@@ -1,0 +1,395 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gamedetail_menu_per_game_settings">個別遊戲設定</string>
+    <string name="gamedetail_menu_details">詳情</string>
+    <string name="gamedetail_menu_description">簡介</string>
+    <string name="gamedetail_menu_screenshots">截圖</string>
+    <string name="gamedetail_menu_achievements">成就</string>
+    <string name="gamedetail_menu_related_games">相關遊戲</string>
+
+    <string name="gamedetail_menu_play_button_extracting">解壓縮中...</string>
+    <string name="gamedetail_menu_play_button_queued">排隊中</string>
+    <string name="gamedetail_menu_play_button_no_space">空間不足</string>
+    <string name="gamedetail_menu_play_button_resume">繼續下載</string>
+    <string name="gamedetail_menu_play_button_retry">重試</string>
+    <string name="gamedetail_menu_play_button_play">開始遊戲</string>
+    <string name="gamedetail_menu_play_button_install">安裝</string>
+    <string name="gamedetail_menu_play_button_download">下載</string>
+    <string name="gamedetail_menu_play_button_progress_percent">%1$d%%</string>
+
+    <string name="gamedetail_menu_saves_syncing">同步中...</string>
+    <string name="gamedetail_menu_saves_default_channel">自動存檔</string>
+
+    <string name="gamedetail_menu_favorite_label">最愛</string>
+    <string name="gamedetail_menu_favorite_compact_remove_description">從最愛中移除</string>
+    <string name="gamedetail_menu_favorite_compact_add_description">加入最愛</string>
+    <string name="gamedetail_menu_favorite_row_remove_description">從最愛中移除</string>
+    <string name="gamedetail_menu_favorite_row_add_description">加入最愛</string>
+
+    <string name="gamedetail_menu_privacy_private">不公開</string>
+    <string name="gamedetail_menu_privacy_public">公開</string>
+
+    <string name="gamedetail_menu_options_label">選項</string>
+    <string name="gamedetail_menu_options_compact_description">選項</string>
+    <string name="gamedetail_menu_options_row_description">選項</string>
+
+    <string name="gamedetail_footer_prev_next_game">上/下一款遊戲</string>
+    <string name="gamedetail_footer_section_scroll">捲動</string>
+
+    <string name="gamedetail_footer_play_syncing">同步中...</string>
+    <string name="gamedetail_footer_play_downloaded">遊玩</string>
+    <string name="gamedetail_footer_play_install">安裝</string>
+    <string name="gamedetail_footer_play_download">下載</string>
+    <string name="gamedetail_footer_play_queued">排隊中</string>
+    <string name="gamedetail_footer_play_retry_no_space">重試</string>
+    <string name="gamedetail_footer_play_downloading">下載中</string>
+    <string name="gamedetail_footer_play_extracting">解壓縮中</string>
+    <string name="gamedetail_footer_play_resume">繼續下載</string>
+    <string name="gamedetail_footer_play_retry_failed">重試</string>
+    <string name="gamedetail_footer_play_fallback">遊玩</string>
+
+    <string name="gamedetail_footer_saves_syncing">同步中...</string>
+    <string name="gamedetail_footer_saves_sync">同步</string>
+
+    <string name="gamedetail_footer_menu_unfavorite">取消最愛</string>
+    <string name="gamedetail_footer_menu_favorite">加入最愛</string>
+
+    <string name="gamedetail_footer_menu_make_public">設為公開</string>
+    <string name="gamedetail_footer_menu_make_private">設為不公開</string>
+
+    <string name="gamedetail_footer_configure">設定</string>
+    <string name="gamedetail_footer_options">選項</string>
+    <string name="gamedetail_footer_view_screenshot">檢視</string>
+    <string name="gamedetail_footer_view_all_achievements">查看全部</string>
+    <string name="gamedetail_footer_open_related">開啟</string>
+    <string name="gamedetail_footer_back">返回</string>
+    <string name="gamedetail_footer_new_game">新遊戲</string>
+    <string name="gamedetail_footer_shortcut_make_public">設為公開</string>
+    <string name="gamedetail_footer_shortcut_make_private">設為不公開</string>
+    <string name="gamedetail_footer_shortcut_unfavorite">取消最愛</string>
+    <string name="gamedetail_footer_shortcut_favorite">加入最愛</string>
+
+    <string name="gamedetail_section_description_heading">簡介</string>
+    <string name="gamedetail_section_screenshots_heading">截圖</string>
+    <string name="gamedetail_section_related_heading">相關遊戲</string>
+    <string name="gamedetail_section_achievements_heading">成就</string>
+    <string name="gamedetail_section_achievements_count">（%1$d/%2$d）</string>
+
+    <string name="gamedetail_chip_players_label">玩家人數</string>
+    <string name="gamedetail_chip_main_story_label">主線</string>
+    <string name="gamedetail_chip_main_extras_label">主線+額外內容</string>
+    <string name="gamedetail_chip_completionist_label">完全攻略</string>
+    <string name="gamedetail_chip_my_rating_label">我的評分</string>
+    <string name="gamedetail_chip_difficulty_label">難度</string>
+    <string name="gamedetail_chip_community_rating_label">評分</string>
+    <string name="gamedetail_chip_play_time_label">遊玩時間</string>
+
+    <string name="gamedetail_chip_rating_value">%1$d/10</string>
+    <string name="gamedetail_chip_rating_unset">--</string>
+    <string name="gamedetail_chip_community_rating_value">%1$d%%</string>
+
+    <string name="gamedetail_chip_play_time_minutes">%1$dm</string>
+    <string name="gamedetail_chip_play_time_hours_minutes">%1$dh %2$dm</string>
+    <string name="gamedetail_chip_play_time_hours">%1$dh</string>
+    <string name="gamedetail_chip_play_time_hours_grouped">%1$sh</string>
+
+    <string name="gamedetail_collapsed_header_rating_percent">%1$d%%</string>
+    <plurals name="gamedetail_collapsed_header_play_count">
+        <item quantity="other">%1$d次遊玩</item>
+    </plurals>
+
+    <plurals name="gamedetail_achievement_strip_points">
+        <item quantity="other">%1$d分</item>
+    </plurals>
+
+    <string name="gamedetail_achievement_list_subtitle">成就</string>
+    <string name="gamedetail_achievement_list_progress">%1$d/%2$d（%3$d%%）</string>
+    <string name="gamedetail_achievement_list_unlocked_heading">已解鎖（%1$d）</string>
+    <string name="gamedetail_achievement_list_locked_heading">未解鎖（%1$d）</string>
+    <string name="gamedetail_achievement_list_tier_hardcore">硬核</string>
+    <string name="gamedetail_achievement_list_tier_casual">一般</string>
+    <plurals name="gamedetail_achievement_list_points">
+        <item quantity="other">%1$d分</item>
+    </plurals>
+    <string name="gamedetail_achievement_list_footer_navigate">移動</string>
+    <string name="gamedetail_achievement_list_footer_back">返回</string>
+
+    <string name="gamedetail_screenshot_viewer_position">%1$d / %2$d</string>
+    <string name="gamedetail_screenshot_viewer_footer_navigate">移動</string>
+    <string name="gamedetail_screenshot_viewer_footer_close">關閉</string>
+    <string name="gamedetail_screenshot_viewer_footer_set_background">設為背景</string>
+
+    <string name="gamedetail_option_item_current_description">目前使用中</string>
+    <string name="gamedetail_option_item_value">[%1$s]</string>
+
+    <string name="gamedetail_save_status_latest_label">最新</string>
+    <string name="gamedetail_save_status_time">· %1$s</string>
+    <string name="gamedetail_save_status_synced">已同步</string>
+    <string name="gamedetail_save_status_local_newer">本機較新</string>
+    <string name="gamedetail_save_status_server_newer">伺服器較新</string>
+    <string name="gamedetail_save_status_local_only">本機</string>
+    <string name="gamedetail_save_status_pending_upload">待上傳</string>
+    <string name="gamedetail_save_status_needs_resolution">需要處理衝突</string>
+    <string name="gamedetail_save_status_no_save">沒有存檔</string>
+    <string name="gamedetail_save_status_not_configured">尚未設定</string>
+
+    <string name="gamedetail_rename_channel_title">建立存檔槽</string>
+    <string name="gamedetail_rename_channel_footer_confirm">確認</string>
+    <string name="gamedetail_rename_channel_footer_cancel">取消</string>
+    <string name="gamedetail_rename_channel_description">請輸入此存檔槽的名稱</string>
+    <string name="gamedetail_rename_channel_placeholder">存檔槽名稱</string>
+
+    <string name="gamedetail_more_options_manage_saves">管理已快取的存檔</string>
+    <string name="gamedetail_more_options_ratings_status">評分與狀態</string>
+    <string name="gamedetail_more_options_change_launcher">變更啟動程式</string>
+    <string name="gamedetail_more_options_speedrun_splits">速通分段</string>
+    <string name="gamedetail_more_options_title_id">遊戲ID</string>
+    <string name="gamedetail_more_options_title_id_missing">未偵測到</string>
+    <string name="gamedetail_more_options_select_disc">選擇光碟</string>
+    <string name="gamedetail_more_options_select_variant">選擇版本</string>
+    <string name="gamedetail_more_options_files">檔案</string>
+    <string name="gamedetail_more_options_refresh_data">重新整理遊戲資料</string>
+    <string name="gamedetail_more_options_add_to_collection">加入合輯</string>
+    <string name="gamedetail_more_options_change_cover">變更封面</string>
+    <string name="gamedetail_more_options_reset_cover">重設封面</string>
+    <string name="gamedetail_more_options_uninstall">解除安裝</string>
+    <string name="gamedetail_more_options_unlink_from_launcher">取消與%1$s的連結</string>
+    <string name="gamedetail_more_options_unlink_launcher_fallback">啟動程式</string>
+    <string name="gamedetail_more_options_delete_download">刪除下載</string>
+    <string name="gamedetail_more_options_remove_from_library">從遊戲庫中移除</string>
+    <string name="gamedetail_more_options_show">顯示</string>
+    <string name="gamedetail_more_options_hide">隱藏</string>
+
+    <string name="gamedetail_ratings_status_title">評分與狀態</string>
+    <string name="gamedetail_ratings_status_footer_navigate">移動</string>
+    <string name="gamedetail_ratings_status_footer_select">選擇</string>
+    <string name="gamedetail_ratings_status_footer_back">返回</string>
+    <string name="gamedetail_ratings_status_rate_game">為遊戲評分</string>
+    <string name="gamedetail_ratings_status_rate_game_unset">尚未評分</string>
+    <string name="gamedetail_ratings_status_score_value">%1$d/10</string>
+    <string name="gamedetail_ratings_status_set_difficulty">設定難度</string>
+    <string name="gamedetail_ratings_status_difficulty_unset">未設定</string>
+    <string name="gamedetail_ratings_status_set_status">設定狀態</string>
+    <string name="gamedetail_ratings_status_status_unset">未設定</string>
+
+    <string name="gamedetail_status_picker_title">設定狀態</string>
+    <string name="gamedetail_status_picker_footer_navigate">移動</string>
+    <string name="gamedetail_status_picker_footer_confirm">確認</string>
+    <string name="gamedetail_status_picker_footer_cancel">取消</string>
+
+    <string name="gamedetail_rating_picker_title_rating">為遊戲評分</string>
+    <string name="gamedetail_rating_picker_title_difficulty">設定難度</string>
+    <string name="gamedetail_rating_picker_footer_adjust">調整</string>
+    <string name="gamedetail_rating_picker_footer_confirm">確認</string>
+    <string name="gamedetail_rating_picker_footer_cancel">取消</string>
+    <string name="gamedetail_rating_picker_unset">未設定</string>
+    <string name="gamedetail_rating_picker_value">%1$d/10</string>
+
+    <string name="gamedetail_play_options_title">開始遊戲</string>
+    <string name="gamedetail_play_options_section_continue">繼續</string>
+    <string name="gamedetail_play_options_section_new_game">新遊戲</string>
+    <string name="gamedetail_play_options_resume_latest">最新</string>
+    <string name="gamedetail_play_options_resume_no_sync">不同步直接遊玩</string>
+    <string name="gamedetail_play_options_resume_no_sync_subtext">略過啟動前的存檔同步檢查</string>
+    <string name="gamedetail_play_options_resume_hardcore">硬核</string>
+    <string name="gamedetail_play_options_resume_hardcore_subtext">以硬核模式繼續此存檔</string>
+    <string name="gamedetail_play_options_new_casual">一般</string>
+    <string name="gamedetail_play_options_new_casual_subtext_states">可使用即時存檔與作弊碼</string>
+    <string name="gamedetail_play_options_new_casual_subtext_cheats">可使用作弊碼</string>
+    <string name="gamedetail_play_options_new_hardcore">硬核</string>
+    <string name="gamedetail_play_options_new_hardcore_subtext_online">僅限連線，無法使用即時存檔或作弊碼</string>
+    <string name="gamedetail_play_options_new_hardcore_subtext_offline">需要網際網路連線</string>
+
+    <string name="gamedetail_permission_storage_title">需要權限</string>
+    <string name="gamedetail_permission_storage_message">存檔同步已啟用，但尚未授予檔案存取權限。請授予權限以同步存檔，或停用存檔同步以繼續。</string>
+    <string name="gamedetail_permission_storage_confirm">授予權限</string>
+    <string name="gamedetail_permission_folder_title">需要資料夾存取權</string>
+    <string name="gamedetail_permission_folder_message">存檔同步需要存取Android/data資料夾，才能同步其他模擬器的存檔。請在系統提示時選擇Android資料夾，或停用存檔同步以繼續。</string>
+    <string name="gamedetail_permission_folder_confirm">選擇資料夾</string>
+    <string name="gamedetail_permission_disable_sync">停用存檔同步</string>
+    <string name="gamedetail_permission_cancel">取消</string>
+
+    <string name="gamedetail_missing_disc_title">缺少光碟</string>
+    <string name="gamedetail_missing_disc_footer_download">下載</string>
+    <string name="gamedetail_missing_disc_footer_cancel">取消</string>
+    <plurals name="gamedetail_missing_disc_message">
+        <item quantity="other">光碟%1$s尚未下載。\n要下載嗎？</item>
+    </plurals>
+
+    <string name="gamedetail_extraction_failed_title">解壓縮失敗</string>
+    <string name="gamedetail_extraction_failed_footer_select">選擇</string>
+    <string name="gamedetail_extraction_failed_footer_cancel">取消</string>
+    <string name="gamedetail_extraction_failed_message">無法解壓縮%1$s</string>
+    <string name="gamedetail_extraction_failed_retry">重試解壓縮</string>
+    <string name="gamedetail_extraction_failed_redownload">重新下載</string>
+
+    <string name="gamedetail_launcher_picker_title">選擇啟動程式</string>
+
+    <string name="gamedetail_core_picker_title">選擇核心</string>
+    <string name="gamedetail_core_picker_subtitle">核心必須先安裝在RetroArch中</string>
+    <string name="gamedetail_core_picker_platform_default">使用平台預設</string>
+
+    <string name="gamedetail_emulator_picker_title">選擇模擬器</string>
+    <string name="gamedetail_emulator_picker_platform_default">使用平台預設</string>
+
+    <string name="gamedetail_variant_picker_title">選擇版本</string>
+    <string name="gamedetail_variant_picker_subtitle">選擇要啟動的版本</string>
+    <string name="gamedetail_variant_picker_original">預設（原版）</string>
+
+    <string name="gamedetail_cover_picker_title">封面</string>
+    <string name="gamedetail_cover_picker_footer_navigate">移動</string>
+    <string name="gamedetail_cover_picker_footer_select">選擇</string>
+    <string name="gamedetail_cover_picker_footer_search">搜尋</string>
+    <string name="gamedetail_cover_picker_footer_from_file">從檔案選擇</string>
+    <string name="gamedetail_cover_picker_footer_cancel">取消</string>
+    <string name="gamedetail_cover_picker_search_placeholder">搜尋美術圖...</string>
+    <string name="gamedetail_cover_picker_empty">找不到此遊戲的封面。</string>
+    <string name="gamedetail_cover_picker_error">無法搜尋封面。%1$s</string>
+
+    <string name="gamedetail_file_picker_title_manage">檔案</string>
+    <string name="gamedetail_file_picker_title_choose">選擇檔案</string>
+    <string name="gamedetail_file_picker_summary_no_changes">沒有變更</string>
+    <string name="gamedetail_file_picker_summary_added">+%1$d · %2$s</string>
+    <string name="gamedetail_file_picker_summary_removed">-%1$d · %2$s</string>
+    <string name="gamedetail_file_picker_summary_selection">已選擇%1$d/%2$d · %3$s</string>
+    <string name="gamedetail_file_picker_confirm_download">下載</string>
+    <string name="gamedetail_file_picker_confirm_download_count">下載%1$d個</string>
+    <string name="gamedetail_file_picker_confirm_remove_count">移除%1$d個</string>
+    <string name="gamedetail_file_picker_confirm_apply">套用變更</string>
+    <string name="gamedetail_file_picker_confirm_no_changes">沒有變更</string>
+    <string name="gamedetail_file_picker_deselect_all">取消全選</string>
+    <string name="gamedetail_file_picker_select_all">全選</string>
+    <string name="gamedetail_file_picker_cancel">取消</string>
+    <string name="gamedetail_file_picker_expand_description">展開</string>
+    <string name="gamedetail_file_picker_collapse_description">收合</string>
+    <string name="gamedetail_file_picker_default_tag">預設</string>
+    <string name="gamedetail_file_picker_pending_remove">將被移除</string>
+    <string name="gamedetail_file_picker_pending_add">將下載</string>
+    <string name="gamedetail_file_picker_on_device">已在裝置上</string>
+
+    <string name="gamedetail_per_game_title">個別遊戲設定</string>
+    <string name="gamedetail_per_game_footer_adjust">調整</string>
+    <string name="gamedetail_per_game_footer_change_reset">變更/重設</string>
+    <string name="gamedetail_per_game_footer_select">選擇</string>
+    <string name="gamedetail_per_game_footer_change_save_path">變更</string>
+    <string name="gamedetail_per_game_footer_open_save_location">開啟</string>
+    <string name="gamedetail_per_game_footer_change_memcard">變更</string>
+    <string name="gamedetail_per_game_footer_cycle">切換</string>
+    <string name="gamedetail_per_game_footer_open">開啟</string>
+    <string name="gamedetail_per_game_footer_back">返回</string>
+
+    <string name="gamedetail_per_game_emulator_label">模擬器</string>
+    <string name="gamedetail_per_game_emulator_none">未偵測到</string>
+    <string name="gamedetail_per_game_core_label">核心</string>
+    <string name="gamedetail_per_game_core_default">預設</string>
+    <string name="gamedetail_per_game_save_path_label">存檔路徑</string>
+    <string name="gamedetail_per_game_save_location_label">存檔位置</string>
+    <string name="gamedetail_per_game_save_location_unset">尚未設定</string>
+    <string name="gamedetail_per_game_memcard_label">記憶卡</string>
+    <string name="gamedetail_per_game_memcard_default">預設（%1$s）</string>
+    <string name="gamedetail_per_game_memcard_default_auto">自動</string>
+    <string name="gamedetail_per_game_display_target_label">顯示目標</string>
+    <string name="gamedetail_per_game_display_target_inherit">繼承（%1$s）</string>
+    <string name="gamedetail_per_game_extension_label">副檔名</string>
+    <string name="gamedetail_per_game_extension_inherit">繼承（%1$s）</string>
+    <string name="gamedetail_per_game_extension_inherit_auto">自動</string>
+    <string name="gamedetail_per_game_platform_settings">平台設定</string>
+    <string name="gamedetail_per_game_inherited_tag">已繼承</string>
+    <string name="gamedetail_per_game_save_path_browser_title">存檔路徑</string>
+    <string name="gamedetail_per_game_save_path_content_dir">（ROM所在目錄）</string>
+
+    <string name="gamedetail_cover_file_browser_title">選擇封面</string>
+
+    <string name="gamedetail_speedrun_segments_title">%1$s－分段</string>
+    <string name="gamedetail_speedrun_title">速通分段</string>
+    <string name="gamedetail_speedrun_footer_add_segment">新增分段</string>
+    <string name="gamedetail_speedrun_footer_delete">刪除</string>
+    <string name="gamedetail_speedrun_footer_move">移動</string>
+    <string name="gamedetail_speedrun_footer_back">返回</string>
+    <string name="gamedetail_speedrun_footer_open">開啟</string>
+    <string name="gamedetail_speedrun_footer_new_category">新增類別</string>
+    <string name="gamedetail_speedrun_footer_close">關閉</string>
+    <string name="gamedetail_speedrun_segment_row">%1$d. %2$s</string>
+    <string name="gamedetail_speedrun_default_segment_name">分段1</string>
+    <string name="gamedetail_speedrun_rename_category">重新命名類別</string>
+    <string name="gamedetail_speedrun_delete_category">刪除類別</string>
+    <string name="gamedetail_speedrun_empty_prefix">尚無類別，請按</string>
+    <string name="gamedetail_speedrun_empty_suffix">建立一個，或從社群匯入。</string>
+    <string name="gamedetail_speedrun_category_summary">%1$d個分段 · %2$d次嘗試</string>
+    <string name="gamedetail_speedrun_import_row">匯入分段...</string>
+    <string name="gamedetail_speedrun_import_loading_title">搜尋中...</string>
+    <string name="gamedetail_speedrun_import_loading_message">正在therun.gg與speedrun.com上查詢類別</string>
+    <string name="gamedetail_speedrun_import_importing_title">匯入中...</string>
+    <string name="gamedetail_speedrun_import_importing_message">正在從頂尖紀錄取得分段資料</string>
+    <string name="gamedetail_speedrun_import_failed_title">匯入</string>
+    <string name="gamedetail_speedrun_import_failed_footer_back">返回</string>
+    <string name="gamedetail_speedrun_preview_footer_other_runner">其他玩家</string>
+    <string name="gamedetail_speedrun_preview_footer_import">匯入</string>
+    <string name="gamedetail_speedrun_preview_footer_back">返回</string>
+    <string name="gamedetail_speedrun_preview_attribution">分段提供者：%1$s（第%2$d名）</string>
+    <string name="gamedetail_speedrun_preview_segment_row">%1$d. %2$s</string>
+    <string name="gamedetail_speedrun_import_options_title">匯入分段</string>
+    <string name="gamedetail_speedrun_import_options_footer_import">匯入</string>
+    <string name="gamedetail_speedrun_import_options_footer_cancel">取消</string>
+    <string name="gamedetail_speedrun_source_therun">therun.gg · 完整分段</string>
+    <string name="gamedetail_speedrun_source_speedruncom">speedrun.com · 僅類別名稱</string>
+    <string name="gamedetail_speedrun_prompt_confirm">確認</string>
+    <string name="gamedetail_speedrun_prompt_cancel">取消</string>
+    <string name="gamedetail_speedrun_prompt_placeholder">名稱</string>
+    <string name="gamedetail_speedrun_confirm_delete_title">要刪除「%1$s」嗎？</string>
+    <string name="gamedetail_speedrun_confirm_delete_footer_delete">刪除</string>
+    <string name="gamedetail_speedrun_confirm_delete_footer_cancel">取消</string>
+    <string name="gamedetail_speedrun_confirm_delete_category_message">這將刪除該類別、其分段以及所有已記錄的嘗試。</string>
+    <string name="gamedetail_speedrun_confirm_delete_segment_message">這將從類別中移除該分段。</string>
+    <string name="gamedetail_speedrun_prompt_new_category">新增類別</string>
+    <string name="gamedetail_speedrun_prompt_rename_category">重新命名類別</string>
+    <string name="gamedetail_speedrun_prompt_new_segment">新增分段</string>
+    <string name="gamedetail_speedrun_prompt_rename_segment">重新命名分段</string>
+    <string name="gamedetail_speedrun_import_none_found">找不到「%1$s」的線上類別</string>
+    <string name="gamedetail_speedrun_import_fetch_failed">無法取得%1$s的分段資料</string>
+
+    <string name="gamedetail_notice_launch_failed">啟動失敗：%1$s</string>
+    <string name="gamedetail_notice_background_updated">背景已更新</string>
+    <string name="gamedetail_notice_background_failed">無法設定背景</string>
+    <string name="gamedetail_notice_rating_saved">評分已儲存</string>
+    <string name="gamedetail_notice_difficulty_saved">難度已儲存</string>
+    <string name="gamedetail_notice_status_saved">狀態已儲存</string>
+    <string name="gamedetail_notice_no_emulator_for_saves">無法判斷存檔所使用的模擬器</string>
+    <string name="gamedetail_notice_no_emulator_for_selection">無法判斷模擬器</string>
+    <string name="gamedetail_notice_no_emulator_for_restore">無法判斷還原存檔所使用的模擬器</string>
+    <string name="gamedetail_notice_no_emulator_for_sync">無法判斷模擬器</string>
+    <string name="gamedetail_notice_saves_up_to_date">存檔已是最新</string>
+    <string name="gamedetail_notice_save_uploaded">本機存檔已上傳</string>
+    <string name="gamedetail_notice_save_downloaded">伺服器存檔已下載</string>
+    <string name="gamedetail_notice_sync_skipped">已略過同步</string>
+    <string name="gamedetail_notice_variant_local_only">無法下載僅限本機的版本</string>
+    <string name="gamedetail_notice_downloading_variant">正在下載%1$s</string>
+    <plurals name="gamedetail_notice_files_queued">
+        <item quantity="other">已排入%1$d個</item>
+    </plurals>
+    <plurals name="gamedetail_notice_files_removed">
+        <item quantity="other">已移除%1$d個</item>
+    </plurals>
+    <plurals name="gamedetail_notice_downloads_queued">
+        <item quantity="other">已排入%1$d個下載</item>
+    </plurals>
+    <string name="gamedetail_notice_already_downloaded">遊戲已下載</string>
+    <plurals name="gamedetail_notice_discs_queued">
+        <item quantity="other">正在下載%1$d片光碟</item>
+    </plurals>
+    <plurals name="gamedetail_notice_missing_discs_queued">
+        <item quantity="other">正在下載%1$d片缺少的光碟</item>
+    </plurals>
+    <string name="gamedetail_notice_extraction_succeeded">解壓縮成功</string>
+    <string name="gamedetail_notice_redownload_started">已開始重新下載</string>
+    <string name="gamedetail_notice_apk_install_failed">無法安裝APK</string>
+    <string name="gamedetail_notice_download_deleted">下載已刪除</string>
+    <string name="gamedetail_notice_removed_from_library">已從遊戲庫移除</string>
+    <string name="gamedetail_notice_remove_failed">無法移除此遊戲</string>
+    <string name="gamedetail_notice_game_data_refreshed">遊戲資料已重新整理</string>
+    <string name="gamedetail_notice_android_data_refreshed">遊戲資料已重新整理</string>
+    <string name="gamedetail_notice_app_data_failed">無法取得應用程式資料</string>
+    <string name="gamedetail_notice_refresh_failed">重新整理失敗：%1$s</string>
+
+    <string name="gamedetail_header_platform_unknown">未知</string>
+</resources>

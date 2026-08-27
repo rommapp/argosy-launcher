@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="firstrun_welcome_intro">Bienvenue ! Configurons votre appareil.</string>
+    <string name="firstrun_welcome_button_start">Commencer</string>
+
+    <string name="firstrun_romm_url_title">Connexion Rom Manager</string>
+    <string name="firstrun_romm_url_field_label">URL du serveur</string>
+    <string name="firstrun_romm_url_hint">Entrez l\'adresse de votre serveur RomM et nous détecterons comment vous connecter.</string>
+    <string name="firstrun_romm_url_button_continue">Continuer</string>
+    <string name="firstrun_romm_url_button_checking">Vérification...</string>
+    <string name="firstrun_romm_url_button_back">Retour</string>
+    <string name="firstrun_romm_url_error_blank">Entrez une URL de serveur</string>
+
+    <string name="firstrun_pairing_code_title">Entrer le code de jumelage</string>
+    <string name="firstrun_pairing_code_hint">Créez un jeton API dans l\'interface web de RomM, puis entrez le code à 8 caractères.</string>
+    <string name="firstrun_pairing_code_clear_description">Effacer le code</string>
+    <string name="firstrun_pairing_code_button_connect">Connecter</string>
+    <string name="firstrun_pairing_code_button_connecting">Connexion...</string>
+    <string name="firstrun_pairing_code_button_edit_url">Modifier l\'URL</string>
+    <string name="firstrun_pairing_code_button_scan">Scanner le code QR</string>
+    <string name="firstrun_pairing_code_button_device_pairing">Utiliser le jumelage par QR à la place</string>
+    <string name="firstrun_pairing_code_error_incomplete">Entrez le code de jumelage complet à 8 caractères</string>
+
+    <string name="firstrun_device_pairing_title">Scanner pour jumeler</string>
+    <string name="firstrun_device_pairing_hint">Scannez ce code avec votre téléphone, ou connectez-vous ici sur cet appareil, puis approuvez-le dans RomM.</string>
+    <string name="firstrun_device_pairing_no_browser">Aucun navigateur sur cet appareil. Scannez le code ou utilisez un code de jumelage à la place.</string>
+    <string name="firstrun_device_pairing_button_sign_in">Se connecter sur cet appareil</string>
+    <string name="firstrun_device_pairing_button_manual_code">Utiliser un code de jumelage</string>
+    <string name="firstrun_device_pairing_button_back">Retour</string>
+    <string name="firstrun_device_pairing_error_denied">Le jumelage a été refusé sur le serveur</string>
+    <string name="firstrun_device_pairing_error_expired">Le code de jumelage a expiré, recommencez</string>
+    <string name="firstrun_device_pairing_error_unexpected">Résultat de jumelage inattendu</string>
+
+    <string name="firstrun_romm_success_title">Connecté avec succès !</string>
+    <string name="firstrun_romm_success_server">Serveur : %1$s</string>
+    <string name="firstrun_romm_success_library">%1$s sur %2$s</string>
+    <plurals name="firstrun_romm_success_game_count">
+        <item quantity="one">%d jeu</item>
+        <item quantity="many">%d jeux</item>
+        <item quantity="other">%d jeux</item>
+    </plurals>
+    <plurals name="firstrun_romm_success_platform_count">
+        <item quantity="one">%d plateforme</item>
+        <item quantity="many">%d plateformes</item>
+        <item quantity="other">%d plateformes</item>
+    </plurals>
+    <string name="firstrun_romm_success_button_continue">Continuer</string>
+    <string name="firstrun_romm_success_error_library_fetch">Échec de la récupération de la bibliothèque : %1$s</string>
+
+    <string name="firstrun_permissions_title">Autorisations</string>
+    <string name="firstrun_permissions_intro">Argosy en a besoin pour gérer votre bibliothèque et vos émulateurs.</string>
+    <string name="firstrun_permissions_storage_title">Gérer le stockage (obligatoire)</string>
+    <string name="firstrun_permissions_storage_description">Nécessaire pour parcourir les dossiers, télécharger des jeux et synchroniser les sauvegardes.</string>
+    <string name="firstrun_permissions_notifications_title">Notifications</string>
+    <string name="firstrun_permissions_notifications_description">Affiche la progression des téléchargements et des synchronisations.</string>
+    <string name="firstrun_permissions_overlay_title">Affichage par-dessus les autres applications</string>
+    <string name="firstrun_permissions_overlay_description">Active les superpositions de détection des sauvegardes en jeu.</string>
+    <string name="firstrun_permissions_usage_title">Accès à l\'utilisation</string>
+    <string name="firstrun_permissions_usage_description">Active le suivi précis du temps de jeu et la reprise.</string>
+    <string name="firstrun_permissions_button_continue">Continuer</string>
+    <string name="firstrun_permissions_note_optional">Vous pourrez accorder les autres autorisations plus tard dans les paramètres.</string>
+    <string name="firstrun_permissions_note_storage_required">Accordez l\'accès au stockage pour continuer. Les autres sont facultatives et peuvent être accordées plus tard dans les paramètres.</string>
+
+    <string name="firstrun_rom_path_title">Emplacement des jeux</string>
+    <string name="firstrun_rom_path_description">Choisissez où seront stockés vos fichiers de jeu. Nous créerons automatiquement des sous-dossiers pour chaque console.</string>
+    <string name="firstrun_rom_path_button_continue">Continuer</string>
+    <string name="firstrun_rom_path_button_change_folder">Choisir un autre dossier</string>
+    <string name="firstrun_rom_path_button_choose_folder">Choisir un dossier</string>
+
+    <string name="firstrun_image_cache_optional_badge">FACULTATIF</string>
+    <string name="firstrun_image_cache_title">Emplacement du cache d\'images</string>
+    <string name="firstrun_image_cache_description">Par défaut, les visuels des jeux sont stockés dans le cache interne de l\'application. Si votre appareil manque d\'espace de stockage, vous pouvez choisir un emplacement externe.</string>
+    <string name="firstrun_image_cache_button_continue">Continuer</string>
+    <string name="firstrun_image_cache_button_change_folder">Choisir un autre dossier</string>
+    <string name="firstrun_image_cache_button_choose_folder">Choisir un dossier externe</string>
+    <string name="firstrun_image_cache_button_use_default">Utiliser le dossier par défaut (interne)</string>
+    <string name="firstrun_image_cache_folder_note">Les images seront stockées dans un sous-dossier \'%1$s\'.</string>
+
+    <string name="firstrun_platform_select_eyebrow">SÉLECTIONNER LES PLATEFORMES</string>
+    <string name="firstrun_platform_select_title">Choisissez les plateformes à synchroniser</string>
+    <plurals name="firstrun_platform_select_selected_count">
+        <item quantity="one">%1$d plateforme sélectionnée sur %2$d</item>
+        <item quantity="many">%1$d plateformes sélectionnées sur %2$d</item>
+        <item quantity="other">%1$d plateformes sélectionnées sur %2$d</item>
+    </plurals>
+    <plurals name="firstrun_platform_select_game_count">
+        <item quantity="one">%d jeu</item>
+        <item quantity="many">%d jeux</item>
+        <item quantity="other">%d jeux</item>
+    </plurals>
+    <string name="firstrun_platform_select_button_select_all">Tout sélectionner</string>
+    <string name="firstrun_platform_select_button_deselect_all">Tout désélectionner</string>
+    <string name="firstrun_platform_select_button_continue">Continuer</string>
+
+    <string name="firstrun_core_prompt_title">Télécharger les cœurs d\'émulateur ?</string>
+    <plurals name="firstrun_core_prompt_available_count">
+        <item quantity="one">%d cœur libretro est disponible pour vos plateformes sélectionnées.</item>
+        <item quantity="many">%d cœurs libretro sont disponibles pour vos plateformes sélectionnées.</item>
+        <item quantity="other">%d cœurs libretro sont disponibles pour vos plateformes sélectionnées.</item>
+    </plurals>
+    <string name="firstrun_core_prompt_explainer">Ils activent l\'émulation intégrée sans avoir besoin d\'applications d\'émulateur séparées.</string>
+    <string name="firstrun_core_prompt_all_installed">Tous les cœurs pour vos plateformes sélectionnées sont déjà installés.</string>
+    <string name="firstrun_core_prompt_button_download">Télécharger les cœurs</string>
+    <string name="firstrun_core_prompt_button_skip">Ignorer (désactiver l\'émulateur intégré)</string>
+    <string name="firstrun_core_prompt_button_continue">Continuer</string>
+    <string name="firstrun_core_prompt_note_skip">Ignorer désactive l\'émulateur intégré. Vous pourrez le réactiver et télécharger des cœurs plus tard depuis les paramètres.</string>
+
+    <string name="firstrun_core_download_title">Téléchargement des cœurs d\'émulateur</string>
+    <string name="firstrun_core_download_none_needed">Aucun cœur nécessaire pour les plateformes sélectionnées</string>
+    <string name="firstrun_core_download_button_continue_no_cores">Continuer</string>
+    <plurals name="firstrun_core_download_progress_count">
+        <item quantity="one">Téléchargement de %1$d cœur sur %2$d...</item>
+        <item quantity="many">Téléchargement de %1$d cœurs sur %2$d...</item>
+        <item quantity="other">Téléchargement de %1$d cœurs sur %2$d...</item>
+    </plurals>
+    <plurals name="firstrun_core_download_partial_count">
+        <item quantity="one">%1$d cœur téléchargé sur %2$d</item>
+        <item quantity="many">%1$d cœurs téléchargés sur %2$d</item>
+        <item quantity="other">%1$d cœurs téléchargés sur %2$d</item>
+    </plurals>
+    <string name="firstrun_core_download_all_done">Tous les cœurs ont été téléchargés</string>
+    <string name="firstrun_core_download_note_skip">Ignorez si vous préférez utiliser des émulateurs autonomes</string>
+    <string name="firstrun_core_download_button_skip">Ignorer</string>
+    <string name="firstrun_core_download_button_continue">Continuer</string>
+    <string name="firstrun_core_download_status_complete_description">Terminé</string>
+    <string name="firstrun_core_download_status_failed_description">Échec</string>
+    <string name="firstrun_core_download_retry_description">Réessayer</string>
+    <string name="firstrun_core_download_button_retry">Réessayer</string>
+
+    <string name="firstrun_complete_title">Tout est prêt !</string>
+    <string name="firstrun_complete_library">%1$s sur %2$s prêts à synchroniser</string>
+    <plurals name="firstrun_complete_game_count">
+        <item quantity="one">%d jeu</item>
+        <item quantity="many">%d jeux</item>
+        <item quantity="other">%d jeux</item>
+    </plurals>
+    <plurals name="firstrun_complete_platform_count">
+        <item quantity="one">%d plateforme</item>
+        <item quantity="many">%d plateformes</item>
+        <item quantity="other">%d plateformes</item>
+    </plurals>
+    <string name="firstrun_complete_hint">Synchronisez votre bibliothèque depuis les paramètres de collection pour commencer.</string>
+    <string name="firstrun_complete_button_start">Commencer à jouer</string>
+</resources>

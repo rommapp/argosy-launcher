@@ -33,7 +33,9 @@ import com.nendo.argosy.data.steam.SteamService
 import com.nendo.argosy.data.storage.AndroidDataAccessor
 import com.nendo.argosy.ui.screens.settings.InstalledSteamLauncher
 import com.nendo.argosy.ui.screens.settings.NotInstalledSteamLauncher
+import com.nendo.argosy.R
 import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.ui.screens.settings.SteamSettingsState
 import kotlinx.coroutines.CoroutineScope
@@ -204,13 +206,13 @@ class SteamSettingsDelegate @Inject constructor(
             try {
                 val summary = withContext(Dispatchers.IO) { gameNativeStoreSync.scan() }
                 if (!summary.configured) {
-                    notificationManager.showError("No GameNative folders configured")
+                    notificationManager.showError(NotificationText.Res(R.string.notif_steam_settings_gamenative_unconfigured))
                     return@launch
                 }
                 _state.update { it.copy(gameNativeMissingDirs = missingFolders(summary)) }
                 notificationManager.show(
-                    title = "GameNative Library",
-                    subtitle = formatScanSummary(summary)
+                    title = NotificationText.Res(R.string.notif_steam_settings_gamenative_scan_title),
+                    subtitle = NotificationText.Raw(formatScanSummary(summary))
                 )
             } finally {
                 _state.update { it.copy(isGameNativeScanning = false) }
@@ -307,7 +309,7 @@ class SteamSettingsDelegate @Inject constructor(
                 storeSyncDirs.filterValues { !File(it).isDirectory }.keys
             }
             val volumes = withContext(Dispatchers.IO) { steamPathResolver.getAvailableVolumes() }
-            val installedByVolume = withContext(Dispatchers.IO) { loadInstalledSteamSummary(volumes) }
+            val installedByVolume = withContext(Dispatchers.IO) { loadInstalledSteamSummary(volumes, context) }
             val resolvedSteamPath = withContext(Dispatchers.IO) { steamPathResolver.getResolvedSteamBase() }
             val steamPlatform = withContext(Dispatchers.IO) {
                 platformRepository.getById(com.nendo.argosy.data.platform.LocalPlatformIds.STEAM)
@@ -372,8 +374,12 @@ class SteamSettingsDelegate @Inject constructor(
             val inFlight = (if (active) 1 else 0) + queued
             if (inFlight > 0) {
                 notificationManager.show(
-                    title = "Install path changed",
-                    subtitle = "$inFlight download(s) in progress will finish at their original location. New downloads use the new target."
+                    title = NotificationText.Res(R.string.notif_steam_settings_install_path_changed_title),
+                    subtitle = NotificationText.Plural(
+                        R.plurals.notif_steam_settings_install_path_changed_subtitle,
+                        inFlight,
+                        listOf(inFlight)
+                    )
                 )
             }
         }
@@ -427,7 +433,9 @@ class SteamSettingsDelegate @Inject constructor(
                 }
                 is FetchReleaseResult.Error -> {
                     _state.update { it.copy(downloadingLauncherId = null, downloadProgress = null) }
-                    notificationManager.showError("Download failed: ${result.message}")
+                    notificationManager.showError(
+                        NotificationText.Res(R.string.notif_steam_settings_launcher_download_failed, listOf(result.message))
+                    )
                 }
             }
         }
@@ -508,7 +516,14 @@ class SteamSettingsDelegate @Inject constructor(
 
                 val finalState = serviceRef?.state?.value?.connectionState
                 if (finalState != SteamConnectionState.LOGGED_IN) {
-                    _state.update { it.copy(syncState = LibrarySyncState.Error("Could not connect to Steam")) }
+                    _state.update {
+                        it.copy(
+                            syncState = LibrarySyncState.Error(
+                                messageRes = R.string.notif_steam_sync_error_could_not_connect_sync,
+                                message = context.getString(R.string.notif_steam_sync_error_could_not_connect_sync)
+                            )
+                        )
+                    }
                     return@launch
                 }
             }
@@ -542,7 +557,14 @@ class SteamSettingsDelegate @Inject constructor(
 
                 val finalState = serviceRef?.state?.value?.connectionState
                 if (finalState != SteamConnectionState.LOGGED_IN) {
-                    _state.update { it.copy(syncState = LibrarySyncState.Error("Could not connect to Steam")) }
+                    _state.update {
+                        it.copy(
+                            syncState = LibrarySyncState.Error(
+                                messageRes = R.string.notif_steam_sync_error_could_not_connect_overwrite,
+                                message = context.getString(R.string.notif_steam_sync_error_could_not_connect_overwrite)
+                            )
+                        )
+                    }
                     return@launch
                 }
             }
@@ -577,7 +599,7 @@ class SteamSettingsDelegate @Inject constructor(
     fun resetLibrary(scope: CoroutineScope) {
         scope.launch {
             val count = steamLibraryManager.resetLibrary()
-            notificationManager.show("Removed $count Steam games")
+            notificationManager.show(NotificationText.Res(R.string.notif_steam_settings_library_reset, listOf(count)))
         }
     }
 
@@ -623,7 +645,9 @@ class SteamSettingsDelegate @Inject constructor(
         val appId = appIdStr.toLongOrNull()
 
         if (appId == null || appId <= 0) {
-            _state.update { it.copy(addGameError = "Please enter a valid Steam App ID") }
+            _state.update {
+                it.copy(addGameError = context.getString(R.string.settings_steam_delegate_invalid_app_id))
+            }
             return
         }
 
@@ -632,7 +656,9 @@ class SteamSettingsDelegate @Inject constructor(
 
             when (val result = steamRepository.addGame(appId, launcherPackage)) {
                 is SteamResult.Success -> {
-                    notificationManager.show("Added: ${result.data.title}")
+                    notificationManager.show(
+                        NotificationText.Res(R.string.notif_steam_settings_game_added, listOf(result.data.title))
+                    )
                     dismissAddSteamGameDialog()
                 }
                 is SteamResult.Error -> {
@@ -715,24 +741,30 @@ class SteamSettingsDelegate @Inject constructor(
                 _state.update { it.copy(syncState = syncState) }
 
                 if (syncState is LibrarySyncState.Complete && syncState.gamesAdded > 0) {
-                    notificationManager.show("Added ${syncState.gamesAdded} Steam games")
+                    notificationManager.show(
+                        NotificationText.Res(R.string.notif_steam_settings_library_synced, listOf(syncState.gamesAdded))
+                    )
                 } else if (syncState is LibrarySyncState.Error) {
-                    notificationManager.showError(syncState.message)
+                    val text = syncState.messageRes?.let { NotificationText.Res(it) }
+                        ?: NotificationText.Raw(syncState.message)
+                    notificationManager.showError(text)
                 }
             }
         }
     }
 
     private suspend fun loadInstalledSteamSummary(
-        volumes: List<com.nendo.argosy.data.steam.SteamInstallVolume>
+        volumes: List<com.nendo.argosy.data.steam.SteamInstallVolume>,
+        context: Context
     ): Map<String, Int> {
         val games = gameRepository.getInstalledSteamGames()
         if (games.isEmpty()) return emptyMap()
         val buckets = linkedMapOf<String, Int>()
         val volumesByPath = volumes.sortedByDescending { it.path.length }
+        val otherLabel = context.getString(R.string.settings_steam_delegate_volume_other_label)
         for (game in games) {
             val path = game.localPath ?: continue
-            val label = volumesByPath.firstOrNull { path.startsWith(it.path) }?.label ?: "Other"
+            val label = volumesByPath.firstOrNull { path.startsWith(it.path) }?.label ?: otherLabel
             buckets[label] = (buckets[label] ?: 0) + 1
         }
         return buckets

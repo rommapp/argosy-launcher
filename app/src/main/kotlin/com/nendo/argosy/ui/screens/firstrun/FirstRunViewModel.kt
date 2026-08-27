@@ -5,8 +5,10 @@ import android.os.Build
 import android.os.Environment
 import android.content.pm.PackageManager
 import android.provider.Settings
+import androidx.annotation.StringRes
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModel
+import com.nendo.argosy.R
 import androidx.lifecycle.viewModelScope
 import android.app.Application
 import com.nendo.argosy.data.repository.PlatformRepository
@@ -65,6 +67,17 @@ enum class CoreDownloadStatus {
     PENDING, DOWNLOADING, COMPLETE, FAILED
 }
 
+/**
+ * A connection failure to show on the login steps. Either app-authored text, held as
+ * [textRes] plus an optional [arg] so the render site resolves it in the user's locale,
+ * or [serverMessage], which the server supplied and the app cannot translate.
+ */
+data class FirstRunError(
+    @StringRes val textRes: Int? = null,
+    val arg: String? = null,
+    val serverMessage: String? = null
+)
+
 data class FirstRunUiState(
     val currentStep: FirstRunStep = FirstRunStep.WELCOME,
     val focusedIndex: Int = 0,
@@ -80,7 +93,7 @@ data class FirstRunUiState(
     val rommShowScanner: Boolean = false,
     val rommHasCamera: Boolean = false,
     val isConnecting: Boolean = false,
-    val connectionError: String? = null,
+    val connectionError: FirstRunError? = null,
     val rommGameCount: Int = 0,
     val rommPlatformCount: Int = 0,
     val romStoragePath: String? = null,
@@ -270,7 +283,7 @@ class FirstRunViewModel @Inject constructor(
 
                 val result = coreManager.downloadCoreById(core.coreId)
                 val newStatus = if (result.isSuccess) CoreDownloadStatus.COMPLETE else CoreDownloadStatus.FAILED
-                val errorMessage = result.exceptionOrNull()?.let { formatCoreDownloadError(it.message ?: "Unknown error") }
+                val errorMessage = result.exceptionOrNull()?.let { formatCoreDownloadError(it) }
 
                 _uiState.update { state ->
                     val updatedCores = state.coreDownloads.map {
@@ -302,7 +315,7 @@ class FirstRunViewModel @Inject constructor(
 
             val result = coreManager.downloadCoreById(coreId)
             val newStatus = if (result.isSuccess) CoreDownloadStatus.COMPLETE else CoreDownloadStatus.FAILED
-            val errorMessage = result.exceptionOrNull()?.let { formatCoreDownloadError(it.message ?: "Unknown error") }
+            val errorMessage = result.exceptionOrNull()?.let { formatCoreDownloadError(it) }
 
             _uiState.update { state ->
                 val updatedCores = state.coreDownloads.map {
@@ -575,7 +588,12 @@ class FirstRunViewModel @Inject constructor(
                     }
                 }
                 is RomMResult.Error -> {
-                    _uiState.update { it.copy(isConnecting = false, connectionError = result.message) }
+                    _uiState.update {
+                        it.copy(
+                            isConnecting = false,
+                            connectionError = FirstRunError(serverMessage = result.message)
+                        )
+                    }
                 }
             }
         }
@@ -653,7 +671,9 @@ class FirstRunViewModel @Inject constructor(
 
     private fun startDevicePairing(url: String) {
         if (url.isBlank()) {
-            _uiState.update { it.copy(connectionError = "Enter a server URL") }
+            _uiState.update {
+                it.copy(connectionError = FirstRunError(textRes = R.string.firstrun_romm_url_error_blank))
+            }
             return
         }
         devicePollJob?.cancel()
@@ -681,7 +701,7 @@ class FirstRunViewModel @Inject constructor(
                             isConnecting = false,
                             rommUrlCommitted = false,
                             rommDevicePairing = false,
-                            connectionError = init.message,
+                            connectionError = FirstRunError(serverMessage = init.message),
                             focusedIndex = 0
                         )
                     }
@@ -706,14 +726,22 @@ class FirstRunViewModel @Inject constructor(
                 }
                 onAuthSuccess()
             }
-            DeviceAuthOutcome.Denied -> failDevicePairing("Pairing was denied on the server")
-            DeviceAuthOutcome.Expired -> failDevicePairing("Pairing code expired, start again")
-            is DeviceAuthOutcome.AddedAccount -> failDevicePairing("Unexpected pairing result")
-            is DeviceAuthOutcome.Failed -> failDevicePairing(outcome.message)
+            DeviceAuthOutcome.Denied -> failDevicePairing(
+                FirstRunError(textRes = R.string.firstrun_device_pairing_error_denied)
+            )
+            DeviceAuthOutcome.Expired -> failDevicePairing(
+                FirstRunError(textRes = R.string.firstrun_device_pairing_error_expired)
+            )
+            is DeviceAuthOutcome.AddedAccount -> failDevicePairing(
+                FirstRunError(textRes = R.string.firstrun_device_pairing_error_unexpected)
+            )
+            is DeviceAuthOutcome.Failed -> failDevicePairing(
+                FirstRunError(serverMessage = outcome.message)
+            )
         }
     }
 
-    private fun failDevicePairing(message: String) {
+    private fun failDevicePairing(error: FirstRunError) {
         romMRepository.cancelDeviceAuth()
         _uiState.update {
             it.copy(
@@ -723,7 +751,7 @@ class FirstRunViewModel @Inject constructor(
                 rommDeviceVerificationUrl = null,
                 rommBrowserMissing = false,
                 isConnecting = false,
-                connectionError = message,
+                connectionError = error,
                 focusedIndex = 0
             )
         }
@@ -735,7 +763,9 @@ class FirstRunViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     isConnecting = false,
-                    connectionError = "Enter the full 8-character pairing code"
+                    connectionError = FirstRunError(
+                        textRes = R.string.firstrun_pairing_code_error_incomplete
+                    )
                 )
             }
             return
@@ -747,7 +777,7 @@ class FirstRunViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isConnecting = false,
-                        connectionError = result.message,
+                        connectionError = FirstRunError(serverMessage = result.message),
                         rommPairingCode = ""
                     )
                 }
@@ -774,7 +804,10 @@ class FirstRunViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         isConnecting = false,
-                        connectionError = "Failed to fetch library: ${summary.message}"
+                        connectionError = FirstRunError(
+                            textRes = R.string.firstrun_romm_success_error_library_fetch,
+                            arg = summary.message
+                        )
                     )
                 }
             }

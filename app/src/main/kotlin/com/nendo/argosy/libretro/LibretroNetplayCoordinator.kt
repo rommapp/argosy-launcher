@@ -217,7 +217,7 @@ class LibretroNetplayCoordinator(
                         }
                         if (progressState?.stage != NetplayProgressStage.Failed) {
                             val label = NetplayQualityInfo.labelForRttMs(initRtt)
-                            val readyMsg = if (initRtt != null) "Ready -- ${initRtt}ms [${label.name}]" else null
+                            val readyMsg = if (initRtt != null) "Ready -- ${initRtt}ms [${activity.getString(label.labelRes)}]" else null
                             progressState = NetplayProgressState(NetplayProgressStage.Ready, readyMsg)
                             lastAnnouncedTier = if (initRtt != null) label else null
                             tierChangeTimestamp = System.currentTimeMillis()
@@ -360,7 +360,7 @@ class LibretroNetplayCoordinator(
                     } else if (System.currentTimeMillis() - candidateStartMs >= TIER_CHANGE_DEBOUNCE_MS) {
                         lastAnnouncedTier = currentTier
                         tierChangeTimestamp = System.currentTimeMillis()
-                        showToast("Connection: ${currentTier.name} (${rttMs}ms)")
+                        showToast("Connection: ${activity.getString(currentTier.labelRes)} (${rttMs}ms)")
                     }
                 } else {
                     candidateTier = null

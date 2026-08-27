@@ -46,11 +46,13 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import coil.compose.AsyncImage
+import com.nendo.argosy.R
 import com.nendo.argosy.data.quaypass.QuayPassService
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.FooterBar
@@ -137,7 +139,7 @@ fun QuayPassCheckInScreen(
                             modifier = Modifier.size(Dimens.iconLg)
                         )
                         Text(
-                            text = "Check-In",
+                            text = stringResource(R.string.quaypass_checkin_header_title),
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -146,16 +148,26 @@ fun QuayPassCheckInScreen(
                 }
                 Text(
                     text = when (serviceState) {
-                        QuayPassService.QuayPassRunState.RUNNING -> "Listening for nearby travelers..."
-                        QuayPassService.QuayPassRunState.DISABLED -> "QuayPass is off"
-                        QuayPassService.QuayPassRunState.NOT_LINKED -> "Link your Argosy account to check in"
-                        QuayPassService.QuayPassRunState.AWAITING_REGISTRATION -> "Registering with the server..."
-                        QuayPassService.QuayPassRunState.AWAITING_CREDENTIAL -> "Connect to finish setting up your pass"
-                        QuayPassService.QuayPassRunState.KEY_EXPIRED -> "Reconnect to refresh your pass"
-                        QuayPassService.QuayPassRunState.CREDENTIAL_REJECTED -> "Server key mismatch"
-                        QuayPassService.QuayPassRunState.BLUETOOTH_OFF -> "Turn on Bluetooth to check in"
-                        QuayPassService.QuayPassRunState.PERMISSIONS_MISSING -> "Bluetooth permission needed"
-                        QuayPassService.QuayPassRunState.BLE_UNSUPPORTED -> "This device can't exchange nearby"
+                        QuayPassService.QuayPassRunState.RUNNING ->
+                            stringResource(R.string.quaypass_checkin_state_running)
+                        QuayPassService.QuayPassRunState.DISABLED ->
+                            stringResource(R.string.quaypass_checkin_state_disabled)
+                        QuayPassService.QuayPassRunState.NOT_LINKED ->
+                            stringResource(R.string.quaypass_checkin_state_not_linked)
+                        QuayPassService.QuayPassRunState.AWAITING_REGISTRATION ->
+                            stringResource(R.string.quaypass_checkin_state_awaiting_registration)
+                        QuayPassService.QuayPassRunState.AWAITING_CREDENTIAL ->
+                            stringResource(R.string.quaypass_checkin_state_awaiting_credential)
+                        QuayPassService.QuayPassRunState.KEY_EXPIRED ->
+                            stringResource(R.string.quaypass_checkin_state_key_expired)
+                        QuayPassService.QuayPassRunState.CREDENTIAL_REJECTED ->
+                            stringResource(R.string.quaypass_checkin_state_credential_rejected)
+                        QuayPassService.QuayPassRunState.BLUETOOTH_OFF ->
+                            stringResource(R.string.quaypass_checkin_state_bluetooth_off)
+                        QuayPassService.QuayPassRunState.PERMISSIONS_MISSING ->
+                            stringResource(R.string.quaypass_checkin_state_permissions_missing)
+                        QuayPassService.QuayPassRunState.BLE_UNSUPPORTED ->
+                            stringResource(R.string.quaypass_checkin_state_ble_unsupported)
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
@@ -201,15 +213,15 @@ fun QuayPassCheckInScreen(
             val primaryAction = when {
                 uiState.arrivalSequenceRunning || focusedCard == null -> null
                 focusedCard.isBlocked || focusedCard.isFriend || focusedCard.requestSent -> null
-                focusedCard.requestReceived -> "Accept"
-                else -> "Add Friend"
+                focusedCard.requestReceived -> stringResource(R.string.quaypass_checkin_footer_accept)
+                else -> stringResource(R.string.quaypass_checkin_footer_add_friend)
             }
             FooterBar(
                 hints = buildList {
                     if (primaryAction != null) add(InputButton.A to primaryAction)
-                    add(InputButton.Y to "Greeting")
-                    add(InputButton.B to "Back")
-                    add(InputButton.DPAD_VERTICAL to "Scroll")
+                    add(InputButton.Y to stringResource(R.string.quaypass_checkin_footer_greeting))
+                    add(InputButton.B to stringResource(R.string.quaypass_checkin_footer_back))
+                    add(InputButton.DPAD_VERTICAL to stringResource(R.string.quaypass_checkin_footer_scroll))
                 },
                 onHintClick = { button ->
                     if (button == InputButton.Y) viewModel.openGreetingEditor()
@@ -251,11 +263,11 @@ private fun EmptyState() {
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
         ) {
             Text(
-                text = "No travelers yet",
+                text = stringResource(R.string.quaypass_checkin_empty_title),
                 style = MaterialTheme.typography.titleMedium
             )
             Text(
-                text = "Take Argosy with you. You'll meet other players passively when you're nearby.",
+                text = stringResource(R.string.quaypass_checkin_empty_message),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
             )
@@ -320,7 +332,8 @@ private fun CheckInCardView(
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = card.displayName ?: "@${card.username}",
+                        text = card.displayName
+                            ?: stringResource(R.string.quaypass_checkin_card_name_fallback, card.username),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Medium
                     )
@@ -331,15 +344,15 @@ private fun CheckInCardView(
                 }
                 if (card.displayName != null) {
                     Text(
-                        text = "@${card.username}",
+                        text = stringResource(R.string.quaypass_checkin_card_username_subtitle, card.username),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 val relationshipLabel = when {
-                    card.isBlocked -> "Blocked"
-                    card.requestReceived -> "Wants to add you"
-                    card.requestSent -> "Friend request sent"
+                    card.isBlocked -> stringResource(R.string.quaypass_checkin_card_blocked)
+                    card.requestReceived -> stringResource(R.string.quaypass_checkin_card_request_received)
+                    card.requestSent -> stringResource(R.string.quaypass_checkin_card_request_sent)
                     else -> null
                 }
                 if (relationshipLabel != null) {
@@ -372,7 +385,10 @@ private fun CheckInCardView(
                             Spacer(Modifier.width(Dimens.spacingXs))
                         }
                         Text(
-                            text = "Played ${card.lastGameTitle}",
+                            text = stringResource(
+                                R.string.quaypass_checkin_card_last_played,
+                                card.lastGameTitle.orEmpty()
+                            ),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -382,7 +398,7 @@ private fun CheckInCardView(
                 val encountered = formatTimestamp(LocalContext.current, card.encounteredAt)
                 Text(
                     text = if (card.meetCount > 1) {
-                        "Met ${card.meetCount} times · $encountered"
+                        stringResource(R.string.quaypass_checkin_card_meet_count, card.meetCount, encountered)
                     } else {
                         encountered
                     },
@@ -401,7 +417,7 @@ private fun CheckInCardView(
 @Composable
 private fun FriendBadge(modifier: Modifier = Modifier) {
     Text(
-        text = "Friend",
+        text = stringResource(R.string.quaypass_checkin_card_friend_badge),
         style = MaterialTheme.typography.labelSmall,
         fontWeight = FontWeight.SemiBold,
         color = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -414,7 +430,7 @@ private fun FriendBadge(modifier: Modifier = Modifier) {
 @Composable
 private fun TicketAwardChip(amount: Int, modifier: Modifier = Modifier) {
     Text(
-        text = "+$amount",
+        text = stringResource(R.string.quaypass_checkin_card_ticket_award, amount),
         style = MaterialTheme.typography.labelMedium,
         fontWeight = FontWeight.SemiBold,
         color = MaterialTheme.colorScheme.onPrimaryContainer,

@@ -29,6 +29,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
+import com.nendo.argosy.ui.common.labelRes
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.InputButton
@@ -48,11 +51,7 @@ fun SoundPickerPopup(
     onDismiss: () -> Unit
 ) {
     val listState = rememberLazyListState()
-    val displayName = soundType.name
-        .replace("_", " ")
-        .lowercase()
-        .split(" ")
-        .joinToString(" ") { it.replaceFirstChar { c -> c.uppercase() } }
+    val displayName = stringResource(soundType.labelRes)
 
     FocusedScroll(
         listState = listState,
@@ -107,8 +106,8 @@ fun SoundPickerPopup(
 
             FooterHints(
                 hints = listOf(
-                    InputButton.A to "Select",
-                    InputButton.B to "Close"
+                    InputButton.A to stringResource(R.string.settings_sound_picker_hint_select),
+                    InputButton.B to stringResource(R.string.settings_sound_picker_hint_close)
                 ),
                 onHintClick = { button ->
                     when (button) {

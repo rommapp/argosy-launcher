@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.screens.social
 
+import com.nendo.argosy.R
+import com.nendo.argosy.core.notification.NotificationText
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.text.BasicTextField
@@ -51,7 +53,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
@@ -118,7 +123,9 @@ fun SocialScreen(
             onCreatePost = onCreatePost,
             onViewProfile = onViewProfile,
             onShareScreenshot = {
-                viewModel.notificationManager.show(title = "Share screenshot coming soon")
+                viewModel.notificationManager.show(
+                    title = NotificationText.Res(R.string.notif_social_share_screenshot_soon_quickaction)
+                )
             },
             onDrawerToggle = onDrawerToggle,
             onNavigateToGameDetail = onNavigateToGameDetail,
@@ -161,7 +168,7 @@ fun SocialScreen(
                 }
                 is SocialLaunchEvent.LaunchError -> {
                     viewModel.notificationManager.show(
-                        title = event.message,
+                        title = NotificationText.Raw(event.message),
                         type = com.nendo.argosy.core.notification.NotificationType.ERROR
                     )
                 }
@@ -262,7 +269,7 @@ fun SocialScreen(
                                 NotConnectedContent()
                             }
                             is SocialConnectionState.Connecting -> {
-                                LoadingContent("Connecting...")
+                                LoadingContent(stringResource(R.string.social_feed_loading_connecting))
                             }
                             is SocialConnectionState.Failed -> {
                                 ErrorContent(state.reason)
@@ -272,8 +279,10 @@ fun SocialScreen(
                                 val feedLoading = uiState.activeFeedLoading
                                 if (feedLoading && feedEvents.isEmpty()) {
                                     LoadingContent(
-                                        if (uiState.feedMode == FeedMode.COMMUNITY) "Loading community feed..."
-                                        else "Loading feed..."
+                                        stringResource(
+                                            if (uiState.feedMode == FeedMode.COMMUNITY) R.string.social_feed_loading_community
+                                            else R.string.social_feed_loading_friends
+                                        )
                                     )
                                 } else if (feedEvents.isEmpty()) {
                                     EmptyFeedContent(isCommunity = uiState.feedMode == FeedMode.COMMUNITY)
@@ -287,7 +296,7 @@ fun SocialScreen(
                                                     .padding(horizontal = 12.dp, vertical = 6.dp)
                                             ) {
                                                 Text(
-                                                    text = "Community Feed",
+                                                    text = stringResource(R.string.social_feed_community_badge),
                                                     style = MaterialTheme.typography.labelMedium,
                                                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                                                     textAlign = TextAlign.Center,
@@ -336,7 +345,7 @@ fun SocialScreen(
                         if (!uiState.isConnected) {
                             NotConnectedContent()
                         } else if (uiState.isLoadingNotifications && uiState.notifications.isEmpty()) {
-                            LoadingContent("Loading notifications...")
+                            LoadingContent(stringResource(R.string.social_notifications_loading))
                         } else {
                             NotificationsTabContent(
                                 notifications = uiState.notifications,
@@ -376,13 +385,19 @@ fun SocialScreen(
                 hints = buildList {
                     when (uiState.selectedTab) {
                         SocialTab.FEED -> {
-                            add(FooterHintItem(InputButton.A, "View"))
-                            add(FooterHintItem(InputButton.Y, if (isLiked) "Unlike" else "Like"))
+                            add(FooterHintItem(InputButton.A, stringResource(R.string.social_feed_hint_view)))
+                            add(FooterHintItem(
+                                InputButton.Y,
+                                stringResource(if (isLiked) R.string.social_feed_hint_unlike else R.string.social_feed_hint_like)
+                            ))
                             add(FooterHintItem(
                                 InputButton.X,
-                                if (uiState.feedMode == FeedMode.COMMUNITY) "Friends" else "Community"
+                                stringResource(
+                                    if (uiState.feedMode == FeedMode.COMMUNITY) R.string.social_feed_hint_switch_to_friends
+                                    else R.string.social_feed_hint_switch_to_community
+                                )
                             ))
-                            add(FooterHintItem(InputButton.SELECT, "Options"))
+                            add(FooterHintItem(InputButton.SELECT, stringResource(R.string.social_feed_hint_options)))
                         }
                         SocialTab.FRIENDS -> {
                             val receivedCount = uiState.receivedRequests.size
@@ -390,32 +405,34 @@ fun SocialScreen(
                             val idx = uiState.focusedFriendIndex
                             when {
                                 idx < receivedCount -> {
-                                    add(FooterHintItem(InputButton.A, "Accept"))
-                                    add(FooterHintItem(InputButton.Y, "Decline"))
+                                    add(FooterHintItem(InputButton.A, stringResource(R.string.social_friends_hint_accept)))
+                                    add(FooterHintItem(InputButton.Y, stringResource(R.string.social_friends_hint_decline)))
                                 }
                                 idx < receivedCount + sentCount -> {
-                                    add(FooterHintItem(InputButton.A, "Cancel"))
+                                    add(FooterHintItem(InputButton.A, stringResource(R.string.social_friends_hint_cancel_request)))
                                 }
                                 else -> {
                                     val focusedFriend = uiState.friends.getOrNull(idx - receivedCount - sentCount)
                                     val canJoin = focusedFriend != null && focusedFriend.id in uiState.joinableFriendIds
-                                    val primaryLabel = if (canJoin) "Join" else "Profile"
+                                    val primaryLabel = stringResource(
+                                        if (canJoin) R.string.social_friends_hint_join else R.string.social_friends_hint_view_profile
+                                    )
                                     add(FooterHintItem(InputButton.A, primaryLabel, enabled = uiState.friends.isNotEmpty()))
-                                    add(FooterHintItem(InputButton.Y, "Favorite", enabled = uiState.friends.isNotEmpty()))
+                                    add(FooterHintItem(InputButton.Y, stringResource(R.string.social_friends_hint_favorite), enabled = uiState.friends.isNotEmpty()))
                                 }
                             }
                         }
                         SocialTab.NOTIFICATIONS -> {
-                            add(FooterHintItem(InputButton.A, "Open", enabled = uiState.notifications.isNotEmpty()))
-                            add(FooterHintItem(InputButton.Y, "Read All", enabled = uiState.unreadCount > 0))
+                            add(FooterHintItem(InputButton.A, stringResource(R.string.social_notifications_hint_open), enabled = uiState.notifications.isNotEmpty()))
+                            add(FooterHintItem(InputButton.Y, stringResource(R.string.social_notifications_hint_read_all), enabled = uiState.unreadCount > 0))
                         }
                         SocialTab.PROFILE -> {
                             if (uiState.profileFocusIndex == 0) {
-                                add(FooterHintItem(InputButton.A, "Avatar"))
+                                add(FooterHintItem(InputButton.A, stringResource(R.string.social_profile_hint_avatar)))
                             } else {
-                                add(FooterHintItem(InputButton.A, "View Game", enabled = uiState.focusedGameInLibrary))
+                                add(FooterHintItem(InputButton.A, stringResource(R.string.social_profile_hint_view_game), enabled = uiState.focusedGameInLibrary))
                             }
-                            add(FooterHintItem(InputButton.SELECT, "Settings"))
+                            add(FooterHintItem(InputButton.SELECT, stringResource(R.string.social_profile_hint_settings)))
                         }
                     }
                 }
@@ -453,7 +470,9 @@ fun SocialScreen(
                         FeedOption.FIND_COMMUNITIES -> viewModel.showCommunitySearch()
                         FeedOption.VIEW_PROFILE -> focusedEvent?.user?.id?.let { onViewProfile(it) }
                         FeedOption.SHARE_SCREENSHOT -> {
-                            viewModel.notificationManager.show(title = "Share screenshot coming soon")
+                            viewModel.notificationManager.show(
+                                title = NotificationText.Res(R.string.notif_social_share_screenshot_soon_feedmenu)
+                            )
                         }
                         FeedOption.REPORT_POST -> viewModel.feedOptionsDelegate.showReportReasonModal()
                         FeedOption.HIDE_POST -> viewModel.hideCurrentEvent()
@@ -469,7 +488,9 @@ fun SocialScreen(
                 onReasonSelect = { reason ->
                     viewModel.feedOptionsDelegate.hideReportReasonModal()
                     viewModel.reportCurrentEvent(reason)
-                    viewModel.notificationManager.show(title = "Post reported and hidden")
+                    viewModel.notificationManager.show(
+                        title = NotificationText.Res(R.string.notif_social_post_reported)
+                    )
                 },
                 onDismiss = { viewModel.feedOptionsDelegate.hideReportReasonModal() }
             )
@@ -525,12 +546,14 @@ private fun SocialTabBar(
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Text(
-                        text = when (tab) {
-                            SocialTab.FEED -> "Feed"
-                            SocialTab.FRIENDS -> "Friends"
-                            SocialTab.NOTIFICATIONS -> "Alerts"
-                            SocialTab.PROFILE -> "Profile"
-                        },
+                        text = stringResource(
+                            when (tab) {
+                                SocialTab.FEED -> R.string.social_tabbar_feed
+                                SocialTab.FRIENDS -> R.string.social_tabbar_friends
+                                SocialTab.NOTIFICATIONS -> R.string.social_tabbar_alerts
+                                SocialTab.PROFILE -> R.string.social_tabbar_profile
+                            }
+                        ),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                         color = if (isSelected) {
@@ -550,7 +573,7 @@ private fun SocialTabBar(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = if (unreadCount > 99) "99+" else unreadCount.toString(),
+                                text = if (unreadCount > 99) stringResource(R.string.social_tabbar_unread_overflow) else unreadCount.toString(),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onError,
                                 fontWeight = FontWeight.Bold
@@ -578,13 +601,13 @@ private fun NotConnectedContent() {
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = "Not Connected",
+                text = stringResource(R.string.social_notconnected_title),
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Link your account in Settings to see friend activity",
+                text = stringResource(R.string.social_notconnected_body),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
             )
@@ -617,7 +640,7 @@ private fun ErrorContent(message: String) {
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = "Error: $message",
+            text = stringResource(R.string.social_error_prefix, message),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.error
         )
@@ -632,14 +655,16 @@ private fun EmptyFeedContent(isCommunity: Boolean = false) {
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = "No Activity Yet",
+                text = stringResource(R.string.social_emptyfeed_title),
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = if (isCommunity) "Follow game communities to see posts here"
-                else "Your friends' gaming activity will appear here",
+                text = stringResource(
+                    if (isCommunity) R.string.social_emptyfeed_body_community
+                    else R.string.social_emptyfeed_body_friends
+                ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
             )
@@ -664,12 +689,12 @@ private fun FeedContent(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Activity",
+                text = stringResource(R.string.social_feedcontent_header_title),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
             Text(
-                text = "${events.size} events",
+                text = pluralStringResource(R.plurals.social_feedcontent_event_count, events.size, events.size),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
             )
@@ -787,7 +812,7 @@ private fun StartedPlayingCard(
                             )
                         }
                         Text(
-                            text = formatRelativeTime(event.createdAt),
+                            text = formatRelativeTime(LocalContext.current, event.createdAt),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                             modifier = Modifier.padding(start = 8.dp)
@@ -857,7 +882,7 @@ private fun StartedPlayingFooter(
             ) {
                 Icon(
                     imageVector = if (isLikedByMe) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                    contentDescription = "Likes",
+                    contentDescription = stringResource(R.string.social_startedplayingfooter_likes_desc),
                     modifier = Modifier.size(16.dp),
                     tint = if (isLikedByMe) {
                         MaterialTheme.colorScheme.error
@@ -874,7 +899,7 @@ private fun StartedPlayingFooter(
                 Spacer(modifier = Modifier.width(16.dp))
                 Icon(
                     imageVector = Icons.Filled.Comment,
-                    contentDescription = "Comments",
+                    contentDescription = stringResource(R.string.social_startedplayingfooter_comments_desc),
                     modifier = Modifier.size(16.dp),
                     tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                 )
@@ -986,13 +1011,13 @@ private fun DoodleCard(
                             verticalAlignment = Alignment.Top
                         ) {
                             Text(
-                                text = "shared a doodle",
+                                text = stringResource(R.string.social_doodlecard_shared_label),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.weight(1f)
                             )
                             Text(
-                                text = formatRelativeTime(event.createdAt),
+                                text = formatRelativeTime(LocalContext.current, event.createdAt),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                                 modifier = Modifier.padding(start = 8.dp)
@@ -1180,7 +1205,7 @@ private fun StandardFeedEventCard(
                             )
                         }
                         Text(
-                            text = formatRelativeTime(event.createdAt),
+                            text = formatRelativeTime(LocalContext.current, event.createdAt),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                             modifier = Modifier.padding(start = 8.dp)
@@ -1252,7 +1277,7 @@ private fun FeedEventCardFooter(
             ) {
                 Icon(
                     imageVector = if (isLikedByMe) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                    contentDescription = "Likes",
+                    contentDescription = stringResource(R.string.social_feedeventcardfooter_likes_desc),
                     modifier = Modifier.size(16.dp),
                     tint = if (isLikedByMe) {
                         MaterialTheme.colorScheme.error
@@ -1269,7 +1294,7 @@ private fun FeedEventCardFooter(
                 Spacer(modifier = Modifier.width(16.dp))
                 Icon(
                     imageVector = Icons.Filled.Comment,
-                    contentDescription = "Comments",
+                    contentDescription = stringResource(R.string.social_feedeventcardfooter_comments_desc),
                     modifier = Modifier.size(16.dp),
                     tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                 )
@@ -1322,58 +1347,74 @@ private fun parseColor(hexColor: String): Color {
     }
 }
 
+/**
+ * Renders the feed-event description line for a card. Several branches end on a
+ * dangling preposition by design: the game title is the card's own heading, not part
+ * of this text, so folding it in would show the title twice.
+ */
+@Composable
 private fun formatEventDescription(event: FeedEventDto): String {
     return when (event.eventType) {
-        FeedEventType.STARTED_PLAYING -> "First Play"
+        FeedEventType.STARTED_PLAYING -> stringResource(R.string.social_feed_desc_started_playing)
         FeedEventType.PLAY_MILESTONE -> {
             val hours = (event.payload?.get("total_hours") as? Number)?.toInt() ?: 0
-            "reached $hours hours in"
+            pluralStringResource(R.plurals.social_feed_desc_play_milestone, hours, hours)
         }
         FeedEventType.MARATHON_SESSION -> {
             val mins = (event.payload?.get("duration_mins") as? Number)?.toInt() ?: 0
-            "had a ${mins / 60}h marathon session in"
+            stringResource(R.string.social_feed_desc_marathon_session, mins / 60)
         }
-        FeedEventType.COMPLETED -> "completed"
+        FeedEventType.COMPLETED -> stringResource(R.string.social_feed_desc_completed)
         FeedEventType.ACHIEVEMENT_UNLOCKED -> {
-            val name = event.payload?.get("achievement_name") as? String ?: "an achievement"
-            "unlocked \"$name\" in"
+            val name = event.payload?.get("achievement_name") as? String
+                ?: stringResource(R.string.social_feed_desc_achievement_unlocked_fallback_name)
+            stringResource(R.string.social_feed_desc_achievement_unlocked, name)
         }
         FeedEventType.ACHIEVEMENT_MILESTONE -> {
             val count = (event.payload?.get("total_unlocked") as? Number)?.toInt() ?: 0
-            "earned $count achievements in"
+            pluralStringResource(R.plurals.social_feed_desc_achievement_milestone, count, count)
         }
-        FeedEventType.PERFECT_GAME -> "mastered"
-        FeedEventType.GAME_ADDED -> "added to their library"
-        FeedEventType.GAME_FAVORITED -> "favorited"
+        FeedEventType.PERFECT_GAME -> stringResource(R.string.social_feed_desc_perfect_game)
+        FeedEventType.GAME_ADDED -> stringResource(R.string.social_feed_desc_game_added)
+        FeedEventType.GAME_FAVORITED -> stringResource(R.string.social_feed_desc_game_favorited)
         FeedEventType.GAME_RATED -> {
             val rating = (event.payload?.get("rating") as? Number)?.toInt() ?: 0
-            "rated ${"*".repeat(rating)}"
+            stringResource(R.string.social_feed_desc_game_rated, "*".repeat(rating))
         }
         FeedEventType.FRIEND_ADDED -> {
-            val friendName = event.payload?.get("friend_name") as? String ?: "someone"
-            "became friends with $friendName"
+            val friendName = event.payload?.get("friend_name") as? String
+                ?: stringResource(R.string.social_feed_desc_friend_added_fallback_name)
+            stringResource(R.string.social_feed_desc_friend_added, friendName)
         }
         FeedEventType.COLLECTION_SHARED -> {
-            val name = event.payload?.get("collection_name") as? String ?: "a collection"
-            "shared collection \"$name\""
+            val name = event.payload?.get("collection_name") as? String
+                ?: stringResource(R.string.social_feed_desc_collection_fallback_name)
+            stringResource(R.string.social_feed_desc_collection_shared, name)
         }
         FeedEventType.COLLECTION_SAVED -> {
-            val name = event.payload?.get("collection_name") as? String ?: "a collection"
-            "saved collection \"$name\""
+            val name = event.payload?.get("collection_name") as? String
+                ?: stringResource(R.string.social_feed_desc_collection_fallback_name)
+            stringResource(R.string.social_feed_desc_collection_saved, name)
         }
         FeedEventType.COLLECTION_CREATED -> {
-            val name = event.payload?.get("collection_name") as? String ?: "a collection"
-            "created collection \"$name\""
+            val name = event.payload?.get("collection_name") as? String
+                ?: stringResource(R.string.social_feed_desc_collection_fallback_name)
+            stringResource(R.string.social_feed_desc_collection_created, name)
         }
         FeedEventType.COLLECTION_UPDATED -> {
-            val name = event.payload?.get("collection_name") as? String ?: "a collection"
+            val name = event.payload?.get("collection_name") as? String
+                ?: stringResource(R.string.social_feed_desc_collection_fallback_name)
             val count = (event.payload?.get("game_count") as? Number)?.toInt() ?: 0
-            "added $count games to \"$name\""
+            pluralStringResource(R.plurals.social_feed_desc_collection_updated, count, count, name)
         }
-        FeedEventType.DOODLE -> "shared a doodle"
+        FeedEventType.DOODLE -> stringResource(R.string.social_feed_desc_doodle)
         FeedEventType.DISCUSSION -> {
             val body = event.payload?.get("body") as? String ?: ""
-            if (body.length > 100) body.take(100) + "..." else body.ifEmpty { "shared a post" }
+            if (body.length > 100) {
+                stringResource(R.string.social_feed_desc_discussion_truncated, body.take(100))
+            } else {
+                body.ifEmpty { stringResource(R.string.social_feed_desc_discussion_shared_post) }
+            }
         }
         null -> event.type
     }
@@ -1440,17 +1481,17 @@ private fun CommunitySearchDialog(
     }
 
     Modal(
-        title = "Find Communities",
+        title = stringResource(R.string.social_communitysearch_modal_title),
         baseWidth = 420.dp,
         onDismiss = onDismiss,
         footerHints = buildList {
             if (searchFocused) {
-                add(InputButton.DPAD_DOWN to "Browse")
+                add(InputButton.DPAD_DOWN to stringResource(R.string.social_communitysearch_hint_browse))
             } else {
-                add(InputButton.DPAD to "Navigate")
-                add(InputButton.A to "Follow/Unfollow")
+                add(InputButton.DPAD to stringResource(R.string.social_communitysearch_hint_navigate))
+                add(InputButton.A to stringResource(R.string.social_communitysearch_hint_toggle_follow))
             }
-            add(InputButton.B to "Close")
+            add(InputButton.B to stringResource(R.string.social_communitysearch_hint_close))
         }
     ) {
         Box(
@@ -1473,7 +1514,7 @@ private fun CommunitySearchDialog(
         ) {
             if (query.isEmpty()) {
                 Text(
-                    text = "Search for a game...",
+                    text = stringResource(R.string.social_communitysearch_placeholder),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                 )
@@ -1556,7 +1597,10 @@ private fun CommunitySearchDialog(
                                 .padding(horizontal = 8.dp, vertical = 4.dp)
                         ) {
                             Text(
-                                text = if (isFollowed) "Following" else "Follow",
+                                text = stringResource(
+                                    if (isFollowed) R.string.social_communitysearch_following
+                                    else R.string.social_communitysearch_follow
+                                ),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = if (isFollowed) MaterialTheme.colorScheme.onPrimary
                                 else MaterialTheme.colorScheme.onSurfaceVariant
@@ -1575,7 +1619,7 @@ private fun CommunitySearchDialog(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "No games found",
+                            text = stringResource(R.string.social_communitysearch_no_results),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                         )

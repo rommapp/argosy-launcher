@@ -62,17 +62,20 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.SubcomposeAsyncImage
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.coil.AppIconData
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.FooterSpacer
 import com.nendo.argosy.ui.components.InputButton
+import com.nendo.argosy.ui.primitives.InputGlyph
 import androidx.compose.ui.graphics.lerp
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
@@ -189,17 +192,19 @@ fun AppsScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = when {
-                            uiState.isReorderMode -> "Reorder Apps"
-                            uiState.showHiddenApps -> "Hidden Apps"
-                            else -> "Apps"
+                            uiState.isReorderMode -> stringResource(R.string.library_apps_title_reorder)
+                            uiState.showHiddenApps -> stringResource(R.string.library_apps_title_hidden)
+                            else -> stringResource(R.string.library_apps_title)
                         },
                         style = MaterialTheme.typography.headlineMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     if (uiState.isReorderMode) {
                         Spacer(modifier = Modifier.width(Dimens.spacingMd))
+                        InputGlyph(button = InputButton.A)
+                        Spacer(modifier = Modifier.width(Dimens.spacingXs))
                         Text(
-                            text = "(Press A to save)",
+                            text = stringResource(R.string.library_apps_reorder_hint),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -229,7 +234,7 @@ fun AppsScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "No apps found",
+                            text = stringResource(R.string.library_apps_empty),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -265,16 +270,24 @@ fun AppsScreen(
             FooterHints(
                 hints = when {
                     uiState.isReorderMode -> listOf(
-                        InputButton.DPAD to "Move",
-                        InputButton.A to "Save",
-                        InputButton.B to "Cancel"
+                        InputButton.DPAD to stringResource(R.string.library_apps_hint_move),
+                        InputButton.A to stringResource(R.string.library_apps_hint_save),
+                        InputButton.B to stringResource(R.string.library_apps_hint_cancel)
                     )
                     else -> listOf(
-                        InputButton.A to "Open",
-                        InputButton.B to "Back",
-                        InputButton.Y to if (uiState.hasSecondaryDisplay) "Open on Top" else "Reorder",
-                        InputButton.SELECT to "Options",
-                        InputButton.X to if (uiState.showHiddenApps) "Show Apps" else "Show Hidden"
+                        InputButton.A to stringResource(R.string.library_apps_hint_open),
+                        InputButton.B to stringResource(R.string.library_apps_hint_back),
+                        InputButton.Y to if (uiState.hasSecondaryDisplay) {
+                            stringResource(R.string.library_apps_hint_open_on_top)
+                        } else {
+                            stringResource(R.string.library_apps_hint_reorder)
+                        },
+                        InputButton.SELECT to stringResource(R.string.library_apps_hint_options),
+                        InputButton.X to if (uiState.showHiddenApps) {
+                            stringResource(R.string.library_apps_hint_show_apps)
+                        } else {
+                            stringResource(R.string.library_apps_hint_show_hidden)
+                        }
                     )
                 },
                 onHintClick = { button ->
@@ -360,25 +373,29 @@ private fun ContextMenuItem(
     onClick: () -> Unit = {}
 ) {
     val (icon, label) = when (item) {
-        AppContextMenuItem.APP_INFO -> Icons.Default.Info to "App Info"
-        AppContextMenuItem.OPEN_ON_TOP -> Icons.Default.ArrowUpward to "Open on Top Screen"
+        AppContextMenuItem.APP_INFO ->
+            Icons.Default.Info to stringResource(R.string.library_apps_menu_app_info)
+        AppContextMenuItem.OPEN_ON_TOP ->
+            Icons.Default.ArrowUpward to stringResource(R.string.library_apps_menu_open_on_top)
         AppContextMenuItem.TOGGLE_HOME -> if (isOnHome) {
-            Icons.Default.Home to "Remove from Home"
+            Icons.Default.Home to stringResource(R.string.library_apps_menu_remove_from_home)
         } else {
-            Icons.Outlined.Home to "Add to Home"
+            Icons.Outlined.Home to stringResource(R.string.library_apps_menu_add_to_home)
         }
         AppContextMenuItem.TOGGLE_SECONDARY_HOME -> if (isOnSecondaryHome) {
-            Icons.Default.Devices to "Remove from Second Screen"
+            Icons.Default.Devices to stringResource(R.string.library_apps_menu_remove_from_second_screen)
         } else {
-            Icons.Outlined.Devices to "Add to Second Screen"
+            Icons.Outlined.Devices to stringResource(R.string.library_apps_menu_add_to_second_screen)
         }
         AppContextMenuItem.TOGGLE_VISIBILITY -> if (isAppHidden) {
-            Icons.Default.Visibility to "Show"
+            Icons.Default.Visibility to stringResource(R.string.library_apps_menu_show)
         } else {
-            Icons.Default.VisibilityOff to "Hide"
+            Icons.Default.VisibilityOff to stringResource(R.string.library_apps_menu_hide)
         }
-        AppContextMenuItem.REORDER -> Icons.Default.SwapVert to "Reorder Apps"
-        AppContextMenuItem.UNINSTALL -> Icons.Default.Delete to "Uninstall"
+        AppContextMenuItem.REORDER ->
+            Icons.Default.SwapVert to stringResource(R.string.library_apps_menu_reorder)
+        AppContextMenuItem.UNINSTALL ->
+            Icons.Default.Delete to stringResource(R.string.library_apps_menu_uninstall)
     }
 
     val isDangerous = item == AppContextMenuItem.UNINSTALL

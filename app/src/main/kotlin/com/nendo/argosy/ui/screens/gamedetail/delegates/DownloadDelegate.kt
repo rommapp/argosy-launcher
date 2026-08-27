@@ -3,6 +3,7 @@ package com.nendo.argosy.ui.screens.gamedetail.delegates
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import com.nendo.argosy.R
 import com.nendo.argosy.data.download.DownloadManager
 import com.nendo.argosy.data.download.DownloadState
 import com.nendo.argosy.data.steam.SteamContentManager
@@ -15,9 +16,11 @@ import com.nendo.argosy.data.model.FilePickerRow
 import com.nendo.argosy.data.update.ApkInstallManager
 import com.nendo.argosy.domain.usecase.download.DownloadResult
 import com.nendo.argosy.ui.common.toDownloadStatus
+import com.nendo.argosy.ui.common.toNotificationText
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.core.notification.showSuccess
 import com.nendo.argosy.ui.screens.common.GameActionsDelegate
@@ -199,10 +202,28 @@ class DownloadDelegate @Inject constructor(
         scope.launch {
             val (added, removed) = filePickerFlow.applyManagedSelection(gameId, rows, selected)
             val parts = buildList {
-                if (added > 0) add("$added queued")
-                if (removed > 0) add("$removed removed")
+                if (added > 0) {
+                    add(
+                        context.resources.getQuantityString(
+                            R.plurals.gamedetail_notice_files_queued,
+                            added,
+                            added
+                        )
+                    )
+                }
+                if (removed > 0) {
+                    add(
+                        context.resources.getQuantityString(
+                            R.plurals.gamedetail_notice_files_removed,
+                            removed,
+                            removed
+                        )
+                    )
+                }
             }
-            if (parts.isNotEmpty()) notificationManager.showSuccess(parts.joinToString(", "))
+            if (parts.isNotEmpty()) {
+                notificationManager.showSuccess(NotificationText.Raw(parts.joinToString(", ")))
+            }
         }
     }
 
@@ -213,9 +234,25 @@ class DownloadDelegate @Inject constructor(
         selectedVersionIds: Set<Long>
     ) {
         scope.launch {
-            val (queued, errors) = filePickerFlow.downloadSelection(gameId, selectedFileIds, selectedVersionIds)
-            errors.forEach { notificationManager.showError(it) }
-            if (queued > 1) notificationManager.showSuccess("Queued $queued downloads")
+            val (queued, issues) = filePickerFlow.downloadSelection(gameId, selectedFileIds, selectedVersionIds)
+            issues.forEach { issue ->
+                when (issue) {
+                    is DownloadResult.AlreadyDownloaded -> notificationManager.showError(
+                        NotificationText.Res(R.string.error_filepicker_already_downloaded)
+                    )
+                    is DownloadResult.Error -> notificationManager.showError(issue.reason.toNotificationText())
+                    else -> { }
+                }
+            }
+            if (queued > 1) {
+                notificationManager.showSuccess(
+                    NotificationText.Plural(
+                        R.plurals.gamedetail_notice_downloads_queued,
+                        queued,
+                        listOf(queued)
+                    )
+                )
+            }
         }
     }
 
@@ -226,12 +263,20 @@ class DownloadDelegate @Inject constructor(
             when (val result = gameActions.queueDownload(gameId)) {
                 is DownloadResult.Queued -> { }
                 is DownloadResult.AlreadyDownloaded -> {
-                    notificationManager.showSuccess("Game already downloaded")
+                    notificationManager.showSuccess(
+                        NotificationText.Res(R.string.gamedetail_notice_already_downloaded)
+                    )
                 }
                 is DownloadResult.MultiDiscQueued -> {
-                    notificationManager.showSuccess("Downloading ${result.discCount} discs")
+                    notificationManager.showSuccess(
+                        NotificationText.Plural(
+                            R.plurals.gamedetail_notice_discs_queued,
+                            result.discCount,
+                            listOf(result.discCount)
+                        )
+                    )
                 }
-                is DownloadResult.Error -> notificationManager.showError(result.message)
+                is DownloadResult.Error -> notificationManager.showError(result.reason.toNotificationText())
                 is DownloadResult.ExtractionFailed -> {
                     _state.update {
                         it.copy(
@@ -239,7 +284,7 @@ class DownloadDelegate @Inject constructor(
                             extractionFailedInfo = ExtractionFailedInfo(
                                 gameId = result.gameId,
                                 fileName = result.fileName,
-                                errorReason = result.errorReason
+                                errorReason = result.errorReason.toNotificationText()
                             ),
                             extractionPromptFocusIndex = 0
                         )
@@ -290,15 +335,19 @@ class DownloadDelegate @Inject constructor(
             when (focusIndex) {
                 0 -> {
                     when (val result = gameActions.retryExtraction(info.gameId)) {
-                        is DownloadResult.Queued -> notificationManager.showSuccess("Extraction succeeded")
-                        is DownloadResult.Error -> notificationManager.showError(result.message)
+                        is DownloadResult.Queued -> notificationManager.showSuccess(
+                            NotificationText.Res(R.string.gamedetail_notice_extraction_succeeded)
+                        )
+                        is DownloadResult.Error -> notificationManager.showError(result.reason.toNotificationText())
                         else -> { }
                     }
                 }
                 1 -> {
                     when (val result = gameActions.redownload(info.gameId)) {
-                        is DownloadResult.Queued -> notificationManager.showSuccess("Redownload started")
-                        is DownloadResult.Error -> notificationManager.showError(result.message)
+                        is DownloadResult.Queued -> notificationManager.showSuccess(
+                            NotificationText.Res(R.string.gamedetail_notice_redownload_started)
+                        )
+                        is DownloadResult.Error -> notificationManager.showError(result.reason.toNotificationText())
                         else -> { }
                     }
                 }
@@ -326,11 +375,17 @@ class DownloadDelegate @Inject constructor(
 
             when (val result = gameActions.repairMissingDiscs(gameId)) {
                 is DownloadResult.MultiDiscQueued -> {
-                    notificationManager.showSuccess("Downloading ${result.discCount} missing discs")
+                    notificationManager.showSuccess(
+                        NotificationText.Plural(
+                            R.plurals.gamedetail_notice_missing_discs_queued,
+                            result.discCount,
+                            listOf(result.discCount)
+                        )
+                    )
                 }
                 is DownloadResult.Queued -> { }
                 is DownloadResult.AlreadyDownloaded -> { }
-                is DownloadResult.Error -> notificationManager.showError(result.message)
+                is DownloadResult.Error -> notificationManager.showError(result.reason.toNotificationText())
                 is DownloadResult.ExtractionFailed -> { }
             }
         }
@@ -340,7 +395,9 @@ class DownloadDelegate @Inject constructor(
         scope.launch {
             val success = apkInstallManager.installApkForGame(gameId)
             if (!success) {
-                notificationManager.showError("Could not install APK")
+                notificationManager.showError(
+                    NotificationText.Res(R.string.gamedetail_notice_apk_install_failed)
+                )
             }
         }
     }
@@ -348,7 +405,9 @@ class DownloadDelegate @Inject constructor(
     fun deleteLocalFile(scope: CoroutineScope, gameId: Long, onGameDeleted: () -> Unit) {
         scope.launch {
             gameActions.deleteLocalFile(gameId)
-            notificationManager.showSuccess("Download deleted")
+            notificationManager.showSuccess(
+                NotificationText.Res(R.string.gamedetail_notice_download_deleted)
+            )
             onGameDeleted()
         }
     }
@@ -356,10 +415,14 @@ class DownloadDelegate @Inject constructor(
     fun removeFromLibrary(scope: CoroutineScope, gameId: Long) {
         scope.launch {
             if (gameActions.removeFromLibrary(gameId)) {
-                notificationManager.showSuccess("Removed from library")
+                notificationManager.showSuccess(
+                    NotificationText.Res(R.string.gamedetail_notice_removed_from_library)
+                )
                 _launchEvents.emit(LaunchEvent.NavigateBack)
             } else {
-                notificationManager.showError("Could not remove this game")
+                notificationManager.showError(
+                    NotificationText.Res(R.string.gamedetail_notice_remove_failed)
+                )
             }
         }
     }
@@ -380,11 +443,13 @@ class DownloadDelegate @Inject constructor(
             _state.update { it.copy(isRefreshingGameData = true) }
             when (val result = gameActions.refreshGameData(gameId)) {
                 is RomMResult.Success -> {
-                    notificationManager.showSuccess("Game data refreshed")
+                    notificationManager.showSuccess(
+                        NotificationText.Res(R.string.gamedetail_notice_game_data_refreshed)
+                    )
                     onSuccess()
                 }
                 is RomMResult.Error -> {
-                    notificationManager.showError(result.message)
+                    notificationManager.showError(NotificationText.Raw(result.message))
                 }
             }
             _state.update { it.copy(isRefreshingGameData = false) }
@@ -421,14 +486,20 @@ class DownloadDelegate @Inject constructor(
                             imageCacheManager.queueScreenshotCacheByGameId(gameId, details.screenshotUrls)
                         }
 
-                        notificationManager.showSuccess("Game data refreshed")
+                        notificationManager.showSuccess(
+                            NotificationText.Res(R.string.gamedetail_notice_android_data_refreshed)
+                        )
                         onSuccess()
                     }
                 } else {
-                    notificationManager.showError("Could not fetch app data")
+                    notificationManager.showError(
+                        NotificationText.Res(R.string.gamedetail_notice_app_data_failed)
+                    )
                 }
             } catch (e: Exception) {
-                notificationManager.showError("Failed to refresh: ${e.message}")
+                notificationManager.showError(
+                    NotificationText.Res(R.string.gamedetail_notice_refresh_failed, listOf(e.message ?: "null"))
+                )
             }
             _state.update { it.copy(isRefreshingGameData = false) }
         }

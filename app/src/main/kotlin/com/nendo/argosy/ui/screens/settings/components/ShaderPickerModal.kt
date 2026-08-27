@@ -28,8 +28,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.libretro.shader.ShaderRegistry
+import com.nendo.argosy.ui.common.labelRes
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.InputButton
@@ -110,7 +113,7 @@ fun ShaderPickerModal(
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
         ) {
             Text(
-                text = "ADD SHADER",
+                text = stringResource(R.string.settings_shader_picker_title),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -126,7 +129,7 @@ fun ShaderPickerModal(
                     when (item) {
                         is ShaderPickerItem.Header -> {
                             Text(
-                                text = item.category.name.replace('_', ' '),
+                                text = stringResource(item.category.labelRes),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.padding(
@@ -155,9 +158,9 @@ fun ShaderPickerModal(
 
             FooterHints(
                 hints = listOf(
-                    InputButton.DPAD_HORIZONTAL to "Section",
-                    InputButton.A to "Add",
-                    InputButton.B to "Cancel"
+                    InputButton.DPAD_HORIZONTAL to stringResource(R.string.settings_shader_picker_hint_section),
+                    InputButton.A to stringResource(R.string.settings_shader_picker_hint_add),
+                    InputButton.B to stringResource(R.string.settings_shader_picker_hint_cancel)
                 ),
                 onHintClick = { button ->
                     when (button) {
@@ -228,14 +231,14 @@ private fun ShaderPickerEntry(
                 }
                 entry.source == ShaderRegistry.Source.CUSTOM -> {
                     Text(
-                        text = "Custom",
+                        text = stringResource(R.string.settings_shader_picker_custom_badge),
                         style = MaterialTheme.typography.labelSmall,
                         color = textColor.copy(alpha = 0.5f)
                     )
                 }
                 !isInstalled -> {
                     Text(
-                        text = "Download",
+                        text = stringResource(R.string.settings_shader_picker_download_badge),
                         style = MaterialTheme.typography.labelSmall,
                         color = textColor.copy(alpha = 0.4f)
                     )

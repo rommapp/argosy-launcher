@@ -28,10 +28,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import com.nendo.argosy.R
 import com.nendo.argosy.data.social.SocialNotification
 import com.nendo.argosy.data.social.SocialUser
 import com.nendo.argosy.ui.components.friends.SocialAvatar
@@ -53,13 +56,13 @@ fun NotificationsTabContent(
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = "No Notifications",
+                    text = stringResource(R.string.social_notifications_empty_title),
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Activity from your posts and friends will appear here",
+                    text = stringResource(R.string.social_notifications_empty_body),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                 )
@@ -134,7 +137,7 @@ private fun NotificationCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = formatRelativeTime(notification.updatedAt),
+                    text = formatRelativeTime(LocalContext.current, notification.updatedAt),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                 )
@@ -169,7 +172,7 @@ private fun ActorAvatarStack(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "?",
+                text = stringResource(R.string.social_notifications_unknown_avatar),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -212,7 +215,7 @@ private fun ActorAvatarStack(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "+$overflowCount",
+                    text = stringResource(R.string.social_notifications_avatar_overflow, overflowCount),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Bold
@@ -222,33 +225,40 @@ private fun ActorAvatarStack(
     }
 }
 
+@Composable
 private fun formatNotificationText(notification: SocialNotification): String {
     val actors = notification.resolvedActors
-    val actorName = actors.firstOrNull()?.displayName ?: "Someone"
-    val eventType = notification.eventType ?: "post"
+    val actorName = actors.firstOrNull()?.displayName ?: stringResource(R.string.social_notifications_default_actor)
+    val eventType = notification.eventType ?: stringResource(R.string.social_notifications_event_type_fallback)
 
     return when (notification.type) {
         "comment" -> {
             when (actors.size) {
-                0 -> "Someone commented on your $eventType"
-                1 -> "$actorName commented on your $eventType"
-                2 -> "$actorName and ${actors[1].displayName} commented on your $eventType"
-                else -> "$actorName, ${actors[1].displayName}, and ${actors.size - 2} others commented on your $eventType"
+                0 -> stringResource(R.string.social_notifications_comment_zero, eventType)
+                1 -> stringResource(R.string.social_notifications_comment_one, actorName, eventType)
+                2 -> stringResource(R.string.social_notifications_comment_two, actorName, actors[1].displayName, eventType)
+                else -> stringResource(
+                    R.string.social_notifications_comment_many,
+                    actorName,
+                    actors[1].displayName,
+                    actors.size - 2,
+                    eventType
+                )
             }
         }
         "like_milestone" -> {
             val likeCount = (notification.metadata?.get("like_count") as? Number)?.toInt()
-            val preview = notification.eventPreview ?: "Your post"
+            val preview = notification.eventPreview ?: stringResource(R.string.social_notifications_like_milestone_default_preview)
             if (likeCount != null) {
-                "$preview reached $likeCount likes"
+                stringResource(R.string.social_notifications_like_milestone_with_count, preview, likeCount)
             } else {
-                "$preview reached a like milestone"
+                stringResource(R.string.social_notifications_like_milestone_generic, preview)
             }
         }
-        "friend_request" -> "$actorName sent you a friend request"
-        "friend_accepted" -> "$actorName accepted your friend request"
-        "friend_added" -> "$actorName added you as a friend"
-        else -> "New notification"
+        "friend_request" -> stringResource(R.string.social_notifications_friend_request, actorName)
+        "friend_accepted" -> stringResource(R.string.social_notifications_friend_accepted, actorName)
+        "friend_added" -> stringResource(R.string.social_notifications_friend_added, actorName)
+        else -> stringResource(R.string.social_notifications_generic_fallback)
     }
 }
 

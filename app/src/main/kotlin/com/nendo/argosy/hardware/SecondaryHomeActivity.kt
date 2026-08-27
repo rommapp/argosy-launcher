@@ -51,6 +51,7 @@ import com.nendo.argosy.util.hideSystemBars
 import com.nendo.argosy.util.installImmersiveMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -60,6 +61,11 @@ class SecondaryHomeActivity :
     DualScreenManager.CompanionHost {
 
     private lateinit var dsm: DualScreenManager
+
+    override fun attachBaseContext(newBase: android.content.Context) {
+        val tag = SessionStateStore(newBase).getAppLanguage()
+        super.attachBaseContext(com.nendo.argosy.core.locale.LocaleHelper.wrap(newBase, tag))
+    }
 
     var currentScreen by mutableStateOf(CompanionScreen.HOME)
         private set
@@ -174,6 +180,10 @@ class SecondaryHomeActivity :
                     themeState.value = prefs.toThemeState()
                     customFonts.value = resolveCustomFonts(prefs.displayFontPath, prefs.bodyFontPath)
                 }
+            }
+            LaunchedEffect(isInitialized) {
+                if (!isInitialized) return@LaunchedEffect
+                dsm.localeChangeToken.drop(1).collect { recreate() }
             }
             SecondaryHomeTheme(themeState = themeState.value, fonts = customFonts.value) {
                 if (!isInitialized) return@SecondaryHomeTheme

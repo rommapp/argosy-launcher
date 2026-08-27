@@ -10,6 +10,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.data.preferences.MenuWrapMode
 import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.SliderPreference
@@ -35,7 +38,7 @@ internal sealed class NavigationItem(
     class Header(
         key: String,
         section: String,
-        val title: String,
+        val titleRes: Int,
         visibleWhen: (ControlsState) -> Boolean = { true }
     ) : NavigationItem(key, section, visibleWhen)
 
@@ -59,11 +62,13 @@ internal sealed class NavigationItem(
     data object SelectRCombo : NavigationItem("selectRCombo", "menus")
 
     companion object {
-        private val ControllerHeader = Header("controllerHeader", "controller", "Controller")
+        private val ControllerHeader =
+            Header("controllerHeader", "controller", R.string.settings_navigation_section_controller)
         private val FeedbackSpacer = SectionSpacer("feedbackSpacer", "feedback")
-        private val FeedbackHeader = Header("feedbackHeader", "feedback", "Feedback")
+        private val FeedbackHeader =
+            Header("feedbackHeader", "feedback", R.string.settings_navigation_section_feedback)
         private val MenusSpacer = SectionSpacer("menusSpacer", "menus")
-        private val MenusHeader = Header("menusHeader", "menus", "Menus")
+        private val MenusHeader = Header("menusHeader", "menus", R.string.settings_navigation_section_menus)
 
         val ALL: List<NavigationItem>
             get() = listOf(
@@ -82,11 +87,11 @@ private val navigationLayout = SettingsLayout<NavigationItem, ControlsState>(
     isFocusable = { it.isFocusable },
     visibleWhen = { item, state -> item.visibleWhen(state) },
     sectionOf = { it.section },
-    sectionTitle = {
+    sectionTitleRes = {
         when (it) {
-            "controller" -> "Controller"
-            "feedback" -> "Feedback"
-            "menus" -> "Menus"
+            "controller" -> R.string.settings_navigation_section_controller
+            "feedback" -> R.string.settings_navigation_section_feedback
+            "menus" -> R.string.settings_navigation_section_menus
             else -> null
         }
     }
@@ -99,15 +104,22 @@ internal fun navigationItemAtFocusIndex(index: Int, controls: ControlsState): Na
 
 internal fun navigationSections(controls: ControlsState) = navigationLayout.buildSections(controls)
 
+private fun menuWrapLabelRes(mode: MenuWrapMode): Int = when (mode) {
+    MenuWrapMode.OFF -> R.string.settings_navigation_menu_wrap_off
+    MenuWrapMode.HARD_STOP -> R.string.settings_navigation_menu_wrap_hard_stop
+    MenuWrapMode.AUTO -> R.string.settings_navigation_menu_wrap_auto
+}
+
 @Composable
 fun NavigationSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val controls = uiState.controls
+    val context = LocalContext.current
 
     val visibleItems = remember(controls.hapticEnabled, controls.vibrationSupported) {
         navigationLayout.visibleItems(controls)
     }
-    val sections = remember(controls.hapticEnabled, controls.vibrationSupported) {
-        navigationLayout.buildSections(controls)
+    val sections = remember(controls.hapticEnabled, controls.vibrationSupported, context) {
+        navigationLayout.buildSections(controls, context)
     }
 
     fun isFocused(item: NavigationItem): Boolean =
@@ -129,64 +141,72 @@ fun NavigationSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) { item ->
         when (item) {
-            is NavigationItem.Header -> NavigationSectionHeader(item.title)
+            is NavigationItem.Header -> NavigationSectionHeader(stringResource(item.titleRes))
             is NavigationItem.SectionSpacer -> Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
             NavigationItem.ControllerLayout -> {
-                val layoutDisplay = ControlsSettingsDelegate.layoutDisplayName(controls.controllerLayout)
+                val layoutDisplay = stringResource(
+                    ControlsSettingsDelegate.layoutDisplayNameRes(controls.controllerLayout)
+                )
                 val detected = controls.detectedLayout
                 val device = controls.detectedDeviceName
                 val subtitle = when {
-                    detected != null && device != null -> "Detected: $detected ($device)"
-                    detected != null -> "Detected: $detected"
-                    else -> "No controller detected"
+                    detected != null && device != null ->
+                        stringResource(R.string.settings_navigation_controller_layout_detected_device, detected, device)
+                    detected != null ->
+                        stringResource(R.string.settings_navigation_controller_layout_detected, detected)
+                    else -> stringResource(R.string.settings_navigation_controller_layout_undetected)
                 }
                 CyclePreference(
-                    title = "Controller Layout",
+                    title = stringResource(R.string.settings_navigation_controller_layout_title),
                     value = layoutDisplay,
                     subtitle = subtitle,
                     isFocused = isFocused(item),
                     onClick = { viewModel.cycleControllerLayout() },
                     onPrev = { viewModel.cycleControllerLayout(-1) },
-                    options = remember { ControlsSettingsDelegate.LAYOUT_CYCLE.map { ControlsSettingsDelegate.layoutDisplayName(it) } },
+                    options = remember(context) {
+                        ControlsSettingsDelegate.LAYOUT_CYCLE.map {
+                            context.getString(ControlsSettingsDelegate.layoutDisplayNameRes(it))
+                        }
+                    },
                     onSelect = { viewModel.setControllerLayout(ControlsSettingsDelegate.LAYOUT_CYCLE[it]) },
                     pickerRequestToken = pickerToken(item)
                 )
             }
 
             NavigationItem.SwapAB -> SwitchPreference(
-                title = "Swap A/B",
-                subtitle = "Swap confirm and back buttons",
+                title = stringResource(R.string.settings_navigation_swap_ab_title),
+                subtitle = stringResource(R.string.settings_navigation_swap_ab_subtitle),
                 isEnabled = controls.swapAB,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.setSwapAB(it) }
             )
 
             NavigationItem.SwapXY -> SwitchPreference(
-                title = "Swap X/Y",
-                subtitle = "Swap context menu and secondary action",
+                title = stringResource(R.string.settings_navigation_swap_xy_title),
+                subtitle = stringResource(R.string.settings_navigation_swap_xy_subtitle),
                 isEnabled = controls.swapXY,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.setSwapXY(it) }
             )
 
             NavigationItem.SwapStartSelect -> SwitchPreference(
-                title = "Swap Start/Select",
-                subtitle = "Flip the Start and Select button functions",
+                title = stringResource(R.string.settings_navigation_swap_start_select_title),
+                subtitle = stringResource(R.string.settings_navigation_swap_start_select_subtitle),
                 isEnabled = controls.swapStartSelect,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.setSwapStartSelect(it) }
             )
 
             NavigationItem.HapticFeedback -> SwitchPreference(
-                title = "Haptic Feedback",
+                title = stringResource(R.string.settings_navigation_haptic_title),
                 isEnabled = controls.hapticEnabled,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.setHapticEnabled(it) }
             )
 
             NavigationItem.VibrationStrength -> SliderPreference(
-                title = "Vibration Strength",
+                title = stringResource(R.string.settings_navigation_vibration_title),
                 value = (controls.vibrationStrength * 10).toInt() + 1,
                 minValue = 1,
                 maxValue = 11,
@@ -195,37 +215,51 @@ fun NavigationSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             )
 
             NavigationItem.MenuWrap -> CyclePreference(
-                title = "Menu Wrapping",
-                value = controls.menuWrapMode.displayName,
-                subtitle = "Navigate past the last item to the first",
+                title = stringResource(R.string.settings_navigation_menu_wrap_title),
+                value = stringResource(menuWrapLabelRes(controls.menuWrapMode)),
+                subtitle = stringResource(R.string.settings_navigation_menu_wrap_subtitle),
                 isFocused = isFocused(item),
                 onClick = { viewModel.cycleMenuWrapMode() },
                 onPrev = { viewModel.cycleMenuWrapMode(-1) },
-                options = remember { MenuWrapMode.entries.map { it.displayName } },
+                options = remember(context) {
+                    MenuWrapMode.entries.map { context.getString(menuWrapLabelRes(it)) }
+                },
                 onSelect = { viewModel.setMenuWrapMode(MenuWrapMode.entries[it]) },
                 pickerRequestToken = pickerToken(item)
             )
 
             NavigationItem.SelectLCombo -> CyclePreference(
-                title = "Select + L",
-                value = ControlsSettingsDelegate.comboDisplayName(controls.selectLCombo),
-                subtitle = "Hold Select and press L1",
+                title = stringResource(R.string.settings_navigation_select_l_combo_title),
+                value = stringResource(
+                    ControlsSettingsDelegate.comboDisplayNameRes(controls.selectLCombo)
+                ),
+                subtitle = stringResource(R.string.settings_navigation_select_l_combo_subtitle),
                 isFocused = isFocused(item),
                 onClick = { viewModel.cycleSelectLCombo() },
                 onPrev = { viewModel.cycleSelectLCombo(-1) },
-                options = remember { ControlsSettingsDelegate.COMBO_CYCLE.map { ControlsSettingsDelegate.comboDisplayName(it) } },
+                options = remember(context) {
+                    ControlsSettingsDelegate.COMBO_CYCLE.map {
+                        context.getString(ControlsSettingsDelegate.comboDisplayNameRes(it))
+                    }
+                },
                 onSelect = { viewModel.setSelectLCombo(ControlsSettingsDelegate.COMBO_CYCLE[it]) },
                 pickerRequestToken = pickerToken(item)
             )
 
             NavigationItem.SelectRCombo -> CyclePreference(
-                title = "Select + R",
-                value = ControlsSettingsDelegate.comboDisplayName(controls.selectRCombo),
-                subtitle = "Hold Select and press R1",
+                title = stringResource(R.string.settings_navigation_select_r_combo_title),
+                value = stringResource(
+                    ControlsSettingsDelegate.comboDisplayNameRes(controls.selectRCombo)
+                ),
+                subtitle = stringResource(R.string.settings_navigation_select_r_combo_subtitle),
                 isFocused = isFocused(item),
                 onClick = { viewModel.cycleSelectRCombo() },
                 onPrev = { viewModel.cycleSelectRCombo(-1) },
-                options = remember { ControlsSettingsDelegate.COMBO_CYCLE.map { ControlsSettingsDelegate.comboDisplayName(it) } },
+                options = remember(context) {
+                    ControlsSettingsDelegate.COMBO_CYCLE.map {
+                        context.getString(ControlsSettingsDelegate.comboDisplayNameRes(it))
+                    }
+                },
                 onSelect = { viewModel.setSelectRCombo(ControlsSettingsDelegate.COMBO_CYCLE[it]) },
                 pickerRequestToken = pickerToken(item)
             )

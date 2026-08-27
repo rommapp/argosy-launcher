@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="collections_browse_genres">जॉनर</string>
+    <string name="collections_browse_game_modes">गेम मोड</string>
+    <string name="collections_browse_series">सीरीज़</string>
+
+    <string name="collections_section_mine">मेरे कलेक्शन</string>
+    <string name="collections_section_browse_by">ब्राउज़ करें</string>
+
+    <string name="collections_pinned_description">पिन किया गया</string>
+
+    <string name="collections_new">नया कलेक्शन</string>
+
+    <plurals name="collections_game_count">
+        <item quantity="one">%d गेम</item>
+        <item quantity="other">%d गेम</item>
+    </plurals>
+    <plurals name="collections_category_count">
+        <item quantity="one">%d श्रेणी</item>
+        <item quantity="other">%d श्रेणियां</item>
+    </plurals>
+
+    <string name="collections_options_download_all">सभी डाउनलोड करें (%1$d)</string>
+    <string name="collections_options_rename">कलेक्शन का नाम बदलें</string>
+    <string name="collections_options_delete">कलेक्शन हटाएं</string>
+    <string name="collections_options_remove_game">\"%1$s\" हटाएं</string>
+    <string name="collections_options_remove_game_fallback">गेम</string>
+
+    <string name="collections_delete_dialog_title">कलेक्शन हटाएं</string>
+    <string name="collections_delete_dialog_message">क्या आप वाकई \"%1$s\" को हटाना चाहते हैं? इससे कलेक्शन हट जाएगा, लेकिन इसमें मौजूद गेम नहीं हटेंगे।</string>
+    <string name="collections_delete_dialog_confirm">हटाएं</string>
+
+    <string name="collections_create_dialog_title">कलेक्शन बनाएं</string>
+    <string name="collections_create_dialog_name_label">कलेक्शन का नाम</string>
+    <string name="collections_create_dialog_confirm">बनाएं</string>
+
+    <string name="collections_edit_dialog_title">कलेक्शन संपादित करें</string>
+    <string name="collections_edit_dialog_name_label">कलेक्शन का नाम</string>
+    <string name="collections_edit_dialog_confirm">सहेजें</string>
+
+    <string name="collections_removegame_dialog_title">गेम हटाएं</string>
+    <string name="collections_removegame_dialog_message">\"%1$s\" को \"%2$s\" से हटाएं?</string>
+    <string name="collections_removegame_dialog_confirm">हटाएं</string>
+
+    <string name="collections_namedialog_cancel">रद्द करें</string>
+
+    <string name="collections_screen_hint_navigate">नेविगेट</string>
+    <string name="collections_screen_hint_select">चुनें</string>
+    <string name="collections_screen_hint_back">वापस</string>
+    <string name="collections_screen_hint_refreshing">रीफ्रेश हो रहा है…</string>
+    <string name="collections_screen_hint_refresh">रीफ्रेश</string>
+    <string name="collections_screen_hint_unpin">अनपिन</string>
+    <string name="collections_screen_hint_pin">पिन</string>
+    <string name="collections_screen_hint_options">विकल्प</string>
+
+    <string name="collections_detail_loading">लोड हो रहा है…</string>
+    <string name="collections_detail_hint_search_open">खोलें</string>
+    <string name="collections_detail_hint_search_close">खोज बंद करें</string>
+    <string name="collections_detail_hint_navigate">नेविगेट</string>
+    <string name="collections_detail_hint_open">खोलें</string>
+    <string name="collections_detail_hint_back">वापस</string>
+    <string name="collections_detail_hint_search">खोजें</string>
+    <string name="collections_detail_hint_unpin">अनपिन</string>
+    <string name="collections_detail_hint_pin">पिन</string>
+    <string name="collections_detail_hint_jump">जंप</string>
+    <string name="collections_detail_hint_options">विकल्प</string>
+    <string name="collections_detail_hint_refreshing">रीफ्रेश हो रहा है…</string>
+    <string name="collections_detail_hint_refresh">रीफ्रेश</string>
+    <string name="collections_detail_back_description">वापस</string>
+    <string name="collections_detail_search_placeholder">%1$s में खोजें</string>
+    <string name="collections_detail_close_search_description">खोज बंद करें</string>
+    <string name="collections_detail_search_description">खोजें</string>
+    <string name="collections_detail_empty_title">इस कलेक्शन में कोई गेम नहीं है</string>
+    <string name="collections_detail_empty_subtitle">लाइब्रेरी या गेम विवरण से गेम जोड़ें</string>
+    <plurals name="collections_detail_header_game_count">
+        <item quantity="one">%d गेम</item>
+        <item quantity="other">%d गेम</item>
+    </plurals>
+
+    <string name="collections_browser_loading">लोड हो रहा है…</string>
+    <string name="collections_browser_hint_search_select">चुनें</string>
+    <string name="collections_browser_hint_search_close">खोज बंद करें</string>
+    <string name="collections_browser_hint_navigate">नेविगेट</string>
+    <string name="collections_browser_hint_select">चुनें</string>
+    <string name="collections_browser_hint_back">वापस</string>
+    <string name="collections_browser_hint_search">खोजें</string>
+    <string name="collections_browser_hint_unpin">अनपिन</string>
+    <string name="collections_browser_hint_pin">पिन</string>
+    <string name="collections_browser_hint_jump">जंप</string>
+    <string name="collections_browser_hint_refreshing">रीफ्रेश हो रहा है…</string>
+    <string name="collections_browser_hint_refresh">रीफ्रेश</string>
+    <string name="collections_browser_back_description">वापस</string>
+    <string name="collections_browser_search_placeholder">%1$s में खोजें</string>
+    <string name="collections_browser_close_search_description">खोज बंद करें</string>
+    <string name="collections_browser_search_description">खोजें</string>
+    <string name="collections_browser_category_pinned_description">पिन किया गया</string>
+    <string name="collections_browser_title_fallback">ब्राउज़ करें</string>
+    <string name="collections_browser_empty">कोई %1$s नहीं मिला</string>
+    <plurals name="collections_browser_header_category_count">
+        <item quantity="one">%d श्रेणी</item>
+        <item quantity="other">%d श्रेणियां</item>
+    </plurals>
+    <plurals name="collections_browser_row_game_count">
+        <item quantity="one">%d गेम</item>
+        <item quantity="other">%d गेम</item>
+    </plurals>
+
+    <string name="collections_category_loading">लोड हो रहा है…</string>
+    <string name="collections_category_hint_search_open">खोलें</string>
+    <string name="collections_category_hint_search_close">खोज बंद करें</string>
+    <string name="collections_category_hint_navigate">नेविगेट</string>
+    <string name="collections_category_hint_open">खोलें</string>
+    <string name="collections_category_hint_back">वापस</string>
+    <string name="collections_category_hint_search">खोजें</string>
+    <string name="collections_category_hint_unpin">अनपिन</string>
+    <string name="collections_category_hint_pin">पिन</string>
+    <string name="collections_category_hint_jump">जंप</string>
+    <string name="collections_category_hint_refreshing">रीफ्रेश हो रहा है…</string>
+    <string name="collections_category_hint_refresh">रीफ्रेश</string>
+    <string name="collections_category_hint_download_all">सभी डाउनलोड करें (%1$d)</string>
+    <string name="collections_category_downloadall_title">डाउनलोड कतार में जोड़े जा रहे हैं</string>
+    <plurals name="collections_category_downloadall_progress">
+        <item quantity="one">%2$d में से %1$d गेम</item>
+        <item quantity="other">%2$d में से %1$d गेम</item>
+    </plurals>
+    <string name="collections_category_back_description">वापस</string>
+    <string name="collections_category_search_placeholder">%1$s में खोजें</string>
+    <string name="collections_category_close_search_description">खोज बंद करें</string>
+    <string name="collections_category_search_description">खोजें</string>
+    <string name="collections_category_empty_title">इस श्रेणी में कोई गेम नहीं है</string>
+    <plurals name="collections_category_header_game_count">
+        <item quantity="one">%d गेम</item>
+        <item quantity="other">%d गेम</item>
+    </plurals>
+    <string name="collections_detail_platform_unknown">अज्ञात</string>
+    <string name="collections_category_platform_unknown">अज्ञात</string>
+
+    <string name="collections_widecard_rating_value">%1$d/10</string>
+    <string name="collections_widecard_difficulty_value">%1$d/10</string>
+
+    <string name="downloads_empty_title">कोई डाउनलोड नहीं</string>
+    <string name="downloads_empty_subtitle">डाउनलोड यहां दिखाई देंगे</string>
+    <string name="downloads_section_header_moving">ROM स्टोरेज में ले जाया जा रहा है</string>
+    <string name="downloads_section_header_extracting">एक्सट्रैक्ट हो रहा है</string>
+    <string name="downloads_section_header_downloading">डाउनलोड हो रहा है</string>
+    <string name="downloads_section_header_active">सक्रिय</string>
+    <string name="downloads_section_header_queued">कतार में</string>
+    <string name="downloads_section_header_finished">पूर्ण</string>
+    <string name="downloads_hint_navigate">नेविगेट</string>
+    <string name="downloads_hint_remove">हटाएं</string>
+    <string name="downloads_hint_cancel">रद्द करें</string>
+    <string name="downloads_hint_clear_finished">पूर्ण साफ़ करें</string>
+    <string name="downloads_hint_back">वापस</string>
+    <string name="downloads_failed_dialog_title">डाउनलोड विफल</string>
+    <string name="downloads_failed_dialog_message">\"%1$s\" डाउनलोड नहीं हो सका। आप क्या करना चाहेंगे?</string>
+    <string name="downloads_failed_dialog_confirm">पुनः प्रयास करें</string>
+    <string name="downloads_failed_dialog_clear">साफ़ करें</string>
+    <string name="downloads_file_state_done">पूर्ण</string>
+    <string name="downloads_file_state_extracting">एक्सट्रैक्ट हो रहा है</string>
+    <string name="downloads_file_state_moving">ले जाया जा रहा है</string>
+    <string name="downloads_file_state_failed">विफल</string>
+    <string name="downloads_file_state_queued">कतार में</string>
+    <string name="downloads_file_state_percent">%1$d%%</string>
+    <string name="downloads_item_status_moving">ROM स्टोरेज में ले जाया जा रहा है…</string>
+    <string name="downloads_item_status_extracting_fallback">एक्सट्रैक्ट हो रहा है…</string>
+    <string name="downloads_item_status_insufficient_storage">जरूरत: %1$s, उपलब्ध: %2$s</string>
+    <string name="downloads_item_status_failed_fallback">डाउनलोड विफल हुआ</string>
+    <string name="downloads_item_status_queued_fallback">कतार में</string>
+    <string name="downloads_completed_status_failed_fallback">डाउनलोड विफल हुआ</string>
+    <string name="downloads_completed_status_installed">इंस्टॉल हो गया</string>
+    <string name="downloads_speed_suffix">%1$s/s</string>
+
+    <string name="downloads_action_pause">पॉज़ करें</string>
+    <string name="downloads_action_resume">फिर से शुरू करें</string>
+    <string name="downloads_action_toggle">टॉगल करें</string>
+    <string name="downloads_action_options">विकल्प</string>
+    <string name="downloads_action_view">देखें</string>
+
+    <string name="downloads_steam_status_preparing">तैयारी हो रही है…</string>
+    <string name="downloads_steam_status_connecting">Steam से कनेक्ट हो रहा है…</string>
+    <string name="downloads_steam_status_fetching_manifest">डिपो मैनिफेस्ट प्राप्त किया जा रहा है…</string>
+    <string name="downloads_steam_status_validating_fallback">जांच हो रही है…</string>
+    <string name="downloads_steam_status_moving">फ़ाइलें ले जाई जा रही हैं…</string>
+    <string name="downloads_steam_status_cleaning">सफाई हो रही है…</string>
+    <string name="downloads_steam_status_depot_progress">" (%1$d/%2$d डिपो)"</string>
+
+    <plurals name="downloads_group_progress">
+        <item quantity="one">%2$d में से %1$d फ़ाइल</item>
+        <item quantity="other">%2$d में से %1$d फ़ाइलें</item>
+    </plurals>
+
+    <string name="touchlayout_editor_title">टच कंट्रोल्स कस्टमाइज़ करें</string>
+    <string name="touchlayout_editor_orientation_portrait">पोर्ट्रेट</string>
+    <string name="touchlayout_editor_orientation_landscape">लैंडस्केप</string>
+    <string name="touchlayout_editor_close">बंद करें</string>
+</resources>

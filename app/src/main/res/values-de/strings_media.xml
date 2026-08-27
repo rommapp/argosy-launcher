@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="media_library_heading">MEDIEN</string>
+
+    <string name="media_library_footer_library">Bibliothek</string>
+    <string name="media_library_footer_resume">Fortsetzen</string>
+    <string name="media_library_footer_play">Wiedergabe</string>
+    <string name="media_library_footer_refreshing">Wird aktualisiert</string>
+    <string name="media_library_footer_refresh">Aktualisieren</string>
+    <string name="media_library_footer_open">Öffnen</string>
+    <string name="media_library_footer_back">Zurück</string>
+
+    <string name="media_empty_state_title">Noch nichts hier</string>
+    <string name="media_empty_state_message">Diese Bibliothek hat keine Inhalte auf dem Server, oder die letzte Aktualisierung hat sie noch nicht erreicht.</string>
+    <string name="media_error_state_title">Medienserver nicht erreichbar</string>
+    <string name="media_signed_out_title">Kein Medienkonto</string>
+    <string name="media_signed_out_message">Melden Sie sich in den Einstellungen bei einem Medienserver an, um Filme und Serien zu durchsuchen.</string>
+
+    <string name="media_poster_card_watched">Gesehen</string>
+    <string name="media_download_badge_present">Heruntergeladen</string>
+    <string name="media_download_badge_unavailable">Heruntergeladen, auf nicht verbundenem Speicher</string>
+
+    <string name="media_detail_open_failed">Dieser Titel konnte nicht geöffnet werden.</string>
+    <string name="media_detail_item_missing">Dieser Titel ist nicht mehr in der Bibliothek.</string>
+
+    <string name="media_detail_rail_heading_cast">Besetzung</string>
+    <string name="media_detail_rail_heading_similar">Ähnliche Titel</string>
+
+    <string name="media_detail_episodes_loading">Episoden werden geladen</string>
+    <string name="media_detail_episodes_error_title">Episoden nicht verfügbar</string>
+    <string name="media_detail_season_empty_title">Keine Episoden in dieser Staffel</string>
+    <string name="media_detail_seasons_empty_title">Noch keine Staffeln</string>
+    <string name="media_detail_seasons_empty_message">Diese Serie hat keine Staffeln auf dem Server, oder die letzte Aktualisierung hat sie noch nicht erreicht.</string>
+
+    <string name="media_season_tab_number">Staffel %1$d</string>
+
+    <plurals name="media_detail_chip_season_count">
+        <item quantity="one">%d Staffel</item>
+        <item quantity="other">%d Staffeln</item>
+    </plurals>
+
+    <string name="media_detail_footer_sibling_title">Vorheriger/nächster Titel</string>
+    <string name="media_detail_footer_options">Optionen</string>
+    <string name="media_detail_footer_episode_unwatched">Als ungesehen markieren</string>
+    <string name="media_detail_footer_episode_watched">Als gesehen markieren</string>
+    <string name="media_detail_footer_unfavorite">Favorit entfernen</string>
+    <string name="media_detail_footer_favorite">Favorit</string>
+    <string name="media_detail_footer_back">Zurück</string>
+
+    <string name="media_detail_confirm_resume">Fortsetzen</string>
+    <string name="media_detail_confirm_open_season">Staffel öffnen</string>
+    <string name="media_detail_confirm_open_title">Titel öffnen</string>
+    <string name="media_detail_confirm_play_section">Wiedergabe</string>
+    <string name="media_detail_confirm_downloads">Downloads</string>
+    <string name="media_detail_confirm_favorite">Favorit</string>
+    <string name="media_detail_confirm_mark_watched">Als gesehen markieren</string>
+    <string name="media_detail_confirm_options">Optionen</string>
+    <string name="media_detail_confirm_open_seasons">Staffeln öffnen</string>
+    <string name="media_detail_confirm_open_episodes">Episoden öffnen</string>
+    <string name="media_detail_confirm_play_default">Wiedergabe</string>
+
+    <string name="media_rail_play">Wiedergabe</string>
+    <string name="media_rail_play_resume">%1$s fortsetzen</string>
+    <string name="media_rail_play_episode">%1$s abspielen</string>
+
+    <string name="media_rail_download">Herunterladen</string>
+    <string name="media_rail_download_complete">Heruntergeladen</string>
+    <string name="media_rail_download_progress_queued">%1$d von %2$d, %3$d in Warteschlange</string>
+    <string name="media_rail_download_progress">%1$d von %2$d</string>
+    <string name="media_rail_download_with_note">%1$s - %2$s</string>
+    <string name="media_rail_download_note_one_unavailable">nicht verbunden</string>
+    <plurals name="media_rail_download_note_unavailable">
+        <item quantity="one">%d nicht verbunden</item>
+        <item quantity="other">%d nicht verbunden</item>
+    </plurals>
+
+    <string name="media_rail_favorited">Favorisiert</string>
+    <string name="media_rail_favorite">Favorit</string>
+    <string name="media_rail_watched">Gesehen</string>
+    <string name="media_rail_mark_watched">Als gesehen markieren</string>
+    <string name="media_rail_options">Optionen</string>
+    <string name="media_rail_seasons">Staffeln</string>
+    <string name="media_rail_episodes">Episoden</string>
+    <string name="media_rail_cast">Besetzung</string>
+    <string name="media_rail_similar">Ähnliche Titel</string>
+
+    <string name="media_detail_menu_mark_unwatched">Als ungesehen markieren</string>
+    <string name="media_detail_menu_mark_watched">Als gesehen markieren</string>
+    <string name="media_detail_menu_remove_favorite">Favorit entfernen</string>
+    <string name="media_detail_menu_favorite">Favorit</string>
+    <string name="media_detail_menu_download">Herunterladen</string>
+    <string name="media_detail_menu_remove_downloads">Downloads entfernen</string>
+    <string name="media_detail_menu_refreshing">Wird aktualisiert</string>
+    <string name="media_detail_menu_refresh_from_server">Vom Server aktualisieren</string>
+    <string name="media_detail_menu_go_to_library">Zur Bibliothek</string>
+
+    <string name="media_episode_row_now_playing">Läuft gerade</string>
+    <string name="media_episode_row_watched">Gesehen</string>
+
+    <string name="media_resume_start_over_label">Von vorne beginnen</string>
+    <string name="media_resume_start_over_supporting">Von Anfang an abspielen</string>
+    <string name="media_resume_resume_label">Fortsetzen</string>
+    <string name="media_resume_resume_supporting">Weiter ab %1$s</string>
+
+    <string name="media_download_episodes_subtitle">Episoden wählen</string>
+    <string name="media_download_episodes_confirm">Herunterladen</string>
+    <string name="media_download_episode_row_label">%1$d. %2$s</string>
+    <string name="media_download_quick_action_next">Nächste %1$d</string>
+
+    <string name="media_download_refused_fetch_failed">Episoden dieser Serie konnten nicht vom Server abgerufen werden</string>
+    <string name="media_download_refused_no_episodes">Für diese Serie wurden keine Episoden gefunden</string>
+
+    <plurals name="media_download_count">
+        <item quantity="one">%d Download</item>
+        <item quantity="other">%d Downloads</item>
+    </plurals>
+    <string name="media_download_confirm_subtitle">%1$s auf diesem Gerät</string>
+    <string name="media_download_confirm_keep">Behalten</string>
+    <string name="media_download_confirm_keep_supporting">Nichts wird gelöscht</string>
+    <string name="media_download_confirm_remove">Entfernen</string>
+    <string name="media_download_confirm_remove_supporting">Löscht %1$s von diesem Gerät</string>
+    <string name="media_download_confirm_warning">Die Dateien kommen nur durch erneutes Herunterladen zurück</string>
+
+    <string name="media_download_quality_remove">Download entfernen</string>
+    <string name="media_download_quality_remove_supporting">Löscht die Kopie auf diesem Gerät</string>
+    <string name="media_download_storage_warning">Videodateien sind groß, das könnte nicht passen</string>
+
+    <plurals name="media_download_title_count">
+        <item quantity="one">%d Titel</item>
+        <item quantity="other">%d Titel</item>
+    </plurals>
+    <string name="media_download_quality_subtitle">%1$s - %2$s frei</string>
+    <string name="media_download_size_gigabytes">%1$.1f GB</string>
+
+    <string name="media_download_quality_source_unknown">Quelldatei, Größe variiert</string>
+    <string name="media_download_quality_transcode">Server-Transcodierung</string>
+    <string name="media_download_quality_source_size">Quelldatei - %1$s</string>
+    <string name="media_download_quality_estimate">Etwa %1$s</string>
+
+    <string name="media_download_note_mixed">Textuntertitel werden mit dem Video heruntergeladen, Bilduntertitel gibt es nur mit Original</string>
+    <string name="media_download_note_none">Keine Untertitel bei diesem Titel</string>
+    <string name="media_download_note_text_only">Untertitel werden mit dem Video heruntergeladen</string>
+    <string name="media_download_note_burned_in">Bilduntertitel werden in eine kleinere Kopie eingebrannt und können nicht deaktiviert werden</string>
+    <string name="media_download_note_picture_only">Bilduntertitel gibt es nur mit Original</string>
+
+    <string name="media_player_overlay_quality_title">Qualität</string>
+    <string name="media_player_overlay_quality_hint_choose">Wählen</string>
+    <string name="media_player_overlay_quality_hint_apply">Übernehmen</string>
+    <string name="media_player_overlay_quality_hint_cancel">Abbrechen</string>
+    <string name="media_player_overlay_quality_apply_button">Übernehmen</string>
+
+    <string name="media_player_quality_option_original">Original</string>
+    <string name="media_player_quality_summary_original">Original</string>
+    <string name="media_player_quality_wheel_resolution">Auflösung</string>
+    <string name="media_player_quality_wheel_framerate">Bildrate</string>
+    <string name="media_player_quality_wheel_bitrate">Bitrate</string>
+
+    <string name="media_player_overlay_audio_title">Audio</string>
+    <string name="media_player_overlay_audio_hint_select">Auswählen</string>
+    <string name="media_player_overlay_audio_hint_close">Schließen</string>
+
+    <string name="media_player_overlay_subtitles_title">Untertitel</string>
+    <string name="media_player_overlay_subtitles_hint_select">Auswählen</string>
+    <string name="media_player_overlay_subtitles_hint_close">Schließen</string>
+    <string name="media_player_subtitle_row_off">Aus</string>
+    <string name="media_player_subtitle_row_burn_in">Bilduntertitel einbrennen</string>
+    <string name="media_player_subtitle_burn_in_on">Für diese Wiedergabe aktiviert - der Server codiert das Video neu</string>
+    <string name="media_player_subtitle_burn_in_off">Aus - Bilduntertitel können nicht angezeigt werden</string>
+    <string name="media_player_subtitle_row_picture">Bild-Untertitel</string>
+    <string name="media_player_subtitle_picture_notice">%1$s ist ein Bild, kein Text. Es kann nur angezeigt werden, wenn der Server es in das Video einbrennt.</string>
+
+    <string name="media_player_overlay_chapters_title">Kapitel</string>
+    <string name="media_player_overlay_chapters_hint_play">Von hier abspielen</string>
+    <string name="media_player_overlay_chapters_hint_close">Schließen</string>
+    <string name="media_player_chapter_fallback">Kapitel %1$d</string>
+
+    <string name="media_player_caption_time_left">Noch %1$s</string>
+
+    <string name="media_player_control_previous_episode">Vorherige Episode</string>
+    <string name="media_player_control_next_episode">Nächste Episode</string>
+    <string name="media_player_control_episode_absent">Kein %1$s</string>
+    <string name="media_player_control_episode_named">%1$s  %2$s</string>
+    <string name="media_player_control_skip_back">%1$ds zurück</string>
+    <string name="media_player_control_skip_forward">%1$ds vor</string>
+    <string name="media_player_control_pause">Pause</string>
+    <string name="media_player_control_play">Wiedergabe</string>
+    <string name="media_player_control_audio">Tonspur</string>
+    <string name="media_player_control_subtitles">Untertitel</string>
+    <string name="media_player_control_chapters">Kapitel</string>
+    <string name="media_player_control_quality">Qualität  %1$s</string>
+    <string name="media_player_control_fill">Bildschirm füllen</string>
+    <string name="media_player_control_fit">An Bildschirm anpassen</string>
+    <string name="media_player_control_volume_full">Lautstärke maximal</string>
+    <string name="media_player_control_volume_half">Lautstärke mittel</string>
+    <string name="media_player_control_volume_mute">Stumm</string>
+    <string name="media_player_control_lock">Steuerung sperren</string>
+    <string name="media_player_control_watched">Gesehen</string>
+    <string name="media_player_control_mark_watched">Als gesehen markieren</string>
+    <string name="media_player_control_close">Schließen</string>
+
+    <string name="media_player_skip_intro">Intro überspringen</string>
+    <string name="media_player_skip_credits">Abspann überspringen</string>
+
+    <string name="media_player_exit_title">Player verlassen?</string>
+    <string name="media_player_exit_message">Die Wiedergabe wird gestoppt. Sie können später dort weitermachen, wo Sie aufgehört haben.</string>
+    <string name="media_player_exit_confirm">Verlassen</string>
+    <string name="media_player_exit_cancel">Weiterschauen</string>
+
+    <string name="media_player_error_retry">Erneut versuchen</string>
+    <string name="media_player_error_close">Schließen</string>
+
+    <plurals name="media_player_autoplay_countdown">
+        <item quantity="one">Weiter in %d</item>
+        <item quantity="other">Weiter in %d</item>
+    </plurals>
+    <string name="media_player_autoplay_play_now">Jetzt abspielen</string>
+    <string name="media_player_autoplay_stop">Stopp</string>
+
+    <string name="media_player_error_playback_failed">Dieser Titel konnte nicht abgespielt werden</string>
+    <string name="media_player_error_not_signed_in">Nicht bei Jellyfin angemeldet</string>
+    <string name="media_player_notice_stream_unavailable_copy">Streaming - Ihr Download befindet sich auf nicht verbundenem Speicher</string>
+    <string name="media_player_notice_stream_absent_copy">Streaming - Ihr Download ist nicht mehr auf diesem Gerät</string>
+
+    <string name="media_player_stored_episode_code">S%1$d E%2$d</string>
+    <string name="media_player_stored_episode_number">Episode %1$d</string>
+    <string name="media_player_server_episode_code">S%1$d E%2$d</string>
+    <string name="media_player_server_episode_number">Episode %1$d</string>
+
+    <string name="media_negotiator_track_fallback">Spur %1$d</string>
+    <string name="media_engine_track_fallback">Spur %1$d</string>
+
+    <string name="media_negotiator_error_not_signed_in">Nicht bei Jellyfin angemeldet</string>
+    <string name="media_negotiator_error_no_source">Der Server hat keine abspielbare Version angeboten</string>
+    <string name="media_negotiator_error_unplayable">Dieser Titel kann auf diesem Gerät nicht abgespielt werden</string>
+
+    <string name="media_music_header_title">Servermusik</string>
+    <string name="media_music_header_subtitle_bgm">Titel zur BGM-Playlist hinzufügen</string>
+    <string name="media_music_header_subtitle_sfx">Einen Sound für %1$s zuweisen</string>
+    <string name="media_music_header_sfx_target_fallback">diese Aktion</string>
+    <string name="media_music_header_back">Zurück</string>
+
+    <string name="media_music_search_placeholder">Titel suchen...</string>
+
+    <string name="media_music_chip_artist">Künstler</string>
+    <string name="media_music_chip_album">Album</string>
+    <string name="media_music_chip_genre">Genre</string>
+    <string name="media_music_chip_duration">Unter %1$ds</string>
+    <string name="media_music_chip_clear">Leeren</string>
+
+    <string name="media_music_facet_chooser_title">Filtern nach</string>
+    <string name="media_music_facet_chooser_artist">Künstler</string>
+    <string name="media_music_facet_chooser_album">Album</string>
+    <string name="media_music_facet_chooser_genre">Genre</string>
+    <string name="media_music_facet_chooser_max_duration">Maximale Dauer</string>
+    <string name="media_music_facet_chooser_clear">Filter zurücksetzen</string>
+    <string name="media_music_duration_value">%1$ds</string>
+
+    <string name="media_music_facet_values_title_artist">Künstler</string>
+    <string name="media_music_facet_values_title_album">Album</string>
+    <string name="media_music_facet_values_title_genre">Genre</string>
+    <string name="media_music_facet_all_artists">Alle Künstler</string>
+    <string name="media_music_facet_all_albums">Alle Alben</string>
+    <string name="media_music_facet_all_genres">Alle Genres</string>
+
+    <string name="media_music_offline_message">Nicht mit Ihrem RomM-Server verbunden</string>
+    <string name="media_music_unsupported_message">Dieser RomM-Server unterstützt noch keine Musiksuche</string>
+    <string name="media_music_error_fallback">Etwas ist schiefgelaufen</string>
+    <string name="media_music_error_retry">Wiederholen</string>
+    <string name="media_music_empty_message">Keine Titel gefunden</string>
+
+    <string name="media_music_track_in_playlist">In der Playlist</string>
+    <string name="media_music_track_stop_preview">Vorschau stoppen</string>
+    <string name="media_music_track_preview">Vorschau</string>
+
+    <string name="media_music_unknown_game">Unbekanntes Spiel</string>
+
+    <string name="media_music_notice_facet_failed">Filteroptionen konnten nicht geladen werden</string>
+    <string name="media_music_notice_preview_failed">Vorschau fehlgeschlagen</string>
+    <string name="media_music_notice_removed">Aus der Playlist entfernt</string>
+    <string name="media_music_notice_added">Zur Playlist hinzugefügt</string>
+    <string name="media_music_notice_download_failed">Download fehlgeschlagen</string>
+
+    <string name="media_music_footer_filters">Filter</string>
+    <string name="media_music_footer_game">Spiel</string>
+    <string name="media_music_footer_stop">Stopp</string>
+    <string name="media_music_footer_preview">Vorschau</string>
+    <string name="media_music_footer_assign">Zuweisen</string>
+    <string name="media_music_footer_remove">Entfernen</string>
+    <string name="media_music_footer_add">Hinzufügen</string>
+</resources>

@@ -11,8 +11,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.data.emulator.VariantOption
 import com.nendo.argosy.data.model.VariantCategory
+import com.nendo.argosy.ui.common.labelRes
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.Modal
 import com.nendo.argosy.ui.screens.gamedetail.components.OptionItem
@@ -29,8 +32,8 @@ fun VariantPickerModal(
     onDismiss: () -> Unit
 ) {
     Modal(
-        title = "SELECT VARIANT",
-        subtitle = "Choose which version to launch",
+        title = stringResource(R.string.gamedetail_variant_picker_title),
+        subtitle = stringResource(R.string.gamedetail_variant_picker_subtitle),
         onDismiss = onDismiss
     ) {
         val listState = rememberLazyListState()
@@ -48,7 +51,7 @@ fun VariantPickerModal(
                 if (category != prevCategory) {
                     item(key = "header_${category.key}") {
                         Text(
-                            text = category.displayLabel,
+                            text = stringResource(category.labelRes),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.padding(
@@ -60,7 +63,11 @@ fun VariantPickerModal(
                     }
                 }
                 item(key = "variant_${variant.fileId ?: "primary"}") {
-                    val label = if (variant.fileId == null) "Default (Original)" else variant.fileName
+                    val label = if (variant.fileId == null) {
+                        stringResource(R.string.gamedetail_variant_picker_original)
+                    } else {
+                        variant.fileName
+                    }
                     val downloaded = variant.isDownloaded
                     val canDownload = !downloaded && variant.fileId != null && onDownloadVariant != null
                     OptionItem(

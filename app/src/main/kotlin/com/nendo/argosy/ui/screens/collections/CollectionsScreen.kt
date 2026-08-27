@@ -46,12 +46,15 @@ import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import coil.compose.AsyncImage
+import com.nendo.argosy.R
 import com.nendo.argosy.domain.usecase.collection.CollectionWithCount
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.FooterHints
@@ -133,7 +136,7 @@ fun CollectionsScreen(
         ) {
             item {
                 Text(
-                    text = "MY COLLECTIONS",
+                    text = stringResource(R.string.collections_section_mine),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(bottom = Dimens.spacingSm)
@@ -168,7 +171,7 @@ fun CollectionsScreen(
             item {
                 Spacer(modifier = Modifier.height(Dimens.spacingLg))
                 Text(
-                    text = "BROWSE BY",
+                    text = stringResource(R.string.collections_section_browse_by),
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(bottom = Dimens.spacingSm)
@@ -178,20 +181,20 @@ fun CollectionsScreen(
             item {
                 BrowseByRow(
                     icon = Icons.Default.Style,
-                    label = "Genres",
+                    label = stringResource(VirtualBrowseKind.GENRES.labelRes),
                     count = uiState.genres.size,
                     isFocused = !hasDialogOpen && uiState.focusedSection == CollectionSection.BROWSE_BY && uiState.focusedIndex == 0,
-                    onClick = { onVirtualBrowseClick("genres") }
+                    onClick = { onVirtualBrowseClick(VirtualBrowseKind.GENRES.route) }
                 )
             }
 
             item {
                 BrowseByRow(
                     icon = Icons.Default.SportsEsports,
-                    label = "Game Modes",
+                    label = stringResource(VirtualBrowseKind.GAME_MODES.labelRes),
                     count = uiState.gameModes.size,
                     isFocused = !hasDialogOpen && uiState.focusedSection == CollectionSection.BROWSE_BY && uiState.focusedIndex == 1,
-                    onClick = { onVirtualBrowseClick("modes") }
+                    onClick = { onVirtualBrowseClick(VirtualBrowseKind.GAME_MODES.route) }
                 )
             }
 
@@ -199,10 +202,10 @@ fun CollectionsScreen(
                 item {
                     BrowseByRow(
                         icon = Icons.Default.Style,
-                        label = "Series",
+                        label = stringResource(VirtualBrowseKind.SERIES.labelRes),
                         count = uiState.series.size,
                         isFocused = !hasDialogOpen && uiState.focusedSection == CollectionSection.BROWSE_BY && uiState.focusedIndex == 2,
-                        onClick = { onVirtualBrowseClick("series") }
+                        onClick = { onVirtualBrowseClick(VirtualBrowseKind.SERIES.route) }
                     )
                 }
             }
@@ -210,15 +213,19 @@ fun CollectionsScreen(
 
         Box(modifier = Modifier.align(Alignment.BottomCenter)) {
             val baseHints = listOf(
-                InputButton.DPAD to "Navigate",
-                InputButton.A to "Select",
-                InputButton.B to "Back",
-                InputButton.X to if (uiState.isRefreshing) "Refreshing..." else "Refresh"
+                InputButton.DPAD to stringResource(R.string.collections_screen_hint_navigate),
+                InputButton.A to stringResource(R.string.collections_screen_hint_select),
+                InputButton.B to stringResource(R.string.collections_screen_hint_back),
+                InputButton.X to stringResource(
+                    if (uiState.isRefreshing) R.string.collections_screen_hint_refreshing else R.string.collections_screen_hint_refresh
+                )
             )
             val contextHints = if (uiState.focusedSection == CollectionSection.MY_COLLECTIONS && uiState.focusedCollection != null) {
                 listOf(
-                    InputButton.Y to if (uiState.isFocusedCollectionPinned) "Unpin" else "Pin",
-                    InputButton.SELECT to "Options"
+                    InputButton.Y to stringResource(
+                        if (uiState.isFocusedCollectionPinned) R.string.collections_screen_hint_unpin else R.string.collections_screen_hint_pin
+                    ),
+                    InputButton.SELECT to stringResource(R.string.collections_screen_hint_options)
                 )
             } else {
                 emptyList()
@@ -327,7 +334,7 @@ private fun CollectionRow(
                         Spacer(modifier = Modifier.width(Dimens.spacingSm))
                         Icon(
                             Icons.Default.PushPin,
-                            contentDescription = "Pinned",
+                            contentDescription = stringResource(R.string.collections_pinned_description),
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(Dimens.spacingMd)
                         )
@@ -335,7 +342,11 @@ private fun CollectionRow(
                 }
                 Spacer(modifier = Modifier.height(Dimens.spacingXs))
                 Text(
-                    text = "${collection.gameCount} games",
+                    text = pluralStringResource(
+                        R.plurals.collections_game_count,
+                        collection.gameCount,
+                        collection.gameCount
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -480,7 +491,7 @@ private fun NewCollectionRow(
             Spacer(modifier = Modifier.width(Dimens.spacingMd))
 
             Text(
-                text = "New Collection",
+                text = stringResource(R.string.collections_new),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -540,7 +551,7 @@ private fun BrowseByRow(
             )
 
             Text(
-                text = "$count categories",
+                text = pluralStringResource(R.plurals.collections_category_count, count, count),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

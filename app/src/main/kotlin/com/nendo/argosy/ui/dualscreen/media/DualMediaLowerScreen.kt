@@ -34,13 +34,19 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import coil.compose.AsyncImage
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.animateScrollToItemCentered
 import com.nendo.argosy.ui.screens.media.MediaItemUi
+import com.nendo.argosy.ui.screens.media.episodeLabel
+import com.nendo.argosy.ui.screens.media.runtimeLabel
 import com.nendo.argosy.ui.screens.media.components.MediaCastRail
 import com.nendo.argosy.ui.screens.media.components.MediaEpisodeRow
 import com.nendo.argosy.ui.screens.media.components.MediaMessageState
@@ -74,7 +80,7 @@ fun DualMediaLowerScreen(
     onSeasonSelected: (Int) -> Unit = {},
     onEpisodeTapped: (String) -> Unit = {},
     onBackTapped: () -> Unit = {},
-    backHint: String = "Library",
+    backHint: String = stringResource(R.string.dual_media_footer_back_library),
     playerLocked: Boolean = false
 ) {
     val showCursor = isInteractive && (!state.isPlaybackLive || playerLocked)
@@ -92,7 +98,11 @@ fun DualMediaLowerScreen(
                         title = playing.seriesName
                             ?: playing.title.ifBlank { state.nowPlayingTitle },
                         countLabel = state.episodes.size.takeIf { it > 0 }?.let { count ->
-                            if (count == 1) "1 episode" else "$count episodes"
+                            pluralStringResource(
+                                R.plurals.dual_media_browse_episode_count,
+                                count,
+                                count
+                            )
                         },
                         onBack = onBackTapped
                     )
@@ -111,8 +121,8 @@ fun DualMediaLowerScreen(
                 when {
                     !state.isSignedIn -> MediaMessageState(
                         icon = Icons.Outlined.Movie,
-                        title = "No media account",
-                        message = "Sign in to a media server from Settings to watch here."
+                        title = stringResource(R.string.dual_media_signed_out_title),
+                        message = stringResource(R.string.dual_media_signed_out_message)
                     )
                     state.isShowMode -> DualMediaShowBody(
                         state = state,
@@ -123,13 +133,13 @@ fun DualMediaLowerScreen(
                     state.isLoading && !state.hasRows && state.nowPlaying == null ->
                         MediaMessageState(
                             icon = Icons.Outlined.Movie,
-                            title = "Loading",
+                            title = stringResource(R.string.dual_media_loading_title),
                             message = null
                         )
                     state.isEmpty -> MediaMessageState(
                         icon = Icons.Outlined.Movie,
-                        title = "Nothing to watch yet",
-                        message = "Titles you start appear here once they are under way."
+                        title = stringResource(R.string.dual_media_empty_title),
+                        message = stringResource(R.string.dual_media_empty_message)
                     )
                     else -> DualMediaTitleBody(
                         state = state,
@@ -143,13 +153,15 @@ fun DualMediaLowerScreen(
 
         val showEpisodeFooter = showCursor && state.isShowMode && state.episodes.isNotEmpty()
         if (showEpisodeFooter || (showCursor && state.hasRows)) {
+            val seasonHint = stringResource(R.string.dual_media_footer_season)
+            val watchHint = stringResource(R.string.dual_media_footer_watch)
             Box(modifier = Modifier.align(Alignment.BottomCenter)) {
                 FooterBar(
                     hints = buildList {
                         if (showEpisodeFooter && state.seasons.size > 1) {
-                            add(InputButton.DPAD_HORIZONTAL to "Season")
+                            add(InputButton.DPAD_HORIZONTAL to seasonHint)
                         }
-                        add(InputButton.A to "Watch")
+                        add(InputButton.A to watchHint)
                         add(InputButton.B to backHint)
                     }
                 )
@@ -200,9 +212,11 @@ private fun DualMediaShowBody(
             state.episodes.isEmpty() -> MediaMessageState(
                 icon = Icons.Outlined.Movie,
                 title = when {
-                    state.isLoading || state.isFetchingEpisodes -> "Loading"
-                    state.episodeFetchError != null -> "Couldn't load episodes"
-                    else -> "No episodes here yet"
+                    state.isLoading || state.isFetchingEpisodes ->
+                        stringResource(R.string.dual_media_episodes_loading_title)
+                    state.episodeFetchError != null ->
+                        stringResource(R.string.dual_media_episodes_error_title)
+                    else -> stringResource(R.string.dual_media_episodes_empty_title)
                 },
                 message = state.episodeFetchError
                     ?.takeIf { !state.isLoading && !state.isFetchingEpisodes }
@@ -282,7 +296,9 @@ private fun DualMediaTitleBody(
             }
         }
         if (state.cast.isNotEmpty()) {
-            item(key = "cast-header") { DualMediaSectionHeader("Cast") }
+            item(key = "cast-header") {
+                DualMediaSectionHeader(stringResource(R.string.dual_media_cast_header))
+            }
             item(key = "cast") {
                 MediaCastRail(
                     cast = state.cast,
@@ -349,7 +365,7 @@ private fun DualMediaBrowseHeader(
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back",
+                contentDescription = stringResource(R.string.dual_media_browse_back_description),
                 tint = theme.textPrimary,
                 modifier = Modifier.size(Dimens.iconSm)
             )
@@ -408,13 +424,14 @@ private fun DualMediaNowPlaying(
     showBrief: Boolean
 ) {
     val theme = LocalArgosyTheme.current
+    val context = LocalContext.current
     val heading = item.seriesName
         ?: item.title.ifBlank { fallbackTitle }
     val catalog = if (item.seriesName != null) {
-        listOfNotNull(item.episodeLabel, item.title.takeIf { it.isNotBlank() }, item.runtimeLabel)
+        listOfNotNull(item.episodeLabel(context), item.title.takeIf { it.isNotBlank() }, item.runtimeLabel(context))
             .joinToString("  ")
     } else {
-        listOfNotNull(item.year?.toString(), item.runtimeLabel).joinToString(" - ")
+        listOfNotNull(item.year?.toString(), item.runtimeLabel(context)).joinToString(" - ")
     }
     Row(
         modifier = Modifier
@@ -451,7 +468,11 @@ private fun DualMediaNowPlaying(
                 if (showTransport) {
                     Icon(
                         imageVector = if (isPlaying) Icons.Filled.PlayArrow else Icons.Filled.Pause,
-                        contentDescription = if (isPlaying) "Playing" else "Paused",
+                        contentDescription = if (isPlaying) {
+                            stringResource(R.string.dual_media_transport_playing_description)
+                        } else {
+                            stringResource(R.string.dual_media_transport_paused_description)
+                        },
                         tint = if (isPlaying) theme.focusAccent else theme.textMute,
                         modifier = Modifier.size(Dimens.iconSm)
                     )

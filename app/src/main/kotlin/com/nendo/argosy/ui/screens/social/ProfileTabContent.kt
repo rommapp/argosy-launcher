@@ -14,8 +14,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.data.social.SocialUser
 import com.nendo.argosy.data.social.UserProfileData
 
@@ -35,7 +37,7 @@ fun ProfileTabContent(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "Not connected",
+                text = stringResource(R.string.social_profiletab_not_connected),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
             )
@@ -90,7 +92,7 @@ fun ProfileTabContent(
 
             if (mostPlayed.isNotEmpty()) {
                 item {
-                    SectionHeader("MOST PLAYED")
+                    SectionHeader(stringResource(R.string.social_profiletab_most_played_header))
                 }
 
                 mostPlayed.forEachIndexed { index, game ->

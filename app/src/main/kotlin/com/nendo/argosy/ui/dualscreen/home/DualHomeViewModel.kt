@@ -8,8 +8,10 @@ package com.nendo.argosy.ui.dualscreen.home
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nendo.argosy.R
 import com.nendo.argosy.data.local.entity.CollectionEntity
 import com.nendo.argosy.data.repository.DownloadQueueRepository
 import com.nendo.argosy.data.repository.GameRepository
@@ -42,6 +44,7 @@ import com.nendo.argosy.ui.common.toHomeGameUi
 import com.nendo.argosy.ui.screens.home.GameDownloadIndicator
 import com.nendo.argosy.ui.screens.home.HomeGameUi
 import com.nendo.argosy.ui.screens.home.toHomeMediaUi
+import com.nendo.argosy.ui.screens.media.episodeLabel
 import com.nendo.argosy.ui.screens.media.toCompanionDetail
 import com.nendo.argosy.ui.screens.media.toMediaItemUi
 import com.nendo.argosy.util.DisplayAffinityHelper
@@ -54,6 +57,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import com.nendo.argosy.data.preferences.SessionStateStore
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.ui.common.labelRes
+import com.nendo.argosy.ui.screens.library.SourceFilter
 import kotlinx.coroutines.flow.first
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -78,14 +83,38 @@ private const val MEDIA_RESUME_START_OVER_INDEX = 0
 private const val MEDIA_RESUME_OPTION_COUNT = 2
 private const val MEDIA_NOTICE_DURATION_MS = 4000L
 
+/**
+ * A row of the companion home.
+ *
+ * [title] carries the name of the rows whose text is library data - a platform, a pinned
+ * collection, a media library - and stays empty for the fixed rows, whose wording is translated.
+ * Those set [titleRes] and [shortTitleRes] instead, and every read site goes through
+ * [resolveTitle] or [resolveShortTitle] rather than the fields.
+ */
 sealed class DualHomeSection(
     val kind: HomeSectionKind,
     val title: String,
-    val shortTitle: String = title
+    val shortTitle: String = title,
+    @StringRes val titleRes: Int? = null,
+    @StringRes val shortTitleRes: Int? = null
 ) {
-    data object Recent : DualHomeSection(HomeSectionKind.CONTINUE, "Continue Playing", "Continue")
-    data object Recommendations : DualHomeSection(HomeSectionKind.RECOMMENDATIONS, "Recommended", "For You")
-    data object Favorites : DualHomeSection(HomeSectionKind.FAVORITES, "Favorites")
+    data object Recent : DualHomeSection(
+        HomeSectionKind.CONTINUE,
+        "",
+        titleRes = R.string.dual_home_section_recent_title,
+        shortTitleRes = R.string.dual_home_section_recent_short
+    )
+    data object Recommendations : DualHomeSection(
+        HomeSectionKind.RECOMMENDATIONS,
+        "",
+        titleRes = R.string.dual_home_section_recommendations_title,
+        shortTitleRes = R.string.dual_home_section_recommendations_short
+    )
+    data object Favorites : DualHomeSection(
+        HomeSectionKind.FAVORITES,
+        "",
+        titleRes = R.string.dual_home_section_favorites_title
+    )
     data object Android : DualHomeSection(HomeSectionKind.ANDROID, "Android")
     data object Steam : DualHomeSection(HomeSectionKind.STEAM, "Steam")
     data class Platform(
@@ -110,39 +139,54 @@ sealed class DualHomeSection(
     ) : DualHomeSection(HomeSectionKind.MEDIA_LIBRARY, name)
 }
 
+/**
+ * The row's full name, translated where the row is a fixed one.
+ */
+fun DualHomeSection.resolveTitle(context: Context): String =
+    titleRes?.let(context::getString) ?: title
+
+/**
+ * The row's name for the breadcrumb strip. A row with no short form of its own falls back to its
+ * full name, translated or not, the way the class's own default did.
+ */
+fun DualHomeSection.resolveShortTitle(context: Context): String =
+    shortTitleRes?.let(context::getString)
+        ?: titleRes?.let(context::getString)
+        ?: shortTitle
+
 enum class DualHomeFocusZone { CAROUSEL, APP_BAR }
 
 enum class DualHomeViewMode { CAROUSEL, COLLECTIONS, COLLECTION_GAMES, LIBRARY_GRID, MEDIA_GRID, MEDIA_INFO }
 
 data class DualCollectionPickerEntry(val id: Long, val name: String, val isMember: Boolean)
 
-enum class DualLibraryMenuAction(val label: String) {
-    PLAY("Play"),
-    INSTALL("Install"),
-    DOWNLOAD("Download"),
-    FAVORITE("Favorite"),
-    UNFAVORITE("Unfavorite"),
-    DETAILS("Details"),
-    ADD_TO_COLLECTION("Add to Collection"),
-    ADD_TO_GRID("Add to Grid"),
-    REFRESH("Refresh Data"),
-    RESYNC_PLATFORM("Resync Platform"),
-    DELETE("Delete Download"),
-    UNINSTALL("Uninstall"),
-    HIDE("Hide"),
-    SHOW("Show")
+enum class DualLibraryMenuAction(@StringRes val labelRes: Int) {
+    PLAY(R.string.dual_library_menu_play),
+    INSTALL(R.string.dual_library_menu_install),
+    DOWNLOAD(R.string.dual_library_menu_download),
+    FAVORITE(R.string.dual_library_menu_favorite),
+    UNFAVORITE(R.string.dual_library_menu_unfavorite),
+    DETAILS(R.string.dual_library_menu_details),
+    ADD_TO_COLLECTION(R.string.dual_library_menu_add_to_collection),
+    ADD_TO_GRID(R.string.dual_library_menu_add_to_grid),
+    REFRESH(R.string.dual_library_menu_refresh),
+    RESYNC_PLATFORM(R.string.dual_library_menu_resync_platform),
+    DELETE(R.string.dual_library_menu_delete),
+    UNINSTALL(R.string.dual_library_menu_uninstall),
+    HIDE(R.string.dual_library_menu_hide),
+    SHOW(R.string.dual_library_menu_show)
 }
 
 enum class ForwardingMode { NONE, OVERLAY, BACKGROUND }
 
-enum class DualMediaMenuAction(val label: String) {
-    OPEN_INFO("Open Media Info"),
-    START_OVER("Start Over"),
-    FAVORITE("Favorite"),
-    UNFAVORITE("Unfavorite"),
-    DOWNLOAD("Download"),
-    REMOVE_DOWNLOADS("Remove Download"),
-    REFRESH("Refresh Library")
+enum class DualMediaMenuAction(@StringRes val labelRes: Int) {
+    OPEN_INFO(R.string.dual_media_menu_open_info),
+    START_OVER(R.string.dual_media_menu_start_over),
+    FAVORITE(R.string.dual_media_menu_favorite),
+    UNFAVORITE(R.string.dual_media_menu_unfavorite),
+    DOWNLOAD(R.string.dual_media_menu_download),
+    REMOVE_DOWNLOADS(R.string.dual_media_menu_remove_downloads),
+    REFRESH(R.string.dual_media_menu_refresh)
 }
 
 /**
@@ -173,13 +217,24 @@ sealed class DualCollectionListItem {
     ) : DualCollectionListItem()
 }
 
-enum class DualFilterCategory(val label: String) {
-    SORT("Sort"), SEARCH("Search"), SOURCE("Source"), GENRE("Genre"), PLAYERS("Players"), FRANCHISE("Franchise")
+enum class DualFilterCategory(@StringRes val labelRes: Int) {
+    SORT(R.string.dual_filter_category_sort),
+    SEARCH(R.string.dual_filter_category_search),
+    SOURCE(R.string.dual_filter_category_source),
+    GENRE(R.string.dual_filter_category_genre),
+    PLAYERS(R.string.dual_filter_category_players),
+    FRANCHISE(R.string.dual_filter_category_franchise)
 }
 
+/**
+ * A row in the dual-screen filter list. [label] is what the row reads; [value] is what
+ * selecting it stores. They coincide for genres, where the text is library data, and differ
+ * for the source rows, which store an enum name.
+ */
 data class DualFilterOption(
     val label: String,
-    val isSelected: Boolean
+    val isSelected: Boolean,
+    val value: String = label
 )
 
 data class DualActiveFilters(
@@ -253,7 +308,7 @@ data class DualHomeUiState(
     val activeFilters: DualActiveFilters = DualActiveFilters(),
     val showSectionOverlay: Boolean = false,
     val overlaySectionLabel: String = "",
-    val libraryPlatformLabel: String = "All",
+    val libraryPlatformLabel: String = "",
     val repairedCoverPaths: Map<Long, String> = emptyMap(),
     val mediaDownloadProgress: Map<String, com.nendo.argosy.data.repository.MediaTransferProgress> =
         emptyMap(),
@@ -290,8 +345,8 @@ data class DualHomeUiState(
     val isViewAllFocused: Boolean
         get() = hasMoreGames && selectedIndex == games.size
 
-    val platformName: String
-        get() = currentSection?.title ?: ""
+    fun platformName(context: Context): String =
+        currentSection?.resolveTitle(context).orEmpty()
 
     val selectedGame: HomeGameUi?
         get() = games.getOrNull(selectedIndex)
@@ -369,17 +424,19 @@ data class DualHomeUiState(
      * here instead of a square that silently renders nothing.
      */
     fun tileContentFor(
-        tile: com.nendo.argosy.domain.model.HomeTile
+        tile: com.nendo.argosy.domain.model.HomeTile,
+        context: Context
     ): com.nendo.argosy.ui.components.CustomGridTileContent? =
         when (val target = tile.target) {
             is com.nendo.argosy.domain.model.HomeTileTargetRef.Game -> {
                 val game = tileGames[target.gameId]
                 com.nendo.argosy.ui.components.CustomGridTileContent(
                     game = game,
-                    label = game?.title ?: "Missing game",
+                    label = game?.title
+                        ?: context.getString(R.string.dual_tile_missing_game),
                     isMissing = game == null,
                     subtitle = game?.platformDisplayName,
-                    stats = game?.let { com.nendo.argosy.ui.components.tileStatsFor(it) }.orEmpty()
+                    stats = game?.let { com.nendo.argosy.ui.components.tileStatsFor(it, context) }.orEmpty()
                 )
             }
             is com.nendo.argosy.domain.model.HomeTileTargetRef.Collection -> {
@@ -387,15 +444,17 @@ data class DualHomeUiState(
                 val focus = target.focusGameId?.let { tileGames[it] }
                 com.nendo.argosy.ui.components.CustomGridTileContent(
                     game = focus,
-                    label = focus?.title ?: collection?.name ?: "Missing collection",
+                    label = focus?.title ?: collection?.name
+                        ?: context.getString(R.string.dual_tile_missing_collection),
                     isMissing = collection == null,
                     coverPath = if (focus == null) collection?.coverPath else null,
-                    subtitle = collection?.name?.takeIf { focus != null } ?: "Collection",
+                    subtitle = collection?.name?.takeIf { focus != null }
+                        ?: context.getString(R.string.dual_tile_collection_subtitle),
                     isCollectionQueue = focus != null,
                     stats = collection?.let {
                         listOf(
                             com.nendo.argosy.ui.components.TileStat(
-                                "Games",
+                                context.getString(R.string.dual_tile_collection_games_stat),
                                 it.gameCount.toString()
                             )
                         )
@@ -411,10 +470,10 @@ data class DualHomeUiState(
                 val name = tileApps[target.packageName]
                 com.nendo.argosy.ui.components.CustomGridTileContent(
                     game = null,
-                    label = name ?: "Missing app",
+                    label = name ?: context.getString(R.string.dual_tile_missing_app),
                     isMissing = name == null,
                     packageName = target.packageName,
-                    subtitle = "App"
+                    subtitle = context.getString(R.string.dual_tile_app_subtitle)
                 )
             }
             is com.nendo.argosy.domain.model.HomeTileTargetRef.Media,
@@ -422,7 +481,7 @@ data class DualHomeUiState(
             com.nendo.argosy.domain.model.HomeTileTargetRef.Unresolvable ->
                 com.nendo.argosy.ui.components.CustomGridTileContent(
                     game = null,
-                    label = "Unavailable",
+                    label = context.getString(R.string.dual_tile_unavailable),
                     isMissing = true
                 )
         }
@@ -484,6 +543,7 @@ class DualHomeViewModel(
     }
 
     private val customGrid = com.nendo.argosy.ui.home.grid.CustomGridCoordinator(
+        context = context,
         scope = viewModelScope,
         repository = homeTileRepository,
         pageRepository = homeGridPageRepository,
@@ -538,7 +598,11 @@ class DualHomeViewModel(
                         target = com.nendo.argosy.domain.model.HomeTileTargetRef
                             .Collection(collection.id),
                         title = collection.name,
-                        subtitle = if (count == 1) "1 game" else "$count games",
+                        subtitle = context.resources.getQuantityString(
+                            R.plurals.dual_tile_picker_collection_game_count,
+                            count,
+                            count
+                        ),
                         coverPath = collectionRepository
                             .getCollectionCoverPaths(collection.id)
                             .firstOrNull()
@@ -558,7 +622,13 @@ class DualHomeViewModel(
                         target = com.nendo.argosy.domain.model.HomeTileTargetRef
                             .App(app.packageName),
                         title = app.label,
-                        subtitle = if (app.packageName in emulatorPackages) "Emulator" else "App",
+                        subtitle = context.getString(
+                            if (app.packageName in emulatorPackages) {
+                                R.string.dual_tile_picker_app_emulator
+                            } else {
+                                R.string.dual_tile_picker_app_other
+                            }
+                        ),
                         packageName = app.packageName
                     )
                 }
@@ -1027,6 +1097,7 @@ class DualHomeViewModel(
         val verified = mediaAvailabilityVerifier?.availability?.value.orEmpty()
         val items = entities.map {
             it.toHomeMediaUi(
+                context,
                 repository,
                 userData[it.itemId],
                 series[it.seriesId],
@@ -1192,7 +1263,7 @@ class DualHomeViewModel(
                 mediaResumePrompt = com.nendo.argosy.ui.screens.media.MediaResumePrompt(
                     itemId = item.itemId,
                     title = item.title,
-                    subtitle = item.episodeLabel ?: item.year?.toString(),
+                    subtitle = item.episodeLabel(context) ?: item.year?.toString(),
                     resumeTicks = item.resumeTicks
                 ),
                 mediaResumeFocusIndex = MEDIA_RESUME_START_OVER_INDEX
@@ -1645,7 +1716,7 @@ class DualHomeViewModel(
             ?: repository.getItem(itemId)
                 ?.toMediaItemUi(repository, repository.getUserData(itemId))
             ?: return
-        holder.setCompanionDetail(item.toCompanionDetail())
+        holder.setCompanionDetail(item.toCompanionDetail(context))
     }
 
     private fun sortRecentGamesWithNewPriority(games: List<GameEntity>): List<GameEntity> {
@@ -2428,11 +2499,14 @@ class DualHomeViewModel(
         )}
     }
 
+    private fun allPlatformsLabel(): String =
+        context.getString(R.string.dual_library_platform_filter_all)
+
     fun enterLibraryGrid(onLoaded: (() -> Unit)? = null) {
         _uiState.update { it.copy(
             viewMode = DualHomeViewMode.LIBRARY_GRID,
             activeFilters = DualActiveFilters(),
-            libraryPlatformLabel = "All"
+            libraryPlatformLabel = allPlatformsLabel()
         )}
         loadLibraryGames(onLoaded = onLoaded)
     }
@@ -2440,7 +2514,7 @@ class DualHomeViewModel(
     fun enterLibraryGridForPlatform(platformId: Long, onLoaded: (() -> Unit)? = null) {
         val platformName = _uiState.value.sections
             .filterIsInstance<DualHomeSection.Platform>()
-            .find { it.id == platformId }?.displayName ?: "All"
+            .find { it.id == platformId }?.displayName ?: allPlatformsLabel()
         _uiState.update { it.copy(
             viewMode = DualHomeViewMode.LIBRARY_GRID,
             activeFilters = DualActiveFilters(platformId = platformId),
@@ -2471,8 +2545,8 @@ class DualHomeViewModel(
         val nextPlatformId = options[nextIndex]
 
         val nextLabel = if (nextPlatformId != null) {
-            platformSections.find { it.id == nextPlatformId }?.displayName ?: "All"
-        } else "All"
+            platformSections.find { it.id == nextPlatformId }?.displayName ?: allPlatformsLabel()
+        } else allPlatformsLabel()
 
         _uiState.update { it.copy(
             activeFilters = it.activeFilters.copy(platformId = nextPlatformId),
@@ -2930,7 +3004,7 @@ class DualHomeViewModel(
                 }
                 state.activeFilters.copy(sort = newSort)
             }
-            DualFilterCategory.SOURCE -> state.activeFilters.copy(source = label)
+            DualFilterCategory.SOURCE -> state.activeFilters.copy(source = option.value)
             DualFilterCategory.GENRE -> {
                 val updated = if (state.activeFilters.genres.contains(label))
                     state.activeFilters.genres - label
@@ -2987,7 +3061,11 @@ class DualHomeViewModel(
             val userCollections = collectionRepository.getAllByType(CollectionType.REGULAR)
                 .filter { it.name.isNotBlank() && it.name.lowercase() != "favorites" }
             if (userCollections.isNotEmpty()) {
-                items.add(DualCollectionListItem.Header("MY COLLECTIONS"))
+                items.add(
+                    DualCollectionListItem.Header(
+                        context.getString(R.string.dual_collections_header_user)
+                    )
+                )
                 userCollections.forEach { entity ->
                     items.add(buildCollectionItem(entity))
                 }
@@ -2996,7 +3074,11 @@ class DualHomeViewModel(
             val genres = collectionRepository.getAllByType(CollectionType.GENRE)
                 .filter { it.name.isNotBlank() }
             if (genres.isNotEmpty()) {
-                items.add(DualCollectionListItem.Header("GENRES"))
+                items.add(
+                    DualCollectionListItem.Header(
+                        context.getString(R.string.dual_collections_header_genres)
+                    )
+                )
                 genres.forEach { entity ->
                     items.add(buildCollectionItem(entity))
                 }
@@ -3005,7 +3087,11 @@ class DualHomeViewModel(
             val gameModes = collectionRepository.getAllByType(CollectionType.GAME_MODE)
                 .filter { it.name.isNotBlank() }
             if (gameModes.isNotEmpty()) {
-                items.add(DualCollectionListItem.Header("GAME MODES"))
+                items.add(
+                    DualCollectionListItem.Header(
+                        context.getString(R.string.dual_collections_header_game_modes)
+                    )
+                )
                 gameModes.forEach { entity ->
                     items.add(buildCollectionItem(entity))
                 }
@@ -3196,16 +3282,17 @@ class DualHomeViewModel(
                     if (filters.sort.descending) " v" else " ^"
                 } else ""
                 DualFilterOption(
-                    label = option.label + directionIndicator,
+                    label = context.getString(option.labelRes) + directionIndicator,
                     isSelected = option == filters.sort.option
                 )
             }
-            DualFilterCategory.SOURCE -> listOf(
-                DualFilterOption("ALL", filters.source == "ALL"),
-                DualFilterOption("PLAYABLE", filters.source == "PLAYABLE"),
-                DualFilterOption("FAVORITES", filters.source == "FAVORITES"),
-                DualFilterOption("HIDDEN", filters.source == "HIDDEN")
-            )
+            DualFilterCategory.SOURCE -> SourceFilter.entries.map { source ->
+                DualFilterOption(
+                    label = context.getString(source.labelRes),
+                    isSelected = filters.source == source.name,
+                    value = source.name
+                )
+            }
             DualFilterCategory.GENRE -> {
                 val genres = allLibraryGames
                     .mapNotNull { it.genre }

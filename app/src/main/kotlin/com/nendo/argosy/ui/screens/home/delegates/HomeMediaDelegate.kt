@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.screens.home.delegates
 
+import android.content.Context
+import com.nendo.argosy.R
 import com.nendo.argosy.data.local.entity.MediaItemEntity
 import com.nendo.argosy.data.local.entity.MediaItemType
 import com.nendo.argosy.data.media.MediaAvailability
@@ -15,6 +17,7 @@ import com.nendo.argosy.ui.screens.home.toHomeMediaUi
 import com.nendo.argosy.ui.screens.media.MediaLibraryUi
 import com.nendo.argosy.ui.screens.media.MediaResumePrompt
 import com.nendo.argosy.ui.screens.media.toMediaLibraryUi
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,10 +40,6 @@ import javax.inject.Singleton
  * lazy, so the cost is the query rather than the rows.
  */
 private const val TILE_PICKER_LIMIT = 2000
-
-private const val SERIES_LABEL = "Series"
-
-private const val MOVIE_LABEL = "Movie"
 
 /**
  * [libraryItems] belongs to [libraryItemsFor] and to no other library. Naming which library the
@@ -92,6 +91,7 @@ data class HomeMediaState(
 @OptIn(ExperimentalCoroutinesApi::class)
 @Singleton
 class HomeMediaDelegate @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val mediaRepository: MediaRepository,
     private val preferencesRepository: UserPreferencesRepository,
     private val availabilityVerifier: MediaAvailabilityVerifier,
@@ -361,7 +361,11 @@ class HomeMediaDelegate @Inject constructor(
         return com.nendo.argosy.ui.components.TilePickerEntry(
             target = com.nendo.argosy.domain.model.HomeTileTargetRef.Media(detailItemId),
             title = title,
-            subtitle = if (standsForSeries) SERIES_LABEL else MOVIE_LABEL,
+            subtitle = if (standsForSeries) {
+                context.getString(R.string.home_media_picker_series)
+            } else {
+                context.getString(R.string.home_media_picker_movie)
+            },
             posterUrl = posterUrl,
             isSeries = standsForSeries,
             isLocal = isDownloaded
@@ -373,7 +377,11 @@ class HomeMediaDelegate @Inject constructor(
         return com.nendo.argosy.ui.components.TilePickerEntry(
             target = com.nendo.argosy.domain.model.HomeTileTargetRef.Media(itemId),
             title = name,
-            subtitle = if (standsForSeries) SERIES_LABEL else MOVIE_LABEL,
+            subtitle = if (standsForSeries) {
+                context.getString(R.string.home_media_picker_series)
+            } else {
+                context.getString(R.string.home_media_picker_movie)
+            },
             posterUrl = mediaRepository.posterUrl(itemId, primaryImageTag),
             isSeries = standsForSeries,
             isLocal = localPath != null
@@ -454,6 +462,7 @@ class HomeMediaDelegate @Inject constructor(
         val gradients = gradientExtractionDelegate.mediaGradients.value
         return entities.map { entity ->
             entity.toHomeMediaUi(
+                context,
                 mediaRepository,
                 userData[entity.itemId],
                 series[entity.seriesId],

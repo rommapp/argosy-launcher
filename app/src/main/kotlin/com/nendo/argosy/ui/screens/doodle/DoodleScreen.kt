@@ -51,12 +51,14 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import coil.compose.AsyncImage
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.FooterSpacer
@@ -433,9 +435,9 @@ private fun ToolSelector(
                         DoodleTool.FILL -> Icons.Default.FormatColorFill
                     },
                     contentDescription = when (tool) {
-                        DoodleTool.PEN -> "Pen"
-                        DoodleTool.LINE -> "Line"
-                        DoodleTool.FILL -> "Fill"
+                        DoodleTool.PEN -> stringResource(R.string.doodle_tool_selector_pen_description)
+                        DoodleTool.LINE -> stringResource(R.string.doodle_tool_selector_line_description)
+                        DoodleTool.FILL -> stringResource(R.string.doodle_tool_selector_fill_description)
                     },
                     modifier = Modifier.size(18.dp),
                     tint = if (isSelected) MaterialTheme.colorScheme.onPrimary
@@ -606,13 +608,13 @@ private fun UndoRedoButtons(
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.Undo,
-                    contentDescription = "Undo",
+                    contentDescription = stringResource(R.string.doodle_undo_redo_undo_description),
                     modifier = Modifier.size(18.dp),
                     tint = if (canUndo) MaterialTheme.colorScheme.onSurface
                     else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
                 )
                 Text(
-                    text = "Undo",
+                    text = stringResource(R.string.doodle_undo_redo_undo_label),
                     style = MaterialTheme.typography.labelMedium,
                     color = if (canUndo) MaterialTheme.colorScheme.onSurface
                     else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
@@ -643,13 +645,13 @@ private fun UndoRedoButtons(
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.Redo,
-                    contentDescription = "Redo",
+                    contentDescription = stringResource(R.string.doodle_undo_redo_redo_description),
                     modifier = Modifier.size(18.dp),
                     tint = if (canRedo) MaterialTheme.colorScheme.onSurface
                     else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
                 )
                 Text(
-                    text = "Redo",
+                    text = stringResource(R.string.doodle_undo_redo_redo_label),
                     style = MaterialTheme.typography.labelMedium,
                     color = if (canRedo) MaterialTheme.colorScheme.onSurface
                     else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
@@ -689,45 +691,45 @@ private fun DoodleFooter(
     val hints = buildList {
         when (currentSection) {
             DoodleSection.CANVAS -> {
-                add(InputButton.DPAD to "Move")
+                add(InputButton.DPAD to stringResource(R.string.doodle_footer_canvas_move))
                 val drawLabel = when {
-                    selectedTool == DoodleTool.LINE && isDrawing -> "End"
-                    isDrawing -> "Stop"
-                    selectedTool == DoodleTool.LINE -> "Start"
-                    selectedTool == DoodleTool.FILL -> "Fill"
-                    else -> "Draw"
+                    selectedTool == DoodleTool.LINE && isDrawing -> stringResource(R.string.doodle_footer_canvas_draw_end)
+                    isDrawing -> stringResource(R.string.doodle_footer_canvas_draw_stop)
+                    selectedTool == DoodleTool.LINE -> stringResource(R.string.doodle_footer_canvas_draw_start)
+                    selectedTool == DoodleTool.FILL -> stringResource(R.string.doodle_footer_canvas_draw_fill)
+                    else -> stringResource(R.string.doodle_footer_canvas_draw_default)
                 }
                 add(InputButton.A to drawLabel)
-                add(InputButton.Y to "Tool")
+                add(InputButton.Y to stringResource(R.string.doodle_footer_canvas_tool))
             }
             DoodleSection.PALETTE -> {
-                add(InputButton.DPAD to "Select")
-                add(InputButton.A to "Pick")
+                add(InputButton.DPAD to stringResource(R.string.doodle_footer_palette_select))
+                add(InputButton.A to stringResource(R.string.doodle_footer_palette_pick))
             }
             DoodleSection.SIZE -> {
-                add(InputButton.DPAD_HORIZONTAL to "Size")
-                add(InputButton.A to "Confirm")
+                add(InputButton.DPAD_HORIZONTAL to stringResource(R.string.doodle_footer_size_adjust))
+                add(InputButton.A to stringResource(R.string.doodle_footer_size_confirm))
             }
             DoodleSection.UNDO -> {
-                if (canUndo) add(InputButton.A to "Undo")
+                if (canUndo) add(InputButton.A to stringResource(R.string.doodle_footer_undo))
             }
             DoodleSection.REDO -> {
-                if (canRedo) add(InputButton.A to "Redo")
+                if (canRedo) add(InputButton.A to stringResource(R.string.doodle_footer_redo))
             }
             DoodleSection.GAME -> {
-                add(InputButton.A to "Select")
+                add(InputButton.A to stringResource(R.string.doodle_footer_game_select))
                 if (linkedGameTitle != null) {
-                    add(InputButton.Y to "Clear")
+                    add(InputButton.Y to stringResource(R.string.doodle_footer_game_clear))
                 }
             }
         }
         if (hasContent) {
-            add(InputButton.START to "Done")
+            add(InputButton.START to stringResource(R.string.doodle_footer_done))
         }
         val backLabel = when {
-            isDrawing -> "Cancel"
-            hasContent -> "Discard"
-            else -> "Back"
+            isDrawing -> stringResource(R.string.doodle_footer_back_cancel)
+            hasContent -> stringResource(R.string.doodle_footer_back_discard)
+            else -> stringResource(R.string.doodle_footer_back_default)
         }
         add(InputButton.B to backLabel)
     }
@@ -783,7 +785,7 @@ private fun GameSection(
             )
         }
         Text(
-            text = linkedGameTitle ?: "Game",
+            text = linkedGameTitle ?: stringResource(R.string.doodle_game_section_fallback),
             style = MaterialTheme.typography.labelMedium,
             color = if (linkedGameTitle != null) MaterialTheme.colorScheme.onSurface
             else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
@@ -814,17 +816,17 @@ private fun GamePickerDialog(
     }
 
     Modal(
-        title = "Select Game",
+        title = stringResource(R.string.doodle_game_picker_title),
         baseWidth = 400.dp,
         onDismiss = onDismiss,
         footerHints = buildList {
             if (searchFocused) {
-                add(InputButton.DPAD_DOWN to "Browse")
+                add(InputButton.DPAD_DOWN to stringResource(R.string.doodle_game_picker_footer_browse))
             } else {
-                add(InputButton.DPAD to "Navigate")
-                add(InputButton.A to "Select")
+                add(InputButton.DPAD to stringResource(R.string.doodle_game_picker_footer_navigate))
+                add(InputButton.A to stringResource(R.string.doodle_game_picker_footer_select))
             }
-            add(InputButton.B to "Cancel")
+            add(InputButton.B to stringResource(R.string.doodle_game_picker_footer_cancel))
         }
     ) {
         Box(
@@ -847,7 +849,7 @@ private fun GamePickerDialog(
         ) {
             if (query.isEmpty()) {
                 Text(
-                    text = "Search games...",
+                    text = stringResource(R.string.doodle_game_picker_search_placeholder),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                 )
@@ -886,7 +888,7 @@ private fun GamePickerDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "No game",
+                        text = stringResource(R.string.doodle_game_picker_no_game),
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (isNoneFocused) lerp(LocalArgosyTheme.current.focusAccent, Color.White, 0.45f)
                         else MaterialTheme.colorScheme.onSurfaceVariant
@@ -950,23 +952,23 @@ private fun DiscardDialog(
     onDiscard: () -> Unit,
     onCancel: () -> Unit
 ) {
-    Modal(title = "Discard Doodle?") {
+    Modal(title = stringResource(R.string.doodle_discard_dialog_title)) {
         Text(
-            text = "You have unsaved changes. Are you sure you want to discard your doodle?",
+            text = stringResource(R.string.doodle_discard_dialog_message),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 8.dp)
         )
         OptionItem(
             icon = Icons.Default.Delete,
-            label = "Discard",
+            label = stringResource(R.string.doodle_discard_dialog_discard),
             isFocused = focusIndex == 0,
             isDangerous = true,
             onClick = onDiscard
         )
         OptionItem(
             icon = Icons.Default.Edit,
-            label = "Keep Editing",
+            label = stringResource(R.string.doodle_discard_dialog_keep_editing),
             isFocused = focusIndex == 1,
             onClick = onCancel
         )

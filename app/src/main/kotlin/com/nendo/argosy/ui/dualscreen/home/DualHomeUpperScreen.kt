@@ -39,11 +39,13 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.Box3dCover
 import com.nendo.argosy.ui.components.GameTitle
@@ -147,7 +149,7 @@ fun DualHomeUpperScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Select a game",
+                        text = stringResource(R.string.dual_home_showcase_no_selection),
                         style = MaterialTheme.typography.headlineSmall,
                         color = theme.textDim
                     )

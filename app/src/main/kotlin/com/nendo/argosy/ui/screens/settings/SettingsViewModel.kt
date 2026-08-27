@@ -41,6 +41,8 @@ import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationText
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.screens.settings.components.ScopedMapping
 import com.nendo.argosy.ui.screens.settings.delegates.AccountsSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.AmbientAudioSettingsDelegate
@@ -433,11 +435,14 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             val reclaimed = imageCacheManager.clearPlatformCache(platformSlug)
             notificationManager.show(
-                title = "Artwork Cache",
+                title = NotificationText.Res(R.string.settings_shell_vm_artwork_cache_title),
                 subtitle = if (reclaimed > 0) {
-                    "Cleared ${com.nendo.argosy.util.formatBytes(reclaimed)}"
+                    NotificationText.Res(
+                        R.string.settings_shell_vm_artwork_cleared_template,
+                        listOf(com.nendo.argosy.util.formatBytes(reclaimed))
+                    )
                 } else {
-                    "Nothing cached to clear"
+                    NotificationText.Res(R.string.settings_shell_vm_artwork_nothing_cached)
                 },
                 type = com.nendo.argosy.core.notification.NotificationType.SUCCESS,
                 duration = com.nendo.argosy.core.notification.NotificationDuration.MEDIUM
@@ -448,7 +453,7 @@ class SettingsViewModel @Inject constructor(
     fun scanFilesForPlatform(platformId: Long) {
         val platformIndex = _uiState.value.platformDetail.platformIndex
         val config = _uiState.value.emulators.platforms.getOrNull(platformIndex)
-        val platformName = config?.platform?.name ?: "Platform"
+        val platformName = config?.platform?.name ?: context.getString(R.string.settings_shell_vm_platform_fallback)
         _uiState.update { it.copy(platformDetail = it.platformDetail.copy(isScanning = true)) }
         viewModelScope.launch {
             val invalidated = gameRepository.validateLocalFilesForPlatform(platformId)
@@ -457,13 +462,32 @@ class SettingsViewModel @Inject constructor(
             loadPlatformDetailStats(platformIndex)
 
             val parts = mutableListOf<String>()
-            if (discovered > 0) parts.add("$discovered found")
-            if (invalidated > 0) parts.add("$invalidated removed")
-            if (parts.isEmpty()) parts.add("No changes")
+            if (discovered > 0) {
+                parts.add(
+                    context.resources.getQuantityString(
+                        R.plurals.settings_shell_vm_scan_found_template,
+                        discovered,
+                        discovered
+                    )
+                )
+            }
+            if (invalidated > 0) {
+                parts.add(
+                    context.resources.getQuantityString(
+                        R.plurals.settings_shell_vm_scan_removed_template,
+                        invalidated,
+                        invalidated
+                    )
+                )
+            }
+            if (parts.isEmpty()) parts.add(context.getString(R.string.settings_shell_vm_scan_no_changes))
 
             notificationManager.show(
-                title = "Scan Complete",
-                subtitle = "$platformName: ${parts.joinToString(", ")}",
+                title = NotificationText.Res(R.string.settings_shell_vm_scan_complete_title),
+                subtitle = NotificationText.Res(
+                    R.string.settings_shell_vm_scan_complete_subtitle_template,
+                    listOf(platformName, parts.joinToString(", "))
+                ),
                 type = com.nendo.argosy.core.notification.NotificationType.SUCCESS,
                 duration = com.nendo.argosy.core.notification.NotificationDuration.MEDIUM
             )
@@ -480,15 +504,28 @@ class SettingsViewModel @Inject constructor(
             loadPlatformDetailStats(platformIndex)
 
             val parts = buildList {
-                if (result.added > 0) add("${result.added} added")
-                if (result.enriched > 0) add("${result.enriched} updated")
+                if (result.added > 0) {
+                    add(
+                        context.resources.getQuantityString(
+                            R.plurals.settings_shell_vm_android_added_template,
+                            result.added,
+                            result.added
+                        )
+                    )
+                }
+                if (result.enriched > 0) {
+                    add(context.getString(R.string.settings_shell_vm_android_updated_template, result.enriched))
+                }
             }
             notificationManager.show(
-                title = "Scan Complete",
+                title = NotificationText.Res(R.string.settings_shell_vm_scan_complete_title2),
                 subtitle = if (parts.isNotEmpty()) {
-                    "Android: ${parts.joinToString(", ")}"
+                    NotificationText.Res(
+                        R.string.settings_shell_vm_android_scan_result_template,
+                        listOf(parts.joinToString(", "))
+                    )
                 } else {
-                    "Android: nothing new. Add others from Apps."
+                    NotificationText.Res(R.string.settings_shell_vm_android_scan_nothing_new)
                 },
                 type = com.nendo.argosy.core.notification.NotificationType.SUCCESS,
                 duration = com.nendo.argosy.core.notification.NotificationDuration.MEDIUM
@@ -1215,6 +1252,8 @@ class SettingsViewModel @Inject constructor(
 
     fun setBetaUpdatesEnabled(enabled: Boolean) = routeSetBetaUpdatesEnabled(this, enabled)
     fun setAppAffinityEnabled(enabled: Boolean) = routeSetAppAffinityEnabled(this, enabled)
+    fun setAppLanguage(tag: String) = routeSetAppLanguage(this, tag)
+    fun cycleAppLanguage(direction: Int = 1) = routeCycleAppLanguage(this, direction)
 
     fun setDualScreenEnabled(enabled: Boolean) = routeSetDualScreenEnabled(this, enabled)
 
@@ -1520,11 +1559,19 @@ class SettingsViewModel @Inject constructor(
             val holding = extContentOrganizer.gamesHoldingCombinedLayout(platformId, platformDir)
             val restored = holding.count { extContentOrganizer.restoreFromCombinedLayout(it, platformDir) > 0 }
             notificationManager.show(
-                title = if (restored > 0) "Folders Restored" else "Nothing Moved",
+                title = NotificationText.Res(
+                    if (restored > 0) {
+                        R.string.settings_shell_vm_folders_restored_title
+                    } else {
+                        R.string.settings_shell_vm_nothing_moved_title
+                    }
+                ),
                 subtitle = if (restored > 0) {
-                    "$restored game${if (restored > 1) "s" else ""} moved back into their own folders"
+                    NotificationText.Plural(
+                        R.plurals.settings_shell_vm_games_moved_back, restored, listOf(restored)
+                    )
                 } else {
-                    "No games could be moved back"
+                    NotificationText.Res(R.string.settings_shell_vm_no_games_moved_back)
                 },
                 type = if (restored > 0) {
                     com.nendo.argosy.core.notification.NotificationType.SUCCESS
@@ -1679,20 +1726,22 @@ class SettingsViewModel @Inject constructor(
     fun pushRACredentialsToRetroArch() = raDelegate.pushToRetroArch(viewModelScope) { count ->
         when {
             count > 0 -> notificationManager.show(
-                title = "Pushed to RetroArch",
-                subtitle = "Updated $count RetroArch config(s)",
+                title = NotificationText.Res(R.string.settings_shell_vm_pushed_to_retroarch_title),
+                subtitle = NotificationText.Plural(
+                    R.plurals.settings_shell_vm_retroarch_configs_updated, count, listOf(count)
+                ),
                 type = com.nendo.argosy.core.notification.NotificationType.SUCCESS,
                 duration = com.nendo.argosy.core.notification.NotificationDuration.MEDIUM
             )
             count == 0 -> notificationManager.show(
-                title = "RetroArch not found",
-                subtitle = "No retroarch.cfg found to update",
+                title = NotificationText.Res(R.string.settings_shell_vm_retroarch_not_found_title),
+                subtitle = NotificationText.Res(R.string.settings_shell_vm_retroarch_not_found_subtitle),
                 type = com.nendo.argosy.core.notification.NotificationType.ERROR,
                 duration = com.nendo.argosy.core.notification.NotificationDuration.MEDIUM
             )
             else -> notificationManager.show(
-                title = "Not signed in",
-                subtitle = "Log into RetroAchievements first",
+                title = NotificationText.Res(R.string.settings_shell_vm_not_signed_in_title),
+                subtitle = NotificationText.Res(R.string.settings_shell_vm_not_signed_in_subtitle),
                 type = com.nendo.argosy.core.notification.NotificationType.ERROR,
                 duration = com.nendo.argosy.core.notification.NotificationDuration.MEDIUM
             )
@@ -1736,8 +1785,12 @@ class SettingsViewModel @Inject constructor(
             val deleted = gameRepository.deleteLocalFilesForPlatform(platformId)
             if (deleted > 0) {
                 notificationManager.show(
-                    title = "Files Removed",
-                    subtitle = "$deleted file${if (deleted > 1) "s" else ""} removed from ${config.platform.name}",
+                    title = NotificationText.Res(R.string.settings_shell_vm_files_removed_title),
+                    subtitle = NotificationText.Plural(
+                        R.plurals.settings_shell_vm_files_removed_subtitle,
+                        deleted,
+                        listOf(deleted, config.platform.name)
+                    ),
                     type = com.nendo.argosy.core.notification.NotificationType.SUCCESS,
                     duration = com.nendo.argosy.core.notification.NotificationDuration.MEDIUM
                 )
@@ -1769,8 +1822,10 @@ class SettingsViewModel @Inject constructor(
             val copied = biosRepository.copyBiosForPlatformTo(slug, path)
             if (copied > 0) {
                 notificationManager.show(
-                    title = "BIOS Copied",
-                    subtitle = "$copied file${if (copied > 1) "s" else ""} copied",
+                    title = NotificationText.Res(R.string.settings_shell_vm_bios_copied_title),
+                    subtitle = NotificationText.Plural(
+                        R.plurals.settings_shell_vm_bios_copied_subtitle, copied, listOf(copied)
+                    ),
                     type = com.nendo.argosy.core.notification.NotificationType.SUCCESS,
                     duration = com.nendo.argosy.core.notification.NotificationDuration.MEDIUM
                 )

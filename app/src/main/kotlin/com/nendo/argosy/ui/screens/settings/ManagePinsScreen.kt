@@ -44,9 +44,12 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.nendo.argosy.R
 import com.nendo.argosy.domain.model.PinnedCollection
 import com.nendo.argosy.domain.usecase.collection.CategoryType
 import com.nendo.argosy.ui.components.FooterHints
@@ -106,7 +109,7 @@ fun ManagePinsScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Loading...",
+                            text = stringResource(R.string.settings_shell_managepins_loading),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -141,16 +144,16 @@ fun ManagePinsScreen(
 
         val hints = if (uiState.isReorderMode) {
             listOf(
-                InputButton.DPAD_VERTICAL to "Move",
-                InputButton.A to "Done",
-                InputButton.B to "Cancel"
+                InputButton.DPAD_VERTICAL to stringResource(R.string.settings_shell_managepins_reorder_move),
+                InputButton.A to stringResource(R.string.settings_shell_managepins_reorder_done),
+                InputButton.B to stringResource(R.string.settings_shell_managepins_reorder_cancel)
             )
         } else {
             listOf(
-                InputButton.DPAD to "Navigate",
-                InputButton.A to "Reorder",
-                InputButton.Y to "Unpin",
-                InputButton.B to "Back"
+                InputButton.DPAD to stringResource(R.string.settings_shell_managepins_navigate),
+                InputButton.A to stringResource(R.string.settings_shell_managepins_reorder_hint),
+                InputButton.Y to stringResource(R.string.settings_shell_managepins_unpin),
+                InputButton.B to stringResource(R.string.settings_shell_managepins_back_hint)
             )
         }
 
@@ -179,7 +182,7 @@ private fun ManagePinsHeader(onBack: () -> Unit) {
         IconButton(onClick = onBack) {
             Icon(
                 Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back",
+                contentDescription = stringResource(R.string.settings_shell_managepins_back_desc),
                 tint = MaterialTheme.colorScheme.onSurface
             )
         }
@@ -187,7 +190,7 @@ private fun ManagePinsHeader(onBack: () -> Unit) {
         Spacer(modifier = Modifier.width(Dimens.spacingSm))
 
         Text(
-            text = "Manage Pinned Collections",
+            text = stringResource(R.string.settings_shell_managepins_title),
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onSurface
         )
@@ -207,11 +210,12 @@ private fun PinRow(
     )
 
     val (icon, typeLabel) = when (pin) {
-        is PinnedCollection.Regular -> Icons.Default.Folder to "Collection"
+        is PinnedCollection.Regular ->
+            Icons.Default.Folder to stringResource(R.string.settings_shell_managepins_type_collection)
         is PinnedCollection.Virtual -> when (pin.type) {
-            CategoryType.GENRE -> Icons.Default.Category to "Genre"
-            CategoryType.GAME_MODE -> Icons.Default.Category to "Game Mode"
-            CategoryType.SERIES -> Icons.Default.Category to "Series"
+            CategoryType.GENRE -> Icons.Default.Category to stringResource(R.string.settings_shell_managepins_type_genre)
+            CategoryType.GAME_MODE -> Icons.Default.Category to stringResource(R.string.settings_shell_managepins_type_game_mode)
+            CategoryType.SERIES -> Icons.Default.Category to stringResource(R.string.settings_shell_managepins_type_series)
         }
     }
 
@@ -234,7 +238,7 @@ private fun PinRow(
         if (isBeingMoved) {
             Icon(
                 Icons.Default.DragHandle,
-                contentDescription = "Moving",
+                contentDescription = stringResource(R.string.settings_shell_managepins_moving_desc),
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(Dimens.iconMd)
             )
@@ -258,7 +262,12 @@ private fun PinRow(
                 else MaterialTheme.colorScheme.onSurface
             )
             Text(
-                text = "$typeLabel - ${pin.gameCount} games",
+                text = pluralStringResource(
+                    R.plurals.settings_shell_managepins_row_subtitle,
+                    pin.gameCount,
+                    typeLabel,
+                    pin.gameCount
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = if (isFocused) focusedContentColor.copy(alpha = 0.7f)
                 else MaterialTheme.colorScheme.onSurfaceVariant
@@ -282,13 +291,13 @@ private fun EmptyPinsState() {
             )
             Spacer(modifier = Modifier.height(Dimens.spacingMd))
             Text(
-                text = "No pinned collections",
+                text = stringResource(R.string.settings_shell_managepins_empty_title),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(Dimens.spacingSm))
             Text(
-                text = "Pin collections from the Collections screen",
+                text = stringResource(R.string.settings_shell_managepins_empty_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
             )

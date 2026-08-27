@@ -1,0 +1,412 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ===== Notification channels and foreground services ===== -->
+
+    <string name="dual_channel_secondary_display_name">Zweiter Bildschirm</string>
+    <string name="dual_channel_secondary_display_description">Zeigt die Spielbibliothek auf dem zweiten Bildschirm</string>
+    <string name="dual_channel_screen_capture_name">Ambient-LED-Bildschirmerfassung</string>
+    <string name="dual_channel_screen_capture_description">Erfasst Bildschirmfarben für die Ambientebeleuchtung</string>
+
+    <string name="dual_notification_guard_text">Zweiter Bildschirm aktiv</string>
+    <string name="dual_notification_screen_capture_text">Bildschirm wird für Ambient-LEDs erfasst</string>
+
+    <!-- ===== Companion dashboard, shown on the second screen while a game runs ===== -->
+
+    <string name="dual_companion_quick_action_save_state">Savestate speichern</string>
+    <string name="dual_companion_quick_action_screenshot">Screenshot</string>
+    <string name="dual_companion_quick_action_load_state">Savestate laden</string>
+    <string name="dual_companion_quick_action_load_confirm">Zum Bestätigen tippen</string>
+
+    <string name="dual_companion_session_label">Sitzung</string>
+    <string name="dual_companion_achievements_label">Erfolge</string>
+    <string name="dual_companion_stat_play_time">Gesamte Spielzeit</string>
+    <string name="dual_companion_stat_play_count">Anzahl Starts</string>
+
+    <string name="dual_companion_play_time_hours_minutes">%1$dh %2$dm</string>
+    <string name="dual_companion_play_time_hours">%1$dh</string>
+    <string name="dual_companion_play_time_minutes">%1$dm</string>
+    <string name="dual_companion_play_time_zero">0m</string>
+
+    <string name="dual_companion_saves_dirty">Neue Spielstanddaten</string>
+    <string name="dual_companion_saves_synced">Spielstände synchronisiert</string>
+    <string name="dual_companion_saves_synced_icon_description">Gespeichert</string>
+
+    <string name="dual_companion_app_bar_add_description">App hinzufügen</string>
+    <string name="dual_companion_app_bar_media_to_library_description">Zurück zur Bibliothek</string>
+    <string name="dual_companion_app_bar_media_to_player_description">Wird gerade angesehen</string>
+
+    <string name="dual_companion_drawer_title">Alle Apps</string>
+    <string name="dual_companion_drawer_pinned_description">Angeheftet</string>
+
+    <!-- ===== Footer hints on the showcase screen ===== -->
+
+    <string name="dual_showcase_detail_footer_tab">Tab</string>
+    <string name="dual_showcase_detail_footer_select">Auswählen</string>
+    <string name="dual_showcase_detail_footer_back">Zurück</string>
+
+    <string name="dual_showcase_collections_footer_navigate">Navigieren</string>
+    <string name="dual_showcase_collections_footer_open">Öffnen</string>
+    <string name="dual_showcase_collections_footer_back">Zurück</string>
+
+    <!-- ===== Footer hints naming what the driven home screen does ===== -->
+
+    <string name="dual_home_hint_action_play">Spielen</string>
+    <string name="dual_home_hint_action_download">Herunterladen</string>
+
+    <string name="dual_home_hint_collection_navigate">Navigieren</string>
+    <string name="dual_home_hint_collection_details">Details</string>
+    <string name="dual_home_hint_collection_back">Zurück</string>
+
+    <string name="dual_home_hint_library_platform">Plattform</string>
+    <string name="dual_home_hint_library_letter">Buchstabe</string>
+    <string name="dual_home_hint_library_details">Details</string>
+    <string name="dual_home_hint_library_options">Optionen</string>
+    <string name="dual_home_hint_library_filters">Filter</string>
+    <string name="dual_home_hint_library_back">Zurück</string>
+
+    <string name="dual_home_hint_media_grid_library">Bibliothek</string>
+    <string name="dual_home_hint_media_grid_resume">Fortsetzen</string>
+    <string name="dual_home_hint_media_grid_options">Optionen</string>
+    <string name="dual_home_hint_media_grid_play">Abspielen</string>
+    <string name="dual_home_hint_media_grid_back">Zurück</string>
+
+    <string name="dual_home_hint_media_info_title">Vorheriger/nächster Titel</string>
+    <string name="dual_home_hint_media_info_season">Staffel</string>
+    <string name="dual_home_hint_media_info_watch">Ansehen</string>
+    <string name="dual_home_hint_media_info_back">Zurück</string>
+
+    <string name="dual_home_hint_drawer_open">Öffnen</string>
+    <string name="dual_home_hint_drawer_pin">Anheften/Lösen</string>
+    <string name="dual_home_hint_drawer_open_top">Oben öffnen</string>
+    <string name="dual_home_hint_drawer_close">Schließen</string>
+
+    <string name="dual_home_hint_app_bar_select">Auswählen</string>
+    <string name="dual_home_hint_app_bar_open_top">Oben öffnen</string>
+    <string name="dual_home_hint_app_bar_all_apps">Alle Apps</string>
+
+    <string name="dual_home_hint_carousel_platform">Plattform</string>
+    <string name="dual_home_hint_carousel_details">Details</string>
+    <string name="dual_home_hint_carousel_favorite">Favorit</string>
+    <string name="dual_home_hint_carousel_unfavorite">Favorit entfernen</string>
+    <string name="dual_home_hint_carousel_collections">Sammlungen</string>
+    <string name="dual_home_hint_carousel_library">Bibliothek</string>
+
+    <!-- ===== Footer hints on the screen that only describes what the other one has focused ===== -->
+
+    <string name="dual_detail_hint_game_section">Abschnitt</string>
+    <string name="dual_detail_hint_game_open">Öffnen</string>
+    <string name="dual_detail_hint_game_back">Zurück</string>
+
+    <string name="dual_detail_hint_media_grid_library">Bibliothek</string>
+    <string name="dual_detail_hint_media_grid_resume">Fortsetzen</string>
+    <string name="dual_detail_hint_media_grid_options">Optionen</string>
+    <string name="dual_detail_hint_media_grid_play">Abspielen</string>
+    <string name="dual_detail_hint_media_grid_back">Zurück</string>
+
+    <string name="dual_detail_hint_media_info_title">Vorheriger/nächster Titel</string>
+    <string name="dual_detail_hint_media_info_season">Staffel</string>
+    <string name="dual_detail_hint_media_info_watch">Ansehen</string>
+    <string name="dual_detail_hint_media_info_back">Zurück</string>
+
+    <string name="dual_detail_hint_default_section">Abschnitt</string>
+    <string name="dual_detail_hint_default_favorite">Favorit</string>
+    <string name="dual_detail_hint_default_options">Optionen</string>
+    <string name="dual_detail_hint_default_play">Spielen</string>
+    <string name="dual_detail_hint_default_back">Zurück</string>
+
+    <!-- ===== Media panel on the companion screen ===== -->
+
+    <string name="dual_media_footer_season">Staffel</string>
+    <string name="dual_media_footer_watch">Ansehen</string>
+    <string name="dual_media_footer_back_library">Bibliothek</string>
+    <string name="dual_media_footer_back_home">Zurück</string>
+
+    <string name="dual_media_signed_out_title">Kein Medienkonto</string>
+    <string name="dual_media_signed_out_message">Melden Sie sich in den Einstellungen bei einem Medienserver an, um hier anzusehen.</string>
+    <string name="dual_media_loading_title">Wird geladen</string>
+    <string name="dual_media_empty_title">Noch nichts zum Ansehen</string>
+    <string name="dual_media_empty_message">Titel, die Sie starten, erscheinen hier, sobald sie begonnen wurden.</string>
+
+    <string name="dual_media_episodes_loading_title">Wird geladen</string>
+    <string name="dual_media_episodes_error_title">Episoden konnten nicht geladen werden</string>
+    <string name="dual_media_episodes_empty_title">Noch keine Episoden</string>
+
+    <string name="dual_media_cast_header">Besetzung</string>
+    <string name="dual_media_browse_back_description">Zurück</string>
+    <plurals name="dual_media_browse_episode_count">
+        <item quantity="one">%d Episode</item>
+        <item quantity="other">%d Episoden</item>
+    </plurals>
+
+    <string name="dual_media_transport_playing_description">Wird abgespielt</string>
+    <string name="dual_media_transport_paused_description">Pausiert</string>
+
+    <string name="dual_media_grid_empty">Noch nichts in dieser Bibliothek</string>
+
+    <!-- ===== Showcase panel describing the focused game ===== -->
+
+    <string name="dual_showcase_stat_play_time_label">Spielzeit</string>
+    <string name="dual_showcase_stat_last_played_label">Zuletzt gespielt</string>
+    <string name="dual_showcase_stat_last_played_never">Nie</string>
+    <string name="dual_showcase_stat_status_label">Status</string>
+    <string name="dual_showcase_stat_status_none">Keiner</string>
+
+    <string name="dual_showcase_last_played_today">Heute</string>
+    <string name="dual_showcase_last_played_yesterday">Gestern</string>
+    <plurals name="dual_showcase_last_played_days">
+        <item quantity="one">vor %d Tag</item>
+        <item quantity="other">vor %d Tagen</item>
+    </plurals>
+    <plurals name="dual_showcase_last_played_weeks">
+        <item quantity="one">vor %d Woche</item>
+        <item quantity="other">vor %d Wochen</item>
+    </plurals>
+    <plurals name="dual_showcase_last_played_months">
+        <item quantity="one">vor %d Monat</item>
+        <item quantity="other">vor %d Monaten</item>
+    </plurals>
+
+    <string name="dual_home_showcase_no_selection">Wählen Sie ein Spiel</string>
+
+    <!-- ===== Showcase panel describing the focused collection ===== -->
+
+    <string name="dual_collection_showcase_all_title">Sammlungen</string>
+    <plurals name="dual_collection_showcase_game_count">
+        <item quantity="one">%d Spiel</item>
+        <item quantity="other">%d Spiele</item>
+    </plurals>
+    <string name="dual_collection_showcase_stat_installed">Installiert</string>
+    <string name="dual_collection_showcase_stat_achievements">Erfolge</string>
+    <string name="dual_collection_showcase_stat_playtime">Spielzeit</string>
+    <string name="dual_collection_showcase_empty">Noch nichts in dieser Sammlung</string>
+
+    <string name="dual_collection_play_time_minutes">%1$dm gesamt</string>
+    <string name="dual_collection_play_time_hours_minutes">%1$dh %2$dm gesamt</string>
+    <string name="dual_collection_play_time_hours">%1$dh gesamt</string>
+
+    <!-- ===== Home rows on the companion screen ===== -->
+
+    <string name="dual_home_section_recent_title">Weiterspielen</string>
+    <string name="dual_home_section_recent_short">Weiter</string>
+    <string name="dual_home_section_recommendations_title">Empfohlen</string>
+    <string name="dual_home_section_recommendations_short">Für Sie</string>
+    <string name="dual_home_section_favorites_title">Favoriten</string>
+
+    <!-- ===== Menu over a game on the companion library grid ===== -->
+
+    <string name="dual_library_menu_play">Spielen</string>
+    <string name="dual_library_menu_install">Installieren</string>
+    <string name="dual_library_menu_download">Herunterladen</string>
+    <string name="dual_library_menu_favorite">Favorit</string>
+    <string name="dual_library_menu_unfavorite">Favorit entfernen</string>
+    <string name="dual_library_menu_details">Details</string>
+    <string name="dual_library_menu_add_to_collection">Zur Sammlung hinzufügen</string>
+    <string name="dual_library_menu_add_to_grid">Zum Raster hinzufügen</string>
+    <string name="dual_library_menu_refresh">Daten aktualisieren</string>
+    <string name="dual_library_menu_resync_platform">Plattform neu synchronisieren</string>
+    <string name="dual_library_menu_delete">Download löschen</string>
+    <string name="dual_library_menu_uninstall">Deinstallieren</string>
+    <string name="dual_library_menu_hide">Ausblenden</string>
+    <string name="dual_library_menu_show">Einblenden</string>
+
+    <!-- ===== Menu over a film or series on the companion screen ===== -->
+
+    <string name="dual_media_menu_open_info">Medieninfo öffnen</string>
+    <string name="dual_media_menu_start_over">Von vorne beginnen</string>
+    <string name="dual_media_menu_favorite">Favorit</string>
+    <string name="dual_media_menu_unfavorite">Favorit entfernen</string>
+    <string name="dual_media_menu_download">Herunterladen</string>
+    <string name="dual_media_menu_remove_downloads">Download entfernen</string>
+    <string name="dual_media_menu_refresh">Bibliothek aktualisieren</string>
+
+    <!-- ===== Filter panel on the companion library grid ===== -->
+
+    <string name="dual_filter_category_sort">Sortieren</string>
+    <string name="dual_filter_category_search">Suchen</string>
+    <string name="dual_filter_category_source">Quelle</string>
+    <string name="dual_filter_category_genre">Genre</string>
+    <string name="dual_filter_category_players">Spieler</string>
+    <string name="dual_filter_category_franchise">Franchise</string>
+
+    <string name="dual_filter_search_placeholder">Spiele suchen...</string>
+    <string name="dual_filter_search_active">Gefiltert nach: \"%1$s\"</string>
+
+    <!-- ===== Collection list on the companion screen ===== -->
+
+    <string name="dual_collections_header_user">MEINE SAMMLUNGEN</string>
+    <string name="dual_collections_header_genres">GENRES</string>
+    <string name="dual_collections_header_game_modes">SPIELMODI</string>
+
+    <!-- ===== Companion library grid ===== -->
+
+    <string name="dual_library_platform_filter_all">Alle</string>
+    <string name="dual_library_grid_platform_fallback">Alle</string>
+    <string name="dual_library_grid_header">%1$s (%2$d)</string>
+    <string name="dual_home_carousel_header">%1$s (%2$d)</string>
+
+    <!-- ===== Curated grid tiles on the companion screen ===== -->
+
+    <string name="dual_tile_missing_game">Fehlendes Spiel</string>
+    <string name="dual_tile_missing_collection">Fehlende Sammlung</string>
+    <string name="dual_tile_collection_subtitle">Sammlung</string>
+    <string name="dual_tile_collection_games_stat">Spiele</string>
+    <string name="dual_tile_missing_app">Fehlende App</string>
+    <string name="dual_tile_app_subtitle">App</string>
+    <string name="dual_tile_unavailable">Nicht verfügbar</string>
+
+    <plurals name="dual_tile_picker_collection_game_count">
+        <item quantity="one">%d Spiel</item>
+        <item quantity="other">%d Spiele</item>
+    </plurals>
+    <string name="dual_tile_picker_app_emulator">Emulator</string>
+    <string name="dual_tile_picker_app_other">App</string>
+
+    <!-- ===== Prompt offered when a download finishes on the companion screen ===== -->
+
+    <string name="dual_home_tile_add_title">Zum Startraster hinzufügen?</string>
+    <string name="dual_home_tile_add_message">%1$s wurde fertig heruntergeladen.</string>
+    <string name="dual_home_tile_add_confirm">Hinzufügen</string>
+    <string name="dual_home_tile_add_cancel">Nicht jetzt</string>
+
+    <string name="dual_home_collection_picker_title">Zur Sammlung hinzufügen</string>
+    <string name="dual_home_collection_picker_member">%1$s  -  hinzugefügt</string>
+    <string name="dual_home_media_menu_header">MEDIEN</string>
+
+    <!-- ===== Game detail on the companion screen ===== -->
+
+    <string name="dual_detail_tab_saves">SPIELSTÄNDE</string>
+    <string name="dual_detail_tab_states">SAVESTATES</string>
+    <string name="dual_detail_tab_media">MEDIEN</string>
+    <string name="dual_detail_tab_options">OPTIONEN</string>
+
+    <string name="dual_state_menu_copy_to">In Slot kopieren</string>
+    <string name="dual_state_menu_delete">Savestate löschen</string>
+    <string name="dual_detail_state_menu_header">SAVESTATE</string>
+
+    <string name="dual_detail_state_prompt_auto_slot">Der Auto-Savestate</string>
+    <string name="dual_detail_state_prompt_numbered_slot">Slot %1$d</string>
+    <string name="dual_detail_state_prompt_delete_title">Savestate löschen</string>
+    <string name="dual_detail_state_prompt_overwrite_title">Savestate überschreiben</string>
+    <string name="dual_detail_state_prompt_delete_message">%1$s wird von diesem Gerät und dem Server entfernt.</string>
+    <string name="dual_detail_state_prompt_overwrite_message">%1$s enthält bereits einen Savestate. Er wird durch die Kopie ersetzt.</string>
+    <string name="dual_detail_state_prompt_delete_confirm">Löschen</string>
+    <string name="dual_detail_state_prompt_overwrite_confirm">Überschreiben</string>
+
+    <string name="dual_detail_saves_loading">Spielstände werden geladen...</string>
+    <string name="dual_detail_saves_applying">Spielstand wird angewendet...</string>
+    <string name="dual_detail_saves_slots_heading">Spielstand-Slots</string>
+    <string name="dual_detail_saves_new_slot">Neuer Slot</string>
+    <string name="dual_detail_saves_history_heading">Verlauf</string>
+    <string name="dual_detail_saves_history_heading_named">Verlauf (%1$s)</string>
+    <string name="dual_detail_saves_history_empty">Noch keine Spielstände</string>
+    <string name="dual_detail_saves_active_restore_point_description">Aktiver Wiederherstellungspunkt</string>
+    <string name="dual_detail_saves_latest">Neueste</string>
+    <string name="dual_detail_saves_sync_synced">Synchronisiert</string>
+    <string name="dual_detail_saves_sync_local">Lokal</string>
+
+    <string name="dual_detail_states_empty">Keine Savestate-Slots</string>
+    <string name="dual_detail_states_copy_prompt">Wählen Sie einen Slot zum Kopieren</string>
+    <string name="dual_detail_states_slot_empty">Leer</string>
+    <string name="dual_detail_states_slot_no_shot">Kein Bild</string>
+    <string name="dual_detail_states_slot_number">Slot %1$d</string>
+
+    <string name="dual_detail_media_empty">Keine Screenshots</string>
+    <string name="dual_detail_media_screenshot_description">Screenshot</string>
+
+    <string name="dual_detail_option_emulator_default">Plattformstandard</string>
+    <string name="dual_detail_option_core_default">Standard</string>
+    <string name="dual_detail_option_save_path_custom">Angepasst</string>
+    <string name="dual_detail_option_save_path_default">Standard</string>
+    <string name="dual_detail_option_memory_card_auto">Auto</string>
+    <string name="dual_detail_option_variant_default">Standard</string>
+
+    <string name="dual_detail_option_play_extracting">Wird entpackt...</string>
+    <string name="dual_detail_option_play_downloading">Wird heruntergeladen %1$d%%</string>
+    <string name="dual_detail_option_play_queued">Wartet...</string>
+    <string name="dual_detail_option_play_paused">Pausiert %1$d%%</string>
+    <string name="dual_detail_option_play_no_space">Kein Speicherplatz</string>
+    <string name="dual_detail_option_play">Spielen</string>
+    <string name="dual_detail_option_download">Herunterladen</string>
+    <string name="dual_detail_option_auto_save_slot">Autospeicherung</string>
+
+    <string name="dual_detail_option_rating">Bewertung</string>
+    <string name="dual_detail_option_difficulty">Schwierigkeit</string>
+    <string name="dual_detail_option_status">Status</string>
+    <string name="dual_detail_option_status_not_set">Nicht festgelegt</string>
+    <string name="dual_detail_option_unfavorite">Aus Favoriten entfernen</string>
+    <string name="dual_detail_option_favorite">Zu Favoriten hinzufügen</string>
+    <string name="dual_detail_option_change_emulator">Emulator ändern</string>
+    <string name="dual_detail_option_change_core">Core ändern</string>
+    <string name="dual_detail_option_save_path">Speicherpfad</string>
+    <string name="dual_detail_option_display_target">Zielbildschirm</string>
+    <string name="dual_detail_option_memory_card">Speicherkarte</string>
+    <string name="dual_detail_option_select_variant">Variante auswählen</string>
+    <string name="dual_detail_option_select_disc">Disc auswählen</string>
+    <string name="dual_detail_option_title_id">Titel-ID</string>
+    <string name="dual_detail_option_title_id_missing">Nicht erkannt</string>
+    <string name="dual_detail_option_files">Dateien</string>
+    <string name="dual_detail_option_add_to_collection">Zur Sammlung hinzufügen</string>
+    <string name="dual_detail_option_refresh_metadata">Metadaten aktualisieren</string>
+    <string name="dual_detail_option_delete">Aus Bibliothek entfernen</string>
+    <string name="dual_detail_option_unhide">Spiel einblenden</string>
+    <string name="dual_detail_option_hide">Spiel ausblenden</string>
+
+    <!-- ===== Modals raised over the companion game detail ===== -->
+
+    <string name="dual_detail_file_picker_no_changes">Keine Änderungen</string>
+    <string name="dual_detail_file_picker_summary_adds">+%1$d · %2$s</string>
+    <string name="dual_detail_file_picker_summary_removes">-%1$d · %2$s</string>
+    <string name="dual_detail_file_picker_summary_selected">%1$d von %2$d · %3$s ausgewählt</string>
+    <string name="dual_detail_file_picker_manage_title">Dateien</string>
+    <string name="dual_detail_file_picker_choose_title">Dateien auswählen</string>
+
+    <string name="dual_detail_steam_install_heading">INSTALLATIONSORT</string>
+    <string name="dual_detail_steam_install_argosy">Über Argosy herunterladen</string>
+    <string name="dual_detail_steam_install_external">Als installiert markieren</string>
+    <string name="dual_detail_steam_install_managed_by">Verwaltet von %1$s</string>
+
+    <string name="dual_detail_screenshot_viewer_description">Screenshot</string>
+    <string name="dual_detail_achievements_label">Erfolge</string>
+
+    <string name="dual_detail_emulator_picker_heading">EMULATOR AUSWÄHLEN</string>
+    <string name="dual_detail_emulator_picker_default">Plattformstandard verwenden</string>
+
+    <string name="dual_detail_core_picker_heading">CORE AUSWÄHLEN</string>
+    <string name="dual_detail_core_picker_default">Plattformstandard verwenden</string>
+
+    <string name="dual_detail_save_path_heading">SPEICHERPFAD</string>
+    <string name="dual_detail_save_path_reset">Auf geerbten Standard zurücksetzen</string>
+    <string name="dual_detail_save_path_inherited">Geerbter Standard</string>
+    <string name="dual_detail_save_path_inherited_hint">Legen Sie einen eigenen Pfad in den spielspezifischen Einstellungen auf dem Hauptbildschirm fest</string>
+    <string name="dual_detail_save_path_current_override">Aktuelle Überschreibung</string>
+
+    <string name="dual_detail_display_target_heading">ZIELBILDSCHIRM</string>
+    <string name="dual_detail_display_target_default">Plattformstandard verwenden</string>
+
+    <string name="dual_detail_memory_card_heading">SPEICHERKARTE</string>
+    <string name="dual_detail_memory_card_auto">Automatisch erkennen</string>
+
+    <string name="dual_detail_variant_heading">VARIANTE AUSWÄHLEN</string>
+    <string name="dual_detail_variant_default">Standard (Original)</string>
+
+    <string name="dual_detail_disc_heading">DISC AUSWÄHLEN</string>
+    <string name="dual_detail_disc_label">Disc %1$d</string>
+
+    <string name="dual_detail_collection_heading">ZUR SAMMLUNG HINZUFÜGEN</string>
+    <string name="dual_detail_collection_create">Neue Sammlung erstellen</string>
+
+    <string name="dual_detail_state_preview_description">Savestate-Vorschau</string>
+    <string name="dual_detail_state_preview_cover_fallback">Ersatz-Cover</string>
+    <string name="dual_detail_state_sync_synced">Synchronisiert</string>
+    <string name="dual_detail_state_sync_pending">Ausstehend</string>
+    <string name="dual_detail_state_sync_server">Server</string>
+    <string name="dual_detail_state_sync_local">Lokal</string>
+
+    <string name="dual_detail_save_name_heading">SPEICHER-SLOT ERSTELLEN</string>
+    <string name="dual_detail_save_name_field_label">Slot-Name</string>
+    <string name="dual_detail_save_name_cancel">Abbrechen</string>
+    <string name="dual_detail_save_name_create">Erstellen</string>
+
+    <string name="dual_detail_save_slot_auto">Autospeicherung</string>
+</resources>

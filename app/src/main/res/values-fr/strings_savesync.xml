@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="savesync_section_attention">Nécessite votre attention</string>
+    <string name="savesync_section_in_progress">En cours</string>
+    <string name="savesync_section_games">Jeux avec sauvegardes</string>
+
+    <string name="savesync_footer_navigate">Naviguer</string>
+    <string name="savesync_footer_choose">Choisir</string>
+    <string name="savesync_footer_confirm_keep_local">Garder la locale</string>
+    <string name="savesync_footer_confirm_keep_server">Garder celle du serveur</string>
+    <string name="savesync_footer_confirm_skip">Ignorer</string>
+    <string name="savesync_footer_open_game">Ouvrir le jeu</string>
+    <string name="savesync_footer_scan_server">Analyser RomM</string>
+    <string name="savesync_footer_back">Retour</string>
+
+    <string name="savesync_device_this_label">Cet appareil</string>
+    <string name="savesync_device_not_connected">Non connecté à RomM</string>
+    <string name="savesync_device_id_pill">…%1$s</string>
+    <string name="savesync_device_client_versioned">%1$s v%2$s</string>
+    <string name="savesync_device_server_versioned">RomM v%1$s</string>
+    <string name="savesync_device_server_connected">Connecté</string>
+    <string name="savesync_device_server_offline">Hors ligne</string>
+    <!-- Just the unit word: the count is rendered beside it, never inside it, so there is no
+         argument to carry. French puts 0 in the singular, which this already gets right. -->
+    <plurals name="savesync_device_save_count_unit" tools:ignore="ImpliedQuantity">
+        <item quantity="one">sauvegarde</item>
+        <item quantity="many">sauvegardes</item>
+        <item quantity="other">sauvegardes</item>
+    </plurals>
+
+    <string name="savesync_other_devices_heading">Autres appareils</string>
+    <plurals name="savesync_other_devices_more">
+        <item quantity="one">+%d de plus</item>
+        <item quantity="many">+%d de plus</item>
+        <item quantity="other">+%d de plus</item>
+    </plurals>
+
+    <plurals name="savesync_access_notice_title">
+        <item quantity="one">%d emplacement de sauvegarde inaccessible</item>
+        <item quantity="many">%d emplacements de sauvegarde inaccessibles</item>
+        <item quantity="other">%d emplacements de sauvegarde inaccessibles</item>
+    </plurals>
+
+    <string name="savesync_empty_title_connected">Aucune sauvegarde de jeu synchronisée pour l\'instant</string>
+    <string name="savesync_empty_message_connected">Les sauvegardes apparaîtront ici au fil du jeu</string>
+    <string name="savesync_empty_title_disconnected">Connectez-vous à RomM pour synchroniser les sauvegardes</string>
+    <string name="savesync_empty_message_disconnected">Ouvrez les paramètres pour ajouter votre serveur RomM</string>
+
+    <string name="savesync_conflict_side_local">Locale</string>
+    <string name="savesync_conflict_side_server">Serveur</string>
+    <string name="savesync_conflict_device_this">cet appareil</string>
+    <string name="savesync_conflict_device_other">un autre appareil</string>
+    <string name="savesync_conflict_side_summary">%1$s - %2$s (%3$s)</string>
+    <string name="savesync_conflict_time_unknown">inconnu</string>
+    <string name="savesync_conflict_newer_badge">plus récente</string>
+    <string name="savesync_attention_button_keep_local">Garder la locale</string>
+    <string name="savesync_attention_button_keep_server">Garder celle du serveur</string>
+    <string name="savesync_attention_button_skip">Ignorer</string>
+
+    <string name="savesync_progress_status_uploading">Envoi</string>
+    <string name="savesync_progress_status_downloading">Téléchargement</string>
+    <string name="savesync_progress_status_queued">En file d\'attente</string>
+
+    <string name="savesync_game_pill_just_synced">Synchronisé à l\'instant</string>
+    <string name="savesync_game_pill_conflict">Conflit</string>
+    <string name="savesync_game_last_write_this_device">Dernière écriture - cet appareil</string>
+    <string name="savesync_game_last_write_device">Dernière écriture - %1$s</string>
+    <string name="savesync_game_last_write_unknown">Dernière écriture - appareil inconnu</string>
+    <string name="savesync_game_last_write_time">%1$s · %2$s</string>
+
+    <string name="savesync_force_check_title">Analyser RomM pour les sauvegardes manquantes</string>
+    <string name="savesync_force_check_idle">Parcourt les jeux locaux et récupère la dernière sauvegarde de chaque canal depuis RomM.</string>
+    <string name="savesync_force_check_running">Analyse en cours...</string>
+    <plurals name="savesync_force_check_up_to_date">
+        <item quantity="one">À jour - %d jeu inspecté, rien de nouveau.</item>
+        <item quantity="many">À jour - %d jeux inspectés, rien de nouveau.</item>
+        <item quantity="other">À jour - %d jeux inspectés, rien de nouveau.</item>
+    </plurals>
+    <plurals name="savesync_force_check_queued">
+        <item quantity="one">%1$d sauvegarde mise en file depuis %2$d jeux ; %3$d téléchargée.</item>
+        <item quantity="many">%1$d sauvegardes mises en file depuis %2$d jeux ; %3$d téléchargées.</item>
+        <item quantity="other">%1$d sauvegardes mises en file depuis %2$d jeux ; %3$d téléchargées.</item>
+    </plurals>
+    <string name="savesync_force_check_failed">Échec : %1$s</string>
+    <string name="savesync_force_check_failed_fallback">Échec de la vérification des sauvegardes</string>
+
+    <string name="savesync_device_unnamed">Appareil sans nom</string>
+    <string name="savesync_device_web">Web</string>
+
+    <string name="savesync_channel_archived">Archivée</string>
+    <string name="savesync_channel_autosave">Sauvegarde automatique</string>
+</resources>

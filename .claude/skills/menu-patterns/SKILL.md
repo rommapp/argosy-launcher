@@ -52,6 +52,14 @@ section's own input handler when it cycles the value.
 
 **Examples:** Theme mode, controller layout, border style
 
+**Options are tokens, labels are resources.** A cycle's selection mechanism is
+`options.indexOf(currentValue)`, and the value it writes back is an element of
+`options`, so those entries are the persisted DataStore tokens and must stay byte-exact
+literals. Only the rendered label becomes a `stringResource`. `LibretroSettingDef.Cycle`
+models this directly: `options` (on-disk, upstream-exact) alongside `labels`, resolved
+through `labelFor()`. Getting it backwards is silent - a miss coerces to index 0 rather
+than throwing, so the user's setting resets to the first option with nothing logged.
+
 ---
 
 ### 3. Stepper (SliderPreference)
@@ -303,6 +311,14 @@ Shed the OBVIOUS guides first; never drop a non-obvious hint to keep an obvious 
 
 **Shipped:** `FooterHint.hidePriority()` implements this order (X/Y=4, bumpers/triggers=3,
 Start/Select=2, A/B=1, d-pad=0; higher survives longer).
+
+### Hint Labels Are Resources, Never Button Letters
+
+A hint's label is the action ("Select", "Back", "Filter") as a `@StringRes Int`, and the
+button is rendered as an `InputGlyph` from the hint's `InputButton`. Never write the
+letter into the label text: A/B are user-swappable, so a baked-in letter describes the
+wrong button the moment someone swaps them, and it hardcodes an English glyph into every
+translation. Identical hint text on two screens gets two keys.
 
 ### Face Button Naming Convention
 

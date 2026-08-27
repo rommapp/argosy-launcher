@@ -25,7 +25,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.components.GamepadHoldTracker
 import com.nendo.argosy.ui.components.HoldToConfirmButton
@@ -168,8 +171,8 @@ fun HardResetModal(
     ModalInputEffect(active = true, handler = modalHandler)
 
     Modal(
-        title = "Hard Reset",
-        subtitle = "This cannot be undone",
+        title = stringResource(R.string.settings_hard_reset_title),
+        subtitle = stringResource(R.string.settings_hard_reset_subtitle),
         subtitleColor = theme.destructive,
         baseWidth = 440.dp,
         onDismiss = if (isResetting) null else onDismiss
@@ -180,43 +183,52 @@ fun HardResetModal(
                 .verticalScroll(rememberScrollState())
         ) {
             Text(
-                text = "$downloadedGamesCount downloaded games - ${formatBytes(downloadedGamesBytes)} on disk",
+                text = pluralStringResource(
+                    R.plurals.settings_hard_reset_games_summary,
+                    downloadedGamesCount,
+                    downloadedGamesCount,
+                    formatBytes(downloadedGamesBytes)
+                ),
                 style = MaterialTheme.typography.titleSmall,
                 color = theme.textPrimary
             )
             Spacer(modifier = Modifier.height(Dimens.spacingMd))
             ScopeList(
-                header = "Deletes",
+                header = stringResource(R.string.settings_hard_reset_deletes_header),
                 headerColor = theme.destructive,
                 items = listOf(
-                    "All downloaded game files on disk",
-                    "The entire library database - play time, collections, download history, per-game settings",
-                    "Every cache - images, saves and states, extracted ROMs, sound effects, emulator installers, Steam staging, presence covers"
+                    stringResource(R.string.settings_hard_reset_deletes_files),
+                    stringResource(R.string.settings_hard_reset_deletes_database),
+                    stringResource(R.string.settings_hard_reset_deletes_caches)
                 )
             )
             Spacer(modifier = Modifier.height(Dimens.spacingMd))
             ScopeList(
-                header = "Keeps",
+                header = stringResource(R.string.settings_hard_reset_keeps_header),
                 headerColor = semanticColors.success,
                 items = listOf(
-                    "Settings and sign-ins - RomM and Steam stay connected",
-                    "Saves already synced to the server",
-                    "Emulator apps and their own save data",
-                    "Your music folder"
+                    stringResource(R.string.settings_hard_reset_keeps_sign_ins),
+                    stringResource(R.string.settings_hard_reset_keeps_synced_saves),
+                    stringResource(R.string.settings_hard_reset_keeps_emulator_apps),
+                    stringResource(R.string.settings_hard_reset_keeps_music)
                 )
             )
             if (blocked) {
                 Spacer(modifier = Modifier.height(Dimens.spacingMd))
                 Text(
-                    text = "$pendingUploads saves waiting to upload",
+                    text = pluralStringResource(
+                        R.plurals.settings_hard_reset_pending_uploads,
+                        pendingUploads,
+                        pendingUploads
+                    ),
                     style = MaterialTheme.typography.titleSmall,
                     color = semanticColors.warning
                 )
                 Text(
                     text = if (canSyncNow) {
-                        "Sync them first - resetting now would discard them forever."
+                        stringResource(R.string.settings_hard_reset_sync_first_connected)
                     } else {
-                        "Reconnect to the server and sync them first - resetting now would discard them forever."
+                        stringResource(R.string.settings_hard_reset_sync_first_disconnected)
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = theme.textDim
@@ -239,7 +251,7 @@ fun HardResetModal(
                 )
                 Spacer(modifier = Modifier.width(Dimens.spacingSm))
                 Text(
-                    text = "Resetting...",
+                    text = stringResource(R.string.settings_hard_reset_in_progress),
                     style = MaterialTheme.typography.titleSmall,
                     color = theme.textPrimary
                 )
@@ -250,7 +262,7 @@ fun HardResetModal(
                 horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm, Alignment.End)
             ) {
                 ModalActionButton(
-                    label = "Cancel",
+                    label = stringResource(R.string.settings_hard_reset_cancel_button),
                     tint = theme.focusAccent,
                     restLabelColor = theme.textPrimary,
                     focused = focusIndex == FOCUS_CANCEL,
@@ -258,7 +270,7 @@ fun HardResetModal(
                 )
                 if (blocked) {
                     ModalActionButton(
-                        label = "Sync Now",
+                        label = stringResource(R.string.settings_hard_reset_sync_now_button),
                         tint = theme.focusAccent,
                         restLabelColor = theme.textPrimary,
                         focused = focusIndex == FOCUS_ACTION,
@@ -269,7 +281,7 @@ fun HardResetModal(
             }
             Spacer(modifier = Modifier.height(Dimens.spacingSm))
             HoldToConfirmButton(
-                label = "Hold to Reset",
+                label = stringResource(R.string.settings_hard_reset_hold_button),
                 isFocused = !blocked && focusIndex == FOCUS_ACTION,
                 enabled = !blocked,
                 gamepadTracker = tracker,

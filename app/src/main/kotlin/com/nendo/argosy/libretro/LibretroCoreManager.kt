@@ -203,7 +203,13 @@ class LibretroCoreManager @Inject constructor(
                 if (responseCode != HttpURLConnection.HTTP_OK) {
                     val errorMessage = "HTTP $responseCode: ${connection.responseMessage}"
                     Log.e(TAG, "Core download failed: $errorMessage for $zipUrl")
-                    throw IllegalStateException("Core not available: $errorMessage")
+                    val failure = when {
+                        responseCode == HttpURLConnection.HTTP_NOT_FOUND ->
+                            CoreDownloadFailure.NotPublished
+                        responseCode >= 500 -> CoreDownloadFailure.ServerError
+                        else -> CoreDownloadFailure.Unknown("Core not available: $errorMessage")
+                    }
+                    throw CoreDownloadException(failure, "Core not available: $errorMessage")
                 }
 
                 val version = connection.getHeaderField("Last-Modified")
@@ -239,7 +245,8 @@ class LibretroCoreManager @Inject constructor(
                 val minExpectedSize = coreInfo.estimatedSizeBytes / 4
                 if (fileSize < minExpectedSize) {
                     targetFile.delete()
-                    throw IllegalStateException(
+                    throw CoreDownloadException(
+                        CoreDownloadFailure.Corrupted,
                         "Downloaded core is corrupted: ${coreInfo.fileName} is $fileSize bytes, " +
                             "expected at least $minExpectedSize bytes"
                     )

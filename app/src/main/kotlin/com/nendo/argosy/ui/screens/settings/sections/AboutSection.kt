@@ -33,8 +33,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.SwitchPreference
@@ -65,7 +67,7 @@ internal sealed class AboutItem(
         else -> true
     }
 
-    class Header(key: String, section: String, val title: String) : AboutItem(key, section)
+    class Header(key: String, section: String, val titleRes: Int) : AboutItem(key, section)
     data object VersionInfo : AboutItem("versionInfo", "version")
     data object CheckUpdates : AboutItem("checkUpdates", "version")
     data object ChangelogPreview : AboutItem(
@@ -95,10 +97,10 @@ internal sealed class AboutItem(
     data object AppAffinity : AboutItem("appAffinity", "debug")
 
     companion object {
-        private val VersionHeader = Header("versionHeader", "version", "VERSION")
-        private val BackupHeader = Header("backupHeader", "backup", "BACKUP")
-        private val SystemHeader = Header("systemHeader", "system", "SYSTEM APP")
-        private val DebugHeader = Header("debugHeader", "debug", "DEBUG")
+        private val VersionHeader = Header("versionHeader", "version", R.string.settings_about_section_version)
+        private val BackupHeader = Header("backupHeader", "backup", R.string.settings_about_section_backup)
+        private val SystemHeader = Header("systemHeader", "system", R.string.settings_about_section_system_app)
+        private val DebugHeader = Header("debugHeader", "debug", R.string.settings_about_section_debug)
 
         val ALL: List<AboutItem>
             get() = listOf(
@@ -115,12 +117,12 @@ private val aboutLayout = SettingsLayout<AboutItem, AboutLayoutState>(
     isFocusable = { it.isFocusable },
     visibleWhen = { item, state -> item.visibleWhen(state) },
     sectionOf = { it.section },
-    sectionTitle = {
+    sectionTitleRes = {
         when (it) {
-            "version" -> "VERSION"
-            "backup" -> "BACKUP"
-            "system" -> "SYSTEM APP"
-            "debug" -> "DEBUG"
+            "version" -> R.string.settings_about_section_version
+            "backup" -> R.string.settings_about_section_backup
+            "system" -> R.string.settings_about_section_system_app
+            "debug" -> R.string.settings_about_section_debug
             else -> null
         }
     }
@@ -150,7 +152,9 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
     val layoutState = remember(hasLogPath, hasChangelog) { AboutLayoutState(hasLogPath, hasChangelog) }
     val visibleItems = remember(hasLogPath, hasChangelog) { aboutLayout.visibleItems(layoutState) }
-    val sections = remember(hasLogPath, hasChangelog) { aboutLayout.buildSections(layoutState) }
+    val sections = remember(hasLogPath, hasChangelog, context) {
+        aboutLayout.buildSections(layoutState, context)
+    }
 
     LaunchedEffect(Unit) {
         if (!isDebug && !updateCheck.isChecking && !updateCheck.isDownloading && !updateCheck.readyToInstall) {
@@ -182,7 +186,7 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) { item ->
             when (item) {
-                is AboutItem.Header -> SectionHeader(item.title)
+                is AboutItem.Header -> SectionHeader(stringResource(item.titleRes))
 
                 AboutItem.VersionInfo -> VersionInfoRow(
                     argosyVersion = uiState.appVersion,
@@ -191,21 +195,43 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 )
 
                 AboutItem.CheckUpdates -> {
+                    val checkTitle = stringResource(R.string.settings_about_update_title_check)
                     val (title, subtitle) = when {
-                        isDebug -> "Check for Updates" to "Disabled in debug builds"
-                        updateCheck.isDownloading -> "Downloading..." to "${updateCheck.downloadProgress}%"
-                        updateCheck.isChecking -> "Check for Updates" to "Checking..."
-                        updateCheck.error != null -> "Check for Updates" to "Error: ${updateCheck.error}"
-                        updateCheck.updateAvailable -> "Update Available" to "${updateCheck.latestVersion} is ready to download"
-                        updateCheck.hasChecked && isOnBetaVersion -> "Check for Updates" to "Up to date (pre-release)"
-                        updateCheck.hasChecked -> "Check for Updates" to "Up to date"
-                        isOnBetaVersion -> "Check for Updates" to "Running pre-release build"
-                        else -> "Check for Updates" to "Check for new versions"
+                        isDebug -> checkTitle to
+                            stringResource(R.string.settings_about_update_subtitle_debug)
+                        updateCheck.isDownloading ->
+                            stringResource(R.string.settings_about_update_title_downloading) to
+                                stringResource(
+                                    R.string.settings_about_update_subtitle_progress,
+                                    updateCheck.downloadProgress
+                                )
+                        updateCheck.isChecking -> checkTitle to
+                            stringResource(R.string.settings_about_update_subtitle_checking)
+                        updateCheck.error != null -> checkTitle to
+                            stringResource(R.string.settings_about_update_subtitle_error, updateCheck.error)
+                        updateCheck.updateAvailable ->
+                            stringResource(R.string.settings_about_update_title_available) to
+                                stringResource(
+                                    R.string.settings_about_update_subtitle_available,
+                                    updateCheck.latestVersion.orEmpty()
+                                )
+                        updateCheck.hasChecked && isOnBetaVersion -> checkTitle to
+                            stringResource(R.string.settings_about_update_subtitle_current_prerelease)
+                        updateCheck.hasChecked -> checkTitle to
+                            stringResource(R.string.settings_about_update_subtitle_current)
+                        isOnBetaVersion -> checkTitle to
+                            stringResource(R.string.settings_about_update_subtitle_on_prerelease)
+                        else -> checkTitle to
+                            stringResource(R.string.settings_about_update_subtitle_idle)
                     }
                     UpdateActionsRow(
                         title = title,
                         subtitle = subtitle,
-                        primaryLabel = if (updateCheck.updateAvailable) "Download" else "Check",
+                        primaryLabel = if (updateCheck.updateAvailable) {
+                            stringResource(R.string.settings_about_update_action_download)
+                        } else {
+                            stringResource(R.string.settings_about_update_action_check)
+                        },
                         primaryEnabled = !isDebug && !updateCheck.isChecking && !updateCheck.isDownloading,
                         isFocused = isFocused(item),
                         actionIndex = uiState.aboutUpdateActionIndex,
@@ -228,11 +254,12 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 )
 
                 AboutItem.BetaUpdates -> SwitchPreference(
-                    title = "Beta Updates",
-                    subtitle = if (uiState.betaUpdatesEnabled)
-                        "Receiving pre-release builds"
-                    else
-                        "Stable releases only",
+                    title = stringResource(R.string.settings_about_beta_updates_title),
+                    subtitle = if (uiState.betaUpdatesEnabled) {
+                        stringResource(R.string.settings_about_beta_updates_subtitle_on)
+                    } else {
+                        stringResource(R.string.settings_about_beta_updates_subtitle_off)
+                    },
                     isEnabled = uiState.betaUpdatesEnabled,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.setBetaUpdatesEnabled(it) }
@@ -242,16 +269,19 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
                 AboutItem.ExportSettings -> ActionPreference(
                     icon = Icons.Outlined.Upload,
-                    title = "Export Settings",
-                    subtitle = "Writes your appearance and navigation settings to ${SettingsBackupRepository.FILE_NAME}. No accounts, servers or sync state are included.",
+                    title = stringResource(R.string.settings_about_export_title),
+                    subtitle = stringResource(
+                        R.string.settings_about_export_subtitle,
+                        SettingsBackupRepository.FILE_NAME
+                    ),
                     isFocused = isFocused(item),
                     onClick = { viewModel.exportSettings() }
                 )
 
                 AboutItem.ImportSettings -> ActionPreference(
                     icon = Icons.Outlined.Download,
-                    title = "Import Settings",
-                    subtitle = "Apply settings from a backup file",
+                    title = stringResource(R.string.settings_about_import_title),
+                    subtitle = stringResource(R.string.settings_about_import_subtitle),
                     isFocused = isFocused(item),
                     onClick = { viewModel.requestImportSettings() }
                 )
@@ -260,16 +290,16 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
                 AboutItem.SystemizeHelper -> ActionPreference(
                     icon = Icons.Default.HealthAndSafety,
-                    title = "Stop Crashes on Heavy Emulators",
-                    subtitle = "Argosy can be force-closed when a demanding emulator uses most of the RAM. On a rooted device, this writes a script that makes Argosy a system app so it is no longer killed.",
+                    title = stringResource(R.string.settings_about_systemize_title),
+                    subtitle = stringResource(R.string.settings_about_systemize_subtitle),
                     isFocused = isFocused(item),
                     onClick = { viewModel.writeSystemizeScript() }
                 )
 
                 AboutItem.RestartApp -> ActionPreference(
                     icon = Icons.Outlined.RestartAlt,
-                    title = "Restart Argosy",
-                    subtitle = "Close and reopen the launcher",
+                    title = stringResource(R.string.settings_about_restart_title),
+                    subtitle = stringResource(R.string.settings_about_restart_subtitle),
                     isFocused = isFocused(item),
                     onClick = { viewModel.restartApp() }
                 )
@@ -280,8 +310,8 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     if (uiState.fileLoggingPath != null) {
                         SwitchPreference(
                             icon = Icons.Default.Description,
-                            title = "File Logging",
-                            subtitle = formatLoggingPath(uiState.fileLoggingPath),
+                            title = stringResource(R.string.settings_about_file_logging_title),
+                            subtitle = formatLoggingPath(context, uiState.fileLoggingPath),
                             isEnabled = uiState.fileLoggingEnabled,
                             isFocused = isFocused(item),
                             onToggle = { viewModel.toggleFileLogging(it) },
@@ -290,8 +320,8 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     } else {
                         ActionPreference(
                             icon = Icons.Default.Description,
-                            title = "Enable File Logging",
-                            subtitle = "Write logs to a file for debugging",
+                            title = stringResource(R.string.settings_about_file_logging_enable_title),
+                            subtitle = stringResource(R.string.settings_about_file_logging_enable_subtitle),
                             isFocused = isFocused(item),
                             onClick = { viewModel.openLogFolderPicker() }
                         )
@@ -299,7 +329,7 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 }
 
                 AboutItem.LogLevel -> CyclePreference(
-                    title = "Log Level",
+                    title = stringResource(R.string.settings_about_log_level_title),
                     value = uiState.fileLogLevel.name,
                     isFocused = isFocused(item),
                     onClick = { viewModel.cycleFileLogLevel() },
@@ -310,11 +340,12 @@ fun AboutSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 )
 
                 AboutItem.SaveDebugLogging -> SwitchPreference(
-                    title = "Save Debug Logging",
-                    subtitle = if (uiState.saveDebugLoggingEnabled)
-                        "Detailed save operations logged"
-                    else
-                        "Log save sync, cache, and channel events",
+                    title = stringResource(R.string.settings_about_save_debug_title),
+                    subtitle = if (uiState.saveDebugLoggingEnabled) {
+                        stringResource(R.string.settings_about_save_debug_subtitle_on)
+                    } else {
+                        stringResource(R.string.settings_about_save_debug_subtitle_off)
+                    },
                     isEnabled = uiState.saveDebugLoggingEnabled,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.setSaveDebugLoggingEnabled(it) }
@@ -379,7 +410,7 @@ private fun UpdateActionsRow(
         )
         Spacer(modifier = Modifier.width(Dimens.spacingSm))
         ActionButton(
-            label = "Changelog",
+            label = stringResource(R.string.settings_about_update_action_changelog),
             onClick = onChangelog,
             focused = isFocused && actionIndex == 1
         )
@@ -396,7 +427,7 @@ private fun ChangelogPreviewRow(
     val theme = LocalArgosyTheme.current
     Column(modifier = preferenceModifier(isFocused, onClick = onClick)) {
         Text(
-            text = "What's New - $version",
+            text = stringResource(R.string.settings_about_changelog_preview_title, version),
             style = MaterialTheme.typography.titleMedium,
             color = preferenceContentColor(isFocused)
         )
@@ -428,7 +459,7 @@ private fun VersionInfoRow(
         ) {
             Column {
                 Text(
-                    text = "Argosy",
+                    text = stringResource(R.string.settings_about_version_argosy_label),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -441,12 +472,12 @@ private fun VersionInfoRow(
             if (rommVersion != null) {
                 Column {
                     Text(
-                        text = "RomM API",
+                        text = stringResource(R.string.settings_about_version_romm_label),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = "v$rommVersion",
+                        text = stringResource(R.string.settings_about_version_romm_value, rommVersion),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -461,7 +492,7 @@ private fun VersionInfoRow(
                 .padding(horizontal = 8.dp, vertical = 4.dp)
         ) {
             Text(
-                text = "Licenses",
+                text = stringResource(R.string.settings_about_licenses_label),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -475,14 +506,18 @@ private fun VersionInfoRow(
     }
 }
 
-private fun formatLoggingPath(rawPath: String): String {
+private fun formatLoggingPath(context: android.content.Context, rawPath: String): String {
     val primaryRoot = com.nendo.argosy.data.storage.StoragePathUtils.primaryExternalRoot
     return when {
         rawPath.startsWith(primaryRoot) ->
-            rawPath.replaceFirst(primaryRoot, "Internal")
+            rawPath.replaceFirst(primaryRoot, context.getString(R.string.settings_about_log_path_internal))
         rawPath.startsWith("/storage/") -> {
             val parts = rawPath.removePrefix("/storage/").split("/", limit = 2)
-            if (parts.size == 2) "SD Card/${parts[1]}" else rawPath
+            if (parts.size == 2) {
+                context.getString(R.string.settings_about_log_path_sd_card, parts[1])
+            } else {
+                rawPath
+            }
         }
         else -> rawPath
     }

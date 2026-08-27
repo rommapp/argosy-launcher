@@ -1,19 +1,24 @@
 package com.nendo.argosy.data.model
 
 import com.nendo.argosy.data.local.entity.GameListItem
+import java.text.Collator
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
-enum class SortOption(val label: String, val defaultDescending: Boolean) {
-    TITLE("A-Z", false),
-    RATING("Rating", true),
-    USER_RATING("User Rating", true),
-    DIFFICULTY("Difficulty", true),
-    RELEASE_YEAR("Release Year", true),
-    PLAY_COUNT("Play Count", true),
-    PLAY_TIME("Play Time", true),
-    LAST_PLAYED("Last Played", true),
-    RECENTLY_ADDED("Recently Added", true)
+/**
+ * How a game list is ordered. The name is the stored and compared value; the display label
+ * lives in `ui/common/SortOptionUi.kt`, because this layer must not import `R`.
+ */
+enum class SortOption(val defaultDescending: Boolean) {
+    TITLE(false),
+    RATING(true),
+    USER_RATING(true),
+    DIFFICULTY(true),
+    RELEASE_YEAR(true),
+    PLAY_COUNT(true),
+    PLAY_TIME(true),
+    LAST_PLAYED(true),
+    RECENTLY_ADDED(true)
 }
 
 data class ActiveSort(
@@ -169,12 +174,13 @@ object GameListItemProps : SortableProps<GameListItem> {
 }
 
 private fun <T> bucketByTitle(items: List<T>, p: SortableProps<T>): List<Section<T>> {
-    val sorted = items.sortedBy { p.sortTitle(it) }
+    val collator = Collator.getInstance().apply { strength = Collator.SECONDARY }
+    val sorted = items.sortedWith(compareBy(collator) { p.sortTitle(it) })
     val grouped = sorted.groupBy { item ->
         val first = p.sortTitle(item).uppercase().firstOrNull()
         if (first != null && first.isLetter()) first.toString() else "#"
     }
-    val letterKeys = grouped.keys.filter { it != "#" }.sortedDescending()
+    val letterKeys = grouped.keys.filter { it != "#" }.sortedWith(collator.reversed())
     val orderedKeys = if (grouped.containsKey("#")) letterKeys + listOf("#") else letterKeys
     return orderedKeys.mapNotNull { key ->
         grouped[key]?.let { Section(label = key, sidebarLabel = key, items = it) }

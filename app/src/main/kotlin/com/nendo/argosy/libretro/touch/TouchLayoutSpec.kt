@@ -1,6 +1,7 @@
 package com.nendo.argosy.libretro.touch
 
 import android.view.KeyEvent
+import androidx.annotation.StringRes
 import androidx.compose.ui.graphics.Color
 import com.nendo.argosy.data.repository.MappingPlatform
 import com.nendo.argosy.data.repository.MappingPlatforms
@@ -29,7 +30,7 @@ enum class GroupId {
 
 data class TouchSlot(
     val androidKeyCode: Int,
-    val label: String,
+    @StringRes val label: Int,
     val tint: Color? = null
 )
 
@@ -41,12 +42,11 @@ data class TouchLayoutSpec(
     val shoulderSlots: List<TouchSlot>,
     val system: List<TouchSlot>,
     val analog: AnalogConfig,
-    val notes: String? = null,
     val sixButtonToggle: Boolean = false,
     val mappingPlatform: MappingPlatform = MappingPlatforms.UNIVERSAL
 )
 
-internal fun slot(retroBtn: Int, label: String, tint: Color? = null): TouchSlot {
+internal fun slot(retroBtn: Int, @StringRes label: Int, tint: Color? = null): TouchSlot {
     val keyCode = when (retroBtn) {
         RetroButton.A -> KeyEvent.KEYCODE_BUTTON_A
         RetroButton.B -> KeyEvent.KEYCODE_BUTTON_B

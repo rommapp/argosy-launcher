@@ -66,12 +66,14 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.nendo.argosy.R
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.data.remote.romm.RomMMusicFacet
 import com.nendo.argosy.ui.common.rememberFileImageModel
@@ -141,7 +143,8 @@ fun MusicBrowserScreen(
                 val st = viewModel.uiState.value
                 val picker = st.facetPicker
                 val onDurationRow = picker?.stage == FacetPickerStage.CHOOSER &&
-                    picker.options.getOrNull(picker.focusIndex) == DURATION_FILTER_OPTION
+                    picker.chooserOptions.getOrNull(picker.focusIndex) ==
+                        FacetChooserOption.MAX_DURATION
                 if (onDurationRow) {
                     viewModel.adjustSfxMaxDuration(delta)
                     return InputResult.HANDLED
@@ -280,19 +283,20 @@ fun MusicBrowserScreen(
                     uiState.isLoading -> MusicBrowserLoading()
                     uiState.isOffline -> MusicBrowserMessage(
                         icon = Icons.Outlined.CloudOff,
-                        message = "Not connected to your RomM server"
+                        message = stringResource(R.string.media_music_offline_message)
                     )
                     uiState.isUnsupported -> MusicBrowserMessage(
                         icon = Icons.Outlined.MusicOff,
-                        message = "This RomM server does not support music browsing yet"
+                        message = stringResource(R.string.media_music_unsupported_message)
                     )
                     uiState.errorMessage != null -> MusicBrowserError(
-                        message = uiState.errorMessage ?: "Something went wrong",
+                        message = uiState.errorMessage
+                            ?: stringResource(R.string.media_music_error_fallback),
                         onRetry = { viewModel.retry() }
                     )
                     uiState.tracks.isEmpty() -> MusicBrowserMessage(
                         icon = Icons.Outlined.MusicNote,
-                        message = "No tracks found"
+                        message = stringResource(R.string.media_music_empty_message)
                     )
                     else -> LazyColumn(
                         state = listState,
@@ -378,18 +382,26 @@ fun MusicBrowserScreen(
         val hints = if (uiState.facetPicker != null || uiState.isUnsupported || uiState.isOffline) {
             emptyList()
         } else {
+            val filtersLabel = stringResource(R.string.media_music_footer_filters)
+            val gameLabel = stringResource(R.string.media_music_footer_game)
+            val stopLabel = stringResource(R.string.media_music_footer_stop)
+            val previewLabel = stringResource(R.string.media_music_footer_preview)
+            val assignLabel = stringResource(R.string.media_music_footer_assign)
+            val removeLabel = stringResource(R.string.media_music_footer_remove)
+            val addLabel = stringResource(R.string.media_music_footer_add)
             buildList {
-                add(InputButton.LB to "Filters")
+                add(InputButton.LB to filtersLabel)
                 if (uiState.groups.size > 1) {
-                    add(InputButton.LT_RT to "Game")
+                    add(InputButton.LT_RT to gameLabel)
                 }
                 if (focusedTrack != null) {
-                    add(InputButton.X to if (uiState.previewingId == focusedTrack.romFileId) "Stop" else "Preview")
+                    val previewing = uiState.previewingId == focusedTrack.romFileId
+                    add(InputButton.X to if (previewing) stopLabel else previewLabel)
                     add(
                         InputButton.A to when {
-                            mode == MusicBrowserMode.SFX -> "Assign"
-                            uiState.isInPlaylist(focusedTrack) -> "Remove"
-                            else -> "Add"
+                            mode == MusicBrowserMode.SFX -> assignLabel
+                            uiState.isInPlaylist(focusedTrack) -> removeLabel
+                            else -> addLabel
                         }
                     )
                 }
@@ -428,7 +440,7 @@ private fun MusicBrowserHeader(
         IconButton(onClick = onBack) {
             Icon(
                 Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back",
+                contentDescription = stringResource(R.string.media_music_header_back),
                 tint = MaterialTheme.colorScheme.onSurface
             )
         }
@@ -437,14 +449,19 @@ private fun MusicBrowserHeader(
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "Server Music",
+                text = stringResource(R.string.media_music_header_title),
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
                 text = when (mode) {
-                    MusicBrowserMode.BGM -> "Add tracks to the BGM playlist"
-                    MusicBrowserMode.SFX -> "Assign a sound for ${sfxTargetLabel ?: "this action"}"
+                    MusicBrowserMode.BGM ->
+                        stringResource(R.string.media_music_header_subtitle_bgm)
+                    MusicBrowserMode.SFX -> stringResource(
+                        R.string.media_music_header_subtitle_sfx,
+                        sfxTargetLabel
+                            ?: stringResource(R.string.media_music_header_sfx_target_fallback)
+                    )
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -495,7 +512,7 @@ private fun MusicSearchField(
         Box(modifier = Modifier.weight(1f)) {
             if (query.isEmpty()) {
                 Text(
-                    text = "Search tracks...",
+                    text = stringResource(R.string.media_music_search_placeholder),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                 )
@@ -535,24 +552,31 @@ private fun MusicFilterChips(
         horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        FilterChip(label = artistFilter ?: "Artist", isActive = artistFilter != null) {
+        val artistLabel = artistFilter ?: stringResource(R.string.media_music_chip_artist)
+        val albumLabel = albumFilter ?: stringResource(R.string.media_music_chip_album)
+        val genreLabel = genreFilter ?: stringResource(R.string.media_music_chip_genre)
+        FilterChip(label = artistLabel, isActive = artistFilter != null) {
             onFacetTap(RomMMusicFacet.ARTISTS)
         }
-        FilterChip(label = albumFilter ?: "Album", isActive = albumFilter != null) {
+        FilterChip(label = albumLabel, isActive = albumFilter != null) {
             onFacetTap(RomMMusicFacet.ALBUMS)
         }
-        FilterChip(label = genreFilter ?: "Genre", isActive = genreFilter != null) {
+        FilterChip(label = genreLabel, isActive = genreFilter != null) {
             onFacetTap(RomMMusicFacet.GENRES)
         }
         if (sfxMaxDuration != null) {
             FilterChip(
-                label = "Under ${sfxMaxDuration}s",
+                label = stringResource(R.string.media_music_chip_duration, sfxMaxDuration),
                 isActive = sfxMaxDuration != SFX_DURATION_DEFAULT_SECONDS,
                 onClick = onDurationTap
             )
         }
         if (hasActiveFilters) {
-            FilterChip(label = "Clear", isActive = false, onClick = onClearAll)
+            FilterChip(
+                label = stringResource(R.string.media_music_chip_clear),
+                isActive = false,
+                onClick = onClearAll
+            )
         }
     }
 }
@@ -690,7 +714,11 @@ private fun MusicTrackRow(
         } else {
             Icon(
                 imageVector = if (isPreviewing) Icons.Default.GraphicEq else Icons.Outlined.MusicNote,
-                contentDescription = if (isInPlaylist) "In playlist" else null,
+                contentDescription = if (isInPlaylist) {
+                    stringResource(R.string.media_music_track_in_playlist)
+                } else {
+                    null
+                },
                 tint = when {
                     isPreviewing -> MaterialTheme.colorScheme.primary
                     isInPlaylist -> focusAccent
@@ -737,7 +765,11 @@ private fun MusicTrackRow(
         IconButton(onClick = onPreview) {
             Icon(
                 imageVector = if (isPreviewing) Icons.Default.Stop else Icons.Default.PlayArrow,
-                contentDescription = if (isPreviewing) "Stop preview" else "Preview",
+                contentDescription = if (isPreviewing) {
+                    stringResource(R.string.media_music_track_stop_preview)
+                } else {
+                    stringResource(R.string.media_music_track_preview)
+                },
                 tint = if (isPreviewing) MaterialTheme.colorScheme.primary
                 else MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -789,7 +821,7 @@ private fun MusicBrowserError(
             )
             Spacer(modifier = Modifier.height(Dimens.spacingMd))
             Text(
-                text = "Retry",
+                text = stringResource(R.string.media_music_error_retry),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier
@@ -861,7 +893,8 @@ private fun FacetPickerPopup(
                 ) {
                     itemsIndexed(picker.options, key = { index, option -> "$index:$option" }) { index, option ->
                         val isFocused = picker.focusIndex == index
-                        if (option == DURATION_FILTER_OPTION && sfxMaxDuration != null) {
+                        val chooserOption = picker.chooserOptions.getOrNull(index)
+                        if (chooserOption == FacetChooserOption.MAX_DURATION && sfxMaxDuration != null) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier
@@ -890,7 +923,10 @@ private fun FacetPickerPopup(
                                         .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingXs)
                                 )
                                 Text(
-                                    text = "${sfxMaxDuration}s",
+                                    text = stringResource(
+                                        R.string.media_music_duration_value,
+                                        sfxMaxDuration
+                                    ),
                                     style = MaterialTheme.typography.titleMedium,
                                     color = if (isFocused) focusedContent else MaterialTheme.colorScheme.onSurface
                                 )

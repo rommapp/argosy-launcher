@@ -30,11 +30,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import coil.compose.AsyncImage
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.GridFocusedScroll
 import com.nendo.argosy.ui.components.PlatformIconAssets
 import com.nendo.argosy.ui.primitives.FocusIndicators
@@ -153,7 +156,11 @@ private fun PlatformCell(
         Spacer(modifier = Modifier.height(Dimens.spacingXs))
 
         Text(
-            text = cell.name,
+            text = if (cell.isAllGames) {
+                stringResource(R.string.library_cell_all_games)
+            } else {
+                cell.name
+            },
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.Bold,
             color = if (isFocused) {
@@ -166,8 +173,9 @@ private fun PlatformCell(
             textAlign = TextAlign.Center
         )
 
+        val countText = pluralStringResource(cell.itemCountRes, cell.itemCount, cell.itemCount)
         Text(
-            text = cell.metaLine,
+            text = cell.metaLine(countText),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
@@ -251,13 +259,13 @@ fun LibraryPlatformGridEmpty(modifier: Modifier = Modifier) {
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = "No platforms yet",
+                text = stringResource(R.string.library_landing_empty_title),
                 style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(Dimens.spacingSm))
             Text(
-                text = "Sync your library from Rom Manager in Settings",
+                text = stringResource(R.string.library_landing_empty_body),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center

@@ -20,14 +20,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import android.content.Context
+import androidx.annotation.StringRes
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.data.local.entity.SaveSyncEntity
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.util.formatClockDateTime
@@ -69,18 +72,17 @@ data class SaveStatusInfo(
     fun displayLabel(context: Context): String = when {
         channelName != null -> channelName
         activeSaveTimestamp != null -> formatClockDateTime(context, activeSaveTimestamp)
-        else -> "Latest"
+        else -> context.getString(R.string.gamedetail_save_status_latest_label)
     }
 
     val effectiveStatus: SaveSyncStatus
         get() = status
 
-    val displayTime: String?
-        get() = when {
-            activeSaveTimestamp != null -> formatRelativeTimeVerbose(Instant.ofEpochMilli(activeSaveTimestamp))
-            lastSyncTime != null -> formatRelativeTimeVerbose(lastSyncTime)
-            else -> null
-        }
+    fun displayTime(context: Context): String? = when {
+        activeSaveTimestamp != null -> formatRelativeTimeVerbose(context, Instant.ofEpochMilli(activeSaveTimestamp))
+        lastSyncTime != null -> formatRelativeTimeVerbose(context, lastSyncTime)
+        else -> null
+    }
 }
 
 data class SaveStatusEvent(
@@ -95,6 +97,7 @@ fun SaveStatusRow(
     status: SaveStatusInfo,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.Top,
@@ -109,7 +112,7 @@ fun SaveStatusRow(
 
         androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = status.displayLabel(LocalContext.current),
+                text = status.displayLabel(context),
                 style = MaterialTheme.typography.bodySmall,
                 color = LocalLauncherTheme.current.semanticColors.warning,
                 maxLines = 1,
@@ -121,14 +124,14 @@ fun SaveStatusRow(
                 horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
             ) {
                 Text(
-                    text = status.effectiveStatus.displayName,
+                    text = stringResource(status.effectiveStatus.displayNameRes),
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
                     color = status.effectiveStatus.textColor()
                 )
 
-                status.displayTime?.let { time ->
+                status.displayTime(context)?.let { time ->
                     Text(
-                        text = "· $time",
+                        text = stringResource(R.string.gamedetail_save_status_time, time),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )
@@ -174,15 +177,16 @@ private fun SaveSyncStatus.textColor() = when (this) {
     SaveSyncStatus.NOT_CONFIGURED -> MaterialTheme.colorScheme.error
 }
 
-private val SaveSyncStatus.displayName: String
+@get:StringRes
+private val SaveSyncStatus.displayNameRes: Int
     get() = when (this) {
-        SaveSyncStatus.SYNCED -> "Synced"
-        SaveSyncStatus.LOCAL_NEWER -> "Local newer"
-        SaveSyncStatus.SERVER_NEWER -> "Server newer"
-        SaveSyncStatus.LOCAL_ONLY -> "Local"
-        SaveSyncStatus.PENDING_UPLOAD -> "Pending upload"
-        SaveSyncStatus.NEEDS_RESOLUTION -> "Needs resolution"
-        SaveSyncStatus.NO_SAVE -> "No save"
-        SaveSyncStatus.NOT_CONFIGURED -> "Not configured"
+        SaveSyncStatus.SYNCED -> R.string.gamedetail_save_status_synced
+        SaveSyncStatus.LOCAL_NEWER -> R.string.gamedetail_save_status_local_newer
+        SaveSyncStatus.SERVER_NEWER -> R.string.gamedetail_save_status_server_newer
+        SaveSyncStatus.LOCAL_ONLY -> R.string.gamedetail_save_status_local_only
+        SaveSyncStatus.PENDING_UPLOAD -> R.string.gamedetail_save_status_pending_upload
+        SaveSyncStatus.NEEDS_RESOLUTION -> R.string.gamedetail_save_status_needs_resolution
+        SaveSyncStatus.NO_SAVE -> R.string.gamedetail_save_status_no_save
+        SaveSyncStatus.NOT_CONFIGURED -> R.string.gamedetail_save_status_not_configured
     }
 

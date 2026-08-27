@@ -1,8 +1,10 @@
 package com.nendo.argosy.ui.screens.gamedetail.delegates
 
+import com.nendo.argosy.R
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.core.notification.showSuccess
 import com.nendo.argosy.core.event.GameUpdateBus
@@ -32,11 +34,11 @@ class GameRatingDelegate @Inject constructor(
             val result = romMRepository.updateUserRating(gameId, value)
             when (result) {
                 is RomMResult.Success -> {
-                    notificationManager.showSuccess("Rating saved")
+                    notificationManager.showSuccess(NotificationText.Res(R.string.gamedetail_notice_rating_saved))
                     onComplete(RatingUpdateResult.Success)
                 }
                 is RomMResult.Error -> {
-                    notificationManager.showError(result.message)
+                    notificationManager.showError(NotificationText.Raw(result.message))
                     onComplete(RatingUpdateResult.Error(result.message))
                 }
             }
@@ -53,11 +55,11 @@ class GameRatingDelegate @Inject constructor(
             val result = romMRepository.updateUserDifficulty(gameId, value)
             when (result) {
                 is RomMResult.Success -> {
-                    notificationManager.showSuccess("Difficulty saved")
+                    notificationManager.showSuccess(NotificationText.Res(R.string.gamedetail_notice_difficulty_saved))
                     onComplete(RatingUpdateResult.Success)
                 }
                 is RomMResult.Error -> {
-                    notificationManager.showError(result.message)
+                    notificationManager.showError(NotificationText.Raw(result.message))
                     onComplete(RatingUpdateResult.Error(result.message))
                 }
             }
@@ -74,7 +76,7 @@ class GameRatingDelegate @Inject constructor(
             val result = romMRepository.updateUserStatus(gameId, value)
             when (result) {
                 is RomMResult.Success -> {
-                    notificationManager.showSuccess("Status saved")
+                    notificationManager.showSuccess(NotificationText.Res(R.string.gamedetail_notice_status_saved))
                     gameUpdateBus.emit(
                         GameUpdateBus.GameUpdate(
                             gameId = gameId,
@@ -84,7 +86,7 @@ class GameRatingDelegate @Inject constructor(
                     onComplete(RatingUpdateResult.Success)
                 }
                 is RomMResult.Error -> {
-                    notificationManager.showError(result.message)
+                    notificationManager.showError(NotificationText.Raw(result.message))
                     onComplete(RatingUpdateResult.Error(result.message))
                 }
             }

@@ -19,6 +19,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.data.platform.PlatformWeightRegistry
 import com.nendo.argosy.data.repository.MappingPlatforms
 import com.nendo.argosy.libretro.LibretroCoreRegistry
@@ -46,7 +50,7 @@ internal sealed class BuiltinControlsItem(
     class Header(
         key: String,
         section: String,
-        val title: String,
+        val titleRes: Int,
         visibleWhen: (BuiltinControlsState) -> Boolean = { true }
     ) : BuiltinControlsItem(key, section, visibleWhen)
 
@@ -79,11 +83,22 @@ internal sealed class BuiltinControlsItem(
     data object TouchCustomizeLayouts : BuiltinControlsItem("touchCustomizeLayouts", "touchControls", { it.touchEnabled })
 
     companion object {
-        private val ControllersHeader = Header("controllersHeader", "controllers", "Controllers")
-        private val SticksHeader = Header("sticksHeader", "sticks", "Analog Sticks") { it.showStickMappings }
-        private val HotkeysHeader = Header("hotkeysHeader", "hotkeys", "Hotkeys")
-        private val SpeedrunHeader = Header("speedrunHeader", "speedrun", "Speedrun Timer")
-        private val TouchHeader = Header("touchControlsHeader", "touchControls", "Touch Controls")
+        private val ControllersHeader = Header(
+            "controllersHeader",
+            "controllers",
+            R.string.settings_builtin_controls_section_controllers
+        )
+        private val SticksHeader = Header(
+            "sticksHeader",
+            "sticks",
+            R.string.settings_builtin_controls_section_sticks
+        ) { it.showStickMappings }
+        private val HotkeysHeader =
+            Header("hotkeysHeader", "hotkeys", R.string.settings_builtin_controls_section_hotkeys)
+        private val SpeedrunHeader =
+            Header("speedrunHeader", "speedrun", R.string.settings_builtin_controls_section_speedrun)
+        private val TouchHeader =
+            Header("touchControlsHeader", "touchControls", R.string.settings_builtin_controls_section_touch)
 
         val ALL: List<BuiltinControlsItem>
             get() = listOf(
@@ -126,13 +141,13 @@ private val builtinControlsLayout = SettingsLayout<BuiltinControlsItem, BuiltinC
     isFocusable = { it.isFocusable },
     visibleWhen = { item, state -> item.visibleWhen(state) },
     sectionOf = { it.section },
-    sectionTitle = {
+    sectionTitleRes = {
         when (it) {
-            "controllers" -> "Controllers"
-            "sticks" -> "Analog Sticks"
-            "hotkeys" -> "Hotkeys"
-            "speedrun" -> "Speedrun Timer"
-            "touchControls" -> "Touch Controls"
+            "controllers" -> R.string.settings_builtin_controls_section_controllers
+            "sticks" -> R.string.settings_builtin_controls_section_sticks
+            "hotkeys" -> R.string.settings_builtin_controls_section_hotkeys
+            "speedrun" -> R.string.settings_builtin_controls_section_speedrun
+            "touchControls" -> R.string.settings_builtin_controls_section_touch
             else -> null
         }
     }
@@ -153,6 +168,7 @@ fun BuiltinControlsSection(
     viewModel: SettingsViewModel
 ) {
     val controlsState = uiState.builtinControls
+    val context = LocalContext.current
     val controllerOrder by viewModel.getControllerOrder().collectAsState(initial = emptyList())
     val hotkeys by viewModel.observeHotkeys().collectAsState(initial = emptyList())
 
@@ -175,8 +191,8 @@ fun BuiltinControlsSection(
     val visibleItems = remember(controlsState) {
         builtinControlsLayout.visibleItems(controlsState)
     }
-    val sections = remember(controlsState) {
-        builtinControlsLayout.buildSections(controlsState)
+    val sections = remember(controlsState, context) {
+        builtinControlsLayout.buildSections(controlsState, context)
     }
 
     fun isFocused(item: BuiltinControlsItem): Boolean =
@@ -202,7 +218,7 @@ fun BuiltinControlsSection(
                         Spacer(modifier = Modifier.height(Dimens.spacingMd))
                     }
                     Text(
-                        text = item.title.uppercase(),
+                        text = stringResource(item.titleRes).uppercase(),
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(
@@ -214,9 +230,12 @@ fun BuiltinControlsSection(
                 }
 
                 BuiltinControlsItem.Rumble -> SwitchPreference(
-                    title = "Rumble",
-                    subtitle = if (!isGlobal && platformSettings?.rumbleEnabled != null)
-                        "Platform override" else "Enable controller vibration feedback",
+                    title = stringResource(R.string.settings_builtin_controls_rumble_title),
+                    subtitle = if (!isGlobal && platformSettings?.rumbleEnabled != null) {
+                        stringResource(R.string.settings_builtin_controls_platform_override)
+                    } else {
+                        stringResource(R.string.settings_builtin_controls_rumble_subtitle)
+                    },
                     isEnabled = effectiveRumble,
                     isFocused = isFocused(item),
                     onToggle = {
@@ -227,11 +246,15 @@ fun BuiltinControlsSection(
 
                 BuiltinControlsItem.ControllerOrder -> NavigationPreference(
                     icon = Icons.Default.SortByAlpha,
-                    title = "Controller Order",
+                    title = stringResource(R.string.settings_builtin_controls_order_title),
                     subtitle = if (controllerOrder.isNotEmpty()) {
-                        "${controllerOrder.size} controller${if (controllerOrder.size > 1) "s" else ""} assigned"
+                        pluralStringResource(
+                            R.plurals.settings_builtin_controls_order_assigned,
+                            controllerOrder.size,
+                            controllerOrder.size
+                        )
                     } else {
-                        "Set player order by pressing a button on each controller"
+                        stringResource(R.string.settings_builtin_controls_order_subtitle)
                     },
                     isFocused = isFocused(item),
                     onClick = { viewModel.showControllerOrderModal() }
@@ -239,19 +262,21 @@ fun BuiltinControlsSection(
 
                 BuiltinControlsItem.InputMapping -> NavigationPreference(
                     icon = Icons.Default.Gamepad,
-                    title = "Input Mapping",
-                    subtitle = "Remap buttons for each controller",
+                    title = stringResource(R.string.settings_builtin_controls_mapping_title),
+                    subtitle = stringResource(R.string.settings_builtin_controls_mapping_subtitle),
                     isFocused = isFocused(item),
                     onClick = { viewModel.showInputMappingModal() }
                 )
 
                 BuiltinControlsItem.AnalogAsDpad -> SwitchPreference(
-                    title = "Left Stick as D-Pad",
-                    subtitle = if (!isGlobal && platformSettings?.analogAsDpad != null)
-                        "Platform override"
-                    else if (!isGlobal && !platformHasAnalog)
-                        "Platform default"
-                    else "Map left analog stick to D-pad inputs",
+                    title = stringResource(R.string.settings_builtin_controls_analog_as_dpad_title),
+                    subtitle = if (!isGlobal && platformSettings?.analogAsDpad != null) {
+                        stringResource(R.string.settings_builtin_controls_platform_override)
+                    } else if (!isGlobal && !platformHasAnalog) {
+                        stringResource(R.string.settings_builtin_controls_platform_default)
+                    } else {
+                        stringResource(R.string.settings_builtin_controls_analog_as_dpad_subtitle)
+                    },
                     isEnabled = effectiveAnalogAsDpad,
                     isFocused = isFocused(item),
                     onToggle = {
@@ -261,9 +286,12 @@ fun BuiltinControlsSection(
                 )
 
                 BuiltinControlsItem.DpadAsAnalog -> SwitchPreference(
-                    title = "D-Pad as Left Stick",
-                    subtitle = if (!isGlobal && platformSettings?.dpadAsAnalog != null)
-                        "Platform override" else "Map D-pad to left analog stick inputs",
+                    title = stringResource(R.string.settings_builtin_controls_dpad_as_analog_title),
+                    subtitle = if (!isGlobal && platformSettings?.dpadAsAnalog != null) {
+                        stringResource(R.string.settings_builtin_controls_platform_override)
+                    } else {
+                        stringResource(R.string.settings_builtin_controls_dpad_as_analog_subtitle)
+                    },
                     isEnabled = effectiveDpadAsAnalog,
                     isFocused = isFocused(item),
                     onToggle = {
@@ -274,23 +302,23 @@ fun BuiltinControlsSection(
 
                 BuiltinControlsItem.Hotkeys -> NavigationPreference(
                     icon = Icons.Default.Keyboard,
-                    title = "Hotkeys",
-                    subtitle = "Configure shortcuts for menu, fast forward, rewind",
+                    title = stringResource(R.string.settings_builtin_controls_hotkeys_title),
+                    subtitle = stringResource(R.string.settings_builtin_controls_hotkeys_subtitle),
                     isFocused = isFocused(item),
                     onClick = { viewModel.showHotkeysModal() }
                 )
 
                 BuiltinControlsItem.LimitHotkeysToPlayer1 -> SwitchPreference(
-                    title = "Limit Hotkeys to Player 1",
-                    subtitle = "Only player 1 controller can trigger hotkeys",
+                    title = stringResource(R.string.settings_builtin_controls_limit_hotkeys_title),
+                    subtitle = stringResource(R.string.settings_builtin_controls_limit_hotkeys_subtitle),
                     isEnabled = controlsState.limitHotkeysToPlayer1,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.setBuiltinLimitHotkeysToPlayer1(it) }
                 )
 
                 BuiltinControlsItem.ToggleFastForward -> SwitchPreference(
-                    title = "Toggle Fast Forward",
-                    subtitle = "Press once to start, again to stop (off = hold to fast forward)",
+                    title = stringResource(R.string.settings_builtin_controls_toggle_ff_title),
+                    subtitle = stringResource(R.string.settings_builtin_controls_toggle_ff_subtitle),
                     isEnabled = controlsState.fastForwardMode == com.nendo.argosy.data.local.entity.FastForwardMode.TOGGLE,
                     isFocused = isFocused(item),
                     onToggle = { enabled ->
@@ -302,8 +330,8 @@ fun BuiltinControlsSection(
                 )
 
                 BuiltinControlsItem.PreserveFastForwardPitch -> SwitchPreference(
-                    title = "Preserve Audio Pitch",
-                    subtitle = "Keep pitch steady while fast forwarding. Uses extra CPU; off by default",
+                    title = stringResource(R.string.settings_builtin_controls_ff_pitch_title),
+                    subtitle = stringResource(R.string.settings_builtin_controls_ff_pitch_subtitle),
                     isEnabled = controlsState.fastForwardPreservePitch,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.setBuiltinFastForwardPreservePitch(it) }
@@ -314,7 +342,7 @@ fun BuiltinControlsSection(
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     Spacer(modifier = Modifier.height(Dimens.spacingSm))
                     OptionItem(
-                        label = "Reset All to Global",
+                        label = stringResource(R.string.settings_builtin_controls_reset_all),
                         isFocused = isFocused(item),
                         isDangerous = true,
                         onClick = { viewModel.resetAllPlatformControlSettings() }
@@ -322,40 +350,46 @@ fun BuiltinControlsSection(
                 }
 
                 BuiltinControlsItem.SpeedrunStartOnReset -> SwitchPreference(
-                    title = "Start timer on reset",
-                    subtitle = "Resetting the game starts a new timed attempt (off = manual start via Split hotkey)",
+                    title = stringResource(R.string.settings_speedrun_start_on_reset_title),
+                    subtitle = stringResource(R.string.settings_speedrun_start_on_reset_subtitle),
                     isEnabled = controlsState.speedrunStartOnReset,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.setSpeedrunStartOnReset(it) }
                 )
 
                 BuiltinControlsItem.SpeedrunPanelSide -> SwitchPreference(
-                    title = "Splits panel on left",
-                    subtitle = "Show the splits panel on the left edge (off = right)",
+                    title = stringResource(R.string.settings_speedrun_panel_side_title),
+                    subtitle = stringResource(R.string.settings_speedrun_panel_side_subtitle),
                     isEnabled = controlsState.speedrunPanelSide == "Left",
                     isFocused = isFocused(item),
                     onToggle = { viewModel.setSpeedrunPanelSide(if (it) "Left" else "Right") }
                 )
 
                 BuiltinControlsItem.SpeedrunPanelWidth -> CyclePreference(
-                    title = "Splits panel width",
-                    subtitle = "Panel text scales to fit",
-                    value = "${controlsState.speedrunPanelWidthPercent}%",
+                    title = stringResource(R.string.settings_speedrun_panel_width_title),
+                    subtitle = stringResource(R.string.settings_speedrun_panel_width_subtitle),
+                    value = stringResource(
+                        R.string.settings_builtin_controls_percent_value,
+                        controlsState.speedrunPanelWidthPercent
+                    ),
                     isFocused = isFocused(item),
                     onClick = { viewModel.adjustSpeedrunPanelWidth(5) },
                     onPrev = { viewModel.adjustSpeedrunPanelWidth(-5) }
                 )
 
                 BuiltinControlsItem.TouchEnabled -> SwitchPreference(
-                    title = "Show touch controls when no gamepad",
-                    subtitle = "Display an on-screen overlay when no controller is connected",
+                    title = stringResource(R.string.settings_touch_enabled_title),
+                    subtitle = stringResource(R.string.settings_touch_enabled_subtitle),
                     isEnabled = controlsState.touchEnabled,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.setTouchEnabled(it) }
                 )
                 BuiltinControlsItem.TouchOpacityLandscape -> SwitchPreference(
-                    title = "Landscape opacity",
-                    subtitle = "Currently ${(controlsState.touchOpacityLandscape * 100).toInt()}%",
+                    title = stringResource(R.string.settings_touch_opacity_landscape_title),
+                    subtitle = stringResource(
+                        R.string.settings_touch_current_percent,
+                        (controlsState.touchOpacityLandscape * 100).toInt()
+                    ),
                     isEnabled = controlsState.touchOpacityLandscape > 0.5f,
                     isFocused = isFocused(item),
                     onToggle = {
@@ -363,8 +397,11 @@ fun BuiltinControlsSection(
                     }
                 )
                 BuiltinControlsItem.TouchOpacityPortrait -> SwitchPreference(
-                    title = "Portrait opacity",
-                    subtitle = "Currently ${(controlsState.touchOpacityPortrait * 100).toInt()}%",
+                    title = stringResource(R.string.settings_touch_opacity_portrait_title),
+                    subtitle = stringResource(
+                        R.string.settings_touch_current_percent,
+                        (controlsState.touchOpacityPortrait * 100).toInt()
+                    ),
                     isEnabled = controlsState.touchOpacityPortrait > 0.7f,
                     isFocused = isFocused(item),
                     onToggle = {
@@ -372,8 +409,11 @@ fun BuiltinControlsSection(
                     }
                 )
                 BuiltinControlsItem.TouchSizeScale -> SwitchPreference(
-                    title = "Button size",
-                    subtitle = "Currently ${(controlsState.touchSizeScale * 100).toInt()}%",
+                    title = stringResource(R.string.settings_touch_size_title),
+                    subtitle = stringResource(
+                        R.string.settings_touch_current_percent,
+                        (controlsState.touchSizeScale * 100).toInt()
+                    ),
                     isEnabled = controlsState.touchSizeScale > 1.0f,
                     isFocused = isFocused(item),
                     onToggle = {
@@ -381,50 +421,50 @@ fun BuiltinControlsSection(
                     }
                 )
                 BuiltinControlsItem.TouchHaptic -> SwitchPreference(
-                    title = "Haptic feedback",
-                    subtitle = "Vibrate briefly on touch",
+                    title = stringResource(R.string.settings_touch_haptic_title),
+                    subtitle = stringResource(R.string.settings_touch_haptic_subtitle),
                     isEnabled = controlsState.touchHaptic,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.setTouchHaptic(it) }
                 )
                 BuiltinControlsItem.TouchFadeOnIdle -> SwitchPreference(
-                    title = "Fade after inactivity",
-                    subtitle = "Dim controls after 5s without input",
+                    title = stringResource(R.string.settings_touch_fade_title),
+                    subtitle = stringResource(R.string.settings_touch_fade_subtitle),
                     isEnabled = controlsState.touchFadeOnIdle,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.setTouchFadeOnIdle(it) }
                 )
                 BuiltinControlsItem.TouchSwapHanded -> SwitchPreference(
-                    title = "Swap left/right inputs",
-                    subtitle = "Mirror the layout horizontally",
+                    title = stringResource(R.string.settings_touch_swap_handed_title),
+                    subtitle = stringResource(R.string.settings_touch_swap_handed_subtitle),
                     isEnabled = controlsState.touchSwapHanded,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.setTouchSwapHanded(it) }
                 )
                 BuiltinControlsItem.TouchLockOrientation -> SwitchPreference(
-                    title = "Lock orientation in-game",
-                    subtitle = "Don't auto-rotate during play",
+                    title = stringResource(R.string.settings_touch_lock_orientation_title),
+                    subtitle = stringResource(R.string.settings_touch_lock_orientation_subtitle),
                     isEnabled = controlsState.touchLockOrientation,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.setTouchLockOrientation(it) }
                 )
                 BuiltinControlsItem.TouchMirror180 -> SwitchPreference(
-                    title = "Mirror controls on 180° flip",
-                    subtitle = "Keep controls on the same physical side when phone flips",
+                    title = stringResource(R.string.settings_touch_mirror_title),
+                    subtitle = stringResource(R.string.settings_touch_mirror_subtitle),
                     isEnabled = controlsState.touchMirror180,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.setTouchMirror180(it) }
                 )
                 BuiltinControlsItem.TouchColouredFaceButtons -> SwitchPreference(
-                    title = "Coloured PSX face buttons",
-                    subtitle = "Tint △ □ ○ ✕ with their canonical colours",
+                    title = stringResource(R.string.settings_touch_coloured_faces_title),
+                    subtitle = stringResource(R.string.settings_touch_coloured_faces_subtitle),
                     isEnabled = controlsState.touchColouredFaceButtons,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.setTouchColouredFaceButtons(it) }
                 )
                 BuiltinControlsItem.TouchGenesis6Button -> SwitchPreference(
-                    title = "Genesis 6-button mode",
-                    subtitle = "Show all six buttons for Genesis / Mega Drive",
+                    title = stringResource(R.string.settings_touch_genesis6_title),
+                    subtitle = stringResource(R.string.settings_touch_genesis6_subtitle),
                     isEnabled = controlsState.touchGenesis6Button,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.setTouchGenesis6Button(it) }
@@ -432,8 +472,8 @@ fun BuiltinControlsSection(
 
                 BuiltinControlsItem.TouchCustomizeLayouts -> NavigationPreference(
                     icon = Icons.Default.Gamepad,
-                    title = "Customize layouts…",
-                    subtitle = "Drag and resize touch controls per platform",
+                    title = stringResource(R.string.settings_touch_customize_title),
+                    subtitle = stringResource(R.string.settings_touch_customize_subtitle),
                     isFocused = isFocused(item),
                     onClick = { viewModel.showTouchLayoutEditor() }
                 )

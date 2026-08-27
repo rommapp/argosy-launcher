@@ -1,0 +1,483 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ===== BuiltinVideoSection / LibretroSettingItem ===== -->
+
+    <string name="settings_shell_libretro_configure_shader_effects_subtitle">शेडर इफ़ेक्ट कॉन्फ़िगर करें</string>
+    <string name="settings_shell_libretro_global_hint_template">ग्लोबल: %1$s</string>
+    <string name="settings_shell_libretro_on_label">चालू</string>
+    <string name="settings_shell_libretro_off_label">बंद</string>
+
+    <!-- ===== FrameSection ===== -->
+
+    <string name="settings_shell_frame_select_title">फ़्रेम चुनें</string>
+    <string name="settings_shell_frame_auto_with_name">ऑटो (%1$s)</string>
+    <string name="settings_shell_frame_auto_none">ऑटो (कोई नहीं)</string>
+    <string name="settings_shell_frame_none_option">कोई नहीं</string>
+    <string name="settings_shell_frame_selected_desc">चयनित</string>
+    <string name="settings_shell_frame_download_desc">डाउनलोड करें</string>
+    <string name="settings_shell_frame_preview_desc">फ़्रेम प्रीव्यू</string>
+    <string name="settings_shell_frame_no_selection">कोई फ़्रेम चयनित नहीं</string>
+    <string name="settings_shell_frame_unavailable">फ़्रेम उपलब्ध नहीं है</string>
+
+    <!-- ===== ShaderStackSection ===== -->
+
+    <string name="settings_shell_shaderstack_tab_label">%1$d. %2$s</string>
+    <string name="settings_shell_shaderstack_preview_desc">शेडर प्रीव्यू</string>
+    <string name="settings_shell_shaderstack_no_preview">कोई प्रीव्यू नहीं</string>
+    <string name="settings_shell_shaderstack_empty">चेन में कोई शेडर नहीं</string>
+    <string name="settings_shell_shaderstack_no_params">कोई समायोज्य पैरामीटर नहीं</string>
+
+    <!-- ===== CoreOptionsSection ===== -->
+
+    <string name="settings_shell_coreoptions_no_platforms">बिल्ट-इन एमुलेटर सपोर्ट वाला कोई प्लेटफ़ॉर्म नहीं</string>
+    <string name="settings_shell_coreoptions_status_installed_selector">इंस्टॉल किया गया</string>
+    <string name="settings_shell_coreoptions_status_not_downloaded_selector">डाउनलोड नहीं किया गया</string>
+    <string name="settings_shell_coreoptions_status_installed_option">इंस्टॉल किया गया</string>
+    <string name="settings_shell_coreoptions_status_not_downloaded_option">डाउनलोड नहीं किया गया</string>
+    <string name="settings_shell_coreoptions_selector_value_template">%1$s (%2$s)</string>
+    <string name="settings_shell_coreoptions_option_value_template">%1$s (%2$s)</string>
+    <string name="settings_shell_coreoptions_none_available">कोई कोर उपलब्ध नहीं</string>
+    <string name="settings_shell_coreoptions_core_title">कोर</string>
+    <string name="settings_shell_coreoptions_redownload">कोर फिर से डाउनलोड करें</string>
+    <string name="settings_shell_coreoptions_download">कोर डाउनलोड करें</string>
+    <string name="settings_shell_coreoptions_downloading">डाउनलोड हो रहा है&#8230;</string>
+    <string name="settings_shell_coreoptions_reinstall_subtitle">कोर करप्ट या पुराना होने पर फिर से इंस्टॉल करें</string>
+    <string name="settings_shell_coreoptions_download_subtitle">सेटिंग्स बदलने के लिए कोर डाउनलोड करें</string>
+    <string name="settings_shell_coreoptions_delete_core">कोर हटाएँ</string>
+    <string name="settings_shell_coreoptions_delete_core_subtitle">इसकी सेटिंग्स रखते हुए जगह खाली करें</string>
+    <string name="settings_shell_coreoptions_reset_all">सभी को डिफ़ॉल्ट पर रीसेट करें</string>
+
+    <!-- ===== CoreManagementSection ===== -->
+
+    <string name="settings_shell_coremanagement_no_platforms">सिंक के लिए कोई समर्थित प्लेटफ़ॉर्म चालू नहीं</string>
+    <string name="settings_shell_coremanagement_header">हर प्लेटफ़ॉर्म के लिए कोर चुनें</string>
+    <string name="settings_shell_coremanagement_active_desc">सक्रिय</string>
+    <string name="settings_shell_coremanagement_download_required_desc">डाउनलोड आवश्यक</string>
+    <string name="settings_shell_coremanagement_netplay_tag">Netplay</string>
+    <string name="settings_shell_coremanagement_update_tag">अपडेट</string>
+
+    <!-- ===== BuiltinVideoSection: per-platform save/state path rows ===== -->
+
+    <string name="settings_shell_builtinvideo_reset_all_to_global">सभी को ग्लोबल पर रीसेट करें</string>
+    <string name="settings_shell_builtinvideo_save_path_title">सेव फ़ाइल पाथ</string>
+    <string name="settings_shell_builtinvideo_state_path_title">स्टेट पाथ</string>
+    <string name="settings_shell_builtinvideo_save_trailing_custom">(कस्टम)</string>
+    <string name="settings_shell_builtinvideo_save_trailing_custom_platform">(इस प्लेटफ़ॉर्म के लिए कस्टम)</string>
+    <string name="settings_shell_builtinvideo_save_trailing_from_global">(ग्लोबल से)</string>
+    <string name="settings_shell_builtinvideo_state_trailing_custom">(कस्टम)</string>
+    <string name="settings_shell_builtinvideo_state_trailing_custom_platform">(इस प्लेटफ़ॉर्म के लिए कस्टम)</string>
+    <string name="settings_shell_builtinvideo_state_trailing_from_global">(ग्लोबल से)</string>
+
+    <!-- ===== SettingsFooter.kt (standalone, unused default footer) ===== -->
+
+    <string name="settings_shell_footer_standalone_navigate">नेविगेट करें</string>
+    <string name="settings_shell_footer_standalone_select">चुनें</string>
+    <string name="settings_shell_footer_standalone_back">वापस</string>
+
+    <!-- ===== SettingsScreen: section header titles ===== -->
+
+    <string name="settings_shell_header_main">सेटिंग्स</string>
+    <string name="settings_shell_header_accounts">अकाउंट</string>
+    <string name="settings_shell_header_saves">सेव</string>
+    <string name="settings_shell_header_sync_settings">सिंक सेटिंग्स</string>
+    <string name="settings_shell_header_steam">STEAM (प्रायोगिक)</string>
+    <string name="settings_shell_header_storage">स्टोरेज</string>
+    <string name="settings_shell_header_storage_games">गेम्स स्टोरेज</string>
+    <string name="settings_shell_header_storage_media">मीडिया स्टोरेज</string>
+    <string name="settings_shell_header_storage_platform_games_fallback">प्लेटफ़ॉर्म गेम्स</string>
+    <string name="settings_shell_header_storage_caches">कैश और सिस्टम</string>
+    <string name="settings_shell_header_theme">थीम</string>
+    <string name="settings_shell_header_audio">ऑडियो</string>
+    <string name="settings_shell_header_theme_sounds">साउंड</string>
+    <string name="settings_shell_header_theme_music">संगीत</string>
+    <string name="settings_shell_header_theme_fonts">फ़ॉन्ट</string>
+    <string name="settings_shell_header_theme_backdrop">सरफ़ेस बैकड्रॉप</string>
+    <string name="settings_shell_header_interface">इंटरफ़ेस</string>
+    <string name="settings_shell_header_box_art">बॉक्स आर्ट</string>
+    <string name="settings_shell_header_controller_grip">कंट्रोलर ग्रिप</string>
+    <string name="settings_shell_header_home_screen">होम स्क्रीन</string>
+    <string name="settings_shell_header_library_view">लाइब्रेरी</string>
+    <string name="settings_shell_header_displays">डिस्प्ले</string>
+    <string name="settings_shell_header_ambient_led">LED नियंत्रण</string>
+    <string name="settings_shell_header_navigation">नेविगेशन</string>
+    <string name="settings_shell_header_platforms">प्लेटफ़ॉर्म</string>
+    <string name="settings_shell_header_builtin_emulator">बिल्ट-इन एमुलेटर</string>
+    <string name="settings_shell_header_platform_detail_fallback">प्लेटफ़ॉर्म</string>
+    <string name="settings_shell_header_builtin_video">बिल्ट-इन A/V और परफ़ॉर्मेंस</string>
+    <string name="settings_shell_header_builtin_controls">बिल्ट-इन कंट्रोल्स</string>
+    <string name="settings_shell_header_core_management">कोर मैनेज करें</string>
+    <string name="settings_shell_header_core_options">कोर विकल्प</string>
+    <string name="settings_shell_header_bios">BIOS फ़ाइलें</string>
+    <string name="settings_shell_header_shader_stack">शेडर चेन</string>
+    <string name="settings_shell_header_frame_picker">फ़्रेम चुनें</string>
+    <string name="settings_shell_header_permissions">अनुमतियाँ</string>
+    <string name="settings_shell_header_drivers">GPU ड्राइवर</string>
+    <string name="settings_shell_header_about">परिचय</string>
+    <string name="settings_shell_header_social">सोशल</string>
+    <string name="settings_shell_header_context_global">ग्लोबल</string>
+
+    <string name="settings_shell_context_previous_desc">पिछला कॉन्टेक्स्ट</string>
+    <string name="settings_shell_context_next_desc">अगला कॉन्टेक्स्ट</string>
+
+    <!-- ===== SettingsScreen: file browser titles ===== -->
+
+    <string name="settings_shell_platform_fallback">प्लेटफ़ॉर्म</string>
+    <string name="settings_shell_filebrowser_platform_rom_path_title">%1$s ROM पाथ</string>
+    <string name="settings_shell_filebrowser_gamenative_sync_folder_title">%1$s सिंक फ़ोल्डर</string>
+    <string name="settings_shell_filebrowser_save_path_title">सेव पाथ</string>
+    <string name="settings_shell_filebrowser_platform_save_path_title">%1$s सेव पाथ</string>
+    <string name="settings_shell_filebrowser_platform_state_path_title">%1$s स्टेट पाथ</string>
+    <string name="settings_shell_filebrowser_builtin_save_path_title">बिल्ट-इन सेव पाथ</string>
+    <string name="settings_shell_filebrowser_builtin_state_path_title">बिल्ट-इन स्टेट पाथ</string>
+    <string name="settings_shell_filebrowser_platform_builtin_save_path_title">%1$s बिल्ट-इन सेव पाथ</string>
+    <string name="settings_shell_filebrowser_platform_builtin_state_path_title">%1$s बिल्ट-इन स्टेट पाथ</string>
+    <string name="settings_shell_filebrowser_settings_backup_title">सेटिंग्स बैकअप चुनें</string>
+    <string name="settings_shell_filebrowser_add_music_title">संगीत जोड़ें</string>
+    <string name="settings_shell_filebrowser_music_location_title">संगीत लोकेशन</string>
+    <string name="settings_shell_filebrowser_media_location_title">मीडिया लोकेशन</string>
+    <string name="settings_shell_filebrowser_custom_sound_title">कस्टम साउंड</string>
+
+    <!-- ===== SettingsScreen: confirm modals ===== -->
+
+    <string name="settings_shell_modal_builtin_migration_save_title">सेव फ़ाइलें माइग्रेट करें?</string>
+    <string name="settings_shell_modal_builtin_migration_state_title">स्टेट फ़ाइलें माइग्रेट करें?</string>
+    <string name="settings_shell_modal_builtin_migration_save_message">गंतव्य में पहले से %1$d सेव फ़ाइलें मौजूद हैं। पुरानी लोकेशन से मौजूदा फ़ाइलें स्थानांतरित करें? इससे कोई भी टकराव ओवरराइट हो जाएगा।</string>
+    <string name="settings_shell_modal_builtin_migration_state_message">गंतव्य में पहले से %1$d स्टेट फ़ाइलें मौजूद हैं। पुरानी लोकेशन से मौजूदा फ़ाइलें स्थानांतरित करें? इससे कोई भी टकराव ओवरराइट हो जाएगा।</string>
+    <string name="settings_shell_modal_builtin_migration_confirm">माइग्रेट करें</string>
+    <string name="settings_shell_modal_builtin_migration_skip">छोड़ें</string>
+
+    <string name="settings_shell_modal_music_relocation_title">संगीत फ़ाइलें स्थानांतरित करें?</string>
+    <string name="settings_shell_modal_music_relocation_message">मौजूदा संगीत फ़ोल्डर में %1$d फ़ाइलें हैं। इन्हें नई लोकेशन पर ले जाएँ? इससे कोई भी टकराव ओवरराइट हो जाएगा।</string>
+    <string name="settings_shell_modal_music_relocation_confirm">स्थानांतरित करें</string>
+    <string name="settings_shell_modal_music_relocation_skip">छोड़ें</string>
+
+    <string name="settings_shell_modal_media_relocation_title">डाउनलोड किया गया मीडिया स्थानांतरित करें?</string>
+    <string name="settings_shell_modal_media_relocation_message">मौजूदा मीडिया फ़ोल्डर में %1$d फ़ाइलें हैं। इन्हें नई लोकेशन पर ले जाएँ? इससे कोई भी टकराव ओवरराइट हो जाएगा।</string>
+    <string name="settings_shell_modal_media_relocation_confirm">स्थानांतरित करें</string>
+    <string name="settings_shell_modal_media_relocation_leave">छोड़ दें</string>
+
+    <string name="settings_shell_modal_jellyfin_signout_title">Jellyfin से साइन आउट करें?</string>
+    <string name="settings_shell_modal_jellyfin_signout_message">यह डिवाइस आपका Jellyfin लॉगिन भूल जाएगा। डाउनलोड किया गया मीडिया डिस्क पर रहेगा और आपकी वॉच हिस्ट्री सर्वर पर बनी रहेगी।</string>
+    <string name="settings_shell_modal_jellyfin_signout_confirm">साइन आउट करें</string>
+
+    <string name="settings_shell_modal_import_settings_title">सेटिंग्स इम्पोर्ट करें?</string>
+    <string name="settings_shell_modal_import_settings_message">बैकअप फ़ाइल चुनें और उसमें नामित सेटिंग्स आपकी सेटिंग्स की जगह ले लेंगी। फ़ाइल जो छोड़ती है वह अछूता रहेगा, और अकाउंट, सर्वर, सिंक स्टेटस और फ़ाइल लोकेशन कभी नहीं लाए जाते।</string>
+    <string name="settings_shell_modal_import_settings_confirm">फ़ाइल चुनें</string>
+
+    <string name="settings_shell_modal_migrate_downloads_title">डाउनलोड माइग्रेट करें?</string>
+    <string name="settings_shell_modal_migrate_downloads_message">%1$d गेम (%2$s) नई लोकेशन पर ले जाएँ?</string>
+    <string name="settings_shell_modal_migrate_downloads_confirm">माइग्रेट करें</string>
+    <string name="settings_shell_modal_migrate_downloads_skip">छोड़ें</string>
+
+    <string name="settings_shell_modal_migrate_platform_title">%1$s ROM माइग्रेट करें?</string>
+    <string name="settings_shell_modal_migrate_platform_fallback">प्लेटफ़ॉर्म</string>
+    <string name="settings_shell_modal_migrate_platform_message">डाउनलोड किए गए गेम नई लोकेशन पर ले जाएँ? फ़ाइलें कॉपी होकर फिर पुरानी लोकेशन से हटा दी जाएँगी।</string>
+    <string name="settings_shell_modal_migrate_platform_confirm">माइग्रेट करें</string>
+    <string name="settings_shell_modal_migrate_platform_skip">छोड़ें</string>
+
+    <string name="settings_shell_modal_purge_platform_title">%1$s पर्ज करें?</string>
+    <string name="settings_shell_modal_purge_platform_fallback">प्लेटफ़ॉर्म</string>
+    <string name="settings_shell_modal_purge_platform_message">इससे सभी %1$d गेम और उनकी लोकल ROM फ़ाइलें हट जाएँगी। यह पूर्ववत नहीं किया जा सकता।</string>
+    <string name="settings_shell_modal_purge_platform_confirm">पर्ज करें</string>
+
+    <string name="settings_shell_modal_sync_first_title">पहले सेव सिंक करें</string>
+    <string name="settings_shell_modal_sync_first_message">पहले सेव सिंक करें - %1$d लंबित हैं। अभी लाइब्रेरी रीसेट करने से वे सेव हमेशा के लिए मिट जाएँगे जो अपलोड नहीं हुए हैं।</string>
+    <string name="settings_shell_modal_sync_first_confirm">अभी सिंक करें</string>
+
+    <string name="settings_shell_modal_reset_library_title">लाइब्रेरी रीसेट करें?</string>
+    <string name="settings_shell_modal_reset_library_message">इससे डेटाबेस और इमेज कैश साफ़ हो जाएँगे। डाउनलोड की गई फ़ाइलें डिस्क पर बनी रहेंगी। हमेशा के लिए खो जाएगा: खेलने का समय, लोकल कलेक्शन, डाउनलोड हिस्ट्री, सेव सिंक स्टेटस, और प्रति-गेम सेटिंग्स। आपको अपनी लाइब्रेरी फिर से सिंक करनी होगी।</string>
+    <string name="settings_shell_modal_reset_library_confirm">रीसेट करें</string>
+
+    <plurals name="settings_shell_unsynced_saves_warning">
+        <item quantity="one">%d सिंक न हुआ सेव खो जाएगा।</item>
+        <item quantity="other">%d सिंक न हुए सेव खो जाएँगे।</item>
+    </plurals>
+
+    <string name="settings_shell_modal_delete_game_soundtrack_title">%1$s हटाएँ?</string>
+    <string name="settings_shell_modal_delete_game_soundtrack_message">यह गेम के लिए डाउनलोड की गई सभी फ़ाइलें हटा देगा।%1$s इसका साउंडट्रैक भी हटाना है या नहीं, चुनें।</string>
+    <string name="settings_shell_modal_delete_game_cancel">रद्द करें</string>
+    <string name="settings_shell_modal_delete_game_only">गेम हटाएँ</string>
+    <string name="settings_shell_modal_delete_game_with_soundtrack">हटाएँ + साउंडट्रैक</string>
+
+    <string name="settings_shell_modal_delete_game_plain_title">%1$s हटाएँ?</string>
+    <string name="settings_shell_modal_delete_game_plain_message">यह गेम के लिए डाउनलोड की गई सभी फ़ाइलें हटा देगा।%1$s यह पूर्ववत नहीं किया जा सकता।</string>
+    <string name="settings_shell_modal_delete_game_plain_confirm">गेम हटाएँ</string>
+
+    <string name="settings_shell_modal_romm_signout_title">RomM से साइन आउट करें?</string>
+    <plurals name="settings_shell_romm_signout_pending_message">
+        <item quantity="one">पहले %1$d सेव अपलोड होगा। जब सब कुछ आपके सर्वर पर हो जाए, तब इस अकाउंट के कैश किए गए सेव, स्टेट और सेटिंग्स इस डिवाइस से हटा दी जाएँगी। आपके डाउनलोड किए गए गेम बने रहेंगे।</item>
+        <item quantity="other">पहले %1$d सेव अपलोड होंगे। जब सब कुछ आपके सर्वर पर हो जाए, तब इस अकाउंट के कैश किए गए सेव, स्टेट और सेटिंग्स इस डिवाइस से हटा दी जाएँगी। आपके डाउनलोड किए गए गेम बने रहेंगे।</item>
+    </plurals>
+    <string name="settings_shell_romm_signout_message">इस अकाउंट के कैश किए गए सेव, स्टेट और सेटिंग्स इस डिवाइस से हटा दी जाएँगी, और जो कुछ पहले ही अपलोड हो चुका है वह आपके सर्वर पर बना रहेगा। आपके डाउनलोड किए गए गेम बने रहेंगे।</string>
+    <string name="settings_shell_modal_romm_signout_confirm">साइन आउट करें</string>
+
+    <string name="settings_shell_modal_reset_save_cache_title">सेव कैश रीसेट करें?</string>
+    <string name="settings_shell_modal_reset_save_cache_message">इससे सभी लोकल रूप से कैश किए गए सेव स्नैपशॉट और लंबित सिंक ऑपरेशन हट जाएँगे। आपकी असली सेव फ़ाइलें और सर्वर सेव प्रभावित नहीं होंगी।</string>
+    <string name="settings_shell_modal_reset_save_cache_confirm">रीसेट करें</string>
+
+    <string name="settings_shell_modal_clear_save_path_cache_title">सेव पाथ कैश साफ़ करें?</string>
+    <string name="settings_shell_modal_clear_save_path_cache_message">इससे सभी पहचाने गए सेव फ़ाइल पाथ साफ़ हो जाएँगे। अगली सिंक पर पाथ फिर से पहचाने जाएँगे। अगर सेव गलत लोकेशन पर सिंक हो रहे हैं तो इसका उपयोग करें।</string>
+    <string name="settings_shell_modal_clear_save_path_cache_confirm">साफ़ करें</string>
+
+    <string name="settings_shell_modal_secure_saves_off_title">सिक्योर सेव बंद करें?</string>
+    <string name="settings_shell_modal_secure_saves_off_message">इसे बंद करने से RetroAchievements हार्डकोर मोड बंद हो जाता है। सिक्योर सेव फिर से चालू होने तक गेम कैज़ुअल मोड में लॉन्च होंगे।</string>
+    <string name="settings_shell_modal_secure_saves_off_confirm">बंद करें</string>
+
+    <string name="settings_shell_modal_clear_state_cache_title">स्टेट कैश साफ़ करें?</string>
+    <string name="settings_shell_modal_clear_state_cache_message">इससे सभी लोकल रूप से कैश किए गए सेव स्टेट स्नैपशॉट और उनके लंबित सिंक ऑपरेशन हट जाएँगे। सेव फ़ाइलें और सर्वर कॉपी प्रभावित नहीं होंगी।</string>
+    <string name="settings_shell_modal_clear_state_cache_confirm">साफ़ करें</string>
+
+    <string name="settings_shell_modal_caches_clear_confirm">साफ़ करें</string>
+
+    <string name="settings_shell_modal_delete_core_title">कोर हटाएँ?</string>
+    <string name="settings_shell_modal_delete_core_message">कोर इस डिवाइस से हटा दिया जाएगा। इसका उपयोग करने वाले गेम को चलने से पहले इसे फिर से डाउनलोड करना होगा।</string>
+    <string name="settings_shell_modal_delete_core_confirm">हटाएँ</string>
+
+    <string name="settings_shell_modal_sync_saves_title">सेव सिंक करें?</string>
+    <string name="settings_shell_modal_sync_saves_message">इससे डाउनलोड किए गए सभी गेम में सेव में बदलाव की जाँच होगी और उन्हें सर्वर से सिंक किया जाएगा। पिछली सिंक से नए लोकल सेव अपलोड होंगे, और नए सर्वर सेव डाउनलोड होंगे।</string>
+    <string name="settings_shell_modal_sync_saves_confirm">सिंक करें</string>
+
+    <!-- ===== SettingsScreen: AccountModals ===== -->
+
+    <string name="settings_shell_accounts_add_title">एक अकाउंट जोड़ें?</string>
+    <string name="settings_shell_accounts_switch_title">%1$s पर स्विच करें?</string>
+    <string name="settings_shell_accounts_fallback_name">अकाउंट</string>
+    <string name="settings_shell_accounts_exit_message">पहले Argosy के बाहर लॉन्च किया गया कोई भी गेम पूरी तरह बंद करें। Argosy उन सेशन को नहीं देख सकता, और चल रहा गेम उन सेव के ऊपर लिख सकता है जिन्हें यह स्थानांतरित करता है। कुछ भी हटाए जाने से पहले सेव आर्काइव और सत्यापित किए जाते हैं।</string>
+    <string name="settings_shell_accounts_add_confirm">गेम बंद हैं, जारी रखें</string>
+    <string name="settings_shell_accounts_switch_confirm">गेम बंद हैं, स्विच करें</string>
+
+    <string name="settings_shell_accounts_remove_title">%1$s हटाएँ?</string>
+    <string name="settings_shell_accounts_remove_fallback_name">अकाउंट</string>
+    <string name="settings_shell_accounts_removal_message_base">यह इस अकाउंट के सेव, स्टेट, लंबित काम, उपलब्धियाँ और लाइब्रेरी ओवरले इस डिवाइस से हटा देगा। डाउनलोड किए गए गेम बने रहेंगे।</string>
+    <string name="settings_shell_accounts_removal_pending_suffix"> अभी भी न भेजा गया: %1$s।</string>
+    <string name="settings_shell_accounts_removal_last_account_suffix"> यह आखिरी अकाउंट है, इसलिए डिवाइस RomM से साइन आउट हो जाएगा।</string>
+    <string name="settings_shell_accounts_removal_revoke_suffix"> डिवाइस RomM सर्वर पर रजिस्टर्ड रहेगा; उसे वहाँ रद्द करें।</string>
+    <string name="settings_shell_accounts_cancel">रद्द करें</string>
+    <string name="settings_shell_accounts_keep_queued_work">लंबित काम रखें</string>
+    <string name="settings_shell_accounts_discard_and_remove">छोड़ें और हटाएँ</string>
+    <string name="settings_shell_accounts_remove_confirm">हटाएँ</string>
+
+    <string name="settings_shell_accounts_switch_failed_title">स्विच पूरा नहीं हुआ</string>
+    <string name="settings_shell_accounts_switch_failed_message">%1$s स्विच पूरा होने तक गेम लॉन्च रोके रहते हैं, ताकि कोई सेव आधा स्थानांतरित न रह जाए। इसे पूरा करने के लिए फिर से कोशिश करें।</string>
+    <string name="settings_shell_accounts_retry">फिर कोशिश करें</string>
+    <string name="settings_shell_accounts_not_now">अभी नहीं</string>
+
+    <string name="settings_shell_accounts_cannot_switch_title">अभी स्विच नहीं कर सकते</string>
+    <string name="settings_shell_accounts_ok">ठीक है</string>
+    <string name="settings_shell_accounts_close">बंद करें</string>
+
+    <string name="settings_shell_accounts_notice_title">अकाउंट</string>
+    <string name="settings_shell_accounts_ok2">ठीक है</string>
+    <string name="settings_shell_accounts_close2">बंद करें</string>
+
+    <!-- ===== SettingsScreen: footer hints ===== -->
+
+    <string name="settings_shell_footer_navigate">नेविगेट करें</string>
+    <string name="settings_shell_footer_navigate_vertical">नेविगेट करें</string>
+    <string name="settings_shell_footer_preview_shape">शेप प्रीव्यू</string>
+    <string name="settings_shell_footer_preview_game">गेम प्रीव्यू</string>
+    <string name="settings_shell_footer_shader">शेडर</string>
+    <string name="settings_shell_footer_reorder">क्रम बदलें</string>
+    <string name="settings_shell_footer_adjust_shaderstack">समायोजित करें</string>
+    <string name="settings_shell_footer_reset_shaderstack">रीसेट करें</string>
+    <string name="settings_shell_footer_remove_shaderstack">हटाएँ</string>
+    <string name="settings_shell_footer_add_shaderstack">जोड़ें</string>
+    <string name="settings_shell_footer_platform_builtin">प्लेटफ़ॉर्म</string>
+    <string name="settings_shell_footer_reset_to_default_builtinvideo">डिफ़ॉल्ट पर रीसेट करें</string>
+    <string name="settings_shell_footer_sample">सैंपल</string>
+    <string name="settings_shell_footer_reset_to_default_themesounds">डिफ़ॉल्ट पर रीसेट करें</string>
+    <string name="settings_shell_footer_platform_coreoptions">प्लेटफ़ॉर्म</string>
+    <string name="settings_shell_footer_reset_to_default_coreoptions">डिफ़ॉल्ट पर रीसेट करें</string>
+    <string name="settings_shell_footer_force_sync">फ़ोर्स सिंक</string>
+    <string name="settings_shell_footer_folders_scan">फ़ोल्डर / स्कैन</string>
+    <string name="settings_shell_footer_switch_remove">स्विच / हटाएँ</string>
+    <string name="settings_shell_footer_refresh">रीफ़्रेश करें</string>
+    <string name="settings_shell_footer_sort">सॉर्ट करें</string>
+    <string name="settings_shell_footer_category">श्रेणी</string>
+    <string name="settings_shell_footer_delete">हटाएँ</string>
+    <string name="settings_shell_footer_adjust_platformdetail">समायोजित करें</string>
+    <string name="settings_shell_footer_update_emulator">एमुलेटर अपडेट करें</string>
+    <string name="settings_shell_footer_reset_platformdetail">रीसेट करें</string>
+    <string name="settings_shell_footer_toggle_label">टॉगल करें</string>
+    <string name="settings_shell_footer_open_label">खोलें</string>
+    <string name="settings_shell_footer_select_label">चुनें</string>
+    <string name="settings_shell_footer_select_default">चुनें</string>
+    <string name="settings_shell_footer_display">डिस्प्ले</string>
+    <string name="settings_shell_footer_enable">चालू करें</string>
+    <string name="settings_shell_footer_update">अपडेट करें</string>
+    <string name="settings_shell_footer_reset_builtinvideo_override">रीसेट करें</string>
+    <string name="settings_shell_footer_reset_builtincontrols_override">रीसेट करें</string>
+    <string name="settings_shell_footer_back">वापस</string>
+
+    <!-- ===== SettingsScreen: cache clear confirm modals ===== -->
+
+    <string name="settings_shell_caches_image_title">इमेज कैश साफ़ करें?</string>
+    <string name="settings_shell_caches_image_message">इससे कैश किए गए सभी कवर, बैकग्राउंड और स्क्रीनशॉट हट जाएँगे। ब्राउज़ करते समय इमेज सर्वर से फिर से डाउनलोड होंगी।</string>
+    <string name="settings_shell_caches_rom_extraction_title">एक्सट्रैक्ट किए गए ROM साफ़ करें?</string>
+    <string name="settings_shell_caches_rom_extraction_message">इससे कंप्रेस्ड गेम की एक्सट्रैक्ट की गई वर्किंग कॉपी हट जाएँगी। हर गेम के अगली बार लॉन्च होने पर वे फिर से एक्सट्रैक्ट होंगी।</string>
+    <string name="settings_shell_caches_rom_staging_title">छोड़ी गई स्टेजिंग साफ़ करें?</string>
+    <string name="settings_shell_caches_rom_staging_message">इससे उन डाउनलोड की आंतरिक वर्किंग फ़ाइलें हट जाएँगी जो कभी पूरे नहीं हुए। क्यू में मौजूद डाउनलोड अपनी फ़ाइलें रखेंगे और वहीं से जारी रहेंगे।</string>
+    <string name="settings_shell_caches_sfx_title">साउंड इफ़ेक्ट कैश साफ़ करें?</string>
+    <string name="settings_shell_caches_sfx_message">इससे ट्रांसकोड की गई कस्टम साउंड फ़ाइलें हट जाएँगी। अगली बार साउंड लोड होने पर वे अपने आप फिर से बन जाएँगी।</string>
+    <string name="settings_shell_caches_emulator_apks_title">एमुलेटर इंस्टॉलर साफ़ करें?</string>
+    <string name="settings_shell_caches_emulator_apks_message">इससे डाउनलोड किए गए एमुलेटर इंस्टॉलर APK हट जाएँगे। इंस्टॉल किए गए एमुलेटर प्रभावित नहीं होंगे।</string>
+    <string name="settings_shell_caches_misc_downloads_title">विविध डाउनलोड साफ़ करें?</string>
+    <string name="settings_shell_caches_misc_downloads_message">इससे फ्रेंड प्रेज़ेंस कवर और डाउनलोड किए गए GPU ड्राइवर पैकेज हट जाएँगे। इंस्टॉल किए गए ड्राइवर प्रभावित नहीं होंगे।</string>
+    <string name="settings_shell_caches_shaders_catalog_title">शेडर कैटलॉग साफ़ करें?</string>
+    <string name="settings_shell_caches_shaders_catalog_message">इससे डाउनलोड किए गए कैटलॉग शेडर हट जाएँगे। कस्टम शेडर बने रहेंगे, और कैटलॉग शेडर मांगे जाने पर फिर से डाउनलोड होंगे।</string>
+    <string name="settings_shell_caches_frames_title">फ़्रेम ओवरले साफ़ करें?</string>
+    <string name="settings_shell_caches_frames_message">इससे डाउनलोड किए गए फ़्रेम ओवरले हट जाएँगे। चुने जाने पर वे मांगे जाने पर फिर से डाउनलोड होंगे।</string>
+    <string name="settings_shell_caches_steam_downloads_title">Steam डाउनलोड डेटा साफ़ करें?</string>
+    <string name="settings_shell_caches_steam_downloads_message">इससे स्टेज किए गए Steam डाउनलोड हट जाएँगे और डाउनलोड क्यू साफ़ हो जाएगी। इंस्टॉल किए गए गेम प्रभावित नहीं होंगे, लेकिन आधे-अधूरे डाउनलोड शुरू से चालू होंगे।</string>
+
+    <!-- ===== ManagePinsScreen ===== -->
+
+    <string name="settings_shell_managepins_loading">लोड हो रहा है&#8230;</string>
+    <string name="settings_shell_managepins_reorder_move">मूव करें</string>
+    <string name="settings_shell_managepins_reorder_done">पूर्ण</string>
+    <string name="settings_shell_managepins_reorder_cancel">रद्द करें</string>
+    <string name="settings_shell_managepins_navigate">नेविगेट करें</string>
+    <string name="settings_shell_managepins_reorder_hint">क्रम बदलें</string>
+    <string name="settings_shell_managepins_unpin">अनपिन करें</string>
+    <string name="settings_shell_managepins_back_hint">वापस</string>
+    <string name="settings_shell_managepins_back_desc">वापस</string>
+    <string name="settings_shell_managepins_title">पिन किए गए कलेक्शन मैनेज करें</string>
+    <string name="settings_shell_managepins_type_collection">कलेक्शन</string>
+    <string name="settings_shell_managepins_type_genre">शैली</string>
+    <string name="settings_shell_managepins_type_game_mode">गेम मोड</string>
+    <string name="settings_shell_managepins_type_series">सीरीज़</string>
+    <string name="settings_shell_managepins_moving_desc">मूव हो रहा है</string>
+    <plurals name="settings_shell_managepins_row_subtitle">
+        <item quantity="one">%1$s - %2$d गेम</item>
+        <item quantity="other">%1$s - %2$d गेम</item>
+    </plurals>
+    <string name="settings_shell_managepins_empty_title">कोई पिन किया गया कलेक्शन नहीं</string>
+    <string name="settings_shell_managepins_empty_subtitle">कलेक्शन स्क्रीन से कलेक्शन पिन करें</string>
+
+    <!-- ===== BgmPlaylistManagerScreen ===== -->
+
+    <string name="settings_shell_bgm_synced_folders">सिंक किए गए फ़ोल्डर</string>
+    <string name="settings_shell_bgm_tracks">ट्रैक</string>
+    <string name="settings_shell_bgm_reorder_move">मूव करें</string>
+    <string name="settings_shell_bgm_reorder_done">पूर्ण</string>
+    <string name="settings_shell_bgm_reorder_cancel">रद्द करें</string>
+    <string name="settings_shell_bgm_add_music_empty">संगीत जोड़ें</string>
+    <string name="settings_shell_bgm_move_hint">मूव करें</string>
+    <string name="settings_shell_bgm_add_music_hint">संगीत जोड़ें</string>
+    <string name="settings_shell_bgm_remove_verb">हटाएँ</string>
+    <string name="settings_shell_bgm_remove_verb_uncovered">हटाएँ</string>
+    <string name="settings_shell_bgm_disable_verb">बंद करें</string>
+    <string name="settings_shell_bgm_enable_verb">चालू करें</string>
+    <string name="settings_shell_bgm_back_desc">वापस</string>
+    <string name="settings_shell_bgm_title">संगीत प्लेलिस्ट</string>
+    <string name="settings_shell_bgm_add_label">जोड़ें</string>
+    <string name="settings_shell_bgm_folder_missing">फ़ोल्डर गुम है</string>
+    <plurals name="settings_shell_bgm_track_count">
+        <item quantity="one">%1$d ट्रैक</item>
+        <item quantity="other">%1$d ट्रैक</item>
+    </plurals>
+    <plurals name="settings_shell_bgm_disabled_suffix_template">
+        <item quantity="one"> (%1$d बंद)</item>
+        <item quantity="other"> (%1$d बंद)</item>
+    </plurals>
+    <string name="settings_shell_bgm_remove_folder_desc">फ़ोल्डर हटाएँ</string>
+    <string name="settings_shell_bgm_moving_desc">मूव हो रहा है</string>
+    <string name="settings_shell_bgm_file_missing">फ़ाइल गुम है - प्लेबैक के दौरान छोड़ दी गई</string>
+    <string name="settings_shell_bgm_disabled_desc">बंद है - प्लेबैक से बाहर</string>
+    <string name="settings_shell_bgm_move_up_desc">ऊपर ले जाएँ</string>
+    <string name="settings_shell_bgm_move_down_desc">नीचे ले जाएँ</string>
+    <string name="settings_shell_bgm_remove_desc">हटाएँ</string>
+    <string name="settings_shell_bgm_empty_state">कोई संगीत नहीं - म्यूज़िक ब्राउज़र या लोकल फ़ाइलों से जोड़ें</string>
+
+    <!-- ===== Routers: SettingsBuiltinRouter ===== -->
+
+    <string name="settings_shell_router_cores_load_failed">कोर लोड नहीं हो सके। कृपया फिर से कोशिश करें।</string>
+    <string name="settings_shell_router_cannot_download_offline">ऑफ़लाइन रहते हुए डाउनलोड नहीं किया जा सकता</string>
+    <string name="settings_shell_router_cannot_update_offline">ऑफ़लाइन रहते हुए अपडेट नहीं किया जा सकता</string>
+    <string name="settings_shell_router_core_downloading_title">%1$s डाउनलोड हो रहा है</string>
+    <string name="settings_shell_router_core_downloading_subtitle">कृपया प्रतीक्षा करें&#8230;</string>
+    <string name="settings_shell_router_core_downloaded_title">%1$s डाउनलोड हो गया</string>
+    <string name="settings_shell_router_core_downloaded_subtitle">कोर अब उपलब्ध है</string>
+    <string name="settings_shell_router_core_download_failed_title">डाउनलोड विफल</string>
+    <string name="settings_shell_router_core_download_failed_fallback">अज्ञात त्रुटि</string>
+
+    <!-- ===== Routers: SettingsAboutRouter ===== -->
+
+    <string name="settings_shell_router_settings_exported_title">सेटिंग्स एक्सपोर्ट हो गईं</string>
+    <string name="settings_shell_router_settings_exported_subtitle">%1$d सेटिंग्स %2$s में लिखी गईं</string>
+    <string name="settings_shell_router_settings_imported_title">सेटिंग्स इम्पोर्ट हो गईं</string>
+    <string name="settings_shell_router_import_subtitle_with_skipped">%1$d लागू, %2$d छोड़ी गईं। सब कुछ लागू करने के लिए रीस्टार्ट करें।</string>
+    <string name="settings_shell_router_import_subtitle">%1$d लागू। सब कुछ लागू करने के लिए रीस्टार्ट करें।</string>
+
+    <!-- ===== Routers: SettingsFontRouter ===== -->
+
+    <string name="settings_shell_router_font_import_failed_title">फ़ॉन्ट इम्पोर्ट विफल</string>
+    <string name="settings_shell_router_font_error_no_filename">चुनी गई फ़ाइल नहीं पढ़ी जा सकी</string>
+    <string name="settings_shell_router_font_error_no_stream">चुनी गई फ़ाइल नहीं पढ़ी जा सकी</string>
+    <string name="settings_shell_router_font_error_unsupported_ext">केवल .ttf और .otf फ़ॉन्ट समर्थित हैं</string>
+    <string name="settings_shell_router_font_error_invalid">%1$s एक मान्य फ़ॉन्ट फ़ाइल नहीं है</string>
+
+    <!-- ===== Routers: SettingsGeneralRouter ===== -->
+
+    <string name="settings_shell_router_emulator_name_fallback">अज्ञात</string>
+    <string name="settings_shell_router_content_dir_save">(ROM डायरेक्टरी)</string>
+    <string name="settings_shell_router_content_dir_state">(ROM डायरेक्टरी)</string>
+
+    <!-- ===== Routers: SettingsInitRouter ===== -->
+
+    <string name="settings_shell_router_content_dir_save2">(ROM डायरेक्टरी)</string>
+    <string name="settings_shell_router_content_dir_state2">(ROM डायरेक्टरी)</string>
+
+    <!-- ===== SettingsViewModel ===== -->
+
+    <string name="settings_shell_vm_artwork_cache_title">आर्टवर्क कैश</string>
+    <string name="settings_shell_vm_artwork_cleared_template">%1$s साफ़ किया गया</string>
+    <string name="settings_shell_vm_artwork_nothing_cached">साफ़ करने के लिए कुछ भी कैश नहीं है</string>
+    <string name="settings_shell_vm_platform_fallback">प्लेटफ़ॉर्म</string>
+    <plurals name="settings_shell_vm_scan_found_template">
+        <item quantity="one">%1$d मिले</item>
+        <item quantity="other">%1$d मिले</item>
+    </plurals>
+    <plurals name="settings_shell_vm_scan_removed_template">
+        <item quantity="one">%1$d हटाए गए</item>
+        <item quantity="other">%1$d हटाए गए</item>
+    </plurals>
+    <string name="settings_shell_vm_scan_no_changes">कोई बदलाव नहीं</string>
+    <string name="settings_shell_vm_scan_complete_title">स्कैन पूरा हुआ</string>
+    <string name="settings_shell_vm_scan_complete_subtitle_template">%1$s: %2$s</string>
+    <string name="settings_shell_vm_scan_complete_title2">स्कैन पूरा हुआ</string>
+    <plurals name="settings_shell_vm_android_added_template">
+        <item quantity="one">%1$d जोड़े गए</item>
+        <item quantity="other">%1$d जोड़े गए</item>
+    </plurals>
+    <string name="settings_shell_vm_android_updated_template">%1$d अपडेट किए गए</string>
+    <string name="settings_shell_vm_android_scan_result_template">Android: %1$s</string>
+    <string name="settings_shell_vm_android_scan_nothing_new">Android: कुछ नया नहीं। ऐप्स से अन्य जोड़ें।</string>
+    <string name="settings_shell_vm_folders_restored_title">फ़ोल्डर बहाल किए गए</string>
+    <string name="settings_shell_vm_nothing_moved_title">कुछ भी मूव नहीं हुआ</string>
+    <plurals name="settings_shell_vm_games_moved_back">
+        <item quantity="one">%1$d गेम अपने फ़ोल्डर में वापस मूव हो गया</item>
+        <item quantity="other">%1$d गेम अपने फ़ोल्डर में वापस मूव हो गए</item>
+    </plurals>
+    <string name="settings_shell_vm_no_games_moved_back">कोई गेम वापस मूव नहीं किया जा सका</string>
+    <string name="settings_shell_vm_pushed_to_retroarch_title">RetroArch में पुश किया गया</string>
+    <plurals name="settings_shell_vm_retroarch_configs_updated">
+        <item quantity="one">%1$d RetroArch कॉन्फ़िग अपडेट किया गया</item>
+        <item quantity="other">%1$d RetroArch कॉन्फ़िग अपडेट किए गए</item>
+    </plurals>
+    <string name="settings_shell_vm_retroarch_not_found_title">RetroArch नहीं मिला</string>
+    <string name="settings_shell_vm_retroarch_not_found_subtitle">अपडेट करने के लिए कोई retroarch.cfg नहीं मिली</string>
+    <string name="settings_shell_vm_not_signed_in_title">साइन इन नहीं है</string>
+    <string name="settings_shell_vm_not_signed_in_subtitle">पहले RetroAchievements में लॉग इन करें</string>
+    <string name="settings_shell_vm_files_removed_title">फ़ाइलें हटाई गईं</string>
+    <plurals name="settings_shell_vm_files_removed_subtitle">
+        <item quantity="one">%2$s से %1$d फ़ाइल हटाई गई</item>
+        <item quantity="other">%2$s से %1$d फ़ाइलें हटाई गईं</item>
+    </plurals>
+    <string name="settings_shell_vm_bios_copied_title">BIOS कॉपी किया गया</string>
+    <plurals name="settings_shell_vm_bios_copied_subtitle">
+        <item quantity="one">%1$d फ़ाइल कॉपी की गई</item>
+        <item quantity="other">%1$d फ़ाइलें कॉपी की गईं</item>
+    </plurals>
+</resources>

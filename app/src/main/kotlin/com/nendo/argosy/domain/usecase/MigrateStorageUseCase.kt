@@ -5,16 +5,12 @@ import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.storage.StorageAttributionRepository
 import com.nendo.argosy.data.storage.StorageCategory
-import com.nendo.argosy.core.notification.NotificationManager
-import com.nendo.argosy.core.notification.NotificationProgress
-import com.nendo.argosy.core.notification.NotificationType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
 
 private const val TAG = "MigrateStorageUseCase"
-private const val NOTIFICATION_KEY = "migration"
 
 data class MigrationResult(
     val migrated: Int,
@@ -22,26 +18,25 @@ data class MigrationResult(
     val failed: Int
 )
 
+/**
+ * Migration progress, reported through [MigrateStorageUseCase]'s onProgress callback so the
+ * caller can render it (this use case does not know how to localize or display text).
+ * [current] is 0 for the initial call before any game has been processed.
+ */
 class MigrateStorageUseCase @Inject constructor(
     private val gameRepository: GameRepository,
     private val preferencesRepository: UserPreferencesRepository,
-    private val notificationManager: NotificationManager,
     private val attributionRepository: StorageAttributionRepository
 ) {
     suspend operator fun invoke(
         oldPath: String,
         newPath: String,
-        onProgress: ((current: Int, total: Int, title: String) -> Unit)? = null
+        onProgress: ((current: Int, total: Int, gameTitle: String) -> Unit)? = null
     ): MigrationResult = withContext(Dispatchers.IO) {
         val gamesWithPaths = gameRepository.getGamesWithLocalPaths()
         val totalGames = gamesWithPaths.size
 
-        notificationManager.showPersistent(
-            key = NOTIFICATION_KEY,
-            title = "Moving games",
-            subtitle = "0 / $totalGames",
-            progress = NotificationProgress(0, totalGames)
-        )
+        onProgress?.invoke(0, totalGames, "")
 
         var migrated = 0
         var failed = 0
@@ -52,11 +47,6 @@ class MigrateStorageUseCase @Inject constructor(
         gamesWithPaths.forEachIndexed { index, game ->
             Log.d(TAG, "Migration: processing ${index + 1}/$totalGames - ${game.title}")
 
-            notificationManager.updatePersistent(
-                key = NOTIFICATION_KEY,
-                subtitle = "${index + 1}/$totalGames: ${game.title}",
-                progress = NotificationProgress(index, totalGames)
-            )
             onProgress?.invoke(index + 1, totalGames, game.title)
 
             try {
@@ -100,19 +90,6 @@ class MigrateStorageUseCase @Inject constructor(
         Log.d(TAG, "Migration: complete - migrated=$migrated, skipped=$skipped, failed=$failed")
 
         preferencesRepository.setRomStoragePath(newPath)
-
-        val message = buildString {
-            append("Moved $migrated")
-            if (skipped > 0) append(", $skipped missing")
-            if (failed > 0) append(", $failed failed")
-        }
-
-        notificationManager.completePersistent(
-            key = NOTIFICATION_KEY,
-            title = "Migration complete",
-            subtitle = message,
-            type = if (failed > 0) NotificationType.WARNING else NotificationType.SUCCESS
-        )
 
         attributionRepository.markDirty(StorageCategory.GAMES)
         MigrationResult(migrated, skipped, failed)

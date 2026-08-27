@@ -8,6 +8,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.NestedModal
 
@@ -17,14 +19,14 @@ fun RenameChannelModal(
     onTextChange: (String) -> Unit
 ) {
     NestedModal(
-        title = "CREATE CHANNEL",
+        title = stringResource(R.string.gamedetail_rename_channel_title),
         footerHints = listOf(
-            InputButton.A to "Confirm",
-            InputButton.B to "Cancel"
+            InputButton.A to stringResource(R.string.gamedetail_rename_channel_footer_confirm),
+            InputButton.B to stringResource(R.string.gamedetail_rename_channel_footer_cancel)
         )
     ) {
         Text(
-            text = "Enter a name for this save channel",
+            text = stringResource(R.string.gamedetail_rename_channel_description),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -35,7 +37,7 @@ fun RenameChannelModal(
             onValueChange = onTextChange,
             modifier = Modifier.fillMaxWidth(),
             placeholder = {
-                Text("Channel name")
+                Text(stringResource(R.string.gamedetail_rename_channel_placeholder))
             },
             singleLine = true,
             colors = OutlinedTextFieldDefaults.colors(

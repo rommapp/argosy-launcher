@@ -5,11 +5,13 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.core.notification.NotificationDuration
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.NotificationType
 import com.nendo.argosy.data.preferences.FontSlot
 import com.nendo.argosy.ui.screens.settings.sections.ThemeFontsLayoutState
 import com.nendo.argosy.ui.screens.settings.sections.themeFontsMaxFocusIndex
 import com.nendo.argosy.ui.theme.CustomFontLoader
+import com.nendo.argosy.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -42,8 +44,8 @@ internal fun routeImportFont(vm: SettingsViewModel, slot: FontSlot, uri: Uri) {
                 vm.updateFontNameState(slot, result.name)
             }
             is FontImportResult.Failure -> vm.notificationManager.show(
-                title = "Font Import Failed",
-                subtitle = result.reason,
+                title = NotificationText.Res(R.string.settings_shell_router_font_import_failed_title),
+                subtitle = NotificationText.Raw(result.reason),
                 type = NotificationType.ERROR,
                 duration = NotificationDuration.MEDIUM
             )
@@ -72,16 +74,16 @@ internal fun routeRevertFont(vm: SettingsViewModel, slot: FontSlot) {
 private fun importFontFile(context: Context, slot: FontSlot, uri: Uri): FontImportResult {
     val fileName = queryDisplayName(context, uri)
         ?: uri.lastPathSegment?.substringAfterLast('/')
-        ?: return FontImportResult.Failure("Could not read the selected file")
+        ?: return FontImportResult.Failure(context.getString(R.string.settings_shell_router_font_error_no_filename))
     val extension = fileName.substringAfterLast('.', "").lowercase()
     if (extension !in ALLOWED_FONT_EXTENSIONS) {
-        return FontImportResult.Failure("Only .ttf and .otf fonts are supported")
+        return FontImportResult.Failure(context.getString(R.string.settings_shell_router_font_error_unsupported_ext))
     }
     val tempFile = File.createTempFile("font-import", ".$extension", context.cacheDir)
     try {
         context.contentResolver.openInputStream(uri)?.use { input ->
             tempFile.outputStream().use { output -> input.copyTo(output) }
-        } ?: return FontImportResult.Failure("Could not read the selected file")
+        } ?: return FontImportResult.Failure(context.getString(R.string.settings_shell_router_font_error_no_stream))
         CustomFontLoader.validate(tempFile)
         val displayName = fileName.substringBeforeLast('.')
         val sanitized = displayName.replace(Regex("[^A-Za-z0-9._-]"), "_")
@@ -91,7 +93,9 @@ private fun importFontFile(context: Context, slot: FontSlot, uri: Uri): FontImpo
         deleteSlotFonts(context, slot, keep = target)
         return FontImportResult.Success(target.absolutePath, displayName)
     } catch (e: Exception) {
-        return FontImportResult.Failure("${fileName} is not a valid font file")
+        return FontImportResult.Failure(
+            context.getString(R.string.settings_shell_router_font_error_invalid, fileName)
+        )
     } finally {
         tempFile.delete()
     }

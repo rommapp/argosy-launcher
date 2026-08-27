@@ -1,0 +1,300 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="media_library_heading">МЕДИА</string>
+
+    <string name="media_library_footer_library">Библиотека</string>
+    <string name="media_library_footer_resume">Продолжить</string>
+    <string name="media_library_footer_play">Воспроизвести</string>
+    <string name="media_library_footer_refreshing">Обновление</string>
+    <string name="media_library_footer_refresh">Обновить</string>
+    <string name="media_library_footer_open">Открыть</string>
+    <string name="media_library_footer_back">Назад</string>
+
+    <string name="media_empty_state_title">Здесь пока ничего нет</string>
+    <string name="media_empty_state_message">В этой библиотеке нет элементов на сервере, либо последнее обновление её не затронуло.</string>
+    <string name="media_error_state_title">Не удалось подключиться к медиасерверу</string>
+    <string name="media_signed_out_title">Нет аккаунта медиа</string>
+    <string name="media_signed_out_message">Войдите на медиасервер в настройках, чтобы просматривать фильмы и сериалы.</string>
+
+    <string name="media_poster_card_watched">Просмотрено</string>
+    <string name="media_download_badge_present">Загружено</string>
+    <string name="media_download_badge_unavailable">Загружено, хранилище не подключено</string>
+
+    <string name="media_detail_open_failed">Не удалось открыть этот тайтл.</string>
+    <string name="media_detail_item_missing">Этого тайтла больше нет в библиотеке.</string>
+
+    <string name="media_detail_rail_heading_cast">В ролях</string>
+    <string name="media_detail_rail_heading_similar">Похожее</string>
+
+    <string name="media_detail_episodes_loading">Загрузка эпизодов</string>
+    <string name="media_detail_episodes_error_title">Эпизоды недоступны</string>
+    <string name="media_detail_season_empty_title">В этом сезоне нет эпизодов</string>
+    <string name="media_detail_seasons_empty_title">Пока нет сезонов</string>
+    <string name="media_detail_seasons_empty_message">У этого сериала нет сезонов на сервере, либо последнее обновление его не затронуло.</string>
+
+    <string name="media_season_tab_number">Сезон %1$d</string>
+
+    <plurals name="media_detail_chip_season_count">
+        <item quantity="one">%d сезон</item>
+        <item quantity="few">%d сезона</item>
+        <item quantity="many">%d сезонов</item>
+        <item quantity="other">%d сезона</item>
+    </plurals>
+
+    <string name="media_detail_footer_sibling_title">Пред./След. тайтл</string>
+    <string name="media_detail_footer_options">Параметры</string>
+    <string name="media_detail_footer_episode_unwatched">Не просмотрено</string>
+    <string name="media_detail_footer_episode_watched">Просмотрено</string>
+    <string name="media_detail_footer_unfavorite">Убрать из избранного</string>
+    <string name="media_detail_footer_favorite">В избранное</string>
+    <string name="media_detail_footer_back">Назад</string>
+
+    <string name="media_detail_confirm_resume">Продолжить</string>
+    <string name="media_detail_confirm_open_season">Открыть сезон</string>
+    <string name="media_detail_confirm_open_title">Открыть тайтл</string>
+    <string name="media_detail_confirm_play_section">Воспроизвести</string>
+    <string name="media_detail_confirm_downloads">Загрузки</string>
+    <string name="media_detail_confirm_favorite">В избранное</string>
+    <string name="media_detail_confirm_mark_watched">Просмотрено</string>
+    <string name="media_detail_confirm_options">Параметры</string>
+    <string name="media_detail_confirm_open_seasons">Открыть сезоны</string>
+    <string name="media_detail_confirm_open_episodes">Открыть эпизоды</string>
+    <string name="media_detail_confirm_play_default">Воспроизвести</string>
+
+    <string name="media_rail_play">Воспроизвести</string>
+    <string name="media_rail_play_resume">Продолжить с %1$s</string>
+    <string name="media_rail_play_episode">Воспроизвести %1$s</string>
+
+    <string name="media_rail_download">Скачать</string>
+    <string name="media_rail_download_complete">Загружено</string>
+    <string name="media_rail_download_progress_queued">%1$d из %2$d, в очереди %3$d</string>
+    <string name="media_rail_download_progress">%1$d из %2$d</string>
+    <string name="media_rail_download_with_note">%1$s - %2$s</string>
+    <string name="media_rail_download_note_one_unavailable">не подключено</string>
+    <plurals name="media_rail_download_note_unavailable">
+        <item quantity="one">%d не подключено</item>
+        <item quantity="few">%d не подключено</item>
+        <item quantity="many">%d не подключено</item>
+        <item quantity="other">%d не подключено</item>
+    </plurals>
+
+    <string name="media_rail_favorited">В избранном</string>
+    <string name="media_rail_favorite">В избранное</string>
+    <string name="media_rail_watched">Просмотрено</string>
+    <string name="media_rail_mark_watched">Просмотрено</string>
+    <string name="media_rail_options">Параметры</string>
+    <string name="media_rail_seasons">Сезоны</string>
+    <string name="media_rail_episodes">Эпизоды</string>
+    <string name="media_rail_cast">В ролях</string>
+    <string name="media_rail_similar">Похожее</string>
+
+    <string name="media_detail_menu_mark_unwatched">Отметить как непросмотренное</string>
+    <string name="media_detail_menu_mark_watched">Отметить как просмотренное</string>
+    <string name="media_detail_menu_remove_favorite">Убрать из избранного</string>
+    <string name="media_detail_menu_favorite">В избранное</string>
+    <string name="media_detail_menu_download">Скачать</string>
+    <string name="media_detail_menu_remove_downloads">Удалить загрузки</string>
+    <string name="media_detail_menu_refreshing">Обновление</string>
+    <string name="media_detail_menu_refresh_from_server">Обновить с сервера</string>
+    <string name="media_detail_menu_go_to_library">Перейти в библиотеку</string>
+
+    <string name="media_episode_row_now_playing">Сейчас воспроизводится</string>
+    <string name="media_episode_row_watched">Просмотрено</string>
+
+    <string name="media_resume_start_over_label">Начать заново</string>
+    <string name="media_resume_start_over_supporting">Воспроизвести с начала</string>
+    <string name="media_resume_resume_label">Продолжить</string>
+    <string name="media_resume_resume_supporting">Продолжить с %1$s</string>
+
+    <string name="media_download_episodes_subtitle">Выберите эпизоды</string>
+    <string name="media_download_episodes_confirm">Скачать</string>
+    <string name="media_download_episode_row_label">%1$d. %2$s</string>
+    <string name="media_download_quick_action_next">Следующие %1$d</string>
+
+    <string name="media_download_refused_fetch_failed">Не удалось получить эпизоды этого сериала с сервера</string>
+    <string name="media_download_refused_no_episodes">Эпизоды для этого сериала не найдены</string>
+
+    <plurals name="media_download_count">
+        <item quantity="one">%d загрузка</item>
+        <item quantity="few">%d загрузки</item>
+        <item quantity="many">%d загрузок</item>
+        <item quantity="other">%d загрузки</item>
+    </plurals>
+    <string name="media_download_confirm_subtitle">%1$s на этом устройстве</string>
+    <string name="media_download_confirm_keep">Оставить</string>
+    <string name="media_download_confirm_keep_supporting">Ничего не будет удалено</string>
+    <string name="media_download_confirm_remove">Удалить</string>
+    <string name="media_download_confirm_remove_supporting">Удалит %1$s с этого устройства</string>
+    <string name="media_download_confirm_warning">Файлы можно будет вернуть только повторной загрузкой</string>
+
+    <string name="media_download_quality_remove">Удалить загрузку</string>
+    <string name="media_download_quality_remove_supporting">Удаляет копию на этом устройстве</string>
+    <string name="media_download_storage_warning">Видеофайлы большие, может не хватить места</string>
+
+    <plurals name="media_download_title_count">
+        <item quantity="one">%d тайтл</item>
+        <item quantity="few">%d тайтла</item>
+        <item quantity="many">%d тайтлов</item>
+        <item quantity="other">%d тайтла</item>
+    </plurals>
+    <string name="media_download_quality_subtitle">%1$s - свободно %2$s</string>
+    <string name="media_download_size_gigabytes">%1$.1f GB</string>
+
+    <string name="media_download_quality_source_unknown">Исходный файл, размер варьируется</string>
+    <string name="media_download_quality_transcode">Перекодирование на сервере</string>
+    <string name="media_download_quality_source_size">Исходный файл - %1$s</string>
+    <string name="media_download_quality_estimate">Около %1$s</string>
+
+    <string name="media_download_note_mixed">Текстовые субтитры скачиваются вместе с видео, субтитры-изображения доступны только с вариантом Оригинал</string>
+    <string name="media_download_note_none">У этого тайтла нет субтитров</string>
+    <string name="media_download_note_text_only">Субтитры скачиваются вместе с видео</string>
+    <string name="media_download_note_burned_in">Субтитры-изображения вшиваются в облегчённую копию и не могут быть отключены</string>
+    <string name="media_download_note_picture_only">Субтитры-изображения доступны только с вариантом Оригинал</string>
+
+    <string name="media_player_overlay_quality_title">Качество</string>
+    <string name="media_player_overlay_quality_hint_choose">Выбрать</string>
+    <string name="media_player_overlay_quality_hint_apply">Применить</string>
+    <string name="media_player_overlay_quality_hint_cancel">Отмена</string>
+    <string name="media_player_overlay_quality_apply_button">Применить</string>
+
+    <string name="media_player_quality_option_original">Оригинал</string>
+    <string name="media_player_quality_summary_original">Оригинал</string>
+    <string name="media_player_quality_wheel_resolution">Разрешение</string>
+    <string name="media_player_quality_wheel_framerate">Частота кадров</string>
+    <string name="media_player_quality_wheel_bitrate">Битрейт</string>
+
+    <string name="media_player_overlay_audio_title">Аудио</string>
+    <string name="media_player_overlay_audio_hint_select">Выбрать</string>
+    <string name="media_player_overlay_audio_hint_close">Закрыть</string>
+
+    <string name="media_player_overlay_subtitles_title">Субтитры</string>
+    <string name="media_player_overlay_subtitles_hint_select">Выбрать</string>
+    <string name="media_player_overlay_subtitles_hint_close">Закрыть</string>
+    <string name="media_player_subtitle_row_off">Выключены</string>
+    <string name="media_player_subtitle_row_burn_in">Вшить субтитры-изображения</string>
+    <string name="media_player_subtitle_burn_in_on">Включено для этого просмотра - сервер перекодирует видео</string>
+    <string name="media_player_subtitle_burn_in_off">Выключено - субтитры-изображения нельзя показать</string>
+    <string name="media_player_subtitle_row_picture">Субтитры-изображение</string>
+    <string name="media_player_subtitle_picture_notice">%1$s - это изображение, а не текст. Показать его можно, только если сервер вошьёт его в видео.</string>
+
+    <string name="media_player_overlay_chapters_title">Главы</string>
+    <string name="media_player_overlay_chapters_hint_play">Смотреть отсюда</string>
+    <string name="media_player_overlay_chapters_hint_close">Закрыть</string>
+    <string name="media_player_chapter_fallback">Глава %1$d</string>
+
+    <string name="media_player_caption_time_left">Осталось %1$s</string>
+
+    <string name="media_player_control_previous_episode">Предыдущий эпизод</string>
+    <string name="media_player_control_next_episode">Следующий эпизод</string>
+    <string name="media_player_control_episode_absent">Нет: %1$s</string>
+    <string name="media_player_control_episode_named">%1$s  %2$s</string>
+    <string name="media_player_control_skip_back">Назад на %1$ds</string>
+    <string name="media_player_control_skip_forward">Вперёд на %1$ds</string>
+    <string name="media_player_control_pause">Пауза</string>
+    <string name="media_player_control_play">Воспроизвести</string>
+    <string name="media_player_control_audio">Аудиодорожка</string>
+    <string name="media_player_control_subtitles">Субтитры</string>
+    <string name="media_player_control_chapters">Главы</string>
+    <string name="media_player_control_quality">Качество  %1$s</string>
+    <string name="media_player_control_fill">На весь экран</string>
+    <string name="media_player_control_fit">По размеру экрана</string>
+    <string name="media_player_control_volume_full">Громкость максимум</string>
+    <string name="media_player_control_volume_half">Громкость средняя</string>
+    <string name="media_player_control_volume_mute">Без звука</string>
+    <string name="media_player_control_lock">Заблокировать управление</string>
+    <string name="media_player_control_watched">Просмотрено</string>
+    <string name="media_player_control_mark_watched">Отметить как просмотренное</string>
+    <string name="media_player_control_close">Закрыть</string>
+
+    <string name="media_player_skip_intro">Пропустить заставку</string>
+    <string name="media_player_skip_credits">Пропустить титры</string>
+
+    <string name="media_player_exit_title">Выйти из плеера?</string>
+    <string name="media_player_exit_message">Воспроизведение остановится. Вы сможете продолжить с того же места.</string>
+    <string name="media_player_exit_confirm">Выйти</string>
+    <string name="media_player_exit_cancel">Продолжить просмотр</string>
+
+    <string name="media_player_error_retry">Повторить</string>
+    <string name="media_player_error_close">Закрыть</string>
+
+    <plurals name="media_player_autoplay_countdown">
+        <item quantity="one">Далее через %d</item>
+        <item quantity="few">Далее через %d</item>
+        <item quantity="many">Далее через %d</item>
+        <item quantity="other">Далее через %d</item>
+    </plurals>
+    <string name="media_player_autoplay_play_now">Смотреть сейчас</string>
+    <string name="media_player_autoplay_stop">Остановить</string>
+
+    <string name="media_player_error_playback_failed">Не удалось воспроизвести этот тайтл</string>
+    <string name="media_player_error_not_signed_in">Нет входа в Jellyfin</string>
+    <string name="media_player_notice_stream_unavailable_copy">Потоковое воспроизведение - хранилище с загрузкой не подключено</string>
+    <string name="media_player_notice_stream_absent_copy">Потоковое воспроизведение - загрузка больше не на этом устройстве</string>
+
+    <string name="media_player_stored_episode_code">С%1$d Э%2$d</string>
+    <string name="media_player_stored_episode_number">Эпизод %1$d</string>
+    <string name="media_player_server_episode_code">С%1$d Э%2$d</string>
+    <string name="media_player_server_episode_number">Эпизод %1$d</string>
+
+    <string name="media_negotiator_track_fallback">Дорожка %1$d</string>
+    <string name="media_engine_track_fallback">Дорожка %1$d</string>
+
+    <string name="media_negotiator_error_not_signed_in">Нет входа в Jellyfin</string>
+    <string name="media_negotiator_error_no_source">Сервер не предложил ни одной воспроизводимой версии</string>
+    <string name="media_negotiator_error_unplayable">Этот тайтл нельзя воспроизвести на этом устройстве</string>
+
+    <string name="media_music_header_title">Музыка сервера</string>
+    <string name="media_music_header_subtitle_bgm">Добавить треки в плейлист BGM</string>
+    <string name="media_music_header_subtitle_sfx">Назначить звук для %1$s</string>
+    <string name="media_music_header_sfx_target_fallback">этого действия</string>
+    <string name="media_music_header_back">Назад</string>
+
+    <string name="media_music_search_placeholder">Поиск треков...</string>
+
+    <string name="media_music_chip_artist">Исполнитель</string>
+    <string name="media_music_chip_album">Альбом</string>
+    <string name="media_music_chip_genre">Жанр</string>
+    <string name="media_music_chip_duration">До %1$ds</string>
+    <string name="media_music_chip_clear">Очистить</string>
+
+    <string name="media_music_facet_chooser_title">Фильтр по</string>
+    <string name="media_music_facet_chooser_artist">Исполнитель</string>
+    <string name="media_music_facet_chooser_album">Альбом</string>
+    <string name="media_music_facet_chooser_genre">Жанр</string>
+    <string name="media_music_facet_chooser_max_duration">Макс. длительность</string>
+    <string name="media_music_facet_chooser_clear">Сбросить фильтры</string>
+    <string name="media_music_duration_value">%1$ds</string>
+
+    <string name="media_music_facet_values_title_artist">Исполнитель</string>
+    <string name="media_music_facet_values_title_album">Альбом</string>
+    <string name="media_music_facet_values_title_genre">Жанр</string>
+    <string name="media_music_facet_all_artists">Все исполнители</string>
+    <string name="media_music_facet_all_albums">Все альбомы</string>
+    <string name="media_music_facet_all_genres">Все жанры</string>
+
+    <string name="media_music_offline_message">Нет подключения к вашему серверу RomM</string>
+    <string name="media_music_unsupported_message">Этот сервер RomM пока не поддерживает просмотр музыки</string>
+    <string name="media_music_error_fallback">Что-то пошло не так</string>
+    <string name="media_music_error_retry">Повторить</string>
+    <string name="media_music_empty_message">Треки не найдены</string>
+
+    <string name="media_music_track_in_playlist">В плейлисте</string>
+    <string name="media_music_track_stop_preview">Остановить прослушивание</string>
+    <string name="media_music_track_preview">Прослушать</string>
+
+    <string name="media_music_unknown_game">Неизвестная игра</string>
+
+    <string name="media_music_notice_facet_failed">Не удалось загрузить параметры фильтра</string>
+    <string name="media_music_notice_preview_failed">Не удалось прослушать</string>
+    <string name="media_music_notice_removed">Удалено из плейлиста</string>
+    <string name="media_music_notice_added">Добавлено в плейлист</string>
+    <string name="media_music_notice_download_failed">Не удалось загрузить</string>
+
+    <string name="media_music_footer_filters">Фильтры</string>
+    <string name="media_music_footer_game">Игра</string>
+    <string name="media_music_footer_stop">Стоп</string>
+    <string name="media_music_footer_preview">Прослушать</string>
+    <string name="media_music_footer_assign">Назначить</string>
+    <string name="media_music_footer_remove">Убрать</string>
+    <string name="media_music_footer_add">Добавить</string>
+</resources>

@@ -22,7 +22,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.Lifecycle
+import androidx.annotation.StringRes
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.LifecycleEventObserver
+import com.nendo.argosy.R
 import com.nendo.argosy.data.social.Friend
 import com.nendo.argosy.data.social.PresenceStatus
 import com.nendo.argosy.ui.components.InputButton
@@ -36,11 +39,11 @@ import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.generated.ColorTokens
 
-private enum class FriendMenuAction(val label: String, val icon: ImageVector) {
-    JOIN("Join", Icons.Default.SportsEsports),
-    VIEW_PROFILE("View Profile", Icons.Default.Person),
-    MY_CODE("My Friend Code", Icons.Default.QrCode),
-    ADD_FRIEND("Add Friend", Icons.Default.PersonAdd)
+private enum class FriendMenuAction(@StringRes val labelRes: Int, val icon: ImageVector) {
+    JOIN(R.string.ui_friend_options_join, Icons.Default.SportsEsports),
+    VIEW_PROFILE(R.string.ui_friend_options_view_profile, Icons.Default.Person),
+    MY_CODE(R.string.ui_friend_options_my_code, Icons.Default.QrCode),
+    ADD_FRIEND(R.string.ui_friend_options_add_friend, Icons.Default.PersonAdd)
 }
 
 @Composable
@@ -123,13 +126,13 @@ fun FriendOptionsModal(
         titleContent = { FriendMenuHeader(friend) },
         onDismiss = onDismiss,
         footerHints = listOf(
-            InputButton.A to "Select",
-            InputButton.B to "Close"
+            InputButton.A to stringResource(R.string.ui_friend_options_footer_select),
+            InputButton.B to stringResource(R.string.ui_friend_options_footer_close)
         ),
         content = {
             actions.forEachIndexed { index, action ->
                 OptionItem(
-                    label = action.label,
+                    label = stringResource(action.labelRes),
                     icon = action.icon,
                     isFocused = index == focusedIndex,
                     onClick = { activate(action) }
@@ -178,9 +181,16 @@ private fun FriendMenuHeader(friend: Friend) {
                     )
                     Text(
                         text = when {
-                            friend.currentGame == null -> "In Game"
-                            friend.currentGame.netplaySession != null -> "Hosting ${friend.currentGame.title}"
-                            else -> "Playing ${friend.currentGame.title}"
+                            friend.currentGame == null ->
+                                stringResource(R.string.ui_friend_options_presence_in_game)
+                            friend.currentGame.netplaySession != null -> stringResource(
+                                R.string.ui_friend_options_presence_hosting,
+                                friend.currentGame.title
+                            )
+                            else -> stringResource(
+                                R.string.ui_friend_options_presence_playing,
+                                friend.currentGame.title
+                            )
                         },
                         style = MaterialTheme.typography.labelSmall,
                         color = ColorTokens.Domain.Presence.online,
@@ -191,11 +201,14 @@ private fun FriendMenuHeader(friend: Friend) {
             } else {
                 Text(
                     text = when (friend.presence) {
-                        PresenceStatus.ONLINE -> "Online"
-                        PresenceStatus.AWAY -> "Away"
-                        PresenceStatus.WATCHING -> friend.currentGame?.title
-                            ?.let { "Watching $it" } ?: "Watching"
-                        else -> "Offline"
+                        PresenceStatus.ONLINE ->
+                            stringResource(R.string.ui_friend_options_presence_online)
+                        PresenceStatus.AWAY ->
+                            stringResource(R.string.ui_friend_options_presence_away)
+                        PresenceStatus.WATCHING -> friend.currentGame?.title?.let {
+                            stringResource(R.string.ui_friend_options_presence_watching_title, it)
+                        } ?: stringResource(R.string.ui_friend_options_presence_watching)
+                        else -> stringResource(R.string.ui_friend_options_presence_offline)
                     },
                     style = MaterialTheme.typography.labelSmall,
                     color = LocalArgosyTheme.current.textMute

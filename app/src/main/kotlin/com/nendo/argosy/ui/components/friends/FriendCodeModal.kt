@@ -20,6 +20,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -78,11 +80,11 @@ fun FriendCodeModal(
     }
 
     NestedModal(
-        title = "My Friend Code",
+        title = stringResource(R.string.ui_friend_code_title),
         onDismiss = onDismiss,
         footerHints = listOf(
-            InputButton.A to "Regenerate",
-            InputButton.B to "Close"
+            InputButton.A to stringResource(R.string.ui_friend_code_footer_regenerate),
+            InputButton.B to stringResource(R.string.ui_friend_code_footer_close)
         ),
         content = {
             Column(
@@ -90,7 +92,7 @@ fun FriendCodeModal(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Scan or enter code to add friend",
+                text = stringResource(R.string.ui_friend_code_instructions),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -119,7 +121,7 @@ fun FriendCodeModal(
             Spacer(modifier = Modifier.height(16.dp))
 
             OptionItem(
-                label = "Regenerate Code",
+                label = stringResource(R.string.ui_friend_code_regenerate_row),
                 icon = Icons.Default.Refresh,
                 isFocused = focusIndex.intValue == 0,
                 onClick = onRegenerate
@@ -128,7 +130,7 @@ fun FriendCodeModal(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Regenerating will invalidate your current code",
+                text = stringResource(R.string.ui_friend_code_regenerate_warning),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center

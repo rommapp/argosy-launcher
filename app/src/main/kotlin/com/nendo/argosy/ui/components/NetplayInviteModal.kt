@@ -10,8 +10,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.data.social.NetplayInvitePayload
 import com.nendo.argosy.ui.primitives.ActionButton
 import com.nendo.argosy.ui.theme.Dimens
@@ -24,12 +26,12 @@ fun NetplayInviteModal(
     onDismiss: () -> Unit
 ) {
     Modal(
-        title = "Netplay Invite",
+        title = stringResource(R.string.ui_netplay_invite_title),
         baseWidth = 400.dp,
         onDismiss = onDismiss
     ) {
         Text(
-            text = "${invite.hostUsername} invited you to play",
+            text = stringResource(R.string.ui_netplay_invite_message, invite.hostUsername),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -50,14 +52,14 @@ fun NetplayInviteModal(
             horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
         ) {
             ActionButton(
-                label = "Dismiss",
+                label = stringResource(R.string.ui_netplay_invite_dismiss),
                 onClick = onDismiss,
                 focused = focusedButton == 0,
                 modifier = Modifier.weight(1f)
             )
 
             ActionButton(
-                label = "Join",
+                label = stringResource(R.string.ui_netplay_invite_join),
                 onClick = onJoin,
                 focused = focusedButton == 1,
                 primary = true,

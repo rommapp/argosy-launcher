@@ -1,0 +1,752 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sort_title">A-Z</string>
+    <string name="sort_rating">评分</string>
+    <string name="sort_user_rating">我的评分</string>
+    <string name="sort_difficulty">难度</string>
+    <string name="sort_release_year">发行年份</string>
+    <string name="sort_play_count">游玩次数</string>
+    <string name="sort_play_time">游戏时长</string>
+    <string name="sort_last_played">最近游玩</string>
+    <string name="sort_recently_added">最近添加</string>
+
+    <string name="source_filter_all">全部游戏</string>
+    <string name="source_filter_playable">可玩</string>
+    <string name="source_filter_favorites">收藏</string>
+    <string name="source_filter_hidden">已隐藏</string>
+
+    <string name="completion_status_incomplete">未完成</string>
+    <string name="completion_status_finished">已通关</string>
+    <string name="completion_status_completed_100">100%</string>
+    <string name="completion_status_retired">已搁置</string>
+    <string name="completion_status_never_playing">不玩</string>
+
+    <string name="ui_save_channel_title">存档管理</string>
+    <string name="ui_save_channel_slots_heading">存档槽位</string>
+    <string name="ui_save_channel_history_heading_named">历史记录（%1$s）</string>
+    <string name="ui_save_channel_history_heading">历史记录</string>
+    <string name="ui_save_channel_history_empty">暂无存档</string>
+    <string name="ui_save_channel_tab_saves">存档</string>
+    <string name="ui_save_channel_tab_states">即时存档</string>
+    <string name="ui_save_channel_states_empty">没有可用的即时存档槽位</string>
+    <string name="ui_save_channel_states_heading_named">%1$s中的即时存档</string>
+    <string name="ui_save_channel_states_heading_default">默认槽位中的即时存档</string>
+    <string name="ui_save_channel_slot_new">新建槽位</string>
+    <string name="ui_save_channel_slot_legacy_tag">[旧版]</string>
+    <string name="ui_save_channel_history_active_point">当前恢复点</string>
+    <string name="ui_save_channel_history_latest">最新</string>
+    <string name="ui_save_channel_history_tag_synced">[已同步]</string>
+    <string name="ui_save_channel_history_tag_local">[本地]</string>
+    <string name="ui_save_channel_active_default">最新</string>
+    <string name="ui_save_channel_slot_autosave">自动存档</string>
+    <string name="ui_save_channel_slot_archived">已归档</string>
+
+    <string name="ui_save_channel_footer_migrate">迁移</string>
+    <string name="ui_save_channel_footer_delete_legacy_slot">删除</string>
+    <string name="ui_save_channel_footer_activate">启用</string>
+    <string name="ui_save_channel_footer_rename">重命名</string>
+    <string name="ui_save_channel_footer_delete_slot">删除</string>
+    <string name="ui_save_channel_footer_restore_save">恢复</string>
+    <string name="ui_save_channel_footer_save_as">另存为</string>
+    <string name="ui_save_channel_footer_restore_state">恢复</string>
+    <string name="ui_save_channel_footer_preview_state">预览</string>
+    <string name="ui_save_channel_footer_delete_state">删除</string>
+    <string name="ui_save_channel_footer_download_state">下载</string>
+    <string name="ui_save_channel_footer_tab_states">即时存档</string>
+    <string name="ui_save_channel_footer_tab_saves">存档</string>
+    <string name="ui_save_channel_footer_sync">同步</string>
+
+    <string name="ui_save_channel_restore_title">恢复存档</string>
+    <string name="ui_save_channel_restore_confirm">恢复</string>
+    <string name="ui_save_channel_restore_cancel">取消</string>
+    <string name="ui_save_channel_restore_message">要将此存档恢复到当前游戏状态吗？</string>
+
+    <string name="ui_save_channel_rename_title_save_as">另存为</string>
+    <string name="ui_save_channel_rename_title_new_slot">新建存档槽位</string>
+    <string name="ui_save_channel_rename_title_rename">重命名存档槽位</string>
+    <string name="ui_save_channel_rename_confirm_save_as">保存</string>
+    <string name="ui_save_channel_rename_confirm_new_slot">创建</string>
+    <string name="ui_save_channel_rename_confirm_rename">重命名</string>
+    <string name="ui_save_channel_rename_prompt_save_as">输入此存档槽位的名称</string>
+    <string name="ui_save_channel_rename_prompt_new_slot">输入此存档槽位的名称</string>
+    <string name="ui_save_channel_rename_prompt_rename">输入新名称</string>
+    <string name="ui_save_channel_rename_footer_confirm">确认</string>
+    <string name="ui_save_channel_rename_footer_cancel">取消</string>
+    <string name="ui_save_channel_rename_placeholder">槽位名称</string>
+    <string name="ui_save_channel_rename_cancel_button">取消</string>
+
+    <string name="ui_save_channel_migrate_title">迁移存档</string>
+    <string name="ui_save_channel_migrate_confirm">迁移</string>
+    <string name="ui_save_channel_migrate_cancel">取消</string>
+    <string name="ui_save_channel_migrate_message">要将“%1$s”迁移到新存档系统吗？</string>
+    <string name="ui_save_channel_migrate_note">这将把它注册为一个命名存档槽位。</string>
+
+    <string name="ui_save_channel_delete_legacy_title">删除旧版存档</string>
+    <string name="ui_save_channel_delete_legacy_confirm">删除</string>
+    <string name="ui_save_channel_delete_legacy_cancel">取消</string>
+    <plurals name="ui_save_channel_delete_legacy_message">
+        <item quantity="other">删除“%1$s”及其%2$d个备份？</item>
+    </plurals>
+    <string name="ui_save_channel_delete_legacy_note">这将从服务器和本地存储中移除它，且无法撤销。</string>
+
+    <string name="ui_save_channel_delete_slot_title">删除存档槽位</string>
+    <string name="ui_save_channel_delete_slot_confirm">删除</string>
+    <string name="ui_save_channel_delete_slot_cancel">取消</string>
+    <string name="ui_save_channel_delete_slot_message">删除“%1$s”？</string>
+    <string name="ui_save_channel_delete_slot_note">这将从服务器和本地存储中移除它，且无法撤销。</string>
+
+    <string name="ui_save_channel_version_mismatch_title">核心版本不匹配</string>
+    <string name="ui_save_channel_version_mismatch_confirm">仍然加载</string>
+    <string name="ui_save_channel_version_mismatch_cancel">取消</string>
+    <string name="ui_save_channel_version_mismatch_saved_with">此即时存档保存时使用的核心：</string>
+    <string name="ui_save_channel_version_mismatch_saved_core_unknown">未知</string>
+    <string name="ui_save_channel_version_mismatch_current">当前核心版本：</string>
+    <string name="ui_save_channel_version_mismatch_current_core_unknown">未知</string>
+    <string name="ui_save_channel_version_mismatch_warning">加载可能导致崩溃或数据损坏。</string>
+
+    <string name="ui_save_channel_delete_state_title">删除即时存档</string>
+    <string name="ui_save_channel_delete_state_confirm">删除</string>
+    <string name="ui_save_channel_delete_state_cancel">取消</string>
+    <string name="ui_save_channel_delete_state_target_auto">自动即时存档</string>
+    <string name="ui_save_channel_delete_state_target_slot">槽位%1$d</string>
+    <string name="ui_save_channel_delete_state_message">删除%1$s？</string>
+    <string name="ui_save_channel_delete_state_note">这将从缓存中移除它。</string>
+
+    <string name="ui_save_channel_replace_auto_title">替换自动即时存档</string>
+    <string name="ui_save_channel_replace_auto_confirm">替换</string>
+    <string name="ui_save_channel_replace_auto_cancel">取消</string>
+    <string name="ui_save_channel_replace_auto_message">要用槽位%1$d替换自动即时存档吗？</string>
+    <string name="ui_save_channel_replace_auto_note">当前的自动即时存档将被覆盖。</string>
+
+    <string name="ui_save_channel_notice_download_target_auto">自动即时存档</string>
+    <string name="ui_save_channel_notice_download_target_slot">即时存档槽位%1$d</string>
+    <string name="ui_save_channel_notice_downloaded">已下载%1$s</string>
+    <string name="ui_save_channel_notice_no_local_path">游戏没有本地路径</string>
+    <string name="ui_save_channel_notice_restore_target_auto">自动即时存档</string>
+    <string name="ui_save_channel_notice_restore_target_slot">即时存档槽位%1$d</string>
+    <string name="ui_save_channel_notice_restored_state">已恢复%1$s</string>
+    <string name="ui_save_channel_notice_state_not_cached">缓存中未找到该即时存档</string>
+    <string name="ui_save_channel_notice_state_no_config">此模拟器没有即时存档配置</string>
+    <string name="ui_save_channel_notice_delete_target_auto">自动即时存档</string>
+    <string name="ui_save_channel_notice_delete_target_slot">即时存档槽位%1$d</string>
+    <string name="ui_save_channel_notice_deleted_state">已删除%1$s</string>
+    <string name="ui_save_channel_notice_replace_auto_failed">无法替换自动即时存档</string>
+    <string name="ui_save_channel_notice_replaced_auto">已用槽位%1$d替换自动即时存档</string>
+
+    <string name="ui_save_channel_notice_activate_default">自动存档</string>
+    <string name="ui_save_channel_notice_using_slot">正在使用存档槽位：%1$s</string>
+    <string name="ui_save_channel_notice_clear_failed">清除现有存档失败</string>
+    <string name="ui_save_channel_notice_switch_default">自动存档</string>
+    <string name="ui_save_channel_notice_switched_to">已切换到：%1$s</string>
+    <string name="ui_save_channel_notice_restored_to_slot">已恢复到%1$s</string>
+    <string name="ui_save_channel_notice_restored">存档已恢复</string>
+    <string name="ui_save_channel_notice_restored_to_slot_synced">已恢复到%1$s并同步</string>
+    <string name="ui_save_channel_notice_restored_synced">存档已恢复并同步</string>
+    <string name="ui_save_channel_notice_slot_name_empty">槽位名称不能为空</string>
+    <string name="ui_save_channel_notice_slot_name_reserved">“%1$s”是保留名称</string>
+    <string name="ui_save_channel_notice_new_slot_exists">槽位“%1$s”已存在</string>
+    <string name="ui_save_channel_notice_new_slot_created">已创建存档槽位“%1$s”</string>
+    <string name="ui_save_channel_notice_save_as_same_name">新槽位名称必须与源名称不同</string>
+    <string name="ui_save_channel_notice_save_as_slot_exists">槽位“%1$s”已存在</string>
+    <string name="ui_save_channel_notice_save_as_created">已创建存档槽位“%1$s”</string>
+    <string name="ui_save_channel_notice_save_as_failed">创建存档槽位失败</string>
+    <string name="ui_save_channel_notice_renamed">已重命名为“%1$s”</string>
+    <string name="ui_save_channel_notice_slot_deleted">已删除存档槽位“%1$s”</string>
+    <string name="ui_save_channel_notice_migrated">已迁移“%1$s”</string>
+    <string name="ui_save_channel_notice_migrate_failed">迁移存档失败</string>
+    <string name="ui_save_channel_notice_legacy_deleted">已删除“%1$s”</string>
+    <string name="ui_save_channel_notice_saves_synced">已从服务器同步存档</string>
+
+    <string name="ui_state_slot_row_empty">（空）</string>
+    <string name="ui_state_slot_row_tag_synced">[已同步]</string>
+    <string name="ui_state_slot_row_tag_pending">[待同步]</string>
+    <string name="ui_state_slot_row_tag_server">[服务器]</string>
+    <string name="ui_state_slot_row_tag_local">[本地]</string>
+
+    <string name="ui_confirm_modal_cancel">取消</string>
+
+    <string name="ui_modal_search_placeholder">搜索...</string>
+
+    <string name="ui_disc_picker_title">选择光盘</string>
+    <string name="ui_disc_picker_subtitle">选择要启动的光盘</string>
+    <string name="ui_disc_picker_row">光盘%1$d</string>
+
+    <string name="ui_memcard_picker_title">选择存储卡</string>
+    <string name="ui_memcard_picker_subtitle">存档同步将使用所选文件夹对应的存储卡</string>
+    <string name="ui_memcard_picker_empty">空</string>
+    <plurals name="ui_memcard_picker_save_count">
+        <item quantity="other">%d个游戏存档</item>
+    </plurals>
+    <string name="ui_memcard_picker_summary_dated">%1$s - %2$s</string>
+
+    <string name="ui_netplay_invite_title">联机邀请</string>
+    <string name="ui_netplay_invite_message">%1$s邀请你一起玩</string>
+    <string name="ui_netplay_invite_dismiss">关闭</string>
+    <string name="ui_netplay_invite_join">加入</string>
+
+    <string name="ui_changelog_title">%1$s版新功能</string>
+    <string name="ui_changelog_footer_continue">继续</string>
+    <string name="ui_changelog_action_required">需要操作：%1$s</string>
+    <string name="ui_changelog_action_relogin_romm">重新登录RomM</string>
+    <string name="ui_changelog_action_resync_library">重新同步游戏库</string>
+    <string name="ui_changelog_action_clear_cache">清除缓存</string>
+    <string name="ui_changelog_action_set_steam_path">设置Steam安装路径</string>
+
+    <string name="ui_background_conflict_title">存档同步冲突</string>
+    <string name="ui_background_conflict_default_slot">默认存档</string>
+    <string name="ui_background_conflict_message_local_changed">自上次同步以来，你的本地存档已发生更改。请选择保留哪个存档。</string>
+    <string name="ui_background_conflict_message_server_newer">服务器上有更新的存档。请选择保留哪个存档。</string>
+    <string name="ui_background_conflict_choice_local">本地</string>
+    <string name="ui_background_conflict_choice_server">服务器</string>
+    <string name="ui_background_conflict_choice_skip">跳过</string>
+    <string name="ui_background_conflict_choice_skip_subtitle">暂时保留两者</string>
+    <string name="ui_background_conflict_age_future">在未来</string>
+    <string name="ui_background_conflict_age_now">刚刚</string>
+    <plurals name="ui_background_conflict_age_minutes">
+        <item quantity="other">%d分钟前</item>
+    </plurals>
+    <plurals name="ui_background_conflict_age_hours">
+        <item quantity="other">%d小时前</item>
+    </plurals>
+    <plurals name="ui_background_conflict_age_days">
+        <item quantity="other">%d天前</item>
+    </plurals>
+    <plurals name="ui_background_conflict_age_months">
+        <item quantity="other">%d个月前</item>
+    </plurals>
+
+    <string name="ui_save_conflict_title">存档冲突</string>
+    <string name="ui_save_conflict_default_slot">默认存档</string>
+    <string name="ui_save_conflict_message">服务器上有更新的存档。覆盖后将用你的本地存档替换它。</string>
+    <string name="ui_save_conflict_source_local">本地</string>
+    <string name="ui_save_conflict_source_server">服务器</string>
+    <string name="ui_save_conflict_skip">跳过同步</string>
+    <string name="ui_save_conflict_overwrite">覆盖</string>
+    <string name="ui_save_conflict_unknown_game">未知游戏</string>
+    <string name="ui_save_conflict_age_future">在未来</string>
+    <string name="ui_save_conflict_age_now">刚刚</string>
+    <plurals name="ui_save_conflict_age_minutes">
+        <item quantity="other">%d分钟前</item>
+    </plurals>
+    <plurals name="ui_save_conflict_age_hours">
+        <item quantity="other">%d小时前</item>
+    </plurals>
+    <plurals name="ui_save_conflict_age_days">
+        <item quantity="other">%d天前</item>
+    </plurals>
+    <plurals name="ui_save_conflict_age_months">
+        <item quantity="other">%d个月前</item>
+    </plurals>
+
+    <string name="ui_view_all_outline_label">查看全部</string>
+    <string name="ui_view_all_remaining_count">+%1$d</string>
+    <string name="ui_view_all_accent_label">查看全部</string>
+
+    <string name="ui_new_badge_label">新</string>
+
+    <string name="ui_expandable_preference_collapse">收起</string>
+    <string name="ui_expandable_preference_expand">展开</string>
+
+    <string name="ui_permission_card_granted">已授权</string>
+
+    <string name="ui_game_card_favorite">收藏</string>
+    <string name="ui_game_card_downloaded">已下载</string>
+
+    <string name="ui_download_badge_paused">已暂停</string>
+    <string name="ui_download_cover_paused">已暂停</string>
+
+    <string name="ui_section_breadcrumb_previous">上一个分区</string>
+    <string name="ui_section_breadcrumb_next">下一个分区</string>
+
+    <string name="ui_qr_code_description">%1$s的二维码</string>
+    <string name="ui_qr_scanner_hint">对准RomM配对二维码</string>
+
+    <string name="ui_custom_tile_menu_header">磁贴</string>
+
+    <string name="ui_add_to_collection_title">添加到合集</string>
+    <string name="ui_add_to_collection_empty">还没有合集</string>
+    <string name="ui_add_to_collection_create">创建新合集</string>
+    <string name="ui_add_to_collection_member">已在合集中</string>
+
+    <string name="ui_steam_location_download">通过Argosy下载</string>
+    <string name="ui_steam_location_mark_installed">标记为已安装</string>
+    <string name="ui_steam_location_managed_by">由%1$s管理</string>
+
+    <string name="ui_direction_ring_title">方向</string>
+    <string name="ui_direction_ring_rotate">旋转</string>
+    <string name="ui_direction_ring_set">设置</string>
+    <string name="ui_direction_ring_cancel">取消</string>
+
+    <string name="ui_core_crash_title">核心崩溃</string>
+    <string name="ui_core_crash_footer_select">选择</string>
+    <string name="ui_core_crash_footer_dismiss_options">关闭</string>
+    <string name="ui_core_crash_footer_launch">启动游戏</string>
+    <string name="ui_core_crash_footer_dismiss_ready">关闭</string>
+    <string name="ui_core_crash_footer_dismiss_done">关闭</string>
+    <string name="ui_core_crash_footer_cancel_download">取消</string>
+    <string name="ui_core_crash_message">“%1$s”在上次会话中崩溃了。请选择恢复方式。</string>
+
+    <string name="ui_episode_picker_selection_none">尚未选择</string>
+    <plurals name="ui_episode_picker_selection_count">
+        <item quantity="other">已选择%d集</item>
+    </plurals>
+    <string name="ui_episode_picker_cancel">取消</string>
+
+    <string name="ui_media_tile_mode_sequential">下一集</string>
+    <string name="ui_media_tile_mode_sequential_supporting">无论在哪观看，都会接续你的观看进度</string>
+    <string name="ui_media_tile_mode_random">随机剧集</string>
+    <string name="ui_media_tile_mode_random_supporting">随机选一集，看完前不会更换</string>
+    <string name="ui_media_tile_mode_season">单季</string>
+    <string name="ui_media_tile_mode_season_supporting">按顺序播放单独一季</string>
+    <string name="ui_media_tile_mode_playlist">选定剧集</string>
+    <string name="ui_media_tile_mode_playlist_supporting">按你选择的顺序播放所选剧集</string>
+    <string name="ui_media_tile_step_mode">这个磁贴应该播放什么？</string>
+    <string name="ui_media_tile_step_season">选择一季</string>
+    <string name="ui_media_tile_step_episodes">选择剧集</string>
+    <string name="ui_media_tile_empty_seasons">此剧集尚未同步任何季</string>
+    <string name="ui_media_tile_empty_episodes">此剧集尚未同步任何集</string>
+    <string name="ui_media_tile_episodes_confirm">使用这些剧集</string>
+    <string name="ui_media_tile_error_season_not_synced">该季尚未同步任何集</string>
+    <string name="ui_media_tile_error_series_not_synced">此剧集尚未同步任何集</string>
+
+    <string name="ui_tile_picker_title">添加到网格</string>
+    <string name="ui_tile_picker_subtitle_matching">匹配“%1$s”</string>
+    <string name="ui_tile_picker_empty_games">没有可添加的已安装游戏</string>
+    <string name="ui_tile_picker_empty_collections">还没有合集</string>
+    <string name="ui_tile_picker_empty_apps">未找到应用</string>
+    <string name="ui_tile_picker_empty_media">没有可添加的内容</string>
+    <string name="ui_tile_picker_empty_search">没有匹配的搜索结果</string>
+    <string name="ui_tile_picker_delete_page">删除页面</string>
+
+    <string name="ui_page_chooser_title_focus_game">播放下一个</string>
+    <string name="ui_page_chooser_title_backdrop">背景</string>
+    <string name="ui_page_chooser_title_music">音乐</string>
+    <string name="ui_page_chooser_subtitle_focus_game">此磁贴播放的游戏</string>
+    <string name="ui_page_chooser_subtitle_game_art">美术图和截图</string>
+    <string name="ui_page_chooser_subtitle_backdrop">此页面磁贴背后显示的内容</string>
+    <string name="ui_page_chooser_subtitle_music">此页面播放的音乐</string>
+    <string name="ui_page_chooser_footer_navigate">导航</string>
+    <string name="ui_page_chooser_footer_choose">选择</string>
+    <string name="ui_page_chooser_footer_back">返回</string>
+    <string name="ui_page_chooser_search_placeholder">搜索游戏...</string>
+    <string name="ui_page_chooser_loading">加载中...</string>
+    <string name="ui_page_chooser_empty">没有可选内容。</string>
+    <string name="ui_page_chooser_focus_game_current">正在游玩</string>
+    <string name="ui_page_chooser_source_game_art">来自游戏的美术图</string>
+    <string name="ui_page_chooser_source_game_art_subtitle">游戏库中已有的封面和截图</string>
+    <string name="ui_page_chooser_source_file">此设备上的文件</string>
+    <string name="ui_page_chooser_source_file_subtitle">图片、动画或短视频</string>
+    <string name="ui_page_chooser_source_none">无背景</string>
+    <string name="ui_page_chooser_source_none_subtitle">显示启动器自带的背景</string>
+    <string name="ui_page_chooser_art_background">背景图</string>
+    <string name="ui_page_chooser_art_cover">封面</string>
+    <string name="ui_page_chooser_art_screenshot">截图%1$d</string>
+    <string name="ui_page_chooser_music_launcher">启动器音乐</string>
+    <string name="ui_page_chooser_music_tile_audio">此页面的视频</string>
+    <string name="ui_page_chooser_music_soundtracks_header">你的原声音乐</string>
+
+    <string name="ui_custom_grid_add_page">添加页面</string>
+
+    <string name="ui_friend_options_join">加入</string>
+    <string name="ui_friend_options_view_profile">查看资料</string>
+    <string name="ui_friend_options_my_code">我的好友码</string>
+    <string name="ui_friend_options_add_friend">添加好友</string>
+    <string name="ui_friend_options_footer_select">选择</string>
+    <string name="ui_friend_options_footer_close">关闭</string>
+    <string name="ui_friend_options_presence_in_game">游戏中</string>
+    <string name="ui_friend_options_presence_hosting">正在主持%1$s</string>
+    <string name="ui_friend_options_presence_playing">正在玩%1$s</string>
+    <string name="ui_friend_options_presence_online">在线</string>
+    <string name="ui_friend_options_presence_away">离开</string>
+    <string name="ui_friend_options_presence_watching_title">正在看%1$s</string>
+    <string name="ui_friend_options_presence_watching">正在观看</string>
+    <string name="ui_friend_options_presence_offline">离线</string>
+
+    <string name="ui_friends_options_title">好友</string>
+    <string name="ui_friends_options_footer_select">选择</string>
+    <string name="ui_friends_options_footer_close">关闭</string>
+    <string name="ui_friends_options_add_by_code">通过好友码添加</string>
+    <string name="ui_friends_options_show_code">显示我的好友码</string>
+
+    <string name="ui_friend_code_title">我的好友码</string>
+    <string name="ui_friend_code_footer_regenerate">重新生成</string>
+    <string name="ui_friend_code_footer_close">关闭</string>
+    <string name="ui_friend_code_instructions">扫描或输入代码以添加好友</string>
+    <string name="ui_friend_code_regenerate_row">重新生成代码</string>
+    <string name="ui_friend_code_regenerate_warning">重新生成将使当前代码失效</string>
+
+    <string name="ui_add_friend_title">添加好友</string>
+    <string name="ui_add_friend_footer_submit">提交</string>
+    <string name="ui_add_friend_footer_cancel">取消</string>
+    <string name="ui_add_friend_instructions">输入好友的6位代码</string>
+    <string name="ui_add_friend_code_placeholder">ABC123</string>
+    <string name="ui_add_friend_error_length">代码必须为6个字符</string>
+
+    <string name="ui_netplay_join_unknown_game">未知</string>
+    <string name="ui_netplay_join_heading">正在加入%1$s</string>
+    <string name="ui_netplay_join_unknown_host">联机</string>
+    <string name="ui_netplay_join_status_joining">正在加入会话</string>
+    <string name="ui_netplay_join_status_matching_core">正在匹配核心</string>
+    <string name="ui_netplay_join_status_downloading_core">正在下载核心</string>
+    <string name="ui_netplay_join_status_core_ready">核心已就绪</string>
+    <string name="ui_netplay_join_status_verifying">正在验证游戏</string>
+    <string name="ui_netplay_join_status_verified">已验证</string>
+    <string name="ui_netplay_join_candidates_single_missing">ROM未下载。选择以安装。</string>
+    <string name="ui_netplay_join_candidates_single_failed">验证失败。选择以重试。</string>
+    <string name="ui_netplay_join_candidates_none_installed">没有已安装的匹配ROM。请选择一个下载。</string>
+    <string name="ui_netplay_join_candidates_multiple">有多个匹配项。请选择一个ROM。</string>
+    <string name="ui_netplay_join_candidate_installed">已安装</string>
+    <string name="ui_netplay_join_candidate_not_installed">未安装</string>
+    <string name="ui_netplay_join_variants_prompt">ROM哈希值不匹配。请选择一个变体。</string>
+
+    <string name="ui_platform_filter_sort_default">默认</string>
+    <string name="ui_platform_filter_sort_name_asc">名称（A-Z）</string>
+    <string name="ui_platform_filter_sort_name_desc">名称（Z-A）</string>
+    <string name="ui_platform_filter_sort_most_games">游戏最多</string>
+    <string name="ui_platform_filter_sort_least_games">游戏最少</string>
+    <string name="ui_platform_filter_search_placeholder">搜索平台...</string>
+    <string name="ui_platform_filter_search_clear">清除</string>
+    <plurals name="ui_platform_filter_count">
+        <item quantity="other">%d个平台</item>
+    </plurals>
+    <string name="ui_platform_filter_open_search">搜索</string>
+    <string name="ui_platform_filter_open_sort">排序</string>
+    <string name="ui_platform_filter_open_filter">筛选平台</string>
+    <string name="ui_platform_filter_mode_has_games">有游戏</string>
+    <string name="ui_platform_filter_mode_enabled">已启用</string>
+    <string name="ui_platform_filter_mode_all">全部</string>
+    <string name="ui_platform_filter_hint_sort_navigate">导航</string>
+    <string name="ui_platform_filter_hint_sort_select">选择</string>
+    <string name="ui_platform_filter_hint_sort_back">返回</string>
+    <string name="ui_platform_filter_hint_search_done">完成</string>
+    <string name="ui_platform_filter_hint_search_close">关闭</string>
+    <string name="ui_platform_filter_hint_header_navigate">导航</string>
+    <string name="ui_platform_filter_hint_header_select">选择</string>
+    <string name="ui_platform_filter_hint_header_close">关闭</string>
+    <string name="ui_platform_filter_hint_list_navigate">导航</string>
+    <string name="ui_platform_filter_hint_list_toggle">切换</string>
+    <string name="ui_platform_filter_hint_list_close">关闭</string>
+
+    <string name="ui_volume_meter_other">其他应用和文件</string>
+    <string name="ui_volume_meter_free">剩余%1$s</string>
+
+    <string name="ui_cycle_preference_reset_to_global">重置为全局设置</string>
+    <string name="ui_toggle_preference_reset_to_global">重置为全局设置</string>
+    <string name="ui_toggle_preference_custom_marker">（自定义）</string>
+    <string name="ui_action_preference_reset_to_default">重置为默认值</string>
+    <string name="ui_hue_slider_default">默认</string>
+    <string name="ui_image_cache_migrating">正在移动图片...</string>
+    <string name="ui_image_cache_change">更改</string>
+    <string name="ui_image_cache_reset">重置</string>
+
+    <string name="ui_home_layout_box_art_subtitle_none">没有游戏带有书脊图，因此所有游戏都以2D封面显示</string>
+    <string name="ui_home_layout_box_art_subtitle">将带有书脊的游戏绘制为立体盒装，其余以封面显示</string>
+    <string name="ui_home_layout_row_alignment">行位置</string>
+    <string name="ui_home_layout_focus_position">焦点锚点</string>
+    <string name="ui_home_layout_inverted">反转顺序</string>
+    <string name="ui_home_layout_resting_scale">静止大小</string>
+    <string name="ui_home_layout_neighbour_push">推挤相邻项</string>
+    <string name="ui_home_layout_platform_badge">平台徽标</string>
+    <string name="ui_home_layout_scroll_axis">滚动方向</string>
+    <string name="ui_home_layout_show_titles">显示标题</string>
+    <string name="ui_home_layout_show_all_games">显示全部游戏</string>
+    <string name="ui_home_layout_show_all_games_subtitle">滚动浏览平台的完整游戏库，而不是在“查看全部”处停止</string>
+    <string name="ui_home_layout_carousel_box_art">3D立体封面</string>
+    <string name="ui_home_layout_auto_grid_box_art">3D立体封面</string>
+    <string name="ui_home_layout_custom_grid_lanes">横向格数</string>
+    <string name="ui_home_layout_custom_grid_auto_add">添加新下载</string>
+    <string name="ui_home_layout_custom_grid_empty_slots">显示空白格</string>
+    <string name="ui_home_layout_custom_grid_empty_slots_subtitle">为空白的格子加上轮廓</string>
+    <string name="ui_home_layout_custom_grid_persist_pages">保留空白页面</string>
+    <string name="ui_home_layout_custom_grid_persist_pages_subtitle">新增的页面即使为空也会保留</string>
+    <string name="ui_home_layout_custom_grid_auto_fit">自动适配格子</string>
+    <string name="ui_home_layout_custom_grid_auto_fit_subtitle">放置内容时移动或缩小占用的磁贴，而不是拒绝放置</string>
+    <string name="ui_home_layout_rail_libraries">媒体库</string>
+    <string name="ui_home_layout_rail_libraries_subtitle">媒体服务器上每个库对应一行</string>
+    <string name="ui_home_layout_rail_continue_watching">继续观看</string>
+    <string name="ui_home_layout_rail_continue_watching_subtitle">显示你看到一半的电影和剧集</string>
+    <string name="ui_home_layout_rail_next_up">接下来播放</string>
+    <string name="ui_home_layout_rail_next_up_subtitle">显示你正在追的每部剧集的下一集</string>
+    <string name="ui_home_layout_auto_add_off">关闭</string>
+    <string name="ui_home_layout_auto_add_auto">自动</string>
+    <string name="ui_home_layout_auto_add_prompt">先询问</string>
+    <string name="ui_home_layout_kind_carousel">轮播</string>
+    <string name="ui_home_layout_kind_auto_grid">自动网格</string>
+    <string name="ui_home_layout_kind_custom_grid">自定义网格</string>
+    <string name="ui_home_layout_alignment_top">顶部</string>
+    <string name="ui_home_layout_alignment_center">居中</string>
+    <string name="ui_home_layout_alignment_bottom">底部</string>
+    <string name="ui_home_layout_focus_leading">起始位置</string>
+    <string name="ui_home_layout_focus_center">居中</string>
+    <string name="ui_home_layout_axis_vertical">垂直</string>
+    <string name="ui_home_layout_axis_horizontal">水平</string>
+    <string name="ui_home_layout_lanes_columns">列数</string>
+    <string name="ui_home_layout_lanes_rows">行数</string>
+
+    <string name="ui_quick_settings_title">快捷设置</string>
+    <string name="ui_quick_settings_footer_close">关闭</string>
+    <string name="ui_quick_settings_hint_navigate">导航</string>
+    <string name="ui_quick_settings_hint_close">关闭</string>
+    <string name="ui_quick_settings_performance">性能</string>
+    <string name="ui_quick_settings_performance_disabled">需要权限</string>
+    <string name="ui_quick_settings_fan">风扇</string>
+    <string name="ui_quick_settings_fan_disabled">需要权限</string>
+    <string name="ui_quick_settings_fan_quiet">静音</string>
+    <string name="ui_quick_settings_fan_smart">智能</string>
+    <string name="ui_quick_settings_fan_sport">运动</string>
+    <string name="ui_quick_settings_fan_custom">Turbo+</string>
+    <string name="ui_quick_settings_performance_standard">标准</string>
+    <string name="ui_quick_settings_performance_high">高性能</string>
+    <string name="ui_quick_settings_performance_max">最高性能</string>
+    <string name="ui_quick_settings_fan_speed">转速</string>
+    <string name="ui_quick_settings_vibration_strength">强度</string>
+    <string name="ui_quick_settings_theme">主题</string>
+    <string name="ui_quick_settings_haptics">震动反馈</string>
+    <string name="ui_quick_settings_ui_sounds">界面音效</string>
+    <string name="ui_quick_settings_bgm">BGM</string>
+    <string name="ui_quick_settings_swap_displays">交换屏幕</string>
+    <string name="ui_quick_settings_quaypass">QuayPass</string>
+    <string name="ui_quick_settings_volume">音量</string>
+    <string name="ui_quick_settings_brightness">亮度</string>
+
+    <string name="ui_drawer_tab_navigation">导航</string>
+    <string name="ui_drawer_tab_friends">好友</string>
+    <string name="ui_drawer_footer_favorite">收藏</string>
+    <string name="ui_drawer_footer_options">选项</string>
+    <string name="ui_drawer_footer_join">加入</string>
+    <string name="ui_drawer_friends_empty">还没有好友</string>
+    <string name="ui_drawer_friends_online">在线（%1$d）</string>
+    <string name="ui_drawer_friends_offline">离线（%1$d）</string>
+    <string name="ui_drawer_friend_hosting">正在主持%1$s</string>
+    <string name="ui_drawer_friend_playing">正在玩%1$s</string>
+    <string name="ui_drawer_friend_in_game">游戏中</string>
+    <string name="ui_drawer_friend_favorite">收藏</string>
+    <string name="ui_drawer_account_none">无账号</string>
+    <string name="ui_drawer_account_caption">账号</string>
+    <string name="ui_drawer_server_connected">RomM已连接</string>
+    <string name="ui_drawer_server_offline">RomM离线</string>
+    <string name="ui_drawer_nav_home">首页</string>
+    <string name="ui_drawer_nav_social">社交</string>
+    <string name="ui_drawer_nav_quaypass">签到</string>
+    <string name="ui_drawer_nav_collections">合集</string>
+    <string name="ui_drawer_nav_library">游戏库</string>
+    <string name="ui_drawer_nav_media">媒体</string>
+    <string name="ui_drawer_nav_downloads">下载</string>
+    <string name="ui_drawer_nav_save_sync">存档同步</string>
+    <string name="ui_drawer_nav_apps">应用</string>
+    <string name="ui_drawer_nav_settings">设置</string>
+
+    <string name="ui_sync_overlay_unknown_game">游戏</string>
+    <string name="ui_sync_overlay_slot_prefix">"槽位："</string>
+    <string name="ui_sync_overlay_slot_default">最新</string>
+    <string name="ui_sync_overlay_blocked_grant">授予权限</string>
+    <string name="ui_sync_overlay_blocked_configure_path">配置存档路径</string>
+    <string name="ui_sync_overlay_blocked_disable">禁用同步</string>
+    <string name="ui_sync_overlay_blocked_skip">暂时跳过</string>
+    <string name="ui_sync_overlay_hardcore_title">硬核存档冲突</string>
+    <string name="ui_sync_overlay_hardcore_message">“%1$s”的服务器版本不再满足硬核模式的要求。</string>
+    <string name="ui_sync_overlay_hardcore_note">如果存档在Argosy之外被修改过，可能会出现这种情况。</string>
+    <string name="ui_sync_overlay_hardcore_keep">保留硬核</string>
+    <string name="ui_sync_overlay_hardcore_keep_subtitle">将本地存档上传到服务器</string>
+    <string name="ui_sync_overlay_hardcore_downgrade">降级为休闲</string>
+    <string name="ui_sync_overlay_hardcore_downgrade_subtitle">使用服务器存档，失去硬核状态</string>
+    <string name="ui_sync_overlay_hardcore_skip">跳过同步</string>
+    <string name="ui_sync_overlay_hardcore_skip_subtitle">不同步直接启动</string>
+    <string name="ui_sync_overlay_local_modified_title">本地存档已修改</string>
+    <string name="ui_sync_overlay_local_modified_message">“%1$s”的本地存档有尚未备份的更改。</string>
+    <string name="ui_sync_overlay_local_modified_question">你想保留本地进度，还是恢复之前选择的存档？</string>
+    <string name="ui_sync_overlay_local_modified_apply">应用本地存档</string>
+    <string name="ui_sync_overlay_local_modified_apply_subtitle">将本地存档设为最新版本</string>
+    <string name="ui_sync_overlay_local_modified_restore">使用已同步的存档</string>
+    <string name="ui_sync_overlay_local_modified_restore_subtitle">用上次同步的版本覆盖本地存档（会创建备份）</string>
+    <string name="ui_sync_overlay_post_session_title">存档冲突</string>
+    <string name="ui_sync_overlay_post_session_subject">“%1$s” -- %2$s</string>
+    <string name="ui_sync_overlay_post_session_default_slot">默认存档</string>
+    <string name="ui_sync_overlay_post_session_message">服务器上有更新的存档。覆盖后将用你的本地存档替换它。</string>
+    <string name="ui_sync_overlay_post_session_local">本地</string>
+    <string name="ui_sync_overlay_post_session_server">服务器</string>
+    <string name="ui_sync_overlay_post_session_server_named">服务器（%1$s）</string>
+    <string name="ui_sync_overlay_post_session_skip">跳过同步</string>
+    <string name="ui_sync_overlay_post_session_skip_subtitle">保留本地存档，不上传</string>
+    <string name="ui_sync_overlay_post_session_overwrite">覆盖服务器</string>
+    <string name="ui_sync_overlay_post_session_overwrite_subtitle">用本地版本替换服务器存档</string>
+    <string name="ui_sync_overlay_legacy_status">正在同步...</string>
+
+    <string name="ui_quick_menu_orb_search">搜索</string>
+    <string name="ui_quick_menu_orb_random">随机</string>
+    <string name="ui_quick_menu_orb_most_played">游玩最多</string>
+    <string name="ui_quick_menu_orb_top_unplayed">高分未玩</string>
+    <string name="ui_quick_menu_orb_recent">最近</string>
+    <string name="ui_quick_menu_orb_favorites">收藏</string>
+    <string name="ui_quick_menu_empty_most_played">还没有玩过的游戏</string>
+    <string name="ui_quick_menu_empty_top_unplayed">未找到评分游戏</string>
+    <string name="ui_quick_menu_empty_recent">没有最近游玩记录</string>
+    <string name="ui_quick_menu_empty_favorites">还没有收藏</string>
+    <string name="ui_quick_menu_empty_random">没有可用的游戏</string>
+    <string name="ui_quick_menu_search_placeholder">搜索游戏...</string>
+    <string name="ui_quick_menu_search_prompt">至少输入2个字符进行搜索</string>
+    <string name="ui_quick_menu_search_no_results">未找到“%1$s”的相关游戏</string>
+    <string name="ui_quick_menu_recent_searches_heading">最近搜索</string>
+    <string name="ui_quick_menu_row_platform_unknown">未知</string>
+    <string name="ui_quick_menu_row_downloaded">已下载</string>
+    <string name="ui_quick_menu_random_platform_unknown">未知</string>
+    <string name="ui_quick_menu_random_downloaded">已下载</string>
+
+    <string name="ui_file_browser_title_folder">选择文件夹</string>
+    <string name="ui_file_browser_title_file">选择文件</string>
+    <string name="ui_file_browser_title_file_or_folder">选择文件或文件夹</string>
+    <string name="ui_file_browser_permission_title">需要存储访问权限</string>
+    <string name="ui_file_browser_permission_message">Argosy需要“所有文件访问权限”才能浏览文件夹、下载游戏和同步存档。请授权后返回此处。</string>
+    <string name="ui_file_browser_permission_button">授予访问权限</string>
+    <string name="ui_file_browser_permission_footer_grant">授予访问权限</string>
+    <string name="ui_file_browser_permission_footer_back">返回</string>
+    <string name="ui_file_browser_error_unreadable">无法访问该目录</string>
+    <string name="ui_file_browser_empty_folder">空文件夹</string>
+    <string name="ui_file_browser_footer_select_file">选择文件</string>
+    <string name="ui_file_browser_footer_select_file_or_folder">选择文件</string>
+    <string name="ui_file_browser_footer_open_folder">打开</string>
+    <string name="ui_file_browser_footer_back">返回</string>
+    <string name="ui_file_browser_footer_new_folder">新建文件夹</string>
+    <string name="ui_file_browser_footer_use_folder">使用此文件夹</string>
+    <string name="ui_file_browser_new_folder_title">新建文件夹</string>
+    <string name="ui_file_browser_new_folder_field_label">文件夹名称</string>
+    <string name="ui_file_browser_new_folder_cancel">取消</string>
+    <string name="ui_file_browser_new_folder_confirm">创建</string>
+    <string name="ui_file_browser_new_folder_error_empty">文件夹名称不能为空</string>
+    <string name="ui_file_browser_new_folder_error_invalid">文件夹名称无效</string>
+    <string name="ui_file_browser_new_folder_error_exists">文件夹已存在</string>
+    <string name="ui_file_browser_new_folder_error_failed">创建文件夹失败</string>
+
+    <string name="ui_startup_status_initializing">正在初始化...</string>
+    <string name="ui_startup_status_loading_library">正在加载游戏库...</string>
+    <string name="ui_startup_status_syncing_collections">正在同步合集...</string>
+    <string name="ui_startup_status_checking_emulators">正在检查模拟器...</string>
+    <string name="ui_startup_status_preparing_home">正在准备主页...</string>
+    <string name="ui_startup_status_waiting_for_storage">正在等待存储...</string>
+    <string name="ui_startup_status_scanning_roms">正在扫描ROM文件...</string>
+    <string name="ui_builtin_cores_ready_title">内置模拟器已就绪</string>
+    <plurals name="ui_builtin_cores_ready_subtitle">
+        <item quantity="other">已下载%d个核心</item>
+    </plurals>
+    <string name="ui_netplay_invite_failed_title">无法加入%1$s</string>
+    <string name="ui_netplay_invite_reason_rom_missing">未找到ROM</string>
+    <string name="ui_netplay_invite_reason_rom_version">ROM版本不同</string>
+    <string name="ui_netplay_invite_reason_core_version">核心版本不同</string>
+    <string name="ui_netplay_invite_reason_core_unsupported">核心不受支持</string>
+    <string name="ui_netplay_invite_reason_missing_game_id">会话缺少游戏ID</string>
+    <string name="ui_netplay_invite_reason_game_not_local">未找到本地游戏</string>
+    <string name="ui_netplay_invite_reason_launch_failed">无法启动游戏</string>
+    <string name="ui_dual_file_picker_hint_tab">标签页</string>
+    <string name="ui_dual_file_picker_hint_select">选择</string>
+    <string name="ui_dual_file_picker_hint_back">返回</string>
+    <string name="ui_dual_collections_hint_navigate">导航</string>
+    <string name="ui_dual_collections_hint_open">打开</string>
+    <string name="ui_dual_collections_hint_back">返回</string>
+
+    <string name="ui_download_notice_queued">排队中</string>
+    <string name="ui_download_notice_no_space">等待存储空间</string>
+    <string name="ui_download_notice_extracting">正在解压</string>
+    <string name="ui_download_notice_moving">正在移动到ROM存储</string>
+    <string name="ui_download_notice_paused">已暂停</string>
+    <string name="ui_download_notice_completed">已完成</string>
+    <string name="ui_download_notice_failed">失败</string>
+    <string name="ui_download_notice_failed_subtitle">%1$s：%2$s</string>
+
+    <string name="ui_sync_notice_success_title">存档已同步</string>
+    <string name="ui_sync_notice_game_with_slot">%1$s（%2$s）</string>
+    <plurals name="ui_sync_notice_batch_title">
+        <item quantity="other">%d个存档已同步</item>
+    </plurals>
+    <string name="ui_sync_notice_batch_subtitle">%1$s，还有%2$d个</string>
+    <string name="ui_sync_notice_upload_failed_title">上传失败</string>
+    <string name="ui_sync_notice_download_failed_title">下载失败</string>
+    <string name="ui_sync_notice_failed_game_with_slot">%1$s（%2$s）</string>
+    <string name="ui_sync_notice_failed_subtitle">%1$s：%2$s</string>
+
+    <string name="util_formatters_relative_today">今天</string>
+    <string name="util_formatters_relative_yesterday">昨天</string>
+    <plurals name="util_formatters_relative_days_ago">
+        <item quantity="other">%d天前</item>
+    </plurals>
+    <plurals name="util_formatters_relative_weeks_ago">
+        <item quantity="other">%d周前</item>
+    </plurals>
+
+    <string name="util_formatters_relative_str_now">刚刚</string>
+    <plurals name="util_formatters_relative_str_minutes_ago">
+        <item quantity="other">%d分钟前</item>
+    </plurals>
+    <plurals name="util_formatters_relative_str_hours_ago">
+        <item quantity="other">%d小时前</item>
+    </plurals>
+    <plurals name="util_formatters_relative_str_days_ago">
+        <item quantity="other">%d天前</item>
+    </plurals>
+    <plurals name="util_formatters_relative_str_weeks_ago">
+        <item quantity="other">%d周前</item>
+    </plurals>
+
+    <string name="util_formatters_relative_verbose_just_now">刚刚</string>
+    <plurals name="util_formatters_relative_verbose_minutes_ago">
+        <item quantity="other">%d分钟前</item>
+    </plurals>
+    <plurals name="util_formatters_relative_verbose_hours_ago">
+        <item quantity="other">%d小时前</item>
+    </plurals>
+    <plurals name="util_formatters_relative_verbose_days_ago">
+        <item quantity="other">%d天前</item>
+    </plurals>
+    <plurals name="util_formatters_relative_verbose_weeks_ago">
+        <item quantity="other">%d周前</item>
+    </plurals>
+
+    <string name="util_formatters_relative_short_future">在未来</string>
+    <string name="util_formatters_relative_short_just_now">刚刚</string>
+    <plurals name="util_formatters_relative_short_minutes_ago">
+        <item quantity="other">%d分钟前</item>
+    </plurals>
+    <plurals name="util_formatters_relative_short_hours_ago">
+        <item quantity="other">%d小时前</item>
+    </plurals>
+    <plurals name="util_formatters_relative_short_days_ago">
+        <item quantity="other">%d天前</item>
+    </plurals>
+
+    <string name="util_formatters_save_timestamp_today">今天%1$s</string>
+    <string name="util_formatters_save_timestamp_yesterday">昨天</string>
+    <plurals name="util_formatters_save_timestamp_days_ago">
+        <item quantity="other">%d天前</item>
+    </plurals>
+
+    <string name="util_formatters_playtime_minutes">%1$dm</string>
+    <string name="util_formatters_playtime_hours_minutes">%1$dh %2$dm</string>
+    <string name="util_formatters_playtime_hours">%1$dh</string>
+
+    <string name="common_homegrid_playtime_hours_minutes">%1$dh %2$dm</string>
+    <string name="common_homegrid_playtime_minutes">%1$dm</string>
+
+    <string name="notif_steam_sync_error_no_cached_licenses">没有缓存的授权信息 -- 请先连接Steam</string>
+    <string name="notif_steam_sync_error_no_active_account">没有活跃账号</string>
+    <string name="notif_steam_sync_error_not_connected">未连接到Steam</string>
+    <string name="notif_steam_sync_error_could_not_connect_sync">无法连接到Steam</string>
+    <string name="notif_steam_sync_error_could_not_connect_overwrite">无法连接到Steam</string>
+
+    <string name="media_library_viewmodel_refresh_label">正在刷新</string>
+
+    <string name="gamedetail_action_buttons_play">开始游戏</string>
+    <string name="gamedetail_action_buttons_autosave">自动存档</string>
+    <string name="gamedetail_action_buttons_download">下载</string>
+    <string name="gamedetail_action_buttons_install">安装</string>
+    <string name="gamedetail_action_buttons_queued">排队中...</string>
+    <string name="gamedetail_action_buttons_no_space">空间不足</string>
+    <string name="gamedetail_action_buttons_downloading_percent">%1$d%%</string>
+    <string name="gamedetail_action_buttons_extracting">解压中...</string>
+    <string name="gamedetail_action_buttons_resume_percent">继续 %1$d%%</string>
+    <string name="gamedetail_action_buttons_retry">重试</string>
+    <string name="gamedetail_action_buttons_unfavorite">取消收藏</string>
+    <string name="gamedetail_action_buttons_favorite">收藏</string>
+    <string name="gamedetail_action_buttons_more_options">更多选项</string>
+
+    <string name="home_grid_local_video_row_title">选择此设备上的视频</string>
+    <string name="home_grid_local_video_row_subtitle">直接从存储中播放</string>
+</resources>

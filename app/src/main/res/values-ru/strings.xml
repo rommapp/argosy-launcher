@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="secondary_home_label">Argosy Спутник</string>
+    <string name="focus_accessibility_description">Удерживает фокус геймпада на экране игры во время игры на двух экранах</string>
+</resources>

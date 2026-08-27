@@ -1,0 +1,836 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sort_title">А-Я</string>
+    <string name="sort_rating">Рейтинг</string>
+    <string name="sort_user_rating">Моя оценка</string>
+    <string name="sort_difficulty">Сложность</string>
+    <string name="sort_release_year">Год выпуска</string>
+    <string name="sort_play_count">Число запусков</string>
+    <string name="sort_play_time">Время в игре</string>
+    <string name="sort_last_played">Последняя игра</string>
+    <string name="sort_recently_added">Недавно добавленные</string>
+
+    <string name="source_filter_all">Все игры</string>
+    <string name="source_filter_playable">Готово к игре</string>
+    <string name="source_filter_favorites">Избранное</string>
+    <string name="source_filter_hidden">Скрытые</string>
+
+    <string name="completion_status_incomplete">Не пройдено</string>
+    <string name="completion_status_finished">Пройдено</string>
+    <string name="completion_status_completed_100">100%</string>
+    <string name="completion_status_retired">Заброшено</string>
+    <string name="completion_status_never_playing">Не буду играть</string>
+
+    <string name="ui_save_channel_title">Управление сохранениями</string>
+    <string name="ui_save_channel_slots_heading">Слоты сохранений</string>
+    <string name="ui_save_channel_history_heading_named">История (%1$s)</string>
+    <string name="ui_save_channel_history_heading">История</string>
+    <string name="ui_save_channel_history_empty">Сохранений пока нет</string>
+    <string name="ui_save_channel_tab_saves">Сохранения</string>
+    <string name="ui_save_channel_tab_states">Состояния</string>
+    <string name="ui_save_channel_states_empty">Нет доступных слотов состояний</string>
+    <string name="ui_save_channel_states_heading_named">Состояния в %1$s</string>
+    <string name="ui_save_channel_states_heading_default">Состояния в слоте по умолчанию</string>
+    <string name="ui_save_channel_slot_new">Новый слот</string>
+    <string name="ui_save_channel_slot_legacy_tag">[Устаревший]</string>
+    <string name="ui_save_channel_history_active_point">Активная точка восстановления</string>
+    <string name="ui_save_channel_history_latest">Последнее</string>
+    <string name="ui_save_channel_history_tag_synced">[Синхронизировано]</string>
+    <string name="ui_save_channel_history_tag_local">[Локально]</string>
+    <string name="ui_save_channel_active_default">Последнее</string>
+    <string name="ui_save_channel_slot_autosave">Автосохранение</string>
+    <string name="ui_save_channel_slot_archived">В архиве</string>
+
+    <string name="ui_save_channel_footer_migrate">Перенести</string>
+    <string name="ui_save_channel_footer_delete_legacy_slot">Удалить</string>
+    <string name="ui_save_channel_footer_activate">Активировать</string>
+    <string name="ui_save_channel_footer_rename">Переименовать</string>
+    <string name="ui_save_channel_footer_delete_slot">Удалить</string>
+    <string name="ui_save_channel_footer_restore_save">Восстановить</string>
+    <string name="ui_save_channel_footer_save_as">Сохранить как</string>
+    <string name="ui_save_channel_footer_restore_state">Восстановить</string>
+    <string name="ui_save_channel_footer_preview_state">Просмотр</string>
+    <string name="ui_save_channel_footer_delete_state">Удалить</string>
+    <string name="ui_save_channel_footer_download_state">Скачать</string>
+    <string name="ui_save_channel_footer_tab_states">Состояния</string>
+    <string name="ui_save_channel_footer_tab_saves">Сохранения</string>
+    <string name="ui_save_channel_footer_sync">Синхро</string>
+
+    <string name="ui_save_channel_restore_title">ВОССТАНОВИТЬ СОХРАНЕНИЕ</string>
+    <string name="ui_save_channel_restore_confirm">Восстановить</string>
+    <string name="ui_save_channel_restore_cancel">Отмена</string>
+    <string name="ui_save_channel_restore_message">Восстановить это сохранение в текущую игру?</string>
+
+    <string name="ui_save_channel_rename_title_save_as">СОХРАНИТЬ КАК</string>
+    <string name="ui_save_channel_rename_title_new_slot">НОВЫЙ СЛОТ СОХРАНЕНИЯ</string>
+    <string name="ui_save_channel_rename_title_rename">ПЕРЕИМЕНОВАТЬ СЛОТ СОХРАНЕНИЯ</string>
+    <string name="ui_save_channel_rename_confirm_save_as">Сохранить</string>
+    <string name="ui_save_channel_rename_confirm_new_slot">Создать</string>
+    <string name="ui_save_channel_rename_confirm_rename">Переименовать</string>
+    <string name="ui_save_channel_rename_prompt_save_as">Введите имя для этого слота сохранения</string>
+    <string name="ui_save_channel_rename_prompt_new_slot">Введите имя для этого слота сохранения</string>
+    <string name="ui_save_channel_rename_prompt_rename">Введите новое имя</string>
+    <string name="ui_save_channel_rename_footer_confirm">Подтвердить</string>
+    <string name="ui_save_channel_rename_footer_cancel">Отмена</string>
+    <string name="ui_save_channel_rename_placeholder">Имя слота</string>
+    <string name="ui_save_channel_rename_cancel_button">Отмена</string>
+
+    <string name="ui_save_channel_migrate_title">ПЕРЕНОС СОХРАНЕНИЯ</string>
+    <string name="ui_save_channel_migrate_confirm">Перенести</string>
+    <string name="ui_save_channel_migrate_cancel">Отмена</string>
+    <string name="ui_save_channel_migrate_message">Перенести \"%1$s\" в новую систему сохранений?</string>
+    <string name="ui_save_channel_migrate_note">Это зарегистрирует его как именованный слот сохранения.</string>
+
+    <string name="ui_save_channel_delete_legacy_title">УДАЛИТЬ УСТАРЕВШЕЕ СОХРАНЕНИЕ</string>
+    <string name="ui_save_channel_delete_legacy_confirm">Удалить</string>
+    <string name="ui_save_channel_delete_legacy_cancel">Отмена</string>
+    <plurals name="ui_save_channel_delete_legacy_message">
+        <item quantity="one">Удалить \"%1$s\" и %2$d резервную копию?</item>
+        <item quantity="few">Удалить \"%1$s\" и %2$d резервные копии?</item>
+        <item quantity="many">Удалить \"%1$s\" и %2$d резервных копий?</item>
+        <item quantity="other">Удалить \"%1$s\" и %2$d резервной копии?</item>
+    </plurals>
+    <string name="ui_save_channel_delete_legacy_note">Это удалит его с сервера и из локального хранилища. Это действие нельзя отменить.</string>
+
+    <string name="ui_save_channel_delete_slot_title">УДАЛИТЬ СЛОТ СОХРАНЕНИЯ</string>
+    <string name="ui_save_channel_delete_slot_confirm">Удалить</string>
+    <string name="ui_save_channel_delete_slot_cancel">Отмена</string>
+    <string name="ui_save_channel_delete_slot_message">Удалить \"%1$s\"?</string>
+    <string name="ui_save_channel_delete_slot_note">Это удалит его с сервера и из локального хранилища. Это действие нельзя отменить.</string>
+
+    <string name="ui_save_channel_version_mismatch_title">НЕСОВПАДЕНИЕ ВЕРСИИ ЯДРА</string>
+    <string name="ui_save_channel_version_mismatch_confirm">Загрузить всё равно</string>
+    <string name="ui_save_channel_version_mismatch_cancel">Отмена</string>
+    <string name="ui_save_channel_version_mismatch_saved_with">Это состояние было сохранено с помощью:</string>
+    <string name="ui_save_channel_version_mismatch_saved_core_unknown">Неизвестно</string>
+    <string name="ui_save_channel_version_mismatch_current">Текущая версия ядра:</string>
+    <string name="ui_save_channel_version_mismatch_current_core_unknown">Неизвестно</string>
+    <string name="ui_save_channel_version_mismatch_warning">Загрузка может вызвать сбои или повреждение данных.</string>
+
+    <string name="ui_save_channel_delete_state_title">УДАЛИТЬ СОСТОЯНИЕ</string>
+    <string name="ui_save_channel_delete_state_confirm">Удалить</string>
+    <string name="ui_save_channel_delete_state_cancel">Отмена</string>
+    <string name="ui_save_channel_delete_state_target_auto">авто-состояние</string>
+    <string name="ui_save_channel_delete_state_target_slot">слот %1$d</string>
+    <string name="ui_save_channel_delete_state_message">Удалить %1$s?</string>
+    <string name="ui_save_channel_delete_state_note">Это удалит его из кэша.</string>
+
+    <string name="ui_save_channel_replace_auto_title">ЗАМЕНИТЬ АВТО-СОСТОЯНИЕ</string>
+    <string name="ui_save_channel_replace_auto_confirm">Заменить</string>
+    <string name="ui_save_channel_replace_auto_cancel">Отмена</string>
+    <string name="ui_save_channel_replace_auto_message">Заменить авто-состояние слотом %1$d?</string>
+    <string name="ui_save_channel_replace_auto_note">Текущее авто-состояние будет перезаписано.</string>
+
+    <string name="ui_save_channel_notice_download_target_auto">авто-состояние</string>
+    <string name="ui_save_channel_notice_download_target_slot">слот состояния %1$d</string>
+    <string name="ui_save_channel_notice_downloaded">Загружено: %1$s</string>
+    <string name="ui_save_channel_notice_no_local_path">У игры нет локального пути</string>
+    <string name="ui_save_channel_notice_restore_target_auto">авто-состояние</string>
+    <string name="ui_save_channel_notice_restore_target_slot">слот состояния %1$d</string>
+    <string name="ui_save_channel_notice_restored_state">Восстановлено: %1$s</string>
+    <string name="ui_save_channel_notice_state_not_cached">Состояние не найдено в кэше</string>
+    <string name="ui_save_channel_notice_state_no_config">Нет конфигурации состояний для этого эмулятора</string>
+    <string name="ui_save_channel_notice_delete_target_auto">авто-состояние</string>
+    <string name="ui_save_channel_notice_delete_target_slot">слот состояния %1$d</string>
+    <string name="ui_save_channel_notice_deleted_state">Удалено: %1$s</string>
+    <string name="ui_save_channel_notice_replace_auto_failed">Не удалось заменить авто-состояние</string>
+    <string name="ui_save_channel_notice_replaced_auto">Авто-состояние заменено слотом %1$d</string>
+
+    <string name="ui_save_channel_notice_activate_default">Автосохранение</string>
+    <string name="ui_save_channel_notice_using_slot">Используется слот сохранения: %1$s</string>
+    <string name="ui_save_channel_notice_clear_failed">Не удалось очистить существующее сохранение</string>
+    <string name="ui_save_channel_notice_switch_default">Автосохранение</string>
+    <string name="ui_save_channel_notice_switched_to">Переключено на: %1$s</string>
+    <string name="ui_save_channel_notice_restored_to_slot">Восстановлено в %1$s</string>
+    <string name="ui_save_channel_notice_restored">Сохранение восстановлено</string>
+    <string name="ui_save_channel_notice_restored_to_slot_synced">Восстановлено в %1$s и синхронизировано</string>
+    <string name="ui_save_channel_notice_restored_synced">Сохранение восстановлено и синхронизировано</string>
+    <string name="ui_save_channel_notice_slot_name_empty">Имя слота не может быть пустым</string>
+    <string name="ui_save_channel_notice_slot_name_reserved">\'%1$s\' - зарезервированное имя</string>
+    <string name="ui_save_channel_notice_new_slot_exists">Слот \'%1$s\' уже существует</string>
+    <string name="ui_save_channel_notice_new_slot_created">Создан слот сохранения \'%1$s\'</string>
+    <string name="ui_save_channel_notice_save_as_same_name">Имя нового слота должно отличаться от исходного</string>
+    <string name="ui_save_channel_notice_save_as_slot_exists">Слот \'%1$s\' уже существует</string>
+    <string name="ui_save_channel_notice_save_as_created">Создан слот сохранения \'%1$s\'</string>
+    <string name="ui_save_channel_notice_save_as_failed">Не удалось создать слот сохранения</string>
+    <string name="ui_save_channel_notice_renamed">Переименовано в \'%1$s\'</string>
+    <string name="ui_save_channel_notice_slot_deleted">Слот сохранения \'%1$s\' удалён</string>
+    <string name="ui_save_channel_notice_migrated">\'%1$s\' перенесён</string>
+    <string name="ui_save_channel_notice_migrate_failed">Не удалось перенести сохранение</string>
+    <string name="ui_save_channel_notice_legacy_deleted">\'%1$s\' удалён</string>
+    <string name="ui_save_channel_notice_saves_synced">Сохранения синхронизированы с сервером</string>
+
+    <string name="ui_state_slot_row_empty">(Пусто)</string>
+    <string name="ui_state_slot_row_tag_synced">[Синхронизировано]</string>
+    <string name="ui_state_slot_row_tag_pending">[Ожидает]</string>
+    <string name="ui_state_slot_row_tag_server">[Сервер]</string>
+    <string name="ui_state_slot_row_tag_local">[Локально]</string>
+
+    <string name="ui_confirm_modal_cancel">Отмена</string>
+
+    <string name="ui_modal_search_placeholder">Поиск...</string>
+
+    <string name="ui_disc_picker_title">ВЫБОР ДИСКА</string>
+    <string name="ui_disc_picker_subtitle">Выберите диск для запуска</string>
+    <string name="ui_disc_picker_row">Диск %1$d</string>
+
+    <string name="ui_memcard_picker_title">ВЫБОР КАРТЫ ПАМЯТИ</string>
+    <string name="ui_memcard_picker_subtitle">Синхронизация сохранений использует карту памяти выбранной папки</string>
+    <string name="ui_memcard_picker_empty">пусто</string>
+    <plurals name="ui_memcard_picker_save_count">
+        <item quantity="one">%d сохранение игры</item>
+        <item quantity="few">%d сохранения игры</item>
+        <item quantity="many">%d сохранений игры</item>
+        <item quantity="other">%d сохранения игры</item>
+    </plurals>
+    <string name="ui_memcard_picker_summary_dated">%1$s - %2$s</string>
+
+    <string name="ui_netplay_invite_title">Приглашение в сетевую игру</string>
+    <string name="ui_netplay_invite_message">%1$s приглашает вас поиграть</string>
+    <string name="ui_netplay_invite_dismiss">Отклонить</string>
+    <string name="ui_netplay_invite_join">Присоединиться</string>
+
+    <string name="ui_changelog_title">Что нового в %1$s</string>
+    <string name="ui_changelog_footer_continue">Продолжить</string>
+    <string name="ui_changelog_action_required">Требуется действие: %1$s</string>
+    <string name="ui_changelog_action_relogin_romm">Войти в RomM заново</string>
+    <string name="ui_changelog_action_resync_library">Синхронизировать библиотеку заново</string>
+    <string name="ui_changelog_action_clear_cache">Очистить кэш</string>
+    <string name="ui_changelog_action_set_steam_path">Указать путь установки Steam</string>
+
+    <string name="ui_background_conflict_title">Конфликт синхронизации сохранений</string>
+    <string name="ui_background_conflict_default_slot">Сохранение по умолчанию</string>
+    <string name="ui_background_conflict_message_local_changed">Ваше локальное сохранение изменилось после последней синхронизации. Выберите, какое сохранение оставить.</string>
+    <string name="ui_background_conflict_message_server_newer">На сервере есть более новое сохранение. Выберите, какое сохранение оставить.</string>
+    <string name="ui_background_conflict_choice_local">Локальное</string>
+    <string name="ui_background_conflict_choice_server">Сервер</string>
+    <string name="ui_background_conflict_choice_skip">Пропустить</string>
+    <string name="ui_background_conflict_choice_skip_subtitle">Оставить оба варианта пока</string>
+    <string name="ui_background_conflict_age_future">в будущем</string>
+    <string name="ui_background_conflict_age_now">только что</string>
+    <plurals name="ui_background_conflict_age_minutes">
+        <item quantity="one">%d минуту назад</item>
+        <item quantity="few">%d минуты назад</item>
+        <item quantity="many">%d минут назад</item>
+        <item quantity="other">%d минуты назад</item>
+    </plurals>
+    <plurals name="ui_background_conflict_age_hours">
+        <item quantity="one">%d час назад</item>
+        <item quantity="few">%d часа назад</item>
+        <item quantity="many">%d часов назад</item>
+        <item quantity="other">%d часа назад</item>
+    </plurals>
+    <plurals name="ui_background_conflict_age_days">
+        <item quantity="one">%d день назад</item>
+        <item quantity="few">%d дня назад</item>
+        <item quantity="many">%d дней назад</item>
+        <item quantity="other">%d дня назад</item>
+    </plurals>
+    <plurals name="ui_background_conflict_age_months">
+        <item quantity="one">%d месяц назад</item>
+        <item quantity="few">%d месяца назад</item>
+        <item quantity="many">%d месяцев назад</item>
+        <item quantity="other">%d месяца назад</item>
+    </plurals>
+
+    <string name="ui_save_conflict_title">Конфликт сохранений</string>
+    <string name="ui_save_conflict_default_slot">Сохранение по умолчанию</string>
+    <string name="ui_save_conflict_message">На сервере есть более новое сохранение. Перезапись заменит его вашим локальным сохранением.</string>
+    <string name="ui_save_conflict_source_local">Локальное</string>
+    <string name="ui_save_conflict_source_server">Сервер</string>
+    <string name="ui_save_conflict_skip">Пропустить синхронизацию</string>
+    <string name="ui_save_conflict_overwrite">Перезаписать</string>
+    <string name="ui_save_conflict_unknown_game">Неизвестная игра</string>
+    <string name="ui_save_conflict_age_future">в будущем</string>
+    <string name="ui_save_conflict_age_now">только что</string>
+    <plurals name="ui_save_conflict_age_minutes">
+        <item quantity="one">%d минуту назад</item>
+        <item quantity="few">%d минуты назад</item>
+        <item quantity="many">%d минут назад</item>
+        <item quantity="other">%d минуты назад</item>
+    </plurals>
+    <plurals name="ui_save_conflict_age_hours">
+        <item quantity="one">%d час назад</item>
+        <item quantity="few">%d часа назад</item>
+        <item quantity="many">%d часов назад</item>
+        <item quantity="other">%d часа назад</item>
+    </plurals>
+    <plurals name="ui_save_conflict_age_days">
+        <item quantity="one">%d день назад</item>
+        <item quantity="few">%d дня назад</item>
+        <item quantity="many">%d дней назад</item>
+        <item quantity="other">%d дня назад</item>
+    </plurals>
+    <plurals name="ui_save_conflict_age_months">
+        <item quantity="one">%d месяц назад</item>
+        <item quantity="few">%d месяца назад</item>
+        <item quantity="many">%d месяцев назад</item>
+        <item quantity="other">%d месяца назад</item>
+    </plurals>
+
+    <string name="ui_view_all_outline_label">Смотреть все</string>
+    <string name="ui_view_all_remaining_count">+%1$d</string>
+    <string name="ui_view_all_accent_label">Смотреть все</string>
+
+    <string name="ui_new_badge_label">НОВОЕ</string>
+
+    <string name="ui_expandable_preference_collapse">Свернуть</string>
+    <string name="ui_expandable_preference_expand">Развернуть</string>
+
+    <string name="ui_permission_card_granted">Разрешено</string>
+
+    <string name="ui_game_card_favorite">Избранное</string>
+    <string name="ui_game_card_downloaded">Загружено</string>
+
+    <string name="ui_download_badge_paused">На паузе</string>
+    <string name="ui_download_cover_paused">На паузе</string>
+
+    <string name="ui_section_breadcrumb_previous">Предыдущий раздел</string>
+    <string name="ui_section_breadcrumb_next">Следующий раздел</string>
+
+    <string name="ui_qr_code_description">QR-код для %1$s</string>
+    <string name="ui_qr_scanner_hint">Наведите на QR-код сопряжения RomM</string>
+
+    <string name="ui_custom_tile_menu_header">ПЛИТКА</string>
+
+    <string name="ui_add_to_collection_title">ДОБАВИТЬ В КОЛЛЕКЦИЮ</string>
+    <string name="ui_add_to_collection_empty">Пока нет коллекций</string>
+    <string name="ui_add_to_collection_create">Создать новую коллекцию</string>
+    <string name="ui_add_to_collection_member">В коллекции</string>
+
+    <string name="ui_steam_location_download">Скачать через Argosy</string>
+    <string name="ui_steam_location_mark_installed">Отметить как установленную</string>
+    <string name="ui_steam_location_managed_by">Управляется через %1$s</string>
+
+    <string name="ui_direction_ring_title">Направление</string>
+    <string name="ui_direction_ring_rotate">Повернуть</string>
+    <string name="ui_direction_ring_set">Задать</string>
+    <string name="ui_direction_ring_cancel">Отмена</string>
+
+    <string name="ui_core_crash_title">Ядро аварийно завершилось</string>
+    <string name="ui_core_crash_footer_select">Выбрать</string>
+    <string name="ui_core_crash_footer_dismiss_options">Закрыть</string>
+    <string name="ui_core_crash_footer_launch">Запустить игру</string>
+    <string name="ui_core_crash_footer_dismiss_ready">Закрыть</string>
+    <string name="ui_core_crash_footer_dismiss_done">Закрыть</string>
+    <string name="ui_core_crash_footer_cancel_download">Отмена</string>
+    <string name="ui_core_crash_message">\'%1$s\' аварийно завершилось во время последней сессии. Выберите способ восстановления.</string>
+
+    <string name="ui_episode_picker_selection_none">Пока ничего не выбрано</string>
+    <plurals name="ui_episode_picker_selection_count">
+        <item quantity="one">Выбран %d эпизод</item>
+        <item quantity="few">Выбраны %d эпизода</item>
+        <item quantity="many">Выбрано %d эпизодов</item>
+        <item quantity="other">Выбрано %d эпизода</item>
+    </plurals>
+    <string name="ui_episode_picker_cancel">Отмена</string>
+
+    <string name="ui_media_tile_mode_sequential">Следующий эпизод</string>
+    <string name="ui_media_tile_mode_sequential_supporting">Продолжает с того места, где вы остановились, где бы вы ни смотрели</string>
+    <string name="ui_media_tile_mode_random">Случайный эпизод</string>
+    <string name="ui_media_tile_mode_random_supporting">Выбирает один эпизод и сохраняет его, пока вы его не посмотрите</string>
+    <string name="ui_media_tile_mode_season">Один сезон</string>
+    <string name="ui_media_tile_mode_season_supporting">Проходит один сезон целиком</string>
+    <string name="ui_media_tile_mode_playlist">Выбранные эпизоды</string>
+    <string name="ui_media_tile_mode_playlist_supporting">Воспроизводит выбранные вами эпизоды в выбранном порядке</string>
+    <string name="ui_media_tile_step_mode">Что должна воспроизводить эта плитка?</string>
+    <string name="ui_media_tile_step_season">Выберите сезон</string>
+    <string name="ui_media_tile_step_episodes">Выберите эпизоды</string>
+    <string name="ui_media_tile_empty_seasons">Для этого сериала ещё не синхронизированы сезоны</string>
+    <string name="ui_media_tile_empty_episodes">Для этого сериала ещё не синхронизированы эпизоды</string>
+    <string name="ui_media_tile_episodes_confirm">Использовать эти эпизоды</string>
+    <string name="ui_media_tile_error_season_not_synced">Для этого сезона ещё не синхронизированы эпизоды</string>
+    <string name="ui_media_tile_error_series_not_synced">Для этого сериала ещё не синхронизированы эпизоды</string>
+
+    <string name="ui_tile_picker_title">ДОБАВИТЬ НА СЕТКУ</string>
+    <string name="ui_tile_picker_subtitle_matching">Совпадения с \"%1$s\"</string>
+    <string name="ui_tile_picker_empty_games">Нет установленных игр для добавления</string>
+    <string name="ui_tile_picker_empty_collections">Пока нет коллекций</string>
+    <string name="ui_tile_picker_empty_apps">Приложения не найдены</string>
+    <string name="ui_tile_picker_empty_media">Нет доступных названий для добавления</string>
+    <string name="ui_tile_picker_empty_search">По этому запросу ничего не найдено</string>
+    <string name="ui_tile_picker_delete_page">Удалить страницу</string>
+
+    <string name="ui_page_chooser_title_focus_game">Играть далее</string>
+    <string name="ui_page_chooser_title_backdrop">Фон</string>
+    <string name="ui_page_chooser_title_music">Музыка</string>
+    <string name="ui_page_chooser_subtitle_focus_game">Игра, которую запускает эта плитка</string>
+    <string name="ui_page_chooser_subtitle_game_art">Артворк и скриншоты</string>
+    <string name="ui_page_chooser_subtitle_backdrop">Что показывает эта страница за плитками</string>
+    <string name="ui_page_chooser_subtitle_music">Что воспроизводит эта страница</string>
+    <string name="ui_page_chooser_footer_navigate">Навигация</string>
+    <string name="ui_page_chooser_footer_choose">Выбрать</string>
+    <string name="ui_page_chooser_footer_back">Назад</string>
+    <string name="ui_page_chooser_search_placeholder">Поиск игр...</string>
+    <string name="ui_page_chooser_loading">Загрузка...</string>
+    <string name="ui_page_chooser_empty">Здесь нечего выбрать.</string>
+    <string name="ui_page_chooser_focus_game_current">Сейчас играет</string>
+    <string name="ui_page_chooser_source_game_art">Артворк игры</string>
+    <string name="ui_page_chooser_source_game_art_subtitle">Обложки и скриншоты, уже имеющиеся в библиотеке</string>
+    <string name="ui_page_chooser_source_file">Файл на этом устройстве</string>
+    <string name="ui_page_chooser_source_file_subtitle">Изображение, анимация или короткое видео</string>
+    <string name="ui_page_chooser_source_none">Без фона</string>
+    <string name="ui_page_chooser_source_none_subtitle">Показать собственный фон лаунчера</string>
+    <string name="ui_page_chooser_art_background">Фоновое изображение</string>
+    <string name="ui_page_chooser_art_cover">Обложка</string>
+    <string name="ui_page_chooser_art_screenshot">Скриншот %1$d</string>
+    <string name="ui_page_chooser_music_launcher">Музыка лаунчера</string>
+    <string name="ui_page_chooser_music_tile_audio">Видео этой страницы</string>
+    <string name="ui_page_chooser_music_soundtracks_header">Ваши саундтреки</string>
+
+    <string name="ui_custom_grid_add_page">Добавить страницу</string>
+
+    <string name="ui_friend_options_join">Присоединиться</string>
+    <string name="ui_friend_options_view_profile">Просмотреть профиль</string>
+    <string name="ui_friend_options_my_code">Мой код друга</string>
+    <string name="ui_friend_options_add_friend">Добавить друга</string>
+    <string name="ui_friend_options_footer_select">Выбрать</string>
+    <string name="ui_friend_options_footer_close">Закрыть</string>
+    <string name="ui_friend_options_presence_in_game">В игре</string>
+    <string name="ui_friend_options_presence_hosting">Хостит %1$s</string>
+    <string name="ui_friend_options_presence_playing">Играет в %1$s</string>
+    <string name="ui_friend_options_presence_online">В сети</string>
+    <string name="ui_friend_options_presence_away">Нет на месте</string>
+    <string name="ui_friend_options_presence_watching_title">Смотрит %1$s</string>
+    <string name="ui_friend_options_presence_watching">Смотрит</string>
+    <string name="ui_friend_options_presence_offline">Не в сети</string>
+
+    <string name="ui_friends_options_title">Друзья</string>
+    <string name="ui_friends_options_footer_select">Выбрать</string>
+    <string name="ui_friends_options_footer_close">Закрыть</string>
+    <string name="ui_friends_options_add_by_code">Добавить друга по коду</string>
+    <string name="ui_friends_options_show_code">Показать мой код друга</string>
+
+    <string name="ui_friend_code_title">Мой код друга</string>
+    <string name="ui_friend_code_footer_regenerate">Обновить</string>
+    <string name="ui_friend_code_footer_close">Закрыть</string>
+    <string name="ui_friend_code_instructions">Отсканируйте или введите код, чтобы добавить друга</string>
+    <string name="ui_friend_code_regenerate_row">Обновить код</string>
+    <string name="ui_friend_code_regenerate_warning">Обновление сделает текущий код недействительным</string>
+
+    <string name="ui_add_friend_title">Добавить друга</string>
+    <string name="ui_add_friend_footer_submit">Отправить</string>
+    <string name="ui_add_friend_footer_cancel">Отмена</string>
+    <string name="ui_add_friend_instructions">Введите 6-значный код друга</string>
+    <string name="ui_add_friend_code_placeholder">ABC123</string>
+    <string name="ui_add_friend_error_length">Код должен содержать 6 символов</string>
+
+    <string name="ui_netplay_join_unknown_game">Неизвестно</string>
+    <string name="ui_netplay_join_heading">Подключение к %1$s</string>
+    <string name="ui_netplay_join_unknown_host">сетевая игра</string>
+    <string name="ui_netplay_join_status_joining">Подключение к сессии</string>
+    <string name="ui_netplay_join_status_matching_core">Поиск подходящего ядра</string>
+    <string name="ui_netplay_join_status_downloading_core">Загрузка ядра</string>
+    <string name="ui_netplay_join_status_core_ready">Ядро готово</string>
+    <string name="ui_netplay_join_status_verifying">Проверка игры</string>
+    <string name="ui_netplay_join_status_verified">Проверено</string>
+    <string name="ui_netplay_join_candidates_single_missing">ROM не загружен. Выберите, чтобы установить.</string>
+    <string name="ui_netplay_join_candidates_single_failed">Проверка не удалась. Выберите, чтобы повторить.</string>
+    <string name="ui_netplay_join_candidates_none_installed">Нет подходящих установленных ROM. Выберите один для загрузки.</string>
+    <string name="ui_netplay_join_candidates_multiple">Найдено несколько совпадений. Выберите ROM.</string>
+    <string name="ui_netplay_join_candidate_installed">Установлен</string>
+    <string name="ui_netplay_join_candidate_not_installed">Не установлен</string>
+    <string name="ui_netplay_join_variants_prompt">Хеш ROM не совпал. Выберите вариант.</string>
+
+    <string name="ui_platform_filter_sort_default">По умолчанию</string>
+    <string name="ui_platform_filter_sort_name_asc">Имя (А-Я)</string>
+    <string name="ui_platform_filter_sort_name_desc">Имя (Я-А)</string>
+    <string name="ui_platform_filter_sort_most_games">Больше всего игр</string>
+    <string name="ui_platform_filter_sort_least_games">Меньше всего игр</string>
+    <string name="ui_platform_filter_search_placeholder">Поиск платформ...</string>
+    <string name="ui_platform_filter_search_clear">Очистить</string>
+    <plurals name="ui_platform_filter_count">
+        <item quantity="one">%d платформа</item>
+        <item quantity="few">%d платформы</item>
+        <item quantity="many">%d платформ</item>
+        <item quantity="other">%d платформы</item>
+    </plurals>
+    <string name="ui_platform_filter_open_search">Поиск</string>
+    <string name="ui_platform_filter_open_sort">Сортировка</string>
+    <string name="ui_platform_filter_open_filter">Фильтр платформ</string>
+    <string name="ui_platform_filter_mode_has_games">С играми</string>
+    <string name="ui_platform_filter_mode_enabled">Включённые</string>
+    <string name="ui_platform_filter_mode_all">Все</string>
+    <string name="ui_platform_filter_hint_sort_navigate">Навигация</string>
+    <string name="ui_platform_filter_hint_sort_select">Выбрать</string>
+    <string name="ui_platform_filter_hint_sort_back">Назад</string>
+    <string name="ui_platform_filter_hint_search_done">Готово</string>
+    <string name="ui_platform_filter_hint_search_close">Закрыть</string>
+    <string name="ui_platform_filter_hint_header_navigate">Навигация</string>
+    <string name="ui_platform_filter_hint_header_select">Выбрать</string>
+    <string name="ui_platform_filter_hint_header_close">Закрыть</string>
+    <string name="ui_platform_filter_hint_list_navigate">Навигация</string>
+    <string name="ui_platform_filter_hint_list_toggle">Переключить</string>
+    <string name="ui_platform_filter_hint_list_close">Закрыть</string>
+
+    <string name="ui_volume_meter_other">Другие приложения и файлы</string>
+    <string name="ui_volume_meter_free">%1$s свободно</string>
+
+    <string name="ui_cycle_preference_reset_to_global">Сбросить к общему</string>
+    <string name="ui_toggle_preference_reset_to_global">Сбросить к общему</string>
+    <string name="ui_toggle_preference_custom_marker">(Своё)</string>
+    <string name="ui_action_preference_reset_to_default">Сбросить по умолчанию</string>
+    <string name="ui_hue_slider_default">По умолчанию</string>
+    <string name="ui_image_cache_migrating">Перемещение изображений...</string>
+    <string name="ui_image_cache_change">Изменить</string>
+    <string name="ui_image_cache_reset">Сбросить</string>
+
+    <string name="ui_home_layout_box_art_subtitle_none">Ни у одной игры нет корешка, поэтому все игры отображаются как 2D-обложки</string>
+    <string name="ui_home_layout_box_art_subtitle">Отображать игры с корешком как коробку, а остальные как обложки</string>
+    <string name="ui_home_layout_row_alignment">Положение ряда</string>
+    <string name="ui_home_layout_focus_position">Точка фокуса</string>
+    <string name="ui_home_layout_inverted">Обратный порядок</string>
+    <string name="ui_home_layout_resting_scale">Размер в покое</string>
+    <string name="ui_home_layout_neighbour_push">Сдвигать соседние</string>
+    <string name="ui_home_layout_platform_badge">Значок платформы</string>
+    <string name="ui_home_layout_scroll_axis">Направление прокрутки</string>
+    <string name="ui_home_layout_show_titles">Показывать названия</string>
+    <string name="ui_home_layout_show_all_games">Показывать все игры</string>
+    <string name="ui_home_layout_show_all_games_subtitle">Прокручивать всю библиотеку платформы вместо остановки на плитке \"Смотреть все\"</string>
+    <string name="ui_home_layout_carousel_box_art">Коробки 3D</string>
+    <string name="ui_home_layout_auto_grid_box_art">Коробки 3D</string>
+    <string name="ui_home_layout_custom_grid_lanes">Ячеек в ширину</string>
+    <string name="ui_home_layout_custom_grid_auto_add">Добавлять новые загрузки</string>
+    <string name="ui_home_layout_custom_grid_empty_slots">Показывать пустые ячейки</string>
+    <string name="ui_home_layout_custom_grid_empty_slots_subtitle">Обводить контуром ячейки, на которых ничего нет</string>
+    <string name="ui_home_layout_custom_grid_persist_pages">Сохранять пустые страницы</string>
+    <string name="ui_home_layout_custom_grid_persist_pages_subtitle">Добавленная страница остаётся, даже если на ней ничего нет</string>
+    <string name="ui_home_layout_custom_grid_auto_fit">Автоподбор ячеек</string>
+    <string name="ui_home_layout_custom_grid_auto_fit_subtitle">Сдвигать или уменьшать плитки, на которые попадает размещение, вместо отказа</string>
+    <string name="ui_home_layout_rail_libraries">Медиатеки</string>
+    <string name="ui_home_layout_rail_libraries_subtitle">Ряд для каждой библиотеки на вашем медиасервере</string>
+    <string name="ui_home_layout_rail_continue_watching">Продолжить просмотр</string>
+    <string name="ui_home_layout_rail_continue_watching_subtitle">Ряд фильмов и эпизодов, которые вы начали смотреть</string>
+    <string name="ui_home_layout_rail_next_up">Далее</string>
+    <string name="ui_home_layout_rail_next_up_subtitle">Ряд со следующим эпизодом каждого сериала, который вы смотрите</string>
+    <string name="ui_home_layout_auto_add_off">Выкл</string>
+    <string name="ui_home_layout_auto_add_auto">Автоматически</string>
+    <string name="ui_home_layout_auto_add_prompt">Спрашивать каждый раз</string>
+    <string name="ui_home_layout_kind_carousel">Карусель</string>
+    <string name="ui_home_layout_kind_auto_grid">Автосетка</string>
+    <string name="ui_home_layout_kind_custom_grid">Своя сетка</string>
+    <string name="ui_home_layout_alignment_top">Сверху</string>
+    <string name="ui_home_layout_alignment_center">По центру</string>
+    <string name="ui_home_layout_alignment_bottom">Снизу</string>
+    <string name="ui_home_layout_focus_leading">В начале</string>
+    <string name="ui_home_layout_focus_center">По центру</string>
+    <string name="ui_home_layout_axis_vertical">Вертикально</string>
+    <string name="ui_home_layout_axis_horizontal">Горизонтально</string>
+    <string name="ui_home_layout_lanes_columns">Столбцы</string>
+    <string name="ui_home_layout_lanes_rows">Строки</string>
+
+    <string name="ui_quick_settings_title">Быстрые настройки</string>
+    <string name="ui_quick_settings_footer_close">Закрыть</string>
+    <string name="ui_quick_settings_hint_navigate">Навигация</string>
+    <string name="ui_quick_settings_hint_close">Закрыть</string>
+    <string name="ui_quick_settings_performance">Производительность</string>
+    <string name="ui_quick_settings_performance_disabled">Требуется разрешение</string>
+    <string name="ui_quick_settings_fan">Вентилятор</string>
+    <string name="ui_quick_settings_fan_disabled">Требуется разрешение</string>
+    <string name="ui_quick_settings_fan_quiet">Тихий</string>
+    <string name="ui_quick_settings_fan_smart">Умный</string>
+    <string name="ui_quick_settings_fan_sport">Спорт</string>
+    <string name="ui_quick_settings_fan_custom">Турбо+</string>
+    <string name="ui_quick_settings_performance_standard">Стандарт</string>
+    <string name="ui_quick_settings_performance_high">Высокая производительность</string>
+    <string name="ui_quick_settings_performance_max">Максимальная производительность</string>
+    <string name="ui_quick_settings_fan_speed">Скорость</string>
+    <string name="ui_quick_settings_vibration_strength">Сила</string>
+    <string name="ui_quick_settings_theme">Тема</string>
+    <string name="ui_quick_settings_haptics">Вибрация</string>
+    <string name="ui_quick_settings_ui_sounds">Звуки интерфейса</string>
+    <string name="ui_quick_settings_bgm">BGM</string>
+    <string name="ui_quick_settings_swap_displays">Поменять экраны местами</string>
+    <string name="ui_quick_settings_quaypass">QuayPass</string>
+    <string name="ui_quick_settings_volume">Громкость</string>
+    <string name="ui_quick_settings_brightness">Яркость</string>
+
+    <string name="ui_drawer_tab_navigation">Меню</string>
+    <string name="ui_drawer_tab_friends">Друзья</string>
+    <string name="ui_drawer_footer_favorite">Избранное</string>
+    <string name="ui_drawer_footer_options">Параметры</string>
+    <string name="ui_drawer_footer_join">Присоединиться</string>
+    <string name="ui_drawer_friends_empty">Пока нет друзей</string>
+    <string name="ui_drawer_friends_online">В СЕТИ (%1$d)</string>
+    <string name="ui_drawer_friends_offline">НЕ В СЕТИ (%1$d)</string>
+    <string name="ui_drawer_friend_hosting">Хостит %1$s</string>
+    <string name="ui_drawer_friend_playing">Играет в %1$s</string>
+    <string name="ui_drawer_friend_in_game">В игре</string>
+    <string name="ui_drawer_friend_favorite">Избранное</string>
+    <string name="ui_drawer_account_none">Нет аккаунта</string>
+    <string name="ui_drawer_account_caption">Аккаунт</string>
+    <string name="ui_drawer_server_connected">RomM подключен</string>
+    <string name="ui_drawer_server_offline">RomM не в сети</string>
+    <string name="ui_drawer_nav_home">Главная</string>
+    <string name="ui_drawer_nav_social">Общение</string>
+    <string name="ui_drawer_nav_quaypass">Регистрация</string>
+    <string name="ui_drawer_nav_collections">Коллекции</string>
+    <string name="ui_drawer_nav_library">Библиотека</string>
+    <string name="ui_drawer_nav_media">Медиа</string>
+    <string name="ui_drawer_nav_downloads">Загрузки</string>
+    <string name="ui_drawer_nav_save_sync">Синхронизация сохранений</string>
+    <string name="ui_drawer_nav_apps">Приложения</string>
+    <string name="ui_drawer_nav_settings">Настройки</string>
+
+    <string name="ui_sync_overlay_unknown_game">Игра</string>
+    <string name="ui_sync_overlay_slot_prefix">"Слот: "</string>
+    <string name="ui_sync_overlay_slot_default">Последнее</string>
+    <string name="ui_sync_overlay_blocked_grant">Предоставить доступ</string>
+    <string name="ui_sync_overlay_blocked_configure_path">Настроить путь сохранения</string>
+    <string name="ui_sync_overlay_blocked_disable">Отключить синхронизацию</string>
+    <string name="ui_sync_overlay_blocked_skip">Пропустить сейчас</string>
+    <string name="ui_sync_overlay_hardcore_title">Конфликт сохранения в режиме хардкор</string>
+    <string name="ui_sync_overlay_hardcore_message">Версия \"%1$s\" на сервере больше не соответствует требованиям режима хардкор.</string>
+    <string name="ui_sync_overlay_hardcore_note">Это может произойти, если сохранение было изменено вне Argosy.</string>
+    <string name="ui_sync_overlay_hardcore_keep">Сохранить хардкор</string>
+    <string name="ui_sync_overlay_hardcore_keep_subtitle">Загрузить локальное сохранение на сервер</string>
+    <string name="ui_sync_overlay_hardcore_downgrade">Перейти в казуальный режим</string>
+    <string name="ui_sync_overlay_hardcore_downgrade_subtitle">Использовать сохранение с сервера, потерять статус хардкор</string>
+    <string name="ui_sync_overlay_hardcore_skip">Пропустить синхронизацию</string>
+    <string name="ui_sync_overlay_hardcore_skip_subtitle">Запустить без синхронизации</string>
+    <string name="ui_sync_overlay_local_modified_title">Локальное сохранение изменено</string>
+    <string name="ui_sync_overlay_local_modified_message">Ваше локальное сохранение для \"%1$s\" содержит изменения, которые не были сохранены в резервную копию.</string>
+    <string name="ui_sync_overlay_local_modified_question">Оставить локальный прогресс или восстановить ранее выбранное сохранение?</string>
+    <string name="ui_sync_overlay_local_modified_apply">Применить локальное</string>
+    <string name="ui_sync_overlay_local_modified_apply_subtitle">Сделать локальное сохранение последней версией</string>
+    <string name="ui_sync_overlay_local_modified_restore">Использовать синхронизированное</string>
+    <string name="ui_sync_overlay_local_modified_restore_subtitle">Заменить локальное последней синхронизированной версией (будет создана резервная копия)</string>
+    <string name="ui_sync_overlay_post_session_title">Конфликт сохранений</string>
+    <string name="ui_sync_overlay_post_session_subject">\"%1$s\" -- %2$s</string>
+    <string name="ui_sync_overlay_post_session_default_slot">Сохранение по умолчанию</string>
+    <string name="ui_sync_overlay_post_session_message">На сервере есть более новое сохранение. Перезапись заменит его вашим локальным сохранением.</string>
+    <string name="ui_sync_overlay_post_session_local">Локальное</string>
+    <string name="ui_sync_overlay_post_session_server">Сервер</string>
+    <string name="ui_sync_overlay_post_session_server_named">Сервер (%1$s)</string>
+    <string name="ui_sync_overlay_post_session_skip">Пропустить синхронизацию</string>
+    <string name="ui_sync_overlay_post_session_skip_subtitle">Оставить локальное сохранение, не отправлять</string>
+    <string name="ui_sync_overlay_post_session_overwrite">Перезаписать сервер</string>
+    <string name="ui_sync_overlay_post_session_overwrite_subtitle">Заменить сохранение на сервере локальной версией</string>
+    <string name="ui_sync_overlay_legacy_status">Синхронизация...</string>
+
+    <string name="ui_quick_menu_orb_search">Поиск</string>
+    <string name="ui_quick_menu_orb_random">Случайная</string>
+    <string name="ui_quick_menu_orb_most_played">Больше всего сыграно</string>
+    <string name="ui_quick_menu_orb_top_unplayed">Рекомендуем</string>
+    <string name="ui_quick_menu_orb_recent">Недавние</string>
+    <string name="ui_quick_menu_orb_favorites">Избранное</string>
+    <string name="ui_quick_menu_empty_most_played">Пока нет сыгранных игр</string>
+    <string name="ui_quick_menu_empty_top_unplayed">Оценённые игры не найдены</string>
+    <string name="ui_quick_menu_empty_recent">Нет недавних игр</string>
+    <string name="ui_quick_menu_empty_favorites">Пока нет избранного</string>
+    <string name="ui_quick_menu_empty_random">Нет доступных игр</string>
+    <string name="ui_quick_menu_search_placeholder">Поиск игр...</string>
+    <string name="ui_quick_menu_search_prompt">Введите не менее 2 символов для поиска</string>
+    <string name="ui_quick_menu_search_no_results">По запросу \"%1$s\" игр не найдено</string>
+    <string name="ui_quick_menu_recent_searches_heading">Недавние запросы</string>
+    <string name="ui_quick_menu_row_platform_unknown">Неизвестно</string>
+    <string name="ui_quick_menu_row_downloaded">Загружено</string>
+    <string name="ui_quick_menu_random_platform_unknown">Неизвестно</string>
+    <string name="ui_quick_menu_random_downloaded">Загружено</string>
+
+    <string name="ui_file_browser_title_folder">Выбор папки</string>
+    <string name="ui_file_browser_title_file">Выбор файла</string>
+    <string name="ui_file_browser_title_file_or_folder">Выбор файла или папки</string>
+    <string name="ui_file_browser_permission_title">Требуется доступ к хранилищу</string>
+    <string name="ui_file_browser_permission_message">Argosy нужен доступ ко всем файлам, чтобы просматривать папки, скачивать игры и синхронизировать сохранения. Предоставьте его и вернитесь сюда.</string>
+    <string name="ui_file_browser_permission_button">Предоставить доступ</string>
+    <string name="ui_file_browser_permission_footer_grant">Предоставить доступ</string>
+    <string name="ui_file_browser_permission_footer_back">Назад</string>
+    <string name="ui_file_browser_error_unreadable">Не удалось получить доступ к каталогу</string>
+    <string name="ui_file_browser_empty_folder">Пустая папка</string>
+    <string name="ui_file_browser_footer_select_file">Выбрать файл</string>
+    <string name="ui_file_browser_footer_select_file_or_folder">Выбрать файл</string>
+    <string name="ui_file_browser_footer_open_folder">Открыть</string>
+    <string name="ui_file_browser_footer_back">Назад</string>
+    <string name="ui_file_browser_footer_new_folder">Новая папка</string>
+    <string name="ui_file_browser_footer_use_folder">Использовать папку</string>
+    <string name="ui_file_browser_new_folder_title">Новая папка</string>
+    <string name="ui_file_browser_new_folder_field_label">Имя папки</string>
+    <string name="ui_file_browser_new_folder_cancel">Отмена</string>
+    <string name="ui_file_browser_new_folder_confirm">Создать</string>
+    <string name="ui_file_browser_new_folder_error_empty">Имя папки не может быть пустым</string>
+    <string name="ui_file_browser_new_folder_error_invalid">Недопустимое имя папки</string>
+    <string name="ui_file_browser_new_folder_error_exists">Такая папка уже существует</string>
+    <string name="ui_file_browser_new_folder_error_failed">Не удалось создать папку</string>
+
+    <string name="ui_startup_status_initializing">Инициализация...</string>
+    <string name="ui_startup_status_loading_library">Загрузка библиотеки...</string>
+    <string name="ui_startup_status_syncing_collections">Синхронизация коллекций...</string>
+    <string name="ui_startup_status_checking_emulators">Проверка эмуляторов...</string>
+    <string name="ui_startup_status_preparing_home">Подготовка главного экрана...</string>
+    <string name="ui_startup_status_waiting_for_storage">Ожидание хранилища...</string>
+    <string name="ui_startup_status_scanning_roms">Сканирование файлов ROM...</string>
+    <string name="ui_builtin_cores_ready_title">Встроенный эмулятор готов</string>
+    <plurals name="ui_builtin_cores_ready_subtitle">
+        <item quantity="one">Загружено %d ядро</item>
+        <item quantity="few">Загружено %d ядра</item>
+        <item quantity="many">Загружено %d ядер</item>
+        <item quantity="other">Загружено %d ядра</item>
+    </plurals>
+    <string name="ui_netplay_invite_failed_title">Не удалось присоединиться к %1$s</string>
+    <string name="ui_netplay_invite_reason_rom_missing">ROM не найден</string>
+    <string name="ui_netplay_invite_reason_rom_version">Другая версия ROM</string>
+    <string name="ui_netplay_invite_reason_core_version">Другая версия ядра</string>
+    <string name="ui_netplay_invite_reason_core_unsupported">Ядро не поддерживается</string>
+    <string name="ui_netplay_invite_reason_missing_game_id">Не указан идентификатор игры для сессии</string>
+    <string name="ui_netplay_invite_reason_game_not_local">Локальная игра не найдена</string>
+    <string name="ui_netplay_invite_reason_launch_failed">Не удалось запустить игру</string>
+    <string name="ui_dual_file_picker_hint_tab">Вкладка</string>
+    <string name="ui_dual_file_picker_hint_select">Выбрать</string>
+    <string name="ui_dual_file_picker_hint_back">Назад</string>
+    <string name="ui_dual_collections_hint_navigate">Навигация</string>
+    <string name="ui_dual_collections_hint_open">Открыть</string>
+    <string name="ui_dual_collections_hint_back">Назад</string>
+
+    <string name="ui_download_notice_queued">В очереди</string>
+    <string name="ui_download_notice_no_space">Ожидание места</string>
+    <string name="ui_download_notice_extracting">Распаковка</string>
+    <string name="ui_download_notice_moving">Перемещение в хранилище ROM</string>
+    <string name="ui_download_notice_paused">На паузе</string>
+    <string name="ui_download_notice_completed">Завершено</string>
+    <string name="ui_download_notice_failed">Ошибка</string>
+    <string name="ui_download_notice_failed_subtitle">%1$s: %2$s</string>
+
+    <string name="ui_sync_notice_success_title">Сохранение синхронизировано</string>
+    <string name="ui_sync_notice_game_with_slot">%1$s (%2$s)</string>
+    <plurals name="ui_sync_notice_batch_title">
+        <item quantity="one">%d сохранение синхронизировано</item>
+        <item quantity="few">%d сохранения синхронизировано</item>
+        <item quantity="many">%d сохранений синхронизировано</item>
+        <item quantity="other">%d сохранения синхронизировано</item>
+    </plurals>
+    <string name="ui_sync_notice_batch_subtitle">%1$s и ещё %2$d</string>
+    <string name="ui_sync_notice_upload_failed_title">Не удалось отправить</string>
+    <string name="ui_sync_notice_download_failed_title">Не удалось загрузить</string>
+    <string name="ui_sync_notice_failed_game_with_slot">%1$s (%2$s)</string>
+    <string name="ui_sync_notice_failed_subtitle">%1$s: %2$s</string>
+
+    <string name="util_formatters_relative_today">Сегодня</string>
+    <string name="util_formatters_relative_yesterday">Вчера</string>
+    <plurals name="util_formatters_relative_days_ago">
+        <item quantity="one">%dд назад</item>
+        <item quantity="few">%dд назад</item>
+        <item quantity="many">%dд назад</item>
+        <item quantity="other">%dд назад</item>
+    </plurals>
+    <plurals name="util_formatters_relative_weeks_ago">
+        <item quantity="one">%dнед назад</item>
+        <item quantity="few">%dнед назад</item>
+        <item quantity="many">%dнед назад</item>
+        <item quantity="other">%dнед назад</item>
+    </plurals>
+
+    <string name="util_formatters_relative_str_now">сейчас</string>
+    <plurals name="util_formatters_relative_str_minutes_ago">
+        <item quantity="one">%dм назад</item>
+        <item quantity="few">%dм назад</item>
+        <item quantity="many">%dм назад</item>
+        <item quantity="other">%dм назад</item>
+    </plurals>
+    <plurals name="util_formatters_relative_str_hours_ago">
+        <item quantity="one">%dч назад</item>
+        <item quantity="few">%dч назад</item>
+        <item quantity="many">%dч назад</item>
+        <item quantity="other">%dч назад</item>
+    </plurals>
+    <plurals name="util_formatters_relative_str_days_ago">
+        <item quantity="one">%dд назад</item>
+        <item quantity="few">%dд назад</item>
+        <item quantity="many">%dд назад</item>
+        <item quantity="other">%dд назад</item>
+    </plurals>
+    <plurals name="util_formatters_relative_str_weeks_ago">
+        <item quantity="one">%dнед назад</item>
+        <item quantity="few">%dнед назад</item>
+        <item quantity="many">%dнед назад</item>
+        <item quantity="other">%dнед назад</item>
+    </plurals>
+
+    <string name="util_formatters_relative_verbose_just_now">только что</string>
+    <plurals name="util_formatters_relative_verbose_minutes_ago">
+        <item quantity="one">%d мин назад</item>
+        <item quantity="few">%d мин назад</item>
+        <item quantity="many">%d мин назад</item>
+        <item quantity="other">%d мин назад</item>
+    </plurals>
+    <plurals name="util_formatters_relative_verbose_hours_ago">
+        <item quantity="one">%d ч назад</item>
+        <item quantity="few">%d ч назад</item>
+        <item quantity="many">%d ч назад</item>
+        <item quantity="other">%d ч назад</item>
+    </plurals>
+    <plurals name="util_formatters_relative_verbose_days_ago">
+        <item quantity="one">%d день назад</item>
+        <item quantity="few">%d дня назад</item>
+        <item quantity="many">%d дней назад</item>
+        <item quantity="other">%d дня назад</item>
+    </plurals>
+    <plurals name="util_formatters_relative_verbose_weeks_ago">
+        <item quantity="one">%d неделю назад</item>
+        <item quantity="few">%d недели назад</item>
+        <item quantity="many">%d недель назад</item>
+        <item quantity="other">%d недели назад</item>
+    </plurals>
+
+    <string name="util_formatters_relative_short_future">в будущем</string>
+    <string name="util_formatters_relative_short_just_now">только что</string>
+    <plurals name="util_formatters_relative_short_minutes_ago">
+        <item quantity="one">%dм назад</item>
+        <item quantity="few">%dм назад</item>
+        <item quantity="many">%dм назад</item>
+        <item quantity="other">%dм назад</item>
+    </plurals>
+    <plurals name="util_formatters_relative_short_hours_ago">
+        <item quantity="one">%dч назад</item>
+        <item quantity="few">%dч назад</item>
+        <item quantity="many">%dч назад</item>
+        <item quantity="other">%dч назад</item>
+    </plurals>
+    <plurals name="util_formatters_relative_short_days_ago">
+        <item quantity="one">%dд назад</item>
+        <item quantity="few">%dд назад</item>
+        <item quantity="many">%dд назад</item>
+        <item quantity="other">%dд назад</item>
+    </plurals>
+
+    <string name="util_formatters_save_timestamp_today">Сегодня %1$s</string>
+    <string name="util_formatters_save_timestamp_yesterday">Вчера</string>
+    <plurals name="util_formatters_save_timestamp_days_ago">
+        <item quantity="one">%d день назад</item>
+        <item quantity="few">%d дня назад</item>
+        <item quantity="many">%d дней назад</item>
+        <item quantity="other">%d дня назад</item>
+    </plurals>
+
+    <string name="util_formatters_playtime_minutes">%1$dm</string>
+    <string name="util_formatters_playtime_hours_minutes">%1$dh %2$dm</string>
+    <string name="util_formatters_playtime_hours">%1$dh</string>
+
+    <string name="common_homegrid_playtime_hours_minutes">%1$dh %2$dm</string>
+    <string name="common_homegrid_playtime_minutes">%1$dm</string>
+
+    <string name="notif_steam_sync_error_no_cached_licenses">Нет кэшированных лицензий -- сначала подключитесь к Steam</string>
+    <string name="notif_steam_sync_error_no_active_account">Нет активного аккаунта</string>
+    <string name="notif_steam_sync_error_not_connected">Нет подключения к Steam</string>
+    <string name="notif_steam_sync_error_could_not_connect_sync">Не удалось подключиться к Steam</string>
+    <string name="notif_steam_sync_error_could_not_connect_overwrite">Не удалось подключиться к Steam</string>
+
+    <string name="media_library_viewmodel_refresh_label">Обновление</string>
+
+    <string name="gamedetail_action_buttons_play">ИГРАТЬ</string>
+    <string name="gamedetail_action_buttons_autosave">Автосохранение</string>
+    <string name="gamedetail_action_buttons_download">СКАЧАТЬ</string>
+    <string name="gamedetail_action_buttons_install">УСТАНОВИТЬ</string>
+    <string name="gamedetail_action_buttons_queued">В ОЧЕРЕДИ...</string>
+    <string name="gamedetail_action_buttons_no_space">НЕТ МЕСТА</string>
+    <string name="gamedetail_action_buttons_downloading_percent">%1$d%%</string>
+    <string name="gamedetail_action_buttons_extracting">РАСПАКОВКА...</string>
+    <string name="gamedetail_action_buttons_resume_percent">ПРОДОЛЖИТЬ %1$d%%</string>
+    <string name="gamedetail_action_buttons_retry">ПОВТОРИТЬ</string>
+    <string name="gamedetail_action_buttons_unfavorite">Убрать из избранного</string>
+    <string name="gamedetail_action_buttons_favorite">Добавить в избранное</string>
+    <string name="gamedetail_action_buttons_more_options">Больше опций</string>
+
+    <string name="home_grid_local_video_row_title">Выбрать видео на этом устройстве</string>
+    <string name="home_grid_local_video_row_subtitle">Воспроизводится прямо из хранилища</string>
+</resources>

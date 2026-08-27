@@ -33,6 +33,8 @@ import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.DragReorderState
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.FooterHints
@@ -98,15 +100,15 @@ fun RegionPickerPopup(
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
         ) {
             Text(
-                text = "SELECT REGIONS",
+                text = stringResource(R.string.settings_region_picker_title),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
                 text = if (orderingEnabled) {
-                    "Toggle regions to sync. Hold and drag to set priority; the top match wins when a game has multiple versions"
+                    stringResource(R.string.settings_region_picker_subtitle_ordering)
                 } else {
-                    "Toggle regions to include/exclude during sync"
+                    stringResource(R.string.settings_region_picker_subtitle_toggle)
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -144,22 +146,22 @@ fun RegionPickerPopup(
                 forced = heldRegion != null,
                 hints = if (heldRegion != null) {
                     listOf(
-                        InputButton.DPAD_VERTICAL to "Move",
-                        InputButton.A to "Accept",
-                        InputButton.B to "Cancel"
+                        InputButton.DPAD_VERTICAL to stringResource(R.string.settings_region_picker_hint_move),
+                        InputButton.A to stringResource(R.string.settings_region_picker_hint_accept),
+                        InputButton.B to stringResource(R.string.settings_region_picker_hint_cancel)
                     )
                 } else if (orderingEnabled) {
                     listOf(
-                        InputButton.DPAD to "Navigate",
-                        InputButton.A to "Toggle",
-                        InputButton.X to "Prioritize",
-                        InputButton.B to "Close"
+                        InputButton.DPAD to stringResource(R.string.settings_region_picker_hint_navigate),
+                        InputButton.A to stringResource(R.string.settings_region_picker_hint_toggle),
+                        InputButton.X to stringResource(R.string.settings_region_picker_hint_prioritize),
+                        InputButton.B to stringResource(R.string.settings_region_picker_hint_close)
                     )
                 } else {
                     listOf(
-                        InputButton.DPAD to "Navigate",
-                        InputButton.A to "Toggle",
-                        InputButton.B to "Close"
+                        InputButton.DPAD to stringResource(R.string.settings_region_picker_hint_navigate),
+                        InputButton.A to stringResource(R.string.settings_region_picker_hint_toggle),
+                        InputButton.B to stringResource(R.string.settings_region_picker_hint_close)
                     )
                 },
                 onHintClick = { button ->

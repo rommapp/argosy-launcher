@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ============================ QuayPass check-in screen ============================ -->
+
+    <string name="quaypass_checkin_header_title">चेक-इन</string>
+
+    <string name="quaypass_checkin_state_running">आस-पास यात्री खोजे जा रहे हैं...</string>
+    <string name="quaypass_checkin_state_disabled">QuayPass बंद है</string>
+    <string name="quaypass_checkin_state_not_linked">चेक-इन करने के लिए अपना Argosy खाता लिंक करें</string>
+    <string name="quaypass_checkin_state_awaiting_registration">सर्वर के साथ रजिस्टर हो रहा है...</string>
+    <string name="quaypass_checkin_state_awaiting_credential">अपना पास पूरा सेटअप करने के लिए कनेक्ट करें</string>
+    <string name="quaypass_checkin_state_key_expired">अपना पास रीफ्रेश करने के लिए फिर से कनेक्ट करें</string>
+    <string name="quaypass_checkin_state_credential_rejected">सर्वर की चाबी मेल नहीं खाती</string>
+    <string name="quaypass_checkin_state_bluetooth_off">चेक-इन के लिए ब्लूटूथ चालू करें</string>
+    <string name="quaypass_checkin_state_permissions_missing">ब्लूटूथ अनुमति चाहिए</string>
+    <string name="quaypass_checkin_state_ble_unsupported">यह डिवाइस पास में डेटा नहीं भेज सकता</string>
+
+    <string name="quaypass_checkin_footer_accept">स्वीकार करें</string>
+    <string name="quaypass_checkin_footer_add_friend">फ्रेंड जोड़ें</string>
+    <string name="quaypass_checkin_footer_greeting">ग्रीटिंग</string>
+    <string name="quaypass_checkin_footer_back">वापस</string>
+    <string name="quaypass_checkin_footer_scroll">स्क्रॉल</string>
+
+    <string name="quaypass_checkin_empty_title">अभी तक कोई यात्री नहीं</string>
+    <string name="quaypass_checkin_empty_message">Argosy अपने साथ रखें। पास होने पर आप अपने आप दूसरे प्लेयर से मिलेंगे।</string>
+
+    <string name="quaypass_checkin_card_name_fallback">\@%1$s</string>
+    <string name="quaypass_checkin_card_username_subtitle">\@%1$s</string>
+    <string name="quaypass_checkin_card_blocked">ब्लॉक्ड</string>
+    <string name="quaypass_checkin_card_request_received">आपको जोड़ना चाहते हैं</string>
+    <string name="quaypass_checkin_card_request_sent">फ्रेंड रिक्वेस्ट भेजी गई</string>
+    <string name="quaypass_checkin_card_last_played">%1$s खेला</string>
+    <string name="quaypass_checkin_card_meet_count">%1$d बार मिले &#183; %2$s</string>
+    <string name="quaypass_checkin_card_friend_badge">फ्रेंड</string>
+    <string name="quaypass_checkin_card_ticket_award">+%1$d</string>
+
+    <plurals name="quaypass_ticket_balance_chip_count">
+        <item quantity="one">%1$d टिकट</item>
+        <item quantity="other">%1$d टिकट</item>
+    </plurals>
+
+    <!-- =========================== QuayPass greeting editor =========================== -->
+
+    <string name="quaypass_greeting_modal_title">ग्रीटिंग</string>
+    <string name="quaypass_greeting_modal_footer_save">सेव करें</string>
+    <string name="quaypass_greeting_modal_footer_cancel">रद्द करें</string>
+    <string name="quaypass_greeting_modal_description">चेक-इन पर मिलने वाले यात्रियों को दिखाया जाएगा।</string>
+    <string name="quaypass_greeting_modal_placeholder">नमस्ते!</string>
+
+    <!-- ================================== Doodle editor ================================== -->
+
+    <string name="doodle_tool_selector_pen_description">पेन</string>
+    <string name="doodle_tool_selector_line_description">लाइन</string>
+    <string name="doodle_tool_selector_fill_description">फिल</string>
+
+    <string name="doodle_undo_redo_undo_description">अनडू</string>
+    <string name="doodle_undo_redo_undo_label">अनडू</string>
+    <string name="doodle_undo_redo_redo_description">रीडू</string>
+    <string name="doodle_undo_redo_redo_label">रीडू</string>
+
+    <string name="doodle_footer_canvas_move">मूव</string>
+    <string name="doodle_footer_canvas_draw_end">समाप्त</string>
+    <string name="doodle_footer_canvas_draw_stop">रोकें</string>
+    <string name="doodle_footer_canvas_draw_start">शुरू करें</string>
+    <string name="doodle_footer_canvas_draw_fill">फिल</string>
+    <string name="doodle_footer_canvas_draw_default">ड्रॉ करें</string>
+    <string name="doodle_footer_canvas_tool">टूल</string>
+
+    <string name="doodle_footer_palette_select">चुनें</string>
+    <string name="doodle_footer_palette_pick">अपनाएं</string>
+
+    <string name="doodle_footer_size_adjust">साइज़</string>
+    <string name="doodle_footer_size_confirm">पुष्टि करें</string>
+
+    <string name="doodle_footer_undo">अनडू</string>
+    <string name="doodle_footer_redo">रीडू</string>
+
+    <string name="doodle_footer_game_select">चुनें</string>
+    <string name="doodle_footer_game_clear">साफ़ करें</string>
+
+    <string name="doodle_footer_done">पूर्ण</string>
+    <string name="doodle_footer_back_cancel">रद्द करें</string>
+    <string name="doodle_footer_back_discard">हटाएं</string>
+    <string name="doodle_footer_back_default">वापस</string>
+
+    <string name="doodle_game_section_fallback">गेम</string>
+
+    <string name="doodle_game_picker_title">गेम चुनें</string>
+    <string name="doodle_game_picker_footer_browse">ब्राउज़ करें</string>
+    <string name="doodle_game_picker_footer_navigate">नेविगेट</string>
+    <string name="doodle_game_picker_footer_select">चुनें</string>
+    <string name="doodle_game_picker_footer_cancel">रद्द करें</string>
+    <string name="doodle_game_picker_search_placeholder">गेम खोजें...</string>
+    <string name="doodle_game_picker_no_game">कोई गेम नहीं</string>
+
+    <string name="doodle_discard_dialog_title">डूडल छोड़ें?</string>
+    <string name="doodle_discard_dialog_message">आपके पास बिना सेव किए बदलाव हैं। क्या आप वाकई अपना डूडल छोड़ना चाहते हैं?</string>
+    <string name="doodle_discard_dialog_discard">छोड़ें</string>
+    <string name="doodle_discard_dialog_keep_editing">संपादन जारी रखें</string>
+
+    <!-- ============================== Secondary home (companion) ========================== -->
+
+    <string name="secondaryhome_drawer_all_apps_title">सभी ऐप्स</string>
+    <string name="secondaryhome_drawer_pinned_description">पिन किया गया</string>
+</resources>

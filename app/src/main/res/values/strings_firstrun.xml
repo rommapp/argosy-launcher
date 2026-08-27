@@ -1,0 +1,347 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Owner: ui/screens/firstrun
+      Key prefix: firstrun_
+      Keys are named for the usage site, never for the English text, and identical English
+      is never shared between two usage sites.
+
+      This is the setup wizard a new user sees before anything else in the app. It explains
+      concepts that have no everyday equivalent in most languages, so the notes below say
+      what each string labels rather than restating it.
+
+      Product names that are NEVER translated, wherever they appear in this file:
+      Argosy (this app), RomM (the game library server this app connects to), libretro
+      (the emulator core project), RetroArch, RetroAchievements.
+    -->
+
+    <!-- ===== Step 1: welcome ===== -->
+
+    <!-- Greeting under the app name on the first screen of the setup wizard. Full sentence.
+         "Let us begin the setup" in tone, not a literal welcome mat. -->
+    <string name="firstrun_welcome_intro">Welcome! Let\'s get you set up.</string>
+    <!-- Button that begins the setup wizard. Verb phrase, imperative. -->
+    <string name="firstrun_welcome_button_start">Get Started</string>
+
+    <!-- ===== Step 2a: entering the RomM server address ===== -->
+
+    <!-- Heading of the step where the user types their server address. "Rom Manager" is the
+         literal expansion of the product name RomM; keep the product recognisable. -->
+    <string name="firstrun_romm_url_title">Rom Manager Login</string>
+    <!-- Floating label on the text field for the server web address. Noun phrase. -->
+    <string name="firstrun_romm_url_field_label">Server URL</string>
+    <!-- Explanatory line under the address field. "we" is the app. "sign in" is the account
+         login that follows. RomM is a product name and is not translated. -->
+    <string name="firstrun_romm_url_hint">Enter your RomM server address and we\'ll detect how to sign in.</string>
+    <!-- Button that submits the typed server address. Verb, imperative. -->
+    <string name="firstrun_romm_url_button_continue">Continue</string>
+    <!-- Label the same button takes on while the app is contacting the server to see which
+         sign-in methods it offers. Present-progressive verb. -->
+    <string name="firstrun_romm_url_button_checking">Checking...</string>
+    <!-- Button that returns to the welcome step. Verb, imperative. -->
+    <string name="firstrun_romm_url_button_back">Back</string>
+    <!-- Error shown under the address field when the user submits it empty. Imperative
+         sentence telling them what to do. -->
+    <string name="firstrun_romm_url_error_blank">Enter a server URL</string>
+
+    <!-- ===== Step 2b: signing in with a pairing code typed by hand ===== -->
+
+    <!-- Heading of the step where the user types the pairing code. A pairing code is a short
+         one-off code that links this device to the user's server account. Imperative. -->
+    <string name="firstrun_pairing_code_title">Enter pairing code</string>
+    <!-- Instructions above the code field. An "API token" is created by the user in the RomM
+         web interface and becomes the pairing code. The code is always 8 characters, which is
+         fixed by the server protocol, so the number stays 8 in every language. -->
+    <string name="firstrun_pairing_code_hint">Create an API token in the RomM web UI, then enter the 8-character code.</string>
+    <!-- Screen reader description of the button that empties the pairing code field.
+         Verb phrase, an action. -->
+    <string name="firstrun_pairing_code_clear_description">Clear code</string>
+    <!-- Button that sends the typed pairing code to the server. Verb, imperative. -->
+    <string name="firstrun_pairing_code_button_connect">Connect</string>
+    <!-- Label the same button takes on while the code is being checked. Present-progressive. -->
+    <string name="firstrun_pairing_code_button_connecting">Connecting...</string>
+    <!-- Button that goes back to the server address field to change it. Verb phrase. -->
+    <string name="firstrun_pairing_code_button_edit_url">Edit URL</string>
+    <!-- Button that opens the camera to read a pairing QR code instead of typing it.
+         Verb phrase, imperative. -->
+    <string name="firstrun_pairing_code_button_scan">Scan QR Code</string>
+    <!-- Button that switches away from typing a code, over to the QR pairing flow where the
+         user approves this device from a phone. Verb phrase. -->
+    <string name="firstrun_pairing_code_button_device_pairing">Use QR pairing instead</string>
+    <!-- Error shown when the user submits a pairing code shorter than the full 8 characters.
+         Imperative sentence. The length is fixed by the server protocol. -->
+    <string name="firstrun_pairing_code_error_incomplete">Enter the full 8-character pairing code</string>
+
+    <!-- ===== Step 2c: signing in by approving this device elsewhere ===== -->
+
+    <!-- Heading of the step showing a QR code the user scans with another device to approve
+         this one. Imperative. -->
+    <string name="firstrun_device_pairing_title">Scan to pair</string>
+    <!-- Instructions under that heading. Two routes are offered in one sentence: scan the code
+         with a phone, or open the sign-in page on this device. "approve it in RomM" means
+         confirming this device in the RomM web interface. RomM is not translated. -->
+    <string name="firstrun_device_pairing_hint">Scan this code with your phone, or sign in here on this device, then approve it in RomM.</string>
+    <!-- Error shown when this device has no web browser installed, so the sign-in page cannot
+         be opened here. Two sentences telling the user what to do instead. -->
+    <string name="firstrun_device_pairing_no_browser">No browser on this device. Scan the code or use a pairing code instead.</string>
+    <!-- Button that opens the sign-in web page on this device rather than on a phone.
+         Verb phrase, imperative. -->
+    <string name="firstrun_device_pairing_button_sign_in">Sign in on this device</string>
+    <!-- Button that abandons QR pairing and switches to typing a pairing code by hand.
+         Verb phrase, imperative. -->
+    <string name="firstrun_device_pairing_button_manual_code">Use a pairing code</string>
+    <!-- Button that cancels pairing and returns to the server address field. Verb, imperative. -->
+    <string name="firstrun_device_pairing_button_back">Back</string>
+    <!-- Error shown when the user rejected this device instead of approving it. Past tense
+         statement of what happened, not an instruction. -->
+    <string name="firstrun_device_pairing_error_denied">Pairing was denied on the server</string>
+    <!-- Error shown when the pairing code timed out before anyone approved it. Statement plus
+         an imperative telling the user to restart the pairing. -->
+    <string name="firstrun_device_pairing_error_expired">Pairing code expired, start again</string>
+    <!-- Error shown when the server answers pairing with something the app does not recognise.
+         Statement, deliberately vague because the cause is unknown. -->
+    <string name="firstrun_device_pairing_error_unexpected">Unexpected pairing result</string>
+
+    <!-- ===== Step 3: sign-in succeeded ===== -->
+
+    <!-- Heading confirming the app is now signed in to the server. Statement, celebratory. -->
+    <string name="firstrun_romm_success_title">Connected successfully!</string>
+    <!-- Line naming which server the app connected to. "Server" is a noun label; %1$s is the
+         server web address and is never translated. -->
+    <string name="firstrun_romm_success_server">Server: %1$s</string>
+    <!-- Summary of the library found on the server, assembled from the two counts below so
+         that each count can take its own plural form. %1$s is the game count phrase and
+         %2$s is the platform count phrase; reorder them as your language needs. -->
+    <string name="firstrun_romm_success_library">%1$s across %2$s</string>
+    <!-- How many games the server holds, used only inside firstrun_romm_success_library.
+         "Game" here means one title in the library. -->
+    <plurals name="firstrun_romm_success_game_count">
+        <item quantity="one">%d game</item>
+        <item quantity="other">%d games</item>
+    </plurals>
+    <!-- How many platforms the server holds, used only inside firstrun_romm_success_library.
+         A "platform" is a games console or computer system, for example a handheld console,
+         not a software platform. -->
+    <plurals name="firstrun_romm_success_platform_count">
+        <item quantity="one">%d platform</item>
+        <item quantity="other">%d platforms</item>
+    </plurals>
+    <!-- Button that moves on from the success screen to the permissions step. Verb, imperative. -->
+    <string name="firstrun_romm_success_button_continue">Continue</string>
+    <!-- Error shown when sign-in worked but reading the library listing afterwards failed.
+         %1$s is a message from the server and arrives untranslated. -->
+    <string name="firstrun_romm_success_error_library_fetch">Failed to fetch library: %1$s</string>
+
+    <!-- ===== Step 4: Android permissions ===== -->
+
+    <!-- Heading of the step listing the Android permissions the app asks for. Noun, plural. -->
+    <string name="firstrun_permissions_title">Permissions</string>
+    <!-- Line under that heading explaining why the permissions are needed. "Argosy" is this
+         app's name and is not translated. "emulators" are the programs that run console games. -->
+    <string name="firstrun_permissions_intro">Argosy needs these to manage your library and emulators.</string>
+    <!-- Title of the card for the Android all-files access permission. Name it the way Android
+         system settings name it in your language. "(Required)" marks it as the one permission
+         setup cannot continue without. -->
+    <string name="firstrun_permissions_storage_title">Manage Storage (Required)</string>
+    <!-- Description under that card. "sync saves" means copying game save data between this
+         device and the server. -->
+    <string name="firstrun_permissions_storage_description">Required to browse folders, download games, and sync saves.</string>
+    <!-- Title of the card for the Android notifications permission. Match the Android system
+         settings wording in your language. Noun, plural. -->
+    <string name="firstrun_permissions_notifications_title">Notifications</string>
+    <!-- Description under the notifications card. "download and sync progress" is progress of
+         file downloads and of save synchronisation. -->
+    <string name="firstrun_permissions_notifications_description">Shows download and sync progress.</string>
+    <!-- Title of the card for the Android draw-over-other-apps permission. Match the Android
+         system settings wording in your language. -->
+    <string name="firstrun_permissions_overlay_title">Display Over Other Apps</string>
+    <!-- Description under the overlay card. An "overlay" here is a small panel the app draws
+         on top of a running game when it notices the game has written a save. -->
+    <string name="firstrun_permissions_overlay_description">Enables in-game save detection overlays.</string>
+    <!-- Title of the card for the Android usage access permission. Match the Android system
+         settings wording in your language. -->
+    <string name="firstrun_permissions_usage_title">Usage Access</string>
+    <!-- Description under the usage access card. "play time tracking" counts how long each game
+         was played; "resume" is returning to a game that is still running. -->
+    <string name="firstrun_permissions_usage_description">Enables accurate play time tracking and resume.</string>
+    <!-- Button that leaves the permissions step. Verb, imperative. -->
+    <string name="firstrun_permissions_button_continue">Continue</string>
+    <!-- Note under the button once storage access has been granted. "Settings" names this app's
+         own Settings screen, not the Android system settings. -->
+    <string name="firstrun_permissions_note_optional">You can grant the other permissions later in Settings.</string>
+    <!-- Note under the button while storage access is still missing, shown in the error colour.
+         First sentence is an imperative; "The others" are the three optional permissions.
+         "Settings" names this app's own Settings screen. -->
+    <string name="firstrun_permissions_note_storage_required">Grant storage access to continue. The others are optional and can be granted later in Settings.</string>
+
+    <!-- ===== Step 5: where downloaded games are kept ===== -->
+
+    <!-- Heading of the step where the user picks the folder for game files. "Games Path" is a
+         noun phrase meaning the folder path games are stored under. -->
+    <string name="firstrun_rom_path_title">Games Path</string>
+    <!-- Explanation under that heading. "subfolders" are created by the app, one per console.
+         "console" means a games machine such as a handheld or a home console. -->
+    <string name="firstrun_rom_path_description">Choose where your game files will be stored. We\'ll create subfolders for each console automatically.</string>
+    <!-- Button that accepts the chosen games folder and moves on. Verb, imperative. -->
+    <string name="firstrun_rom_path_button_continue">Continue</string>
+    <!-- Button that reopens the folder picker to replace the already chosen games folder.
+         Verb phrase, imperative. -->
+    <string name="firstrun_rom_path_button_change_folder">Choose Different Folder</string>
+    <!-- Button that opens the folder picker when no games folder has been chosen yet.
+         Verb phrase, imperative. -->
+    <string name="firstrun_rom_path_button_choose_folder">Choose Folder</string>
+
+    <!-- ===== Step 6: where cover art is cached ===== -->
+
+    <!-- Small label above the heading marking this whole step as skippable. Adjective, shown in
+         caps in English; use whatever casing suits a label in your language. -->
+    <string name="firstrun_image_cache_optional_badge">OPTIONAL</string>
+    <!-- Heading of the step where the user may pick a folder for downloaded artwork. "Image
+         Cache" is the store of game cover images kept on this device. Noun phrase. -->
+    <string name="firstrun_image_cache_title">Image Cache Location</string>
+    <!-- Explanation under that heading. The internal cache is private storage inside the app
+         that the user cannot browse; an external location is a folder on shared storage or an
+         SD card. -->
+    <string name="firstrun_image_cache_description">By default, game artwork is stored in the app\'s internal cache. If your device has limited storage, you can choose an external location.</string>
+    <!-- Button that accepts the chosen artwork folder and moves on. Verb, imperative. -->
+    <string name="firstrun_image_cache_button_continue">Continue</string>
+    <!-- Button that reopens the folder picker to replace the already chosen artwork folder.
+         Verb phrase, imperative. -->
+    <string name="firstrun_image_cache_button_change_folder">Choose Different Folder</string>
+    <!-- Button that opens the folder picker for the artwork folder when none is chosen yet.
+         "External" means outside the private storage belonging to the app. Verb phrase,
+         imperative. -->
+    <string name="firstrun_image_cache_button_choose_folder">Choose External Folder</string>
+    <!-- Button that skips this step and keeps artwork in the private storage belonging to the
+         app. "(Internal)" names that default location. Verb phrase, imperative. -->
+    <string name="firstrun_image_cache_button_use_default">Use Default (Internal)</string>
+    <!-- Note at the foot of the step. %1$s is the literal on-disk folder name the app creates
+         inside the chosen location; it is a real directory name, so leave it exactly as the
+         app supplies it and translate only the sentence around it. -->
+    <string name="firstrun_image_cache_folder_note">Images will be stored in an \'%1$s\' subfolder.</string>
+
+    <!-- ===== Step 7: choosing which platforms to sync ===== -->
+
+    <!-- Small label above the heading naming the step. Shown in caps in English; use whatever
+         casing suits a label in your language. A "platform" is a games console or computer
+         system, not a software platform. -->
+    <string name="firstrun_platform_select_eyebrow">SELECT PLATFORMS</string>
+    <!-- Heading of the platform list. "sync" means keep the games for that platform in step
+         with the server. Imperative. -->
+    <string name="firstrun_platform_select_title">Choose which platforms to sync</string>
+    <!-- Running tally under the heading. %1$d is how many platforms the user has switched on,
+         %2$d is how many exist in total; the plural form follows the total. -->
+    <plurals name="firstrun_platform_select_selected_count">
+        <item quantity="one">%1$d of %2$d platform selected</item>
+        <item quantity="other">%1$d of %2$d platforms selected</item>
+    </plurals>
+    <!-- Second line of each platform row, counting the games the server holds for that one
+         platform. -->
+    <plurals name="firstrun_platform_select_game_count">
+        <item quantity="one">%d game</item>
+        <item quantity="other">%d games</item>
+    </plurals>
+    <!-- Button that switches every platform in the list on. Verb phrase, imperative. -->
+    <string name="firstrun_platform_select_button_select_all">Select All</string>
+    <!-- Label the same button takes on once every platform is already on, which switches them
+         all off. Verb phrase, imperative. -->
+    <string name="firstrun_platform_select_button_deselect_all">Deselect All</string>
+    <!-- Button that accepts the platform choice and moves on. Verb, imperative. -->
+    <string name="firstrun_platform_select_button_continue">Continue</string>
+
+    <!-- ===== Step 8: offering to download emulator cores ===== -->
+
+    <!-- Heading asking whether to download emulator cores. A "core" is an emulator engine the
+         app runs games with, downloaded as a plug-in rather than as a separate app. Question. -->
+    <string name="firstrun_core_prompt_title">Download Emulator Cores?</string>
+    <!-- Line saying how many cores could be downloaded for the platforms the user picked.
+         "libretro" is the name of the project those cores come from and is never translated. -->
+    <plurals name="firstrun_core_prompt_available_count">
+        <item quantity="one">%d libretro core is available for your selected platforms.</item>
+        <item quantity="other">%d libretro cores are available for your selected platforms.</item>
+    </plurals>
+    <!-- Second line explaining what the cores buy the user. "built-in emulation" means playing
+         games inside this app; "separate emulator apps" are other apps installed alongside. -->
+    <string name="firstrun_core_prompt_explainer">These enable built-in emulation without needing separate emulator apps.</string>
+    <!-- Line replacing the count when every needed core is already on the device. Statement. -->
+    <string name="firstrun_core_prompt_all_installed">All cores for your selected platforms are already installed.</string>
+    <!-- Button that starts downloading the missing cores. Verb phrase, imperative. -->
+    <string name="firstrun_core_prompt_button_download">Download Cores</string>
+    <!-- Button that declines the download. The bracketed half warns what declining does: the
+         built-in emulator is switched off. Verb, imperative. -->
+    <string name="firstrun_core_prompt_button_skip">Skip (Disable Built-in Emulator)</string>
+    <!-- Label that button takes on when there is nothing to download, so it merely moves on.
+         Verb, imperative. -->
+    <string name="firstrun_core_prompt_button_continue">Continue</string>
+    <!-- Note under the skip button spelling out the consequence and the way back. "Settings"
+         names the Settings screen inside this app, not the Android system settings. -->
+    <string name="firstrun_core_prompt_note_skip">Skipping turns off the built-in emulator. You can re-enable it and download cores later from Settings.</string>
+
+    <!-- ===== Step 9: downloading the cores ===== -->
+
+    <!-- Heading of the download progress step. Present-progressive verb phrase. -->
+    <string name="firstrun_core_download_title">Downloading Emulator Cores</string>
+    <!-- Line shown when the chosen platforms turned out to need no cores at all. Statement. -->
+    <string name="firstrun_core_download_none_needed">No cores needed for selected platforms</string>
+    <!-- Button that leaves this step in that nothing-to-download case. Verb, imperative. -->
+    <string name="firstrun_core_download_button_continue_no_cores">Continue</string>
+    <!-- Progress line while downloads run. %1$d is how many finished, %2$d is how many were
+         queued; the plural form follows the queued total. -->
+    <plurals name="firstrun_core_download_progress_count">
+        <item quantity="one">Downloading %1$d of %2$d core...</item>
+        <item quantity="other">Downloading %1$d of %2$d cores...</item>
+    </plurals>
+    <!-- Result line when the run finished but some downloads failed. %1$d is how many
+         succeeded, %2$d is how many were queued; the plural form follows the queued total. -->
+    <plurals name="firstrun_core_download_partial_count">
+        <item quantity="one">%1$d of %2$d core downloaded</item>
+        <item quantity="other">%1$d of %2$d cores downloaded</item>
+    </plurals>
+    <!-- Result line when every queued core downloaded. Statement. -->
+    <string name="firstrun_core_download_all_done">All cores downloaded</string>
+    <!-- Note above the buttons saying who may safely skip the downloads. "standalone emulators"
+         are separate emulator apps installed on the device. -->
+    <string name="firstrun_core_download_note_skip">Skip if you prefer to use standalone emulators</string>
+    <!-- Button that abandons the remaining downloads and moves on. Verb, imperative. -->
+    <string name="firstrun_core_download_button_skip">Skip</string>
+    <!-- Button that leaves this step once the downloads have finished. Verb, imperative. -->
+    <string name="firstrun_core_download_button_continue">Continue</string>
+    <!-- Screen reader description of the tick icon on a core row that downloaded successfully.
+         Adjective describing the state of that row, not a verb. -->
+    <string name="firstrun_core_download_status_complete_description">Complete</string>
+    <!-- Screen reader description of the warning icon on a core row whose download failed.
+         Adjective describing the state of that row, not a verb. -->
+    <string name="firstrun_core_download_status_failed_description">Failed</string>
+    <!-- Screen reader description of the icon inside the button that downloads a failed core
+         again. Verb, imperative. -->
+    <string name="firstrun_core_download_retry_description">Retry</string>
+    <!-- Visible label on that same button. Verb, imperative. Kept short; it sits beside the
+         icon on a narrow row. -->
+    <string name="firstrun_core_download_button_retry">Retry</string>
+
+    <!-- ===== Step 10: setup finished ===== -->
+
+    <!-- Heading of the closing screen. Exclamation meaning setup is finished. -->
+    <string name="firstrun_complete_title">All Set!</string>
+    <!-- Closing summary of the library waiting to be synchronised, assembled from the two
+         counts below so each takes its own plural form. %1$s is the game count phrase and
+         %2$s is the platform count phrase; reorder them as your language needs. -->
+    <string name="firstrun_complete_library">%1$s across %2$s ready to sync</string>
+    <!-- How many games are waiting, used only inside firstrun_complete_library. -->
+    <plurals name="firstrun_complete_game_count">
+        <item quantity="one">%d game</item>
+        <item quantity="other">%d games</item>
+    </plurals>
+    <!-- How many platforms are waiting, used only inside firstrun_complete_library. A
+         "platform" is a games console or computer system. -->
+    <plurals name="firstrun_complete_platform_count">
+        <item quantity="one">%d platform</item>
+        <item quantity="other">%d platforms</item>
+    </plurals>
+    <!-- Line telling the user where to start the first library synchronisation. "Collection
+         settings" names a section of the Settings screen inside this app, so match whatever
+         that section is called in your language. -->
+    <string name="firstrun_complete_hint">Sync your library from Collection settings to get started.</string>
+    <!-- Button that closes the wizard and opens the app. Verb phrase, imperative. -->
+    <string name="firstrun_complete_button_start">Start Playing</string>
+</resources>

@@ -51,12 +51,14 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import coil.compose.AsyncImage
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.FooterSpacer
@@ -151,7 +153,7 @@ fun PostEditorScreen(
             .padding(16.dp)
     ) {
         Text(
-            text = "Create Post",
+            text = stringResource(R.string.social_posteditor_screen_title),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onBackground
         )
@@ -179,7 +181,7 @@ fun PostEditorScreen(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = "${uiState.body.length}/2000",
+                    text = stringResource(R.string.social_posteditor_body_counter, uiState.body.length, 2000),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                     modifier = Modifier.align(Alignment.End)
@@ -299,7 +301,7 @@ private fun BodyInput(
     ) {
         if (body.isEmpty()) {
             Text(
-                text = "What's on your mind?",
+                text = stringResource(R.string.social_posteditor_body_placeholder),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
             )
@@ -376,12 +378,12 @@ private fun DoodleColumn(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "Remove doodle",
+                        contentDescription = stringResource(R.string.social_posteditor_doodle_remove_desc),
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.onErrorContainer
                     )
                     Text(
-                        text = "Remove",
+                        text = stringResource(R.string.social_posteditor_doodle_remove_label),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onErrorContainer
                     )
@@ -411,12 +413,12 @@ private fun DoodleColumn(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Brush,
-                        contentDescription = "Add doodle",
+                        contentDescription = stringResource(R.string.social_posteditor_doodle_add_desc),
                         modifier = Modifier.size(28.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )
                     Text(
-                        text = "Add Doodle",
+                        text = stringResource(R.string.social_posteditor_doodle_add_label),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )
@@ -469,7 +471,7 @@ private fun GameSection(
             )
         }
         Text(
-            text = linkedGameTitle ?: "Link a game (optional)",
+            text = linkedGameTitle ?: stringResource(R.string.social_posteditor_game_link_placeholder),
             style = MaterialTheme.typography.bodyMedium,
             color = if (linkedGameTitle != null) MaterialTheme.colorScheme.onSurface
             else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
@@ -510,13 +512,18 @@ private fun VisibilityToggle(
         )
         Column {
             Text(
-                text = if (isPublic) "Public" else "Friends Only",
+                text = stringResource(
+                    if (isPublic) R.string.social_posteditor_visibility_public
+                    else R.string.social_posteditor_visibility_friends_only
+                ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
-                text = if (isPublic) "Visible in game community"
-                else "Only visible to friends",
+                text = stringResource(
+                    if (isPublic) R.string.social_posteditor_visibility_public_desc
+                    else R.string.social_posteditor_visibility_friends_desc
+                ),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
             )
@@ -533,33 +540,42 @@ private fun PostEditorFooter(
     linkedGameTitle: String?,
     onHintClick: ((InputButton) -> Unit)? = null
 ) {
+    val editLabel = stringResource(R.string.social_posteditor_footer_edit)
+    val selectLabel = stringResource(R.string.social_posteditor_footer_select)
+    val clearLabel = stringResource(R.string.social_posteditor_footer_clear)
+    val toggleLabel = stringResource(R.string.social_posteditor_footer_toggle)
+    val removeDoodleLabel = stringResource(R.string.social_posteditor_footer_remove_doodle)
+    val addDoodleLabel = stringResource(R.string.social_posteditor_footer_add_doodle)
+    val postLabel = stringResource(R.string.social_posteditor_footer_post)
+    val discardLabel = stringResource(R.string.social_posteditor_footer_discard)
+    val backLabel = stringResource(R.string.social_posteditor_footer_back)
+
     val hints = buildList {
         when (currentSection) {
             PostEditorSection.BODY -> {
-                add(InputButton.A to "Edit")
+                add(InputButton.A to editLabel)
             }
             PostEditorSection.GAME -> {
-                add(InputButton.A to "Select")
+                add(InputButton.A to selectLabel)
                 if (linkedGameTitle != null) {
-                    add(InputButton.Y to "Clear")
+                    add(InputButton.Y to clearLabel)
                 }
             }
             PostEditorSection.VISIBILITY -> {
-                add(InputButton.A to "Toggle")
+                add(InputButton.A to toggleLabel)
             }
             PostEditorSection.DOODLE -> {
                 if (hasDoodle) {
-                    add(InputButton.A to "Remove")
+                    add(InputButton.A to removeDoodleLabel)
                 } else {
-                    add(InputButton.A to "Add Doodle")
+                    add(InputButton.A to addDoodleLabel)
                 }
             }
         }
         if (canPost) {
-            add(InputButton.START to "Post")
+            add(InputButton.START to postLabel)
         }
-        val backLabel = if (hasContent) "Discard" else "Back"
-        add(InputButton.B to backLabel)
+        add(InputButton.B to if (hasContent) discardLabel else backLabel)
     }
     FooterHints(hints = hints, onHintClick = onHintClick)
     FooterSpacer()
@@ -574,7 +590,7 @@ private fun PostConfirmDialog(
     onPost: () -> Unit,
     onCancel: () -> Unit
 ) {
-    Modal(title = "Create Post") {
+    Modal(title = stringResource(R.string.social_postconfirm_modal_title)) {
         if (isPosting) {
             Row(
                 modifier = Modifier.padding(vertical = 8.dp),
@@ -583,16 +599,16 @@ private fun PostConfirmDialog(
             ) {
                 CircularProgressIndicator(modifier = Modifier.size(24.dp))
                 Text(
-                    text = "Posting...",
+                    text = stringResource(R.string.social_postconfirm_posting),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
         } else {
-            val visibility = when {
-                hasGame && isPublic -> "This post will be shared publicly in the game community."
-                else -> "This post will be shared with your friends."
-            }
+            val visibility = stringResource(
+                if (hasGame && isPublic) R.string.social_postconfirm_visibility_public
+                else R.string.social_postconfirm_visibility_friends
+            )
             Text(
                 text = visibility,
                 style = MaterialTheme.typography.bodyMedium,
@@ -601,13 +617,13 @@ private fun PostConfirmDialog(
             )
             OptionItem(
                 icon = Icons.Default.Send,
-                label = "Post",
+                label = stringResource(R.string.social_postconfirm_option_post),
                 isFocused = focusIndex == 0,
                 onClick = onPost
             )
             OptionItem(
                 icon = Icons.Default.Close,
-                label = "Cancel",
+                label = stringResource(R.string.social_postconfirm_option_cancel),
                 isFocused = focusIndex == 1,
                 onClick = onCancel
             )
@@ -621,23 +637,23 @@ private fun DiscardPostDialog(
     onDiscard: () -> Unit,
     onCancel: () -> Unit
 ) {
-    Modal(title = "Discard Post?") {
+    Modal(title = stringResource(R.string.social_discardpost_modal_title)) {
         Text(
-            text = "You have unsaved changes. Are you sure you want to discard this post?",
+            text = stringResource(R.string.social_discardpost_body),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 8.dp)
         )
         OptionItem(
             icon = Icons.Default.Delete,
-            label = "Discard",
+            label = stringResource(R.string.social_discardpost_option_discard),
             isFocused = focusIndex == 0,
             isDangerous = true,
             onClick = onDiscard
         )
         OptionItem(
             icon = Icons.Default.Edit,
-            label = "Keep Editing",
+            label = stringResource(R.string.social_discardpost_option_keep_editing),
             isFocused = focusIndex == 1,
             onClick = onCancel
         )
@@ -666,17 +682,17 @@ private fun PostGamePickerDialog(
     }
 
     Modal(
-        title = "Select Game",
+        title = stringResource(R.string.social_postgamepicker_modal_title),
         baseWidth = 400.dp,
         onDismiss = onDismiss,
         footerHints = buildList {
             if (searchFocused) {
-                add(InputButton.DPAD_DOWN to "Browse")
+                add(InputButton.DPAD_DOWN to stringResource(R.string.social_postgamepicker_hint_browse))
             } else {
-                add(InputButton.DPAD to "Navigate")
-                add(InputButton.A to "Select")
+                add(InputButton.DPAD to stringResource(R.string.social_postgamepicker_hint_navigate))
+                add(InputButton.A to stringResource(R.string.social_postgamepicker_hint_select))
             }
-            add(InputButton.B to "Cancel")
+            add(InputButton.B to stringResource(R.string.social_postgamepicker_hint_cancel))
         }
     ) {
         Box(
@@ -699,7 +715,7 @@ private fun PostGamePickerDialog(
         ) {
             if (query.isEmpty()) {
                 Text(
-                    text = "Search games...",
+                    text = stringResource(R.string.social_postgamepicker_search_placeholder),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                 )
@@ -738,7 +754,7 @@ private fun PostGamePickerDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "No game",
+                        text = stringResource(R.string.social_postgamepicker_no_game),
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (isNoneFocused) lerp(LocalArgosyTheme.current.focusAccent, Color.White, 0.45f)
                         else MaterialTheme.colorScheme.onSurfaceVariant

@@ -2,8 +2,16 @@ package com.nendo.argosy.util
 
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.ui.screens.settings.PlatformFilterItem
+import java.text.Collator
 
 object PlatformFilterLogic {
+    /**
+     * Case-insensitive ordering that follows the reader's language rather than UTF-16 code
+     * points, so an accented name sorts beside its unaccented neighbour instead of after `z`.
+     */
+    private fun nameCollator(): Collator =
+        Collator.getInstance().apply { strength = Collator.SECONDARY }
+
     enum class SortMode {
         DEFAULT,
         NAME_ASC,
@@ -72,19 +80,20 @@ object PlatformFilterLogic {
             matchesFilter && matchesQuery
         }
 
+        val collator = nameCollator()
         return filtered.sortedWith { a, b ->
             when (sortMode) {
-                SortMode.NAME_ASC -> nameOf(a).compareTo(nameOf(b), ignoreCase = true)
-                SortMode.NAME_DESC -> nameOf(b).compareTo(nameOf(a), ignoreCase = true)
+                SortMode.NAME_ASC -> collator.compare(nameOf(a), nameOf(b))
+                SortMode.NAME_DESC -> collator.compare(nameOf(b), nameOf(a))
                 SortMode.MOST_GAMES -> {
                     val countCompare = countOf(b).compareTo(countOf(a))
                     if (countCompare != 0) countCompare
-                    else nameOf(a).compareTo(nameOf(b), ignoreCase = true)
+                    else collator.compare(nameOf(a), nameOf(b))
                 }
                 SortMode.LEAST_GAMES -> {
                     val countCompare = countOf(a).compareTo(countOf(b))
                     if (countCompare != 0) countCompare
-                    else nameOf(a).compareTo(nameOf(b), ignoreCase = true)
+                    else collator.compare(nameOf(a), nameOf(b))
                 }
                 SortMode.DEFAULT -> defaultCompare(a, b)
             }

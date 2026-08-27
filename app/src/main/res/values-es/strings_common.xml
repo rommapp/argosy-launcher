@@ -1,0 +1,832 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sort_title">A-Z</string>
+    <string name="sort_rating">Calificación</string>
+    <string name="sort_user_rating">Mi calificación</string>
+    <string name="sort_difficulty">Dificultad</string>
+    <string name="sort_release_year">Año de lanzamiento</string>
+    <string name="sort_play_count">Veces jugado</string>
+    <string name="sort_play_time">Tiempo de juego</string>
+    <string name="sort_last_played">Última vez jugado</string>
+    <string name="sort_recently_added">Agregado recientemente</string>
+
+    <string name="source_filter_all">Todos los juegos</string>
+    <string name="source_filter_playable">Jugables</string>
+    <string name="source_filter_favorites">Favoritos</string>
+    <string name="source_filter_hidden">Ocultos</string>
+
+    <string name="completion_status_incomplete">Incompleto</string>
+    <string name="completion_status_finished">Terminado</string>
+    <string name="completion_status_completed_100">100%</string>
+    <string name="completion_status_retired">Retirado</string>
+    <string name="completion_status_never_playing">No se jugará</string>
+
+    <!-- Save manager (ui/common/savechannel) -->
+
+    <string name="ui_save_channel_title">Gestión de partidas guardadas</string>
+    <string name="ui_save_channel_slots_heading">Ranuras de guardado</string>
+    <string name="ui_save_channel_history_heading_named">Historial (%1$s)</string>
+    <string name="ui_save_channel_history_heading">Historial</string>
+    <string name="ui_save_channel_history_empty">Aún no hay partidas guardadas</string>
+    <string name="ui_save_channel_tab_saves">Partidas guardadas</string>
+    <string name="ui_save_channel_tab_states">Estados</string>
+    <string name="ui_save_channel_states_empty">No hay ranuras de estado disponibles</string>
+    <string name="ui_save_channel_states_heading_named">Estados en %1$s</string>
+    <string name="ui_save_channel_states_heading_default">Estados en la ranura predeterminada</string>
+    <string name="ui_save_channel_slot_new">Nueva ranura</string>
+    <string name="ui_save_channel_slot_legacy_tag">[Antigua]</string>
+    <string name="ui_save_channel_history_active_point">Punto de restauración activo</string>
+    <string name="ui_save_channel_history_latest">Más reciente</string>
+    <string name="ui_save_channel_history_tag_synced">[Sincronizada]</string>
+    <string name="ui_save_channel_history_tag_local">[Local]</string>
+    <string name="ui_save_channel_active_default">Más reciente</string>
+    <string name="ui_save_channel_slot_autosave">Guardado automático</string>
+    <string name="ui_save_channel_slot_archived">Archivado</string>
+
+    <string name="ui_save_channel_footer_migrate">Migrar</string>
+    <string name="ui_save_channel_footer_delete_legacy_slot">Eliminar</string>
+    <string name="ui_save_channel_footer_activate">Activar</string>
+    <string name="ui_save_channel_footer_rename">Renombrar</string>
+    <string name="ui_save_channel_footer_delete_slot">Eliminar</string>
+    <string name="ui_save_channel_footer_restore_save">Restaurar</string>
+    <string name="ui_save_channel_footer_save_as">Guardar como</string>
+    <string name="ui_save_channel_footer_restore_state">Restaurar</string>
+    <string name="ui_save_channel_footer_preview_state">Vista previa</string>
+    <string name="ui_save_channel_footer_delete_state">Eliminar</string>
+    <string name="ui_save_channel_footer_download_state">Descargar</string>
+    <string name="ui_save_channel_footer_tab_states">Estados</string>
+    <string name="ui_save_channel_footer_tab_saves">Partidas</string>
+    <string name="ui_save_channel_footer_sync">Sincronizar</string>
+
+    <string name="ui_save_channel_restore_title">RESTAURAR PARTIDA GUARDADA</string>
+    <string name="ui_save_channel_restore_confirm">Restaurar</string>
+    <string name="ui_save_channel_restore_cancel">Cancelar</string>
+    <string name="ui_save_channel_restore_message">¿Restaurar esta partida guardada en tu progreso actual?</string>
+
+    <string name="ui_save_channel_rename_title_save_as">GUARDAR COMO</string>
+    <string name="ui_save_channel_rename_title_new_slot">NUEVA RANURA DE GUARDADO</string>
+    <string name="ui_save_channel_rename_title_rename">RENOMBRAR RANURA DE GUARDADO</string>
+    <string name="ui_save_channel_rename_confirm_save_as">Guardar</string>
+    <string name="ui_save_channel_rename_confirm_new_slot">Crear</string>
+    <string name="ui_save_channel_rename_confirm_rename">Renombrar</string>
+    <string name="ui_save_channel_rename_prompt_save_as">Escribe un nombre para esta ranura de guardado</string>
+    <string name="ui_save_channel_rename_prompt_new_slot">Escribe un nombre para esta ranura de guardado</string>
+    <string name="ui_save_channel_rename_prompt_rename">Escribe un nuevo nombre</string>
+    <string name="ui_save_channel_rename_footer_confirm">Confirmar</string>
+    <string name="ui_save_channel_rename_footer_cancel">Cancelar</string>
+    <string name="ui_save_channel_rename_placeholder">Nombre de la ranura</string>
+    <string name="ui_save_channel_rename_cancel_button">Cancelar</string>
+
+    <string name="ui_save_channel_migrate_title">MIGRAR PARTIDA GUARDADA</string>
+    <string name="ui_save_channel_migrate_confirm">Migrar</string>
+    <string name="ui_save_channel_migrate_cancel">Cancelar</string>
+    <string name="ui_save_channel_migrate_message">¿Migrar \"%1$s\" al nuevo sistema de guardado?</string>
+    <string name="ui_save_channel_migrate_note">Esto la registrará como una ranura de guardado con nombre.</string>
+
+    <string name="ui_save_channel_delete_legacy_title">ELIMINAR GUARDADO ANTIGUO</string>
+    <string name="ui_save_channel_delete_legacy_confirm">Eliminar</string>
+    <string name="ui_save_channel_delete_legacy_cancel">Cancelar</string>
+    <plurals name="ui_save_channel_delete_legacy_message">
+        <item quantity="one">¿Eliminar \"%1$s\" y %2$d copia de seguridad?</item>
+        <item quantity="many">¿Eliminar \"%1$s\" y %2$d copias de seguridad?</item>
+        <item quantity="other">¿Eliminar \"%1$s\" y %2$d copias de seguridad?</item>
+    </plurals>
+    <string name="ui_save_channel_delete_legacy_note">Esto la eliminará del servidor y del almacenamiento local. Esta acción no se puede deshacer.</string>
+
+    <string name="ui_save_channel_delete_slot_title">ELIMINAR RANURA DE GUARDADO</string>
+    <string name="ui_save_channel_delete_slot_confirm">Eliminar</string>
+    <string name="ui_save_channel_delete_slot_cancel">Cancelar</string>
+    <string name="ui_save_channel_delete_slot_message">¿Eliminar \"%1$s\"?</string>
+    <string name="ui_save_channel_delete_slot_note">Esto la eliminará del servidor y del almacenamiento local. Esta acción no se puede deshacer.</string>
+
+    <string name="ui_save_channel_version_mismatch_title">INCOMPATIBILIDAD DE VERSIÓN DEL NÚCLEO</string>
+    <string name="ui_save_channel_version_mismatch_confirm">Cargar de todos modos</string>
+    <string name="ui_save_channel_version_mismatch_cancel">Cancelar</string>
+    <string name="ui_save_channel_version_mismatch_saved_with">Este estado se guardó con:</string>
+    <string name="ui_save_channel_version_mismatch_saved_core_unknown">Desconocido</string>
+    <string name="ui_save_channel_version_mismatch_current">Versión actual del núcleo:</string>
+    <string name="ui_save_channel_version_mismatch_current_core_unknown">Desconocido</string>
+    <string name="ui_save_channel_version_mismatch_warning">Cargarlo puede causar fallos o corrupción de datos.</string>
+
+    <string name="ui_save_channel_delete_state_title">ELIMINAR ESTADO</string>
+    <string name="ui_save_channel_delete_state_confirm">Eliminar</string>
+    <string name="ui_save_channel_delete_state_cancel">Cancelar</string>
+    <string name="ui_save_channel_delete_state_target_auto">estado automático</string>
+    <string name="ui_save_channel_delete_state_target_slot">ranura %1$d</string>
+    <string name="ui_save_channel_delete_state_message">¿Eliminar %1$s?</string>
+    <string name="ui_save_channel_delete_state_note">Esto lo eliminará de la caché.</string>
+
+    <string name="ui_save_channel_replace_auto_title">REEMPLAZAR ESTADO AUTOMÁTICO</string>
+    <string name="ui_save_channel_replace_auto_confirm">Reemplazar</string>
+    <string name="ui_save_channel_replace_auto_cancel">Cancelar</string>
+    <string name="ui_save_channel_replace_auto_message">¿Reemplazar el estado automático con la ranura %1$d?</string>
+    <string name="ui_save_channel_replace_auto_note">El estado automático actual se sobrescribirá.</string>
+
+    <string name="ui_save_channel_notice_download_target_auto">estado automático</string>
+    <string name="ui_save_channel_notice_download_target_slot">ranura de estado %1$d</string>
+    <string name="ui_save_channel_notice_downloaded">%1$s descargado</string>
+    <string name="ui_save_channel_notice_no_local_path">El juego no tiene una ruta local</string>
+    <string name="ui_save_channel_notice_restore_target_auto">estado automático</string>
+    <string name="ui_save_channel_notice_restore_target_slot">ranura de estado %1$d</string>
+    <string name="ui_save_channel_notice_restored_state">%1$s restaurado</string>
+    <string name="ui_save_channel_notice_state_not_cached">Estado no encontrado en la caché</string>
+    <string name="ui_save_channel_notice_state_no_config">No hay configuración de estado para este emulador</string>
+    <string name="ui_save_channel_notice_delete_target_auto">estado automático</string>
+    <string name="ui_save_channel_notice_delete_target_slot">ranura de estado %1$d</string>
+    <string name="ui_save_channel_notice_deleted_state">%1$s eliminado</string>
+    <string name="ui_save_channel_notice_replace_auto_failed">No se pudo reemplazar el estado automático</string>
+    <string name="ui_save_channel_notice_replaced_auto">Estado automático reemplazado con la ranura %1$d</string>
+
+    <string name="ui_save_channel_notice_activate_default">Guardado automático</string>
+    <string name="ui_save_channel_notice_using_slot">Usando ranura de guardado: %1$s</string>
+    <string name="ui_save_channel_notice_clear_failed">No se pudo borrar la partida guardada existente</string>
+    <string name="ui_save_channel_notice_switch_default">Guardado automático</string>
+    <string name="ui_save_channel_notice_switched_to">Cambiado a: %1$s</string>
+    <string name="ui_save_channel_notice_restored_to_slot">Restaurado a %1$s</string>
+    <string name="ui_save_channel_notice_restored">Partida guardada restaurada</string>
+    <string name="ui_save_channel_notice_restored_to_slot_synced">Restaurado a %1$s y sincronizado</string>
+    <string name="ui_save_channel_notice_restored_synced">Partida guardada restaurada y sincronizada</string>
+    <string name="ui_save_channel_notice_slot_name_empty">El nombre de la ranura no puede estar vacío</string>
+    <string name="ui_save_channel_notice_slot_name_reserved">\'%1$s\' es un nombre reservado</string>
+    <string name="ui_save_channel_notice_new_slot_exists">La ranura \'%1$s\' ya existe</string>
+    <string name="ui_save_channel_notice_new_slot_created">Ranura de guardado \'%1$s\' creada</string>
+    <string name="ui_save_channel_notice_save_as_same_name">El nombre de la nueva ranura debe ser diferente del original</string>
+    <string name="ui_save_channel_notice_save_as_slot_exists">La ranura \'%1$s\' ya existe</string>
+    <string name="ui_save_channel_notice_save_as_created">Ranura de guardado \'%1$s\' creada</string>
+    <string name="ui_save_channel_notice_save_as_failed">No se pudo crear la ranura de guardado</string>
+    <string name="ui_save_channel_notice_renamed">Renombrado a \'%1$s\'</string>
+    <string name="ui_save_channel_notice_slot_deleted">Ranura de guardado \'%1$s\' eliminada</string>
+    <string name="ui_save_channel_notice_migrated">\'%1$s\' migrada</string>
+    <string name="ui_save_channel_notice_migrate_failed">No se pudo migrar la partida guardada</string>
+    <string name="ui_save_channel_notice_legacy_deleted">\'%1$s\' eliminada</string>
+    <string name="ui_save_channel_notice_saves_synced">Partidas guardadas sincronizadas desde el servidor</string>
+
+    <string name="ui_state_slot_row_empty">(Vacío)</string>
+    <string name="ui_state_slot_row_tag_synced">[Sincronizado]</string>
+    <string name="ui_state_slot_row_tag_pending">[Pendiente]</string>
+    <string name="ui_state_slot_row_tag_server">[Servidor]</string>
+    <string name="ui_state_slot_row_tag_local">[Local]</string>
+
+    <!-- Shared modals and controls (ui/components, ui/primitives) -->
+
+    <string name="ui_confirm_modal_cancel">Cancelar</string>
+
+    <string name="ui_modal_search_placeholder">Buscar...</string>
+
+    <string name="ui_disc_picker_title">SELECCIONAR DISCO</string>
+    <string name="ui_disc_picker_subtitle">Elige qué disco iniciar</string>
+    <string name="ui_disc_picker_row">Disco %1$d</string>
+
+    <string name="ui_memcard_picker_title">SELECCIONAR TARJETA DE MEMORIA</string>
+    <string name="ui_memcard_picker_subtitle">La sincronización de partidas guardadas usa la tarjeta de memoria de la carpeta seleccionada</string>
+    <string name="ui_memcard_picker_empty">vacía</string>
+    <plurals name="ui_memcard_picker_save_count">
+        <item quantity="one">%d partida guardada</item>
+        <item quantity="many">%d partidas guardadas</item>
+        <item quantity="other">%d partidas guardadas</item>
+    </plurals>
+    <string name="ui_memcard_picker_summary_dated">%1$s - %2$s</string>
+
+    <string name="ui_netplay_invite_title">Invitación de Netplay</string>
+    <string name="ui_netplay_invite_message">%1$s te invitó a jugar</string>
+    <string name="ui_netplay_invite_dismiss">Descartar</string>
+    <string name="ui_netplay_invite_join">Unirse</string>
+
+    <string name="ui_changelog_title">Novedades de %1$s</string>
+    <string name="ui_changelog_footer_continue">Continuar</string>
+    <string name="ui_changelog_action_required">Acción requerida: %1$s</string>
+    <string name="ui_changelog_action_relogin_romm">Volver a iniciar sesión en RomM</string>
+    <string name="ui_changelog_action_resync_library">Resincronizar biblioteca</string>
+    <string name="ui_changelog_action_clear_cache">Vaciar caché</string>
+    <string name="ui_changelog_action_set_steam_path">Configurar ruta de instalación de Steam</string>
+
+    <string name="ui_background_conflict_title">Conflicto de sincronización de partidas guardadas</string>
+    <string name="ui_background_conflict_default_slot">Partida guardada predeterminada</string>
+    <string name="ui_background_conflict_message_local_changed">Tu partida guardada local ha cambiado desde la última sincronización. Elige cuál conservar.</string>
+    <string name="ui_background_conflict_message_server_newer">Existe una partida guardada más reciente en el servidor. Elige cuál conservar.</string>
+    <string name="ui_background_conflict_choice_local">Local</string>
+    <string name="ui_background_conflict_choice_server">Servidor</string>
+    <string name="ui_background_conflict_choice_skip">Omitir</string>
+    <string name="ui_background_conflict_choice_skip_subtitle">Conservar ambas por ahora</string>
+    <string name="ui_background_conflict_age_future">en el futuro</string>
+    <string name="ui_background_conflict_age_now">justo ahora</string>
+    <plurals name="ui_background_conflict_age_minutes">
+        <item quantity="one">hace %d minuto</item>
+        <item quantity="many">hace %d minutos</item>
+        <item quantity="other">hace %d minutos</item>
+    </plurals>
+    <plurals name="ui_background_conflict_age_hours">
+        <item quantity="one">hace %d hora</item>
+        <item quantity="many">hace %d horas</item>
+        <item quantity="other">hace %d horas</item>
+    </plurals>
+    <plurals name="ui_background_conflict_age_days">
+        <item quantity="one">hace %d día</item>
+        <item quantity="many">hace %d días</item>
+        <item quantity="other">hace %d días</item>
+    </plurals>
+    <plurals name="ui_background_conflict_age_months">
+        <item quantity="one">hace %d mes</item>
+        <item quantity="many">hace %d meses</item>
+        <item quantity="other">hace %d meses</item>
+    </plurals>
+
+    <string name="ui_save_conflict_title">Conflicto de partida guardada</string>
+    <string name="ui_save_conflict_default_slot">Partida guardada predeterminada</string>
+    <string name="ui_save_conflict_message">El servidor tiene una partida guardada más reciente. Sobrescribir la reemplazará con tu partida guardada local.</string>
+    <string name="ui_save_conflict_source_local">Local</string>
+    <string name="ui_save_conflict_source_server">Servidor</string>
+    <string name="ui_save_conflict_skip">Omitir sincronización</string>
+    <string name="ui_save_conflict_overwrite">Sobrescribir</string>
+    <string name="ui_save_conflict_unknown_game">Juego desconocido</string>
+    <string name="ui_save_conflict_age_future">en el futuro</string>
+    <string name="ui_save_conflict_age_now">justo ahora</string>
+    <plurals name="ui_save_conflict_age_minutes">
+        <item quantity="one">hace %d minuto</item>
+        <item quantity="many">hace %d minutos</item>
+        <item quantity="other">hace %d minutos</item>
+    </plurals>
+    <plurals name="ui_save_conflict_age_hours">
+        <item quantity="one">hace %d hora</item>
+        <item quantity="many">hace %d horas</item>
+        <item quantity="other">hace %d horas</item>
+    </plurals>
+    <plurals name="ui_save_conflict_age_days">
+        <item quantity="one">hace %d día</item>
+        <item quantity="many">hace %d días</item>
+        <item quantity="other">hace %d días</item>
+    </plurals>
+    <plurals name="ui_save_conflict_age_months">
+        <item quantity="one">hace %d mes</item>
+        <item quantity="many">hace %d meses</item>
+        <item quantity="other">hace %d meses</item>
+    </plurals>
+
+    <string name="ui_view_all_outline_label">Ver todo</string>
+    <string name="ui_view_all_remaining_count">+%1$d</string>
+    <string name="ui_view_all_accent_label">Ver todo</string>
+
+    <string name="ui_new_badge_label">NUEVO</string>
+
+    <string name="ui_expandable_preference_collapse">Contraer</string>
+    <string name="ui_expandable_preference_expand">Expandir</string>
+
+    <string name="ui_permission_card_granted">Concedido</string>
+
+    <string name="ui_game_card_favorite">Favorito</string>
+    <string name="ui_game_card_downloaded">Descargado</string>
+
+    <string name="ui_download_badge_paused">Pausado</string>
+    <string name="ui_download_cover_paused">Pausado</string>
+
+    <string name="ui_section_breadcrumb_previous">Sección anterior</string>
+    <string name="ui_section_breadcrumb_next">Sección siguiente</string>
+
+    <string name="ui_qr_code_description">Código QR de %1$s</string>
+    <string name="ui_qr_scanner_hint">Apunta al código QR de emparejamiento de RomM</string>
+
+    <string name="ui_custom_tile_menu_header">MOSAICO</string>
+
+    <string name="ui_add_to_collection_title">AGREGAR A LA COLECCIÓN</string>
+    <string name="ui_add_to_collection_empty">Aún no hay colecciones</string>
+    <string name="ui_add_to_collection_create">Crear nueva colección</string>
+    <string name="ui_add_to_collection_member">En la colección</string>
+
+    <string name="ui_steam_location_download">Descargar mediante Argosy</string>
+    <string name="ui_steam_location_mark_installed">Marcar como instalado</string>
+    <string name="ui_steam_location_managed_by">Administrado por %1$s</string>
+
+    <string name="ui_direction_ring_title">Dirección</string>
+    <string name="ui_direction_ring_rotate">Girar</string>
+    <string name="ui_direction_ring_set">Establecer</string>
+    <string name="ui_direction_ring_cancel">Cancelar</string>
+
+    <string name="ui_core_crash_title">El núcleo se bloqueó</string>
+    <string name="ui_core_crash_footer_select">Seleccionar</string>
+    <string name="ui_core_crash_footer_dismiss_options">Descartar</string>
+    <string name="ui_core_crash_footer_launch">Iniciar juego</string>
+    <string name="ui_core_crash_footer_dismiss_ready">Descartar</string>
+    <string name="ui_core_crash_footer_dismiss_done">Descartar</string>
+    <string name="ui_core_crash_footer_cancel_download">Cancelar</string>
+    <string name="ui_core_crash_message">\'%1$s\' se bloqueó durante tu última sesión. Elige cómo recuperarlo.</string>
+
+    <string name="ui_episode_picker_selection_none">Nada elegido todavía</string>
+    <plurals name="ui_episode_picker_selection_count">
+        <item quantity="one">%d episodio elegido</item>
+        <item quantity="many">%d episodios elegidos</item>
+        <item quantity="other">%d episodios elegidos</item>
+    </plurals>
+    <string name="ui_episode_picker_cancel">Cancelar</string>
+
+    <string name="ui_media_tile_mode_sequential">Siguiente episodio</string>
+    <string name="ui_media_tile_mode_sequential_supporting">Continúa donde vayas, sin importar dónde lo veas</string>
+    <string name="ui_media_tile_mode_random">Episodio aleatorio</string>
+    <string name="ui_media_tile_mode_random_supporting">Elige uno y lo mantiene hasta que lo hayas visto</string>
+    <string name="ui_media_tile_mode_season">Una temporada</string>
+    <string name="ui_media_tile_mode_season_supporting">Recorre una sola temporada</string>
+    <string name="ui_media_tile_mode_playlist">Episodios elegidos</string>
+    <string name="ui_media_tile_mode_playlist_supporting">Reproduce los episodios que elijas, en el orden que elijas</string>
+    <string name="ui_media_tile_step_mode">¿Qué debería reproducir este mosaico?</string>
+    <string name="ui_media_tile_step_season">Elige una temporada</string>
+    <string name="ui_media_tile_step_episodes">Elige episodios</string>
+    <string name="ui_media_tile_empty_seasons">Aún no se ha sincronizado ninguna temporada de esta serie</string>
+    <string name="ui_media_tile_empty_episodes">Aún no se ha sincronizado ningún episodio de esta serie</string>
+    <string name="ui_media_tile_episodes_confirm">Usar estos episodios</string>
+    <string name="ui_media_tile_error_season_not_synced">Aún no se ha sincronizado ningún episodio de esa temporada</string>
+    <string name="ui_media_tile_error_series_not_synced">Aún no se ha sincronizado ningún episodio de esta serie</string>
+
+    <string name="ui_tile_picker_title">AGREGAR A LA CUADRÍCULA</string>
+    <string name="ui_tile_picker_subtitle_matching">Coincide con \"%1$s\"</string>
+    <string name="ui_tile_picker_empty_games">No hay juegos instalados para agregar</string>
+    <string name="ui_tile_picker_empty_collections">Aún no hay colecciones</string>
+    <string name="ui_tile_picker_empty_apps">No se encontraron aplicaciones</string>
+    <string name="ui_tile_picker_empty_media">No hay títulos para agregar</string>
+    <string name="ui_tile_picker_empty_search">Nada coincide con esa búsqueda</string>
+    <string name="ui_tile_picker_delete_page">Eliminar página</string>
+
+    <string name="ui_page_chooser_title_focus_game">Jugar a continuación</string>
+    <string name="ui_page_chooser_title_backdrop">Fondo</string>
+    <string name="ui_page_chooser_title_music">Música</string>
+    <string name="ui_page_chooser_subtitle_focus_game">El juego que reproduce este mosaico</string>
+    <string name="ui_page_chooser_subtitle_game_art">Ilustraciones y capturas de pantalla</string>
+    <string name="ui_page_chooser_subtitle_backdrop">Lo que esta página muestra detrás de sus mosaicos</string>
+    <string name="ui_page_chooser_subtitle_music">Lo que reproduce esta página</string>
+    <string name="ui_page_chooser_footer_navigate">Navegar</string>
+    <string name="ui_page_chooser_footer_choose">Elegir</string>
+    <string name="ui_page_chooser_footer_back">Atrás</string>
+    <string name="ui_page_chooser_search_placeholder">Buscar juegos...</string>
+    <string name="ui_page_chooser_loading">Cargando...</string>
+    <string name="ui_page_chooser_empty">No hay nada para elegir aquí.</string>
+    <string name="ui_page_chooser_focus_game_current">Reproduciendo ahora</string>
+    <string name="ui_page_chooser_source_game_art">Ilustración de un juego</string>
+    <string name="ui_page_chooser_source_game_art_subtitle">Portadas y capturas de pantalla ya en tu biblioteca</string>
+    <string name="ui_page_chooser_source_file">Un archivo en este dispositivo</string>
+    <string name="ui_page_chooser_source_file_subtitle">Una imagen, una animación o un video corto</string>
+    <string name="ui_page_chooser_source_none">Sin fondo</string>
+    <string name="ui_page_chooser_source_none_subtitle">Mostrar el fondo propio del launcher</string>
+    <string name="ui_page_chooser_art_background">Ilustración de fondo</string>
+    <string name="ui_page_chooser_art_cover">Portada</string>
+    <string name="ui_page_chooser_art_screenshot">Captura de pantalla %1$d</string>
+    <string name="ui_page_chooser_music_launcher">Música del launcher</string>
+    <string name="ui_page_chooser_music_tile_audio">El video de esta página</string>
+    <string name="ui_page_chooser_music_soundtracks_header">Tus bandas sonoras</string>
+
+    <string name="ui_custom_grid_add_page">Agregar una página</string>
+
+    <string name="ui_friend_options_join">Unirse</string>
+    <string name="ui_friend_options_view_profile">Ver perfil</string>
+    <string name="ui_friend_options_my_code">Mi código de amigo</string>
+    <string name="ui_friend_options_add_friend">Agregar amigo</string>
+    <string name="ui_friend_options_footer_select">Seleccionar</string>
+    <string name="ui_friend_options_footer_close">Cerrar</string>
+    <string name="ui_friend_options_presence_in_game">En el juego</string>
+    <string name="ui_friend_options_presence_hosting">Organizando %1$s</string>
+    <string name="ui_friend_options_presence_playing">Jugando %1$s</string>
+    <string name="ui_friend_options_presence_online">En línea</string>
+    <string name="ui_friend_options_presence_away">Ausente</string>
+    <string name="ui_friend_options_presence_watching_title">Viendo %1$s</string>
+    <string name="ui_friend_options_presence_watching">Viendo</string>
+    <string name="ui_friend_options_presence_offline">Sin conexión</string>
+
+    <string name="ui_friends_options_title">Amigos</string>
+    <string name="ui_friends_options_footer_select">Seleccionar</string>
+    <string name="ui_friends_options_footer_close">Cerrar</string>
+    <string name="ui_friends_options_add_by_code">Agregar amigo por código</string>
+    <string name="ui_friends_options_show_code">Mostrar mi código de amigo</string>
+
+    <string name="ui_friend_code_title">Mi código de amigo</string>
+    <string name="ui_friend_code_footer_regenerate">Regenerar</string>
+    <string name="ui_friend_code_footer_close">Cerrar</string>
+    <string name="ui_friend_code_instructions">Escanea o escribe el código para agregar un amigo</string>
+    <string name="ui_friend_code_regenerate_row">Regenerar código</string>
+    <string name="ui_friend_code_regenerate_warning">Regenerar invalidará tu código actual</string>
+
+    <string name="ui_add_friend_title">Agregar amigo</string>
+    <string name="ui_add_friend_footer_submit">Enviar</string>
+    <string name="ui_add_friend_footer_cancel">Cancelar</string>
+    <string name="ui_add_friend_instructions">Escribe el código de 6 caracteres de tu amigo</string>
+    <string name="ui_add_friend_code_placeholder">ABC123</string>
+    <string name="ui_add_friend_error_length">El código debe tener 6 caracteres</string>
+
+    <string name="ui_netplay_join_unknown_game">Desconocido</string>
+    <string name="ui_netplay_join_heading">Uniéndote a %1$s</string>
+    <string name="ui_netplay_join_unknown_host">netplay</string>
+    <string name="ui_netplay_join_status_joining">Uniéndote a la sesión</string>
+    <string name="ui_netplay_join_status_matching_core">Buscando núcleo compatible</string>
+    <string name="ui_netplay_join_status_downloading_core">Descargando núcleo</string>
+    <string name="ui_netplay_join_status_core_ready">Núcleo listo</string>
+    <string name="ui_netplay_join_status_verifying">Verificando juego</string>
+    <string name="ui_netplay_join_status_verified">Verificado</string>
+    <string name="ui_netplay_join_candidates_single_missing">ROM no descargada. Selecciona para instalar.</string>
+    <string name="ui_netplay_join_candidates_single_failed">Falló la verificación. Selecciona para reintentar.</string>
+    <string name="ui_netplay_join_candidates_none_installed">Ninguna ROM instalada coincide. Elige una para descargar.</string>
+    <string name="ui_netplay_join_candidates_multiple">Varias coincidencias. Elige una ROM.</string>
+    <string name="ui_netplay_join_candidate_installed">Instalada</string>
+    <string name="ui_netplay_join_candidate_not_installed">No instalada</string>
+    <string name="ui_netplay_join_variants_prompt">El hash de la ROM no coincidió. Elige una variante.</string>
+
+    <!-- Platform filter header (ui/components/PlatformFilterHeader.kt) -->
+
+    <string name="ui_platform_filter_sort_default">Predeterminado</string>
+    <string name="ui_platform_filter_sort_name_asc">Nombre (A-Z)</string>
+    <string name="ui_platform_filter_sort_name_desc">Nombre (Z-A)</string>
+    <string name="ui_platform_filter_sort_most_games">Más juegos</string>
+    <string name="ui_platform_filter_sort_least_games">Menos juegos</string>
+    <string name="ui_platform_filter_search_placeholder">Buscar plataformas...</string>
+    <string name="ui_platform_filter_search_clear">Borrar</string>
+    <plurals name="ui_platform_filter_count">
+        <item quantity="one">%d plataforma</item>
+        <item quantity="many">%d plataformas</item>
+        <item quantity="other">%d plataformas</item>
+    </plurals>
+    <string name="ui_platform_filter_open_search">Buscar</string>
+    <string name="ui_platform_filter_open_sort">Ordenar</string>
+    <string name="ui_platform_filter_open_filter">Filtrar plataformas</string>
+    <string name="ui_platform_filter_mode_has_games">Con juegos</string>
+    <string name="ui_platform_filter_mode_enabled">Habilitadas</string>
+    <string name="ui_platform_filter_mode_all">Todas</string>
+    <string name="ui_platform_filter_hint_sort_navigate">Navegar</string>
+    <string name="ui_platform_filter_hint_sort_select">Seleccionar</string>
+    <string name="ui_platform_filter_hint_sort_back">Atrás</string>
+    <string name="ui_platform_filter_hint_search_done">Listo</string>
+    <string name="ui_platform_filter_hint_search_close">Cerrar</string>
+    <string name="ui_platform_filter_hint_header_navigate">Navegar</string>
+    <string name="ui_platform_filter_hint_header_select">Seleccionar</string>
+    <string name="ui_platform_filter_hint_header_close">Cerrar</string>
+    <string name="ui_platform_filter_hint_list_navigate">Navegar</string>
+    <string name="ui_platform_filter_hint_list_toggle">Alternar</string>
+    <string name="ui_platform_filter_hint_list_close">Cerrar</string>
+
+    <!-- Storage meter, preference rows, home layout rows (ui/components) -->
+
+    <string name="ui_volume_meter_other">Otras apps y archivos</string>
+    <string name="ui_volume_meter_free">%1$s libres</string>
+
+    <string name="ui_cycle_preference_reset_to_global">Restablecer al global</string>
+    <string name="ui_toggle_preference_reset_to_global">Restablecer al global</string>
+    <string name="ui_toggle_preference_custom_marker">(Personalizado)</string>
+    <string name="ui_action_preference_reset_to_default">Restablecer al predeterminado</string>
+    <string name="ui_hue_slider_default">Predeterminado</string>
+    <string name="ui_image_cache_migrating">Moviendo imágenes...</string>
+    <string name="ui_image_cache_change">Cambiar</string>
+    <string name="ui_image_cache_reset">Restablecer</string>
+
+    <string name="ui_home_layout_box_art_subtitle_none">Ningún juego tiene lomo, así que todos se muestran como portada 2D</string>
+    <string name="ui_home_layout_box_art_subtitle">Muestra como caja 3D los juegos que tienen lomo, y como portada el resto</string>
+    <string name="ui_home_layout_row_alignment">Posición de la fila</string>
+    <string name="ui_home_layout_focus_position">Anclaje del enfoque</string>
+    <string name="ui_home_layout_inverted">Orden invertido</string>
+    <string name="ui_home_layout_resting_scale">Tamaño en reposo</string>
+    <string name="ui_home_layout_neighbour_push">Empujar vecinos</string>
+    <string name="ui_home_layout_platform_badge">Insignia de plataforma</string>
+    <string name="ui_home_layout_scroll_axis">Dirección de desplazamiento</string>
+    <string name="ui_home_layout_show_titles">Mostrar títulos</string>
+    <string name="ui_home_layout_show_all_games">Mostrar todos los juegos</string>
+    <string name="ui_home_layout_show_all_games_subtitle">Desplázate por toda la biblioteca de una plataforma en lugar de detenerte en Ver todo</string>
+    <string name="ui_home_layout_carousel_box_art">Caja 3D</string>
+    <string name="ui_home_layout_auto_grid_box_art">Caja 3D</string>
+    <string name="ui_home_layout_custom_grid_lanes">Celdas de ancho</string>
+    <string name="ui_home_layout_custom_grid_auto_add">Agregar descargas nuevas</string>
+    <string name="ui_home_layout_custom_grid_empty_slots">Mostrar espacios vacíos</string>
+    <string name="ui_home_layout_custom_grid_empty_slots_subtitle">Resaltar las celdas donde no hay nada</string>
+    <string name="ui_home_layout_custom_grid_persist_pages">Conservar páginas vacías</string>
+    <string name="ui_home_layout_custom_grid_persist_pages_subtitle">Una página agregada permanece aunque no contenga nada</string>
+    <string name="ui_home_layout_custom_grid_auto_fit">Ajuste automático de celdas</string>
+    <string name="ui_home_layout_custom_grid_auto_fit_subtitle">Mueve o reduce los mosaicos donde cae una colocación, en lugar de rechazarla</string>
+    <string name="ui_home_layout_rail_libraries">Bibliotecas multimedia</string>
+    <string name="ui_home_layout_rail_libraries_subtitle">Una fila para cada biblioteca de tu servidor multimedia</string>
+    <string name="ui_home_layout_rail_continue_watching">Continuar viendo</string>
+    <string name="ui_home_layout_rail_continue_watching_subtitle">Una fila de películas y episodios que ya empezaste</string>
+    <string name="ui_home_layout_rail_next_up">A continuación</string>
+    <string name="ui_home_layout_rail_next_up_subtitle">Una fila con el próximo episodio de cada serie que estás viendo</string>
+    <string name="ui_home_layout_auto_add_off">Desactivado</string>
+    <string name="ui_home_layout_auto_add_auto">Automáticamente</string>
+    <string name="ui_home_layout_auto_add_prompt">Preguntar siempre</string>
+    <string name="ui_home_layout_kind_carousel">Carrusel</string>
+    <string name="ui_home_layout_kind_auto_grid">Cuadrícula automática</string>
+    <string name="ui_home_layout_kind_custom_grid">Cuadrícula personalizada</string>
+    <string name="ui_home_layout_alignment_top">Arriba</string>
+    <string name="ui_home_layout_alignment_center">Centro</string>
+    <string name="ui_home_layout_alignment_bottom">Abajo</string>
+    <string name="ui_home_layout_focus_leading">Inicio</string>
+    <string name="ui_home_layout_focus_center">Centro</string>
+    <string name="ui_home_layout_axis_vertical">Vertical</string>
+    <string name="ui_home_layout_axis_horizontal">Horizontal</string>
+    <string name="ui_home_layout_lanes_columns">Columnas</string>
+    <string name="ui_home_layout_lanes_rows">Filas</string>
+
+    <!-- Quick settings panel (ui/components/QuickSettingsPanel.kt) -->
+
+    <string name="ui_quick_settings_title">Ajustes rápidos</string>
+    <string name="ui_quick_settings_footer_close">Cerrar</string>
+    <string name="ui_quick_settings_hint_navigate">Navegar</string>
+    <string name="ui_quick_settings_hint_close">Cerrar</string>
+    <string name="ui_quick_settings_performance">Rendimiento</string>
+    <string name="ui_quick_settings_performance_disabled">Se requiere permiso</string>
+    <string name="ui_quick_settings_fan">Ventilador</string>
+    <string name="ui_quick_settings_fan_disabled">Se requiere permiso</string>
+    <string name="ui_quick_settings_fan_quiet">Silencioso</string>
+    <string name="ui_quick_settings_fan_smart">Inteligente</string>
+    <string name="ui_quick_settings_fan_sport">Deportivo</string>
+    <string name="ui_quick_settings_fan_custom">Turbo+</string>
+    <string name="ui_quick_settings_performance_standard">Estándar</string>
+    <string name="ui_quick_settings_performance_high">Alto rendimiento</string>
+    <string name="ui_quick_settings_performance_max">Rendimiento máximo</string>
+    <string name="ui_quick_settings_fan_speed">Velocidad</string>
+    <string name="ui_quick_settings_vibration_strength">Intensidad</string>
+    <string name="ui_quick_settings_theme">Tema</string>
+    <string name="ui_quick_settings_haptics">Vibración</string>
+    <string name="ui_quick_settings_ui_sounds">Sonidos de la interfaz</string>
+    <string name="ui_quick_settings_bgm">BGM</string>
+    <string name="ui_quick_settings_swap_displays">Intercambiar pantallas</string>
+    <string name="ui_quick_settings_quaypass">QuayPass</string>
+    <string name="ui_quick_settings_volume">Volumen</string>
+    <string name="ui_quick_settings_brightness">Brillo</string>
+
+    <!-- Main drawer (ui/components/MainDrawer.kt) -->
+
+    <string name="ui_drawer_tab_navigation">Nav</string>
+    <string name="ui_drawer_tab_friends">Amigos</string>
+    <string name="ui_drawer_footer_favorite">Favorito</string>
+    <string name="ui_drawer_footer_options">Opciones</string>
+    <string name="ui_drawer_footer_join">Unirse</string>
+    <string name="ui_drawer_friends_empty">Aún no tienes amigos</string>
+    <string name="ui_drawer_friends_online">EN LÍNEA (%1$d)</string>
+    <string name="ui_drawer_friends_offline">SIN CONEXIÓN (%1$d)</string>
+    <string name="ui_drawer_friend_hosting">Organizando %1$s</string>
+    <string name="ui_drawer_friend_playing">Jugando %1$s</string>
+    <string name="ui_drawer_friend_in_game">En el juego</string>
+    <string name="ui_drawer_friend_favorite">Favorito</string>
+    <string name="ui_drawer_account_none">Sin cuenta</string>
+    <string name="ui_drawer_account_caption">Cuenta</string>
+    <string name="ui_drawer_server_connected">RomM conectado</string>
+    <string name="ui_drawer_server_offline">RomM sin conexión</string>
+    <string name="ui_drawer_nav_home">Inicio</string>
+    <string name="ui_drawer_nav_social">Social</string>
+    <string name="ui_drawer_nav_quaypass">Check-In</string>
+    <string name="ui_drawer_nav_collections">Colecciones</string>
+    <string name="ui_drawer_nav_library">Biblioteca</string>
+    <string name="ui_drawer_nav_media">Medios</string>
+    <string name="ui_drawer_nav_downloads">Descargas</string>
+    <string name="ui_drawer_nav_save_sync">Sincronización de guardado</string>
+    <string name="ui_drawer_nav_apps">Aplicaciones</string>
+    <string name="ui_drawer_nav_settings">Ajustes</string>
+
+    <!-- Sync overlay (ui/components/SyncOverlay.kt) -->
+
+    <string name="ui_sync_overlay_unknown_game">Juego</string>
+    <string name="ui_sync_overlay_slot_prefix">"Ranura: "</string>
+    <string name="ui_sync_overlay_slot_default">Más reciente</string>
+    <string name="ui_sync_overlay_blocked_grant">Conceder permiso</string>
+    <string name="ui_sync_overlay_blocked_configure_path">Configurar ruta de guardado</string>
+    <string name="ui_sync_overlay_blocked_disable">Desactivar sincronización</string>
+    <string name="ui_sync_overlay_blocked_skip">Omitir por ahora</string>
+    <string name="ui_sync_overlay_hardcore_title">Conflicto de guardado en modo hardcore</string>
+    <string name="ui_sync_overlay_hardcore_message">La versión del servidor de \"%1$s\" ya no cumple los requisitos del modo hardcore.</string>
+    <string name="ui_sync_overlay_hardcore_note">Esto puede ocurrir si la partida guardada se modificó fuera de Argosy.</string>
+    <string name="ui_sync_overlay_hardcore_keep">Mantener hardcore</string>
+    <string name="ui_sync_overlay_hardcore_keep_subtitle">Subir la partida guardada local al servidor</string>
+    <string name="ui_sync_overlay_hardcore_downgrade">Cambiar a casual</string>
+    <string name="ui_sync_overlay_hardcore_downgrade_subtitle">Usar la partida guardada del servidor, perder el estado hardcore</string>
+    <string name="ui_sync_overlay_hardcore_skip">Omitir sincronización</string>
+    <string name="ui_sync_overlay_hardcore_skip_subtitle">Iniciar sin sincronizar</string>
+    <string name="ui_sync_overlay_local_modified_title">Partida guardada local modificada</string>
+    <string name="ui_sync_overlay_local_modified_message">Tu partida guardada local de \"%1$s\" tiene cambios que no se han respaldado.</string>
+    <string name="ui_sync_overlay_local_modified_question">¿Quieres conservar tu progreso local o restaurar la partida guardada seleccionada anteriormente?</string>
+    <string name="ui_sync_overlay_local_modified_apply">Aplicar guardado local</string>
+    <string name="ui_sync_overlay_local_modified_apply_subtitle">Establecer la partida guardada local como la versión más reciente</string>
+    <string name="ui_sync_overlay_local_modified_restore">Usar guardado sincronizado</string>
+    <string name="ui_sync_overlay_local_modified_restore_subtitle">Sobrescribir la copia local con la última versión sincronizada (se crea una copia de seguridad)</string>
+    <string name="ui_sync_overlay_post_session_title">Conflicto de partida guardada</string>
+    <string name="ui_sync_overlay_post_session_subject">\"%1$s\" -- %2$s</string>
+    <string name="ui_sync_overlay_post_session_default_slot">Partida guardada predeterminada</string>
+    <string name="ui_sync_overlay_post_session_message">El servidor tiene una partida guardada más reciente. Sobrescribir la reemplazará con tu partida guardada local.</string>
+    <string name="ui_sync_overlay_post_session_local">Local</string>
+    <string name="ui_sync_overlay_post_session_server">Servidor</string>
+    <string name="ui_sync_overlay_post_session_server_named">Servidor (%1$s)</string>
+    <string name="ui_sync_overlay_post_session_skip">Omitir sincronización</string>
+    <string name="ui_sync_overlay_post_session_skip_subtitle">Conservar tu partida guardada local, no subirla</string>
+    <string name="ui_sync_overlay_post_session_overwrite">Sobrescribir servidor</string>
+    <string name="ui_sync_overlay_post_session_overwrite_subtitle">Reemplazar la partida guardada del servidor con tu versión local</string>
+    <string name="ui_sync_overlay_legacy_status">Sincronizando...</string>
+
+    <!-- Quick menu (ui/quickmenu) -->
+
+    <string name="ui_quick_menu_orb_search">Buscar</string>
+    <string name="ui_quick_menu_orb_random">Aleatorio</string>
+    <string name="ui_quick_menu_orb_most_played">Más jugados</string>
+    <string name="ui_quick_menu_orb_top_unplayed">Por descubrir</string>
+    <string name="ui_quick_menu_orb_recent">Recientes</string>
+    <string name="ui_quick_menu_orb_favorites">Favoritos</string>
+    <string name="ui_quick_menu_empty_most_played">Aún no has jugado ningún juego</string>
+    <string name="ui_quick_menu_empty_top_unplayed">No se encontraron juegos calificados</string>
+    <string name="ui_quick_menu_empty_recent">No hay juegos recientes</string>
+    <string name="ui_quick_menu_empty_favorites">Aún no hay favoritos</string>
+    <string name="ui_quick_menu_empty_random">No hay juegos disponibles</string>
+    <string name="ui_quick_menu_search_placeholder">Buscar juegos...</string>
+    <string name="ui_quick_menu_search_prompt">Escribe al menos 2 caracteres para buscar</string>
+    <string name="ui_quick_menu_search_no_results">No se encontraron juegos para \"%1$s\"</string>
+    <string name="ui_quick_menu_recent_searches_heading">Búsquedas recientes</string>
+    <string name="ui_quick_menu_row_platform_unknown">Desconocida</string>
+    <string name="ui_quick_menu_row_downloaded">Descargado</string>
+    <string name="ui_quick_menu_random_platform_unknown">Desconocida</string>
+    <string name="ui_quick_menu_random_downloaded">Descargado</string>
+
+    <!-- File browser (ui/filebrowser) -->
+
+    <string name="ui_file_browser_title_folder">Seleccionar carpeta</string>
+    <string name="ui_file_browser_title_file">Seleccionar archivo</string>
+    <string name="ui_file_browser_title_file_or_folder">Seleccionar archivo o carpeta</string>
+    <string name="ui_file_browser_permission_title">Se requiere acceso al almacenamiento</string>
+    <string name="ui_file_browser_permission_message">Argosy necesita el permiso Acceso a todos los archivos para explorar carpetas, descargar juegos y sincronizar partidas guardadas. Concédelo y vuelve aquí.</string>
+    <string name="ui_file_browser_permission_button">Conceder acceso</string>
+    <string name="ui_file_browser_permission_footer_grant">Conceder acceso</string>
+    <string name="ui_file_browser_permission_footer_back">Atrás</string>
+    <string name="ui_file_browser_error_unreadable">No se puede acceder al directorio</string>
+    <string name="ui_file_browser_empty_folder">Carpeta vacía</string>
+    <string name="ui_file_browser_footer_select_file">Seleccionar archivo</string>
+    <string name="ui_file_browser_footer_select_file_or_folder">Seleccionar archivo</string>
+    <string name="ui_file_browser_footer_open_folder">Abrir</string>
+    <string name="ui_file_browser_footer_back">Atrás</string>
+    <string name="ui_file_browser_footer_new_folder">Nueva carpeta</string>
+    <string name="ui_file_browser_footer_use_folder">Usar carpeta</string>
+    <string name="ui_file_browser_new_folder_title">Nueva carpeta</string>
+    <string name="ui_file_browser_new_folder_field_label">Nombre de la carpeta</string>
+    <string name="ui_file_browser_new_folder_cancel">Cancelar</string>
+    <string name="ui_file_browser_new_folder_confirm">Crear</string>
+    <string name="ui_file_browser_new_folder_error_empty">El nombre de la carpeta no puede estar vacío</string>
+    <string name="ui_file_browser_new_folder_error_invalid">Nombre de carpeta no válido</string>
+    <string name="ui_file_browser_new_folder_error_exists">Esa carpeta ya existe</string>
+    <string name="ui_file_browser_new_folder_error_failed">No se pudo crear la carpeta</string>
+
+    <!-- App shell and startup (ui/ArgosyApp.kt, ui/ArgosyViewModel.kt) -->
+
+    <string name="ui_startup_status_initializing">Iniciando...</string>
+    <string name="ui_startup_status_loading_library">Cargando biblioteca...</string>
+    <string name="ui_startup_status_syncing_collections">Sincronizando colecciones...</string>
+    <string name="ui_startup_status_checking_emulators">Revisando emuladores...</string>
+    <string name="ui_startup_status_preparing_home">Preparando el inicio...</string>
+    <string name="ui_startup_status_waiting_for_storage">Esperando el almacenamiento...</string>
+    <string name="ui_startup_status_scanning_roms">Explorando archivos ROM...</string>
+    <string name="ui_builtin_cores_ready_title">Emulador integrado listo</string>
+    <plurals name="ui_builtin_cores_ready_subtitle">
+        <item quantity="one">%d núcleo descargado</item>
+        <item quantity="many">%d núcleos descargados</item>
+        <item quantity="other">%d núcleos descargados</item>
+    </plurals>
+    <string name="ui_netplay_invite_failed_title">No se puede unir a %1$s</string>
+    <string name="ui_netplay_invite_reason_rom_missing">ROM no encontrada</string>
+    <string name="ui_netplay_invite_reason_rom_version">Versión de ROM distinta</string>
+    <string name="ui_netplay_invite_reason_core_version">Versión de núcleo distinta</string>
+    <string name="ui_netplay_invite_reason_core_unsupported">Núcleo no compatible</string>
+    <string name="ui_netplay_invite_reason_missing_game_id">Falta el id del juego para la sesión</string>
+    <string name="ui_netplay_invite_reason_game_not_local">Juego local no encontrado</string>
+    <string name="ui_netplay_invite_reason_launch_failed">No se pudo iniciar el juego</string>
+    <string name="ui_dual_file_picker_hint_tab">Pestaña</string>
+    <string name="ui_dual_file_picker_hint_select">Seleccionar</string>
+    <string name="ui_dual_file_picker_hint_back">Atrás</string>
+    <string name="ui_dual_collections_hint_navigate">Navegar</string>
+    <string name="ui_dual_collections_hint_open">Abrir</string>
+    <string name="ui_dual_collections_hint_back">Atrás</string>
+
+    <!-- Transient notifications (ui/notification) -->
+
+    <string name="ui_download_notice_queued">En cola</string>
+    <string name="ui_download_notice_no_space">Esperando almacenamiento</string>
+    <string name="ui_download_notice_extracting">Extrayendo</string>
+    <string name="ui_download_notice_moving">Moviendo al almacenamiento de ROM</string>
+    <string name="ui_download_notice_paused">Pausado</string>
+    <string name="ui_download_notice_completed">Completado</string>
+    <string name="ui_download_notice_failed">Fallido</string>
+    <string name="ui_download_notice_failed_subtitle">%1$s: %2$s</string>
+
+    <string name="ui_sync_notice_success_title">Partida guardada sincronizada</string>
+    <string name="ui_sync_notice_game_with_slot">%1$s (%2$s)</string>
+    <plurals name="ui_sync_notice_batch_title">
+        <item quantity="one">%d partida guardada sincronizada</item>
+        <item quantity="many">%d partidas guardadas sincronizadas</item>
+        <item quantity="other">%d partidas guardadas sincronizadas</item>
+    </plurals>
+    <string name="ui_sync_notice_batch_subtitle">%1$s, +%2$d más</string>
+    <string name="ui_sync_notice_upload_failed_title">Error al subir</string>
+    <string name="ui_sync_notice_download_failed_title">Error al descargar</string>
+    <string name="ui_sync_notice_failed_game_with_slot">%1$s (%2$s)</string>
+    <string name="ui_sync_notice_failed_subtitle">%1$s: %2$s</string>
+
+    <!-- Rendered outside this file's own area; each key keeps its owner's prefix. -->
+
+    <string name="util_formatters_relative_today">Hoy</string>
+    <string name="util_formatters_relative_yesterday">Ayer</string>
+    <plurals name="util_formatters_relative_days_ago">
+        <item quantity="one">hace %dd</item>
+        <item quantity="many">hace %dd</item>
+        <item quantity="other">hace %dd</item>
+    </plurals>
+    <plurals name="util_formatters_relative_weeks_ago">
+        <item quantity="one">hace %dsem</item>
+        <item quantity="many">hace %dsem</item>
+        <item quantity="other">hace %dsem</item>
+    </plurals>
+
+    <string name="util_formatters_relative_str_now">ahora</string>
+    <plurals name="util_formatters_relative_str_minutes_ago">
+        <item quantity="one">hace %dmin</item>
+        <item quantity="many">hace %dmin</item>
+        <item quantity="other">hace %dmin</item>
+    </plurals>
+    <plurals name="util_formatters_relative_str_hours_ago">
+        <item quantity="one">hace %dh</item>
+        <item quantity="many">hace %dh</item>
+        <item quantity="other">hace %dh</item>
+    </plurals>
+    <plurals name="util_formatters_relative_str_days_ago">
+        <item quantity="one">hace %dd</item>
+        <item quantity="many">hace %dd</item>
+        <item quantity="other">hace %dd</item>
+    </plurals>
+    <plurals name="util_formatters_relative_str_weeks_ago">
+        <item quantity="one">hace %dsem</item>
+        <item quantity="many">hace %dsem</item>
+        <item quantity="other">hace %dsem</item>
+    </plurals>
+
+    <string name="util_formatters_relative_verbose_just_now">justo ahora</string>
+    <plurals name="util_formatters_relative_verbose_minutes_ago">
+        <item quantity="one">hace %d min</item>
+        <item quantity="many">hace %d min</item>
+        <item quantity="other">hace %d min</item>
+    </plurals>
+    <plurals name="util_formatters_relative_verbose_hours_ago">
+        <item quantity="one">hace %d h</item>
+        <item quantity="many">hace %d h</item>
+        <item quantity="other">hace %d h</item>
+    </plurals>
+    <plurals name="util_formatters_relative_verbose_days_ago">
+        <item quantity="one">hace %d día</item>
+        <item quantity="many">hace %d días</item>
+        <item quantity="other">hace %d días</item>
+    </plurals>
+    <plurals name="util_formatters_relative_verbose_weeks_ago">
+        <item quantity="one">hace %d semana</item>
+        <item quantity="many">hace %d semanas</item>
+        <item quantity="other">hace %d semanas</item>
+    </plurals>
+
+    <string name="util_formatters_relative_short_future">en el futuro</string>
+    <string name="util_formatters_relative_short_just_now">justo ahora</string>
+    <plurals name="util_formatters_relative_short_minutes_ago">
+        <item quantity="one">%dmin</item>
+        <item quantity="many">%dmin</item>
+        <item quantity="other">%dmin</item>
+    </plurals>
+    <plurals name="util_formatters_relative_short_hours_ago">
+        <item quantity="one">%dh</item>
+        <item quantity="many">%dh</item>
+        <item quantity="other">%dh</item>
+    </plurals>
+    <plurals name="util_formatters_relative_short_days_ago">
+        <item quantity="one">%dd</item>
+        <item quantity="many">%dd</item>
+        <item quantity="other">%dd</item>
+    </plurals>
+
+    <string name="util_formatters_save_timestamp_today">Hoy %1$s</string>
+    <string name="util_formatters_save_timestamp_yesterday">Ayer</string>
+    <plurals name="util_formatters_save_timestamp_days_ago">
+        <item quantity="one">hace %d día</item>
+        <item quantity="many">hace %d días</item>
+        <item quantity="other">hace %d días</item>
+    </plurals>
+
+    <string name="util_formatters_playtime_minutes">%1$dm</string>
+    <string name="util_formatters_playtime_hours_minutes">%1$dh %2$dm</string>
+    <string name="util_formatters_playtime_hours">%1$dh</string>
+
+    <string name="common_homegrid_playtime_hours_minutes">%1$dh %2$dm</string>
+    <string name="common_homegrid_playtime_minutes">%1$dm</string>
+
+    <string name="notif_steam_sync_error_no_cached_licenses">Sin licencias en caché -- conéctate primero a Steam</string>
+    <string name="notif_steam_sync_error_no_active_account">Sin cuenta activa</string>
+    <string name="notif_steam_sync_error_not_connected">No conectado a Steam</string>
+    <string name="notif_steam_sync_error_could_not_connect_sync">No se pudo conectar a Steam</string>
+    <string name="notif_steam_sync_error_could_not_connect_overwrite">No se pudo conectar a Steam</string>
+
+    <string name="media_library_viewmodel_refresh_label">Actualizando</string>
+
+    <string name="gamedetail_action_buttons_play">JUGAR</string>
+    <string name="gamedetail_action_buttons_autosave">Guardado automático</string>
+    <string name="gamedetail_action_buttons_download">DESCARGAR</string>
+    <string name="gamedetail_action_buttons_install">INSTALAR</string>
+    <string name="gamedetail_action_buttons_queued">EN COLA...</string>
+    <string name="gamedetail_action_buttons_no_space">SIN ESPACIO</string>
+    <string name="gamedetail_action_buttons_downloading_percent">%1$d%%</string>
+    <string name="gamedetail_action_buttons_extracting">EXTRAYENDO...</string>
+    <string name="gamedetail_action_buttons_resume_percent">REANUDAR %1$d%%</string>
+    <string name="gamedetail_action_buttons_retry">REINTENTAR</string>
+    <string name="gamedetail_action_buttons_unfavorite">Quitar de favoritos</string>
+    <string name="gamedetail_action_buttons_favorite">Agregar a favoritos</string>
+    <string name="gamedetail_action_buttons_more_options">Más opciones</string>
+
+    <string name="home_grid_local_video_row_title">Elige un video en este dispositivo</string>
+    <string name="home_grid_local_video_row_subtitle">Se reproduce directamente desde tu almacenamiento</string>
+</resources>

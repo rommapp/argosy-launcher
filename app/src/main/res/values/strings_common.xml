@@ -1,0 +1,1570 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Owner: ui/components, ui/primitives, ui/common
+      Key prefix: ui_
+      Keys are named for the usage site, never for the English text, and identical English
+      is never shared between two usage sites.
+
+      Exception: the sort and source labels below name enums rendered identically by the
+      library, the settings screen and the dual-screen home. One key each, because the three
+      surfaces show the same control rather than three coincidentally identical strings.
+    -->
+
+    <!-- Sort orders offered in the library filter. All are noun phrases naming what the
+         list is ordered by, not commands. -->
+    <!-- Alphabetical. Adapt to your alphabet, for example A-Z, А-Я, あ-ん. -->
+    <string name="sort_title">A-Z</string>
+    <!-- Rating from the metadata provider, not the user's own. -->
+    <string name="sort_rating">Rating</string>
+    <!-- The rating this user gave the game themselves. -->
+    <string name="sort_user_rating">User Rating</string>
+    <!-- How hard the user judged the game to be. -->
+    <string name="sort_difficulty">Difficulty</string>
+    <string name="sort_release_year">Release Year</string>
+    <!-- How many times the game has been launched. -->
+    <string name="sort_play_count">Play Count</string>
+    <!-- Total time spent playing, not "time of play". -->
+    <string name="sort_play_time">Play Time</string>
+    <string name="sort_last_played">Last Played</string>
+    <!-- Most recently added to the library. -->
+    <string name="sort_recently_added">Recently Added</string>
+
+    <!-- Which slice of the library to show. Noun phrases naming a set of games. -->
+    <!-- No filter applied. -->
+    <string name="source_filter_all">All Games</string>
+    <!-- Games that are downloaded and can be started right now. -->
+    <string name="source_filter_playable">Playable</string>
+    <!-- Games the user marked as favourites. -->
+    <string name="source_filter_favorites">Favorites</string>
+    <!-- Games the user chose to hide from the library. Adjective describing the games. -->
+    <string name="source_filter_hidden">Hidden</string>
+
+    <!-- How far through a game the user says they are. Shown as a chip on game detail, in
+         the status picker, and on the dual-screen showcase. Adjectives describing the game's
+         state, not commands. -->
+    <!-- Started but not finished. -->
+    <string name="completion_status_incomplete">Incomplete</string>
+    <!-- Reached the ending. -->
+    <string name="completion_status_finished">Finished</string>
+    <!-- Everything in the game done. The percent sign is part of the label; keep whatever
+         form means "fully completed" in your language. -->
+    <string name="completion_status_completed_100">100%</string>
+    <!-- Set aside for good without finishing, deliberately rather than by accident. -->
+    <string name="completion_status_retired">Retired</string>
+    <!-- Owned but the user has decided never to play it. -->
+    <string name="completion_status_never_playing">Won\'t Play</string>
+
+    <!-- Save manager (ui/common/savechannel) -->
+
+    <!-- Heading of the modal that manages a game's saves and save states. Noun phrase naming
+         the modal, not a command. -->
+    <string name="ui_save_channel_title">Save Management</string>
+    <!-- Heading over the left column, which lists the named slots a game's saves are kept in.
+         Noun, plural. -->
+    <string name="ui_save_channel_slots_heading">Save Slots</string>
+    <!-- Heading over the right column when a slot is picked, listing that slot's earlier saves.
+         %1$s is the slot's name. Noun: the record of past saves, not a command. -->
+    <string name="ui_save_channel_history_heading_named">History (%1$s)</string>
+    <!-- The same heading with no slot picked. Noun. -->
+    <string name="ui_save_channel_history_heading">History</string>
+    <!-- Shown in the history column when the chosen slot holds nothing. -->
+    <string name="ui_save_channel_history_empty">No saves yet</string>
+    <!-- Tab of the save manager listing the game's own saves. Noun, plural. -->
+    <string name="ui_save_channel_tab_saves">Saves</string>
+    <!-- Tab of the save manager listing emulator save states. Noun, plural, short for
+         "save states". -->
+    <string name="ui_save_channel_tab_states">States</string>
+    <!-- Shown on the states tab when the emulator reports no state slots at all. -->
+    <string name="ui_save_channel_states_empty">No state slots available</string>
+    <!-- Heading over the list of save states, naming the save slot they belong to. %1$s is the
+         slot's name. -->
+    <string name="ui_save_channel_states_heading_named">States in %1$s</string>
+    <!-- The same heading when no named slot is active. -->
+    <string name="ui_save_channel_states_heading_default">States in the default slot</string>
+    <!-- Row at the end of the slot list. Verb phrase: creates another named save slot. -->
+    <string name="ui_save_channel_slot_new">New Slot</string>
+    <!-- Tag beside a save slot from the older save system that has not been migrated yet.
+         Adjective describing the slot. Square brackets are the tag's shape; keep them. -->
+    <string name="ui_save_channel_slot_legacy_tag">[Legacy]</string>
+    <!-- Icon description on the save the game will resume from. Noun phrase. -->
+    <string name="ui_save_channel_history_active_point">Active restore point</string>
+    <!-- Tag on the newest save in the history list. Adjective describing that save. -->
+    <string name="ui_save_channel_history_latest">Latest</string>
+    <!-- Tag on a history entry that exists on the server as well as on this device. Adjective;
+         keep the brackets. -->
+    <string name="ui_save_channel_history_tag_synced">[Synced]</string>
+    <!-- Tag on a history entry that exists only on this device. Adjective; keep the brackets. -->
+    <string name="ui_save_channel_history_tag_local">[Local]</string>
+    <!-- Shown at the top right of the save manager when no named slot is active, naming the
+         save the game is currently using. Adjective describing that save. -->
+    <string name="ui_save_channel_active_default">Latest</string>
+    <!-- Name of the slot every game has by default, where the emulator's own save is kept. -->
+    <string name="ui_save_channel_slot_autosave">Autosave</string>
+    <!-- Name of the bucket holding saves put aside when a slot was switched. Adjective
+         describing the saves. -->
+    <string name="ui_save_channel_slot_archived">Archived</string>
+
+    <!-- Footer hint on a legacy save slot. Verb: brings it into the current save system. -->
+    <string name="ui_save_channel_footer_migrate">Migrate</string>
+    <!-- Footer hint on a legacy save slot. Verb: erases it and its backups. -->
+    <string name="ui_save_channel_footer_delete_legacy_slot">Delete</string>
+    <!-- Footer hint on a save slot. Verb: makes it the slot the game plays from. -->
+    <string name="ui_save_channel_footer_activate">Activate</string>
+    <!-- Footer hint on a save slot. Verb: gives it another name. -->
+    <string name="ui_save_channel_footer_rename">Rename</string>
+    <!-- Footer hint on a save slot. Verb: erases the slot. -->
+    <string name="ui_save_channel_footer_delete_slot">Delete</string>
+    <!-- Footer hint on a save in the history list. Verb: puts that save back in play. -->
+    <string name="ui_save_channel_footer_restore_save">Restore</string>
+    <!-- Footer hint on a save in the history list. Verb phrase: copies it into a new named
+         slot. -->
+    <string name="ui_save_channel_footer_save_as">Save As</string>
+    <!-- Footer hint on a downloaded save state. Verb: loads it into the emulator. -->
+    <string name="ui_save_channel_footer_restore_state">Restore</string>
+    <!-- Footer hint on a save state that has a screenshot. Verb: shows the screenshot full
+         size. -->
+    <string name="ui_save_channel_footer_preview_state">Preview</string>
+    <!-- Footer hint on a downloaded save state. Verb: erases it from the cache. -->
+    <string name="ui_save_channel_footer_delete_state">Delete</string>
+    <!-- Footer hint on a save state held only on the server. Verb: fetches it. -->
+    <string name="ui_save_channel_footer_download_state">Download</string>
+    <!-- Footer hint on the saves tab. Noun, plural: the shoulder button turns to the states
+         tab. -->
+    <string name="ui_save_channel_footer_tab_states">States</string>
+    <!-- Footer hint on the states tab. Noun, plural: the shoulder button turns back to the
+         saves tab. -->
+    <string name="ui_save_channel_footer_tab_saves">Saves</string>
+    <!-- Footer hint when a game has no states at all. Verb: fetches the game's saves from the
+         server. -->
+    <string name="ui_save_channel_footer_sync">Sync</string>
+
+    <!-- Heading of the confirmation before a save is put back in play. Rendered in caps in
+         English; use whatever casing is normal for a heading in your language. -->
+    <string name="ui_save_channel_restore_title">RESTORE SAVE</string>
+    <!-- Footer hint accepting that confirmation. Verb. -->
+    <string name="ui_save_channel_restore_confirm">Restore</string>
+    <!-- Footer hint declining that confirmation. Verb. -->
+    <string name="ui_save_channel_restore_cancel">Cancel</string>
+    <!-- Body of that confirmation. -->
+    <string name="ui_save_channel_restore_message">Restore this save to your current game state?</string>
+
+    <!-- Heading when copying the chosen save into a new slot. Verb phrase, rendered in caps. -->
+    <string name="ui_save_channel_rename_title_save_as">SAVE AS</string>
+    <!-- Heading when making an empty save slot. Noun phrase, rendered in caps. -->
+    <string name="ui_save_channel_rename_title_new_slot">NEW SAVE SLOT</string>
+    <!-- Heading when giving an existing slot another name. Verb phrase, rendered in caps. -->
+    <string name="ui_save_channel_rename_title_rename">RENAME SAVE SLOT</string>
+    <!-- Button that copies the save into the newly named slot. Verb. -->
+    <string name="ui_save_channel_rename_confirm_save_as">Save</string>
+    <!-- Button that makes the empty slot. Verb. -->
+    <string name="ui_save_channel_rename_confirm_new_slot">Create</string>
+    <!-- Button that commits the new name. Verb. -->
+    <string name="ui_save_channel_rename_confirm_rename">Rename</string>
+    <!-- Prompt above the text field when copying a save into a new slot. -->
+    <string name="ui_save_channel_rename_prompt_save_as">Enter a name for this save slot</string>
+    <!-- Prompt above the text field when making an empty slot. -->
+    <string name="ui_save_channel_rename_prompt_new_slot">Enter a name for this save slot</string>
+    <!-- Prompt above the text field when renaming an existing slot. -->
+    <string name="ui_save_channel_rename_prompt_rename">Enter a new name</string>
+    <!-- Footer hint accepting the typed name. Verb. -->
+    <string name="ui_save_channel_rename_footer_confirm">Confirm</string>
+    <!-- Footer hint abandoning the typed name. Verb. -->
+    <string name="ui_save_channel_rename_footer_cancel">Cancel</string>
+    <!-- Placeholder inside the empty text field. Noun phrase naming what to type. -->
+    <string name="ui_save_channel_rename_placeholder">Slot name</string>
+    <!-- Button beside the confirm button. Verb: abandons the typed name. -->
+    <string name="ui_save_channel_rename_cancel_button">Cancel</string>
+
+    <!-- Heading of the confirmation before a legacy slot is brought into the current save
+         system. Verb phrase, rendered in caps. -->
+    <string name="ui_save_channel_migrate_title">MIGRATE SAVE</string>
+    <!-- Footer hint accepting that confirmation. Verb. -->
+    <string name="ui_save_channel_migrate_confirm">Migrate</string>
+    <!-- Footer hint declining that confirmation. Verb. -->
+    <string name="ui_save_channel_migrate_cancel">Cancel</string>
+    <!-- Body of that confirmation. %1$s is the slot's name. -->
+    <string name="ui_save_channel_migrate_message">Migrate \"%1$s\" to new save system?</string>
+    <!-- Note under that body, saying what migrating does. -->
+    <string name="ui_save_channel_migrate_note">This will register it as a named save slot.</string>
+
+    <!-- Heading of the confirmation before a legacy slot is erased. Verb phrase, rendered in
+         caps. -->
+    <string name="ui_save_channel_delete_legacy_title">DELETE LEGACY SAVE</string>
+    <!-- Footer hint accepting that confirmation. Verb. -->
+    <string name="ui_save_channel_delete_legacy_confirm">Delete</string>
+    <!-- Footer hint declining that confirmation. Verb. -->
+    <string name="ui_save_channel_delete_legacy_cancel">Cancel</string>
+    <!-- Body of that confirmation. %1$s is the slot's name, %2$d how many earlier saves go with
+         it. -->
+    <plurals name="ui_save_channel_delete_legacy_message">
+        <item quantity="one">Delete \"%1$s\" and %2$d backup?</item>
+        <item quantity="other">Delete \"%1$s\" and %2$d backups?</item>
+    </plurals>
+    <!-- Note under that body, saying what deleting reaches. -->
+    <string name="ui_save_channel_delete_legacy_note">This will remove it from the server and local storage. This cannot be undone.</string>
+
+    <!-- Heading of the confirmation before a save slot is erased. Verb phrase, rendered in
+         caps. -->
+    <string name="ui_save_channel_delete_slot_title">DELETE SAVE SLOT</string>
+    <!-- Footer hint accepting that confirmation. Verb. -->
+    <string name="ui_save_channel_delete_slot_confirm">Delete</string>
+    <!-- Footer hint declining that confirmation. Verb. -->
+    <string name="ui_save_channel_delete_slot_cancel">Cancel</string>
+    <!-- Body of that confirmation. %1$s is the slot's name. -->
+    <string name="ui_save_channel_delete_slot_message">Delete \"%1$s\"?</string>
+    <!-- Note under that body, saying what deleting reaches. -->
+    <string name="ui_save_channel_delete_slot_note">This will remove it from the server and local storage. This cannot be undone.</string>
+
+    <!-- Heading of the warning shown when a save state was written by a different build of the
+         emulator core. Rendered in caps. -->
+    <string name="ui_save_channel_version_mismatch_title">CORE VERSION MISMATCH</string>
+    <!-- Footer hint loading the state anyway. Verb phrase. -->
+    <string name="ui_save_channel_version_mismatch_confirm">Load Anyway</string>
+    <!-- Footer hint declining. Verb. -->
+    <string name="ui_save_channel_version_mismatch_cancel">Cancel</string>
+    <!-- Caption above the core the state was written by. -->
+    <string name="ui_save_channel_version_mismatch_saved_with">This state was saved with:</string>
+    <!-- Stands in for the core name when the state does not record one. Adjective. -->
+    <string name="ui_save_channel_version_mismatch_saved_core_unknown">Unknown</string>
+    <!-- Caption above the core that is loaded now. -->
+    <string name="ui_save_channel_version_mismatch_current">Current core version:</string>
+    <!-- Stands in for the running core's name when it cannot be read. Adjective. -->
+    <string name="ui_save_channel_version_mismatch_current_core_unknown">Unknown</string>
+    <!-- Warning under both, saying what loading anyway risks. -->
+    <string name="ui_save_channel_version_mismatch_warning">Loading may cause crashes or corruption.</string>
+
+    <!-- Heading of the confirmation before a save state is erased. Verb phrase, rendered in
+         caps. -->
+    <string name="ui_save_channel_delete_state_title">DELETE STATE</string>
+    <!-- Footer hint accepting that confirmation. Verb. -->
+    <string name="ui_save_channel_delete_state_confirm">Delete</string>
+    <!-- Footer hint declining that confirmation. Verb. -->
+    <string name="ui_save_channel_delete_state_cancel">Cancel</string>
+    <!-- Names the state being erased when it is the one the emulator writes by itself. Noun
+         phrase, lower case because it sits inside a sentence. -->
+    <string name="ui_save_channel_delete_state_target_auto">auto state</string>
+    <!-- Names the state being erased when it is a numbered slot. %1$d is the slot number.
+         Lower case because it sits inside a sentence. -->
+    <string name="ui_save_channel_delete_state_target_slot">slot %1$d</string>
+    <!-- Body of that confirmation. %1$s is one of the two names above. -->
+    <string name="ui_save_channel_delete_state_message">Delete %1$s?</string>
+    <!-- Note under that body, saying what deleting reaches. -->
+    <string name="ui_save_channel_delete_state_note">This will remove it from the cache.</string>
+
+    <!-- Heading of the confirmation before a numbered state overwrites the automatic one. Verb
+         phrase, rendered in caps. -->
+    <string name="ui_save_channel_replace_auto_title">REPLACE AUTO STATE</string>
+    <!-- Footer hint accepting that confirmation. Verb. -->
+    <string name="ui_save_channel_replace_auto_confirm">Replace</string>
+    <!-- Footer hint declining that confirmation. Verb. -->
+    <string name="ui_save_channel_replace_auto_cancel">Cancel</string>
+    <!-- Body of that confirmation. %1$d is the numbered slot being copied from. -->
+    <string name="ui_save_channel_replace_auto_message">Replace auto state with slot %1$d?</string>
+    <!-- Note under that body. -->
+    <string name="ui_save_channel_replace_auto_note">The current auto state will be overwritten.</string>
+
+    <!-- Names the state that was fetched, when it is the automatic one. Lower case because it
+         sits inside a sentence. -->
+    <string name="ui_save_channel_notice_download_target_auto">auto state</string>
+    <!-- Names the state that was fetched, when it is a numbered slot. %1$d is the slot number.
+         Lower case because it sits inside a sentence. -->
+    <string name="ui_save_channel_notice_download_target_slot">state slot %1$d</string>
+    <!-- Brief message after fetching a save state from the server. Past tense statement. %1$s is
+         one of the two names above. -->
+    <string name="ui_save_channel_notice_downloaded">Downloaded %1$s</string>
+    <!-- Brief message when a state cannot be loaded because the game file is not on the
+         device. -->
+    <string name="ui_save_channel_notice_no_local_path">Game has no local path</string>
+    <!-- Names the state that was loaded, when it is the automatic one. Lower case. -->
+    <string name="ui_save_channel_notice_restore_target_auto">auto state</string>
+    <!-- Names the state that was loaded, when it is a numbered slot. %1$d is the slot number.
+         Lower case. -->
+    <string name="ui_save_channel_notice_restore_target_slot">state slot %1$d</string>
+    <!-- Brief message after a save state is loaded. Past tense statement. %1$s is one of the two
+         names above. -->
+    <string name="ui_save_channel_notice_restored_state">Restored %1$s</string>
+    <!-- Brief message when the chosen state is no longer in the cache. -->
+    <string name="ui_save_channel_notice_state_not_cached">State not found in cache</string>
+    <!-- Brief message when Argosy has no state location for the emulator the game runs on. -->
+    <string name="ui_save_channel_notice_state_no_config">No state configuration for this emulator</string>
+    <!-- Names the state that was erased, when it is the automatic one. Lower case. -->
+    <string name="ui_save_channel_notice_delete_target_auto">auto state</string>
+    <!-- Names the state that was erased, when it is a numbered slot. %1$d is the slot number.
+         Lower case. -->
+    <string name="ui_save_channel_notice_delete_target_slot">state slot %1$d</string>
+    <!-- Brief message after a save state is erased. Past tense statement. %1$s is one of the two
+         names above. -->
+    <string name="ui_save_channel_notice_deleted_state">Deleted %1$s</string>
+    <!-- Brief message when copying a numbered state over the automatic one failed. -->
+    <string name="ui_save_channel_notice_replace_auto_failed">Could not replace the auto state</string>
+    <!-- Brief message after that copy succeeded. %1$d is the slot it was copied from. -->
+    <string name="ui_save_channel_notice_replaced_auto">Replaced auto state with slot %1$d</string>
+
+    <!-- Stands in for the slot name when the game is playing from the default slot, inside the
+         "using slot" message below. -->
+    <string name="ui_save_channel_notice_activate_default">Auto Save</string>
+    <!-- Brief message after switching which slot a game plays from. %1$s is the slot's name. -->
+    <string name="ui_save_channel_notice_using_slot">Using save slot: %1$s</string>
+    <!-- Brief message when the old save could not be moved out of the way. -->
+    <string name="ui_save_channel_notice_clear_failed">Failed to clear existing save</string>
+    <!-- Stands in for the slot name when switching to an empty default slot, inside the
+         "switched to" message below. -->
+    <string name="ui_save_channel_notice_switch_default">Auto Save</string>
+    <!-- Brief message after switching to a slot that holds nothing yet. %1$s is the slot's
+         name. -->
+    <string name="ui_save_channel_notice_switched_to">Switched to: %1$s</string>
+    <!-- Brief message after a save is put back in play from a named slot. Past tense statement.
+         %1$s is the slot's name. -->
+    <string name="ui_save_channel_notice_restored_to_slot">Restored to %1$s</string>
+    <!-- The same message when no slot is named. Past tense statement. -->
+    <string name="ui_save_channel_notice_restored">Save restored</string>
+    <!-- Brief message after a save is put back in play from a named slot and uploaded. %1$s is
+         the slot's name. -->
+    <string name="ui_save_channel_notice_restored_to_slot_synced">Restored to %1$s and synced</string>
+    <!-- The same message when no slot is named. -->
+    <string name="ui_save_channel_notice_restored_synced">Save restored and synced</string>
+    <!-- Brief message when the typed slot name was blank. -->
+    <string name="ui_save_channel_notice_slot_name_empty">Slot name cannot be empty</string>
+    <!-- Brief message when the typed slot name is one Argosy keeps for itself. %1$s is what was
+         typed. -->
+    <string name="ui_save_channel_notice_slot_name_reserved">\'%1$s\' is a reserved name</string>
+    <!-- Brief message when making a new slot and the name is already taken. %1$s is what was
+         typed. -->
+    <string name="ui_save_channel_notice_new_slot_exists">Slot \'%1$s\' already exists</string>
+    <!-- Brief message after a new empty slot is made. %1$s is its name. -->
+    <string name="ui_save_channel_notice_new_slot_created">Created save slot \'%1$s\'</string>
+    <!-- Brief message when copying a save into a slot that has the name it came from. -->
+    <string name="ui_save_channel_notice_save_as_same_name">New slot name must differ from the source</string>
+    <!-- Brief message when copying a save and the name is already taken. %1$s is what was
+         typed. -->
+    <string name="ui_save_channel_notice_save_as_slot_exists">Slot \'%1$s\' already exists</string>
+    <!-- Brief message after a save is copied into a new slot. %1$s is the new slot's name. -->
+    <string name="ui_save_channel_notice_save_as_created">Created save slot \'%1$s\'</string>
+    <!-- Brief message when that copy failed. -->
+    <string name="ui_save_channel_notice_save_as_failed">Failed to create save slot</string>
+    <!-- Brief message after a slot is renamed. %1$s is the new name. -->
+    <string name="ui_save_channel_notice_renamed">Renamed to \'%1$s\'</string>
+    <!-- Brief message after a save slot is erased. %1$s is its name. -->
+    <string name="ui_save_channel_notice_slot_deleted">Deleted save slot \'%1$s\'</string>
+    <!-- Brief message after a legacy slot is brought into the current save system. %1$s is its
+         name. -->
+    <string name="ui_save_channel_notice_migrated">Migrated \'%1$s\'</string>
+    <!-- Brief message when that migration failed. -->
+    <string name="ui_save_channel_notice_migrate_failed">Failed to migrate save</string>
+    <!-- Brief message after a legacy slot is erased. %1$s is its name. -->
+    <string name="ui_save_channel_notice_legacy_deleted">Deleted \'%1$s\'</string>
+    <!-- Brief message after fetching every server save for a game. Past tense statement. -->
+    <string name="ui_save_channel_notice_saves_synced">Saves synced from server</string>
+
+    <!-- Second line on a state slot the emulator has never written to. The brackets are part of
+         the label. -->
+    <string name="ui_state_slot_row_empty">(Empty)</string>
+    <!-- Tag on a state held on this device and on the server. Adjective; keep the brackets. -->
+    <string name="ui_state_slot_row_tag_synced">[Synced]</string>
+    <!-- Tag on a state waiting to be uploaded. Adjective; keep the brackets. -->
+    <string name="ui_state_slot_row_tag_pending">[Pending]</string>
+    <!-- Tag on a state held only on the server. Noun naming where it is; keep the brackets. -->
+    <string name="ui_state_slot_row_tag_server">[Server]</string>
+    <!-- Tag on a state held only on this device. Noun naming where it is; keep the brackets. -->
+    <string name="ui_state_slot_row_tag_local">[Local]</string>
+
+    <!-- Shared modals and controls (ui/components, ui/primitives) -->
+
+    <!-- Declining button of the shared confirm modal. Verb. -->
+    <string name="ui_confirm_modal_cancel">Cancel</string>
+
+    <!-- Placeholder in a modal's search field when nothing has been typed. -->
+    <string name="ui_modal_search_placeholder">Search...</string>
+
+    <!-- Heading of the modal that asks which disc of a multi-disc game to start. Rendered in
+         caps in English. -->
+    <string name="ui_disc_picker_title">SELECT DISC</string>
+    <!-- Second line under that heading. -->
+    <string name="ui_disc_picker_subtitle">Choose which disc to launch</string>
+    <!-- One row of that list. %1$d is the disc's number as the original release counts them. -->
+    <string name="ui_disc_picker_row">Disc %1$d</string>
+
+    <!-- Heading of the modal that asks which memory card a game's saves live on. Rendered in
+         caps in English. -->
+    <string name="ui_memcard_picker_title">SELECT MEMORY CARD</string>
+    <!-- Second line under that heading. -->
+    <string name="ui_memcard_picker_subtitle">Save sync uses the selected folder memory card</string>
+    <!-- Second line under a memory card that holds nothing. Adjective describing the card. -->
+    <string name="ui_memcard_picker_empty">empty</string>
+    <!-- Second line under a memory card, saying how many games have saves on it. -->
+    <plurals name="ui_memcard_picker_save_count">
+        <item quantity="one">%d game save</item>
+        <item quantity="other">%d game saves</item>
+    </plurals>
+    <!-- Second line under a memory card that has been written to. %1$s is the count above, %2$s
+         the date it was last written. -->
+    <string name="ui_memcard_picker_summary_dated">%1$s - %2$s</string>
+
+    <!-- Heading of the prompt shown when a friend invites this device into a netplay game. -->
+    <string name="ui_netplay_invite_title">Netplay Invite</string>
+    <!-- Body of that prompt. %1$s is the friend's name. -->
+    <string name="ui_netplay_invite_message">%1$s invited you to play</string>
+    <!-- Declining button on that prompt. Verb: closes it without joining. -->
+    <string name="ui_netplay_invite_dismiss">Dismiss</string>
+    <!-- Accepting button on that prompt. Verb: enters the friend's game. -->
+    <string name="ui_netplay_invite_join">Join</string>
+
+    <!-- Heading of the modal shown after an update, listing what changed. %1$s is the version
+         number. -->
+    <string name="ui_changelog_title">What\'s New in %1$s</string>
+    <!-- Footer hint on that modal when nothing has to be done first. Verb: closes it. -->
+    <string name="ui_changelog_footer_continue">Continue</string>
+    <!-- Line under the highlights when the update needs the reader to do something. %1$s is the
+         list of those things, joined by commas. -->
+    <string name="ui_changelog_action_required">Action required: %1$s</string>
+    <!-- One of those things. Verb phrase: sign in to the game server again. "RomM" is the name
+         of the server software; leave it untranslated. -->
+    <string name="ui_changelog_action_relogin_romm">Re-login to RomM</string>
+    <!-- One of those things. Verb phrase: fetch the whole library again. -->
+    <string name="ui_changelog_action_resync_library">Resync Library</string>
+    <!-- One of those things. Verb phrase: empty Argosy's cached files. -->
+    <string name="ui_changelog_action_clear_cache">Clear Cache</string>
+    <!-- One of those things. Verb phrase: tell Argosy where Steam games are installed. -->
+    <string name="ui_changelog_action_set_steam_path">Set Steam Install Path</string>
+
+    <!-- Heading of the prompt shown when a save changed on both this device and the server while
+         Argosy was syncing in the background. -->
+    <string name="ui_background_conflict_title">Save Sync Conflict</string>
+    <!-- Shown beside the game's name when the save belongs to no named slot. -->
+    <string name="ui_background_conflict_default_slot">Default Save</string>
+    <!-- Body of that prompt when the copy on this device changed. -->
+    <string name="ui_background_conflict_message_local_changed">Your local save has changed since the last sync. Pick which save wins.</string>
+    <!-- Body of that prompt when the copy on the server is newer. -->
+    <string name="ui_background_conflict_message_server_newer">A newer save exists on the server. Pick which save wins.</string>
+    <!-- Choice keeping the copy on this device. Adjective naming which copy. -->
+    <string name="ui_background_conflict_choice_local">Local</string>
+    <!-- Choice keeping the copy on the server. Noun naming which copy. -->
+    <string name="ui_background_conflict_choice_server">Server</string>
+    <!-- Choice deciding neither way. Verb. -->
+    <string name="ui_background_conflict_choice_skip">Skip</string>
+    <!-- Second line under that choice. -->
+    <string name="ui_background_conflict_choice_skip_subtitle">Keep both for now</string>
+    <!-- Age of a save whose clock is ahead of this device's. Adverb phrase. -->
+    <string name="ui_background_conflict_age_future">in the future</string>
+    <!-- Age of a save written less than a minute ago. Adverb phrase. -->
+    <string name="ui_background_conflict_age_now">just now</string>
+    <!-- Age of a save, in minutes. -->
+    <plurals name="ui_background_conflict_age_minutes">
+        <item quantity="one">%d minute ago</item>
+        <item quantity="other">%d minutes ago</item>
+    </plurals>
+    <!-- Age of a save, in hours. -->
+    <plurals name="ui_background_conflict_age_hours">
+        <item quantity="one">%d hour ago</item>
+        <item quantity="other">%d hours ago</item>
+    </plurals>
+    <!-- Age of a save, in days. -->
+    <plurals name="ui_background_conflict_age_days">
+        <item quantity="one">%d day ago</item>
+        <item quantity="other">%d days ago</item>
+    </plurals>
+    <!-- Age of a save, in months. -->
+    <plurals name="ui_background_conflict_age_months">
+        <item quantity="one">%d month ago</item>
+        <item quantity="other">%d months ago</item>
+    </plurals>
+
+    <!-- Heading of the prompt shown before launch when a save differs between this device and
+         the server. -->
+    <string name="ui_save_conflict_title">Save Conflict</string>
+    <!-- Shown beside the game's name when the save belongs to no named slot. -->
+    <string name="ui_save_conflict_default_slot">Default Save</string>
+    <!-- Body of that prompt. -->
+    <string name="ui_save_conflict_message">The server has a newer save. Overwriting will replace it with your local save.</string>
+    <!-- Row naming the copy on this device. Adjective. -->
+    <string name="ui_save_conflict_source_local">Local</string>
+    <!-- Row naming the copy on the server. Noun. -->
+    <string name="ui_save_conflict_source_server">Server</string>
+    <!-- Button leaving both copies alone. Verb phrase. -->
+    <string name="ui_save_conflict_skip">Skip Sync</string>
+    <!-- Button replacing the server's copy. Verb. -->
+    <string name="ui_save_conflict_overwrite">Overwrite</string>
+    <!-- Stands in for a game's name when the library no longer holds it. -->
+    <string name="ui_save_conflict_unknown_game">Unknown Game</string>
+    <!-- Age of a save whose clock is ahead of this device's. Adverb phrase. -->
+    <string name="ui_save_conflict_age_future">in the future</string>
+    <!-- Age of a save written less than a minute ago. Adverb phrase. -->
+    <string name="ui_save_conflict_age_now">just now</string>
+    <!-- Age of a save, in minutes. -->
+    <plurals name="ui_save_conflict_age_minutes">
+        <item quantity="one">%d minute ago</item>
+        <item quantity="other">%d minutes ago</item>
+    </plurals>
+    <!-- Age of a save, in hours. -->
+    <plurals name="ui_save_conflict_age_hours">
+        <item quantity="one">%d hour ago</item>
+        <item quantity="other">%d hours ago</item>
+    </plurals>
+    <!-- Age of a save, in days. -->
+    <plurals name="ui_save_conflict_age_days">
+        <item quantity="one">%d day ago</item>
+        <item quantity="other">%d days ago</item>
+    </plurals>
+    <!-- Age of a save, in months. -->
+    <plurals name="ui_save_conflict_age_months">
+        <item quantity="one">%d month ago</item>
+        <item quantity="other">%d months ago</item>
+    </plurals>
+
+    <!-- Label under the grid sketch on the card that ends a row of games, when no count is
+         known. Verb phrase: opens the whole list. -->
+    <string name="ui_view_all_outline_label">View All</string>
+    <!-- Number of games the row does not show, on the card that ends it. %1$d is that number. -->
+    <string name="ui_view_all_remaining_count">+%1$d</string>
+    <!-- Label under that number. Verb phrase: opens the whole list. -->
+    <string name="ui_view_all_accent_label">View All</string>
+
+    <!-- Drawn on the starburst badge marking something added recently. Adjective, rendered in
+         caps in English. -->
+    <string name="ui_new_badge_label">NEW</string>
+
+    <!-- Icon description on an open settings group. Verb: folds it away. -->
+    <string name="ui_expandable_preference_collapse">Collapse</string>
+    <!-- Icon description on a folded settings group. Verb: opens it. -->
+    <string name="ui_expandable_preference_expand">Expand</string>
+
+    <!-- Icon description on a permission row that has been allowed. Adjective describing the
+         permission. -->
+    <string name="ui_permission_card_granted">Granted</string>
+
+    <!-- Icon description on the marker a game card shows when it is a favourite. Noun. -->
+    <string name="ui_game_card_favorite">Favorite</string>
+    <!-- Icon description on the marker a game card shows when the game is on the device.
+         Adjective describing the game. -->
+    <string name="ui_game_card_downloaded">Downloaded</string>
+
+    <!-- Icon description on the badge over a paused download. Adjective describing the
+         download. -->
+    <string name="ui_download_badge_paused">Paused</string>
+    <!-- Icon description on the cover of a paused download. Adjective describing the
+         download. -->
+    <string name="ui_download_cover_paused">Paused</string>
+
+    <!-- Icon description on the shoulder-button glyph left of the section breadcrumb. -->
+    <string name="ui_section_breadcrumb_previous">Previous section</string>
+    <!-- Icon description on the shoulder-button glyph right of the section breadcrumb. -->
+    <string name="ui_section_breadcrumb_next">Next section</string>
+
+    <!-- Description of a rendered QR code. %1$s is the address the code encodes. -->
+    <string name="ui_qr_code_description">QR Code for %1$s</string>
+    <!-- Instruction over the camera view while scanning a pairing code. "RomM" is the name of
+         the server software; leave it untranslated. -->
+    <string name="ui_qr_scanner_hint">Point at the RomM pairing QR code</string>
+
+    <!-- Heading of the menu that opens over a tile on the curated home grid. Noun, singular,
+         rendered in caps in English. -->
+    <string name="ui_custom_tile_menu_header">TILE</string>
+
+    <!-- Heading of the modal that puts a game into one of the user's collections. Rendered in
+         caps in English. -->
+    <string name="ui_add_to_collection_title">ADD TO COLLECTION</string>
+    <!-- Shown in that modal when the user has made no collections. -->
+    <string name="ui_add_to_collection_empty">No collections yet</string>
+    <!-- Row at the end of that list. Verb phrase. -->
+    <string name="ui_add_to_collection_create">Create New Collection</string>
+    <!-- Icon description on the tick beside a collection the game is already in. -->
+    <string name="ui_add_to_collection_member">In collection</string>
+
+    <!-- Row of the prompt asking where a Steam game should come from. Verb phrase: Argosy
+         fetches it. -->
+    <string name="ui_steam_location_download">Download via Argosy</string>
+    <!-- Row of that prompt for a launcher that already has the game. Verb phrase: records the
+         game as present without fetching anything. -->
+    <string name="ui_steam_location_mark_installed">Mark as Installed</string>
+    <!-- Second line under that row. %1$s is the other launcher's name. -->
+    <string name="ui_steam_location_managed_by">Managed by %1$s</string>
+
+    <!-- Heading of the dial that sets a direction. Noun. -->
+    <string name="ui_direction_ring_title">Direction</string>
+    <!-- Hint beside that dial. Verb: the directions turn it. -->
+    <string name="ui_direction_ring_rotate">Rotate</string>
+    <!-- Hint beside that dial. Verb: keeps the angle the dial is on. -->
+    <string name="ui_direction_ring_set">Set</string>
+    <!-- Hint beside that dial. Verb: leaves the angle as it was. -->
+    <string name="ui_direction_ring_cancel">Cancel</string>
+
+    <!-- Heading of the prompt shown when an emulator core crashed last session. -->
+    <string name="ui_core_crash_title">Core Crashed</string>
+    <!-- Footer hint while that prompt lists ways to recover. Verb: takes the row under the
+         cursor. -->
+    <string name="ui_core_crash_footer_select">Select</string>
+    <!-- Footer hint while that prompt lists ways to recover. Verb: closes it. -->
+    <string name="ui_core_crash_footer_dismiss_options">Dismiss</string>
+    <!-- Footer hint once a replacement core is ready. Verb phrase: starts the game. -->
+    <string name="ui_core_crash_footer_launch">Launch game</string>
+    <!-- Footer hint once a replacement core is ready. Verb: closes the prompt. -->
+    <string name="ui_core_crash_footer_dismiss_ready">Dismiss</string>
+    <!-- Footer hint once the download has finished but the game cannot start. Verb: closes the
+         prompt. -->
+    <string name="ui_core_crash_footer_dismiss_done">Dismiss</string>
+    <!-- Footer hint while a replacement core is downloading. Verb: stops the download. -->
+    <string name="ui_core_crash_footer_cancel_download">Cancel</string>
+    <!-- Body of that prompt. %1$s is the core's display name. -->
+    <string name="ui_core_crash_message">\'%1$s\' crashed during your last session. Choose how to recover.</string>
+
+    <!-- Prompt above the list of episodes when none have been ticked. -->
+    <string name="ui_episode_picker_selection_none">Nothing chosen yet</string>
+    <!-- Prompt above the list of episodes, saying how many are ticked. -->
+    <plurals name="ui_episode_picker_selection_count">
+        <item quantity="one">%d episode chosen</item>
+        <item quantity="other">%d episodes chosen</item>
+    </plurals>
+    <!-- Button that leaves the episode list without keeping the ticks. Verb. -->
+    <string name="ui_episode_picker_cancel">Cancel</string>
+
+    <!-- What a series tile plays: the episode after the last one watched. Noun phrase. -->
+    <string name="ui_media_tile_mode_sequential">Next episode</string>
+    <!-- Second line under that choice. -->
+    <string name="ui_media_tile_mode_sequential_supporting">Follows where you are up to, wherever you watch it</string>
+    <!-- What a series tile plays: one episode picked at random. Noun phrase. -->
+    <string name="ui_media_tile_mode_random">Random episode</string>
+    <!-- Second line under that choice. -->
+    <string name="ui_media_tile_mode_random_supporting">Picks one and keeps it until you have watched it</string>
+    <!-- What a series tile plays: a single season, in order. Noun phrase. -->
+    <string name="ui_media_tile_mode_season">One season</string>
+    <!-- Second line under that choice. -->
+    <string name="ui_media_tile_mode_season_supporting">Works through a single season</string>
+    <!-- What a series tile plays: the episodes the user ticks. Noun phrase. -->
+    <string name="ui_media_tile_mode_playlist">Chosen episodes</string>
+    <!-- Second line under that choice. -->
+    <string name="ui_media_tile_mode_playlist_supporting">Plays the episodes you pick, in the order you pick them</string>
+    <!-- Second line of the setup modal while asking what the tile should play. -->
+    <string name="ui_media_tile_step_mode">What should this tile play?</string>
+    <!-- Second line of the setup modal while asking which season. -->
+    <string name="ui_media_tile_step_season">Choose a season</string>
+    <!-- Second line of the setup modal while asking which episodes. -->
+    <string name="ui_media_tile_step_episodes">Choose episodes</string>
+    <!-- Shown in place of the season list when the series has never been fetched. -->
+    <string name="ui_media_tile_empty_seasons">No seasons have been synced for this series yet</string>
+    <!-- Shown in place of the episode list when the series has never been fetched. -->
+    <string name="ui_media_tile_empty_episodes">No episodes have been synced for this series yet</string>
+    <!-- Button that commits the ticked episodes. Verb phrase. -->
+    <string name="ui_media_tile_episodes_confirm">Use these episodes</string>
+    <!-- Shown when the chosen season's episodes have never been fetched. -->
+    <string name="ui_media_tile_error_season_not_synced">No episodes have been synced for that season yet</string>
+    <!-- Shown when a whole-series mode finds the series has never been fetched. -->
+    <string name="ui_media_tile_error_series_not_synced">No episodes have been synced for this series yet</string>
+
+    <!-- Heading of the modal that adds something to the curated home grid. Rendered in caps in
+         English. -->
+    <string name="ui_tile_picker_title">ADD TO GRID</string>
+    <!-- Second line under that heading while the list is filtered. %1$s is what was typed. -->
+    <string name="ui_tile_picker_subtitle_matching">Matching \"%1$s\"</string>
+    <!-- Shown on the games tab when nothing is on the device. -->
+    <string name="ui_tile_picker_empty_games">No installed games to add</string>
+    <!-- Shown on the collections tab when the user has made none. -->
+    <string name="ui_tile_picker_empty_collections">No collections yet</string>
+    <!-- Shown on the apps tab when nothing was found. -->
+    <string name="ui_tile_picker_empty_apps">No apps found</string>
+    <!-- Shown on the media tab when the media server offers nothing. "Titles" here means films
+         and series. -->
+    <string name="ui_tile_picker_empty_media">No titles to add</string>
+    <!-- Shown on any tab when the typed filter matches nothing. -->
+    <string name="ui_tile_picker_empty_search">Nothing matches that search</string>
+    <!-- Destructive row pinned under that list. Verb phrase: removes the whole page of the
+         curated grid. -->
+    <string name="ui_tile_picker_delete_page">Delete Page</string>
+
+    <!-- Heading of the chooser when it is picking which game a collection tile plays next. Verb
+         phrase, rendered in caps by the modal. -->
+    <string name="ui_page_chooser_title_focus_game">Play Next</string>
+    <!-- Heading of the chooser when it is picking a page's background art. Noun. -->
+    <string name="ui_page_chooser_title_backdrop">Backdrop</string>
+    <!-- Heading of the chooser when it is picking a page's music. Noun. -->
+    <string name="ui_page_chooser_title_music">Music</string>
+    <!-- Second line under the heading when picking which game a collection tile plays next. -->
+    <string name="ui_page_chooser_subtitle_focus_game">The game this tile plays</string>
+    <!-- Second line under the heading while listing one game's images. -->
+    <string name="ui_page_chooser_subtitle_game_art">Artwork and screenshots</string>
+    <!-- Second line under the heading while picking background art. -->
+    <string name="ui_page_chooser_subtitle_backdrop">What this page shows behind its tiles</string>
+    <!-- Second line under the heading while picking music. -->
+    <string name="ui_page_chooser_subtitle_music">What this page plays</string>
+    <!-- Footer hint in the chooser. Verb: the directions move between the rows. -->
+    <string name="ui_page_chooser_footer_navigate">Navigate</string>
+    <!-- Footer hint in the chooser. Verb: takes the row under the cursor. -->
+    <string name="ui_page_chooser_footer_choose">Choose</string>
+    <!-- Footer hint in the chooser. Verb: returns to the previous list. -->
+    <string name="ui_page_chooser_footer_back">Back</string>
+    <!-- Placeholder in the chooser's search field. -->
+    <string name="ui_page_chooser_search_placeholder">Search games...</string>
+    <!-- Shown in the chooser while its rows are being worked out. -->
+    <string name="ui_page_chooser_loading">Loading...</string>
+    <!-- Shown in the chooser when it has no rows to offer. -->
+    <string name="ui_page_chooser_empty">Nothing here to choose from.</string>
+    <!-- Second line under the game a collection tile is currently set to play. Adverb phrase
+         describing that game. -->
+    <string name="ui_page_chooser_focus_game_current">Playing now</string>
+    <!-- Row of the chooser leading to the library's own images. Noun phrase. -->
+    <string name="ui_page_chooser_source_game_art">Artwork from a game</string>
+    <!-- Second line under that row. -->
+    <string name="ui_page_chooser_source_game_art_subtitle">Covers and screenshots already in your library</string>
+    <!-- Row of the chooser leading to the device's file browser. Noun phrase. -->
+    <string name="ui_page_chooser_source_file">A file on this device</string>
+    <!-- Second line under that row. -->
+    <string name="ui_page_chooser_source_file_subtitle">A picture, an animation, or a short video</string>
+    <!-- Row of the chooser that leaves the page with no background art of its own. -->
+    <string name="ui_page_chooser_source_none">No backdrop</string>
+    <!-- Second line under that row. -->
+    <string name="ui_page_chooser_source_none_subtitle">Show the launcher\'s own background</string>
+    <!-- Name of one of a game's images: the wide art shown behind it. Noun phrase. -->
+    <string name="ui_page_chooser_art_background">Background art</string>
+    <!-- Name of one of a game's images: its box front. Noun. -->
+    <string name="ui_page_chooser_art_cover">Cover</string>
+    <!-- Name of one of a game's images: a picture taken in play. %1$d numbers them from one. -->
+    <string name="ui_page_chooser_art_screenshot">Screenshot %1$d</string>
+    <!-- Row of the music chooser leaving the launcher's own music playing. Noun phrase. -->
+    <string name="ui_page_chooser_music_launcher">Launcher music</string>
+    <!-- Row of the music chooser taking sound from the video a tile on the page is playing. -->
+    <string name="ui_page_chooser_music_tile_audio">This page\'s video</string>
+    <!-- Heading over the user's own music files in the music chooser. Noun, plural. -->
+    <string name="ui_page_chooser_music_soundtracks_header">Your soundtracks</string>
+
+    <!-- Row at the end of the curated grid's pages. Verb phrase: makes another page. -->
+    <string name="ui_custom_grid_add_page">Add a page</string>
+
+    <!-- Row of the menu over a friend, shown when they are hosting a game that can be joined.
+         Verb. -->
+    <string name="ui_friend_options_join">Join</string>
+    <!-- Row of the menu over a friend. Verb phrase: opens their profile. -->
+    <string name="ui_friend_options_view_profile">View Profile</string>
+    <!-- Row of the menu over a friend. Noun phrase: shows this device's own friend code. -->
+    <string name="ui_friend_options_my_code">My Friend Code</string>
+    <!-- Row of the menu over a friend. Verb phrase: opens the field for a friend's code. -->
+    <string name="ui_friend_options_add_friend">Add Friend</string>
+    <!-- Footer hint on that menu. Verb: takes the row under the cursor. -->
+    <string name="ui_friend_options_footer_select">Select</string>
+    <!-- Footer hint on that menu. Verb: closes it. -->
+    <string name="ui_friend_options_footer_close">Close</string>
+    <!-- Friend's status in that menu when the game they are in is not known. -->
+    <string name="ui_friend_options_presence_in_game">In Game</string>
+    <!-- Friend's status when they are hosting a netplay game. %1$s is the game's title. -->
+    <string name="ui_friend_options_presence_hosting">Hosting %1$s</string>
+    <!-- Friend's status when they are in a game on their own. %1$s is the game's title. -->
+    <string name="ui_friend_options_presence_playing">Playing %1$s</string>
+    <!-- Friend's status when they are reachable but not in a game. Adjective. -->
+    <string name="ui_friend_options_presence_online">Online</string>
+    <!-- Friend's status when their device has been idle. Adjective. -->
+    <string name="ui_friend_options_presence_away">Away</string>
+    <!-- Friend's status when they are watching something. %1$s is the film or episode. -->
+    <string name="ui_friend_options_presence_watching_title">Watching %1$s</string>
+    <!-- Friend's status when they are watching something unnamed. -->
+    <string name="ui_friend_options_presence_watching">Watching</string>
+    <!-- Friend's status when they are not reachable. Adjective. -->
+    <string name="ui_friend_options_presence_offline">Offline</string>
+
+    <!-- Heading of the menu reached from the drawer's friends tab. Noun, plural. -->
+    <string name="ui_friends_options_title">Friends</string>
+    <!-- Footer hint on that menu. Verb: takes the row under the cursor. -->
+    <string name="ui_friends_options_footer_select">Select</string>
+    <!-- Footer hint on that menu. Verb: closes it. -->
+    <string name="ui_friends_options_footer_close">Close</string>
+    <!-- Row of that menu. Verb phrase: opens the field for a friend's code. -->
+    <string name="ui_friends_options_add_by_code">Add Friend by Code</string>
+    <!-- Row of that menu. Verb phrase: shows this device's own code. -->
+    <string name="ui_friends_options_show_code">Show My Friend Code</string>
+
+    <!-- Heading of the modal showing this device's own friend code. -->
+    <string name="ui_friend_code_title">My Friend Code</string>
+    <!-- Footer hint on that modal. Verb: issues a new code and retires the old one. -->
+    <string name="ui_friend_code_footer_regenerate">Regenerate</string>
+    <!-- Footer hint on that modal. Verb: closes it. -->
+    <string name="ui_friend_code_footer_close">Close</string>
+    <!-- Line above the code, saying what the other person does with it. -->
+    <string name="ui_friend_code_instructions">Scan or enter code to add friend</string>
+    <!-- Row under the code. Verb phrase: issues a new one. -->
+    <string name="ui_friend_code_regenerate_row">Regenerate Code</string>
+    <!-- Warning under that row, saying what issuing a new code costs. -->
+    <string name="ui_friend_code_regenerate_warning">Regenerating will invalidate your current code</string>
+
+    <!-- Heading of the modal that takes a friend's code. Verb phrase. -->
+    <string name="ui_add_friend_title">Add Friend</string>
+    <!-- Footer hint on that modal. Verb: sends the typed code. -->
+    <string name="ui_add_friend_footer_submit">Submit</string>
+    <!-- Footer hint on that modal. Verb: closes it without sending. -->
+    <string name="ui_add_friend_footer_cancel">Cancel</string>
+    <!-- Line above the field, saying what to type. -->
+    <string name="ui_add_friend_instructions">Enter your friend\'s 6-character code</string>
+    <!-- Sample code shown faintly in the empty field. It is an example of the code's shape, not
+         a word; keep it six letters and digits. -->
+    <string name="ui_add_friend_code_placeholder">ABC123</string>
+    <!-- Shown under the field when the typed code is the wrong length. -->
+    <string name="ui_add_friend_error_length">Code must be 6 characters</string>
+
+    <!-- Stands in for the game's title while joining a netplay session, when the title is not
+         known. Adjective. -->
+    <string name="ui_netplay_join_unknown_game">Unknown</string>
+    <!-- Heading of the modal shown while joining a netplay session. %1$s is the host's name. -->
+    <string name="ui_netplay_join_heading">Joining %1$s</string>
+    <!-- Stands in for the host's name in that heading when it is not known. Noun naming the
+         feature. -->
+    <string name="ui_netplay_join_unknown_host">netplay</string>
+    <!-- Progress line while the session is being entered. -->
+    <string name="ui_netplay_join_status_joining">Joining session</string>
+    <!-- Progress line while the host's emulator core is being matched. -->
+    <string name="ui_netplay_join_status_matching_core">Matching core</string>
+    <!-- Progress line while that core is being fetched. -->
+    <string name="ui_netplay_join_status_downloading_core">Downloading core</string>
+    <!-- Progress line once that core is in place. -->
+    <string name="ui_netplay_join_status_core_ready">Core ready</string>
+    <!-- Progress line while this device's copy of the game is being checked against the
+         host's. -->
+    <string name="ui_netplay_join_status_verifying">Verifying game</string>
+    <!-- Progress line once that check passed. Adjective. -->
+    <string name="ui_netplay_join_status_verified">Verified</string>
+    <!-- Prompt over the one matching game, when it is not on the device. "ROM" is the game
+         file. -->
+    <string name="ui_netplay_join_candidates_single_missing">ROM not downloaded. Select to install.</string>
+    <!-- Prompt over the one matching game, when the check failed. -->
+    <string name="ui_netplay_join_candidates_single_failed">Verify failed. Select to retry.</string>
+    <!-- Prompt over the list when none of the matches are on the device. -->
+    <string name="ui_netplay_join_candidates_none_installed">No installed ROM matches. Pick one to download.</string>
+    <!-- Prompt over the list when several games match. -->
+    <string name="ui_netplay_join_candidates_multiple">Multiple matches. Pick a ROM.</string>
+    <!-- Tag on a matching game that is on the device. Adjective. -->
+    <string name="ui_netplay_join_candidate_installed">Installed</string>
+    <!-- Tag on a matching game that is not on the device. Adjective. -->
+    <string name="ui_netplay_join_candidate_not_installed">Not installed</string>
+    <!-- Prompt over the list of a game's other releases, when this device's copy does not match
+         the host's. -->
+    <string name="ui_netplay_join_variants_prompt">ROM hash didn\'t match. Pick a variant.</string>
+
+    <!-- Platform filter header (ui/components/PlatformFilterHeader.kt) -->
+
+    <!-- Sort order for the platform list: the order Argosy ships. Noun. -->
+    <string name="ui_platform_filter_sort_default">Default</string>
+    <!-- Sort order for the platform list: by name, forwards. Adapt the letters to your
+         alphabet. -->
+    <string name="ui_platform_filter_sort_name_asc">Name (A-Z)</string>
+    <!-- Sort order for the platform list: by name, backwards. Adapt the letters to your
+         alphabet. -->
+    <string name="ui_platform_filter_sort_name_desc">Name (Z-A)</string>
+    <!-- Sort order for the platform list: fullest first. -->
+    <string name="ui_platform_filter_sort_most_games">Most Games</string>
+    <!-- Sort order for the platform list: emptiest first. -->
+    <string name="ui_platform_filter_sort_least_games">Least Games</string>
+    <!-- Placeholder in the platform list's search field. -->
+    <string name="ui_platform_filter_search_placeholder">Search platforms...</string>
+    <!-- Icon description on the cross that empties that field. Verb. -->
+    <string name="ui_platform_filter_search_clear">Clear</string>
+    <!-- Count of platforms shown left of the header's buttons. -->
+    <plurals name="ui_platform_filter_count">
+        <item quantity="one">%d platform</item>
+        <item quantity="other">%d platforms</item>
+    </plurals>
+    <!-- Icon description of the button that opens the search field. Verb. -->
+    <string name="ui_platform_filter_open_search">Search</string>
+    <!-- Icon description of the button that opens the sort menu. Verb. -->
+    <string name="ui_platform_filter_open_sort">Sort</string>
+    <!-- Icon description of the button that changes which platforms are listed. Verb phrase. -->
+    <string name="ui_platform_filter_open_filter">Filter platforms</string>
+    <!-- Chip naming the slice of platforms being shown: only those with games. -->
+    <string name="ui_platform_filter_mode_has_games">Has Games</string>
+    <!-- Chip naming the slice of platforms being shown: only those set to sync. Adjective. -->
+    <string name="ui_platform_filter_mode_enabled">Enabled</string>
+    <!-- Chip naming the slice of platforms being shown: every one. -->
+    <string name="ui_platform_filter_mode_all">All</string>
+    <!-- Footer hint while the sort menu is open. Verb: the directions move between rows. -->
+    <string name="ui_platform_filter_hint_sort_navigate">Navigate</string>
+    <!-- Footer hint while the sort menu is open. Verb: takes the row under the cursor. -->
+    <string name="ui_platform_filter_hint_sort_select">Select</string>
+    <!-- Footer hint while the sort menu is open. Verb: closes the menu. -->
+    <string name="ui_platform_filter_hint_sort_back">Back</string>
+    <!-- Footer hint while typing in the search field. Verb phrase: finishes typing. -->
+    <string name="ui_platform_filter_hint_search_done">Done</string>
+    <!-- Footer hint while typing in the search field. Verb: leaves the field. -->
+    <string name="ui_platform_filter_hint_search_close">Close</string>
+    <!-- Footer hint while the header's buttons hold the cursor. Verb: the directions move
+         between them. -->
+    <string name="ui_platform_filter_hint_header_navigate">Navigate</string>
+    <!-- Footer hint while the header's buttons hold the cursor. Verb: presses the one under
+         the cursor. -->
+    <string name="ui_platform_filter_hint_header_select">Select</string>
+    <!-- Footer hint while the header's buttons hold the cursor. Verb: leaves the whole
+         modal. -->
+    <string name="ui_platform_filter_hint_header_close">Close</string>
+    <!-- Footer hint while the platform list holds the cursor. Verb: the directions move between
+         platforms. -->
+    <string name="ui_platform_filter_hint_list_navigate">Navigate</string>
+    <!-- Footer hint while the platform list holds the cursor. Verb: turns the platform under
+         the cursor on or off. -->
+    <string name="ui_platform_filter_hint_list_toggle">Toggle</string>
+    <!-- Footer hint while the platform list holds the cursor. Verb: leaves the modal. -->
+    <string name="ui_platform_filter_hint_list_close">Close</string>
+
+    <!-- Storage meter, preference rows, home layout rows (ui/components) -->
+
+    <!-- Legend entry for everything on the volume that is not Argosy's. -->
+    <string name="ui_volume_meter_other">Other apps &amp; files</string>
+    <!-- Space left on a storage volume. %1$s is a formatted size such as "12.4 GB". Adjective
+         describing that space. -->
+    <string name="ui_volume_meter_free">%1$s free</string>
+
+    <!-- Icon description on the cross beside a per-game setting that overrides the global one.
+         Verb phrase: puts the setting back under the global value. -->
+    <string name="ui_cycle_preference_reset_to_global">Reset to global</string>
+    <!-- The same cross beside a per-game switch. Verb phrase. -->
+    <string name="ui_toggle_preference_reset_to_global">Reset to global</string>
+    <!-- Tag beside a switch whose value differs from the global one. Adjective describing the
+         setting; keep the brackets. -->
+    <string name="ui_toggle_preference_custom_marker">(Custom)</string>
+    <!-- Icon description on the cross beside a settings row. Verb phrase: puts the row back to
+         the value Argosy ships. -->
+    <string name="ui_action_preference_reset_to_default">Reset to default</string>
+    <!-- Value shown on the hue slider when no colour has been picked. Noun. -->
+    <string name="ui_hue_slider_default">Default</string>
+    <!-- Second line of the image cache row while its files are being moved. -->
+    <string name="ui_image_cache_migrating">Moving images...</string>
+    <!-- Button on the image cache row. Verb: picks another folder. -->
+    <string name="ui_image_cache_change">Change</string>
+    <!-- Button on the image cache row. Verb: puts the folder back to Argosy's own. -->
+    <string name="ui_image_cache_reset">Reset</string>
+
+    <!-- Second line under the 3D box art switch when no game in the library has spine art. -->
+    <string name="ui_home_layout_box_art_subtitle_none">No game has spine art, so every game draws as a 2D cover</string>
+    <!-- Second line under the 3D box art switch otherwise. -->
+    <string name="ui_home_layout_box_art_subtitle">Draw games that have a spine as a box, and the rest as covers</string>
+    <!-- Settings row: where a carousel row sits vertically. Noun phrase. -->
+    <string name="ui_home_layout_row_alignment">Row Position</string>
+    <!-- Settings row: where along a carousel the focused card sits. Noun phrase. -->
+    <string name="ui_home_layout_focus_position">Focus Anchor</string>
+    <!-- Settings row: whether a carousel runs the other way. Noun phrase. -->
+    <string name="ui_home_layout_inverted">Reverse Order</string>
+    <!-- Settings row: how big an unfocused card is. Noun phrase. -->
+    <string name="ui_home_layout_resting_scale">Resting Size</string>
+    <!-- Settings row: whether the focused card pushes the cards beside it aside. Verb phrase. -->
+    <string name="ui_home_layout_neighbour_push">Push Neighbours</string>
+    <!-- Settings row: whether a card shows which platform its game is for. Noun phrase. -->
+    <string name="ui_home_layout_platform_badge">Platform Badge</string>
+    <!-- Settings row: which way the automatic grid moves. Noun phrase. -->
+    <string name="ui_home_layout_scroll_axis">Scroll Direction</string>
+    <!-- Settings row: whether a card shows its game's name. Verb phrase. -->
+    <string name="ui_home_layout_show_titles">Show Titles</string>
+    <!-- Settings row: whether the grid runs past the card that ends a row. Verb phrase. -->
+    <string name="ui_home_layout_show_all_games">Show Every Game</string>
+    <!-- Second line under that row. "View All" names the card that ends a row and matches
+         ui_view_all_outline_label. -->
+    <string name="ui_home_layout_show_all_games_subtitle">Scroll a platform\'s whole library instead of stopping at View All</string>
+    <!-- Settings row on the carousel: whether covers draw as 3D boxes. "3D" is the shape, not a
+         word to translate. -->
+    <string name="ui_home_layout_carousel_box_art">3D Box Art</string>
+    <!-- The same row on the automatic grid. -->
+    <string name="ui_home_layout_auto_grid_box_art">3D Box Art</string>
+    <!-- Settings row: how many cells the curated grid is wide. Noun phrase. -->
+    <string name="ui_home_layout_custom_grid_lanes">Cells across</string>
+    <!-- Settings row: what happens to a game once it finishes downloading. Verb phrase. -->
+    <string name="ui_home_layout_custom_grid_auto_add">Add New Downloads</string>
+    <!-- Settings row: whether empty cells are outlined. Verb phrase. -->
+    <string name="ui_home_layout_custom_grid_empty_slots">Show Blank Slots</string>
+    <!-- Second line under that row. -->
+    <string name="ui_home_layout_custom_grid_empty_slots_subtitle">Outline the cells nothing sits on</string>
+    <!-- Settings row: whether a page with nothing on it is kept. Verb phrase. -->
+    <string name="ui_home_layout_custom_grid_persist_pages">Keep Blank Pages</string>
+    <!-- Second line under that row. -->
+    <string name="ui_home_layout_custom_grid_persist_pages_subtitle">An added page stays even while it holds nothing</string>
+    <!-- Settings row: whether a placement moves the tiles it lands on. Verb phrase. -->
+    <string name="ui_home_layout_custom_grid_auto_fit">Auto-fit Cells</string>
+    <!-- Second line under that row. -->
+    <string name="ui_home_layout_custom_grid_auto_fit_subtitle">Move or shrink tiles a placement lands on, instead of refusing it</string>
+    <!-- Settings row: whether the home screen shows a row per media library. Noun, plural. -->
+    <string name="ui_home_layout_rail_libraries">Media Libraries</string>
+    <!-- Second line under that row. -->
+    <string name="ui_home_layout_rail_libraries_subtitle">A row for each library on your media server</string>
+    <!-- Settings row: whether the home screen shows part-watched titles. Verb phrase naming the
+         row; matches home_breadcrumb_continue_watching. -->
+    <string name="ui_home_layout_rail_continue_watching">Continue Watching</string>
+    <!-- Second line under that row. -->
+    <string name="ui_home_layout_rail_continue_watching_subtitle">A row of movies and episodes you are part way through</string>
+    <!-- Settings row: whether the home screen shows the next episode of each series. Noun
+         phrase naming the row; matches home_breadcrumb_next_up. -->
+    <string name="ui_home_layout_rail_next_up">Next Up</string>
+    <!-- Second line under that row. -->
+    <string name="ui_home_layout_rail_next_up_subtitle">A row of the next episode of each show you are watching</string>
+    <!-- Value of the new-download setting: nothing is added. Adverb. -->
+    <string name="ui_home_layout_auto_add_off">Off</string>
+    <!-- Value of the new-download setting: a tile appears without asking. Adverb. -->
+    <string name="ui_home_layout_auto_add_auto">Automatically</string>
+    <!-- Value of the new-download setting: the reader is asked each time. Verb phrase. -->
+    <string name="ui_home_layout_auto_add_prompt">Ask First</string>
+    <!-- Name of the home layout that lays games out in scrolling rows. Noun. -->
+    <string name="ui_home_layout_kind_carousel">Carousel</string>
+    <!-- Name of the home layout that fills a grid by itself. Noun phrase. -->
+    <string name="ui_home_layout_kind_auto_grid">Auto Grid</string>
+    <!-- Name of the home layout the reader arranges themselves. Noun phrase. -->
+    <string name="ui_home_layout_kind_custom_grid">Custom Grid</string>
+    <!-- Value of the row position setting: rows sit at the top. -->
+    <string name="ui_home_layout_alignment_top">Top</string>
+    <!-- Value of the row position setting: rows sit in the middle. -->
+    <string name="ui_home_layout_alignment_center">Center</string>
+    <!-- Value of the row position setting: rows sit at the bottom. -->
+    <string name="ui_home_layout_alignment_bottom">Bottom</string>
+    <!-- Value of the focus anchor setting: the focused card sits at the start of the row. -->
+    <string name="ui_home_layout_focus_leading">Leading</string>
+    <!-- Value of the focus anchor setting: the focused card sits in the middle of the row. -->
+    <string name="ui_home_layout_focus_center">Center</string>
+    <!-- Value of the scroll direction setting: the grid moves up and down. -->
+    <string name="ui_home_layout_axis_vertical">Vertical</string>
+    <!-- Value of the scroll direction setting: the grid moves left and right. -->
+    <string name="ui_home_layout_axis_horizontal">Horizontal</string>
+    <!-- Title of the lane-count row when the grid moves up and down. Noun, plural. -->
+    <string name="ui_home_layout_lanes_columns">Columns</string>
+    <!-- Title of the lane-count row when the grid moves left and right. Noun, plural. -->
+    <string name="ui_home_layout_lanes_rows">Rows</string>
+
+    <!-- Quick settings panel (ui/components/QuickSettingsPanel.kt) -->
+
+    <!-- Heading of the panel that slides in from the side. Noun phrase. -->
+    <string name="ui_quick_settings_title">Quick Settings</string>
+    <!-- Footer hint on that panel. Verb: closes it. -->
+    <string name="ui_quick_settings_footer_close">Close</string>
+    <!-- Footer hint on that panel. Verb: up and down move between rows. -->
+    <string name="ui_quick_settings_hint_navigate">Navigate</string>
+    <!-- Footer hint on that panel. Verb: closes it. -->
+    <string name="ui_quick_settings_hint_close">Close</string>
+    <!-- Row of that panel: how hard the device is allowed to work. Noun. -->
+    <string name="ui_quick_settings_performance">Performance</string>
+    <!-- Shown in place of that row's value when Argosy cannot reach the device's settings. -->
+    <string name="ui_quick_settings_performance_disabled">Permission required</string>
+    <!-- Row of that panel: how the cooling fan runs. Noun. -->
+    <string name="ui_quick_settings_fan">Fan</string>
+    <!-- Shown in place of that row's value when Argosy cannot reach the device's settings. -->
+    <string name="ui_quick_settings_fan_disabled">Permission required</string>
+    <!-- Fan setting: as quiet as the device allows. Adjective. -->
+    <string name="ui_quick_settings_fan_quiet">Quiet</string>
+    <!-- Fan setting: the device decides. Adjective. -->
+    <string name="ui_quick_settings_fan_smart">Smart</string>
+    <!-- Fan setting: cooling favoured over noise. Adjective. -->
+    <string name="ui_quick_settings_fan_sport">Sport</string>
+    <!-- Fan setting: the reader sets the speed themselves. The plus sign is part of the
+         label. -->
+    <string name="ui_quick_settings_fan_custom">Turbo+</string>
+    <!-- Performance setting: the device's ordinary mode. Adjective. -->
+    <string name="ui_quick_settings_performance_standard">Standard</string>
+    <!-- Performance setting: faster, warmer. Noun phrase. -->
+    <string name="ui_quick_settings_performance_high">High Performance</string>
+    <!-- Performance setting: as fast as the device goes. Noun phrase. -->
+    <string name="ui_quick_settings_performance_max">Max Performance</string>
+    <!-- Label over the slider that sets fan speed by hand. Noun. -->
+    <string name="ui_quick_settings_fan_speed">Speed</string>
+    <!-- Label over the slider that sets how hard the device buzzes. Noun. -->
+    <string name="ui_quick_settings_vibration_strength">Strength</string>
+    <!-- Row of that panel: light or dark. Noun. -->
+    <string name="ui_quick_settings_theme">Theme</string>
+    <!-- Row of that panel: whether the device buzzes on a press. Noun, plural. -->
+    <string name="ui_quick_settings_haptics">Haptics</string>
+    <!-- Row of that panel: whether the launcher makes a sound on a press. Noun phrase. -->
+    <string name="ui_quick_settings_ui_sounds">UI Sounds</string>
+    <!-- Row of that panel: whether the launcher plays music. Abbreviation of "background
+         music". -->
+    <string name="ui_quick_settings_bgm">BGM</string>
+    <!-- Row of that panel, on a device with two screens. Verb phrase: puts each screen in the
+         other's role. -->
+    <string name="ui_quick_settings_swap_displays">Swap Displays</string>
+    <!-- Row of that panel. "QuayPass" is the name of an Argosy feature; leave it
+         untranslated. -->
+    <string name="ui_quick_settings_quaypass">QuayPass</string>
+    <!-- Label beside the system volume slider. Noun. -->
+    <string name="ui_quick_settings_volume">Volume</string>
+    <!-- Label beside the screen brightness slider. Noun. -->
+    <string name="ui_quick_settings_brightness">Brightness</string>
+
+    <!-- Main drawer (ui/components/MainDrawer.kt) -->
+
+    <!-- Drawer tab holding the launcher's screens. Noun, short for "navigation". Keep it short:
+         the two tabs sit side by side. -->
+    <string name="ui_drawer_tab_navigation">Nav</string>
+    <!-- Drawer tab holding the reader's friends. Noun, plural. -->
+    <string name="ui_drawer_tab_friends">Friends</string>
+    <!-- Footer hint on the friends tab. Verb: marks the friend under the cursor as a
+         favourite. -->
+    <string name="ui_drawer_footer_favorite">Favorite</string>
+    <!-- Footer hint on the friends tab. Noun, plural: opens the menu for that friend. -->
+    <string name="ui_drawer_footer_options">Options</string>
+    <!-- Footer hint on the friends tab, when that friend is hosting a game. Verb. -->
+    <string name="ui_drawer_footer_join">Join</string>
+    <!-- Shown on the friends tab when the reader has no friends yet. -->
+    <string name="ui_drawer_friends_empty">No friends yet</string>
+    <!-- Heading over the reachable friends. %1$d is how many. Rendered in caps in English. -->
+    <string name="ui_drawer_friends_online">ONLINE (%1$d)</string>
+    <!-- Heading over the unreachable friends. %1$d is how many. Rendered in caps in English. -->
+    <string name="ui_drawer_friends_offline">OFFLINE (%1$d)</string>
+    <!-- Second line under a friend hosting a netplay game. %1$s is the game's title. -->
+    <string name="ui_drawer_friend_hosting">Hosting %1$s</string>
+    <!-- Second line under a friend in a game on their own. %1$s is the game's title. -->
+    <string name="ui_drawer_friend_playing">Playing %1$s</string>
+    <!-- Second line under a friend in a game Argosy cannot name. -->
+    <string name="ui_drawer_friend_in_game">In Game</string>
+    <!-- Icon description on the star beside a friend marked as a favourite. Noun. -->
+    <string name="ui_drawer_friend_favorite">Favorite</string>
+    <!-- Shown on the drawer's account row when no game server account is signed in. -->
+    <string name="ui_drawer_account_none">No account</string>
+    <!-- Second line of the drawer's account row, naming what the row is. Noun. -->
+    <string name="ui_drawer_account_caption">Account</string>
+    <!-- Icon description in the drawer's footer when the game server is reachable. "RomM" is
+         the name of the server software; leave it untranslated. -->
+    <string name="ui_drawer_server_connected">RomM Connected</string>
+    <!-- Icon description in the drawer's footer when it is not. -->
+    <string name="ui_drawer_server_offline">RomM Offline</string>
+    <!-- Drawer row leading to the home screen. -->
+    <string name="ui_drawer_nav_home">Home</string>
+    <!-- Drawer row leading to friends and activity. Adjective used as a noun. -->
+    <string name="ui_drawer_nav_social">Social</string>
+    <!-- Drawer row leading to QuayPass. "Check-In" is what the feature does; QuayPass is its
+         name elsewhere. -->
+    <string name="ui_drawer_nav_quaypass">Check-In</string>
+    <!-- Drawer row leading to the reader's own collections. Noun, plural. -->
+    <string name="ui_drawer_nav_collections">Collections</string>
+    <!-- Drawer row leading to every game. Noun. -->
+    <string name="ui_drawer_nav_library">Library</string>
+    <!-- Drawer row leading to films and series. Noun. -->
+    <string name="ui_drawer_nav_media">Media</string>
+    <!-- Drawer row leading to what is being fetched. Noun, plural. -->
+    <string name="ui_drawer_nav_downloads">Downloads</string>
+    <!-- Drawer row leading to the save sync screen. Noun phrase. -->
+    <string name="ui_drawer_nav_save_sync">Save Sync</string>
+    <!-- Drawer row leading to installed Android apps. Noun, plural. -->
+    <string name="ui_drawer_nav_apps">Apps</string>
+    <!-- Drawer row leading to the settings screen. Noun, plural. -->
+    <string name="ui_drawer_nav_settings">Settings</string>
+
+    <!-- Sync overlay (ui/components/SyncOverlay.kt) -->
+
+    <!-- Stands in for the game's title on the overlay when it is not known. Noun. -->
+    <string name="ui_sync_overlay_unknown_game">Game</string>
+    <!-- Caption before the name of the save slot being synced. Noun; the colon and space are
+         part of the line. -->
+    <!-- Names the save slot the overlay is syncing. The rest of the UI calls these slots, not
+         channels, so this says slot too; "channel" is the internal name for the same thing. -->
+    <string name="ui_sync_overlay_slot_prefix">"Slot: "</string>
+    <!-- Stands in for that slot's name when the game has no named slot. Adjective describing
+         the save. -->
+    <string name="ui_sync_overlay_slot_default">Latest</string>
+    <!-- Button on the blocked overlay. Verb phrase: opens the system permission screen. -->
+    <string name="ui_sync_overlay_blocked_grant">Grant Permission</string>
+    <!-- Button on the blocked overlay. Verb phrase: opens the settings row that names the save
+         folder. -->
+    <string name="ui_sync_overlay_blocked_configure_path">Configure Save Path</string>
+    <!-- Button on the blocked overlay. Verb phrase: turns save sync off for this game. -->
+    <string name="ui_sync_overlay_blocked_disable">Disable Sync</string>
+    <!-- Button on the blocked overlay. Verb phrase: starts the game without syncing. -->
+    <string name="ui_sync_overlay_blocked_skip">Skip for Now</string>
+    <!-- Heading when the server's save no longer qualifies for hardcore play. "Hardcore" is the
+         RetroAchievements mode name. -->
+    <string name="ui_sync_overlay_hardcore_title">Hardcore Save Conflict</string>
+    <!-- Body under that heading. %1$s is the game's name. -->
+    <string name="ui_sync_overlay_hardcore_message">The server version of \"%1$s\" no longer meets the requirements for hardcore mode.</string>
+    <!-- Note under that body. -->
+    <string name="ui_sync_overlay_hardcore_note">This can happen if the save was modified outside of Argosy.</string>
+    <!-- Choice keeping hardcore standing. Verb phrase. -->
+    <string name="ui_sync_overlay_hardcore_keep">Keep Hardcore</string>
+    <!-- Second line under that choice. -->
+    <string name="ui_sync_overlay_hardcore_keep_subtitle">Upload local save to server</string>
+    <!-- Choice taking the server's save and losing hardcore standing. Verb phrase. "Casual" is
+         the RetroAchievements mode name. -->
+    <string name="ui_sync_overlay_hardcore_downgrade">Downgrade to Casual</string>
+    <!-- Second line under that choice. -->
+    <string name="ui_sync_overlay_hardcore_downgrade_subtitle">Use server save, lose hardcore status</string>
+    <!-- Choice starting the game without syncing. Verb phrase. -->
+    <string name="ui_sync_overlay_hardcore_skip">Skip Sync</string>
+    <!-- Second line under that choice. -->
+    <string name="ui_sync_overlay_hardcore_skip_subtitle">Launch without syncing</string>
+    <!-- Heading when the save on this device has changes that were never backed up. -->
+    <string name="ui_sync_overlay_local_modified_title">Local Save Modified</string>
+    <!-- Body under that heading. %1$s is the game's title. -->
+    <string name="ui_sync_overlay_local_modified_message">Your local save for \"%1$s\" has changes that haven\'t been backed up.</string>
+    <!-- Question under that body. -->
+    <string name="ui_sync_overlay_local_modified_question">Would you like to keep your local progress or restore the previously selected save?</string>
+    <!-- Choice keeping the copy on this device. Verb phrase. -->
+    <string name="ui_sync_overlay_local_modified_apply">Apply Local</string>
+    <!-- Second line under that choice. -->
+    <string name="ui_sync_overlay_local_modified_apply_subtitle">Set local save as the latest version</string>
+    <!-- Choice taking the last copy that was backed up. Verb phrase. -->
+    <string name="ui_sync_overlay_local_modified_restore">Use Synced Save</string>
+    <!-- Second line under that choice. -->
+    <string name="ui_sync_overlay_local_modified_restore_subtitle">Overwrite local with last synced version (backup created)</string>
+    <!-- Heading when a save changed on both sides while the game was being played. -->
+    <string name="ui_sync_overlay_post_session_title">Save Conflict</string>
+    <!-- Line naming what is in conflict. %1$s is the game's title, %2$s the save slot. The
+         double hyphen is a dash; use whatever separator reads naturally. -->
+    <string name="ui_sync_overlay_post_session_subject">\"%1$s\" -- %2$s</string>
+    <!-- Stands in for the slot's name when the game has none. -->
+    <string name="ui_sync_overlay_post_session_default_slot">Default Save</string>
+    <!-- Body under that line. -->
+    <string name="ui_sync_overlay_post_session_message">The server has a newer save. Overwriting will replace it with your local save.</string>
+    <!-- Label under the timestamp of the copy on this device. Adjective. -->
+    <string name="ui_sync_overlay_post_session_local">Local</string>
+    <!-- Label under the timestamp of the copy on the server. Noun. -->
+    <string name="ui_sync_overlay_post_session_server">Server</string>
+    <!-- The same label when the server records which device wrote it. %1$s is that device's
+         name. -->
+    <string name="ui_sync_overlay_post_session_server_named">Server (%1$s)</string>
+    <!-- Choice leaving the server's copy alone. Verb phrase. -->
+    <string name="ui_sync_overlay_post_session_skip">Skip Sync</string>
+    <!-- Second line under that choice. -->
+    <string name="ui_sync_overlay_post_session_skip_subtitle">Keep your local save, do not upload</string>
+    <!-- Choice replacing the server's copy. Verb phrase. -->
+    <string name="ui_sync_overlay_post_session_overwrite">Overwrite Server</string>
+    <!-- Second line under that choice. -->
+    <string name="ui_sync_overlay_post_session_overwrite_subtitle">Replace the server save with your local version</string>
+    <!-- Status on the older sync overlay while a sync is running. -->
+    <string name="ui_sync_overlay_legacy_status">Syncing...</string>
+
+    <!-- Quick menu (ui/quickmenu) -->
+
+    <!-- Quick menu orb opening the search field. Verb. -->
+    <string name="ui_quick_menu_orb_search">Search</string>
+    <!-- Quick menu orb offering one game chosen at random. Adjective used as a noun. -->
+    <string name="ui_quick_menu_orb_random">Random</string>
+    <!-- Quick menu orb listing the games with the most time on them. -->
+    <string name="ui_quick_menu_orb_most_played">Most Played</string>
+    <!-- Quick menu orb listing well-rated games that have not been started. Keep it short: the
+         orbs sit side by side. -->
+    <string name="ui_quick_menu_orb_top_unplayed">Top New</string>
+    <!-- Quick menu orb listing the games played most recently. Shortened noun. -->
+    <string name="ui_quick_menu_orb_recent">Recent</string>
+    <!-- Quick menu orb listing the games marked as favourites. Noun, plural. -->
+    <string name="ui_quick_menu_orb_favorites">Favorites</string>
+    <!-- Shown under the most-played orb when nothing has been played. -->
+    <string name="ui_quick_menu_empty_most_played">No games played yet</string>
+    <!-- Shown under the top-new orb when no game carries a rating. -->
+    <string name="ui_quick_menu_empty_top_unplayed">No rated games found</string>
+    <!-- Shown under the recent orb when nothing has been played. -->
+    <string name="ui_quick_menu_empty_recent">No recent games</string>
+    <!-- Shown under the favourites orb when nothing is marked. -->
+    <string name="ui_quick_menu_empty_favorites">No favorites yet</string>
+    <!-- Shown under the random orb when the library is empty. -->
+    <string name="ui_quick_menu_empty_random">No games available</string>
+    <!-- Placeholder in the quick menu's search field. -->
+    <string name="ui_quick_menu_search_placeholder">Search games...</string>
+    <!-- Shown under an almost-empty search field, saying how much to type. -->
+    <string name="ui_quick_menu_search_prompt">Type at least 2 characters to search</string>
+    <!-- Shown when a search matches nothing. %1$s is what was typed. -->
+    <string name="ui_quick_menu_search_no_results">No games found for \"%1$s\"</string>
+    <!-- Heading over the searches the reader made before. Noun, plural. -->
+    <string name="ui_quick_menu_recent_searches_heading">Recent Searches</string>
+    <!-- Stands in for the platform name on a quick menu list row, when the platform is no longer
+         in the library. Adjective. -->
+    <string name="ui_quick_menu_row_platform_unknown">Unknown</string>
+    <!-- Icon description on the tick shown on a quick menu list row when the game is on the
+         device. Adjective describing the game. -->
+    <string name="ui_quick_menu_row_downloaded">Downloaded</string>
+    <!-- Stands in for the platform name on the random game card, when the platform is no longer
+         in the library. Adjective. -->
+    <string name="ui_quick_menu_random_platform_unknown">Unknown</string>
+    <!-- Icon description on the tick shown on the random game card when the game is on the
+         device. Adjective describing the game. -->
+    <string name="ui_quick_menu_random_downloaded">Downloaded</string>
+
+    <!-- File browser (ui/filebrowser) -->
+
+    <!-- Heading of the file browser when it is picking a folder. Verb phrase. -->
+    <string name="ui_file_browser_title_folder">Select Folder</string>
+    <!-- Heading of the file browser when it is picking a file. Verb phrase. -->
+    <string name="ui_file_browser_title_file">Select File</string>
+    <!-- Heading of the file browser when either will do. Verb phrase. -->
+    <string name="ui_file_browser_title_file_or_folder">Select File or Folder</string>
+    <!-- Heading shown in place of the browser until Android grants file access. -->
+    <string name="ui_file_browser_permission_title">Storage access required</string>
+    <!-- Body under that heading. "All files access" is the name Android gives the permission;
+         match the wording your Android translation uses. -->
+    <string name="ui_file_browser_permission_message">Argosy needs All files access to browse folders, download games, and sync saves. Grant it, then return here.</string>
+    <!-- Button under that body. Verb phrase: opens the system permission screen. -->
+    <string name="ui_file_browser_permission_button">Grant Access</string>
+    <!-- Footer hint while that heading is shown. Verb phrase: opens the system permission
+         screen. -->
+    <string name="ui_file_browser_permission_footer_grant">Grant Access</string>
+    <!-- Footer hint while that heading is shown. Verb: closes the browser. -->
+    <string name="ui_file_browser_permission_footer_back">Back</string>
+    <!-- Shown when Android refuses to list a folder's contents. -->
+    <string name="ui_file_browser_error_unreadable">Cannot access directory</string>
+    <!-- Shown when a folder holds nothing. Adjective phrase describing the folder. -->
+    <string name="ui_file_browser_empty_folder">Empty folder</string>
+    <!-- Footer hint while picking a file. Verb phrase: takes the file under the cursor. -->
+    <string name="ui_file_browser_footer_select_file">Select File</string>
+    <!-- Footer hint while either a file or a folder will do. Verb phrase. -->
+    <string name="ui_file_browser_footer_select_file_or_folder">Select File</string>
+    <!-- Footer hint while picking a folder. Verb: steps into the folder under the cursor. -->
+    <string name="ui_file_browser_footer_open_folder">Open</string>
+    <!-- Footer hint in the browser. Verb: leaves it. -->
+    <string name="ui_file_browser_footer_back">Back</string>
+    <!-- Footer hint in the browser. Noun phrase: makes a folder here. -->
+    <string name="ui_file_browser_footer_new_folder">New Folder</string>
+    <!-- Footer hint in the browser. Verb phrase: takes the folder currently open. -->
+    <string name="ui_file_browser_footer_use_folder">Use Folder</string>
+    <!-- Heading of the modal that makes a folder. Noun phrase. -->
+    <string name="ui_file_browser_new_folder_title">New Folder</string>
+    <!-- Label of that modal's text field. Noun phrase naming what to type. -->
+    <string name="ui_file_browser_new_folder_field_label">Folder name</string>
+    <!-- Button on that modal. Verb: closes it without making anything. -->
+    <string name="ui_file_browser_new_folder_cancel">Cancel</string>
+    <!-- Button on that modal. Verb: makes the folder. -->
+    <string name="ui_file_browser_new_folder_confirm">Create</string>
+    <!-- Shown under that field when nothing was typed. -->
+    <string name="ui_file_browser_new_folder_error_empty">Folder name cannot be empty</string>
+    <!-- Shown under that field when the name holds a character a folder name cannot. -->
+    <string name="ui_file_browser_new_folder_error_invalid">Invalid folder name</string>
+    <!-- Shown under that field when something of that name is already here. -->
+    <string name="ui_file_browser_new_folder_error_exists">Folder already exists</string>
+    <!-- Shown under that field when Android refused to make the folder. -->
+    <string name="ui_file_browser_new_folder_error_failed">Failed to create folder</string>
+
+    <!-- App shell and startup (ui/ArgosyApp.kt, ui/ArgosyViewModel.kt) -->
+
+    <!-- Splash status while the launcher is starting. -->
+    <string name="ui_startup_status_initializing">Initializing...</string>
+    <!-- Splash status while the game library is being read from the device. -->
+    <string name="ui_startup_status_loading_library">Loading library...</string>
+    <!-- Splash status while collections are being fetched from the game server. -->
+    <string name="ui_startup_status_syncing_collections">Syncing collections...</string>
+    <!-- Splash status while installed emulators are being looked over. -->
+    <string name="ui_startup_status_checking_emulators">Checking emulators...</string>
+    <!-- Splash status while the home screen is being built. -->
+    <string name="ui_startup_status_preparing_home">Preparing home...</string>
+    <!-- Splash status while the launcher waits for storage it cannot yet read. -->
+    <string name="ui_startup_status_waiting_for_storage">Waiting for storage...</string>
+    <!-- Splash status during the weekly check that every game file is still where it was.
+         "ROM" is the game file. -->
+    <string name="ui_startup_status_scanning_roms">Scanning ROM files...</string>
+    <!-- Brief message after the built-in emulator finishes setting itself up. -->
+    <string name="ui_builtin_cores_ready_title">Built-in Emulator Ready</string>
+    <!-- Second line of that message. A "core" is one emulator engine. -->
+    <plurals name="ui_builtin_cores_ready_subtitle">
+        <item quantity="one">Downloaded %d core</item>
+        <item quantity="other">Downloaded %d cores</item>
+    </plurals>
+    <!-- Heading of the brief message shown when a netplay invite cannot be taken up. %1$s is the
+         game's title. -->
+    <string name="ui_netplay_invite_failed_title">Can\'t join %1$s</string>
+    <!-- Reason under that heading: this device does not have the game. "ROM" is the game
+         file. -->
+    <string name="ui_netplay_invite_reason_rom_missing">ROM not found</string>
+    <!-- Reason under that heading: this device has a different release of the game. -->
+    <string name="ui_netplay_invite_reason_rom_version">Different ROM version</string>
+    <!-- Reason under that heading: this device runs a different build of the emulator core. -->
+    <string name="ui_netplay_invite_reason_core_version">Different core version</string>
+    <!-- Reason under that heading: the host's emulator core cannot be used here. -->
+    <string name="ui_netplay_invite_reason_core_unsupported">Core unsupported</string>
+    <!-- Reason under that heading: the invite did not say which game it is for. -->
+    <string name="ui_netplay_invite_reason_missing_game_id">Missing game id for session</string>
+    <!-- Reason under that heading: the game is not in this device's library. -->
+    <string name="ui_netplay_invite_reason_game_not_local">Local game not found</string>
+    <!-- Reason under that heading: the game refused to start. -->
+    <string name="ui_netplay_invite_reason_launch_failed">Couldn\'t launch game</string>
+    <!-- Footer hint on the companion display's file picker. Noun: the shoulder buttons move
+         between its tabs. -->
+    <string name="ui_dual_file_picker_hint_tab">Tab</string>
+    <!-- Footer hint on the companion display's file picker. Verb: takes the row under the
+         cursor. -->
+    <string name="ui_dual_file_picker_hint_select">Select</string>
+    <!-- Footer hint on the companion display's file picker. Verb: leaves it. -->
+    <string name="ui_dual_file_picker_hint_back">Back</string>
+    <!-- Footer hint on the companion display's collection showcase. Verb: the directions move
+         between collections. -->
+    <string name="ui_dual_collections_hint_navigate">Navigate</string>
+    <!-- Footer hint on the companion display's collection showcase. Verb: opens the collection
+         under the cursor. -->
+    <string name="ui_dual_collections_hint_open">Open</string>
+    <!-- Footer hint on the companion display's collection showcase. Verb: leaves it. -->
+    <string name="ui_dual_collections_hint_back">Back</string>
+
+    <!-- Transient notifications (ui/notification) -->
+
+    <!-- Brief message when a download is waiting its turn. Adjective describing it. -->
+    <string name="ui_download_notice_queued">Queued</string>
+    <!-- Brief message when a download stops for want of space. Verb phrase describing it. -->
+    <string name="ui_download_notice_no_space">Waiting for Storage</string>
+    <!-- Brief message while a finished download is being unpacked. Verb describing it. -->
+    <string name="ui_download_notice_extracting">Extracting</string>
+    <!-- Brief message while an unpacked game is being put in its final folder. "ROM Storage" is
+         the folder Argosy keeps games in. -->
+    <string name="ui_download_notice_moving">Moving to ROM Storage</string>
+    <!-- Brief message when a download is held. Adjective describing it. -->
+    <string name="ui_download_notice_paused">Paused</string>
+    <!-- Brief message when a download finishes. Adjective describing it. -->
+    <string name="ui_download_notice_completed">Completed</string>
+    <!-- Brief message when a download gives up. Adjective describing it. -->
+    <string name="ui_download_notice_failed">Failed</string>
+    <!-- Second line of that message. %1$s is the game's title, %2$s the reason it stopped. -->
+    <string name="ui_download_notice_failed_subtitle">%1$s: %2$s</string>
+
+    <!-- Heading of the brief message shown after one save uploads or downloads cleanly. -->
+    <string name="ui_sync_notice_success_title">Save Synced</string>
+    <!-- Second line of that message. %1$s is the game's title, %2$s the save slot. -->
+    <string name="ui_sync_notice_game_with_slot">%1$s (%2$s)</string>
+    <!-- Heading of the brief message shown after several saves sync at once. -->
+    <plurals name="ui_sync_notice_batch_title">
+        <item quantity="one">%d save synced</item>
+        <item quantity="other">%d saves synced</item>
+    </plurals>
+    <!-- Second line of that message when more games synced than fit. %1$s is the titles that
+         fit, %2$d how many are left over. -->
+    <string name="ui_sync_notice_batch_subtitle">%1$s, +%2$d more</string>
+    <!-- Heading of the brief message shown when a save could not be sent to the server. -->
+    <string name="ui_sync_notice_upload_failed_title">Upload Failed</string>
+    <!-- Heading of the brief message shown when a save could not be fetched from the server. -->
+    <string name="ui_sync_notice_download_failed_title">Download Failed</string>
+    <!-- Names the save that failed. %1$s is the game's title, %2$s the save slot. -->
+    <string name="ui_sync_notice_failed_game_with_slot">%1$s (%2$s)</string>
+    <!-- Second line of the failure message. %1$s is the name above, %2$s the reason. -->
+    <string name="ui_sync_notice_failed_subtitle">%1$s: %2$s</string>
+
+    <!-- The keys below render outside this file's own area (util/Formatters, data/steam,
+         ui/screens/media, ui/components/HomeCustomGrid, ui/screens/gamedetail). Each keeps
+         the prefix naming its real owner, so moving one to that owner's file is a rename
+         rather than a re-read. -->
+
+    <!-- Relative-time labels built by util/Formatters.kt, one function per prefix so
+         identical English across the four "ago" formatters never shares a key. -->
+
+    <!-- formatRelativeTime(context, instant, ...): a date within the last day. -->
+    <string name="util_formatters_relative_today">Today</string>
+    <string name="util_formatters_relative_yesterday">Yesterday</string>
+    <plurals name="util_formatters_relative_days_ago">
+        <item quantity="one">%dd ago</item>
+        <item quantity="other">%dd ago</item>
+    </plurals>
+    <plurals name="util_formatters_relative_weeks_ago">
+        <item quantity="one">%dw ago</item>
+        <item quantity="other">%dw ago</item>
+    </plurals>
+
+    <!-- formatRelativeTime(context, timestamp: String, ...): same phrasing family as above,
+         a different function and so a different key per rule against sharing English. -->
+    <string name="util_formatters_relative_str_now">now</string>
+    <plurals name="util_formatters_relative_str_minutes_ago">
+        <item quantity="one">%dm ago</item>
+        <item quantity="other">%dm ago</item>
+    </plurals>
+    <plurals name="util_formatters_relative_str_hours_ago">
+        <item quantity="one">%dh ago</item>
+        <item quantity="other">%dh ago</item>
+    </plurals>
+    <plurals name="util_formatters_relative_str_days_ago">
+        <item quantity="one">%dd ago</item>
+        <item quantity="other">%dd ago</item>
+    </plurals>
+    <plurals name="util_formatters_relative_str_weeks_ago">
+        <item quantity="one">%dw ago</item>
+        <item quantity="other">%dw ago</item>
+    </plurals>
+
+    <!-- formatRelativeTimeVerbose(context, instant, ...): the spelled-out phrasing used on
+         save-sync screens. -->
+    <string name="util_formatters_relative_verbose_just_now">just now</string>
+    <plurals name="util_formatters_relative_verbose_minutes_ago">
+        <item quantity="one">%d min ago</item>
+        <item quantity="other">%d min ago</item>
+    </plurals>
+    <plurals name="util_formatters_relative_verbose_hours_ago">
+        <item quantity="one">%d hr ago</item>
+        <item quantity="other">%d hr ago</item>
+    </plurals>
+    <plurals name="util_formatters_relative_verbose_days_ago">
+        <item quantity="one">%d day ago</item>
+        <item quantity="other">%d days ago</item>
+    </plurals>
+    <plurals name="util_formatters_relative_verbose_weeks_ago">
+        <item quantity="one">%d week ago</item>
+        <item quantity="other">%d weeks ago</item>
+    </plurals>
+
+    <!-- formatRelativeTimeShort(context, instant, ...): the compact phrasing used on sync
+         overlays and the storage meter. -->
+    <string name="util_formatters_relative_short_future">in the future</string>
+    <string name="util_formatters_relative_short_just_now">just now</string>
+    <plurals name="util_formatters_relative_short_minutes_ago">
+        <item quantity="one">%dm ago</item>
+        <item quantity="other">%dm ago</item>
+    </plurals>
+    <plurals name="util_formatters_relative_short_hours_ago">
+        <item quantity="one">%dh ago</item>
+        <item quantity="other">%dh ago</item>
+    </plurals>
+    <plurals name="util_formatters_relative_short_days_ago">
+        <item quantity="one">%dd ago</item>
+        <item quantity="other">%dd ago</item>
+    </plurals>
+
+    <!-- formatSaveTimestamp(context, timestamp): the save-manager history phrasing. %1$s in
+         the "Today" form is the clock time from formatClockTime, already locale-formatted. -->
+    <string name="util_formatters_save_timestamp_today">Today %1$s</string>
+    <string name="util_formatters_save_timestamp_yesterday">Yesterday</string>
+    <plurals name="util_formatters_save_timestamp_days_ago">
+        <item quantity="one">%d day ago</item>
+        <item quantity="other">%d days ago</item>
+    </plurals>
+
+    <!-- formatPlayTime(context, minutes): total play time abbreviated to letter units, matching
+         the unlocalized letter-suffix convention already used by media_item_runtime_*. -->
+    <string name="util_formatters_playtime_minutes">%1$dm</string>
+    <string name="util_formatters_playtime_hours_minutes">%1$dh %2$dm</string>
+    <string name="util_formatters_playtime_hours">%1$dh</string>
+
+    <!-- Play time on a curated home-grid tile (ui/components/HomeCustomGrid.kt). Same
+         phrasing as util_formatters_playtime_* above, a different usage site and so its own
+         keys rather than a shared one. -->
+    <string name="common_homegrid_playtime_hours_minutes">%1$dh %2$dm</string>
+    <string name="common_homegrid_playtime_minutes">%1$dm</string>
+
+    <!-- Steam library sync errors (data/steam/SteamLibraryManager.kt,
+         ui/screens/settings/delegates/SteamSettingsDelegate.kt). Authored sentences that used
+         to reach NotificationText.Raw untranslated; each is its own usage site even where the
+         English happens to repeat. -->
+    <string name="notif_steam_sync_error_no_cached_licenses">No cached licenses -- connect to Steam first</string>
+    <string name="notif_steam_sync_error_no_active_account">No active account</string>
+    <string name="notif_steam_sync_error_not_connected">Not connected to Steam</string>
+    <!-- Shown by syncLibrary() when the on-demand Steam reconnect times out. -->
+    <string name="notif_steam_sync_error_could_not_connect_sync">Could not connect to Steam</string>
+    <!-- Shown by forceSyncLibraryWithOverwrite() when the on-demand Steam reconnect times out;
+         same English as the key above, a different call site. -->
+    <string name="notif_steam_sync_error_could_not_connect_overwrite">Could not connect to Steam</string>
+
+    <!-- Media library refresh state (ui/screens/media/MediaLibraryViewModel.kt). Not currently
+         read by any screen (the footer hint computes its own "Refreshing" label locally), kept
+         as a resource id anyway so the state carries a translatable value rather than a raw
+         literal per the project's string carrier rule. -->
+    <string name="media_library_viewmodel_refresh_label">Refreshing</string>
+
+    <!-- Primary action button on the game detail screen (ui/screens/gamedetail/components/
+         GameDetailSections.kt, ActionButtons). -->
+    <!-- Verb: starts the game. Ambiguous out of context with a media "Play" button; this one
+         always launches an emulator session. -->
+    <string name="gamedetail_action_buttons_play">PLAY</string>
+    <!-- Stands in for a save slot's name when the game plays from the unnamed default slot. -->
+    <string name="gamedetail_action_buttons_autosave">Auto-save</string>
+    <string name="gamedetail_action_buttons_download">DOWNLOAD</string>
+    <string name="gamedetail_action_buttons_install">INSTALL</string>
+    <string name="gamedetail_action_buttons_queued">QUEUED...</string>
+    <string name="gamedetail_action_buttons_no_space">NO SPACE</string>
+    <!-- Download progress. %1$d is a whole-number percent; the literal %% renders one percent
+         sign. -->
+    <string name="gamedetail_action_buttons_downloading_percent">%1$d%%</string>
+    <string name="gamedetail_action_buttons_extracting">EXTRACTING...</string>
+    <!-- Resumes a paused download. %1$d is a whole-number percent; the literal %% renders one
+         percent sign. -->
+    <string name="gamedetail_action_buttons_resume_percent">RESUME %1$d%%</string>
+    <string name="gamedetail_action_buttons_retry">RETRY</string>
+    <!-- Icon description on the favorite toggle when the game is already a favorite. Verb:
+         removes it. -->
+    <string name="gamedetail_action_buttons_unfavorite">Unfavorite</string>
+    <!-- Icon description on the favorite toggle when the game is not a favorite. Verb: adds
+         it. -->
+    <string name="gamedetail_action_buttons_favorite">Favorite</string>
+    <!-- Icon description on the button that opens the game detail overflow menu. -->
+    <string name="gamedetail_action_buttons_more_options">More options</string>
+
+    <!-- Stylized wordmark on the app splash screen (ui/ArgosyApp.kt, AppSplashScreen). Brand
+         name, never translated. -->
+    <string name="argosyapp_splash_title" translatable="false">ARGOSY</string>
+
+    <!-- Local-file entry pinned to the top of the home custom-grid media tile picker
+         (ui/home/grid/CustomGridCoordinator.kt). Verb phrase addressed to the user. -->
+    <string name="home_grid_local_video_row_title">Choose a video on this device</string>
+    <string name="home_grid_local_video_row_subtitle">Plays straight from your storage</string>
+</resources>

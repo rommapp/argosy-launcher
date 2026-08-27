@@ -482,7 +482,14 @@ data class SyncResult(
     val gamesAdded: Int,
     val gamesUpdated: Int,
     val gamesDeleted: Int,
-    val errors: List<String>
+    val errors: List<String>,
+    /**
+     * A second sync was asked for while one was running, so this one did nothing. Callers back
+     * off quietly rather than surfacing it. It is a flag rather than an error string because
+     * the string was previously matched to drive that decision, which stops working the moment
+     * the text changes for any reason.
+     */
+    val alreadyInProgress: Boolean = false
 )
 
 data class MultiDiscGroup(

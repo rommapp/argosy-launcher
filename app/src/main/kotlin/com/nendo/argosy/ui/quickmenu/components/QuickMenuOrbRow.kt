@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.quickmenu.components
 
+import androidx.annotation.StringRes
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import com.nendo.argosy.ui.util.clickableNoFocus
@@ -29,7 +30,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.quickmenu.QuickMenuOrb
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
@@ -140,7 +143,7 @@ private fun Orb(
         ) {
             Icon(
                 imageVector = orb.icon,
-                contentDescription = orb.label,
+                contentDescription = stringResource(orb.labelRes),
                 tint = iconTint.copy(alpha = iconAlpha),
                 modifier = Modifier.size(Dimens.iconMd)
             )
@@ -149,7 +152,7 @@ private fun Orb(
         Spacer(modifier = Modifier.height(Dimens.spacingSm))
 
         Text(
-            text = orb.label,
+            text = stringResource(orb.labelRes),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = labelAlpha)
         )
@@ -166,12 +169,13 @@ private val QuickMenuOrb.icon: ImageVector
         QuickMenuOrb.FAVORITES -> Icons.Default.Favorite
     }
 
-private val QuickMenuOrb.label: String
+@get:StringRes
+private val QuickMenuOrb.labelRes: Int
     get() = when (this) {
-        QuickMenuOrb.SEARCH -> "Search"
-        QuickMenuOrb.RANDOM -> "Random"
-        QuickMenuOrb.MOST_PLAYED -> "Most Played"
-        QuickMenuOrb.TOP_UNPLAYED -> "Top New"
-        QuickMenuOrb.RECENT -> "Recent"
-        QuickMenuOrb.FAVORITES -> "Favorites"
+        QuickMenuOrb.SEARCH -> R.string.ui_quick_menu_orb_search
+        QuickMenuOrb.RANDOM -> R.string.ui_quick_menu_orb_random
+        QuickMenuOrb.MOST_PLAYED -> R.string.ui_quick_menu_orb_most_played
+        QuickMenuOrb.TOP_UNPLAYED -> R.string.ui_quick_menu_orb_top_unplayed
+        QuickMenuOrb.RECENT -> R.string.ui_quick_menu_orb_recent
+        QuickMenuOrb.FAVORITES -> R.string.ui_quick_menu_orb_favorites
     }

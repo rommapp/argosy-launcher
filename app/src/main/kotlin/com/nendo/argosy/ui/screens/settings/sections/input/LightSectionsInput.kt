@@ -10,6 +10,8 @@ import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.sections.AboutItem
 import com.nendo.argosy.ui.screens.settings.sections.BiosItem
 import com.nendo.argosy.ui.screens.settings.sections.BuiltinEmulatorItem
+import com.nendo.argosy.ui.screens.settings.sections.MainSettingsItem
+import com.nendo.argosy.ui.screens.settings.sections.mainSettingsItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.NavigationItem
 import com.nendo.argosy.ui.screens.settings.sections.ControllerGripItem
 import com.nendo.argosy.ui.screens.settings.sections.GRIP_RESERVE_PERCENT_STEP
@@ -86,6 +88,7 @@ internal class LightSectionsInput(
             SettingsSection.CONTROLLER_GRIP -> handleControllerGripLeftRight(direction)
             SettingsSection.HOME_SCREEN -> handleHomeScreenLeftRight(direction)
             SettingsSection.LIBRARY_VIEW -> handleLibraryViewLeftRight(direction)
+            SettingsSection.MAIN -> handleMainLeftRight(direction)
             SettingsSection.NAVIGATION -> handleNavigationLeftRight(direction)
             SettingsSection.SYNC_SETTINGS -> handleSyncSettingsLeftRight(direction)
             SettingsSection.STEAM_SETTINGS -> handleSteamLeftRight(direction)
@@ -128,6 +131,15 @@ internal class LightSectionsInput(
                 }
             }
             else -> {}
+        }
+        return InputResult.UNHANDLED
+    }
+
+    private fun handleMainLeftRight(direction: Int): InputResult {
+        val state = viewModel.uiState.value
+        if (mainSettingsItemAtFocusIndex(state.focusedIndex) == MainSettingsItem.Language) {
+            viewModel.cycleAppLanguage(direction)
+            return InputResult.HANDLED
         }
         return InputResult.UNHANDLED
     }

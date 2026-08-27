@@ -32,6 +32,19 @@ exception is legitimate, and the boundary where it becomes a violation again.
   delegate/router (gamepad A-press routes via SettingsConfirmRouter, not the
   section file) -> section render -> CONSUMPTION SITE. A setting with no
   consumption-site change is a ghost setting; trace the full chain.
+- Label vs token: every user-facing string is a resource id; every stored,
+  compared, routed or path-forming string is a literal token. One string must
+  never be both, because renaming a label to read better then invalidates rows
+  already written. Where they are identical today, introduce the token first
+  and give the label its own key. Labels for data/ and domain/ types attach as
+  extension properties in ui/common/ (see CompletionStatusUi.kt), so R never
+  crosses inward. Carriers are @StringRes Int, never (Context) -> String: a
+  lambda is not stability-safe under compose_stability_config.conf, and
+  ViewModels outlive the activity recreation a locale change triggers. Never
+  deduplicate identical English across usage sites - the seven
+  LibretroCoreRegistry display names that are byte-identical to save-tree
+  folder names are why. Upstream identifiers are never translated, and
+  libretro/coreoptions/** stays English by decision, not by omission.
 - DB: schema change = migration in data/local/migrations/Migrations.kt AND
   an append to MigrationRegistry.ALL (or it silently never runs) AND a
   version bump AND the exported schema JSON.
@@ -134,5 +147,6 @@ folder resolution); "tidying" them breaks resolution.
 - Coupled-change axes -> .claude/skills/investigate/coupling-map.md.
 - Writing any code -> code-quality skill. Settings/modals -> menu-patterns.
 - Dimensions/colors -> design-tokens. Dual-screen -> dual-screen skill.
+- Any user-facing text -> the label-vs-token law above, CONTRIBUTING.md AS-7/AS-8.
 - Platforms/emulators/cores -> platform-support. RA -> ra-compliance.
 - Contributor expectations, smells, PR evidence -> CONTRIBUTING.md.

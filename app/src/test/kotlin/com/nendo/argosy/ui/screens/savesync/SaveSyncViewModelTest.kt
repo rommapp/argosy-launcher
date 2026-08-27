@@ -296,6 +296,7 @@ class SaveSyncViewModelTest {
     }
 
     private fun build(): SaveSyncViewModel = SaveSyncViewModel(
+        context = mockk<android.content.Context>(relaxed = true),
         saveSyncDao = saveSyncDao,
         pendingConflictDao = pendingConflictDao,
         syncQueueManager = syncQueueManager,

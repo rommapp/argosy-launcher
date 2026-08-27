@@ -29,8 +29,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.QrCodeWithOverlay
@@ -45,13 +47,13 @@ import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 
 internal sealed class AccountsItem(val key: String) {
-    class Header(key: String, val title: String) : AccountsItem(key)
+    class Header(key: String, val titleRes: Int) : AccountsItem(key)
     class Gap(key: String) : AccountsItem(key)
     class Account(val account: AccountUi) : AccountsItem("account-${account.id}")
     data object AddAccount : AccountsItem("addAccount")
     class NeedsSyncNotice(
         key: String,
-        val title: String,
+        val titleRes: Int,
         val titles: List<String>
     ) : AccountsItem(key)
 
@@ -63,7 +65,7 @@ internal sealed class AccountsItem(val key: String) {
 }
 
 internal fun accountsItems(state: AccountsState): List<AccountsItem> = buildList {
-    add(AccountsItem.Header("accountsHeader", "PAIRED ACCOUNTS"))
+    add(AccountsItem.Header("accountsHeader", R.string.settings_accounts_section_paired))
     state.accounts.forEach { add(AccountsItem.Account(it)) }
     add(AccountsItem.Gap("manageGap"))
     add(AccountsItem.AddAccount)
@@ -72,7 +74,7 @@ internal fun accountsItems(state: AccountsState): List<AccountsItem> = buildList
         add(
             AccountsItem.NeedsSyncNotice(
                 key = "needsSyncSaves",
-                title = "SAVES WAITING ON A SYNC",
+                titleRes = R.string.settings_accounts_needs_sync_saves,
                 titles = state.needsSyncSaveTitles
             )
         )
@@ -82,7 +84,7 @@ internal fun accountsItems(state: AccountsState): List<AccountsItem> = buildList
         add(
             AccountsItem.NeedsSyncNotice(
                 key = "needsSyncStates",
-                title = "SAVE STATES WAITING ON A SYNC",
+                titleRes = R.string.settings_accounts_needs_sync_states,
                 titles = state.needsSyncStateTitles
             )
         )
@@ -136,9 +138,10 @@ fun AccountsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     ) {
         items(rows, key = { it.first.key }) { (item, focusIndex) ->
             when (item) {
-                is AccountsItem.Header -> SectionHeader(item.title)
+                is AccountsItem.Header -> SectionHeader(stringResource(item.titleRes))
                 is AccountsItem.Gap -> Spacer(modifier = Modifier.height(Dimens.spacingLg))
-                is AccountsItem.NeedsSyncNotice -> NeedsSyncCard(item.title, item.titles)
+                is AccountsItem.NeedsSyncNotice ->
+                    NeedsSyncCard(stringResource(item.titleRes), item.titles)
                 is AccountsItem.Account -> AccountRow(
                     account = item.account,
                     state = accounts,
@@ -148,10 +151,10 @@ fun AccountsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     onSelectAction = { viewModel.setAccountRowAction(item.account, it) }
                 )
                 AccountsItem.AddAccount -> ActionPreference(
-                    title = "Add Account",
+                    title = stringResource(R.string.settings_accounts_add_title),
                     subtitle = accounts.activeAccount
-                        ?.let { "Pair another user on ${it.serverLabel}" }
-                        ?: "Sign in under RomM first",
+                        ?.let { stringResource(R.string.settings_accounts_add_subtitle, it.serverLabel) }
+                        ?: stringResource(R.string.settings_accounts_add_subtitle_locked),
                     icon = Icons.Default.PersonAdd,
                     isEnabled = accounts.activeAccount != null,
                     isFocused = focusIndex == uiState.focusedIndex,
@@ -216,7 +219,7 @@ private fun AccountRow(
             }
             if (account.isActive) {
                 Text(
-                    text = "ACTIVE",
+                    text = stringResource(R.string.settings_accounts_active_badge),
                     style = MaterialTheme.typography.labelSmall,
                     color = theme.focusAccent
                 )
@@ -227,7 +230,7 @@ private fun AccountRow(
             actions.forEach { action ->
                 when (action) {
                     AccountRowAction.SWITCH -> ActionButton(
-                        label = "Switch",
+                        label = stringResource(R.string.settings_accounts_action_switch),
                         onClick = {
                             onSelectAction(AccountRowAction.SWITCH)
                             onSwitch()
@@ -236,7 +239,7 @@ private fun AccountRow(
                         primary = true
                     )
                     AccountRowAction.REMOVE -> ActionButton(
-                        label = "Remove",
+                        label = stringResource(R.string.settings_accounts_action_remove),
                         onClick = {
                             onSelectAction(AccountRowAction.REMOVE)
                             onRemove()
@@ -251,9 +254,9 @@ private fun AccountRow(
         if (!removable) {
             Text(
                 text = if (state.accounts.size <= 1) {
-                    "This is the only account on this device. Sign out from RomM to leave it."
+                    stringResource(R.string.settings_accounts_remove_blocked_only)
                 } else {
-                    "Switch to another account before removing this one."
+                    stringResource(R.string.settings_accounts_remove_blocked_active)
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -280,8 +283,7 @@ private fun NeedsSyncCard(title: String, titles: List<String>) {
             color = theme.focusAccent
         )
         Text(
-            text = "These were left empty because the copy on this device was known to be older " +
-                "than the server's. Sync to fill them in.",
+            text = stringResource(R.string.settings_accounts_needs_sync_message),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -314,12 +316,12 @@ private fun NoAccountsCard() {
             modifier = Modifier.size(Dimens.iconLg)
         )
         Text(
-            text = "No RomM account is paired yet",
+            text = stringResource(R.string.settings_accounts_empty_title),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface
         )
         Text(
-            text = "Sign in under RomM. Once one account is paired you can add more here.",
+            text = stringResource(R.string.settings_accounts_empty_message),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -341,7 +343,7 @@ private fun AccountsLoadingCard() {
             color = MaterialTheme.colorScheme.primary
         )
         Text(
-            text = "Loading accounts...",
+            text = stringResource(R.string.settings_accounts_loading),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface
         )
@@ -359,15 +361,16 @@ private fun AccountSwitchProgressPane(state: AccountsState) {
     ) {
         Text(
             text = if (state.isResumingSwitch) {
-                "Finishing the interrupted switch"
+                stringResource(R.string.settings_accounts_switch_resuming)
             } else {
-                "Switching account"
+                stringResource(R.string.settings_accounts_switch_title)
             },
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface
         )
         Text(
-            text = state.switchProgressLabel ?: "Working",
+            text = state.switchProgressLabel
+                ?: stringResource(R.string.settings_accounts_switch_working),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -376,8 +379,7 @@ private fun AccountSwitchProgressPane(state: AccountsState) {
             color = MaterialTheme.colorScheme.primary
         )
         Text(
-            text = "Saves are archived and verified before anything is removed. " +
-                "Leave this screen open.",
+            text = stringResource(R.string.settings_accounts_switch_message),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -396,13 +398,12 @@ private fun AccountPairingPane(uiState: SettingsUiState, viewModel: SettingsView
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) {
         Text(
-            text = "Scan to add an account",
+            text = stringResource(R.string.settings_accounts_pairing_title),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface
         )
         Text(
-            text = "Sign in to RomM on your phone as the user you want to add, scan this code, " +
-                "then approve this device. Argosy signs in as them once approved.",
+            text = stringResource(R.string.settings_accounts_pairing_message),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -451,7 +452,11 @@ private fun AccountPairingPane(uiState: SettingsUiState, viewModel: SettingsView
         Spacer(modifier = Modifier.height(Dimens.spacingSm))
 
         ActionButton(
-            label = if (pairing.error != null) "Try Again" else "Cancel",
+            label = if (pairing.error != null) {
+                stringResource(R.string.settings_accounts_pairing_retry)
+            } else {
+                stringResource(R.string.settings_accounts_pairing_cancel)
+            },
             onClick = {
                 if (pairing.error != null) {
                     viewModel.retryAddAccountPairing()

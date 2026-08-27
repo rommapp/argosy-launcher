@@ -32,8 +32,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.lazy.itemsIndexed
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.InfoPreference
@@ -66,7 +70,7 @@ internal sealed class PlatformDetailItem(
 ) {
     val isFocusable: Boolean get() = this !is Header && this !is InfoItem
 
-    class Header(key: String, section: String, val title: String, visibleWhen: (PlatformDetailVisibility) -> Boolean = { true }) : PlatformDetailItem(key, section, visibleWhen)
+    class Header(key: String, section: String, val titleRes: Int, visibleWhen: (PlatformDetailVisibility) -> Boolean = { true }) : PlatformDetailItem(key, section, visibleWhen)
     class InfoItem(key: String, section: String, visibleWhen: (PlatformDetailVisibility) -> Boolean = { true }) : PlatformDetailItem(key, section, visibleWhen)
 
     data object Emulator : PlatformDetailItem("emulator", "emulator", { !it.isAndroid })
@@ -105,14 +109,14 @@ internal sealed class PlatformDetailItem(
     companion object {
         val ALL: List<PlatformDetailItem>
             get() = listOf(
-                Header("header_emulator", "emulator", "Emulator", { !it.isAndroid }),
+                Header("header_emulator", "emulator", R.string.settings_platform_section_emulator, { !it.isAndroid }),
                 Emulator, Core, Extension, DisplayTarget, LegacyMode, LaunchArgs, BuiltinVideo, BuiltinControls, BuiltinCoreOptions,
-                Header("header_platform", "platform", "Platform"),
+                Header("header_platform", "platform", R.string.settings_platform_section_platform),
                 InfoItem("info_platform_stats", "platform"),
                 MoveEarlier, MoveLater, ScanFiles, ScanApps, ClearArtCache,
-                Header("header_bios", "bios", "BIOS", { it.hasBios && !it.isAndroid }),
+                Header("header_bios", "bios", R.string.settings_platform_section_bios, { it.hasBios && !it.isAndroid }),
                 InfoItem("info_bios_status", "bios", { it.hasBios && !it.isAndroid }), BiosDownload, BiosInstall, BiosCopy,
-                Header("header_sync", "sync", "Storage & Sync"),
+                Header("header_sync", "sync", R.string.settings_platform_section_sync),
                 SyncToggle, SyncNow, DownloadDefaults, CombineContent,
                 InfoItem("info_package_path", "sync", { it.showSavePath && !it.isBuiltin && !it.isRetroArch }),
                 RomPath, SavePath, MemoryCard, StatePath,
@@ -188,13 +192,13 @@ private fun createPlatformDetailLayout() = SettingsLayout<PlatformDetailItem, Pl
     isFocusable = { it.isFocusable },
     visibleWhen = { item, state -> item.visibleWhen(state) },
     sectionOf = { it.section },
-    sectionTitle = {
+    sectionTitleRes = {
         when (it) {
-            "emulator" -> "Emulator"
-            "platform" -> "Platform"
-            "bios" -> "BIOS"
-            "sync" -> "Storage & Sync"
-            "downloads" -> "Download Defaults"
+            "emulator" -> R.string.settings_platform_section_emulator
+            "platform" -> R.string.settings_platform_section_platform
+            "bios" -> R.string.settings_platform_section_bios
+            "sync" -> R.string.settings_platform_section_sync
+            "downloads" -> R.string.settings_platform_section_downloads
             else -> null
         }
     }
@@ -243,9 +247,13 @@ fun PlatformDetailSection(
     val detail = uiState.platformDetail
     val config = uiState.emulators.platforms.getOrNull(detail.platformIndex)
     val emulators = uiState.emulators
+    val context = LocalContext.current
 
     if (config == null) {
-        Text("No platform selected", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            text = stringResource(R.string.settings_platform_none_selected),
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
         return
     }
 
@@ -258,7 +266,7 @@ fun PlatformDetailSection(
     }
     val layout = remember { createPlatformDetailLayout() }
     val visibleItems = remember(visibility) { layout.visibleItems(visibility) }
-    val sections = remember(visibility) { layout.buildSections(visibility) }
+    val sections = remember(visibility, context) { layout.buildSections(visibility, context) }
 
     fun isFocused(item: PlatformDetailItem): Boolean =
         uiState.focusedIndex == layout.focusIndexOf(item, visibility)
@@ -291,7 +299,10 @@ fun PlatformDetailSection(
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
         ) { item ->
             when (item) {
-                is PlatformDetailItem.Header -> com.nendo.argosy.ui.screens.settings.components.SectionHeader(item.title)
+                is PlatformDetailItem.Header ->
+                    com.nendo.argosy.ui.screens.settings.components.SectionHeader(
+                        stringResource(item.titleRes)
+                    )
 
                 // -- EMULATOR section --
                 PlatformDetailItem.Emulator -> {
@@ -300,9 +311,18 @@ fun PlatformDetailSection(
                     val hasInstallableKnown = config.availableEmulators.isNotEmpty() ||
                         config.downloadableEmulators.isNotEmpty()
                     ActionPreference(
-                        title = if (hasInstallableKnown) "Change Emulator" else "Select App",
-                        subtitle = config.effectiveEmulatorName ?: "Not installed",
-                        trailingText = if (hasUpdate) "Update available" else null,
+                        title = if (hasInstallableKnown) {
+                            stringResource(R.string.settings_platform_emulator_change)
+                        } else {
+                            stringResource(R.string.settings_platform_emulator_select_app)
+                        },
+                        subtitle = config.effectiveEmulatorName
+                            ?: stringResource(R.string.settings_platform_emulator_not_installed),
+                        trailingText = if (hasUpdate) {
+                            stringResource(R.string.settings_platform_emulator_update_available)
+                        } else {
+                            null
+                        },
                         isFocused = isFocused(item),
                         onClick = {
                             if (hasInstallableKnown) {
@@ -327,10 +347,10 @@ fun PlatformDetailSection(
                         .indexOfFirst { it.id == config.selectedCore }
                         .takeIf { it >= 0 } ?: 0
                     CyclePreference(
-                        title = "Core",
+                        title = stringResource(R.string.settings_platform_core_title),
                         value = config.availableCores
                             .firstOrNull { it.id == config.selectedCore }
-                            ?.displayName ?: "Default",
+                            ?.displayName ?: stringResource(R.string.settings_platform_core_default),
                         isFocused = isFocused(item),
                         onClick = { viewModel.cycleCoreForPlatform(config, 1) },
                         onPrev = { viewModel.cycleCoreForPlatform(config, -1) },
@@ -340,7 +360,7 @@ fun PlatformDetailSection(
                         valueFooter = if (platformHasNetplay) {
                             {
                                 CoreTag(
-                                    text = "Netplay",
+                                    text = stringResource(R.string.settings_platform_core_netplay_tag),
                                     color = if (activeNetplay) {
                                         LocalLauncherTheme.current.semanticColors.success
                                     } else {
@@ -352,10 +372,11 @@ fun PlatformDetailSection(
                     )
                 }
                 PlatformDetailItem.Extension -> CyclePreference(
-                    title = "File Extension",
+                    title = stringResource(R.string.settings_platform_extension_title),
                     value = config.extensionOptions
                         .firstOrNull { it.extension == config.selectedExtension }?.label
-                        ?: config.selectedExtension ?: "Default",
+                        ?: config.selectedExtension
+                        ?: stringResource(R.string.settings_platform_extension_default),
                     isFocused = isFocused(item),
                     onClick = { viewModel.cycleExtensionForPlatform(config, 1) },
                     onPrev = { viewModel.cycleExtensionForPlatform(config, -1) },
@@ -364,47 +385,47 @@ fun PlatformDetailSection(
                     pickerRequestToken = pickerToken(item)
                 )
                 PlatformDetailItem.DisplayTarget -> CyclePreference(
-                    title = "Display Target",
-                    value = config.displayTarget.name,
+                    title = stringResource(R.string.settings_platform_display_target_title),
+                    value = config.displayTarget.displayName,
                     isFocused = isFocused(item),
                     onClick = { viewModel.cycleDisplayTarget(config, 1) },
                     onPrev = { viewModel.cycleDisplayTarget(config, -1) },
-                    options = remember { EmulatorDisplayTarget.entries.map { it.name } },
+                    options = remember { EmulatorDisplayTarget.entries.map { it.displayName } },
                     onSelect = { viewModel.cycleDisplayTarget(config, it - config.displayTarget.ordinal) },
                     pickerRequestToken = pickerToken(item)
                 )
                 PlatformDetailItem.LegacyMode -> SwitchPreference(
-                    title = "Legacy Mode",
-                    subtitle = "Use file:// URI for Drastic",
+                    title = stringResource(R.string.settings_platform_legacy_mode_title),
+                    subtitle = stringResource(R.string.settings_platform_legacy_mode_subtitle),
                     isEnabled = config.useFileUri,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.toggleLegacyMode(config) }
                 )
                 PlatformDetailItem.LaunchArgs -> NavigationPreference(
                     icon = Icons.Default.Settings,
-                    title = "Launch Args",
-                    subtitle = "Customize how Argosy launches this emulator",
+                    title = stringResource(R.string.settings_platform_launch_args_title),
+                    subtitle = stringResource(R.string.settings_platform_launch_args_subtitle),
                     isFocused = isFocused(item),
                     onClick = { viewModel.openLaunchArgsModal(config.platform.id) }
                 )
                 PlatformDetailItem.BuiltinVideo -> NavigationPreference(
                     icon = Icons.Default.Gamepad,
-                    title = "Built-in A/V & Performance",
-                    subtitle = "Display, performance, and saving overrides",
+                    title = stringResource(R.string.settings_platform_builtin_video_title),
+                    subtitle = stringResource(R.string.settings_platform_builtin_video_subtitle),
                     isFocused = isFocused(item),
                     onClick = { openFrom(item) { viewModel.navigateToBuiltinVideoForPlatform(detail.platformIndex) } }
                 )
                 PlatformDetailItem.BuiltinControls -> NavigationPreference(
                     icon = Icons.Default.Gamepad,
-                    title = "Built-in Controls",
-                    subtitle = "Rumble, stick mapping overrides",
+                    title = stringResource(R.string.settings_platform_builtin_controls_title),
+                    subtitle = stringResource(R.string.settings_platform_builtin_controls_subtitle),
                     isFocused = isFocused(item),
                     onClick = { openFrom(item) { viewModel.navigateToBuiltinControlsForPlatform(detail.platformIndex) } }
                 )
                 PlatformDetailItem.BuiltinCoreOptions -> NavigationPreference(
                     icon = Icons.Default.Gamepad,
-                    title = "Core Options",
-                    subtitle = "Per-core settings for this platform",
+                    title = stringResource(R.string.settings_platform_core_options_title),
+                    subtitle = stringResource(R.string.settings_platform_core_options_subtitle),
                     isFocused = isFocused(item),
                     onClick = { openFrom(item) { viewModel.navigateToCoreOptionsForPlatform() } }
                 )
@@ -425,70 +446,127 @@ fun PlatformDetailSection(
                                     .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingXs),
                                 verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
                             ) {
-                                StatRow("Games in Library", "${detail.totalGames}", textColor, valueColor, style)
-                                StatRow("Downloaded", "${detail.downloadedGames}", textColor, valueColor, style)
+                                StatRow(
+                                    stringResource(R.string.settings_platform_stat_total_games),
+                                    "${detail.totalGames}",
+                                    textColor,
+                                    valueColor,
+                                    style
+                                )
+                                StatRow(
+                                    stringResource(R.string.settings_platform_stat_downloaded),
+                                    "${detail.downloadedGames}",
+                                    textColor,
+                                    valueColor,
+                                    style
+                                )
                                 if (detail.favorites > 0) {
-                                    StatRow("Favorites", "${detail.favorites}", textColor, valueColor, style)
+                                    StatRow(
+                                        stringResource(R.string.settings_platform_stat_favorites),
+                                        "${detail.favorites}",
+                                        textColor,
+                                        valueColor,
+                                        style
+                                    )
                                 }
-                                StatRow("Play Time", detail.playTimeFormatted, textColor, valueColor, style)
+                                StatRow(
+                                    stringResource(R.string.settings_platform_stat_play_time),
+                                    detail.playTimeFormatted,
+                                    textColor,
+                                    valueColor,
+                                    style
+                                )
                                 if (isSyncingThis) {
                                     val syncText = if (syncProgress.gamesTotal > 0) {
-                                        "Syncing ${syncProgress.gamesDone}/${syncProgress.gamesTotal}"
-                                    } else "Syncing..."
-                                    StatRow("Sync", syncText, textColor, MaterialTheme.colorScheme.primary, style)
+                                        stringResource(
+                                            R.string.settings_platform_stat_sync_progress,
+                                            syncProgress.gamesDone,
+                                            syncProgress.gamesTotal
+                                        )
+                                    } else {
+                                        stringResource(R.string.settings_platform_stat_sync_busy)
+                                    }
+                                    StatRow(
+                                        stringResource(R.string.settings_platform_stat_sync),
+                                        syncText,
+                                        textColor,
+                                        MaterialTheme.colorScheme.primary,
+                                        style
+                                    )
                                 }
                             }
                         }
                         "info_package_path" -> {
                             val status = when (detail.packagePathAccessible) {
-                                true -> "Accessible"
-                                false -> "Blocked"
-                                null -> "Checking..."
+                                true -> stringResource(R.string.settings_platform_package_path_accessible)
+                                false -> stringResource(R.string.settings_platform_package_path_blocked)
+                                null -> stringResource(R.string.settings_platform_package_path_checking)
                             }
-                            InfoPreference(title = "Package Path", value = status, isFocused = false)
+                            InfoPreference(
+                                title = stringResource(R.string.settings_platform_package_path_title),
+                                value = status,
+                                isFocused = false
+                            )
                         }
                         "info_bios_status" -> {
                             val status = when {
-                                detail.biosDownloaded >= detail.biosTotal -> "All downloaded"
-                                detail.biosDownloaded > 0 -> "${detail.biosDownloaded} of ${detail.biosTotal} downloaded"
-                                else -> "Not downloaded"
+                                detail.biosDownloaded >= detail.biosTotal ->
+                                    stringResource(R.string.settings_platform_bios_status_all)
+                                detail.biosDownloaded > 0 -> stringResource(
+                                    R.string.settings_platform_bios_status_partial,
+                                    detail.biosDownloaded,
+                                    detail.biosTotal
+                                )
+                                else -> stringResource(R.string.settings_platform_bios_status_none)
                             }
-                            InfoPreference(title = "Status", value = status, isFocused = false)
+                            InfoPreference(
+                                title = stringResource(R.string.settings_platform_bios_status_title),
+                                value = status,
+                                isFocused = false
+                            )
                         }
                     }
                 }
                 PlatformDetailItem.ClearArtCache -> ActionPreference(
-                    title = "Clear Cached Artwork",
-                    subtitle = "Delete downloaded covers and screenshots for this platform so they are fetched again. Covers you chose yourself are kept",
+                    title = stringResource(R.string.settings_platform_clear_art_title),
+                    subtitle = stringResource(R.string.settings_platform_clear_art_subtitle),
                     isFocused = isFocused(item),
                     icon = Icons.Default.Refresh,
                     onClick = { viewModel.clearPlatformArtCache(config.platform.slug) }
                 )
                 PlatformDetailItem.MoveEarlier -> ActionPreference(
-                    title = "Move Earlier",
-                    subtitle = "Show this platform sooner everywhere platforms are listed",
+                    title = stringResource(R.string.settings_platform_move_earlier_title),
+                    subtitle = stringResource(R.string.settings_platform_move_earlier_subtitle),
                     isFocused = isFocused(item),
                     icon = Icons.Default.KeyboardArrowUp,
                     onClick = { viewModel.movePlatformOrder(config.platform.id, -1) }
                 )
                 PlatformDetailItem.MoveLater -> ActionPreference(
-                    title = "Move Later",
-                    subtitle = "Show this platform further along everywhere platforms are listed",
+                    title = stringResource(R.string.settings_platform_move_later_title),
+                    subtitle = stringResource(R.string.settings_platform_move_later_subtitle),
                     isFocused = isFocused(item),
                     icon = Icons.Default.KeyboardArrowDown,
                     onClick = { viewModel.movePlatformOrder(config.platform.id, 1) }
                 )
                 PlatformDetailItem.ScanFiles -> ActionPreference(
-                    title = if (detail.isScanning) "Scanning..." else "Scan for Files",
-                    subtitle = "Check for new or missing ROM files",
+                    title = if (detail.isScanning) {
+                        stringResource(R.string.settings_platform_scan_busy)
+                    } else {
+                        stringResource(R.string.settings_platform_scan_files_title)
+                    },
+                    subtitle = stringResource(R.string.settings_platform_scan_files_subtitle),
                     isFocused = isFocused(item),
                     icon = Icons.Default.Search,
                     isEnabled = !detail.isScanning,
                     onClick = { viewModel.scanFilesForPlatform(config.platform.id) }
                 )
                 PlatformDetailItem.ScanApps -> ActionPreference(
-                    title = if (detail.isScanning) "Scanning..." else "Scan for Games",
-                    subtitle = "Add installed apps that identify as games",
+                    title = if (detail.isScanning) {
+                        stringResource(R.string.settings_platform_scan_busy)
+                    } else {
+                        stringResource(R.string.settings_platform_scan_apps_title)
+                    },
+                    subtitle = stringResource(R.string.settings_platform_scan_apps_subtitle),
                     isFocused = isFocused(item),
                     icon = Icons.Default.Search,
                     isEnabled = !detail.isScanning,
@@ -498,9 +576,13 @@ fun PlatformDetailSection(
 
                 // -- PATHS section --
                 PlatformDetailItem.RomPath -> ActionPreference(
-                    title = "ROM Path",
-                    subtitle = formatPath(storageConfig?.effectivePath),
-                    trailingText = if (storageConfig?.customRomPath != null) "(custom)" else null,
+                    title = stringResource(R.string.settings_platform_rom_path_title),
+                    subtitle = formatPath(context, storageConfig?.effectivePath),
+                    trailingText = if (storageConfig?.customRomPath != null) {
+                        stringResource(R.string.settings_platform_path_custom_tag)
+                    } else {
+                        null
+                    },
                     isFocused = isFocused(item),
                     onClick = { viewModel.openPlatformFolderPicker(config.platform.id) },
                     showResetButton = storageConfig?.customRomPath != null,
@@ -512,15 +594,20 @@ fun PlatformDetailSection(
                     val accessBlocked = !isBuiltinEmulator && !config.effectiveEmulatorIsRetroArch &&
                         detail.packagePathAccessible == false && !hasOverride
                     ActionPreference(
-                        title = "Save Path",
+                        title = stringResource(R.string.settings_platform_save_path_title),
                         subtitle = when {
-                            accessBlocked -> "Access blocked -- set a custom save path"
+                            accessBlocked ->
+                                stringResource(R.string.settings_platform_save_path_blocked)
                             config.effectiveEmulatorIsRetroArch -> retroArchPathSubtitle(
-                                config, storageConfig?.effectiveSavePath, hasOverride
+                                context, config, storageConfig?.effectiveSavePath, hasOverride
                             )
-                            else -> formatPath(storageConfig?.effectiveSavePath)
+                            else -> formatPath(context, storageConfig?.effectiveSavePath)
                         },
-                        trailingText = if (hasOverride) "(custom)" else null,
+                        trailingText = if (hasOverride) {
+                            stringResource(R.string.settings_platform_path_custom_tag)
+                        } else {
+                            null
+                        },
                         isFocused = isFocused(item),
                         onClick = { viewModel.launchSavePathPicker(config.platform.id) },
                         showResetButton = hasOverride,
@@ -531,22 +618,27 @@ fun PlatformDetailSection(
                     val cardCount = storageConfig?.folderMemcardCount ?: -1
                     val selected = storageConfig?.selectedMemcardPath
                     val selectedName = selected?.let { java.io.File(it).name }
-                    val emulatorName = config.effectiveEmulatorName ?: "this emulator"
+                    val emulatorName = config.effectiveEmulatorName
+                        ?: stringResource(R.string.settings_platform_memcard_this_emulator)
                     val isOverridingSavePath = storageConfig?.isUserSavePathOverride == true
                     val (value, subtitle) = when {
                         isOverridingSavePath ->
-                            "Using save-path override" to "Memory card pinned via custom save path"
+                            stringResource(R.string.settings_platform_memcard_override_value) to
+                                stringResource(R.string.settings_platform_memcard_override_subtitle)
                         cardCount <= 0 ->
-                            "None found" to "No folder memory cards found -- convert one in $emulatorName to enable save sync"
+                            stringResource(R.string.settings_platform_memcard_none_value) to
+                                stringResource(R.string.settings_platform_memcard_none_subtitle, emulatorName)
                         selected != null ->
-                            (selectedName ?: selected) to "(custom)"
+                            (selectedName ?: selected) to
+                                stringResource(R.string.settings_platform_path_custom_tag)
                         cardCount == 1 ->
-                            "Auto" to null
+                            stringResource(R.string.settings_platform_memcard_auto_value) to null
                         else ->
-                            "Not selected" to "Multiple memory cards detected -- select one to enable save sync"
+                            stringResource(R.string.settings_platform_memcard_unselected_value) to
+                                stringResource(R.string.settings_platform_memcard_unselected_subtitle)
                     }
                     ActionPreference(
-                        title = "Memory Card",
+                        title = stringResource(R.string.settings_platform_memcard_title),
                         subtitle = subtitle ?: value,
                         trailingText = if (subtitle != null) value else null,
                         isFocused = isFocused(item),
@@ -560,13 +652,17 @@ fun PlatformDetailSection(
                 PlatformDetailItem.StatePath -> {
                     val hasOverride = storageConfig?.isUserStatePathOverride == true
                     ActionPreference(
-                        title = "State Path",
+                        title = stringResource(R.string.settings_platform_state_path_title),
                         subtitle = if (config.effectiveEmulatorIsRetroArch) {
-                            retroArchPathSubtitle(config, storageConfig?.effectiveStatePath, hasOverride)
+                            retroArchPathSubtitle(context, config, storageConfig?.effectiveStatePath, hasOverride)
                         } else {
-                            formatPath(storageConfig?.effectiveStatePath)
+                            formatPath(context, storageConfig?.effectiveStatePath)
                         },
-                        trailingText = if (hasOverride) "(custom)" else null,
+                        trailingText = if (hasOverride) {
+                            stringResource(R.string.settings_platform_path_custom_tag)
+                        } else {
+                            null
+                        },
                         isFocused = isFocused(item),
                         onClick = { viewModel.launchStatePathPicker(config.platform.id) },
                         showResetButton = hasOverride,
@@ -576,15 +672,15 @@ fun PlatformDetailSection(
 
                 // -- SYNC section --
                 PlatformDetailItem.SyncToggle -> SwitchPreference(
-                    title = "Sync Enabled",
-                    subtitle = "Include this platform in library sync",
+                    title = stringResource(R.string.settings_platform_sync_toggle_title),
+                    subtitle = stringResource(R.string.settings_platform_sync_toggle_subtitle),
                     isEnabled = storageConfig?.syncEnabled ?: true,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.togglePlatformSync(config.platform.id, it) }
                 )
                 PlatformDetailItem.CombineContent -> SwitchPreference(
-                    title = "Combine Content",
-                    subtitle = "All games in one folder, all updates and DLC in extcontent",
+                    title = stringResource(R.string.settings_platform_combine_content_title),
+                    subtitle = stringResource(R.string.settings_platform_combine_content_subtitle),
                     isEnabled = storageConfig?.combineContent ?: false,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.togglePlatformCombineContent(config.platform.id, it) }
@@ -593,8 +689,12 @@ fun PlatformDetailSection(
                     val isBusy = config.platform.id in uiState.storage.busyPlatformIds ||
                         uiState.storage.isLibrarySyncing
                     ActionPreference(
-                        title = "Sync Now",
-                        subtitle = if (isBusy) "Sync in progress..." else "Sync this platform with RomM",
+                        title = stringResource(R.string.settings_platform_sync_now_title),
+                        subtitle = if (isBusy) {
+                            stringResource(R.string.settings_platform_sync_now_busy)
+                        } else {
+                            stringResource(R.string.settings_platform_sync_now_subtitle)
+                        },
                         isFocused = isFocused(item),
                         icon = Icons.Default.Sync,
                         spinIcon = isBusy,
@@ -604,15 +704,26 @@ fun PlatformDetailSection(
                 }
                 PlatformDetailItem.PackagePath -> {} // rendered as InfoItem
                 PlatformDetailItem.DownloadDefaults -> ActionPreference(
-                    title = "Download Defaults",
-                    subtitle = if (detail.downloadOverrides.isEmpty()) "Preselected file types"
-                        else "${detail.downloadOverrides.size} platform overrides",
+                    title = stringResource(R.string.settings_platform_download_defaults_title),
+                    subtitle = if (detail.downloadOverrides.isEmpty()) {
+                        stringResource(R.string.settings_platform_download_defaults_subtitle)
+                    } else {
+                        pluralStringResource(
+                            R.plurals.settings_platform_download_defaults_overrides,
+                            detail.downloadOverrides.size,
+                            detail.downloadOverrides.size
+                        )
+                    },
                     isFocused = isFocused(item),
                     onClick = { viewModel.openPlatformDownloadDefaults(config.platform.slug) }
                 )
                 PlatformDetailItem.RemoveFiles -> ActionPreference(
-                    title = "Remove Local Files",
-                    subtitle = "${detail.downloadedGames} downloaded files",
+                    title = stringResource(R.string.settings_platform_remove_files_title),
+                    subtitle = pluralStringResource(
+                        R.plurals.settings_platform_remove_files_subtitle,
+                        detail.downloadedGames,
+                        detail.downloadedGames
+                    ),
                     isFocused = isFocused(item),
                     isDangerous = true,
                     onClick = { viewModel.requestRemoveLocalFiles() }
@@ -621,25 +732,35 @@ fun PlatformDetailSection(
                 // -- BIOS section --
                 PlatformDetailItem.BiosStatus -> {} // rendered as InfoItem
                 PlatformDetailItem.BiosDownload -> ActionPreference(
-                    title = "Download All",
+                    title = stringResource(R.string.settings_platform_bios_download_title),
                     subtitle = if (uiState.bios.isDownloading) {
-                        uiState.bios.downloadingFileName?.let { "Downloading $it..." } ?: "Downloading..."
+                        uiState.bios.downloadingFileName
+                            ?.let { stringResource(R.string.settings_platform_bios_downloading_file, it) }
+                            ?: stringResource(R.string.settings_platform_bios_downloading)
                     } else {
-                        "${detail.biosTotal - detail.biosDownloaded} files"
+                        pluralStringResource(
+                            R.plurals.settings_platform_bios_download_missing,
+                            detail.biosTotal - detail.biosDownloaded,
+                            detail.biosTotal - detail.biosDownloaded
+                        )
                     },
                     isFocused = isFocused(item),
                     icon = Icons.Default.Download,
                     onClick = { viewModel.downloadBiosForPlatform(config.platform.slug) }
                 )
                 PlatformDetailItem.BiosInstall -> ActionPreference(
-                    title = "Install to Emulator",
-                    subtitle = "Copy BIOS to ${config.effectiveEmulatorName ?: "emulator"}",
+                    title = stringResource(R.string.settings_platform_bios_install_title),
+                    subtitle = stringResource(
+                        R.string.settings_platform_bios_install_subtitle,
+                        config.effectiveEmulatorName
+                            ?: stringResource(R.string.settings_platform_bios_install_fallback)
+                    ),
                     isFocused = isFocused(item),
                     onClick = { viewModel.distributeAllBios() }
                 )
                 PlatformDetailItem.BiosCopy -> ActionPreference(
-                    title = "Copy to...",
-                    subtitle = "Copy BIOS files to another folder",
+                    title = stringResource(R.string.settings_platform_bios_copy_title),
+                    subtitle = stringResource(R.string.settings_platform_bios_copy_subtitle),
                     isFocused = isFocused(item),
                     icon = Icons.Default.ContentCopy,
                     onClick = { viewModel.launchBiosCopyPicker(config.platform.slug) }
@@ -656,9 +777,14 @@ fun PlatformDetailSection(
 
         com.nendo.argosy.ui.primitives.ArgosyConfirmModalHost(
             visible = detail.showRemoveConfirm,
-            title = "Remove Local Files",
-            message = "Delete ${detail.downloadedGames} ROM file${if (detail.downloadedGames > 1) "s" else ""} for ${config.platform.name}? Games will remain in your library but must be re-downloaded to play.",
-            confirmLabel = "Delete",
+            title = stringResource(R.string.settings_platform_remove_confirm_title),
+            message = pluralStringResource(
+                R.plurals.settings_platform_remove_confirm_message,
+                detail.downloadedGames,
+                detail.downloadedGames,
+                config.platform.name
+            ),
+            confirmLabel = stringResource(R.string.settings_platform_remove_confirm_action),
             onConfirm = { viewModel.confirmRemoveLocalFiles(config.platform.id) },
             onDismiss = { viewModel.dismissRemoveConfirm() },
             destructive = true
@@ -666,11 +792,13 @@ fun PlatformDetailSection(
 
         com.nendo.argosy.ui.primitives.ArgosyConfirmModalHost(
             visible = detail.combineRestoreCount > 0,
-            title = "Restore Game Folders",
-            message = "Combine Content is off. Move ${detail.combineRestoreCount} game" +
-                "${if (detail.combineRestoreCount > 1) "s" else ""} with updates or DLC back into " +
-                "their own folders? Everything else stays where it is.",
-            confirmLabel = "Move",
+            title = stringResource(R.string.settings_platform_combine_restore_title),
+            message = pluralStringResource(
+                R.plurals.settings_platform_combine_restore_message,
+                detail.combineRestoreCount,
+                detail.combineRestoreCount
+            ),
+            confirmLabel = stringResource(R.string.settings_platform_combine_restore_action),
             onConfirm = { viewModel.confirmCombineRestore(config.platform.id) },
             onDismiss = { viewModel.dismissCombineRestore() }
         )
@@ -776,36 +904,43 @@ private fun StatRow(
     }
 }
 
-internal fun formatPath(path: String?): String {
-    if (path == null) return "Not configured"
+internal fun formatPath(context: android.content.Context, path: String?): String {
+    if (path == null) return context.getString(R.string.settings_platform_path_unconfigured)
     val maxLen = 40
     return if (path.length > maxLen) "...${path.takeLast(maxLen)}" else path
 }
 
-private fun formatConfigLocation(path: String?): String {
-    if (path == null) return "retroarch.cfg"
+private fun formatConfigLocation(context: android.content.Context, path: String?): String {
+    if (path == null) return RETROARCH_CONFIG_FILE
     val root = com.nendo.argosy.data.storage.StoragePathUtils.primaryExternalRoot
-    return formatPath(path.removePrefix(root).trimStart('/'))
+    return formatPath(context, path.removePrefix(root).trimStart('/'))
 }
+
+private const val RETROARCH_CONFIG_FILE = "retroarch.cfg"
 
 /**
  * Second line under a RetroArch save or state path, naming the configuration the path came
  * from. A manual path speaks for itself and gets no second line.
  */
 private fun retroArchPathSubtitle(
+    context: android.content.Context,
     config: PlatformEmulatorConfig,
     resolvedPath: String?,
     hasOverride: Boolean
 ): String {
-    val path = formatPath(resolvedPath)
+    val path = formatPath(context, resolvedPath)
     if (hasOverride) return path
     val source = when (config.retroArchConfigStatus) {
-        RetroArchConfigStatus.LOADED -> "From ${formatConfigLocation(config.retroArchConfigPath)}"
-        RetroArchConfigStatus.UNREADABLE ->
-            "${formatConfigLocation(config.retroArchConfigPath)} could not be read -- " +
-                "set the folder RetroArch uses"
+        RetroArchConfigStatus.LOADED -> context.getString(
+            R.string.settings_platform_retroarch_config_loaded,
+            formatConfigLocation(context, config.retroArchConfigPath)
+        )
+        RetroArchConfigStatus.UNREADABLE -> context.getString(
+            R.string.settings_platform_retroarch_config_unreadable,
+            formatConfigLocation(context, config.retroArchConfigPath)
+        )
         RetroArchConfigStatus.MISSING ->
-            "No RetroArch configuration found -- set the folder RetroArch uses"
+            context.getString(R.string.settings_platform_retroarch_config_missing)
     }
     return "$path\n$source"
 }
@@ -817,9 +952,10 @@ private fun DownloadDefaultsModal(
     viewModel: SettingsViewModel
 ) {
     val keys = com.nendo.argosy.data.preferences.DownloadDefaults.CONFIGURABLE_KEYS
+    val context = LocalContext.current
     com.nendo.argosy.ui.components.Modal(
-        title = "DOWNLOAD DEFAULTS",
-        subtitle = "File types preselected when downloading",
+        title = stringResource(R.string.settings_platform_download_defaults_modal_title),
+        subtitle = stringResource(R.string.settings_platform_download_defaults_modal_subtitle),
         onDismiss = viewModel::dismissPlatformDownloadDefaults
     ) {
         val listState = androidx.compose.foundation.lazy.rememberLazyListState()
@@ -837,8 +973,12 @@ private fun DownloadDefaultsModal(
                     ?: detail.globalDownloadDefaults[key]
                     ?: (com.nendo.argosy.data.preferences.DownloadDefaults.FACTORY[key] ?: false)
                 SwitchPreference(
-                    title = downloadCategoryLabel(key),
-                    subtitle = if (override == null) "Inherited from global" else "Platform override",
+                    title = downloadCategoryLabel(context, key),
+                    subtitle = if (override == null) {
+                        stringResource(R.string.settings_platform_download_default_inherited)
+                    } else {
+                        stringResource(R.string.settings_platform_download_default_override)
+                    },
                     isEnabled = effective,
                     isFocused = detail.downloadDefaultsFocusIndex == index,
                     onToggle = { viewModel.setPlatformDownloadDefault(key, it) }
@@ -846,8 +986,8 @@ private fun DownloadDefaultsModal(
             }
             item(key = "reset_overrides") {
                 ActionPreference(
-                    title = "Reset to Global",
-                    subtitle = "Clear all platform overrides",
+                    title = stringResource(R.string.settings_platform_download_defaults_reset_title),
+                    subtitle = stringResource(R.string.settings_platform_download_defaults_reset_subtitle),
                     isFocused = detail.downloadDefaultsFocusIndex == keys.size,
                     isEnabled = detail.downloadOverrides.isNotEmpty(),
                     onClick = { viewModel.resetPlatformDownloadDefaults() }

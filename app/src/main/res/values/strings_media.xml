@@ -1,0 +1,652 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Owner: ui/screens/media, ui/screens/player, ui/screens/musicbrowser
+      Key prefix: media_
+      Keys are named for the usage site, never for the English text, and identical English
+      is never shared between two usage sites.
+    -->
+
+    <!-- ===================== Media library grid ===================== -->
+
+    <!-- Heading across the top of the media browsing screen, naming the screen itself. Noun.
+         Rendered in caps in English; use whatever casing is normal for a heading in your
+         language. -->
+    <string name="media_library_heading">MEDIA</string>
+
+    <!-- Footer hint on the media grid. Noun: the shoulder buttons move between the media
+         server's libraries (Movies, Shows). Not Argosy's own game library. -->
+    <string name="media_library_footer_library">Library</string>
+    <!-- Footer hint on a grid tile that was stopped part way through. Verb: starts playing again
+         from where it was left. -->
+    <string name="media_library_footer_resume">Resume</string>
+    <!-- Footer hint on a grid tile that has not been started. Verb: begins playback. Not the noun
+         "a play". -->
+    <string name="media_library_footer_play">Play</string>
+    <!-- Footer hint on the media grid while a refresh is already running. Adjective phrase
+         describing what the launcher is doing, not a command. -->
+    <string name="media_library_footer_refreshing">Refreshing</string>
+    <!-- Footer hint on the media grid. Verb: fetches the libraries from the media server again. -->
+    <string name="media_library_footer_refresh">Refresh</string>
+    <!-- Footer hint on a grid tile. Verb: opens the page describing the title. -->
+    <string name="media_library_footer_open">Open</string>
+    <!-- Footer hint on the media grid. Verb phrase: leaves the screen. -->
+    <string name="media_library_footer_back">Back</string>
+
+    <!-- ===================== Empty, error and signed-out states ===================== -->
+
+    <!-- Heading shown in place of the grid when the chosen library holds nothing. -->
+    <string name="media_empty_state_title">Nothing here yet</string>
+    <!-- Body under that heading. "Library" here is one of the collections a media server offers. -->
+    <string name="media_empty_state_message">This library has no items on the server, or the last refresh has not reached it.</string>
+    <!-- Heading shown when the media server could not be reached. The server's own message is
+         printed underneath it. -->
+    <string name="media_error_state_title">Could not reach the media server</string>
+    <!-- Heading shown when no media server has been signed in to at all. Noun phrase describing
+         what is missing. -->
+    <string name="media_signed_out_title">No media account</string>
+    <!-- Body under that heading. "Settings" names Argosy's own settings screen. -->
+    <string name="media_signed_out_message">Sign in to a media server from Settings to browse movies and shows.</string>
+
+    <!-- ===================== Poster tiles and badges ===================== -->
+
+    <!-- Spoken description of the tick on a grid tile whose title has been watched right through.
+         Adjective describing the title. -->
+    <string name="media_poster_card_watched">Watched</string>
+    <!-- Spoken description of the mark on a title whose file is on this device. Adjective
+         describing the title, not a command to download it. -->
+    <string name="media_download_badge_present">Downloaded</string>
+    <!-- Spoken description of the mark on a title that was downloaded to storage the device
+         cannot currently read, such as a memory card that has been taken out. The copy still
+         exists; it just cannot be reached. -->
+    <string name="media_download_badge_unavailable">Downloaded, on storage that is not connected</string>
+
+    <!-- ===================== Detail screen ===================== -->
+
+    <!-- Shown in place of the detail screen when the title could not be opened and the server gave
+         no reason of its own. -->
+    <string name="media_detail_open_failed">This title could not be opened.</string>
+    <!-- Shown on the detail screen when the title has gone from the library while it was open. -->
+    <string name="media_detail_item_missing">This title is no longer in the library.</string>
+
+    <!-- Heading over the row of people credited on a title. Noun, collective: the actors, not the
+         verb "to cast". -->
+    <string name="media_detail_rail_heading_cast">Cast</string>
+    <!-- Heading over the row of titles that resemble this one. Noun phrase. -->
+    <string name="media_detail_rail_heading_similar">More Like This</string>
+
+    <!-- Shown while a season's episodes are being fetched. Present participle describing what is
+         happening. -->
+    <string name="media_detail_episodes_loading">Loading episodes</string>
+    <!-- Heading shown when a season's episodes could not be fetched. The server's own message is
+         printed underneath it. -->
+    <string name="media_detail_episodes_error_title">Episodes are unavailable</string>
+    <!-- Heading shown when the chosen season turned out to hold no episodes. -->
+    <string name="media_detail_season_empty_title">No episodes in this season</string>
+    <!-- Heading shown on a series for which no season has been fetched at all. -->
+    <string name="media_detail_seasons_empty_title">No seasons yet</string>
+    <!-- Body under that heading. -->
+    <string name="media_detail_seasons_empty_message">This series has no seasons on the server, or the last refresh has not reached it.</string>
+
+    <!-- Name of a numbered season on the season tab row. %1$d is the season number. -->
+    <string name="media_season_tab_number">Season %1$d</string>
+
+    <!-- Chip on the detail header saying how many seasons a series has. -->
+    <plurals name="media_detail_chip_season_count">
+        <item quantity="one">%d season</item>
+        <item quantity="other">%d seasons</item>
+    </plurals>
+
+    <!-- Footer hint on the detail screen of a title that has neighbours in its library. Noun
+         phrase: the shoulder buttons step to the title before or after this one. -->
+    <string name="media_detail_footer_sibling_title">Prev/Next Title</string>
+    <!-- Footer hint on the detail screen. Noun, plural: opens the menu of actions for this
+         title. -->
+    <string name="media_detail_footer_options">Options</string>
+    <!-- Footer hint while an episode is under the cursor and already watched. Verb phrase: clears
+         the watched mark. -->
+    <string name="media_detail_footer_episode_unwatched">Mark Unwatched</string>
+    <!-- Footer hint while an unwatched episode is under the cursor. Verb phrase: sets the watched
+         mark. -->
+    <string name="media_detail_footer_episode_watched">Mark Watched</string>
+    <!-- Footer hint on the detail screen of a title that is already a favourite. Verb: takes it
+         back out. -->
+    <string name="media_detail_footer_unfavorite">Unfavorite</string>
+    <!-- Footer hint on the detail screen of a title that is not a favourite. Verb: marks it as
+         one. -->
+    <string name="media_detail_footer_favorite">Favorite</string>
+    <!-- Footer hint on the detail screen. Verb phrase: leaves the screen. -->
+    <string name="media_detail_footer_back">Back</string>
+
+    <!-- Footer hint naming what a confirm does when the thing under the cursor was stopped part
+         way through. Verb: starts playing again from where it was left. -->
+    <string name="media_detail_confirm_resume">Resume</string>
+    <!-- Footer hint naming what a confirm does on the season tab row. Verb phrase: shows that
+         season's episodes. -->
+    <string name="media_detail_confirm_open_season">Open Season</string>
+    <!-- Footer hint naming what a confirm does on the row of similar titles. Verb phrase: leaves
+         for that title's own page. -->
+    <string name="media_detail_confirm_open_title">Open Title</string>
+    <!-- Footer hint naming what a confirm does inside the episode list. Verb: begins playback. -->
+    <string name="media_detail_confirm_play_section">Play</string>
+    <!-- Footer hint naming what a confirm does on the rail's Download row. Noun, plural: opens the
+         download choices for this title. -->
+    <string name="media_detail_confirm_downloads">Downloads</string>
+    <!-- Footer hint naming what a confirm does on the rail's Favorite row. Verb. -->
+    <string name="media_detail_confirm_favorite">Favorite</string>
+    <!-- Footer hint naming what a confirm does on the rail's Watched row. Verb phrase. -->
+    <string name="media_detail_confirm_mark_watched">Mark Watched</string>
+    <!-- Footer hint naming what a confirm does on the rail's Options row. Noun, plural. -->
+    <string name="media_detail_confirm_options">Options</string>
+    <!-- Footer hint naming what a confirm does on the rail's Seasons row. Verb phrase: moves the
+         cursor into the season tabs. -->
+    <string name="media_detail_confirm_open_seasons">Open Seasons</string>
+    <!-- Footer hint naming what a confirm does on the rail's Episodes row. Verb phrase: moves the
+         cursor into the episode list. -->
+    <string name="media_detail_confirm_open_episodes">Open Episodes</string>
+    <!-- Footer hint naming what a confirm does on the rail's Play row. Verb. -->
+    <string name="media_detail_confirm_play_default">Play</string>
+
+    <!-- ===================== Detail screen left rail ===================== -->
+
+    <!-- The rail's main button when there is nothing to resume. Verb: begins playback. -->
+    <string name="media_rail_play">Play</string>
+    <!-- The rail's main button for a title stopped part way through. %1$s is a clock reading such
+         as 12:34. Verb phrase. -->
+    <string name="media_rail_play_resume">Resume %1$s</string>
+    <!-- The rail's main button on a series, naming the episode a press would start. %1$s is the
+         season and episode code. Verb phrase. -->
+    <string name="media_rail_play_episode">Play %1$s</string>
+
+    <!-- Rail row for a title with no copy on this device. Verb: fetches it from the server. -->
+    <string name="media_rail_download">Download</string>
+    <!-- Rail row for a title whose every episode is on this device. Adjective describing the
+         title, not a command. -->
+    <string name="media_rail_download_complete">Downloaded</string>
+    <!-- Rail row for a series partly on this device with more still queued. %1$d is how many are
+         downloaded, %2$d how many the series has, %3$d how many are waiting to be fetched. -->
+    <string name="media_rail_download_progress_queued">%1$d of %2$d, %3$d queued</string>
+    <!-- Rail row for a series partly on this device with nothing queued. %1$d is how many are
+         downloaded, %2$d how many the series has. -->
+    <string name="media_rail_download_progress">%1$d of %2$d</string>
+    <!-- Joins the rail's download row to a note about copies that cannot be reached. %1$s is the
+         row, %2$s the note. -->
+    <string name="media_rail_download_with_note">%1$s - %2$s</string>
+    <!-- The note for a single title whose downloaded copy is on storage the device cannot read,
+         such as a memory card that has been taken out. -->
+    <string name="media_rail_download_note_one_unavailable">not connected</string>
+    <!-- The note for a series, saying how many of its downloaded episodes sit on storage the
+         device cannot read. -->
+    <plurals name="media_rail_download_note_unavailable">
+        <item quantity="one">%d not connected</item>
+        <item quantity="other">%d not connected</item>
+    </plurals>
+
+    <!-- Rail row for a title already marked as a favourite. Adjective describing the title, not a
+         command. -->
+    <string name="media_rail_favorited">Favorited</string>
+    <!-- Rail row for a title that is not a favourite. Verb: marks it as one. -->
+    <string name="media_rail_favorite">Favorite</string>
+    <!-- Rail row for a film already watched right through. Adjective describing the film. -->
+    <string name="media_rail_watched">Watched</string>
+    <!-- Rail row for an unwatched film. Verb phrase: sets the watched mark. -->
+    <string name="media_rail_mark_watched">Mark Watched</string>
+    <!-- Rail row opening the menu of everything else this screen can do. Noun, plural. -->
+    <string name="media_rail_options">Options</string>
+    <!-- Rail row that moves the cursor into the season tabs. Noun, plural. -->
+    <string name="media_rail_seasons">Seasons</string>
+    <!-- Rail row that moves the cursor into the episode list. Noun, plural. -->
+    <string name="media_rail_episodes">Episodes</string>
+    <!-- Rail row that moves the cursor into the row of credited people. Noun, collective. -->
+    <string name="media_rail_cast">Cast</string>
+    <!-- Rail row that moves the cursor into the row of titles resembling this one. Noun phrase. -->
+    <string name="media_rail_similar">More Like This</string>
+
+    <!-- ===================== Detail screen options menu ===================== -->
+
+    <!-- Menu row for a title already watched right through. Verb phrase: clears the watched
+         mark. -->
+    <string name="media_detail_menu_mark_unwatched">Mark Unwatched</string>
+    <!-- Menu row for an unwatched title. Verb phrase: sets the watched mark. -->
+    <string name="media_detail_menu_mark_watched">Mark Watched</string>
+    <!-- Menu row for a title that is already a favourite. Verb phrase: takes it back out. -->
+    <string name="media_detail_menu_remove_favorite">Remove Favorite</string>
+    <!-- Menu row for a title that is not a favourite. Verb: marks it as one. -->
+    <string name="media_detail_menu_favorite">Favorite</string>
+    <!-- Menu row that opens the download choices. Verb. -->
+    <string name="media_detail_menu_download">Download</string>
+    <!-- Menu row that erases the copies held on this device, keeping the library entry. Verb
+         phrase. -->
+    <string name="media_detail_menu_remove_downloads">Remove Downloads</string>
+    <!-- Menu row while a refresh is already running. Adjective phrase describing what the
+         launcher is doing, not a command. -->
+    <string name="media_detail_menu_refreshing">Refreshing</string>
+    <!-- Menu row that fetches the open season's episodes again. Verb phrase. -->
+    <string name="media_detail_menu_refresh_from_server">Refresh From Server</string>
+    <!-- Menu row that leaves for the grid of the library this title belongs to. Verb phrase.
+         "Library" here is one of the collections a media server offers. -->
+    <string name="media_detail_menu_go_to_library">Go to Library</string>
+
+    <!-- ===================== Episode rows ===================== -->
+
+    <!-- Spoken description of the mark on the episode currently playing. Adjective phrase
+         describing the episode. -->
+    <string name="media_episode_row_now_playing">Now playing</string>
+    <!-- Spoken description of the tick on an episode watched right through. Adjective describing
+         the episode. -->
+    <string name="media_episode_row_watched">Watched</string>
+
+    <!-- ===================== Resume prompt ===================== -->
+
+    <!-- Row of the resume prompt that restarts the title. Verb phrase. -->
+    <string name="media_resume_start_over_label">Start Over</string>
+    <!-- Second line under that row. -->
+    <string name="media_resume_start_over_supporting">Play from the beginning</string>
+    <!-- Row of the resume prompt that picks the title up where it was left. Verb. -->
+    <string name="media_resume_resume_label">Resume</string>
+    <!-- Second line under that row. %1$s is a clock reading such as 12:34. -->
+    <string name="media_resume_resume_supporting">Continue from %1$s</string>
+
+    <!-- ===================== Download prompt ===================== -->
+
+    <!-- Second line of the download prompt while episodes are being ticked. Verb phrase
+         addressed to the user. -->
+    <string name="media_download_episodes_subtitle">Choose episodes</string>
+    <!-- The committing button under the episode chooser. Verb: fetches everything ticked. -->
+    <string name="media_download_episodes_confirm">Download</string>
+    <!-- One episode in the chooser. %1$d is its number within the season, %2$s its name. -->
+    <string name="media_download_episode_row_label">%1$d. %2$s</string>
+    <!-- Shortcut in the episode chooser that ticks the next few unwatched episodes. %1$d is how
+         many. -->
+    <string name="media_download_quick_action_next">Next %1$d</string>
+
+    <!-- Shown instead of the chooser when this show's episodes could not be fetched. -->
+    <string name="media_download_refused_fetch_failed">Couldn\'t get this show\'s episodes from the server</string>
+    <!-- Shown instead of the chooser when the fetch succeeded but the show has no episodes. -->
+    <string name="media_download_refused_no_episodes">No episodes were found for this show</string>
+
+    <!-- How many downloaded copies a removal prompt is about. -->
+    <plurals name="media_download_count">
+        <item quantity="one">%d download</item>
+        <item quantity="other">%d downloads</item>
+    </plurals>
+    <!-- Second line of the removal prompt. %1$s is the count phrase above. -->
+    <string name="media_download_confirm_subtitle">%1$s on this device</string>
+    <!-- Declining row of the removal prompt. Verb: leaves the files alone. -->
+    <string name="media_download_confirm_keep">Keep</string>
+    <!-- Second line under that row. -->
+    <string name="media_download_confirm_keep_supporting">Nothing is deleted</string>
+    <!-- Accepting row of the removal prompt. Verb: erases the files. -->
+    <string name="media_download_confirm_remove">Remove</string>
+    <!-- Second line under that row. %1$s is the count phrase. -->
+    <string name="media_download_confirm_remove_supporting">Deletes %1$s from this device</string>
+    <!-- Warning under the removal prompt. -->
+    <string name="media_download_confirm_warning">The files come back only by downloading them again</string>
+
+    <!-- Row of the quality prompt offered when the title is already on this device. Verb phrase:
+         erases the copy, keeping the library entry. -->
+    <string name="media_download_quality_remove">Remove Download</string>
+    <!-- Second line under that row. -->
+    <string name="media_download_quality_remove_supporting">Deletes the copy on this device</string>
+    <!-- Warning under the quality prompt when the chosen download may not fit. -->
+    <string name="media_download_storage_warning">Video files are large and this may not fit</string>
+
+    <!-- How many titles a download prompt covers. -->
+    <plurals name="media_download_title_count">
+        <item quantity="one">%d title</item>
+        <item quantity="other">%d titles</item>
+    </plurals>
+    <!-- Second line of the quality prompt. %1$s is the title count above, %2$s the free space. -->
+    <string name="media_download_quality_subtitle">%1$s - %2$s free</string>
+    <!-- A size in gigabytes. %1$.1f is the number, "GB" is the unit symbol. -->
+    <string name="media_download_size_gigabytes">%1$.1f GB</string>
+
+    <!-- Second line under a quality row whose size is not known ahead of time, because the server
+         hands over the file it already holds. -->
+    <string name="media_download_quality_source_unknown">Source file, size varies</string>
+    <!-- Second line under a quality row the server will re-encode for, with no size known. -->
+    <string name="media_download_quality_transcode">Server transcode</string>
+    <!-- Second line under a quality row the title already fits inside, so the server hands over
+         its own file. %1$s is that file's size. -->
+    <string name="media_download_quality_source_size">Source file - %1$s</string>
+    <!-- Second line under a quality row whose size is an estimate. %1$s is that estimate. -->
+    <string name="media_download_quality_estimate">About %1$s</string>
+
+    <!-- Note on the download prompt when nothing is known about this title's subtitles yet, and
+         when it carries both kinds. Text subtitles are saved as files beside the video; picture
+         subtitles are images and survive only in the untouched source file. "Original" is the
+         name of the highest download quality and is translated with that row. -->
+    <string name="media_download_note_mixed">Text subtitles download with the video, picture subtitles come only with Original</string>
+    <!-- Note on the download prompt when the title carries no subtitles at all. -->
+    <string name="media_download_note_none">No subtitles on this title</string>
+    <!-- Note on the download prompt when every subtitle is text. -->
+    <string name="media_download_note_text_only">Subtitles download with the video</string>
+    <!-- Note on the download prompt when the only subtitles are images and the server has been
+         told to draw them into the video, which cannot then be switched off. -->
+    <string name="media_download_note_burned_in">Picture subtitles are drawn into a smaller copy and cannot be turned off</string>
+    <!-- Note on the download prompt when the only subtitles are images, so they survive only in
+         the untouched source file. -->
+    <string name="media_download_note_picture_only">Picture subtitles come only with Original</string>
+
+    <!-- ===================== Video player: overlays ===================== -->
+
+    <!-- Title of the list that caps how this viewing streams. Noun. -->
+    <string name="media_player_overlay_quality_title">Quality</string>
+    <!-- Footer hint on that list. Verb: the directions turn the wheels. -->
+    <string name="media_player_overlay_quality_hint_choose">Choose</string>
+    <!-- Footer hint on that list. Verb: commits the wheels and reopens the stream. -->
+    <string name="media_player_overlay_quality_hint_apply">Apply</string>
+    <!-- Footer hint on that list. Verb: closes it without changing the stream. -->
+    <string name="media_player_overlay_quality_hint_cancel">Cancel</string>
+    <!-- The button under the quality wheels. Verb: commits the wheels and reopens the stream. -->
+    <string name="media_player_overlay_quality_apply_button">Apply</string>
+
+    <!-- The row on every quality wheel that caps nothing, leaving the source as it is. Adjective
+         used as a noun. -->
+    <string name="media_player_quality_option_original">Original</string>
+    <!-- How the quality reads on the player's caption line when nothing is capped. Adjective
+         used as a noun. -->
+    <string name="media_player_quality_summary_original">Original</string>
+    <!-- Heading over the wheel that caps picture size. Noun. -->
+    <string name="media_player_quality_wheel_resolution">Resolution</string>
+    <!-- Heading over the wheel that caps how many pictures a second are sent. Noun phrase. -->
+    <string name="media_player_quality_wheel_framerate">Frame Rate</string>
+    <!-- Heading over the wheel that caps how much data a second is sent. Noun phrase. -->
+    <string name="media_player_quality_wheel_bitrate">Bit Rate</string>
+
+    <!-- Title of the list of sound tracks. Noun. -->
+    <string name="media_player_overlay_audio_title">Audio</string>
+    <!-- Footer hint on that list. Verb: switches to the track under the cursor. -->
+    <string name="media_player_overlay_audio_hint_select">Select</string>
+    <!-- Footer hint on that list. Verb: puts the list away. -->
+    <string name="media_player_overlay_audio_hint_close">Close</string>
+
+    <!-- Title of the list of subtitle tracks. Noun, plural. -->
+    <string name="media_player_overlay_subtitles_title">Subtitles</string>
+    <!-- Footer hint on that list. Verb: switches to the track under the cursor. -->
+    <string name="media_player_overlay_subtitles_hint_select">Select</string>
+    <!-- Footer hint on that list. Verb: puts the list away. -->
+    <string name="media_player_overlay_subtitles_hint_close">Close</string>
+    <!-- The first row of the subtitle list, which shows no subtitles at all. Adverb. -->
+    <string name="media_player_subtitle_row_off">Off</string>
+    <!-- The last row of the subtitle list. Verb phrase: has the server draw image-based subtitles
+         into the video itself, which is the only way they can be shown. -->
+    <string name="media_player_subtitle_row_burn_in">Burn In Picture Subtitles</string>
+    <!-- Second line under that row while it is switched on. -->
+    <string name="media_player_subtitle_burn_in_on">On for this playback - the server re-encodes the video</string>
+    <!-- Second line under that row while it is switched off. -->
+    <string name="media_player_subtitle_burn_in_off">Off - picture subtitles cannot be shown</string>
+    <!-- Second line under a subtitle track that is a sequence of images rather than text, so it
+         carries no language of its own to show. -->
+    <string name="media_player_subtitle_row_picture">Picture subtitle</string>
+    <!-- Shown under the subtitle list when an image-based track was chosen with burn-in off, so it
+         cannot be shown. %1$s is the track's name. -->
+    <string name="media_player_subtitle_picture_notice">%1$s is a picture, not text. It can only be shown by having the server draw it into the video.</string>
+
+    <!-- Title of the list of chapter marks. Noun, plural. -->
+    <string name="media_player_overlay_chapters_title">Chapters</string>
+    <!-- Footer hint on that list. Verb phrase: moves the position to the chapter under the
+         cursor. -->
+    <string name="media_player_overlay_chapters_hint_play">Play From Here</string>
+    <!-- Footer hint on that list. Verb: puts the list away. -->
+    <string name="media_player_overlay_chapters_hint_close">Close</string>
+    <!-- Name given to a chapter the server left unnamed. %1$d is its position in the list. -->
+    <string name="media_player_chapter_fallback">Chapter %1$d</string>
+
+    <!-- ===================== Video player: transport caption ===================== -->
+
+    <!-- Caption under the scrubber on a title with no chapter marks. %1$s is a clock reading of
+         how much of the title has not been played yet. -->
+    <string name="media_player_caption_time_left">%1$s Left</string>
+
+    <!-- Caption naming the button that steps back to the previous episode. Noun phrase. -->
+    <string name="media_player_control_previous_episode">Previous Episode</string>
+    <!-- Caption naming the button that steps on to the following episode. Noun phrase. -->
+    <string name="media_player_control_next_episode">Next Episode</string>
+    <!-- Caption for one of those two buttons when there is no such episode, so the button does
+         nothing. %1$s is the button's name above. -->
+    <string name="media_player_control_episode_absent">No %1$s</string>
+    <!-- Caption for one of those two buttons when the episode is known. %1$s is the button's
+         name, %2$s the episode it would play. -->
+    <string name="media_player_control_episode_named">%1$s  %2$s</string>
+    <!-- Caption naming the button that steps the position backwards. %1$d is how many seconds one
+         press moves; "s" is the unit symbol for seconds. -->
+    <string name="media_player_control_skip_back">Back %1$ds</string>
+    <!-- Caption naming the button that steps the position forwards. %1$d is how many seconds one
+         press moves; "s" is the unit symbol for seconds. -->
+    <string name="media_player_control_skip_forward">Forward %1$ds</string>
+    <!-- Caption naming the main transport button while the picture is running. Verb: a press
+         halts it. -->
+    <string name="media_player_control_pause">Pause</string>
+    <!-- Caption naming the main transport button while the picture is stopped. Verb: a press
+         starts it. -->
+    <string name="media_player_control_play">Play</string>
+    <!-- Caption naming the button that opens the sound track list. Noun phrase. -->
+    <string name="media_player_control_audio">Audio Track</string>
+    <!-- Caption naming the button that opens the subtitle list. Noun, plural. -->
+    <string name="media_player_control_subtitles">Subtitles</string>
+    <!-- Caption naming the button that opens the chapter list. Noun, plural. -->
+    <string name="media_player_control_chapters">Chapters</string>
+    <!-- Caption naming the button that opens the quality wheels, with the caps in force beside
+         it. %1$s is those caps. -->
+    <string name="media_player_control_quality">Quality  %1$s</string>
+    <!-- Caption naming the picture-shape button while the whole frame is visible. Verb phrase: a
+         press crops the frame to cover the screen. -->
+    <string name="media_player_control_fill">Fill Screen</string>
+    <!-- Caption naming the picture-shape button while the frame is cropped. Verb phrase: a press
+         brings the whole frame back. -->
+    <string name="media_player_control_fit">Fit Screen</string>
+    <!-- Caption naming the volume button at its loudest stop. Noun phrase describing the state in
+         force, not a command. -->
+    <string name="media_player_control_volume_full">Volume Full</string>
+    <!-- Caption naming the volume button at its middle stop. Noun phrase describing the state in
+         force. -->
+    <string name="media_player_control_volume_half">Volume Half</string>
+    <!-- Caption naming the volume button at silence. Adjective describing the state in force. -->
+    <string name="media_player_control_volume_mute">Muted</string>
+    <!-- Caption naming the button that hides the controls and keeps them hidden. Verb phrase. -->
+    <string name="media_player_control_lock">Lock Controls</string>
+    <!-- Caption naming the watched button on a title already watched right through. Adjective
+         describing the title. -->
+    <string name="media_player_control_watched">Watched</string>
+    <!-- Caption naming the watched button on an unwatched title. Verb phrase. -->
+    <string name="media_player_control_mark_watched">Mark Watched</string>
+    <!-- Caption naming the button that ends the viewing. Verb. -->
+    <string name="media_player_control_close">Close</string>
+
+    <!-- The button that appears only while the opening titles are on screen. Verb phrase: jumps
+         past them. -->
+    <string name="media_player_skip_intro">Skip Intro</string>
+    <!-- The button that appears only while the closing credits are on screen. Verb phrase: jumps
+         past them. -->
+    <string name="media_player_skip_credits">Skip Credits</string>
+
+    <!-- ===================== Video player: panels and errors ===================== -->
+
+    <!-- Title of the prompt asking whether to leave the player. -->
+    <string name="media_player_exit_title">Leave the player?</string>
+    <!-- Body of that prompt. -->
+    <string name="media_player_exit_message">Playback will stop. You can pick up where you left off.</string>
+    <!-- Accepting button on that prompt. Verb: closes the player. -->
+    <string name="media_player_exit_confirm">Leave</string>
+    <!-- Declining button on that prompt. Verb phrase: stays in the player. -->
+    <string name="media_player_exit_cancel">Keep Watching</string>
+
+    <!-- Button on the player's error panel. Verb phrase: opens the stream again. -->
+    <string name="media_player_error_retry">Try Again</string>
+    <!-- Button on the player's error panel. Verb: closes the player. -->
+    <string name="media_player_error_close">Close</string>
+
+    <!-- Line above the offer of the next episode, counting down the seconds left to refuse it. -->
+    <plurals name="media_player_autoplay_countdown">
+        <item quantity="one">Up next in %d</item>
+        <item quantity="other">Up next in %d</item>
+    </plurals>
+    <!-- Accepting button on that offer. Verb phrase: starts the next episode at once. -->
+    <string name="media_player_autoplay_play_now">Play Now</string>
+    <!-- Declining button on that offer. Verb: ends the viewing instead. -->
+    <string name="media_player_autoplay_stop">Stop</string>
+
+    <!-- Shown in the player when the picture failed part way through. -->
+    <string name="media_player_error_playback_failed">This title could not be played</string>
+    <!-- Shown in the player when there is no signed-in media account to fetch the stream with.
+         "Jellyfin" is the name of the media server software; leave it untranslated. -->
+    <string name="media_player_error_not_signed_in">Not signed in to Jellyfin</string>
+    <!-- Line under the title in the player when a downloaded copy exists but sits on storage the
+         device cannot read, so the title is being streamed instead. -->
+    <string name="media_player_notice_stream_unavailable_copy">Streaming - your download is on storage that is not connected</string>
+    <!-- Line under the title in the player when the downloaded copy has gone from the device, so
+         the title is being streamed instead. -->
+    <string name="media_player_notice_stream_absent_copy">Streaming - your download is no longer on this device</string>
+
+    <!-- ===================== Video player: item and stream description ===================== -->
+
+    <!-- Season and episode of a stored episode, on the player's second line. %1$d is the season
+         number and %2$d the episode number. The letters stand for "season" and "episode" in
+         English; change them to whatever your language abbreviates those two words to, for
+         example T1 E2 in Spanish. -->
+    <string name="media_player_stored_episode_code">S%1$d E%2$d</string>
+    <!-- Same line for a stored episode whose season is unknown. %1$d is the episode number. -->
+    <string name="media_player_stored_episode_number">Episode %1$d</string>
+    <!-- Season and episode as the media server reports them, on the player's second line. %1$d is
+         the season number and %2$d the episode number. The letters stand for "season" and
+         "episode" in English; change them to whatever your language abbreviates those two words
+         to, for example T1 E2 in Spanish. -->
+    <string name="media_player_server_episode_code">S%1$d E%2$d</string>
+    <!-- Same line for a server episode whose season is unknown. %1$d is the episode number. -->
+    <string name="media_player_server_episode_number">Episode %1$d</string>
+
+    <!-- Name given to a sound or subtitle track the negotiated stream left unnamed. %1$d is its
+         position among the tracks of its kind. -->
+    <string name="media_negotiator_track_fallback">Track %1$d</string>
+    <!-- Name given to a sound or subtitle track found inside a downloaded file that carries no
+         name of its own. %1$d is its position among the tracks of its kind. -->
+    <string name="media_engine_track_fallback">Track %1$d</string>
+
+    <!-- Shown when a playback could not be arranged because no media account is signed in.
+         "Jellyfin" is the name of the media server software; leave it untranslated. -->
+    <string name="media_negotiator_error_not_signed_in">Not signed in to Jellyfin</string>
+    <!-- Shown when the server answered the playback request with no version it could send. -->
+    <string name="media_negotiator_error_no_source">The server offered no playable version</string>
+    <!-- Shown when the server can neither send the file as it is nor re-encode it for this
+         device. -->
+    <string name="media_negotiator_error_unplayable">This title cannot be played on this device</string>
+
+    <!-- ===================== Music browser ===================== -->
+
+    <!-- Title across the top of the browser for music held on the game server. Noun phrase. -->
+    <string name="media_music_header_title">Server Music</string>
+    <!-- Second line under that title while browsing for background music. "BGM" is the launcher's
+         own name for the music it plays behind its menus. -->
+    <string name="media_music_header_subtitle_bgm">Add tracks to the BGM playlist</string>
+    <!-- Second line under that title while picking a sound effect. %1$s names the action the sound
+         will be attached to. -->
+    <string name="media_music_header_subtitle_sfx">Assign a sound for %1$s</string>
+    <!-- Stands in for that action when its name is not known. Noun phrase. -->
+    <string name="media_music_header_sfx_target_fallback">this action</string>
+    <!-- Spoken description of the arrow that leaves the music browser. Verb phrase. -->
+    <string name="media_music_header_back">Back</string>
+
+    <!-- Placeholder in the music browser's search field, shown while it is empty. Verb phrase
+         addressed to the user. -->
+    <string name="media_music_search_placeholder">Search tracks...</string>
+
+    <!-- Filter chip naming the performer filter while none is chosen. Noun, singular. -->
+    <string name="media_music_chip_artist">Artist</string>
+    <!-- Filter chip naming the album filter while none is chosen. Noun, singular. -->
+    <string name="media_music_chip_album">Album</string>
+    <!-- Filter chip naming the genre filter while none is chosen. Noun, singular. -->
+    <string name="media_music_chip_genre">Genre</string>
+    <!-- Filter chip showing the longest sound effect that will be listed. %1$d is a number of
+         seconds; "s" is the unit symbol for seconds. -->
+    <string name="media_music_chip_duration">Under %1$ds</string>
+    <!-- Filter chip that drops every filter at once. Verb. -->
+    <string name="media_music_chip_clear">Clear</string>
+
+    <!-- Heading of the list of filters to open. Rendered in caps in English; use whatever casing
+         is normal for a heading in your language. -->
+    <string name="media_music_facet_chooser_title">Filter By</string>
+    <!-- Row of that list that opens the performer filter. Noun, singular. -->
+    <string name="media_music_facet_chooser_artist">Artist</string>
+    <!-- Row of that list that opens the album filter. Noun, singular. -->
+    <string name="media_music_facet_chooser_album">Album</string>
+    <!-- Row of that list that opens the genre filter. Noun, singular. -->
+    <string name="media_music_facet_chooser_genre">Genre</string>
+    <!-- Row of that list carrying the sound-effect length limit, adjusted with left and right.
+         Noun phrase. -->
+    <string name="media_music_facet_chooser_max_duration">Max Duration</string>
+    <!-- Row of that list that drops every filter at once. Verb phrase. -->
+    <string name="media_music_facet_chooser_clear">Clear Filters</string>
+    <!-- The number of seconds beside the length-limit row. %1$d is the number; "s" is the unit
+         symbol for seconds. -->
+    <string name="media_music_duration_value">%1$ds</string>
+
+    <!-- Heading of the list of performers to filter by. Noun, singular. -->
+    <string name="media_music_facet_values_title_artist">Artist</string>
+    <!-- Heading of the list of albums to filter by. Noun, singular. -->
+    <string name="media_music_facet_values_title_album">Album</string>
+    <!-- Heading of the list of genres to filter by. Noun, singular. -->
+    <string name="media_music_facet_values_title_genre">Genre</string>
+    <!-- First row of the performer list, which applies no performer filter. Noun phrase. -->
+    <string name="media_music_facet_all_artists">All Artists</string>
+    <!-- First row of the album list, which applies no album filter. Noun phrase. -->
+    <string name="media_music_facet_all_albums">All Albums</string>
+    <!-- First row of the genre list, which applies no genre filter. Noun phrase. -->
+    <string name="media_music_facet_all_genres">All Genres</string>
+
+    <!-- Shown in place of the track list when the game server cannot be reached. "RomM" is the
+         name of the game server software; leave it untranslated. -->
+    <string name="media_music_offline_message">Not connected to your RomM server</string>
+    <!-- Shown in place of the track list when the game server is too old to serve music. "RomM" is
+         the name of the game server software; leave it untranslated. -->
+    <string name="media_music_unsupported_message">This RomM server does not support music browsing yet</string>
+    <!-- Shown in place of the track list when the request failed and the server gave no message of
+         its own. -->
+    <string name="media_music_error_fallback">Something went wrong</string>
+    <!-- Button under that message. Verb phrase: asks the server again. -->
+    <string name="media_music_error_retry">Retry</string>
+    <!-- Shown in place of the track list when the search and filters match nothing. -->
+    <string name="media_music_empty_message">No tracks found</string>
+
+    <!-- Spoken description of the mark on a track already in the background-music playlist.
+         Prepositional phrase describing the track. -->
+    <string name="media_music_track_in_playlist">In playlist</string>
+    <!-- Spoken description of the button beside a track that is being previewed. Verb phrase: a
+         press halts the preview. -->
+    <string name="media_music_track_stop_preview">Stop preview</string>
+    <!-- Spoken description of the button beside a track that is not being previewed. Verb: a press
+         plays a little of it. -->
+    <string name="media_music_track_preview">Preview</string>
+
+    <!-- Stands in for the game a track belongs to when the server names none. Noun phrase. -->
+    <string name="media_music_unknown_game">Unknown Game</string>
+
+    <!-- Brief message when the list of filter values could not be fetched. -->
+    <string name="media_music_notice_facet_failed">Could not load filter options</string>
+    <!-- Brief message when a track could not be played as a preview. -->
+    <string name="media_music_notice_preview_failed">Preview failed</string>
+    <!-- Brief message after taking a track out of the background-music playlist. Past tense
+         statement, not a command. -->
+    <string name="media_music_notice_removed">Removed from playlist</string>
+    <!-- Brief message after putting a track into the background-music playlist. Past tense
+         statement. -->
+    <string name="media_music_notice_added">Added to playlist</string>
+    <!-- Brief message when fetching a track from the server failed. -->
+    <string name="media_music_notice_download_failed">Download failed</string>
+
+    <!-- Footer hint in the music browser. Noun, plural: opens the list of filters. -->
+    <string name="media_music_footer_filters">Filters</string>
+    <!-- Footer hint in the music browser. Noun: the triggers jump to the previous or next game's
+         block of tracks. -->
+    <string name="media_music_footer_game">Game</string>
+    <!-- Footer hint on a track that is being previewed. Verb: halts the preview. -->
+    <string name="media_music_footer_stop">Stop</string>
+    <!-- Footer hint on a track that is not being previewed. Verb: plays a little of it. -->
+    <string name="media_music_footer_preview">Preview</string>
+    <!-- Footer hint while picking a sound effect. Verb: attaches this track to the action. -->
+    <string name="media_music_footer_assign">Assign</string>
+    <!-- Footer hint on a track already in the background-music playlist. Verb: takes it out. -->
+    <string name="media_music_footer_remove">Remove</string>
+    <!-- Footer hint on a track that is not in the background-music playlist. Verb: puts it in. -->
+    <string name="media_music_footer_add">Add</string>
+</resources>

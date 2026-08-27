@@ -28,7 +28,9 @@ import com.nendo.argosy.domain.usecase.game.LaunchWithSyncUseCase
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.libretro.LaunchMode
+import com.nendo.argosy.R
 import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.showError
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -458,22 +460,37 @@ class GameLaunchDelegate @Inject constructor(
 
     private fun dispatchErrorResult(result: LaunchResult, onLaunchFailed: () -> Unit) {
         when (result) {
-            is LaunchResult.NoEmulator -> notificationManager.showError("No emulator installed for this platform")
-            is LaunchResult.NoRomFile -> notificationManager.showError("ROM file not found")
-            is LaunchResult.NoSteamLauncher -> notificationManager.showError("Steam launcher not installed")
+            is LaunchResult.NoEmulator -> notificationManager.showError(
+                NotificationText.Res(R.string.notif_gamelaunch_no_emulator)
+            )
+            is LaunchResult.NoRomFile -> notificationManager.showError(
+                NotificationText.Res(R.string.notif_gamelaunch_no_rom_file)
+            )
+            is LaunchResult.NoSteamLauncher -> notificationManager.showError(
+                NotificationText.Res(R.string.notif_gamelaunch_no_steam_launcher)
+            )
             is LaunchResult.NoCore -> {
-                val base = "No core available for ${result.platformSlug}"
-                val message = result.reason?.let { "$base: $it" } ?: base
+                val message = result.reason?.let {
+                    NotificationText.Res(R.string.notif_gamelaunch_no_core_with_reason, listOf(result.platformSlug, it))
+                } ?: NotificationText.Res(R.string.notif_gamelaunch_no_core_base, listOf(result.platformSlug))
                 notificationManager.showError(message)
             }
             is LaunchResult.MissingDiscs -> {
                 val discText = result.missingDiscNumbers.joinToString(", ")
-                notificationManager.showError("Missing discs: $discText. View game details to repair.")
+                notificationManager.showError(
+                    NotificationText.Res(R.string.notif_gamelaunch_missing_discs, listOf(discText))
+                )
             }
-            is LaunchResult.MissingBios -> notificationManager.showError("Missing BIOS for ${result.platformSlug}. Install it in Settings before launching.")
-            is LaunchResult.NoScummVMGameId -> notificationManager.showError("Missing .scummvm file for ${result.gameName}")
-            is LaunchResult.NoAndroidApp -> notificationManager.showError("Android app not installed: ${result.packageName}")
-            is LaunchResult.Error -> notificationManager.showError(result.message)
+            is LaunchResult.MissingBios -> notificationManager.showError(
+                NotificationText.Res(R.string.notif_gamelaunch_missing_bios, listOf(result.platformSlug))
+            )
+            is LaunchResult.NoScummVMGameId -> notificationManager.showError(
+                NotificationText.Res(R.string.notif_gamelaunch_no_scummvm_id, listOf(result.gameName))
+            )
+            is LaunchResult.NoAndroidApp -> notificationManager.showError(
+                NotificationText.Res(R.string.notif_gamelaunch_no_android_app, listOf(result.packageName))
+            )
+            is LaunchResult.Error -> notificationManager.showError(NotificationText.Raw(result.message))
             else -> { /* Success/SelectDisc/SelectVariant handled elsewhere */ }
         }
         onLaunchFailed()
@@ -688,8 +705,8 @@ class GameLaunchDelegate @Inject constructor(
                     soundManager.play(SoundType.LAUNCH_GAME)
                     state.onLaunch(applyLaunchMode(result.intent, state.launchMode))
                 }
-                is LaunchResult.Error -> notificationManager.showError(result.message)
-                else -> notificationManager.showError("Failed to launch disc")
+                is LaunchResult.Error -> notificationManager.showError(NotificationText.Raw(result.message))
+                else -> notificationManager.showError(NotificationText.Res(R.string.notif_gamelaunch_disc_launch_failed))
             }
         }
     }
@@ -737,8 +754,8 @@ class GameLaunchDelegate @Inject constructor(
                     soundManager.play(SoundType.LAUNCH_GAME)
                     state.onLaunch(applyLaunchMode(result.intent, state.launchMode))
                 }
-                is LaunchResult.Error -> notificationManager.showError(result.message)
-                else -> notificationManager.showError("Failed to launch")
+                is LaunchResult.Error -> notificationManager.showError(NotificationText.Raw(result.message))
+                else -> notificationManager.showError(NotificationText.Res(R.string.notif_gamelaunch_launch_failed))
             }
         }
     }

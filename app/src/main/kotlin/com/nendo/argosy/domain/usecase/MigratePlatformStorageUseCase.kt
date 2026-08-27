@@ -5,21 +5,22 @@ import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.storage.StorageAttributionRepository
 import com.nendo.argosy.data.storage.StorageCategory
-import com.nendo.argosy.core.notification.NotificationManager
-import com.nendo.argosy.core.notification.NotificationProgress
-import com.nendo.argosy.core.notification.NotificationType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
 
 private const val TAG = "MigratePlatformStorage"
-private const val NOTIFICATION_KEY = "platform-migration"
 
+/**
+ * Per-platform storage migration. Progress is reported through onProgress so the caller can
+ * render it; this use case does not localize or display text. [current] is 0 for the initial
+ * call before any game has been processed, and the platform name is passed back via the
+ * returned [MigrationResult]'s caller context, not through this use case.
+ */
 class MigratePlatformStorageUseCase @Inject constructor(
     private val gameRepository: GameRepository,
     private val platformDao: PlatformDao,
-    private val notificationManager: NotificationManager,
     private val attributionRepository: StorageAttributionRepository
 ) {
     suspend operator fun invoke(
@@ -27,10 +28,8 @@ class MigratePlatformStorageUseCase @Inject constructor(
         oldPath: String,
         newPath: String,
         isResetToGlobal: Boolean = false,
-        onProgress: ((current: Int, total: Int, title: String) -> Unit)? = null
+        onProgress: ((current: Int, total: Int, gameTitle: String) -> Unit)? = null
     ): MigrationResult = withContext(Dispatchers.IO) {
-        val platform = platformDao.getById(platformId)
-        val platformName = platform?.name ?: "Platform $platformId"
         val gamesWithPaths = gameRepository.getGamesWithLocalPathsForPlatform(platformId)
         val totalGames = gamesWithPaths.size
 
@@ -39,12 +38,7 @@ class MigratePlatformStorageUseCase @Inject constructor(
             return@withContext MigrationResult(0, 0, 0)
         }
 
-        notificationManager.showPersistent(
-            key = NOTIFICATION_KEY,
-            title = "Moving $platformName ROMs",
-            subtitle = "0 / $totalGames",
-            progress = NotificationProgress(0, totalGames)
-        )
+        onProgress?.invoke(0, totalGames, "")
 
         var migrated = 0
         var failed = 0
@@ -55,11 +49,6 @@ class MigratePlatformStorageUseCase @Inject constructor(
         gamesWithPaths.forEachIndexed { index, game ->
             Log.d(TAG, "Migration: processing ${index + 1}/$totalGames - ${game.title}")
 
-            notificationManager.updatePersistent(
-                key = NOTIFICATION_KEY,
-                subtitle = "${index + 1}/$totalGames: ${game.title}",
-                progress = NotificationProgress(index, totalGames)
-            )
             onProgress?.invoke(index + 1, totalGames, game.title)
 
             try {
@@ -98,19 +87,6 @@ class MigratePlatformStorageUseCase @Inject constructor(
         Log.d(TAG, "Migration: complete - migrated=$migrated, skipped=$skipped, failed=$failed")
 
         platformDao.updateCustomRomPath(platformId, if (isResetToGlobal) null else newPath)
-
-        val message = buildString {
-            append("Moved $migrated")
-            if (skipped > 0) append(", $skipped missing")
-            if (failed > 0) append(", $failed failed")
-        }
-
-        notificationManager.completePersistent(
-            key = NOTIFICATION_KEY,
-            title = "$platformName migration complete",
-            subtitle = message,
-            type = if (failed > 0) NotificationType.WARNING else NotificationType.SUCCESS
-        )
 
         attributionRepository.markDirty(StorageCategory.GAMES)
         MigrationResult(migrated, skipped, failed)

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="error_sync_library_not_connected">尚未連線至RomM</string>
+    <string name="error_sync_library_unexpected">同步失敗</string>
+
+    <string name="error_sync_platform_not_connected">尚未連線至RomM</string>
+    <string name="error_sync_platform_not_found">找不到平台</string>
+    <string name="error_sync_platform_unexpected">同步失敗</string>
+
+    <string name="error_restore_cached_states_game_not_found">找不到遊戲</string>
+    <string name="error_restore_cached_states_no_local_path">遊戲沒有本機路徑</string>
+    <string name="error_restore_cached_states_directory_unresolved">無法判斷即時存檔的還原位置</string>
+    <string name="error_restore_cached_states_unexpected">無法還原即時存檔</string>
+
+    <string name="error_state_sync_game_not_found">找不到遊戲</string>
+    <string name="error_state_sync_no_local_path">遊戲沒有本機路徑</string>
+
+    <string name="error_restore_state_target_path_unresolved">無法判斷此即時存檔的還原位置</string>
+    <string name="error_restore_state_write_failed">無法還原即時存檔檔案</string>
+
+    <string name="error_restore_cached_save_game_not_found">找不到遊戲</string>
+    <string name="error_restore_cached_save_no_local_copy">遊戲沒有本機備份</string>
+    <string name="error_restore_cached_save_location_unresolved">無法判斷存檔位置</string>
+    <string name="error_restore_cached_save_clear_failed">無法清除目標路徑中現有的存檔</string>
+    <string name="error_restore_cached_save_no_local_cache_id">沒有可還原的本機存檔</string>
+    <string name="error_restore_cached_save_no_server_save_id">沒有可還原的伺服器存檔</string>
+    <string name="error_restore_cached_save_restore_failed">無法還原存檔</string>
+
+    <string name="error_download_game_not_found">找不到遊戲</string>
+    <string name="error_download_game_not_synced">遊戲尚未從RomM同步</string>
+    <string name="error_download_invalid_file_type">無效的檔案類型：.%1$s</string>
+    <string name="error_download_rom_info_fetch_failed">無法取得ROM資訊：%1$s</string>
+    <string name="error_download_no_discs_found">找不到此多光碟遊戲的光碟</string>
+    <string name="error_download_all_discs_downloaded">所有光碟皆已下載</string>
+    <string name="error_download_no_discs_queued">無法將任何光碟加入下載佇列</string>
+    <string name="error_download_game_not_found_for_repair">找不到遊戲</string>
+    <string name="error_download_not_multi_disc">不是多光碟遊戲</string>
+
+    <string name="error_download_invalid_content_type">無效的檔案類型：%1$s</string>
+    <string name="error_download_file_too_small">檔案過小，不像是ROM</string>
+    <string name="error_download_unexpected">下載失敗</string>
+    <string name="error_download_insufficient_unpack_space_internal">解壓縮需要內部儲存空間%1$d MB，目前剩餘%2$d MB</string>
+    <string name="error_download_insufficient_unpack_space_rom">解壓縮需要ROM儲存空間%1$d MB，目前剩餘%2$d MB</string>
+    <string name="error_download_unpack_escaped_staging">解壓縮後的遊戲未落在暫存資料夾中</string>
+    <string name="error_download_staged_path_missing">暫存的遊戲沒有記錄路徑</string>
+    <string name="error_download_insufficient_deploy_space">需要ROM儲存空間%1$d MB，目前剩餘%2$d MB</string>
+    <string name="error_download_move_to_storage_failed">無法將遊戲移至ROM儲存空間</string>
+    <string name="error_download_moved_file_not_found">在ROM儲存空間中找不到已移動的遊戲</string>
+    <string name="error_download_downloaded_file_missing">找不到已下載的檔案</string>
+    <string name="error_download_no_download_entry">找不到下載項目</string>
+    <string name="error_download_no_longer_exists">已下載的檔案已不存在</string>
+    <string name="error_download_extraction_failed">解壓縮失敗</string>
+
+    <string name="error_filepicker_already_downloaded">遊戲已下載</string>
+</resources>

@@ -20,7 +20,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.generated.ColorTokens
@@ -81,7 +83,8 @@ fun OptionItem(
         if (isSelected) {
             Icon(
                 imageVector = Icons.Default.Check,
-                contentDescription = "Current",
+                contentDescription =
+                    stringResource(R.string.gamedetail_option_item_current_description),
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.width(Dimens.iconSm)
             )
@@ -94,7 +97,7 @@ fun OptionItem(
             )
         } else if (value != null) {
             Text(
-                text = "[$value]",
+                text = stringResource(R.string.gamedetail_option_item_value, value),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

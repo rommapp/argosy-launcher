@@ -12,6 +12,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.data.preferences.DisplayRoleOverride
 import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.NavigationPreference
@@ -53,7 +57,7 @@ internal sealed class DisplaysItem(
     class Header(
         key: String,
         section: String,
-        val title: String,
+        val titleRes: Int,
         visibleWhen: (DisplaysLayoutState) -> Boolean = { true }
     ) : DisplaysItem(key, section, visibleWhen)
 
@@ -77,9 +81,11 @@ internal sealed class DisplaysItem(
     )
 
     companion object {
-        private val ScreenSafetyHeader = Header("screenSafetyHeader", "screenSafety", "Screen Safety")
+        private val ScreenSafetyHeader =
+            Header("screenSafetyHeader", "screenSafety", R.string.settings_displays_section_screen_safety)
         private val DisplaysSpacer = SectionSpacer("displaysSpacer", "displays")
-        private val DisplaysHeader = Header("displaysHeader", "displays", "Displays")
+        private val DisplaysHeader =
+            Header("displaysHeader", "displays", R.string.settings_displays_section_displays)
 
         val ALL: List<DisplaysItem>
             get() = listOf(
@@ -96,14 +102,20 @@ private val displaysLayout = SettingsLayout<DisplaysItem, DisplaysLayoutState>(
     isFocusable = { it.isFocusable },
     visibleWhen = { item, state -> item.visibleWhen(state) },
     sectionOf = { it.section },
-    sectionTitle = {
+    sectionTitleRes = {
         when (it) {
-            "screenSafety" -> "Screen Safety"
-            "displays" -> "Displays"
+            "screenSafety" -> R.string.settings_displays_section_screen_safety
+            "displays" -> R.string.settings_displays_section_displays
             else -> null
         }
     }
 )
+
+private fun displayRoleLabelRes(mode: DisplayRoleOverride): Int = when (mode) {
+    DisplayRoleOverride.AUTO -> R.string.settings_displays_display_roles_auto
+    DisplayRoleOverride.STANDARD -> R.string.settings_displays_display_roles_standard
+    DisplayRoleOverride.SWAPPED -> R.string.settings_displays_display_roles_swapped
+}
 
 internal fun displaysMaxFocusIndex(state: DisplaysLayoutState): Int = displaysLayout.maxFocusIndex(state)
 
@@ -119,6 +131,7 @@ internal fun displaysFocusIndexOf(item: DisplaysItem, state: DisplaysLayoutState
 fun DisplaysSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val display = uiState.display
     val storage = uiState.storage
+    val context = LocalContext.current
 
     val layoutState = remember(
         display.ambientLedAvailable,
@@ -138,8 +151,8 @@ fun DisplaysSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val visibleItems = remember(layoutState) {
         displaysLayout.visibleItems(layoutState)
     }
-    val sections = remember(layoutState) {
-        displaysLayout.buildSections(layoutState)
+    val sections = remember(layoutState, context) {
+        displaysLayout.buildSections(layoutState, context)
     }
 
     fun isFocused(item: DisplaysItem): Boolean =
@@ -166,30 +179,42 @@ fun DisplaysSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) { item ->
         when (item) {
-            is DisplaysItem.Header -> DisplaysSectionHeader(item.title)
+            is DisplaysItem.Header -> DisplaysSectionHeader(stringResource(item.titleRes))
             is DisplaysItem.SectionSpacer -> Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
             DisplaysItem.ScreenDimmer -> SwitchPreference(
-                title = "Screen Dimmer",
-                subtitle = "Dims screen after inactivity to prevent burn-in",
+                title = stringResource(R.string.settings_displays_screen_dimmer_title),
+                subtitle = stringResource(R.string.settings_displays_screen_dimmer_subtitle),
                 isEnabled = storage.screenDimmerEnabled,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.toggleScreenDimmer() }
             )
 
             DisplaysItem.DimAfter -> CyclePreference(
-                title = "Dim After",
-                value = "${storage.screenDimmerTimeoutMinutes} min",
+                title = stringResource(R.string.settings_displays_dim_after_title),
+                value = pluralStringResource(
+                    R.plurals.settings_displays_dim_after_value,
+                    storage.screenDimmerTimeoutMinutes,
+                    storage.screenDimmerTimeoutMinutes
+                ),
                 isFocused = isFocused(item),
                 onClick = { viewModel.cycleScreenDimmerTimeout() },
                 onPrev = { viewModel.adjustScreenDimmerTimeout(-1) },
-                options = remember { (1..5).map { "$it min" } },
+                options = remember(context) {
+                    (1..5).map {
+                        context.resources.getQuantityString(
+                            R.plurals.settings_displays_dim_after_value,
+                            it,
+                            it
+                        )
+                    }
+                },
                 onSelect = { viewModel.adjustScreenDimmerTimeout((it + 1) - storage.screenDimmerTimeoutMinutes) },
                 pickerRequestToken = pickerToken(item)
             )
 
             DisplaysItem.DimLevel -> SliderPreference(
-                title = "Dim Level",
+                title = stringResource(R.string.settings_displays_dim_level_title),
                 value = storage.screenDimmerLevel,
                 minValue = 40,
                 maxValue = 70,
@@ -199,11 +224,11 @@ fun DisplaysSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             )
 
             DisplaysItem.DualScreenEnabled -> SwitchPreference(
-                title = "Enable Dual-screen Mode",
+                title = stringResource(R.string.settings_displays_dual_screen_title),
                 subtitle = if (display.secondaryDisplayUnsupported) {
-                    "This system does not allow a companion app on the secondary display; toggle off and on to retry"
+                    stringResource(R.string.settings_displays_dual_screen_subtitle_unsupported)
                 } else {
-                    "Use secondary display as companion screen"
+                    stringResource(R.string.settings_displays_dual_screen_subtitle)
                 },
                 isEnabled = display.dualScreenEnabled,
                 isFocused = isFocused(item),
@@ -211,21 +236,23 @@ fun DisplaysSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             )
 
             DisplaysItem.DisplayRoles -> CyclePreference(
-                title = "Display Roles",
-                subtitle = "Which physical display is the main vs companion screen; Swapped flips top and bottom",
-                value = display.displayRoleOverride.displayName,
+                title = stringResource(R.string.settings_displays_display_roles_title),
+                subtitle = stringResource(R.string.settings_displays_display_roles_subtitle),
+                value = stringResource(displayRoleLabelRes(display.displayRoleOverride)),
                 isFocused = isFocused(item),
                 onClick = { viewModel.cycleDisplayRoleOverride() },
                 onPrev = { viewModel.cycleDisplayRoleOverride(-1) },
-                options = remember { DisplayRoleOverride.entries.map { it.displayName } },
+                options = remember(context) {
+                    DisplayRoleOverride.entries.map { context.getString(displayRoleLabelRes(it)) }
+                },
                 onSelect = { viewModel.setDisplayRoleOverride(DisplayRoleOverride.entries[it]) },
                 pickerRequestToken = pickerToken(item)
             )
 
             DisplaysItem.AmbientLedSettings -> NavigationPreference(
                 icon = Icons.Outlined.WbTwilight,
-                title = "LED Control",
-                subtitle = "Thumbstick LED colors and effects",
+                title = stringResource(R.string.settings_displays_ambient_led_title),
+                subtitle = stringResource(R.string.settings_displays_ambient_led_subtitle),
                 isFocused = isFocused(item),
                 onClick = { openFrom(item) { viewModel.navigateToAmbientLed() } }
             )

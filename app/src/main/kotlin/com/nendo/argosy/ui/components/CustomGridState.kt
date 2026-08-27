@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.components
 
+import androidx.annotation.StringRes
+import com.nendo.argosy.R
 import com.nendo.argosy.data.local.entity.PageAudioKind
 import com.nendo.argosy.data.local.entity.PageBackgroundKind
 import com.nendo.argosy.data.repository.HomeTileRepository
@@ -9,16 +11,30 @@ import com.nendo.argosy.domain.model.HomeTileTargetRef
 import com.nendo.argosy.domain.model.TileRect
 import com.nendo.argosy.domain.model.fitTilesToPage
 
-enum class CustomTileMenuAction(val label: String) {
-    ARRANGE("Move or resize"),
-    RECURATE("Change what it plays"),
-    REMOVE("Remove from grid"),
-    START_GAME_QUEUE("Make game queue"),
-    SET_FOCUS_GAME("Set the active game"),
-    ADVANCE_FOCUS_GAME("Finish/skip game"),
-    PAGE_BACKDROP("Backdrop for this page"),
-    PAGE_MUSIC("Music for this page"),
-    DELETE_PAGE("Delete Page")
+enum class CustomTileMenuAction {
+    ARRANGE,
+    RECURATE,
+    REMOVE,
+    START_GAME_QUEUE,
+    SET_FOCUS_GAME,
+    ADVANCE_FOCUS_GAME,
+    PAGE_BACKDROP,
+    PAGE_MUSIC,
+    DELETE_PAGE;
+
+    @get:StringRes
+    val labelRes: Int
+        get() = when (this) {
+            ARRANGE -> R.string.custom_tile_menu_action_arrange
+            RECURATE -> R.string.custom_tile_menu_action_recurate
+            REMOVE -> R.string.custom_tile_menu_action_remove
+            START_GAME_QUEUE -> R.string.custom_tile_menu_action_start_game_queue
+            SET_FOCUS_GAME -> R.string.custom_tile_menu_action_set_focus_game
+            ADVANCE_FOCUS_GAME -> R.string.custom_tile_menu_action_advance_focus_game
+            PAGE_BACKDROP -> R.string.custom_tile_menu_action_page_backdrop
+            PAGE_MUSIC -> R.string.custom_tile_menu_action_page_music
+            DELETE_PAGE -> R.string.custom_tile_menu_action_delete_page
+        }
 }
 
 /**
@@ -70,20 +86,26 @@ data class PageChooserState(
     val gameId: Long? = null,
     val gameTitle: String? = null
 ) {
-    val title: String
+    /**
+     * Null once a game has been opened, because the heading is then that game's own title, which
+     * [gameTitle] already carries.
+     */
+    @get:StringRes
+    val titleRes: Int?
         get() = when {
-            kind == PageChooserKind.FOCUS_GAME -> "Play Next"
-            gameTitle != null -> gameTitle
-            kind == PageChooserKind.BACKDROP -> "Backdrop"
-            else -> "Music"
+            kind == PageChooserKind.FOCUS_GAME -> R.string.ui_page_chooser_title_focus_game
+            gameTitle != null -> null
+            kind == PageChooserKind.BACKDROP -> R.string.ui_page_chooser_title_backdrop
+            else -> R.string.ui_page_chooser_title_music
         }
 
-    val subtitle: String
+    @get:StringRes
+    val subtitleRes: Int
         get() = when {
-            kind == PageChooserKind.FOCUS_GAME -> "The game this tile plays"
-            gameId != null -> "Artwork and screenshots"
-            kind == PageChooserKind.BACKDROP -> "What this page shows behind its tiles"
-            else -> "What this page plays"
+            kind == PageChooserKind.FOCUS_GAME -> R.string.ui_page_chooser_subtitle_focus_game
+            gameId != null -> R.string.ui_page_chooser_subtitle_game_art
+            kind == PageChooserKind.BACKDROP -> R.string.ui_page_chooser_subtitle_backdrop
+            else -> R.string.ui_page_chooser_subtitle_music
         }
 }
 

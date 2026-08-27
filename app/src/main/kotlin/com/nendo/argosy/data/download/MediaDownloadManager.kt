@@ -4,7 +4,9 @@ import android.content.Context
 import android.net.Uri
 import android.os.StatFs
 import android.util.Log
+import com.nendo.argosy.R
 import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.NotificationType
 import com.nendo.argosy.data.local.dao.MediaDownloadQueueDao
 import com.nendo.argosy.data.local.entity.MediaDownloadDbState
@@ -55,6 +57,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.time.Instant
 import java.time.temporal.ChronoUnit
+import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -362,7 +365,10 @@ class MediaDownloadManager @Inject constructor(
         scope.launch {
             val owner = mediaRepository.currentUserId()
             if (owner == null) {
-                notify("Sign in to download", "Connect a media server from Settings")
+                notify(
+                    NotificationText.Res(R.string.sync_media_signin_title),
+                    NotificationText.Res(R.string.sync_media_signin_subtitle)
+                )
                 return@launch
             }
             val outcomes = itemIds.map { enqueueOne(owner, it, quality) }
@@ -383,21 +389,32 @@ class MediaDownloadManager @Inject constructor(
     private fun refusalNotice(
         outcomes: List<EnqueueOutcome>,
         quality: MediaDownloadQuality
-    ): Pair<String, String> {
+    ): Pair<NotificationText, NotificationText> {
         val downloaded = outcomes.count { it == EnqueueOutcome.ALREADY_DOWNLOADED }
         val queued = outcomes.count { it == EnqueueOutcome.ALREADY_QUEUED }
         return when {
             downloaded > 0 && queued == 0 ->
-                "Already downloaded" to "${titleCount(downloaded)} on this device at ${quality.displayName}"
+                NotificationText.Res(R.string.sync_media_refusal_downloaded_title) to
+                    NotificationText.Res(
+                        R.string.sync_media_refusal_downloaded_subtitle,
+                        listOf(titleCount(downloaded), quality.displayName)
+                    )
             queued > 0 && downloaded == 0 ->
-                "Already in the queue" to "${titleCount(queued)} waiting to download"
+                NotificationText.Res(R.string.sync_media_refusal_queued_title) to
+                    NotificationText.Res(R.string.sync_media_refusal_queued_subtitle, listOf(titleCount(queued)))
             downloaded > 0 ->
-                "Nothing new to download" to "${titleCount(downloaded)} downloaded, ${titleCount(queued)} queued"
-            else -> "Nothing to download" to "This title has no file the server will hand over"
+                NotificationText.Res(R.string.sync_media_refusal_mixed_title) to
+                    NotificationText.Res(
+                        R.string.sync_media_refusal_mixed_subtitle,
+                        listOf(titleCount(downloaded), titleCount(queued))
+                    )
+            else -> NotificationText.Res(R.string.sync_media_refusal_unavailable_title) to
+                NotificationText.Res(R.string.sync_media_refusal_unavailable_subtitle)
         }
     }
 
-    private fun titleCount(count: Int): String = if (count == 1) "1 title" else "$count titles"
+    private fun titleCount(count: Int): String =
+        context.resources.getQuantityString(R.plurals.sync_media_title_count, count, count)
 
     fun pauseActiveDownload() {
         val active = _activeDownload.value ?: return
@@ -533,8 +550,8 @@ class MediaDownloadManager @Inject constructor(
         }
         if (unreachable > 0) {
             notify(
-                "Storage unavailable",
-                "${titleCount(unreachable)} stay downloaded until their storage is back"
+                NotificationText.Res(R.string.sync_media_unreachable_title),
+                NotificationText.Res(R.string.sync_media_unreachable_subtitle, listOf(titleCount(unreachable)))
             )
         }
         MediaRemovalResult(removed = removed, unreachable = unreachable, absent = absent)
@@ -760,7 +777,7 @@ class MediaDownloadManager @Inject constructor(
             val owner = mediaRepository.currentUserId() ?: return@launch
             var plan: MediaFetchPlan? = null
             try {
-                setPreparing(queued, "Preparing")
+                setPreparing(queued, context.getString(R.string.sync_media_step_preparing))
                 mediaDownloadQueueDao.updateState(owner, queued.itemId, MediaDownloadDbState.PREPARING.name)
 
                 val item = mediaRepository.getItem(queued.itemId)
@@ -790,7 +807,7 @@ class MediaDownloadManager @Inject constructor(
                 }
 
                 if (negotiated.isTranscode) {
-                    setPreparing(queued, "Waiting for the server to start the transcode")
+                    setPreparing(queued, context.getString(R.string.sync_media_step_awaiting_transcode))
                 }
                 val outcome = fetch(owner, queued, negotiated, temp, resumeFrom)
 
@@ -867,7 +884,7 @@ class MediaDownloadManager @Inject constructor(
     ) {
         val message = "Needs ${formatGigabytes(required)}, ${formatGigabytes(available)} free"
         Log.w(TAG, "Holding ${queued.itemName}: $message")
-        notify("Not enough storage for ${queued.itemName}", message)
+        notify(NotificationText.Res(R.string.sync_media_storage_title, listOf(queued.itemName)), NotificationText.Raw(message))
         val paused = MediaDownloadState.Paused(queued.itemId, queued.itemName, 0f, message)
         _downloadState.value = paused
         _activeDownload.value = _activeDownload.value?.copy(state = paused)
@@ -1056,17 +1073,23 @@ class MediaDownloadManager @Inject constructor(
     ) {
         val missing = outcome.failed + plan.droppedSubtitles
         if (missing <= 0) return
-        val detail = when {
-            plan.burnedInSubtitle != null ->
-                "${plan.burnedInSubtitle} is in the picture; the rest could not travel"
-            outcome.failed > 0 -> "The server would not hand over every subtitle track"
-            plan.isTranscode -> "Picture subtitles cannot travel with a smaller size"
-            else -> "Picture subtitles are kept apart from the file and cannot travel with it"
+        val detail: NotificationText = when {
+            plan.burnedInSubtitle != null -> NotificationText.Res(
+                R.string.sync_media_subtitle_shortfall_burned_in, listOf(plan.burnedInSubtitle)
+            )
+            outcome.failed > 0 -> NotificationText.Res(R.string.sync_media_subtitle_shortfall_refused)
+            plan.isTranscode -> NotificationText.Res(R.string.sync_media_subtitle_shortfall_transcoded)
+            else -> NotificationText.Res(R.string.sync_media_subtitle_shortfall_external)
         }
-        notify("${item.name} downloaded without $missing subtitle ${trackWord(missing)}", detail)
+        notify(
+            NotificationText.Plural(
+                R.plurals.sync_media_subtitle_shortfall_title,
+                missing,
+                listOf(item.name, missing)
+            ),
+            detail
+        )
     }
-
-    private fun trackWord(count: Int): String = if (count == 1) "track" else "tracks"
 
     private fun displaceExisting(destinationPath: String): String? {
         if (!fileAccessLayer.exists(destinationPath)) return null
@@ -1133,8 +1156,8 @@ class MediaDownloadManager @Inject constructor(
         if (transcodingUrl == null) {
             if (wantsTranscode) {
                 notify(
-                    "Downloading the original file",
-                    "${item.name} could not be transcoded for download"
+                    NotificationText.Res(R.string.sync_media_transcode_unavailable_title),
+                    NotificationText.Res(R.string.sync_media_transcode_unavailable_subtitle, listOf(item.name))
                 )
             }
             return originalPlan(source, item)
@@ -1339,7 +1362,8 @@ class MediaDownloadManager @Inject constructor(
     private fun itemPathFor(item: MediaItemEntity): String =
         if (MediaItemType.fromWire(item.itemType) == MediaItemType.EPISODE) {
             val series = item.seriesName?.takeIf { it.isNotBlank() } ?: "Series"
-            val season = item.parentIndexNumber?.let { "Season %02d".format(it) } ?: "Season"
+            val season = item.parentIndexNumber
+                ?.let { String.format(Locale.ROOT, "Season %02d", it) } ?: "Season"
             "$series/$season"
         } else {
             listOfNotNull(item.name, item.productionYear?.let { "($it)" }).joinToString(" ")
@@ -1350,7 +1374,7 @@ class MediaDownloadManager @Inject constructor(
         val season = item.parentIndexNumber
         val episode = item.indexNumber
         if (season == null || episode == null) return item.name
-        return "S%02dE%02d - %s".format(season, episode, item.name)
+        return String.format(Locale.ROOT, "S%02dE%02d - %s", season, episode, item.name)
     }
 
     private fun setPreparing(queued: QueuedMediaDownload, detail: String) {
@@ -1494,7 +1518,7 @@ class MediaDownloadManager @Inject constructor(
         }
     }
 
-    private fun notify(title: String, subtitle: String) {
+    private fun notify(title: NotificationText, subtitle: NotificationText) {
         notificationManager.show(
             title = title,
             subtitle = subtitle,
@@ -1516,7 +1540,8 @@ class MediaDownloadManager @Inject constructor(
         get() = subtitleDeliveryFor(codec, isTextSubtitleStream) != null
 
     private val JellyfinMediaStream.displayLabel: String
-        get() = displayTitle ?: title ?: language ?: codec ?: "Subtitles"
+        get() = displayTitle ?: title ?: language ?: codec
+            ?: context.getString(R.string.sync_media_subtitle_label_fallback)
 
     private val MediaItemEntity.isDownloadable: Boolean
         get() = MediaItemType.fromWire(itemType).let {

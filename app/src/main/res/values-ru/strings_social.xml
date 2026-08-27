@@ -1,0 +1,342 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="social_feed_loading_connecting">Подключение...</string>
+    <string name="social_feed_loading_community">Загрузка ленты сообщества...</string>
+    <string name="social_feed_loading_friends">Загрузка ленты...</string>
+    <string name="social_feed_community_badge">Лента сообщества</string>
+
+    <string name="social_feed_hint_view">Просмотр</string>
+    <string name="social_feed_hint_unlike">Убрать лайк</string>
+    <string name="social_feed_hint_like">Лайк</string>
+    <string name="social_feed_hint_switch_to_friends">Друзья</string>
+    <string name="social_feed_hint_switch_to_community">Сообщество</string>
+    <string name="social_feed_hint_options">Параметры</string>
+
+    <string name="social_friends_hint_accept">Принять</string>
+    <string name="social_friends_hint_decline">Отклонить</string>
+    <string name="social_friends_hint_cancel_request">Отмена</string>
+    <string name="social_friends_hint_join">Присоединиться</string>
+    <string name="social_friends_hint_view_profile">Профиль</string>
+    <string name="social_friends_hint_favorite">В избранное</string>
+
+    <string name="social_notifications_hint_open">Открыть</string>
+    <string name="social_notifications_hint_read_all">Прочитать все</string>
+    <string name="social_notifications_loading">Загрузка уведомлений...</string>
+
+    <string name="social_profile_hint_avatar">Аватар</string>
+    <string name="social_profile_hint_view_game">Игра</string>
+    <string name="social_profile_hint_settings">Настройки</string>
+
+    <string name="social_tabbar_feed">Лента</string>
+    <string name="social_tabbar_friends">Друзья</string>
+    <string name="social_tabbar_alerts">Уведомления</string>
+    <string name="social_tabbar_profile">Профиль</string>
+    <string name="social_tabbar_unread_overflow">99+</string>
+
+    <string name="social_notconnected_title">Не подключено</string>
+    <string name="social_notconnected_body">Привяжите аккаунт в настройках, чтобы видеть активность друзей</string>
+
+    <string name="social_error_prefix">Ошибка: %1$s</string>
+
+    <string name="social_emptyfeed_title">Пока нет активности</string>
+    <string name="social_emptyfeed_body_community">Подпишитесь на сообщества игр, чтобы видеть посты здесь</string>
+    <string name="social_emptyfeed_body_friends">Здесь появится игровая активность ваших друзей</string>
+
+    <string name="social_feedcontent_header_title">Активность</string>
+    <plurals name="social_feedcontent_event_count">
+        <item quantity="one">%1$d событие</item>
+        <item quantity="few">%1$d события</item>
+        <item quantity="many">%1$d событий</item>
+        <item quantity="other">%1$d события</item>
+    </plurals>
+
+    <string name="social_doodlecard_shared_label">Новый рисунок</string>
+
+    <string name="social_startedplayingfooter_likes_desc">Лайки</string>
+    <string name="social_startedplayingfooter_comments_desc">Комментарии</string>
+    <string name="social_feedeventcardfooter_likes_desc">Лайки</string>
+    <string name="social_feedeventcardfooter_comments_desc">Комментарии</string>
+
+    <string name="social_feed_desc_started_playing">Первый запуск</string>
+    <plurals name="social_feed_desc_play_milestone">
+        <item quantity="one">%1$d час в игре</item>
+        <item quantity="few">%1$d часа в игре</item>
+        <item quantity="many">%1$d часов в игре</item>
+        <item quantity="other">%1$d часа в игре</item>
+    </plurals>
+    <string name="social_feed_desc_marathon_session">Марафонская сессия %1$dh</string>
+    <string name="social_feed_desc_completed">Игра пройдена</string>
+    <string name="social_feed_desc_achievement_unlocked">Открыто: \"%1$s\"</string>
+    <string name="social_feed_desc_achievement_unlocked_fallback_name">достижение</string>
+    <plurals name="social_feed_desc_achievement_milestone">
+        <item quantity="one">%1$d достижение</item>
+        <item quantity="few">%1$d достижения</item>
+        <item quantity="many">%1$d достижений</item>
+        <item quantity="other">%1$d достижения</item>
+    </plurals>
+    <string name="social_feed_desc_perfect_game">Полное прохождение</string>
+    <string name="social_feed_desc_game_added">Добавлено в библиотеку</string>
+    <string name="social_feed_desc_game_favorited">Добавлено в избранное</string>
+    <string name="social_feed_desc_game_rated">Оценка: %1$s</string>
+    <string name="social_feed_desc_friend_added">Теперь друзья с %1$s</string>
+    <string name="social_feed_desc_friend_added_fallback_name">кем-то</string>
+    <string name="social_feed_desc_collection_shared">Коллекция \"%1$s\" опубликована</string>
+    <string name="social_feed_desc_collection_saved">Коллекция \"%1$s\" сохранена</string>
+    <string name="social_feed_desc_collection_created">Коллекция \"%1$s\" создана</string>
+    <plurals name="social_feed_desc_collection_updated">
+        <item quantity="one">Добавлена %1$d игра в \"%2$s\"</item>
+        <item quantity="few">Добавлено %1$d игры в \"%2$s\"</item>
+        <item quantity="many">Добавлено %1$d игр в \"%2$s\"</item>
+        <item quantity="other">Добавлено %1$d игры в \"%2$s\"</item>
+    </plurals>
+    <string name="social_feed_desc_collection_fallback_name">коллекция</string>
+    <string name="social_feed_desc_doodle">Новый рисунок</string>
+    <string name="social_feed_desc_discussion_shared_post">Новая публикация</string>
+    <string name="social_feed_desc_discussion_truncated">%1$s...</string>
+
+    <string name="social_communitysearch_modal_title">Поиск сообществ</string>
+    <string name="social_communitysearch_hint_browse">Просмотр</string>
+    <string name="social_communitysearch_hint_navigate">Навигация</string>
+    <string name="social_communitysearch_hint_toggle_follow">Подписаться/Отписаться</string>
+    <string name="social_communitysearch_hint_close">Закрыть</string>
+    <string name="social_communitysearch_placeholder">Поиск игры...</string>
+    <string name="social_communitysearch_following">Подписаны</string>
+    <string name="social_communitysearch_follow">Подписаться</string>
+    <string name="social_communitysearch_no_results">Игры не найдены</string>
+
+    <string name="social_feedoptions_modal_title">Параметры</string>
+    <string name="social_feedoptions_option_find_communities">Найти сообщества</string>
+    <string name="social_feedoptions_option_create_post">Создать публикацию</string>
+    <string name="social_feedoptions_option_view_profile">Профиль %1$s</string>
+    <string name="social_feedoptions_option_share_screenshot">Поделиться скриншотом</string>
+    <string name="social_feedoptions_option_report_post">Пожаловаться на публикацию</string>
+    <string name="social_feedoptions_option_hide_post">Скрыть публикацию</string>
+
+    <string name="social_avataroptions_modal_title">Аватар</string>
+
+    <string name="social_reportreason_modal_title">Причина жалобы</string>
+    <string name="social_reportreason_spam">Спам или повторяющийся контент</string>
+    <string name="social_reportreason_harassment">Травля или издевательства</string>
+    <string name="social_reportreason_inappropriate">Неприемлемый или оскорбительный контент</string>
+    <string name="social_reportreason_misinformation">Ложная или вводящая в заблуждение информация</string>
+
+    <string name="social_avatar_option_edit_doodle">Изменить рисунок</string>
+    <string name="social_avatar_option_use_doodle">Использовать рисунок</string>
+    <string name="social_avatar_option_use_initials">Использовать инициалы</string>
+
+    <string name="social_viewmodel_legacy_joining_title">Подключение к %1$s</string>
+    <string name="social_viewmodel_legacy_checking_compatibility">Проверка совместимости...</string>
+
+    <string name="social_posteditor_screen_title">Создать публикацию</string>
+    <string name="social_posteditor_body_counter">%1$d/%2$d</string>
+    <string name="social_posteditor_body_placeholder">О чём вы думаете?</string>
+    <string name="social_posteditor_doodle_remove_desc">Удалить рисунок</string>
+    <string name="social_posteditor_doodle_remove_label">Удалить</string>
+    <string name="social_posteditor_doodle_add_desc">Добавить рисунок</string>
+    <string name="social_posteditor_doodle_add_label">Добавить рисунок</string>
+    <string name="social_posteditor_game_link_placeholder">Привязать игру (необязательно)</string>
+    <string name="social_posteditor_visibility_public">Публично</string>
+    <string name="social_posteditor_visibility_friends_only">Только для друзей</string>
+    <string name="social_posteditor_visibility_public_desc">Видно в сообществе игры</string>
+    <string name="social_posteditor_visibility_friends_desc">Видно только друзьям</string>
+
+    <string name="social_posteditor_footer_edit">Изменить</string>
+    <string name="social_posteditor_footer_select">Выбрать</string>
+    <string name="social_posteditor_footer_clear">Очистить</string>
+    <string name="social_posteditor_footer_toggle">Переключить</string>
+    <string name="social_posteditor_footer_remove_doodle">Удалить</string>
+    <string name="social_posteditor_footer_add_doodle">Добавить рисунок</string>
+    <string name="social_posteditor_footer_post">Опубликовать</string>
+    <string name="social_posteditor_footer_discard">Отменить</string>
+    <string name="social_posteditor_footer_back">Назад</string>
+
+    <string name="social_postconfirm_modal_title">Создать публикацию</string>
+    <string name="social_postconfirm_posting">Публикация...</string>
+    <string name="social_postconfirm_visibility_public">Эта публикация будет видна всем в сообществе игры.</string>
+    <string name="social_postconfirm_visibility_friends">Эта публикация будет видна только вашим друзьям.</string>
+    <string name="social_postconfirm_option_post">Опубликовать</string>
+    <string name="social_postconfirm_option_cancel">Отмена</string>
+
+    <string name="social_discardpost_modal_title">Отменить публикацию?</string>
+    <string name="social_discardpost_body">У вас есть несохранённые изменения. Вы уверены, что хотите отменить эту публикацию?</string>
+    <string name="social_discardpost_option_discard">Отменить</string>
+    <string name="social_discardpost_option_keep_editing">Продолжить редактирование</string>
+
+    <string name="social_postgamepicker_modal_title">Выбор игры</string>
+    <string name="social_postgamepicker_hint_browse">Просмотр</string>
+    <string name="social_postgamepicker_hint_navigate">Навигация</string>
+    <string name="social_postgamepicker_hint_select">Выбрать</string>
+    <string name="social_postgamepicker_hint_cancel">Отмена</string>
+    <string name="social_postgamepicker_search_placeholder">Поиск игр...</string>
+    <string name="social_postgamepicker_no_game">Без игры</string>
+
+    <string name="social_friends_empty_title">Пока нет друзей</string>
+    <string name="social_friends_empty_body">Добавьте друзей по коду друга в настройках</string>
+    <string name="social_friends_header_incoming">Входящие запросы</string>
+    <string name="social_friends_header_sent">Отправленные запросы</string>
+    <string name="social_friends_header_accepted">Друзья</string>
+    <string name="social_friends_request_accept">Принять</string>
+    <string name="social_friends_request_decline">Отклонить</string>
+    <string name="social_friends_request_cancel">Отмена</string>
+
+    <string name="social_friendcard_hosting">Хостит %1$s</string>
+    <string name="social_friendcard_playing">Играет в %1$s</string>
+    <string name="social_friendcard_watching">Смотрит %1$s</string>
+    <string name="social_friendcard_favorite_remove_desc">Убрать из избранного</string>
+    <string name="social_friendcard_favorite_add_desc">Добавить в избранное</string>
+
+    <string name="social_netplaybadge_desc">Сетевая сессия</string>
+    <string name="social_netplaybadge_label">Сетевая игра</string>
+
+    <string name="social_netplayjoin_checking">Проверка...</string>
+    <string name="social_netplayjoin_join">Присоединиться</string>
+    <string name="social_netplayjoin_rom_not_found">У вас нет этого ROM</string>
+    <string name="social_netplayjoin_rom_version_mismatch">Другая версия ROM</string>
+    <string name="social_netplayjoin_core_version_mismatch">Обновите Argosy для совместимости</string>
+    <string name="social_netplayjoin_core_not_supported">Ядро не поддерживается</string>
+    <string name="social_netplayjoin_session_busy">Сессия занята</string>
+
+    <string name="social_presence_online">В сети</string>
+    <string name="social_presence_away">Нет на месте</string>
+    <string name="social_presence_in_game">В игре</string>
+    <string name="social_presence_watching">Смотрит</string>
+    <string name="social_presence_offline">Не в сети</string>
+
+    <string name="social_profiletab_not_connected">Не подключено</string>
+    <string name="social_profiletab_most_played_header">БОЛЬШЕ ВСЕГО ИГРАЛИ</string>
+
+    <string name="social_accountcard_presence_playing">играет в %1$s</string>
+    <string name="social_accountcard_presence_in_game">в игре</string>
+    <string name="social_accountcard_presence_watching_game">смотрит %1$s</string>
+    <string name="social_accountcard_presence_watching">смотрит</string>
+    <string name="social_accountcard_presence_online">в сети</string>
+    <string name="social_accountcard_presence_away">нет на месте</string>
+    <string name="social_accountcard_member_since_wide">На платформе с %1$s</string>
+    <string name="social_accountcard_member_since_compact">На платформе с %1$s</string>
+    <plurals name="social_accountcard_friend_count_wide">
+        <item quantity="one">%1$d друг</item>
+        <item quantity="few">%1$d друга</item>
+        <item quantity="many">%1$d друзей</item>
+        <item quantity="other">%1$d друга</item>
+    </plurals>
+    <plurals name="social_accountcard_friend_count_compact">
+        <item quantity="one">%1$d друг</item>
+        <item quantity="few">%1$d друга</item>
+        <item quantity="many">%1$d друзей</item>
+        <item quantity="other">%1$d друга</item>
+    </plurals>
+
+    <string name="social_relationship_friends_desc">Друзья</string>
+    <string name="social_relationship_favorite_desc">Избранное</string>
+    <string name="social_relationship_not_favorite_desc">Не в избранном</string>
+    <string name="social_relationship_not_friends_desc">Не друзья</string>
+    <string name="social_relationship_pending_desc">Ожидание</string>
+
+    <string name="social_statsgrid_total_play_time">Общее время в игре</string>
+    <string name="social_statsgrid_games_played">Сыграно игр</string>
+    <string name="social_statsgrid_friends">Друзья</string>
+    <string name="social_statsgrid_top_genre">Любимый жанр</string>
+    <string name="social_statsgrid_top_platform">Любимая платформа</string>
+    <string name="social_statsgrid_fav_decade">Любимое десятилетие</string>
+    <string name="social_statsgrid_placeholder_dash">--</string>
+
+    <string name="social_playtimechart_header">ПОСЛЕДНИЕ 30 ДНЕЙ</string>
+    <string name="social_playtimechart_peak">пик: %1$s</string>
+
+    <plurals name="social_mostplayed_sessions">
+        <item quantity="one">%1$d сессия</item>
+        <item quantity="few">%1$d сессии</item>
+        <item quantity="many">%1$d сессий</item>
+        <item quantity="other">%1$d сессии</item>
+    </plurals>
+
+    <string name="social_playhours_minutes">%1$d мин</string>
+    <string name="social_playhours_hours_decimal">%1$s ч</string>
+    <plurals name="social_playhours_hours_whole">
+        <item quantity="one">%1$d ч</item>
+        <item quantity="few">%1$d ч</item>
+        <item quantity="many">%1$d ч</item>
+        <item quantity="other">%1$d ч</item>
+    </plurals>
+    <string name="social_playhours_hours_thousands">%1$s тыс. ч</string>
+
+    <string name="social_userprofile_hint_view_game">Игра</string>
+    <string name="social_userprofile_hint_unfavorite">Убрать из избранного</string>
+    <string name="social_userprofile_hint_favorite">В избранное</string>
+    <string name="social_userprofile_hint_add_friend">Добавить в друзья</string>
+    <string name="social_userprofile_hint_back">Назад</string>
+    <string name="social_userprofile_most_played_header">БОЛЬШЕ ВСЕГО ИГРАЛИ</string>
+
+    <string name="social_notifications_empty_title">Нет уведомлений</string>
+    <string name="social_notifications_empty_body">Здесь появится активность по вашим публикациям и друзьям</string>
+    <string name="social_notifications_unknown_avatar">?</string>
+    <string name="social_notifications_avatar_overflow">+%1$d</string>
+    <string name="social_notifications_default_actor">Кто-то</string>
+    <string name="social_notifications_event_type_fallback">публикацию</string>
+
+    <string name="social_notifications_comment_zero">Кто-то прокомментировал вашу %1$s</string>
+    <string name="social_notifications_comment_one">%1$s оставил(а) комментарий к вашей %2$s</string>
+    <string name="social_notifications_comment_two">%1$s и %2$s оставили комментарии к вашей %3$s</string>
+    <string name="social_notifications_comment_many">%1$s, %2$s и ещё %3$d человек оставили комментарии к вашей %4$s</string>
+
+    <string name="social_notifications_like_milestone_default_preview">Ваша публикация</string>
+    <string name="social_notifications_like_milestone_with_count">«%1$s» набрала %2$d лайков</string>
+    <string name="social_notifications_like_milestone_generic">«%1$s» набрала много лайков</string>
+
+    <string name="social_notifications_friend_request">%1$s отправил(а) вам запрос в друзья</string>
+    <string name="social_notifications_friend_accepted">%1$s принял(а) ваш запрос в друзья</string>
+    <string name="social_notifications_friend_added">%1$s добавил(а) вас в друзья</string>
+    <string name="social_notifications_generic_fallback">Новое уведомление</string>
+
+    <string name="social_eventdetail_hint_back">Назад</string>
+    <string name="social_eventdetail_hint_unlike">Убрать лайк</string>
+    <string name="social_eventdetail_hint_like">Лайк</string>
+    <string name="social_eventdetail_hint_comment">Комментарий</string>
+    <string name="social_eventdetail_hint_view_game">Игра</string>
+    <string name="social_eventdetail_hint_profile">Профиль</string>
+
+    <string name="social_eventdetail_comments_header_portrait">Комментарии (%1$d)</string>
+    <string name="social_eventdetail_comments_header_landscape">Комментарии</string>
+    <string name="social_eventdetail_no_comments_portrait">Комментариев пока нет. Оставьте первый!</string>
+    <string name="social_eventdetail_no_comments_landscape">Комментариев пока нет</string>
+    <string name="social_eventdetail_comment_input_placeholder">Добавить комментарий...</string>
+    <string name="social_eventdetail_comment_send_desc">Отправить</string>
+    <string name="social_eventdetail_likes_desc">Лайки</string>
+
+    <string name="social_eventdetail_desc_started_playing">Первый запуск</string>
+    <plurals name="social_eventdetail_desc_play_milestone">
+        <item quantity="one">%1$d час в игре</item>
+        <item quantity="few">%1$d часа в игре</item>
+        <item quantity="many">%1$d часов в игре</item>
+        <item quantity="other">%1$d часа в игре</item>
+    </plurals>
+    <string name="social_eventdetail_desc_marathon_session">Марафонская сессия %1$dh</string>
+    <string name="social_eventdetail_desc_completed">Игра пройдена</string>
+    <string name="social_eventdetail_desc_achievement_unlocked">Открыто: \"%1$s\"</string>
+    <string name="social_eventdetail_desc_achievement_unlocked_fallback_name">достижение</string>
+    <plurals name="social_eventdetail_desc_achievement_milestone">
+        <item quantity="one">%1$d достижение</item>
+        <item quantity="few">%1$d достижения</item>
+        <item quantity="many">%1$d достижений</item>
+        <item quantity="other">%1$d достижения</item>
+    </plurals>
+    <string name="social_eventdetail_desc_perfect_game">Полное прохождение</string>
+    <string name="social_eventdetail_desc_game_added">Добавлено в библиотеку</string>
+    <string name="social_eventdetail_desc_game_favorited">Добавлено в избранное</string>
+    <string name="social_eventdetail_desc_game_rated">Оценка: %1$s</string>
+    <string name="social_eventdetail_desc_friend_added">Теперь друзья с %1$s</string>
+    <string name="social_eventdetail_desc_friend_added_fallback_name">кем-то</string>
+    <string name="social_eventdetail_desc_collection_shared">Коллекция \"%1$s\" опубликована</string>
+    <string name="social_eventdetail_desc_collection_saved">Коллекция \"%1$s\" сохранена</string>
+    <string name="social_eventdetail_desc_collection_created">Коллекция \"%1$s\" создана</string>
+    <plurals name="social_eventdetail_desc_collection_updated">
+        <item quantity="one">Добавлена %1$d игра в \"%2$s\"</item>
+        <item quantity="few">Добавлено %1$d игры в \"%2$s\"</item>
+        <item quantity="many">Добавлено %1$d игр в \"%2$s\"</item>
+        <item quantity="other">Добавлено %1$d игры в \"%2$s\"</item>
+    </plurals>
+    <string name="social_eventdetail_desc_collection_fallback_name">коллекция</string>
+    <string name="social_eventdetail_desc_doodle">Новый рисунок</string>
+    <string name="social_eventdetail_desc_discussion_shared_post">Новая публикация</string>
+    <string name="social_eventdetail_desc_discussion_truncated">%1$s...</string>
+</resources>

@@ -22,8 +22,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.NavigationPreference
 import com.nendo.argosy.ui.screens.settings.DriverGroupUi
@@ -73,7 +76,7 @@ fun DriversSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             item(key = "downloads_header") {
                 Spacer(modifier = Modifier.height(Dimens.spacingMd))
                 Text(
-                    text = "DOWNLOADED",
+                    text = stringResource(R.string.settings_drivers_section_downloaded),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.padding(start = Dimens.spacingSm)
@@ -117,18 +120,19 @@ private fun DriversHeader(drivers: DriversState) {
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)) {
             Text(
-                text = "GPU",
+                text = stringResource(R.string.settings_drivers_gpu_label),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                text = drivers.gpuModel?.takeIf { it.isNotBlank() } ?: "Unknown",
+                text = drivers.gpuModel?.takeIf { it.isNotBlank() }
+                    ?: stringResource(R.string.settings_drivers_gpu_unknown),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(Dimens.spacingXs))
             Text(
-                text = "RECOMMENDED",
+                text = stringResource(R.string.settings_drivers_recommended_label),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -150,10 +154,15 @@ private fun DriverSourceRow(
 ) {
     val subtitle = when {
         group.error != null -> group.error
-        group.releases.isEmpty() -> "No releases"
+        group.releases.isEmpty() -> stringResource(R.string.settings_drivers_source_no_releases)
         else -> {
             val latest = group.releases.firstOrNull { !it.prerelease } ?: group.releases.first()
-            "${group.releases.size} releases · latest ${latest.title.ifBlank { latest.tagName }}"
+            pluralStringResource(
+                R.plurals.settings_drivers_source_releases,
+                group.releases.size,
+                group.releases.size,
+                latest.title.ifBlank { latest.tagName }
+            )
         }
     }
     NavigationPreference(

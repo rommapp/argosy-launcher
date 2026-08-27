@@ -12,6 +12,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -302,33 +304,33 @@ fun HomeLayoutSettingRow(
     boxArtCapableGames: Int? = null
 ) {
     val boxArtSubtitle = if (boxArtCapableGames == 0) {
-        "No game has spine art, so every game draws as a 2D cover"
+        stringResource(R.string.ui_home_layout_box_art_subtitle_none)
     } else {
-        "Draw games that have a spine as a box, and the rest as covers"
+        stringResource(R.string.ui_home_layout_box_art_subtitle)
     }
     when (field) {
         HomeLayoutSettingField.ROW_ALIGNMENT -> CyclePreference(
-            title = "Row Position",
+            title = stringResource(R.string.ui_home_layout_row_alignment),
             value = alignmentLabel(settings.carousel.rowAlignment),
             isFocused = isFocused,
             onClick = { onAdjust(1) },
             onPrev = { onAdjust(-1) }
         )
         HomeLayoutSettingField.FOCUS_POSITION -> CyclePreference(
-            title = "Focus Anchor",
+            title = stringResource(R.string.ui_home_layout_focus_position),
             value = focusPositionLabel(settings.carousel.focusPosition),
             isFocused = isFocused,
             onClick = { onAdjust(1) },
             onPrev = { onAdjust(-1) }
         )
         HomeLayoutSettingField.INVERTED -> SwitchPreference(
-            title = "Reverse Order",
+            title = stringResource(R.string.ui_home_layout_inverted),
             isEnabled = settings.carousel.inverted,
             isFocused = isFocused,
             onToggle = { onToggle() }
         )
         HomeLayoutSettingField.RESTING_SCALE -> SliderPreference(
-            title = "Resting Size",
+            title = stringResource(R.string.ui_home_layout_resting_scale),
             value = percentOf(settings.carousel.restingScale),
             minValue = RESTING_SCALE_MIN_PERCENT,
             maxValue = RESTING_SCALE_MAX_PERCENT,
@@ -338,46 +340,46 @@ fun HomeLayoutSettingRow(
             onAdjust = { delta -> onAdjust(if (delta < 0) -1 else 1) }
         )
         HomeLayoutSettingField.NEIGHBOUR_PUSH -> SwitchPreference(
-            title = "Push Neighbours",
+            title = stringResource(R.string.ui_home_layout_neighbour_push),
             isEnabled = settings.carousel.neighbourPush,
             isFocused = isFocused,
             onToggle = { onToggle() }
         )
         HomeLayoutSettingField.PLATFORM_BADGE -> SwitchPreference(
-            title = "Platform Badge",
+            title = stringResource(R.string.ui_home_layout_platform_badge),
             isEnabled = settings.carousel.showPlatformBadge,
             isFocused = isFocused,
             onToggle = { onToggle() }
         )
         HomeLayoutSettingField.SCROLL_AXIS -> CyclePreference(
-            title = "Scroll Direction",
+            title = stringResource(R.string.ui_home_layout_scroll_axis),
             value = scrollAxisLabel(settings.autoGrid.scrollAxis),
             isFocused = isFocused,
             onClick = { onAdjust(1) },
             onPrev = { onAdjust(-1) }
         )
         HomeLayoutSettingField.SHOW_TITLES -> SwitchPreference(
-            title = "Show Titles",
+            title = stringResource(R.string.ui_home_layout_show_titles),
             isEnabled = settings.autoGrid.showTitles,
             isFocused = isFocused,
             onToggle = { onToggle() }
         )
         HomeLayoutSettingField.AUTO_GRID_SHOW_ALL -> SwitchPreference(
-            title = "Show Every Game",
-            subtitle = "Scroll a platform's whole library instead of stopping at View All",
+            title = stringResource(R.string.ui_home_layout_show_all_games),
+            subtitle = stringResource(R.string.ui_home_layout_show_all_games_subtitle),
             isEnabled = settings.autoGrid.showAllGames,
             isFocused = isFocused,
             onToggle = { onToggle() }
         )
         HomeLayoutSettingField.CAROUSEL_BOX_ART -> SwitchPreference(
-            title = "3D Box Art",
+            title = stringResource(R.string.ui_home_layout_carousel_box_art),
             subtitle = boxArtSubtitle,
             isEnabled = settings.carousel.useBoxArt,
             isFocused = isFocused,
             onToggle = { onToggle() }
         )
         HomeLayoutSettingField.AUTO_GRID_BOX_ART -> SwitchPreference(
-            title = "3D Box Art",
+            title = stringResource(R.string.ui_home_layout_auto_grid_box_art),
             subtitle = boxArtSubtitle,
             isEnabled = settings.autoGrid.useBoxArt,
             isFocused = isFocused,
@@ -392,7 +394,7 @@ fun HomeLayoutSettingRow(
             onAdjust = { delta -> onAdjust(if (delta < 0) -1 else 1) }
         )
         HomeLayoutSettingField.CUSTOM_GRID_LANES -> SliderPreference(
-            title = "Cells across",
+            title = stringResource(R.string.ui_home_layout_custom_grid_lanes),
             value = settings.customGrid.laneCount,
             minValue = MIN_LANE_COUNT,
             maxValue = MAX_LANE_COUNT,
@@ -400,50 +402,50 @@ fun HomeLayoutSettingRow(
             onAdjust = { delta -> onAdjust(if (delta < 0) -1 else 1) }
         )
         HomeLayoutSettingField.CUSTOM_GRID_AUTO_ADD -> CyclePreference(
-            title = "Add New Downloads",
+            title = stringResource(R.string.ui_home_layout_custom_grid_auto_add),
             value = autoAddLabel(settings.customGrid.autoAdd),
             isFocused = isFocused,
             onClick = { onAdjust(1) },
             onPrev = { onAdjust(-1) }
         )
         HomeLayoutSettingField.CUSTOM_GRID_EMPTY_SLOTS -> SwitchPreference(
-            title = "Show Blank Slots",
-            subtitle = "Outline the cells nothing sits on",
+            title = stringResource(R.string.ui_home_layout_custom_grid_empty_slots),
+            subtitle = stringResource(R.string.ui_home_layout_custom_grid_empty_slots_subtitle),
             isEnabled = settings.customGrid.showEmptySlots,
             isFocused = isFocused,
             onToggle = { onToggle() }
         )
         HomeLayoutSettingField.CUSTOM_GRID_PERSIST_PAGES -> SwitchPreference(
-            title = "Keep Blank Pages",
-            subtitle = "An added page stays even while it holds nothing",
+            title = stringResource(R.string.ui_home_layout_custom_grid_persist_pages),
+            subtitle = stringResource(R.string.ui_home_layout_custom_grid_persist_pages_subtitle),
             isEnabled = settings.customGrid.persistBlankPages,
             isFocused = isFocused,
             onToggle = { onToggle() }
         )
         HomeLayoutSettingField.CUSTOM_GRID_AUTO_FIT -> SwitchPreference(
-            title = "Auto-fit Cells",
-            subtitle = "Move or shrink tiles a placement lands on, instead of refusing it",
+            title = stringResource(R.string.ui_home_layout_custom_grid_auto_fit),
+            subtitle = stringResource(R.string.ui_home_layout_custom_grid_auto_fit_subtitle),
             isEnabled = settings.customGrid.autoFit,
             isFocused = isFocused,
             onToggle = { onToggle() }
         )
         HomeLayoutSettingField.RAIL_MEDIA_LIBRARIES -> SwitchPreference(
-            title = "Media Libraries",
-            subtitle = "A row for each library on your media server",
+            title = stringResource(R.string.ui_home_layout_rail_libraries),
+            subtitle = stringResource(R.string.ui_home_layout_rail_libraries_subtitle),
             isEnabled = settings.rails.showLibraries,
             isFocused = isFocused,
             onToggle = { onToggle() }
         )
         HomeLayoutSettingField.RAIL_CONTINUE_WATCHING -> SwitchPreference(
-            title = "Continue Watching",
-            subtitle = "A row of movies and episodes you are part way through",
+            title = stringResource(R.string.ui_home_layout_rail_continue_watching),
+            subtitle = stringResource(R.string.ui_home_layout_rail_continue_watching_subtitle),
             isEnabled = settings.rails.showContinueWatching,
             isFocused = isFocused,
             onToggle = { onToggle() }
         )
         HomeLayoutSettingField.RAIL_NEXT_UP -> SwitchPreference(
-            title = "Next Up",
-            subtitle = "A row of the next episode of each show you are watching",
+            title = stringResource(R.string.ui_home_layout_rail_next_up),
+            subtitle = stringResource(R.string.ui_home_layout_rail_next_up_subtitle),
             isEnabled = settings.rails.showNextUp,
             isFocused = isFocused,
             onToggle = { onToggle() }
@@ -451,32 +453,37 @@ fun HomeLayoutSettingRow(
     }
 }
 
+@Composable
 private fun autoAddLabel(mode: HomeTileAutoAdd): String = when (mode) {
-    HomeTileAutoAdd.OFF -> "Off"
-    HomeTileAutoAdd.AUTO -> "Automatically"
-    HomeTileAutoAdd.PROMPT -> "Ask First"
+    HomeTileAutoAdd.OFF -> stringResource(R.string.ui_home_layout_auto_add_off)
+    HomeTileAutoAdd.AUTO -> stringResource(R.string.ui_home_layout_auto_add_auto)
+    HomeTileAutoAdd.PROMPT -> stringResource(R.string.ui_home_layout_auto_add_prompt)
 }
 
+@Composable
 private fun layoutLabel(kind: HomeLayoutKind): String = when (kind) {
-    HomeLayoutKind.CAROUSEL -> "Carousel"
-    HomeLayoutKind.AUTO_GRID -> "Auto Grid"
-    HomeLayoutKind.CUSTOM_GRID -> "Custom Grid"
+    HomeLayoutKind.CAROUSEL -> stringResource(R.string.ui_home_layout_kind_carousel)
+    HomeLayoutKind.AUTO_GRID -> stringResource(R.string.ui_home_layout_kind_auto_grid)
+    HomeLayoutKind.CUSTOM_GRID -> stringResource(R.string.ui_home_layout_kind_custom_grid)
 }
 
+@Composable
 private fun alignmentLabel(alignment: HomeRowAlignment): String = when (alignment) {
-    HomeRowAlignment.TOP -> "Top"
-    HomeRowAlignment.CENTER -> "Center"
-    HomeRowAlignment.BOTTOM -> "Bottom"
+    HomeRowAlignment.TOP -> stringResource(R.string.ui_home_layout_alignment_top)
+    HomeRowAlignment.CENTER -> stringResource(R.string.ui_home_layout_alignment_center)
+    HomeRowAlignment.BOTTOM -> stringResource(R.string.ui_home_layout_alignment_bottom)
 }
 
+@Composable
 private fun focusPositionLabel(position: HomeFocusPosition): String = when (position) {
-    HomeFocusPosition.LEADING -> "Leading"
-    HomeFocusPosition.CENTER -> "Center"
+    HomeFocusPosition.LEADING -> stringResource(R.string.ui_home_layout_focus_leading)
+    HomeFocusPosition.CENTER -> stringResource(R.string.ui_home_layout_focus_center)
 }
 
+@Composable
 private fun scrollAxisLabel(axis: HomeScrollAxis): String = when (axis) {
-    HomeScrollAxis.VERTICAL -> "Vertical"
-    HomeScrollAxis.HORIZONTAL -> "Horizontal"
+    HomeScrollAxis.VERTICAL -> stringResource(R.string.ui_home_layout_axis_vertical)
+    HomeScrollAxis.HORIZONTAL -> stringResource(R.string.ui_home_layout_axis_horizontal)
 }
 
 
@@ -484,9 +491,10 @@ private fun scrollAxisLabel(axis: HomeScrollAxis): String = when (axis) {
  * Lanes run across the axis that is not scrolling, so the same stored number is presented as
  * columns or rows depending on which way the grid moves.
  */
+@Composable
 private fun laneCountLabel(axis: HomeScrollAxis): String = when (axis) {
-    HomeScrollAxis.VERTICAL -> "Columns"
-    HomeScrollAxis.HORIZONTAL -> "Rows"
+    HomeScrollAxis.VERTICAL -> stringResource(R.string.ui_home_layout_lanes_columns)
+    HomeScrollAxis.HORIZONTAL -> stringResource(R.string.ui_home_layout_lanes_rows)
 }
 
 private fun percentOf(scale: Float): Int = (scale * PERCENT).roundToInt()

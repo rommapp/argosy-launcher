@@ -52,6 +52,11 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class PlayerActivity : ComponentActivity() {
 
+    override fun attachBaseContext(newBase: Context) {
+        val tag = com.nendo.argosy.data.preferences.SessionStateStore(newBase).getAppLanguage()
+        super.attachBaseContext(com.nendo.argosy.core.locale.LocaleHelper.wrap(newBase, tag))
+    }
+
     @Inject
     lateinit var userPreferencesRepository: UserPreferencesRepository
 

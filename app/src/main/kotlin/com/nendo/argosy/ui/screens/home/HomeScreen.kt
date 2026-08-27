@@ -98,6 +98,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
@@ -108,6 +109,7 @@ import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import coil.size.Size
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.domain.model.RequiredAction
@@ -754,7 +756,7 @@ fun HomeScreen(
                             )
                             com.nendo.argosy.ui.components.CustomGridSurface(
                                 state = uiState.customGrid,
-                                contentFor = { tile -> uiState.tileContentFor(tile) },
+                                contentFor = { tile -> uiState.tileContentFor(tile, context) },
                                 laneCount = uiState.customGridConfig.laneCount,
                                 onCellTap = { cell ->
                                     val grid = uiState.customGrid
@@ -883,45 +885,79 @@ fun HomeScreen(
                 val focusedGame = uiState.focusedGame
                 if (isCustomGrid) {
                     val grid = uiState.customGrid
+                    val gridPageLabel = stringResource(R.string.home_footer_grid_page)
+                    val gridFinishedLabel = stringResource(R.string.home_footer_grid_finished)
+                    val gridOptionsLabel = stringResource(R.string.home_footer_grid_options)
+                    val engagedFullscreenLabel =
+                        stringResource(R.string.home_footer_grid_engaged_fullscreen)
+                    val engagedIsMedia = grid.engagedTile?.target is
+                        com.nendo.argosy.domain.model.HomeTileTargetRef.Media
                     FooterHints(
                         hints = when {
                             grid.engagedTileId != null -> listOfNotNull(
-                                InputButton.A to if (grid.engagedPaused) "Play" else "Pause",
-                                InputButton.DPAD_HORIZONTAL to "Seek",
-                                (InputButton.X to "Fullscreen").takeIf {
-                                    grid.engagedTile?.target is
-                                        com.nendo.argosy.domain.model.HomeTileTargetRef.Media
+                                InputButton.A to if (grid.engagedPaused) {
+                                    stringResource(R.string.home_footer_grid_engaged_play)
+                                } else {
+                                    stringResource(R.string.home_footer_grid_engaged_pause)
                                 },
-                                InputButton.B to "Back to grid"
+                                InputButton.DPAD_HORIZONTAL to
+                                    stringResource(R.string.home_footer_grid_engaged_seek),
+                                if (engagedIsMedia) {
+                                    InputButton.X to engagedFullscreenLabel
+                                } else {
+                                    null
+                                },
+                                InputButton.B to
+                                    stringResource(R.string.home_footer_grid_engaged_back)
                             )
                             grid.mediaTileNotice != null ->
-                                listOf(InputButton.DPAD_HORIZONTAL to "Choose")
+                                listOf(
+                                    InputButton.DPAD_HORIZONTAL to
+                                        stringResource(R.string.home_footer_media_notice_choose)
+                                )
                             grid.isMediaSetupOpen && grid.mediaSetup?.step ==
                                 com.nendo.argosy.ui.components.MediaTileStep.EPISODES ->
-                                listOf(InputButton.A to "Tick", InputButton.B to "Back")
-                            grid.isMediaSetupOpen -> listOf(InputButton.B to "Back")
+                                listOf(
+                                    InputButton.A to
+                                        stringResource(
+                                            R.string.home_footer_media_setup_episode_tick
+                                        ),
+                                    InputButton.B to
+                                        stringResource(
+                                            R.string.home_footer_media_setup_episode_back
+                                        )
+                                )
+                            grid.isMediaSetupOpen -> listOf(
+                                InputButton.B to
+                                    stringResource(R.string.home_footer_media_setup_back)
+                            )
                             grid.showPicker -> listOf(
-                                InputButton.LB_RB to "Tab",
-                                InputButton.LT_RT to "Jump",
-                                InputButton.Y to "Search"
+                                InputButton.LB_RB to
+                                    stringResource(R.string.home_footer_tile_picker_tab),
+                                InputButton.LT_RT to
+                                    stringResource(R.string.home_footer_tile_picker_jump),
+                                InputButton.Y to
+                                    stringResource(R.string.home_footer_tile_picker_search)
                             )
                             grid.isEditing -> listOf(
                                 InputButton.DPAD to grid.editLabel.orEmpty(),
                                 InputButton.X to if (grid.editMode == TileEditMode.MOVE) {
-                                    "Resize"
+                                    stringResource(R.string.home_footer_grid_edit_resize)
                                 } else {
-                                    "Move"
+                                    stringResource(R.string.home_footer_grid_edit_move)
                                 },
-                                InputButton.A to "Place",
-                                InputButton.B to "Cancel"
+                                InputButton.A to
+                                    stringResource(R.string.home_footer_grid_edit_place),
+                                InputButton.B to
+                                    stringResource(R.string.home_footer_grid_edit_cancel)
                             )
                             else -> buildList {
-                                add(InputButton.LB_RB to "Page")
+                                add(InputButton.LB_RB to gridPageLabel)
                                 grid.confirmLabel?.let { add(InputButton.A to it) }
                                 if (grid.focusedCollection?.focusGameId != null) {
-                                    add(InputButton.Y to "Finished")
+                                    add(InputButton.Y to gridFinishedLabel)
                                 }
-                                add(InputButton.SELECT to "Options")
+                                add(InputButton.SELECT to gridOptionsLabel)
                             }
                         },
                         variant = FooterVariant.SUBTLE
@@ -929,26 +965,38 @@ fun HomeScreen(
                     FooterSpacer()
                 } else if (uiState.isMediaRow || uiState.focusedMedia != null) {
                     val focusedMedia = uiState.focusedMedia
+                    val mediaItemLabel = stringResource(R.string.home_footer_media_item)
+                    val mediaSectionLabel = stringResource(R.string.home_footer_media_section)
+                    val mediaRowLabel = stringResource(R.string.home_footer_media_row)
+                    val mediaRefreshLabel = stringResource(R.string.home_footer_media_refresh)
+                    val mediaResumeLabel = stringResource(R.string.home_footer_media_resume)
+                    val mediaPlayLabel = stringResource(R.string.home_footer_media_play)
+                    val mediaUnfavoriteLabel =
+                        stringResource(R.string.home_footer_media_unfavorite)
+                    val mediaDetailsLabel = stringResource(R.string.home_footer_media_details)
                     FooterHints(
                         hints = buildList {
                             if (isAutoGrid) {
-                                add(InputButton.DPAD to "Item")
-                                add(InputButton.LB_RB to "Section")
+                                add(InputButton.DPAD to mediaItemLabel)
+                                add(InputButton.LB_RB to mediaSectionLabel)
                             } else {
-                                add(InputButton.DPAD_HORIZONTAL to "Item")
-                                add(InputButton.DPAD_VERTICAL to "Row")
+                                add(InputButton.DPAD_HORIZONTAL to mediaItemLabel)
+                                add(InputButton.DPAD_VERTICAL to mediaRowLabel)
                             }
                             if (focusedMedia == null) {
-                                add(InputButton.A to "Refresh")
+                                add(InputButton.A to mediaRefreshLabel)
                             } else {
                                 add(
-                                    InputButton.A to
-                                        if (focusedMedia.hasResumePosition) "Resume" else "Play"
+                                    InputButton.A to if (focusedMedia.hasResumePosition) {
+                                        mediaResumeLabel
+                                    } else {
+                                        mediaPlayLabel
+                                    }
                                 )
                                 if (uiState.currentRow == HomeRow.Favorites) {
-                                    add(InputButton.Y to "Unfavorite")
+                                    add(InputButton.Y to mediaUnfavoriteLabel)
                                 }
-                                add(InputButton.X to "Details")
+                                add(InputButton.X to mediaDetailsLabel)
                             }
                         },
                         variant = FooterVariant.SUBTLE,
@@ -966,15 +1014,28 @@ fun HomeScreen(
                     if (!uiState.isVideoPreviewActive) {
                         FooterHints(
                             hints = listOf(
-                                if (isAutoGrid) InputButton.DPAD to "Game" else InputButton.DPAD_HORIZONTAL to "Game",
-                                if (isAutoGrid) InputButton.LB_RB to "Section" else InputButton.DPAD_VERTICAL to "Platform",
-                                InputButton.A to when {
-                                    focusedGame.needsInstall -> "Install"
-                                    focusedGame.isDownloaded -> "Play"
-                                    else -> "Download"
+                                (if (isAutoGrid) InputButton.DPAD else InputButton.DPAD_HORIZONTAL)
+                                    to stringResource(R.string.home_footer_game_item),
+                                if (isAutoGrid) {
+                                    InputButton.LB_RB to
+                                        stringResource(R.string.home_footer_game_section)
+                                } else {
+                                    InputButton.DPAD_VERTICAL to
+                                        stringResource(R.string.home_footer_game_platform)
                                 },
-                                InputButton.Y to if (focusedGame.isFavorite) "Unfavorite" else "Favorite",
-                                InputButton.X to "Details"
+                                InputButton.A to when {
+                                    focusedGame.needsInstall ->
+                                        stringResource(R.string.home_footer_game_install)
+                                    focusedGame.isDownloaded ->
+                                        stringResource(R.string.home_footer_game_play)
+                                    else -> stringResource(R.string.home_footer_game_download)
+                                },
+                                InputButton.Y to if (focusedGame.isFavorite) {
+                                    stringResource(R.string.home_footer_game_unfavorite)
+                                } else {
+                                    stringResource(R.string.home_footer_game_favorite)
+                                },
+                                InputButton.X to stringResource(R.string.home_footer_game_details)
                             ),
                             variant = FooterVariant.SUBTLE,
                             onHintClick = { button ->
@@ -999,17 +1060,16 @@ fun HomeScreen(
                     val viewAll = uiState.focusedItem as? HomeRowItem.ViewAll
                     FooterHints(
                         hints = listOf(
+                            (if (isAutoGrid) InputButton.DPAD else InputButton.DPAD_HORIZONTAL)
+                                to stringResource(R.string.home_footer_viewall_item),
                             if (isAutoGrid) {
-                                InputButton.DPAD to "Game"
+                                InputButton.LB_RB to
+                                    stringResource(R.string.home_footer_viewall_section)
                             } else {
-                                InputButton.DPAD_HORIZONTAL to "Game"
+                                InputButton.DPAD_VERTICAL to
+                                    stringResource(R.string.home_footer_viewall_platform)
                             },
-                            if (isAutoGrid) {
-                                InputButton.LB_RB to "Section"
-                            } else {
-                                InputButton.DPAD_VERTICAL to "Platform"
-                            },
-                            InputButton.A to "Library"
+                            InputButton.A to stringResource(R.string.home_footer_viewall_library)
                         ),
                         variant = FooterVariant.SUBTLE,
                         onHintClick = { button ->
@@ -1171,10 +1231,10 @@ fun HomeScreen(
         val pendingTileAdd = uiState.customGrid.pendingAdd
         if (pendingTileAdd != null) {
             com.nendo.argosy.ui.primitives.ArgosyConfirmModal(
-                title = "Add to home grid?",
-                message = "${pendingTileAdd.title} finished downloading.",
-                confirmLabel = "Add",
-                cancelLabel = "Not now",
+                title = stringResource(R.string.home_tile_add_title),
+                message = stringResource(R.string.home_tile_add_message, pendingTileAdd.title),
+                confirmLabel = stringResource(R.string.home_tile_add_confirm),
+                cancelLabel = stringResource(R.string.home_tile_add_cancel),
                 focusedIndex = uiState.customGrid.pendingAddFocusIndex,
                 onConfirm = viewModel::confirmPendingTileAdd,
                 onDismiss = viewModel::dismissPendingTileAdd
@@ -1184,8 +1244,8 @@ fun HomeScreen(
         if (uiState.customGrid.showMenu) {
             val menuTile = uiState.customGrid.focusedTile
             com.nendo.argosy.ui.components.CustomTileMenuModal(
-                title = menuTile?.let { uiState.tileContentFor(it)?.label }.orEmpty(),
-                entries = uiState.customGrid.menuActions.map { it.label },
+                title = menuTile?.let { uiState.tileContentFor(it, context)?.label }.orEmpty(),
+                entries = uiState.customGrid.menuActions.map { context.getString(it.labelRes) },
                 focusIndex = uiState.customGrid.menuFocusIndex,
                 onSelect = { index ->
                     viewModel.moveTileMenuFocus(index - uiState.customGrid.menuFocusIndex)
@@ -1233,16 +1293,16 @@ fun HomeScreen(
         if (mediaTileNotice != null) {
             com.nendo.argosy.ui.primitives.ArgosyConfirmModal(
                 title = if (mediaTileNotice.placesOnDecline) {
-                    "Plays from this device"
+                    stringResource(R.string.home_media_tile_notice_local_title)
                 } else {
-                    "Download to play here"
+                    stringResource(R.string.home_media_tile_notice_download_title)
                 },
                 message = listOfNotNull(
                     mediaTileNotice.message,
                     mediaTileNotice.warning
                 ).joinToString("\n\n"),
-                confirmLabel = mediaTileNotice.confirmLabel,
-                cancelLabel = mediaTileNotice.declineLabel,
+                confirmLabel = stringResource(mediaTileNotice.confirmLabelRes),
+                cancelLabel = stringResource(mediaTileNotice.declineLabelRes),
                 focusedIndex = mediaTileNotice.buttonIndex,
                 onConfirm = viewModel::confirmMediaTileNotice,
                 onDismiss = viewModel::dismissMediaTileNotice
@@ -1253,7 +1313,11 @@ fun HomeScreen(
             val choosingBackground = uiState.customGrid.pendingBackgroundPage != null
             com.nendo.argosy.ui.filebrowser.FileBrowserScreen(
                 mode = com.nendo.argosy.ui.filebrowser.FileBrowserMode.FILE_SELECTION,
-                title = if (choosingBackground) "Choose a backdrop" else "Choose a video",
+                title = if (choosingBackground) {
+                    stringResource(R.string.home_tile_file_browser_backdrop_title)
+                } else {
+                    stringResource(R.string.home_tile_file_browser_video_title)
+                },
                 fileFilter = com.nendo.argosy.ui.filebrowser.FileFilter(
                     extensions = if (choosingBackground) {
                         PAGE_BACKGROUND_EXTENSIONS
@@ -1473,7 +1537,9 @@ private fun PlatformBreadcrumb(
 ) {
     val rows = uiState.availableRows
     SectionBreadcrumb(
-        labels = rows.map { uiState.shortLabelFor(it) },
+        labels = rows.map { row ->
+            row.shortLabelRes?.let { stringResource(it) } ?: uiState.shortLabelFor(row)
+        },
         currentIndex = rows.indexOf(uiState.currentRow).coerceAtLeast(0),
         onPrevious = onPreviousRow,
         onNext = onNextRow,
@@ -1833,7 +1899,7 @@ private fun EmptyState(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "No games in $collectionName",
+                    text = stringResource(R.string.home_empty_pinned_row, collectionName),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1847,16 +1913,16 @@ private fun EmptyState(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "No games yet",
+                    text = stringResource(R.string.home_empty_title),
                     style = MaterialTheme.typography.headlineSmall,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(Dimens.spacingSm))
                 Text(
                     text = if (isRommConfigured) {
-                        "Sync your library to get started"
+                        stringResource(R.string.home_empty_message_configured)
                     } else {
-                        "Connect to a Rom Manager server in Settings to get started"
+                        stringResource(R.string.home_empty_message_unconfigured)
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -1864,7 +1930,10 @@ private fun EmptyState(
                 )
                 if (isRommConfigured) {
                     Spacer(modifier = Modifier.height(Dimens.spacingMd))
-                    FooterHint(button = InputButton.A, action = "Sync Library")
+                    FooterHint(
+                        button = InputButton.A,
+                        action = stringResource(R.string.home_empty_sync_hint)
+                    )
                 }
             }
         }
@@ -1893,10 +1962,23 @@ private fun GameSelectOverlay(
         else -> Icons.Default.Download
     }
     val primaryLabel = when {
-        game.needsInstall -> "Install"
-        game.isDownloaded -> "Play"
-        else -> "Download"
+        game.needsInstall -> stringResource(R.string.home_quick_actions_install)
+        game.isDownloaded -> stringResource(R.string.home_quick_actions_play)
+        else -> stringResource(R.string.home_quick_actions_download)
     }
+
+    val favoriteLabel = if (game.isFavorite) {
+        stringResource(R.string.home_quick_actions_unfavorite)
+    } else {
+        stringResource(R.string.home_quick_actions_favorite)
+    }
+    val detailsLabel = stringResource(R.string.home_quick_actions_details)
+    val addToCollectionLabel = stringResource(R.string.home_quick_actions_add_to_collection)
+    val refreshDataLabel = stringResource(R.string.home_quick_actions_refresh_data)
+    val resyncPlatformLabel = stringResource(R.string.home_quick_actions_resync_platform)
+    val deleteDownloadLabel = stringResource(R.string.home_quick_actions_delete_download)
+    val removeFromHomeLabel = stringResource(R.string.home_quick_actions_remove_from_home)
+    val hideLabel = stringResource(R.string.home_quick_actions_hide)
 
     data class MenuEntry(
         val icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
@@ -1907,24 +1989,50 @@ private fun GameSelectOverlay(
 
     val options = buildList {
         add(MenuEntry(primaryIcon, primaryLabel, onClick = onPrimaryAction))
-        add(MenuEntry(if (game.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder, if (game.isFavorite) "Unfavorite" else "Favorite", onClick = onFavorite))
-        add(MenuEntry(Icons.Default.Info, "Details", onClick = onDetails))
-        add(MenuEntry(Icons.AutoMirrored.Filled.PlaylistAdd, "Add to Collection", onClick = onAddToCollection))
+        add(
+            MenuEntry(
+                if (game.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                favoriteLabel,
+                onClick = onFavorite
+            )
+        )
+        add(MenuEntry(Icons.Default.Info, detailsLabel, onClick = onDetails))
+        add(
+            MenuEntry(
+                Icons.AutoMirrored.Filled.PlaylistAdd,
+                addToCollectionLabel,
+                onClick = onAddToCollection
+            )
+        )
         if (game.isRommGame || game.isAndroidApp) {
-            add(MenuEntry(Icons.Default.Refresh, "Refresh Data", onClick = onRefresh))
+            add(MenuEntry(Icons.Default.Refresh, refreshDataLabel, onClick = onRefresh))
         }
         if (isPlatformRow && game.platformId > 0) {
-            add(MenuEntry(Icons.Default.Refresh, "Resync Platform", onClick = onResyncPlatform))
+            add(MenuEntry(Icons.Default.Refresh, resyncPlatformLabel, onClick = onResyncPlatform))
         }
     }
     val dangerousOptions = buildList {
         if (game.isDownloaded || game.needsInstall) {
-            add(MenuEntry(Icons.Default.DeleteOutline, "Delete Download", isDangerous = true, onClick = onDelete))
+            add(
+                MenuEntry(
+                    Icons.Default.DeleteOutline,
+                    deleteDownloadLabel,
+                    isDangerous = true,
+                    onClick = onDelete
+                )
+            )
         }
         if (game.isAndroidApp) {
-            add(MenuEntry(Icons.Default.Home, "Remove from Home", isDangerous = true, onClick = onRemoveFromHome))
+            add(
+                MenuEntry(
+                    Icons.Default.Home,
+                    removeFromHomeLabel,
+                    isDangerous = true,
+                    onClick = onRemoveFromHome
+                )
+            )
         }
-        add(MenuEntry(label = "Hide", isDangerous = true, onClick = onHide))
+        add(MenuEntry(label = hideLabel, isDangerous = true, onClick = onHide))
     }
 
     val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
@@ -1947,7 +2055,7 @@ private fun GameSelectOverlay(
                 .heightIn(max = maxHeight * 0.85f)
         ) {
             Text(
-                text = "QUICK ACTIONS",
+                text = stringResource(R.string.home_quick_actions_heading),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )

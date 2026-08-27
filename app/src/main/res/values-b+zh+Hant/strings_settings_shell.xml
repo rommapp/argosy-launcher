@@ -1,0 +1,478 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Owner: settings screen shell (SettingsScreen, routers, footer, missed sections,
+      ManagePinsScreen, BgmPlaylistManagerScreen, libretro settings accessor/item).
+      Key prefix: settings_shell_
+      Keys are named for the usage site, never for the English text; identical English at two
+      different usage sites always gets two keys.
+    -->
+
+    <!-- ===== BuiltinVideoSection / LibretroSettingItem ===== -->
+
+    <string name="settings_shell_libretro_configure_shader_effects_subtitle">設定著色器效果</string>
+    <string name="settings_shell_libretro_global_hint_template">全域：%1$s</string>
+    <string name="settings_shell_libretro_on_label">開啟</string>
+    <string name="settings_shell_libretro_off_label">關閉</string>
+
+    <!-- ===== FrameSection ===== -->
+
+    <string name="settings_shell_frame_select_title">選擇邊框</string>
+    <string name="settings_shell_frame_auto_with_name">自動（%1$s）</string>
+    <string name="settings_shell_frame_auto_none">自動（無）</string>
+    <string name="settings_shell_frame_none_option">無</string>
+    <string name="settings_shell_frame_selected_desc">已選取</string>
+    <string name="settings_shell_frame_download_desc">下載</string>
+    <string name="settings_shell_frame_preview_desc">邊框預覽</string>
+    <string name="settings_shell_frame_no_selection">尚未選擇邊框</string>
+    <string name="settings_shell_frame_unavailable">邊框無法使用</string>
+
+    <!-- ===== ShaderStackSection ===== -->
+
+    <string name="settings_shell_shaderstack_tab_label">%1$d. %2$s</string>
+    <string name="settings_shell_shaderstack_preview_desc">著色器預覽</string>
+    <string name="settings_shell_shaderstack_no_preview">無預覽</string>
+    <string name="settings_shell_shaderstack_empty">鏈中沒有著色器</string>
+    <string name="settings_shell_shaderstack_no_params">沒有可調整的參數</string>
+
+    <!-- ===== CoreOptionsSection ===== -->
+
+    <string name="settings_shell_coreoptions_no_platforms">沒有支援內建模擬器的平台</string>
+    <string name="settings_shell_coreoptions_status_installed_selector">已安裝</string>
+    <string name="settings_shell_coreoptions_status_not_downloaded_selector">尚未下載</string>
+    <string name="settings_shell_coreoptions_status_installed_option">已安裝</string>
+    <string name="settings_shell_coreoptions_status_not_downloaded_option">尚未下載</string>
+    <string name="settings_shell_coreoptions_selector_value_template">%1$s（%2$s）</string>
+    <string name="settings_shell_coreoptions_option_value_template">%1$s（%2$s）</string>
+    <string name="settings_shell_coreoptions_none_available">沒有可用的核心</string>
+    <string name="settings_shell_coreoptions_core_title">核心</string>
+    <string name="settings_shell_coreoptions_redownload">重新下載核心</string>
+    <string name="settings_shell_coreoptions_download">下載核心</string>
+    <string name="settings_shell_coreoptions_downloading">下載中&#8230;</string>
+    <string name="settings_shell_coreoptions_reinstall_subtitle">若核心毀損或過舊，可重新安裝</string>
+    <string name="settings_shell_coreoptions_download_subtitle">下載核心即可變更設定</string>
+    <string name="settings_shell_coreoptions_delete_core">刪除核心</string>
+    <string name="settings_shell_coreoptions_delete_core_subtitle">釋放空間，並保留其設定</string>
+    <string name="settings_shell_coreoptions_reset_all">全部重設為預設值</string>
+
+    <!-- ===== CoreManagementSection ===== -->
+
+    <string name="settings_shell_coremanagement_no_platforms">沒有已啟用同步的支援平台</string>
+    <string name="settings_shell_coremanagement_header">為各平台選擇核心</string>
+    <string name="settings_shell_coremanagement_active_desc">使用中</string>
+    <string name="settings_shell_coremanagement_download_required_desc">需要下載</string>
+    <string name="settings_shell_coremanagement_netplay_tag">Netplay</string>
+    <string name="settings_shell_coremanagement_update_tag">更新</string>
+
+    <!-- ===== BuiltinVideoSection: per-platform save/state path rows ===== -->
+
+    <string name="settings_shell_builtinvideo_reset_all_to_global">全部重設為全域設定</string>
+    <string name="settings_shell_builtinvideo_save_path_title">存檔路徑</string>
+    <string name="settings_shell_builtinvideo_state_path_title">即時存檔路徑</string>
+    <string name="settings_shell_builtinvideo_save_trailing_custom">（自訂）</string>
+    <string name="settings_shell_builtinvideo_save_trailing_custom_platform">（此平台自訂）</string>
+    <string name="settings_shell_builtinvideo_save_trailing_from_global">（來自全域）</string>
+    <string name="settings_shell_builtinvideo_state_trailing_custom">（自訂）</string>
+    <string name="settings_shell_builtinvideo_state_trailing_custom_platform">（此平台自訂）</string>
+    <string name="settings_shell_builtinvideo_state_trailing_from_global">（來自全域）</string>
+
+    <!-- ===== SettingsFooter.kt (standalone, unused default footer) ===== -->
+
+    <string name="settings_shell_footer_standalone_navigate">瀏覽</string>
+    <string name="settings_shell_footer_standalone_select">選取</string>
+    <string name="settings_shell_footer_standalone_back">返回</string>
+
+    <!-- ===== SettingsScreen: section header titles ===== -->
+
+    <string name="settings_shell_header_main">設定</string>
+    <string name="settings_shell_header_accounts">帳號</string>
+    <string name="settings_shell_header_saves">存檔</string>
+    <string name="settings_shell_header_sync_settings">同步設定</string>
+    <string name="settings_shell_header_steam">STEAM（實驗功能）</string>
+    <string name="settings_shell_header_storage">儲存空間</string>
+    <string name="settings_shell_header_storage_games">遊戲儲存空間</string>
+    <string name="settings_shell_header_storage_media">媒體儲存空間</string>
+    <string name="settings_shell_header_storage_platform_games_fallback">平台遊戲</string>
+    <string name="settings_shell_header_storage_caches">快取與系統</string>
+    <string name="settings_shell_header_theme">主題</string>
+    <string name="settings_shell_header_audio">音訊</string>
+    <string name="settings_shell_header_theme_sounds">音效</string>
+    <string name="settings_shell_header_theme_music">音樂</string>
+    <string name="settings_shell_header_theme_fonts">字型</string>
+    <string name="settings_shell_header_theme_backdrop">介面背景</string>
+    <string name="settings_shell_header_interface">介面</string>
+    <string name="settings_shell_header_box_art">封面圖</string>
+    <string name="settings_shell_header_controller_grip">控制器握持方式</string>
+    <string name="settings_shell_header_home_screen">主畫面</string>
+    <string name="settings_shell_header_library_view">收藏庫</string>
+    <string name="settings_shell_header_displays">顯示器</string>
+    <string name="settings_shell_header_ambient_led">LED控制</string>
+    <string name="settings_shell_header_navigation">導覽</string>
+    <string name="settings_shell_header_platforms">平台</string>
+    <string name="settings_shell_header_builtin_emulator">內建模擬器</string>
+    <string name="settings_shell_header_platform_detail_fallback">平台</string>
+    <string name="settings_shell_header_builtin_video">內建影音與效能</string>
+    <string name="settings_shell_header_builtin_controls">內建控制</string>
+    <string name="settings_shell_header_core_management">管理核心</string>
+    <string name="settings_shell_header_core_options">核心選項</string>
+    <string name="settings_shell_header_bios">BIOS檔案</string>
+    <string name="settings_shell_header_shader_stack">著色器鏈</string>
+    <string name="settings_shell_header_frame_picker">選擇邊框</string>
+    <string name="settings_shell_header_permissions">權限</string>
+    <string name="settings_shell_header_drivers">GPU驅動程式</string>
+    <string name="settings_shell_header_about">關於</string>
+    <string name="settings_shell_header_social">社群</string>
+    <string name="settings_shell_header_context_global">全域</string>
+
+    <string name="settings_shell_context_previous_desc">上一個內容</string>
+    <string name="settings_shell_context_next_desc">下一個內容</string>
+
+    <!-- ===== SettingsScreen: file browser titles ===== -->
+
+    <string name="settings_shell_platform_fallback">平台</string>
+    <string name="settings_shell_filebrowser_platform_rom_path_title">%1$s ROM路徑</string>
+    <string name="settings_shell_filebrowser_gamenative_sync_folder_title">%1$s同步資料夾</string>
+    <string name="settings_shell_filebrowser_save_path_title">存檔路徑</string>
+    <string name="settings_shell_filebrowser_platform_save_path_title">%1$s存檔路徑</string>
+    <string name="settings_shell_filebrowser_platform_state_path_title">%1$s即時存檔路徑</string>
+    <string name="settings_shell_filebrowser_builtin_save_path_title">內建存檔路徑</string>
+    <string name="settings_shell_filebrowser_builtin_state_path_title">內建即時存檔路徑</string>
+    <string name="settings_shell_filebrowser_platform_builtin_save_path_title">%1$s內建存檔路徑</string>
+    <string name="settings_shell_filebrowser_platform_builtin_state_path_title">%1$s內建即時存檔路徑</string>
+    <string name="settings_shell_filebrowser_settings_backup_title">選擇設定備份</string>
+    <string name="settings_shell_filebrowser_add_music_title">新增音樂</string>
+    <string name="settings_shell_filebrowser_music_location_title">音樂位置</string>
+    <string name="settings_shell_filebrowser_media_location_title">媒體位置</string>
+    <string name="settings_shell_filebrowser_custom_sound_title">自訂音效</string>
+
+    <!-- ===== SettingsScreen: confirm modals ===== -->
+
+    <string name="settings_shell_modal_builtin_migration_save_title">要遷移存檔嗎？</string>
+    <string name="settings_shell_modal_builtin_migration_state_title">要遷移即時存檔嗎？</string>
+    <string name="settings_shell_modal_builtin_migration_save_message">目的地已有%1$d個存檔。要將舊位置的現有檔案移動過來嗎？這會覆蓋任何衝突的檔案。</string>
+    <string name="settings_shell_modal_builtin_migration_state_message">目的地已有%1$d個即時存檔。要將舊位置的現有檔案移動過來嗎？這會覆蓋任何衝突的檔案。</string>
+    <string name="settings_shell_modal_builtin_migration_confirm">遷移</string>
+    <string name="settings_shell_modal_builtin_migration_skip">略過</string>
+
+    <string name="settings_shell_modal_music_relocation_title">要移動音樂檔案嗎？</string>
+    <string name="settings_shell_modal_music_relocation_message">目前的音樂資料夾中有%1$d個檔案。要將它們移動到新位置嗎？這會覆蓋任何衝突的檔案。</string>
+    <string name="settings_shell_modal_music_relocation_confirm">移動</string>
+    <string name="settings_shell_modal_music_relocation_skip">略過</string>
+
+    <string name="settings_shell_modal_media_relocation_title">要移動已下載的媒體嗎？</string>
+    <string name="settings_shell_modal_media_relocation_message">目前的媒體資料夾中有%1$d個檔案。要將它們移動到新位置嗎？這會覆蓋任何衝突的檔案。</string>
+    <string name="settings_shell_modal_media_relocation_confirm">移動</string>
+    <string name="settings_shell_modal_media_relocation_leave">保留原處</string>
+
+    <string name="settings_shell_modal_jellyfin_signout_title">要登出Jellyfin嗎？</string>
+    <string name="settings_shell_modal_jellyfin_signout_message">這台裝置會忘記您的Jellyfin登入資訊。已下載的媒體會保留在裝置上，觀看紀錄則保留在伺服器上。</string>
+    <string name="settings_shell_modal_jellyfin_signout_confirm">登出</string>
+
+    <string name="settings_shell_modal_import_settings_title">要匯入設定嗎？</string>
+    <string name="settings_shell_modal_import_settings_message">選擇備份檔案後，檔案中列出的設定會取代您目前的設定。檔案未包含的項目則不受影響，帳號、伺服器、同步狀態與檔案位置永遠不會被匯入。</string>
+    <string name="settings_shell_modal_import_settings_confirm">選擇檔案</string>
+
+    <string name="settings_shell_modal_migrate_downloads_title">要遷移下載內容嗎？</string>
+    <string name="settings_shell_modal_migrate_downloads_message">要將%1$d款遊戲（%2$s）移動到新位置嗎？</string>
+    <string name="settings_shell_modal_migrate_downloads_confirm">遷移</string>
+    <string name="settings_shell_modal_migrate_downloads_skip">略過</string>
+
+    <string name="settings_shell_modal_migrate_platform_title">要遷移%1$s的ROM嗎？</string>
+    <string name="settings_shell_modal_migrate_platform_fallback">平台</string>
+    <string name="settings_shell_modal_migrate_platform_message">要將已下載的遊戲移動到新位置嗎？檔案會先複製過去，再從舊位置移除。</string>
+    <string name="settings_shell_modal_migrate_platform_confirm">遷移</string>
+    <string name="settings_shell_modal_migrate_platform_skip">略過</string>
+
+    <string name="settings_shell_modal_purge_platform_title">要清除%1$s嗎？</string>
+    <string name="settings_shell_modal_purge_platform_fallback">平台</string>
+    <string name="settings_shell_modal_purge_platform_message">這會刪除全部%1$d款遊戲及其本機ROM檔案，且無法復原。</string>
+    <string name="settings_shell_modal_purge_platform_confirm">清除</string>
+
+    <string name="settings_shell_modal_sync_first_title">請先同步存檔</string>
+    <string name="settings_shell_modal_sync_first_message">請先同步存檔，目前還有%1$d個待處理。現在重設收藏庫會永久捨棄尚未上傳的存檔。</string>
+    <string name="settings_shell_modal_sync_first_confirm">立即同步</string>
+
+    <string name="settings_shell_modal_reset_library_title">要重設收藏庫嗎？</string>
+    <string name="settings_shell_modal_reset_library_message">這會清除資料庫與圖片快取。已下載的檔案會保留在裝置上。將永久遺失：遊玩時間、本機合輯、下載紀錄、存檔同步狀態，以及各遊戲的個別設定。您之後需要重新同步收藏庫。</string>
+    <string name="settings_shell_modal_reset_library_confirm">重設</string>
+
+    <plurals name="settings_shell_unsynced_saves_warning">
+        <item quantity="other">%d個未同步的存檔將遺失。</item>
+    </plurals>
+
+    <string name="settings_shell_modal_delete_game_soundtrack_title">要刪除%1$s嗎？</string>
+    <string name="settings_shell_modal_delete_game_soundtrack_message">這會移除此遊戲所有已下載的檔案。%1$s請選擇是否一併刪除其原聲帶。</string>
+    <string name="settings_shell_modal_delete_game_cancel">取消</string>
+    <string name="settings_shell_modal_delete_game_only">刪除遊戲</string>
+    <string name="settings_shell_modal_delete_game_with_soundtrack">刪除＋原聲帶</string>
+
+    <string name="settings_shell_modal_delete_game_plain_title">要刪除%1$s嗎？</string>
+    <string name="settings_shell_modal_delete_game_plain_message">這會移除此遊戲所有已下載的檔案。%1$s此操作無法復原。</string>
+    <string name="settings_shell_modal_delete_game_plain_confirm">刪除遊戲</string>
+
+    <string name="settings_shell_modal_romm_signout_title">要登出RomM嗎？</string>
+    <plurals name="settings_shell_romm_signout_pending_message">
+        <item quantity="other">%1$d個存檔會先上傳。全部同步到伺服器後，此帳號在此裝置上快取的存檔、即時存檔與設定會被移除，已下載的遊戲則會保留。</item>
+    </plurals>
+    <string name="settings_shell_romm_signout_message">此帳號在此裝置上快取的存檔、即時存檔與設定會被移除，已上傳的內容會保留在伺服器上，已下載的遊戲則會保留。</string>
+    <string name="settings_shell_modal_romm_signout_confirm">登出</string>
+
+    <string name="settings_shell_modal_reset_save_cache_title">要重設存檔快取嗎？</string>
+    <string name="settings_shell_modal_reset_save_cache_message">這會刪除所有本機快取的存檔快照與待處理的同步作業，不會影響您實際的存檔檔案與伺服器上的存檔。</string>
+    <string name="settings_shell_modal_reset_save_cache_confirm">重設</string>
+
+    <string name="settings_shell_modal_clear_save_path_cache_title">要清除存檔路徑快取嗎？</string>
+    <string name="settings_shell_modal_clear_save_path_cache_message">這會清除所有偵測到的存檔路徑，下次同步時會重新偵測。若存檔同步到錯誤的位置，可使用此功能。</string>
+    <string name="settings_shell_modal_clear_save_path_cache_confirm">清除</string>
+
+    <string name="settings_shell_modal_secure_saves_off_title">要關閉安全存檔嗎？</string>
+    <string name="settings_shell_modal_secure_saves_off_message">關閉此功能會停用RetroAchievements的硬核模式。在重新開啟安全存檔之前，遊戲會以一般模式啟動。</string>
+    <string name="settings_shell_modal_secure_saves_off_confirm">關閉</string>
+
+    <string name="settings_shell_modal_clear_state_cache_title">要清除即時存檔快取嗎？</string>
+    <string name="settings_shell_modal_clear_state_cache_message">這會刪除所有本機快取的即時存檔快照與待處理的同步作業，不會影響存檔檔案與伺服器上的副本。</string>
+    <string name="settings_shell_modal_clear_state_cache_confirm">清除</string>
+
+    <string name="settings_shell_modal_caches_clear_confirm">清除</string>
+
+    <string name="settings_shell_modal_delete_core_title">要刪除核心嗎？</string>
+    <string name="settings_shell_modal_delete_core_message">核心會從此裝置移除。設定使用此核心的遊戲需要重新下載後才能執行。</string>
+    <string name="settings_shell_modal_delete_core_confirm">刪除</string>
+
+    <string name="settings_shell_modal_sync_saves_title">要同步存檔嗎？</string>
+    <string name="settings_shell_modal_sync_saves_message">這會掃描所有已下載的遊戲以尋找存檔變更，並與伺服器同步。比上次同步更新的本機存檔會上傳，較新的伺服器存檔則會下載。</string>
+    <string name="settings_shell_modal_sync_saves_confirm">同步</string>
+
+    <!-- ===== SettingsScreen: AccountModals ===== -->
+
+    <string name="settings_shell_accounts_add_title">要新增帳號嗎？</string>
+    <string name="settings_shell_accounts_switch_title">要切換到%1$s嗎？</string>
+    <string name="settings_shell_accounts_fallback_name">帳號</string>
+    <string name="settings_shell_accounts_exit_message">請先完全結束任何在Argosy之外啟動的遊戲。Argosy無法偵測到那些工作階段，仍在執行的遊戲可能會覆寫這次移動的存檔。存檔會先封存並驗證，才會移除任何內容。</string>
+    <string name="settings_shell_accounts_add_confirm">遊戲已關閉，繼續</string>
+    <string name="settings_shell_accounts_switch_confirm">遊戲已關閉，切換</string>
+
+    <string name="settings_shell_accounts_remove_title">要移除%1$s嗎？</string>
+    <string name="settings_shell_accounts_remove_fallback_name">帳號</string>
+    <string name="settings_shell_accounts_removal_message_base">這會從此裝置移除此帳號的存檔、即時存檔、待處理工作、成就與收藏庫疊層，已下載的遊戲會保留。</string>
+    <string name="settings_shell_accounts_removal_pending_suffix"> 尚未傳送：%1$s。</string>
+    <string name="settings_shell_accounts_removal_last_account_suffix"> 這是最後一個帳號，因此裝置會登出RomM。</string>
+    <string name="settings_shell_accounts_removal_revoke_suffix"> 此裝置仍會在RomM伺服器上保持註冊狀態，請至伺服器端撤銷。</string>
+    <string name="settings_shell_accounts_cancel">取消</string>
+    <string name="settings_shell_accounts_keep_queued_work">保留待處理工作</string>
+    <string name="settings_shell_accounts_discard_and_remove">捨棄並移除</string>
+    <string name="settings_shell_accounts_remove_confirm">移除</string>
+
+    <string name="settings_shell_accounts_switch_failed_title">切換未完成</string>
+    <string name="settings_shell_accounts_switch_failed_message">%1$s在切換完成前，遊戲啟動會保持封鎖，以避免存檔移動到一半。請重試以完成切換。</string>
+    <string name="settings_shell_accounts_retry">重試</string>
+    <string name="settings_shell_accounts_not_now">稍後再說</string>
+
+    <string name="settings_shell_accounts_cannot_switch_title">目前無法切換</string>
+    <string name="settings_shell_accounts_ok">確定</string>
+    <string name="settings_shell_accounts_close">關閉</string>
+
+    <string name="settings_shell_accounts_notice_title">帳號</string>
+    <string name="settings_shell_accounts_ok2">確定</string>
+    <string name="settings_shell_accounts_close2">關閉</string>
+
+    <!-- ===== SettingsScreen: footer hints ===== -->
+
+    <string name="settings_shell_footer_navigate">瀏覽</string>
+    <string name="settings_shell_footer_navigate_vertical">瀏覽</string>
+    <string name="settings_shell_footer_preview_shape">預覽外型</string>
+    <string name="settings_shell_footer_preview_game">預覽遊戲</string>
+    <string name="settings_shell_footer_shader">著色器</string>
+    <string name="settings_shell_footer_reorder">重新排序</string>
+    <string name="settings_shell_footer_adjust_shaderstack">調整</string>
+    <string name="settings_shell_footer_reset_shaderstack">重設</string>
+    <string name="settings_shell_footer_remove_shaderstack">移除</string>
+    <string name="settings_shell_footer_add_shaderstack">新增</string>
+    <string name="settings_shell_footer_platform_builtin">平台</string>
+    <string name="settings_shell_footer_reset_to_default_builtinvideo">重設為預設值</string>
+    <string name="settings_shell_footer_sample">試聽</string>
+    <string name="settings_shell_footer_reset_to_default_themesounds">重設為預設值</string>
+    <string name="settings_shell_footer_platform_coreoptions">平台</string>
+    <string name="settings_shell_footer_reset_to_default_coreoptions">重設為預設值</string>
+    <string name="settings_shell_footer_force_sync">強制同步</string>
+    <string name="settings_shell_footer_folders_scan">資料夾／掃描</string>
+    <string name="settings_shell_footer_switch_remove">切換／移除</string>
+    <string name="settings_shell_footer_refresh">重新整理</string>
+    <string name="settings_shell_footer_sort">排序</string>
+    <string name="settings_shell_footer_category">類別</string>
+    <string name="settings_shell_footer_delete">刪除</string>
+    <string name="settings_shell_footer_adjust_platformdetail">調整</string>
+    <string name="settings_shell_footer_update_emulator">更新模擬器</string>
+    <string name="settings_shell_footer_reset_platformdetail">重設</string>
+    <string name="settings_shell_footer_toggle_label">切換</string>
+    <string name="settings_shell_footer_open_label">開啟</string>
+    <string name="settings_shell_footer_select_label">選取</string>
+    <string name="settings_shell_footer_select_default">選取</string>
+    <string name="settings_shell_footer_display">顯示</string>
+    <string name="settings_shell_footer_enable">啟用</string>
+    <string name="settings_shell_footer_update">更新</string>
+    <string name="settings_shell_footer_reset_builtinvideo_override">重設</string>
+    <string name="settings_shell_footer_reset_builtincontrols_override">重設</string>
+    <string name="settings_shell_footer_back">返回</string>
+
+    <!-- ===== SettingsScreen: cache clear confirm modals ===== -->
+
+    <string name="settings_shell_caches_image_title">要清除圖片快取嗎？</string>
+    <string name="settings_shell_caches_image_message">這會刪除所有快取的封面、背景與螢幕截圖，瀏覽時圖片會從伺服器重新下載。</string>
+    <string name="settings_shell_caches_rom_extraction_title">要清除已解壓縮的ROM嗎？</string>
+    <string name="settings_shell_caches_rom_extraction_message">這會刪除壓縮遊戲解壓縮出的工作副本，下次啟動遊戲時會重新解壓縮。</string>
+    <string name="settings_shell_caches_rom_staging_title">要清除已捨棄的暫存嗎？</string>
+    <string name="settings_shell_caches_rom_staging_message">這會刪除未完成下載所留下的內部工作檔案。仍在佇列中的下載會保留其檔案，並從中斷處繼續。</string>
+    <string name="settings_shell_caches_sfx_title">要清除音效快取嗎？</string>
+    <string name="settings_shell_caches_sfx_message">這會刪除已轉碼的自訂音效檔案，下次載入音效時會自動重建。</string>
+    <string name="settings_shell_caches_emulator_apks_title">要清除模擬器安裝檔嗎？</string>
+    <string name="settings_shell_caches_emulator_apks_message">這會刪除已下載的模擬器安裝用APK，不會影響已安裝的模擬器。</string>
+    <string name="settings_shell_caches_misc_downloads_title">要清除其他下載內容嗎？</string>
+    <string name="settings_shell_caches_misc_downloads_message">這會刪除好友狀態封面與已下載的GPU驅動程式套件，不會影響已安裝的驅動程式。</string>
+    <string name="settings_shell_caches_shaders_catalog_title">要清除著色器目錄嗎？</string>
+    <string name="settings_shell_caches_shaders_catalog_message">這會刪除已下載的目錄著色器，自訂著色器會保留，目錄著色器會在需要時重新下載。</string>
+    <string name="settings_shell_caches_frames_title">要清除邊框疊層嗎？</string>
+    <string name="settings_shell_caches_frames_message">這會刪除已下載的邊框疊層，選取時會重新下載。</string>
+    <string name="settings_shell_caches_steam_downloads_title">要清除Steam下載資料嗎？</string>
+    <string name="settings_shell_caches_steam_downloads_message">這會刪除暫存的Steam下載內容並清空下載佇列，不會影響已安裝的遊戲，但未完成的下載會從頭開始。</string>
+
+    <!-- ===== ManagePinsScreen ===== -->
+
+    <string name="settings_shell_managepins_loading">載入中&#8230;</string>
+    <string name="settings_shell_managepins_reorder_move">移動</string>
+    <string name="settings_shell_managepins_reorder_done">完成</string>
+    <string name="settings_shell_managepins_reorder_cancel">取消</string>
+    <string name="settings_shell_managepins_navigate">瀏覽</string>
+    <string name="settings_shell_managepins_reorder_hint">重新排序</string>
+    <string name="settings_shell_managepins_unpin">取消釘選</string>
+    <string name="settings_shell_managepins_back_hint">返回</string>
+    <string name="settings_shell_managepins_back_desc">返回</string>
+    <string name="settings_shell_managepins_title">管理已釘選的合輯</string>
+    <string name="settings_shell_managepins_type_collection">合輯</string>
+    <string name="settings_shell_managepins_type_genre">類型</string>
+    <string name="settings_shell_managepins_type_game_mode">遊戲模式</string>
+    <string name="settings_shell_managepins_type_series">系列</string>
+    <string name="settings_shell_managepins_moving_desc">移動中</string>
+    <plurals name="settings_shell_managepins_row_subtitle">
+        <item quantity="other">%1$s - %2$d款遊戲</item>
+    </plurals>
+    <string name="settings_shell_managepins_empty_title">沒有已釘選的合輯</string>
+    <string name="settings_shell_managepins_empty_subtitle">請在合輯畫面中釘選合輯</string>
+
+    <!-- ===== BgmPlaylistManagerScreen ===== -->
+
+    <string name="settings_shell_bgm_synced_folders">已同步的資料夾</string>
+    <string name="settings_shell_bgm_tracks">曲目</string>
+    <string name="settings_shell_bgm_reorder_move">移動</string>
+    <string name="settings_shell_bgm_reorder_done">完成</string>
+    <string name="settings_shell_bgm_reorder_cancel">取消</string>
+    <string name="settings_shell_bgm_add_music_empty">新增音樂</string>
+    <string name="settings_shell_bgm_move_hint">移動</string>
+    <string name="settings_shell_bgm_add_music_hint">新增音樂</string>
+    <string name="settings_shell_bgm_remove_verb">移除</string>
+    <string name="settings_shell_bgm_remove_verb_uncovered">移除</string>
+    <string name="settings_shell_bgm_disable_verb">停用</string>
+    <string name="settings_shell_bgm_enable_verb">啟用</string>
+    <string name="settings_shell_bgm_back_desc">返回</string>
+    <string name="settings_shell_bgm_title">音樂播放清單</string>
+    <string name="settings_shell_bgm_add_label">新增</string>
+    <string name="settings_shell_bgm_folder_missing">找不到資料夾</string>
+    <plurals name="settings_shell_bgm_track_count">
+        <item quantity="other">%1$d首曲目</item>
+    </plurals>
+    <plurals name="settings_shell_bgm_disabled_suffix_template">
+        <item quantity="other">（已停用%1$d首）</item>
+    </plurals>
+    <string name="settings_shell_bgm_remove_folder_desc">移除資料夾</string>
+    <string name="settings_shell_bgm_moving_desc">移動中</string>
+    <string name="settings_shell_bgm_file_missing">找不到檔案，播放時會略過</string>
+    <string name="settings_shell_bgm_disabled_desc">已停用，播放時會排除</string>
+    <string name="settings_shell_bgm_move_up_desc">上移</string>
+    <string name="settings_shell_bgm_move_down_desc">下移</string>
+    <string name="settings_shell_bgm_remove_desc">移除</string>
+    <string name="settings_shell_bgm_empty_state">沒有音樂，可從音樂瀏覽器或本機檔案新增</string>
+
+    <!-- ===== Routers: SettingsBuiltinRouter ===== -->
+
+    <string name="settings_shell_router_cores_load_failed">無法載入核心，請再試一次。</string>
+    <string name="settings_shell_router_cannot_download_offline">離線時無法下載</string>
+    <string name="settings_shell_router_cannot_update_offline">離線時無法更新</string>
+    <string name="settings_shell_router_core_downloading_title">正在下載%1$s</string>
+    <string name="settings_shell_router_core_downloading_subtitle">請稍候&#8230;</string>
+    <string name="settings_shell_router_core_downloaded_title">已下載%1$s</string>
+    <string name="settings_shell_router_core_downloaded_subtitle">核心現在可以使用</string>
+    <string name="settings_shell_router_core_download_failed_title">下載失敗</string>
+    <string name="settings_shell_router_core_download_failed_fallback">未知錯誤</string>
+
+    <!-- ===== Routers: SettingsAboutRouter ===== -->
+
+    <string name="settings_shell_router_settings_exported_title">設定已匯出</string>
+    <string name="settings_shell_router_settings_exported_subtitle">已將%1$d項設定寫入%2$s</string>
+    <string name="settings_shell_router_settings_imported_title">設定已匯入</string>
+    <string name="settings_shell_router_import_subtitle_with_skipped">已套用%1$d項，略過%2$d項。重新啟動以套用全部設定。</string>
+    <string name="settings_shell_router_import_subtitle">已套用%1$d項。重新啟動以套用全部設定。</string>
+
+    <!-- ===== Routers: SettingsFontRouter ===== -->
+
+    <string name="settings_shell_router_font_import_failed_title">字型匯入失敗</string>
+    <string name="settings_shell_router_font_error_no_filename">無法讀取所選的檔案</string>
+    <string name="settings_shell_router_font_error_no_stream">無法讀取所選的檔案</string>
+    <string name="settings_shell_router_font_error_unsupported_ext">僅支援.ttf與.otf字型</string>
+    <string name="settings_shell_router_font_error_invalid">%1$s不是有效的字型檔案</string>
+
+    <!-- ===== Routers: SettingsGeneralRouter ===== -->
+
+    <string name="settings_shell_router_emulator_name_fallback">未知</string>
+    <string name="settings_shell_router_content_dir_save">（ROM目錄）</string>
+    <string name="settings_shell_router_content_dir_state">（ROM目錄）</string>
+
+    <!-- ===== Routers: SettingsInitRouter ===== -->
+
+    <string name="settings_shell_router_content_dir_save2">（ROM目錄）</string>
+    <string name="settings_shell_router_content_dir_state2">（ROM目錄）</string>
+
+    <!-- ===== SettingsViewModel ===== -->
+
+    <string name="settings_shell_vm_artwork_cache_title">美術圖片快取</string>
+    <string name="settings_shell_vm_artwork_cleared_template">已清除%1$s</string>
+    <string name="settings_shell_vm_artwork_nothing_cached">沒有可清除的快取</string>
+    <string name="settings_shell_vm_platform_fallback">平台</string>
+    <plurals name="settings_shell_vm_scan_found_template">
+        <item quantity="other">找到%1$d個</item>
+    </plurals>
+    <plurals name="settings_shell_vm_scan_removed_template">
+        <item quantity="other">已移除%1$d個</item>
+    </plurals>
+    <string name="settings_shell_vm_scan_no_changes">沒有變更</string>
+    <string name="settings_shell_vm_scan_complete_title">掃描完成</string>
+    <string name="settings_shell_vm_scan_complete_subtitle_template">%1$s：%2$s</string>
+    <string name="settings_shell_vm_scan_complete_title2">掃描完成</string>
+    <plurals name="settings_shell_vm_android_added_template">
+        <item quantity="other">已新增%1$d個</item>
+    </plurals>
+    <string name="settings_shell_vm_android_updated_template">已更新%1$d個</string>
+    <string name="settings_shell_vm_android_scan_result_template">Android：%1$s</string>
+    <string name="settings_shell_vm_android_scan_nothing_new">Android：沒有新項目，可從應用程式新增其他項目。</string>
+    <string name="settings_shell_vm_folders_restored_title">資料夾已還原</string>
+    <string name="settings_shell_vm_nothing_moved_title">沒有移動任何項目</string>
+    <plurals name="settings_shell_vm_games_moved_back">
+        <item quantity="other">已將%1$d款遊戲移回各自的資料夾</item>
+    </plurals>
+    <string name="settings_shell_vm_no_games_moved_back">沒有遊戲可以移回</string>
+    <string name="settings_shell_vm_pushed_to_retroarch_title">已推送到RetroArch</string>
+    <plurals name="settings_shell_vm_retroarch_configs_updated">
+        <item quantity="other">已更新%1$d個RetroArch設定檔</item>
+    </plurals>
+    <string name="settings_shell_vm_retroarch_not_found_title">找不到RetroArch</string>
+    <string name="settings_shell_vm_retroarch_not_found_subtitle">找不到可更新的retroarch.cfg</string>
+    <string name="settings_shell_vm_not_signed_in_title">尚未登入</string>
+    <string name="settings_shell_vm_not_signed_in_subtitle">請先登入RetroAchievements</string>
+    <string name="settings_shell_vm_files_removed_title">檔案已移除</string>
+    <plurals name="settings_shell_vm_files_removed_subtitle">
+        <item quantity="other">已從%2$s移除%1$d個檔案</item>
+    </plurals>
+    <string name="settings_shell_vm_bios_copied_title">BIOS已複製</string>
+    <plurals name="settings_shell_vm_bios_copied_subtitle">
+        <item quantity="other">已複製%1$d個檔案</item>
+    </plurals>
+</resources>

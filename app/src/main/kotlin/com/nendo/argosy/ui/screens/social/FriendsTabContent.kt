@@ -39,9 +39,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.data.netplay.NetplayPreflightResult
 import com.nendo.argosy.data.social.Friend
 import com.nendo.argosy.data.social.NetplaySession
@@ -124,13 +126,13 @@ fun FriendsTabContent(
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = "No Friends Yet",
+                    text = stringResource(R.string.social_friends_empty_title),
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
                 Spacer(modifier = Modifier.height(Dimens.spacingSm))
                 Text(
-                    text = "Add friends using your friend code in Settings",
+                    text = stringResource(R.string.social_friends_empty_body),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                 )
@@ -148,7 +150,7 @@ fun FriendsTabContent(
         contentPadding = PaddingValues(horizontal = Dimens.spacingLg, vertical = Dimens.spacingMd)
     ) {
         if (receivedRequests.isNotEmpty()) {
-            item(key = "friends_hdr_incoming") { RequestsSectionHeader(text = "Incoming Requests") }
+            item(key = "friends_hdr_incoming") { RequestsSectionHeader(text = stringResource(R.string.social_friends_header_incoming)) }
             itemsIndexed(receivedRequests, key = { _, friend -> friend.id }) { index, friend ->
                 RequestCard(
                     friend = friend,
@@ -163,7 +165,7 @@ fun FriendsTabContent(
 
         if (sentRequests.isNotEmpty()) {
             val base = receivedRequests.size
-            item(key = "friends_hdr_sent") { RequestsSectionHeader(text = "Sent Requests") }
+            item(key = "friends_hdr_sent") { RequestsSectionHeader(text = stringResource(R.string.social_friends_header_sent)) }
             itemsIndexed(sentRequests, key = { _, friend -> friend.id }) { index, friend ->
                 RequestCard(
                     friend = friend,
@@ -179,7 +181,7 @@ fun FriendsTabContent(
         if (friends.isNotEmpty()) {
             val base = receivedRequests.size + sentRequests.size
             if (hasRequests) {
-                item(key = "friends_hdr_accepted") { RequestsSectionHeader(text = "Friends") }
+                item(key = "friends_hdr_accepted") { RequestsSectionHeader(text = stringResource(R.string.social_friends_header_accepted)) }
             }
             itemsIndexed(friends, key = { _, friend -> friend.id }) { index, friend ->
                 FriendCard(
@@ -267,11 +269,11 @@ private fun RequestCard(
 
             if (incoming) {
                 Row(horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)) {
-                    RequestActionButton(label = "Accept", primary = true, onClick = onAccept)
-                    RequestActionButton(label = "Decline", primary = false, onClick = onDecline)
+                    RequestActionButton(label = stringResource(R.string.social_friends_request_accept), primary = true, onClick = onAccept)
+                    RequestActionButton(label = stringResource(R.string.social_friends_request_decline), primary = false, onClick = onDecline)
                 }
             } else {
-                RequestActionButton(label = "Cancel", primary = false, onClick = onCancel)
+                RequestActionButton(label = stringResource(R.string.social_friends_request_cancel), primary = false, onClick = onCancel)
             }
         }
     }
@@ -378,12 +380,12 @@ private fun FriendCard(
                     Text(
                         text = if (friend.presence == PresenceStatus.IN_GAME && friend.currentGame != null) {
                             if (friend.currentGame.netplaySession != null) {
-                                "Hosting ${friend.currentGame.title}"
+                                stringResource(R.string.social_friendcard_hosting, friend.currentGame.title)
                             } else {
-                                "Playing ${friend.currentGame.title}"
+                                stringResource(R.string.social_friendcard_playing, friend.currentGame.title)
                             }
                         } else if (friend.presence == PresenceStatus.WATCHING && friend.currentGame != null) {
-                            "Watching ${friend.currentGame.title}"
+                            stringResource(R.string.social_friendcard_watching, friend.currentGame.title)
                         } else {
                             presenceLabel(friend.presence)
                         },
@@ -433,7 +435,10 @@ private fun FriendCard(
             ) {
                 Icon(
                     imageVector = if (friend.isFavorite) Icons.Filled.Star else Icons.Outlined.StarBorder,
-                    contentDescription = if (friend.isFavorite) "Remove favorite" else "Add favorite",
+                    contentDescription = stringResource(
+                        if (friend.isFavorite) R.string.social_friendcard_favorite_remove_desc
+                        else R.string.social_friendcard_favorite_add_desc
+                    ),
                     modifier = Modifier.size(20.dp),
                     tint = if (friend.isFavorite) Color(0xFFFBBF24) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
                 )
@@ -454,12 +459,12 @@ private fun NetplayFriendBadge() {
     ) {
         Icon(
             imageVector = Icons.Filled.SportsEsports,
-            contentDescription = "Netplay session",
+            contentDescription = stringResource(R.string.social_netplaybadge_desc),
             tint = Color(0xFF6366F1),
             modifier = Modifier.size(12.dp)
         )
         Text(
-            text = "Netplay",
+            text = stringResource(R.string.social_netplaybadge_label),
             style = MaterialTheme.typography.labelSmall,
             color = Color(0xFF6366F1),
             fontWeight = FontWeight.Bold
@@ -507,7 +512,7 @@ private fun FriendNetplayJoinRow(
     when (val state = joinState) {
         FriendNetplayJoinState.Loading -> {
             Text(
-                text = "Checking...",
+                text = stringResource(R.string.social_netplayjoin_checking),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
@@ -521,18 +526,18 @@ private fun FriendNetplayJoinRow(
                     .padding(horizontal = 12.dp, vertical = 6.dp)
             ) {
                 Text(
-                    text = "Join",
+                    text = stringResource(R.string.social_netplayjoin_join),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onPrimary,
                     fontWeight = FontWeight.Bold
                 )
             }
         }
-        FriendNetplayJoinState.RomNotFound -> DisabledLabel("You don't have this ROM")
-        FriendNetplayJoinState.RomVersionMismatch -> DisabledLabel("Different ROM version")
-        FriendNetplayJoinState.CoreVersionMismatch -> DisabledLabel("Update Argosy to match")
-        FriendNetplayJoinState.CoreNotSupported -> DisabledLabel("Core unsupported")
-        FriendNetplayJoinState.SessionBusy -> DisabledLabel("Session busy")
+        FriendNetplayJoinState.RomNotFound -> DisabledLabel(stringResource(R.string.social_netplayjoin_rom_not_found))
+        FriendNetplayJoinState.RomVersionMismatch -> DisabledLabel(stringResource(R.string.social_netplayjoin_rom_version_mismatch))
+        FriendNetplayJoinState.CoreVersionMismatch -> DisabledLabel(stringResource(R.string.social_netplayjoin_core_version_mismatch))
+        FriendNetplayJoinState.CoreNotSupported -> DisabledLabel(stringResource(R.string.social_netplayjoin_core_not_supported))
+        FriendNetplayJoinState.SessionBusy -> DisabledLabel(stringResource(R.string.social_netplayjoin_session_busy))
     }
 }
 
@@ -554,10 +559,11 @@ private fun presenceColor(status: PresenceStatus?): Color = when (status) {
     PresenceStatus.OFFLINE, null -> Color(0xFF6B7280)
 }
 
+@Composable
 private fun presenceLabel(status: PresenceStatus?): String = when (status) {
-    PresenceStatus.ONLINE -> "Online"
-    PresenceStatus.AWAY -> "Away"
-    PresenceStatus.IN_GAME -> "In Game"
-    PresenceStatus.WATCHING -> "Watching"
-    PresenceStatus.OFFLINE, null -> "Offline"
+    PresenceStatus.ONLINE -> stringResource(R.string.social_presence_online)
+    PresenceStatus.AWAY -> stringResource(R.string.social_presence_away)
+    PresenceStatus.IN_GAME -> stringResource(R.string.social_presence_in_game)
+    PresenceStatus.WATCHING -> stringResource(R.string.social_presence_watching)
+    PresenceStatus.OFFLINE, null -> stringResource(R.string.social_presence_offline)
 }

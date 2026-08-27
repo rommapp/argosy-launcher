@@ -44,10 +44,13 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.FooterHintsWithState
@@ -59,6 +62,7 @@ import com.nendo.argosy.ui.primitives.ModalActionButton
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.primitives.ProgressBarStyle
 import com.nendo.argosy.ui.common.StateScreenshotViewer
+import com.nendo.argosy.ui.common.displayName
 import com.nendo.argosy.util.formatSaveSize
 import com.nendo.argosy.util.formatSaveTimestamp
 
@@ -109,7 +113,7 @@ fun SaveChannelModal(
             ) {
                 Column {
                     Text(
-                        text = "Save Management",
+                        text = stringResource(R.string.ui_save_channel_title),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -239,7 +243,7 @@ fun SaveChannelModal(
             state.screenshotPreviewEntry != null) {
             StateScreenshotViewer(
                 screenshotPath = state.screenshotPreviewEntry.screenshotPath ?: "",
-                slotLabel = state.screenshotPreviewEntry.displayName,
+                slotLabel = state.screenshotPreviewEntry.displayName(LocalContext.current),
                 timestampFormatted = state.screenshotPreviewEntry.timestampFormatted,
                 onDismiss = onDismissScreenshotPreview
             )
@@ -286,7 +290,7 @@ private fun SavesTabContent(
                 .fillMaxHeight()
         ) {
             Text(
-                text = "Save Slots",
+                text = stringResource(R.string.ui_save_channel_slots_heading),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(
@@ -338,8 +342,11 @@ private fun SavesTabContent(
                     if (it.isCreateAction) null else it.displayName
                 }
             Text(
-                text = if (slotName != null) "History ($slotName)"
-                    else "History",
+                text = if (slotName != null) {
+                    stringResource(R.string.ui_save_channel_history_heading_named, slotName)
+                } else {
+                    stringResource(R.string.ui_save_channel_history_heading)
+                },
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(
@@ -355,7 +362,7 @@ private fun SavesTabContent(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "No saves yet",
+                        text = stringResource(R.string.ui_save_channel_history_empty),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -394,8 +401,8 @@ private fun TabRow(
         SaveTab.entries.forEach { tab ->
             val isActive = tab == selectedTab
             val label = when (tab) {
-                SaveTab.SAVES -> "Saves"
-                SaveTab.STATES -> "States"
+                SaveTab.SAVES -> stringResource(R.string.ui_save_channel_tab_saves)
+                SaveTab.STATES -> stringResource(R.string.ui_save_channel_tab_states)
             }
             Text(
                 text = label,
@@ -436,14 +443,16 @@ private fun StatesTabContent(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "No state slots available",
+                text = stringResource(R.string.ui_save_channel_states_empty),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     } else {
         Text(
-            text = state.activeChannel?.let { "States in $it" } ?: "States in the default slot",
+            text = state.activeChannel?.let {
+                stringResource(R.string.ui_save_channel_states_heading_named, it)
+            } ?: stringResource(R.string.ui_save_channel_states_heading_default),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = Dimens.spacingSm, vertical = Dimens.spacingXs)
@@ -567,7 +576,7 @@ private fun NewSlotRow(
             modifier = Modifier.size(18.dp)
         )
         Text(
-            text = "New Slot",
+            text = stringResource(R.string.ui_save_channel_slot_new),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.primary
         )
@@ -622,7 +631,7 @@ private fun MigrationSlotRow(
             )
         }
         Text(
-            text = "[Legacy]",
+            text = stringResource(R.string.ui_save_channel_slot_legacy_tag),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
                 .copy(alpha = 0.6f)
@@ -671,14 +680,16 @@ private fun HistoryRow(
                 if (item.isActiveRestorePoint) {
                     Icon(
                         imageVector = Icons.Filled.CheckCircle,
-                        contentDescription = "Active restore point",
+                        contentDescription = stringResource(
+                            R.string.ui_save_channel_history_active_point
+                        ),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(14.dp)
                     )
                 }
                 if (item.isLatest) {
                     Text(
-                        text = "Latest",
+                        text = stringResource(R.string.ui_save_channel_history_latest),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -691,11 +702,15 @@ private fun HistoryRow(
             )
         }
 
-        val syncTag = if (item.isSynced) "Synced" else "Local"
+        val syncTag = if (item.isSynced) {
+            stringResource(R.string.ui_save_channel_history_tag_synced)
+        } else {
+            stringResource(R.string.ui_save_channel_history_tag_local)
+        }
         val syncColor = if (item.isSynced) Color(0xFF4CAF50)
             else MaterialTheme.colorScheme.onSurfaceVariant
         Text(
-            text = "[$syncTag]",
+            text = syncTag,
             style = MaterialTheme.typography.labelSmall,
             color = syncColor
         )
@@ -715,7 +730,7 @@ private fun ActiveSaveIndicator(activeChannel: String?) {
             color = MaterialTheme.colorScheme.primary
         )
         Text(
-            text = activeChannel ?: "Latest",
+            text = activeChannel ?: stringResource(R.string.ui_save_channel_active_default),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.primary
         )
@@ -732,6 +747,7 @@ private fun formatTruncatedPath(path: String, maxSegments: Int = 3): String {
     }
 }
 
+@Composable
 private fun buildFooterHints(state: SaveChannelState): List<FooterHintItem> {
     val hints = mutableListOf<FooterHintItem>()
 
@@ -741,22 +757,57 @@ private fun buildFooterHints(state: SaveChannelState): List<FooterHintItem> {
                 SaveFocusColumn.SLOTS -> {
                     val focused = state.focusedSlot
                     if (focused?.isMigrationCandidate == true) {
-                        hints.add(FooterHintItem(InputButton.A, "Migrate"))
-                        hints.add(FooterHintItem(InputButton.Y, "Delete"))
+                        hints.add(
+                            FooterHintItem(
+                                InputButton.A,
+                                stringResource(R.string.ui_save_channel_footer_migrate)
+                            )
+                        )
+                        hints.add(
+                            FooterHintItem(
+                                InputButton.Y,
+                                stringResource(R.string.ui_save_channel_footer_delete_legacy_slot)
+                            )
+                        )
                     } else {
-                        hints.add(FooterHintItem(InputButton.A, "Activate"))
+                        hints.add(
+                            FooterHintItem(
+                                InputButton.A,
+                                stringResource(R.string.ui_save_channel_footer_activate)
+                            )
+                        )
                         if (state.canRenameSlot) {
-                            hints.add(FooterHintItem(InputButton.X, "Rename"))
+                            hints.add(
+                                FooterHintItem(
+                                    InputButton.X,
+                                    stringResource(R.string.ui_save_channel_footer_rename)
+                                )
+                            )
                         }
                         if (state.canDeleteSlot) {
-                            hints.add(FooterHintItem(InputButton.Y, "Delete"))
+                            hints.add(
+                                FooterHintItem(
+                                    InputButton.Y,
+                                    stringResource(R.string.ui_save_channel_footer_delete_slot)
+                                )
+                            )
                         }
                     }
                 }
                 SaveFocusColumn.HISTORY -> {
-                    hints.add(FooterHintItem(InputButton.A, "Restore"))
+                    hints.add(
+                        FooterHintItem(
+                            InputButton.A,
+                            stringResource(R.string.ui_save_channel_footer_restore_save)
+                        )
+                    )
                     if (state.canLockAsSlot) {
-                        hints.add(FooterHintItem(InputButton.Y, "Save As"))
+                        hints.add(
+                            FooterHintItem(
+                                InputButton.Y,
+                                stringResource(R.string.ui_save_channel_footer_save_as)
+                            )
+                        )
                     }
                 }
             }
@@ -764,22 +815,48 @@ private fun buildFooterHints(state: SaveChannelState): List<FooterHintItem> {
         SaveTab.STATES -> {
             val focused = state.focusedStateEntry
             if (focused != null && focused.localCacheId != null) {
-                hints.add(FooterHintItem(InputButton.A, "Restore"))
+                hints.add(
+                    FooterHintItem(
+                        InputButton.A,
+                        stringResource(R.string.ui_save_channel_footer_restore_state)
+                    )
+                )
                 if (focused.screenshotPath != null) {
-                    hints.add(FooterHintItem(InputButton.X, "Preview"))
+                    hints.add(
+                        FooterHintItem(
+                            InputButton.X,
+                            stringResource(R.string.ui_save_channel_footer_preview_state)
+                        )
+                    )
                 }
-                hints.add(FooterHintItem(InputButton.Y, "Delete"))
+                hints.add(
+                    FooterHintItem(
+                        InputButton.Y,
+                        stringResource(R.string.ui_save_channel_footer_delete_state)
+                    )
+                )
             } else if (focused?.serverStateId != null) {
-                hints.add(FooterHintItem(InputButton.A, "Download"))
+                hints.add(
+                    FooterHintItem(
+                        InputButton.A,
+                        stringResource(R.string.ui_save_channel_footer_download_state)
+                    )
+                )
             }
         }
     }
 
     if (state.supportsStates) {
-        val tabLabel = if (state.selectedTab == SaveTab.SAVES) "States" else "Saves"
+        val tabLabel = if (state.selectedTab == SaveTab.SAVES) {
+            stringResource(R.string.ui_save_channel_footer_tab_states)
+        } else {
+            stringResource(R.string.ui_save_channel_footer_tab_saves)
+        }
         hints.add(FooterHintItem(InputButton.RB, tabLabel))
     } else {
-        hints.add(FooterHintItem(InputButton.RB, "Sync"))
+        hints.add(
+            FooterHintItem(InputButton.RB, stringResource(R.string.ui_save_channel_footer_sync))
+        )
     }
 
     return hints
@@ -790,14 +867,14 @@ private fun buildFooterHints(state: SaveChannelState): List<FooterHintItem> {
 @Composable
 private fun RestoreConfirmationOverlay() {
     NestedModal(
-        title = "RESTORE SAVE",
+        title = stringResource(R.string.ui_save_channel_restore_title),
         footerHints = listOf(
-            InputButton.A to "Restore",
-            InputButton.B to "Cancel"
+            InputButton.A to stringResource(R.string.ui_save_channel_restore_confirm),
+            InputButton.B to stringResource(R.string.ui_save_channel_restore_cancel)
         )
     ) {
         Text(
-            text = "Restore this save to your current game state?",
+            text = stringResource(R.string.ui_save_channel_restore_message),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -815,19 +892,19 @@ private fun RenameChannelOverlay(
     onCancel: () -> Unit
 ) {
     val title = when (mode) {
-        RenameMode.SAVE_AS -> "SAVE AS"
-        RenameMode.NEW_SLOT -> "NEW SAVE SLOT"
-        RenameMode.RENAME -> "RENAME SAVE SLOT"
+        RenameMode.SAVE_AS -> stringResource(R.string.ui_save_channel_rename_title_save_as)
+        RenameMode.NEW_SLOT -> stringResource(R.string.ui_save_channel_rename_title_new_slot)
+        RenameMode.RENAME -> stringResource(R.string.ui_save_channel_rename_title_rename)
     }
     val confirmLabel = when (mode) {
-        RenameMode.SAVE_AS -> "Save"
-        RenameMode.NEW_SLOT -> "Create"
-        RenameMode.RENAME -> "Rename"
+        RenameMode.SAVE_AS -> stringResource(R.string.ui_save_channel_rename_confirm_save_as)
+        RenameMode.NEW_SLOT -> stringResource(R.string.ui_save_channel_rename_confirm_new_slot)
+        RenameMode.RENAME -> stringResource(R.string.ui_save_channel_rename_confirm_rename)
     }
     val prompt = when (mode) {
-        RenameMode.SAVE_AS -> "Enter a name for this save slot"
-        RenameMode.NEW_SLOT -> "Enter a name for this save slot"
-        RenameMode.RENAME -> "Enter a new name"
+        RenameMode.SAVE_AS -> stringResource(R.string.ui_save_channel_rename_prompt_save_as)
+        RenameMode.NEW_SLOT -> stringResource(R.string.ui_save_channel_rename_prompt_new_slot)
+        RenameMode.RENAME -> stringResource(R.string.ui_save_channel_rename_prompt_rename)
     }
     val theme = LocalArgosyTheme.current
     val focusRequester = remember { FocusRequester() }
@@ -839,8 +916,8 @@ private fun RenameChannelOverlay(
     NestedModal(
         title = title,
         footerHints = listOf(
-            InputButton.A to "Confirm",
-            InputButton.B to "Cancel"
+            InputButton.A to stringResource(R.string.ui_save_channel_rename_footer_confirm),
+            InputButton.B to stringResource(R.string.ui_save_channel_rename_footer_cancel)
         )
     ) {
         Text(
@@ -857,7 +934,7 @@ private fun RenameChannelOverlay(
                 .fillMaxWidth()
                 .focusRequester(focusRequester),
             placeholder = {
-                Text("Slot name")
+                Text(stringResource(R.string.ui_save_channel_rename_placeholder))
             },
             singleLine = true,
             colors = OutlinedTextFieldDefaults.colors(
@@ -873,7 +950,7 @@ private fun RenameChannelOverlay(
             horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
         ) {
             ModalActionButton(
-                label = "Cancel",
+                label = stringResource(R.string.ui_save_channel_rename_cancel_button),
                 tint = theme.textDim,
                 restLabelColor = theme.textPrimary,
                 focused = false,
@@ -896,21 +973,21 @@ private fun RenameChannelOverlay(
 @Composable
 private fun MigrateConfirmationOverlay(channelName: String) {
     NestedModal(
-        title = "MIGRATE SAVE",
+        title = stringResource(R.string.ui_save_channel_migrate_title),
         footerHints = listOf(
-            InputButton.A to "Migrate",
-            InputButton.B to "Cancel"
+            InputButton.A to stringResource(R.string.ui_save_channel_migrate_confirm),
+            InputButton.B to stringResource(R.string.ui_save_channel_migrate_cancel)
         )
     ) {
         Text(
-            text = "Migrate \"$channelName\" to new save system?",
+            text = stringResource(R.string.ui_save_channel_migrate_message, channelName),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
         Text(
-            text = "This will register it as a named save slot.",
+            text = stringResource(R.string.ui_save_channel_migrate_note),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -924,23 +1001,27 @@ private fun DeleteLegacyConfirmationOverlay(
     channelName: String,
     saveCount: Int
 ) {
-    val countLabel = if (saveCount == 1) "1 backup" else "$saveCount backups"
     NestedModal(
-        title = "DELETE LEGACY SAVE",
+        title = stringResource(R.string.ui_save_channel_delete_legacy_title),
         footerHints = listOf(
-            InputButton.A to "Delete",
-            InputButton.B to "Cancel"
+            InputButton.A to stringResource(R.string.ui_save_channel_delete_legacy_confirm),
+            InputButton.B to stringResource(R.string.ui_save_channel_delete_legacy_cancel)
         )
     ) {
         Text(
-            text = "Delete \"$channelName\" and $countLabel?",
+            text = pluralStringResource(
+                R.plurals.ui_save_channel_delete_legacy_message,
+                saveCount,
+                channelName,
+                saveCount
+            ),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
         Text(
-            text = "This will remove it from the server and local storage. This cannot be undone.",
+            text = stringResource(R.string.ui_save_channel_delete_legacy_note),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -952,21 +1033,21 @@ private fun DeleteLegacyConfirmationOverlay(
 @Composable
 private fun DeleteConfirmationOverlay(channelName: String) {
     NestedModal(
-        title = "DELETE SAVE SLOT",
+        title = stringResource(R.string.ui_save_channel_delete_slot_title),
         footerHints = listOf(
-            InputButton.A to "Delete",
-            InputButton.B to "Cancel"
+            InputButton.A to stringResource(R.string.ui_save_channel_delete_slot_confirm),
+            InputButton.B to stringResource(R.string.ui_save_channel_delete_slot_cancel)
         )
     ) {
         Text(
-            text = "Delete \"$channelName\"?",
+            text = stringResource(R.string.ui_save_channel_delete_slot_message, channelName),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
         Text(
-            text = "This will remove it from the server and local storage. This cannot be undone.",
+            text = stringResource(R.string.ui_save_channel_delete_slot_note),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -983,20 +1064,22 @@ fun VersionMismatchOverlay(
     currentVersion: String?
 ) {
     NestedModal(
-        title = "CORE VERSION MISMATCH",
+        title = stringResource(R.string.ui_save_channel_version_mismatch_title),
         footerHints = listOf(
-            InputButton.A to "Load Anyway",
-            InputButton.B to "Cancel"
+            InputButton.A to stringResource(R.string.ui_save_channel_version_mismatch_confirm),
+            InputButton.B to stringResource(R.string.ui_save_channel_version_mismatch_cancel)
         )
     ) {
         Text(
-            text = "This state was saved with:",
+            text = stringResource(R.string.ui_save_channel_version_mismatch_saved_with),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
         Text(
-            text = "${savedCoreId ?: "Unknown"} ${savedVersion ?: ""}".trim(),
+            text = "${
+                savedCoreId ?: stringResource(R.string.ui_save_channel_version_mismatch_saved_core_unknown)
+            } ${savedVersion ?: ""}".trim(),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -1005,13 +1088,15 @@ fun VersionMismatchOverlay(
         Spacer(modifier = Modifier.height(Dimens.spacingSm))
 
         Text(
-            text = "Current core version:",
+            text = stringResource(R.string.ui_save_channel_version_mismatch_current),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
         Text(
-            text = "${currentCoreId ?: "Unknown"} ${currentVersion ?: ""}".trim(),
+            text = "${
+                currentCoreId ?: stringResource(R.string.ui_save_channel_version_mismatch_current_core_unknown)
+            } ${currentVersion ?: ""}".trim(),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -1020,7 +1105,7 @@ fun VersionMismatchOverlay(
         Spacer(modifier = Modifier.height(Dimens.radiusLg))
 
         Text(
-            text = "Loading may cause crashes or corruption.",
+            text = stringResource(R.string.ui_save_channel_version_mismatch_warning),
             style = MaterialTheme.typography.bodySmall,
             color = LocalLauncherTheme.current.semanticColors.warning,
             textAlign = TextAlign.Center,
@@ -1031,23 +1116,27 @@ fun VersionMismatchOverlay(
 
 @Composable
 private fun StateDeleteConfirmationOverlay(slotNumber: Int) {
-    val slotLabel = if (slotNumber == -1) "auto state" else "slot $slotNumber"
+    val slotLabel = if (slotNumber == -1) {
+        stringResource(R.string.ui_save_channel_delete_state_target_auto)
+    } else {
+        stringResource(R.string.ui_save_channel_delete_state_target_slot, slotNumber)
+    }
     NestedModal(
-        title = "DELETE STATE",
+        title = stringResource(R.string.ui_save_channel_delete_state_title),
         footerHints = listOf(
-            InputButton.A to "Delete",
-            InputButton.B to "Cancel"
+            InputButton.A to stringResource(R.string.ui_save_channel_delete_state_confirm),
+            InputButton.B to stringResource(R.string.ui_save_channel_delete_state_cancel)
         )
     ) {
         Text(
-            text = "Delete $slotLabel?",
+            text = stringResource(R.string.ui_save_channel_delete_state_message, slotLabel),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
         Text(
-            text = "This will remove it from the cache.",
+            text = stringResource(R.string.ui_save_channel_delete_state_note),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -1059,21 +1148,21 @@ private fun StateDeleteConfirmationOverlay(slotNumber: Int) {
 @Composable
 private fun StateReplaceAutoConfirmationOverlay(slotNumber: Int) {
     NestedModal(
-        title = "REPLACE AUTO STATE",
+        title = stringResource(R.string.ui_save_channel_replace_auto_title),
         footerHints = listOf(
-            InputButton.A to "Replace",
-            InputButton.B to "Cancel"
+            InputButton.A to stringResource(R.string.ui_save_channel_replace_auto_confirm),
+            InputButton.B to stringResource(R.string.ui_save_channel_replace_auto_cancel)
         )
     ) {
         Text(
-            text = "Replace auto state with slot $slotNumber?",
+            text = stringResource(R.string.ui_save_channel_replace_auto_message, slotNumber),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
         Text(
-            text = "The current auto state will be overwritten.",
+            text = stringResource(R.string.ui_save_channel_replace_auto_note),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,

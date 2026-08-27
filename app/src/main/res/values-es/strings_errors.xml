@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="error_sync_library_not_connected">RomM no conectado</string>
+    <string name="error_sync_library_unexpected">Error de sincronización</string>
+
+    <string name="error_sync_platform_not_connected">RomM no conectado</string>
+    <string name="error_sync_platform_not_found">Plataforma no encontrada</string>
+    <string name="error_sync_platform_unexpected">Error de sincronización</string>
+
+    <string name="error_restore_cached_states_game_not_found">Juego no encontrado</string>
+    <string name="error_restore_cached_states_no_local_path">El juego no tiene una ruta local</string>
+    <string name="error_restore_cached_states_directory_unresolved">No se pudo determinar dónde restaurar los estados</string>
+    <string name="error_restore_cached_states_unexpected">No se pudieron restaurar los estados</string>
+
+    <string name="error_state_sync_game_not_found">Juego no encontrado</string>
+    <string name="error_state_sync_no_local_path">El juego no tiene una ruta local</string>
+
+    <string name="error_restore_state_target_path_unresolved">No se pudo determinar dónde restaurar este estado</string>
+    <string name="error_restore_state_write_failed">Error al restaurar el archivo de estado</string>
+
+    <string name="error_restore_cached_save_game_not_found">Juego no encontrado</string>
+    <string name="error_restore_cached_save_no_local_copy">El juego no tiene una copia local</string>
+    <string name="error_restore_cached_save_location_unresolved">No se pudo determinar la ubicación de la partida guardada</string>
+    <string name="error_restore_cached_save_clear_failed">Error al borrar la partida guardada existente en la ruta de destino</string>
+    <string name="error_restore_cached_save_no_local_cache_id">No hay ninguna partida guardada local para restaurar</string>
+    <string name="error_restore_cached_save_no_server_save_id">No hay ninguna partida guardada en el servidor para restaurar</string>
+    <string name="error_restore_cached_save_restore_failed">Error al restaurar la partida guardada</string>
+
+    <string name="error_download_game_not_found">Juego no encontrado</string>
+    <string name="error_download_game_not_synced">El juego no está sincronizado desde RomM</string>
+    <string name="error_download_invalid_file_type">Tipo de archivo no válido: .%1$s</string>
+    <string name="error_download_rom_info_fetch_failed">Error al obtener la información de la ROM: %1$s</string>
+    <string name="error_download_no_discs_found">No se encontraron discos para este juego multidisco</string>
+    <string name="error_download_all_discs_downloaded">Todos los discos ya están descargados</string>
+    <string name="error_download_no_discs_queued">No se pudo encolar la descarga de ningún disco</string>
+    <string name="error_download_game_not_found_for_repair">Juego no encontrado</string>
+    <string name="error_download_not_multi_disc">No es un juego multidisco</string>
+
+    <string name="error_download_invalid_content_type">Tipo de archivo no válido: %1$s</string>
+    <string name="error_download_file_too_small">El archivo es demasiado pequeño para ser una ROM</string>
+    <string name="error_download_unexpected">Error al descargar</string>
+    <string name="error_download_insufficient_unpack_space_internal">La extracción necesita %1$d MB en el almacenamiento interno, %2$d MB disponibles</string>
+    <string name="error_download_insufficient_unpack_space_rom">La extracción necesita %1$d MB en el almacenamiento de ROM, %2$d MB disponibles</string>
+    <string name="error_download_unpack_escaped_staging">El juego extraído no llegó a la carpeta temporal</string>
+    <string name="error_download_staged_path_missing">El juego en preparación no tiene una ruta registrada</string>
+    <string name="error_download_insufficient_deploy_space">Necesita %1$d MB en el almacenamiento de ROM, %2$d MB disponibles</string>
+    <string name="error_download_move_to_storage_failed">No se pudo mover el juego al almacenamiento de ROM</string>
+    <string name="error_download_moved_file_not_found">El juego movido no se encontró en el almacenamiento de ROM</string>
+    <string name="error_download_downloaded_file_missing">Archivo descargado no encontrado</string>
+    <string name="error_download_no_download_entry">No se encontró ninguna entrada de descarga</string>
+    <string name="error_download_no_longer_exists">El archivo descargado ya no existe</string>
+    <string name="error_download_extraction_failed">Error al extraer</string>
+
+    <string name="error_filepicker_already_downloaded">Juego ya descargado</string>
+</resources>

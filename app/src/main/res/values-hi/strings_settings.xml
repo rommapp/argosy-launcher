@@ -1,0 +1,2185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ===== Top level of the settings screen ===== -->
+
+    <string name="settings_main_section_launcher">लॉन्चर</string>
+    <string name="settings_main_section_gameplay">गेमप्ले</string>
+    <string name="settings_main_section_library">लाइब्रेरी</string>
+    <string name="settings_main_section_connections">कनेक्शन</string>
+    <string name="settings_main_section_system">सिस्टम</string>
+
+    <string name="settings_main_theme_title">थीम</string>
+    <string name="settings_main_theme_subtitle">रंग, बैकड्रॉप, फ़ॉन्ट</string>
+    <string name="settings_main_interface_title">इंटरफ़ेस</string>
+    <string name="settings_main_interface_subtitle">ग्रिड डेंसिटी, स्केल, होम स्क्रीन</string>
+    <string name="settings_main_navigation_title">नेविगेशन</string>
+    <string name="settings_main_navigation_subtitle">बटन लेआउट, हैप्टिक फ़ीडबैक</string>
+    <string name="settings_main_audio_title">ऑडियो</string>
+    <string name="settings_main_audio_subtitle">साउंड और संगीत</string>
+    <string name="settings_main_displays_title">डिस्प्ले</string>
+    <string name="settings_main_displays_subtitle">डिमर, डुअल-स्क्रीन, LED</string>
+
+    <string name="settings_main_builtin_emulator_title">बिल्ट-इन एमुलेटर</string>
+    <string name="settings_main_builtin_emulator_subtitle_on">चालू</string>
+    <string name="settings_main_builtin_emulator_subtitle_off">बंद</string>
+    <string name="settings_main_saves_title">सेव</string>
+    <string name="settings_main_saves_subtitle_on">सिंक चालू</string>
+    <string name="settings_main_saves_subtitle_off">सिंक बंद</string>
+    <string name="settings_main_retroachievements_subtitle_logged_in">%1$s के रूप में लॉग इन</string>
+    <string name="settings_main_retroachievements_subtitle_logged_out">लॉग इन नहीं है</string>
+    <string name="settings_main_bios_title">BIOS फ़ाइलें</string>
+    <string name="settings_main_drivers_title">GPU ड्राइवर</string>
+
+    <string name="settings_main_platforms_title">प्लेटफ़ॉर्म</string>
+    <plurals name="settings_main_platforms_subtitle">
+        <item quantity="one">%d प्लेटफ़ॉर्म</item>
+        <item quantity="other">%d प्लेटफ़ॉर्म</item>
+    </plurals>
+    <string name="settings_main_storage_title">स्टोरेज</string>
+    <plurals name="settings_main_storage_subtitle_downloaded">
+        <item quantity="one">%d डाउनलोड किया गया</item>
+        <item quantity="other">%d डाउनलोड किए गए</item>
+    </plurals>
+    <string name="settings_main_storage_subtitle_empty">कोई डाउनलोड नहीं</string>
+
+    <string name="settings_main_romm_subtitle_unconfigured">सर्वर कॉन्फ़िगर नहीं है</string>
+    <string name="settings_main_romm_subtitle_checking">कनेक्शन जाँचा जा रहा है...</string>
+    <string name="settings_main_romm_subtitle_offline">सर्वर ऑफ़लाइन है</string>
+    <string name="settings_main_romm_subtitle_last_sync">आखिरी सिंक: %1$s</string>
+    <string name="settings_main_romm_subtitle_never_synced">कभी सिंक नहीं हुआ</string>
+    <string name="settings_main_steam_subtitle_signed_out">साइन इन नहीं है</string>
+    <string name="settings_main_jellyfin_subtitle_unconfigured">सर्वर कॉन्फ़िगर नहीं है</string>
+    <string name="settings_main_jellyfin_subtitle_signed_in_as">%1$s के रूप में साइन इन</string>
+    <string name="settings_main_jellyfin_subtitle_signed_in">साइन इन है</string>
+    <string name="settings_main_jellyfin_subtitle_signed_out">साइन इन नहीं है</string>
+    <string name="settings_main_social_title">सोशल</string>
+    <string name="settings_main_social_subtitle_linked">%1$s के रूप में लिंक</string>
+    <string name="settings_main_social_subtitle_connecting">कनेक्ट हो रहा है...</string>
+    <string name="settings_main_social_subtitle_unlinked">लिंक नहीं है</string>
+
+    <string name="settings_main_permissions_title">अनुमतियाँ</string>
+    <string name="settings_main_permissions_subtitle_all">सभी दी गईं</string>
+    <string name="settings_main_permissions_subtitle_partial">%1$d/%2$d दी गईं</string>
+    <string name="settings_main_device_title">Android सेटिंग्स</string>
+    <string name="settings_main_device_subtitle">सिस्टम सेटिंग्स</string>
+    <string name="settings_main_about_title">परिचय</string>
+    <string name="settings_main_about_subtitle">वर्शन %1$s</string>
+
+    <!-- ===== Audio section ===== -->
+
+    <string name="settings_audio_sounds_title">साउंड</string>
+    <string name="settings_audio_sounds_subtitle_on">चालू, %1$d%%</string>
+    <string name="settings_audio_sounds_subtitle_off">बंद</string>
+    <string name="settings_audio_music_title">संगीत</string>
+    <string name="settings_audio_music_subtitle_on">चालू, %1$d%%</string>
+    <string name="settings_audio_music_subtitle_off">बंद</string>
+
+    <!-- ===== Theme section ===== -->
+
+    <string name="settings_theme_section_appearance">रूप-रंग</string>
+    <string name="settings_theme_section_identity">पहचान</string>
+
+    <string name="settings_theme_mode_title">मोड</string>
+    <string name="settings_theme_mode_light">लाइट</string>
+    <string name="settings_theme_mode_dark">डार्क</string>
+    <string name="settings_theme_mode_system">सिस्टम</string>
+
+    <string name="settings_theme_accent_color_title">एक्सेंट कलर</string>
+    <string name="settings_theme_secondary_color_title">सेकेंडरी कलर</string>
+    <string name="settings_theme_accent_footer_title">एक्सेंट कलर फ़ुटर</string>
+    <string name="settings_theme_accent_footer_subtitle">फ़ुटर बैकग्राउंड के लिए एक्सेंट कलर का उपयोग करें</string>
+    <string name="settings_theme_tint_bleed_title">सरफ़ेस टिंट</string>
+
+    <string name="settings_theme_backdrop_title">सरफ़ेस बैकड्रॉप</string>
+    <string name="settings_theme_backdrop_subtitle_off">बंद</string>
+    <string name="settings_theme_fonts_title">फ़ॉन्ट</string>
+    <string name="settings_theme_fonts_subtitle_default">डिफ़ॉल्ट</string>
+
+    <!-- ===== Interface section ===== -->
+
+    <string name="settings_interface_ui_scale_title">UI स्केल</string>
+    <string name="settings_interface_compact_footer_title">कॉम्पैक्ट फ़ुटर</string>
+    <string name="settings_interface_compact_footer_subtitle">पतली कंट्रोल गाइड बार का उपयोग करें</string>
+    <string name="settings_interface_controller_grip_title">कंट्रोलर ग्रिप</string>
+    <string name="settings_interface_controller_grip_subtitle">ग्रिप वाले हिस्से से UI को ऊपर खिसकाएँ</string>
+    <string name="settings_interface_home_screen_title">होम स्क्रीन</string>
+    <string name="settings_interface_home_screen_subtitle">लेआउट, सामग्री और बैकग्राउंड</string>
+    <string name="settings_interface_library_view_title">लाइब्रेरी</string>
+    <string name="settings_interface_library_view_subtitle">ग्रिड डेंसिटी और डिफ़ॉल्ट फ़िल्टर</string>
+    <string name="settings_interface_box_art_title">बॉक्स आर्ट</string>
+    <string name="settings_interface_box_art_subtitle">कवर शेप, बॉर्डर और इफ़ेक्ट</string>
+
+    <!-- ===== Navigation section ===== -->
+
+    <string name="settings_navigation_section_controller">कंट्रोलर</string>
+    <string name="settings_navigation_section_feedback">फ़ीडबैक</string>
+    <string name="settings_navigation_section_menus">मेनू</string>
+
+    <string name="settings_navigation_controller_layout_title">कंट्रोलर लेआउट</string>
+    <string name="settings_navigation_controller_layout_auto">ऑटो</string>
+    <string name="settings_navigation_controller_layout_detected_device">पहचाना गया: %1$s (%2$s)</string>
+    <string name="settings_navigation_controller_layout_detected">पहचाना गया: %1$s</string>
+    <string name="settings_navigation_controller_layout_undetected">कोई कंट्रोलर नहीं मिला</string>
+
+    <string name="settings_navigation_swap_ab_title">A/B बदलें</string>
+    <string name="settings_navigation_swap_ab_subtitle">कन्फ़र्म और बैक बटन बदलें</string>
+    <string name="settings_navigation_swap_xy_title">X/Y बदलें</string>
+    <string name="settings_navigation_swap_xy_subtitle">कॉन्टेक्स्ट मेनू और सेकेंडरी एक्शन बदलें</string>
+    <string name="settings_navigation_swap_start_select_title">Start/Select बदलें</string>
+    <string name="settings_navigation_swap_start_select_subtitle">Start और Select बटन के काम आपस में बदलें</string>
+
+    <string name="settings_navigation_haptic_title">हैप्टिक फ़ीडबैक</string>
+    <string name="settings_navigation_vibration_title">वाइब्रेशन तीव्रता</string>
+
+    <string name="settings_navigation_menu_wrap_title">मेनू रैपिंग</string>
+    <string name="settings_navigation_menu_wrap_subtitle">सूची के आखिरी आइटम से आगे जाने पर पहले आइटम पर आ जाएँ</string>
+    <string name="settings_navigation_menu_wrap_off">बंद</string>
+    <string name="settings_navigation_menu_wrap_hard_stop">हार्ड स्टॉप</string>
+    <string name="settings_navigation_menu_wrap_auto">ऑटो</string>
+
+    <string name="settings_navigation_select_l_combo_title">Select + L</string>
+    <string name="settings_navigation_select_l_combo_subtitle">Select दबाए रखें और L1 दबाएँ</string>
+    <string name="settings_navigation_select_r_combo_title">Select + R</string>
+    <string name="settings_navigation_select_r_combo_subtitle">Select दबाए रखें और R1 दबाएँ</string>
+    <string name="settings_navigation_combo_quick_menu">क्विक मेनू</string>
+    <string name="settings_navigation_combo_quick_settings">क्विक सेटिंग्स</string>
+    <string name="settings_navigation_combo_none">कुछ नहीं</string>
+
+    <!-- ===== Displays section ===== -->
+
+    <string name="settings_displays_section_screen_safety">स्क्रीन सुरक्षा</string>
+    <string name="settings_displays_section_displays">डिस्प्ले</string>
+
+    <string name="settings_displays_screen_dimmer_title">स्क्रीन डिमर</string>
+    <string name="settings_displays_screen_dimmer_subtitle">बर्न-इन रोकने के लिए निष्क्रियता के बाद स्क्रीन धीमी करता है</string>
+    <string name="settings_displays_dim_after_title">इतनी देर बाद धीमा करें</string>
+    <plurals name="settings_displays_dim_after_value">
+        <item quantity="one">%d मिनट</item>
+        <item quantity="other">%d मिनट</item>
+    </plurals>
+    <string name="settings_displays_dim_level_title">डिमिंग स्तर</string>
+
+    <string name="settings_displays_dual_screen_title">डुअल-स्क्रीन मोड चालू करें</string>
+    <string name="settings_displays_dual_screen_subtitle">सेकेंडरी डिस्प्ले को कम्पैनियन स्क्रीन के रूप में उपयोग करें</string>
+    <string name="settings_displays_dual_screen_subtitle_unsupported">यह सिस्टम सेकेंडरी डिस्प्ले पर कम्पैनियन ऐप की अनुमति नहीं देता; फिर से कोशिश करने के लिए बंद करके चालू करें</string>
+
+    <string name="settings_displays_display_roles_title">डिस्प्ले भूमिकाएँ</string>
+    <string name="settings_displays_display_roles_subtitle">कौन-सा फ़िज़िकल डिस्प्ले मेन है और कौन-सा कम्पैनियन स्क्रीन; Swapped ऊपर-नीचे पलट देता है</string>
+    <string name="settings_displays_display_roles_auto">ऑटो</string>
+    <string name="settings_displays_display_roles_standard">स्टैंडर्ड</string>
+    <string name="settings_displays_display_roles_swapped">Swapped</string>
+
+    <string name="settings_displays_ambient_led_title">LED नियंत्रण</string>
+    <string name="settings_displays_ambient_led_subtitle">थंबस्टिक LED के रंग और इफ़ेक्ट</string>
+
+    <!-- ===== Controller grip section ===== -->
+
+    <string name="settings_grip_mode_title">मोड</string>
+    <string name="settings_grip_mode_off">बंद</string>
+    <string name="settings_grip_mode_on">चालू</string>
+    <string name="settings_grip_mode_auto">ऑटो</string>
+    <string name="settings_grip_mode_subtitle_off">UI को कभी ऊपर न खिसकाएँ</string>
+    <string name="settings_grip_mode_subtitle_on">पोर्ट्रेट में UI को हमेशा ऊपर खिसकाएँ</string>
+    <string name="settings_grip_mode_subtitle_auto">चुना गया कंट्रोलर जुड़ने पर UI को अपने आप ऊपर खिसकाएँ</string>
+
+    <string name="settings_grip_controllers_title">कंट्रोलर</string>
+    <string name="settings_grip_controllers_subtitle_empty">कोई कंट्रोलर चुना नहीं गया</string>
+    <plurals name="settings_grip_controllers_subtitle_count">
+        <item quantity="one">%d कंट्रोलर</item>
+        <item quantity="other">%d कंट्रोलर</item>
+    </plurals>
+    <string name="settings_grip_reserved_height_title">आरक्षित ऊँचाई</string>
+
+    <!-- ===== Home screen section ===== -->
+
+    <string name="settings_home_screen_section_layout">लेआउट</string>
+    <string name="settings_home_screen_section_background">बैकग्राउंड</string>
+    <string name="settings_home_screen_section_video">वीडियो वॉलपेपर</string>
+    <string name="settings_home_screen_section_content">सामग्री</string>
+
+    <string name="settings_home_screen_background_title">बैकग्राउंड</string>
+    <string name="settings_home_screen_background_subtitle">गेम आर्ट या बैकड्रॉप पैटर्न</string>
+    <string name="settings_home_screen_background_mode_game_art">गेम आर्ट</string>
+    <string name="settings_home_screen_background_mode_pattern">पैटर्न</string>
+
+    <string name="settings_home_screen_game_artwork_title">गेम आर्टवर्क</string>
+    <string name="settings_home_screen_game_artwork_subtitle">बैकग्राउंड के रूप में गेम कवर का उपयोग करें</string>
+    <string name="settings_home_screen_custom_image_title">कस्टम इमेज</string>
+    <string name="settings_home_screen_custom_image_subtitle_set">कस्टम इमेज चुनी गई</string>
+    <string name="settings_home_screen_custom_image_subtitle_empty">कोई इमेज चुनी नहीं गई</string>
+
+    <string name="settings_home_screen_blur_title">ब्लर</string>
+    <string name="settings_home_screen_saturation_title">सैचुरेशन</string>
+    <string name="settings_home_screen_opacity_title">ओपैसिटी</string>
+
+    <string name="settings_home_screen_video_wallpaper_title">वीडियो वॉलपेपर दिखाएँ</string>
+    <string name="settings_home_screen_video_wallpaper_subtitle">होम स्क्रीन पर वीडियो बैकग्राउंड चलाएँ</string>
+    <string name="settings_home_screen_video_delay_title">प्लेबैक से पहले देरी</string>
+    <string name="settings_home_screen_video_delay_instant">तुरंत</string>
+    <plurals name="settings_home_screen_video_delay_seconds">
+        <item quantity="one">%d सेकंड</item>
+        <item quantity="other">%d सेकंड</item>
+    </plurals>
+    <string name="settings_home_screen_video_muted_title">म्यूट प्लेबैक</string>
+    <string name="settings_home_screen_video_muted_subtitle">वीडियो का ऑडियो म्यूट करें</string>
+
+    <string name="settings_home_screen_installed_only_title">केवल इंस्टॉल किए गए गेम</string>
+    <string name="settings_home_screen_installed_only_subtitle">होम स्क्रीन पर केवल डाउनलोड किए गए गेम दिखाएँ</string>
+
+    <!-- ===== Saves section ===== -->
+
+    <string name="settings_saves_section_sync">सिंक</string>
+    <string name="settings_saves_section_manage">मैनेज</string>
+
+    <string name="settings_saves_save_sync_title">सेव सिंक</string>
+    <string name="settings_saves_save_sync_subtitle">सर्वर के साथ गेम सेव सिंक करें</string>
+    <string name="settings_saves_save_sync_locked_value">अनुपलब्ध</string>
+    <string name="settings_saves_save_sync_locked_subtitle">RomM सर्वर आवश्यक है</string>
+
+    <string name="settings_saves_secure_saves_title">सिक्योर सेव</string>
+    <string name="settings_saves_secure_saves_subtitle_on">Argosy सेव फ़ाइलों को मैनेज और लागू करता है</string>
+    <string name="settings_saves_secure_saves_subtitle_off">Argosy लॉन्चर के बाहर मैनेज किए गए सेव सिंक करने की कोशिश करता है</string>
+    <string name="settings_saves_secure_saves_locked_value">अनुपलब्ध</string>
+    <string name="settings_saves_secure_saves_locked_subtitle">RomM सर्वर आवश्यक है</string>
+
+    <string name="settings_saves_cache_limit_title">लोकल सेव कैश</string>
+    <plurals name="settings_saves_cache_limit_value">
+        <item quantity="one">%d सेव प्रति गेम</item>
+        <item quantity="other">%d सेव प्रति गेम</item>
+    </plurals>
+
+    <string name="settings_saves_manage_sync_title">सेव सिंक मैनेज करें</string>
+    <string name="settings_saves_manage_sync_subtitle">टकराव जाँचें और अभी सिंक करें</string>
+    <plurals name="settings_saves_manage_sync_pending">
+        <item quantity="one">%d लंबित</item>
+        <item quantity="other">%d लंबित</item>
+    </plurals>
+    <string name="settings_saves_caches_title">सेव कैश</string>
+    <string name="settings_saves_caches_subtitle">कैश किए गए सेव और पहचाने गए पाथ साफ़ करें</string>
+
+    <!-- ===== Sync settings section ===== -->
+
+    <string name="settings_sync_section_media">मीडिया</string>
+    <string name="settings_sync_section_download_defaults">डाउनलोड डिफ़ॉल्ट</string>
+
+    <string name="settings_sync_platform_filters_title">प्लेटफ़ॉर्म फ़िल्टर</string>
+    <string name="settings_sync_platform_filters_subtitle_count">%1$d/%2$d प्लेटफ़ॉर्म</string>
+    <string name="settings_sync_platform_filters_subtitle_empty">सिंक के लिए प्लेटफ़ॉर्म चुनें</string>
+
+    <string name="settings_sync_metadata_filters_title">मेटाडेटा फ़िल्टर</string>
+    <string name="settings_sync_metadata_filters_subtitle_none">कोई फ़िल्टर लागू नहीं</string>
+    <plurals name="settings_sync_metadata_filters_regions">
+        <item quantity="one">%1$d क्षेत्र (%2$s)</item>
+        <item quantity="other">%1$d क्षेत्र (%2$s)</item>
+    </plurals>
+    <string name="settings_sync_metadata_filters_region_mode_exclude">छोड़ें</string>
+    <string name="settings_sync_metadata_filters_region_mode_include">शामिल</string>
+    <string name="settings_sync_metadata_filters_excluded">%1$s नहीं</string>
+    <string name="settings_sync_metadata_filters_beta">बीटा</string>
+    <string name="settings_sync_metadata_filters_prototype">प्रोटो</string>
+    <string name="settings_sync_metadata_filters_demo">डेमो</string>
+    <string name="settings_sync_metadata_filters_hack">हैक्स</string>
+
+    <string name="settings_sync_cache_screenshots_title">स्क्रीनशॉट कैश करें</string>
+    <string name="settings_sync_cache_screenshots_subtitle">बॉक्सआर्ट और बैकग्राउंड हमेशा कैश किए जाते हैं</string>
+    <string name="settings_sync_cache_box_art_title">3D बॉक्स आर्ट कैश करें</string>
+    <string name="settings_sync_cache_box_art_subtitle">3D बॉक्स डिस्प्ले के लिए बॉक्स के पीछे और स्पाइन स्कैन डाउनलोड करें</string>
+    <string name="settings_sync_upload_screenshots_title">स्क्रीनशॉट अपलोड करें</string>
+    <string name="settings_sync_upload_screenshots_subtitle">खेलते समय लिए गए स्क्रीनशॉट RomM पर भेजें</string>
+    <string name="settings_sync_upload_screenshots_subtitle_unsupported">RomM 5.0 या नया वर्शन आवश्यक है</string>
+    <string name="settings_sync_upload_screenshots_subtitle_needs_usage">सटीक गेम मिलान के लिए यूसेज एक्सेस दें</string>
+
+    <string name="settings_sync_image_cache_title">इमेज कैश लोकेशन</string>
+    <string name="settings_sync_image_cache_path_internal">इंटरनल (डिफ़ॉल्ट)</string>
+    <string name="settings_sync_image_cache_progress_title">इमेज कैश हो रही हैं</string>
+    <string name="settings_sync_image_cache_progress_percent">%1$d%%</string>
+
+    <string name="settings_sync_download_category_other">अन्य फ़ोल्डर</string>
+    <string name="settings_sync_download_category_subtitle">डिफ़ॉल्ट रूप से डाउनलोड में %1$s शामिल करें</string>
+
+    <!-- ===== RetroAchievements section ===== -->
+
+    <string name="settings_ra_logged_in_label">इस रूप में लॉग इन</string>
+    <string name="settings_ra_username_unknown">अज्ञात</string>
+    <string name="settings_ra_connected_icon_description">कनेक्टेड</string>
+
+    <string name="settings_ra_section_pending_sync">सिंक होना बाकी</string>
+    <plurals name="settings_ra_pending_sync_count">
+        <item quantity="one">%d उपलब्धि सिंक होने के लिए बाकी</item>
+        <item quantity="other">%d उपलब्धियाँ सिंक होने के लिए बाकी</item>
+    </plurals>
+
+    <string name="settings_ra_section_account">अकाउंट</string>
+    <string name="settings_ra_logout_title">लॉगआउट</string>
+    <string name="settings_ra_logout_title_busy">लॉगआउट हो रहा है...</string>
+    <string name="settings_ra_logout_subtitle">RetroAchievements से साइन आउट करें</string>
+
+    <string name="settings_ra_play_mode_title">प्ले मोड प्राथमिकता</string>
+    <string name="settings_ra_play_mode_subtitle_locked">सिक्योर सेव आवश्यक है</string>
+    <string name="settings_ra_play_mode_ask">पूछें</string>
+    <string name="settings_ra_play_mode_casual">कैज़ुअल डिफ़ॉल्ट रखें</string>
+    <string name="settings_ra_play_mode_hardcore">हार्डकोर डिफ़ॉल्ट रखें</string>
+    <string name="settings_ra_play_mode_subtitle_ask">लॉन्च पर कैज़ुअल और हार्डकोर में से चुनने को कहें</string>
+    <string name="settings_ra_play_mode_subtitle_casual">सेव स्टेट, चीट और रिवाइंड की अनुमति देता है। सॉफ्टकोर उपलब्धियाँ अर्जित करें।</string>
+    <string name="settings_ra_play_mode_subtitle_hardcore">सेव स्टेट, चीट और रिवाइंड बंद करता है। हार्डकोर उपलब्धियाँ अर्जित करें।</string>
+    <string name="settings_ra_play_mode_subtitle_default">गेम लॉन्च करते समय पसंदीदा मोड</string>
+
+    <string name="settings_ra_section_retroarch">RETROARCH</string>
+    <string name="settings_ra_push_retroarch_title">RetroArch में पुश करें</string>
+    <string name="settings_ra_push_retroarch_subtitle">यह लॉगिन RetroArch के कॉन्फ़िग में लिखें</string>
+
+    <string name="settings_ra_intro_subtitle">क्लासिक गेम खेलते हुए उपलब्धियाँ अर्जित करें</string>
+    <string name="settings_ra_login_row_title">लॉगिन</string>
+    <string name="settings_ra_login_row_subtitle">अपने RetroAchievements अकाउंट से साइन इन करें</string>
+
+    <string name="settings_ra_section_offline_proxy">ऑफ़लाइन प्रॉक्सी</string>
+    <string name="settings_ra_proxy_title">RetroAchievements प्रॉक्सी</string>
+    <string name="settings_ra_proxy_subtitle">उपलब्धियों को लोकल RAOfflineProxy के ज़रिए भेजें</string>
+    <string name="settings_ra_proxy_address_label">प्रॉक्सी एड्रेस</string>
+
+    <string name="settings_ra_login_form_title">RetroAchievements लॉगिन</string>
+    <string name="settings_ra_login_username_label">यूज़रनेम</string>
+    <string name="settings_ra_login_password_label">पासवर्ड</string>
+    <string name="settings_ra_login_submit_title">लॉगिन</string>
+    <string name="settings_ra_login_submit_title_busy">लॉगिन हो रहा है...</string>
+    <string name="settings_ra_login_submit_subtitle">RetroAchievements में साइन इन करें</string>
+    <string name="settings_ra_login_cancel_title">रद्द करें</string>
+    <string name="settings_ra_login_cancel_subtitle">RetroAchievements सेटिंग्स पर वापस जाएँ</string>
+
+    <!-- ===== BIOS section ===== -->
+
+    <string name="settings_bios_path_title">BIOS डायरेक्टरी</string>
+    <string name="settings_bios_path_internal">इंटरनल (डिफ़ॉल्ट)</string>
+
+    <string name="settings_bios_section_platforms">प्लेटफ़ॉर्म</string>
+    <string name="settings_bios_empty_notice">अभी तक कोई BIOS फ़ाइल सिंक नहीं हुई। उपलब्ध फ़र्मवेयर जानने के लिए अपनी लाइब्रेरी सिंक करें।</string>
+    <string name="settings_bios_footer_note">BIOS फ़ाइलें आपके RomM सर्वर से डाउनलोड होकर लोकल स्टोर होती हैं। इन्हें एमुलेटर डायरेक्टरी में कॉपी करने के लिए \'Distribute\' का उपयोग करें।</string>
+
+    <string name="settings_bios_firmware_downloaded">डाउनलोड हो गया</string>
+    <string name="settings_bios_firmware_downloading">डाउनलोड हो रहा है...</string>
+
+    <string name="settings_bios_summary_title">BIOS स्टेटस</string>
+    <string name="settings_bios_summary_empty">कोई BIOS फ़ाइल नहीं मिली</string>
+    <string name="settings_bios_summary_complete">सभी %1$d फ़ाइलें तैयार</string>
+    <string name="settings_bios_summary_partial">%2$d में से %1$d डाउनलोड हुईं</string>
+    <string name="settings_bios_summary_downloading">डाउनलोड हो रहा है: %1$s</string>
+    <string name="settings_bios_summary_distributing">एमुलेटर में वितरित हो रहा है...</string>
+    <string name="settings_bios_summary_download_missing">%1$d डाउनलोड करें</string>
+    <string name="settings_bios_summary_redownload">फिर से डाउनलोड करें</string>
+    <string name="settings_bios_summary_distribute">वितरित करें</string>
+
+    <string name="settings_bios_platform_redownload">फिर से डाउनलोड करें</string>
+    <string name="settings_bios_platform_download">डाउनलोड करें</string>
+
+    <string name="settings_bios_distribute_result_title">वितरण पूरा हुआ</string>
+    <string name="settings_bios_distribute_result_message">%2$d एमुलेटर में %1$d BIOS फ़ाइलें कॉपी की गईं</string>
+    <plurals name="settings_bios_distribute_result_files">
+        <item quantity="one">%d फ़ाइल</item>
+        <item quantity="other">%d फ़ाइलें</item>
+    </plurals>
+    <string name="settings_bios_distribute_result_dismiss">ठीक है</string>
+
+    <string name="settings_bios_gpu_prompt_title">GPU ड्राइवर उपलब्ध है</string>
+    <string name="settings_bios_gpu_prompt_detected">पहचाना गया: %1$s</string>
+    <string name="settings_bios_gpu_prompt_message">Snapdragon 8 डिवाइस पर कस्टम GPU ड्राइवर Switch एमुलेशन का परफ़ॉर्मेंस बेहतर कर सकता है।</string>
+    <string name="settings_bios_gpu_prompt_installing">ड्राइवर इंस्टॉल हो रहा है...</string>
+    <string name="settings_bios_gpu_prompt_install_versioned">सुझाया गया इंस्टॉल करें (%1$s)</string>
+    <string name="settings_bios_gpu_prompt_install">सुझाया गया इंस्टॉल करें</string>
+    <string name="settings_bios_gpu_prompt_install_from_file">फ़ाइल से इंस्टॉल करें</string>
+    <string name="settings_bios_gpu_prompt_skip">छोड़ें</string>
+
+    <!-- ===== GPU drivers section ===== -->
+
+    <string name="settings_drivers_gpu_label">GPU</string>
+    <string name="settings_drivers_gpu_unknown">अज्ञात</string>
+    <string name="settings_drivers_recommended_label">सुझाया गया</string>
+    <string name="settings_drivers_section_downloaded">डाउनलोड किए गए</string>
+    <string name="settings_drivers_source_no_releases">कोई रिलीज़ नहीं</string>
+    <plurals name="settings_drivers_source_releases">
+        <item quantity="one">%1$d रिलीज़ - नवीनतम %2$s</item>
+        <item quantity="other">%1$d रिलीज़ - नवीनतम %2$s</item>
+    </plurals>
+
+    <!-- ===== Permissions section ===== -->
+
+    <string name="settings_permissions_intro">पूरी कार्यक्षमता के लिए Argosy को कुछ अनुमतियाँ चाहिए। एक्सेस देने के लिए हर अनुमति पर टैप करें।</string>
+    <string name="settings_permissions_storage_title">स्टोरेज एक्सेस</string>
+    <string name="settings_permissions_storage_description">गेम डाउनलोड करने, सेव फ़ाइलें सिंक करने और डिवाइस पर ROM फ़ाइलों तक पहुँचने के लिए आवश्यक।</string>
+    <string name="settings_permissions_usage_stats_title">यूसेज स्टैट्स एक्सेस</string>
+    <string name="settings_permissions_usage_stats_description">सटीक प्ले टाइम ट्रैकिंग और ऐप बदलते समय गेम सेशन का बिना रुकावट रिज़्यूम सक्षम करता है।</string>
+    <string name="settings_permissions_notifications_title">नोटिफ़िकेशन</string>
+    <string name="settings_permissions_notifications_description">बैकग्राउंड में गेम डाउनलोड होते समय डाउनलोड प्रगति दिखाता है।</string>
+    <string name="settings_permissions_write_settings_title">सिस्टम सेटिंग्स एक्सेस</string>
+    <string name="settings_permissions_write_settings_description">क्विक सेटिंग्स पैनल से डिवाइस के परफ़ॉर्मेंस मोड और फ़ैन सेटिंग्स नियंत्रित करने देता है।</string>
+    <string name="settings_permissions_screen_capture_title">स्क्रीन कैप्चर</string>
+    <string name="settings_permissions_screen_capture_description">गेम खेलते समय स्क्रीन के रंग पढ़ने के लिए एम्बिएंट LED लाइटिंग सक्षम करता है।</string>
+    <string name="settings_permissions_display_overlay_title">अन्य ऐप्स के ऊपर दिखाएँ</string>
+    <string name="settings_permissions_display_overlay_description">बाहरी एमुलेटर में गेम खेलते समय सेव पहचान नोटिफ़िकेशन दिखाता है।</string>
+    <string name="settings_permissions_status_footer">स्थिति: %1$d/%2$d अनुमतियाँ दी गईं</string>
+
+    <!-- ===== About section ===== -->
+
+    <string name="settings_about_section_version">वर्शन</string>
+    <string name="settings_about_section_backup">बैकअप</string>
+    <string name="settings_about_section_system_app">सिस्टम ऐप</string>
+    <string name="settings_about_section_debug">डीबग</string>
+
+    <string name="settings_about_update_title_check">अपडेट जाँचें</string>
+    <string name="settings_about_update_title_downloading">डाउनलोड हो रहा है...</string>
+    <string name="settings_about_update_title_available">अपडेट उपलब्ध है</string>
+    <string name="settings_about_update_subtitle_debug">डीबग बिल्ड में बंद है</string>
+    <string name="settings_about_update_subtitle_progress">%1$d%%</string>
+    <string name="settings_about_update_subtitle_checking">जाँचा जा रहा है...</string>
+    <string name="settings_about_update_subtitle_error">त्रुटि: %1$s</string>
+    <string name="settings_about_update_subtitle_available">%1$s डाउनलोड के लिए तैयार है</string>
+    <string name="settings_about_update_subtitle_current_prerelease">अप टू डेट (प्री-रिलीज़)</string>
+    <string name="settings_about_update_subtitle_current">अप टू डेट</string>
+    <string name="settings_about_update_subtitle_on_prerelease">प्री-रिलीज़ बिल्ड चल रहा है</string>
+    <string name="settings_about_update_subtitle_idle">नए वर्शन जाँचें</string>
+    <string name="settings_about_update_action_download">डाउनलोड करें</string>
+    <string name="settings_about_update_action_check">जाँचें</string>
+    <string name="settings_about_update_action_changelog">चेंजलॉग</string>
+    <string name="settings_about_changelog_preview_title">नया क्या है - %1$s</string>
+
+    <string name="settings_about_beta_updates_title">बीटा अपडेट</string>
+    <string name="settings_about_beta_updates_subtitle_on">प्री-रिलीज़ बिल्ड मिल रहे हैं</string>
+    <string name="settings_about_beta_updates_subtitle_off">केवल स्टेबल रिलीज़</string>
+
+    <string name="settings_about_export_title">सेटिंग्स एक्सपोर्ट करें</string>
+    <string name="settings_about_export_subtitle">आपके रूप-रंग और नेविगेशन सेटिंग्स %1$s में लिखता है। कोई अकाउंट, सर्वर या सिंक स्टेटस शामिल नहीं होता।</string>
+    <string name="settings_about_import_title">सेटिंग्स इम्पोर्ट करें</string>
+    <string name="settings_about_import_subtitle">बैकअप फ़ाइल से सेटिंग्स लागू करें</string>
+
+    <string name="settings_about_systemize_title">भारी एमुलेटर पर क्रैश रोकें</string>
+    <string name="settings_about_systemize_subtitle">जब कोई भारी एमुलेटर ज़्यादातर RAM का उपयोग करता है तो Argosy फ़ोर्स-क्लोज़ हो सकता है। रूटेड डिवाइस पर, यह एक स्क्रिप्ट लिखता है जो Argosy को सिस्टम ऐप बना देता है ताकि इसे अब बंद न किया जाए।</string>
+    <string name="settings_about_restart_title">Argosy रीस्टार्ट करें</string>
+    <string name="settings_about_restart_subtitle">लॉन्चर बंद करके फिर से खोलें</string>
+
+    <string name="settings_about_file_logging_title">फ़ाइल लॉगिंग</string>
+    <string name="settings_about_file_logging_enable_title">फ़ाइल लॉगिंग चालू करें</string>
+    <string name="settings_about_file_logging_enable_subtitle">डीबगिंग के लिए फ़ाइल में लॉग लिखें</string>
+    <string name="settings_about_log_path_internal">इंटरनल</string>
+    <string name="settings_about_log_path_sd_card">SD कार्ड/%1$s</string>
+    <string name="settings_about_log_level_title">लॉग लेवल</string>
+    <string name="settings_about_save_debug_title">सेव डीबग लॉगिंग</string>
+    <string name="settings_about_save_debug_subtitle_on">विस्तृत सेव ऑपरेशन लॉग हो रहे हैं</string>
+    <string name="settings_about_save_debug_subtitle_off">सेव सिंक, कैश और चैनल इवेंट लॉग करें</string>
+
+    <string name="settings_about_version_romm_value">v%1$s</string>
+    <string name="settings_about_licenses_label">लाइसेंस</string>
+
+    <!-- ===== Surface backdrop section ===== -->
+
+    <string name="settings_backdrop_section_pattern">पैटर्न</string>
+    <string name="settings_backdrop_section_layers">लेयर</string>
+
+    <string name="settings_backdrop_enabled_title">सरफ़ेस बैकड्रॉप</string>
+    <string name="settings_backdrop_enabled_subtitle">मेनू और कम्पैनियन स्क्रीन के पीछे टाइल किया गया पैटर्न</string>
+
+    <string name="settings_backdrop_preset_title">पैटर्न</string>
+    <string name="settings_backdrop_preset_dots">डॉट्स</string>
+    <string name="settings_backdrop_preset_scanlines">स्कैनलाइन</string>
+    <string name="settings_backdrop_preset_hex">हेक्स</string>
+    <string name="settings_backdrop_preset_icon_grid">आइकन ग्रिड</string>
+    <string name="settings_backdrop_preset_platforms">प्लेटफ़ॉर्म</string>
+
+    <string name="settings_backdrop_density_title">डेंसिटी</string>
+    <string name="settings_backdrop_scatter_title">स्कैटर</string>
+    <string name="settings_backdrop_scale_jitter_title">स्केल जिटर</string>
+    <string name="settings_backdrop_strength_title">तीव्रता</string>
+    <string name="settings_backdrop_edge_title">एज लाइन</string>
+    <string name="settings_backdrop_edge_none">कोई नहीं</string>
+    <string name="settings_backdrop_edge_solid">सॉलिड</string>
+    <string name="settings_backdrop_edge_dashed">डैश्ड</string>
+    <string name="settings_backdrop_edge_faded">फ़ेडेड</string>
+    <string name="settings_backdrop_edge_connections">कनेक्शन</string>
+
+    <string name="settings_backdrop_corner_title">कॉर्नर आइकन</string>
+    <string name="settings_backdrop_corner_none">कोई नहीं</string>
+    <string name="settings_backdrop_corner_dots">डॉट्स</string>
+    <string name="settings_backdrop_corner_plus">प्लस</string>
+    <string name="settings_backdrop_corner_diamond">डायमंड</string>
+
+    <string name="settings_backdrop_motion_title">मोशन</string>
+    <string name="settings_backdrop_motion_off">बंद</string>
+    <string name="settings_backdrop_motion_drift">ड्रिफ़्ट</string>
+    <string name="settings_backdrop_motion_sway">स्वे</string>
+    <string name="settings_backdrop_speed_title">गति</string>
+    <string name="settings_backdrop_direction_title">दिशा</string>
+    <string name="settings_backdrop_direction_value">%1$d&#176;</string>
+    <string name="settings_backdrop_reshuffle_title">फिर से शफ़ल करें</string>
+    <string name="settings_backdrop_reshuffle_subtitle">पैटर्न की रैंडम जिटर फिर से तय करें</string>
+
+    <!-- ===== Fonts section ===== -->
+
+    <string name="settings_fonts_section_display">डिस्प्ले फ़ॉन्ट</string>
+    <string name="settings_fonts_section_body">बॉडी फ़ॉन्ट</string>
+    <string name="settings_fonts_section_preview">प्रीव्यू</string>
+
+    <string name="settings_fonts_display_slot_title">डिस्प्ले फ़ॉन्ट</string>
+    <string name="settings_fonts_display_slot_subtitle">टाइटल, हेडर और आईब्रो</string>
+    <string name="settings_fonts_slot_default">डिफ़ॉल्ट</string>
+    <string name="settings_fonts_display_scale_title">डिस्प्ले स्केल</string>
+    <string name="settings_fonts_display_revert_title">डिफ़ॉल्ट पर लौटें</string>
+    <string name="settings_fonts_display_revert_subtitle">इम्पोर्ट किया गया डिस्प्ले फ़ॉन्ट हटाएँ</string>
+
+    <string name="settings_fonts_body_slot_title">बॉडी फ़ॉन्ट</string>
+    <string name="settings_fonts_body_slot_subtitle">अन्य सभी UI टेक्स्ट</string>
+    <string name="settings_fonts_body_scale_title">बॉडी स्केल</string>
+    <string name="settings_fonts_body_revert_title">डिफ़ॉल्ट पर लौटें</string>
+    <string name="settings_fonts_body_revert_subtitle">इम्पोर्ट किया गया बॉडी फ़ॉन्ट हटाएँ</string>
+
+    <string name="settings_fonts_guideline_formats">केवल TTF और OTF फ़ाइलें; इम्पोर्ट पर फ़ॉन्ट सत्यापित किए जाते हैं।</string>
+    <string name="settings_fonts_guideline_legibility">ऐसे फ़ॉन्ट चुनें जो दूर से TV पर भी साफ़ पढ़े जा सकें।</string>
+    <string name="settings_fonts_guideline_weights">400, 500 और 600 वेट कवर करें, वरना हेडिंग नकली-बोल्ड दिख सकती हैं।</string>
+    <string name="settings_fonts_guideline_fallback">फ़ॉन्ट में न मिलने वाले ग्लिफ़ (जैसे CJK) हर ग्लिफ़ के हिसाब से सिस्टम फ़ॉन्ट पर वापस चले जाते हैं।</string>
+
+    <string name="settings_fonts_preview_heading">जारी रखें</string>
+    <string name="settings_fonts_preview_body">जहाँ छोड़ा था वहीं से शुरू करें। सेव, स्टेट और प्ले टाइम आपकी पूरी लाइब्रेरी में सिंक बने रहते हैं।</string>
+    <string name="settings_fonts_preview_row">फ़ोकस्ड मेनू रो</string>
+    <string name="settings_fonts_preview_specimen">Aa Bb 0123</string>
+
+    <!-- ===== Background music section ===== -->
+
+    <string name="settings_music_section_music">बैकग्राउंड संगीत</string>
+    <string name="settings_music_section_storage">स्टोरेज</string>
+
+    <string name="settings_music_toggle_title">बैकग्राउंड संगीत</string>
+    <string name="settings_music_toggle_subtitle">लॉन्चर उपयोग करते समय संगीत चलाएँ</string>
+    <string name="settings_music_volume_title">वॉल्यूम</string>
+
+    <string name="settings_music_playlist_title">संगीत प्लेलिस्ट</string>
+    <string name="settings_music_playlist_empty">कोई ट्रैक नहीं</string>
+    <plurals name="settings_music_playlist_count">
+        <item quantity="one">%d ट्रैक</item>
+        <item quantity="other">%d ट्रैक</item>
+    </plurals>
+
+    <string name="settings_music_browse_server_title">सर्वर संगीत ब्राउज़ करें</string>
+    <string name="settings_music_browse_server_subtitle">RomM से ट्रैक प्रीव्यू और डाउनलोड करें</string>
+    <string name="settings_music_browse_local_title">लोकल संगीत ब्राउज़ करें</string>
+    <string name="settings_music_browse_local_subtitle">प्लेलिस्ट में फ़ाइलें या फ़ोल्डर जोड़ें</string>
+    <string name="settings_music_location_title">संगीत लोकेशन</string>
+
+    <string name="settings_music_shuffle_title">शफ़ल</string>
+    <string name="settings_music_shuffle_subtitle">प्लेबैक क्रम रैंडम करें</string>
+    <string name="settings_music_game_themes_title">गेम थीम</string>
+    <string name="settings_music_game_themes_subtitle">गेम के डिटेल पेज पर उसका टाइटल थीम बजाएँ</string>
+
+    <!-- ===== Interface sounds section ===== -->
+
+    <string name="settings_sounds_section_ui_sounds">UI साउंड</string>
+    <string name="settings_sounds_section_customize">कस्टमाइज़ करें</string>
+
+    <string name="settings_sounds_toggle_title">UI साउंड</string>
+    <string name="settings_sounds_toggle_subtitle">नेविगेशन और चयन पर टोन बजाएँ</string>
+    <string name="settings_sounds_volume_title">वॉल्यूम</string>
+
+    <string name="settings_sounds_type_silent">साइलेंट</string>
+    <string name="settings_sounds_type_navigate">नेविगेट</string>
+    <string name="settings_sounds_type_boundary">बाउंड्री</string>
+    <string name="settings_sounds_type_section_change">सेक्शन बदलना</string>
+    <string name="settings_sounds_type_select">चुनना</string>
+    <string name="settings_sounds_type_back">बैक</string>
+    <string name="settings_sounds_type_open_modal">मॉडल खोलना</string>
+    <string name="settings_sounds_type_close_modal">मॉडल बंद करना</string>
+    <string name="settings_sounds_type_favorite">फ़ेवरेट</string>
+    <string name="settings_sounds_type_unfavorite">अनफ़ेवरेट</string>
+    <string name="settings_sounds_type_download_start">डाउनलोड शुरू</string>
+    <string name="settings_sounds_type_download_complete">डाउनलोड पूर्ण</string>
+    <string name="settings_sounds_type_download_cancel">डाउनलोड रद्द</string>
+    <string name="settings_sounds_type_error">त्रुटि</string>
+    <string name="settings_sounds_type_volume_preview">वॉल्यूम प्रीव्यू</string>
+    <string name="settings_sounds_type_toggle">टॉगल</string>
+    <string name="settings_sounds_type_launch_game">गेम लॉन्च</string>
+
+    <!-- ===== Ambient LED section ===== -->
+
+    <string name="settings_led_section_general">सामान्य</string>
+    <string name="settings_led_section_cover_art">कवर आर्ट</string>
+    <string name="settings_led_section_reactive_audio">रिएक्टिव ऑडियो</string>
+    <string name="settings_led_section_reactive_screen">रिएक्टिव स्क्रीन</string>
+
+    <string name="settings_led_enable_title">LED चालू करें</string>
+    <string name="settings_led_enable_subtitle">थंबस्टिक लाइटिंग के लिए मुख्य स्विच</string>
+    <string name="settings_led_brightness_title">ब्राइटनेस</string>
+
+    <string name="settings_led_custom_color_title">कस्टम डिफ़ॉल्ट कलर</string>
+    <string name="settings_led_custom_color_subtitle_on">कस्टम ह्यू का उपयोग हो रहा है</string>
+    <string name="settings_led_custom_color_subtitle_off">एक्सेंट कलर का उपयोग हो रहा है</string>
+    <string name="settings_led_custom_color_hue_title">डिफ़ॉल्ट कलर ह्यू</string>
+
+    <string name="settings_led_achievement_flash_title">अचीवमेंट फ़्लैश</string>
+    <string name="settings_led_achievement_flash_subtitle">उपलब्धि अनलॉक होने पर थंबस्टिक फ़्लैश करें</string>
+
+    <string name="settings_led_cover_art_title">कवर आर्ट कलर</string>
+    <string name="settings_led_cover_art_subtitle">LED गेम बॉक्स आर्ट के ग्रेडिएंट से मेल खाते हैं</string>
+    <string name="settings_led_transition_title">ट्रांज़िशन स्पीड</string>
+    <string name="settings_led_transition_instant">तुरंत</string>
+    <string name="settings_led_transition_100ms">100ms</string>
+    <string name="settings_led_transition_250ms">250ms</string>
+    <string name="settings_led_transition_500ms">500ms</string>
+    <string name="settings_led_transition_1s">1s</string>
+    <string name="settings_led_transition_milliseconds">%1$dms</string>
+
+    <string name="settings_led_audio_brightness_title">ऑडियो ब्राइटनेस</string>
+    <string name="settings_led_audio_brightness_subtitle">LED संगीत के साथ धड़कते हैं</string>
+    <string name="settings_led_audio_colors_title">ऑडियो कलर</string>
+    <string name="settings_led_audio_colors_subtitle">तीव्रता रंग समूहों के बीच बदलती है</string>
+
+    <string name="settings_led_screen_colors_title">स्क्रीन कलर</string>
+    <string name="settings_led_screen_colors_subtitle">LED गेम स्क्रीन की सामग्री से मेल खाते हैं</string>
+    <string name="settings_led_screen_colors_subtitle_locked">स्क्रीन कैप्चर अनुमति आवश्यक है</string>
+    <string name="settings_led_color_mode_title">कलर चयन</string>
+    <string name="settings_led_color_mode_dominant">प्रमुख रंग</string>
+    <string name="settings_led_color_mode_vibrant_muted">जीवंत और हल्का</string>
+    <string name="settings_led_color_mode_hue_families">ह्यू परिवार</string>
+
+    <!-- ===== Storage section ===== -->
+
+    <string name="settings_storage_section_overview">ओवरव्यू</string>
+    <string name="settings_storage_section_locations">फ़ाइल लोकेशन</string>
+    <string name="settings_storage_section_downloads">डाउनलोड</string>
+    <string name="settings_storage_section_danger">डेंजर ज़ोन</string>
+
+    <string name="settings_storage_recompute_title">फिर से गणना करें</string>
+
+    <string name="settings_storage_meter_games">गेम</string>
+    <string name="settings_storage_meter_media">मीडिया</string>
+    <string name="settings_storage_meter_steam">Steam और PC</string>
+    <string name="settings_storage_meter_apps">ऐप्स</string>
+    <string name="settings_storage_meter_caches">कैश और सिस्टम</string>
+    <string name="settings_storage_meter_music">संगीत</string>
+
+    <string name="settings_storage_games_tile_title">गेम</string>
+    <plurals name="settings_storage_games_tile_count">
+        <item quantity="one">%d गेम</item>
+        <item quantity="other">%d गेम</item>
+    </plurals>
+    <string name="settings_storage_media_tile_title">मीडिया</string>
+    <plurals name="settings_storage_media_tile_count">
+        <item quantity="one">%d टाइटल डाउनलोड किया गया</item>
+        <item quantity="other">%d टाइटल डाउनलोड किए गए</item>
+    </plurals>
+    <string name="settings_storage_music_tile_title">संगीत</string>
+    <string name="settings_storage_music_tile_action">प्लेलिस्ट मैनेज करें</string>
+    <string name="settings_storage_caches_tile_title">कैश और सिस्टम</string>
+    <plurals name="settings_storage_caches_tile_count">
+        <item quantity="one">%d फ़ाइल</item>
+        <item quantity="other">%d फ़ाइलें</item>
+    </plurals>
+    <string name="settings_storage_steam_tile_title">Steam और PC</string>
+    <string name="settings_storage_steam_tile_subtitle">स्टोर, इंस्टॉल और स्टेजिंग</string>
+
+    <string name="settings_storage_rom_path_title">ग्लोबल ROM पाथ</string>
+    <string name="settings_storage_rom_path_free">%1$s खाली</string>
+    <string name="settings_storage_image_cache_title">इमेज कैश</string>
+    <string name="settings_storage_image_cache_migrating">इमेज मूव हो रही हैं...</string>
+    <string name="settings_storage_image_cache_internal">इंटरनल (डिफ़ॉल्ट)</string>
+    <string name="settings_storage_music_location_title">संगीत लोकेशन</string>
+    <string name="settings_storage_music_location_default">डिफ़ॉल्ट</string>
+    <string name="settings_storage_bios_folder_title">BIOS फ़ोल्डर</string>
+    <string name="settings_storage_bios_folder_migrating">फ़ाइलें मूव हो रही हैं...</string>
+    <string name="settings_storage_bios_folder_internal">इंटरनल (डिफ़ॉल्ट)</string>
+    <string name="settings_storage_builtin_save_path_title">बिल्ट-इन सेव पाथ</string>
+    <string name="settings_storage_builtin_save_path_internal">इंटरनल (डिफ़ॉल्ट)</string>
+    <string name="settings_storage_builtin_state_path_title">बिल्ट-इन स्टेट पाथ</string>
+    <string name="settings_storage_builtin_state_path_internal">इंटरनल (डिफ़ॉल्ट)</string>
+
+    <string name="settings_storage_max_downloads_title">अधिकतम सक्रिय डाउनलोड</string>
+    <string name="settings_storage_threshold_title">तुरंत डाउनलोड सीमा</string>
+    <string name="settings_storage_threshold_value">%1$d MB</string>
+    <string name="settings_storage_threshold_subtitle">इस आकार से छोटी फ़ाइलें तुरंत डाउनलोड होती हैं</string>
+    <string name="settings_storage_internal_staging_title">इंटरनल स्टोरेज पर अनपैक करें</string>
+    <string name="settings_storage_internal_staging_subtitle">कंप्रेस्ड गेम इंटरनल रूप से डाउनलोड और एक्सट्रैक्ट करें, फिर पूरा गेम आपके ROM फ़ोल्डर में ले जाएँ। इंटरनल स्पेस कम होने पर सीधे ROM फ़ोल्डर का उपयोग करता है।</string>
+
+    <string name="settings_storage_reset_library_title">लाइब्रेरी रीसेट करें</string>
+    <string name="settings_storage_reset_library_subtitle">डेटाबेस और इमेज कैश साफ़ करता है। डाउनलोड की गई फ़ाइलें डिस्क पर बनी रहती हैं।</string>
+    <string name="settings_storage_reset_library_busy">रीसेट हो रहा है...</string>
+    <string name="settings_storage_hard_reset_title">हार्ड रीसेट</string>
+    <string name="settings_storage_hard_reset_subtitle">डाउनलोड किए गए गेम, लाइब्रेरी डेटाबेस और हर कैश हटाता है। सेटिंग्स और साइन-इन बने रहते हैं।</string>
+    <string name="settings_storage_hard_reset_busy">रीसेट हो रहा है...</string>
+
+    <!-- ===== Storage: games ===== -->
+
+    <string name="settings_storage_games_section_overview">ओवरव्यू</string>
+    <string name="settings_storage_games_section_platforms">प्लेटफ़ॉर्म</string>
+
+    <string name="settings_storage_games_integrity_title">साप्ताहिक ROM इंटीग्रिटी जाँच</string>
+    <string name="settings_storage_games_integrity_subtitle">स्टार्टअप पर हफ़्ते में एक बार डाउनलोड की गई गेम फ़ाइलों को सत्यापित करता है</string>
+
+    <plurals name="settings_storage_games_totals_count">
+        <item quantity="one">%d डाउनलोड किया गया</item>
+        <item quantity="other">%d डाउनलोड किए गए</item>
+    </plurals>
+    <string name="settings_storage_games_totals_used">%1$s उपयोग हुआ</string>
+
+    <string name="settings_storage_games_sort_toggle_description">सॉर्ट क्रम टॉगल करें</string>
+    <string name="settings_storage_games_sort_platform">प्लेटफ़ॉर्म क्रम</string>
+    <string name="settings_storage_games_sort_size">सबसे बड़ा पहले</string>
+
+    <string name="settings_storage_games_empty_computing_title">स्टोरेज उपयोग की गणना हो रही है...</string>
+    <string name="settings_storage_games_empty_computing_message">स्कैन पूरा होते ही यहाँ प्रति-प्लेटफ़ॉर्म गेम आकार दिखेंगे।</string>
+    <string name="settings_storage_games_empty_title">कोई डाउनलोड किया गया गेम नहीं</string>
+    <string name="settings_storage_games_empty_message">अपनी लाइब्रेरी से गेम डाउनलोड करें और प्रति-प्लेटफ़ॉर्म उपयोग यहाँ दिखेगा।</string>
+
+    <plurals name="settings_storage_games_platform_count">
+        <item quantity="one">%d डाउनलोड किया गया</item>
+        <item quantity="other">%d डाउनलोड किए गए</item>
+    </plurals>
+
+    <!-- ===== Storage: media ===== -->
+
+    <string name="settings_storage_media_artwork_title">आर्टवर्क कैश</string>
+    <string name="settings_storage_media_artwork_subtitle">ब्राउज़ करते समय लाए गए पोस्टर और बैकड्रॉप, अन्य ऑनलाइन आर्टवर्क के साथ साझा</string>
+    <plurals name="settings_storage_media_artwork_files">
+        <item quantity="one">%d फ़ाइल</item>
+        <item quantity="other">%d फ़ाइलें</item>
+    </plurals>
+
+    <string name="settings_storage_media_section_libraries">लाइब्रेरी</string>
+    <string name="settings_storage_media_section_locations">लोकेशन</string>
+
+    <plurals name="settings_storage_media_totals_count">
+        <item quantity="one">%d टाइटल डाउनलोड किया गया</item>
+        <item quantity="other">%d टाइटल डाउनलोड किए गए</item>
+    </plurals>
+    <string name="settings_storage_media_totals_used">%1$s उपयोग हुआ</string>
+    <string name="settings_storage_media_totals_offline">%1$s उस स्टोरेज पर जो जुड़ी नहीं है</string>
+
+    <string name="settings_storage_media_empty_computing_title">स्टोरेज उपयोग की गणना हो रही है...</string>
+    <string name="settings_storage_media_empty_computing_message">स्कैन पूरा होते ही यहाँ प्रति-लाइब्रेरी आकार दिखेंगे।</string>
+    <string name="settings_storage_media_empty_title">अभी तक कोई मीडिया लाइब्रेरी नहीं</string>
+    <string name="settings_storage_media_empty_message">मीडिया सर्वर में साइन इन करें और डाउनलोड की गई फ़िल्में व एपिसोड यहाँ प्रति-लाइब्रेरी दिखेंगी।</string>
+
+    <plurals name="settings_storage_media_library_count">
+        <item quantity="one">%d डाउनलोड किया गया</item>
+        <item quantity="other">%d डाउनलोड किए गए</item>
+    </plurals>
+    <plurals name="settings_storage_media_library_offline">
+        <item quantity="one">%1$d उस स्टोरेज पर प्रतीक्षारत जो जुड़ी नहीं है, आखिरी बार मापे जाने पर %2$s</item>
+        <item quantity="other">%1$d उस स्टोरेज पर प्रतीक्षारत जो जुड़ी नहीं है, आखिरी बार मापे जाने पर %2$s</item>
+    </plurals>
+    <plurals name="settings_storage_media_library_missing">
+        <item quantity="one">%d अब डिस्क पर नहीं है</item>
+        <item quantity="other">%d अब डिस्क पर नहीं है</item>
+    </plurals>
+
+    <string name="settings_storage_media_location_offline">जुड़ी नहीं है, आखिरी बार मापे जाने पर %1$s</string>
+    <plurals name="settings_storage_media_location_current">
+        <item quantity="one">नए डाउनलोड यहीं आते हैं, %d फ़ाइल</item>
+        <item quantity="other">नए डाउनलोड यहीं आते हैं, %d फ़ाइलें</item>
+    </plurals>
+    <plurals name="settings_storage_media_location_stale">
+        <item quantity="one">पहले के डाउनलोड फ़ोल्डर से यहाँ छूटी, %d फ़ाइल</item>
+        <item quantity="other">पहले के डाउनलोड फ़ोल्डर से यहाँ छूटीं, %d फ़ाइलें</item>
+    </plurals>
+    <string name="settings_storage_media_location_unavailable">अनुपलब्ध</string>
+
+    <!-- ===== Storage: one console's games ===== -->
+
+    <string name="settings_storage_platform_games_loading">लोड हो रहा है...</string>
+    <string name="settings_storage_platform_games_empty_title">कोई डाउनलोड किया गया गेम नहीं</string>
+    <string name="settings_storage_platform_games_empty_message">%1$s के लिए डाउनलोड किए गए गेम यहाँ प्रति-श्रेणी विवरण के साथ दिखेंगे।</string>
+
+    <string name="settings_storage_bucket_base">बेस</string>
+    <string name="settings_storage_bucket_updates">अपडेट</string>
+    <string name="settings_storage_bucket_dlc">DLC</string>
+    <string name="settings_storage_bucket_hacks">हैक्स</string>
+    <string name="settings_storage_bucket_soundtrack">साउंडट्रैक</string>
+    <string name="settings_storage_bucket_other">अन्य</string>
+    <plurals name="settings_storage_bucket_stats">
+        <item quantity="one">%1$d - %2$s</item>
+        <item quantity="other">%1$d - %2$s</item>
+    </plurals>
+
+    <string name="settings_storage_category_delete_title">%1$s हटाएँ?</string>
+    <plurals name="settings_storage_category_delete_message">
+        <item quantity="one">%1$d फ़ाइल (%2$s) हटाता है। आपकी लाइब्रेरी से फिर डाउनलोड होगा।</item>
+        <item quantity="other">%1$d फ़ाइलें (%2$s) हटाता है। आपकी लाइब्रेरी से फिर डाउनलोड होंगी।</item>
+    </plurals>
+    <string name="settings_storage_category_delete_confirm">हटाएँ</string>
+
+    <!-- ===== Storage: caches ===== -->
+
+    <string name="settings_caches_section_sync">सिंक कैश</string>
+    <string name="settings_caches_section_media">मीडिया कैश</string>
+    <string name="settings_caches_section_system">सिस्टम</string>
+
+    <plurals name="settings_caches_pending_uploads_title">
+        <item quantity="one">%d सेव अपलोड होने के लिए प्रतीक्षारत</item>
+        <item quantity="other">%d सेव अपलोड होने के लिए प्रतीक्षारत</item>
+    </plurals>
+    <string name="settings_caches_pending_uploads_subtitle_online">सिंक कैश साफ़ करने से पहले अभी सिंक करें</string>
+    <string name="settings_caches_pending_uploads_subtitle_offline">सिंक करने के लिए सर्वर से फिर से जुड़ें</string>
+
+    <string name="settings_caches_save_cache_title">सेव कैश रीसेट करें</string>
+    <string name="settings_caches_save_cache_busy">रीसेट हो रहा है...</string>
+    <plurals name="settings_caches_save_cache_pending">
+        <item quantity="one">%d सेव अपलोड होने के लिए प्रतीक्षारत</item>
+        <item quantity="other">%d सेव अपलोड होने के लिए प्रतीक्षारत</item>
+    </plurals>
+    <plurals name="settings_caches_save_cache_count">
+        <item quantity="one">%d कैश किया गया सेव या स्टेट</item>
+        <item quantity="other">%d कैश किए गए सेव और स्टेट</item>
+    </plurals>
+    <string name="settings_caches_save_cache_empty">कोई कैश एंट्री नहीं</string>
+
+    <string name="settings_caches_state_cache_title">स्टेट कैश साफ़ करें</string>
+    <string name="settings_caches_state_cache_busy">साफ़ हो रहा है...</string>
+    <plurals name="settings_caches_state_cache_pending">
+        <item quantity="one">%d सेव अपलोड होने के लिए प्रतीक्षारत</item>
+        <item quantity="other">%d सेव अपलोड होने के लिए प्रतीक्षारत</item>
+    </plurals>
+    <plurals name="settings_caches_state_cache_count">
+        <item quantity="one">%d कैश किया गया सेव स्टेट</item>
+        <item quantity="other">%d कैश किए गए सेव स्टेट</item>
+    </plurals>
+    <string name="settings_caches_state_cache_empty">कोई कैश स्टेट नहीं</string>
+
+    <string name="settings_caches_path_cache_title">सेव पाथ कैश साफ़ करें</string>
+    <string name="settings_caches_path_cache_busy">साफ़ हो रहा है...</string>
+    <plurals name="settings_caches_path_cache_pending">
+        <item quantity="one">%d सेव अपलोड होने के लिए प्रतीक्षारत</item>
+        <item quantity="other">%d सेव अपलोड होने के लिए प्रतीक्षारत</item>
+    </plurals>
+    <plurals name="settings_caches_path_cache_count">
+        <item quantity="one">%d कैश किया गया पाथ</item>
+        <item quantity="other">%d कैश किए गए पाथ</item>
+    </plurals>
+    <string name="settings_caches_path_cache_empty">कोई कैश पाथ नहीं</string>
+
+    <string name="settings_caches_state_toggle_title">सेव स्टेट कैश करें</string>
+    <string name="settings_caches_state_toggle_subtitle">सेशन खत्म होने पर क्लाउड सिंक के लिए स्टेट स्नैपशॉट रखें</string>
+    <string name="settings_caches_save_limit_title">लोकल सेव कैश</string>
+    <plurals name="settings_caches_save_limit_value">
+        <item quantity="one">%d सेव प्रति गेम</item>
+        <item quantity="other">%d सेव प्रति गेम</item>
+    </plurals>
+
+    <string name="settings_caches_image_cache_title">इमेज कैश</string>
+    <string name="settings_caches_image_cache_busy">साफ़ हो रहा है...</string>
+    <plurals name="settings_caches_image_cache_subtitle">
+        <item quantity="one">%d फ़ाइल - कवर ब्राउज़ करते समय फिर से डाउनलोड होते हैं</item>
+        <item quantity="other">%d फ़ाइलें - कवर ब्राउज़ करते समय फिर से डाउनलोड होते हैं</item>
+    </plurals>
+    <string name="settings_caches_validate_title">इमेज कैश सत्यापित करें</string>
+    <string name="settings_caches_validate_busy">सत्यापित हो रहा है...</string>
+    <string name="settings_caches_validate_subtitle">गुम या खराब कैश इमेज ठीक करें</string>
+
+    <string name="settings_caches_screenshots_title">स्क्रीनशॉट कैश करें</string>
+    <string name="settings_caches_screenshots_subtitle">बॉक्सआर्ट और बैकग्राउंड हमेशा कैश किए जाते हैं</string>
+    <string name="settings_caches_box_art_title">3D बॉक्स आर्ट कैश करें</string>
+    <string name="settings_caches_box_art_subtitle">3D बॉक्स डिस्प्ले के लिए बॉक्स के पीछे और स्पाइन स्कैन डाउनलोड करें</string>
+
+    <string name="settings_caches_rom_extraction_title">एक्सट्रैक्ट किए गए ROM</string>
+    <string name="settings_caches_rom_extraction_busy">साफ़ हो रहा है...</string>
+    <string name="settings_caches_rom_extraction_subtitle">कंप्रेस्ड गेम की वर्किंग कॉपी - लॉन्च पर फिर से एक्सट्रैक्ट होती हैं</string>
+    <string name="settings_caches_rom_staging_title">छोड़ी गई डाउनलोड स्टेजिंग</string>
+    <string name="settings_caches_rom_staging_busy">साफ़ हो रहा है...</string>
+    <string name="settings_caches_rom_staging_subtitle">इंटरनल रूप से अनपैक किए गए और कभी पूरे न हुए डाउनलोड के बचे हुए हिस्से</string>
+    <string name="settings_caches_sfx_title">साउंड इफ़ेक्ट कैश</string>
+    <string name="settings_caches_sfx_busy">साफ़ हो रहा है...</string>
+    <string name="settings_caches_sfx_subtitle">ट्रांसकोड की गई कस्टम साउंड - अपने आप फिर से बनती हैं</string>
+    <string name="settings_caches_emulator_apks_title">एमुलेटर इंस्टॉलर</string>
+    <string name="settings_caches_emulator_apks_busy">साफ़ हो रहा है...</string>
+    <string name="settings_caches_emulator_apks_subtitle">डाउनलोड किए गए APK - इंस्टॉल के बाद हटाना सुरक्षित है</string>
+    <string name="settings_caches_misc_downloads_title">विविध डाउनलोड</string>
+    <string name="settings_caches_misc_downloads_busy">साफ़ हो रहा है...</string>
+    <string name="settings_caches_misc_downloads_subtitle">फ्रेंड प्रेज़ेंस कवर और GPU ड्राइवर डाउनलोड</string>
+
+    <string name="settings_caches_shaders_title">शेडर कैटलॉग</string>
+    <string name="settings_caches_shaders_busy">साफ़ हो रहा है...</string>
+    <string name="settings_caches_shaders_subtitle">डाउनलोड किए गए शेडर - मांगे जाने पर फिर से डाउनलोड होते हैं</string>
+    <string name="settings_caches_frames_title">फ़्रेम ओवरले</string>
+    <string name="settings_caches_frames_busy">साफ़ हो रहा है...</string>
+    <string name="settings_caches_frames_subtitle">डाउनलोड किए गए बेज़ेल - मांगे जाने पर फिर से डाउनलोड होते हैं</string>
+
+    <string name="settings_caches_steam_clear_title">डाउनलोड डेटा साफ़ करें</string>
+    <string name="settings_caches_steam_clear_busy">साफ़ हो रहा है...</string>
+    <string name="settings_caches_steam_clear_blocked">पहले Steam डाउनलोड रद्द करें</string>
+    <string name="settings_caches_steam_clear_subtitle">स्टेज किए गए डाउनलोड और क्यू हटाता है - इंस्टॉल किए गए गेम बने रहते हैं</string>
+
+    <string name="settings_caches_info_artwork_title">आर्टवर्क कैश</string>
+    <string name="settings_caches_info_artwork_subtitle">पोस्टर, बैकड्रॉप और अन्य ऑनलाइन आर्टवर्क - मांगे जाने पर फिर से डाउनलोड होते हैं</string>
+    <string name="settings_caches_info_bios_title">BIOS फ़ाइलें</string>
+    <string name="settings_caches_info_bios_subtitle">एमुलेटर के लिए आवश्यक - यह कैश नहीं है</string>
+    <string name="settings_caches_info_cores_title">कोर और सिस्टम</string>
+    <string name="settings_caches_info_cores_subtitle">बिल्ट-इन एमुलेटर कोर और सपोर्ट फ़ाइलें</string>
+    <string name="settings_caches_info_shaders_title">कस्टम शेडर</string>
+    <string name="settings_caches_info_shaders_subtitle">यूज़र कंटेंट - कभी साफ़ नहीं होता</string>
+    <string name="settings_caches_info_fonts_title">फ़ॉन्ट</string>
+    <string name="settings_caches_info_fonts_subtitle">यूज़र कंटेंट - कभी साफ़ नहीं होता</string>
+    <string name="settings_caches_info_database_title">डेटाबेस</string>
+    <plurals name="settings_caches_info_database_subtitle">
+        <item quantity="one">%d लाइब्रेरी डेटाबेस फ़ाइल</item>
+        <item quantity="other">%d लाइब्रेरी डेटाबेस फ़ाइलें</item>
+    </plurals>
+    <string name="settings_caches_info_steam_total_title">Steam और PC कुल</string>
+    <string name="settings_caches_info_steam_total_subtitle">इंस्टॉल किए गए स्टोर गेम शामिल हैं</string>
+    <string name="settings_caches_info_steam_staging_title">डाउनलोड स्टेजिंग</string>
+    <string name="settings_caches_info_steam_staging_subtitle">डिप्लॉय की प्रतीक्षा में आधे-अधूरे डाउनलोड</string>
+    <string name="settings_caches_info_steam_staging_computing">गणना हो रही है...</string>
+
+    <!-- ===== Steam section ===== -->
+
+    <string name="settings_steam_section_account">अकाउंट</string>
+    <string name="settings_steam_section_library">लाइब्रेरी</string>
+    <string name="settings_steam_section_danger">डेंजर ज़ोन</string>
+
+    <string name="settings_steam_gn_status_configured">एक्सटर्नल स्टोरेज कॉन्फ़िगर है</string>
+    <string name="settings_steam_gn_status_unconfigured">एक्सटर्नल स्टोरेज कॉन्फ़िगर नहीं है</string>
+    <string name="settings_steam_gn_status_missing">इंस्टॉल नहीं है</string>
+    <string name="settings_steam_gn_install_title">GameNative इंस्टॉल करें</string>
+    <string name="settings_steam_gn_install_subtitle">Steam गेम लॉन्च करने के लिए आवश्यक</string>
+    <string name="settings_steam_gn_storage_warning_title">एक्सटर्नल स्टोरेज</string>
+    <string name="settings_steam_gn_storage_warning_value">GameNative खोलें और उसकी सेटिंग्स में \'Write to external storage\' चालू करें</string>
+
+    <string name="settings_steam_install_path_title">इंस्टॉल पाथ</string>
+    <string name="settings_steam_install_path_title_custom">इंस्टॉल पाथ (कस्टम)</string>
+    <string name="settings_steam_install_path_change">बदलें</string>
+    <string name="settings_steam_install_triage_title">इंस्टॉल किए गए गेम</string>
+    <string name="settings_steam_account_title">Steam अकाउंट</string>
+    <string name="settings_steam_account_connected">कनेक्टेड</string>
+
+    <string name="settings_steam_sync_title">लाइब्रेरी सिंक करें</string>
+    <string name="settings_steam_sync_idle">Steam से ओन किए गए गेम सिंक करें</string>
+    <string name="settings_steam_sync_licenses">लाइसेंस सिंक हो रहे हैं...</string>
+    <string name="settings_steam_sync_packages">पैकेज प्राप्त हो रहे हैं (%1$d/%2$d)...</string>
+    <string name="settings_steam_sync_apps">गेम प्राप्त हो रहे हैं (%1$d/%2$d)...</string>
+    <string name="settings_steam_sync_complete">%1$d जोड़े गए, %2$d अपडेट हुए</string>
+    <string name="settings_steam_sync_error">त्रुटि: %1$s</string>
+
+    <string name="settings_steam_add_manual_title">App ID से जोड़ें</string>
+    <string name="settings_steam_add_manual_subtitle">किसी Steam गेम को उसकी App ID से जोड़ें</string>
+
+    <string name="settings_steam_gamenative_library_title">GameNative लाइब्रेरी</string>
+    <string name="settings_steam_gamenative_library_folders">फ़ोल्डर</string>
+    <string name="settings_steam_gamenative_library_scan">स्कैन करें</string>
+    <string name="settings_steam_gamenative_library_scanning">स्कैन हो रहा है...</string>
+    <string name="settings_steam_gamenative_library_unconfigured">GOG, Epic और Amazon इंस्टॉल इम्पोर्ट करने और Steam गेम को इंस्टॉल्ड मार्क करने के लिए GameNative का Frontend Sync फ़ोल्डर सेट करें</string>
+    <string name="settings_steam_gamenative_library_missing">फ़ोल्डर गुम है: %1$s</string>
+    <string name="settings_steam_gamenative_library_configured">%1$s कॉन्फ़िगर है</string>
+
+    <string name="settings_steam_refresh_metadata_title">मेटाडेटा रीफ़्रेश करें</string>
+    <string name="settings_steam_refresh_metadata_busy">रीफ़्रेश हो रहा है...</string>
+    <string name="settings_steam_refresh_metadata_subtitle">स्क्रीनशॉट और बैकग्राउंड अपडेट करें</string>
+
+    <string name="settings_steam_launcher_downloading">डाउनलोड हो रहा है... %1$d%%</string>
+    <string name="settings_steam_launcher_waiting">इंस्टॉल की प्रतीक्षा हो रही है...</string>
+    <string name="settings_steam_launcher_download">APK डाउनलोड करें</string>
+    <string name="settings_steam_launcher_store">Play Store खोलें</string>
+
+    <string name="settings_steam_storage_note_title">स्टोरेज अनुमति दें</string>
+    <string name="settings_steam_storage_note_subtitle">Steam इंटीग्रेशन के लिए आवश्यक</string>
+    <string name="settings_steam_disconnect_title">डिस्कनेक्ट करें</string>
+    <string name="settings_steam_disconnect_subtitle">Steam से लॉग आउट करें</string>
+    <string name="settings_steam_reset_library_title">Steam लाइब्रेरी रीसेट करें</string>
+    <string name="settings_steam_reset_library_subtitle">सभी सिंक किए गए Steam गेम हटाएँ</string>
+
+    <string name="settings_steam_gn_required_title">GameNative आवश्यक है</string>
+    <string name="settings_steam_gn_required_message">Steam गेम Argosy द्वारा डाउनलोड होते हैं और GameNative के ज़रिए लॉन्च होते हैं। आगे बढ़ने से पहले GameNative इंस्टॉल करें और उसकी सेटिंग्स में एक्सटर्नल स्टोरेज चालू करें।</string>
+    <string name="settings_steam_gn_required_action">GameNative इंस्टॉल करें</string>
+
+    <string name="settings_steam_login_title">Steam में लॉग इन करें</string>
+    <string name="settings_steam_login_message">अपनी लाइब्रेरी सिंक करने और गेम डाउनलोड करने के लिए अपना Steam अकाउंट कनेक्ट करें।</string>
+    <string name="settings_steam_login_action">कनेक्ट करें</string>
+    <string name="settings_steam_connecting">कनेक्ट हो रहा है...</string>
+
+    <string name="settings_steam_qr_title">Steam मोबाइल ऐप से स्कैन करें</string>
+    <string name="settings_steam_qr_message">अपने फ़ोन पर Steam खोलें, गार्ड आइकन पर टैप करें, फिर \'Confirm sign-in\' चुनें।</string>
+    <string name="settings_steam_qr_cancel">रद्द करें</string>
+    <string name="settings_steam_qr_image_description">QR कोड</string>
+
+    <string name="settings_steam_error_title">कनेक्शन त्रुटि</string>
+    <string name="settings_steam_error_retry">फिर कोशिश करें</string>
+
+    <string name="settings_steam_add_game_title">Steam गेम जोड़ें</string>
+    <string name="settings_steam_add_game_message">गेम जोड़ने के लिए Steam App ID डालें। यह गेम के Steam स्टोर URL में मिलती है।</string>
+    <string name="settings_steam_add_game_message_launcher">%1$s के लिए गेम जोड़ने हेतु Steam App ID डालें। यह गेम के Steam स्टोर URL में मिलती है।</string>
+    <string name="settings_steam_add_game_field_label">Steam App ID</string>
+    <string name="settings_steam_add_game_field_hint">जैसे 730</string>
+    <string name="settings_steam_add_game_cancel">रद्द करें</string>
+    <string name="settings_steam_add_game_confirm">जोड़ें</string>
+
+    <!-- ===== Social section ===== -->
+
+    <string name="settings_social_section_account">अकाउंट</string>
+    <string name="settings_social_section_privacy">प्राइवेसी</string>
+    <string name="settings_social_section_notifications">नोटिफ़िकेशन</string>
+
+    <string name="settings_social_account_handle">\@%1$s</string>
+    <string name="settings_social_edit_avatar_title">अवतार डूडल एडिट करें</string>
+    <string name="settings_social_edit_avatar_subtitle">कस्टम अवतार बनाएँ</string>
+    <string name="settings_social_use_doodle_title">डूडल अवतार उपयोग करें</string>
+    <string name="settings_social_use_doodle_subtitle_on">आपका डूडल दिखाया जा रहा है</string>
+    <string name="settings_social_use_doodle_subtitle_off">आपके इनिशियल दिखाए जा रहे हैं</string>
+
+    <string name="settings_social_online_status_title">ऑनलाइन स्टेटस</string>
+    <string name="settings_social_online_status_subtitle_on">दोस्तों को ऑनलाइन दिखें</string>
+    <string name="settings_social_online_status_subtitle_off">दोस्तों को ऑफ़लाइन दिखें</string>
+    <string name="settings_social_now_playing_title">अभी क्या खेल रहे हैं दिखाएँ</string>
+    <string name="settings_social_now_playing_subtitle_locked">पहले ऑनलाइन स्टेटस चालू करें</string>
+    <string name="settings_social_now_playing_subtitle_on">आप कौन-सा गेम खेल रहे हैं, यह साझा करें</string>
+    <string name="settings_social_now_playing_subtitle_off">दोस्तों से गेम एक्टिविटी छिपाएँ</string>
+
+    <string name="settings_social_notify_online_title">दोस्त ऑनलाइन आया</string>
+    <string name="settings_social_notify_online_subtitle_locked">पहले ऑनलाइन स्टेटस चालू करें</string>
+    <string name="settings_social_notify_online_subtitle_on">दोस्तों के ऑनलाइन आने पर नोटिफ़िकेशन दिखाएँ</string>
+    <string name="settings_social_notify_online_subtitle_off">नोटिफ़िकेशन बंद है</string>
+    <string name="settings_social_notify_playing_title">दोस्त ने खेलना शुरू किया</string>
+    <string name="settings_social_notify_playing_subtitle_locked">पहले ऑनलाइन स्टेटस चालू करें</string>
+    <string name="settings_social_notify_playing_subtitle_on">दोस्तों के गेम शुरू करने पर नोटिफ़िकेशन दिखाएँ</string>
+    <string name="settings_social_notify_playing_subtitle_off">नोटिफ़िकेशन बंद है</string>
+    <string name="settings_social_suppress_title">खेलते समय म्यूट करें</string>
+    <string name="settings_social_suppress_subtitle_locked">पहले ऑनलाइन स्टेटस चालू करें</string>
+    <string name="settings_social_suppress_subtitle_on">गेमप्ले के दौरान फ्रेंड नोटिफ़िकेशन छिपे रहते हैं</string>
+    <string name="settings_social_suppress_subtitle_off">फ्रेंड नोटिफ़िकेशन हमेशा दिखते हैं</string>
+
+    <string name="settings_social_quaypass_subtitle_on">चेक-इन पर पास आस-पास के यात्रियों को दिखाएँ</string>
+    <string name="settings_social_quaypass_subtitle_off">बंद</string>
+
+    <string name="settings_social_unlink_title">अकाउंट अनलिंक करें</string>
+    <string name="settings_social_unlink_subtitle">सोशल फ़ीचर से डिस्कनेक्ट करें</string>
+
+    <string name="settings_social_not_linked_title">सोशल फ़ीचर चालू करने के लिए लॉग इन करें</string>
+    <string name="settings_social_not_linked_message">दोस्तों से जुड़ें, कलेक्शन साझा करें, और देखें कि बाकी लोग क्या खेल रहे हैं।</string>
+    <string name="settings_social_not_linked_action">अकाउंट लिंक करें</string>
+    <string name="settings_social_connecting">कनेक्ट हो रहा है...</string>
+
+    <string name="settings_social_qr_title">अपना अकाउंट लिंक करने के लिए स्कैन करें</string>
+    <string name="settings_social_qr_visit_prefix">या यहाँ जाएँ </string>
+    <string name="settings_social_qr_visit_suffix"> और डालें:</string>
+    <string name="settings_social_qr_cancel">रद्द करें</string>
+    <string name="settings_social_qr_image_description">QR कोड</string>
+
+    <string name="settings_social_error_title">कनेक्शन त्रुटि</string>
+    <string name="settings_social_error_generic">एक त्रुटि हुई</string>
+    <string name="settings_social_error_retry">फिर कोशिश करें</string>
+
+    <!-- ===== Jellyfin section ===== -->
+
+    <string name="settings_jellyfin_section_server">सर्वर</string>
+    <string name="settings_jellyfin_section_library">लाइब्रेरी</string>
+    <string name="settings_jellyfin_section_playback">प्लेबैक</string>
+    <string name="settings_jellyfin_section_downloads">डाउनलोड</string>
+    <string name="settings_jellyfin_section_privacy">प्राइवेसी</string>
+
+    <string name="settings_jellyfin_server_title">मीडिया सर्वर</string>
+    <string name="settings_jellyfin_server_unconfigured">कॉन्फ़िगर नहीं है</string>
+
+    <string name="settings_jellyfin_account_sign_out">साइन आउट करें</string>
+    <string name="settings_jellyfin_account_cancel">साइन इन रद्द करें</string>
+    <string name="settings_jellyfin_account_sign_in">साइन इन करें</string>
+    <string name="settings_jellyfin_account_signed_in_as">%1$s के रूप में साइन इन</string>
+    <string name="settings_jellyfin_account_signed_in">साइन इन है</string>
+    <string name="settings_jellyfin_account_awaiting_approval">आपके Jellyfin ऐप में मंज़ूरी की प्रतीक्षा हो रही है</string>
+    <string name="settings_jellyfin_account_requesting_code">सर्वर से कोड माँगा जा रहा है</string>
+    <string name="settings_jellyfin_account_quick_connect">अपने Jellyfin ऐप से Quick Connect कोड मंज़ूर करें</string>
+    <string name="settings_jellyfin_account_password">अपने Jellyfin यूज़रनेम और पासवर्ड से साइन इन करें</string>
+
+    <string name="settings_jellyfin_quick_connect_label">Quick Connect कोड</string>
+    <string name="settings_jellyfin_quick_connect_message">जिस डिवाइस पर आप पहले से साइन इन हैं वहाँ Jellyfin खोलें, Quick Connect पर जाएँ और यह कोड डालें। यह कुछ ही मिनट में एक्सपायर हो जाता है।</string>
+    <string name="settings_jellyfin_password_sign_in_title">पासवर्ड से साइन इन करें</string>
+    <string name="settings_jellyfin_password_sign_in_subtitle">कोड की जगह अपने Jellyfin यूज़रनेम और पासवर्ड का उपयोग करें</string>
+
+    <string name="settings_jellyfin_sync_title">लाइब्रेरी सिंक करें</string>
+    <string name="settings_jellyfin_sync_progress">%1$s (%3$d में से %2$d)</string>
+    <string name="settings_jellyfin_sync_reading">आपकी लाइब्रेरी पढ़ी जा रही हैं</string>
+    <string name="settings_jellyfin_sync_signed_out">अपनी फ़िल्में और शो लाने के लिए साइन इन करें</string>
+    <string name="settings_jellyfin_sync_last">आखिरी: %1$s</string>
+    <string name="settings_jellyfin_sync_subtitle">अपनी फ़िल्में, शो और एपिसोड को सर्वर के साथ अपडेट करें</string>
+
+    <string name="settings_jellyfin_streaming_title">स्ट्रीमिंग क्वालिटी</string>
+    <string name="settings_jellyfin_streaming_subtitle_auto">हर टाइटल जैसा है वैसा ही चलाता है, जिससे सर्वर पर कोई लागत नहीं आती</string>
+    <string name="settings_jellyfin_streaming_subtitle_capped">इससे बड़े टाइटल प्ले होते समय सर्वर द्वारा ट्रांसकोड किए जाते हैं। पहले से छोटे टाइटल जैसे हैं वैसे ही चलते हैं</string>
+
+    <string name="settings_jellyfin_audio_language_title">ऑडियो भाषा</string>
+    <string name="settings_jellyfin_audio_language_subtitle">जब टाइटल में एक से ज़्यादा ऑडियो ट्रैक हों तो पहले यही चुनी जाती है</string>
+
+    <string name="settings_jellyfin_subtitles_title">सबटाइटल</string>
+    <string name="settings_jellyfin_subtitles_subtitle_off">कोई सबटाइटल ट्रैक चुना नहीं गया</string>
+    <string name="settings_jellyfin_subtitles_subtitle_forced">केवल फ़ोर्स्ड मार्क किए गए ट्रैक</string>
+    <string name="settings_jellyfin_subtitles_subtitle_preferred">अपनी पसंदीदा भाषा में ट्रैक चुनें</string>
+    <string name="settings_jellyfin_subtitle_language_title">सबटाइटल भाषा</string>
+
+    <string name="settings_jellyfin_burn_in_title">इमेज सबटाइटल बर्न इन करें</string>
+    <string name="settings_jellyfin_burn_in_subtitle_on">नए प्लेबैक सर्वर द्वारा रेंडर किए गए इमेज ट्रैक के साथ शुरू होते हैं, जिससे ट्रांसकोड ज़रूरी हो जाता है। किसी एक टाइटल के लिए इसे सबटाइटल पिकर में बदलें</string>
+    <string name="settings_jellyfin_burn_in_subtitle_off">नए प्लेबैक इमेज ट्रैक बंद रखकर शुरू होते हैं। किसी एक टाइटल के लिए इसे सबटाइटल पिकर में चालू करें</string>
+
+    <string name="settings_jellyfin_confirm_exit_title">प्लेयर बंद करने से पहले पूछें</string>
+    <string name="settings_jellyfin_confirm_exit_subtitle_on">प्लेयर बंद करने पर पहले पुष्टि माँगी जाती है</string>
+    <string name="settings_jellyfin_confirm_exit_subtitle_off">प्लेयर बंद करते ही तुरंत बाहर निकल जाता है</string>
+
+    <string name="settings_jellyfin_download_quality_title">डाउनलोड क्वालिटी</string>
+    <string name="settings_jellyfin_download_subtitle_original">फ़ाइल सर्वर पर जैसी है वैसी ही डाउनलोड करता है</string>
+    <string name="settings_jellyfin_download_subtitle_capped">इससे बड़े टाइटल डाउनलोड शुरू होने से पहले ट्रांसकोड किए जाते हैं। पहले से छोटे टाइटल जैसे हैं वैसे ही डाउनलोड होते हैं</string>
+
+    <string name="settings_jellyfin_media_location_title">मीडिया लोकेशन</string>
+    <string name="settings_jellyfin_media_location_internal">इंटरनल स्टोरेज</string>
+
+    <string name="settings_jellyfin_share_presence_title">आप क्या देख रहे हैं दिखाएँ</string>
+    <string name="settings_jellyfin_share_presence_subtitle_on">आप जो टाइटल देख रहे हैं वह दोस्तों के साथ साझा करें</string>
+    <string name="settings_jellyfin_share_presence_subtitle_off">दोस्तों से मीडिया एक्टिविटी छिपाएँ</string>
+
+    <!-- ===== RomM server section ===== -->
+
+    <string name="settings_romm_section_server">सर्वर</string>
+    <string name="settings_romm_section_library">लाइब्रेरी</string>
+
+    <string name="settings_romm_server_title">Rom Manager</string>
+    <string name="settings_romm_server_checking">कनेक्शन जाँचा जा रहा है...</string>
+    <string name="settings_romm_server_connected">कनेक्टेड</string>
+    <string name="settings_romm_server_offline">%1$s (ऑफ़लाइन)</string>
+    <string name="settings_romm_server_unconfigured">कॉन्फ़िगर नहीं है</string>
+
+    <string name="settings_romm_sign_out_title">साइन आउट करें</string>
+    <string name="settings_romm_sign_out_title_busy">साइन आउट हो रहा है...</string>
+    <string name="settings_romm_sign_out_signed_in_as">%1$s के रूप में साइन इन</string>
+    <string name="settings_romm_sign_out_subtitle">इस RomM अकाउंट को भूल जाएँ</string>
+
+    <string name="settings_romm_accounts_title">अकाउंट</string>
+    <string name="settings_romm_accounts_empty">कोई अकाउंट पेयर नहीं है</string>
+    <string name="settings_romm_accounts_single">1 अकाउंट</string>
+    <string name="settings_romm_accounts_multiple">%2$d में से %1$s</string>
+    <string name="settings_romm_accounts_none_active">कोई सक्रिय अकाउंट नहीं</string>
+
+    <string name="settings_romm_sync_settings_title">सिंक सेटिंग्स</string>
+    <string name="settings_romm_sync_settings_subtitle">फ़िल्टर और मीडिया विकल्प</string>
+
+    <string name="settings_romm_sync_library_title">लाइब्रेरी सिंक करें</string>
+    <string name="settings_romm_sync_platforms">%1$d/%2$d प्लेटफ़ॉर्म</string>
+    <string name="settings_romm_sync_platforms_and_last">%1$s - %2$s</string>
+    <string name="settings_romm_sync_last">आखिरी: %1$s</string>
+    <string name="settings_romm_sync_never">कभी सिंक नहीं हुआ</string>
+
+    <!-- ===== Accounts section ===== -->
+
+    <string name="settings_accounts_section_paired">पेयर किए गए अकाउंट</string>
+    <string name="settings_accounts_active_badge">सक्रिय</string>
+    <string name="settings_accounts_action_switch">स्विच करें</string>
+    <string name="settings_accounts_action_remove">हटाएँ</string>
+    <string name="settings_accounts_remove_blocked_only">इस डिवाइस पर यही एकमात्र अकाउंट है। इसे छोड़ने के लिए RomM से साइन आउट करें।</string>
+    <string name="settings_accounts_remove_blocked_active">इसे हटाने से पहले किसी दूसरे अकाउंट पर स्विच करें।</string>
+
+    <string name="settings_accounts_add_title">अकाउंट जोड़ें</string>
+    <string name="settings_accounts_add_subtitle">%1$s पर एक और यूज़र जोड़ें</string>
+    <string name="settings_accounts_add_subtitle_locked">पहले RomM में साइन इन करें</string>
+
+    <string name="settings_accounts_needs_sync_saves">सिंक की प्रतीक्षा में सेव</string>
+    <string name="settings_accounts_needs_sync_states">सिंक की प्रतीक्षा में सेव स्टेट</string>
+    <string name="settings_accounts_needs_sync_message">इन्हें खाली छोड़ा गया क्योंकि इस डिवाइस पर मौजूद कॉपी सर्वर से पुरानी होना ज्ञात था। इन्हें भरने के लिए सिंक करें।</string>
+
+    <string name="settings_accounts_empty_title">अभी तक कोई RomM अकाउंट पेयर नहीं है</string>
+    <string name="settings_accounts_empty_message">RomM में साइन इन करें। एक अकाउंट पेयर होने के बाद आप यहाँ और जोड़ सकते हैं।</string>
+    <string name="settings_accounts_loading">अकाउंट लोड हो रहे हैं...</string>
+
+    <string name="settings_accounts_switch_title">अकाउंट स्विच हो रहा है</string>
+    <string name="settings_accounts_switch_resuming">अधूरा स्विच पूरा किया जा रहा है</string>
+    <string name="settings_accounts_switch_working">काम हो रहा है</string>
+    <string name="settings_accounts_switch_message">कुछ भी हटाए जाने से पहले सेव आर्काइव और सत्यापित किए जाते हैं। यह स्क्रीन खुली रहने दें।</string>
+
+    <string name="settings_accounts_pairing_title">अकाउंट जोड़ने के लिए स्कैन करें</string>
+    <string name="settings_accounts_pairing_message">अपने फ़ोन पर जिस यूज़र को जोड़ना है उसके तौर पर RomM में साइन इन करें, यह कोड स्कैन करें, फिर इस डिवाइस को मंज़ूर करें। मंज़ूरी मिलते ही Argosy उनके तौर पर साइन इन हो जाता है।</string>
+    <string name="settings_accounts_pairing_retry">फिर कोशिश करें</string>
+    <string name="settings_accounts_pairing_cancel">रद्द करें</string>
+
+    <!-- ===== Built-in emulator section ===== -->
+
+    <string name="settings_builtin_enable_title">बिल्ट-इन एमुलेटर चालू करें</string>
+    <string name="settings_builtin_enable_subtitle">समर्थित प्लेटफ़ॉर्म के लिए LibRetro कोर उपयोग करें</string>
+    <string name="settings_builtin_architecture_title">आर्किटेक्चर</string>
+
+    <string name="settings_builtin_video_title">A/V और परफ़ॉर्मेंस</string>
+    <string name="settings_builtin_video_subtitle">शेडर, डिस्प्ले, परफ़ॉर्मेंस, सेविंग</string>
+    <string name="settings_builtin_controls_title">कंट्रोल्स</string>
+    <string name="settings_builtin_controls_subtitle">रम्बल, इनपुट मैपिंग, हॉटकी</string>
+
+    <string name="settings_builtin_cores_title">कोर मैनेज करें</string>
+    <string name="settings_builtin_cores_subtitle">%2$d में से %1$d कोर इंस्टॉल हैं</string>
+    <plurals name="settings_builtin_cores_updates_badge">
+        <item quantity="one">%d अपडेट</item>
+        <item quantity="other">%d अपडेट</item>
+    </plurals>
+    <string name="settings_builtin_core_options_title">कोर विकल्प</string>
+    <string name="settings_builtin_core_options_subtitle">प्रति-कोर सेटिंग्स और ओवरराइड</string>
+
+    <string name="settings_builtin_two_column_title">टू-कॉलम मेनू</string>
+    <string name="settings_builtin_two_column_subtitle_on">चौड़े डिस्प्ले पर इन-गेम मेनू दो कॉलम में दिखता है</string>
+    <string name="settings_builtin_two_column_subtitle_off">इन-गेम मेनू एक कॉलम में दिखता है</string>
+
+    <string name="settings_builtin_section_hud">स्टेटस बार</string>
+    <string name="settings_builtin_hud_enabled_title">इन-गेम स्टेटस बार</string>
+    <string name="settings_builtin_hud_enabled_subtitle_on">गेम के ऊपर एक छोटा स्टेटस बार दिखाता है</string>
+    <string name="settings_builtin_hud_enabled_subtitle_off">खेलते समय कोई स्टेटस बार नहीं</string>
+    <string name="settings_builtin_hud_corner_title">स्टेटस बार कॉर्नर</string>
+    <string name="settings_builtin_hud_battery_title">बैटरी दिखाएँ</string>
+    <string name="settings_builtin_hud_clock_title">घड़ी दिखाएँ</string>
+    <string name="settings_builtin_hud_playtime_title">सेशन समय दिखाएँ</string>
+    <string name="settings_builtin_hud_playtime_subtitle">यह सेशन शुरू होने के बाद का समय</string>
+    <string name="settings_builtin_hud_fps_title">FPS दिखाएँ</string>
+    <string name="settings_builtin_hud_fps_subtitle">दिखाए गए फ्रेम प्रति सेकंड; फ़ास्ट-फ़ॉरवर्ड के दौरान छिपा रहता है</string>
+    <string name="settings_builtin_hud_last_save_title">आखिरी सेव स्टेट दिखाएँ</string>
+    <string name="settings_builtin_hud_last_save_subtitle">सेव स्टेट को लिखे हुए कितनी देर हुई</string>
+
+    <!-- ===== Built-in emulator: controls ===== -->
+
+    <string name="settings_builtin_controls_section_controllers">कंट्रोलर</string>
+    <string name="settings_builtin_controls_section_sticks">एनालॉग स्टिक</string>
+    <string name="settings_builtin_controls_section_hotkeys">हॉटकी</string>
+    <string name="settings_builtin_controls_section_speedrun">स्पीडरन टाइमर</string>
+    <string name="settings_builtin_controls_section_touch">टच कंट्रोल्स</string>
+
+    <string name="settings_builtin_controls_platform_override">प्लेटफ़ॉर्म ओवरराइड</string>
+    <string name="settings_builtin_controls_platform_default">प्लेटफ़ॉर्म डिफ़ॉल्ट</string>
+    <string name="settings_builtin_controls_percent_value">%1$d%%</string>
+
+    <string name="settings_builtin_controls_rumble_title">रम्बल</string>
+    <string name="settings_builtin_controls_rumble_subtitle">कंट्रोलर वाइब्रेशन फ़ीडबैक चालू करें</string>
+    <string name="settings_builtin_controls_order_title">कंट्रोलर क्रम</string>
+    <string name="settings_builtin_controls_order_subtitle">हर कंट्रोलर पर बटन दबाकर प्लेयर क्रम सेट करें</string>
+    <plurals name="settings_builtin_controls_order_assigned">
+        <item quantity="one">%d कंट्रोलर असाइन किया गया</item>
+        <item quantity="other">%d कंट्रोलर असाइन किए गए</item>
+    </plurals>
+    <string name="settings_builtin_controls_mapping_title">इनपुट मैपिंग</string>
+    <string name="settings_builtin_controls_mapping_subtitle">हर कंट्रोलर के लिए बटन रीमैप करें</string>
+
+    <string name="settings_builtin_controls_analog_as_dpad_title">लेफ़्ट स्टिक को D-Pad बनाएँ</string>
+    <string name="settings_builtin_controls_analog_as_dpad_subtitle">लेफ़्ट एनालॉग स्टिक को D-pad इनपुट से मैप करें</string>
+    <string name="settings_builtin_controls_dpad_as_analog_title">D-Pad को लेफ़्ट स्टिक बनाएँ</string>
+    <string name="settings_builtin_controls_dpad_as_analog_subtitle">D-pad को लेफ़्ट एनालॉग स्टिक इनपुट से मैप करें</string>
+
+    <string name="settings_builtin_controls_hotkeys_title">हॉटकी</string>
+    <string name="settings_builtin_controls_hotkeys_subtitle">मेनू, फ़ास्ट फ़ॉरवर्ड, रिवाइंड के लिए शॉर्टकट कॉन्फ़िगर करें</string>
+    <string name="settings_builtin_controls_limit_hotkeys_title">हॉटकी केवल प्लेयर 1 तक सीमित करें</string>
+    <string name="settings_builtin_controls_limit_hotkeys_subtitle">केवल प्लेयर 1 का कंट्रोलर हॉटकी ट्रिगर कर सकता है</string>
+    <string name="settings_builtin_controls_toggle_ff_title">फ़ास्ट फ़ॉरवर्ड टॉगल करें</string>
+    <string name="settings_builtin_controls_toggle_ff_subtitle">शुरू करने के लिए एक बार, रोकने के लिए फिर से दबाएँ (बंद = फ़ास्ट फ़ॉरवर्ड के लिए दबाए रखें)</string>
+    <string name="settings_builtin_controls_ff_pitch_title">ऑडियो पिच बनाए रखें</string>
+    <string name="settings_builtin_controls_ff_pitch_subtitle">फ़ास्ट फ़ॉरवर्ड के दौरान पिच स्थिर रखें। अतिरिक्त CPU उपयोग करता है; डिफ़ॉल्ट रूप से बंद</string>
+    <string name="settings_builtin_controls_reset_all">सभी को ग्लोबल पर रीसेट करें</string>
+
+    <string name="settings_speedrun_start_on_reset_title">रीसेट पर टाइमर शुरू करें</string>
+    <string name="settings_speedrun_start_on_reset_subtitle">गेम रीसेट करने पर नया टाइम्ड अटेम्प्ट शुरू होता है (बंद = Split हॉटकी से मैन्युअल शुरुआत)</string>
+    <string name="settings_speedrun_panel_side_title">स्प्लिट पैनल बाईं ओर</string>
+    <string name="settings_speedrun_panel_side_subtitle">स्प्लिट पैनल को बाएँ किनारे पर दिखाएँ (बंद = दाएँ)</string>
+    <string name="settings_speedrun_panel_width_title">स्प्लिट पैनल की चौड़ाई</string>
+    <string name="settings_speedrun_panel_width_subtitle">पैनल का टेक्स्ट फ़िट होने के लिए स्केल होता है</string>
+
+    <string name="settings_touch_enabled_title">गेमपैड न होने पर टच कंट्रोल्स दिखाएँ</string>
+    <string name="settings_touch_enabled_subtitle">कोई कंट्रोलर न जुड़े होने पर ऑन-स्क्रीन ओवरले दिखाएँ</string>
+    <string name="settings_touch_current_percent">अभी %1$d%%</string>
+    <string name="settings_touch_opacity_landscape_title">लैंडस्केप ओपैसिटी</string>
+    <string name="settings_touch_opacity_portrait_title">पोर्ट्रेट ओपैसिटी</string>
+    <string name="settings_touch_size_title">बटन का आकार</string>
+    <string name="settings_touch_haptic_title">हैप्टिक फ़ीडबैक</string>
+    <string name="settings_touch_haptic_subtitle">टच पर थोड़ा वाइब्रेट करें</string>
+    <string name="settings_touch_fade_title">निष्क्रियता के बाद फ़ेड करें</string>
+    <string name="settings_touch_fade_subtitle">5s तक कोई इनपुट न मिलने पर कंट्रोल्स धीमे करें</string>
+    <string name="settings_touch_swap_handed_title">लेफ़्ट/राइट इनपुट बदलें</string>
+    <string name="settings_touch_swap_handed_subtitle">लेआउट को क्षैतिज रूप से पलटें</string>
+    <string name="settings_touch_lock_orientation_title">गेम में ओरिएंटेशन लॉक करें</string>
+    <string name="settings_touch_lock_orientation_subtitle">खेलते समय अपने आप न घुमाएँ</string>
+    <string name="settings_touch_mirror_title">180&#176; पलटने पर कंट्रोल्स मिरर करें</string>
+    <string name="settings_touch_mirror_subtitle">फ़ोन पलटने पर कंट्रोल्स को उसी फ़िज़िकल साइड पर रखें</string>
+    <string name="settings_touch_coloured_faces_title">रंगीन PSX फ़ेस बटन</string>
+    <string name="settings_touch_coloured_faces_subtitle">&#9651; &#9633; &#9675; &#10005; को उनके पारंपरिक रंगों में टिंट करें</string>
+    <string name="settings_touch_genesis6_title">Genesis 6-बटन मोड</string>
+    <string name="settings_touch_genesis6_subtitle">Genesis / Mega Drive के लिए सभी छह बटन दिखाएँ</string>
+    <string name="settings_touch_customize_title">लेआउट कस्टमाइज़ करें...</string>
+    <string name="settings_touch_customize_subtitle">प्रति-प्लेटफ़ॉर्म टच कंट्रोल्स को खींचें और आकार बदलें</string>
+
+    <!-- ===== Box art section ===== -->
+
+    <string name="settings_box_art_section_styling">स्टाइलिंग</string>
+    <string name="settings_box_art_section_icon">सिस्टम आइकन</string>
+    <string name="settings_box_art_section_outer">आउटर इफ़ेक्ट</string>
+    <string name="settings_box_art_section_inner">इनर इफ़ेक्ट</string>
+    <string name="settings_box_art_section_gradient">ग्रेडिएंट कलर</string>
+
+    <string name="settings_box_art_shape_title">शेप</string>
+    <string name="settings_box_art_corner_radius_title">कॉर्नर रेडियस</string>
+    <string name="settings_box_art_corner_radius_none">कोई नहीं</string>
+    <string name="settings_box_art_corner_radius_small">छोटा</string>
+    <string name="settings_box_art_corner_radius_medium">मध्यम</string>
+    <string name="settings_box_art_corner_radius_large">बड़ा</string>
+    <string name="settings_box_art_corner_radius_xl">XL</string>
+
+    <string name="settings_box_art_border_thickness_title">बॉर्डर मोटाई</string>
+    <string name="settings_box_art_border_thickness_none">कोई नहीं</string>
+    <string name="settings_box_art_border_thickness_thin">पतला</string>
+    <string name="settings_box_art_border_thickness_medium">मध्यम</string>
+    <string name="settings_box_art_border_thickness_thick">मोटा</string>
+
+    <string name="settings_box_art_border_style_title">बॉर्डर स्टाइल</string>
+    <string name="settings_box_art_border_style_solid">सॉलिड</string>
+    <string name="settings_box_art_border_style_glass">ग्लास</string>
+    <string name="settings_box_art_border_style_gradient">ग्रेडिएंट</string>
+
+    <string name="settings_box_art_glass_tint_title">ग्लास टिंट</string>
+    <string name="settings_box_art_glass_tint_off">बंद</string>
+    <string name="settings_box_art_glass_tint_5">5%</string>
+    <string name="settings_box_art_glass_tint_10">10%</string>
+    <string name="settings_box_art_glass_tint_15">15%</string>
+    <string name="settings_box_art_glass_tint_20">20%</string>
+    <string name="settings_box_art_glass_tint_25">25%</string>
+
+    <string name="settings_box_art_gradient_preset_title">कलर प्रीसेट</string>
+    <string name="settings_box_art_gradient_advanced_title">एडवांस्ड</string>
+
+    <string name="settings_box_art_indicator_style_title">स्टाइल</string>
+    <string name="settings_box_art_indicator_style_off">बंद</string>
+    <string name="settings_box_art_indicator_style_tab">टैब</string>
+    <string name="settings_box_art_indicator_style_spine">स्पाइन</string>
+    <string name="settings_box_art_indicator_content_title">डिस्प्ले</string>
+    <string name="settings_box_art_indicator_content_name">नाम</string>
+    <string name="settings_box_art_indicator_content_icon">आइकन</string>
+    <string name="settings_box_art_indicator_content_both">नाम + आइकन</string>
+
+    <string name="settings_box_art_icon_position_title">कॉर्नर</string>
+    <string name="settings_box_art_icon_position_title_spine">स्पाइन कॉर्नर</string>
+    <string name="settings_box_art_icon_position_title_tab">टैब कॉर्नर</string>
+    <string name="settings_box_art_icon_position_off">बंद</string>
+    <string name="settings_box_art_icon_position_top_left">टॉप-लेफ़्ट</string>
+    <string name="settings_box_art_icon_position_top_right">टॉप-राइट</string>
+    <string name="settings_box_art_icon_position_bottom_left">बॉटम-लेफ़्ट</string>
+    <string name="settings_box_art_icon_position_bottom_right">बॉटम-राइट</string>
+    <string name="settings_box_art_icon_padding_title">पैडिंग</string>
+    <string name="settings_box_art_icon_padding_small">छोटा</string>
+    <string name="settings_box_art_icon_padding_medium">मध्यम</string>
+    <string name="settings_box_art_icon_padding_large">बड़ा</string>
+
+    <string name="settings_box_art_outer_effect_title">इफ़ेक्ट</string>
+    <string name="settings_box_art_outer_effect_off">बंद</string>
+    <string name="settings_box_art_outer_effect_glow">ग्लो</string>
+    <string name="settings_box_art_outer_effect_shadow">शैडो</string>
+    <string name="settings_box_art_outer_effect_shine">शाइन</string>
+    <string name="settings_box_art_outer_thickness_title">मोटाई</string>
+    <string name="settings_box_art_outer_thickness_thin">पतला</string>
+    <string name="settings_box_art_outer_thickness_medium">मध्यम</string>
+    <string name="settings_box_art_outer_thickness_thick">मोटा</string>
+
+    <string name="settings_box_art_glow_strength_title">तीव्रता</string>
+    <string name="settings_box_art_glow_strength_off">बंद</string>
+    <string name="settings_box_art_glow_strength_low">कम</string>
+    <string name="settings_box_art_glow_strength_medium">मध्यम</string>
+    <string name="settings_box_art_glow_strength_high">अधिक</string>
+    <string name="settings_box_art_glow_strength_shadow_small">शैडो S</string>
+    <string name="settings_box_art_glow_strength_shadow_large">शैडो L</string>
+
+    <string name="settings_box_art_glow_color_title">कलर</string>
+    <string name="settings_box_art_glow_color_auto">ऑटो</string>
+    <string name="settings_box_art_glow_color_accent">एक्सेंट</string>
+    <string name="settings_box_art_glow_color_theme_gradient">थीम ग्रेडिएंट</string>
+    <string name="settings_box_art_glow_color_cover">कवर</string>
+
+    <string name="settings_box_art_inner_effect_title">इफ़ेक्ट</string>
+    <string name="settings_box_art_inner_effect_off">बंद</string>
+    <string name="settings_box_art_inner_effect_glow">ग्लो</string>
+    <string name="settings_box_art_inner_effect_shadow">शैडो</string>
+    <string name="settings_box_art_inner_effect_glass">ग्लास</string>
+    <string name="settings_box_art_inner_effect_shine">शाइन</string>
+    <string name="settings_box_art_inner_thickness_title">मोटाई</string>
+    <string name="settings_box_art_inner_thickness_thin">पतला</string>
+    <string name="settings_box_art_inner_thickness_medium">मध्यम</string>
+    <string name="settings_box_art_inner_thickness_thick">मोटा</string>
+
+    <string name="settings_box_art_sample_grid_title">सैंपल ग्रिड</string>
+    <string name="settings_box_art_sample_radius_title">सैंपल रेडियस</string>
+    <string name="settings_box_art_min_saturation_title">न्यूनतम सैचुरेशन</string>
+    <string name="settings_box_art_min_brightness_title">न्यूनतम ब्राइटनेस</string>
+    <string name="settings_box_art_hue_distance_title">ह्यू दूरी</string>
+    <string name="settings_box_art_saturation_boost_title">सैचुरेशन बूस्ट</string>
+    <string name="settings_box_art_brightness_clamp_title">ब्राइटनेस क्लैंप</string>
+    <string name="settings_box_art_gradient_diagnostics">%1$dms | %2$d सैंपल | %3$d परिवार</string>
+
+    <!-- ===== Platforms list ===== -->
+
+    <string name="settings_emulators_section_active">सक्रिय प्लेटफ़ॉर्म</string>
+    <string name="settings_emulators_section_disabled">बंद किए गए प्लेटफ़ॉर्म</string>
+    <string name="settings_emulators_rail_platforms">प्लेटफ़ॉर्म</string>
+
+    <string name="settings_emulators_check_updates_title">अपडेट जाँचें</string>
+    <string name="settings_emulators_check_updates_subtitle">एमुलेटर अपडेट जाँचें</string>
+    <plurals name="settings_emulators_check_updates_available">
+        <item quantity="one">%d अपडेट उपलब्ध</item>
+        <item quantity="other">%d अपडेट उपलब्ध</item>
+    </plurals>
+
+    <string name="settings_emulators_platform_disabled">बंद है</string>
+    <plurals name="settings_emulators_platform_games">
+        <item quantity="one">%d गेम</item>
+        <item quantity="other">%d गेम</item>
+    </plurals>
+    <string name="settings_emulators_platform_no_games">कोई गेम नहीं</string>
+    <string name="settings_emulators_platform_unconfigured">कॉन्फ़िगर नहीं है</string>
+    <string name="settings_emulators_platform_update_badge">अपडेट</string>
+
+    <!-- ===== One platform's settings ===== -->
+
+    <string name="settings_platform_section_emulator">एमुलेटर</string>
+    <string name="settings_platform_section_platform">प्लेटफ़ॉर्म</string>
+    <string name="settings_platform_section_bios">BIOS</string>
+    <string name="settings_platform_section_sync">स्टोरेज और सिंक</string>
+    <string name="settings_platform_section_downloads">डाउनलोड डिफ़ॉल्ट</string>
+
+    <string name="settings_platform_none_selected">कोई प्लेटफ़ॉर्म चुना नहीं गया</string>
+
+    <string name="settings_platform_emulator_change">एमुलेटर बदलें</string>
+    <string name="settings_platform_emulator_select_app">ऐप चुनें</string>
+    <string name="settings_platform_emulator_not_installed">इंस्टॉल नहीं है</string>
+    <string name="settings_platform_emulator_update_available">अपडेट उपलब्ध है</string>
+
+    <string name="settings_platform_core_title">कोर</string>
+    <string name="settings_platform_core_default">डिफ़ॉल्ट</string>
+    <string name="settings_platform_core_netplay_tag">Netplay</string>
+    <string name="settings_platform_extension_title">फ़ाइल एक्सटेंशन</string>
+    <string name="settings_platform_extension_default">डिफ़ॉल्ट</string>
+    <string name="settings_platform_display_target_title">डिस्प्ले टार्गेट</string>
+    <string name="settings_platform_legacy_mode_title">लेगेसी मोड</string>
+    <string name="settings_platform_legacy_mode_subtitle">Drastic के लिए file:// URI उपयोग करें</string>
+    <string name="settings_platform_launch_args_title">लॉन्च आर्ग्स</string>
+    <string name="settings_platform_launch_args_subtitle">Argosy इस एमुलेटर को कैसे लॉन्च करता है, यह कस्टमाइज़ करें</string>
+    <string name="settings_platform_builtin_video_title">बिल्ट-इन A/V और परफ़ॉर्मेंस</string>
+    <string name="settings_platform_builtin_video_subtitle">डिस्प्ले, परफ़ॉर्मेंस और सेविंग ओवरराइड</string>
+    <string name="settings_platform_builtin_controls_title">बिल्ट-इन कंट्रोल्स</string>
+    <string name="settings_platform_builtin_controls_subtitle">रम्बल, स्टिक मैपिंग ओवरराइड</string>
+    <string name="settings_platform_core_options_title">कोर विकल्प</string>
+    <string name="settings_platform_core_options_subtitle">इस प्लेटफ़ॉर्म के लिए प्रति-कोर सेटिंग्स</string>
+
+    <string name="settings_platform_stat_total_games">लाइब्रेरी में गेम</string>
+    <string name="settings_platform_stat_downloaded">डाउनलोड किए गए</string>
+    <string name="settings_platform_stat_favorites">फ़ेवरेट</string>
+    <string name="settings_platform_stat_play_time">खेलने का समय</string>
+    <string name="settings_platform_stat_sync">सिंक</string>
+    <string name="settings_platform_stat_sync_progress">%2$d में से %1$d सिंक हो रहे हैं</string>
+    <string name="settings_platform_stat_sync_busy">सिंक हो रहा है...</string>
+
+    <string name="settings_platform_package_path_title">पैकेज पाथ</string>
+    <string name="settings_platform_package_path_accessible">एक्सेसिबल</string>
+    <string name="settings_platform_package_path_blocked">ब्लॉक्ड</string>
+    <string name="settings_platform_package_path_checking">जाँचा जा रहा है...</string>
+
+    <string name="settings_platform_bios_status_title">स्टेटस</string>
+    <string name="settings_platform_bios_status_all">सभी डाउनलोड हो गईं</string>
+    <string name="settings_platform_bios_status_partial">%2$d में से %1$d डाउनलोड हुईं</string>
+    <string name="settings_platform_bios_status_none">डाउनलोड नहीं हुई</string>
+
+    <string name="settings_platform_clear_art_title">कैश किया गया आर्टवर्क साफ़ करें</string>
+    <string name="settings_platform_clear_art_subtitle">इस प्लेटफ़ॉर्म के डाउनलोड किए गए कवर और स्क्रीनशॉट हटाएँ ताकि वे फिर से लाए जाएँ। आपके खुद चुने गए कवर बने रहते हैं</string>
+    <string name="settings_platform_move_earlier_title">पहले ले जाएँ</string>
+    <string name="settings_platform_move_earlier_subtitle">जहाँ भी प्लेटफ़ॉर्म सूचीबद्ध होते हैं वहाँ इसे पहले दिखाएँ</string>
+    <string name="settings_platform_move_later_title">बाद में ले जाएँ</string>
+    <string name="settings_platform_move_later_subtitle">जहाँ भी प्लेटफ़ॉर्म सूचीबद्ध होते हैं वहाँ इसे आगे दिखाएँ</string>
+    <string name="settings_platform_scan_busy">स्कैन हो रहा है...</string>
+    <string name="settings_platform_scan_files_title">फ़ाइलें स्कैन करें</string>
+    <string name="settings_platform_scan_files_subtitle">नई या गुम ROM फ़ाइलें जाँचें</string>
+    <string name="settings_platform_scan_apps_title">गेम स्कैन करें</string>
+    <string name="settings_platform_scan_apps_subtitle">गेम के रूप में पहचाने जाने वाले इंस्टॉल किए गए ऐप्स जोड़ें</string>
+
+    <string name="settings_platform_path_unconfigured">कॉन्फ़िगर नहीं है</string>
+    <string name="settings_platform_path_custom_tag">(कस्टम)</string>
+    <string name="settings_platform_rom_path_title">ROM पाथ</string>
+    <string name="settings_platform_save_path_title">सेव पाथ</string>
+    <string name="settings_platform_save_path_blocked">एक्सेस ब्लॉक्ड -- कस्टम सेव पाथ सेट करें</string>
+    <string name="settings_platform_state_path_title">स्टेट पाथ</string>
+    <string name="settings_platform_retroarch_config_loaded">%1$s से</string>
+    <string name="settings_platform_retroarch_config_unreadable">%1$s नहीं पढ़ी जा सकी -- वह फ़ोल्डर सेट करें जो RetroArch उपयोग करता है</string>
+    <string name="settings_platform_retroarch_config_missing">कोई RetroArch कॉन्फ़िगरेशन नहीं मिला -- वह फ़ोल्डर सेट करें जो RetroArch उपयोग करता है</string>
+
+    <string name="settings_platform_memcard_title">मेमोरी कार्ड</string>
+    <string name="settings_platform_memcard_override_value">सेव-पाथ ओवरराइड उपयोग हो रहा है</string>
+    <string name="settings_platform_memcard_override_subtitle">मेमोरी कार्ड कस्टम सेव पाथ से पिन किया गया है</string>
+    <string name="settings_platform_memcard_none_value">कोई नहीं मिला</string>
+    <string name="settings_platform_memcard_none_subtitle">कोई फ़ोल्डर मेमोरी कार्ड नहीं मिला -- सेव सिंक चालू करने के लिए %1$s में एक को कन्वर्ट करें</string>
+    <string name="settings_platform_memcard_this_emulator">यह एमुलेटर</string>
+    <string name="settings_platform_memcard_auto_value">ऑटो</string>
+    <string name="settings_platform_memcard_unselected_value">चुना नहीं गया</string>
+    <string name="settings_platform_memcard_unselected_subtitle">कई मेमोरी कार्ड मिले -- सेव सिंक चालू करने के लिए एक चुनें</string>
+
+    <string name="settings_platform_sync_toggle_title">सिंक चालू है</string>
+    <string name="settings_platform_sync_toggle_subtitle">इस प्लेटफ़ॉर्म को लाइब्रेरी सिंक में शामिल करें</string>
+    <string name="settings_platform_combine_content_title">सामग्री मिलाएँ</string>
+    <string name="settings_platform_combine_content_subtitle">सभी गेम एक फ़ोल्डर में, सभी अपडेट और DLC extcontent में</string>
+    <string name="settings_platform_sync_now_title">अभी सिंक करें</string>
+    <string name="settings_platform_sync_now_busy">सिंक चल रही है...</string>
+    <string name="settings_platform_sync_now_subtitle">इस प्लेटफ़ॉर्म को RomM के साथ सिंक करें</string>
+
+    <string name="settings_platform_download_defaults_title">डाउनलोड डिफ़ॉल्ट</string>
+    <string name="settings_platform_download_defaults_subtitle">पहले से चुनी गई फ़ाइल टाइप</string>
+    <plurals name="settings_platform_download_defaults_overrides">
+        <item quantity="one">%d प्लेटफ़ॉर्म ओवरराइड</item>
+        <item quantity="other">%d प्लेटफ़ॉर्म ओवरराइड</item>
+    </plurals>
+    <string name="settings_platform_download_defaults_modal_title">डाउनलोड डिफ़ॉल्ट</string>
+    <string name="settings_platform_download_defaults_modal_subtitle">डाउनलोड करते समय पहले से चुनी जाने वाली फ़ाइल टाइप</string>
+    <string name="settings_platform_download_default_inherited">ग्लोबल से इनहेरिट किया गया</string>
+    <string name="settings_platform_download_default_override">प्लेटफ़ॉर्म ओवरराइड</string>
+    <string name="settings_platform_download_defaults_reset_title">ग्लोबल पर रीसेट करें</string>
+    <string name="settings_platform_download_defaults_reset_subtitle">सभी प्लेटफ़ॉर्म ओवरराइड साफ़ करें</string>
+
+    <string name="settings_platform_remove_files_title">लोकल फ़ाइलें हटाएँ</string>
+    <plurals name="settings_platform_remove_files_subtitle">
+        <item quantity="one">%d डाउनलोड की गई फ़ाइल</item>
+        <item quantity="other">%d डाउनलोड की गई फ़ाइलें</item>
+    </plurals>
+    <string name="settings_platform_remove_confirm_title">लोकल फ़ाइलें हटाएँ</string>
+    <plurals name="settings_platform_remove_confirm_message">
+        <item quantity="one">%2$s के लिए %1$d ROM फ़ाइल हटाएँ? गेम आपकी लाइब्रेरी में बने रहेंगे लेकिन खेलने के लिए फिर से डाउनलोड करने होंगे।</item>
+        <item quantity="other">%2$s के लिए %1$d ROM फ़ाइलें हटाएँ? गेम आपकी लाइब्रेरी में बने रहेंगे लेकिन खेलने के लिए फिर से डाउनलोड करने होंगे।</item>
+    </plurals>
+    <string name="settings_platform_remove_confirm_action">हटाएँ</string>
+
+    <string name="settings_platform_combine_restore_title">गेम फ़ोल्डर बहाल करें</string>
+    <plurals name="settings_platform_combine_restore_message">
+        <item quantity="one">Combine Content बंद है। अपडेट या DLC वाले %d गेम को वापस उनके अपने फ़ोल्डर में ले जाएँ? बाकी सब जहाँ है वहीं रहेगा।</item>
+        <item quantity="other">Combine Content बंद है। अपडेट या DLC वाले %d गेम को वापस उनके अपने फ़ोल्डर में ले जाएँ? बाकी सब जहाँ है वहीं रहेगा।</item>
+    </plurals>
+    <string name="settings_platform_combine_restore_action">मूव करें</string>
+
+    <string name="settings_platform_bios_download_title">सभी डाउनलोड करें</string>
+    <string name="settings_platform_bios_downloading_file">%1$s डाउनलोड हो रही है...</string>
+    <string name="settings_platform_bios_downloading">डाउनलोड हो रहा है...</string>
+    <plurals name="settings_platform_bios_download_missing">
+        <item quantity="one">%d फ़ाइल</item>
+        <item quantity="other">%d फ़ाइलें</item>
+    </plurals>
+    <string name="settings_platform_bios_install_title">एमुलेटर में इंस्टॉल करें</string>
+    <string name="settings_platform_bios_install_subtitle">BIOS को %1$s में कॉपी करें</string>
+    <string name="settings_platform_bios_install_fallback">एमुलेटर</string>
+    <string name="settings_platform_bios_copy_title">यहाँ कॉपी करें...</string>
+    <string name="settings_platform_bios_copy_subtitle">BIOS फ़ाइलें दूसरे फ़ोल्डर में कॉपी करें</string>
+
+    <!-- ===== GameNative folders panel ===== -->
+
+    <string name="settings_gamenative_folders_title">GameNative फ़ोल्डर</string>
+    <string name="settings_gamenative_folders_subtitle">हर स्टोर को उस फ़ोल्डर पर सेट करें जहाँ GameNative अपने इंस्टॉल एक्सपोर्ट करता है। Steam मार्कर केवल ओन किए गए गेम को इंस्टॉल्ड मार्क करते हैं; बाकी स्टोर अपने गेम मिलाने के लिए जोड़ते-हटाते हैं।</string>
+    <string name="settings_gamenative_folders_hint_set">सेट / साफ़</string>
+    <string name="settings_gamenative_folders_hint_select">चुनें</string>
+    <string name="settings_gamenative_folders_hint_back">वापस</string>
+    <string name="settings_gamenative_folders_action_set">सेट करें</string>
+    <string name="settings_gamenative_folders_action_change">बदलें</string>
+    <string name="settings_gamenative_folders_action_clear">साफ़ करें</string>
+
+    <!-- ===== Controller grip panel ===== -->
+
+    <string name="settings_grip_modal_title">कंट्रोलर ग्रिप</string>
+    <string name="settings_grip_modal_subtitle">ग्रिप वाले हिस्से से UI को ऊपर खिसकाएँ</string>
+    <string name="settings_grip_modal_hint_adjust">समायोजित करें</string>
+    <string name="settings_grip_modal_hint_back">वापस</string>
+    <string name="settings_grip_modal_mode_title">मोड</string>
+    <string name="settings_grip_modal_mode_subtitle_off">UI को कभी ऊपर न खिसकाएँ</string>
+    <string name="settings_grip_modal_mode_subtitle_on">पोर्ट्रेट में UI को हमेशा ऊपर खिसकाएँ</string>
+    <string name="settings_grip_modal_mode_subtitle_auto">चुना गया कंट्रोलर जुड़ने पर UI ऊपर खिसकाएँ</string>
+    <string name="settings_grip_modal_controllers_title">कंट्रोलर</string>
+    <string name="settings_grip_modal_reserved_height_title">आरक्षित ऊँचाई</string>
+
+    <!-- ===== Library view section (Settings > Interface > Library) ===== -->
+
+    <string name="settings_library_section_layout">लेआउट</string>
+    <string name="settings_library_section_defaults">डिफ़ॉल्ट</string>
+
+    <string name="settings_library_grid_density_title">ग्रिड डेंसिटी</string>
+    <string name="settings_library_grid_density_compact">कॉम्पैक्ट</string>
+    <string name="settings_library_grid_density_normal">सामान्य</string>
+    <string name="settings_library_grid_density_spacious">स्पेशियस</string>
+
+    <string name="settings_library_default_sort_title">डिफ़ॉल्ट सॉर्ट</string>
+    <string name="settings_library_default_sort_value_ascending">%1$s ^</string>
+    <string name="settings_library_default_sort_value_descending">%1$s v</string>
+
+    <string name="settings_library_installed_first_title">पहले इंस्टॉल किए गए</string>
+    <string name="settings_library_installed_first_subtitle">डाउनलोड किए गए गेम को बाकी से पहले समूहित करें</string>
+    <string name="settings_library_favorites_first_title">पहले फ़ेवरेट</string>
+    <string name="settings_library_favorites_first_subtitle">अपने फ़ेवरेट को बाकी से पहले समूहित करें</string>
+
+    <string name="settings_library_default_platform_title">डिफ़ॉल्ट प्लेटफ़ॉर्म</string>
+    <string name="settings_library_default_source_title">डिफ़ॉल्ट फ़िल्टर</string>
+
+    <!-- ===== Hotkeys modal (Settings > components > HotkeysModal) ===== -->
+
+    <string name="settings_hotkeys_title">हॉटकी</string>
+    <string name="settings_hotkeys_subtitle_default">बटन शॉर्टकट कॉन्फ़िगर करें</string>
+    <string name="settings_hotkeys_subtitle_platform_only">केवल %1$s एडिट हो रहा है</string>
+    <string name="settings_hotkeys_subtitle_all">सभी सिस्टम एडिट हो रहे हैं</string>
+    <string name="settings_hotkeys_hint_record">रिकॉर्ड करें</string>
+    <string name="settings_hotkeys_hint_back">वापस</string>
+    <string name="settings_hotkeys_hint_hold_delay">होल्ड डिले</string>
+    <string name="settings_hotkeys_hint_clear">साफ़ करें</string>
+    <string name="settings_hotkeys_section_system">सिस्टम हॉटकी</string>
+    <string name="settings_hotkeys_section_core">कोर हॉटकी</string>
+    <string name="settings_hotkeys_section_core_named">कोर हॉटकी - %1$s</string>
+    <string name="settings_hotkeys_core_empty">-- कोई सेटिंग उपलब्ध नहीं --</string>
+    <string name="settings_hotkeys_scope_only_for">केवल %1$s के लिए</string>
+    <string name="settings_hotkeys_scope_overrides">शेयर्ड हॉटकी ओवरराइड करता है</string>
+    <string name="settings_hotkeys_scope_using_shared">शेयर्ड हॉटकी उपयोग हो रही हैं</string>
+    <string name="settings_hotkeys_icon_console_desc">इस सिस्टम पर कंसोल द्वारा उपयोग किया जाता है</string>
+    <string name="settings_hotkeys_icon_hold_delay_desc">होल्ड डिले</string>
+    <string name="settings_hotkeys_hold_delay_seconds">%1$ds</string>
+    <string name="settings_hotkeys_combo_inherited">इनहेरिटेड</string>
+    <string name="settings_hotkeys_combo_inherited_suffix">%1$s &#183; इनहेरिटेड</string>
+    <string name="settings_hotkeys_recording_title">हॉटकी रिकॉर्ड हो रही है</string>
+    <string name="settings_hotkeys_hint_cancel">रद्द करें</string>
+    <string name="settings_hotkeys_recording_saved">सेव हो गया!</string>
+    <string name="settings_hotkeys_recording_prompt">1-3 बटन दबाए रखें...</string>
+    <string name="settings_hotkeys_recording_holding">दबाए रखें...</string>
+    <string name="settings_hotkeys_action_in_game_menu">इन-गेम मेनू</string>
+    <string name="settings_hotkeys_action_reset_game">गेम रीसेट करें</string>
+    <string name="settings_hotkeys_action_quick_save">क्विक सेव</string>
+    <string name="settings_hotkeys_action_quick_load">क्विक लोड</string>
+    <string name="settings_hotkeys_action_fast_forward">फ़ास्ट फ़ॉरवर्ड</string>
+    <string name="settings_hotkeys_action_rewind">रिवाइंड</string>
+    <string name="settings_hotkeys_action_quick_suspend">क्विक सस्पेंड</string>
+    <string name="settings_hotkeys_action_cycle_core_option">कोर विकल्प साइकल करें</string>
+    <string name="settings_hotkeys_action_core_input">कोर इनपुट</string>
+    <string name="settings_hotkeys_action_split">स्प्लिट</string>
+    <string name="settings_hotkeys_action_undo_split">स्प्लिट पूर्ववत करें</string>
+    <string name="settings_hotkeys_action_skip_split">स्प्लिट छोड़ें</string>
+    <string name="settings_hotkeys_action_toggle_timer">टाइमर शुरू/रोकें</string>
+    <string name="settings_hotkeys_action_reset_timer">टाइमर रीसेट करें</string>
+
+    <!-- ===== Input mapping modal (Settings > components > InputMappingModal) ===== -->
+
+    <string name="settings_input_mapping_title">इनपुट मैपिंग</string>
+    <string name="settings_input_mapping_subtitle">कॉन्फ़िगर करने के लिए कंट्रोलर चुनें</string>
+    <string name="settings_input_mapping_controller_select_hint">चुनें</string>
+    <string name="settings_input_mapping_controller_back_hint">वापस</string>
+    <string name="settings_input_mapping_empty">कोई कंट्रोलर जुड़ा नहीं है</string>
+    <string name="settings_input_mapping_unknown_layout">अज्ञात लेआउट</string>
+    <string name="settings_input_mapping_platform_remap_hint">रीमैप करें</string>
+    <string name="settings_input_mapping_platform_add_hint">जोड़ें</string>
+    <string name="settings_input_mapping_platform_clear_hint">साफ़ करें</string>
+    <string name="settings_input_mapping_platform_back_hint">वापस</string>
+    <string name="settings_input_mapping_prev_platform_desc">पिछला प्लेटफ़ॉर्म</string>
+    <string name="settings_input_mapping_next_platform_desc">अगला प्लेटफ़ॉर्म</string>
+    <string name="settings_input_mapping_platform_label">प्लेटफ़ॉर्म: %1$s</string>
+    <string name="settings_input_mapping_not_bound">बाइंड नहीं है</string>
+    <string name="settings_input_mapping_recording_back_hint">रद्द करने के लिए दबाए रखें</string>
+    <string name="settings_input_mapping_recording_title">एक बटन दबाएँ</string>
+    <string name="settings_input_mapping_recording_subtitle">%1$s के लिए इनपुट रिकॉर्ड हो रहा है</string>
+    <string name="settings_input_mapping_recording_cancelling">रद्द हो रहा है...</string>
+    <string name="settings_input_mapping_recording_waiting">इनपुट की प्रतीक्षा हो रही है...</string>
+
+    <!-- ===== Launch args modal (Settings > components > LaunchArgsModal) ===== -->
+
+    <string name="settings_launch_args_title">लॉन्च आर्ग्स - %1$s / %2$s</string>
+    <string name="settings_launch_args_hint_change">बदलें</string>
+    <string name="settings_launch_args_hint_reset_field">फ़ील्ड रीसेट करें</string>
+    <string name="settings_launch_args_hint_reset_all">सभी रीसेट करें</string>
+    <string name="settings_launch_args_hint_back">वापस</string>
+    <string name="settings_launch_args_intro">इस प्लेटफ़ॉर्म पर Argosy इस एमुलेटर को कैसे लॉन्च करता है, यह ओवरराइड करें। Resume-mode फ़्लैग ओवरराइड के बावजूद तय ही रहते हैं।</string>
+    <string name="settings_launch_args_data_uri_label">Data URI</string>
+    <string name="settings_launch_args_data_uri_subtitle">Intent.data सेट करता है (शेल में `-d`)। ACTION_VIEW एमुलेटर द्वारा उपयोग होता है जो इंटेंट के data URI से ROM पढ़ते हैं।</string>
+    <string name="settings_launch_args_extras_label">Extras</string>
+    <string name="settings_launch_args_extras_subtitle">हर पाथ-टाइप एक्स्ट्रा (जैसे bootPath, ROM, AutoStartFile) को इस फ़ॉर्मैट में फिर से लिखता है। `None` इन्हें हटा देता है।</string>
+    <string name="settings_launch_args_clip_data_uri_label">ClipData URI</string>
+    <string name="settings_launch_args_clip_data_uri_subtitle">ROM URI को Intent.clipData से जोड़ता है। FLAG_GRANT_READ_URI_PERMISSION को वाकई रिसीवर तक एक्सेस पहुँचाने के लिए आवश्यक।</string>
+    <string name="settings_launch_args_locked_binding_subtitle">इस एमुलेटर के लिए तय है -- फ़ाइल पाथ नहीं है।</string>
+    <string name="settings_launch_args_flag_on">चालू</string>
+    <string name="settings_launch_args_flag_off">बंद</string>
+    <string name="settings_launch_args_mime_type_label">MIME टाइप</string>
+    <string name="settings_launch_args_mime_type_default">डिफ़ॉल्ट (%1$s)</string>
+    <string name="settings_launch_args_mime_type_subtitle">ROM URI के साथ भेजा गया MIME टाइप। ज़्यादातर एमुलेटर इसे नज़रअंदाज़ कर एक्सटेंशन से फ़िल्टर करते हैं।</string>
+    <string name="settings_launch_args_custom_extras_label">कस्टम extras</string>
+    <string name="settings_launch_args_custom_extras_none">कुछ नहीं</string>
+    <string name="settings_launch_args_custom_extras_subtitle">लॉन्च पर जोड़े गए एक्स्ट्रा इंटेंट वैल्यू। फ़ॉर्मैट: स्ट्रिंग के लिए `-e KEY VALUE`, बूलियन के लिए `--ez KEY true`। स्पेस से अलग करें।</string>
+    <string name="settings_launch_args_custom_extras_title">कस्टम Extras</string>
+    <string name="settings_launch_args_custom_extras_save_hint">सेव करें</string>
+    <string name="settings_launch_args_custom_extras_cancel_hint">रद्द करें</string>
+    <string name="settings_launch_args_custom_extras_help">एक्स्ट्रा इंटेंट वैल्यू, स्पेस से अलग की गई। स्ट्रिंग के लिए `-e KEY VALUE` या बूलियन के लिए `--ez KEY true` उपयोग करें।</string>
+    <string name="settings_launch_args_custom_extras_placeholder">-e KEY value</string>
+    <string name="settings_launch_args_custom_badge">(कस्टम)</string>
+    <string name="settings_launch_args_binding_default">डिफ़ॉल्ट (%1$s)</string>
+    <string name="settings_launch_args_binding_none">कुछ नहीं</string>
+    <string name="settings_launch_args_binding_absolute_path">एब्सोल्यूट पाथ</string>
+    <string name="settings_launch_args_binding_file_provider">FileProvider URI</string>
+    <string name="settings_launch_args_binding_document_uri">डॉक्यूमेंट URI (SAF)</string>
+    <string name="settings_launch_args_flag_new_task_subtitle">एक अलग Android टास्क में लॉन्च होता है। लगभग हर एमुलेटर के लिए आवश्यक।</string>
+    <string name="settings_launch_args_flag_clear_task_subtitle">लॉन्च करने से पहले एमुलेटर का कोई भी मौजूदा इंस्टेंस साफ़ करता है।</string>
+    <string name="settings_launch_args_flag_no_history_subtitle">एमुलेटर को हाल के ऐप्स की सूची से छुपाता है।</string>
+    <string name="settings_launch_args_flag_single_top_subtitle">अगर पहले से चल रहा एमुलेटर इंस्टेंस अपने टास्क में सबसे ऊपर है तो उसी का उपयोग करता है।</string>
+    <string name="settings_launch_args_flag_grant_uri_subtitle">ROM URI तक पढ़ने की एक्सेस देता है। content:// URI भेजते समय आवश्यक।</string>
+    <string name="settings_launch_args_flag_clear_top_subtitle">टास्क फिर से उपयोग करते समय टार्गेट के ऊपर की एक्टिविटी साफ़ करता है।</string>
+
+    <!-- ===== Sync filters modal (Settings > components > SyncFiltersModal) ===== -->
+
+    <string name="settings_sync_filters_title">सिंक फ़िल्टर</string>
+    <string name="settings_sync_filters_subtitle">लाइब्रेरी सिंक के दौरान कौन-से गेम शामिल करने हैं, कॉन्फ़िगर करें</string>
+    <string name="settings_sync_filters_regions_none">कुछ चुना नहीं गया</string>
+    <string name="settings_sync_filters_regions_title">क्षेत्र</string>
+    <string name="settings_sync_filters_region_mode_title">क्षेत्र मोड</string>
+    <string name="settings_sync_filters_exclude_beta_title">बीटा छोड़ें</string>
+    <string name="settings_sync_filters_exclude_prototype_title">प्रोटोटाइप छोड़ें</string>
+    <string name="settings_sync_filters_exclude_demo_title">डेमो छोड़ें</string>
+    <string name="settings_sync_filters_exclude_hack_title">ROM हैक छोड़ें</string>
+    <string name="settings_sync_filters_remove_orphans_title">अनाथ एंट्री हटाएँ</string>
+    <string name="settings_sync_filters_remove_orphans_subtitle">सर्वर पर अब न मौजूद गेम हटाएँ</string>
+    <string name="settings_sync_filters_hint_navigate">नेविगेट करें</string>
+    <string name="settings_sync_filters_hint_toggle">टॉगल करें</string>
+    <string name="settings_sync_filters_hint_close">बंद करें</string>
+    <string name="settings_sync_filters_region_mode_include">चुने गए शामिल करें</string>
+    <string name="settings_sync_filters_region_mode_exclude">चुने गए छोड़ें</string>
+
+    <!-- ===== Platform filters modal (Settings > components > PlatformFiltersModal) ===== -->
+
+    <string name="settings_platform_filters_title">प्लेटफ़ॉर्म फ़िल्टर</string>
+    <string name="settings_platform_filters_subtitle">लाइब्रेरी सिंक के दौरान कौन-से प्लेटफ़ॉर्म शामिल करने हैं, चुनें</string>
+    <string name="settings_platform_filters_loading">प्लेटफ़ॉर्म प्राप्त हो रहे हैं...</string>
+    <string name="settings_platform_filters_empty">कोई प्लेटफ़ॉर्म उपलब्ध नहीं</string>
+    <string name="settings_platform_filters_no_games">कोई गेम नहीं</string>
+    <plurals name="settings_platform_filters_rom_count">
+        <item quantity="one">%1$d गेम</item>
+        <item quantity="other">%1$d गेम</item>
+    </plurals>
+
+    <!-- ===== RomM config form (Settings > components > RomMConfigForm) ===== -->
+
+    <string name="settings_romm_config_server_url_label">सर्वर URL</string>
+    <string name="settings_romm_config_server_url_placeholder">https://romm.example.com</string>
+    <string name="settings_romm_config_auth_method_title">ऑथ तरीका</string>
+    <string name="settings_romm_config_auth_method_device">डिवाइस पेयरिंग</string>
+    <string name="settings_romm_config_auth_method_pairing_code">पेयरिंग कोड</string>
+    <string name="settings_romm_config_device_instructions">अपने फ़ोन से QR कोड स्कैन करके इस डिवाइस को पेयर करें, फिर इसे RomM में मंज़ूर करें। RomM 5.0 या नया वर्शन आवश्यक है।</string>
+    <string name="settings_romm_config_pairing_code_instructions">RomM वेब UI में एक API टोकन बनाएँ, फिर कोड पाने के लिए Pair Device पर क्लिक करें।</string>
+    <string name="settings_romm_config_connect_generating_title">कोड बन रहा है...</string>
+    <string name="settings_romm_config_connect_connecting_title">कनेक्ट हो रहा है...</string>
+    <string name="settings_romm_config_connect_pair_title">डिवाइस पेयर करें</string>
+    <string name="settings_romm_config_connect_title">कनेक्ट करें</string>
+    <string name="settings_romm_config_connect_device_subtitle">पेयरिंग QR कोड बनाएँ</string>
+    <string name="settings_romm_config_connect_subtitle">RomM सर्वर से कनेक्ट करें</string>
+    <string name="settings_romm_config_scan_title">QR कोड स्कैन करें</string>
+    <string name="settings_romm_config_scan_subtitle">RomM वेब UI से पेयरिंग QR स्कैन करें</string>
+    <string name="settings_romm_config_cancel_title">रद्द करें</string>
+    <string name="settings_romm_config_cancel_subtitle">सर्वर सेटिंग्स पर वापस जाएँ</string>
+    <string name="settings_romm_device_pairing_title">पेयर करने के लिए स्कैन करें</string>
+    <string name="settings_romm_device_pairing_subtitle">अपने फ़ोन से यह कोड स्कैन करें, फिर इस डिवाइस को RomM में मंज़ूर करें।</string>
+    <string name="settings_romm_device_pairing_cancel_title">रद्द करें</string>
+    <string name="settings_romm_device_pairing_cancel_subtitle">पेयरिंग रोकें</string>
+
+    <!-- ===== Jellyfin config form (Settings > components > JellyfinConfigForm) ===== -->
+
+    <string name="settings_jellyfin_config_server_address_label">सर्वर एड्रेस</string>
+    <string name="settings_jellyfin_config_server_address_placeholder">https://jellyfin.example.com</string>
+    <string name="settings_jellyfin_config_save_title">सेव करें</string>
+    <string name="settings_jellyfin_config_save_subtitle">अपनी मीडिया लाइब्रेरी के लिए यह एड्रेस उपयोग करें</string>
+    <string name="settings_jellyfin_config_cancel_title">रद्द करें</string>
+    <string name="settings_jellyfin_config_cancel_subtitle">Jellyfin सेटिंग्स पर वापस जाएँ</string>
+
+    <!-- ===== Jellyfin sign-in form (Settings > components > JellyfinSignInForm) ===== -->
+
+    <string name="settings_jellyfin_signin_username_label">यूज़रनेम</string>
+    <string name="settings_jellyfin_signin_password_label">पासवर्ड</string>
+    <string name="settings_jellyfin_signin_submitting_title">साइन इन हो रहा है...</string>
+    <string name="settings_jellyfin_signin_submit_title">साइन इन करें</string>
+    <string name="settings_jellyfin_signin_submit_subtitle">अपनी मीडिया लाइब्रेरी के लिए यह अकाउंट उपयोग करें</string>
+    <string name="settings_jellyfin_signin_cancel_title">रद्द करें</string>
+    <string name="settings_jellyfin_signin_cancel_subtitle">Jellyfin सेटिंग्स पर वापस जाएँ</string>
+
+    <!-- ===== Emulator picker popup (Settings > components > EmulatorPickerPopup) ===== -->
+
+    <string name="settings_emulator_picker_title">एमुलेटर चुनें</string>
+    <string name="settings_emulator_picker_auto_name">ऑटो</string>
+    <string name="settings_emulator_picker_auto_subtitle">सुझाया गया एमुलेटर उपयोग करें</string>
+    <string name="settings_emulator_picker_installed_downloading_progress">डाउनलोड हो रहा है %1$d%%</string>
+    <string name="settings_emulator_picker_installed_installing">इंस्टॉल हो रहा है...</string>
+    <string name="settings_emulator_picker_installed_download_error">डाउनलोड त्रुटि</string>
+    <string name="settings_emulator_picker_version_unknown">?</string>
+    <string name="settings_emulator_picker_version_update_arrow">%1$s -&gt; %2$s</string>
+    <string name="settings_emulator_picker_installed_label">इंस्टॉल्ड</string>
+    <string name="settings_emulator_picker_download_header">डाउनलोड के लिए उपलब्ध</string>
+    <string name="settings_emulator_picker_downloadable_downloading_progress">डाउनलोड हो रहा है %1$d%%</string>
+    <string name="settings_emulator_picker_downloadable_installing">इंस्टॉल हो रहा है...</string>
+    <string name="settings_emulator_picker_downloadable_download_error">डाउनलोड त्रुटि</string>
+    <string name="settings_emulator_picker_other_app_name">अन्य ऐप...</string>
+    <string name="settings_emulator_picker_other_app_subtitle">किसी भी इंस्टॉल किए गए ऐप से लॉन्च करें</string>
+    <string name="settings_emulator_picker_hint_navigate">नेविगेट करें</string>
+    <string name="settings_emulator_picker_hint_select">चुनें</string>
+    <string name="settings_emulator_picker_hint_close">बंद करें</string>
+    <string name="settings_emulator_picker_update_available_desc">अपडेट उपलब्ध है</string>
+
+    <!-- ===== Variant picker modal (Settings > components > VariantPickerModal) ===== -->
+
+    <string name="settings_variant_picker_title">वर्शन चुनें</string>
+    <string name="settings_variant_picker_hint_navigate">नेविगेट करें</string>
+    <string name="settings_variant_picker_hint_select">चुनें</string>
+    <string name="settings_variant_picker_hint_cancel">रद्द करें</string>
+
+    <!-- ===== Emulator update modal (Settings > components > EmulatorUpdateModal) ===== -->
+
+    <string name="settings_emulator_update_title">%1$s अपडेट करें</string>
+    <string name="settings_emulator_update_checking">अपडेट जाँचे जा रहे हैं...</string>
+    <string name="settings_emulator_update_select_version">वर्शन चुनें</string>
+    <string name="settings_emulator_update_downloading">डाउनलोड हो रहा है... %1$d%%</string>
+    <string name="settings_emulator_update_installing">इंस्टॉल हो रहा है...</string>
+    <string name="settings_emulator_update_installed">अपडेट सफलतापूर्वक इंस्टॉल हुआ</string>
+    <string name="settings_emulator_update_failed">अपडेट विफल: %1$s</string>
+
+    <!-- ===== Region picker popup (Settings > components > RegionPickerPopup) ===== -->
+
+    <string name="settings_region_picker_title">क्षेत्र चुनें</string>
+    <string name="settings_region_picker_subtitle_ordering">सिंक करने के लिए क्षेत्र टॉगल करें। प्राथमिकता सेट करने के लिए दबाकर खींचें; एक से ज़्यादा वर्शन होने पर सबसे ऊपर वाला मैच जीतता है</string>
+    <string name="settings_region_picker_subtitle_toggle">सिंक में शामिल/छोड़ने के लिए क्षेत्र टॉगल करें</string>
+    <string name="settings_region_picker_hint_move">मूव करें</string>
+    <string name="settings_region_picker_hint_accept">स्वीकार करें</string>
+    <string name="settings_region_picker_hint_cancel">रद्द करें</string>
+    <string name="settings_region_picker_hint_navigate">नेविगेट करें</string>
+    <string name="settings_region_picker_hint_toggle">टॉगल करें</string>
+    <string name="settings_region_picker_hint_prioritize">प्राथमिकता दें</string>
+    <string name="settings_region_picker_hint_close">बंद करें</string>
+
+    <!-- ===== Driver version picker modal (Settings > components > DriverVersionPickerModal) ===== -->
+
+    <string name="settings_driver_picker_title">वर्शन चुनें</string>
+    <string name="settings_driver_picker_empty">कोई रिलीज़ उपलब्ध नहीं</string>
+    <string name="settings_driver_picker_hint_hide">छुपाएँ</string>
+    <string name="settings_driver_picker_hint_close">बंद करें</string>
+    <string name="settings_driver_picker_hint_navigate">नेविगेट करें</string>
+    <string name="settings_driver_picker_hint_download">डाउनलोड करें</string>
+    <string name="settings_driver_picker_hint_cancel">रद्द करें</string>
+    <string name="settings_driver_picker_downloaded_desc">डाउनलोड हो गया</string>
+    <string name="settings_driver_picker_latest_badge">नवीनतम</string>
+    <string name="settings_driver_picker_prerelease_badge">प्री</string>
+    <string name="settings_driver_picker_no_asset">कोई डाउनलोड करने योग्य फ़ाइल नहीं</string>
+    <plurals name="settings_driver_picker_assets_count">
+        <item quantity="one">%1$s &#183; %2$d फ़ाइल</item>
+        <item quantity="other">%1$s &#183; %2$d फ़ाइलें</item>
+    </plurals>
+    <string name="settings_driver_picker_saved_to_header">यहाँ सेव हुआ</string>
+    <string name="settings_driver_picker_download_progress">%1$s / %2$s</string>
+
+    <!-- ===== Shader picker modal (Settings > components > ShaderPickerModal) ===== -->
+
+    <string name="settings_shader_picker_title">शेडर जोड़ें</string>
+    <string name="settings_shader_picker_hint_section">सेक्शन</string>
+    <string name="settings_shader_picker_hint_add">जोड़ें</string>
+    <string name="settings_shader_picker_hint_cancel">रद्द करें</string>
+    <string name="settings_shader_picker_custom_badge">कस्टम</string>
+    <string name="settings_shader_picker_download_badge">डाउनलोड करें</string>
+
+    <!-- ===== Sound picker popup (Settings > components > SoundPickerPopup) ===== -->
+
+    <string name="settings_sound_picker_hint_select">चुनें</string>
+    <string name="settings_sound_picker_hint_close">बंद करें</string>
+
+    <!-- ===== App picker modal (Settings > components > AppPickerModal) ===== -->
+
+    <string name="settings_app_picker_title">ऐप चुनें - %1$s</string>
+    <string name="settings_app_picker_intro">इस प्लेटफ़ॉर्म के लिए Argosy को कोई ज्ञात एमुलेटर इंस्टॉल्ड नहीं मिला। गेम लॉन्च करने के लिए कोई भी ऐप चुनें; बाद में Launch Args से इसे कस्टमाइज़ कर सकते हैं।</string>
+    <string name="settings_app_picker_empty">लॉन्च करने योग्य कोई ऐप नहीं मिला।</string>
+
+    <!-- ===== Controller order modal (Settings > components > ControllerOrderModal) ===== -->
+
+    <string name="settings_controller_order_title">कंट्रोलर क्रम</string>
+    <string name="settings_controller_order_subtitle">कंट्रोलर असाइन करने के लिए कोई भी बटन दबाएँ</string>
+    <string name="settings_controller_order_hint_confirm">पुष्टि करें</string>
+    <string name="settings_controller_order_hint_unregister_back">अनरजिस्टर/वापस</string>
+    <string name="settings_controller_order_default_name">कंट्रोलर</string>
+    <string name="settings_controller_order_slot_label">P%1$d</string>
+    <string name="settings_controller_order_slot_pressing">दबाएँ...</string>
+    <string name="settings_controller_order_slot_empty">खाली</string>
+
+    <!-- ===== Grip controller modal (Settings > components > GripControllerModal) ===== -->
+
+    <string name="settings_grip_controller_default_name">कंट्रोलर</string>
+    <string name="settings_grip_controller_title">कंट्रोलर ग्रिप</string>
+    <string name="settings_grip_controller_subtitle_capturing">कंट्रोलर ग्रिप पर कोई भी बटन दबाएँ</string>
+    <string name="settings_grip_controller_subtitle_list">इनमें से कोई भी कंट्रोलर जुड़ने पर UI अपने आप ऊपर खिसक जाता है</string>
+    <string name="settings_grip_controller_hint_cancel">रद्द करें</string>
+    <string name="settings_grip_controller_hint_add">जोड़ें</string>
+    <string name="settings_grip_controller_hint_back">वापस</string>
+    <string name="settings_grip_controller_hint_remove">हटाएँ</string>
+    <string name="settings_grip_controller_listening_title">सुन रहे हैं&#8230;</string>
+    <string name="settings_grip_controller_listening_subtitle">जिस कंट्रोलर को चाहिए उस पर बटन दबाएँ</string>
+    <string name="settings_grip_controller_add_new_label">नया जोड़ें</string>
+
+    <!-- ===== Hard reset modal (Settings > components > HardResetModal) ===== -->
+
+    <string name="settings_hard_reset_title">हार्ड रीसेट</string>
+    <string name="settings_hard_reset_subtitle">यह पूर्ववत नहीं किया जा सकता</string>
+    <plurals name="settings_hard_reset_games_summary">
+        <item quantity="one">%1$d डाउनलोड किया गया गेम - डिस्क पर %2$s</item>
+        <item quantity="other">%1$d डाउनलोड किए गए गेम - डिस्क पर %2$s</item>
+    </plurals>
+    <string name="settings_hard_reset_deletes_header">हटाता है</string>
+    <string name="settings_hard_reset_deletes_files">डिस्क पर मौजूद सभी डाउनलोड किए गए गेम फ़ाइलें</string>
+    <string name="settings_hard_reset_deletes_database">पूरा लाइब्रेरी डेटाबेस - खेलने का समय, कलेक्शन, डाउनलोड हिस्ट्री, प्रति-गेम सेटिंग्स</string>
+    <string name="settings_hard_reset_deletes_caches">हर कैश - इमेज, सेव और स्टेट, एक्सट्रैक्ट किए गए ROM, साउंड इफ़ेक्ट, एमुलेटर इंस्टॉलर, Steam स्टेजिंग, प्रेज़ेंस कवर</string>
+    <string name="settings_hard_reset_keeps_header">बनाए रखता है</string>
+    <string name="settings_hard_reset_keeps_sign_ins">सेटिंग्स और साइन-इन - RomM और Steam जुड़े रहते हैं</string>
+    <string name="settings_hard_reset_keeps_synced_saves">सर्वर पर पहले से सिंक हो चुके सेव</string>
+    <string name="settings_hard_reset_keeps_emulator_apps">एमुलेटर ऐप्स और उनका अपना सेव डेटा</string>
+    <string name="settings_hard_reset_keeps_music">आपका संगीत फ़ोल्डर</string>
+    <plurals name="settings_hard_reset_pending_uploads">
+        <item quantity="one">%1$d सेव अपलोड होने के लिए प्रतीक्षारत</item>
+        <item quantity="other">%1$d सेव अपलोड होने के लिए प्रतीक्षारत</item>
+    </plurals>
+    <string name="settings_hard_reset_sync_first_connected">पहले इन्हें सिंक करें - अभी रीसेट करने से ये हमेशा के लिए मिट जाएँगे।</string>
+    <string name="settings_hard_reset_sync_first_disconnected">पहले सर्वर से फिर जुड़ें और इन्हें सिंक करें - अभी रीसेट करने से ये हमेशा के लिए मिट जाएँगे।</string>
+    <string name="settings_hard_reset_in_progress">रीसेट हो रहा है...</string>
+    <string name="settings_hard_reset_cancel_button">रद्द करें</string>
+    <string name="settings_hard_reset_sync_now_button">अभी सिंक करें</string>
+    <string name="settings_hard_reset_hold_button">रीसेट के लिए दबाए रखें</string>
+
+    <!-- ===== Platform settings modal (Settings > components > PlatformSettingsModal) ===== -->
+
+    <string name="settings_platform_modal_sync_label">सर्वर के साथ सिंक करें</string>
+    <string name="settings_platform_modal_rom_path_label">ROM पाथ</string>
+    <string name="settings_platform_modal_save_path_label">सेव पाथ</string>
+    <string name="settings_platform_modal_state_path_label">स्टेट पाथ</string>
+    <string name="settings_platform_modal_resync_label">प्लेटफ़ॉर्म फिर से सिंक करें</string>
+    <string name="settings_platform_modal_purge_label">सारा डेटा पर्ज करें</string>
+
+    <!-- ===== Path config item (shared row inside PlatformSettingsModal and the per-game
+         settings modal) ===== -->
+
+    <string name="settings_path_config_coming_soon">(जल्द आ रहा है)</string>
+    <string name="settings_path_config_reset_button">रीसेट करें</string>
+    <string name="settings_path_config_change_button">बदलें</string>
+    <string name="settings_path_config_auto_label">(ऑटो)</string>
+
+    <!-- ===== Release changelog modal (Settings > components > ReleaseChangelogModal) ===== -->
+
+    <string name="settings_changelog_loading">रिलीज़ लोड हो रही हैं...</string>
+    <string name="settings_changelog_empty">कोई रिलीज़ नहीं मिली</string>
+    <string name="settings_changelog_beta_badge">बीटा</string>
+    <string name="settings_changelog_load_more_loading">लोड हो रहा है...</string>
+    <string name="settings_changelog_load_more_label">और लोड करें</string>
+
+    <!-- ===== Save path modal (Settings > components > SavePathModal) ===== -->
+
+    <string name="settings_save_path_modal_title">%1$s - %2$s</string>
+    <string name="settings_save_path_modal_intro">जब Argosy सिंक करने के लिए सेव नहीं ढूँढ पाता तो कस्टम पाथ सेव पहचान ठीक करने में मदद करते हैं। इससे आपका एमुलेटर सेव कहाँ स्टोर करता है, यह नहीं बदलता।</string>
+    <string name="settings_save_path_modal_save_path_label">सेव पाथ</string>
+    <string name="settings_save_path_modal_note_missing">यह फ़ोल्डर अभी डिवाइस पर नहीं है। जब तक यह नहीं होगा, सेव नहीं मिलेंगे।</string>
+    <string name="settings_save_path_modal_note_moved">%1$s वाकई जहाँ सेव रखता है वहाँ ले जाया गया, आपके चुने गए फ़ोल्डर के नीचे।</string>
+    <string name="settings_save_path_modal_note_shape">हर गेम का सेव इस फ़ोल्डर के नीचे %1$s में रहता है।</string>
+    <string name="settings_save_path_modal_beside_rom_title">ROM के बगल में सेव करें</string>
+    <string name="settings_save_path_modal_beside_rom_subtitle_builtin">हर गेम के अपने फ़ोल्डर में सेव स्टोर करें।</string>
+    <string name="settings_save_path_modal_beside_rom_subtitle_external">हर गेम के अपने फ़ोल्डर में सेव ढूँढें। अपने एमुलेटर को भी ROM के बगल में सेव करने के लिए सेट करें।</string>
+    <string name="settings_save_path_modal_state_path_label">स्टेट पाथ</string>
+
+    <!-- ===== Save path option item (shared row inside SavePathModal) ===== -->
+
+    <string name="settings_save_path_option_custom_badge">(कस्टम)</string>
+    <string name="settings_save_path_option_coming_soon">(जल्द आ रहा है)</string>
+    <string name="settings_save_path_option_reset_button">रीसेट करें</string>
+    <string name="settings_save_path_option_change_button">बदलें</string>
+    <string name="settings_save_path_option_not_configured">कॉन्फ़िगर नहीं है</string>
+
+    <!-- ===== Steam launcher preference row (Settings > components > SteamLauncherPreference) ===== -->
+
+    <string name="settings_steam_launcher_pref_add_button">जोड़ें</string>
+
+    <!-- ===== Accounts settings delegate (Settings > delegates > AccountsSettingsDelegate) ===== -->
+
+    <string name="settings_accounts_delegate_fallback_username">RomM यूज़र %1$d</string>
+    <string name="settings_accounts_delegate_notice_no_server">पहले RomM के तहत किसी RomM सर्वर में साइन इन करें।</string>
+    <string name="settings_accounts_delegate_progress_preparing">तैयारी हो रही है</string>
+    <string name="settings_accounts_delegate_progress_resuming">फिर से शुरू हो रहा है</string>
+    <string name="settings_accounts_delegate_progress_archiving">%2$d में से %1$d सेव आर्काइव हो रहे हैं</string>
+    <string name="settings_accounts_delegate_progress_swapping">अकाउंट बदले जा रहे हैं</string>
+    <string name="settings_accounts_delegate_progress_restoring">%2$d में से %1$d सेव बहाल हो रहे हैं</string>
+    <string name="settings_accounts_delegate_progress_finishing">पूरा हो रहा है</string>
+    <string name="settings_accounts_delegate_pairing_error_no_server">इस डिवाइस पर अभी कोई सर्वर कॉन्फ़िगर नहीं है।</string>
+    <string name="settings_accounts_delegate_notice_added">%1$s जोड़ा गया। अभी भी पहले जैसे साइन इन हैं; इसका उपयोग शुरू करने के लिए स्विच करें।</string>
+    <string name="settings_accounts_delegate_fallback_account_label">यह अकाउंट</string>
+    <string name="settings_accounts_delegate_notice_signed_in">%1$s के रूप में साइन इन हुए।</string>
+    <string name="settings_accounts_delegate_notice_account_added">अकाउंट जोड़ा गया।</string>
+    <string name="settings_accounts_delegate_pairing_denied">सर्वर पर पेयरिंग अस्वीकार कर दी गई</string>
+    <string name="settings_accounts_delegate_pairing_expired">पेयरिंग कोड एक्सपायर हो गया, फिर से शुरू करें</string>
+    <string name="settings_accounts_delegate_removal_unknown_account">वह अकाउंट अब इस डिवाइस पर नहीं है।</string>
+    <string name="settings_accounts_delegate_removal_switch_in_progress">एक अकाउंट स्विच अभी भी चल रहा है। इसे पूरा होने दें, फिर फिर से कोशिश करें।</string>
+    <string name="settings_accounts_delegate_removal_refused_prefix">लंबित काम रखा गया, इसलिए अकाउंट नहीं हटाया गया। %1$s</string>
+    <string name="settings_accounts_delegate_removal_refused_fallback">कुछ भी बाकी नहीं है।</string>
+    <string name="settings_accounts_delegate_removal_removed">अकाउंट हटा दिया गया।</string>
+    <string name="settings_accounts_delegate_removal_archived">साफ़ करने से पहले %1$d सेव आर्काइव किए गए।</string>
+    <string name="settings_accounts_delegate_removal_aborted">आर्काइव करते समय %1$d सेव बदल गए और डिस्क पर छोड़ दिए गए।</string>
+    <string name="settings_accounts_delegate_removal_registered_note">डिवाइस अभी भी RomM सर्वर पर रजिस्टर्ड है; उसे वहाँ रद्द करें।</string>
+    <string name="settings_accounts_delegate_completion_switched">अकाउंट स्विच हो गया।</string>
+    <string name="settings_accounts_delegate_completion_aborted">आर्काइव के बीच में %1$d फ़ाइलें बदल गईं और जैसी थीं वैसी ही छोड़ दी गईं।</string>
+    <string name="settings_accounts_delegate_completion_needs_sync">%1$d स्लॉट खाली छोड़े गए क्योंकि लोकल कॉपी सर्वर से पुरानी होना ज्ञात था।</string>
+    <string name="settings_accounts_delegate_blocker_already_switching">एक स्विच पहले से चल रहा है। इसके पूरा होने का इंतज़ार करें।</string>
+    <string name="settings_accounts_delegate_blocker_active_session">एक गेम सेशन अभी भी खुला है। गेम बंद करें, फिर फिर से कोशिश करें।</string>
+    <string name="settings_accounts_delegate_blocker_external_game">%1$s %2$d सेकंड पहले स्क्रीन पर था। इसे पूरी तरह बंद करें, फिर फिर से कोशिश करें।</string>
+    <string name="settings_accounts_delegate_blocker_active_downloads">गेम डाउनलोड अभी भी चल रहे हैं। इन्हें पूरा होने दें या रद्द करें।</string>
+    <string name="settings_accounts_delegate_blocker_emulator_download">एक एमुलेटर डाउनलोड अभी भी चल रहा है। इसे पूरा होने दें या रद्द करें।</string>
+    <string name="settings_accounts_delegate_blocker_steam_download">एक Steam डाउनलोड अभी भी चल रहा है। इसे पूरा होने दें या रद्द करें।</string>
+    <string name="settings_accounts_delegate_blocker_media_download">एक फ़िल्म या एपिसोड अभी भी डाउनलोड हो रहा है। इसे पूरा होने दें या रद्द करें।</string>
+    <string name="settings_accounts_delegate_blocker_library_sync">एक लाइब्रेरी सिंक चल रही है। इसे पूरा होने दें, फिर फिर से कोशिश करें।</string>
+    <string name="settings_accounts_delegate_blocker_netplay_session">एक नेटप्ले सेशन खुला है। इसे छोड़ें, फिर फिर से कोशिश करें।</string>
+    <string name="settings_accounts_delegate_blocker_exit_confirmation">पुष्टि करें कि Argosy के बाहर लॉन्च किया गया कोई भी गेम पूरी तरह बंद है।</string>
+    <string name="settings_accounts_delegate_blocker_unknown_account">वह अकाउंट अब इस डिवाइस पर नहीं है।</string>
+
+    <!-- ===== Steam settings delegate (Settings > delegates > SteamSettingsDelegate) ===== -->
+
+    <string name="settings_steam_delegate_invalid_app_id">कृपया एक मान्य Steam App ID डालें</string>
+    <string name="settings_steam_delegate_volume_other_label">अन्य</string>
+
+    <!-- ===== Jellyfin settings delegate (Settings > delegates > JellyfinSettingsDelegate) ===== -->
+
+    <string name="settings_jellyfin_delegate_config_error_empty">सर्वर एड्रेस डालें</string>
+    <string name="settings_jellyfin_delegate_config_error_scheme">एड्रेस http:// या https:// से शुरू होना चाहिए</string>
+    <string name="settings_jellyfin_delegate_signin_error_empty">अपना यूज़रनेम और पासवर्ड डालें</string>
+
+    <!-- ===== Server settings delegate (Settings > delegates > ServerSettingsDelegate) ===== -->
+
+    <string name="settings_server_delegate_signout_switch_in_progress">एक अकाउंट स्विच अभी पूरा हो रहा है। थोड़ी देर बाद फिर कोशिश करें।</string>
+    <string name="settings_server_delegate_signout_refused">अभी भी साइन इन है: %1$s आपके सर्वर पर नहीं भेजा जा सका। फिर से जुड़ें और सिंक करें, फिर साइन आउट करें।</string>
+    <string name="settings_server_delegate_pairing_denied">सर्वर पर पेयरिंग अस्वीकार कर दी गई</string>
+    <string name="settings_server_delegate_pairing_expired">पेयरिंग कोड एक्सपायर हो गया, फिर से शुरू करें</string>
+    <string name="settings_server_delegate_pairing_unexpected_result">अनपेक्षित पेयरिंग परिणाम</string>
+    <string name="settings_server_delegate_pairing_code_incomplete">पूरा 8-अक्षर वाला पेयरिंग कोड डालें</string>
+
+    <!-- ===== Drivers settings delegate (Settings > delegates > DriversSettingsDelegate) ===== -->
+
+    <string name="settings_drivers_delegate_download_failed">डाउनलोड विफल</string>
+
+    <!-- ===== RetroAchievements settings delegate (Settings > delegates > RASettingsDelegate) ===== -->
+
+    <string name="settings_ra_delegate_login_error_required">यूज़रनेम और पासवर्ड आवश्यक हैं</string>
+
+    <!-- ===== Licenses dialog (Settings > dialogs > LicensesDialog) ===== -->
+
+    <string name="settings_licenses_dialog_title">ओपन सोर्स लाइसेंस</string>
+    <string name="settings_licenses_dialog_cores_heading">एमुलेटर कोर</string>
+    <string name="settings_licenses_dialog_cores_body">कोर libretro buildbot से डाउनलोड होते हैं। कोर लाइसेंस के लिए docs.libretro.com/development/licenses देखें।</string>
+    <string name="settings_licenses_dialog_close_button">बंद करें</string>
+
+    <!-- ===== Systemize result dialog (Settings > dialogs > SystemizeResultDialog) ===== -->
+
+    <string name="settings_systemize_dialog_close_button">बंद करें</string>
+    <string name="settings_systemize_dialog_success_title">स्क्रिप्ट सेव हुई</string>
+    <string name="settings_systemize_dialog_detected_device">पहचाना गया डिवाइस: %1$s</string>
+    <string name="settings_systemize_dialog_next_steps_heading">अगले कदम</string>
+    <string name="settings_systemize_dialog_step_format">%1$d. %2$s</string>
+    <string name="settings_systemize_dialog_success_footnote">रूटेड डिवाइस चाहिए। यह बदलाव पूर्ववत किया जा सकता है: \"Argosy Systemize\" नाम का Magisk मॉड्यूल हटाएँ और रीबूट करें। अगर आपके मेनू में शब्द अलग हैं, तो भी स्क्रिप्ट फ़ाइल सही है - बस अपने run-as-root विकल्प को उसी पर सेट करें।</string>
+    <string name="settings_systemize_dialog_error_title">स्क्रिप्ट सेव नहीं हो सकी</string>
+    <string name="settings_systemize_dialog_error_hint">स्टोरेज एक्सेस गुम हो सकता है। सेटअप में सभी फ़ाइलों तक एक्सेस दें और फिर से कोशिश करें।</string>
+
+    <!-- ===== LibretroSettingItem / LibretroSettingsAccessor ===== -->
+
+    <string name="settings_libretro_shell_configure_shader_chain_title">शेडर चेन कॉन्फ़िगर करें</string>
+    <string name="settings_libretro_shell_frame_value_auto">ऑटो</string>
+    <string name="settings_libretro_shell_frame_value_none">कोई नहीं</string>
+
+    <!-- ===== SettingsModels: SoundState.getSoundValueForType ===== -->
+
+    <string name="settings_sound_value_default">डिफ़ॉल्ट</string>
+    <string name="settings_sound_value_custom_fallback">कस्टम</string>
+
+    <!-- ===== SettingsModels: BiosState.summaryText ===== -->
+
+    <string name="settings_main_bios_summary_none">कोई BIOS फ़ाइल नहीं मिली</string>
+    <plurals name="settings_main_bios_summary_complete">
+        <item quantity="one">सभी %1$d फ़ाइल डाउनलोड हो गई</item>
+        <item quantity="other">सभी %1$d फ़ाइलें डाउनलोड हो गईं</item>
+    </plurals>
+    <string name="settings_main_bios_summary_partial">%2$d में से %1$d डाउनलोड हुईं</string>
+
+    <!-- ===== SettingsModels: DriversState.summary ===== -->
+
+    <string name="settings_drivers_summary_checking">ड्राइवर जाँचे जा रहे हैं&#8230;</string>
+    <string name="settings_drivers_summary_gpu_not_detected">GPU नहीं मिला</string>
+    <string name="settings_drivers_summary_available">%1$s के लिए Adreno ड्राइवर</string>
+
+    <!-- ===== LaunchArgsModal: Intent flag labels ===== -->
+
+    <string name="settings_launch_args_flag_new_task_label">नया टास्क</string>
+    <string name="settings_launch_args_flag_clear_task_label">टास्क साफ़ करें</string>
+    <string name="settings_launch_args_flag_no_history_label">कोई हिस्ट्री नहीं</string>
+    <string name="settings_launch_args_flag_single_top_label">सिंगल टॉप</string>
+    <string name="settings_launch_args_flag_grant_uri_label">रीड URI दें</string>
+    <string name="settings_launch_args_flag_clear_top_label">टॉप साफ़ करें</string>
+
+    <!-- ===== HudCorner display labels ===== -->
+
+    <string name="settings_hudcorner_top_left">टॉप लेफ़्ट</string>
+    <string name="settings_hudcorner_top_right">टॉप राइट</string>
+    <string name="settings_hudcorner_bottom_left">बॉटम लेफ़्ट</string>
+    <string name="settings_hudcorner_bottom_right">बॉटम राइट</string>
+
+    <!-- ===== ShaderPickerModal: category headers ===== -->
+
+    <string name="shader_category_crt">CRT</string>
+    <string name="shader_category_handheld">हैंडहेल्ड</string>
+    <string name="shader_category_scaling">स्केलिंग</string>
+    <string name="shader_category_scanlines">स्कैनलाइन</string>
+    <string name="shader_category_sharpening">शार्पनिंग</string>
+    <string name="shader_category_anti_aliasing">एंटी-अलायसिंग</string>
+    <string name="shader_category_other">अन्य</string>
+
+    <!-- ===== LibretroSettingDef (core/emulator): title, subtitle, Cycle.labels ===== -->
+
+    <string name="settings_libretro_def_section_shaders">शेडर</string>
+    <string name="settings_libretro_def_section_display">डिस्प्ले</string>
+    <string name="settings_libretro_def_section_performance">परफ़ॉर्मेंस</string>
+    <string name="settings_libretro_def_section_saving">सेविंग</string>
+
+    <string name="settings_libretro_def_shader_title">शेडर</string>
+    <string name="settings_libretro_def_filter_title">फ़िल्टर</string>
+    <string name="settings_libretro_def_aspect_ratio_title">एस्पेक्ट रेशियो</string>
+    <string name="settings_libretro_def_portrait_position_title">पोर्ट्रेट स्क्रीन पोज़िशन</string>
+    <string name="settings_libretro_def_portrait_position_subtitle">स्क्रीन वर्टिकल होने पर गेम कहाँ बैठता है</string>
+    <string name="settings_libretro_def_rotation_title">स्क्रीन रोटेशन</string>
+    <string name="settings_libretro_def_overscan_crop_title">ओवरस्कैन क्रॉप करें</string>
+    <string name="settings_libretro_def_frame_title">फ़्रेम</string>
+    <string name="settings_libretro_def_frame_subtitle">गेम के चारों ओर सजावटी बेज़ेल</string>
+    <string name="settings_libretro_def_black_frame_insertion_title">ब्लैक फ़्रेम इंसर्शन</string>
+    <string name="settings_libretro_def_black_frame_insertion_subtitle">मोशन ब्लर कम करता है (120Hz+ डिस्प्ले आवश्यक)</string>
+    <string name="settings_libretro_def_fast_forward_enabled_title">फ़ास्ट फ़ॉरवर्ड चालू करें</string>
+    <string name="settings_libretro_def_fast_forward_speed_title">फ़ास्ट फ़ॉरवर्ड स्पीड</string>
+    <string name="settings_libretro_def_rewind_enabled_title">रिवाइंड चालू करें</string>
+    <string name="settings_libretro_def_rewind_enabled_subtitle">भारी प्लेटफ़ॉर्म पर धीमापन ला सकता है</string>
+    <string name="settings_libretro_def_rewind_speed_title">रिवाइंड स्पीड</string>
+    <string name="settings_libretro_def_rewind_buffer_duration_title">रिवाइंड बफ़र</string>
+    <string name="settings_libretro_def_rewind_buffer_duration_subtitle">मेमोरी में रखा गया गेमप्ले, सेकंड में</string>
+    <string name="settings_libretro_def_skip_duplicate_frames_title">डुप्लिकेट फ्रेम छोड़ें</string>
+    <string name="settings_libretro_def_skip_duplicate_frames_subtitle">बिना बदले फ्रेम छोड़कर CPU उपयोग कम करें</string>
+    <string name="settings_libretro_def_low_latency_audio_title">लो लेटेंसी ऑडियो</string>
+    <string name="settings_libretro_def_low_latency_audio_subtitle">बेहतर रिस्पॉन्स के लिए ऑडियो देरी कम करें</string>
+    <string name="settings_libretro_def_audio_volume_title">वॉल्यूम</string>
+    <string name="settings_libretro_def_audio_volume_subtitle" formatted="false">एमुलेटर आउटपुट स्तर (100% असंशोधित है)</string>
+    <string name="settings_libretro_def_vsync_title">VSync</string>
+    <string name="settings_libretro_def_vsync_subtitle">डिस्प्ले रीफ़्रेश रेट से सिंक करें</string>
+    <string name="settings_libretro_def_auto_save_state_title">बाहर निकलने पर सेव स्टेट बनाएँ</string>
+    <string name="settings_libretro_def_auto_save_state_subtitle">केवल कैज़ुअल गेम पर लागू</string>
+    <string name="settings_libretro_def_auto_restore_state_title">लॉन्च पर स्टेट बहाल करें</string>
+    <string name="settings_libretro_def_auto_restore_state_subtitle">केवल कैज़ुअल गेम पर लागू</string>
+    <string name="settings_libretro_def_hw_core_save_states_title">Dolphin और Flycast सेव स्टेट</string>
+    <string name="settings_libretro_def_hw_core_save_states_subtitle">प्रायोगिक; ये कोर ब्लैक-स्क्रीन हो सकते हैं या रिज़्यूम करने में विफल हो सकते हैं। अगले लॉन्च पर लागू होता है, केवल कैज़ुअल गेम</string>
+
+    <string name="settings_libretro_def_shader_option_none">कोई नहीं</string>
+    <string name="settings_libretro_def_shader_option_custom">कस्टम</string>
+
+    <string name="settings_libretro_def_filter_option_auto">ऑटो</string>
+    <string name="settings_libretro_def_filter_option_nearest">नियरेस्ट</string>
+    <string name="settings_libretro_def_filter_option_bilinear">बाइलीनियर</string>
+
+    <string name="settings_libretro_def_aspect_ratio_option_core_provided">कोर द्वारा तय</string>
+    <string name="settings_libretro_def_aspect_ratio_option_integer">इंटीजर</string>
+    <string name="settings_libretro_def_aspect_ratio_option_stretch">स्ट्रेच</string>
+
+    <string name="settings_libretro_def_portrait_position_option_auto">ऑटो</string>
+    <string name="settings_libretro_def_portrait_position_option_top">ऊपर</string>
+    <string name="settings_libretro_def_portrait_position_option_center">बीच में</string>
+    <string name="settings_libretro_def_portrait_position_option_bottom">नीचे</string>
+
+    <string name="settings_libretro_def_rotation_option_auto">ऑटो</string>
+    <string name="settings_libretro_def_rotation_option_0">0&#176;</string>
+    <string name="settings_libretro_def_rotation_option_90">90&#176;</string>
+    <string name="settings_libretro_def_rotation_option_180">180&#176;</string>
+    <string name="settings_libretro_def_rotation_option_270">270&#176;</string>
+
+    <string name="settings_libretro_def_overscan_crop_option_off">बंद</string>
+
+    <string name="settings_libretro_def_frame_option_none">कोई नहीं</string>
+
+    <!-- ===== Top level of the settings screen: Language row ===== -->
+
+    <string name="settings_main_language_title">भाषा</string>
+    <string name="settings_main_language_subtitle">पूरे लॉन्चर में टेक्स्ट बदलें</string>
+    <string name="settings_main_language_system_default">सिस्टम डिफ़ॉल्ट</string>
+
+</resources>

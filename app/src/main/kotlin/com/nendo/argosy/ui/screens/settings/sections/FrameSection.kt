@@ -34,8 +34,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.libretro.frame.FrameRegistry
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
@@ -92,7 +94,7 @@ fun FrameSection(
                 .fillMaxHeight()
         ) {
             Text(
-                text = "Select Frame",
+                text = stringResource(R.string.settings_shell_frame_select_title),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -106,9 +108,9 @@ fun FrameSection(
                 item(key = "auto") {
                     val autoLabel = if (defaultFrameForPlatform != null) {
                         val frameName = allFrames.find { it.id == defaultFrameForPlatform }?.displayName
-                        "Auto ($frameName)"
+                        stringResource(R.string.settings_shell_frame_auto_with_name, frameName ?: "")
                     } else {
-                        "Auto (None)"
+                        stringResource(R.string.settings_shell_frame_auto_none)
                     }
                     FrameListItem(
                         displayName = autoLabel,
@@ -125,7 +127,7 @@ fun FrameSection(
 
                 item(key = "none") {
                     FrameListItem(
-                        displayName = "None",
+                        displayName = stringResource(R.string.settings_shell_frame_none_option),
                         isSelected = currentFrameOverride == "none",
                         isInstalled = true,
                         isDownloading = false,
@@ -230,12 +232,12 @@ private fun FrameListItem(
             )
             isSelected -> Icon(
                 imageVector = Icons.Default.Check,
-                contentDescription = "Selected",
+                contentDescription = stringResource(R.string.settings_shell_frame_selected_desc),
                 tint = contentColor
             )
             !isInstalled -> Icon(
                 imageVector = Icons.Default.CloudDownload,
-                contentDescription = "Download",
+                contentDescription = stringResource(R.string.settings_shell_frame_download_desc),
                 tint = contentColor.copy(alpha = 0.6f)
             )
         }
@@ -249,7 +251,7 @@ private fun FramePreview(
 ) {
     if (frameId == null) {
         Text(
-            text = "No frame selected",
+            text = stringResource(R.string.settings_shell_frame_no_selection),
             color = Color.White.copy(alpha = 0.5f),
             style = MaterialTheme.typography.bodyMedium
         )
@@ -263,7 +265,7 @@ private fun FramePreview(
     if (bitmap != null) {
         Image(
             bitmap = bitmap.asImageBitmap(),
-            contentDescription = "Frame preview",
+            contentDescription = stringResource(R.string.settings_shell_frame_preview_desc),
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(16f / 9f),
@@ -271,7 +273,7 @@ private fun FramePreview(
         )
     } else {
         Text(
-            text = "Frame not available",
+            text = stringResource(R.string.settings_shell_frame_unavailable),
             color = Color.White.copy(alpha = 0.5f),
             style = MaterialTheme.typography.bodyMedium
         )

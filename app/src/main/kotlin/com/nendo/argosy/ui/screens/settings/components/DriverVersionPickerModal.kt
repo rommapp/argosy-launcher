@@ -28,8 +28,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.InputButton
@@ -76,7 +79,7 @@ fun DriverVersionPickerModal(
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
         ) {
             Text(
-                text = "SELECT VERSION",
+                text = stringResource(R.string.settings_driver_picker_title),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -101,7 +104,7 @@ fun DriverVersionPickerModal(
                     color = MaterialTheme.colorScheme.error
                 )
                 group.releases.isEmpty() -> Text(
-                    text = "No releases available",
+                    text = stringResource(R.string.settings_driver_picker_empty),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -124,12 +127,16 @@ fun DriverVersionPickerModal(
             Spacer(modifier = Modifier.height(Dimens.spacingSm))
 
             val hints = when {
-                download != null && !terminal -> listOf(InputButton.B to "Hide")
-                download != null && terminal -> listOf(InputButton.A to "Close")
+                download != null && !terminal -> listOf(
+                    InputButton.B to stringResource(R.string.settings_driver_picker_hint_hide)
+                )
+                download != null && terminal -> listOf(
+                    InputButton.A to stringResource(R.string.settings_driver_picker_hint_close)
+                )
                 else -> listOf(
-                    InputButton.DPAD to "Navigate",
-                    InputButton.A to "Download",
-                    InputButton.B to "Cancel"
+                    InputButton.DPAD to stringResource(R.string.settings_driver_picker_hint_navigate),
+                    InputButton.A to stringResource(R.string.settings_driver_picker_hint_download),
+                    InputButton.B to stringResource(R.string.settings_driver_picker_hint_cancel)
                 )
             }
             FooterHints(
@@ -174,7 +181,7 @@ private fun DriverReleaseRow(
         if (isDownloaded) {
             Icon(
                 imageVector = Icons.Default.CheckCircle,
-                contentDescription = "Downloaded",
+                contentDescription = stringResource(R.string.settings_driver_picker_downloaded_desc),
                 tint = if (isFocused) focusContent
                        else MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(Dimens.iconSm)
@@ -191,18 +198,23 @@ private fun DriverReleaseRow(
                 )
                 if (release.isLatestStable) {
                     Spacer(modifier = Modifier.width(Dimens.spacingSm))
-                    StatusPill(text = "Latest", color = MaterialTheme.colorScheme.primary)
+                    StatusPill(text = stringResource(R.string.settings_driver_picker_latest_badge), color = MaterialTheme.colorScheme.primary)
                 }
                 if (release.prerelease) {
                     Spacer(modifier = Modifier.width(Dimens.spacingSm))
-                    StatusPill(text = "Pre", color = LocalLauncherTheme.current.semanticColors.warning)
+                    StatusPill(text = stringResource(R.string.settings_driver_picker_prerelease_badge), color = LocalLauncherTheme.current.semanticColors.warning)
                 }
             }
             val firstArtifact = release.artifacts.firstOrNull()
             val subtitle = when {
-                firstArtifact == null -> "No downloadable asset"
+                firstArtifact == null -> stringResource(R.string.settings_driver_picker_no_asset)
                 release.artifacts.size == 1 -> formatBytes(firstArtifact.size)
-                else -> "${formatBytes(firstArtifact.size)} · ${release.artifacts.size} assets"
+                else -> pluralStringResource(
+                    R.plurals.settings_driver_picker_assets_count,
+                    release.artifacts.size,
+                    formatBytes(firstArtifact.size),
+                    release.artifacts.size
+                )
             }
             Text(
                 text = subtitle,
@@ -232,13 +244,13 @@ private fun DownloadStatusBlock(download: DriverDownloadState) {
             }
             download.isComplete -> {
                 Text(
-                    text = "SAVED TO",
+                    text = stringResource(R.string.settings_driver_picker_saved_to_header),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = "Downloads/drivers/",
+                    text = stringResource(R.string.settings_driver_picker_saved_to_path),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -261,7 +273,11 @@ private fun DownloadStatusBlock(download: DriverDownloadState) {
                 } else 0f
                 ArgosyProgressBar(progress = progress.coerceIn(0f, 1f))
                 Text(
-                    text = "${formatBytes(download.downloaded)} / ${formatBytes(download.total)}",
+                    text = stringResource(
+                        R.string.settings_driver_picker_download_progress,
+                        formatBytes(download.downloaded),
+                        formatBytes(download.total)
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

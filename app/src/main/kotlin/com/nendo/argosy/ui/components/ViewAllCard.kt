@@ -28,9 +28,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
@@ -142,7 +144,7 @@ private fun OutlineGridViewAllCard(
                 }
             }
             Text(
-                text = "View All",
+                text = stringResource(R.string.ui_view_all_outline_label),
                 style = MaterialTheme.typography.labelLarge,
                 color = onSurfaceColor.copy(alpha = VIEW_ALL_OUTLINE_MUTED_ALPHA),
                 textAlign = TextAlign.Center
@@ -198,13 +200,13 @@ private fun AccentCountViewAllCard(
             )
             Spacer(modifier = Modifier.height(Dimens.spacingXs))
             Text(
-                text = "+$remainingCount",
+                text = stringResource(R.string.ui_view_all_remaining_count, remainingCount),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = theme.focusAccent
             )
             Text(
-                text = "View All",
+                text = stringResource(R.string.ui_view_all_accent_label),
                 style = MaterialTheme.typography.labelSmall,
                 color = theme.textDim
             )

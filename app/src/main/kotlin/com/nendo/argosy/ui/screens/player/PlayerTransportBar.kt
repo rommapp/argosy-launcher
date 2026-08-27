@@ -54,8 +54,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
 import com.nendo.argosy.ui.theme.Dimens
@@ -168,7 +170,7 @@ private fun ControlRow(state: PlayerUiState, onControlClick: (Int) -> Unit) {
                     isWatched = state.isWatched,
                     videoScale = state.videoScale,
                     volumeStep = state.volumeStep,
-                    skipLabel = state.activeSkip?.kind?.label,
+                    skipLabel = state.activeSkip?.kind?.let { stringResource(it.labelRes) },
                     enabled = state.isControlEnabled(control),
                     focused = onControls && focusedIndex == index,
                     onClick = { onControlClick(index) }
@@ -442,47 +444,85 @@ private fun PlayerControl.icon(
  * What the caption says. Copy lives here rather than in the state so a rename never has to travel
  * through the model the input handler reads.
  */
+@Composable
 private fun PlayerUiState.focusCaption(): String = when (focusRow) {
     PlayerRow.CONTROLS -> focusedControl?.let { controlLabel(it) }.orEmpty()
     PlayerRow.SCRUBBER -> scrubberCaption()
 }
 
+@Composable
 private fun PlayerUiState.scrubberCaption(): String {
     val chapter = chapters.lastOrNull { it.startMs <= previewPositionMs }
     if (chapter != null) return chapter.name
     if (durationMs <= 0) return ""
-    return "${formatPlaybackTime(durationMs - previewPositionMs)} Left"
+    return stringResource(
+        R.string.media_player_caption_time_left,
+        formatPlaybackTime(durationMs - previewPositionMs)
+    )
 }
 
+@Composable
+@Suppress("CyclomaticComplexMethod")
 private fun PlayerUiState.controlLabel(control: PlayerControl): String = when (control) {
-    PlayerControl.PREVIOUS_EPISODE -> episodeCaption("Previous Episode", previousEpisode)
-    PlayerControl.SKIP_BACK -> "Back ${PLAYER_SEEK_STEP_SECONDS}s"
-    PlayerControl.PLAY_PAUSE -> if (isPlaying) "Pause" else "Play"
-    PlayerControl.SKIP_FORWARD -> "Forward ${PLAYER_SEEK_STEP_SECONDS}s"
-    PlayerControl.AUDIO -> "Audio Track"
-    PlayerControl.SUBTITLES -> "Subtitles"
-    PlayerControl.CHAPTERS -> "Chapters"
-    PlayerControl.QUALITY -> "Quality  ${activeQuality.summaryLabel()}"
-    PlayerControl.FIT_FILL ->
-        if (videoScale == PlayerVideoScale.FIT) "Fill Screen" else "Fit Screen"
-    PlayerControl.VOLUME -> when (volumeStep) {
-        PlayerVolumeStep.FULL -> "Volume Full"
-        PlayerVolumeStep.HALF -> "Volume Half"
-        PlayerVolumeStep.MUTE -> "Muted"
+    PlayerControl.PREVIOUS_EPISODE -> episodeCaption(
+        stringResource(R.string.media_player_control_previous_episode),
+        previousEpisode
+    )
+    PlayerControl.SKIP_BACK -> stringResource(
+        R.string.media_player_control_skip_back,
+        PLAYER_SEEK_STEP_SECONDS
+    )
+    PlayerControl.PLAY_PAUSE -> if (isPlaying) {
+        stringResource(R.string.media_player_control_pause)
+    } else {
+        stringResource(R.string.media_player_control_play)
     }
-    PlayerControl.LOCK -> "Lock Controls"
-    PlayerControl.NEXT_EPISODE -> episodeCaption("Next Episode", nextEpisode)
-    PlayerControl.MARK_WATCHED -> if (isWatched) "Watched" else "Mark Watched"
-    PlayerControl.CLOSE -> "Close"
-    PlayerControl.SKIP -> activeSkip?.kind?.label.orEmpty()
+    PlayerControl.SKIP_FORWARD -> stringResource(
+        R.string.media_player_control_skip_forward,
+        PLAYER_SEEK_STEP_SECONDS
+    )
+    PlayerControl.AUDIO -> stringResource(R.string.media_player_control_audio)
+    PlayerControl.SUBTITLES -> stringResource(R.string.media_player_control_subtitles)
+    PlayerControl.CHAPTERS -> stringResource(R.string.media_player_control_chapters)
+    PlayerControl.QUALITY -> stringResource(
+        R.string.media_player_control_quality,
+        activeQuality.summaryLabel(
+            stringResource(R.string.media_player_quality_summary_original)
+        )
+    )
+    PlayerControl.FIT_FILL -> if (videoScale == PlayerVideoScale.FIT) {
+        stringResource(R.string.media_player_control_fill)
+    } else {
+        stringResource(R.string.media_player_control_fit)
+    }
+    PlayerControl.VOLUME -> stringResource(
+        when (volumeStep) {
+            PlayerVolumeStep.FULL -> R.string.media_player_control_volume_full
+            PlayerVolumeStep.HALF -> R.string.media_player_control_volume_half
+            PlayerVolumeStep.MUTE -> R.string.media_player_control_volume_mute
+        }
+    )
+    PlayerControl.LOCK -> stringResource(R.string.media_player_control_lock)
+    PlayerControl.NEXT_EPISODE -> episodeCaption(
+        stringResource(R.string.media_player_control_next_episode),
+        nextEpisode
+    )
+    PlayerControl.MARK_WATCHED -> if (isWatched) {
+        stringResource(R.string.media_player_control_watched)
+    } else {
+        stringResource(R.string.media_player_control_mark_watched)
+    }
+    PlayerControl.CLOSE -> stringResource(R.string.media_player_control_close)
+    PlayerControl.SKIP -> activeSkip?.kind?.let { stringResource(it.labelRes) }.orEmpty()
 }
 
 /**
  * How an episode neighbour reads on the caption line: named when it exists, and named as absent
  * when it does not, because a disabled button owes the viewer the reason it will not press.
  */
+@Composable
 private fun episodeCaption(name: String, episode: PlayerNextEpisode?): String = when {
-    episode == null -> "No $name"
+    episode == null -> stringResource(R.string.media_player_control_episode_absent, name)
     episode.label.isBlank() -> name
-    else -> "$name  ${episode.label}"
+    else -> stringResource(R.string.media_player_control_episode_named, name, episode.label)
 }

@@ -24,6 +24,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.InputButton
@@ -80,12 +83,12 @@ fun PlatformFiltersModal(
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
         ) {
             Text(
-                text = "PLATFORM FILTERS",
+                text = stringResource(R.string.settings_platform_filters_title),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
-                text = "Select which platforms to include during library sync",
+                text = stringResource(R.string.settings_platform_filters_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -125,7 +128,7 @@ fun PlatformFiltersModal(
                     ) {
                         CircularProgressIndicator(modifier = Modifier.size(Dimens.iconLg))
                         Text(
-                            text = "Fetching platforms...",
+                            text = stringResource(R.string.settings_platform_filters_loading),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -139,7 +142,7 @@ fun PlatformFiltersModal(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "No platforms available",
+                        text = stringResource(R.string.settings_platform_filters_empty),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -154,7 +157,15 @@ fun PlatformFiltersModal(
                         items = platforms,
                         key = { _, item -> item.id }
                     ) { index, platform ->
-                        val subtitle = if (platform.romCount > 0) "${platform.romCount} games" else "No games"
+                        val subtitle = if (platform.romCount > 0) {
+                            pluralStringResource(
+                                R.plurals.settings_platform_filters_rom_count,
+                                platform.romCount,
+                                platform.romCount
+                            )
+                        } else {
+                            stringResource(R.string.settings_platform_filters_no_games)
+                        }
                         SwitchPreference(
                             title = platform.name,
                             subtitle = subtitle,

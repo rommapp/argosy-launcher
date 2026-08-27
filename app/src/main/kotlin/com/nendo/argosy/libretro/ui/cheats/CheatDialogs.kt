@@ -29,10 +29,12 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.Modal
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
@@ -123,11 +125,13 @@ fun SearchDialog(
     }
 
     val fieldShape = RoundedCornerShape(Dimens.radiusMd)
-    Modal(title = "Search Cheats", onDismiss = onDismiss) {
+    Modal(title = stringResource(R.string.ingame_cheats_dialog_search_title), onDismiss = onDismiss) {
         OutlinedTextField(
             value = textValue,
             onValueChange = { textValue = it },
-            placeholder = { Text("Enter cheat name...") },
+            placeholder = {
+                Text(stringResource(R.string.ingame_cheats_dialog_search_placeholder))
+            },
             singleLine = true,
             shape = fieldShape,
             modifier = Modifier
@@ -147,7 +151,7 @@ fun SearchDialog(
         ) {
             if (hasClear) {
                 ModalActionButton(
-                    label = "Clear",
+                    label = stringResource(R.string.ingame_cheats_dialog_search_clear),
                     tint = theme.focusAccent,
                     restLabelColor = theme.textPrimary,
                     focused = onButtons && buttonIndex == 0,
@@ -155,14 +159,14 @@ fun SearchDialog(
                 )
             }
             ModalActionButton(
-                label = "Cancel",
+                label = stringResource(R.string.ingame_cheats_dialog_search_cancel),
                 tint = theme.focusAccent,
                 restLabelColor = theme.textPrimary,
                 focused = onButtons && buttonIndex == lastButtonIndex - 1,
                 onClick = onDismiss
             )
             ModalActionButton(
-                label = "Search",
+                label = stringResource(R.string.ingame_cheats_dialog_search_confirm),
                 tint = theme.focusAccent,
                 restLabelColor = theme.textPrimary,
                 focused = onButtons && buttonIndex == lastButtonIndex,
@@ -191,13 +195,16 @@ fun CheatCreateDialog(
     var valueText by remember { mutableStateOf(currentValue.toString()) }
 
     return CheatFormDialog(
-        title = "Create Cheat",
-        addressLabel = "Address: 0x${address.toString(16).uppercase().padStart(6, '0')}",
+        title = stringResource(R.string.ingame_cheats_dialog_create_title),
+        addressLabel = stringResource(
+            R.string.ingame_cheats_dialog_address,
+            address.toString(16).uppercase().padStart(6, '0')
+        ),
         nameValue = nameValue,
         onNameChange = { nameValue = it },
         valueText = valueText,
         onValueTextChange = { valueText = it },
-        confirmLabel = "Create",
+        confirmLabel = stringResource(R.string.ingame_cheats_dialog_create_confirm),
         onConfirm = { name, value -> onCreate(name, value) },
         onDismiss = onDismiss,
         deleteHandling = null
@@ -222,13 +229,13 @@ fun CheatEditDialog(
     var valueText by remember { mutableStateOf(currentValueInt.toString()) }
 
     return CheatFormDialog(
-        title = "Edit Cheat",
-        addressLabel = "Address: 0x$addressPart",
+        title = stringResource(R.string.ingame_cheats_dialog_edit_title),
+        addressLabel = stringResource(R.string.ingame_cheats_dialog_address, addressPart),
         nameValue = nameValue,
         onNameChange = { nameValue = it },
         valueText = valueText,
         onValueTextChange = { valueText = it },
-        confirmLabel = "Save",
+        confirmLabel = stringResource(R.string.ingame_cheats_dialog_edit_confirm),
         onConfirm = { name, value ->
             val newCode = "$addressPart:${value.toString(16).uppercase().padStart(2, '0')}"
             onSave(name, newCode)
@@ -369,7 +376,7 @@ private fun CheatFormDialog(
         OutlinedTextField(
             value = nameValue,
             onValueChange = onNameChange,
-            label = { Text("Cheat name") },
+            label = { Text(stringResource(R.string.ingame_cheats_dialog_name_label)) },
             singleLine = true,
             shape = fieldShape,
             modifier = Modifier
@@ -385,7 +392,15 @@ private fun CheatFormDialog(
         OutlinedTextField(
             value = valueText,
             onValueChange = onValueTextChange,
-            label = { Text("Value ($VALUE_MIN-$VALUE_MAX)") },
+            label = {
+                Text(
+                    stringResource(
+                        R.string.ingame_cheats_dialog_value_label,
+                        VALUE_MIN,
+                        VALUE_MAX
+                    )
+                )
+            },
             singleLine = true,
             shape = fieldShape,
             modifier = Modifier
@@ -406,13 +421,21 @@ private fun CheatFormDialog(
             ),
             isError = valueText.isNotEmpty() && !isValueValid,
             supportingText = if (valueText.isNotEmpty() && !isValueValid) {
-                { Text("Enter a value between $VALUE_MIN and $VALUE_MAX") }
+                {
+                    Text(
+                        stringResource(
+                            R.string.ingame_cheats_dialog_value_error,
+                            VALUE_MIN,
+                            VALUE_MAX
+                        )
+                    )
+                }
             } else null
         )
         if (deleteHandling != null) {
             Spacer(modifier = Modifier.height(Dimens.spacingMd))
             DestructiveRow(
-                label = "Delete Cheat",
+                label = stringResource(R.string.ingame_cheats_dialog_delete_row),
                 focused = focusRow == deleteRow,
                 onClick = {
                     deleteConfirmFocus = 0
@@ -426,7 +449,7 @@ private fun CheatFormDialog(
             horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm, Alignment.End)
         ) {
             ModalActionButton(
-                label = "Cancel",
+                label = stringResource(R.string.ingame_cheats_dialog_cancel),
                 tint = theme.focusAccent,
                 restLabelColor = theme.textPrimary,
                 focused = focusRow == buttonRow && buttonIndex == 0,
@@ -446,9 +469,12 @@ private fun CheatFormDialog(
     if (deleteHandling != null) {
         ArgosyConfirmModal(
             visible = showDeleteConfirm,
-            title = "Delete Cheat",
-            message = "Are you sure you want to delete \"${deleteHandling.cheatName}\"?",
-            confirmLabel = "Delete",
+            title = stringResource(R.string.ingame_cheats_dialog_delete_title),
+            message = stringResource(
+                R.string.ingame_cheats_dialog_delete_message,
+                deleteHandling.cheatName
+            ),
+            confirmLabel = stringResource(R.string.ingame_cheats_dialog_delete_confirm),
             destructive = true,
             onConfirm = {
                 deleteHandling.onDelete()

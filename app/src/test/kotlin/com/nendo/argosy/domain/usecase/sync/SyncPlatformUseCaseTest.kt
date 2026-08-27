@@ -4,7 +4,10 @@ import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.SyncResult
+import com.nendo.argosy.data.sync.SyncNotificationCopyResources
+import com.nendo.argosy.R
 import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.NotificationType
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -43,7 +46,12 @@ class SyncPlatformUseCaseTest {
         romMRepository = mockk(relaxed = true)
         platformDao = mockk(relaxed = true)
         notificationManager = mockk(relaxed = true)
-        useCase = SyncPlatformUseCase(romMRepository, platformDao, notificationManager)
+        useCase = SyncPlatformUseCase(
+            romMRepository,
+            platformDao,
+            notificationManager,
+            SyncNotificationCopyResources()
+        )
 
         val defaultPlatform = createPlatformEntity(123L)
         coEvery { platformDao.getById(any()) } returns defaultPlatform
@@ -56,7 +64,7 @@ class SyncPlatformUseCaseTest {
         val result = useCase(123L, "Game Boy")
 
         assertTrue(result is SyncPlatformResult.Error)
-        assertEquals("RomM not connected", (result as SyncPlatformResult.Error).message)
+        assertEquals(SyncPlatformFailureReason.NotConnected, (result as SyncPlatformResult.Error).reason)
     }
 
     @Test
@@ -68,8 +76,11 @@ class SyncPlatformUseCaseTest {
 
         verify {
             notificationManager.showPersistent(
-                title = "Syncing Game Boy",
-                subtitle = "Fetching games...",
+                title = NotificationText.Res(
+                    R.string.notif_sync_platform_progress_title,
+                    listOf("Game Boy")
+                ),
+                subtitle = NotificationText.Res(R.string.notif_sync_platform_progress_fetching),
                 key = "romm-platform-sync",
                 platformSlug = "gb"
             )
@@ -128,8 +139,14 @@ class SyncPlatformUseCaseTest {
         verify {
             notificationManager.completePersistent(
                 key = "romm-platform-sync",
-                title = "SNES synced",
-                subtitle = "5 added, 3 updated, 1 removed",
+                title = NotificationText.Res(
+                    R.string.notif_sync_platform_complete_title,
+                    listOf("SNES")
+                ),
+                subtitle = NotificationText.Res(
+                    R.string.notif_sync_platform_complete_counts_with_removed,
+                    listOf(5, 3, 1)
+                ),
                 type = NotificationType.SUCCESS,
                 platformSlug = "gb"
             )
@@ -146,8 +163,14 @@ class SyncPlatformUseCaseTest {
         verify {
             notificationManager.completePersistent(
                 key = "romm-platform-sync",
-                title = "SNES synced",
-                subtitle = "5 added, 3 updated",
+                title = NotificationText.Res(
+                    R.string.notif_sync_platform_complete_title,
+                    listOf("SNES")
+                ),
+                subtitle = NotificationText.Res(
+                    R.string.notif_sync_platform_complete_counts,
+                    listOf(5, 3)
+                ),
                 type = NotificationType.SUCCESS,
                 platformSlug = "gb"
             )
@@ -164,8 +187,10 @@ class SyncPlatformUseCaseTest {
         verify {
             notificationManager.completePersistent(
                 key = "romm-platform-sync",
-                title = "Sync completed with errors",
-                subtitle = "Platform not found",
+                title = NotificationText.Res(
+                    R.string.notif_sync_platform_completed_with_errors_title
+                ),
+                subtitle = NotificationText.Raw("Platform not found"),
                 type = NotificationType.ERROR
             )
         }
@@ -174,12 +199,12 @@ class SyncPlatformUseCaseTest {
     @Test
     fun `invoke dismisses notification when sync already in progress`() = runTest {
         every { romMRepository.isConnected() } returns true
-        coEvery { romMRepository.syncPlatform(any()) } returns SyncResult(0, 0, 0, 0, listOf("Sync already in progress"))
+        coEvery { romMRepository.syncPlatform(any()) } returns
+            SyncResult(0, 0, 0, 0, emptyList(), alreadyInProgress = true)
 
         val result = useCase(123L, "SNES")
 
-        assertTrue(result is SyncPlatformResult.Error)
-        assertEquals("Sync already in progress", (result as SyncPlatformResult.Error).message)
+        assertTrue(result is SyncPlatformResult.AlreadyInProgress)
         verify { notificationManager.dismissByKey("romm-platform-sync") }
     }
 
@@ -191,12 +216,15 @@ class SyncPlatformUseCaseTest {
         val result = useCase(123L, "SNES")
 
         assertTrue(result is SyncPlatformResult.Error)
-        assertEquals("Network error", (result as SyncPlatformResult.Error).message)
+        assertEquals(
+            SyncPlatformFailureReason.Unexpected("Network error"),
+            (result as SyncPlatformResult.Error).reason
+        )
         verify {
             notificationManager.completePersistent(
                 key = "romm-platform-sync",
-                title = "Sync failed",
-                subtitle = "Network error",
+                title = NotificationText.Res(R.string.notif_sync_platform_failed_title),
+                subtitle = NotificationText.Raw("Network error"),
                 type = NotificationType.ERROR
             )
         }
@@ -226,6 +254,6 @@ class SyncPlatformUseCaseTest {
         val result = useCase(999L, "Unknown")
 
         assertTrue(result is SyncPlatformResult.Error)
-        assertEquals("Platform not found", (result as SyncPlatformResult.Error).message)
+        assertEquals(SyncPlatformFailureReason.PlatformNotFound, (result as SyncPlatformResult.Error).reason)
     }
 }

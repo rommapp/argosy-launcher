@@ -26,6 +26,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -36,6 +38,7 @@ import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.LaunchedEffect
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import kotlinx.coroutines.delay
@@ -83,7 +86,9 @@ fun DualCollectionShowcase(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = state.name.ifEmpty { "Collections" },
+                    text = state.name.ifEmpty {
+                        stringResource(R.string.dual_collection_showcase_all_title)
+                    },
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = theme.textPrimary,
@@ -94,7 +99,11 @@ fun DualCollectionShowcase(
 
                 if (state.gameCount > 0) {
                     Text(
-                        text = "${state.gameCount} games",
+                        text = pluralStringResource(
+                            R.plurals.dual_collection_showcase_game_count,
+                            state.gameCount,
+                            state.gameCount
+                        ),
                         style = MaterialTheme.typography.labelLarge,
                         color = theme.focusAccent
                     )
@@ -240,11 +249,16 @@ private fun ShowcaseCoverCollage(
     }
 }
 
+@Composable
 private fun formatCollectionPlayTime(minutes: Int): String {
     return when {
-        minutes < 60 -> "${minutes}m total"
-        minutes < 1440 -> "${minutes / 60}h ${minutes % 60}m total"
-        else -> "${minutes / 60}h total"
+        minutes < 60 -> stringResource(R.string.dual_collection_play_time_minutes, minutes)
+        minutes < 1440 -> stringResource(
+            R.string.dual_collection_play_time_hours_minutes,
+            minutes / 60,
+            minutes % 60
+        )
+        else -> stringResource(R.string.dual_collection_play_time_hours, minutes / 60)
     }
 }
 
@@ -313,25 +327,25 @@ private fun CollectionStatStrip(
         horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXl, Alignment.CenterHorizontally)
     ) {
         CollectionStat(
-            label = "Installed",
+            label = stringResource(R.string.dual_collection_showcase_stat_installed),
             value = "${state.installedCount}/${state.gameCount}"
         )
         if (state.achievementsTotal > 0) {
             CollectionStat(
-                label = "Achievements",
+                label = stringResource(R.string.dual_collection_showcase_stat_achievements),
                 value = "${state.achievementsEarned}/${state.achievementsTotal}"
             )
         }
         if (state.totalPlaytimeMinutes > 0) {
             CollectionStat(
-                label = "Playtime",
+                label = stringResource(R.string.dual_collection_showcase_stat_playtime),
                 value = formatCollectionPlayTime(state.totalPlaytimeMinutes)
             )
         }
     }
     if (state.gameCount == 0) {
         Text(
-            text = "Nothing in this collection yet",
+            text = stringResource(R.string.dual_collection_showcase_empty),
             style = MaterialTheme.typography.bodySmall,
             color = theme.textDim
         )

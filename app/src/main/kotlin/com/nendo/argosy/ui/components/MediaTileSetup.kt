@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.components
 
+import androidx.annotation.StringRes
+import com.nendo.argosy.R
 import com.nendo.argosy.data.local.entity.MediaTilePlayMode
 
 /**
@@ -16,28 +18,28 @@ enum class MediaTileStep { MODE, SEASON, EPISODES }
  */
 enum class MediaTileModeOption(
     val mode: MediaTilePlayMode,
-    val label: String,
-    val supporting: String
+    @StringRes val labelRes: Int,
+    @StringRes val supportingRes: Int
 ) {
     SEQUENTIAL(
         MediaTilePlayMode.SEQUENTIAL,
-        "Next episode",
-        "Follows where you are up to, wherever you watch it"
+        R.string.ui_media_tile_mode_sequential,
+        R.string.ui_media_tile_mode_sequential_supporting
     ),
     RANDOM(
         MediaTilePlayMode.RANDOM,
-        "Random episode",
-        "Picks one and keeps it until you have watched it"
+        R.string.ui_media_tile_mode_random,
+        R.string.ui_media_tile_mode_random_supporting
     ),
     SEASON(
         MediaTilePlayMode.SEASON,
-        "One season",
-        "Works through a single season"
+        R.string.ui_media_tile_mode_season,
+        R.string.ui_media_tile_mode_season_supporting
     ),
     PLAYLIST(
         MediaTilePlayMode.PLAYLIST,
-        "Chosen episodes",
-        "Plays the episodes you pick, in the order you pick them"
+        R.string.ui_media_tile_mode_playlist,
+        R.string.ui_media_tile_mode_playlist_supporting
     )
 }
 
@@ -71,8 +73,8 @@ data class MediaTileNotice(
     val warning: String? = null,
     val downloadIds: List<String> = emptyList(),
     val buttonIndex: Int = 0,
-    val confirmLabel: String = "Add and download",
-    val declineLabel: String = "Cancel",
+    @StringRes val confirmLabelRes: Int = R.string.ui_media_tile_notice_confirm_add_download,
+    @StringRes val declineLabelRes: Int = R.string.ui_media_tile_notice_decline_cancel,
     val placesOnDecline: Boolean = false
 )
 
@@ -95,7 +97,7 @@ data class MediaTileSetup(
     val scopeId: String? = null,
     val notice: MediaTileNotice? = null,
     val isLoading: Boolean = false,
-    val error: String? = null
+    @StringRes val errorRes: Int? = null
 ) {
 
     /**
@@ -111,11 +113,12 @@ data class MediaTileSetup(
 
     val title: String get() = entry.title
 
-    val subtitle: String?
+    @get:StringRes
+    val subtitleRes: Int
         get() = when (step) {
-            MediaTileStep.MODE -> "What should this tile play?"
-            MediaTileStep.SEASON -> "Choose a season"
-            MediaTileStep.EPISODES -> "Choose episodes"
+            MediaTileStep.MODE -> R.string.ui_media_tile_step_mode
+            MediaTileStep.SEASON -> R.string.ui_media_tile_step_season
+            MediaTileStep.EPISODES -> R.string.ui_media_tile_step_episodes
         }
 
     /**
@@ -123,15 +126,14 @@ data class MediaTileSetup(
      * is a series nothing has been synced for yet, which is a different answer from a series with no
      * seasons and worth saying differently.
      */
-    val emptyMessage: String?
+    @get:StringRes
+    val emptyMessageRes: Int?
         get() = when {
             isLoading -> null
             step == MediaTileStep.SEASON && seasons.isEmpty() ->
-                "No seasons have been synced for this series yet"
+                R.string.ui_media_tile_empty_seasons
             step == MediaTileStep.EPISODES && picker.isEmpty ->
-                "No episodes have been synced for this series yet"
+                R.string.ui_media_tile_empty_episodes
             else -> null
         }
 }
-
-const val MEDIA_TILE_EPISODES_CONFIRM_LABEL = "Use these episodes"

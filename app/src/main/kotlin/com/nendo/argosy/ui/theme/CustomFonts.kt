@@ -23,9 +23,27 @@ object CustomFontLoader {
         if (!file.isFile) return null
         return try {
             validate(file)
-            FontFamily(Typeface.createFromFile(file))
+            FontFamily(typefaceWithSystemFallback(file))
         } catch (e: Exception) {
             null
+        }
+    }
+
+    /**
+     * A user-supplied font covers the scripts its designer drew and nothing else, so a family
+     * built from it alone renders tofu for every other script. Chaining the system fallback
+     * behind it keeps the chosen face for the glyphs it has and borrows the rest.
+     */
+    private fun typefaceWithSystemFallback(file: File): Typeface {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return Typeface.createFromFile(file)
+        return try {
+            val font = android.graphics.fonts.Font.Builder(file).build()
+            val family = android.graphics.fonts.FontFamily.Builder(font).build()
+            Typeface.CustomFallbackBuilder(family)
+                .setSystemFallback("sans-serif")
+                .build()
+        } catch (e: Exception) {
+            Typeface.createFromFile(file)
         }
     }
 

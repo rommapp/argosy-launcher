@@ -1,7 +1,10 @@
 package com.nendo.argosy.ui.screens.settings.delegates
 
+import android.content.Context
+import com.nendo.argosy.R
 import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.core.notification.NotificationProgress
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.NotificationType
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.data.download.MediaDownloadManager
@@ -29,6 +32,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.time.Instant
 import javax.inject.Inject
@@ -61,7 +65,8 @@ class JellyfinSettingsDelegate @Inject constructor(
     private val mediaDirectoryManager: MediaDirectoryManager,
     private val mediaRepository: MediaRepository,
     private val mediaDownloadManager: MediaDownloadManager,
-    private val notificationManager: NotificationManager
+    private val notificationManager: NotificationManager,
+    @ApplicationContext private val context: Context
 ) {
     private val _state = MutableStateFlow(JellyfinState())
     val state: StateFlow<JellyfinState> = _state.asStateFlow()
@@ -114,11 +119,15 @@ class JellyfinSettingsDelegate @Inject constructor(
     fun commitServerConfig(scope: CoroutineScope, onFocusReset: () -> Unit, onSaved: () -> Unit) {
         val url = _state.value.configUrl.trim().trimEnd('/')
         if (url.isBlank()) {
-            _state.update { it.copy(configError = "Enter a server address") }
+            _state.update {
+                it.copy(configError = context.getString(R.string.settings_jellyfin_delegate_config_error_empty))
+            }
             return
         }
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
-            _state.update { it.copy(configError = "Address must start with http:// or https://") }
+            _state.update {
+                it.copy(configError = context.getString(R.string.settings_jellyfin_delegate_config_error_scheme))
+            }
             return
         }
         scope.launch {
@@ -238,7 +247,9 @@ class JellyfinSettingsDelegate @Inject constructor(
         val state = _state.value
         if (state.serverUrl.isBlank()) return
         if (state.loginUsername.isBlank() || state.loginPassword.isBlank()) {
-            _state.update { it.copy(signInError = "Enter your username and password") }
+            _state.update {
+                it.copy(signInError = context.getString(R.string.settings_jellyfin_delegate_signin_error_empty))
+            }
             return
         }
         if (state.isSigningIn) return
@@ -332,8 +343,8 @@ class JellyfinSettingsDelegate @Inject constructor(
         if (current.isSyncingLibrary || !current.isSignedIn) return
         _state.update { it.copy(isSyncingLibrary = true, librarySyncError = null) }
         notificationManager.showPersistent(
-            title = "Syncing Media",
-            subtitle = "Starting...",
+            title = NotificationText.Res(R.string.notif_jellyfin_settings_sync_title),
+            subtitle = NotificationText.Res(R.string.notif_jellyfin_settings_sync_starting),
             key = MEDIA_SYNC_NOTIFICATION_KEY,
             progress = NotificationProgress(0, 0)
         )
@@ -344,7 +355,7 @@ class JellyfinSettingsDelegate @Inject constructor(
                         if (progress.isSyncing && progress.currentLibrary.isNotBlank()) {
                             notificationManager.updatePersistent(
                                 key = MEDIA_SYNC_NOTIFICATION_KEY,
-                                subtitle = progress.currentLibrary,
+                                subtitle = NotificationText.Raw(progress.currentLibrary),
                                 progress = NotificationProgress(
                                     progress.librariesDone + 1,
                                     progress.librariesTotal
@@ -366,8 +377,13 @@ class JellyfinSettingsDelegate @Inject constructor(
                 val failure = outcome.data.errors.firstOrNull()
                 notificationManager.completePersistent(
                     key = MEDIA_SYNC_NOTIFICATION_KEY,
-                    title = if (failure == null) "Media up to date" else "Some libraries were missed",
-                    subtitle = failure ?: describeSyncCounts(outcome.data),
+                    title = if (failure == null) {
+                        NotificationText.Res(R.string.notif_jellyfin_settings_sync_up_to_date)
+                    } else {
+                        NotificationText.Res(R.string.notif_jellyfin_settings_sync_partial)
+                    },
+                    subtitle = failure?.let { NotificationText.Raw(it) }
+                        ?: NotificationText.Raw(describeSyncCounts(outcome.data)),
                     type = if (failure == null) NotificationType.SUCCESS else NotificationType.ERROR
                 )
                 _state.update {
@@ -381,8 +397,8 @@ class JellyfinSettingsDelegate @Inject constructor(
             is JellyfinResult.Error -> {
                 notificationManager.completePersistent(
                     key = MEDIA_SYNC_NOTIFICATION_KEY,
-                    title = "Media sync failed",
-                    subtitle = outcome.message,
+                    title = NotificationText.Res(R.string.notif_jellyfin_settings_sync_failed_title),
+                    subtitle = NotificationText.Raw(outcome.message),
                     type = NotificationType.ERROR
                 )
                 _state.update {
@@ -397,9 +413,17 @@ class JellyfinSettingsDelegate @Inject constructor(
      * size rather than as an addition.
      */
     private fun describeSyncCounts(result: JellyfinSyncResult): String {
-        val libraries = if (result.librariesSynced == 1) "1 library" else "${result.librariesSynced} libraries"
-        val titles = if (result.itemsAdded == 1) "1 title" else "${result.itemsAdded} titles"
-        return "$libraries, $titles"
+        val libraries = context.resources.getQuantityString(
+            R.plurals.notif_jellyfin_settings_sync_libraries_count,
+            result.librariesSynced,
+            result.librariesSynced
+        )
+        val titles = context.resources.getQuantityString(
+            R.plurals.notif_jellyfin_settings_sync_titles_count,
+            result.itemsAdded,
+            result.itemsAdded
+        )
+        return context.getString(R.string.notif_jellyfin_settings_sync_counts_summary, libraries, titles)
     }
 
     fun cycleDownloadQuality(scope: CoroutineScope, direction: Int) {
@@ -502,7 +526,7 @@ class JellyfinSettingsDelegate @Inject constructor(
     fun onMediaLocationSelected(scope: CoroutineScope, newPath: String) {
         if (mediaDownloadManager.hasBlockingDownloadState()) {
             notificationManager.showError(
-                "Cancel the movie or episode download before moving your media folder"
+                NotificationText.Res(R.string.notif_jellyfin_settings_relocate_blocked_media_download)
             )
             return
         }

@@ -23,11 +23,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.nendo.argosy.R
 import com.nendo.argosy.domain.model.UnifiedStateEntry
+import com.nendo.argosy.ui.common.displayName
+import com.nendo.argosy.ui.common.sizeFormatted
+import com.nendo.argosy.ui.common.slotLabel
 import com.nendo.argosy.util.formatSaveTimestamp
 import java.io.File
 
@@ -39,6 +44,7 @@ fun StateSlotRow(
     modifier: Modifier = Modifier,
     clickModifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val isEmpty = entry.localCacheId == null && entry.serverStateId == null
     val textAlpha = if (isEmpty) 0.45f else 1f
 
@@ -76,14 +82,14 @@ fun StateSlotRow(
             if (screenshotFile != null) {
                 AsyncImage(
                     model = screenshotFile,
-                    contentDescription = entry.displayName,
+                    contentDescription = entry.displayName(context),
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .size(width = 64.dp, height = 48.dp)
                 )
             } else {
                 Text(
-                    text = entry.slotLabel,
+                    text = entry.slotLabel(context),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                         .copy(alpha = 0.5f)
@@ -93,7 +99,7 @@ fun StateSlotRow(
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = entry.displayName,
+                text = entry.displayName(context),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium,
                 color = MaterialTheme.colorScheme.onSurface
@@ -108,21 +114,21 @@ fun StateSlotRow(
                 ) {
                     Text(
                         text = formatSaveTimestamp(
-                            LocalContext.current,
+                            context,
                             entry.timestamp.toEpochMilli()
                         ),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = entry.sizeFormatted,
+                        text = entry.sizeFormatted(context),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             } else {
                 Text(
-                    text = "(Empty)",
+                    text = stringResource(R.string.ui_state_slot_row_empty),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                         .copy(alpha = 0.5f)
@@ -132,17 +138,21 @@ fun StateSlotRow(
 
         if (!isEmpty) {
             val syncLabel = when (entry.syncStatus) {
-                UnifiedStateEntry.SyncStatus.SYNCED -> "Synced"
-                UnifiedStateEntry.SyncStatus.PENDING_UPLOAD -> "Pending"
-                UnifiedStateEntry.SyncStatus.SERVER_ONLY -> "Server"
-                UnifiedStateEntry.SyncStatus.LOCAL_ONLY -> "Local"
+                UnifiedStateEntry.SyncStatus.SYNCED ->
+                    stringResource(R.string.ui_state_slot_row_tag_synced)
+                UnifiedStateEntry.SyncStatus.PENDING_UPLOAD ->
+                    stringResource(R.string.ui_state_slot_row_tag_pending)
+                UnifiedStateEntry.SyncStatus.SERVER_ONLY ->
+                    stringResource(R.string.ui_state_slot_row_tag_server)
+                UnifiedStateEntry.SyncStatus.LOCAL_ONLY ->
+                    stringResource(R.string.ui_state_slot_row_tag_local)
             }
             val syncColor = when (entry.syncStatus) {
                 UnifiedStateEntry.SyncStatus.SYNCED -> Color(0xFF4CAF50)
                 else -> MaterialTheme.colorScheme.onSurfaceVariant
             }
             Text(
-                text = "[$syncLabel]",
+                text = syncLabel,
                 style = MaterialTheme.typography.labelSmall,
                 color = syncColor
             )

@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.screens.gamedetail.modals
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,10 +20,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.nendo.argosy.R
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.InputButton
@@ -30,6 +35,7 @@ import com.nendo.argosy.ui.components.NestedModal
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.LocalInputDispatcher
+import com.nendo.argosy.ui.primitives.InputGlyph
 import com.nendo.argosy.ui.screens.gamedetail.components.OptionItem
 import com.nendo.argosy.ui.screens.gamedetail.delegates.SpeedrunImport
 import com.nendo.argosy.ui.screens.gamedetail.delegates.SpeedrunPrompt
@@ -131,21 +137,25 @@ fun SpeedrunSplitsModal(
     FocusedScroll(listState = listState, focusedIndex = state.focusIndex)
 
     Modal(
-        title = if (editing != null) "${editing.name} - Segments" else "Speedrun Splits",
+        title = if (editing != null) {
+            stringResource(R.string.gamedetail_speedrun_segments_title, editing.name)
+        } else {
+            stringResource(R.string.gamedetail_speedrun_title)
+        },
         subtitle = if (editing == null) gameTitle else null,
         onDismiss = { delegate.dismiss() },
         footerHints = if (editing != null) {
             listOf(
-                InputButton.X to "Add Segment",
-                InputButton.Y to "Delete",
-                InputButton.LB_RB to "Move",
-                InputButton.B to "Back"
+                InputButton.X to stringResource(R.string.gamedetail_speedrun_footer_add_segment),
+                InputButton.Y to stringResource(R.string.gamedetail_speedrun_footer_delete),
+                InputButton.LB_RB to stringResource(R.string.gamedetail_speedrun_footer_move),
+                InputButton.B to stringResource(R.string.gamedetail_speedrun_footer_back)
             )
         } else {
             listOf(
-                InputButton.A to "Open",
-                InputButton.X to "New Category",
-                InputButton.B to "Close"
+                InputButton.A to stringResource(R.string.gamedetail_speedrun_footer_open),
+                InputButton.X to stringResource(R.string.gamedetail_speedrun_footer_new_category),
+                InputButton.B to stringResource(R.string.gamedetail_speedrun_footer_close)
             )
         }
     ) {
@@ -156,21 +166,25 @@ fun SpeedrunSplitsModal(
             ) {
                 itemsIndexed(state.segments, key = { index, _ -> index }) { index, segment ->
                     OptionItem(
-                        label = "${index + 1}.  $segment",
+                        label = stringResource(
+                            R.string.gamedetail_speedrun_segment_row,
+                            index + 1,
+                            segment
+                        ),
                         isFocused = state.focusIndex == index,
                         onClick = { delegate.confirmFocusedAt(index) }
                     )
                 }
                 item(key = "rename-category") {
                     OptionItem(
-                        label = "Rename Category",
+                        label = stringResource(R.string.gamedetail_speedrun_rename_category),
                         isFocused = state.focusIndex == state.segments.size,
                         onClick = { delegate.confirmFocusedAt(state.segments.size) }
                     )
                 }
                 item(key = "delete-category") {
                     OptionItem(
-                        label = "Delete Category",
+                        label = stringResource(R.string.gamedetail_speedrun_delete_category),
                         isDangerous = true,
                         isFocused = state.focusIndex == state.segments.size + 1,
                         onClick = { delegate.confirmFocusedAt(state.segments.size + 1) }
@@ -179,12 +193,23 @@ fun SpeedrunSplitsModal(
             }
         } else {
             if (state.categories.isEmpty()) {
-                Text(
-                    text = "No categories yet. Press X to create one, or import from the community.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs),
                     modifier = Modifier.padding(vertical = Dimens.spacingMd)
-                )
+                ) {
+                    Text(
+                        text = stringResource(R.string.gamedetail_speedrun_empty_prefix),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    InputGlyph(button = InputButton.X)
+                    Text(
+                        text = stringResource(R.string.gamedetail_speedrun_empty_suffix),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
             LazyColumn(
                 state = listState,
@@ -193,7 +218,11 @@ fun SpeedrunSplitsModal(
                 itemsIndexed(state.categories, key = { _, category -> category.id }) { index, category ->
                     OptionItem(
                         label = category.name,
-                        value = "${category.segmentCount} segments · ${category.attemptCount} attempts",
+                        value = stringResource(
+                            R.string.gamedetail_speedrun_category_summary,
+                            category.segmentCount,
+                            category.attemptCount
+                        ),
                         isFocused = state.focusIndex == index,
                         onClick = { delegate.confirmFocusedAt(index) }
                     )
@@ -201,7 +230,7 @@ fun SpeedrunSplitsModal(
                 item(key = "import-splits") {
                     OptionItem(
                         icon = Icons.Default.CloudDownload,
-                        label = "Import Splits...",
+                        label = stringResource(R.string.gamedetail_speedrun_import_row),
                         isFocused = state.focusIndex == state.categories.size,
                         onClick = { delegate.confirmFocusedAt(state.categories.size) }
                     )
@@ -211,24 +240,31 @@ fun SpeedrunSplitsModal(
     }
 
     when (val import = state.import) {
-        is SpeedrunImport.Loading -> NestedModal(title = "Searching...") {
+        is SpeedrunImport.Loading -> NestedModal(
+            title = stringResource(R.string.gamedetail_speedrun_import_loading_title)
+        ) {
             Text(
-                text = "Looking up categories on therun.gg and speedrun.com",
+                text = stringResource(R.string.gamedetail_speedrun_import_loading_message),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        is SpeedrunImport.Importing -> NestedModal(title = "Importing...") {
+        is SpeedrunImport.Importing -> NestedModal(
+            title = stringResource(R.string.gamedetail_speedrun_import_importing_title)
+        ) {
             Text(
-                text = "Fetching splits from a top run",
+                text = stringResource(R.string.gamedetail_speedrun_import_importing_message),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         is SpeedrunImport.Failed -> NestedModal(
-            title = "Import",
+            title = stringResource(R.string.gamedetail_speedrun_import_failed_title),
             onDismiss = { delegate.dismiss() },
-            footerHints = listOf(InputButton.B to "Back")
+            footerHints = listOf(
+                InputButton.B to
+                    stringResource(R.string.gamedetail_speedrun_import_failed_footer_back)
+            )
         ) {
             Text(
                 text = import.message,
@@ -240,20 +276,30 @@ fun SpeedrunSplitsModal(
             title = import.entry.label,
             onDismiss = { delegate.dismiss() },
             footerHints = listOf(
-                InputButton.DPAD_HORIZONTAL to "Other Runner",
-                InputButton.A to "Import",
-                InputButton.B to "Back"
+                InputButton.DPAD_HORIZONTAL to
+                    stringResource(R.string.gamedetail_speedrun_preview_footer_other_runner),
+                InputButton.A to
+                    stringResource(R.string.gamedetail_speedrun_preview_footer_import),
+                InputButton.B to stringResource(R.string.gamedetail_speedrun_preview_footer_back)
             )
         ) {
             Text(
-                text = "Splits by ${import.template.runnerUsername} (#${import.runnerIndex + 1})",
+                text = stringResource(
+                    R.string.gamedetail_speedrun_preview_attribution,
+                    import.template.runnerUsername,
+                    import.runnerIndex + 1
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             LazyColumn(modifier = Modifier.weight(1f, fill = false)) {
                 itemsIndexed(import.template.segments, key = { index, _ -> index }) { index, segment ->
                     Text(
-                        text = "${index + 1}.  $segment",
+                        text = stringResource(
+                            R.string.gamedetail_speedrun_preview_segment_row,
+                            index + 1,
+                            segment
+                        ),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(vertical = Dimens.spacingXs)
@@ -265,11 +311,13 @@ fun SpeedrunSplitsModal(
             val importListState = rememberLazyListState()
             FocusedScroll(listState = importListState, focusedIndex = import.focusIndex)
             NestedModal(
-                title = "Import Splits",
+                title = stringResource(R.string.gamedetail_speedrun_import_options_title),
                 onDismiss = { delegate.dismiss() },
                 footerHints = listOf(
-                    InputButton.A to "Import",
-                    InputButton.B to "Cancel"
+                    InputButton.A to
+                        stringResource(R.string.gamedetail_speedrun_import_options_footer_import),
+                    InputButton.B to
+                        stringResource(R.string.gamedetail_speedrun_import_options_footer_cancel)
                 )
             ) {
                 LazyColumn(
@@ -280,8 +328,10 @@ fun SpeedrunSplitsModal(
                         OptionItem(
                             label = entry.label,
                             value = when (entry.source) {
-                                com.nendo.argosy.data.speedrun.SeedCategory.Source.THERUN -> "therun.gg · full splits"
-                                com.nendo.argosy.data.speedrun.SeedCategory.Source.SPEEDRUN_COM -> "speedrun.com · name only"
+                                com.nendo.argosy.data.speedrun.SeedCategory.Source.THERUN ->
+                                    stringResource(R.string.gamedetail_speedrun_source_therun)
+                                com.nendo.argosy.data.speedrun.SeedCategory.Source.SPEEDRUN_COM ->
+                                    stringResource(R.string.gamedetail_speedrun_source_speedruncom)
                             },
                             isFocused = import.focusIndex == index,
                             onClick = { delegate.confirmImportAt(index) }
@@ -298,15 +348,17 @@ fun SpeedrunSplitsModal(
             title = prompt.title,
             onDismiss = { delegate.dismissPrompt() },
             footerHints = listOf(
-                InputButton.A to "Confirm",
-                InputButton.B to "Cancel"
+                InputButton.A to stringResource(R.string.gamedetail_speedrun_prompt_confirm),
+                InputButton.B to stringResource(R.string.gamedetail_speedrun_prompt_cancel)
             )
         ) {
             OutlinedTextField(
                 value = promptText,
                 onValueChange = { promptText = it },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Name") },
+                placeholder = {
+                    Text(stringResource(R.string.gamedetail_speedrun_prompt_placeholder))
+                },
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -315,18 +367,27 @@ fun SpeedrunSplitsModal(
             )
         }
         is SpeedrunPrompt.ConfirmDelete -> NestedModal(
-            title = "Delete \"${prompt.title}\"?",
+            title = stringResource(
+                R.string.gamedetail_speedrun_confirm_delete_title,
+                prompt.title
+            ),
             onDismiss = { delegate.dismissPrompt() },
             footerHints = listOf(
-                InputButton.A to "Delete",
-                InputButton.B to "Cancel"
+                InputButton.A to
+                    stringResource(R.string.gamedetail_speedrun_confirm_delete_footer_delete),
+                InputButton.B to
+                    stringResource(R.string.gamedetail_speedrun_confirm_delete_footer_cancel)
             )
         ) {
             Text(
                 text = if (prompt.isCategory) {
-                    "This deletes the category, its segments, and all recorded attempts."
+                    stringResource(
+                        R.string.gamedetail_speedrun_confirm_delete_category_message
+                    )
                 } else {
-                    "This removes the segment from the category."
+                    stringResource(
+                        R.string.gamedetail_speedrun_confirm_delete_segment_message
+                    )
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant

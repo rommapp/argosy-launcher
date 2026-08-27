@@ -109,7 +109,9 @@ and system data are separate sibling folders sharing it.
 
 The save unit spans every prefix match, so an upload bundles all of them and a
 restore deletes all of them before extracting. `findSaveFolderBySaveId`
-returns the *parent*, not a match, because there is no single folder.
+returns the *parent*, not a match, because there is no single folder. All of
+that lives in `PrefixBundleFolderHandler`, shared with PS3; what PSP owns is
+the PARAM.SFO test that keeps installed game data out of the bundle.
 
 ### Vita, Wii, Wii U (plain `FolderSaveHandler`)
 
@@ -138,6 +140,104 @@ emulator's user and profile directories:
 Both intermediate levels are discovered. `isValidCachedSavePath` re-checks the
 shape before trusting a cached path.
 
+### PS3 (`Ps3FolderHandler`)
+
+`save_id` is the 9-character title id (`BCUS99086`) read from `PARAM.SFO`,
+`FOLDER_PREFIX`. The game appends a per-artifact suffix, so this is PSP's
+shape rather than Vita's:
+
+```
+<base>/<titleId><suffix>          BCUS99086GAMEDATA, BCUS99086-AUTOSAVE
+```
+
+`FolderSaveHandler.folderMatches` defaults to case-insensitive equality, which
+would match only a folder named exactly `BCUS99086` and miss every real save.
+PSP and PS3 both sit on `PrefixBundleFolderHandler` instead, which carries the
+whole shape: prefix matching, the parent as the resolved path, every matched
+sibling bundled on upload, and those same siblings cleared before a restore
+unpacks back into the parent. PS3 adds nothing to it. PSP adds one thing, the
+PARAM.SFO test that keeps installed game data out of the bundle.
+
+aPS3e base:
+
+```
+{extStorage}/Android/data/aenu.aps3e/files/aps3e/config/dev_hdd0/home/00000001/savedata
+```
+
+The user segment is hardcoded to `00000001` in aPS3e, so the config names it.
+Desktop RPCS3 can hold several, so a desktop path added later has to discover
+that level rather than inherit this constant.
+
+### Xbox 360 (`Xbox360FolderHandler`)
+
+`save_id` is 8-hex uppercase (`4D5307DC`), `FOLDER_EXACT`, but it is *not* the
+first segment. XenDroid keys content by profile before title:
+
+```
+<base>/<XUID 16 hex>/<save_id>/00000001/<package>/
+        ^^^^^^^^^^^^            ^^^^^^^^
+        discovered              saved-game content type
+```
+
+The model is `N3dsFolderHandler`, not `SwitchSaveHandler`: a `FolderSaveHandler`
+subclass that overrides `findSaveFolderBySaveId` to walk a discovered level and
+`constructSavePath` to pick one, which is the same problem 3DS solves for id0
+and id1. Nothing about Switch's profile parsing or JKSV format applies here.
+
+Three traps, each of which produces a silent miss rather than an error:
+
+- The XUID level is enumerated, never constructed. It names the signed-in
+  profile, so `constructSavePath` answers null when no profile directory exists
+  rather than inventing one.
+- `00000001` is the saved-game content type. `00000002` is DLC and `000B0000`
+  is title updates, so matching on the title id alone picks up add-on content
+  and syncs it as a save. The save unit therefore stops at the content-type
+  directory, not at the title.
+- Non-profile content sits under the machine XUID `0000000000000000`. A tree
+  containing only that XUID has no saves in it, so finding the title id there
+  is not a hit.
+
+A consequence of the second trap: the archive is rooted at `00000001`, a name
+every title on the console shares, so it goes in `unidentifiedArchiveRoots` and
+the resolved destination is what places it. Same reason 3DS lists `data`.
+
+`isValidCachedSavePath` checks the `<16 hex>/<8 hex>/00000001` tail before a
+cached row is trusted, because deleting the profile that XUID names leaves a
+path that still exists on disk and still holds files, pointing at somewhere
+XenDroid no longer reads.
+
+XenDroid base:
+
+```
+{extStorage}/Android/data/xendroid.compose/files/compose/content
+```
+
+The layout is Xenia's `ResolvePackageRoot()`, so desktop Xenia matches below
+its own content root. AX360E is deliberately unregistered: its layout has not
+been read from the app, and a guessed path resolves to a directory the emulator
+never writes.
+
+### Xbox (no path exists)
+
+The one platform where `save_id` identifies without locating. Saves are
+written to `E:\UDATA\<save_id>\` inside a FATX filesystem, inside the `.qcow2`
+or `.img` hard-disk image the emulator boots. There is no host directory to
+resolve, and hakuX takes that image from a user file picker rather than placing
+it anywhere fixed, so there is not even a stable image path to look in. X1 BOX
+and desktop xemu have the same property for the same reason.
+
+`hakux` is registered with `supported = false` and an EMPTY `defaultPaths`, and
+the emptiness is the point. `getConfig` and `SavePathAuthority.configFor` both
+drop an unsupported config, so nothing offers the user a save folder, and no
+plausible-looking path is left in the registry for a later reader to trust.
+Reading one would mean a FATX parser over a qcow2, and hakuX's own FATX code
+only imports a dashboard, it exports nothing.
+
+sigil still returns a real `save_id` here, and `xbox` is in
+`PlatformDefinitions.TITLE_ID_PLATFORMS` so that it gets extracted and stored:
+it matches the game to its upstream record even when no file can be reached.
+Membership in that set is about extraction, not about a syncable layout.
+
 ### RetroArch and the file-based default
 
 Not id-derived at all. The save is named for the ROM, not the title:
@@ -149,6 +249,46 @@ Not id-derived at all. The save is named for the ROM, not the title:
 `RetroArchSaveHandler` resolves `<base>` through the core name and
 `retroarch.cfg`, including the `savefiles_in_content_dir` case where the save
 sits beside the ROM.
+
+## What wiring the three actually took
+
+The JNI binding is slug-driven with no mirrored enum, so nothing about it
+changed. What was NOT free, and is the part worth remembering:
+
+**`TITLE_ID_PLATFORMS` is the gate, not the handler.** A handler and a config
+are invisible without it. `PlatformDefinitions.TITLE_ID_PLATFORMS` guards
+`TitleIdDownloadObserver` at all three of its entry points, which is what
+extracts an id after a download, plus the title-id row on both game-detail
+surfaces. Registering a layout for a platform outside that set builds a lookup
+nothing ever supplies a key to.
+
+**The config ids stayed bare.** `aps3e` and `xendroid`, not `aps3e_ps3` and
+`xendroid_xbox360`. Platform-qualifying a single-platform emulator here would
+have broken it: `getConfig`, `getConfigByPackage` and `canSyncWithSettings`
+answer for an emulator alone and look up the bare key, so a platform-only entry
+makes save sync unreachable for that emulator entirely. The qualified form
+exists for emulators that serve more than one platform, which is why `dolphin`
+keeps the bare key for GameCube and only Wii gets `dolphin_wii`. Adding a
+second platform to either emulator later means adding the qualified entry then,
+which the `getConfigForPlatform` fallback chain already handles.
+
+**`isValidCachedSavePath` moved onto `PlatformSaveHandler`.** It was a Switch
+method reached through `if (platformSlug == "switch")` in `SaveUploader` and
+`SaveSyncConflictResolver`. Both now ask
+`PlatformSaveHandlerRegistry.isValidCachedSavePath(platformSlug, path)`, and
+the two platforms that nest a save under a per-install identifier answer it.
+Every other platform inherits true, where existence on disk is the whole
+question.
+
+Nothing here has been tested against a real save. The paths were read out of
+each emulator's source, not observed on device, so PS3 is the place to confirm
+the approach before trusting the other two. The save-zone rule applies in full:
+GET /api/saves and negotiate no_op twice before calling any of it working.
+
+PSP is the regression risk in this change, not the new platforms. Extracting
+`PrefixBundleFolderHandler` moved PSP's bundling, discovery and restore into a
+shared base without changing them, so a PSP round trip is what proves the
+extraction was clean.
 
 ## Save states are a peer subsystem with its own rule
 

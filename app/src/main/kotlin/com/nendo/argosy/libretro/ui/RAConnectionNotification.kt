@@ -40,8 +40,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import kotlinx.coroutines.delay
 
 data class RAConnectionInfo(
@@ -178,7 +180,7 @@ private fun RAConnectionContent(info: RAConnectionInfo) {
             Spacer(Modifier.width(12.dp))
             Column {
                 Text(
-                    text = "RetroAchievements Connected",
+                    text = stringResource(R.string.ingame_raconnect_title),
                     style = MaterialTheme.typography.bodyMedium.copy(shadow = textShadow),
                     color = Color.White,
                     fontWeight = FontWeight.Bold
@@ -186,7 +188,11 @@ private fun RAConnectionContent(info: RAConnectionInfo) {
                 Spacer(Modifier.height(2.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = if (info.isHardcore) "Hardcore Mode" else "Casual Mode",
+                        text = if (info.isHardcore) {
+                            stringResource(R.string.ingame_raconnect_hardcore)
+                        } else {
+                            stringResource(R.string.ingame_raconnect_casual)
+                        },
                         style = MaterialTheme.typography.labelSmall.copy(shadow = textShadow),
                         color = primary,
                         fontWeight = FontWeight.Bold
@@ -198,7 +204,11 @@ private fun RAConnectionContent(info: RAConnectionInfo) {
                             color = shine.copy(alpha = 0.7f)
                         )
                         Text(
-                            text = "${info.earnedCount}/${info.totalCount} earned",
+                            text = stringResource(
+                                R.string.ingame_raconnect_earned,
+                                info.earnedCount,
+                                info.totalCount
+                            ),
                             style = MaterialTheme.typography.labelSmall.copy(shadow = textShadow),
                             color = shine
                         )

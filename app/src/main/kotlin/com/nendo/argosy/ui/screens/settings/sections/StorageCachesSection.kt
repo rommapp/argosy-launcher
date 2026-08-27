@@ -20,6 +20,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.data.storage.StorageCategory
 import com.nendo.argosy.data.storage.StorageSnapshot
 import com.nendo.argosy.ui.components.ActionPreference
@@ -62,7 +66,7 @@ internal sealed class StorageCachesItem(
     class Header(
         key: String,
         section: String,
-        val title: String,
+        val titleRes: Int,
         visibleWhen: (StorageCachesLayoutState) -> Boolean = { true }
     ) : StorageCachesItem(key, section, visibleWhen)
 
@@ -114,17 +118,17 @@ internal sealed class StorageCachesItem(
 
         val ALL: List<StorageCachesItem>
             get() = listOf(
-                Header("syncHeader", "sync", "SYNC CACHES"),
+                Header("syncHeader", "sync", R.string.settings_caches_section_sync),
                 PendingUploads, SaveCacheClear, StateCacheClear, PathCacheClear,
                 StateCacheToggle, SaveCacheLimit,
                 SectionSpacer("mediaSpacer", "media"),
-                Header("mediaHeader", "media", "MEDIA CACHES"),
+                Header("mediaHeader", "media", R.string.settings_caches_section_media),
                 ImageCacheClear, ValidateImageCache,
                 InfoRow(KEY_ARTWORK_CACHE_INFO, "media"),
                 ScreenshotsToggle, BoxArtToggle,
                 RomExtractionClear, RomStagingClear, SfxCacheClear, EmulatorApksClear, MiscDownloadsClear,
                 SectionSpacer("systemSpacer", "system"),
-                Header("systemHeader", "system", "SYSTEM"),
+                Header("systemHeader", "system", R.string.settings_caches_section_system),
                 InfoRow(KEY_BIOS_INFO, "system"),
                 InfoRow(KEY_CORES_INFO, "system"),
                 ShadersCatalogClear,
@@ -133,7 +137,7 @@ internal sealed class StorageCachesItem(
                 InfoRow(KEY_FONTS_INFO, "system"),
                 InfoRow(KEY_DATABASE_INFO, "system"),
                 SectionSpacer("steamSpacer", "steam", { it.steamVisible }),
-                Header("steamHeader", "steam", "STEAM", { it.steamVisible }),
+                Header("steamHeader", "steam", R.string.settings_caches_section_steam, { it.steamVisible }),
                 InfoRow(KEY_STEAM_TOTAL_INFO, "steam", { it.steamVisible }),
                 InfoRow(KEY_STEAM_STAGING_INFO, "steam", { it.steamVisible }),
                 SteamClear
@@ -146,12 +150,12 @@ private val storageCachesLayout = SettingsLayout<StorageCachesItem, StorageCache
     isFocusable = { it.isFocusable },
     visibleWhen = { item, state -> item.visibleWhen(state) },
     sectionOf = { it.section },
-    sectionTitle = {
+    sectionTitleRes = {
         when (it) {
-            "sync" -> "SYNC CACHES"
-            "media" -> "MEDIA CACHES"
-            "system" -> "SYSTEM"
-            "steam" -> "STEAM"
+            "sync" -> R.string.settings_caches_section_sync
+            "media" -> R.string.settings_caches_section_media
+            "system" -> R.string.settings_caches_section_system
+            "steam" -> R.string.settings_caches_section_steam
             else -> null
         }
     }
@@ -193,8 +197,11 @@ fun StorageCachesSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
     val layoutState = remember(uiState.attribution.steamTileLatched, syncSettings.pendingUploadsCount > 0) {
         StorageCachesLayoutState.from(uiState)
     }
+    val context = LocalContext.current
     val visibleItems = remember(layoutState) { storageCachesLayout.visibleItems(layoutState) }
-    val sections = remember(layoutState) { storageCachesLayout.buildSections(layoutState) }
+    val sections = remember(layoutState, context) {
+        storageCachesLayout.buildSections(layoutState, context)
+    }
 
     fun isFocused(item: StorageCachesItem): Boolean =
         uiState.focusedIndex == storageCachesLayout.focusIndexOf(item, layoutState)
@@ -214,7 +221,7 @@ fun StorageCachesSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) { item ->
         when (item) {
-            is StorageCachesItem.Header -> SectionHeader(item.title)
+            is StorageCachesItem.Header -> SectionHeader(stringResource(item.titleRes))
 
             is StorageCachesItem.SectionSpacer -> Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
@@ -222,8 +229,16 @@ fun StorageCachesSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
 
             StorageCachesItem.PendingUploads -> ActionPreference(
                 icon = Icons.Default.Sync,
-                title = "${syncSettings.pendingUploadsCount} saves waiting to upload",
-                subtitle = if (isOnline) "Sync now before clearing sync caches" else "Reconnect to the server to sync",
+                title = pluralStringResource(
+                    R.plurals.settings_caches_pending_uploads_title,
+                    syncSettings.pendingUploadsCount,
+                    syncSettings.pendingUploadsCount
+                ),
+                subtitle = if (isOnline) {
+                    stringResource(R.string.settings_caches_pending_uploads_subtitle_online)
+                } else {
+                    stringResource(R.string.settings_caches_pending_uploads_subtitle_offline)
+                },
                 isFocused = isFocused(item),
                 isEnabled = isOnline && !syncSettings.isSyncing,
                 onClick = { viewModel.requestSyncSaves() }
@@ -233,12 +248,21 @@ fun StorageCachesSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
                 val totalCached = syncSettings.saveCacheCount + syncSettings.stateCacheCount
                 val pendingUploads = syncSettings.pendingUploadsCount
                 ActionPreference(
-                    title = "Reset Save Cache",
+                    title = stringResource(R.string.settings_caches_save_cache_title),
                     subtitle = when {
-                        syncSettings.isResettingSaveCache -> "Resetting..."
-                        pendingUploads > 0 -> "$pendingUploads saves waiting to upload"
-                        totalCached > 0 -> "$totalCached cached saves and states"
-                        else -> "No cached entries"
+                        syncSettings.isResettingSaveCache ->
+                            stringResource(R.string.settings_caches_save_cache_busy)
+                        pendingUploads > 0 -> pluralStringResource(
+                            R.plurals.settings_caches_save_cache_pending,
+                            pendingUploads,
+                            pendingUploads
+                        )
+                        totalCached > 0 -> pluralStringResource(
+                            R.plurals.settings_caches_save_cache_count,
+                            totalCached,
+                            totalCached
+                        )
+                        else -> stringResource(R.string.settings_caches_save_cache_empty)
                     },
                     trailingText = formatBytes(categoryBytes(snapshot, StorageCategory.SAVE_STATE_CACHE)),
                     isFocused = isFocused(item),
@@ -252,12 +276,21 @@ fun StorageCachesSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
                 val stateCount = syncSettings.stateCacheCount
                 val pendingUploads = syncSettings.pendingUploadsCount
                 ActionPreference(
-                    title = "Clear State Cache",
+                    title = stringResource(R.string.settings_caches_state_cache_title),
                     subtitle = when {
-                        syncSettings.isClearingStateCache -> "Clearing..."
-                        pendingUploads > 0 -> "$pendingUploads saves waiting to upload"
-                        stateCount > 0 -> "$stateCount cached save states"
-                        else -> "No cached states"
+                        syncSettings.isClearingStateCache ->
+                            stringResource(R.string.settings_caches_state_cache_busy)
+                        pendingUploads > 0 -> pluralStringResource(
+                            R.plurals.settings_caches_state_cache_pending,
+                            pendingUploads,
+                            pendingUploads
+                        )
+                        stateCount > 0 -> pluralStringResource(
+                            R.plurals.settings_caches_state_cache_count,
+                            stateCount,
+                            stateCount
+                        )
+                        else -> stringResource(R.string.settings_caches_state_cache_empty)
                     },
                     isFocused = isFocused(item),
                     isEnabled = !syncSettings.isClearingStateCache && stateCount > 0 && pendingUploads == 0,
@@ -270,12 +303,21 @@ fun StorageCachesSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
                 val pathCount = syncSettings.pathCacheCount
                 val pendingUploads = syncSettings.pendingUploadsCount
                 ActionPreference(
-                    title = "Clear Save Path Cache",
+                    title = stringResource(R.string.settings_caches_path_cache_title),
                     subtitle = when {
-                        syncSettings.isClearingPathCache -> "Clearing..."
-                        pendingUploads > 0 -> "$pendingUploads saves waiting to upload"
-                        pathCount > 0 -> "$pathCount cached paths"
-                        else -> "No cached paths"
+                        syncSettings.isClearingPathCache ->
+                            stringResource(R.string.settings_caches_path_cache_busy)
+                        pendingUploads > 0 -> pluralStringResource(
+                            R.plurals.settings_caches_path_cache_pending,
+                            pendingUploads,
+                            pendingUploads
+                        )
+                        pathCount > 0 -> pluralStringResource(
+                            R.plurals.settings_caches_path_cache_count,
+                            pathCount,
+                            pathCount
+                        )
+                        else -> stringResource(R.string.settings_caches_path_cache_empty)
                     },
                     isFocused = isFocused(item),
                     isEnabled = !syncSettings.isClearingPathCache && pathCount > 0 && pendingUploads == 0,
@@ -284,8 +326,8 @@ fun StorageCachesSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
             }
 
             StorageCachesItem.StateCacheToggle -> SwitchPreference(
-                title = "Cache Save States",
-                subtitle = "Keep state snapshots for cloud sync at session end",
+                title = stringResource(R.string.settings_caches_state_toggle_title),
+                subtitle = stringResource(R.string.settings_caches_state_toggle_subtitle),
                 isEnabled = syncSettings.stateCacheEnabled,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.toggleStateCache() }
@@ -294,22 +336,40 @@ fun StorageCachesSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
             StorageCachesItem.SaveCacheLimit -> {
                 val limits = SyncSettingsDelegate.SAVE_CACHE_LIMIT_VALUES
                 CyclePreference(
-                    title = "Local Save Cache",
-                    value = "${syncSettings.saveCacheLimit} saves per game",
+                    title = stringResource(R.string.settings_caches_save_limit_title),
+                    value = pluralStringResource(
+                        R.plurals.settings_caches_save_limit_value,
+                        syncSettings.saveCacheLimit,
+                        syncSettings.saveCacheLimit
+                    ),
                     isFocused = isFocused(item),
                     onClick = { viewModel.cycleSaveCacheLimit(1) },
                     onPrev = { viewModel.cycleSaveCacheLimit(-1) },
-                    options = remember { limits.map { "$it saves per game" } },
+                    options = remember(context) {
+                        limits.map {
+                            context.resources.getQuantityString(
+                                R.plurals.settings_caches_save_limit_value,
+                                it,
+                                it
+                            )
+                        }
+                    },
                     onSelect = { viewModel.setSaveCacheLimit(limits[it]) },
                     pickerRequestToken = if (uiState.enumPickerKey == item.key) uiState.enumPickerToken else 0
                 )
             }
 
             StorageCachesItem.ImageCacheClear -> ActionPreference(
-                title = "Image Cache",
-                subtitle = when {
-                    isBusy(CachesClearTarget.IMAGE_CACHE) -> "Clearing..."
-                    else -> "${categoryFiles(snapshot, StorageCategory.IMAGE_CACHE)} files - covers re-download as you browse"
+                title = stringResource(R.string.settings_caches_image_cache_title),
+                subtitle = if (isBusy(CachesClearTarget.IMAGE_CACHE)) {
+                    stringResource(R.string.settings_caches_image_cache_busy)
+                } else {
+                    val imageFiles = categoryFiles(snapshot, StorageCategory.IMAGE_CACHE)
+                    pluralStringResource(
+                        R.plurals.settings_caches_image_cache_subtitle,
+                        imageFiles,
+                        imageFiles
+                    )
                 },
                 trailingText = formatBytes(categoryBytes(snapshot, StorageCategory.IMAGE_CACHE)),
                 isFocused = isFocused(item),
@@ -319,33 +379,40 @@ fun StorageCachesSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
             )
 
             StorageCachesItem.ValidateImageCache -> ActionPreference(
-                title = "Validate Image Cache",
-                subtitle = if (uiState.storage.isValidatingCache) "Validating..." else "Fix missing or broken cached images",
+                title = stringResource(R.string.settings_caches_validate_title),
+                subtitle = if (uiState.storage.isValidatingCache) {
+                    stringResource(R.string.settings_caches_validate_busy)
+                } else {
+                    stringResource(R.string.settings_caches_validate_subtitle)
+                },
                 isFocused = isFocused(item),
                 isEnabled = !uiState.storage.isValidatingCache && !isBusy(CachesClearTarget.IMAGE_CACHE),
                 onClick = { viewModel.validateImageCache() }
             )
 
             StorageCachesItem.ScreenshotsToggle -> SwitchPreference(
-                title = "Cache Screenshots",
-                subtitle = "Boxart and backgrounds are always cached",
+                title = stringResource(R.string.settings_caches_screenshots_title),
+                subtitle = stringResource(R.string.settings_caches_screenshots_subtitle),
                 isEnabled = uiState.server.syncScreenshotsEnabled,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.toggleSyncScreenshots() }
             )
 
             StorageCachesItem.BoxArtToggle -> SwitchPreference(
-                title = "Cache 3D Box Art",
-                subtitle = "Download box back and spine scans for 3D box displays",
+                title = stringResource(R.string.settings_caches_box_art_title),
+                subtitle = stringResource(R.string.settings_caches_box_art_subtitle),
                 isEnabled = uiState.server.boxArtCacheEnabled,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.toggleBoxArtCache() }
             )
 
             StorageCachesItem.RomExtractionClear -> ActionPreference(
-                title = "Extracted ROMs",
-                subtitle = if (isBusy(CachesClearTarget.ROM_EXTRACTION)) "Clearing..."
-                    else "Working copies of compressed games - re-extract on launch",
+                title = stringResource(R.string.settings_caches_rom_extraction_title),
+                subtitle = if (isBusy(CachesClearTarget.ROM_EXTRACTION)) {
+                    stringResource(R.string.settings_caches_rom_extraction_busy)
+                } else {
+                    stringResource(R.string.settings_caches_rom_extraction_subtitle)
+                },
                 trailingText = formatBytes(categoryBytes(snapshot, StorageCategory.ROM_EXTRACTION)),
                 isFocused = isFocused(item),
                 isEnabled = !isBusy(CachesClearTarget.ROM_EXTRACTION),
@@ -353,9 +420,12 @@ fun StorageCachesSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
             )
 
             StorageCachesItem.RomStagingClear -> ActionPreference(
-                title = "Abandoned Download Staging",
-                subtitle = if (isBusy(CachesClearTarget.ROM_STAGING)) "Clearing..."
-                    else "Leftovers from downloads that were unpacked internally and never finished",
+                title = stringResource(R.string.settings_caches_rom_staging_title),
+                subtitle = if (isBusy(CachesClearTarget.ROM_STAGING)) {
+                    stringResource(R.string.settings_caches_rom_staging_busy)
+                } else {
+                    stringResource(R.string.settings_caches_rom_staging_subtitle)
+                },
                 trailingText = formatBytes(categoryBytes(snapshot, StorageCategory.ROM_STAGING)),
                 isFocused = isFocused(item),
                 isEnabled = !isBusy(CachesClearTarget.ROM_STAGING),
@@ -363,9 +433,12 @@ fun StorageCachesSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
             )
 
             StorageCachesItem.SfxCacheClear -> ActionPreference(
-                title = "Sound Effects Cache",
-                subtitle = if (isBusy(CachesClearTarget.SFX_CACHE)) "Clearing..."
-                    else "Transcoded custom sounds - rebuilt automatically",
+                title = stringResource(R.string.settings_caches_sfx_title),
+                subtitle = if (isBusy(CachesClearTarget.SFX_CACHE)) {
+                    stringResource(R.string.settings_caches_sfx_busy)
+                } else {
+                    stringResource(R.string.settings_caches_sfx_subtitle)
+                },
                 trailingText = formatBytes(categoryBytes(snapshot, StorageCategory.SFX_CACHE)),
                 isFocused = isFocused(item),
                 isEnabled = !isBusy(CachesClearTarget.SFX_CACHE),
@@ -373,9 +446,12 @@ fun StorageCachesSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
             )
 
             StorageCachesItem.EmulatorApksClear -> ActionPreference(
-                title = "Emulator Installers",
-                subtitle = if (isBusy(CachesClearTarget.EMULATOR_APKS)) "Clearing..."
-                    else "Downloaded APKs - safe to remove after install",
+                title = stringResource(R.string.settings_caches_emulator_apks_title),
+                subtitle = if (isBusy(CachesClearTarget.EMULATOR_APKS)) {
+                    stringResource(R.string.settings_caches_emulator_apks_busy)
+                } else {
+                    stringResource(R.string.settings_caches_emulator_apks_subtitle)
+                },
                 trailingText = formatBytes(categoryBytes(snapshot, StorageCategory.EMULATOR_APKS)),
                 isFocused = isFocused(item),
                 isEnabled = !isBusy(CachesClearTarget.EMULATOR_APKS),
@@ -383,9 +459,12 @@ fun StorageCachesSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
             )
 
             StorageCachesItem.MiscDownloadsClear -> ActionPreference(
-                title = "Misc Downloads",
-                subtitle = if (isBusy(CachesClearTarget.MISC_DOWNLOADS)) "Clearing..."
-                    else "Friend presence covers and GPU driver downloads",
+                title = stringResource(R.string.settings_caches_misc_downloads_title),
+                subtitle = if (isBusy(CachesClearTarget.MISC_DOWNLOADS)) {
+                    stringResource(R.string.settings_caches_misc_downloads_busy)
+                } else {
+                    stringResource(R.string.settings_caches_misc_downloads_subtitle)
+                },
                 trailingText = formatBytes(categoryBytes(snapshot, StorageCategory.MISC_DOWNLOADS)),
                 isFocused = isFocused(item),
                 isEnabled = !isBusy(CachesClearTarget.MISC_DOWNLOADS),
@@ -393,9 +472,12 @@ fun StorageCachesSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
             )
 
             StorageCachesItem.ShadersCatalogClear -> ActionPreference(
-                title = "Shader Catalog",
-                subtitle = if (isBusy(CachesClearTarget.SHADERS_CATALOG)) "Clearing..."
-                    else "Downloaded shaders - re-download on demand",
+                title = stringResource(R.string.settings_caches_shaders_title),
+                subtitle = if (isBusy(CachesClearTarget.SHADERS_CATALOG)) {
+                    stringResource(R.string.settings_caches_shaders_busy)
+                } else {
+                    stringResource(R.string.settings_caches_shaders_subtitle)
+                },
                 trailingText = formatBytes(categoryBytes(snapshot, StorageCategory.SHADERS_CATALOG)),
                 isFocused = isFocused(item),
                 isEnabled = !isBusy(CachesClearTarget.SHADERS_CATALOG),
@@ -403,9 +485,12 @@ fun StorageCachesSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
             )
 
             StorageCachesItem.FramesClear -> ActionPreference(
-                title = "Frame Overlays",
-                subtitle = if (isBusy(CachesClearTarget.FRAMES)) "Clearing..."
-                    else "Downloaded bezels - re-download on demand",
+                title = stringResource(R.string.settings_caches_frames_title),
+                subtitle = if (isBusy(CachesClearTarget.FRAMES)) {
+                    stringResource(R.string.settings_caches_frames_busy)
+                } else {
+                    stringResource(R.string.settings_caches_frames_subtitle)
+                },
                 trailingText = formatBytes(categoryBytes(snapshot, StorageCategory.FRAMES)),
                 isFocused = isFocused(item),
                 isEnabled = !isBusy(CachesClearTarget.FRAMES),
@@ -413,11 +498,13 @@ fun StorageCachesSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
             )
 
             StorageCachesItem.SteamClear -> ActionPreference(
-                title = "Clear Download Data",
+                title = stringResource(R.string.settings_caches_steam_clear_title),
                 subtitle = when {
-                    isBusy(CachesClearTarget.STEAM_DOWNLOADS) -> "Clearing..."
-                    caches.steamDownloadBusy -> "Cancel Steam downloads first"
-                    else -> "Removes staged downloads and the queue - installed games stay"
+                    isBusy(CachesClearTarget.STEAM_DOWNLOADS) ->
+                        stringResource(R.string.settings_caches_steam_clear_busy)
+                    caches.steamDownloadBusy ->
+                        stringResource(R.string.settings_caches_steam_clear_blocked)
+                    else -> stringResource(R.string.settings_caches_steam_clear_subtitle)
                 },
                 isFocused = isFocused(item),
                 isEnabled = !isBusy(CachesClearTarget.STEAM_DOWNLOADS) && !caches.steamDownloadBusy,
@@ -433,44 +520,52 @@ private fun CachesInfoRow(item: StorageCachesItem.InfoRow, uiState: SettingsUiSt
     val snapshot = uiState.attribution.snapshot
     val (title, subtitle, value) = when (item.key) {
         StorageCachesItem.KEY_ARTWORK_CACHE_INFO -> Triple(
-            "Artwork Cache",
-            "Posters, backdrops and other online artwork - re-downloaded on demand",
+            stringResource(R.string.settings_caches_info_artwork_title),
+            stringResource(R.string.settings_caches_info_artwork_subtitle),
             formatBytes(categoryBytes(snapshot, StorageCategory.REMOTE_IMAGE_CACHE))
         )
         StorageCachesItem.KEY_BIOS_INFO -> Triple(
-            "BIOS Files",
-            "Required by emulators - not a cache",
+            stringResource(R.string.settings_caches_info_bios_title),
+            stringResource(R.string.settings_caches_info_bios_subtitle),
             formatBytes(categoryBytes(snapshot, StorageCategory.BIOS))
         )
         StorageCachesItem.KEY_CORES_INFO -> Triple(
-            "Cores & System",
-            "Built-in emulator cores and support files",
+            stringResource(R.string.settings_caches_info_cores_title),
+            stringResource(R.string.settings_caches_info_cores_subtitle),
             formatBytes(categoryBytes(snapshot, StorageCategory.CORES_SYSTEM))
         )
         StorageCachesItem.KEY_SHADERS_CUSTOM_INFO -> Triple(
-            "Custom Shaders",
-            "User content - never cleared",
+            stringResource(R.string.settings_caches_info_shaders_title),
+            stringResource(R.string.settings_caches_info_shaders_subtitle),
             formatBytes(categoryBytes(snapshot, StorageCategory.SHADERS_CUSTOM))
         )
         StorageCachesItem.KEY_FONTS_INFO -> Triple(
-            "Fonts",
-            "User content - never cleared",
+            stringResource(R.string.settings_caches_info_fonts_title),
+            stringResource(R.string.settings_caches_info_fonts_subtitle),
             formatBytes(categoryBytes(snapshot, StorageCategory.FONTS))
         )
-        StorageCachesItem.KEY_DATABASE_INFO -> Triple(
-            "Database",
-            "${categoryFiles(snapshot, StorageCategory.DATABASE)} library database files",
-            formatBytes(categoryBytes(snapshot, StorageCategory.DATABASE))
-        )
+        StorageCachesItem.KEY_DATABASE_INFO -> {
+            val databaseFiles = categoryFiles(snapshot, StorageCategory.DATABASE)
+            Triple(
+                stringResource(R.string.settings_caches_info_database_title),
+                pluralStringResource(
+                    R.plurals.settings_caches_info_database_subtitle,
+                    databaseFiles,
+                    databaseFiles
+                ),
+                formatBytes(categoryBytes(snapshot, StorageCategory.DATABASE))
+            )
+        }
         StorageCachesItem.KEY_STEAM_TOTAL_INFO -> Triple(
-            "Steam & PC Total",
-            "Includes installed store games",
+            stringResource(R.string.settings_caches_info_steam_total_title),
+            stringResource(R.string.settings_caches_info_steam_total_subtitle),
             formatBytes(categoryBytes(snapshot, StorageCategory.STEAM))
         )
         StorageCachesItem.KEY_STEAM_STAGING_INFO -> Triple(
-            "Download Staging",
-            "Partial downloads awaiting deploy",
-            uiState.storageCaches.steamStagingBytes?.let { formatBytes(it) } ?: "Computing..."
+            stringResource(R.string.settings_caches_info_steam_staging_title),
+            stringResource(R.string.settings_caches_info_steam_staging_subtitle),
+            uiState.storageCaches.steamStagingBytes?.let { formatBytes(it) }
+                ?: stringResource(R.string.settings_caches_info_steam_staging_computing)
         )
         else -> Triple(item.key, "", "")
     }

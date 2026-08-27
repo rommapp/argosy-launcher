@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notif_generic_error_title">Ошибка</string>
+
+    <string name="notif_storage_private_path_error">GameNative не может читать личные папки Argosy. Выберите публичное расположение.</string>
+
+    <string name="notif_storage_migrate_persistent_title">Перемещение игр</string>
+    <string name="notif_storage_migrate_persistent_subtitle_initial">0 / %1$d</string>
+    <string name="notif_storage_migrate_persistent_subtitle_progress">%1$d/%2$d: %3$s</string>
+    <string name="notif_storage_migrate_complete_title">Перенос завершён</string>
+    <string name="notif_storage_migrate_complete_subtitle">Перемещено %1$d, отсутствует %2$d, ошибок %3$d</string>
+
+    <string name="notif_storage_migrate_platform_persistent_title">Перемещение ROM %1$s</string>
+    <string name="notif_storage_migrate_platform_persistent_subtitle_initial">0 / %1$d</string>
+    <string name="notif_storage_migrate_platform_persistent_subtitle_progress">%1$d/%2$d: %3$s</string>
+    <string name="notif_storage_migrate_platform_complete_title">Перенос %1$s завершён</string>
+    <string name="notif_storage_migrate_platform_complete_subtitle">Перемещено %1$d, отсутствует %2$d, ошибок %3$d</string>
+
+    <string name="notif_storage_purge_persistent_title">Очистка %1$s</string>
+    <string name="notif_storage_purge_persistent_subtitle_preparing">Подготовка…</string>
+    <string name="notif_storage_purge_persistent_subtitle_progress">%1$d/%2$d: %3$s</string>
+    <string name="notif_storage_purge_complete_title">%1$s очищена</string>
+    <string name="notif_storage_purge_complete_subtitle">Удалено игр: %1$d, освобождено %2$dMB</string>
+
+    <string name="notif_storage_hardreset_blocked_active_session">Закройте запущенную игру перед сбросом</string>
+    <string name="notif_storage_hardreset_blocked_active_downloads">Отмените загрузки игр перед сбросом</string>
+    <string name="notif_storage_hardreset_blocked_emulator_download">Сначала дождитесь завершения загрузки эмулятора</string>
+    <string name="notif_storage_hardreset_blocked_steam_download">Отмените загрузки Steam перед сбросом</string>
+    <string name="notif_storage_hardreset_blocked_media_download">Отмените загрузку фильма или эпизода перед сбросом</string>
+    <string name="notif_storage_hardreset_pending_uploads_none">Синхронизируйте ожидающие отправки сохранения перед сбросом</string>
+    <string name="notif_storage_hardreset_pending_uploads_one">Синхронизируйте ожидающие сохранения пользователя %1$s перед сбросом</string>
+    <string name="notif_storage_hardreset_pending_uploads_many">Синхронизируйте ожидающие сохранения для %1$s перед сбросом</string>
+    <string name="notif_storage_hardreset_success">Полный сброс завершён - синхронизируйте, чтобы восстановить библиотеку</string>
+    <string name="notif_storage_hardreset_failed">Не удалось выполнить полный сброс - %1$s</string>
+    <string name="notif_storage_hardreset_failed_default_detail">попробуйте снова</string>
+
+    <string name="notif_steam_path_not_accessible">Путь установки недоступен: %1$s</string>
+    <string name="notif_steam_storage_blocked_subtitle">Недостаточно места (свободно %1$dMB, нужно %2$dMB)</string>
+
+    <string name="notif_social_friend_started_playing">Сейчас играет в %1$s</string>
+    <string name="notif_social_friend_online">Теперь в сети</string>
+
+    <string name="notif_settings_cache_validate_title">Проверка кэша изображений</string>
+    <string name="notif_settings_cache_validate_starting">Запуск…</string>
+    <string name="notif_settings_cache_validate_cleaned">Очищено файлов: %1$d, путей: %2$d</string>
+    <string name="notif_settings_cache_validate_healthy">Кэш изображений в порядке</string>
+
+    <string name="notif_settings_downloads_validate_title">Проверка загрузок</string>
+    <string name="notif_settings_downloads_validate_checking">Проверка файлов ROM…</string>
+    <string name="notif_settings_downloads_validate_discovering">Поиск файлов…</string>
+    <string name="notif_settings_downloads_validate_result">Очищено недействительных путей: %1$d, найдено файлов: %2$d</string>
+
+    <string name="notif_storage_caches_emulator_busy_precheck">Сначала дождитесь завершения загрузки эмулятора</string>
+    <string name="notif_storage_caches_driver_busy">Сначала дождитесь завершения загрузки драйвера</string>
+    <string name="notif_storage_caches_steam_busy_precheck">Сначала отмените загрузки Steam</string>
+    <string name="notif_storage_caches_rom_extraction_busy">Нельзя очистить распакованные ROM, пока запущена игра</string>
+    <string name="notif_storage_caches_emulator_busy_runclear">Сначала дождитесь завершения загрузки эмулятора</string>
+    <string name="notif_storage_caches_steam_busy_runclear">Сначала отмените загрузки Steam</string>
+
+    <string name="notif_sync_settings_manual_syncing">Синхронизация сохранений…</string>
+    <string name="notif_sync_settings_manual_not_connected">Нет подключения</string>
+    <string name="notif_sync_settings_manual_up_to_date">Сохранения актуальны</string>
+    <string name="notif_sync_settings_manual_synced">Синхронизировано элементов: %1$d</string>
+    <string name="notif_sync_settings_manual_synced_with_failures">Синхронизировано элементов: %1$d (ошибок: %2$d)</string>
+    <string name="notif_sync_settings_manual_failed">Ошибка синхронизации сохранений: %1$s</string>
+
+    <string name="notif_sync_settings_scan_scanning">Сканирование локальных сохранений…</string>
+    <string name="notif_sync_settings_scan_found">Найдено локальных сохранений для синхронизации: %1$d</string>
+    <string name="notif_sync_settings_scan_syncing">Синхронизация сохранений…</string>
+    <string name="notif_sync_settings_scan_not_connected">Нет подключения</string>
+    <string name="notif_sync_settings_scan_up_to_date">Сохранения актуальны</string>
+    <string name="notif_sync_settings_scan_synced">Синхронизировано элементов: %1$d</string>
+    <string name="notif_sync_settings_scan_synced_with_failures">Синхронизировано элементов: %1$d (ошибок: %2$d)</string>
+    <string name="notif_sync_settings_scan_failed">Ошибка синхронизации сохранений: %1$s</string>
+
+    <string name="notif_sync_settings_imagecache_moving_custom">Перемещение кэшированных изображений…</string>
+    <string name="notif_sync_settings_imagecache_moved_custom">Изображения успешно перемещены</string>
+    <string name="notif_sync_settings_imagecache_move_failed_custom">Не удалось переместить некоторые изображения</string>
+    <string name="notif_sync_settings_imagecache_moving_reset">Перемещение кэшированных изображений…</string>
+    <string name="notif_sync_settings_imagecache_moved_reset">Изображения успешно перемещены</string>
+    <string name="notif_sync_settings_imagecache_move_failed_reset">Не удалось переместить некоторые изображения</string>
+
+    <string name="notif_sync_settings_platforms_fetch_failed">Не удалось загрузить платформы: %1$s</string>
+    <string name="notif_sync_settings_reset_save_cache_blocked">Нельзя сбросить кэш сохранений, пока запущена игра</string>
+    <string name="notif_sync_settings_clear_state_cache_blocked">Нельзя очистить кэш состояний, пока запущена игра</string>
+
+    <string name="notif_steam_settings_gamenative_unconfigured">Папки GameNative не настроены</string>
+    <string name="notif_steam_settings_gamenative_scan_title">Библиотека GameNative</string>
+    <string name="notif_steam_settings_install_path_changed_title">Путь установки изменён</string>
+    <plurals name="notif_steam_settings_install_path_changed_subtitle">
+        <item quantity="one">%1$d загрузка завершится в исходном расположении. Новые загрузки будут использовать новое расположение.</item>
+        <item quantity="few">%1$d загрузки завершатся в исходном расположении. Новые загрузки будут использовать новое расположение.</item>
+        <item quantity="many">%1$d загрузок завершатся в исходном расположении. Новые загрузки будут использовать новое расположение.</item>
+        <item quantity="other">%1$d загрузки завершатся в исходном расположении. Новые загрузки будут использовать новое расположение.</item>
+    </plurals>
+    <string name="notif_steam_settings_launcher_download_failed">Ошибка загрузки: %1$s</string>
+    <string name="notif_steam_settings_library_reset">Удалено игр Steam: %1$d</string>
+    <string name="notif_steam_settings_game_added">Добавлено: %1$s</string>
+    <string name="notif_steam_settings_library_synced">Добавлено игр Steam: %1$d</string>
+
+    <string name="notif_jellyfin_settings_sync_title">Синхронизация медиа</string>
+    <string name="notif_jellyfin_settings_sync_starting">Запуск…</string>
+    <string name="notif_jellyfin_settings_sync_up_to_date">Медиа актуальны</string>
+    <string name="notif_jellyfin_settings_sync_partial">Некоторые библиотеки пропущены</string>
+    <string name="notif_jellyfin_settings_sync_failed_title">Ошибка синхронизации медиа</string>
+    <plurals name="notif_jellyfin_settings_sync_libraries_count">
+        <item quantity="one">%1$d библиотека</item>
+        <item quantity="few">%1$d библиотеки</item>
+        <item quantity="many">%1$d библиотек</item>
+        <item quantity="other">%1$d библиотеки</item>
+    </plurals>
+    <plurals name="notif_jellyfin_settings_sync_titles_count">
+        <item quantity="one">%1$d тайтл</item>
+        <item quantity="few">%1$d тайтла</item>
+        <item quantity="many">%1$d тайтлов</item>
+        <item quantity="other">%1$d тайтла</item>
+    </plurals>
+    <string name="notif_jellyfin_settings_sync_counts_summary">%1$s, %2$s</string>
+    <string name="notif_jellyfin_settings_relocate_blocked_media_download">Отмените загрузку фильма или эпизода перед переносом папки медиа</string>
+
+    <string name="notif_collection_downloads_queued_title">Загрузки поставлены в очередь</string>
+    <plurals name="notif_collection_downloads_queued_subtitle">
+        <item quantity="one">%1$d игра добавлена в очередь загрузки</item>
+        <item quantity="few">%1$d игры добавлены в очередь загрузки</item>
+        <item quantity="many">%1$d игр добавлено в очередь загрузки</item>
+        <item quantity="other">%1$d игры добавлено в очередь загрузки</item>
+    </plurals>
+
+    <string name="notif_virtualcategory_downloads_queued_title">Загрузки поставлены в очередь</string>
+    <plurals name="notif_virtualcategory_downloads_queued_subtitle">
+        <item quantity="one">%1$d игра добавлена в очередь загрузки</item>
+        <item quantity="few">%1$d игры добавлены в очередь загрузки</item>
+        <item quantity="many">%1$d игр добавлено в очередь загрузки</item>
+        <item quantity="other">%1$d игры добавлено в очередь загрузки</item>
+    </plurals>
+
+    <string name="notif_dualscreen_reserved_slot_name">\'%1$s\' - зарезервированное имя</string>
+    <string name="notif_dualscreen_files_queued">%1$d в очереди</string>
+    <string name="notif_dualscreen_files_removed">%1$d удалено</string>
+    <plurals name="notif_dualscreen_downloads_queued">
+        <item quantity="one">В очередь добавлена %1$d загрузка</item>
+        <item quantity="few">В очередь добавлены %1$d загрузки</item>
+        <item quantity="many">В очередь добавлено %1$d загрузок</item>
+        <item quantity="other">В очередь добавлено %1$d загрузки</item>
+    </plurals>
+    <string name="notif_dualscreen_no_local_path">У игры нет локального пути</string>
+    <string name="notif_dualscreen_state_slot_auto">авто-состояние</string>
+    <string name="notif_dualscreen_state_slot_numbered">слот состояния %1$d</string>
+    <string name="notif_dualscreen_state_restored">Восстановлено: %1$s</string>
+    <string name="notif_dualscreen_state_version_mismatch">%1$s создано другой версией ядра</string>
+    <string name="notif_dualscreen_state_restore_failed">Не удалось восстановить %1$s</string>
+    <string name="notif_dualscreen_state_deleted">Удалено: %1$s</string>
+    <string name="notif_dualscreen_state_copied">%1$s скопировано в %2$s</string>
+    <string name="notif_dualscreen_state_copy_failed">Не удалось скопировать %1$s</string>
+
+    <string name="notif_gamelaunch_no_emulator">Для этой платформы не установлен эмулятор</string>
+    <string name="notif_gamelaunch_no_rom_file">Файл ROM не найден</string>
+    <string name="notif_gamelaunch_no_steam_launcher">Лаунчер Steam не установлен</string>
+    <string name="notif_gamelaunch_no_core_base">Нет доступного ядра для %1$s</string>
+    <string name="notif_gamelaunch_no_core_with_reason">Нет доступного ядра для %1$s: %2$s</string>
+    <string name="notif_gamelaunch_missing_discs">Отсутствуют диски: %1$s. Откройте страницу игры, чтобы исправить.</string>
+    <string name="notif_gamelaunch_missing_bios">Отсутствует BIOS для %1$s. Установите его в настройках перед запуском.</string>
+    <string name="notif_gamelaunch_no_scummvm_id">Отсутствует файл .scummvm для %1$s</string>
+    <string name="notif_gamelaunch_no_android_app">Приложение Android не установлено: %1$s</string>
+    <string name="notif_gamelaunch_disc_launch_failed">Не удалось запустить диск</string>
+    <string name="notif_gamelaunch_launch_failed">Не удалось запустить</string>
+
+    <string name="notif_social_share_screenshot_soon_quickaction">Общий доступ к скриншотам скоро появится</string>
+    <string name="notif_social_share_screenshot_soon_feedmenu">Общий доступ к скриншотам скоро появится</string>
+    <string name="notif_social_post_reported">Публикация отмечена и скрыта</string>
+
+    <string name="notif_social_game_not_in_library">Игры нет в библиотеке</string>
+
+    <string name="notif_userprofile_game_not_in_library_input">Игры нет в библиотеке</string>
+    <string name="notif_userprofile_game_not_in_library_touch">Игры нет в библиотеке</string>
+
+    <string name="notif_sync_library_start_failed_title">Не удалось начать синхронизацию</string>
+    <string name="notif_sync_library_progress_title">Синхронизация библиотеки</string>
+    <string name="notif_sync_library_progress_starting">Запуск...</string>
+    <string name="notif_sync_library_progress_platform_games">%1$s (%2$d/%3$d игр)</string>
+    <string name="notif_sync_library_complete_title">Синхронизация завершена</string>
+    <string name="notif_sync_library_complete_counts">Добавлено: %1$d, обновлено: %2$d</string>
+    <string name="notif_sync_library_complete_counts_with_removed">Добавлено: %1$d, обновлено: %2$d, удалено: %3$d</string>
+    <string name="notif_sync_library_completed_with_errors_title">Синхронизация завершена с ошибками</string>
+    <plurals name="notif_sync_library_failed_platforms">
+        <item quantity="one">%1$d платформа с ошибкой</item>
+        <item quantity="few">%1$d платформы с ошибкой</item>
+        <item quantity="many">%1$d платформ с ошибкой</item>
+        <item quantity="other">%1$d платформы с ошибкой</item>
+    </plurals>
+    <string name="notif_sync_library_failed_title">Ошибка синхронизации</string>
+
+    <string name="notif_sync_failure_timeout">Сервер слишком долго не отвечал. Возможно, он занят, либо ваша библиотека очень большая.</string>
+    <string name="notif_sync_failure_unreachable">Не удалось подключиться к серверу. Проверьте соединение и адрес сервера.</string>
+    <string name="notif_sync_failure_connection_lost">Связь с сервером потеряна. Синхронизация продолжится с прерванного места в следующий раз.</string>
+    <string name="notif_sync_failure_unknown">Ошибка синхронизации. Попробуйте снова.</string>
+
+    <string name="notif_sync_platform_progress_title">Синхронизация %1$s</string>
+    <string name="notif_sync_platform_progress_fetching">Получение игр...</string>
+    <string name="notif_sync_platform_complete_title">%1$s синхронизирована</string>
+    <string name="notif_sync_platform_complete_counts">Добавлено: %1$d, обновлено: %2$d</string>
+    <string name="notif_sync_platform_complete_counts_with_removed">Добавлено: %1$d, обновлено: %2$d, удалено: %3$d</string>
+    <string name="notif_sync_platform_completed_with_errors_title">Синхронизация завершена с ошибками</string>
+    <string name="notif_sync_platform_error_unknown">Неизвестная ошибка</string>
+    <string name="notif_sync_platform_failed_title">Ошибка синхронизации</string>
+</resources>

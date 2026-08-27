@@ -19,8 +19,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.components.InputButton
@@ -88,7 +90,11 @@ fun ScreenshotViewerOverlay(
         }
 
         Text(
-            text = "${currentIndex + 1} / ${screenshots.size}",
+            text = stringResource(
+                R.string.gamedetail_screenshot_viewer_position,
+                currentIndex + 1,
+                screenshots.size
+            ),
             style = MaterialTheme.typography.titleMedium,
             color = Color.White,
             modifier = Modifier
@@ -98,9 +104,12 @@ fun ScreenshotViewerOverlay(
 
         FooterHints(
             hints = listOf(
-                InputButton.DPAD_HORIZONTAL to "Navigate",
-                InputButton.B to "Close",
-                InputButton.X to "Set Background"
+                InputButton.DPAD_HORIZONTAL to
+                    stringResource(R.string.gamedetail_screenshot_viewer_footer_navigate),
+                InputButton.B to
+                    stringResource(R.string.gamedetail_screenshot_viewer_footer_close),
+                InputButton.X to
+                    stringResource(R.string.gamedetail_screenshot_viewer_footer_set_background)
             ),
             onHintClick = { button ->
                 when (button) {

@@ -14,6 +14,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.data.preferences.ThemeMode
 import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.HueSliderPreference
@@ -34,7 +37,7 @@ internal sealed class ThemeItem(val key: String, val section: String) {
         else -> true
     }
 
-    class Header(key: String, section: String, val title: String) : ThemeItem(key, section)
+    class Header(key: String, section: String, val titleRes: Int) : ThemeItem(key, section)
 
     class SectionSpacer(key: String, section: String) : ThemeItem(key, section)
 
@@ -48,9 +51,11 @@ internal sealed class ThemeItem(val key: String, val section: String) {
     data object Fonts : ThemeItem("fonts", "identity")
 
     companion object {
-        private val AppearanceHeader = Header("appearanceHeader", "appearance", "Appearance")
+        private val AppearanceHeader =
+            Header("appearanceHeader", "appearance", R.string.settings_theme_section_appearance)
         private val IdentitySpacer = SectionSpacer("identitySpacer", "identity")
-        private val IdentityHeader = Header("identityHeader", "identity", "Identity")
+        private val IdentityHeader =
+            Header("identityHeader", "identity", R.string.settings_theme_section_identity)
 
         val ALL: List<ThemeItem>
             get() = listOf(
@@ -67,10 +72,10 @@ private val themeLayout = SettingsLayout<ThemeItem, Unit>(
     isFocusable = { it.isFocusable },
     visibleWhen = { _, _ -> true },
     sectionOf = { it.section },
-    sectionTitle = {
+    sectionTitleRes = {
         when (it) {
-            "appearance" -> "Appearance"
-            "identity" -> "Identity"
+            "appearance" -> R.string.settings_theme_section_appearance
+            "identity" -> R.string.settings_theme_section_identity
             else -> null
         }
     }
@@ -86,14 +91,21 @@ internal fun themeSections() = themeLayout.buildSections(Unit)
 internal fun themeFocusIndexOf(item: ThemeItem): Int =
     themeLayout.focusIndexOf(item, Unit)
 
+private fun themeModeLabelRes(mode: ThemeMode): Int = when (mode) {
+    ThemeMode.LIGHT -> R.string.settings_theme_mode_light
+    ThemeMode.DARK -> R.string.settings_theme_mode_dark
+    ThemeMode.SYSTEM -> R.string.settings_theme_mode_system
+}
+
 @Composable
 fun ThemeSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val display = uiState.display
+    val context = LocalContext.current
     val currentHue = display.primaryColor?.let { colorIntToHue(it) }
     val secondaryHue = display.secondaryColor?.let { colorIntToHue(it) }
 
     val visibleItems = remember { themeLayout.visibleItems(Unit) }
-    val sections = remember { themeLayout.buildSections(Unit) }
+    val sections = remember(context) { themeLayout.buildSections(Unit, context) }
 
     fun isFocused(item: ThemeItem): Boolean =
         uiState.focusedIndex == themeLayout.focusIndexOf(item, Unit)
@@ -119,22 +131,24 @@ fun ThemeSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) { item ->
         when (item) {
-            is ThemeItem.Header -> ThemeSectionHeader(item.title)
+            is ThemeItem.Header -> ThemeSectionHeader(stringResource(item.titleRes))
             is ThemeItem.SectionSpacer -> Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
             ThemeItem.Mode -> CyclePreference(
-                title = "Mode",
-                value = display.themeMode.name.lowercase().replaceFirstChar { it.uppercase() },
+                title = stringResource(R.string.settings_theme_mode_title),
+                value = stringResource(themeModeLabelRes(display.themeMode)),
                 isFocused = isFocused(item),
                 onClick = { viewModel.cycleThemeMode(1) },
                 onPrev = { viewModel.cycleThemeMode(-1) },
-                options = remember { ThemeMode.entries.map { mode -> mode.name.lowercase().replaceFirstChar { c -> c.uppercase() } } },
+                options = remember(context) {
+                    ThemeMode.entries.map { mode -> context.getString(themeModeLabelRes(mode)) }
+                },
                 onSelect = { viewModel.setThemeMode(ThemeMode.entries[it]) },
                 pickerRequestToken = pickerToken(item)
             )
 
             ThemeItem.AccentColor -> HueSliderPreference(
-                title = "Accent Color",
+                title = stringResource(R.string.settings_theme_accent_color_title),
                 currentHue = currentHue,
                 isFocused = isFocused(item),
                 onHueChange = { hue ->
@@ -147,7 +161,7 @@ fun ThemeSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             )
 
             ThemeItem.SecondaryColor -> HueSliderPreference(
-                title = "Secondary Color",
+                title = stringResource(R.string.settings_theme_secondary_color_title),
                 currentHue = secondaryHue,
                 isFocused = isFocused(item),
                 onHueChange = { hue ->
@@ -160,15 +174,15 @@ fun ThemeSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             )
 
             ThemeItem.AccentFooter -> SwitchPreference(
-                title = "Accent Color Footer",
-                subtitle = "Use accent color for footer background",
+                title = stringResource(R.string.settings_theme_accent_footer_title),
+                subtitle = stringResource(R.string.settings_theme_accent_footer_subtitle),
                 isEnabled = display.useAccentColorFooter,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.setUseAccentColorFooter(it) }
             )
 
             ThemeItem.TintBleed -> SliderPreference(
-                title = "Surface Tint",
+                title = stringResource(R.string.settings_theme_tint_bleed_title),
                 value = display.surfaceTintBleed,
                 minValue = 0,
                 maxValue = 100,
@@ -180,16 +194,20 @@ fun ThemeSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
             ThemeItem.Backdrop -> NavigationPreference(
                 icon = Icons.Outlined.Texture,
-                title = "Surface Backdrop",
-                subtitle = if (display.surfaceBackdrop.enabled) display.surfaceBackdrop.preset.displayName else "Off",
+                title = stringResource(R.string.settings_theme_backdrop_title),
+                subtitle = if (display.surfaceBackdrop.enabled) {
+                    display.surfaceBackdrop.preset.displayName
+                } else {
+                    stringResource(R.string.settings_theme_backdrop_subtitle_off)
+                },
                 isFocused = isFocused(item),
                 onClick = { openFrom(item) { viewModel.navigateToThemeBackdrop() } }
             )
 
             ThemeItem.Fonts -> NavigationPreference(
                 icon = Icons.Outlined.TextFields,
-                title = "Fonts",
-                subtitle = fontsSubtitle(display.displayFontName, display.bodyFontName),
+                title = stringResource(R.string.settings_theme_fonts_title),
+                subtitle = fontsSubtitle(context, display.displayFontName, display.bodyFontName),
                 isFocused = isFocused(item),
                 onClick = { openFrom(item) { viewModel.navigateToThemeFonts() } }
             )
@@ -197,9 +215,14 @@ fun ThemeSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     }
 }
 
-private fun fontsSubtitle(displayFont: String?, bodyFont: String?): String = when {
-    displayFont == null && bodyFont == null -> "Default"
-    else -> listOf(displayFont ?: "Default", bodyFont ?: "Default").distinct().joinToString(" / ")
+private fun fontsSubtitle(
+    context: android.content.Context,
+    displayFont: String?,
+    bodyFont: String?
+): String {
+    val fallback = context.getString(R.string.settings_theme_fonts_subtitle_default)
+    if (displayFont == null && bodyFont == null) return fallback
+    return listOf(displayFont ?: fallback, bodyFont ?: fallback).distinct().joinToString(" / ")
 }
 
 @Composable

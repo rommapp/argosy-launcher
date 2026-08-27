@@ -50,7 +50,7 @@ class DownloadGameUseCaseTest {
         val result = useCase(123L)
 
         assertTrue(result is DownloadResult.Error)
-        assertEquals("Game not found", (result as DownloadResult.Error).message)
+        assertEquals(DownloadGameFailureReason.GameNotFound, (result as DownloadResult.Error).reason)
     }
 
     @Test
@@ -61,7 +61,7 @@ class DownloadGameUseCaseTest {
         val result = useCase(123L)
 
         assertTrue(result is DownloadResult.Error)
-        assertEquals("Game not synced from RomM", (result as DownloadResult.Error).message)
+        assertEquals(DownloadGameFailureReason.GameNotSynced, (result as DownloadResult.Error).reason)
     }
 
     @Test
@@ -73,7 +73,10 @@ class DownloadGameUseCaseTest {
         val result = useCase(123L)
 
         assertTrue(result is DownloadResult.Error)
-        assertEquals("Failed to get ROM info: Network error", (result as DownloadResult.Error).message)
+        assertEquals(
+            DownloadGameFailureReason.RomInfoFetchFailed("Network error"),
+            (result as DownloadResult.Error).reason
+        )
     }
 
     @Test
@@ -86,7 +89,10 @@ class DownloadGameUseCaseTest {
         val result = useCase(123L)
 
         assertTrue(result is DownloadResult.Error)
-        assertEquals("Invalid ROM file type: .png", (result as DownloadResult.Error).message)
+        assertEquals(
+            DownloadGameFailureReason.InvalidFileType("png"),
+            (result as DownloadResult.Error).reason
+        )
     }
 
     @Test
@@ -99,7 +105,10 @@ class DownloadGameUseCaseTest {
         val result = useCase(123L)
 
         assertTrue(result is DownloadResult.Error)
-        assertEquals("Invalid ROM file type: .html", (result as DownloadResult.Error).message)
+        assertEquals(
+            DownloadGameFailureReason.InvalidFileType("html"),
+            (result as DownloadResult.Error).reason
+        )
     }
 
     @Test

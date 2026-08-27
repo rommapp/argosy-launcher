@@ -56,8 +56,11 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -66,6 +69,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nendo.argosy.R
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.social.FeedComment
 import com.nendo.argosy.data.social.FeedEventDto
@@ -391,14 +395,14 @@ fun FeedEventDetailScreen(
         val isLiked = uiState.event?.isLikedByMe == true
         FooterHints(
             hints = buildList {
-                add(InputButton.B to "Back")
-                add(InputButton.Y to if (isLiked) "Unlike" else "Like")
-                add(InputButton.A to "Comment")
+                add(InputButton.B to stringResource(R.string.social_eventdetail_hint_back))
+                add(InputButton.Y to stringResource(if (isLiked) R.string.social_eventdetail_hint_unlike else R.string.social_eventdetail_hint_like))
+                add(InputButton.A to stringResource(R.string.social_eventdetail_hint_comment))
                 if (uiState.localGameId != null) {
-                    add(InputButton.X to "View Game")
+                    add(InputButton.X to stringResource(R.string.social_eventdetail_hint_view_game))
                 }
                 if (uiState.event?.user != null) {
-                    add(InputButton.SELECT to "Profile")
+                    add(InputButton.SELECT to stringResource(R.string.social_eventdetail_hint_profile))
                 }
             },
             onHintClick = { button ->
@@ -552,7 +556,7 @@ private fun PortraitLayout(
 
         item(key = "comments_header") {
             Text(
-                text = "Comments (${comments.size})",
+                text = stringResource(R.string.social_eventdetail_comments_header_portrait, comments.size),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
@@ -571,7 +575,7 @@ private fun PortraitLayout(
         if (comments.isEmpty()) {
             item(key = "empty") {
                 Text(
-                    text = "No comments yet. Be the first!",
+                    text = stringResource(R.string.social_eventdetail_no_comments_portrait),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                 )
@@ -709,7 +713,7 @@ private fun EventMetadata(
                             fontWeight = FontWeight.SemiBold
                         )
                         Text(
-                            text = formatRelativeTime(event.createdAt),
+                            text = formatRelativeTime(LocalContext.current, event.createdAt),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                         )
@@ -722,7 +726,7 @@ private fun EventMetadata(
                 ) {
                     Icon(
                         imageVector = if (event.isLikedByMe) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                        contentDescription = "Likes",
+                        contentDescription = stringResource(R.string.social_eventdetail_likes_desc),
                         modifier = Modifier.size(18.dp),
                         tint = if (event.isLikedByMe) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -965,7 +969,7 @@ private fun CommentsSection(
     ) {
         item(key = "comments_header") {
             Text(
-                text = "Comments",
+                text = stringResource(R.string.social_eventdetail_comments_header_landscape),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold
             )
@@ -984,7 +988,7 @@ private fun CommentsSection(
         if (comments.isEmpty()) {
             item(key = "empty") {
                 Text(
-                    text = "No comments yet",
+                    text = stringResource(R.string.social_eventdetail_no_comments_landscape),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                 )
@@ -1048,7 +1052,7 @@ private fun CommentInput(
             decorationBox = { innerTextField ->
                 if (commentText.isEmpty()) {
                     Text(
-                        text = "Add a comment...",
+                        text = stringResource(R.string.social_eventdetail_comment_input_placeholder),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                     )
@@ -1063,7 +1067,7 @@ private fun CommentInput(
         ) {
             Icon(
                 Icons.Default.Send,
-                contentDescription = "Send",
+                contentDescription = stringResource(R.string.social_eventdetail_comment_send_desc),
                 tint = if (commentText.isNotBlank()) {
                     MaterialTheme.colorScheme.primary
                 } else {
@@ -1111,7 +1115,7 @@ private fun CommentCard(
                     )
                 }
                 Text(
-                    text = formatRelativeTime(comment.createdAt),
+                    text = formatRelativeTime(LocalContext.current, comment.createdAt),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                 )
@@ -1135,58 +1139,69 @@ private fun parseColor(hexColor: String): Color {
     }
 }
 
+@Composable
 private fun formatEventDescription(event: FeedEventDto): String {
     return when (event.eventType) {
-        FeedEventType.STARTED_PLAYING -> "First Play"
+        FeedEventType.STARTED_PLAYING -> stringResource(R.string.social_eventdetail_desc_started_playing)
         FeedEventType.PLAY_MILESTONE -> {
             val hours = (event.payload?.get("total_hours") as? Number)?.toInt() ?: 0
-            "reached $hours hours"
+            pluralStringResource(R.plurals.social_eventdetail_desc_play_milestone, hours, hours)
         }
         FeedEventType.MARATHON_SESSION -> {
             val mins = (event.payload?.get("duration_mins") as? Number)?.toInt() ?: 0
-            "had a ${mins / 60}h marathon session"
+            stringResource(R.string.social_eventdetail_desc_marathon_session, mins / 60)
         }
-        FeedEventType.COMPLETED -> "completed"
+        FeedEventType.COMPLETED -> stringResource(R.string.social_eventdetail_desc_completed)
         FeedEventType.ACHIEVEMENT_UNLOCKED -> {
-            val name = event.payload?.get("achievement_name") as? String ?: "an achievement"
-            "unlocked \"$name\""
+            val name = event.payload?.get("achievement_name") as? String
+                ?: stringResource(R.string.social_eventdetail_desc_achievement_unlocked_fallback_name)
+            stringResource(R.string.social_eventdetail_desc_achievement_unlocked, name)
         }
         FeedEventType.ACHIEVEMENT_MILESTONE -> {
             val count = (event.payload?.get("total_unlocked") as? Number)?.toInt() ?: 0
-            "earned $count achievements"
+            pluralStringResource(R.plurals.social_eventdetail_desc_achievement_milestone, count, count)
         }
-        FeedEventType.PERFECT_GAME -> "mastered"
-        FeedEventType.GAME_ADDED -> "added to library"
-        FeedEventType.GAME_FAVORITED -> "favorited"
+        FeedEventType.PERFECT_GAME -> stringResource(R.string.social_eventdetail_desc_perfect_game)
+        FeedEventType.GAME_ADDED -> stringResource(R.string.social_eventdetail_desc_game_added)
+        FeedEventType.GAME_FAVORITED -> stringResource(R.string.social_eventdetail_desc_game_favorited)
         FeedEventType.GAME_RATED -> {
             val rating = (event.payload?.get("rating") as? Number)?.toInt() ?: 0
-            "rated ${"*".repeat(rating)}"
+            stringResource(R.string.social_eventdetail_desc_game_rated, "*".repeat(rating))
         }
         FeedEventType.FRIEND_ADDED -> {
-            val friendName = event.payload?.get("friend_name") as? String ?: "someone"
-            "became friends with $friendName"
+            val friendName = event.payload?.get("friend_name") as? String
+                ?: stringResource(R.string.social_eventdetail_desc_friend_added_fallback_name)
+            stringResource(R.string.social_eventdetail_desc_friend_added, friendName)
         }
         FeedEventType.COLLECTION_SHARED -> {
-            val name = event.payload?.get("collection_name") as? String ?: "a collection"
-            "shared collection \"$name\""
+            val name = event.payload?.get("collection_name") as? String
+                ?: stringResource(R.string.social_eventdetail_desc_collection_fallback_name)
+            stringResource(R.string.social_eventdetail_desc_collection_shared, name)
         }
         FeedEventType.COLLECTION_SAVED -> {
-            val name = event.payload?.get("collection_name") as? String ?: "a collection"
-            "saved collection \"$name\""
+            val name = event.payload?.get("collection_name") as? String
+                ?: stringResource(R.string.social_eventdetail_desc_collection_fallback_name)
+            stringResource(R.string.social_eventdetail_desc_collection_saved, name)
         }
         FeedEventType.COLLECTION_CREATED -> {
-            val name = event.payload?.get("collection_name") as? String ?: "a collection"
-            "created collection \"$name\""
+            val name = event.payload?.get("collection_name") as? String
+                ?: stringResource(R.string.social_eventdetail_desc_collection_fallback_name)
+            stringResource(R.string.social_eventdetail_desc_collection_created, name)
         }
         FeedEventType.COLLECTION_UPDATED -> {
-            val name = event.payload?.get("collection_name") as? String ?: "a collection"
+            val name = event.payload?.get("collection_name") as? String
+                ?: stringResource(R.string.social_eventdetail_desc_collection_fallback_name)
             val count = (event.payload?.get("game_count") as? Number)?.toInt() ?: 0
-            "added $count games to \"$name\""
+            pluralStringResource(R.plurals.social_eventdetail_desc_collection_updated, count, count, name)
         }
-        FeedEventType.DOODLE -> "shared a doodle"
+        FeedEventType.DOODLE -> stringResource(R.string.social_eventdetail_desc_doodle)
         FeedEventType.DISCUSSION -> {
             val body = event.payload?.get("body") as? String ?: ""
-            if (body.length > 100) body.take(100) + "..." else body.ifEmpty { "shared a post" }
+            if (body.length > 100) {
+                stringResource(R.string.social_eventdetail_desc_discussion_truncated, body.take(100))
+            } else {
+                body.ifEmpty { stringResource(R.string.social_eventdetail_desc_discussion_shared_post) }
+            }
         }
         null -> event.type
     }

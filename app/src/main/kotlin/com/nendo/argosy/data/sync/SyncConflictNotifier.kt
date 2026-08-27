@@ -1,12 +1,16 @@
 package com.nendo.argosy.data.sync
 
+import android.content.Context
+import com.nendo.argosy.R
 import com.nendo.argosy.core.notification.NotificationDuration
 import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.NotificationType
 import com.nendo.argosy.data.local.dao.PendingConflictDao
 import com.nendo.argosy.data.local.entity.PendingConflictEntity
 import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.util.Logger
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -22,6 +26,7 @@ private const val NOTIFICATION_KEY = "sync_conflict_pending"
 
 @Singleton
 class SyncConflictNotifier @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val pendingConflictDao: PendingConflictDao,
     private val syncPreferencesRepository: SyncPreferencesRepository,
     private val notificationManager: NotificationManager
@@ -56,8 +61,12 @@ class SyncConflictNotifier @Inject constructor(
             count > previous -> {
                 Logger.info(TAG, "Conflict count rose $previous -> $count; surfacing notification")
                 notificationManager.show(
-                    title = if (count == 1) "1 save needs your attention" else "$count saves need your attention",
-                    subtitle = "Open Save Sync to resolve. Local saves are unchanged.",
+                    title = NotificationText.Plural(
+                        R.plurals.sync_conflict_pending_title,
+                        count,
+                        listOf(count)
+                    ),
+                    subtitle = NotificationText.Res(R.string.sync_conflict_pending_subtitle),
                     type = NotificationType.WARNING,
                     duration = NotificationDuration.LONG,
                     key = NOTIFICATION_KEY,

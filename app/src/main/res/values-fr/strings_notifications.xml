@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notif_generic_error_title">Erreur</string>
+
+    <string name="notif_storage_private_path_error">GameNative ne peut pas lire les dossiers privés d\'Argosy. Choisissez un emplacement public.</string>
+
+    <string name="notif_storage_migrate_persistent_title">Déplacement des jeux</string>
+    <string name="notif_storage_migrate_persistent_subtitle_initial">0 / %1$d</string>
+    <string name="notif_storage_migrate_persistent_subtitle_progress">%1$d/%2$d : %3$s</string>
+    <string name="notif_storage_migrate_complete_title">Migration terminée</string>
+    <string name="notif_storage_migrate_complete_subtitle">%1$d déplacés, %2$d manquants, %3$d échoués</string>
+
+    <string name="notif_storage_migrate_platform_persistent_title">Déplacement des ROM %1$s</string>
+    <string name="notif_storage_migrate_platform_persistent_subtitle_initial">0 / %1$d</string>
+    <string name="notif_storage_migrate_platform_persistent_subtitle_progress">%1$d/%2$d : %3$s</string>
+    <string name="notif_storage_migrate_platform_complete_title">Migration de %1$s terminée</string>
+    <string name="notif_storage_migrate_platform_complete_subtitle">%1$d déplacés, %2$d manquants, %3$d échoués</string>
+
+    <string name="notif_storage_purge_persistent_title">Purge de %1$s</string>
+    <string name="notif_storage_purge_persistent_subtitle_preparing">Préparation…</string>
+    <string name="notif_storage_purge_persistent_subtitle_progress">%1$d/%2$d : %3$s</string>
+    <string name="notif_storage_purge_complete_title">%1$s purgé</string>
+    <string name="notif_storage_purge_complete_subtitle">%1$d jeux supprimés, %2$dMB libérés</string>
+
+    <string name="notif_storage_hardreset_blocked_active_session">Fermez le jeu en cours avant de réinitialiser</string>
+    <string name="notif_storage_hardreset_blocked_active_downloads">Annulez les téléchargements de jeux avant de réinitialiser</string>
+    <string name="notif_storage_hardreset_blocked_emulator_download">Attendez la fin du téléchargement de l\'émulateur d\'abord</string>
+    <string name="notif_storage_hardreset_blocked_steam_download">Annulez les téléchargements Steam avant de réinitialiser</string>
+    <string name="notif_storage_hardreset_blocked_media_download">Annulez le téléchargement du film ou de l\'épisode avant de réinitialiser</string>
+    <string name="notif_storage_hardreset_pending_uploads_none">Synchronisez les envois de sauvegardes en attente avant de réinitialiser</string>
+    <string name="notif_storage_hardreset_pending_uploads_one">Synchronisez les envois de sauvegardes en attente de %1$s avant de réinitialiser</string>
+    <string name="notif_storage_hardreset_pending_uploads_many">Synchronisez les envois de sauvegardes en attente pour %1$s avant de réinitialiser</string>
+    <string name="notif_storage_hardreset_success">Réinitialisation complète terminée - synchronisez pour reconstruire votre bibliothèque</string>
+    <string name="notif_storage_hardreset_failed">Échec de la réinitialisation complète - %1$s</string>
+    <string name="notif_storage_hardreset_failed_default_detail">réessayez</string>
+
+    <string name="notif_steam_path_not_accessible">Chemin d\'installation inaccessible : %1$s</string>
+    <string name="notif_steam_storage_blocked_subtitle">Stockage insuffisant (%1$dMB libres, %2$dMB requis)</string>
+
+    <string name="notif_social_friend_started_playing">A commencé à jouer à %1$s</string>
+    <string name="notif_social_friend_online">Est maintenant en ligne</string>
+
+    <string name="notif_settings_cache_validate_title">Validation du cache d\'images</string>
+    <string name="notif_settings_cache_validate_starting">Démarrage…</string>
+    <string name="notif_settings_cache_validate_cleaned">%1$d fichiers nettoyés, %2$d chemins effacés</string>
+    <string name="notif_settings_cache_validate_healthy">Le cache d\'images est sain</string>
+
+    <string name="notif_settings_downloads_validate_title">Validation des téléchargements</string>
+    <string name="notif_settings_downloads_validate_checking">Vérification des fichiers ROM…</string>
+    <string name="notif_settings_downloads_validate_discovering">Découverte des fichiers…</string>
+    <string name="notif_settings_downloads_validate_result">%1$d chemins invalides effacés, %2$d fichiers découverts</string>
+
+    <string name="notif_storage_caches_emulator_busy_precheck">Attendez la fin du téléchargement de l\'émulateur d\'abord</string>
+    <string name="notif_storage_caches_driver_busy">Attendez la fin du téléchargement du pilote d\'abord</string>
+    <string name="notif_storage_caches_steam_busy_precheck">Annulez d\'abord les téléchargements Steam</string>
+    <string name="notif_storage_caches_rom_extraction_busy">Impossible d\'effacer les ROM extraites pendant qu\'un jeu est en cours</string>
+    <string name="notif_storage_caches_emulator_busy_runclear">Attendez la fin du téléchargement de l\'émulateur d\'abord</string>
+    <string name="notif_storage_caches_steam_busy_runclear">Annulez d\'abord les téléchargements Steam</string>
+
+    <string name="notif_sync_settings_manual_syncing">Synchronisation des sauvegardes…</string>
+    <string name="notif_sync_settings_manual_not_connected">Non connecté</string>
+    <string name="notif_sync_settings_manual_up_to_date">Les sauvegardes sont à jour</string>
+    <string name="notif_sync_settings_manual_synced">%1$d élément(s) synchronisé(s)</string>
+    <string name="notif_sync_settings_manual_synced_with_failures">%1$d élément(s) synchronisé(s) (%2$d échoué(s))</string>
+    <string name="notif_sync_settings_manual_failed">Échec de la synchronisation des sauvegardes : %1$s</string>
+
+    <string name="notif_sync_settings_scan_scanning">Analyse des sauvegardes locales…</string>
+    <string name="notif_sync_settings_scan_found">%1$d sauvegardes locales à synchroniser trouvées</string>
+    <string name="notif_sync_settings_scan_syncing">Synchronisation des sauvegardes…</string>
+    <string name="notif_sync_settings_scan_not_connected">Non connecté</string>
+    <string name="notif_sync_settings_scan_up_to_date">Les sauvegardes sont à jour</string>
+    <string name="notif_sync_settings_scan_synced">%1$d élément(s) synchronisé(s)</string>
+    <string name="notif_sync_settings_scan_synced_with_failures">%1$d élément(s) synchronisé(s) (%2$d échoué(s))</string>
+    <string name="notif_sync_settings_scan_failed">Échec de la synchronisation des sauvegardes : %1$s</string>
+
+    <string name="notif_sync_settings_imagecache_moving_custom">Déplacement des images en cache…</string>
+    <string name="notif_sync_settings_imagecache_moved_custom">Images déplacées avec succès</string>
+    <string name="notif_sync_settings_imagecache_move_failed_custom">Échec du déplacement de certaines images</string>
+    <string name="notif_sync_settings_imagecache_moving_reset">Déplacement des images en cache…</string>
+    <string name="notif_sync_settings_imagecache_moved_reset">Images déplacées avec succès</string>
+    <string name="notif_sync_settings_imagecache_move_failed_reset">Échec du déplacement de certaines images</string>
+
+    <string name="notif_sync_settings_platforms_fetch_failed">Échec de la récupération des plateformes : %1$s</string>
+    <string name="notif_sync_settings_reset_save_cache_blocked">Impossible de réinitialiser le cache de sauvegardes pendant qu\'un jeu est en cours</string>
+    <string name="notif_sync_settings_clear_state_cache_blocked">Impossible d\'effacer le cache d\'états pendant qu\'un jeu est en cours</string>
+
+    <string name="notif_steam_settings_gamenative_unconfigured">Aucun dossier GameNative configuré</string>
+    <string name="notif_steam_settings_gamenative_scan_title">Bibliothèque GameNative</string>
+    <string name="notif_steam_settings_install_path_changed_title">Chemin d\'installation modifié</string>
+    <plurals name="notif_steam_settings_install_path_changed_subtitle">
+        <item quantity="one">%1$d téléchargement en cours se terminera à son emplacement d\'origine. Les nouveaux téléchargements utiliseront la nouvelle destination.</item>
+        <item quantity="many">%1$d téléchargements en cours se termineront à leur emplacement d\'origine. Les nouveaux téléchargements utiliseront la nouvelle destination.</item>
+        <item quantity="other">%1$d téléchargements en cours se termineront à leur emplacement d\'origine. Les nouveaux téléchargements utiliseront la nouvelle destination.</item>
+    </plurals>
+    <string name="notif_steam_settings_launcher_download_failed">Échec du téléchargement : %1$s</string>
+    <string name="notif_steam_settings_library_reset">%1$d jeux Steam supprimés</string>
+    <string name="notif_steam_settings_game_added">Ajouté : %1$s</string>
+    <string name="notif_steam_settings_library_synced">%1$d jeux Steam ajoutés</string>
+
+    <string name="notif_jellyfin_settings_sync_title">Synchronisation des médias</string>
+    <string name="notif_jellyfin_settings_sync_starting">Démarrage…</string>
+    <string name="notif_jellyfin_settings_sync_up_to_date">Médias à jour</string>
+    <string name="notif_jellyfin_settings_sync_partial">Certaines bibliothèques ont été manquées</string>
+    <string name="notif_jellyfin_settings_sync_failed_title">Échec de la synchronisation des médias</string>
+    <plurals name="notif_jellyfin_settings_sync_libraries_count">
+        <item quantity="one">%1$d bibliothèque</item>
+        <item quantity="many">%1$d bibliothèques</item>
+        <item quantity="other">%1$d bibliothèques</item>
+    </plurals>
+    <plurals name="notif_jellyfin_settings_sync_titles_count">
+        <item quantity="one">%1$d titre</item>
+        <item quantity="many">%1$d titres</item>
+        <item quantity="other">%1$d titres</item>
+    </plurals>
+    <string name="notif_jellyfin_settings_sync_counts_summary">%1$s, %2$s</string>
+    <string name="notif_jellyfin_settings_relocate_blocked_media_download">Annulez le téléchargement du film ou de l\'épisode avant de déplacer votre dossier multimédia</string>
+
+    <string name="notif_collection_downloads_queued_title">Téléchargements en file d\'attente</string>
+    <plurals name="notif_collection_downloads_queued_subtitle">
+        <item quantity="one">%1$d jeu ajouté à la file de téléchargement</item>
+        <item quantity="many">%1$d jeux ajoutés à la file de téléchargement</item>
+        <item quantity="other">%1$d jeux ajoutés à la file de téléchargement</item>
+    </plurals>
+
+    <string name="notif_virtualcategory_downloads_queued_title">Téléchargements en file d\'attente</string>
+    <plurals name="notif_virtualcategory_downloads_queued_subtitle">
+        <item quantity="one">%1$d jeu ajouté à la file de téléchargement</item>
+        <item quantity="many">%1$d jeux ajoutés à la file de téléchargement</item>
+        <item quantity="other">%1$d jeux ajoutés à la file de téléchargement</item>
+    </plurals>
+
+    <string name="notif_dualscreen_reserved_slot_name">\'%1$s\' est un nom réservé</string>
+    <string name="notif_dualscreen_files_queued">%1$d en file d\'attente</string>
+    <string name="notif_dualscreen_files_removed">%1$d retirés</string>
+    <plurals name="notif_dualscreen_downloads_queued">
+        <item quantity="one">%1$d téléchargement mis en file</item>
+        <item quantity="many">%1$d téléchargements mis en file</item>
+        <item quantity="other">%1$d téléchargements mis en file</item>
+    </plurals>
+    <string name="notif_dualscreen_no_local_path">Le jeu n\'a pas de chemin local</string>
+    <string name="notif_dualscreen_state_slot_auto">état automatique</string>
+    <string name="notif_dualscreen_state_slot_numbered">emplacement d\'état %1$d</string>
+    <string name="notif_dualscreen_state_restored">%1$s restauré</string>
+    <string name="notif_dualscreen_state_version_mismatch">%1$s a été créé par une version différente du cœur</string>
+    <string name="notif_dualscreen_state_restore_failed">Impossible de restaurer %1$s</string>
+    <string name="notif_dualscreen_state_deleted">%1$s supprimé</string>
+    <string name="notif_dualscreen_state_copied">%1$s copié vers %2$s</string>
+    <string name="notif_dualscreen_state_copy_failed">Impossible de copier %1$s</string>
+
+    <string name="notif_gamelaunch_no_emulator">Aucun émulateur installé pour cette plateforme</string>
+    <string name="notif_gamelaunch_no_rom_file">Fichier ROM introuvable</string>
+    <string name="notif_gamelaunch_no_steam_launcher">Lanceur Steam non installé</string>
+    <string name="notif_gamelaunch_no_core_base">Aucun cœur disponible pour %1$s</string>
+    <string name="notif_gamelaunch_no_core_with_reason">Aucun cœur disponible pour %1$s : %2$s</string>
+    <string name="notif_gamelaunch_missing_discs">Disques manquants : %1$s. Consultez la fiche du jeu pour réparer.</string>
+    <string name="notif_gamelaunch_missing_bios">BIOS manquant pour %1$s. Installez-le dans les paramètres avant de lancer.</string>
+    <string name="notif_gamelaunch_no_scummvm_id">Fichier .scummvm manquant pour %1$s</string>
+    <string name="notif_gamelaunch_no_android_app">Application Android non installée : %1$s</string>
+    <string name="notif_gamelaunch_disc_launch_failed">Échec du lancement du disque</string>
+    <string name="notif_gamelaunch_launch_failed">Échec du lancement</string>
+
+    <string name="notif_social_share_screenshot_soon_quickaction">Le partage de capture d\'écran arrive bientôt</string>
+    <string name="notif_social_share_screenshot_soon_feedmenu">Le partage de capture d\'écran arrive bientôt</string>
+    <string name="notif_social_post_reported">Publication signalée et masquée</string>
+
+    <string name="notif_social_game_not_in_library">Jeu absent de la bibliothèque</string>
+
+    <string name="notif_userprofile_game_not_in_library_input">Jeu absent de la bibliothèque</string>
+    <string name="notif_userprofile_game_not_in_library_touch">Jeu absent de la bibliothèque</string>
+
+    <string name="notif_sync_library_start_failed_title">Impossible de démarrer la synchronisation</string>
+    <string name="notif_sync_library_progress_title">Synchronisation de la bibliothèque</string>
+    <string name="notif_sync_library_progress_starting">Démarrage...</string>
+    <string name="notif_sync_library_progress_platform_games">%1$s (%2$d/%3$d jeux)</string>
+    <string name="notif_sync_library_complete_title">Synchronisation terminée</string>
+    <string name="notif_sync_library_complete_counts">%1$d ajoutés, %2$d mis à jour</string>
+    <string name="notif_sync_library_complete_counts_with_removed">%1$d ajoutés, %2$d mis à jour, %3$d supprimés</string>
+    <string name="notif_sync_library_completed_with_errors_title">Synchronisation terminée avec des erreurs</string>
+    <plurals name="notif_sync_library_failed_platforms">
+        <item quantity="one">%1$d plateforme en échec</item>
+        <item quantity="many">%1$d plateformes en échec</item>
+        <item quantity="other">%1$d plateformes en échec</item>
+    </plurals>
+    <string name="notif_sync_library_failed_title">Échec de la synchronisation</string>
+
+    <string name="notif_sync_failure_timeout">Le serveur a mis trop de temps à répondre. Il est peut-être occupé ou votre bibliothèque est très volumineuse.</string>
+    <string name="notif_sync_failure_unreachable">Impossible de joindre le serveur. Vérifiez votre connexion et l\'adresse du serveur.</string>
+    <string name="notif_sync_failure_connection_lost">Connexion au serveur perdue. La synchronisation reprendra là où elle s\'est arrêtée la prochaine fois.</string>
+    <string name="notif_sync_failure_unknown">Échec de la synchronisation. Réessayez.</string>
+
+    <string name="notif_sync_platform_progress_title">Synchronisation de %1$s</string>
+    <string name="notif_sync_platform_progress_fetching">Récupération des jeux...</string>
+    <string name="notif_sync_platform_complete_title">%1$s synchronisé</string>
+    <string name="notif_sync_platform_complete_counts">%1$d ajoutés, %2$d mis à jour</string>
+    <string name="notif_sync_platform_complete_counts_with_removed">%1$d ajoutés, %2$d mis à jour, %3$d supprimés</string>
+    <string name="notif_sync_platform_completed_with_errors_title">Synchronisation terminée avec des erreurs</string>
+    <string name="notif_sync_platform_error_unknown">Erreur inconnue</string>
+    <string name="notif_sync_platform_failed_title">Échec de la synchronisation</string>
+</resources>

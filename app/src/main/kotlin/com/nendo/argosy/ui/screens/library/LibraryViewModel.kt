@@ -3,6 +3,7 @@ package com.nendo.argosy.ui.screens.library
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
+import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Cloud
@@ -11,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nendo.argosy.R
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.repository.CollectionRepository
@@ -38,14 +40,18 @@ import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.domain.usecase.cache.RepairImageCacheUseCase
 import com.nendo.argosy.domain.usecase.download.DownloadResult
 import com.nendo.argosy.domain.usecase.sync.SyncPlatformUseCase
+import android.content.Context
 import com.nendo.argosy.ui.common.GridDirection
 import com.nendo.argosy.ui.common.GridFocusNavigator
+import com.nendo.argosy.ui.common.labelRes
 import com.nendo.argosy.ui.common.toLibraryGameUi
+import com.nendo.argosy.ui.common.toNotificationText
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.core.notification.showSuccess
 import com.nendo.argosy.ui.navigation.GameNavigationContext
@@ -87,21 +93,29 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import kotlinx.coroutines.flow.first
 
-enum class FilterCategory(val label: String) {
-    SORT("Sort"),
-    SEARCH("Search"),
-    SOURCE("Source"),
-    PLATFORM("Platform"),
-    GENRE("Genre"),
-    PLAYERS("Players"),
-    SERIES("Series")
+/**
+ * The tabs of the filter modal. Routing runs on the entry itself and on its ordinal, never on the
+ * text of the tab, so [labelRes] is only ever the half that shows.
+ */
+enum class FilterCategory(@StringRes val labelRes: Int) {
+    SORT(R.string.library_filter_category_sort),
+    SEARCH(R.string.library_filter_category_search),
+    SOURCE(R.string.library_filter_category_source),
+    PLATFORM(R.string.library_filter_category_platform),
+    GENRE(R.string.library_filter_category_genre),
+    PLAYERS(R.string.library_filter_category_players),
+    SERIES(R.string.library_filter_category_series)
 }
 
-enum class SourceFilter(val label: String) {
-    ALL("All Games"),
-    PLAYABLE("Playable"),
-    FAVORITES("Favorites"),
-    HIDDEN("Hidden")
+/**
+ * Which slice of the library is shown. The name is the stored and compared value, including
+ * across the dual-screen home; [labelRes] is the half that renders.
+ */
+enum class SourceFilter(@StringRes val labelRes: Int) {
+    ALL(R.string.source_filter_all),
+    PLAYABLE(R.string.source_filter_playable),
+    FAVORITES(R.string.source_filter_favorites),
+    HIDDEN(R.string.source_filter_hidden)
 }
 
 data class ActiveFilters(
@@ -124,21 +138,24 @@ data class ActiveFilters(
             if (sort.option != SortOption.TITLE) 1 else 0
         ).sum()
 
-    val summary: String
-        get() = when {
-            activeCount == 0 -> "All Games"
-            activeCount == 1 -> when {
-                searchQuery.isNotEmpty() -> "\"$searchQuery\""
-                source != SourceFilter.ALL -> source.label
-                sort.option != SortOption.TITLE -> sort.option.label
-                platforms.isNotEmpty() -> platforms.first()
-                genres.isNotEmpty() -> genres.first()
-                players.isNotEmpty() -> players.first()
-                series.isNotEmpty() -> series.first()
-                else -> "All Games"
-            }
-            else -> "$activeCount filters"
+    fun summary(context: Context): String = when {
+        activeCount == 0 -> context.getString(R.string.source_filter_all)
+        activeCount == 1 -> when {
+            searchQuery.isNotEmpty() -> "\"$searchQuery\""
+            source != SourceFilter.ALL -> context.getString(source.labelRes)
+            sort.option != SortOption.TITLE -> context.getString(sort.option.labelRes)
+            platforms.isNotEmpty() -> platforms.first()
+            genres.isNotEmpty() -> genres.first()
+            players.isNotEmpty() -> players.first()
+            series.isNotEmpty() -> series.first()
+            else -> context.getString(R.string.source_filter_all)
         }
+        else -> context.resources.getQuantityString(
+            R.plurals.library_filter_active_count,
+            activeCount,
+            activeCount
+        )
+    }
 }
 
 data class FilterOptions(
@@ -304,19 +321,20 @@ data class LibraryUiState(
     val currentFilterCategory: FilterCategory
         get() = FilterCategory.entries.getOrElse(filterCategoryIndex) { FilterCategory.SOURCE }
 
-    val currentCategoryOptions: List<String>
-        get() = when (currentFilterCategory) {
+    fun currentCategoryOptions(context: Context): List<String> =
+        when (currentFilterCategory) {
             FilterCategory.SORT -> SortOption.entries.map { option ->
                 val directionIndicator = if (option == activeFilters.sort.option) {
                     if (activeFilters.sort.descending) " v" else " ^"
                 } else ""
-                option.label + directionIndicator
+                context.getString(option.labelRes) + directionIndicator
             }
             FilterCategory.SEARCH -> recentSearches
             FilterCategory.SOURCE -> SourceFilter.entries.map { filter ->
+                val label = context.getString(filter.labelRes)
                 if (filter == SourceFilter.HIDDEN && hiddenGameCount > 0)
-                    "${filter.label} ($hiddenGameCount)"
-                else filter.label
+                    "$label ($hiddenGameCount)"
+                else label
             }
             FilterCategory.PLATFORM -> filterOptions.platforms
             FilterCategory.GENRE -> filterOptions.genres
@@ -333,12 +351,12 @@ data class LibraryUiState(
     val selectedSortIndex: Int
         get() = activeFilters.sort.option.ordinal
 
-    val selectedOptionsInCurrentCategory: Set<String>
-        get() = when (currentFilterCategory) {
+    fun selectedOptionsInCurrentCategory(context: Context): Set<String> =
+        when (currentFilterCategory) {
             FilterCategory.SORT -> {
                 val option = activeFilters.sort.option
                 val indicator = if (activeFilters.sort.descending) " v" else " ^"
-                setOf(option.label + indicator)
+                setOf(context.getString(option.labelRes) + indicator)
             }
             FilterCategory.SEARCH -> emptySet()
             FilterCategory.SOURCE -> emptySet()
@@ -736,11 +754,24 @@ class LibraryViewModel @Inject constructor(
                     artUrl = it.coverPath,
                     isGameTitle = true,
                     facts = buildList {
-                        it.emulatorName?.let { name -> add(CompanionFact("Emulator", name)) }
+                        it.emulatorName?.let { name ->
+                            add(
+                                CompanionFact(
+                                    context.getString(R.string.library_companion_fact_emulator),
+                                    name
+                                )
+                            )
+                        }
                         add(
                             CompanionFact(
-                                "Storage",
-                                if (it.isDownloaded) "Downloaded" else "Not downloaded"
+                                context.getString(R.string.library_companion_fact_storage),
+                                context.getString(
+                                    if (it.isDownloaded) {
+                                        R.string.library_companion_storage_downloaded
+                                    } else {
+                                        R.string.library_companion_storage_not_downloaded
+                                    }
+                                )
                             )
                         )
                     }
@@ -1377,7 +1408,7 @@ class LibraryViewModel @Inject constructor(
 
     fun moveFilterOptionFocus(delta: Int) {
         _uiState.update { state ->
-            val options = state.currentCategoryOptions
+            val options = state.currentCategoryOptions(context)
             if (options.isEmpty()) return@update state
             val maxIndex = options.size - 1
             val newIndex = (state.filterOptionIndex + delta).coerceIn(0, maxIndex)
@@ -1389,7 +1420,7 @@ class LibraryViewModel @Inject constructor(
         val state = _uiState.value
         val category = state.currentFilterCategory
         val optionIndex = state.filterOptionIndex
-        val options = state.currentCategoryOptions
+        val options = state.currentCategoryOptions(context)
 
         val newFilters = when (category) {
             FilterCategory.SORT -> {
@@ -1489,7 +1520,9 @@ class LibraryViewModel @Inject constructor(
                 target = com.nendo.argosy.domain.model.HomeTileTargetRef.Game(gameId),
                 columns = _uiState.value.customGridLanes.coerceAtLeast(1)
             )
-            notificationManager.showSuccess("Added to home grid")
+            notificationManager.showSuccess(
+                NotificationText.Res(R.string.library_notice_added_to_home_grid)
+            )
         }
     }
 
@@ -1608,11 +1641,13 @@ class LibraryViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = gameActions.refreshGameData(gameId)) {
                 is RomMResult.Success -> {
-                    notificationManager.showSuccess("Game data refreshed")
+                    notificationManager.showSuccess(
+                        NotificationText.Res(R.string.library_notice_game_data_refreshed)
+                    )
                     loadGames()
                 }
                 is RomMResult.Error -> {
-                    notificationManager.showError(result.message)
+                    notificationManager.showError(NotificationText.Raw(result.message))
                 }
             }
             toggleQuickMenu()
@@ -1622,7 +1657,9 @@ class LibraryViewModel @Inject constructor(
     fun deleteLocalFile(gameId: Long) {
         viewModelScope.launch {
             gameActions.deleteLocalFile(gameId)
-            notificationManager.showSuccess("Download deleted")
+            notificationManager.showSuccess(
+                NotificationText.Res(R.string.library_notice_download_deleted)
+            )
         }
     }
 
@@ -1630,11 +1667,13 @@ class LibraryViewModel @Inject constructor(
         viewModelScope.launch {
             when (val result = gameActions.refreshAndroidGameData(gameId)) {
                 is RefreshAndroidResult.Success -> {
-                    notificationManager.showSuccess("Game data refreshed")
+                    notificationManager.showSuccess(
+                        NotificationText.Res(R.string.library_notice_android_data_refreshed)
+                    )
                     loadGames()
                 }
                 is RefreshAndroidResult.Error -> {
-                    notificationManager.showError(result.message)
+                    notificationManager.showError(NotificationText.Raw(result.message))
                 }
             }
             toggleQuickMenu()
@@ -1675,14 +1714,24 @@ class LibraryViewModel @Inject constructor(
             when (val result = gameActions.queueDownload(gameId)) {
                 is DownloadResult.Queued -> { }
                 is DownloadResult.AlreadyDownloaded -> {
-                    notificationManager.showSuccess("Game already downloaded")
+                    notificationManager.showSuccess(
+                        NotificationText.Res(R.string.library_notice_already_downloaded)
+                    )
                 }
                 is DownloadResult.MultiDiscQueued -> {
-                    notificationManager.showSuccess("Downloading ${result.discCount} discs")
+                    notificationManager.showSuccess(
+                        NotificationText.Plural(
+                            R.plurals.library_notice_downloading_discs,
+                            result.discCount,
+                            listOf(result.discCount)
+                        )
+                    )
                 }
-                is DownloadResult.Error -> notificationManager.showError(result.message)
+                is DownloadResult.Error -> notificationManager.showError(result.reason.toNotificationText())
                 is DownloadResult.ExtractionFailed -> {
-                    notificationManager.showError("Extraction failed. Open game details to retry.")
+                    notificationManager.showError(
+                        NotificationText.Res(R.string.library_notice_extraction_failed)
+                    )
                 }
             }
         }
@@ -1696,7 +1745,9 @@ class LibraryViewModel @Inject constructor(
         viewModelScope.launch {
             val success = apkInstallManager.installApkForGame(gameId)
             if (!success) {
-                notificationManager.showError("Could not install APK")
+                notificationManager.showError(
+                    NotificationText.Res(R.string.library_notice_apk_install_failed)
+                )
             }
         }
     }

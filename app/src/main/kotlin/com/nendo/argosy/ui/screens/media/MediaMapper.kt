@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.screens.media
 
+import android.content.Context
+import com.nendo.argosy.R
 import com.nendo.argosy.data.local.entity.MediaCollectionType
 import com.nendo.argosy.data.local.entity.MediaCreditEntity
 import com.nendo.argosy.data.local.entity.MediaItemEntity
@@ -60,7 +62,6 @@ fun MediaItemEntity.toMediaItemUi(
         thumbUrl = wideImageUrl(repository),
         overview = overview?.let(::plainText)?.takeIf { it.isNotBlank() },
         year = productionYear,
-        runtimeLabel = runTimeTicks?.let { formatRuntime(it) },
         communityRating = communityRating,
         officialRating = officialRating?.takeIf { it.isNotBlank() },
         genres = genres?.takeIf { it.isNotBlank() }?.replace(",", ", "),
@@ -110,20 +111,41 @@ private fun MediaItemEntity.wideImageUrl(repository: MediaRepository): String {
  * Facts are chosen for legibility from a distance rather than completeness: a runtime and a year
  * answer "is this the one I meant", where a genre list read across a room answers nothing.
  */
-fun MediaItemUi.toCompanionDetail(): CompanionDetail =
+fun MediaItemUi.toCompanionDetail(context: Context): CompanionDetail =
     CompanionDetail(
         title = title,
-        subtitle = listOfNotNull(seriesName, episodeLabel).joinToString(" - ").takeIf { it.isNotBlank() },
+        subtitle = listOfNotNull(seriesName, episodeLabel(context)).joinToString(" - ").takeIf { it.isNotBlank() },
         overview = overview,
         artUrl = posterUrl.takeIf { it.isNotBlank() },
         backdropUrl = backdropUrl.takeIf { it.isNotBlank() },
         facts = buildList {
-            year?.let { add(CompanionFact("Year", it.toString())) }
-            runtimeLabel?.let { add(CompanionFact("Runtime", it)) }
-            officialRating?.let { add(CompanionFact("Rated", it)) }
-            communityRating?.let { add(CompanionFact("Rating", "%.1f".format(it))) }
+            year?.let {
+                add(CompanionFact(context.getString(R.string.media_companion_fact_year), it.toString()))
+            }
+            runtimeLabel(context)?.let {
+                add(CompanionFact(context.getString(R.string.media_companion_fact_runtime), it))
+            }
+            officialRating?.let {
+                add(CompanionFact(context.getString(R.string.media_companion_fact_rated), it))
+            }
+            communityRating?.let {
+                add(CompanionFact(context.getString(R.string.media_companion_fact_rating), "%.1f".format(it)))
+            }
         }
     )
+
+/**
+ * The season/episode tag a season or episode row leads with, e.g. "S1 E4". Absent for a movie,
+ * which carries neither number.
+ */
+fun MediaItemUi.episodeLabel(context: Context): String? {
+    val season = seasonNumber ?: return null
+    val episode = episodeNumber ?: return null
+    return context.getString(R.string.media_item_episode_label, season, episode)
+}
+
+fun MediaItemUi.runtimeLabel(context: Context): String? =
+    runTimeTicks?.let { formatRuntime(context, it) }
 
 /**
  * The full-bleed image a screen draws behind its content, resolved as a kind and an item together.
@@ -179,14 +201,15 @@ private fun progressFraction(positionTicks: Long, runTimeTicks: Long?, played: B
     return (positionTicks.toFloat() / runTimeTicks.toFloat()).coerceIn(0f, FINISHED_FRACTION)
 }
 
-fun formatRuntime(ticks: Long): String {
+fun formatRuntime(context: Context, ticks: Long): String {
     val totalMinutes = ticks / TICKS_PER_SECOND / SECONDS_PER_MINUTE
     val hours = totalMinutes / MINUTES_PER_HOUR
     val minutes = totalMinutes % MINUTES_PER_HOUR
     return when {
-        hours > 0 && minutes > 0 -> "${hours}h ${minutes}m"
-        hours > 0 -> "${hours}h"
-        else -> "${minutes}m"
+        hours > 0 && minutes > 0 ->
+            context.getString(R.string.media_item_runtime_hours_minutes, hours, minutes)
+        hours > 0 -> context.getString(R.string.media_item_runtime_hours, hours)
+        else -> context.getString(R.string.media_item_runtime_minutes, minutes)
     }
 }
 

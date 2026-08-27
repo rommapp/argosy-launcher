@@ -40,10 +40,10 @@ private const val NEW_GAME_THRESHOLD_HOURS = 24L
 private const val RECENT_PLAYED_THRESHOLD_HOURS = 4L
 private const val RECENT_GAMES_LIMIT = 50
 
-sealed class HomeSection(val title: String) {
-    data object Recent : HomeSection("Recent")
-    data object Favorites : HomeSection("Favorites")
-    data class Platform(val name: String, val id: Long, val slug: String) : HomeSection(name)
+sealed class HomeSection {
+    data object Recent : HomeSection()
+    data object Favorites : HomeSection()
+    data class Platform(val name: String, val id: Long, val slug: String) : HomeSection()
 }
 
 data class SecondaryGameUi(

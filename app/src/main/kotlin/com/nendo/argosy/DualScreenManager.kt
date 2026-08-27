@@ -34,6 +34,7 @@ import com.nendo.argosy.domain.usecase.save.GetUnifiedSavesUseCase
 import com.nendo.argosy.domain.usecase.save.RestoreCachedSaveUseCase
 import com.nendo.argosy.ui.common.displayTitleId
 import com.nendo.argosy.ui.common.reportTitleIdRecheck
+import com.nendo.argosy.ui.common.toNotificationText
 import com.nendo.argosy.ui.dualscreen.gamedetail.ActiveModal
 import com.nendo.argosy.ui.dualscreen.gamedetail.DualCollectionItem
 import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailUpperState
@@ -47,6 +48,8 @@ import com.nendo.argosy.ui.dualscreen.home.DualHomeViewModel
 import com.nendo.argosy.ui.dualscreen.home.toShowcaseState
 import com.nendo.argosy.ui.input.InputDedupBuffer
 import com.nendo.argosy.ui.input.InputSignature
+import com.nendo.argosy.R
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.core.notification.showSuccess
 import com.nendo.argosy.ui.screens.common.GameActionsDelegate
@@ -175,6 +178,20 @@ class DualScreenManager(
 
     fun setRolesSwapped(value: Boolean) {
         _isRolesSwapped.value = value
+    }
+
+    /**
+     * Bumped whenever the launcher's display language changes. A locale override only takes
+     * effect for resources resolved through an Activity's own wrapped base Context, so both
+     * MainActivity and SecondaryHomeActivity collect this and recreate themselves; a token rather
+     * than the language itself, since each Activity already reads the new value straight from
+     * SessionStateStore during its own attachBaseContext.
+     */
+    private val _localeChangeToken = MutableStateFlow(0)
+    val localeChangeToken: StateFlow<Int> = _localeChangeToken
+
+    fun notifyLocaleChanged() {
+        _localeChangeToken.value += 1
     }
 
     /**
@@ -2354,7 +2371,7 @@ class DualScreenManager(
         val name = state.saveNameText.trim()
         if (name.isBlank()) return
         if (isReservedSaveSlotName(name)) {
-            notificationManager.showError("'$name' is a reserved name")
+            notificationManager.showError(NotificationText.Res(R.string.notif_dualscreen_reserved_slot_name, listOf(name)))
             return
         }
         val gameId = state.gameId
@@ -2730,14 +2747,30 @@ class DualScreenManager(
             if (manageMode) {
                 val (added, removed) = filePickerFlow.applyManagedSelection(gameId, rows, files)
                 val parts = buildList {
-                    if (added > 0) add("$added queued")
-                    if (removed > 0) add("$removed removed")
+                    if (added > 0) add(appContext.getString(R.string.notif_dualscreen_files_queued, added))
+                    if (removed > 0) add(appContext.getString(R.string.notif_dualscreen_files_removed, removed))
                 }
-                if (parts.isNotEmpty()) notificationManager.showSuccess(parts.joinToString(", "))
+                if (parts.isNotEmpty()) {
+                    notificationManager.showSuccess(NotificationText.Raw(parts.joinToString(", ")))
+                }
             } else {
-                val (queued, errors) = filePickerFlow.downloadSelection(gameId, files, versions)
-                errors.forEach { notificationManager.showError(it) }
-                if (queued > 1) notificationManager.showSuccess("Queued " + queued + " downloads")
+                val (queued, issues) = filePickerFlow.downloadSelection(gameId, files, versions)
+                issues.forEach { issue ->
+                    when (issue) {
+                        is com.nendo.argosy.domain.usecase.download.DownloadResult.AlreadyDownloaded ->
+                            notificationManager.showError(
+                                NotificationText.Res(R.string.error_filepicker_already_downloaded)
+                            )
+                        is com.nendo.argosy.domain.usecase.download.DownloadResult.Error ->
+                            notificationManager.showError(issue.reason.toNotificationText())
+                        else -> { }
+                    }
+                }
+                if (queued > 1) {
+                    notificationManager.showSuccess(
+                        NotificationText.Plural(R.plurals.notif_dualscreen_downloads_queued, queued, listOf(queued))
+                    )
+                }
             }
         }
     }
@@ -2796,7 +2829,7 @@ class DualScreenManager(
                 companionHost?.onDirectActionResult("REFRESH_DONE", gameId)
                 _swappedGameDetailViewModel?.loadGame(gameId)
             }
-            notificationManager.reportTitleIdRecheck(result)
+            notificationManager.reportTitleIdRecheck(appContext, result)
         }
     }
 
@@ -2866,7 +2899,7 @@ class DualScreenManager(
                             activeSaveRepository.setActiveSaveApplied(gameId, true)
                         }
                         is RestoreCachedSaveUseCase.Result.Error -> {
-                            Log.w(TAG, "Channel switch restore failed: ${result.message}")
+                            Log.w(TAG, "Channel switch restore failed: ${result.reason}")
                         }
                     }
                 } else {
@@ -2915,7 +2948,7 @@ class DualScreenManager(
                             activeSaveRepository.setActiveSaveApplied(gameId, true)
                         }
                         is RestoreCachedSaveUseCase.Result.Error -> {
-                            Log.w(TAG, "Restore point apply failed: ${result.message}")
+                            Log.w(TAG, "Restore point apply failed: ${result.reason}")
                         }
                     }
                 }
@@ -3028,7 +3061,11 @@ class DualScreenManager(
         lastStateEntries?.takeIf { it.first == gameId }?.second ?: emptyList()
 
     private fun stateSlotLabel(slot: Int): String =
-        if (slot < 0) "auto state" else "state slot $slot"
+        if (slot < 0) {
+            appContext.getString(R.string.notif_dualscreen_state_slot_auto)
+        } else {
+            appContext.getString(R.string.notif_dualscreen_state_slot_numbered, slot)
+        }
 
     /**
      * A state the companion restores goes through the same use case the handheld uses, so a
@@ -3044,7 +3081,7 @@ class DualScreenManager(
             val game = gameDao.getById(gameId) ?: return@launch
             val romPath = game.localPath
             if (romPath == null) {
-                notificationManager.showError("Game has no local path")
+                notificationManager.showError(NotificationText.Res(R.string.notif_dualscreen_no_local_path))
                 return@launch
             }
             val emulatorId = emulatorResolver.getEmulatorIdForGame(
@@ -3059,13 +3096,20 @@ class DualScreenManager(
                 currentCoreId = coreVersionExtractor.getCoreIdForEmulator(emulatorId, game.platformSlug)
             )) {
                 is com.nendo.argosy.domain.usecase.state.RestoreStateResult.Success ->
-                    notificationManager.showSuccess("Restored ${stateSlotLabel(slot)}")
+                    notificationManager.showSuccess(
+                        NotificationText.Res(R.string.notif_dualscreen_state_restored, listOf(stateSlotLabel(slot)))
+                    )
                 is com.nendo.argosy.domain.usecase.state.RestoreStateResult.VersionMismatch ->
                     notificationManager.showError(
-                        "${stateSlotLabel(slot)} was made by a different core version"
+                        NotificationText.Res(
+                            R.string.notif_dualscreen_state_version_mismatch,
+                            listOf(stateSlotLabel(slot))
+                        )
                     )
                 else ->
-                    notificationManager.showError("Could not restore ${stateSlotLabel(slot)}")
+                    notificationManager.showError(
+                        NotificationText.Res(R.string.notif_dualscreen_state_restore_failed, listOf(stateSlotLabel(slot)))
+                    )
             }
             broadcastUnifiedStates(gameId)
         }
@@ -3076,7 +3120,9 @@ class DualScreenManager(
         scope.launch(Dispatchers.IO) {
             val entry = stateEntriesFor(gameId).firstOrNull { it.slotNumber == slot } ?: return@launch
             stateCacheManager.purgeState(gameId, entry.localCacheId, entry.serverStateId)
-            notificationManager.showSuccess("Deleted ${stateSlotLabel(slot)}")
+            notificationManager.showSuccess(
+                NotificationText.Res(R.string.notif_dualscreen_state_deleted, listOf(stateSlotLabel(slot)))
+            )
             broadcastUnifiedStates(gameId)
         }
     }
@@ -3091,11 +3137,16 @@ class DualScreenManager(
             val copied = stateCacheManager.copyStateToSlot(cacheId, targetSlot)
             if (copied) {
                 notificationManager.showSuccess(
-                    "Copied ${stateSlotLabel(sourceSlot)} to ${stateSlotLabel(targetSlot)}"
+                    NotificationText.Res(
+                        R.string.notif_dualscreen_state_copied,
+                        listOf(stateSlotLabel(sourceSlot), stateSlotLabel(targetSlot))
+                    )
                 )
                 broadcastUnifiedStates(gameId)
             } else {
-                notificationManager.showError("Could not copy ${stateSlotLabel(sourceSlot)}")
+                notificationManager.showError(
+                    NotificationText.Res(R.string.notif_dualscreen_state_copy_failed, listOf(stateSlotLabel(sourceSlot)))
+                )
             }
         }
     }

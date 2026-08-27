@@ -28,6 +28,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
@@ -49,7 +51,7 @@ fun ArgosyConfirmModal(
     focusedIndex: Int,
     modifier: Modifier = Modifier,
     destructive: Boolean = false,
-    cancelLabel: String = "Cancel",
+    cancelLabel: String = stringResource(R.string.ui_confirm_modal_cancel),
     neutralLabel: String? = null,
     onNeutral: (() -> Unit)? = null,
     visible: Boolean = true,
@@ -113,7 +115,7 @@ fun ArgosyConfirmModalHost(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     destructive: Boolean = false,
-    cancelLabel: String = "Cancel",
+    cancelLabel: String = stringResource(R.string.ui_confirm_modal_cancel),
     neutralLabel: String? = null,
     onNeutral: (() -> Unit)? = null,
 ) {

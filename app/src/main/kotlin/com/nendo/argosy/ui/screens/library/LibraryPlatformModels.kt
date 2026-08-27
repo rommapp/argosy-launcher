@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.screens.library
 
+import androidx.annotation.PluralsRes
+import com.nendo.argosy.R
 import com.nendo.argosy.data.local.entity.MediaCollectionType
 import com.nendo.argosy.data.local.entity.MediaLibraryEntity
 import com.nendo.argosy.data.local.entity.PlatformEntity
@@ -22,12 +24,13 @@ sealed interface LibraryCellTarget {
 }
 
 /**
- * What a media library holds, and what one of its titles is called. The noun is carried rather than
- * derived at the render site so a media cell's small print is built the same way a platform's is.
+ * What a media library holds. [itemCountRes] names the plural that counts one of its titles, so a
+ * media cell's small print is built the same way a platform's is; the noun itself is resolved at the
+ * render site because only there is a configuration to resolve it against.
  */
-enum class MediaCellKind(val singular: String, val plural: String) {
-    MOVIES("movie", "movies"),
-    SHOWS("show", "shows")
+enum class MediaCellKind(@PluralsRes val itemCountRes: Int) {
+    MOVIES(R.plurals.library_cell_movie_count),
+    SHOWS(R.plurals.library_cell_show_count)
 }
 
 /**
@@ -67,14 +70,18 @@ data class LibraryCellUi(
      * A media library has no on-disk name to print, so it prints only the count - which is already
      * how a platform whose slug merely respells its own name reads, and is why the two families make
      * one grid rather than two.
+     *
+     * [countText] is the already-counted phrase, resolved from [itemCountRes] at the render site.
      */
-    val metaLine: String
-        get() {
-            val noun = mediaKind
-                ?.let { if (itemCount == 1) it.singular else it.plural }
-                ?: if (itemCount == 1) "game" else "games"
-            return (slugs + "$itemCount $noun").joinToString(" · ")
-        }
+    fun metaLine(countText: String): String = (slugs + countText).joinToString(" · ")
+
+    /**
+     * The plural that counts what this cell holds: its media kind's titles, or games for everything
+     * else.
+     */
+    @get:PluralsRes
+    val itemCountRes: Int
+        get() = mediaKind?.itemCountRes ?: R.plurals.library_cell_game_count
 }
 
 /**
@@ -147,9 +154,14 @@ fun MediaLibraryEntity.toLibraryCellUi(itemCount: Int): LibraryCellUi? {
     )
 }
 
+/**
+ * The shortcut cell that opens the whole library unfiltered. It carries no [LibraryCellUi.name]:
+ * unlike a platform, whose name is data, this one is interface text and is resolved at the render
+ * site, which branches on [LibraryCellUi.isAllGames] for its mark already.
+ */
 fun allGamesCell(gameCount: Int): LibraryCellUi = LibraryCellUi(
     target = LibraryCellTarget.AllGames,
-    name = "All Games",
+    name = "",
     slug = "",
     slugs = emptyList(),
     itemCount = gameCount,

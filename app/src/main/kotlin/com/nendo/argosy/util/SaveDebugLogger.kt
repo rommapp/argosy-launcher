@@ -71,7 +71,7 @@ object SaveDebugLogger {
             gameName = gameName,
             channel = channel,
             details = buildString {
-                append("size=${formatBytes(sizeBytes)}")
+                append("size=${formatBytesStable(sizeBytes)}")
                 append(", hash=${contentHash.take(12)}...")
                 append(", hardcore=$isHardcore")
                 append(", needsSync=$needsRemoteSync")
@@ -154,7 +154,7 @@ object SaveDebugLogger {
             gameId = gameId,
             gameName = gameName,
             channel = channel,
-            details = "size=${formatBytes(sizeBytes)}, hash=${contentHash.take(12)}..."
+            details = "size=${formatBytesStable(sizeBytes)}, hash=${contentHash.take(12)}..."
         )
     }
 
@@ -216,7 +216,7 @@ object SaveDebugLogger {
             gameId = gameId,
             gameName = gameName,
             channel = channel,
-            details = "size=${formatBytes(sizeBytes)}, duration=${durationMs}ms"
+            details = "size=${formatBytesStable(sizeBytes)}, duration=${durationMs}ms"
         )
     }
 

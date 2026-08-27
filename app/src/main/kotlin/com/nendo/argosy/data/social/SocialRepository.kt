@@ -23,8 +23,10 @@ import com.nendo.argosy.data.sync.SocialSyncCoordinator
 import com.nendo.argosy.core.event.AchievementUpdateBus
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ProcessLifecycleOwner
+import com.nendo.argosy.R
 import com.nendo.argosy.core.notification.NotificationDuration
 import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.NotificationType
 import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -1381,11 +1383,11 @@ class SocialRepository @Inject constructor(
             when {
                 startedPlayingNewGame && prefs.socialNotifyFriendPlaying -> {
                     title = friend.displayName
-                    subtitle = "Started playing ${newGame?.title}"
+                    subtitle = context.getString(R.string.notif_social_friend_started_playing, newGame?.title)
                     val coverPath = newGame?.coverThumb?.let { saveTempCover(it, friend.id) }
                     notificationManager.show(
-                        title = title,
-                        subtitle = subtitle,
+                        title = NotificationText.Raw(title),
+                        subtitle = NotificationText.Raw(subtitle),
                         imagePath = coverPath,
                         type = NotificationType.INFO,
                         duration = NotificationDuration.SHORT,
@@ -1395,10 +1397,10 @@ class SocialRepository @Inject constructor(
                 }
                 wasOfflineOrAway && isNowOnline && !startedPlayingNewGame && prefs.socialNotifyFriendOnline -> {
                     title = friend.displayName
-                    subtitle = "Is now online"
+                    subtitle = context.getString(R.string.notif_social_friend_online)
                     notificationManager.show(
-                        title = title,
-                        subtitle = subtitle,
+                        title = NotificationText.Raw(title),
+                        subtitle = NotificationText.Raw(subtitle),
                         type = NotificationType.INFO,
                         duration = NotificationDuration.SHORT,
                         key = "presence_${friend.id}",

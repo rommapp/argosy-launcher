@@ -17,6 +17,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -37,7 +39,7 @@ fun AddFriendModal(
 ) {
     val inputDispatcher = LocalInputDispatcher.current
     var codeInput by remember { mutableStateOf("") }
-    var error by remember { mutableStateOf<String?>(null) }
+    var errorRes by remember { mutableStateOf<Int?>(null) }
 
     val inputHandler = remember(onSubmit, onDismiss) {
         object : InputHandler {
@@ -46,7 +48,7 @@ fun AddFriendModal(
                     onSubmit(codeInput.uppercase())
                     return InputResult.HANDLED
                 } else {
-                    error = "Code must be 6 characters"
+                    errorRes = R.string.ui_add_friend_error_length
                     return InputResult.HANDLED
                 }
             }
@@ -73,16 +75,16 @@ fun AddFriendModal(
     }
 
     NestedModal(
-        title = "Add Friend",
+        title = stringResource(R.string.ui_add_friend_title),
         onDismiss = onDismiss,
         footerHints = listOf(
-            InputButton.A to "Submit",
-            InputButton.B to "Cancel"
+            InputButton.A to stringResource(R.string.ui_add_friend_footer_submit),
+            InputButton.B to stringResource(R.string.ui_add_friend_footer_cancel)
         ),
         content = {
             Column {
             Text(
-                text = "Enter your friend's 6-character code",
+                text = stringResource(R.string.ui_add_friend_instructions),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -96,13 +98,13 @@ fun AddFriendModal(
                 onValueChange = { newValue ->
                     if (newValue.length <= 6 && newValue.all { it.isLetterOrDigit() }) {
                         codeInput = newValue.uppercase()
-                        error = null
+                        errorRes = null
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = {
                     Text(
-                        text = "ABC123",
+                        text = stringResource(R.string.ui_add_friend_code_placeholder),
                         style = MaterialTheme.typography.headlineSmall.copy(
                             fontFamily = FontFamily.Monospace,
                             letterSpacing = 4.sp
@@ -124,10 +126,10 @@ fun AddFriendModal(
                 )
             )
 
-            if (error != null) {
+            errorRes?.let { messageRes ->
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = error!!,
+                    text = stringResource(messageRes),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.error,
                     textAlign = TextAlign.Center,

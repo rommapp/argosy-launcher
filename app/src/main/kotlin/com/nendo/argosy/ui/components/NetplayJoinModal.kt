@@ -29,8 +29,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import coil.compose.AsyncImage
 import com.nendo.argosy.data.netplay.CoreSubState
 import com.nendo.argosy.data.netplay.JoinCandidate
@@ -52,7 +54,7 @@ fun NetplayJoinModal(
     ) return
 
     val hostUsername = state.hostUsername()
-    val gameTitle = state.gameTitle() ?: "Unknown"
+    val gameTitle = state.gameTitle() ?: stringResource(R.string.ui_netplay_join_unknown_game)
 
     Modal(
         title = "",
@@ -60,7 +62,10 @@ fun NetplayJoinModal(
         onDismiss = onDismiss,
         titleContent = {
             Text(
-                text = "Joining ${hostUsername ?: "netplay"}",
+                text = stringResource(
+                    R.string.ui_netplay_join_heading,
+                    hostUsername ?: stringResource(R.string.ui_netplay_join_unknown_host)
+                ),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
@@ -95,7 +100,8 @@ private fun CurrentStateContent(state: NetplayJoinState) {
     when (state) {
         is NetplayJoinState.MatchingCore -> MatchingCoreContent(state.sub)
         is NetplayJoinState.VerifyingGame -> VerifyingGameContent(state.sub)
-        is NetplayJoinState.JoiningSession -> StatusLine("Joining session")
+        is NetplayJoinState.JoiningSession ->
+            StatusLine(stringResource(R.string.ui_netplay_join_status_joining))
         is NetplayJoinState.Failed -> Text(
             text = state.message,
             style = MaterialTheme.typography.bodyMedium,
@@ -108,21 +114,25 @@ private fun CurrentStateContent(state: NetplayJoinState) {
 @Composable
 private fun MatchingCoreContent(sub: CoreSubState) {
     when (sub) {
-        CoreSubState.Resolving -> StatusLine("Matching core")
+        CoreSubState.Resolving ->
+            StatusLine(stringResource(R.string.ui_netplay_join_status_matching_core))
         is CoreSubState.Downloading -> {
-            StatusLine("Downloading core")
+            StatusLine(stringResource(R.string.ui_netplay_join_status_downloading_core))
             Spacer(Modifier.height(Dimens.spacingSm))
             ArgosyProgressBar(progress = sub.pct.coerceIn(0f, 1f))
         }
-        is CoreSubState.Ready -> StatusLine("Core ready")
+        is CoreSubState.Ready ->
+            StatusLine(stringResource(R.string.ui_netplay_join_status_core_ready))
     }
 }
 
 @Composable
 private fun VerifyingGameContent(sub: VerifySubState) {
     when (sub) {
-        VerifySubState.Probing -> StatusLine("Verifying game")
-        is VerifySubState.Confirmed -> StatusLine("Verified")
+        VerifySubState.Probing ->
+            StatusLine(stringResource(R.string.ui_netplay_join_status_verifying))
+        is VerifySubState.Confirmed ->
+            StatusLine(stringResource(R.string.ui_netplay_join_status_verified))
         is VerifySubState.AmbiguousCandidates -> CandidatePicker(sub)
         is VerifySubState.HashMismatchVariants -> VariantPicker(sub)
     }
@@ -155,10 +165,13 @@ private fun CandidatePicker(sub: VerifySubState.AmbiguousCandidates) {
     val downloading = sub.selectedGameId != null && sub.downloadProgress != null
 
     val label = when {
-        sub.candidates.size == 1 && !sub.candidates[0].isInstalled -> "ROM not downloaded. Select to install."
-        sub.candidates.size == 1 -> "Verify failed. Select to retry."
-        sub.candidates.none { it.isInstalled } -> "No installed ROM matches. Pick one to download."
-        else -> "Multiple matches. Pick a ROM."
+        sub.candidates.size == 1 && !sub.candidates[0].isInstalled ->
+            stringResource(R.string.ui_netplay_join_candidates_single_missing)
+        sub.candidates.size == 1 ->
+            stringResource(R.string.ui_netplay_join_candidates_single_failed)
+        sub.candidates.none { it.isInstalled } ->
+            stringResource(R.string.ui_netplay_join_candidates_none_installed)
+        else -> stringResource(R.string.ui_netplay_join_candidates_multiple)
     }
     Column {
         Text(
@@ -243,7 +256,11 @@ private fun CandidateRow(
                         color = metaColor
                     )
                     Text(
-                        text = if (candidate.isInstalled) "Installed" else "Not installed",
+                        text = if (candidate.isInstalled) {
+                            stringResource(R.string.ui_netplay_join_candidate_installed)
+                        } else {
+                            stringResource(R.string.ui_netplay_join_candidate_not_installed)
+                        },
                         style = MaterialTheme.typography.labelSmall,
                         color = if (candidate.isInstalled) MaterialTheme.colorScheme.primary else metaColor
                     )
@@ -284,7 +301,7 @@ private fun VariantPicker(sub: VerifySubState.HashMismatchVariants) {
 
     Column {
         Text(
-            text = "ROM hash didn't match. Pick a variant.",
+            text = stringResource(R.string.ui_netplay_join_variants_prompt),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )

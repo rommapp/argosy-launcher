@@ -4,9 +4,12 @@ import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.data.remote.romm.SyncProgress
 import com.nendo.argosy.data.remote.romm.SyncResult
+import com.nendo.argosy.data.sync.SyncNotificationCopyResources
+import com.nendo.argosy.R
 import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.ui.screens.common.LibrarySyncBus
 import com.nendo.argosy.core.notification.NotificationProgress
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.NotificationType
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -38,7 +41,12 @@ class SyncLibraryUseCaseTest {
         every { romMRepository.syncProgress } returns MutableStateFlow(SyncProgress())
         notificationManager = mockk(relaxed = true)
         librarySyncBus = mockk(relaxed = true)
-        useCase = SyncLibraryUseCase(romMRepository, notificationManager, librarySyncBus).apply {
+        useCase = SyncLibraryUseCase(
+            romMRepository,
+            notificationManager,
+            librarySyncBus,
+            SyncNotificationCopyResources()
+        ).apply {
             progressDispatcher = UnconfinedTestDispatcher()
         }
     }
@@ -50,7 +58,7 @@ class SyncLibraryUseCaseTest {
         val result = useCase()
 
         assertTrue(result is SyncLibraryResult.Error)
-        assertEquals("RomM not connected", (result as SyncLibraryResult.Error).message)
+        assertEquals(SyncLibraryFailureReason.NotConnected, (result as SyncLibraryResult.Error).reason)
     }
 
     @Test
@@ -79,7 +87,10 @@ class SyncLibraryUseCaseTest {
         val result = useCase()
 
         assertTrue(result is SyncLibraryResult.Error)
-        assertEquals("Network error", (result as SyncLibraryResult.Error).message)
+        assertEquals(
+            SyncLibraryFailureReason.PlatformCountFailed("Network error"),
+            (result as SyncLibraryResult.Error).reason
+        )
     }
 
     @Test
@@ -111,8 +122,8 @@ class SyncLibraryUseCaseTest {
 
         verify {
             notificationManager.showPersistent(
-                title = "Syncing Library",
-                subtitle = "Starting...",
+                title = NotificationText.Res(R.string.notif_sync_library_progress_title),
+                subtitle = NotificationText.Res(R.string.notif_sync_library_progress_starting),
                 key = "romm-sync",
                 progress = NotificationProgress(0, 3)
             )
@@ -130,8 +141,11 @@ class SyncLibraryUseCaseTest {
         verify {
             notificationManager.completePersistent(
                 key = "romm-sync",
-                title = "Sync complete",
-                subtitle = "5 added, 3 updated, 1 removed",
+                title = NotificationText.Res(R.string.notif_sync_library_complete_title),
+                subtitle = NotificationText.Res(
+                    R.string.notif_sync_library_complete_counts_with_removed,
+                    listOf(5, 3, 1)
+                ),
                 type = NotificationType.SUCCESS
             )
         }
@@ -148,8 +162,14 @@ class SyncLibraryUseCaseTest {
         verify {
             notificationManager.completePersistent(
                 key = "romm-sync",
-                title = "Sync completed with errors",
-                subtitle = "1 platform(s) failed",
+                title = NotificationText.Res(
+                    R.string.notif_sync_library_completed_with_errors_title
+                ),
+                subtitle = NotificationText.Plural(
+                    R.plurals.notif_sync_library_failed_platforms,
+                    1,
+                    listOf(1)
+                ),
                 type = NotificationType.ERROR
             )
         }
@@ -200,7 +220,10 @@ class SyncLibraryUseCaseTest {
         verify {
             notificationManager.updatePersistent(
                 key = "romm-sync",
-                subtitle = "NES (3/10 games)",
+                subtitle = NotificationText.Res(
+                    R.string.notif_sync_library_progress_platform_games,
+                    listOf("NES", 3, 10)
+                ),
                 progress = NotificationProgress(1, 2)
             )
         }
@@ -215,12 +238,15 @@ class SyncLibraryUseCaseTest {
         val result = useCase()
 
         assertTrue(result is SyncLibraryResult.Error)
-        assertEquals("Unexpected error", (result as SyncLibraryResult.Error).message)
+        assertEquals(
+            SyncLibraryFailureReason.Unexpected("Unexpected error"),
+            (result as SyncLibraryResult.Error).reason
+        )
         verify {
             notificationManager.completePersistent(
                 key = "romm-sync",
-                title = "Sync failed",
-                subtitle = "Unexpected error",
+                title = NotificationText.Res(R.string.notif_sync_library_failed_title),
+                subtitle = NotificationText.Raw("Unexpected error"),
                 type = NotificationType.ERROR
             )
         }

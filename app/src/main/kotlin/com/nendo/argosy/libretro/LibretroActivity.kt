@@ -43,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.res.stringResource
 import com.nendo.argosy.libretro.ui.RAConnectionNotification
 import com.nendo.argosy.core.input.ConnectedControllerTracker
 import com.nendo.argosy.core.input.ControllerDetector
@@ -51,6 +52,7 @@ import com.nendo.argosy.ui.input.LocalSwapStartSelect
 import com.nendo.argosy.ui.input.LocalXYIconsSwapped
 import androidx.lifecycle.lifecycleScope
 import com.nendo.argosy.BuildConfig
+import com.nendo.argosy.R
 import com.nendo.argosy.data.cheats.CheatsRepository
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.PlaySessionTracker
@@ -151,6 +153,12 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class LibretroActivity : ComponentActivity() {
+
+    override fun attachBaseContext(newBase: android.content.Context) {
+        val tag = com.nendo.argosy.data.preferences.SessionStateStore(newBase).getAppLanguage()
+        super.attachBaseContext(com.nendo.argosy.core.locale.LocaleHelper.wrap(newBase, tag))
+    }
+
     @Inject lateinit var triggerAxisKeyEmitter: com.nendo.argosy.ui.input.TriggerAxisKeyEmitter
     @Inject lateinit var playSessionTracker: PlaySessionTracker
     @Inject lateinit var preferencesRepository: UserPreferencesRepository
@@ -562,13 +570,13 @@ class LibretroActivity : ComponentActivity() {
     private fun validateRomFile(romFile: File): Boolean {
         if (!romFile.exists()) {
             Log.e(TAG, "ROM file not found: $romPath")
-            inGameMessage = "Game file not found"
+            inGameMessage = getString(R.string.ingame_libretro_rom_not_found)
             finish()
             return false
         }
         if (!romFile.canRead()) {
             Log.e(TAG, "ROM file not readable: $romPath")
-            inGameMessage = "Cannot access game file"
+            inGameMessage = getString(R.string.ingame_libretro_rom_not_readable)
             finish()
             return false
         }
@@ -763,12 +771,12 @@ class LibretroActivity : ComponentActivity() {
         lifecycleScope.launch {
             retroView.getGLRetroErrors().collect { errorCode ->
                 val errorMessage = when (errorCode) {
-                    LibretroDroid.ERROR_LOAD_LIBRARY -> "Emulator core failed to load"
-                    LibretroDroid.ERROR_LOAD_GAME -> "Game file could not be loaded"
-                    LibretroDroid.ERROR_GL_NOT_COMPATIBLE -> "Device graphics not supported"
-                    LibretroDroid.ERROR_SERIALIZATION -> "Save file is corrupted"
-                    LibretroDroid.ERROR_CHEAT -> "Cheat system error"
-                    else -> "An unexpected error occurred"
+                    LibretroDroid.ERROR_LOAD_LIBRARY -> getString(R.string.ingame_libretro_core_error_load_library)
+                    LibretroDroid.ERROR_LOAD_GAME -> getString(R.string.ingame_libretro_core_error_load_game)
+                    LibretroDroid.ERROR_GL_NOT_COMPATIBLE -> getString(R.string.ingame_libretro_core_error_gl_incompatible)
+                    LibretroDroid.ERROR_SERIALIZATION -> getString(R.string.ingame_libretro_core_error_serialization)
+                    LibretroDroid.ERROR_CHEAT -> getString(R.string.ingame_libretro_core_error_cheat)
+                    else -> getString(R.string.ingame_libretro_core_error_unknown)
                 }
                 Log.e(TAG, "GLRetroView error: code=$errorCode, message=$errorMessage")
                 Log.e(TAG, "Context: gameId=$gameId, core=$coreName, rom=$romPath")
@@ -810,9 +818,9 @@ class LibretroActivity : ComponentActivity() {
                             cheatManager.applyAllEnabledCheats(hardcoreMode)
                             if (retroView.sramLoadFailed) {
                                 Log.w(TAG, "[Startup] SRAM failed to load (size mismatch); booting with a fresh save")
-                                inGameMessage = "Failed to load save, using new save instead"
+                                inGameMessage = getString(R.string.ingame_libretro_sram_load_failed_fresh_save)
                             } else if (casualSaveInHardcore) {
-                                inGameMessage = "Continuing casual save in hardcore"
+                                inGameMessage = getString(R.string.ingame_libretro_casual_save_in_hardcore)
                             }
                             corePortDevices = readCorePortDevices()
                             applyControllerTypes()
@@ -925,8 +933,8 @@ class LibretroActivity : ComponentActivity() {
                     speedrunRepository.getCategoriesForGame(gameId).firstOrNull { it.id == id }
                 } ?: speedrunRepository.createCategory(
                     gameId = gameId,
-                    name = "Practice",
-                    segmentNames = (1..5).map { "Segment $it" }
+                    name = getString(R.string.ingame_libretro_speedrun_default_category_name),
+                    segmentNames = (1..5).map { getString(R.string.ingame_libretro_speedrun_default_segment_name, it) }
                 ).let { newId -> speedrunRepository.getCategoriesForGame(gameId).first { it.id == newId } }
                 val segments = speedrunRepository.getSegmentNames(category.id)
                 val comparison = speedrunRepository.getComparison(category.id, segments.size)
@@ -1007,12 +1015,8 @@ class LibretroActivity : ComponentActivity() {
         )
     }
 
-    private fun hudCornerFor(value: String): com.nendo.argosy.ui.components.HudCorner = when (value) {
-        "Top Left" -> com.nendo.argosy.ui.components.HudCorner.TOP_LEFT
-        "Bottom Left" -> com.nendo.argosy.ui.components.HudCorner.BOTTOM_LEFT
-        "Bottom Right" -> com.nendo.argosy.ui.components.HudCorner.BOTTOM_RIGHT
-        else -> com.nendo.argosy.ui.components.HudCorner.TOP_RIGHT
-    }
+    private fun hudCornerFor(value: String): com.nendo.argosy.ui.components.HudCorner =
+        com.nendo.argosy.ui.common.hudCornerFromStored(value)
 
     private fun formatClock(epochMs: Long): String =
         com.nendo.argosy.util.formatClockTime(this, epochMs)
@@ -1025,18 +1029,23 @@ class LibretroActivity : ComponentActivity() {
         val safe = totalSeconds.coerceAtLeast(0L)
         val hours = safe / 3600
         val minutes = (safe % 3600) / 60
-        val text = if (hours > 0) "%d:%02d".format(hours, minutes) else "%dm".format(minutes)
+        val text = if (hours > 0) {
+            getString(R.string.ingame_libretro_hud_duration_hm, hours, minutes)
+        } else {
+            getString(R.string.ingame_libretro_hud_duration_minutes, minutes)
+        }
         return text.padStart(HUD_DURATION_WIDTH)
     }
 
-    private fun formatFps(fps: Int): String = "%s fps".format(fps.toString().padStart(HUD_FPS_DIGITS))
+    private fun formatFps(fps: Int): String =
+        getString(R.string.ingame_libretro_hud_fps_format, fps.toString().padStart(HUD_FPS_DIGITS))
 
     private fun formatAgo(seconds: Long): String {
         val safe = seconds.coerceAtLeast(0L)
         return when {
-            safe < 60 -> "saved just now"
-            safe < 3600 -> "saved ${safe / 60}m ago"
-            else -> "saved ${safe / 3600}h ago"
+            safe < 60 -> getString(R.string.ingame_libretro_hud_last_save_just_now)
+            safe < 3600 -> getString(R.string.ingame_libretro_hud_last_save_minutes_ago, safe / 60)
+            else -> getString(R.string.ingame_libretro_hud_last_save_hours_ago, safe / 3600)
         }
     }
 
@@ -1278,7 +1287,9 @@ class LibretroActivity : ComponentActivity() {
                             if (index != discMenuCurrentIndex) {
                                 discPaths.getOrNull(index)?.let { retroView.changeDisk(index, it.absolutePath) }
                                 currentDiscIndex = index
-                                inGameMessage = "Inserted ${discMenuLabels.getOrNull(index) ?: "Disc ${index + 1}"}"
+                                val discName = discMenuLabels.getOrNull(index)
+                                    ?: getString(R.string.ingame_libretro_disc_swap_fallback_name, index + 1)
+                                inGameMessage = getString(R.string.ingame_libretro_disc_swap_inserted, discName)
                             }
                             discMenuVisible = false
                             hideMenu()
@@ -1301,7 +1312,7 @@ class LibretroActivity : ComponentActivity() {
                             speedrunPickerCategories.getOrNull(index)?.let { armSpeedrunCategory(it.id) }
                         },
                         onDismiss = { speedrunPickerVisible = false },
-                        title = "Speedrun Category"
+                        title = getString(R.string.ingame_libretro_speedrun_picker_title)
                     )
                 }
                 if (netplay.modePickerVisible) {
@@ -1477,11 +1488,11 @@ class LibretroActivity : ComponentActivity() {
                         onFocusChange = { quickTimelineFocusIndex = it },
                         onLoad = { slot ->
                             inGameMessage = if (!canSerialize) {
-                                "Save states unavailable for this core"
+                                getString(R.string.ingame_libretro_quicktimeline_load_unsupported_core)
                             } else if (saveStateManager.performSlotLoad(retroView, slot)) {
-                                "State loaded"
+                                getString(R.string.ingame_libretro_quicktimeline_load_success)
                             } else {
-                                "Failed to load state"
+                                getString(R.string.ingame_libretro_quicktimeline_load_failure)
                             }
                             quickTimelineVisible = false
                             if (!netplay.inSession) {
@@ -1585,7 +1596,7 @@ class LibretroActivity : ComponentActivity() {
             ) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 Text(
-                    text = "Validating save contents",
+                    text = stringResource(R.string.ingame_libretro_closing_overlay_validating),
                     style = MaterialTheme.typography.bodyLarge,
                     color = Color.White
                 )
@@ -1715,7 +1726,7 @@ class LibretroActivity : ComponentActivity() {
             val effective = effectiveControllerType(port)
             ControllerPortOption(
                 port = port,
-                options = devices.map { it.description ?: "Device ${it.id}" },
+                options = devices.map { it.description ?: getString(R.string.ingame_libretro_controller_port_device_fallback, it.id) },
                 selectedIndex = devices.indexOfFirst { it.id == effective }.coerceAtLeast(0),
                 isOverridden = stored != null,
                 pendingRestart = effective != null && effective != appliedControllerTypes[port]
@@ -2125,24 +2136,24 @@ class LibretroActivity : ComponentActivity() {
             InGameMenuAction.Resume -> hideMenu()
             InGameMenuAction.QuickSave -> {
                 inGameMessage = if (!canSerialize) {
-                    "Save states unavailable for this core"
+                    getString(R.string.ingame_libretro_menu_quicksave_unsupported_core)
                 } else {
                     val stateData = try { retroView.serializeState() } catch (_: Exception) { null }
                     if (stateData != null && saveStateManager.performQuickSave(stateData, pendingSaveScreenshot)) {
-                        "State saved"
+                        getString(R.string.ingame_libretro_menu_quicksave_success)
                     } else {
-                        "Failed to save state"
+                        getString(R.string.ingame_libretro_menu_quicksave_failure)
                     }
                 }
                 hideMenu()
             }
             InGameMenuAction.QuickLoad -> {
                 inGameMessage = if (!canSerialize) {
-                    "Save states unavailable for this core"
+                    getString(R.string.ingame_libretro_menu_quickload_unsupported_core)
                 } else if (saveStateManager.performQuickLoad(retroView)) {
-                    "State loaded"
+                    getString(R.string.ingame_libretro_menu_quickload_success)
                 } else {
-                    "Failed to load state"
+                    getString(R.string.ingame_libretro_menu_quickload_failure)
                 }
                 hideMenu()
             }
@@ -2337,30 +2348,42 @@ class LibretroActivity : ComponentActivity() {
     private fun handleStateManagerSave(slotNumber: Int) {
         if (slotNumber >= SaveStateManager.QUICK_SLOT_BASE) return
         if (!canSerialize) {
-            inGameMessage = "Save states unavailable for this core"
+            inGameMessage = getString(R.string.ingame_libretro_state_save_unsupported_core)
             return
         }
         val stateData = try { retroView.serializeState() } catch (_: Exception) { null }
         if (stateData != null) {
             val saved = saveStateManager.performSlotSave(slotNumber, stateData, pendingSaveScreenshot)
-            inGameMessage = if (saved) "State saved to ${if (slotNumber == SaveStateManager.AUTO_SLOT) "Auto" else "Slot $slotNumber"}" else "Failed to save state"
+            inGameMessage = if (saved) {
+                if (slotNumber == SaveStateManager.AUTO_SLOT) {
+                    getString(R.string.ingame_libretro_state_saved_to_auto)
+                } else {
+                    getString(R.string.ingame_libretro_state_saved_to_slot, slotNumber)
+                }
+            } else {
+                getString(R.string.ingame_libretro_state_save_failure)
+            }
         } else {
-            inGameMessage = "Failed to serialize state"
+            inGameMessage = getString(R.string.ingame_libretro_state_save_serialize_failed)
         }
         stateManagerSlots = saveStateManager.getSlotInfoList()
     }
 
     private fun handleStateManagerLoad(slotNumber: Int) {
         if (!canSerialize) {
-            inGameMessage = "Save states unavailable for this core"
+            inGameMessage = getString(R.string.ingame_libretro_state_load_unsupported_core)
             return
         }
         val loaded = saveStateManager.performSlotLoad(retroView, slotNumber)
         if (loaded) {
-            inGameMessage = "State loaded from ${if (slotNumber == SaveStateManager.AUTO_SLOT) "Auto" else "Slot $slotNumber"}"
+            inGameMessage = if (slotNumber == SaveStateManager.AUTO_SLOT) {
+                getString(R.string.ingame_libretro_state_loaded_from_auto)
+            } else {
+                getString(R.string.ingame_libretro_state_loaded_from_slot, slotNumber)
+            }
             dismissStateManager()
         } else {
-            inGameMessage = "Failed to load state"
+            inGameMessage = getString(R.string.ingame_libretro_state_load_failure)
         }
     }
 
@@ -2386,9 +2409,9 @@ class LibretroActivity : ComponentActivity() {
                 return
             }
             if (saveStateManager.performSlotLoad(retroView, SaveStateManager.RESUME_SLOT)) {
-                inGameMessage = "Resumed"
+                inGameMessage = getString(R.string.ingame_libretro_resume_success)
             } else {
-                inGameMessage = "Failed to restore state"
+                inGameMessage = getString(R.string.ingame_libretro_resume_restore_failure)
                 Log.w(TAG, "Failed to restore one-shot resume state")
             }
             resumeFile.delete()
@@ -2405,10 +2428,10 @@ class LibretroActivity : ComponentActivity() {
         if (!settings.autoRestoreState || hardcoreMode) return
 
         if (saveStateManager.performSlotLoad(retroView, SaveStateManager.AUTO_SLOT)) {
-            inGameMessage = "State restored"
+            inGameMessage = getString(R.string.ingame_libretro_auto_restore_success)
             Log.d(TAG, "Auto-restored state from auto slot")
         } else {
-            inGameMessage = "Failed to restore state"
+            inGameMessage = getString(R.string.ingame_libretro_auto_restore_failure)
             Log.w(TAG, "Failed to auto-restore state from auto slot")
         }
     }
@@ -2417,13 +2440,13 @@ class LibretroActivity : ComponentActivity() {
         autoRestorePromptVisible = false
         if (restore) {
             if (!canSerialize) {
-                inGameMessage = "Save states unavailable for this core"
+                inGameMessage = getString(R.string.ingame_libretro_auto_restore_response_unsupported_core)
                 return
             }
             if (saveStateManager.performSlotLoad(retroView, SaveStateManager.AUTO_SLOT)) {
-                inGameMessage = "State restored"
+                inGameMessage = getString(R.string.ingame_libretro_auto_restore_response_success)
             } else {
-                inGameMessage = "Failed to restore state"
+                inGameMessage = getString(R.string.ingame_libretro_auto_restore_response_failure)
             }
         }
     }
@@ -2624,9 +2647,10 @@ class LibretroActivity : ComponentActivity() {
                 lifecycleScope.launch { preferencesRepository.setHudEnabled(action.enabled) }
             }
             is InGameControlsAction.CycleHudCorner -> {
-                val corners = com.nendo.argosy.ui.screens.settings.sections.HUD_CORNERS
-                val index = corners.indexOf(touchSettingsState.hudCorner).coerceAtLeast(0)
-                val next = corners[(if (action.forward) index + 1 else index - 1).mod(corners.size)]
+                val corners = com.nendo.argosy.ui.components.HudCorner.entries
+                val index = com.nendo.argosy.ui.common
+                    .hudCornerFromStored(touchSettingsState.hudCorner).ordinal
+                val next = corners[(if (action.forward) index + 1 else index - 1).mod(corners.size)].name
                 lifecycleScope.launch { preferencesRepository.setHudCorner(next) }
             }
             is InGameControlsAction.SetHudShowBattery -> {
@@ -3063,18 +3087,22 @@ class LibretroActivity : ComponentActivity() {
             runOnUiThread {
                 if (coreDestroyed || !::retroView.isInitialized) return@runOnUiThread
                 if (hardcoreMode) {
-                    notifyQuickAction(false, "", "Save states are disabled in hardcore")
+                    notifyQuickAction(false, "", getString(R.string.ingame_libretro_quickaction_save_hardcore_blocked))
                     return@runOnUiThread
                 }
                 if (!canSerialize) {
-                    notifyQuickAction(false, "", "Save states unavailable for this core")
+                    notifyQuickAction(false, "", getString(R.string.ingame_libretro_quickaction_save_unsupported_core))
                     return@runOnUiThread
                 }
                 val frame = try { retroView.captureRawFrame() } catch (_: Exception) { null }
                 lifecycleScope.launch(Dispatchers.IO) {
                     val stateData = try { retroView.serializeState() } catch (_: Exception) { null }
                     val ok = stateData != null && saveStateManager.performQuickSave(stateData, frame)
-                    notifyQuickAction(ok, "State saved", "Save failed")
+                    notifyQuickAction(
+                        ok,
+                        getString(R.string.ingame_libretro_quickaction_save_success),
+                        getString(R.string.ingame_libretro_quickaction_save_failure)
+                    )
                 }
             }
         }
@@ -3083,16 +3111,20 @@ class LibretroActivity : ComponentActivity() {
             runOnUiThread {
                 if (coreDestroyed || !::retroView.isInitialized) return@runOnUiThread
                 if (hardcoreMode) {
-                    notifyQuickAction(false, "", "Save states are disabled in hardcore")
+                    notifyQuickAction(false, "", getString(R.string.ingame_libretro_quickaction_load_hardcore_blocked))
                     return@runOnUiThread
                 }
                 if (!canSerialize) {
-                    notifyQuickAction(false, "", "Save states unavailable for this core")
+                    notifyQuickAction(false, "", getString(R.string.ingame_libretro_quickaction_load_unsupported_core))
                     return@runOnUiThread
                 }
                 lifecycleScope.launch(Dispatchers.IO) {
                     val ok = try { saveStateManager.performQuickLoad(retroView) } catch (_: Exception) { false }
-                    notifyQuickAction(ok, "State loaded", "Failed to load state")
+                    notifyQuickAction(
+                        ok,
+                        getString(R.string.ingame_libretro_quickaction_load_success),
+                        getString(R.string.ingame_libretro_quickaction_load_failure)
+                    )
                 }
             }
         }
@@ -3102,12 +3134,16 @@ class LibretroActivity : ComponentActivity() {
                 if (coreDestroyed || !::retroView.isInitialized) return@runOnUiThread
                 val frame = try { retroView.captureRawFrame() } catch (_: Exception) { null }
                 if (frame == null) {
-                    notifyQuickAction(false, "", "Capture failed")
+                    notifyQuickAction(false, "", getString(R.string.ingame_libretro_quickaction_screenshot_capture_failed))
                     return@runOnUiThread
                 }
                 lifecycleScope.launch(Dispatchers.IO) {
                     val ok = saveFrameToGallery(frame)
-                    notifyQuickAction(ok, "Screenshot saved", "Screenshot failed")
+                    notifyQuickAction(
+                        ok,
+                        getString(R.string.ingame_libretro_quickaction_screenshot_success),
+                        getString(R.string.ingame_libretro_quickaction_screenshot_failure)
+                    )
                 }
             }
         }

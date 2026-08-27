@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="media_library_heading">媒體</string>
+
+    <string name="media_library_footer_library">媒體庫</string>
+    <string name="media_library_footer_resume">繼續播放</string>
+    <string name="media_library_footer_play">播放</string>
+    <string name="media_library_footer_refreshing">重新整理中</string>
+    <string name="media_library_footer_refresh">重新整理</string>
+    <string name="media_library_footer_open">開啟</string>
+    <string name="media_library_footer_back">返回</string>
+
+    <string name="media_empty_state_title">目前沒有內容</string>
+    <string name="media_empty_state_message">此媒體庫在伺服器上沒有項目，或尚未完成最近一次的重新整理。</string>
+    <string name="media_error_state_title">無法連線至媒體伺服器</string>
+    <string name="media_signed_out_title">尚未登入媒體帳號</string>
+    <string name="media_signed_out_message">請至設定登入媒體伺服器，即可瀏覽電影與影集。</string>
+
+    <string name="media_poster_card_watched">已觀看</string>
+    <string name="media_download_badge_present">已下載</string>
+    <string name="media_download_badge_unavailable">已下載，但儲存裝置未連接</string>
+
+    <string name="media_detail_open_failed">無法開啟此作品。</string>
+    <string name="media_detail_item_missing">此作品已不在媒體庫中。</string>
+
+    <string name="media_detail_rail_heading_cast">演出陣容</string>
+    <string name="media_detail_rail_heading_similar">更多類似作品</string>
+
+    <string name="media_detail_episodes_loading">正在載入集數</string>
+    <string name="media_detail_episodes_error_title">無法取得集數</string>
+    <string name="media_detail_season_empty_title">此季沒有集數</string>
+    <string name="media_detail_seasons_empty_title">尚無季數</string>
+    <string name="media_detail_seasons_empty_message">此影集在伺服器上沒有季數，或尚未完成最近一次的重新整理。</string>
+
+    <string name="media_season_tab_number">第%1$d季</string>
+
+    <plurals name="media_detail_chip_season_count">
+        <item quantity="other">%d季</item>
+    </plurals>
+
+    <string name="media_detail_footer_sibling_title">上/下一部作品</string>
+    <string name="media_detail_footer_options">選項</string>
+    <string name="media_detail_footer_episode_unwatched">標記為未觀看</string>
+    <string name="media_detail_footer_episode_watched">標記為已觀看</string>
+    <string name="media_detail_footer_unfavorite">取消最愛</string>
+    <string name="media_detail_footer_favorite">加入最愛</string>
+    <string name="media_detail_footer_back">返回</string>
+
+    <string name="media_detail_confirm_resume">繼續播放</string>
+    <string name="media_detail_confirm_open_season">開啟該季</string>
+    <string name="media_detail_confirm_open_title">開啟作品</string>
+    <string name="media_detail_confirm_play_section">播放</string>
+    <string name="media_detail_confirm_downloads">下載</string>
+    <string name="media_detail_confirm_favorite">最愛</string>
+    <string name="media_detail_confirm_mark_watched">標記為已觀看</string>
+    <string name="media_detail_confirm_options">選項</string>
+    <string name="media_detail_confirm_open_seasons">開啟季數列表</string>
+    <string name="media_detail_confirm_open_episodes">開啟集數列表</string>
+    <string name="media_detail_confirm_play_default">播放</string>
+
+    <string name="media_rail_play">播放</string>
+    <string name="media_rail_play_resume">繼續播放%1$s</string>
+    <string name="media_rail_play_episode">播放%1$s</string>
+
+    <string name="media_rail_download">下載</string>
+    <string name="media_rail_download_complete">已下載</string>
+    <string name="media_rail_download_progress_queued">%1$d/%2$d，已排入%3$d</string>
+    <string name="media_rail_download_progress">%1$d/%2$d</string>
+    <string name="media_rail_download_with_note">%1$s - %2$s</string>
+    <string name="media_rail_download_note_one_unavailable">未連接</string>
+    <plurals name="media_rail_download_note_unavailable">
+        <item quantity="other">%d個未連接</item>
+    </plurals>
+
+    <string name="media_rail_favorited">已加入最愛</string>
+    <string name="media_rail_favorite">加入最愛</string>
+    <string name="media_rail_watched">已觀看</string>
+    <string name="media_rail_mark_watched">標記為已觀看</string>
+    <string name="media_rail_options">選項</string>
+    <string name="media_rail_seasons">季數</string>
+    <string name="media_rail_episodes">集數</string>
+    <string name="media_rail_cast">演出陣容</string>
+    <string name="media_rail_similar">更多類似作品</string>
+
+    <string name="media_detail_menu_mark_unwatched">標記為未觀看</string>
+    <string name="media_detail_menu_mark_watched">標記為已觀看</string>
+    <string name="media_detail_menu_remove_favorite">移除最愛</string>
+    <string name="media_detail_menu_favorite">加入最愛</string>
+    <string name="media_detail_menu_download">下載</string>
+    <string name="media_detail_menu_remove_downloads">移除下載</string>
+    <string name="media_detail_menu_refreshing">重新整理中</string>
+    <string name="media_detail_menu_refresh_from_server">從伺服器重新整理</string>
+    <string name="media_detail_menu_go_to_library">前往媒體庫</string>
+
+    <string name="media_episode_row_now_playing">正在播放</string>
+    <string name="media_episode_row_watched">已觀看</string>
+
+    <string name="media_resume_start_over_label">從頭開始</string>
+    <string name="media_resume_start_over_supporting">從頭開始播放</string>
+    <string name="media_resume_resume_label">繼續播放</string>
+    <string name="media_resume_resume_supporting">從%1$s繼續</string>
+
+    <string name="media_download_episodes_subtitle">選擇集數</string>
+    <string name="media_download_episodes_confirm">下載</string>
+    <string name="media_download_episode_row_label">%1$d. %2$s</string>
+    <string name="media_download_quick_action_next">接下來%1$d集</string>
+
+    <string name="media_download_refused_fetch_failed">無法從伺服器取得此影集的集數</string>
+    <string name="media_download_refused_no_episodes">找不到此影集的任何集數</string>
+
+    <plurals name="media_download_count">
+        <item quantity="other">%d個下載項目</item>
+    </plurals>
+    <string name="media_download_confirm_subtitle">此裝置上有%1$s</string>
+    <string name="media_download_confirm_keep">保留</string>
+    <string name="media_download_confirm_keep_supporting">不會刪除任何內容</string>
+    <string name="media_download_confirm_remove">移除</string>
+    <string name="media_download_confirm_remove_supporting">從此裝置刪除%1$s</string>
+    <string name="media_download_confirm_warning">檔案唯有重新下載才能復原</string>
+
+    <string name="media_download_quality_remove">移除下載</string>
+    <string name="media_download_quality_remove_supporting">刪除此裝置上的副本</string>
+    <string name="media_download_storage_warning">影片檔案較大，可能無法容納</string>
+
+    <plurals name="media_download_title_count">
+        <item quantity="other">%d部作品</item>
+    </plurals>
+    <string name="media_download_quality_subtitle">%1$s - 剩餘%2$s</string>
+    <string name="media_download_size_gigabytes">%1$.1f GB</string>
+
+    <string name="media_download_quality_source_unknown">原始檔案，大小不一</string>
+    <string name="media_download_quality_transcode">伺服器轉碼</string>
+    <string name="media_download_quality_source_size">原始檔案 - %1$s</string>
+    <string name="media_download_quality_estimate">約%1$s</string>
+
+    <string name="media_download_note_mixed">文字字幕會隨影片一併下載，圖形字幕僅在選擇「原始畫質」時提供</string>
+    <string name="media_download_note_none">此作品沒有字幕</string>
+    <string name="media_download_note_text_only">字幕會隨影片一併下載</string>
+    <string name="media_download_note_burned_in">圖形字幕會燒錄至較小的版本中，且無法關閉</string>
+    <string name="media_download_note_picture_only">圖形字幕僅在選擇「原始畫質」時提供</string>
+
+    <string name="media_player_overlay_quality_title">畫質</string>
+    <string name="media_player_overlay_quality_hint_choose">選擇</string>
+    <string name="media_player_overlay_quality_hint_apply">套用</string>
+    <string name="media_player_overlay_quality_hint_cancel">取消</string>
+    <string name="media_player_overlay_quality_apply_button">套用</string>
+
+    <string name="media_player_quality_option_original">原始畫質</string>
+    <string name="media_player_quality_summary_original">原始畫質</string>
+    <string name="media_player_quality_wheel_resolution">解析度</string>
+    <string name="media_player_quality_wheel_framerate">影格率</string>
+    <string name="media_player_quality_wheel_bitrate">位元率</string>
+
+    <string name="media_player_overlay_audio_title">音訊</string>
+    <string name="media_player_overlay_audio_hint_select">選擇</string>
+    <string name="media_player_overlay_audio_hint_close">關閉</string>
+
+    <string name="media_player_overlay_subtitles_title">字幕</string>
+    <string name="media_player_overlay_subtitles_hint_select">選擇</string>
+    <string name="media_player_overlay_subtitles_hint_close">關閉</string>
+    <string name="media_player_subtitle_row_off">關閉</string>
+    <string name="media_player_subtitle_row_burn_in">燒錄圖形字幕</string>
+    <string name="media_player_subtitle_burn_in_on">本次播放已開啟－伺服器將重新編碼影片</string>
+    <string name="media_player_subtitle_burn_in_off">已關閉－無法顯示圖形字幕</string>
+    <string name="media_player_subtitle_row_picture">圖形字幕</string>
+    <string name="media_player_subtitle_picture_notice">%1$s是圖形而非文字，僅能透過伺服器燒錄至影片中顯示。</string>
+
+    <string name="media_player_overlay_chapters_title">章節</string>
+    <string name="media_player_overlay_chapters_hint_play">從此處播放</string>
+    <string name="media_player_overlay_chapters_hint_close">關閉</string>
+    <string name="media_player_chapter_fallback">第%1$d章</string>
+
+    <string name="media_player_caption_time_left">剩餘%1$s</string>
+
+    <string name="media_player_control_previous_episode">上一集</string>
+    <string name="media_player_control_next_episode">下一集</string>
+    <string name="media_player_control_episode_absent">沒有%1$s</string>
+    <string name="media_player_control_episode_named">%1$s %2$s</string>
+    <string name="media_player_control_skip_back">倒退%1$d秒</string>
+    <string name="media_player_control_skip_forward">快進%1$d秒</string>
+    <string name="media_player_control_pause">暫停</string>
+    <string name="media_player_control_play">播放</string>
+    <string name="media_player_control_audio">音軌</string>
+    <string name="media_player_control_subtitles">字幕</string>
+    <string name="media_player_control_chapters">章節</string>
+    <string name="media_player_control_quality">畫質%1$s</string>
+    <string name="media_player_control_fill">填滿螢幕</string>
+    <string name="media_player_control_fit">符合螢幕</string>
+    <string name="media_player_control_volume_full">音量最大</string>
+    <string name="media_player_control_volume_half">音量一半</string>
+    <string name="media_player_control_volume_mute">靜音</string>
+    <string name="media_player_control_lock">鎖定控制項</string>
+    <string name="media_player_control_watched">已觀看</string>
+    <string name="media_player_control_mark_watched">標記為已觀看</string>
+    <string name="media_player_control_close">關閉</string>
+
+    <string name="media_player_skip_intro">跳過片頭</string>
+    <string name="media_player_skip_credits">跳過工作人員名單</string>
+
+    <string name="media_player_exit_title">要離開播放器嗎？</string>
+    <string name="media_player_exit_message">播放將會停止，您可以之後從中斷處繼續。</string>
+    <string name="media_player_exit_confirm">離開</string>
+    <string name="media_player_exit_cancel">繼續觀看</string>
+
+    <string name="media_player_error_retry">再試一次</string>
+    <string name="media_player_error_close">關閉</string>
+
+    <plurals name="media_player_autoplay_countdown">
+        <item quantity="other">%d秒後播放下一集</item>
+    </plurals>
+    <string name="media_player_autoplay_play_now">立即播放</string>
+    <string name="media_player_autoplay_stop">停止</string>
+
+    <string name="media_player_error_playback_failed">無法播放此作品</string>
+    <string name="media_player_error_not_signed_in">尚未登入Jellyfin</string>
+    <string name="media_player_notice_stream_unavailable_copy">串流播放中－您的下載內容所在的儲存裝置未連接</string>
+    <string name="media_player_notice_stream_absent_copy">串流播放中－您的下載內容已不在此裝置上</string>
+
+    <string name="media_player_stored_episode_code">S%1$d E%2$d</string>
+    <string name="media_player_stored_episode_number">第%1$d集</string>
+    <string name="media_player_server_episode_code">S%1$d E%2$d</string>
+    <string name="media_player_server_episode_number">第%1$d集</string>
+
+    <string name="media_negotiator_track_fallback">音軌%1$d</string>
+    <string name="media_engine_track_fallback">音軌%1$d</string>
+
+    <string name="media_negotiator_error_not_signed_in">尚未登入Jellyfin</string>
+    <string name="media_negotiator_error_no_source">伺服器沒有提供可播放的版本</string>
+    <string name="media_negotiator_error_unplayable">此裝置無法播放此作品</string>
+
+    <string name="media_music_header_title">伺服器音樂</string>
+    <string name="media_music_header_subtitle_bgm">將曲目加入BGM播放清單</string>
+    <string name="media_music_header_subtitle_sfx">為%1$s指定音效</string>
+    <string name="media_music_header_sfx_target_fallback">此動作</string>
+    <string name="media_music_header_back">返回</string>
+
+    <string name="media_music_search_placeholder">搜尋曲目...</string>
+
+    <string name="media_music_chip_artist">演出者</string>
+    <string name="media_music_chip_album">專輯</string>
+    <string name="media_music_chip_genre">類型</string>
+    <string name="media_music_chip_duration">短於%1$d秒</string>
+    <string name="media_music_chip_clear">清除</string>
+
+    <string name="media_music_facet_chooser_title">篩選依據</string>
+    <string name="media_music_facet_chooser_artist">演出者</string>
+    <string name="media_music_facet_chooser_album">專輯</string>
+    <string name="media_music_facet_chooser_genre">類型</string>
+    <string name="media_music_facet_chooser_max_duration">最長時間</string>
+    <string name="media_music_facet_chooser_clear">清除篩選條件</string>
+    <string name="media_music_duration_value">%1$d秒</string>
+
+    <string name="media_music_facet_values_title_artist">演出者</string>
+    <string name="media_music_facet_values_title_album">專輯</string>
+    <string name="media_music_facet_values_title_genre">類型</string>
+    <string name="media_music_facet_all_artists">所有演出者</string>
+    <string name="media_music_facet_all_albums">所有專輯</string>
+    <string name="media_music_facet_all_genres">所有類型</string>
+
+    <string name="media_music_offline_message">尚未連線至您的RomM伺服器</string>
+    <string name="media_music_unsupported_message">此RomM伺服器尚不支援音樂瀏覽功能</string>
+    <string name="media_music_error_fallback">發生錯誤</string>
+    <string name="media_music_error_retry">重試</string>
+    <string name="media_music_empty_message">找不到曲目</string>
+
+    <string name="media_music_track_in_playlist">已在播放清單中</string>
+    <string name="media_music_track_stop_preview">停止試聽</string>
+    <string name="media_music_track_preview">試聽</string>
+
+    <string name="media_music_unknown_game">未知遊戲</string>
+
+    <string name="media_music_notice_facet_failed">無法載入篩選選項</string>
+    <string name="media_music_notice_preview_failed">試聽失敗</string>
+    <string name="media_music_notice_removed">已從播放清單移除</string>
+    <string name="media_music_notice_added">已加入播放清單</string>
+    <string name="media_music_notice_download_failed">下載失敗</string>
+
+    <string name="media_music_footer_filters">篩選</string>
+    <string name="media_music_footer_game">遊戲</string>
+    <string name="media_music_footer_stop">停止</string>
+    <string name="media_music_footer_preview">試聽</string>
+    <string name="media_music_footer_assign">指定</string>
+    <string name="media_music_footer_remove">移除</string>
+    <string name="media_music_footer_add">新增</string>
+</resources>

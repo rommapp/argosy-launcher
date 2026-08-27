@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="savesync_section_attention">Necesita tu atención</string>
+    <string name="savesync_section_in_progress">En curso</string>
+    <string name="savesync_section_games">Juegos con partidas guardadas</string>
+
+    <string name="savesync_footer_navigate">Navegar</string>
+    <string name="savesync_footer_choose">Elegir</string>
+    <string name="savesync_footer_confirm_keep_local">Mantener la local</string>
+    <string name="savesync_footer_confirm_keep_server">Mantener la del servidor</string>
+    <string name="savesync_footer_confirm_skip">Omitir</string>
+    <string name="savesync_footer_open_game">Abrir juego</string>
+    <string name="savesync_footer_scan_server">Analizar RomM</string>
+    <string name="savesync_footer_back">Atrás</string>
+
+    <string name="savesync_device_this_label">Este dispositivo</string>
+    <string name="savesync_device_not_connected">No conectado a RomM</string>
+    <string name="savesync_device_id_pill">…%1$s</string>
+    <string name="savesync_device_client_versioned">%1$s v%2$s</string>
+    <string name="savesync_device_server_versioned">RomM v%1$s</string>
+    <string name="savesync_device_server_connected">Conectado</string>
+    <string name="savesync_device_server_offline">Sin conexión</string>
+    <!-- Just the unit word: the count is rendered beside it, never inside it, so there is no
+         argument to carry. -->
+    <plurals name="savesync_device_save_count_unit" tools:ignore="ImpliedQuantity">
+        <item quantity="one">partida guardada</item>
+        <item quantity="many">partidas guardadas</item>
+        <item quantity="other">partidas guardadas</item>
+    </plurals>
+
+    <string name="savesync_other_devices_heading">Otros dispositivos</string>
+    <plurals name="savesync_other_devices_more">
+        <item quantity="one">+%d más</item>
+        <item quantity="many">+%d más</item>
+        <item quantity="other">+%d más</item>
+    </plurals>
+
+    <plurals name="savesync_access_notice_title">
+        <item quantity="one">%d ubicación de guardado inaccesible</item>
+        <item quantity="many">%d ubicaciones de guardado inaccesibles</item>
+        <item quantity="other">%d ubicaciones de guardado inaccesibles</item>
+    </plurals>
+
+    <string name="savesync_empty_title_connected">Aún no se ha sincronizado ninguna partida guardada</string>
+    <string name="savesync_empty_message_connected">Las partidas guardadas aparecerán aquí a medida que juegues</string>
+    <string name="savesync_empty_title_disconnected">Conéctate a RomM para sincronizar partidas guardadas</string>
+    <string name="savesync_empty_message_disconnected">Abre Ajustes para agregar tu servidor RomM</string>
+
+    <string name="savesync_conflict_side_local">Local</string>
+    <string name="savesync_conflict_side_server">Servidor</string>
+    <string name="savesync_conflict_device_this">este dispositivo</string>
+    <string name="savesync_conflict_device_other">otro dispositivo</string>
+    <string name="savesync_conflict_side_summary">%1$s - %2$s (%3$s)</string>
+    <string name="savesync_conflict_time_unknown">desconocido</string>
+    <string name="savesync_conflict_newer_badge">más reciente</string>
+    <string name="savesync_attention_button_keep_local">Mantener la local</string>
+    <string name="savesync_attention_button_keep_server">Mantener la del servidor</string>
+    <string name="savesync_attention_button_skip">Omitir</string>
+
+    <string name="savesync_progress_status_uploading">Subiendo</string>
+    <string name="savesync_progress_status_downloading">Descargando</string>
+    <string name="savesync_progress_status_queued">En cola</string>
+
+    <string name="savesync_game_pill_just_synced">Sincronizada justo ahora</string>
+    <string name="savesync_game_pill_conflict">Conflicto</string>
+    <string name="savesync_game_last_write_this_device">Última escritura - este dispositivo</string>
+    <string name="savesync_game_last_write_device">Última escritura - %1$s</string>
+    <string name="savesync_game_last_write_unknown">Última escritura - dispositivo desconocido</string>
+    <string name="savesync_game_last_write_time">%1$s · %2$s</string>
+
+    <string name="savesync_force_check_title">Buscar partidas guardadas faltantes en RomM</string>
+    <string name="savesync_force_check_idle">Recorre los juegos locales y obtiene la última partida guardada de cada canal desde RomM.</string>
+    <string name="savesync_force_check_running">Analizando...</string>
+    <plurals name="savesync_force_check_up_to_date">
+        <item quantity="one">Al día - se inspeccionó %d juego, nada nuevo.</item>
+        <item quantity="many">Al día - se inspeccionaron %d juegos, nada nuevo.</item>
+        <item quantity="other">Al día - se inspeccionaron %d juegos, nada nuevo.</item>
+    </plurals>
+    <plurals name="savesync_force_check_queued">
+        <item quantity="one">%1$d partida guardada en cola de %2$d juegos; %3$d descargada.</item>
+        <item quantity="many">%1$d partidas guardadas en cola de %2$d juegos; %3$d descargadas.</item>
+        <item quantity="other">%1$d partidas guardadas en cola de %2$d juegos; %3$d descargadas.</item>
+    </plurals>
+    <string name="savesync_force_check_failed">Error: %1$s</string>
+    <string name="savesync_force_check_failed_fallback">Error al verificar las partidas guardadas</string>
+
+    <string name="savesync_device_unnamed">Dispositivo sin nombre</string>
+    <string name="savesync_device_web">Web</string>
+
+    <string name="savesync_channel_archived">Archivada</string>
+    <string name="savesync_channel_autosave">Guardado automático</string>
+</resources>

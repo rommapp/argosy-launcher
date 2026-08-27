@@ -27,7 +27,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
 import com.nendo.argosy.ui.theme.Dimens
@@ -50,7 +53,7 @@ fun ColumnScope.EpisodePickerContent(
     onPressAt: (Int) -> Unit,
     onCancel: () -> Unit,
     onCommit: () -> Unit,
-    cancelLabel: String = "Cancel",
+    cancelLabel: String = stringResource(R.string.ui_episode_picker_cancel),
     showDownloadMarks: Boolean = false
 ) {
     val theme = LocalArgosyTheme.current
@@ -80,7 +83,15 @@ fun ColumnScope.EpisodePickerContent(
         }
     }
     Text(
-        text = selectionSummary(state.selectedCount),
+        text = if (state.selectedCount == 0) {
+            stringResource(R.string.ui_episode_picker_selection_none)
+        } else {
+            pluralStringResource(
+                R.plurals.ui_episode_picker_selection_count,
+                state.selectedCount,
+                state.selectedCount
+            )
+        },
         style = MaterialTheme.typography.bodySmall,
         color = theme.textDim,
         modifier = Modifier.padding(vertical = Dimens.spacingSm)
@@ -124,12 +135,6 @@ fun ColumnScope.EpisodePickerContent(
             modifier = Modifier.weight(1f)
         )
     }
-}
-
-private fun selectionSummary(count: Int): String = when (count) {
-    0 -> "Nothing chosen yet"
-    1 -> "1 episode chosen"
-    else -> "$count episodes chosen"
 }
 
 /**

@@ -1,0 +1,849 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Owner: ui/dualscreen, hardware
+      Key prefix: dual_
+      Keys are named for the usage site, never for the English text, and identical English
+      is never shared between two usage sites.
+
+      The sort, source and completion-status labels this surface shows are NOT here. They are
+      the same control the library and settings render, so they come from strings_common.xml
+      through com.nendo.argosy.ui.common.labelRes. Do not add a second copy.
+    -->
+
+    <!-- ===== Notification channels and foreground services ===== -->
+
+    <!-- Name of the system notification channel for the companion display, listed in Android's
+         own notification settings. Noun phrase naming the second screen. -->
+    <string name="dual_channel_secondary_display_name">Secondary Display</string>
+    <!-- Description of that channel, shown under its name in Android's notification settings. -->
+    <string name="dual_channel_secondary_display_description">Shows game library on secondary display</string>
+    <!-- Name of the system notification channel for the screen sampling that drives the handheld's
+         ambient LEDs, listed in Android's own notification settings. "LED" is the lamp on the
+         device. -->
+    <string name="dual_channel_screen_capture_name">Ambient LED Screen Capture</string>
+    <!-- Description of that channel, shown under its name in Android's notification settings. -->
+    <string name="dual_channel_screen_capture_description">Samples screen colors for ambient lighting</string>
+
+    <!-- Body of the ongoing notification that keeps the companion display alive. Statement about
+         what the app is doing, not an instruction. -->
+    <string name="dual_notification_guard_text">Dual display active</string>
+    <!-- Body of the ongoing notification shown while the app reads the screen's colors to drive
+         the ambient LEDs. Statement about what the app is doing. -->
+    <string name="dual_notification_screen_capture_text">Sampling screen for ambient LEDs</string>
+
+    <!-- ===== Companion dashboard, shown on the second screen while a game runs ===== -->
+
+    <!-- Button on the in-game dashboard. Verb phrase: writes a save state for the running game. -->
+    <string name="dual_companion_quick_action_save_state">Save State</string>
+    <!-- Button on the in-game dashboard. Noun: grabs a picture of the running game. -->
+    <string name="dual_companion_quick_action_screenshot">Screenshot</string>
+    <!-- Button on the in-game dashboard. Verb phrase: restores the last save state. -->
+    <string name="dual_companion_quick_action_load_state">Load State</string>
+    <!-- What that button reads after the first press, while it waits for a second press before
+         restoring. Instruction addressed to the user. -->
+    <string name="dual_companion_quick_action_load_confirm">Tap to confirm</string>
+
+    <!-- Label beside the running clock on the in-game dashboard. Noun: this sitting at the game,
+         not the total. -->
+    <string name="dual_companion_session_label">Session</string>
+    <!-- Label above the achievement progress bar on the in-game dashboard. Noun, plural. -->
+    <string name="dual_companion_achievements_label">Achievements</string>
+    <!-- Row label on the in-game dashboard. Noun phrase: every minute ever spent in this game. -->
+    <string name="dual_companion_stat_play_time">Total Play Time</string>
+    <!-- Row label on the in-game dashboard. Noun phrase: how many times the game was launched. -->
+    <string name="dual_companion_stat_play_count">Times Played</string>
+
+    <!-- Play time of some hours and some minutes on the in-game dashboard. %1$d is hours, %2$d
+         minutes; "h" and "m" are unit abbreviations. -->
+    <string name="dual_companion_play_time_hours_minutes">%1$dh %2$dm</string>
+    <!-- Play time of a whole number of hours. %1$d is hours; "h" is the unit abbreviation. -->
+    <string name="dual_companion_play_time_hours">%1$dh</string>
+    <!-- Play time under an hour. %1$d is minutes; "m" is the unit abbreviation. -->
+    <string name="dual_companion_play_time_minutes">%1$dm</string>
+    <!-- Play time of a game that has never been started. "m" is the minutes abbreviation. -->
+    <string name="dual_companion_play_time_zero">0m</string>
+
+    <!-- Line beside the save indicator when the running game has written something not yet sent to
+         the server. Noun phrase describing the data, not a command. -->
+    <string name="dual_companion_saves_dirty">New save data</string>
+    <!-- Line beside the save indicator when everything is on the server. Statement about the
+         saves, past participle, not a command to sync them. -->
+    <string name="dual_companion_saves_synced">Saves synced</string>
+    <!-- Spoken description of the tick on the save indicator. Past participle describing the
+         state, not a command. -->
+    <string name="dual_companion_saves_synced_icon_description">Saved</string>
+
+    <!-- Spoken description of the plus button at the left of the companion app bar. Verb phrase:
+         opens the list of every installed app so one can be pinned to the bar. -->
+    <string name="dual_companion_app_bar_add_description">Add app</string>
+    <!-- Spoken description of the app bar's media button while the media panel is on screen.
+         Verb phrase: the press returns to the launcher. -->
+    <string name="dual_companion_app_bar_media_to_library_description">Back to library</string>
+    <!-- Spoken description of the app bar's media button while the launcher is on screen. Noun
+         phrase naming what the press goes to: the film or episode playing on the other screen. -->
+    <string name="dual_companion_app_bar_media_to_player_description">Now watching</string>
+
+    <!-- Heading of the sheet listing every installed app on the companion screen. Noun phrase. -->
+    <string name="dual_companion_drawer_title">All Apps</string>
+    <!-- Spoken description of the pin badge on an app already kept in the companion app bar.
+         Adjective describing the app, not a command to pin it. -->
+    <string name="dual_companion_drawer_pinned_description">Pinned</string>
+
+    <!-- ===== Footer hints on the showcase screen ===== -->
+
+    <!-- Footer hint while the showcase mirrors game details. Noun: the shoulder buttons move
+         between the detail screen's tabs. -->
+    <string name="dual_showcase_detail_footer_tab">Tab</string>
+    <!-- Footer hint while the showcase mirrors game details. Verb: takes the row under the
+         cursor. -->
+    <string name="dual_showcase_detail_footer_select">Select</string>
+    <!-- Footer hint while the showcase mirrors game details. Verb: leaves the detail screen. -->
+    <string name="dual_showcase_detail_footer_back">Back</string>
+
+    <!-- Footer hint while the showcase describes a collection. Verb: the directions move between
+         the collections. -->
+    <string name="dual_showcase_collections_footer_navigate">Navigate</string>
+    <!-- Footer hint while the showcase describes a collection. Verb: shows the games inside it. -->
+    <string name="dual_showcase_collections_footer_open">Open</string>
+    <!-- Footer hint while the showcase describes a collection. Verb: leaves the list. -->
+    <string name="dual_showcase_collections_footer_back">Back</string>
+
+    <!-- ===== Footer hints naming what the driven home screen does ===== -->
+
+    <!-- Footer hint on the home surface, for a game already on the device. Verb: launches it. -->
+    <string name="dual_home_hint_action_play">Play</string>
+    <!-- Footer hint on the home surface, for a game not on the device. Verb: fetches it from the
+         server. -->
+    <string name="dual_home_hint_action_download">Download</string>
+
+    <!-- Footer hint while browsing the games in one collection. Verb: the directions move between
+         them. -->
+    <string name="dual_home_hint_collection_navigate">Navigate</string>
+    <!-- Footer hint while browsing the games in one collection. Noun, plural: opens the page
+         describing the game. -->
+    <string name="dual_home_hint_collection_details">Details</string>
+    <!-- Footer hint while browsing the games in one collection. Verb: leaves the collection. -->
+    <string name="dual_home_hint_collection_back">Back</string>
+
+    <!-- Footer hint on the library grid. Noun: the shoulder buttons move between platforms. -->
+    <string name="dual_home_hint_library_platform">Platform</string>
+    <!-- Footer hint on the library grid. Noun: the triggers jump to the next initial letter in the
+         sorted list. -->
+    <string name="dual_home_hint_library_letter">Letter</string>
+    <!-- Footer hint on the library grid. Noun, plural: opens the page describing the game. -->
+    <string name="dual_home_hint_library_details">Details</string>
+    <!-- Footer hint on the library grid. Noun, plural: opens the menu of actions for the game. -->
+    <string name="dual_home_hint_library_options">Options</string>
+    <!-- Footer hint on the library grid. Noun, plural: opens the panel that narrows the list. -->
+    <string name="dual_home_hint_library_filters">Filters</string>
+    <!-- Footer hint on the library grid. Verb: leaves the grid. -->
+    <string name="dual_home_hint_library_back">Back</string>
+
+    <!-- Footer hint on the grid of films and series. Noun: the shoulder buttons move between the
+         media server's libraries. -->
+    <string name="dual_home_hint_media_grid_library">Library</string>
+    <!-- Footer hint on the grid of films and series. Verb: starts playing again from where the
+         title was left. -->
+    <string name="dual_home_hint_media_grid_resume">Resume</string>
+    <!-- Footer hint on the grid of films and series. Noun, plural: opens the menu of actions for
+         the title. -->
+    <string name="dual_home_hint_media_grid_options">Options</string>
+    <!-- Footer hint on the grid of films and series. Verb: begins playback. -->
+    <string name="dual_home_hint_media_grid_play">Play</string>
+    <!-- Footer hint on the grid of films and series. Verb: leaves the grid. -->
+    <string name="dual_home_hint_media_grid_back">Back</string>
+
+    <!-- Footer hint on the page describing one film or series. Noun phrase: the shoulder buttons
+         move to the title before or after this one. -->
+    <string name="dual_home_hint_media_info_title">Prev/Next Title</string>
+    <!-- Footer hint on the page describing one series. Noun: left and right change which season's
+         episodes are listed. -->
+    <string name="dual_home_hint_media_info_season">Season</string>
+    <!-- Footer hint on the page describing one film or episode. Verb: begins playback. -->
+    <string name="dual_home_hint_media_info_watch">Watch</string>
+    <!-- Footer hint on the page describing one film or series. Verb: leaves the page. -->
+    <string name="dual_home_hint_media_info_back">Back</string>
+
+    <!-- Footer hint while the app drawer is up. Verb: launches the app under the cursor. -->
+    <string name="dual_home_hint_drawer_open">Open</string>
+    <!-- Footer hint while the app drawer is up. Two verbs: the press keeps the app in the app bar
+         or takes it back out, depending on where it already is. -->
+    <string name="dual_home_hint_drawer_pin">Pin/Unpin</string>
+    <!-- Footer hint while the app drawer is up. Verb phrase: launches the app on the other screen,
+         the one above this handheld's own. -->
+    <string name="dual_home_hint_drawer_open_top">Open Top</string>
+    <!-- Footer hint while the app drawer is up. Verb: puts the drawer away. -->
+    <string name="dual_home_hint_drawer_close">Close</string>
+
+    <!-- Footer hint while the cursor is on the app bar. Verb: launches the app under it. -->
+    <string name="dual_home_hint_app_bar_select">Select</string>
+    <!-- Footer hint while the cursor is on the app bar. Verb phrase: launches the app on the other
+         screen instead of this one. -->
+    <string name="dual_home_hint_app_bar_open_top">Open Top</string>
+    <!-- Footer hint while the cursor is on the app bar. Noun phrase: opens the sheet listing every
+         installed app. -->
+    <string name="dual_home_hint_app_bar_all_apps">All Apps</string>
+
+    <!-- Footer hint on the home carousel. Noun: the shoulder buttons move between the rows, which
+         are mostly one platform each. -->
+    <string name="dual_home_hint_carousel_platform">Platform</string>
+    <!-- Footer hint on the home carousel. Noun, plural: opens the page describing the game. -->
+    <string name="dual_home_hint_carousel_details">Details</string>
+    <!-- Footer hint on the home carousel, for a game that is not a favourite. Verb: marks it as
+         one. -->
+    <string name="dual_home_hint_carousel_favorite">Favorite</string>
+    <!-- Footer hint on the home carousel, for a game that is already a favourite. Verb: takes it
+         back out. -->
+    <string name="dual_home_hint_carousel_unfavorite">Unfavorite</string>
+    <!-- Footer hint on the home carousel. Noun, plural: opens the list of collections. -->
+    <string name="dual_home_hint_carousel_collections">Collections</string>
+    <!-- Footer hint on the home carousel. Noun: opens the full library grid. -->
+    <string name="dual_home_hint_carousel_library">Library</string>
+
+    <!-- ===== Footer hints on the screen that only describes what the other one has focused ===== -->
+
+    <!-- Footer hint while the showcase describes a focused game. Noun: the shoulder buttons move
+         between the home screen's rows. -->
+    <string name="dual_detail_hint_game_section">Section</string>
+    <!-- Footer hint while the showcase describes a focused game. Verb: opens the game's page on
+         the other screen. -->
+    <string name="dual_detail_hint_game_open">Open</string>
+    <!-- Footer hint while the showcase describes a focused game. Verb: leaves that screen. -->
+    <string name="dual_detail_hint_game_back">Back</string>
+
+    <!-- Footer hint while the showcase describes a title in the media grid. Noun: the shoulder
+         buttons move between the media server's libraries. -->
+    <string name="dual_detail_hint_media_grid_library">Library</string>
+    <!-- Footer hint while the showcase describes a title in the media grid. Verb: starts playing
+         again from where the title was left. -->
+    <string name="dual_detail_hint_media_grid_resume">Resume</string>
+    <!-- Footer hint while the showcase describes a title in the media grid. Noun, plural: opens
+         the menu of actions for it. -->
+    <string name="dual_detail_hint_media_grid_options">Options</string>
+    <!-- Footer hint while the showcase describes a title in the media grid. Verb: begins
+         playback. -->
+    <string name="dual_detail_hint_media_grid_play">Play</string>
+    <!-- Footer hint while the showcase describes a title in the media grid. Verb: leaves it. -->
+    <string name="dual_detail_hint_media_grid_back">Back</string>
+
+    <!-- Footer hint while the showcase describes one open film or series. Noun phrase: the
+         shoulder buttons move to the title before or after this one. -->
+    <string name="dual_detail_hint_media_info_title">Prev/Next Title</string>
+    <!-- Footer hint while the showcase describes one open series. Noun: left and right change
+         which season's episodes are listed. -->
+    <string name="dual_detail_hint_media_info_season">Season</string>
+    <!-- Footer hint while the showcase describes one open film or episode. Verb: begins
+         playback. -->
+    <string name="dual_detail_hint_media_info_watch">Watch</string>
+    <!-- Footer hint while the showcase describes one open film or series. Verb: leaves it. -->
+    <string name="dual_detail_hint_media_info_back">Back</string>
+
+    <!-- Footer hint while the showcase describes whatever else the other screen has focused.
+         Noun: the shoulder buttons move between that screen's sections. -->
+    <string name="dual_detail_hint_default_section">Section</string>
+    <!-- Footer hint in that state. Verb: marks the focused thing as a favourite. -->
+    <string name="dual_detail_hint_default_favorite">Favorite</string>
+    <!-- Footer hint in that state. Noun, plural: opens the menu of actions for it. -->
+    <string name="dual_detail_hint_default_options">Options</string>
+    <!-- Footer hint in that state. Verb: launches or begins playing it. -->
+    <string name="dual_detail_hint_default_play">Play</string>
+    <!-- Footer hint in that state. Verb: leaves the current screen. -->
+    <string name="dual_detail_hint_default_back">Back</string>
+
+    <!-- ===== Media panel on the companion screen ===== -->
+
+    <!-- Footer hint on the media panel while a series is open. Noun: left and right change which
+         season's episodes are listed. -->
+    <string name="dual_media_footer_season">Season</string>
+    <!-- Footer hint on the media panel. Verb: begins playing the row under the cursor. -->
+    <string name="dual_media_footer_watch">Watch</string>
+    <!-- Footer hint on the media panel when leaving it returns to the media library. Noun. -->
+    <string name="dual_media_footer_back_library">Library</string>
+    <!-- Footer hint on the media panel when it was opened from the home screen, so leaving it
+         returns there. Verb. -->
+    <string name="dual_media_footer_back_home">Back</string>
+
+    <!-- Heading on the media panel when no media server is signed in. Noun phrase describing what
+         is missing. -->
+    <string name="dual_media_signed_out_title">No media account</string>
+    <!-- Body under that heading. Instruction addressed to the user. "Settings" names Argosy's own
+         settings screen. -->
+    <string name="dual_media_signed_out_message">Sign in to a media server from Settings to watch here.</string>
+    <!-- Heading on the media panel while the first rails are being fetched. Adjective phrase
+         describing the panel's state, not a command. -->
+    <string name="dual_media_loading_title">Loading</string>
+    <!-- Heading on the media panel when the media server offers nothing to carry on with. -->
+    <string name="dual_media_empty_title">Nothing to watch yet</string>
+    <!-- Body under that heading. Statement about what will appear later. -->
+    <string name="dual_media_empty_message">Titles you start appear here once they are under way.</string>
+
+    <!-- Heading in the episode list while a season's episodes are being fetched. Adjective phrase
+         describing the list's state. -->
+    <string name="dual_media_episodes_loading_title">Loading</string>
+    <!-- Heading in the episode list when the fetch failed. The server's own reason is shown
+         underneath. -->
+    <string name="dual_media_episodes_error_title">Couldn\'t load episodes</string>
+    <!-- Heading in the episode list when the selected season holds nothing. -->
+    <string name="dual_media_episodes_empty_title">No episodes here yet</string>
+
+    <!-- Heading above the row of people who appear in the open film or episode. Noun, the whole
+         group taken together. -->
+    <string name="dual_media_cast_header">Cast</string>
+    <!-- Spoken description of the arrow that leaves a browsed series on the media panel. Verb. -->
+    <string name="dual_media_browse_back_description">Back</string>
+    <!-- How many episodes the selected season lists, beside the series name. -->
+    <plurals name="dual_media_browse_episode_count">
+        <item quantity="one">%d episode</item>
+        <item quantity="other">%d episodes</item>
+    </plurals>
+
+    <!-- Spoken description of the transport icon while the film on the other screen is running.
+         Adjective describing the playback, not a command. -->
+    <string name="dual_media_transport_playing_description">Playing</string>
+    <!-- Spoken description of the transport icon while the film on the other screen is stopped
+         part way. Adjective describing the playback. -->
+    <string name="dual_media_transport_paused_description">Paused</string>
+
+    <!-- Shown in place of the poster grid when the chosen media library holds nothing. -->
+    <string name="dual_media_grid_empty">Nothing in this library yet</string>
+
+    <!-- ===== Showcase panel describing the focused game ===== -->
+
+    <!-- Label of the figure for total time spent in the game. Noun phrase, not "time of play". -->
+    <string name="dual_showcase_stat_play_time_label">Play Time</string>
+    <!-- Label of the figure for when the game was last started. Noun phrase. -->
+    <string name="dual_showcase_stat_last_played_label">Last Played</string>
+    <!-- That figure's value for a game that has never been started. Adverb. -->
+    <string name="dual_showcase_stat_last_played_never">Never</string>
+    <!-- Label of the figure for how far through the game the user says they are. Noun. -->
+    <string name="dual_showcase_stat_status_label">Status</string>
+    <!-- That figure's value when the user has set no status. Pronoun standing for the absent
+         value, not the number zero. -->
+    <string name="dual_showcase_stat_status_none">None</string>
+
+    <!-- Last-played value for a game started earlier the same day. Adverb. -->
+    <string name="dual_showcase_last_played_today">Today</string>
+    <!-- Last-played value for a game started the day before. Adverb. -->
+    <string name="dual_showcase_last_played_yesterday">Yesterday</string>
+    <!-- Last-played value within the past week. -->
+    <plurals name="dual_showcase_last_played_days">
+        <item quantity="one">%d day ago</item>
+        <item quantity="other">%d days ago</item>
+    </plurals>
+    <!-- Last-played value within the past month. -->
+    <plurals name="dual_showcase_last_played_weeks">
+        <item quantity="one">%d week ago</item>
+        <item quantity="other">%d weeks ago</item>
+    </plurals>
+    <!-- Last-played value older than a month. -->
+    <plurals name="dual_showcase_last_played_months">
+        <item quantity="one">%d month ago</item>
+        <item quantity="other">%d months ago</item>
+    </plurals>
+
+    <!-- Shown on the showcase screen while the other screen has nothing focused. Instruction
+         addressed to the user. -->
+    <string name="dual_home_showcase_no_selection">Select a game</string>
+
+    <!-- ===== Showcase panel describing the focused collection ===== -->
+
+    <!-- Heading on the collection showcase before any one collection is focused. Noun, plural. -->
+    <string name="dual_collection_showcase_all_title">Collections</string>
+    <!-- How many games the focused collection holds, in the top right of the showcase. -->
+    <plurals name="dual_collection_showcase_game_count">
+        <item quantity="one">%d game</item>
+        <item quantity="other">%d games</item>
+    </plurals>
+    <!-- Label of the figure for how many of the collection's games are on the device. Adjective
+         describing the games, drawn in caps in English. -->
+    <string name="dual_collection_showcase_stat_installed">Installed</string>
+    <!-- Label of the figure for achievements earned across the collection. Noun, plural, drawn in
+         caps in English. -->
+    <string name="dual_collection_showcase_stat_achievements">Achievements</string>
+    <!-- Label of the figure for time spent across the collection. Noun, drawn in caps in
+         English. -->
+    <string name="dual_collection_showcase_stat_playtime">Playtime</string>
+    <!-- Shown on the collection showcase when the collection holds nothing. -->
+    <string name="dual_collection_showcase_empty">Nothing in this collection yet</string>
+
+    <!-- Time spent across a collection, under an hour. %1$d is minutes; "m" is the unit
+         abbreviation and "total" says the figure covers every game in the collection. -->
+    <string name="dual_collection_play_time_minutes">%1$dm total</string>
+    <!-- Time spent across a collection, some hours and some minutes. %1$d is hours, %2$d
+         minutes. -->
+    <string name="dual_collection_play_time_hours_minutes">%1$dh %2$dm total</string>
+    <!-- Time spent across a collection, a whole number of hours. %1$d is hours. -->
+    <string name="dual_collection_play_time_hours">%1$dh total</string>
+
+    <!-- ===== Home rows on the companion screen ===== -->
+
+    <!-- Name of the row of games the user stopped part way through. Verb phrase addressed to the
+         user, drawn on the showcase screen. -->
+    <string name="dual_home_section_recent_title">Continue Playing</string>
+    <!-- The same row's name on the breadcrumb strip, where space is short. Shortened verb. -->
+    <string name="dual_home_section_recent_short">Continue</string>
+    <!-- Name of the row of games the launcher suggests. Past participle describing the games. -->
+    <string name="dual_home_section_recommendations_title">Recommended</string>
+    <!-- The same row's name on the breadcrumb strip. Noun phrase, short for "our picks for
+         you". -->
+    <string name="dual_home_section_recommendations_short">For You</string>
+    <!-- Name of the row of games the user marked as favourites. Noun, plural. -->
+    <string name="dual_home_section_favorites_title">Favorites</string>
+
+    <!-- ===== Menu over a game on the companion library grid ===== -->
+
+    <!-- Row in that menu, for a game on the device. Verb: launches it. -->
+    <string name="dual_library_menu_play">Play</string>
+    <!-- Row in that menu, for an Android game whose package is downloaded but not installed.
+         Verb: hands the package to the system installer. -->
+    <string name="dual_library_menu_install">Install</string>
+    <!-- Row in that menu, for a game not on the device. Verb: fetches it from the server. -->
+    <string name="dual_library_menu_download">Download</string>
+    <!-- Row in that menu. Verb: marks the game as a favourite. -->
+    <string name="dual_library_menu_favorite">Favorite</string>
+    <!-- Row in that menu. Verb: takes the game back out of the favourites. -->
+    <string name="dual_library_menu_unfavorite">Unfavorite</string>
+    <!-- Row in that menu. Noun, plural: opens the page describing the game. -->
+    <string name="dual_library_menu_details">Details</string>
+    <!-- Row in that menu. Verb phrase: opens the list of collections so the game can be put in
+         one. -->
+    <string name="dual_library_menu_add_to_collection">Add to Collection</string>
+    <!-- Row in that menu. Verb phrase: gives the game a tile on the curated home grid. -->
+    <string name="dual_library_menu_add_to_grid">Add to Grid</string>
+    <!-- Row in that menu. Verb phrase: fetches this one game's metadata from the server again. -->
+    <string name="dual_library_menu_refresh">Refresh Data</string>
+    <!-- Row in that menu. Verb phrase: fetches every game of this platform from the server
+         again. -->
+    <string name="dual_library_menu_resync_platform">Resync Platform</string>
+    <!-- Row in that menu. Verb phrase: erases the copy held on this device, keeping the library
+         entry. -->
+    <string name="dual_library_menu_delete">Delete Download</string>
+    <!-- Row in that menu, for an installed Android app. Verb: removes the app from the device. -->
+    <string name="dual_library_menu_uninstall">Uninstall</string>
+    <!-- Row in that menu. Verb: keeps the game in the library but stops showing it. -->
+    <string name="dual_library_menu_hide">Hide</string>
+    <!-- Row in that menu, for a game already hidden. Verb: puts it back in the visible list. -->
+    <string name="dual_library_menu_show">Show</string>
+
+    <!-- ===== Menu over a film or series on the companion screen ===== -->
+
+    <!-- Row in that menu. Verb phrase: opens the page describing the title. -->
+    <string name="dual_media_menu_open_info">Open Media Info</string>
+    <!-- Row in that menu, for a title stopped part way. Verb phrase: plays it from the
+         beginning. -->
+    <string name="dual_media_menu_start_over">Start Over</string>
+    <!-- Row in that menu. Verb: marks the title as a favourite. -->
+    <string name="dual_media_menu_favorite">Favorite</string>
+    <!-- Row in that menu. Verb: takes the title back out of the favourites. -->
+    <string name="dual_media_menu_unfavorite">Unfavorite</string>
+    <!-- Row in that menu. Verb: fetches the title from the media server onto this device. -->
+    <string name="dual_media_menu_download">Download</string>
+    <!-- Row in that menu. Verb phrase: erases the copy held on this device. -->
+    <string name="dual_media_menu_remove_downloads">Remove Download</string>
+    <!-- Row in that menu. Verb phrase: fetches this media library from the server again. -->
+    <string name="dual_media_menu_refresh">Refresh Library</string>
+
+    <!-- ===== Filter panel on the companion library grid ===== -->
+
+    <!-- Tab in the filter panel. Noun naming what the list is ordered by. -->
+    <string name="dual_filter_category_sort">Sort</string>
+    <!-- Tab in the filter panel. Verb: opens the text field for filtering by title. -->
+    <string name="dual_filter_category_search">Search</string>
+    <!-- Tab in the filter panel. Noun naming which slice of the library to show. -->
+    <string name="dual_filter_category_source">Source</string>
+    <!-- Tab in the filter panel. Noun, the kind of game. -->
+    <string name="dual_filter_category_genre">Genre</string>
+    <!-- Tab in the filter panel. Noun, plural: how many people can play at once. -->
+    <string name="dual_filter_category_players">Players</string>
+    <!-- Tab in the filter panel. Noun: the series of games a title belongs to. -->
+    <string name="dual_filter_category_franchise">Franchise</string>
+
+    <!-- Placeholder inside the filter panel's text field. Instruction addressed to the user. -->
+    <string name="dual_filter_search_placeholder">Search games...</string>
+    <!-- Line under that field once something is typed. %1$s is what the user typed; the quotation
+         marks set it apart from the sentence. -->
+    <string name="dual_filter_search_active">Filtering by: \"%1$s\"</string>
+
+    <!-- ===== Collection list on the companion screen ===== -->
+
+    <!-- Heading over the collections the user made. Noun phrase, drawn in caps in English. -->
+    <string name="dual_collections_header_user">MY COLLECTIONS</string>
+    <!-- Heading over the automatic collections grouping games by kind. Noun, plural, drawn in
+         caps in English. -->
+    <string name="dual_collections_header_genres">GENRES</string>
+    <!-- Heading over the automatic collections grouping games by how they are played, for example
+         single player or co-op. Noun phrase, plural, drawn in caps in English. -->
+    <string name="dual_collections_header_game_modes">GAME MODES</string>
+
+    <!-- ===== Companion library grid ===== -->
+
+    <!-- Name shown above the library grid when no platform filter is applied. Adjective standing
+         for "every platform", not the whole word. -->
+    <string name="dual_library_platform_filter_all">All</string>
+    <!-- The same position when the caller names no platform at all, as when the grid is showing
+         one collection's games. Adjective standing for "everything here". -->
+    <string name="dual_library_grid_platform_fallback">All</string>
+    <!-- Line above the library grid. %1$s is the platform's name, %2$d how many games are
+         listed. -->
+    <string name="dual_library_grid_header">%1$s (%2$d)</string>
+    <!-- Line above the home carousel naming the row under the cursor. %1$s is the row's name,
+         %2$d how many things it holds. -->
+    <string name="dual_home_carousel_header">%1$s (%2$d)</string>
+
+    <!-- ===== Curated grid tiles on the companion screen ===== -->
+
+    <!-- Drawn on a tile whose game is no longer in the library. Adjective phrase describing the
+         game, not a command to find it. -->
+    <string name="dual_tile_missing_game">Missing game</string>
+    <!-- Drawn on a tile whose collection has been deleted. Adjective phrase describing the
+         collection. -->
+    <string name="dual_tile_missing_collection">Missing collection</string>
+    <!-- Second line on a tile that stands for a whole collection. Noun, singular, naming what kind
+         of thing the tile is. -->
+    <string name="dual_tile_collection_subtitle">Collection</string>
+    <!-- Label of the figure on a collection tile, with the number of games underneath it. Noun,
+         plural. -->
+    <string name="dual_tile_collection_games_stat">Games</string>
+    <!-- Drawn on a tile whose app is no longer installed. Adjective phrase describing the app. -->
+    <string name="dual_tile_missing_app">Missing app</string>
+    <!-- Second line on a tile that launches an installed Android app. Noun, singular, short for
+         "application". -->
+    <string name="dual_tile_app_subtitle">App</string>
+    <!-- Drawn on a tile pointing at something that can no longer be worked out at all. Adjective
+         describing the tile's target. -->
+    <string name="dual_tile_unavailable">Unavailable</string>
+
+    <!-- Second line under a collection in the tile picker, saying how many games it holds. -->
+    <plurals name="dual_tile_picker_collection_game_count">
+        <item quantity="one">%d game</item>
+        <item quantity="other">%d games</item>
+    </plurals>
+    <!-- Second line under an installed app in the tile picker, when Argosy recognises the app as
+         an emulator. Noun, singular. -->
+    <string name="dual_tile_picker_app_emulator">Emulator</string>
+    <!-- Second line under an installed app in the tile picker, for anything else. Noun, singular,
+         short for "application". -->
+    <string name="dual_tile_picker_app_other">App</string>
+
+    <!-- ===== Prompt offered when a download finishes on the companion screen ===== -->
+
+    <!-- Title of that prompt, asking whether the game should get a tile on the curated grid. -->
+    <string name="dual_home_tile_add_title">Add to home grid?</string>
+    <!-- Body of that prompt. %1$s is the game's title. -->
+    <string name="dual_home_tile_add_message">%1$s finished downloading.</string>
+    <!-- Accepting button on that prompt. Verb: puts the tile on the grid. -->
+    <string name="dual_home_tile_add_confirm">Add</string>
+    <!-- Declining button on that prompt. Adverb phrase: leaves the grid alone this time. -->
+    <string name="dual_home_tile_add_cancel">Not now</string>
+
+    <!-- Heading of the list of collections a game can be put into, opened from the companion
+         home. Verb phrase. -->
+    <string name="dual_home_collection_picker_title">Add to Collection</string>
+    <!-- A collection in that list which already holds the game. %1$s is the collection's name; the
+         trailing word is past tense, saying the game is in it already. -->
+    <string name="dual_home_collection_picker_member">%1$s  -  added</string>
+    <!-- Heading over the menu of actions for a film or series on the companion home. Noun, drawn
+         in caps in English. -->
+    <string name="dual_home_media_menu_header">MEDIA</string>
+
+    <!-- ===== Game detail on the companion screen ===== -->
+
+    <!-- Tab of the companion game detail screen, listing the game's cloud saves. Noun, plural,
+         drawn in caps in English. -->
+    <string name="dual_detail_tab_saves">SAVES</string>
+    <!-- Tab listing the game's save states, the emulator's own snapshots. Noun, plural, drawn in
+         caps in English. -->
+    <string name="dual_detail_tab_states">STATES</string>
+    <!-- Tab listing the game's screenshots and artwork. Noun, drawn in caps in English. -->
+    <string name="dual_detail_tab_media">MEDIA</string>
+    <!-- Tab listing what can be done with the game. Noun, plural, drawn in caps in English. -->
+    <string name="dual_detail_tab_options">OPTIONS</string>
+
+    <!-- Row in the menu over a save state. Verb phrase: writes this state into another numbered
+         slot. -->
+    <string name="dual_state_menu_copy_to">Copy to slot</string>
+    <!-- Row in the menu over a save state. Verb phrase: erases it. -->
+    <string name="dual_state_menu_delete">Delete state</string>
+    <!-- Heading over that menu. Noun, singular, drawn in caps in English: one save state. -->
+    <string name="dual_detail_state_menu_header">STATE</string>
+
+    <!-- Names the state the emulator writes by itself, in the sentence of a confirmation prompt.
+         Noun phrase, subject of the sentence that follows. -->
+    <string name="dual_detail_state_prompt_auto_slot">The auto state</string>
+    <!-- Names a numbered state slot in the same sentence. %1$d is the slot number. -->
+    <string name="dual_detail_state_prompt_numbered_slot">Slot %1$d</string>
+    <!-- Title of the prompt before erasing a save state. Verb phrase. -->
+    <string name="dual_detail_state_prompt_delete_title">Delete state</string>
+    <!-- Title of the prompt before writing over a slot that already holds one. Verb phrase. -->
+    <string name="dual_detail_state_prompt_overwrite_title">Overwrite state</string>
+    <!-- Body of the delete prompt. %1$s is the slot's name and starts the sentence. -->
+    <string name="dual_detail_state_prompt_delete_message">%1$s will be removed from this device and the server.</string>
+    <!-- Body of the overwrite prompt. %1$s is the slot's name and starts the sentence. -->
+    <string name="dual_detail_state_prompt_overwrite_message">%1$s already holds a state. It will be replaced by the copy.</string>
+    <!-- Accepting button on the delete prompt. Verb. -->
+    <string name="dual_detail_state_prompt_delete_confirm">Delete</string>
+    <!-- Accepting button on the overwrite prompt. Verb. -->
+    <string name="dual_detail_state_prompt_overwrite_confirm">Overwrite</string>
+
+    <!-- Shown while the game's saves are being read. Adjective phrase describing the screen's
+         state. -->
+    <string name="dual_detail_saves_loading">Loading saves...</string>
+    <!-- Shown over the saves tab while a chosen save is being written to the device. Adjective
+         phrase describing what is happening. -->
+    <string name="dual_detail_saves_applying">Applying save...</string>
+    <!-- Heading over the column of named save slots. Noun phrase, plural. -->
+    <string name="dual_detail_saves_slots_heading">Save Slots</string>
+    <!-- Row at the end of that column. Verb phrase: makes a new named slot. -->
+    <string name="dual_detail_saves_new_slot">New Slot</string>
+    <!-- Heading over the column of a slot's past saves, when no slot is named. Noun. -->
+    <string name="dual_detail_saves_history_heading">History</string>
+    <!-- The same heading naming the slot the list belongs to. %1$s is the slot's name. -->
+    <string name="dual_detail_saves_history_heading_named">History (%1$s)</string>
+    <!-- Shown in place of that column when the slot has no saves. -->
+    <string name="dual_detail_saves_history_empty">No saves yet</string>
+    <!-- Spoken description of the tick beside the save the game will resume from. Noun phrase. -->
+    <string name="dual_detail_saves_active_restore_point_description">Active restore point</string>
+    <!-- Marks the newest save in the list. Adjective describing that save. -->
+    <string name="dual_detail_saves_latest">Latest</string>
+    <!-- Tag on a save that is also on the server. Past participle describing the save. -->
+    <string name="dual_detail_saves_sync_synced">Synced</string>
+    <!-- Tag on a save that exists only on this device. Adjective describing the save. -->
+    <string name="dual_detail_saves_sync_local">Local</string>
+
+    <!-- Shown in place of the states tab when the game has no save states. -->
+    <string name="dual_detail_states_empty">No state slots</string>
+    <!-- Line above the state slots while one is waiting to be copied. Instruction addressed to the
+         user. -->
+    <string name="dual_detail_states_copy_prompt">Choose a slot to copy into</string>
+    <!-- Drawn on a state slot that holds nothing. Adjective describing the slot. -->
+    <string name="dual_detail_states_slot_empty">Empty</string>
+    <!-- Drawn on a state slot that holds a state but no picture of it. Noun phrase: no
+         screenshot was kept. -->
+    <string name="dual_detail_states_slot_no_shot">No shot</string>
+    <!-- Caption under a state slot. %1$d is the slot number. -->
+    <string name="dual_detail_states_slot_number">Slot %1$d</string>
+
+    <!-- Shown in place of the media tab when the game has no screenshots. -->
+    <string name="dual_detail_media_empty">No screenshots</string>
+    <!-- Spoken description of a screenshot thumbnail in the media tab. Noun, singular. -->
+    <string name="dual_detail_media_screenshot_description">Screenshot</string>
+
+    <!-- Value beside the emulator row when the game uses whatever its platform is set to. Noun
+         phrase. -->
+    <string name="dual_detail_option_emulator_default">Platform Default</string>
+    <!-- Value beside the core row when the game uses whatever its emulator is set to. Adjective
+         used as a noun. -->
+    <string name="dual_detail_option_core_default">Default</string>
+    <!-- Value beside the save path row when the game has its own path. Adjective describing the
+         path. -->
+    <string name="dual_detail_option_save_path_custom">Custom</string>
+    <!-- Value beside the save path row when the game uses the inherited one. -->
+    <string name="dual_detail_option_save_path_default">Default</string>
+    <!-- Value beside the memory card row when Argosy picks the card itself. Adjective, short for
+         "automatic". -->
+    <string name="dual_detail_option_memory_card_auto">Auto</string>
+    <!-- Value beside the variant row when the game runs as originally released. -->
+    <string name="dual_detail_option_variant_default">Default</string>
+
+    <!-- The action row while a finished download is being unpacked. Adjective phrase describing
+         what is happening. -->
+    <string name="dual_detail_option_play_extracting">Extracting...</string>
+    <!-- The action row while the game is being fetched. %1$d is the percentage done; the percent
+         sign is part of the figure. -->
+    <string name="dual_detail_option_play_downloading">Downloading %1$d%%</string>
+    <!-- The action row while the download is waiting its turn. Adjective describing the
+         download. -->
+    <string name="dual_detail_option_play_queued">Queued...</string>
+    <!-- The action row while a part-finished download is stopped. %1$d is the percentage done. -->
+    <string name="dual_detail_option_play_paused">Paused %1$d%%</string>
+    <!-- The action row when the download stopped because the device is full. Noun phrase naming
+         the problem. -->
+    <string name="dual_detail_option_play_no_space">No Space</string>
+    <!-- The action row for a game on the device. Verb: launches it. -->
+    <string name="dual_detail_option_play">Play</string>
+    <!-- The action row for a game not on the device. Verb: fetches it from the server. -->
+    <string name="dual_detail_option_download">Download</string>
+    <!-- Second line under the action row, naming the save the game will resume from when it is
+         the one the emulator writes by itself. Noun phrase. -->
+    <string name="dual_detail_option_auto_save_slot">Auto-save</string>
+
+    <!-- Row of the options tab. Noun: the score the user gave the game themselves. -->
+    <string name="dual_detail_option_rating">Rating</string>
+    <!-- Row of the options tab. Noun: how hard the user judged the game to be. -->
+    <string name="dual_detail_option_difficulty">Difficulty</string>
+    <!-- Row of the options tab. Noun: how far through the game the user says they are. -->
+    <string name="dual_detail_option_status">Status</string>
+    <!-- Value beside that row when the user has chosen no status. Adjective phrase describing the
+         field, not a command to set it. -->
+    <string name="dual_detail_option_status_not_set">Not set</string>
+    <!-- Row of the options tab for a game that is already a favourite. Verb phrase: takes it back
+         out. -->
+    <string name="dual_detail_option_unfavorite">Remove from Favorites</string>
+    <!-- Row of the options tab for a game that is not a favourite. Verb phrase: marks it as
+         one. -->
+    <string name="dual_detail_option_favorite">Add to Favorites</string>
+    <!-- Row of the options tab. Verb phrase: picks which emulator app runs this game. -->
+    <string name="dual_detail_option_change_emulator">Change Emulator</string>
+    <!-- Row of the options tab. Verb phrase: picks which libretro core runs this game. "Core" is
+         the emulation engine. -->
+    <string name="dual_detail_option_change_core">Change Core</string>
+    <!-- Row of the options tab. Noun phrase: the folder the game's saves are written to. -->
+    <string name="dual_detail_option_save_path">Save Path</string>
+    <!-- Row of the options tab. Noun phrase: which screen the game opens on. -->
+    <string name="dual_detail_option_display_target">Display Target</string>
+    <!-- Row of the options tab. Noun phrase: the emulated memory card this game saves onto. -->
+    <string name="dual_detail_option_memory_card">Memory Card</string>
+    <!-- Row of the options tab. Verb phrase: picks between different releases of the same game,
+         for example a translation or a romhack. -->
+    <string name="dual_detail_option_select_variant">Select Variant</string>
+    <!-- Row of the options tab. Verb phrase: picks which disc of a multi-disc game to start.
+         "Disc" is one physical disc of the original release. -->
+    <string name="dual_detail_option_select_disc">Select Disc</string>
+    <!-- Row of the options tab. Noun phrase: the identifier the console itself gives the game.
+         Leave "ID" as is. -->
+    <string name="dual_detail_option_title_id">Title ID</string>
+    <!-- Value beside that row when the identifier could not be read from the game's files. Past
+         participle describing the identifier. -->
+    <string name="dual_detail_option_title_id_missing">Not detected</string>
+    <!-- Row of the options tab. Noun, plural: opens the list of the game's downloaded files. -->
+    <string name="dual_detail_option_files">Files</string>
+    <!-- Row of the options tab. Verb phrase: opens the list of collections so the game can be put
+         in one. -->
+    <string name="dual_detail_option_add_to_collection">Add to Collection</string>
+    <!-- Row of the options tab. Verb phrase: fetches this game's metadata from the server
+         again. -->
+    <string name="dual_detail_option_refresh_metadata">Refresh Metadata</string>
+    <!-- Row of the options tab. Verb phrase: removes the game from Argosy's library entirely. -->
+    <string name="dual_detail_option_delete">Delete from Library</string>
+    <!-- Row of the options tab, for a game already hidden. Verb phrase: puts it back in the
+         visible list. -->
+    <string name="dual_detail_option_unhide">Unhide Game</string>
+    <!-- Row of the options tab. Verb phrase: keeps the game in the library but stops showing
+         it. -->
+    <string name="dual_detail_option_hide">Hide Game</string>
+
+    <!-- ===== Modals raised over the companion game detail ===== -->
+
+    <!-- Summary line in the file picker while managing what is already downloaded, when nothing
+         has been ticked or unticked. Noun phrase describing the state. -->
+    <string name="dual_detail_file_picker_no_changes">No changes</string>
+    <!-- Part of that summary listing files about to be fetched. %1$d is how many, %2$s their total
+         size. The leading plus sign marks them as additions. -->
+    <string name="dual_detail_file_picker_summary_adds">+%1$d · %2$s</string>
+    <!-- Part of that summary listing files about to be erased. %1$d is how many, %2$s their total
+         size. The leading minus sign marks them as removals. -->
+    <string name="dual_detail_file_picker_summary_removes">-%1$d · %2$s</string>
+    <!-- Summary line while choosing files for a first download. %1$d is how many are ticked, %2$d
+         how many the game has, %3$s their total size. -->
+    <string name="dual_detail_file_picker_summary_selected">%1$d of %2$d · %3$s selected</string>
+    <!-- Title of the file picker when it is managing files already on the device. Noun,
+         plural. -->
+    <string name="dual_detail_file_picker_manage_title">Files</string>
+    <!-- Title of the file picker when it is choosing what to download. Verb phrase addressed to
+         the user. -->
+    <string name="dual_detail_file_picker_choose_title">Choose files</string>
+
+    <!-- Heading of the modal asking where a Steam game should be installed. Noun phrase, drawn in
+         caps in English. "Steam" is Valve's storefront; leave it untranslated. -->
+    <string name="dual_detail_steam_install_heading">INSTALL LOCATION</string>
+    <!-- Row in that modal. Verb phrase: Argosy fetches the game itself. -->
+    <string name="dual_detail_steam_install_argosy">Download via Argosy</string>
+    <!-- Row in that modal. Verb phrase: the game is already installed by another app and Argosy
+         should only record that. -->
+    <string name="dual_detail_steam_install_external">Mark as Installed</string>
+    <!-- Second line under that row, naming the app that holds the game. %1$s is that app's name;
+         leave it untranslated. -->
+    <string name="dual_detail_steam_install_managed_by">Managed by %1$s</string>
+
+    <!-- Spoken description of the full-screen screenshot on the showcase display. Noun,
+         singular. -->
+    <string name="dual_detail_screenshot_viewer_description">Screenshot</string>
+    <!-- Label beside the achievement count on the showcase display. Noun, plural. -->
+    <string name="dual_detail_achievements_label">Achievements</string>
+
+    <!-- Heading of the modal picking which emulator app runs the game. Verb phrase, drawn in caps
+         in English. -->
+    <string name="dual_detail_emulator_picker_heading">SELECT EMULATOR</string>
+    <!-- Row in that modal. Verb phrase: fall back to whatever the platform is set to. -->
+    <string name="dual_detail_emulator_picker_default">Use Platform Default</string>
+
+    <!-- Heading of the modal picking which libretro core runs the game. Verb phrase, drawn in caps
+         in English. "Core" is the emulation engine. -->
+    <string name="dual_detail_core_picker_heading">SELECT CORE</string>
+    <!-- Row in that modal. Verb phrase: fall back to whatever the platform is set to. -->
+    <string name="dual_detail_core_picker_default">Use Platform Default</string>
+
+    <!-- Heading of the modal showing where the game's saves are written. Noun phrase, drawn in
+         caps in English. -->
+    <string name="dual_detail_save_path_heading">SAVE PATH</string>
+    <!-- Row in that modal while the game has its own path. Verb phrase: drops the override and
+         goes back to the inherited folder. -->
+    <string name="dual_detail_save_path_reset">Reset to Inherited Default</string>
+    <!-- The same row while the game has no override. Noun phrase naming the folder in use. -->
+    <string name="dual_detail_save_path_inherited">Inherited Default</string>
+    <!-- Second line under that row. Instruction addressed to the user. "Per-Game Settings" names a
+         section of the game's page on the handheld's own screen. -->
+    <string name="dual_detail_save_path_inherited_hint">Set a custom path from Per-Game Settings on the main screen</string>
+    <!-- Second line under the row showing the game's own folder. Noun phrase describing that
+         folder. -->
+    <string name="dual_detail_save_path_current_override">Current override</string>
+
+    <!-- Heading of the modal picking which screen the game opens on. Noun phrase, drawn in caps in
+         English. -->
+    <string name="dual_detail_display_target_heading">DISPLAY TARGET</string>
+    <!-- Row in that modal. Verb phrase: fall back to whatever the platform is set to. -->
+    <string name="dual_detail_display_target_default">Use Platform Default</string>
+
+    <!-- Heading of the modal picking the emulated memory card the game saves onto. Noun phrase,
+         drawn in caps in English. -->
+    <string name="dual_detail_memory_card_heading">MEMORY CARD</string>
+    <!-- Row in that modal. Verb phrase: Argosy picks the card itself. -->
+    <string name="dual_detail_memory_card_auto">Auto Detect</string>
+
+    <!-- Heading of the modal picking between different releases of the same game. Verb phrase,
+         drawn in caps in English. -->
+    <string name="dual_detail_variant_heading">SELECT VARIANT</string>
+    <!-- Row in that modal. Noun phrase: the game as originally released, with nothing applied. -->
+    <string name="dual_detail_variant_default">Default (Original)</string>
+
+    <!-- Heading of the modal picking which disc of a multi-disc game to start. Verb phrase, drawn
+         in caps in English. -->
+    <string name="dual_detail_disc_heading">SELECT DISC</string>
+    <!-- Row in that modal. %1$d is the disc's number in the original release. -->
+    <string name="dual_detail_disc_label">Disc %1$d</string>
+
+    <!-- Heading of the modal putting the game into a collection. Verb phrase, drawn in caps in
+         English. -->
+    <string name="dual_detail_collection_heading">ADD TO COLLECTION</string>
+    <!-- Row at the end of that list. Verb phrase: makes a collection that does not exist yet. -->
+    <string name="dual_detail_collection_create">Create New Collection</string>
+
+    <!-- Spoken description of the picture of a save state on the showcase display, used when the
+         state has no name. Noun phrase. -->
+    <string name="dual_detail_state_preview_description">State preview</string>
+    <!-- Spoken description of the cover art drawn when a save state has no picture of its own.
+         Noun phrase. -->
+    <string name="dual_detail_state_preview_cover_fallback">Cover art fallback</string>
+    <!-- Tag on a save state that is also on the server. Past participle describing the state. -->
+    <string name="dual_detail_state_sync_synced">Synced</string>
+    <!-- Tag on a save state waiting to be sent to the server. Adjective describing the state. -->
+    <string name="dual_detail_state_sync_pending">Pending</string>
+    <!-- Tag on a save state held only on the server. Noun standing for "on the server only". -->
+    <string name="dual_detail_state_sync_server">Server</string>
+    <!-- Tag on a save state held only on this device. Adjective describing the state. -->
+    <string name="dual_detail_state_sync_local">Local</string>
+
+    <!-- Heading of the modal naming a new save slot. Verb phrase, drawn in caps in English. -->
+    <string name="dual_detail_save_name_heading">CREATE SAVE SLOT</string>
+    <!-- Label of the text field in that modal. Noun phrase naming what is typed there. -->
+    <string name="dual_detail_save_name_field_label">Slot name</string>
+    <!-- Declining button in that modal. Verb: closes it without making a slot. -->
+    <string name="dual_detail_save_name_cancel">Cancel</string>
+    <!-- Accepting button in that modal. Verb: makes the slot. -->
+    <string name="dual_detail_save_name_create">Create</string>
+
+    <!-- Name of the slot holding the saves the emulator writes by itself, listed beside the user's
+         own named slots. Noun phrase. -->
+    <string name="dual_detail_save_slot_auto">Auto Save</string>
+</resources>

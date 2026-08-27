@@ -72,6 +72,39 @@ Lists MUST use LazyColumn/LazyVerticalGrid, never regular Column/Row.
 
 ---
 
+### User-Facing Text
+
+Every string a user reads is a resource id. Raw English in a `text =`, `title =`,
+`subtitle =`, `label =`, `message =` or `contentDescription =` argument is a defect,
+and `scripts/ci/smell-rules.json` fails the build on one (AS-7).
+
+- Add the key to the `res/values/strings_<area>.xml` that owns the screen, named
+  `<area>_<component>_<role>` for the usage site.
+- **Identical English at two usage sites gets two keys.** Never deduplicate. Seven
+  `LibretroCoreRegistry` display names are byte-identical to save-tree folder names
+  in `EmulatorRegistry.retroArchSaveDirByCore`; fusing them breaks save-path
+  resolution for every user who already has saves on a server.
+- **A string is a label or a token, never both** (AS-8). Anything compared, stored
+  in DataStore, used as a map key, an `options.indexOf(...)` entry, a route or a
+  path component stays a literal. `indexOf` misses tend to `coerceAtLeast(0)` rather
+  than throw, so getting this wrong resets a user's setting with nothing logged.
+- **Labels for `data/` and `domain/` types live in `ui/common/`** as extension
+  properties, following `ui/common/CompletionStatusUi.kt`. `R` never crosses inward.
+- **Carriers are `@StringRes Int`, never `(Context) -> String`.** A lambda is not
+  stability-safe under `compose_stability_config.conf`, and ViewModels outlive the
+  activity recreation a locale change triggers.
+- **Never put a gamepad button letter inside a string.** A/B are user-swappable;
+  render `InputGlyph` beside the text. The sole exception is a row whose purpose is
+  to change that very mapping.
+- Never translate upstream identifiers: core ids, libretro/RetroArch option tokens
+  and shader names, core and emulator display names, platform slugs, paths, package
+  names. `libretro/coreoptions/**` stays English by decision.
+- Use `<plurals>` and `pluralStringResource` instead of `"$n item(s)"`.
+- Add an XML translator comment above any string whose English is ambiguous out of
+  context. This app splits hard on "Save" (verb on an action, noun in save sync),
+  "State" (save state vs completion status), "Play", "Frame", "Core", "Channel",
+  "Collection". The comment is the only context a translator gets.
+
 ## Pre-Implementation Questions
 
 Before writing code, answer these questions:
@@ -522,6 +555,7 @@ A feature is NOT done until all of these are true:
 - [ ] Footer hints updated (following priority tiers)
 - [ ] Lists use LazyColumn/LazyVerticalGrid
 - [ ] Error handling is explicit (no silent failures)
+- [ ] Every user-facing string is a resource id; no label doubles as a stored value
 - [ ] Builds without errors
 
 ### Required

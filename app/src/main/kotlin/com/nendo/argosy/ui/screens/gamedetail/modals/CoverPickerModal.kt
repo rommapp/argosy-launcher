@@ -23,9 +23,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.Modal
 import com.nendo.argosy.ui.screens.gamedetail.CoverCandidate
@@ -67,29 +69,30 @@ fun CoverPickerModal(
     }
 
     Modal(
-        title = "COVER ART",
+        title = stringResource(R.string.gamedetail_cover_picker_title),
         subtitle = gameTitle,
         baseWidth = 560.dp,
         onDismiss = onDismiss,
         footerHints = listOfNotNull(
-            InputButton.DPAD to "Navigate",
-            InputButton.A to "Select",
-            InputButton.X to "Search",
-            (InputButton.Y to "From file").takeIf { onChooseFile != null },
-            InputButton.B to "Cancel"
+            InputButton.DPAD to stringResource(R.string.gamedetail_cover_picker_footer_navigate),
+            InputButton.A to stringResource(R.string.gamedetail_cover_picker_footer_select),
+            InputButton.X to stringResource(R.string.gamedetail_cover_picker_footer_search),
+            (InputButton.Y to stringResource(R.string.gamedetail_cover_picker_footer_from_file))
+                .takeIf { onChooseFile != null },
+            InputButton.B to stringResource(R.string.gamedetail_cover_picker_footer_cancel)
         )
     ) {
         com.nendo.argosy.ui.components.ModalSearchField(
             query = query,
             onQueryChange = onQueryChange,
-            placeholder = "Search artwork...",
+            placeholder = stringResource(R.string.gamedetail_cover_picker_search_placeholder),
             autoFocus = false,
             modifier = Modifier.padding(bottom = Dimens.spacingSm)
         )
         when {
             isLoading -> LoadingState()
             errorMessage != null -> MessageState(errorMessage)
-            covers.isEmpty() -> MessageState("No cover art found for this title.")
+            covers.isEmpty() -> MessageState(stringResource(R.string.gamedetail_cover_picker_empty))
             else -> LazyVerticalGrid(
                 columns = GridCells.Fixed(COVER_PICKER_COLUMNS),
                 state = gridState,

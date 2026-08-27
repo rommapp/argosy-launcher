@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="quaypass_checkin_header_title">签到</string>
+
+    <string name="quaypass_checkin_state_running">正在监听附近的旅行者...</string>
+    <string name="quaypass_checkin_state_disabled">QuayPass已关闭</string>
+    <string name="quaypass_checkin_state_not_linked">请关联你的Argosy账号以签到</string>
+    <string name="quaypass_checkin_state_awaiting_registration">正在向服务器注册...</string>
+    <string name="quaypass_checkin_state_awaiting_credential">请连接以完成通行证设置</string>
+    <string name="quaypass_checkin_state_key_expired">请重新连接以刷新你的通行证</string>
+    <string name="quaypass_checkin_state_credential_rejected">服务器密钥不匹配</string>
+    <string name="quaypass_checkin_state_bluetooth_off">请打开蓝牙以签到</string>
+    <string name="quaypass_checkin_state_permissions_missing">需要蓝牙权限</string>
+    <string name="quaypass_checkin_state_ble_unsupported">此设备无法进行附近交换</string>
+
+    <string name="quaypass_checkin_footer_accept">接受</string>
+    <string name="quaypass_checkin_footer_add_friend">添加好友</string>
+    <string name="quaypass_checkin_footer_greeting">问候语</string>
+    <string name="quaypass_checkin_footer_back">返回</string>
+    <string name="quaypass_checkin_footer_scroll">滚动</string>
+
+    <string name="quaypass_checkin_empty_title">还没有遇到旅行者</string>
+    <string name="quaypass_checkin_empty_message">随身携带Argosy，你会在附近被动地遇见其他玩家。</string>
+
+    <string name="quaypass_checkin_card_name_fallback">@%1$s</string>
+    <string name="quaypass_checkin_card_username_subtitle">@%1$s</string>
+    <string name="quaypass_checkin_card_blocked">已屏蔽</string>
+    <string name="quaypass_checkin_card_request_received">想添加你为好友</string>
+    <string name="quaypass_checkin_card_request_sent">好友请求已发送</string>
+    <string name="quaypass_checkin_card_last_played">玩过%1$s</string>
+    <string name="quaypass_checkin_card_meet_count">已相遇%1$d次 &#183; %2$s</string>
+    <string name="quaypass_checkin_card_friend_badge">好友</string>
+    <string name="quaypass_checkin_card_ticket_award">+%1$d</string>
+
+    <plurals name="quaypass_ticket_balance_chip_count">
+        <item quantity="other">%1$d张门票</item>
+    </plurals>
+
+    <string name="quaypass_greeting_modal_title">问候语</string>
+    <string name="quaypass_greeting_modal_footer_save">保存</string>
+    <string name="quaypass_greeting_modal_footer_cancel">取消</string>
+    <string name="quaypass_greeting_modal_description">在签到时展示给你遇到的旅行者。</string>
+    <string name="quaypass_greeting_modal_placeholder">你好！</string>
+
+    <string name="doodle_tool_selector_pen_description">画笔</string>
+    <string name="doodle_tool_selector_line_description">直线</string>
+    <string name="doodle_tool_selector_fill_description">填充</string>
+
+    <string name="doodle_undo_redo_undo_description">撤销</string>
+    <string name="doodle_undo_redo_undo_label">撤销</string>
+    <string name="doodle_undo_redo_redo_description">重做</string>
+    <string name="doodle_undo_redo_redo_label">重做</string>
+
+    <string name="doodle_footer_canvas_move">移动</string>
+    <string name="doodle_footer_canvas_draw_end">结束</string>
+    <string name="doodle_footer_canvas_draw_stop">停止</string>
+    <string name="doodle_footer_canvas_draw_start">开始</string>
+    <string name="doodle_footer_canvas_draw_fill">填充</string>
+    <string name="doodle_footer_canvas_draw_default">绘制</string>
+    <string name="doodle_footer_canvas_tool">工具</string>
+
+    <string name="doodle_footer_palette_select">选择</string>
+    <string name="doodle_footer_palette_pick">选取</string>
+
+    <string name="doodle_footer_size_adjust">尺寸</string>
+    <string name="doodle_footer_size_confirm">确认</string>
+
+    <string name="doodle_footer_undo">撤销</string>
+    <string name="doodle_footer_redo">重做</string>
+
+    <string name="doodle_footer_game_select">选择</string>
+    <string name="doodle_footer_game_clear">清除</string>
+
+    <string name="doodle_footer_done">完成</string>
+    <string name="doodle_footer_back_cancel">取消</string>
+    <string name="doodle_footer_back_discard">放弃</string>
+    <string name="doodle_footer_back_default">返回</string>
+
+    <string name="doodle_game_section_fallback">游戏</string>
+
+    <string name="doodle_game_picker_title">选择游戏</string>
+    <string name="doodle_game_picker_footer_browse">浏览</string>
+    <string name="doodle_game_picker_footer_navigate">导航</string>
+    <string name="doodle_game_picker_footer_select">选择</string>
+    <string name="doodle_game_picker_footer_cancel">取消</string>
+    <string name="doodle_game_picker_search_placeholder">搜索游戏...</string>
+    <string name="doodle_game_picker_no_game">无游戏</string>
+
+    <string name="doodle_discard_dialog_title">放弃涂鸦？</string>
+    <string name="doodle_discard_dialog_message">你有尚未保存的更改。确定要放弃这幅涂鸦吗？</string>
+    <string name="doodle_discard_dialog_discard">放弃</string>
+    <string name="doodle_discard_dialog_keep_editing">继续编辑</string>
+
+    <string name="secondaryhome_drawer_all_apps_title">全部应用</string>
+    <string name="secondaryhome_drawer_pinned_description">已固定</string>
+</resources>

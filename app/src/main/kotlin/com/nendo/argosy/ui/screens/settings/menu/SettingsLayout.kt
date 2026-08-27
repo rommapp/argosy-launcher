@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.menu
 
+import android.content.Context
 import com.nendo.argosy.ui.components.ListSection
 
 enum class DisabledBehavior {
@@ -13,7 +14,7 @@ class SettingsLayout<Item, State>(
     private val visibleWhen: (Item, State) -> Boolean,
     private val disabledBehavior: (Item) -> DisabledBehavior = { DisabledBehavior.HIDDEN },
     private val sectionOf: (Item) -> String? = { null },
-    private val sectionTitle: (String) -> String? = { null }
+    private val sectionTitleRes: (String) -> Int? = { null }
 ) {
     /**
      * What the pane shows, with headings for sections that lost all their settings left out.
@@ -53,7 +54,11 @@ class SettingsLayout<Item, State>(
         return visibleItems(state).indexOf(item)
     }
 
-    fun buildSections(state: State): List<ListSection> {
+    /**
+     * Section spans for the pane, with rail titles resolved only when a [context] is supplied.
+     * Input handlers jump by index and pass none; render sites pass one so the rail can be named.
+     */
+    fun buildSections(state: State, context: Context? = null): List<ListSection> {
         val visible = visibleItems(state)
         val focusable = focusableItems(state)
         val sectionNames = visible.mapNotNull { sectionOf(it) }.distinct()
@@ -64,7 +69,7 @@ class SettingsLayout<Item, State>(
             if (sectionItems.isEmpty() || sectionFocusable.isEmpty()) return@mapNotNull null
 
             ListSection(
-                name = sectionTitle(sectionName),
+                name = context?.let { ctx -> sectionTitleRes(sectionName)?.let(ctx::getString) },
                 listStartIndex = visible.indexOf(sectionItems.first()),
                 listEndIndex = visible.indexOf(sectionItems.last()),
                 focusStartIndex = focusable.indexOf(sectionFocusable.first()),

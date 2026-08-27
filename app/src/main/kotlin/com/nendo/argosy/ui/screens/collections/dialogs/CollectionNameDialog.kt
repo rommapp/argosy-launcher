@@ -24,9 +24,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
+import com.nendo.argosy.R
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.components.Modal
 import com.nendo.argosy.ui.input.InputHandler
@@ -147,7 +149,7 @@ internal fun CollectionNameDialog(
             horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm, Alignment.End)
         ) {
             ModalActionButton(
-                label = "Cancel",
+                label = stringResource(R.string.collections_namedialog_cancel),
                 tint = theme.focusAccent,
                 restLabelColor = theme.textPrimary,
                 focused = gamepadInput && focusRow == ROW_BUTTONS && buttonIndex == 0,

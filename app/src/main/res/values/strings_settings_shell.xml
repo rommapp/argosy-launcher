@@ -1,0 +1,609 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Owner: settings screen shell (SettingsScreen, routers, footer, missed sections,
+      ManagePinsScreen, BgmPlaylistManagerScreen, libretro settings accessor/item).
+      Key prefix: settings_shell_
+      Keys are named for the usage site, never for the English text; identical English at two
+      different usage sites always gets two keys.
+    -->
+
+    <!-- ===== BuiltinVideoSection / LibretroSettingItem ===== -->
+
+    <!-- Subtitle under a row whose action opens the shader chain configuration screen. Verb
+         phrase. -->
+    <string name="settings_shell_libretro_configure_shader_effects_subtitle">Configure shader effects</string>
+    <!-- Subtitle showing the global value of an overridden per-platform setting. %1$s is the
+         global setting's display value, e.g. "Global: On". -->
+    <string name="settings_shell_libretro_global_hint_template">Global: %1$s</string>
+    <!-- Displayed value for a boolean setting that is turned on. Adjective. -->
+    <string name="settings_shell_libretro_on_label">On</string>
+    <!-- Displayed value for a boolean setting that is turned off. Adjective. -->
+    <string name="settings_shell_libretro_off_label">Off</string>
+
+    <!-- ===== FrameSection ===== -->
+
+    <string name="settings_shell_frame_select_title">Select Frame</string>
+    <!-- Row that picks the default bezel frame for the platform. %1$s is the frame's name. -->
+    <string name="settings_shell_frame_auto_with_name">Auto (%1$s)</string>
+    <!-- Same row when the platform has no default frame. -->
+    <string name="settings_shell_frame_auto_none">Auto (None)</string>
+    <!-- Row that picks no bezel frame. Noun. -->
+    <string name="settings_shell_frame_none_option">None</string>
+    <!-- Icon description on a frame already chosen. Adjective. -->
+    <string name="settings_shell_frame_selected_desc">Selected</string>
+    <!-- Icon description on a frame not yet downloaded. Verb. -->
+    <string name="settings_shell_frame_download_desc">Download</string>
+    <!-- Accessibility description for the frame preview image. Noun phrase. -->
+    <string name="settings_shell_frame_preview_desc">Frame preview</string>
+    <string name="settings_shell_frame_no_selection">No frame selected</string>
+    <string name="settings_shell_frame_unavailable">Frame not available</string>
+
+    <!-- ===== ShaderStackSection ===== -->
+
+    <!-- Tab label in the shader chain stack. %1$d is the 1-based position, %2$s the shader name. -->
+    <string name="settings_shell_shaderstack_tab_label">%1$d. %2$s</string>
+    <!-- Accessibility description for the live shader preview image. Noun phrase. -->
+    <string name="settings_shell_shaderstack_preview_desc">Shader preview</string>
+    <string name="settings_shell_shaderstack_no_preview">No preview</string>
+    <string name="settings_shell_shaderstack_empty">No shaders in chain</string>
+    <string name="settings_shell_shaderstack_no_params">No adjustable parameters</string>
+
+    <!-- ===== CoreOptionsSection ===== -->
+
+    <string name="settings_shell_coreoptions_no_platforms">No platforms with built-in emulator support</string>
+    <!-- Status word shown next to the currently selected core's name. Adjective. -->
+    <string name="settings_shell_coreoptions_status_installed_selector">Installed</string>
+    <!-- Status word shown next to the currently selected core's name when not downloaded. -->
+    <string name="settings_shell_coreoptions_status_not_downloaded_selector">Not Downloaded</string>
+    <!-- Same status word, but for each entry in the core picker list. Separate usage site. -->
+    <string name="settings_shell_coreoptions_status_installed_option">Installed</string>
+    <!-- Same status word, core picker list, not downloaded. Separate usage site. -->
+    <string name="settings_shell_coreoptions_status_not_downloaded_option">Not Downloaded</string>
+    <!-- Combines a core's name with its status word, for the selector row's current value.
+         %1$s is the core name (not translated), %2$s the status word above. -->
+    <string name="settings_shell_coreoptions_selector_value_template">%1$s (%2$s)</string>
+    <!-- Same combination, for each entry in the core picker list. Separate usage site. -->
+    <string name="settings_shell_coreoptions_option_value_template">%1$s (%2$s)</string>
+    <string name="settings_shell_coreoptions_none_available">No cores available</string>
+    <!-- Row title for the core-picker row itself. Noun, the emulator core. -->
+    <string name="settings_shell_coreoptions_core_title">Core</string>
+    <string name="settings_shell_coreoptions_redownload">Redownload Core</string>
+    <string name="settings_shell_coreoptions_download">Download Core</string>
+    <string name="settings_shell_coreoptions_downloading">Downloading&#8230;</string>
+    <string name="settings_shell_coreoptions_reinstall_subtitle">Reinstall if core is corrupt or outdated</string>
+    <string name="settings_shell_coreoptions_download_subtitle">Download the core to enable changing settings</string>
+    <string name="settings_shell_coreoptions_delete_core">Delete Core</string>
+    <string name="settings_shell_coreoptions_delete_core_subtitle">Free up space, keeping your settings for it</string>
+    <string name="settings_shell_coreoptions_reset_all">Reset All to Defaults</string>
+
+    <!-- ===== CoreManagementSection ===== -->
+
+    <string name="settings_shell_coremanagement_no_platforms">No supported platforms enabled for sync</string>
+    <string name="settings_shell_coremanagement_header">Select cores for each platform</string>
+    <!-- Icon description on the core currently in use for a platform. Adjective. -->
+    <string name="settings_shell_coremanagement_active_desc">Active</string>
+    <string name="settings_shell_coremanagement_download_required_desc">Download required</string>
+    <!-- Small tag on a core chip that supports online multiplayer. Proper feature name. -->
+    <string name="settings_shell_coremanagement_netplay_tag">Netplay</string>
+    <!-- Small tag on a core chip that has an update available. Noun. -->
+    <string name="settings_shell_coremanagement_update_tag">Update</string>
+
+    <!-- ===== BuiltinVideoSection: per-platform save/state path rows ===== -->
+
+    <string name="settings_shell_builtinvideo_reset_all_to_global">Reset All to Global</string>
+    <string name="settings_shell_builtinvideo_save_path_title">Save File Path</string>
+    <string name="settings_shell_builtinvideo_state_path_title">State Path</string>
+    <!-- Trailing tag on the save-path row when a global custom path is set. -->
+    <string name="settings_shell_builtinvideo_save_trailing_custom">(custom)</string>
+    <!-- Trailing tag on the save-path row when this platform overrides the global path. -->
+    <string name="settings_shell_builtinvideo_save_trailing_custom_platform">(custom for this platform)</string>
+    <!-- Trailing tag on the save-path row when this platform inherits the global path. -->
+    <string name="settings_shell_builtinvideo_save_trailing_from_global">(from global)</string>
+    <!-- Same three tags, state-path row. Separate usage site. -->
+    <string name="settings_shell_builtinvideo_state_trailing_custom">(custom)</string>
+    <string name="settings_shell_builtinvideo_state_trailing_custom_platform">(custom for this platform)</string>
+    <string name="settings_shell_builtinvideo_state_trailing_from_global">(from global)</string>
+
+    <!-- ===== SettingsFooter.kt (standalone, unused default footer) ===== -->
+
+    <string name="settings_shell_footer_standalone_navigate">Navigate</string>
+    <string name="settings_shell_footer_standalone_select">Select</string>
+    <string name="settings_shell_footer_standalone_back">Back</string>
+
+    <!-- ===== SettingsScreen: section header titles ===== -->
+
+    <string name="settings_shell_header_main">SETTINGS</string>
+    <string name="settings_shell_header_accounts">ACCOUNTS</string>
+    <!-- Proper name of the RomM server this launcher talks to; never translated. -->
+    <string name="settings_shell_header_romm" translatable="false">ROMM</string>
+    <string name="settings_shell_header_saves">SAVES</string>
+    <string name="settings_shell_header_sync_settings">SYNC SETTINGS</string>
+    <!-- "Steam" is Valve's proprietary storefront name; keep it as-is even if you translate the
+         rest of the heading. -->
+    <string name="settings_shell_header_steam">STEAM (EXPERIMENTAL)</string>
+    <!-- Proper name of the media server this launcher talks to; never translated. -->
+    <string name="settings_shell_header_jellyfin" translatable="false">JELLYFIN</string>
+    <!-- Proper name of the outside achievements service; never translated. -->
+    <string name="settings_shell_header_retroachievements" translatable="false">RETROACHIEVEMENTS</string>
+    <string name="settings_shell_header_storage">STORAGE</string>
+    <string name="settings_shell_header_storage_games">GAMES STORAGE</string>
+    <string name="settings_shell_header_storage_media">MEDIA STORAGE</string>
+    <!-- Fallback heading for the per-platform storage screen when the platform name is blank. -->
+    <string name="settings_shell_header_storage_platform_games_fallback">PLATFORM GAMES</string>
+    <string name="settings_shell_header_storage_caches">CACHES &amp; SYSTEM</string>
+    <string name="settings_shell_header_theme">THEME</string>
+    <string name="settings_shell_header_audio">AUDIO</string>
+    <string name="settings_shell_header_theme_sounds">SOUNDS</string>
+    <string name="settings_shell_header_theme_music">MUSIC</string>
+    <string name="settings_shell_header_theme_fonts">FONTS</string>
+    <string name="settings_shell_header_theme_backdrop">SURFACE BACKDROP</string>
+    <string name="settings_shell_header_interface">INTERFACE</string>
+    <string name="settings_shell_header_box_art">BOX ART</string>
+    <string name="settings_shell_header_controller_grip">CONTROLLER GRIP</string>
+    <string name="settings_shell_header_home_screen">HOME SCREEN</string>
+    <string name="settings_shell_header_library_view">LIBRARY</string>
+    <string name="settings_shell_header_displays">DISPLAYS</string>
+    <!-- "LED" is the RGB light strip on some handhelds; commonly left untranslated. -->
+    <string name="settings_shell_header_ambient_led">LED CONTROL</string>
+    <string name="settings_shell_header_navigation">NAVIGATION</string>
+    <string name="settings_shell_header_platforms">PLATFORMS</string>
+    <string name="settings_shell_header_builtin_emulator">BUILT-IN EMULATOR</string>
+    <!-- Fallback heading for a platform detail screen when the platform's own name is unknown. -->
+    <string name="settings_shell_header_platform_detail_fallback">PLATFORM</string>
+    <string name="settings_shell_header_builtin_video">BUILT-IN A/V &amp; PERFORMANCE</string>
+    <string name="settings_shell_header_builtin_controls">BUILT-IN CONTROLS</string>
+    <string name="settings_shell_header_core_management">MANAGE CORES</string>
+    <string name="settings_shell_header_core_options">CORE OPTIONS</string>
+    <!-- "BIOS" is the console startup firmware file; commonly left untranslated. -->
+    <string name="settings_shell_header_bios">BIOS FILES</string>
+    <string name="settings_shell_header_shader_stack">SHADER CHAIN</string>
+    <string name="settings_shell_header_frame_picker">SELECT FRAME</string>
+    <string name="settings_shell_header_permissions">PERMISSIONS</string>
+    <!-- "GPU" is the graphics chip. -->
+    <string name="settings_shell_header_drivers">GPU DRIVERS</string>
+    <string name="settings_shell_header_about">ABOUT</string>
+    <string name="settings_shell_header_social">SOCIAL</string>
+    <!-- Small label next to the header showing "no specific platform is selected". Adjective. -->
+    <string name="settings_shell_header_context_global">Global</string>
+
+    <!-- Accessibility description for the left-bumper button that steps to the previous platform
+         context in the built-in emulator settings header. -->
+    <string name="settings_shell_context_previous_desc">Previous context</string>
+    <!-- Accessibility description for the right-bumper button, next platform context. -->
+    <string name="settings_shell_context_next_desc">Next context</string>
+
+    <!-- ===== SettingsScreen: file browser titles ===== -->
+
+    <!-- Fallback platform name used when building a folder-picker title. Noun. -->
+    <string name="settings_shell_platform_fallback">Platform</string>
+    <!-- Title of the folder picker for a platform's ROM folder. %1$s is the platform name. -->
+    <string name="settings_shell_filebrowser_platform_rom_path_title">%1$s ROM Path</string>
+    <!-- Title of the folder picker for a GameNative sync folder. %1$s is the folder's label. -->
+    <string name="settings_shell_filebrowser_gamenative_sync_folder_title">%1$s Sync Folder</string>
+    <string name="settings_shell_filebrowser_save_path_title">Save Path</string>
+    <string name="settings_shell_filebrowser_platform_save_path_title">%1$s Save Path</string>
+    <string name="settings_shell_filebrowser_platform_state_path_title">%1$s State Path</string>
+    <string name="settings_shell_filebrowser_builtin_save_path_title">Built-in Save Path</string>
+    <string name="settings_shell_filebrowser_builtin_state_path_title">Built-in State Path</string>
+    <string name="settings_shell_filebrowser_platform_builtin_save_path_title">%1$s Built-in Save Path</string>
+    <string name="settings_shell_filebrowser_platform_builtin_state_path_title">%1$s Built-in State Path</string>
+    <string name="settings_shell_filebrowser_settings_backup_title">Select Settings Backup</string>
+    <string name="settings_shell_filebrowser_add_music_title">Add Music</string>
+    <string name="settings_shell_filebrowser_music_location_title">Music Location</string>
+    <string name="settings_shell_filebrowser_media_location_title">Media Location</string>
+    <string name="settings_shell_filebrowser_custom_sound_title">Custom Sound</string>
+
+    <!-- ===== SettingsScreen: confirm modals ===== -->
+
+    <string name="settings_shell_modal_builtin_migration_save_title">Migrate save files?</string>
+    <string name="settings_shell_modal_builtin_migration_state_title">Migrate state files?</string>
+    <!-- %1$d is how many save files already exist at the destination. -->
+    <string name="settings_shell_modal_builtin_migration_save_message">The destination already contains %1$d save files. Move existing files from the old location? This will overwrite any conflicts.</string>
+    <!-- %1$d is how many save state files already exist at the destination. "state" here is a
+         save state (a save-anywhere snapshot), not a completion status. -->
+    <string name="settings_shell_modal_builtin_migration_state_message">The destination already contains %1$d state files. Move existing files from the old location? This will overwrite any conflicts.</string>
+    <string name="settings_shell_modal_builtin_migration_confirm">Migrate</string>
+    <string name="settings_shell_modal_builtin_migration_skip">Skip</string>
+
+    <string name="settings_shell_modal_music_relocation_title">Move music files?</string>
+    <string name="settings_shell_modal_music_relocation_message">The current music folder contains %1$d files. Move them to the new location? This will overwrite any conflicts.</string>
+    <string name="settings_shell_modal_music_relocation_confirm">Move</string>
+    <string name="settings_shell_modal_music_relocation_skip">Skip</string>
+
+    <string name="settings_shell_modal_media_relocation_title">Move downloaded media?</string>
+    <string name="settings_shell_modal_media_relocation_message">The current media folder contains %1$d files. Move them to the new location? This will overwrite any conflicts.</string>
+    <string name="settings_shell_modal_media_relocation_confirm">Move</string>
+    <string name="settings_shell_modal_media_relocation_leave">Leave</string>
+
+    <!-- "Jellyfin" is the media server's proper name; keep it as-is when translating. -->
+    <string name="settings_shell_modal_jellyfin_signout_title">Sign Out of Jellyfin?</string>
+    <string name="settings_shell_modal_jellyfin_signout_message">This device forgets your Jellyfin login. Downloaded media stays on disk and your watch history stays on the server.</string>
+    <string name="settings_shell_modal_jellyfin_signout_confirm">Sign Out</string>
+
+    <string name="settings_shell_modal_import_settings_title">Import Settings?</string>
+    <string name="settings_shell_modal_import_settings_message">Pick a backup file and the settings it names replace yours. Anything the file leaves out is untouched, and accounts, servers, sync state and file locations are never carried.</string>
+    <string name="settings_shell_modal_import_settings_confirm">Choose File</string>
+
+    <string name="settings_shell_modal_migrate_downloads_title">Migrate Downloads?</string>
+    <!-- %1$d is the number of games, %2$s the formatted total size, e.g. "1.2 GB". -->
+    <string name="settings_shell_modal_migrate_downloads_message">Move %1$d games (%2$s) to the new location?</string>
+    <string name="settings_shell_modal_migrate_downloads_confirm">Migrate</string>
+    <string name="settings_shell_modal_migrate_downloads_skip">Skip</string>
+
+    <!-- %1$s is the platform name, or the fallback below if unknown. -->
+    <string name="settings_shell_modal_migrate_platform_title">Migrate %1$s ROMs?</string>
+    <string name="settings_shell_modal_migrate_platform_fallback">Platform</string>
+    <string name="settings_shell_modal_migrate_platform_message">Move downloaded games to the new location? Files will be copied and then removed from the old location.</string>
+    <string name="settings_shell_modal_migrate_platform_confirm">Migrate</string>
+    <string name="settings_shell_modal_migrate_platform_skip">Skip</string>
+
+    <string name="settings_shell_modal_purge_platform_title">Purge %1$s?</string>
+    <string name="settings_shell_modal_purge_platform_fallback">Platform</string>
+    <string name="settings_shell_modal_purge_platform_message">This will delete all %1$d games and their local ROM files. This cannot be undone.</string>
+    <string name="settings_shell_modal_purge_platform_confirm">Purge</string>
+
+    <string name="settings_shell_modal_sync_first_title">Sync Saves First</string>
+    <string name="settings_shell_modal_sync_first_message">Sync saves first - %1$d pending. Resetting the library now would permanently discard saves that have not been uploaded.</string>
+    <string name="settings_shell_modal_sync_first_confirm">Sync Now</string>
+
+    <string name="settings_shell_modal_reset_library_title">Reset Library?</string>
+    <string name="settings_shell_modal_reset_library_message">Clears the database and image cache. Downloaded files stay on disk. Permanently lost: play time, local collections, download history, save sync state, and per-game settings. You will need to re-sync your library.</string>
+    <string name="settings_shell_modal_reset_library_confirm">Reset</string>
+
+    <!-- Appended to the delete-game confirm message when unsynced saves would be lost. The
+         separating space is added by the code, so do not begin this string with one. "Save"
+         here is the noun (a save file), not the verb. -->
+    <plurals name="settings_shell_unsynced_saves_warning">
+        <item quantity="one">%d unsynced save will be lost.</item>
+        <item quantity="other">%d unsynced saves will be lost.</item>
+    </plurals>
+
+    <!-- %1$s is the game's title. -->
+    <string name="settings_shell_modal_delete_game_soundtrack_title">Delete %1$s?</string>
+    <!-- %1$s is the unsynced-saves warning above (or empty). -->
+    <string name="settings_shell_modal_delete_game_soundtrack_message">Removes all downloaded files for this game.%1$s Choose whether to also delete its soundtrack.</string>
+    <string name="settings_shell_modal_delete_game_cancel">Cancel</string>
+    <string name="settings_shell_modal_delete_game_only">Delete Game</string>
+    <string name="settings_shell_modal_delete_game_with_soundtrack">Delete + Soundtrack</string>
+
+    <!-- %1$s is the game's title. Separate usage site from the soundtrack variant above. -->
+    <string name="settings_shell_modal_delete_game_plain_title">Delete %1$s?</string>
+    <string name="settings_shell_modal_delete_game_plain_message">Removes all downloaded files for this game.%1$s This cannot be undone.</string>
+    <string name="settings_shell_modal_delete_game_plain_confirm">Delete Game</string>
+
+    <string name="settings_shell_modal_romm_signout_title">Sign Out of RomM?</string>
+    <!-- Shown when saves are still queued to upload before sign-out. "save" here is a noun. -->
+    <plurals name="settings_shell_romm_signout_pending_message">
+        <item quantity="one">%1$d save will be uploaded first. Once everything is on your server, this account\'s cached saves, states and settings are removed from this device. Your downloaded games stay.</item>
+        <item quantity="other">%1$d saves will be uploaded first. Once everything is on your server, this account\'s cached saves, states and settings are removed from this device. Your downloaded games stay.</item>
+    </plurals>
+    <string name="settings_shell_romm_signout_message">This account\'s cached saves, states and settings are removed from this device, and everything already uploaded stays on your server. Your downloaded games stay.</string>
+    <string name="settings_shell_modal_romm_signout_confirm">Sign Out</string>
+
+    <string name="settings_shell_modal_reset_save_cache_title">Reset Save Cache?</string>
+    <string name="settings_shell_modal_reset_save_cache_message">This will delete all locally cached save snapshots and pending sync operations. Your actual save files and server saves are not affected.</string>
+    <string name="settings_shell_modal_reset_save_cache_confirm">Reset</string>
+
+    <string name="settings_shell_modal_clear_save_path_cache_title">Clear Save Path Cache?</string>
+    <string name="settings_shell_modal_clear_save_path_cache_message">This will clear all detected save file paths. Paths will be re-detected on next sync. Use this if saves are syncing to the wrong location.</string>
+    <string name="settings_shell_modal_clear_save_path_cache_confirm">Clear</string>
+
+    <string name="settings_shell_modal_secure_saves_off_title">Turn Off Secure Saves?</string>
+    <string name="settings_shell_modal_secure_saves_off_message">Turning this off disables RetroAchievements hardcore mode. Games will launch in casual mode until Secure Saves is turned back on.</string>
+    <string name="settings_shell_modal_secure_saves_off_confirm">Turn Off</string>
+
+    <string name="settings_shell_modal_clear_state_cache_title">Clear State Cache?</string>
+    <string name="settings_shell_modal_clear_state_cache_message">This will delete all locally cached save state snapshots and their pending sync operations. Save files and server copies are not affected.</string>
+    <string name="settings_shell_modal_clear_state_cache_confirm">Clear</string>
+
+    <!-- Confirm button shared by every "Clear ... ?" cache modal below. -->
+    <string name="settings_shell_modal_caches_clear_confirm">Clear</string>
+
+    <string name="settings_shell_modal_delete_core_title">Delete core?</string>
+    <string name="settings_shell_modal_delete_core_message">The core is removed from this device. Games set to use it will need it downloaded again before they run.</string>
+    <string name="settings_shell_modal_delete_core_confirm">Delete</string>
+
+    <string name="settings_shell_modal_sync_saves_title">Sync Saves?</string>
+    <string name="settings_shell_modal_sync_saves_message">This will scan all downloaded games for save changes and sync them with the server. Local saves newer than the last sync will be uploaded, and newer server saves will be downloaded.</string>
+    <string name="settings_shell_modal_sync_saves_confirm">Sync</string>
+
+    <!-- ===== SettingsScreen: AccountModals ===== -->
+
+    <string name="settings_shell_accounts_add_title">Add an account?</string>
+    <!-- %1$s is the account's username, or the fallback below if unknown. -->
+    <string name="settings_shell_accounts_switch_title">Switch to %1$s?</string>
+    <string name="settings_shell_accounts_fallback_name">account</string>
+    <string name="settings_shell_accounts_exit_message">Fully exit any game you launched outside Argosy first. Argosy cannot see those sessions, and a game still running can write over the saves this moves. Saves are archived and verified before anything is removed.</string>
+    <string name="settings_shell_accounts_add_confirm">Games Closed, Continue</string>
+    <string name="settings_shell_accounts_switch_confirm">Games Closed, Switch</string>
+
+    <string name="settings_shell_accounts_remove_title">Remove %1$s?</string>
+    <string name="settings_shell_accounts_remove_fallback_name">account</string>
+    <string name="settings_shell_accounts_removal_message_base">Removes this account\'s saves, states, queued work, achievements and library overlay from this device. Downloaded games are kept.</string>
+    <!-- Appended when there is unsent work. %1$s is a short summary phrase. -->
+    <string name="settings_shell_accounts_removal_pending_suffix"> Still unsent: %1$s.</string>
+    <string name="settings_shell_accounts_removal_last_account_suffix"> This is the last account, so the device will be signed out of RomM.</string>
+    <string name="settings_shell_accounts_removal_revoke_suffix"> The device stays registered on the RomM server; revoke it there.</string>
+    <string name="settings_shell_accounts_cancel">Cancel</string>
+    <string name="settings_shell_accounts_keep_queued_work">Keep Queued Work</string>
+    <string name="settings_shell_accounts_discard_and_remove">Discard and Remove</string>
+    <string name="settings_shell_accounts_remove_confirm">Remove</string>
+
+    <string name="settings_shell_accounts_switch_failed_title">Switch did not finish</string>
+    <!-- %1$s is the failure reason reported by the switch attempt. -->
+    <string name="settings_shell_accounts_switch_failed_message">%1$s Game launches stay blocked until the switch completes, so no save is left half moved. Retry to finish it.</string>
+    <string name="settings_shell_accounts_retry">Retry</string>
+    <string name="settings_shell_accounts_not_now">Not Now</string>
+
+    <string name="settings_shell_accounts_cannot_switch_title">Cannot switch yet</string>
+    <string name="settings_shell_accounts_ok">OK</string>
+    <string name="settings_shell_accounts_close">Close</string>
+
+    <string name="settings_shell_accounts_notice_title">Accounts</string>
+    <string name="settings_shell_accounts_ok2">OK</string>
+    <string name="settings_shell_accounts_close2">Close</string>
+
+    <!-- ===== SettingsScreen: footer hints ===== -->
+
+    <string name="settings_shell_footer_navigate">Navigate</string>
+    <!-- Same hint, shown only while the shader stack's vertical param list has focus. -->
+    <string name="settings_shell_footer_navigate_vertical">Navigate</string>
+    <string name="settings_shell_footer_preview_shape">Preview Shape</string>
+    <string name="settings_shell_footer_preview_game">Preview Game</string>
+    <!-- LB/RB hint on the shader stack screen: cycles which shader tab has focus. Noun. -->
+    <string name="settings_shell_footer_shader">Shader</string>
+    <string name="settings_shell_footer_reorder">Reorder</string>
+    <string name="settings_shell_footer_adjust_shaderstack">Adjust</string>
+    <!-- A-button hint on the shader stack screen: resets the focused parameter. Verb. -->
+    <string name="settings_shell_footer_reset_shaderstack">Reset</string>
+    <string name="settings_shell_footer_remove_shaderstack">Remove</string>
+    <string name="settings_shell_footer_add_shaderstack">Add</string>
+    <!-- LB/RB hint that cycles the platform context on built-in video/controls screens. Noun. -->
+    <string name="settings_shell_footer_platform_builtin">Platform</string>
+    <string name="settings_shell_footer_reset_to_default_builtinvideo">Reset to Default</string>
+    <string name="settings_shell_footer_sample">Sample</string>
+    <string name="settings_shell_footer_reset_to_default_themesounds">Reset to Default</string>
+    <!-- LB/RB hint that cycles the platform context on the core options screen. Separate site
+         from the built-in video/controls one above. Noun. -->
+    <string name="settings_shell_footer_platform_coreoptions">Platform</string>
+    <string name="settings_shell_footer_reset_to_default_coreoptions">Reset to Default</string>
+    <string name="settings_shell_footer_force_sync">Force Sync</string>
+    <string name="settings_shell_footer_folders_scan">Folders / Scan</string>
+    <string name="settings_shell_footer_switch_remove">Switch / Remove</string>
+    <string name="settings_shell_footer_refresh">Refresh</string>
+    <string name="settings_shell_footer_sort">Sort</string>
+    <string name="settings_shell_footer_category">Category</string>
+    <string name="settings_shell_footer_delete">Delete</string>
+    <!-- D-pad hint on the platform detail screen: adjusts the focused row's value. Separate
+         site from the shader stack "Adjust" hint above. -->
+    <string name="settings_shell_footer_adjust_platformdetail">Adjust</string>
+    <string name="settings_shell_footer_update_emulator">Update Emulator</string>
+    <!-- Y-button hint on the platform detail screen: resets the focused row's override. Separate
+         site from the shader stack "Reset" hint above. -->
+    <string name="settings_shell_footer_reset_platformdetail">Reset</string>
+    <!-- A-button hint label when the focused row is a toggle. Verb. -->
+    <string name="settings_shell_footer_toggle_label">Toggle</string>
+    <!-- A-button hint label when the focused row opens a sub-screen. Verb. -->
+    <string name="settings_shell_footer_open_label">Open</string>
+    <!-- A-button hint label for an ordinary selectable row, platform detail screen. Verb. -->
+    <string name="settings_shell_footer_select_label">Select</string>
+    <!-- A-button hint label for an ordinary selectable row, the screen-wide default. Separate
+         site from the platform detail one above. Verb. -->
+    <string name="settings_shell_footer_select_default">Select</string>
+    <string name="settings_shell_footer_display">Display</string>
+    <string name="settings_shell_footer_enable">Enable</string>
+    <string name="settings_shell_footer_update">Update</string>
+    <!-- Y-button hint that resets a built-in video per-platform override. Separate site from
+         the other "Reset" hints above. Verb. -->
+    <string name="settings_shell_footer_reset_builtinvideo_override">Reset</string>
+    <!-- Y-button hint that resets a built-in controls per-platform override. Separate site. -->
+    <string name="settings_shell_footer_reset_builtincontrols_override">Reset</string>
+    <string name="settings_shell_footer_back">Back</string>
+
+    <!-- ===== SettingsScreen: cache clear confirm modals ===== -->
+
+    <string name="settings_shell_caches_image_title">Clear Image Cache?</string>
+    <string name="settings_shell_caches_image_message">This will delete all cached covers, backgrounds, and screenshots. Images re-download from the server as you browse.</string>
+    <string name="settings_shell_caches_rom_extraction_title">Clear Extracted ROMs?</string>
+    <string name="settings_shell_caches_rom_extraction_message">This will delete extracted working copies of compressed games. They re-extract the next time each game launches.</string>
+    <string name="settings_shell_caches_rom_staging_title">Clear Abandoned Staging?</string>
+    <string name="settings_shell_caches_rom_staging_message">This will delete internal working files left behind by downloads that never finished. Downloads still in the queue keep theirs and continue where they left off.</string>
+    <string name="settings_shell_caches_sfx_title">Clear Sound Effects Cache?</string>
+    <string name="settings_shell_caches_sfx_message">This will delete transcoded custom sound files. They rebuild automatically the next time sounds load.</string>
+    <string name="settings_shell_caches_emulator_apks_title">Clear Emulator Installers?</string>
+    <string name="settings_shell_caches_emulator_apks_message">This will delete downloaded emulator installer APKs. Installed emulators are not affected.</string>
+    <string name="settings_shell_caches_misc_downloads_title">Clear Misc Downloads?</string>
+    <string name="settings_shell_caches_misc_downloads_message">This will delete friend presence covers and downloaded GPU driver packages. Installed drivers are not affected.</string>
+    <string name="settings_shell_caches_shaders_catalog_title">Clear Shader Catalog?</string>
+    <string name="settings_shell_caches_shaders_catalog_message">This will delete downloaded catalog shaders. Custom shaders are kept, and catalog shaders re-download on demand.</string>
+    <string name="settings_shell_caches_frames_title">Clear Frame Overlays?</string>
+    <string name="settings_shell_caches_frames_message">This will delete downloaded frame overlays. They re-download on demand when selected.</string>
+    <string name="settings_shell_caches_steam_downloads_title">Clear Steam Download Data?</string>
+    <string name="settings_shell_caches_steam_downloads_message">This will delete staged Steam downloads and clear the download queue. Installed games are not affected, but partial downloads restart from zero.</string>
+
+    <!-- ===== ManagePinsScreen ===== -->
+
+    <string name="settings_shell_managepins_loading">Loading&#8230;</string>
+    <string name="settings_shell_managepins_reorder_move">Move</string>
+    <string name="settings_shell_managepins_reorder_done">Done</string>
+    <string name="settings_shell_managepins_reorder_cancel">Cancel</string>
+    <string name="settings_shell_managepins_navigate">Navigate</string>
+    <string name="settings_shell_managepins_reorder_hint">Reorder</string>
+    <string name="settings_shell_managepins_unpin">Unpin</string>
+    <string name="settings_shell_managepins_back_hint">Back</string>
+    <string name="settings_shell_managepins_back_desc">Back</string>
+    <string name="settings_shell_managepins_title">Manage Pinned Collections</string>
+    <!-- Type label for a regular user-made collection. Noun. -->
+    <string name="settings_shell_managepins_type_collection">Collection</string>
+    <!-- Type label for an auto-generated genre collection. Noun. -->
+    <string name="settings_shell_managepins_type_genre">Genre</string>
+    <!-- Type label for an auto-generated game-mode collection (e.g. co-op, multiplayer). Noun. -->
+    <string name="settings_shell_managepins_type_game_mode">Game Mode</string>
+    <!-- Type label for an auto-generated series collection. Noun. -->
+    <string name="settings_shell_managepins_type_series">Series</string>
+    <string name="settings_shell_managepins_moving_desc">Moving</string>
+    <!-- Pin row subtitle. %1$s is the type label above, %2$d the game count. -->
+    <plurals name="settings_shell_managepins_row_subtitle">
+        <item quantity="one">%1$s - %2$d game</item>
+        <item quantity="other">%1$s - %2$d games</item>
+    </plurals>
+    <string name="settings_shell_managepins_empty_title">No pinned collections</string>
+    <string name="settings_shell_managepins_empty_subtitle">Pin collections from the Collections screen</string>
+
+    <!-- ===== BgmPlaylistManagerScreen ===== -->
+
+    <string name="settings_shell_bgm_synced_folders">Synced Folders</string>
+    <!-- Group heading over the individual playlist tracks. Noun, plural. -->
+    <string name="settings_shell_bgm_tracks">Tracks</string>
+    <string name="settings_shell_bgm_reorder_move">Move</string>
+    <string name="settings_shell_bgm_reorder_done">Done</string>
+    <string name="settings_shell_bgm_reorder_cancel">Cancel</string>
+    <string name="settings_shell_bgm_add_music_empty">Add Music</string>
+    <!-- A-button hint that begins reordering the focused track. Verb. -->
+    <string name="settings_shell_bgm_move_hint">Move</string>
+    <string name="settings_shell_bgm_add_music_hint">Add Music</string>
+    <!-- Y-button hint verb when no track has focus. Verb. -->
+    <string name="settings_shell_bgm_remove_verb">Remove</string>
+    <!-- Y-button hint verb when the focused track is not covered by a synced folder. Separate
+         usage site from the one above. Verb. -->
+    <string name="settings_shell_bgm_remove_verb_uncovered">Remove</string>
+    <string name="settings_shell_bgm_disable_verb">Disable</string>
+    <string name="settings_shell_bgm_enable_verb">Enable</string>
+    <string name="settings_shell_bgm_back_desc">Back</string>
+    <string name="settings_shell_bgm_title">Music Playlist</string>
+    <string name="settings_shell_bgm_add_label">Add</string>
+    <string name="settings_shell_bgm_folder_missing">Folder missing</string>
+    <plurals name="settings_shell_bgm_track_count">
+        <item quantity="one">%1$d track</item>
+        <item quantity="other">%1$d tracks</item>
+    </plurals>
+    <!-- Appended to the track-count line. %1$d is how many tracks in the folder are disabled. -->
+    <plurals name="settings_shell_bgm_disabled_suffix_template">
+        <item quantity="one"> (%1$d disabled)</item>
+        <item quantity="other"> (%1$d disabled)</item>
+    </plurals>
+    <string name="settings_shell_bgm_remove_folder_desc">Remove folder</string>
+    <string name="settings_shell_bgm_moving_desc">Moving</string>
+    <string name="settings_shell_bgm_file_missing">File missing - skipped during playback</string>
+    <string name="settings_shell_bgm_disabled_desc">Disabled - excluded from playback</string>
+    <string name="settings_shell_bgm_move_up_desc">Move up</string>
+    <string name="settings_shell_bgm_move_down_desc">Move down</string>
+    <string name="settings_shell_bgm_remove_desc">Remove</string>
+    <string name="settings_shell_bgm_empty_state">No music - add from the music browser or local files</string>
+
+    <!-- ===== Routers: SettingsBuiltinRouter ===== -->
+
+    <string name="settings_shell_router_cores_load_failed">Couldn\'t load cores. Please try again.</string>
+    <string name="settings_shell_router_cannot_download_offline">Cannot download while offline</string>
+    <string name="settings_shell_router_cannot_update_offline">Cannot update while offline</string>
+    <!-- Persistent notification title while a core downloads. %1$s is the core's display name. -->
+    <string name="settings_shell_router_core_downloading_title">Downloading %1$s</string>
+    <string name="settings_shell_router_core_downloading_subtitle">Please wait&#8230;</string>
+    <string name="settings_shell_router_core_downloaded_title">Downloaded %1$s</string>
+    <string name="settings_shell_router_core_downloaded_subtitle">Core is now available</string>
+    <string name="settings_shell_router_core_download_failed_title">Download failed</string>
+    <string name="settings_shell_router_core_download_failed_fallback">Unknown error</string>
+
+    <!-- ===== Routers: SettingsAboutRouter ===== -->
+
+    <string name="settings_shell_router_settings_exported_title">Settings exported</string>
+    <!-- %1$d is a count of settings, %2$s the file path they were written to. -->
+    <string name="settings_shell_router_settings_exported_subtitle">%1$d settings written to %2$s</string>
+    <string name="settings_shell_router_settings_imported_title">Settings imported</string>
+    <string name="settings_shell_router_import_subtitle_with_skipped">%1$d applied, %2$d skipped. Restart to apply everything.</string>
+    <string name="settings_shell_router_import_subtitle">%1$d applied. Restart to apply everything.</string>
+
+    <!-- ===== Routers: SettingsFontRouter ===== -->
+
+    <string name="settings_shell_router_font_import_failed_title">Font Import Failed</string>
+    <!-- Shown when the picked file's name could not be resolved. -->
+    <string name="settings_shell_router_font_error_no_filename">Could not read the selected file</string>
+    <!-- Shown when the picked file could not be opened for reading. Separate usage site,
+         same English as the one above. -->
+    <string name="settings_shell_router_font_error_no_stream">Could not read the selected file</string>
+    <string name="settings_shell_router_font_error_unsupported_ext">Only .ttf and .otf fonts are supported</string>
+    <!-- %1$s is the file name that failed validation. -->
+    <string name="settings_shell_router_font_error_invalid">%1$s is not a valid font file</string>
+
+    <!-- ===== Routers: SettingsGeneralRouter ===== -->
+
+    <!-- Fallback emulator name shown in the save-path modal when the emulator's real name is
+         unknown. Adjective. -->
+    <string name="settings_shell_router_emulator_name_fallback">Unknown</string>
+    <!-- Placeholder shown as the effective save path when RetroArch keeps saves inside the
+         ROM's own folder rather than a fixed directory. -->
+    <string name="settings_shell_router_content_dir_save">(ROM directory)</string>
+    <!-- Same placeholder, for the state path. Separate usage site. -->
+    <string name="settings_shell_router_content_dir_state">(ROM directory)</string>
+
+    <!-- ===== Routers: SettingsInitRouter ===== -->
+
+    <!-- Same "(ROM directory)" placeholder as above, save path during initial load. Separate
+         usage site from the SettingsGeneralRouter one. -->
+    <string name="settings_shell_router_content_dir_save2">(ROM directory)</string>
+    <!-- Same placeholder, state path during initial load. Separate usage site. -->
+    <string name="settings_shell_router_content_dir_state2">(ROM directory)</string>
+
+    <!-- ===== SettingsViewModel ===== -->
+
+    <string name="settings_shell_vm_artwork_cache_title">Artwork Cache</string>
+    <!-- %1$s is a formatted byte size, e.g. "12.4 MB". -->
+    <string name="settings_shell_vm_artwork_cleared_template">Cleared %1$s</string>
+    <string name="settings_shell_vm_artwork_nothing_cached">Nothing cached to clear</string>
+    <string name="settings_shell_vm_platform_fallback">Platform</string>
+    <!-- Counts in the scan summary. English does not inflect after the number here, but many
+         languages do, so these are plurals rather than plain templates. -->
+    <plurals name="settings_shell_vm_scan_found_template">
+        <item quantity="one">%1$d found</item>
+        <item quantity="other">%1$d found</item>
+    </plurals>
+    <plurals name="settings_shell_vm_scan_removed_template">
+        <item quantity="one">%1$d removed</item>
+        <item quantity="other">%1$d removed</item>
+    </plurals>
+    <string name="settings_shell_vm_scan_no_changes">No changes</string>
+    <string name="settings_shell_vm_scan_complete_title">Scan Complete</string>
+    <!-- %1$s is the platform name, %2$s the comma-joined result parts above. -->
+    <string name="settings_shell_vm_scan_complete_subtitle_template">%1$s: %2$s</string>
+    <!-- Same title, Android-games scan. Separate usage site. -->
+    <string name="settings_shell_vm_scan_complete_title2">Scan Complete</string>
+    <plurals name="settings_shell_vm_android_added_template">
+        <item quantity="one">%1$d added</item>
+        <item quantity="other">%1$d added</item>
+    </plurals>
+    <string name="settings_shell_vm_android_updated_template">%1$d updated</string>
+    <string name="settings_shell_vm_android_scan_result_template">Android: %1$s</string>
+    <string name="settings_shell_vm_android_scan_nothing_new">Android: nothing new. Add others from Apps.</string>
+    <string name="settings_shell_vm_folders_restored_title">Folders Restored</string>
+    <string name="settings_shell_vm_nothing_moved_title">Nothing Moved</string>
+    <plurals name="settings_shell_vm_games_moved_back">
+        <item quantity="one">%1$d game moved back into their own folders</item>
+        <item quantity="other">%1$d games moved back into their own folders</item>
+    </plurals>
+    <string name="settings_shell_vm_no_games_moved_back">No games could be moved back</string>
+    <!-- "RetroArch" is the emulator project's proper name; keep it as-is when translating. -->
+    <string name="settings_shell_vm_pushed_to_retroarch_title">Pushed to RetroArch</string>
+    <plurals name="settings_shell_vm_retroarch_configs_updated">
+        <item quantity="one">Updated %1$d RetroArch config</item>
+        <item quantity="other">Updated %1$d RetroArch configs</item>
+    </plurals>
+    <!-- "RetroArch" is the emulator project's proper name; keep it as-is when translating. -->
+    <string name="settings_shell_vm_retroarch_not_found_title">RetroArch not found</string>
+    <!-- "retroarch.cfg" is a file name; never translated. -->
+    <string name="settings_shell_vm_retroarch_not_found_subtitle">No retroarch.cfg found to update</string>
+    <string name="settings_shell_vm_not_signed_in_title">Not signed in</string>
+    <string name="settings_shell_vm_not_signed_in_subtitle">Log into RetroAchievements first</string>
+    <string name="settings_shell_vm_files_removed_title">Files Removed</string>
+    <!-- %1$d is how many files were removed, %2$s the platform name. -->
+    <plurals name="settings_shell_vm_files_removed_subtitle">
+        <item quantity="one">%1$d file removed from %2$s</item>
+        <item quantity="other">%1$d files removed from %2$s</item>
+    </plurals>
+    <!-- "BIOS" is the console startup firmware file; commonly left untranslated. -->
+    <string name="settings_shell_vm_bios_copied_title">BIOS Copied</string>
+    <plurals name="settings_shell_vm_bios_copied_subtitle">
+        <item quantity="one">%1$d file copied</item>
+        <item quantity="other">%1$d files copied</item>
+    </plurals>
+</resources>

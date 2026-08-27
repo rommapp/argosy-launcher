@@ -68,6 +68,15 @@ interface PlatformSaveHandler {
     fun constructSavePath(baseDir: String, saveId: String): String? = null
 
     fun isCanonicalFolderPath(savePath: String, saveId: String): Boolean = true
+
+    /**
+     * Whether a path cached on a sync row still has this platform's shape. Layouts that nest a
+     * save under a per-install identifier (a Switch profile, an Xbox 360 XUID) override this,
+     * because deleting the user that identifier names leaves a cached path that still exists on
+     * disk while pointing at somewhere the emulator no longer reads. Existence alone cannot tell
+     * the two apart, so the shape is checked before the row is trusted.
+     */
+    fun isValidCachedSavePath(path: String): Boolean = true
 }
 
 data class SaveContext(
@@ -106,9 +115,17 @@ data class ExtractResult(
     val corruptZip: Boolean = false
 )
 
+/**
+ * [name] is the on-disk memcard folder name for a real card, an upstream identifier that
+ * must never be translated. The synthetic "use the inherited default" entry built by
+ * [com.nendo.argosy.ui.screens.gamedetail.delegates.PerGameSettingsDelegate] sets
+ * [isDefault] instead of writing a display label into [name], leaving the "Default" wording
+ * to the renderer.
+ */
 data class MemcardInfo(
     val name: String,
     val path: String,
     val gameFolderCount: Int,
-    val lastModified: Long
+    val lastModified: Long,
+    val isDefault: Boolean = false
 )

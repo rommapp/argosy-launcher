@@ -30,6 +30,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -42,6 +44,7 @@ import androidx.compose.ui.unit.sp
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.animateScrollToItemCentered
 import com.nendo.argosy.ui.primitives.ActionButton
@@ -54,6 +57,8 @@ import com.nendo.argosy.ui.screens.settings.SocialState
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
+
+private const val SOCIAL_LINK_HOST = "argosy.dev"
 
 internal data class SocialLayoutState(
     val isConnected: Boolean,
@@ -70,7 +75,7 @@ internal sealed class SocialItem(
         else -> true
     }
 
-    class Header(key: String, section: String, val title: String, visibleWhen: (SocialLayoutState) -> Boolean = { it.isConnected })
+    class Header(key: String, section: String, val titleRes: Int, visibleWhen: (SocialLayoutState) -> Boolean = { it.isConnected })
         : SocialItem(key, section, visibleWhen)
 
     class SectionSpacer(key: String, section: String, visibleWhen: (SocialLayoutState) -> Boolean = { it.isConnected })
@@ -91,12 +96,13 @@ internal sealed class SocialItem(
     data object Unlink : SocialItem("unlink", "unlink")
 
     companion object {
-        private val AccountHeader = Header("accountHeader", "account", "ACCOUNT")
-        private val PrivacyHeader = Header("privacyHeader", "privacy", "PRIVACY")
-        private val NotificationsHeader = Header("notificationsHeader", "notifications", "NOTIFICATIONS")
+        private val AccountHeader = Header("accountHeader", "account", R.string.settings_social_section_account)
+        private val PrivacyHeader = Header("privacyHeader", "privacy", R.string.settings_social_section_privacy)
+        private val NotificationsHeader =
+            Header("notificationsHeader", "notifications", R.string.settings_social_section_notifications)
         private val NotificationsSpacer = SectionSpacer("notificationsSpacer", "notifications")
         private val QuayPassSpacer = SectionSpacer("quayPassSpacer", "quaypass")
-        private val QuayPassHeader = Header("quayPassHeader", "quaypass", "QUAYPASS")
+        private val QuayPassHeader = Header("quayPassHeader", "quaypass", R.string.settings_social_section_quaypass)
         private val UnlinkSpacer = SectionSpacer("unlinkSpacer", "unlink")
 
         val ALL: List<SocialItem>
@@ -115,12 +121,12 @@ private val socialLayout = SettingsLayout<SocialItem, SocialLayoutState>(
     isFocusable = { it.isFocusable },
     visibleWhen = { item, state -> item.visibleWhen(state) },
     sectionOf = { it.section },
-    sectionTitle = {
+    sectionTitleRes = {
         when (it) {
-            "account" -> "ACCOUNT"
-            "privacy" -> "PRIVACY"
-            "notifications" -> "NOTIFICATIONS"
-            "quaypass" -> "QUAYPASS"
+            "account" -> R.string.settings_social_section_account
+            "privacy" -> R.string.settings_social_section_privacy
+            "notifications" -> R.string.settings_social_section_notifications
+            "quaypass" -> R.string.settings_social_section_quaypass
             else -> null
         }
     }
@@ -159,8 +165,9 @@ fun SocialSection(
         uiState.focusedIndex == socialLayout.focusIndexOf(item, layoutState)
 
     if (social.authStatus == SocialAuthStatus.CONNECTED) {
+        val context = LocalContext.current
         val visibleItems = remember(layoutState) { socialLayout.visibleItems(layoutState) }
-        val sections = remember(layoutState) { socialLayout.buildSections(layoutState) }
+        val sections = remember(layoutState, context) { socialLayout.buildSections(layoutState, context) }
 
         SectionPaneLayout(
             items = visibleItems,
@@ -175,7 +182,7 @@ fun SocialSection(
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
         ) { item ->
                     when (item) {
-                        is SocialItem.Header -> SectionHeader(item.title)
+                        is SocialItem.Header -> SectionHeader(stringResource(item.titleRes))
 
                         is SocialItem.SectionSpacer -> Spacer(modifier = Modifier.height(Dimens.spacingLg))
 
@@ -188,18 +195,18 @@ fun SocialSection(
                         )
 
                         SocialItem.EditAvatar -> ActionPreference(
-                            title = "Edit Avatar Doodle",
-                            subtitle = "Draw a custom avatar",
+                            title = stringResource(R.string.settings_social_edit_avatar_title),
+                            subtitle = stringResource(R.string.settings_social_edit_avatar_subtitle),
                             isFocused = isFocused(item),
                             onClick = { viewModel.openAvatarEditor() }
                         )
 
                         SocialItem.UseDoodleAvatar -> SwitchPreference(
-                            title = "Use Doodle Avatar",
+                            title = stringResource(R.string.settings_social_use_doodle_title),
                             subtitle = if (social.avatarUseDoodle) {
-                                "Showing your doodle"
+                                stringResource(R.string.settings_social_use_doodle_subtitle_on)
                             } else {
-                                "Showing your initials"
+                                stringResource(R.string.settings_social_use_doodle_subtitle_off)
                             },
                             isEnabled = social.avatarUseDoodle,
                             isFocused = isFocused(item),
@@ -207,11 +214,11 @@ fun SocialSection(
                         )
 
                         SocialItem.OnlineStatus -> SwitchPreference(
-                            title = "Online Status",
+                            title = stringResource(R.string.settings_social_online_status_title),
                             subtitle = if (social.onlineStatusEnabled) {
-                                "Appear online to friends"
+                                stringResource(R.string.settings_social_online_status_subtitle_on)
                             } else {
-                                "Appear offline to friends"
+                                stringResource(R.string.settings_social_online_status_subtitle_off)
                             },
                             isEnabled = social.onlineStatusEnabled,
                             isFocused = isFocused(item),
@@ -219,13 +226,13 @@ fun SocialSection(
                         )
 
                         SocialItem.ShowNowPlaying -> SwitchPreference(
-                            title = "Show Now Playing",
+                            title = stringResource(R.string.settings_social_now_playing_title),
                             subtitle = if (!social.onlineStatusEnabled) {
-                                "Enable Online Status first"
+                                stringResource(R.string.settings_social_now_playing_subtitle_locked)
                             } else if (social.showNowPlaying) {
-                                "Share which game you're playing"
+                                stringResource(R.string.settings_social_now_playing_subtitle_on)
                             } else {
-                                "Hide game activity from friends"
+                                stringResource(R.string.settings_social_now_playing_subtitle_off)
                             },
                             isEnabled = social.showNowPlaying && social.onlineStatusEnabled,
                             isFocused = isFocused(item),
@@ -233,13 +240,13 @@ fun SocialSection(
                         )
 
                         SocialItem.NotifyFriendOnline -> SwitchPreference(
-                            title = "Friend Comes Online",
+                            title = stringResource(R.string.settings_social_notify_online_title),
                             subtitle = if (!social.onlineStatusEnabled) {
-                                "Enable Online Status first"
+                                stringResource(R.string.settings_social_notify_online_subtitle_locked)
                             } else if (social.notifyFriendOnline) {
-                                "Show notification when friends come online"
+                                stringResource(R.string.settings_social_notify_online_subtitle_on)
                             } else {
-                                "Notifications disabled"
+                                stringResource(R.string.settings_social_notify_online_subtitle_off)
                             },
                             isEnabled = social.notifyFriendOnline && social.onlineStatusEnabled,
                             isFocused = isFocused(item),
@@ -247,13 +254,13 @@ fun SocialSection(
                         )
 
                         SocialItem.NotifyFriendPlaying -> SwitchPreference(
-                            title = "Friend Starts Playing",
+                            title = stringResource(R.string.settings_social_notify_playing_title),
                             subtitle = if (!social.onlineStatusEnabled) {
-                                "Enable Online Status first"
+                                stringResource(R.string.settings_social_notify_playing_subtitle_locked)
                             } else if (social.notifyFriendPlaying) {
-                                "Show notification when friends start a game"
+                                stringResource(R.string.settings_social_notify_playing_subtitle_on)
                             } else {
-                                "Notifications disabled"
+                                stringResource(R.string.settings_social_notify_playing_subtitle_off)
                             },
                             isEnabled = social.notifyFriendPlaying && social.onlineStatusEnabled,
                             isFocused = isFocused(item),
@@ -261,13 +268,13 @@ fun SocialSection(
                         )
 
                         SocialItem.SuppressInGame -> SwitchPreference(
-                            title = "Mute While Playing",
+                            title = stringResource(R.string.settings_social_suppress_title),
                             subtitle = if (!social.onlineStatusEnabled) {
-                                "Enable Online Status first"
+                                stringResource(R.string.settings_social_suppress_subtitle_locked)
                             } else if (social.suppressNotificationsInGame) {
-                                "Friend notifications hidden during gameplay"
+                                stringResource(R.string.settings_social_suppress_subtitle_on)
                             } else {
-                                "Friend notifications always shown"
+                                stringResource(R.string.settings_social_suppress_subtitle_off)
                             },
                             isEnabled = social.suppressNotificationsInGame && social.onlineStatusEnabled,
                             isFocused = isFocused(item),
@@ -275,11 +282,11 @@ fun SocialSection(
                         )
 
                         SocialItem.QuayPassEnabled -> SwitchPreference(
-                            title = "QuayPass",
+                            title = stringResource(R.string.settings_social_quaypass_title),
                             subtitle = if (social.quayPassEnabled) {
-                                "Pass nearby travelers at Check-In"
+                                stringResource(R.string.settings_social_quaypass_subtitle_on)
                             } else {
-                                "Off"
+                                stringResource(R.string.settings_social_quaypass_subtitle_off)
                             },
                             isEnabled = social.quayPassEnabled,
                             isFocused = isFocused(item),
@@ -293,8 +300,8 @@ fun SocialSection(
                         )
 
                         SocialItem.Unlink -> ActionPreference(
-                            title = "Unlink Account",
-                            subtitle = "Disconnect from social features",
+                            title = stringResource(R.string.settings_social_unlink_title),
+                            subtitle = stringResource(R.string.settings_social_unlink_subtitle),
                             isFocused = isFocused(item),
                             isDangerous = true,
                             onClick = { viewModel.logoutSocial() }
@@ -341,7 +348,8 @@ fun SocialSection(
                 SocialAuthStatus.ERROR -> {
                     item {
                         ErrorContent(
-                            message = social.errorMessage ?: "An error occurred",
+                            message = social.errorMessage
+                                ?: stringResource(R.string.settings_social_error_generic),
                             isFocused = uiState.focusedIndex == 0,
                             onRetry = { viewModel.startSocialAuth() }
                         )
@@ -367,7 +375,7 @@ private fun NotLinkedContent(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Log in to enable social features",
+            text = stringResource(R.string.settings_social_not_linked_title),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface
         )
@@ -375,7 +383,7 @@ private fun NotLinkedContent(
         Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
         Text(
-            text = "Connect with friends, share collections, and see what others are playing.",
+            text = stringResource(R.string.settings_social_not_linked_message),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -384,7 +392,7 @@ private fun NotLinkedContent(
         Spacer(modifier = Modifier.height(Dimens.spacingLg))
 
         ActionButton(
-            label = "Link Account",
+            label = stringResource(R.string.settings_social_not_linked_action),
             onClick = onStartAuth,
             focused = isFocused,
             primary = true
@@ -408,7 +416,7 @@ private fun ConnectingContent() {
         Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
         Text(
-            text = "Connecting...",
+            text = stringResource(R.string.settings_social_connecting),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface
         )
@@ -448,7 +456,7 @@ private fun AwaitingAuthContent(
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
         ) {
             Text(
-                text = "Scan to link your account",
+                text = stringResource(R.string.settings_social_qr_title),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center
@@ -459,11 +467,11 @@ private fun AwaitingAuthContent(
 
                 Text(
                     text = buildAnnotatedString {
-                        append("Or visit ")
+                        append(stringResource(R.string.settings_social_qr_visit_prefix))
                         withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-                            append("argosy.dev")
+                            append(SOCIAL_LINK_HOST)
                         }
-                        append(" and enter:")
+                        append(stringResource(R.string.settings_social_qr_visit_suffix))
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -481,7 +489,7 @@ private fun AwaitingAuthContent(
             Spacer(modifier = Modifier.height(Dimens.spacingSm))
 
             ActionButton(
-                label = "Cancel",
+                label = stringResource(R.string.settings_social_qr_cancel),
                 onClick = onCancel,
                 focused = isFocused
             )
@@ -504,7 +512,7 @@ private fun ErrorContent(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Connection Error",
+            text = stringResource(R.string.settings_social_error_title),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.error
         )
@@ -521,7 +529,7 @@ private fun ErrorContent(
         Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
         ActionButton(
-            label = "Try Again",
+            label = stringResource(R.string.settings_social_error_retry),
             onClick = onRetry,
             focused = isFocused,
             primary = true
@@ -548,7 +556,7 @@ private fun QrCodeImage(
         ) {
             Image(
                 bitmap = qrBitmap.asImageBitmap(),
-                contentDescription = "QR Code",
+                contentDescription = stringResource(R.string.settings_social_qr_image_description),
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -640,7 +648,7 @@ private fun AccountInfoCard(
 
         Column {
             Text(
-                text = "@$username",
+                text = stringResource(R.string.settings_social_account_handle, username),
                 style = MaterialTheme.typography.titleMedium,
                 color = contentColor
             )

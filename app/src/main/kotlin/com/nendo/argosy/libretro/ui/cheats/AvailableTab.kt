@@ -22,14 +22,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.annotation.StringRes
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.screens.settings.components.SectionHeader
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.util.touchOnly
 
 sealed class CheatListItem {
-    data class Header(val title: String) : CheatListItem()
+    data class Header(@StringRes val titleRes: Int) : CheatListItem()
     data class Cheat(val item: CheatDisplayItem, val globalIndex: Int) : CheatListItem()
 }
 
@@ -78,15 +82,15 @@ fun buildSectionedList(
     val result = mutableListOf<CheatListItem>()
     var globalIndex = 0
     if (recent.isNotEmpty()) {
-        result.add(CheatListItem.Header("RECENT"))
+        result.add(CheatListItem.Header(R.string.ingame_cheats_available_header_recent))
         recent.forEach { result.add(CheatListItem.Cheat(it, globalIndex++)) }
     }
     if (custom.isNotEmpty()) {
-        result.add(CheatListItem.Header("CUSTOM"))
+        result.add(CheatListItem.Header(R.string.ingame_cheats_available_header_custom))
         custom.forEach { result.add(CheatListItem.Cheat(it, globalIndex++)) }
     }
     if (available.isNotEmpty()) {
-        result.add(CheatListItem.Header("AVAILABLE"))
+        result.add(CheatListItem.Header(R.string.ingame_cheats_available_header_available))
         available.forEach { result.add(CheatListItem.Cheat(it, globalIndex++)) }
     }
     return result
@@ -141,12 +145,20 @@ fun AvailableTab(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = "${cheats.size} cheats",
+                text = pluralStringResource(
+                    R.plurals.ingame_cheats_available_count,
+                    cheats.size,
+                    cheats.size
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                text = "$enabledCount/${allCheats.size} enabled",
+                text = stringResource(
+                    R.string.ingame_cheats_available_enabled,
+                    enabledCount,
+                    allCheats.size
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -160,7 +172,11 @@ fun AvailableTab(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = if (searchQuery.isNotBlank()) "No matching cheats" else "No cheats available",
+                    text = if (searchQuery.isNotBlank()) {
+                        stringResource(R.string.ingame_cheats_available_empty_search)
+                    } else {
+                        stringResource(R.string.ingame_cheats_available_empty)
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -173,13 +189,13 @@ fun AvailableTab(
             ) {
                 items(listItems.size, key = { index ->
                     when (val item = listItems[index]) {
-                        is CheatListItem.Header -> "header_${item.title}"
+                        is CheatListItem.Header -> "header_${item.titleRes}"
                         is CheatListItem.Cheat -> item.item.id
                     }
                 }) { index ->
                     when (val item = listItems[index]) {
                         is CheatListItem.Header -> {
-                            SectionHeader(title = item.title)
+                            SectionHeader(title = stringResource(item.titleRes))
                         }
                         is CheatListItem.Cheat -> {
                             SwitchPreference(
@@ -230,7 +246,11 @@ private fun SearchBar(
             tint = contentColor
         )
         Text(
-            text = query.ifEmpty { "Search cheats..." },
+            text = if (query.isEmpty()) {
+                stringResource(R.string.ingame_cheats_available_search_placeholder)
+            } else {
+                query
+            },
             style = MaterialTheme.typography.bodyLarge,
             color = if (query.isEmpty()) contentColor.copy(alpha = 0.6f) else contentColor,
             maxLines = 1,
@@ -239,7 +259,7 @@ private fun SearchBar(
         )
         if (query.isNotEmpty()) {
             Text(
-                text = "Clear",
+                text = stringResource(R.string.ingame_cheats_available_search_clear),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary
             )

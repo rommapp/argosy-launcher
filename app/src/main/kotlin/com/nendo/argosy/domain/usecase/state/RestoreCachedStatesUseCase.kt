@@ -17,9 +17,20 @@ private const val TAG = "RestoreCachedStates"
 
 sealed class RestoreCachedStatesResult {
     data class Success(val restoredCount: Int) : RestoreCachedStatesResult()
-    data class Error(val message: String) : RestoreCachedStatesResult()
+    data class Error(val reason: RestoreCachedStatesFailureReason) : RestoreCachedStatesResult()
     data object NotConfigured : RestoreCachedStatesResult()
     data object NoStates : RestoreCachedStatesResult()
+}
+
+/**
+ * Why [RestoreCachedStatesUseCase] could not put cached states back on disk. [Unexpected] keeps
+ * the exception text as-is because it is not this app's sentence to translate.
+ */
+sealed class RestoreCachedStatesFailureReason {
+    data object GameNotFound : RestoreCachedStatesFailureReason()
+    data object NoLocalPath : RestoreCachedStatesFailureReason()
+    data object StateDirectoryUnresolved : RestoreCachedStatesFailureReason()
+    data class Unexpected(val message: String?) : RestoreCachedStatesFailureReason()
 }
 
 class RestoreCachedStatesUseCase @Inject constructor(
@@ -43,13 +54,13 @@ class RestoreCachedStatesUseCase @Inject constructor(
         val game = gameDao.getById(gameId)
         if (game == null) {
             Log.w(TAG, "Game not found: $gameId")
-            return RestoreCachedStatesResult.Error("Game not found")
+            return RestoreCachedStatesResult.Error(RestoreCachedStatesFailureReason.GameNotFound)
         }
 
         val romPath = game.localPath
         if (romPath == null) {
             Log.w(TAG, "Game has no local path: $gameId")
-            return RestoreCachedStatesResult.Error("Game has no local path")
+            return RestoreCachedStatesResult.Error(RestoreCachedStatesFailureReason.NoLocalPath)
         }
 
         val emulatorDef = emulatorDetector.getByPackage(emulatorPackage)
@@ -96,7 +107,7 @@ class RestoreCachedStatesUseCase @Inject constructor(
         }
         val targetDir = stateDir ?: statePaths.firstOrNull()?.let { File(it) }
         if (targetDir == null) {
-            return RestoreCachedStatesResult.Error("Could not determine state directory")
+            return RestoreCachedStatesResult.Error(RestoreCachedStatesFailureReason.StateDirectoryUnresolved)
         }
 
         val cachedStates = stateCacheManager.getStatesForChannelAndCore(gameId, channelName, effectiveCoreId)
@@ -182,7 +193,7 @@ class RestoreCachedStatesUseCase @Inject constructor(
             return RestoreCachedStatesResult.Success(restoredCount)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to restore states", e)
-            return RestoreCachedStatesResult.Error(e.message ?: "Unknown error")
+            return RestoreCachedStatesResult.Error(RestoreCachedStatesFailureReason.Unexpected(e.message))
         }
     }
 }

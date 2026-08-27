@@ -33,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -44,6 +45,7 @@ import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.ModalScaffold
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.screens.settings.ChangelogRelease
 import com.nendo.argosy.ui.screens.settings.ChangelogState
 import com.nendo.argosy.ui.theme.Dimens
@@ -270,7 +272,11 @@ fun ReleaseChangelogModal(
                     ChangelogBody(body = shownRelease.body)
                 } else {
                     Text(
-                        text = if (state.isLoading) "Loading releases..." else "No releases found",
+                        text = if (state.isLoading) {
+                            stringResource(R.string.settings_changelog_loading)
+                        } else {
+                            stringResource(R.string.settings_changelog_empty)
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = theme.textDim
                     )
@@ -309,7 +315,7 @@ private fun VersionRow(
             )
             if (release.prerelease) {
                 Text(
-                    text = "beta",
+                    text = stringResource(R.string.settings_changelog_beta_badge),
                     style = MaterialTheme.typography.labelSmall,
                     color = betaColor
                 )
@@ -343,7 +349,11 @@ private fun LoadMoreRow(
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = if (isLoading) "Loading..." else "Load more",
+            text = if (isLoading) {
+                stringResource(R.string.settings_changelog_load_more_loading)
+            } else {
+                stringResource(R.string.settings_changelog_load_more_label)
+            },
             style = MaterialTheme.typography.bodySmall,
             color = if (focused) theme.textPrimary else theme.textDim
         )

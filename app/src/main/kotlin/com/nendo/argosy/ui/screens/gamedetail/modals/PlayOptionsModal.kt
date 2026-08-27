@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.gamedetail.modals
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -25,7 +26,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.Modal
 import com.nendo.argosy.ui.theme.ALauncherColors
 import com.nendo.argosy.ui.theme.Dimens
@@ -41,9 +44,9 @@ sealed class PlayOptionAction {
 }
 
 /** The grouped sections play options are laid out under, with their display headers. */
-enum class PlayOptionSection(val label: String) {
-    Continue("CONTINUE"),
-    NewGame("NEW GAME")
+enum class PlayOptionSection(@StringRes val labelRes: Int) {
+    Continue(R.string.gamedetail_play_options_section_continue),
+    NewGame(R.string.gamedetail_play_options_section_new_game)
 }
 
 /**
@@ -56,8 +59,8 @@ data class PlayOptionItem(
     val action: PlayOptionAction,
     val section: PlayOptionSection,
     val icon: ImageVector,
-    val label: String,
-    val subtext: String? = null,
+    @StringRes val labelRes: Int,
+    @StringRes val subtextRes: Int? = null,
     val iconTint: Color? = null,
     val isEnabled: Boolean = true
 )
@@ -87,7 +90,7 @@ fun buildPlayOptions(
                 action = PlayOptionAction.Resume,
                 section = PlayOptionSection.Continue,
                 icon = Icons.Default.PlayArrow,
-                label = "Latest"
+                labelRes = R.string.gamedetail_play_options_resume_latest
             )
         )
     }
@@ -97,8 +100,8 @@ fun buildPlayOptions(
                 action = PlayOptionAction.ResumeNoSync,
                 section = PlayOptionSection.Continue,
                 icon = Icons.Default.PlayArrow,
-                label = "Play without syncing",
-                subtext = "Skip the pre-launch save sync check"
+                labelRes = R.string.gamedetail_play_options_resume_no_sync,
+                subtextRes = R.string.gamedetail_play_options_resume_no_sync_subtext
             )
         )
     }
@@ -108,8 +111,12 @@ fun buildPlayOptions(
                 action = PlayOptionAction.ResumeHardcore,
                 section = PlayOptionSection.Continue,
                 icon = Icons.Default.EmojiEvents,
-                label = "Hardcore",
-                subtext = if (hasHardcoreSave) null else "Continue this save in hardcore",
+                labelRes = R.string.gamedetail_play_options_resume_hardcore,
+                subtextRes = if (hasHardcoreSave) {
+                    null
+                } else {
+                    R.string.gamedetail_play_options_resume_hardcore_subtext
+                },
                 iconTint = ALauncherColors.StarGold
             )
         )
@@ -120,11 +127,11 @@ fun buildPlayOptions(
             action = PlayOptionAction.NewCasual,
             section = PlayOptionSection.NewGame,
             icon = Icons.Default.SportsEsports,
-            label = "Casual",
-            subtext = when {
+            labelRes = R.string.gamedetail_play_options_new_casual,
+            subtextRes = when {
                 !hasRASupport -> null
-                statesAvailable -> "Save states and cheats available"
-                else -> "Cheats available"
+                statesAvailable -> R.string.gamedetail_play_options_new_casual_subtext_states
+                else -> R.string.gamedetail_play_options_new_casual_subtext_cheats
             }
         )
     )
@@ -134,8 +141,12 @@ fun buildPlayOptions(
                 action = PlayOptionAction.NewHardcore,
                 section = PlayOptionSection.NewGame,
                 icon = Icons.Default.EmojiEvents,
-                label = "Hardcore",
-                subtext = if (isOnline) "Online-only, no save states or cheats" else "Requires internet connection",
+                labelRes = R.string.gamedetail_play_options_new_hardcore,
+                subtextRes = if (isOnline) {
+                    R.string.gamedetail_play_options_new_hardcore_subtext_online
+                } else {
+                    R.string.gamedetail_play_options_new_hardcore_subtext_offline
+                },
                 iconTint = if (isOnline) ALauncherColors.StarGold else null,
                 isEnabled = isOnline
             )
@@ -166,20 +177,23 @@ fun PlayOptionsModal(
         statesAvailable = statesAvailable
     )
 
-    Modal(title = "START GAME", onDismiss = onDismiss) {
+    Modal(
+        title = stringResource(R.string.gamedetail_play_options_title),
+        onDismiss = onDismiss
+    ) {
         var lastSection: PlayOptionSection? = null
         items.forEachIndexed { index, item ->
             if (item.section != lastSection) {
                 if (lastSection != null) Spacer(Modifier.height(Dimens.spacingMd))
-                SectionLabel(item.section.label)
+                SectionLabel(stringResource(item.section.labelRes))
                 Spacer(Modifier.height(Dimens.spacingXs))
                 lastSection = item.section
             }
             PlayOptionRow(
                 icon = item.icon,
                 iconTint = item.iconTint,
-                label = item.label,
-                subtext = item.subtext,
+                label = stringResource(item.labelRes),
+                subtext = item.subtextRes?.let { stringResource(it) },
                 isFocused = focusIndex == index,
                 isEnabled = item.isEnabled,
                 onClick = { onAction(item.action) }

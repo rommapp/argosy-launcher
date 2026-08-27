@@ -1,0 +1,455 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ============================ Left menu (GameDetailMenu) ============================ -->
+
+    <string name="gamedetail_menu_per_game_settings">Spieleinstellungen</string>
+    <string name="gamedetail_menu_details">Details</string>
+    <string name="gamedetail_menu_description">Beschreibung</string>
+    <string name="gamedetail_menu_screenshots">Screenshots</string>
+    <string name="gamedetail_menu_achievements">Erfolge</string>
+    <string name="gamedetail_menu_related_games">Ähnliche Spiele</string>
+
+    <string name="gamedetail_menu_play_button_extracting">Wird entpackt...</string>
+    <string name="gamedetail_menu_play_button_queued">Wartend</string>
+    <string name="gamedetail_menu_play_button_no_space">Kein Speicherplatz</string>
+    <string name="gamedetail_menu_play_button_resume">Fortsetzen</string>
+    <string name="gamedetail_menu_play_button_retry">Wiederholen</string>
+    <string name="gamedetail_menu_play_button_play">Spielen</string>
+    <string name="gamedetail_menu_play_button_install">Installieren</string>
+    <string name="gamedetail_menu_play_button_download">Herunterladen</string>
+    <string name="gamedetail_menu_play_button_progress_percent">%1$d%%</string>
+
+    <string name="gamedetail_menu_saves_syncing">Wird synchronisiert...</string>
+    <string name="gamedetail_menu_saves_default_channel">Autospeicherung</string>
+
+    <string name="gamedetail_menu_favorite_label">Favorit</string>
+    <string name="gamedetail_menu_favorite_compact_remove_description">Aus Favoriten entfernen</string>
+    <string name="gamedetail_menu_favorite_compact_add_description">Zu Favoriten hinzufügen</string>
+    <string name="gamedetail_menu_favorite_row_remove_description">Aus Favoriten entfernen</string>
+    <string name="gamedetail_menu_favorite_row_add_description">Zu Favoriten hinzufügen</string>
+
+    <string name="gamedetail_menu_privacy_private">Privat</string>
+    <string name="gamedetail_menu_privacy_public">Öffentlich</string>
+
+    <string name="gamedetail_menu_options_label">Optionen</string>
+    <string name="gamedetail_menu_options_compact_description">Optionen</string>
+    <string name="gamedetail_menu_options_row_description">Optionen</string>
+
+    <!-- ================================= Footer hints ================================== -->
+
+    <string name="gamedetail_footer_prev_next_game">Vorheriges/nächstes Spiel</string>
+    <string name="gamedetail_footer_section_scroll">Scrollen</string>
+
+    <string name="gamedetail_footer_play_syncing">Wird synchronisiert...</string>
+    <string name="gamedetail_footer_play_downloaded">Spielen</string>
+    <string name="gamedetail_footer_play_install">Installieren</string>
+    <string name="gamedetail_footer_play_download">Herunterladen</string>
+    <string name="gamedetail_footer_play_queued">Wartend</string>
+    <string name="gamedetail_footer_play_retry_no_space">Wiederholen</string>
+    <string name="gamedetail_footer_play_downloading">Herunterladen</string>
+    <string name="gamedetail_footer_play_extracting">Entpacken</string>
+    <string name="gamedetail_footer_play_resume">Fortsetzen</string>
+    <string name="gamedetail_footer_play_retry_failed">Wiederholen</string>
+    <string name="gamedetail_footer_play_fallback">Spielen</string>
+
+    <string name="gamedetail_footer_saves_syncing">Wird synchronisiert...</string>
+    <string name="gamedetail_footer_saves_sync">Sync</string>
+
+    <string name="gamedetail_footer_menu_unfavorite">Favorit entfernen</string>
+    <string name="gamedetail_footer_menu_favorite">Favorit</string>
+
+    <string name="gamedetail_footer_menu_make_public">Öffentlich machen</string>
+    <string name="gamedetail_footer_menu_make_private">Privat machen</string>
+
+    <string name="gamedetail_footer_configure">Konfigurieren</string>
+    <string name="gamedetail_footer_options">Optionen</string>
+    <string name="gamedetail_footer_view_screenshot">Ansehen</string>
+    <string name="gamedetail_footer_view_all_achievements">Alle anzeigen</string>
+    <string name="gamedetail_footer_open_related">Öffnen</string>
+    <string name="gamedetail_footer_back">Zurück</string>
+    <string name="gamedetail_footer_new_game">Neues Spiel</string>
+    <string name="gamedetail_footer_shortcut_make_public">Öffentlich machen</string>
+    <string name="gamedetail_footer_shortcut_make_private">Privat machen</string>
+    <string name="gamedetail_footer_shortcut_unfavorite">Favorit entfernen</string>
+    <string name="gamedetail_footer_shortcut_favorite">Favorit</string>
+
+    <!-- ============================== Page body sections =============================== -->
+
+    <string name="gamedetail_section_description_heading">BESCHREIBUNG</string>
+    <string name="gamedetail_section_screenshots_heading">SCREENSHOTS</string>
+    <string name="gamedetail_section_related_heading">ÄHNLICHE SPIELE</string>
+    <string name="gamedetail_section_achievements_heading">ERFOLGE</string>
+    <string name="gamedetail_section_achievements_count">(%1$d/%2$d)</string>
+
+    <!-- =============================== Header chips ================================== -->
+
+    <string name="gamedetail_chip_players_label">Spieler</string>
+    <string name="gamedetail_chip_main_story_label">Hauptgeschichte</string>
+    <string name="gamedetail_chip_main_extras_label">Hauptgeschichte + Extras</string>
+    <string name="gamedetail_chip_completionist_label">Komplettierung</string>
+    <string name="gamedetail_chip_my_rating_label">Meine Bewertung</string>
+    <string name="gamedetail_chip_difficulty_label">Schwierigkeit</string>
+    <string name="gamedetail_chip_community_rating_label">Bewertung</string>
+    <string name="gamedetail_chip_play_time_label">Spielzeit</string>
+
+    <string name="gamedetail_chip_rating_value">%1$d/10</string>
+    <string name="gamedetail_chip_rating_unset">--</string>
+    <string name="gamedetail_chip_community_rating_value">%1$d%%</string>
+
+    <string name="gamedetail_chip_play_time_minutes">%1$dm</string>
+    <string name="gamedetail_chip_play_time_hours_minutes">%1$dh %2$dm</string>
+    <string name="gamedetail_chip_play_time_hours">%1$dh</string>
+    <string name="gamedetail_chip_play_time_hours_grouped">%1$sh</string>
+
+    <!-- ============================= Collapsed header bar ============================== -->
+
+    <string name="gamedetail_collapsed_header_rating_percent">%1$d%%</string>
+    <plurals name="gamedetail_collapsed_header_play_count">
+        <item quantity="one">%1$d Durchgang</item>
+        <item quantity="other">%1$d Durchgänge</item>
+    </plurals>
+
+    <!-- =============================== Achievement strip =============================== -->
+
+    <plurals name="gamedetail_achievement_strip_points">
+        <item quantity="one">%1$d Pkt.</item>
+        <item quantity="other">%1$d Pkt.</item>
+    </plurals>
+
+    <!-- ============================ Full achievement list ============================== -->
+
+    <string name="gamedetail_achievement_list_subtitle">Erfolge</string>
+    <string name="gamedetail_achievement_list_progress">%1$d/%2$d (%3$d%%)</string>
+    <string name="gamedetail_achievement_list_unlocked_heading">FREIGESCHALTET (%1$d)</string>
+    <string name="gamedetail_achievement_list_locked_heading">GESPERRT (%1$d)</string>
+    <string name="gamedetail_achievement_list_tier_hardcore">Hardcore</string>
+    <string name="gamedetail_achievement_list_tier_casual">Casual</string>
+    <plurals name="gamedetail_achievement_list_points">
+        <item quantity="one">%1$d Pkt.</item>
+        <item quantity="other">%1$d Pkt.</item>
+    </plurals>
+    <string name="gamedetail_achievement_list_footer_navigate">Navigieren</string>
+    <string name="gamedetail_achievement_list_footer_back">Zurück</string>
+
+    <!-- ============================= Screenshot viewer ================================= -->
+
+    <string name="gamedetail_screenshot_viewer_position">%1$d / %2$d</string>
+    <string name="gamedetail_screenshot_viewer_footer_navigate">Navigieren</string>
+    <string name="gamedetail_screenshot_viewer_footer_close">Schließen</string>
+    <string name="gamedetail_screenshot_viewer_footer_set_background">Als Hintergrund festlegen</string>
+
+    <!-- ================================ Option rows =================================== -->
+
+    <string name="gamedetail_option_item_current_description">Aktuell</string>
+    <string name="gamedetail_option_item_value">[%1$s]</string>
+
+    <!-- ================================ Save status =================================== -->
+
+    <string name="gamedetail_save_status_latest_label">Neueste</string>
+    <string name="gamedetail_save_status_time">· %1$s</string>
+    <string name="gamedetail_save_status_synced">Synchronisiert</string>
+    <string name="gamedetail_save_status_local_newer">Lokal neuer</string>
+    <string name="gamedetail_save_status_server_newer">Server neuer</string>
+    <string name="gamedetail_save_status_local_only">Lokal</string>
+    <string name="gamedetail_save_status_pending_upload">Upload ausstehend</string>
+    <string name="gamedetail_save_status_needs_resolution">Klärung erforderlich</string>
+    <string name="gamedetail_save_status_no_save">Kein Spielstand</string>
+    <string name="gamedetail_save_status_not_configured">Nicht konfiguriert</string>
+
+    <!-- ============================ Rename channel modal ================================ -->
+
+    <string name="gamedetail_rename_channel_title">KANAL ERSTELLEN</string>
+    <string name="gamedetail_rename_channel_footer_confirm">Bestätigen</string>
+    <string name="gamedetail_rename_channel_footer_cancel">Abbrechen</string>
+    <string name="gamedetail_rename_channel_description">Geben Sie einen Namen für diesen Speicherkanal ein</string>
+    <string name="gamedetail_rename_channel_placeholder">Kanalname</string>
+
+    <!-- ============================== More options menu ================================ -->
+
+    <string name="gamedetail_more_options_manage_saves">Zwischengespeicherte Spielstände verwalten</string>
+    <string name="gamedetail_more_options_ratings_status">Bewertung &amp; Status</string>
+    <string name="gamedetail_more_options_change_launcher">Launcher ändern</string>
+    <string name="gamedetail_more_options_speedrun_splits">Speedrun-Segmente</string>
+    <string name="gamedetail_more_options_title_id">Titel-ID</string>
+    <string name="gamedetail_more_options_title_id_missing">Nicht erkannt</string>
+    <string name="gamedetail_more_options_select_disc">Disc auswählen</string>
+    <string name="gamedetail_more_options_select_variant">Variante auswählen</string>
+    <string name="gamedetail_more_options_files">Dateien</string>
+    <string name="gamedetail_more_options_refresh_data">Spieldaten aktualisieren</string>
+    <string name="gamedetail_more_options_add_to_collection">Zur Sammlung hinzufügen</string>
+    <string name="gamedetail_more_options_change_cover">Cover ändern</string>
+    <string name="gamedetail_more_options_reset_cover">Cover zurücksetzen</string>
+    <string name="gamedetail_more_options_uninstall">Deinstallieren</string>
+    <string name="gamedetail_more_options_unlink_from_launcher">Verknüpfung mit %1$s aufheben</string>
+    <string name="gamedetail_more_options_unlink_launcher_fallback">Launcher</string>
+    <string name="gamedetail_more_options_delete_download">Download löschen</string>
+    <string name="gamedetail_more_options_remove_from_library">Aus Bibliothek entfernen</string>
+    <string name="gamedetail_more_options_show">Einblenden</string>
+    <string name="gamedetail_more_options_hide">Ausblenden</string>
+
+    <!-- ============================ Ratings and status menu ============================ -->
+
+    <string name="gamedetail_ratings_status_title">BEWERTUNG &amp; STATUS</string>
+    <string name="gamedetail_ratings_status_footer_navigate">Navigieren</string>
+    <string name="gamedetail_ratings_status_footer_select">Auswählen</string>
+    <string name="gamedetail_ratings_status_footer_back">Zurück</string>
+    <string name="gamedetail_ratings_status_rate_game">Spiel bewerten</string>
+    <string name="gamedetail_ratings_status_rate_game_unset">Nicht bewertet</string>
+    <string name="gamedetail_ratings_status_score_value">%1$d/10</string>
+    <string name="gamedetail_ratings_status_set_difficulty">Schwierigkeit festlegen</string>
+    <string name="gamedetail_ratings_status_difficulty_unset">Nicht festgelegt</string>
+    <string name="gamedetail_ratings_status_set_status">Status festlegen</string>
+    <string name="gamedetail_ratings_status_status_unset">Nicht festgelegt</string>
+
+    <!-- ================================ Status picker ================================= -->
+
+    <string name="gamedetail_status_picker_title">STATUS FESTLEGEN</string>
+    <string name="gamedetail_status_picker_footer_navigate">Navigieren</string>
+    <string name="gamedetail_status_picker_footer_confirm">Bestätigen</string>
+    <string name="gamedetail_status_picker_footer_cancel">Abbrechen</string>
+
+    <!-- ================================ Rating picker ================================= -->
+
+    <string name="gamedetail_rating_picker_title_rating">SPIEL BEWERTEN</string>
+    <string name="gamedetail_rating_picker_title_difficulty">SCHWIERIGKEIT FESTLEGEN</string>
+    <string name="gamedetail_rating_picker_footer_adjust">Anpassen</string>
+    <string name="gamedetail_rating_picker_footer_confirm">Bestätigen</string>
+    <string name="gamedetail_rating_picker_footer_cancel">Abbrechen</string>
+    <string name="gamedetail_rating_picker_unset">Nicht festgelegt</string>
+    <string name="gamedetail_rating_picker_value">%1$d/10</string>
+
+    <!-- ============================= Play options modal ================================ -->
+
+    <string name="gamedetail_play_options_title">SPIEL STARTEN</string>
+    <string name="gamedetail_play_options_section_continue">FORTSETZEN</string>
+    <string name="gamedetail_play_options_section_new_game">NEUES SPIEL</string>
+    <string name="gamedetail_play_options_resume_latest">Neueste</string>
+    <string name="gamedetail_play_options_resume_no_sync">Ohne Synchronisierung spielen</string>
+    <string name="gamedetail_play_options_resume_no_sync_subtext">Überspringt die Sync-Prüfung vor dem Start</string>
+    <string name="gamedetail_play_options_resume_hardcore">Hardcore</string>
+    <string name="gamedetail_play_options_resume_hardcore_subtext">Diesen Spielstand im Hardcore-Modus fortsetzen</string>
+    <string name="gamedetail_play_options_new_casual">Casual</string>
+    <string name="gamedetail_play_options_new_casual_subtext_states">Savestates und Cheats verfügbar</string>
+    <string name="gamedetail_play_options_new_casual_subtext_cheats">Cheats verfügbar</string>
+    <string name="gamedetail_play_options_new_hardcore">Hardcore</string>
+    <string name="gamedetail_play_options_new_hardcore_subtext_online">Nur online, keine Savestates oder Cheats</string>
+    <string name="gamedetail_play_options_new_hardcore_subtext_offline">Erfordert eine Internetverbindung</string>
+
+    <!-- ============================== Permission modal ================================= -->
+
+    <string name="gamedetail_permission_storage_title">Berechtigung erforderlich</string>
+    <string name="gamedetail_permission_storage_message">Die Spielstand-Synchronisierung ist aktiviert, aber die Dateizugriffsberechtigung wurde nicht erteilt. Erteilen Sie die Berechtigung, um Spielstände zu synchronisieren, oder deaktivieren Sie die Synchronisierung, um fortzufahren.</string>
+    <string name="gamedetail_permission_storage_confirm">Berechtigung erteilen</string>
+    <string name="gamedetail_permission_folder_title">Ordnerzugriff erforderlich</string>
+    <string name="gamedetail_permission_folder_message">Die Spielstand-Synchronisierung benötigt Zugriff auf den Ordner Android/data, um Spielstände von anderen Emulatoren zu synchronisieren. Wählen Sie bei Aufforderung den Ordner Android, oder deaktivieren Sie die Synchronisierung, um fortzufahren.</string>
+    <string name="gamedetail_permission_folder_confirm">Ordner auswählen</string>
+    <string name="gamedetail_permission_disable_sync">Spielstand-Synchronisierung deaktivieren</string>
+    <string name="gamedetail_permission_cancel">Abbrechen</string>
+
+    <!-- ============================== Missing disc modal =============================== -->
+
+    <string name="gamedetail_missing_disc_title">FEHLENDE DISCS</string>
+    <string name="gamedetail_missing_disc_footer_download">Herunterladen</string>
+    <string name="gamedetail_missing_disc_footer_cancel">Abbrechen</string>
+    <plurals name="gamedetail_missing_disc_message">
+        <item quantity="one">Disc %1$s ist nicht heruntergeladen.\nMöchten Sie sie herunterladen?</item>
+        <item quantity="other">Discs %1$s sind nicht heruntergeladen.\nMöchten Sie sie herunterladen?</item>
+    </plurals>
+
+    <!-- ============================ Extraction failed modal ============================ -->
+
+    <string name="gamedetail_extraction_failed_title">EXTRAKTION FEHLGESCHLAGEN</string>
+    <string name="gamedetail_extraction_failed_footer_select">Auswählen</string>
+    <string name="gamedetail_extraction_failed_footer_cancel">Abbrechen</string>
+    <string name="gamedetail_extraction_failed_message">%1$s konnte nicht entpackt werden</string>
+    <string name="gamedetail_extraction_failed_retry">Extraktion wiederholen</string>
+    <string name="gamedetail_extraction_failed_redownload">Erneut herunterladen</string>
+
+    <!-- ================================= Pickers ====================================== -->
+
+    <string name="gamedetail_launcher_picker_title">LAUNCHER AUSWÄHLEN</string>
+
+    <string name="gamedetail_core_picker_title">CORE AUSWÄHLEN</string>
+    <string name="gamedetail_core_picker_subtitle">Cores müssen zuerst in RetroArch installiert werden</string>
+    <string name="gamedetail_core_picker_platform_default">Plattformstandard verwenden</string>
+
+    <string name="gamedetail_emulator_picker_title">EMULATOR AUSWÄHLEN</string>
+    <string name="gamedetail_emulator_picker_platform_default">Plattformstandard verwenden</string>
+
+    <string name="gamedetail_variant_picker_title">VARIANTE AUSWÄHLEN</string>
+    <string name="gamedetail_variant_picker_subtitle">Wählen Sie, welche Version gestartet werden soll</string>
+    <string name="gamedetail_variant_picker_original">Standard (Original)</string>
+
+    <!-- ================================ Cover picker ================================== -->
+
+    <string name="gamedetail_cover_picker_title">COVER</string>
+    <string name="gamedetail_cover_picker_footer_navigate">Navigieren</string>
+    <string name="gamedetail_cover_picker_footer_select">Auswählen</string>
+    <string name="gamedetail_cover_picker_footer_search">Suchen</string>
+    <string name="gamedetail_cover_picker_footer_from_file">Aus Datei</string>
+    <string name="gamedetail_cover_picker_footer_cancel">Abbrechen</string>
+    <string name="gamedetail_cover_picker_search_placeholder">Artwork suchen...</string>
+    <string name="gamedetail_cover_picker_empty">Kein Cover für diesen Titel gefunden.</string>
+    <string name="gamedetail_cover_picker_error">Cover-Suche fehlgeschlagen. %1$s</string>
+
+    <!-- ================================= File picker ================================== -->
+
+    <string name="gamedetail_file_picker_title_manage">Dateien</string>
+    <string name="gamedetail_file_picker_title_choose">Dateien auswählen</string>
+    <string name="gamedetail_file_picker_summary_no_changes">Keine Änderungen</string>
+    <string name="gamedetail_file_picker_summary_added">+%1$d · %2$s</string>
+    <string name="gamedetail_file_picker_summary_removed">-%1$d · %2$s</string>
+    <string name="gamedetail_file_picker_summary_selection">%1$d von %2$d · %3$s ausgewählt</string>
+    <string name="gamedetail_file_picker_confirm_download">Herunterladen</string>
+    <string name="gamedetail_file_picker_confirm_download_count">%1$d herunterladen</string>
+    <string name="gamedetail_file_picker_confirm_remove_count">%1$d entfernen</string>
+    <string name="gamedetail_file_picker_confirm_apply">Änderungen übernehmen</string>
+    <string name="gamedetail_file_picker_confirm_no_changes">Keine Änderungen</string>
+    <string name="gamedetail_file_picker_deselect_all">Alle abwählen</string>
+    <string name="gamedetail_file_picker_select_all">Alle auswählen</string>
+    <string name="gamedetail_file_picker_cancel">Abbrechen</string>
+    <string name="gamedetail_file_picker_expand_description">Ausklappen</string>
+    <string name="gamedetail_file_picker_collapse_description">Einklappen</string>
+    <string name="gamedetail_file_picker_default_tag">STANDARD</string>
+    <string name="gamedetail_file_picker_pending_remove">Wird entfernt</string>
+    <string name="gamedetail_file_picker_pending_add">Wird heruntergeladen</string>
+    <string name="gamedetail_file_picker_on_device">Auf dem Gerät</string>
+
+    <!-- ============================= Per-game settings ================================= -->
+
+    <string name="gamedetail_per_game_title">Spieleinstellungen</string>
+    <string name="gamedetail_per_game_footer_adjust">Anpassen</string>
+    <string name="gamedetail_per_game_footer_change_reset">Ändern/Zurücksetzen</string>
+    <string name="gamedetail_per_game_footer_select">Auswählen</string>
+    <string name="gamedetail_per_game_footer_change_save_path">Ändern</string>
+    <string name="gamedetail_per_game_footer_open_save_location">Öffnen</string>
+    <string name="gamedetail_per_game_footer_change_memcard">Ändern</string>
+    <string name="gamedetail_per_game_footer_cycle">Wechseln</string>
+    <string name="gamedetail_per_game_footer_open">Öffnen</string>
+    <string name="gamedetail_per_game_footer_back">Zurück</string>
+
+    <string name="gamedetail_per_game_emulator_label">Emulator</string>
+    <string name="gamedetail_per_game_emulator_none">Keiner erkannt</string>
+    <string name="gamedetail_per_game_core_label">Core</string>
+    <string name="gamedetail_per_game_core_default">Standard</string>
+    <string name="gamedetail_per_game_save_path_label">Speicherpfad</string>
+    <string name="gamedetail_per_game_save_location_label">Speicherort</string>
+    <string name="gamedetail_per_game_save_location_unset">Nicht konfiguriert</string>
+    <string name="gamedetail_per_game_memcard_label">Speicherkarte</string>
+    <string name="gamedetail_per_game_memcard_default">Standard (%1$s)</string>
+    <string name="gamedetail_per_game_memcard_default_auto">Auto</string>
+    <string name="gamedetail_per_game_display_target_label">Zielbildschirm</string>
+    <string name="gamedetail_per_game_display_target_inherit">Geerbt (%1$s)</string>
+    <string name="gamedetail_per_game_extension_label">Dateiendung</string>
+    <string name="gamedetail_per_game_extension_inherit">Geerbt (%1$s)</string>
+    <string name="gamedetail_per_game_extension_inherit_auto">Auto</string>
+    <string name="gamedetail_per_game_platform_settings">Plattformeinstellungen</string>
+    <string name="gamedetail_per_game_inherited_tag">Geerbt</string>
+    <string name="gamedetail_per_game_save_path_browser_title">Speicherpfad</string>
+    <string name="gamedetail_per_game_save_path_content_dir">(ROM-Verzeichnis)</string>
+
+    <string name="gamedetail_cover_file_browser_title">Cover auswählen</string>
+
+    <!-- =============================== Speedrun splits ================================= -->
+
+    <string name="gamedetail_speedrun_segments_title">%1$s - Segmente</string>
+    <string name="gamedetail_speedrun_title">Speedrun-Segmente</string>
+    <string name="gamedetail_speedrun_footer_add_segment">Segment hinzufügen</string>
+    <string name="gamedetail_speedrun_footer_delete">Löschen</string>
+    <string name="gamedetail_speedrun_footer_move">Verschieben</string>
+    <string name="gamedetail_speedrun_footer_back">Zurück</string>
+    <string name="gamedetail_speedrun_footer_open">Öffnen</string>
+    <string name="gamedetail_speedrun_footer_new_category">Neue Kategorie</string>
+    <string name="gamedetail_speedrun_footer_close">Schließen</string>
+    <string name="gamedetail_speedrun_segment_row">%1$d.  %2$s</string>
+    <string name="gamedetail_speedrun_default_segment_name">Segment 1</string>
+    <string name="gamedetail_speedrun_rename_category">Kategorie umbenennen</string>
+    <string name="gamedetail_speedrun_delete_category">Kategorie löschen</string>
+    <string name="gamedetail_speedrun_empty_prefix">Noch keine Kategorien. Drücken Sie</string>
+    <string name="gamedetail_speedrun_empty_suffix">um eine zu erstellen, oder importieren Sie eine aus der Community.</string>
+    <string name="gamedetail_speedrun_category_summary">%1$d Segmente · %2$d Versuche</string>
+    <string name="gamedetail_speedrun_import_row">Segmente importieren...</string>
+    <string name="gamedetail_speedrun_import_loading_title">Wird gesucht...</string>
+    <string name="gamedetail_speedrun_import_loading_message">Kategorien werden auf therun.gg und speedrun.com gesucht</string>
+    <string name="gamedetail_speedrun_import_importing_title">Wird importiert...</string>
+    <string name="gamedetail_speedrun_import_importing_message">Segmente eines Spitzenlaufs werden abgerufen</string>
+    <string name="gamedetail_speedrun_import_failed_title">Import</string>
+    <string name="gamedetail_speedrun_import_failed_footer_back">Zurück</string>
+    <string name="gamedetail_speedrun_preview_footer_other_runner">Anderer Läufer</string>
+    <string name="gamedetail_speedrun_preview_footer_import">Importieren</string>
+    <string name="gamedetail_speedrun_preview_footer_back">Zurück</string>
+    <string name="gamedetail_speedrun_preview_attribution">Segmente von %1$s (#%2$d)</string>
+    <string name="gamedetail_speedrun_preview_segment_row">%1$d.  %2$s</string>
+    <string name="gamedetail_speedrun_import_options_title">Segmente importieren</string>
+    <string name="gamedetail_speedrun_import_options_footer_import">Importieren</string>
+    <string name="gamedetail_speedrun_import_options_footer_cancel">Abbrechen</string>
+    <string name="gamedetail_speedrun_source_therun">therun.gg · vollständige Segmente</string>
+    <string name="gamedetail_speedrun_source_speedruncom">speedrun.com · nur Name</string>
+    <string name="gamedetail_speedrun_prompt_confirm">Bestätigen</string>
+    <string name="gamedetail_speedrun_prompt_cancel">Abbrechen</string>
+    <string name="gamedetail_speedrun_prompt_placeholder">Name</string>
+    <string name="gamedetail_speedrun_confirm_delete_title">\"%1$s\" löschen?</string>
+    <string name="gamedetail_speedrun_confirm_delete_footer_delete">Löschen</string>
+    <string name="gamedetail_speedrun_confirm_delete_footer_cancel">Abbrechen</string>
+    <string name="gamedetail_speedrun_confirm_delete_category_message">Dies löscht die Kategorie, ihre Segmente und alle aufgezeichneten Versuche.</string>
+    <string name="gamedetail_speedrun_confirm_delete_segment_message">Dies entfernt das Segment aus der Kategorie.</string>
+    <string name="gamedetail_speedrun_prompt_new_category">Neue Kategorie</string>
+    <string name="gamedetail_speedrun_prompt_rename_category">Kategorie umbenennen</string>
+    <string name="gamedetail_speedrun_prompt_new_segment">Neues Segment</string>
+    <string name="gamedetail_speedrun_prompt_rename_segment">Segment umbenennen</string>
+    <string name="gamedetail_speedrun_import_none_found">Keine Kategorien online gefunden für \"%1$s\"</string>
+    <string name="gamedetail_speedrun_import_fetch_failed">Segmente für %1$s konnten nicht abgerufen werden</string>
+
+    <!-- ============================ Brief on-screen messages =========================== -->
+
+    <string name="gamedetail_notice_launch_failed">Start fehlgeschlagen: %1$s</string>
+    <string name="gamedetail_notice_background_updated">Hintergrund aktualisiert</string>
+    <string name="gamedetail_notice_background_failed">Hintergrund konnte nicht festgelegt werden</string>
+    <string name="gamedetail_notice_rating_saved">Bewertung gespeichert</string>
+    <string name="gamedetail_notice_difficulty_saved">Schwierigkeit gespeichert</string>
+    <string name="gamedetail_notice_status_saved">Status gespeichert</string>
+    <string name="gamedetail_notice_no_emulator_for_saves">Emulator für Spielstände konnte nicht ermittelt werden</string>
+    <string name="gamedetail_notice_no_emulator_for_selection">Emulator konnte nicht ermittelt werden</string>
+    <string name="gamedetail_notice_no_emulator_for_restore">Emulator für Wiederherstellung konnte nicht ermittelt werden</string>
+    <string name="gamedetail_notice_no_emulator_for_sync">Emulator konnte nicht ermittelt werden</string>
+    <string name="gamedetail_notice_saves_up_to_date">Spielstände sind aktuell</string>
+    <string name="gamedetail_notice_save_uploaded">Lokaler Spielstand hochgeladen</string>
+    <string name="gamedetail_notice_save_downloaded">Server-Spielstand heruntergeladen</string>
+    <string name="gamedetail_notice_sync_skipped">Synchronisierung übersprungen</string>
+    <string name="gamedetail_notice_variant_local_only">Nur lokale Variante kann nicht heruntergeladen werden</string>
+    <string name="gamedetail_notice_downloading_variant">%1$s wird heruntergeladen</string>
+    <plurals name="gamedetail_notice_files_queued">
+        <item quantity="one">%1$d in Warteschlange</item>
+        <item quantity="other">%1$d in Warteschlange</item>
+    </plurals>
+    <plurals name="gamedetail_notice_files_removed">
+        <item quantity="one">%1$d entfernt</item>
+        <item quantity="other">%1$d entfernt</item>
+    </plurals>
+    <plurals name="gamedetail_notice_downloads_queued">
+        <item quantity="one">%1$d Download in Warteschlange</item>
+        <item quantity="other">%1$d Downloads in Warteschlange</item>
+    </plurals>
+    <string name="gamedetail_notice_already_downloaded">Spiel bereits heruntergeladen</string>
+    <plurals name="gamedetail_notice_discs_queued">
+        <item quantity="one">%1$d Disc wird heruntergeladen</item>
+        <item quantity="other">%1$d Discs werden heruntergeladen</item>
+    </plurals>
+    <plurals name="gamedetail_notice_missing_discs_queued">
+        <item quantity="one">%1$d fehlende Disc wird heruntergeladen</item>
+        <item quantity="other">%1$d fehlende Discs werden heruntergeladen</item>
+    </plurals>
+    <string name="gamedetail_notice_extraction_succeeded">Extraktion erfolgreich</string>
+    <string name="gamedetail_notice_redownload_started">Erneuter Download gestartet</string>
+    <string name="gamedetail_notice_apk_install_failed">APK konnte nicht installiert werden</string>
+    <string name="gamedetail_notice_download_deleted">Download gelöscht</string>
+    <string name="gamedetail_notice_removed_from_library">Aus Bibliothek entfernt</string>
+    <string name="gamedetail_notice_remove_failed">Spiel konnte nicht entfernt werden</string>
+    <string name="gamedetail_notice_game_data_refreshed">Spieldaten aktualisiert</string>
+    <string name="gamedetail_notice_android_data_refreshed">Spieldaten aktualisiert</string>
+    <string name="gamedetail_notice_app_data_failed">App-Daten konnten nicht abgerufen werden</string>
+    <string name="gamedetail_notice_refresh_failed">Aktualisierung fehlgeschlagen: %1$s</string>
+
+    <string name="gamedetail_header_platform_unknown">Unbekannt</string>
+</resources>

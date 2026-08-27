@@ -4,11 +4,14 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import com.nendo.argosy.R
 import com.nendo.argosy.core.storage.StorageVolume
 import com.nendo.argosy.core.storage.StorageVolumeType
 import com.nendo.argosy.ui.util.clickableNoFocus
+import com.nendo.argosy.util.formatBytes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
@@ -59,6 +62,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalConfiguration
@@ -148,9 +152,12 @@ fun FileBrowserScreen(
         Column(modifier = Modifier.fillMaxSize()) {
             FileBrowserHeader(
                 title = title ?: when (mode) {
-                    FileBrowserMode.FOLDER_SELECTION -> "Select Folder"
-                    FileBrowserMode.FILE_SELECTION -> "Select File"
-                    FileBrowserMode.FILE_OR_FOLDER_SELECTION -> "Select File or Folder"
+                    FileBrowserMode.FOLDER_SELECTION ->
+                        stringResource(R.string.ui_file_browser_title_folder)
+                    FileBrowserMode.FILE_SELECTION ->
+                        stringResource(R.string.ui_file_browser_title_file)
+                    FileBrowserMode.FILE_OR_FOLDER_SELECTION ->
+                        stringResource(R.string.ui_file_browser_title_file_or_folder)
                 }
             )
 
@@ -197,7 +204,7 @@ fun FileBrowserScreen(
                             focusedIndex = state.fileFocusIndex,
                             isFocused = state.focusedPane == FocusedPane.FILES,
                             isLoading = state.isLoading,
-                            error = state.error,
+                            errorRes = state.errorRes,
                             onEntryClick = { entry ->
                                 if (entry.isDirectory) {
                                     viewModel.navigate(entry.path)
@@ -225,7 +232,7 @@ fun FileBrowserScreen(
         if (state.showCreateFolderDialog) {
             CreateFolderDialog(
                 folderName = state.newFolderName,
-                error = state.createFolderError,
+                errorRes = state.createFolderErrorRes,
                 onFolderNameChange = { viewModel.setNewFolderName(it) },
                 onConfirm = { viewModel.confirmCreateFolder() },
                 onDismiss = { viewModel.dismissCreateFolderDialog() }
@@ -270,13 +277,13 @@ private fun PermissionRequiredPane(
         )
         Spacer(modifier = Modifier.height(Dimens.spacingMd))
         Text(
-            text = "Storage access required",
+            text = stringResource(R.string.ui_file_browser_permission_title),
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onSurface
         )
         Spacer(modifier = Modifier.height(Dimens.spacingSm))
         Text(
-            text = "Argosy needs All files access to browse folders, download games, and sync saves. Grant it, then return here.",
+            text = stringResource(R.string.ui_file_browser_permission_message),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -291,7 +298,7 @@ private fun PermissionRequiredPane(
                 .padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingMd)
         ) {
             Text(
-                text = "Grant Access",
+                text = stringResource(R.string.ui_file_browser_permission_button),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onPrimary
             )
@@ -306,8 +313,8 @@ private fun FileBrowserPermissionFooter(
 ) {
     FooterHints(
         hints = listOf(
-            InputButton.A to "Grant Access",
-            InputButton.B to "Back"
+            InputButton.A to stringResource(R.string.ui_file_browser_permission_footer_grant),
+            InputButton.B to stringResource(R.string.ui_file_browser_permission_footer_back)
         ),
         onHintClick = { button ->
             when (button) {
@@ -432,7 +439,7 @@ private fun VolumeItem(
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = formatFileSize(volume.availableBytes) + " free",
+                text = formatBytes(volume.availableBytes) + " free",
                 style = MaterialTheme.typography.bodySmall,
                 color = contentColor.copy(alpha = 0.7f)
             )
@@ -479,7 +486,7 @@ private fun FilePane(
     focusedIndex: Int,
     isFocused: Boolean,
     isLoading: Boolean,
-    error: String?,
+    @StringRes errorRes: Int?,
     onEntryClick: (FileEntry) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -537,7 +544,7 @@ private fun FilePane(
                     )
                 }
             }
-            error != null -> {
+            errorRes != null -> {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -553,7 +560,7 @@ private fun FilePane(
                     )
                     Spacer(modifier = Modifier.height(Dimens.spacingSm))
                     Text(
-                        text = error,
+                        text = stringResource(errorRes),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.error
                     )
@@ -565,7 +572,7 @@ private fun FilePane(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "Empty folder",
+                        text = stringResource(R.string.ui_file_browser_empty_folder),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -650,7 +657,7 @@ private fun FileItem(
         )
         if (!entry.isDirectory && !entry.isParentLink) {
             Text(
-                text = formatFileSize(entry.size),
+                text = formatBytes(entry.size),
                 style = MaterialTheme.typography.bodySmall,
                 color = contentColor.copy(alpha = 0.6f)
             )
@@ -668,20 +675,26 @@ private fun FileBrowserFooter(
     onCancel: () -> Unit
 ) {
     val selectHint = when (mode) {
-        FileBrowserMode.FILE_SELECTION -> "Select File"
-        FileBrowserMode.FILE_OR_FOLDER_SELECTION -> "Select File"
-        FileBrowserMode.FOLDER_SELECTION -> "Open"
+        FileBrowserMode.FILE_SELECTION ->
+            stringResource(R.string.ui_file_browser_footer_select_file)
+        FileBrowserMode.FILE_OR_FOLDER_SELECTION ->
+            stringResource(R.string.ui_file_browser_footer_select_file_or_folder)
+        FileBrowserMode.FOLDER_SELECTION ->
+            stringResource(R.string.ui_file_browser_footer_open_folder)
     }
     val showFolderOptions = mode == FileBrowserMode.FOLDER_SELECTION ||
                             mode == FileBrowserMode.FILE_OR_FOLDER_SELECTION
+    val backHint = stringResource(R.string.ui_file_browser_footer_back)
+    val newFolderHint = stringResource(R.string.ui_file_browser_footer_new_folder)
+    val useFolderHint = stringResource(R.string.ui_file_browser_footer_use_folder)
     val hints = buildList {
         add(InputButton.A to selectHint)
-        add(InputButton.B to "Back")
+        add(InputButton.B to backHint)
         if (showFolderOptions && currentPath.isNotEmpty()) {
             if (mode == FileBrowserMode.FOLDER_SELECTION) {
-                add(InputButton.Y to "New Folder")
+                add(InputButton.Y to newFolderHint)
             }
-            add(InputButton.X to "Use Folder")
+            add(InputButton.X to useFolderHint)
         }
     }
 
@@ -706,7 +719,7 @@ private const val FOLDER_ROW_BUTTONS = 1
 @Composable
 private fun CreateFolderDialog(
     folderName: String,
-    error: String?,
+    @StringRes errorRes: Int?,
     onFolderNameChange: (String) -> Unit,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
@@ -777,13 +790,16 @@ private fun CreateFolderDialog(
     ModalInputEffect(active = true, handler = inputHandler)
 
     val fieldShape = RoundedCornerShape(Dimens.radiusMd)
-    Modal(title = "New Folder", onDismiss = onDismiss) {
+    Modal(
+        title = stringResource(R.string.ui_file_browser_new_folder_title),
+        onDismiss = onDismiss
+    ) {
         OutlinedTextField(
             value = folderName,
             onValueChange = onFolderNameChange,
-            label = { Text("Folder name") },
+            label = { Text(stringResource(R.string.ui_file_browser_new_folder_field_label)) },
             singleLine = true,
-            isError = error != null,
+            isError = errorRes != null,
             shape = fieldShape,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { if (canCreate) onConfirm() }),
@@ -796,10 +812,10 @@ private fun CreateFolderDialog(
                     } else Modifier
                 )
         )
-        if (error != null) {
+        if (errorRes != null) {
             Spacer(modifier = Modifier.height(Dimens.spacingSm))
             Text(
-                text = error,
+                text = stringResource(errorRes),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.error
             )
@@ -810,14 +826,14 @@ private fun CreateFolderDialog(
             horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm, Alignment.End)
         ) {
             ModalActionButton(
-                label = "Cancel",
+                label = stringResource(R.string.ui_file_browser_new_folder_cancel),
                 tint = theme.focusAccent,
                 restLabelColor = theme.textPrimary,
                 focused = focusRow == FOLDER_ROW_BUTTONS && buttonIndex == 0,
                 onClick = onDismiss
             )
             ModalActionButton(
-                label = "Create",
+                label = stringResource(R.string.ui_file_browser_new_folder_confirm),
                 tint = theme.focusAccent,
                 restLabelColor = theme.textPrimary,
                 focused = focusRow == FOLDER_ROW_BUTTONS && buttonIndex == 1,
@@ -828,10 +844,3 @@ private fun CreateFolderDialog(
     }
 }
 
-private fun formatFileSize(bytes: Long): String {
-    if (bytes <= 0) return "0 B"
-    val units = arrayOf("B", "KB", "MB", "GB", "TB")
-    val digitGroups = (Math.log10(bytes.toDouble()) / Math.log10(1024.0)).toInt()
-    val value = bytes / Math.pow(1024.0, digitGroups.toDouble())
-    return String.format(java.util.Locale.US, "%.1f %s", value, units[digitGroups.coerceIn(0, units.lastIndex)])
-}

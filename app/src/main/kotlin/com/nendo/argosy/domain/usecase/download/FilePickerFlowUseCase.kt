@@ -317,31 +317,33 @@ class FilePickerFlowUseCase @Inject constructor(
         }
     }
 
-    /** Returns queued count; errors surface through the returned messages. */
+    /**
+     * Returns queued count; the caller renders each returned issue via its own UI mapping.
+     */
     suspend fun downloadSelection(
         gameId: Long,
         selectedFileIds: Set<Long>,
         selectedVersionIds: Set<Long>
-    ): Pair<Int, List<String>> {
+    ): Pair<Int, List<DownloadResult>> {
         val primaryRommId = gameDao.getById(gameId)?.rommId
         var queued = 0
-        val errors = mutableListOf<String>()
+        val issues = mutableListOf<DownloadResult>()
         if (primaryRommId == null || primaryRommId in selectedVersionIds || selectedVersionIds.isEmpty()) {
             val explicit = selectedFileIds.toList().takeIf { it.isNotEmpty() }
             when (val r = downloadGameUseCase(gameId, selectedFileIds = explicit)) {
                 is DownloadResult.Queued -> queued++
-                is DownloadResult.AlreadyDownloaded -> errors += "Game already downloaded"
-                is DownloadResult.Error -> errors += r.message
+                is DownloadResult.AlreadyDownloaded -> issues += r
+                is DownloadResult.Error -> issues += r
                 else -> {}
             }
         }
         selectedVersionIds.filter { it != primaryRommId }.forEach { versionId ->
             when (val r = downloadGameUseCase(gameId, versionRommId = versionId)) {
                 is DownloadResult.Queued -> queued++
-                is DownloadResult.Error -> errors += r.message
+                is DownloadResult.Error -> issues += r
                 else -> {}
             }
         }
-        return queued to errors
+        return queued to issues
     }
 }

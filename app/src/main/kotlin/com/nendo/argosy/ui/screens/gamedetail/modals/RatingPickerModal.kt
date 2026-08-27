@@ -17,6 +17,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.theme.ALauncherColors
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.components.CenteredModal
@@ -32,7 +34,11 @@ fun RatingPickerModal(
     onDismiss: () -> Unit
 ) {
     val isRating = type == RatingType.OPINION
-    val title = if (isRating) "RATE GAME" else "SET DIFFICULTY"
+    val title = if (isRating) {
+        stringResource(R.string.gamedetail_rating_picker_title_rating)
+    } else {
+        stringResource(R.string.gamedetail_rating_picker_title_difficulty)
+    }
     val filledIcon = if (isRating) Icons.Default.Star else Icons.Default.Whatshot
     val outlineIcon = if (isRating) Icons.Default.StarOutline else Icons.Outlined.Whatshot
     val filledColor = if (isRating) ALauncherColors.StarGold else ALauncherColors.DifficultyRed
@@ -43,9 +49,10 @@ fun RatingPickerModal(
         baseWidth = 420.dp,
         onDismiss = onDismiss,
         footerHints = listOf(
-            InputButton.DPAD_HORIZONTAL to "Adjust",
-            InputButton.A to "Confirm",
-            InputButton.B to "Cancel"
+            InputButton.DPAD_HORIZONTAL to
+                stringResource(R.string.gamedetail_rating_picker_footer_adjust),
+            InputButton.A to stringResource(R.string.gamedetail_rating_picker_footer_confirm),
+            InputButton.B to stringResource(R.string.gamedetail_rating_picker_footer_cancel)
         )
     ) {
         Row(
@@ -66,7 +73,11 @@ fun RatingPickerModal(
         }
 
         Text(
-            text = if (value == 0) "Not set" else "$value/10",
+            text = if (value == 0) {
+                stringResource(R.string.gamedetail_rating_picker_unset)
+            } else {
+                stringResource(R.string.gamedetail_rating_picker_value, value)
+            },
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.align(Alignment.CenterHorizontally)

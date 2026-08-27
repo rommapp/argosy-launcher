@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.filebrowser
 
+import androidx.annotation.StringRes
 import com.nendo.argosy.core.media.AudioFileTypes
 import com.nendo.argosy.core.storage.StorageVolume
 
@@ -50,10 +51,10 @@ data class FileBrowserState(
     val mode: FileBrowserMode = FileBrowserMode.FOLDER_SELECTION,
     val fileFilter: FileFilter? = null,
     val isLoading: Boolean = false,
-    val error: String? = null,
+    @StringRes val errorRes: Int? = null,
     val hasPermission: Boolean = true,
     val showCreateFolderDialog: Boolean = false,
     val newFolderName: String = "",
-    val createFolderError: String? = null
+    @StringRes val createFolderErrorRes: Int? = null
 )
 

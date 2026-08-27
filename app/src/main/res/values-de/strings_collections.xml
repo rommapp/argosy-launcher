@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="collections_browse_genres">Genres</string>
+    <string name="collections_browse_game_modes">Spielmodi</string>
+    <string name="collections_browse_series">Reihen</string>
+
+    <string name="collections_section_mine">MEINE SAMMLUNGEN</string>
+    <string name="collections_section_browse_by">DURCHSUCHEN NACH</string>
+
+    <string name="collections_pinned_description">Angeheftet</string>
+
+    <string name="collections_new">Neue Sammlung</string>
+
+    <plurals name="collections_game_count">
+        <item quantity="one">%d Spiel</item>
+        <item quantity="other">%d Spiele</item>
+    </plurals>
+    <plurals name="collections_category_count">
+        <item quantity="one">%d Kategorie</item>
+        <item quantity="other">%d Kategorien</item>
+    </plurals>
+
+    <string name="collections_options_download_all">Alle herunterladen (%1$d)</string>
+    <string name="collections_options_rename">Sammlung umbenennen</string>
+    <string name="collections_options_delete">Sammlung löschen</string>
+    <string name="collections_options_remove_game">\"%1$s\" entfernen</string>
+    <string name="collections_options_remove_game_fallback">Spiel</string>
+
+    <string name="collections_delete_dialog_title">Sammlung löschen</string>
+    <string name="collections_delete_dialog_message">Möchten Sie \"%1$s\" wirklich löschen? Dies entfernt die Sammlung, nicht die enthaltenen Spiele.</string>
+    <string name="collections_delete_dialog_confirm">Löschen</string>
+
+    <string name="collections_create_dialog_title">Sammlung erstellen</string>
+    <string name="collections_create_dialog_name_label">Sammlungsname</string>
+    <string name="collections_create_dialog_confirm">Erstellen</string>
+
+    <string name="collections_edit_dialog_title">Sammlung bearbeiten</string>
+    <string name="collections_edit_dialog_name_label">Sammlungsname</string>
+    <string name="collections_edit_dialog_confirm">Speichern</string>
+
+    <string name="collections_removegame_dialog_title">Spiel entfernen</string>
+    <string name="collections_removegame_dialog_message">\"%1$s\" aus \"%2$s\" entfernen?</string>
+    <string name="collections_removegame_dialog_confirm">Entfernen</string>
+
+    <string name="collections_namedialog_cancel">Abbrechen</string>
+
+    <string name="collections_screen_hint_navigate">Navigieren</string>
+    <string name="collections_screen_hint_select">Auswählen</string>
+    <string name="collections_screen_hint_back">Zurück</string>
+    <string name="collections_screen_hint_refreshing">Aktualisiert…</string>
+    <string name="collections_screen_hint_refresh">Aktualisieren</string>
+    <string name="collections_screen_hint_unpin">Lösen</string>
+    <string name="collections_screen_hint_pin">Anheften</string>
+    <string name="collections_screen_hint_options">Optionen</string>
+
+    <string name="collections_detail_loading">Lädt…</string>
+    <string name="collections_detail_hint_search_open">Öffnen</string>
+    <string name="collections_detail_hint_search_close">Suche schließen</string>
+    <string name="collections_detail_hint_navigate">Navigieren</string>
+    <string name="collections_detail_hint_open">Öffnen</string>
+    <string name="collections_detail_hint_back">Zurück</string>
+    <string name="collections_detail_hint_search">Suchen</string>
+    <string name="collections_detail_hint_unpin">Lösen</string>
+    <string name="collections_detail_hint_pin">Anheften</string>
+    <string name="collections_detail_hint_jump">Springen</string>
+    <string name="collections_detail_hint_options">Optionen</string>
+    <string name="collections_detail_hint_refreshing">Aktualisiert…</string>
+    <string name="collections_detail_hint_refresh">Aktualisieren</string>
+    <string name="collections_detail_back_description">Zurück</string>
+    <string name="collections_detail_search_placeholder">%1$s durchsuchen</string>
+    <string name="collections_detail_close_search_description">Suche schließen</string>
+    <string name="collections_detail_search_description">Suchen</string>
+    <string name="collections_detail_empty_title">Keine Spiele in dieser Sammlung</string>
+    <string name="collections_detail_empty_subtitle">Spiele aus der Bibliothek oder den Spieldetails hinzufügen</string>
+    <plurals name="collections_detail_header_game_count">
+        <item quantity="one">%d Spiel</item>
+        <item quantity="other">%d Spiele</item>
+    </plurals>
+
+    <string name="collections_browser_loading">Lädt…</string>
+    <string name="collections_browser_hint_search_select">Auswählen</string>
+    <string name="collections_browser_hint_search_close">Suche schließen</string>
+    <string name="collections_browser_hint_navigate">Navigieren</string>
+    <string name="collections_browser_hint_select">Auswählen</string>
+    <string name="collections_browser_hint_back">Zurück</string>
+    <string name="collections_browser_hint_search">Suchen</string>
+    <string name="collections_browser_hint_unpin">Lösen</string>
+    <string name="collections_browser_hint_pin">Anheften</string>
+    <string name="collections_browser_hint_jump">Springen</string>
+    <string name="collections_browser_hint_refreshing">Aktualisiert…</string>
+    <string name="collections_browser_hint_refresh">Aktualisieren</string>
+    <string name="collections_browser_back_description">Zurück</string>
+    <string name="collections_browser_search_placeholder">%1$s durchsuchen</string>
+    <string name="collections_browser_close_search_description">Suche schließen</string>
+    <string name="collections_browser_search_description">Suchen</string>
+    <string name="collections_browser_category_pinned_description">Angeheftet</string>
+    <string name="collections_browser_title_fallback">Durchsuchen</string>
+    <string name="collections_browser_empty">Keine %1$s gefunden</string>
+    <plurals name="collections_browser_header_category_count">
+        <item quantity="one">%d Kategorie</item>
+        <item quantity="other">%d Kategorien</item>
+    </plurals>
+    <plurals name="collections_browser_row_game_count">
+        <item quantity="one">%d Spiel</item>
+        <item quantity="other">%d Spiele</item>
+    </plurals>
+
+    <string name="collections_category_loading">Lädt…</string>
+    <string name="collections_category_hint_search_open">Öffnen</string>
+    <string name="collections_category_hint_search_close">Suche schließen</string>
+    <string name="collections_category_hint_navigate">Navigieren</string>
+    <string name="collections_category_hint_open">Öffnen</string>
+    <string name="collections_category_hint_back">Zurück</string>
+    <string name="collections_category_hint_search">Suchen</string>
+    <string name="collections_category_hint_unpin">Lösen</string>
+    <string name="collections_category_hint_pin">Anheften</string>
+    <string name="collections_category_hint_jump">Springen</string>
+    <string name="collections_category_hint_refreshing">Aktualisiert…</string>
+    <string name="collections_category_hint_refresh">Aktualisieren</string>
+    <string name="collections_category_hint_download_all">Alle herunterladen (%1$d)</string>
+    <string name="collections_category_downloadall_title">Downloads werden eingereiht</string>
+    <plurals name="collections_category_downloadall_progress">
+        <item quantity="one">%1$d von %2$d Spiel</item>
+        <item quantity="other">%1$d von %2$d Spielen</item>
+    </plurals>
+    <string name="collections_category_back_description">Zurück</string>
+    <string name="collections_category_search_placeholder">%1$s durchsuchen</string>
+    <string name="collections_category_close_search_description">Suche schließen</string>
+    <string name="collections_category_search_description">Suchen</string>
+    <string name="collections_category_empty_title">Keine Spiele in dieser Kategorie</string>
+    <plurals name="collections_category_header_game_count">
+        <item quantity="one">%d Spiel</item>
+        <item quantity="other">%d Spiele</item>
+    </plurals>
+    <string name="collections_detail_platform_unknown">Unbekannt</string>
+    <string name="collections_category_platform_unknown">Unbekannt</string>
+
+    <string name="collections_widecard_rating_value">%1$d/10</string>
+    <string name="collections_widecard_difficulty_value">%1$d/10</string>
+
+    <string name="downloads_empty_title">Keine Downloads</string>
+    <string name="downloads_empty_subtitle">Downloads werden hier angezeigt</string>
+    <string name="downloads_section_header_moving">Wird in ROM-Speicher verschoben</string>
+    <string name="downloads_section_header_extracting">Wird entpackt</string>
+    <string name="downloads_section_header_downloading">Wird heruntergeladen</string>
+    <string name="downloads_section_header_active">Aktiv</string>
+    <string name="downloads_section_header_queued">Wartend</string>
+    <string name="downloads_section_header_finished">Abgeschlossen</string>
+    <string name="downloads_hint_navigate">Navigieren</string>
+    <string name="downloads_hint_remove">Entfernen</string>
+    <string name="downloads_hint_cancel">Abbrechen</string>
+    <string name="downloads_hint_clear_finished">Abgeschlossene entfernen</string>
+    <string name="downloads_hint_back">Zurück</string>
+    <string name="downloads_failed_dialog_title">Download fehlgeschlagen</string>
+    <string name="downloads_failed_dialog_message">\"%1$s\" konnte nicht heruntergeladen werden. Was möchten Sie tun?</string>
+    <string name="downloads_failed_dialog_confirm">Wiederholen</string>
+    <string name="downloads_failed_dialog_clear">Entfernen</string>
+    <string name="downloads_file_state_done">Fertig</string>
+    <string name="downloads_file_state_extracting">Wird entpackt</string>
+    <string name="downloads_file_state_moving">Wird verschoben</string>
+    <string name="downloads_file_state_failed">Fehlgeschlagen</string>
+    <string name="downloads_file_state_queued">Wartend</string>
+    <string name="downloads_file_state_percent">%1$d%%</string>
+    <string name="downloads_item_status_moving">Wird in ROM-Speicher verschoben…</string>
+    <string name="downloads_item_status_extracting_fallback">Wird entpackt…</string>
+    <string name="downloads_item_status_insufficient_storage">Benötigt %1$s, verfügbar %2$s</string>
+    <string name="downloads_item_status_failed_fallback">Download fehlgeschlagen</string>
+    <string name="downloads_item_status_queued_fallback">Wartend</string>
+    <string name="downloads_completed_status_failed_fallback">Download fehlgeschlagen</string>
+    <string name="downloads_completed_status_installed">Installiert</string>
+    <string name="downloads_speed_suffix">%1$s/s</string>
+
+    <string name="downloads_action_pause">Pause</string>
+    <string name="downloads_action_resume">Fortsetzen</string>
+    <string name="downloads_action_toggle">Umschalten</string>
+    <string name="downloads_action_options">Optionen</string>
+    <string name="downloads_action_view">Ansehen</string>
+
+    <string name="downloads_steam_status_preparing">Wird vorbereitet…</string>
+    <string name="downloads_steam_status_connecting">Verbindung zu Steam wird hergestellt…</string>
+    <string name="downloads_steam_status_fetching_manifest">Depot-Manifest wird abgerufen…</string>
+    <string name="downloads_steam_status_validating_fallback">Wird überprüft…</string>
+    <string name="downloads_steam_status_moving">Dateien werden verschoben…</string>
+    <string name="downloads_steam_status_cleaning">Wird bereinigt…</string>
+    <string name="downloads_steam_status_depot_progress">" (%1$d/%2$d Depots)"</string>
+
+    <plurals name="downloads_group_progress">
+        <item quantity="one">%1$d von %2$d Datei</item>
+        <item quantity="other">%1$d von %2$d Dateien</item>
+    </plurals>
+
+    <string name="touchlayout_editor_title">Touch-Steuerung anpassen</string>
+    <string name="touchlayout_editor_orientation_portrait">Hochformat</string>
+    <string name="touchlayout_editor_orientation_landscape">Querformat</string>
+    <string name="touchlayout_editor_close">Schließen</string>
+</resources>

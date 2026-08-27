@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.res.stringResource
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -112,7 +113,9 @@ fun LibretroSettingsSection(
                         Spacer(modifier = Modifier.height(Dimens.spacingMd))
                     }
                     Text(
-                        text = LibretroSettingDef.SECTIONS[item.section] ?: item.section,
+                        text = LibretroSettingDef.SECTIONS[item.section]
+                            ?.let { stringResource(it) }
+                            ?: item.section,
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(

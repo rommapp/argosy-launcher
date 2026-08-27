@@ -9,6 +9,7 @@ import android.content.IntentFilter
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import com.nendo.argosy.R
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PlaySessionDao
 import com.nendo.argosy.data.local.dao.SaveCacheDao
@@ -27,6 +28,7 @@ import com.nendo.argosy.domain.usecase.state.StateSyncResult
 import com.nendo.argosy.domain.usecase.state.SyncStatesOnSessionEndUseCase
 import com.nendo.argosy.core.notification.NotificationDuration
 import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.NotificationType
 import com.nendo.argosy.DualScreenManagerHolder
 import com.nendo.argosy.core.event.GameUpdateBus
@@ -287,8 +289,8 @@ class PlaySessionTracker @Inject constructor(
                     is SyncSaveOnSessionEndUseCase.Result.Uploaded -> {
                         Logger.info(TAG, "[SaveSync] ORPHAN gameId=${orphaned.gameId} | Synced to RomM")
                         notificationManager.show(
-                            title = "Save Uploaded",
-                            subtitle = game.title,
+                            title = NotificationText.Res(R.string.sync_session_save_uploaded_orphan),
+                            subtitle = NotificationText.Raw(game.title),
                             type = NotificationType.SUCCESS,
                             imagePath = game.coverPath,
                             duration = NotificationDuration.MEDIUM,
@@ -896,8 +898,8 @@ class PlaySessionTracker @Inject constructor(
             is SyncSaveOnSessionEndUseCase.Result.Uploaded -> {
                 Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Sync result: UPLOADED")
                 notificationManager.show(
-                    title = "Save Uploaded",
-                    subtitle = game?.title,
+                    title = NotificationText.Res(R.string.sync_session_save_uploaded),
+                    subtitle = game?.title?.let { NotificationText.Raw(it) },
                     type = NotificationType.SUCCESS,
                     imagePath = game?.coverPath,
                     duration = NotificationDuration.MEDIUM,
@@ -908,8 +910,8 @@ class PlaySessionTracker @Inject constructor(
             is SyncSaveOnSessionEndUseCase.Result.NoChange -> {
                 Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Sync result: NO_CHANGE")
                 notificationManager.show(
-                    title = "No save changes",
-                    subtitle = game?.title,
+                    title = NotificationText.Res(R.string.sync_session_save_unchanged),
+                    subtitle = game?.title?.let { NotificationText.Raw(it) },
                     type = NotificationType.INFO,
                     imagePath = game?.coverPath,
                     duration = NotificationDuration.SHORT,
@@ -929,8 +931,15 @@ class PlaySessionTracker @Inject constructor(
             is SyncSaveOnSessionEndUseCase.Result.Error -> {
                 Logger.error(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Sync result: ERROR | ${result.message}")
                 notificationManager.show(
-                    title = "Upload Failed",
-                    subtitle = "${game?.title ?: "Save"}: ${result.message}",
+                    title = NotificationText.Res(R.string.sync_session_save_upload_failed),
+                    subtitle = NotificationText.Res(
+                        R.string.sync_session_save_upload_failed_subtitle,
+                        listOf(
+                            game?.title
+                                ?: application.getString(R.string.sync_session_save_upload_failed_name_fallback),
+                            result.message
+                        )
+                    ),
                     type = NotificationType.ERROR,
                     imagePath = game?.coverPath,
                     duration = NotificationDuration.MEDIUM,
@@ -947,7 +956,7 @@ class PlaySessionTracker @Inject constructor(
             is StateSyncResult.Cached -> Logger.debug(TAG, "Cached ${result.count} states for game $gameId")
             is StateSyncResult.NoStatesFound -> Logger.debug(TAG, "No states found for game $gameId")
             is StateSyncResult.NotConfigured -> Logger.debug(TAG, "State caching not configured for game $gameId")
-            is StateSyncResult.Error -> Logger.error(TAG, "State sync error: ${result.message}")
+            is StateSyncResult.Error -> Logger.error(TAG, "State sync error: ${result.reason}")
         }
     }
 

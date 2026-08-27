@@ -18,11 +18,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.domain.model.CompletionStatus
 import com.nendo.argosy.ui.common.color
 import com.nendo.argosy.ui.common.icon
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.common.labelRes
 
 @Composable
 fun MetadataChip(label: String, value: String) {
@@ -76,7 +79,11 @@ fun RatingChip(
                 modifier = Modifier.size(Dimens.iconXs)
             )
             Text(
-                text = if (isSet) "$value/10" else "--",
+                text = if (isSet) {
+                    stringResource(R.string.gamedetail_chip_rating_value, value)
+                } else {
+                    stringResource(R.string.gamedetail_chip_rating_unset)
+                },
                 style = MaterialTheme.typography.bodyLarge,
                 color = if (isSet) {
                     MaterialTheme.colorScheme.onSurface
@@ -119,13 +126,16 @@ fun CommunityRatingChip(rating: Float) {
                 modifier = Modifier.size(Dimens.iconXs)
             )
             Text(
-                text = "${rating.toInt()}%",
+                text = stringResource(
+                    R.string.gamedetail_chip_community_rating_value,
+                    rating.toInt()
+                ),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface
             )
         }
         Text(
-            text = "Rating",
+            text = stringResource(R.string.gamedetail_chip_community_rating_label),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -135,16 +145,20 @@ fun CommunityRatingChip(rating: Float) {
 @Composable
 fun PlayTimeChip(minutes: Int) {
     val displayTime = when {
-        minutes < 60 -> "${minutes}m"
+        minutes < 60 -> stringResource(R.string.gamedetail_chip_play_time_minutes, minutes)
         minutes < 600 -> {
             val hours = minutes / 60
             val mins = minutes % 60
-            if (mins > 0) "${hours}h ${mins}m" else "${hours}h"
+            if (mins > 0) {
+                stringResource(R.string.gamedetail_chip_play_time_hours_minutes, hours, mins)
+            } else {
+                stringResource(R.string.gamedetail_chip_play_time_hours, hours)
+            }
         }
-        else -> {
-            val hours = minutes / 60
-            "${hours.formatWithCommas()}h"
-        }
+        else -> stringResource(
+            R.string.gamedetail_chip_play_time_hours_grouped,
+            (minutes / 60).formatWithCommas()
+        )
     }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -172,7 +186,7 @@ fun PlayTimeChip(minutes: Int) {
             )
         }
         Text(
-            text = "Play Time",
+            text = stringResource(R.string.gamedetail_chip_play_time_label),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -203,7 +217,7 @@ fun StatusChip(statusValue: String?) {
                 modifier = Modifier.size(Dimens.iconXs)
             )
             Text(
-                text = status.label,
+                text = stringResource(status.labelRes),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface
             )

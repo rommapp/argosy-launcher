@@ -32,7 +32,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import com.nendo.argosy.R
 import com.nendo.argosy.core.input.controllerIdOf
 import com.nendo.argosy.domain.model.GripAutoController
 import com.nendo.argosy.ui.components.InputButton
@@ -68,6 +70,7 @@ fun GripControllerModal(
     val currentOnAdd = rememberUpdatedState(onAdd)
     val currentOnRemove = rememberUpdatedState(onRemove)
     val currentOnDismiss = rememberUpdatedState(onDismiss)
+    val defaultControllerName = stringResource(R.string.settings_grip_controller_default_name)
 
     fun removeFocused() {
         val entries = currentControllers.value
@@ -84,7 +87,7 @@ fun GripControllerModal(
 
     val onAddRow = focusedIndex >= controllers.size
 
-    DisposableEffect(gamepadInputHandler) {
+    DisposableEffect(gamepadInputHandler, defaultControllerName) {
         val listener: (KeyEvent) -> Boolean = { event ->
             if (event.action == KeyEvent.ACTION_DOWN) {
                 val device = event.device
@@ -95,7 +98,7 @@ fun GripControllerModal(
                     capturing && isBack -> goBack()
 
                     capturing && device != null && device.isGamepadDevice() -> {
-                        currentOnAdd.value(controllerIdOf(device), device.name ?: "Controller")
+                        currentOnAdd.value(controllerIdOf(device), device.name ?: defaultControllerName)
                         capturing = false
                         focusedIndex = entries.size
                     }
@@ -129,18 +132,24 @@ fun GripControllerModal(
     }
 
     Modal(
-        title = "Controller Grip",
+        title = stringResource(R.string.settings_grip_controller_title),
         subtitle = if (capturing) {
-            "Press any button on the controller grip"
+            stringResource(R.string.settings_grip_controller_subtitle_capturing)
         } else {
-            "The UI automatically shifts up when any of these controllers are connected"
+            stringResource(R.string.settings_grip_controller_subtitle_list)
         },
         baseWidth = Dimens.modalWidthLg,
         onDismiss = onDismiss,
         footerHints = when {
-            capturing -> listOf(InputButton.B to "Cancel")
-            onAddRow -> listOf(InputButton.A to "Add", InputButton.B to "Back")
-            else -> listOf(InputButton.Y to "Remove", InputButton.B to "Back")
+            capturing -> listOf(InputButton.B to stringResource(R.string.settings_grip_controller_hint_cancel))
+            onAddRow -> listOf(
+                InputButton.A to stringResource(R.string.settings_grip_controller_hint_add),
+                InputButton.B to stringResource(R.string.settings_grip_controller_hint_back)
+            )
+            else -> listOf(
+                InputButton.Y to stringResource(R.string.settings_grip_controller_hint_remove),
+                InputButton.B to stringResource(R.string.settings_grip_controller_hint_back)
+            )
         },
         inlineFooterHints = true,
         onFooterHintClick = { button ->
@@ -194,12 +203,12 @@ private fun ListeningRow() {
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) {
         Text(
-            text = "Listening…",
+            text = stringResource(R.string.settings_grip_controller_listening_title),
             style = MaterialTheme.typography.titleMedium,
             color = theme.focusAccent
         )
         Text(
-            text = "Press a button on the controller you want",
+            text = stringResource(R.string.settings_grip_controller_listening_subtitle),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -214,7 +223,7 @@ private fun GripControllerRow(name: String, isFocused: Boolean, onClick: () -> U
 
 @Composable
 private fun AddControllerRow(isFocused: Boolean, onClick: () -> Unit) {
-    ModalListRow(icon = false, label = "Add New", isFocused = isFocused, onClick = onClick)
+    ModalListRow(icon = false, label = stringResource(R.string.settings_grip_controller_add_new_label), isFocused = isFocused, onClick = onClick)
 }
 
 @Composable

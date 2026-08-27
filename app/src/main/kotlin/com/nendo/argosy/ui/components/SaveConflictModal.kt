@@ -22,8 +22,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import android.content.Context
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.primitives.ActionButton
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
@@ -49,9 +53,10 @@ fun SaveConflictModal(
     onOverwrite: () -> Unit
 ) {
     val localIsNewer = info.localTimestamp.isAfter(info.serverTimestamp)
+    val context = LocalContext.current
 
     Modal(
-        title = "Save Conflict",
+        title = stringResource(R.string.ui_save_conflict_title),
         baseWidth = 400.dp,
         onDismiss = onKeepLocal,
         titleContent = {
@@ -68,7 +73,8 @@ fun SaveConflictModal(
                 )
                 Spacer(modifier = Modifier.width(Dimens.spacingMd))
                 Text(
-                    text = info.channelName ?: "Default Save",
+                    text = info.channelName
+                        ?: stringResource(R.string.ui_save_conflict_default_slot),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.secondary
@@ -77,8 +83,7 @@ fun SaveConflictModal(
         }
     ) {
         Text(
-            text = "The server has a newer save. " +
-                "Overwriting will replace it with your local save.",
+            text = stringResource(R.string.ui_save_conflict_message),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -88,15 +93,15 @@ fun SaveConflictModal(
         Column(verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)) {
             SaveSourceRow(
                 icon = Icons.Default.PhoneAndroid,
-                label = "Local",
-                timestamp = info.localTimestamp.toRelativeString(),
+                label = stringResource(R.string.ui_save_conflict_source_local),
+                timestamp = info.localTimestamp.toRelativeString(context),
                 isNewer = localIsNewer
             )
             SaveSourceRow(
                 icon = Icons.Default.Cloud,
-                label = "Server",
+                label = stringResource(R.string.ui_save_conflict_source_server),
                 subtitle = info.serverDeviceName,
-                timestamp = info.serverTimestamp.toRelativeString(),
+                timestamp = info.serverTimestamp.toRelativeString(context),
                 isNewer = !localIsNewer
             )
         }
@@ -108,14 +113,14 @@ fun SaveConflictModal(
             horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
         ) {
             ActionButton(
-                label = "Skip Sync",
+                label = stringResource(R.string.ui_save_conflict_skip),
                 onClick = onKeepLocal,
                 focused = focusedButton == 0,
                 modifier = Modifier.weight(1f)
             )
 
             ActionButton(
-                label = "Overwrite",
+                label = stringResource(R.string.ui_save_conflict_overwrite),
                 onClick = onOverwrite,
                 focused = focusedButton == 1,
                 primary = true,
@@ -176,15 +181,32 @@ private fun SaveSourceRow(
     }
 }
 
-private fun Instant.toRelativeString(): String {
+private fun Instant.toRelativeString(context: Context): String {
     val now = Instant.now()
     val duration = Duration.between(this, now)
+    val resources = context.resources
     return when {
-        duration.isNegative -> "in the future"
-        duration.toMinutes() < 1 -> "just now"
-        duration.toHours() < 1 -> "${duration.toMinutes()} minutes ago"
-        duration.toDays() < 1 -> "${duration.toHours()} hours ago"
-        duration.toDays() < 30 -> "${duration.toDays()} days ago"
-        else -> "${duration.toDays() / 30} months ago"
+        duration.isNegative -> context.getString(R.string.ui_save_conflict_age_future)
+        duration.toMinutes() < 1 -> context.getString(R.string.ui_save_conflict_age_now)
+        duration.toHours() < 1 -> resources.getQuantityString(
+            R.plurals.ui_save_conflict_age_minutes,
+            duration.toMinutes().toInt(),
+            duration.toMinutes().toInt()
+        )
+        duration.toDays() < 1 -> resources.getQuantityString(
+            R.plurals.ui_save_conflict_age_hours,
+            duration.toHours().toInt(),
+            duration.toHours().toInt()
+        )
+        duration.toDays() < 30 -> resources.getQuantityString(
+            R.plurals.ui_save_conflict_age_days,
+            duration.toDays().toInt(),
+            duration.toDays().toInt()
+        )
+        else -> resources.getQuantityString(
+            R.plurals.ui_save_conflict_age_months,
+            (duration.toDays() / 30).toInt(),
+            (duration.toDays() / 30).toInt()
+        )
     }
 }

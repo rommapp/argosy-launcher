@@ -17,9 +17,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.nendo.argosy.R
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.NestedModal
@@ -71,16 +73,16 @@ fun GreetingEditModal(
     }
 
     NestedModal(
-        title = "Greeting",
+        title = stringResource(R.string.quaypass_greeting_modal_title),
         onDismiss = onDismiss,
         footerHints = listOf(
-            InputButton.A to "Save",
-            InputButton.B to "Cancel"
+            InputButton.A to stringResource(R.string.quaypass_greeting_modal_footer_save),
+            InputButton.B to stringResource(R.string.quaypass_greeting_modal_footer_cancel)
         ),
         content = {
             Column {
                 Text(
-                    text = "Shown to travelers you pass at Check-In.",
+                    text = stringResource(R.string.quaypass_greeting_modal_description),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -95,7 +97,7 @@ fun GreetingEditModal(
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = {
                         Text(
-                            text = "Hi there!",
+                            text = stringResource(R.string.quaypass_greeting_modal_placeholder),
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
                         )
                     },

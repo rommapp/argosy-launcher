@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -28,10 +29,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.VideogameAsset
 import coil.compose.AsyncImage
+import com.nendo.argosy.R
 import com.nendo.argosy.domain.usecase.storage.GameStorageBreakdown
 import com.nendo.argosy.domain.usecase.storage.GameStorageBucket
 import com.nendo.argosy.domain.usecase.storage.GameStorageBucketRow
@@ -49,13 +53,14 @@ import com.nendo.argosy.ui.util.clickableNoFocus
 import com.nendo.argosy.ui.util.pressScale
 import com.nendo.argosy.util.formatBytes
 
-internal fun bucketDisplayLabel(bucket: GameStorageBucket): String = when (bucket) {
-    GameStorageBucket.BASE -> "Base"
-    GameStorageBucket.UPDATES -> "Updates"
-    GameStorageBucket.DLC -> "DLC"
-    GameStorageBucket.HACKS -> "Hacks"
-    GameStorageBucket.SOUNDTRACK -> "Soundtrack"
-    GameStorageBucket.OTHER -> "Other"
+@StringRes
+internal fun bucketDisplayLabelRes(bucket: GameStorageBucket): Int = when (bucket) {
+    GameStorageBucket.BASE -> R.string.settings_storage_bucket_base
+    GameStorageBucket.UPDATES -> R.string.settings_storage_bucket_updates
+    GameStorageBucket.DLC -> R.string.settings_storage_bucket_dlc
+    GameStorageBucket.HACKS -> R.string.settings_storage_bucket_hacks
+    GameStorageBucket.SOUNDTRACK -> R.string.settings_storage_bucket_soundtrack
+    GameStorageBucket.OTHER -> R.string.settings_storage_bucket_other
 }
 
 internal sealed class StoragePlatformGamesItem(
@@ -172,12 +177,19 @@ private fun PlatformGamesEmptyState(state: StoragePlatformGamesState) {
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
     ) {
         Text(
-            text = if (state.isLoading) "Loading..." else "No downloaded games",
+            text = if (state.isLoading) {
+                stringResource(R.string.settings_storage_platform_games_loading)
+            } else {
+                stringResource(R.string.settings_storage_platform_games_empty_title)
+            },
             style = MaterialTheme.typography.titleSmall,
             color = theme.textPrimary
         )
         Text(
-            text = "Downloaded games for ${state.platformName} appear here with a per-category breakdown.",
+            text = stringResource(
+                R.string.settings_storage_platform_games_empty_message,
+                state.platformName
+            ),
             style = MaterialTheme.typography.bodySmall,
             color = theme.textDim
         )
@@ -295,7 +307,12 @@ private fun CategoryPill(
     val theme = LocalArgosyTheme.current
     val interaction = remember { MutableInteractionSource() }
     val shape = RoundedCornerShape(Dimens.radiusControl)
-    val statsLabel = "${row.fileCount} - ${formatBytes(row.totalBytes)}"
+    val statsLabel = pluralStringResource(
+        R.plurals.settings_storage_bucket_stats,
+        row.fileCount,
+        row.fileCount,
+        formatBytes(row.totalBytes)
+    )
     val onFill = if (color.luminance() > 0.5f) theme.surfaceBase else theme.textPrimary
     val fillColor = if (highlighted) color else Color.Transparent
     val borderColor = if (highlighted) color else color.copy(alpha = 0.5f)
@@ -312,7 +329,7 @@ private fun CategoryPill(
         horizontalAlignment = Alignment.Start
     ) {
         Text(
-            text = bucketDisplayLabel(row.bucket),
+            text = stringResource(bucketDisplayLabelRes(row.bucket)),
             style = MaterialTheme.typography.labelMedium,
             color = labelColor
         )

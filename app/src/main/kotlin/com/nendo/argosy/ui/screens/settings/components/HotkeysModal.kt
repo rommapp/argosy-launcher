@@ -45,7 +45,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.R
 import com.nendo.argosy.data.repository.InputPresets
@@ -84,13 +86,16 @@ private val HOLD_DELAY_CYCLE = listOf(0L, 1000L, 2000L, 3000L)
 
 private sealed interface RecordTarget {
     val label: String
+        @Composable get
 
     data class System(val action: HotkeyAction) : RecordTarget {
-        override val label get() = getActionDisplayName(action)
+        override val label: String
+            @Composable get() = getActionDisplayName(action)
     }
 
     data class Core(val def: CoreControlDef) : RecordTarget {
-        override val label get() = def.label
+        override val label: String
+            @Composable get() = def.label
     }
 }
 
@@ -154,6 +159,7 @@ fun HotkeysModal(
     var state by remember { mutableStateOf<HotkeysState>(HotkeysState.ActionList()) }
     val scope = rememberCoroutineScope()
     val gamepadInputHandler = LocalGamepadInputHandler.current
+    val context = LocalContext.current
 
     val canScopePlatform = platformSlug != null
     var scopeToPlatform by remember(canScopePlatform) { mutableStateOf(false) }
@@ -167,7 +173,7 @@ fun HotkeysModal(
     val scopeLabel = if (canScopePlatform) platformName ?: platformSlug else null
 
     val rows = remember(hotkeys, coreControls, coreId, coreName, conflictingActions, activeScopeType, activeScopeKey, platformSlug, scopeLabel) {
-        buildRows(hotkeys, coreControls, coreId, coreName, conflictingActions, activeScopeType, activeScopeKey, platformSlug, scopeLabel)
+        buildRows(context, hotkeys, coreControls, coreId, coreName, conflictingActions, activeScopeType, activeScopeKey, platformSlug, scopeLabel)
     }
     val focusableRows = remember(rows) { rows.filter { it.focusable } }
 
@@ -261,9 +267,12 @@ fun HotkeysModal(
     }
 
     val subtitle = when {
-        !canScopePlatform -> "Configure button shortcuts"
-        scopeToPlatform -> "Editing ${platformName ?: platformSlug} only"
-        else -> "Editing all systems"
+        !canScopePlatform -> stringResource(R.string.settings_hotkeys_subtitle_default)
+        scopeToPlatform -> stringResource(
+            R.string.settings_hotkeys_subtitle_platform_only,
+            platformName ?: platformSlug ?: ""
+        )
+        else -> stringResource(R.string.settings_hotkeys_subtitle_all)
     }
     when (val currentState = state) {
         is HotkeysState.ActionList -> MenuListContent(
@@ -300,6 +309,7 @@ fun HotkeysModal(
 }
 
 private fun buildRows(
+    context: android.content.Context,
     hotkeys: List<HotkeyEntity>,
     coreControls: List<CoreControlDef>,
     coreId: String?,
@@ -313,7 +323,7 @@ private fun buildRows(
     if (platformLabel != null) {
         add(MenuRow.ScopeToggle(platformLabel = platformLabel, enabled = scopeType == HotkeyScopeType.PLATFORM))
     }
-    add(MenuRow.Header("System Hotkeys", dimmed = false))
+    add(MenuRow.Header(context.getString(R.string.settings_hotkeys_section_system), dimmed = false))
     HOTKEY_ACTIONS.forEach { action ->
         val scopeEntity = hotkeys.find { it.action == action && it.scopeType == scopeType && it.scopeKey == scopeKey }
         val inherited = scopeType == HotkeyScopeType.PLATFORM && scopeEntity == null
@@ -346,10 +356,12 @@ private fun buildRows(
         val controlRows = coreControls.map { def ->
             MenuRow.Core(def, coreBinds.find { it.coreInputRetropadId == def.retropadId })
         }
-        val headerTitle = coreName?.let { "Core Hotkeys - $it" } ?: "Core Hotkeys"
+        val headerTitle = coreName?.let {
+            context.getString(R.string.settings_hotkeys_section_core_named, it)
+        } ?: context.getString(R.string.settings_hotkeys_section_core)
         add(MenuRow.Header(headerTitle, dimmed = controlRows.isEmpty()))
         if (controlRows.isEmpty()) {
-            add(MenuRow.Placeholder("-- no settings available --"))
+            add(MenuRow.Placeholder(context.getString(R.string.settings_hotkeys_core_empty)))
         } else {
             addAll(controlRows)
         }
@@ -373,16 +385,16 @@ private fun MenuListContent(
     FocusedScroll(listState = listState, focusedIndex = focusedRowPosition)
 
     Modal(
-        title = "Hotkeys",
+        title = stringResource(R.string.settings_hotkeys_title),
         subtitle = subtitle,
         baseWidth = 520.dp,
         onDismiss = onDismiss,
         inlineFooterHints = true,
         footerHints = listOf(
-            InputButton.A to "Record",
-            InputButton.B to "Back",
-            InputButton.X to "Hold delay",
-            InputButton.Y to "Clear"
+            InputButton.A to stringResource(R.string.settings_hotkeys_hint_record),
+            InputButton.B to stringResource(R.string.settings_hotkeys_hint_back),
+            InputButton.X to stringResource(R.string.settings_hotkeys_hint_hold_delay),
+            InputButton.Y to stringResource(R.string.settings_hotkeys_hint_clear)
         ),
         onFooterHintClick = { button -> if (button == InputButton.B) onDismiss() }
     ) {
@@ -461,12 +473,16 @@ private fun ScopeToggleRow(
     ) {
         Column {
             Text(
-                text = "Only for $platformLabel",
+                text = stringResource(R.string.settings_hotkeys_scope_only_for, platformLabel),
                 style = MaterialTheme.typography.bodyMedium,
                 color = contentColor
             )
             Text(
-                text = if (enabled) "Overrides the shared hotkeys" else "Using the shared hotkeys",
+                text = if (enabled) {
+                    stringResource(R.string.settings_hotkeys_scope_overrides)
+                } else {
+                    stringResource(R.string.settings_hotkeys_scope_using_shared)
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -563,7 +579,7 @@ private fun HotkeyRow(
             if (showWarning) {
                 Icon(
                     painter = painterResource(R.drawable.ic_controller),
-                    contentDescription = "Used by the console on this system",
+                    contentDescription = stringResource(R.string.settings_hotkeys_icon_console_desc),
                     modifier = Modifier.size(14.dp),
                     tint = warningColor
                 )
@@ -575,13 +591,13 @@ private fun HotkeyRow(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Timer,
-                        contentDescription = "Hold delay",
+                        contentDescription = stringResource(R.string.settings_hotkeys_icon_hold_delay_desc),
                         modifier = Modifier.size(14.dp),
                         tint = contentColor.copy(alpha = secondaryAlpha)
                     )
                     Spacer(modifier = Modifier.width(Dimens.spacingXs))
                     Text(
-                        text = "${holdMs / 1000}s",
+                        text = stringResource(R.string.settings_hotkeys_hold_delay_seconds, holdMs / 1000),
                         style = MaterialTheme.typography.bodySmall,
                         color = contentColor.copy(alpha = secondaryAlpha)
                     )
@@ -594,8 +610,11 @@ private fun HotkeyRow(
             }
             Text(
                 text = when {
-                    inherited && combo.isNotEmpty() -> "${HotkeyManager.formatCombo(combo)} · inherited"
-                    inherited -> "Inherited"
+                    inherited && combo.isNotEmpty() -> stringResource(
+                        R.string.settings_hotkeys_combo_inherited_suffix,
+                        HotkeyManager.formatCombo(combo)
+                    )
+                    inherited -> stringResource(R.string.settings_hotkeys_combo_inherited)
                     else -> HotkeyManager.formatCombo(combo)
                 },
                 style = MaterialTheme.typography.bodySmall,
@@ -663,11 +682,11 @@ private fun RecordingContent(
     }
 
     Modal(
-        title = "Recording Hotkey",
+        title = stringResource(R.string.settings_hotkeys_recording_title),
         subtitle = title,
         baseWidth = 350.dp,
         onDismiss = onCancel,
-        footerHints = listOf(InputButton.B to "Cancel"),
+        footerHints = listOf(InputButton.B to stringResource(R.string.settings_hotkeys_hint_cancel)),
         onFooterHintClick = { button -> if (button == InputButton.B) onCancel() }
     ) {
         Box(
@@ -716,11 +735,11 @@ private fun RecordingContent(
                 ) {
                     Text(
                         text = if (isComplete) {
-                            "Saved!"
+                            stringResource(R.string.settings_hotkeys_recording_saved)
                         } else if (heldKeys.isEmpty()) {
-                            "Hold 1-3 buttons..."
+                            stringResource(R.string.settings_hotkeys_recording_prompt)
                         } else {
-                            "Keep holding..."
+                            stringResource(R.string.settings_hotkeys_recording_holding)
                         },
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface
@@ -738,22 +757,23 @@ private fun RecordingContent(
     }
 }
 
+@Composable
 private fun getActionDisplayName(action: HotkeyAction): String {
     return when (action) {
-        HotkeyAction.IN_GAME_MENU -> "In-Game Menu"
-        HotkeyAction.RESET_GAME -> "Reset Game"
-        HotkeyAction.QUICK_SAVE -> "Quick Save"
-        HotkeyAction.QUICK_LOAD -> "Quick Load"
-        HotkeyAction.FAST_FORWARD -> "Fast Forward"
-        HotkeyAction.REWIND -> "Rewind"
-        HotkeyAction.QUICK_SUSPEND -> "Quick Suspend"
-        HotkeyAction.CYCLE_CORE_OPTION -> "Cycle Core Option"
-        HotkeyAction.SEND_CORE_INPUT -> "Core Input"
-        HotkeyAction.SPEEDRUN_SPLIT -> "Split"
-        HotkeyAction.SPEEDRUN_UNDO_SPLIT -> "Undo Split"
-        HotkeyAction.SPEEDRUN_SKIP_SPLIT -> "Skip Split"
-        HotkeyAction.SPEEDRUN_TOGGLE_TIMER -> "Start/Pause Timer"
-        HotkeyAction.SPEEDRUN_RESET_TIMER -> "Reset Timer"
+        HotkeyAction.IN_GAME_MENU -> stringResource(R.string.settings_hotkeys_action_in_game_menu)
+        HotkeyAction.RESET_GAME -> stringResource(R.string.settings_hotkeys_action_reset_game)
+        HotkeyAction.QUICK_SAVE -> stringResource(R.string.settings_hotkeys_action_quick_save)
+        HotkeyAction.QUICK_LOAD -> stringResource(R.string.settings_hotkeys_action_quick_load)
+        HotkeyAction.FAST_FORWARD -> stringResource(R.string.settings_hotkeys_action_fast_forward)
+        HotkeyAction.REWIND -> stringResource(R.string.settings_hotkeys_action_rewind)
+        HotkeyAction.QUICK_SUSPEND -> stringResource(R.string.settings_hotkeys_action_quick_suspend)
+        HotkeyAction.CYCLE_CORE_OPTION -> stringResource(R.string.settings_hotkeys_action_cycle_core_option)
+        HotkeyAction.SEND_CORE_INPUT -> stringResource(R.string.settings_hotkeys_action_core_input)
+        HotkeyAction.SPEEDRUN_SPLIT -> stringResource(R.string.settings_hotkeys_action_split)
+        HotkeyAction.SPEEDRUN_UNDO_SPLIT -> stringResource(R.string.settings_hotkeys_action_undo_split)
+        HotkeyAction.SPEEDRUN_SKIP_SPLIT -> stringResource(R.string.settings_hotkeys_action_skip_split)
+        HotkeyAction.SPEEDRUN_TOGGLE_TIMER -> stringResource(R.string.settings_hotkeys_action_toggle_timer)
+        HotkeyAction.SPEEDRUN_RESET_TIMER -> stringResource(R.string.settings_hotkeys_action_reset_timer)
     }
 }
 

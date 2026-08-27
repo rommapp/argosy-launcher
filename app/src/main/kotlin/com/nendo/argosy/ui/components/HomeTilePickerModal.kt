@@ -16,6 +16,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.HorizontalDivider
@@ -33,10 +34,12 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import coil.compose.AsyncImage
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
@@ -92,11 +95,17 @@ data class TilePickerEntry(
  * there is no Media tab, because a tab that lists nothing advertises a feature the reader has not
  * asked for.
  */
-enum class TilePickerCategory(val label: String) {
-    GAMES("Games"),
-    COLLECTIONS("Collections"),
-    APPS("Apps"),
-    MEDIA("Media")
+enum class TilePickerCategory {
+    GAMES, COLLECTIONS, APPS, MEDIA;
+
+    @get:StringRes
+    val labelRes: Int
+        get() = when (this) {
+            GAMES -> R.string.tile_picker_category_games
+            COLLECTIONS -> R.string.tile_picker_category_collections
+            APPS -> R.string.tile_picker_category_apps
+            MEDIA -> R.string.tile_picker_category_media
+        }
 }
 
 /**
@@ -128,8 +137,12 @@ fun HomeTilePickerModal(
     FocusedScroll(listState = listState, focusedIndex = focusIndex)
 
     Modal(
-        title = "ADD TO GRID",
-        subtitle = if (searchActive || query.isBlank()) null else "Matching \"$query\"",
+        title = stringResource(R.string.ui_tile_picker_title),
+        subtitle = if (searchActive || query.isBlank()) {
+            null
+        } else {
+            stringResource(R.string.ui_tile_picker_subtitle_matching, query)
+        },
         baseWidth = Dimens.modalWidthLg,
         onDismiss = onDismiss
     ) {
@@ -150,13 +163,17 @@ fun HomeTilePickerModal(
             Text(
                 text = if (query.isBlank()) {
                     when (category) {
-                    TilePickerCategory.GAMES -> "No installed games to add"
-                    TilePickerCategory.COLLECTIONS -> "No collections yet"
-                    TilePickerCategory.APPS -> "No apps found"
-                    TilePickerCategory.MEDIA -> "No titles to add"
-                }
+                        TilePickerCategory.GAMES ->
+                            stringResource(R.string.ui_tile_picker_empty_games)
+                        TilePickerCategory.COLLECTIONS ->
+                            stringResource(R.string.ui_tile_picker_empty_collections)
+                        TilePickerCategory.APPS ->
+                            stringResource(R.string.ui_tile_picker_empty_apps)
+                        TilePickerCategory.MEDIA ->
+                            stringResource(R.string.ui_tile_picker_empty_media)
+                    }
                 } else {
-                    "Nothing matches that search"
+                    stringResource(R.string.ui_tile_picker_empty_search)
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = LocalArgosyTheme.current.textDim,
@@ -183,7 +200,7 @@ fun HomeTilePickerModal(
                 color = LocalArgosyTheme.current.hairlineLow
             )
             TileDangerRow(
-                label = "Delete Page",
+                label = stringResource(R.string.ui_tile_picker_delete_page),
                 isFocused = focusIndex >= entries.size,
                 onClick = onDeletePage
             )
@@ -314,7 +331,7 @@ private fun TilePickerTabs(
         categories.forEach { entry ->
             val isCurrent = entry == category
             Text(
-                text = entry.label.uppercase(),
+                text = stringResource(entry.labelRes).uppercase(),
                 style = MaterialTheme.typography.labelMedium,
                 color = if (isCurrent) theme.focusAccent else theme.textDim,
                 modifier = Modifier

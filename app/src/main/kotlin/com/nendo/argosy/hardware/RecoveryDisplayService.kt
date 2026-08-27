@@ -20,6 +20,11 @@ import com.nendo.argosy.R
 
 class RecoveryDisplayService : Service() {
 
+    override fun attachBaseContext(newBase: Context) {
+        val tag = com.nendo.argosy.data.preferences.SessionStateStore(newBase).getAppLanguage()
+        super.attachBaseContext(com.nendo.argosy.core.locale.LocaleHelper.wrap(newBase, tag))
+    }
+
     companion object {
         private const val TAG = "RecoveryDisplayService"
         const val ACTION_START = "com.nendo.argosy.RECOVERY_DISPLAY_START"

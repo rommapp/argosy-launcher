@@ -34,9 +34,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.ListSection
@@ -117,7 +119,8 @@ fun MediaDetailScreen(
         when {
             uiState.isLoading -> MediaDetailSkeleton()
             uiState.item == null -> MediaErrorState(
-                message = uiState.errorMessage ?: "This title could not be opened."
+                message = uiState.errorMessage
+                    ?: stringResource(R.string.media_detail_open_failed)
             )
             else -> MediaDetailContent(
                 uiState = uiState,
@@ -289,7 +292,7 @@ private fun MediaExtraRails(
     ) {
         if (uiState.cast.isNotEmpty()) {
             MediaRailHeading(
-                text = "Cast",
+                text = stringResource(R.string.media_detail_rail_heading_cast),
                 isFocused = uiState.section == MediaDetailSection.CAST
             )
             MediaCastRail(
@@ -302,7 +305,7 @@ private fun MediaExtraRails(
 
         if (uiState.similar.isNotEmpty()) {
             MediaRailHeading(
-                text = "More Like This",
+                text = stringResource(R.string.media_detail_rail_heading_similar),
                 isFocused = uiState.section == MediaDetailSection.SIMILAR
             )
             MediaSimilarRail(
@@ -364,7 +367,7 @@ private fun MediaSeriesPane(
                 )
 
                 uiState.isLoadingEpisodes -> Text(
-                    text = "Loading episodes",
+                    text = stringResource(R.string.media_detail_episodes_loading),
                     style = MaterialTheme.typography.bodyMedium,
                     color = theme.textMute,
                     modifier = Modifier.fillMaxWidth().padding(Dimens.spacingLg)
@@ -372,20 +375,20 @@ private fun MediaSeriesPane(
 
                 episodesError != null -> MediaMessageState(
                     icon = Icons.Outlined.Inbox,
-                    title = "Episodes are unavailable",
+                    title = stringResource(R.string.media_detail_episodes_error_title),
                     message = episodesError
                 )
 
                 uiState.hasSeasons -> MediaMessageState(
                     icon = Icons.Outlined.Inbox,
-                    title = "No episodes in this season",
+                    title = stringResource(R.string.media_detail_season_empty_title),
                     message = null
                 )
 
                 else -> MediaMessageState(
                     icon = Icons.Outlined.Inbox,
-                    title = "No seasons yet",
-                    message = "This series has no seasons on the server, or the last refresh has not reached it."
+                    title = stringResource(R.string.media_detail_seasons_empty_title),
+                    message = stringResource(R.string.media_detail_seasons_empty_message)
                 )
             }
         }
@@ -452,18 +455,32 @@ private fun MediaEpisodeList(
     }
 }
 
-private fun buildDetailHints(uiState: MediaDetailUiState): List<Pair<InputButton, String>> = buildList {
-    if (uiState.hasSiblingTitles) add(InputButton.LB_RB to "Prev/Next Title")
-    add(InputButton.X to "Options")
-    if (uiState.section == MediaDetailSection.EPISODES) {
-        add(InputButton.Y to if (uiState.focusedEpisode?.played == true) "Mark Unwatched" else "Mark Watched")
-    } else {
-        add(InputButton.Y to if (uiState.item?.isFavorite == true) "Unfavorite" else "Favorite")
+@Composable
+private fun buildDetailHints(uiState: MediaDetailUiState): List<Pair<InputButton, String>> {
+    val siblingLabel = stringResource(R.string.media_detail_footer_sibling_title)
+    val optionsLabel = stringResource(R.string.media_detail_footer_options)
+    val episodeUnwatchedLabel = stringResource(R.string.media_detail_footer_episode_unwatched)
+    val episodeWatchedLabel = stringResource(R.string.media_detail_footer_episode_watched)
+    val unfavoriteLabel = stringResource(R.string.media_detail_footer_unfavorite)
+    val favoriteLabel = stringResource(R.string.media_detail_footer_favorite)
+    val confirmLabel = confirmHint(uiState)
+    val backLabel = stringResource(R.string.media_detail_footer_back)
+    return buildList {
+        if (uiState.hasSiblingTitles) add(InputButton.LB_RB to siblingLabel)
+        add(InputButton.X to optionsLabel)
+        if (uiState.section == MediaDetailSection.EPISODES) {
+            val played = uiState.focusedEpisode?.played == true
+            add(InputButton.Y to if (played) episodeUnwatchedLabel else episodeWatchedLabel)
+        } else {
+            val favorite = uiState.item?.isFavorite == true
+            add(InputButton.Y to if (favorite) unfavoriteLabel else favoriteLabel)
+        }
+        add(InputButton.A to confirmLabel)
+        add(InputButton.B to backLabel)
     }
-    add(InputButton.A to confirmHint(uiState))
-    add(InputButton.B to "Back")
 }
 
+@Composable
 private fun confirmHint(uiState: MediaDetailUiState): String {
     val resumeTarget = when (uiState.section) {
         MediaDetailSection.EPISODES -> uiState.focusedEpisode
@@ -473,19 +490,29 @@ private fun confirmHint(uiState: MediaDetailUiState): String {
         MediaDetailSection.MENU ->
             if (uiState.focusedRow == MediaDetailRow.PLAY) uiState.playTarget else null
     }
-    if (resumeTarget?.hasResumePosition == true) return "Resume"
-    if (uiState.section == MediaDetailSection.SEASONS) return "Open Season"
-    if (uiState.section == MediaDetailSection.SIMILAR) return "Open Title"
-    if (uiState.section != MediaDetailSection.MENU) return "Play"
-    return when (uiState.focusedRow) {
-        MediaDetailRow.DOWNLOAD -> "Downloads"
-        MediaDetailRow.FAVORITE -> "Favorite"
-        MediaDetailRow.WATCHED -> "Mark Watched"
-        MediaDetailRow.OPTIONS -> "Options"
-        MediaDetailRow.SEASONS -> "Open Seasons"
-        MediaDetailRow.EPISODES -> "Open Episodes"
-        else -> "Play"
+    if (resumeTarget?.hasResumePosition == true) {
+        return stringResource(R.string.media_detail_confirm_resume)
     }
+    if (uiState.section == MediaDetailSection.SEASONS) {
+        return stringResource(R.string.media_detail_confirm_open_season)
+    }
+    if (uiState.section == MediaDetailSection.SIMILAR) {
+        return stringResource(R.string.media_detail_confirm_open_title)
+    }
+    if (uiState.section != MediaDetailSection.MENU) {
+        return stringResource(R.string.media_detail_confirm_play_section)
+    }
+    return stringResource(
+        when (uiState.focusedRow) {
+            MediaDetailRow.DOWNLOAD -> R.string.media_detail_confirm_downloads
+            MediaDetailRow.FAVORITE -> R.string.media_detail_confirm_favorite
+            MediaDetailRow.WATCHED -> R.string.media_detail_confirm_mark_watched
+            MediaDetailRow.OPTIONS -> R.string.media_detail_confirm_options
+            MediaDetailRow.SEASONS -> R.string.media_detail_confirm_open_seasons
+            MediaDetailRow.EPISODES -> R.string.media_detail_confirm_open_episodes
+            else -> R.string.media_detail_confirm_play_default
+        }
+    )
 }
 
 private const val COMPACT_MENU_ASPECT_RATIO = 1.3f

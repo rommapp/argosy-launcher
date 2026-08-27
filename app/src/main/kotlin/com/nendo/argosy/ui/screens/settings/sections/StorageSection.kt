@@ -32,6 +32,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.data.steam.SteamConnectionState
 import com.nendo.argosy.data.storage.StorageCategory
 import com.nendo.argosy.data.storage.StorageSnapshot
@@ -94,7 +98,7 @@ internal sealed class StorageItem(
         else -> true
     }
 
-    class Header(key: String, section: String, val title: String) : StorageItem(key, section)
+    class Header(key: String, section: String, val titleRes: Int) : StorageItem(key, section)
     class SectionSpacer(key: String, section: String) : StorageItem(key, section)
 
     data object VolumeHero : StorageItem("volumeHero", "overview")
@@ -121,11 +125,13 @@ internal sealed class StorageItem(
 
     companion object {
         private val LocationsSpacer = SectionSpacer("locationsSpacer", "locations")
-        private val LocationsHeader = Header("locationsHeader", "locations", "FILE LOCATIONS")
+        private val LocationsHeader =
+            Header("locationsHeader", "locations", R.string.settings_storage_section_locations)
         private val DownloadsSpacer = SectionSpacer("downloadsSpacer", "downloads")
-        private val DownloadsHeader = Header("downloadsHeader", "downloads", "DOWNLOADS")
+        private val DownloadsHeader =
+            Header("downloadsHeader", "downloads", R.string.settings_storage_section_downloads)
         private val DangerSpacer = SectionSpacer("dangerSpacer", "danger")
-        private val DangerHeader = Header("dangerHeader", "danger", "DANGER ZONE")
+        private val DangerHeader = Header("dangerHeader", "danger", R.string.settings_storage_section_danger)
 
         val ALL: List<StorageItem>
             get() = listOf(
@@ -143,12 +149,12 @@ private val storageLayout = SettingsLayout<StorageItem, StorageLayoutState>(
     isFocusable = { it.isFocusable },
     visibleWhen = { item, state -> item.visibleWhen(state) },
     sectionOf = { it.section },
-    sectionTitle = {
+    sectionTitleRes = {
         when (it) {
-            "overview" -> "OVERVIEW"
-            "locations" -> "FILE LOCATIONS"
-            "downloads" -> "DOWNLOADS"
-            "danger" -> "DANGER ZONE"
+            "overview" -> R.string.settings_storage_section_overview
+            "locations" -> R.string.settings_storage_section_locations
+            "downloads" -> R.string.settings_storage_section_downloads
+            "danger" -> R.string.settings_storage_section_danger
             else -> null
         }
     }
@@ -242,7 +248,7 @@ internal fun RecomputeRow(
         }
         Spacer(modifier = Modifier.width(Dimens.spacingSm))
         Text(
-            text = "Recompute",
+            text = stringResource(R.string.settings_storage_recompute_title),
             style = MaterialTheme.typography.bodyMedium,
             color = theme.textPrimary,
             modifier = Modifier.weight(1f)
@@ -274,11 +280,12 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val snapshot = attribution.snapshot
     val walkProgress = attribution.walkProgress
 
+    val context = LocalContext.current
     val steamVisible = storageSteamVisible(uiState)
     val mediaVisible = storageMediaVisible(uiState)
     val layoutState = remember(steamVisible, mediaVisible) { StorageLayoutState(steamVisible, mediaVisible) }
     val visibleItems = remember(layoutState) { storageLayout.visibleItems(layoutState) }
-    val sections = remember(layoutState) { storageLayout.buildSections(layoutState) }
+    val sections = remember(layoutState, context) { storageLayout.buildSections(layoutState, context) }
 
     val gamesBytes = remember(snapshot, walkProgress) {
         displayBytes(snapshot, walkProgress[StorageCategory.GAMES], setOf(StorageCategory.GAMES))
@@ -310,17 +317,25 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         volumeMeterCategoryColors(primary, secondary, 6)
     }
     val appsVisible = appsBytes > 0L
-    val heroCategories = remember(snapshot, walkProgress, steamVisible, mediaVisible, appsVisible, categoryColors) {
+    val heroCategories = remember(
+        snapshot,
+        walkProgress,
+        steamVisible,
+        mediaVisible,
+        appsVisible,
+        categoryColors,
+        context
+    ) {
         buildList {
             add(VolumeMeterCategory(
-                label = "Games",
+                label = context.getString(R.string.settings_storage_meter_games),
                 color = categoryColors[0],
                 bytes = gamesBytes,
                 perVolume = groupPerVolume(snapshot, setOf(StorageCategory.GAMES))
             ))
             if (mediaVisible) {
                 add(VolumeMeterCategory(
-                    label = "Media",
+                    label = context.getString(R.string.settings_storage_meter_media),
                     color = categoryColors[5],
                     bytes = mediaBytes,
                     perVolume = groupPerVolume(snapshot, setOf(StorageCategory.MEDIA))
@@ -328,7 +343,7 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             }
             if (steamVisible) {
                 add(VolumeMeterCategory(
-                    label = "Steam & PC",
+                    label = context.getString(R.string.settings_storage_meter_steam),
                     color = categoryColors[1],
                     bytes = steamBytes,
                     perVolume = groupPerVolume(snapshot, setOf(StorageCategory.STEAM))
@@ -336,20 +351,20 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             }
             if (appsVisible) {
                 add(VolumeMeterCategory(
-                    label = "Apps",
+                    label = context.getString(R.string.settings_storage_meter_apps),
                     color = categoryColors[2],
                     bytes = appsBytes,
                     perVolume = groupPerVolume(snapshot, setOf(StorageCategory.ANDROID_APPS))
                 ))
             }
             add(VolumeMeterCategory(
-                label = "Caches & System",
+                label = context.getString(R.string.settings_storage_meter_caches),
                 color = categoryColors[3],
                 bytes = cachesBytes,
                 perVolume = groupPerVolume(snapshot, CACHES_CATEGORIES)
             ))
             add(VolumeMeterCategory(
-                label = "Music",
+                label = context.getString(R.string.settings_storage_meter_music),
                 color = categoryColors[4],
                 bytes = musicBytes,
                 perVolume = groupPerVolume(snapshot, setOf(StorageCategory.MUSIC))
@@ -378,7 +393,7 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) { item ->
         when (item) {
-            is StorageItem.Header -> SectionHeader(item.title)
+            is StorageItem.Header -> SectionHeader(stringResource(item.titleRes))
 
             is StorageItem.SectionSpacer -> Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
@@ -397,50 +412,62 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             )
 
             StorageItem.GamesTile -> CategoryTile(
-                title = "Games",
+                title = stringResource(R.string.settings_storage_games_tile_title),
                 icon = Icons.Default.SportsEsports,
                 primaryStat = formatBytes(gamesBytes),
-                secondaryStat = "$gamesCount games",
+                secondaryStat = pluralStringResource(
+                    R.plurals.settings_storage_games_tile_count,
+                    gamesCount,
+                    gamesCount
+                ),
                 isFocused = isFocused(item),
                 isWorking = walkProgress[StorageCategory.GAMES].isActiveWalk(),
                 onClick = { openFrom(item) { viewModel.navigateToStorageGames() } }
             )
 
             StorageItem.MediaTile -> CategoryTile(
-                title = "Media",
+                title = stringResource(R.string.settings_storage_media_tile_title),
                 icon = Icons.Outlined.Movie,
                 primaryStat = formatBytes(mediaBytes),
-                secondaryStat = if (mediaCount == 1) "1 title downloaded" else "$mediaCount titles downloaded",
+                secondaryStat = pluralStringResource(
+                    R.plurals.settings_storage_media_tile_count,
+                    mediaCount,
+                    mediaCount
+                ),
                 isFocused = isFocused(item),
                 isWorking = walkProgress[StorageCategory.MEDIA].isActiveWalk(),
                 onClick = { openFrom(item) { viewModel.navigateToStorageMedia() } }
             )
 
             StorageItem.MusicTile -> CategoryTile(
-                title = "Music",
+                title = stringResource(R.string.settings_storage_music_tile_title),
                 icon = Icons.Outlined.MusicNote,
                 primaryStat = formatBytes(musicBytes),
-                secondaryStat = "Manage playlist",
+                secondaryStat = stringResource(R.string.settings_storage_music_tile_action),
                 isFocused = isFocused(item),
                 isWorking = walkProgress[StorageCategory.MUSIC].isActiveWalk(),
                 onClick = { openFrom(item) { viewModel.navigateToThemeMusic() } }
             )
 
             StorageItem.CachesTile -> CategoryTile(
-                title = "Caches & System",
+                title = stringResource(R.string.settings_storage_caches_tile_title),
                 icon = Icons.Default.Cached,
                 primaryStat = formatBytes(cachesBytes),
-                secondaryStat = "$cachesFileCount files",
+                secondaryStat = pluralStringResource(
+                    R.plurals.settings_storage_caches_tile_count,
+                    cachesFileCount,
+                    cachesFileCount
+                ),
                 isFocused = isFocused(item),
                 isWorking = CACHES_CATEGORIES.any { walkProgress[it].isActiveWalk() },
                 onClick = { openFrom(item) { viewModel.navigateToStorageCaches() } }
             )
 
             StorageItem.SteamTile -> CategoryTile(
-                title = "Steam & PC",
+                title = stringResource(R.string.settings_storage_steam_tile_title),
                 icon = Icons.Default.CloudQueue,
                 primaryStat = formatBytes(steamBytes),
-                secondaryStat = "Stores, installs, and staging",
+                secondaryStat = stringResource(R.string.settings_storage_steam_tile_subtitle),
                 isFocused = isFocused(item),
                 isWorking = walkProgress[StorageCategory.STEAM].isActiveWalk(),
                 onClick = { openFrom(item) { viewModel.navigateToStorageCachesForSteam() } }
@@ -448,10 +475,13 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
             StorageItem.GlobalRomPath -> ActionPreference(
                 icon = Icons.Default.Folder,
-                title = "Global ROM Path",
+                title = stringResource(R.string.settings_storage_rom_path_title),
                 subtitle = formatStoragePath(storage.romStoragePath),
                 isFocused = isFocused(item),
-                trailingText = "${formatBytes(storage.availableSpace)} free",
+                trailingText = stringResource(
+                    R.string.settings_storage_rom_path_free,
+                    formatBytes(storage.availableSpace)
+                ),
                 onClick = { viewModel.openFolderPicker() }
             )
 
@@ -460,12 +490,16 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 val displayPath = if (cachePath != null) {
                     "${cachePath.substringAfterLast("/")}/argosy_images"
                 } else {
-                    "Internal (default)"
+                    stringResource(R.string.settings_storage_image_cache_internal)
                 }
                 ActionPreference(
                     icon = Icons.Default.Image,
-                    title = "Image Cache",
-                    subtitle = if (syncSettings.isImageCacheMigrating) "Moving images..." else displayPath,
+                    title = stringResource(R.string.settings_storage_image_cache_title),
+                    subtitle = if (syncSettings.isImageCacheMigrating) {
+                        stringResource(R.string.settings_storage_image_cache_migrating)
+                    } else {
+                        displayPath
+                    },
                     isFocused = isFocused(item),
                     isEnabled = !syncSettings.isImageCacheMigrating,
                     onClick = { viewModel.openImageCachePicker() }
@@ -474,19 +508,21 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
             StorageItem.MusicLocation -> ActionPreference(
                 icon = Icons.Outlined.LibraryMusic,
-                title = "Music Location",
-                subtitle = uiState.ambientAudio.musicDirPath?.let { formatStoragePath(it) } ?: "Default",
+                title = stringResource(R.string.settings_storage_music_location_title),
+                subtitle = uiState.ambientAudio.musicDirPath?.let { formatStoragePath(it) }
+                    ?: stringResource(R.string.settings_storage_music_location_default),
                 isFocused = isFocused(item),
                 onClick = { viewModel.openMusicLocationPicker() }
             )
 
             StorageItem.BiosFolder -> ActionPreference(
                 icon = Icons.Default.Memory,
-                title = "BIOS Folder",
+                title = stringResource(R.string.settings_storage_bios_folder_title),
                 subtitle = if (uiState.bios.isBiosMigrating) {
-                    "Moving files..."
+                    stringResource(R.string.settings_storage_bios_folder_migrating)
                 } else {
-                    uiState.bios.customBiosPath?.let { formatStoragePath(it) } ?: "Internal (default)"
+                    uiState.bios.customBiosPath?.let { formatStoragePath(it) }
+                        ?: stringResource(R.string.settings_storage_bios_folder_internal)
                 },
                 isFocused = isFocused(item),
                 isEnabled = !uiState.bios.isBiosMigrating,
@@ -495,11 +531,11 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
             StorageItem.BuiltinSavePath -> ActionPreference(
                 icon = Icons.Default.Save,
-                title = "Built-in Save Path",
+                title = stringResource(R.string.settings_storage_builtin_save_path_title),
                 subtitle = if (uiState.builtinVideo.isCustomSavePath) {
                     formatStoragePath(uiState.builtinVideo.savePath)
                 } else {
-                    "Internal (default)"
+                    stringResource(R.string.settings_storage_builtin_save_path_internal)
                 },
                 isFocused = isFocused(item),
                 onClick = { viewModel.openBuiltinSavePathBrowser() }
@@ -507,18 +543,18 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
             StorageItem.BuiltinStatePath -> ActionPreference(
                 icon = Icons.Default.History,
-                title = "Built-in State Path",
+                title = stringResource(R.string.settings_storage_builtin_state_path_title),
                 subtitle = if (uiState.builtinVideo.isCustomStatePath) {
                     formatStoragePath(uiState.builtinVideo.statePath)
                 } else {
-                    "Internal (default)"
+                    stringResource(R.string.settings_storage_builtin_state_path_internal)
                 },
                 isFocused = isFocused(item),
                 onClick = { viewModel.openBuiltinStatePathBrowser() }
             )
 
             StorageItem.MaxDownloads -> SliderPreference(
-                title = "Max Active Downloads",
+                title = stringResource(R.string.settings_storage_max_downloads_title),
                 value = storage.maxConcurrentDownloads,
                 minValue = 1,
                 maxValue = 5,
@@ -530,22 +566,26 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 val thresholds = remember { listOf(50, 100, 250, 500) }
                 val currentIndex = thresholds.indexOf(storage.instantDownloadThresholdMb).coerceAtLeast(0)
                 CyclePreference(
-                    title = "Instant Download Threshold",
-                    value = "${storage.instantDownloadThresholdMb} MB",
+                    title = stringResource(R.string.settings_storage_threshold_title),
+                    value = stringResource(
+                        R.string.settings_storage_threshold_value,
+                        storage.instantDownloadThresholdMb
+                    ),
                     isFocused = isFocused(item),
                     onClick = { viewModel.cycleInstantDownloadThreshold(1) },
                     onPrev = { viewModel.cycleInstantDownloadThreshold(-1) },
-                    subtitle = "Files under this size download immediately",
-                    options = remember { thresholds.map { "$it MB" } },
+                    subtitle = stringResource(R.string.settings_storage_threshold_subtitle),
+                    options = remember(context) {
+                        thresholds.map { context.getString(R.string.settings_storage_threshold_value, it) }
+                    },
                     onSelect = { viewModel.cycleInstantDownloadThreshold(it - currentIndex) },
                     pickerRequestToken = if (uiState.enumPickerKey == item.key) uiState.enumPickerToken else 0
                 )
             }
 
             StorageItem.InternalStaging -> SwitchPreference(
-                title = "Unpack on Internal Storage",
-                subtitle = "Download and extract compressed games internally, then move the finished " +
-                    "game to your ROM folder. Falls back to the ROM folder when internal space is short.",
+                title = stringResource(R.string.settings_storage_internal_staging_title),
+                subtitle = stringResource(R.string.settings_storage_internal_staging_subtitle),
                 isEnabled = storage.stageDownloadsInternally,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.toggleStageDownloadsInternally() }
@@ -554,8 +594,12 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             StorageItem.ResetLibrary -> {
                 val isPurging = storage.isPurgingAll
                 ActionPreference(
-                    title = "Reset Library",
-                    subtitle = if (isPurging) "Resetting..." else "Clears the database and image cache. Downloaded files stay on disk.",
+                    title = stringResource(R.string.settings_storage_reset_library_title),
+                    subtitle = if (isPurging) {
+                        stringResource(R.string.settings_storage_reset_library_busy)
+                    } else {
+                        stringResource(R.string.settings_storage_reset_library_subtitle)
+                    },
                     isFocused = isFocused(item),
                     isDangerous = true,
                     isEnabled = !isPurging && !storage.isHardResetting,
@@ -564,11 +608,11 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             }
 
             StorageItem.HardReset -> ActionPreference(
-                title = "Hard Reset",
+                title = stringResource(R.string.settings_storage_hard_reset_title),
                 subtitle = if (storage.isHardResetting) {
-                    "Resetting..."
+                    stringResource(R.string.settings_storage_hard_reset_busy)
                 } else {
-                    "Deletes downloaded games, the library database, and every cache. Settings and sign-ins stay."
+                    stringResource(R.string.settings_storage_hard_reset_subtitle)
                 },
                 isFocused = isFocused(item),
                 isDangerous = true,
@@ -576,21 +620,6 @@ fun StorageSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 onClick = { viewModel.requestHardReset() }
             )
         }
-    }
-}
-
-internal fun formatFileSize(bytes: Long): String {
-    val units = listOf("B", "KB", "MB", "GB", "TB")
-    var size = bytes.toDouble()
-    var unitIndex = 0
-    while (size >= 1024 && unitIndex < units.lastIndex) {
-        size /= 1024
-        unitIndex++
-    }
-    return if (unitIndex == 0) {
-        "${size.toLong()} ${units[unitIndex]}"
-    } else {
-        "%.1f %s".format(size, units[unitIndex])
     }
 }
 

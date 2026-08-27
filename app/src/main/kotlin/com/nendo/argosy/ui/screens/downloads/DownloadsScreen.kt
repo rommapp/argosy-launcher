@@ -46,13 +46,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.nendo.argosy.R
+import com.nendo.argosy.core.notification.resolve
 import com.nendo.argosy.data.download.DownloadProgress
 import com.nendo.argosy.data.download.DownloadState
 import com.nendo.argosy.ui.common.rememberFileImageModel
+import com.nendo.argosy.ui.common.toNotificationText
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.input.LocalInputDispatcher
@@ -100,6 +105,7 @@ fun DownloadsScreen(
     val uiState by viewModel.uiState.collectAsState()
     val state = uiState.downloadState
     val listState = rememberLazyListState()
+    val context = LocalContext.current
 
     LaunchedEffect(uiState.focusedIndex) {
         if (uiState.allItems.isNotEmpty()) {
@@ -125,13 +131,13 @@ fun DownloadsScreen(
                 )
                 Spacer(modifier = Modifier.height(Dimens.spacingMd))
                 Text(
-                    text = "No Downloads",
+                    text = stringResource(R.string.downloads_empty_title),
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(Dimens.spacingSm))
                 Text(
-                    text = "Downloads will appear here",
+                    text = stringResource(R.string.downloads_empty_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                 )
@@ -152,21 +158,24 @@ fun DownloadsScreen(
             val completedGroups = uiState.completedGroups
 
             if (activeGroups.isNotEmpty()) {
-                val hasExtracting = activeGroups.any { it.aggregate.state == DownloadState.EXTRACTING }
-                val hasMoving = activeGroups.any { it.aggregate.state == DownloadState.MOVING }
-                val totalSpeed = activeGroups.sumOf { it.aggregate.bytesPerSecond }
-                val headerText = when {
-                    hasMoving -> "Moving to ROM Storage"
-                    hasExtracting -> "Extracting"
-                    totalSpeed > 0 -> "Downloading"
-                    else -> "Active"
+                val hasExtracting = activeGroups.any { it.aggregate(context).state == DownloadState.EXTRACTING }
+                val hasMoving = activeGroups.any { it.aggregate(context).state == DownloadState.MOVING }
+                val totalSpeed = activeGroups.sumOf { it.aggregate(context).bytesPerSecond }
+                item {
+                    val headerText = stringResource(
+                        when {
+                            hasMoving -> R.string.downloads_section_header_moving
+                            hasExtracting -> R.string.downloads_section_header_extracting
+                            totalSpeed > 0 -> R.string.downloads_section_header_downloading
+                            else -> R.string.downloads_section_header_active
+                        }
+                    )
+                    SectionHeader(headerText, if (totalSpeed > 0) formatSpeed(totalSpeed) else null)
                 }
-                val speedText = if (totalSpeed > 0) formatSpeed(totalSpeed) else null
-                item { SectionHeader(headerText, speedText) }
                 itemsIndexed(activeGroups, key = { _, g -> g.primary.id }) { index, group ->
                     Column {
                         DownloadItem(
-                            download = group.aggregate,
+                            download = group.aggregate(context),
                             isInActiveList = true,
                             isFocused = index == uiState.focusedIndex,
                             availableStorage = state.availableStorageBytes
@@ -177,11 +186,11 @@ fun DownloadsScreen(
             }
 
             if (queuedGroups.isNotEmpty()) {
-                item { SectionHeader("Queued") }
+                item { SectionHeader(stringResource(R.string.downloads_section_header_queued)) }
                 itemsIndexed(queuedGroups, key = { _, g -> g.primary.id }) { index, group ->
                     Column {
                         DownloadItem(
-                            download = group.aggregate,
+                            download = group.aggregate(context),
                             isInActiveList = false,
                             isFocused = (activeGroups.size + index) == uiState.focusedIndex,
                             availableStorage = state.availableStorageBytes
@@ -192,11 +201,11 @@ fun DownloadsScreen(
             }
 
             if (completedGroups.isNotEmpty()) {
-                item { SectionHeader("Finished") }
+                item { SectionHeader(stringResource(R.string.downloads_section_header_finished)) }
                 val completedStartIndex = activeGroups.size + queuedGroups.size
                 itemsIndexed(completedGroups, key = { _, g -> g.primary.id }) { index, group ->
                     CompletedDownloadItem(
-                        download = group.aggregate,
+                        download = group.aggregate(context),
                         isFocused = (completedStartIndex + index) == uiState.focusedIndex
                     )
                 }
@@ -205,19 +214,19 @@ fun DownloadsScreen(
 
         if (uiState.allItems.isNotEmpty()) {
             val footerHints = buildList {
-                add(InputButton.DPAD_VERTICAL to "Navigate")
+                add(InputButton.DPAD_VERTICAL to stringResource(R.string.downloads_hint_navigate))
                 if (uiState.focusedItem != null) {
-                    add(InputButton.A to uiState.confirmLabel)
+                    add(InputButton.A to stringResource(uiState.confirmLabelRes))
                 }
                 if (uiState.canRemove) {
-                    add(InputButton.X to "Remove")
+                    add(InputButton.X to stringResource(R.string.downloads_hint_remove))
                 } else if (uiState.canCancel) {
-                    add(InputButton.X to "Cancel")
+                    add(InputButton.X to stringResource(R.string.downloads_hint_cancel))
                 }
                 if (uiState.hasFinishedItems) {
-                    add(InputButton.Y to "Clear Finished")
+                    add(InputButton.Y to stringResource(R.string.downloads_hint_clear_finished))
                 }
-                add(InputButton.B to "Back")
+                add(InputButton.B to stringResource(R.string.downloads_hint_back))
             }
 
             FooterHints(
@@ -237,15 +246,15 @@ fun DownloadsScreen(
         val failedItem = uiState.focusedItem
         ArgosyConfirmModalHost(
             visible = uiState.showFailedActionDialog,
-            title = "Download Failed",
-            message = "\"${failedItem?.displayTitle ?: ""}\" failed to download. What would you like to do?",
-            confirmLabel = "Retry",
+            title = stringResource(R.string.downloads_failed_dialog_title),
+            message = stringResource(R.string.downloads_failed_dialog_message, failedItem?.displayTitle ?: ""),
+            confirmLabel = stringResource(R.string.downloads_failed_dialog_confirm),
             onConfirm = {
                 failedItem?.let { viewModel.retryDownload(it.id) }
                 viewModel.dismissFailedActionDialog()
             },
             onDismiss = { viewModel.dismissFailedActionDialog() },
-            neutralLabel = "Clear",
+            neutralLabel = stringResource(R.string.downloads_failed_dialog_clear),
             onNeutral = {
                 failedItem?.let { viewModel.removeFromCompleted(it.id) }
                 viewModel.dismissFailedActionDialog()
@@ -272,13 +281,13 @@ private fun GroupFileRows(group: DownloadGroup) {
                 )
                 Text(
                     text = when (file.state) {
-                        DownloadState.COMPLETED -> "Done"
-                        DownloadState.EXTRACTING -> "Extracting"
-                        DownloadState.MOVING -> "Moving"
+                        DownloadState.COMPLETED -> stringResource(R.string.downloads_file_state_done)
+                        DownloadState.EXTRACTING -> stringResource(R.string.downloads_file_state_extracting)
+                        DownloadState.MOVING -> stringResource(R.string.downloads_file_state_moving)
                         DownloadState.DOWNLOADING ->
-                            "${(file.progressPercent * 100).toInt()}%"
-                        DownloadState.FAILED -> "Failed"
-                        else -> "Queued"
+                            stringResource(R.string.downloads_file_state_percent, (file.progressPercent * 100).toInt())
+                        DownloadState.FAILED -> stringResource(R.string.downloads_file_state_failed)
+                        else -> stringResource(R.string.downloads_file_state_queued)
                     },
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -397,7 +406,7 @@ private fun DownloadItem(
                 isMoving -> {
                     ArgosyProgressBar(progress = download.extractionPercent, style = ProgressBarStyle.Working)
                     Text(
-                        text = "Moving to ROM storage...",
+                        text = stringResource(R.string.downloads_item_status_moving),
                         style = MaterialTheme.typography.bodySmall,
                         color = workingColor,
                         maxLines = 1,
@@ -407,7 +416,7 @@ private fun DownloadItem(
                 isExtracting -> {
                     ArgosyProgressBar(progress = null, style = ProgressBarStyle.Working)
                     Text(
-                        text = download.statusMessage ?: "Extracting...",
+                        text = download.statusMessage ?: stringResource(R.string.downloads_item_status_extracting_fallback),
                         style = MaterialTheme.typography.bodySmall,
                         color = workingColor,
                         maxLines = 1,
@@ -447,24 +456,29 @@ private fun DownloadItem(
                     )
                 }
                 download.state == DownloadState.WAITING_FOR_STORAGE -> Text(
-                    text = "Need ${formatBytes(
-                        download.requiredStorageBytes
-                            ?: (download.totalBytes - download.bytesDownloaded)
-                    )}, Available ${formatBytes(availableStorage)}",
+                    text = stringResource(
+                        R.string.downloads_item_status_insufficient_storage,
+                        formatBytes(
+                            download.requiredStorageBytes
+                                ?: (download.totalBytes - download.bytesDownloaded)
+                        ),
+                        formatBytes(availableStorage)
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = LocalArgosyTheme.current.destructive,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
                 download.state == DownloadState.FAILED -> Text(
-                    text = download.errorReason ?: "Download failed",
+                    text = download.errorReason?.toNotificationText()?.resolve()
+                        ?: stringResource(R.string.downloads_item_status_failed_fallback),
                     style = MaterialTheme.typography.bodySmall,
                     color = LocalArgosyTheme.current.destructive,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
                 else -> Text(
-                    text = download.statusMessage ?: "Queued",
+                    text = download.statusMessage ?: stringResource(R.string.downloads_item_status_queued_fallback),
                     style = MaterialTheme.typography.bodySmall,
                     color = theme.textMute,
                     maxLines = 1,
@@ -504,14 +518,15 @@ private fun CompletedDownloadItem(
             DownloadItemHeader(download)
             when {
                 download.state == DownloadState.FAILED -> Text(
-                    text = download.errorReason ?: "Download failed",
+                    text = download.errorReason?.toNotificationText()?.resolve()
+                        ?: stringResource(R.string.downloads_completed_status_failed_fallback),
                     style = MaterialTheme.typography.bodySmall,
                     color = LocalArgosyTheme.current.destructive,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
                 download.state == DownloadState.COMPLETED -> Text(
-                    text = "Installed",
+                    text = stringResource(R.string.downloads_completed_status_installed),
                     style = MaterialTheme.typography.bodySmall,
                     color = theme.focusAccent
                 )
@@ -556,7 +571,8 @@ private fun DownloadCover(download: DownloadProgress) {
     }
 }
 
+@Composable
 private fun formatSpeed(bytesPerSecond: Long): String {
-    return "${formatBytes(bytesPerSecond)}/s"
+    return stringResource(R.string.downloads_speed_suffix, formatBytes(bytesPerSecond))
 }
 

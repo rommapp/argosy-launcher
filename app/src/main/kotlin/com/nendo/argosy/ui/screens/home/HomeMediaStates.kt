@@ -11,6 +11,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.screens.media.components.MediaMessageState
 import com.nendo.argosy.ui.theme.Dimens
 
@@ -27,14 +29,16 @@ import com.nendo.argosy.ui.theme.Dimens
 @Composable
 internal fun MediaRowEmptyState(row: HomeRow, modifier: Modifier = Modifier) {
     val title = when (row) {
-        HomeRow.NextUp -> "Nothing up next"
-        HomeRow.ContinueWatching -> "Nothing to continue"
-        else -> "Nothing in this library"
+        HomeRow.NextUp -> stringResource(R.string.home_media_empty_next_up_title)
+        HomeRow.ContinueWatching ->
+            stringResource(R.string.home_media_empty_continue_watching_title)
+        else -> stringResource(R.string.home_media_empty_library_title)
     }
     val message = when (row) {
-        HomeRow.NextUp -> "Finish an episode and the next one shows up here."
-        HomeRow.ContinueWatching -> "Anything you stop part way through shows up here."
-        else -> "Refresh to fetch this library from your media server."
+        HomeRow.NextUp -> stringResource(R.string.home_media_empty_next_up_message)
+        HomeRow.ContinueWatching ->
+            stringResource(R.string.home_media_empty_continue_watching_message)
+        else -> stringResource(R.string.home_media_empty_library_message)
     }
     MediaMessageState(
         icon = Icons.Outlined.Inbox,

@@ -36,6 +36,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.data.emulator.EmulatorDef
 import com.nendo.argosy.data.emulator.InstalledEmulator
 import com.nendo.argosy.data.remote.github.VersionFormatter
@@ -151,7 +153,7 @@ fun EmulatorPickerPopup(
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
         ) {
             Text(
-                text = "SELECT EMULATOR",
+                text = stringResource(R.string.settings_emulator_picker_title),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -174,8 +176,8 @@ fun EmulatorPickerPopup(
                             val isTouchSelected = selectedIndex == 0
                             val isCurrentEmulator = info.selectedEmulatorName == null
                             EmulatorPickerItem(
-                                name = "Auto",
-                                subtitle = "Use recommended emulator",
+                                name = stringResource(R.string.settings_emulator_picker_auto_name),
+                                subtitle = stringResource(R.string.settings_emulator_picker_auto_subtitle),
                                 isFocused = isFocused(item),
                                 isTouchSelected = isTouchSelected,
                                 isCurrentEmulator = isCurrentEmulator,
@@ -194,18 +196,26 @@ fun EmulatorPickerPopup(
 
                             val subtitle = when {
                                 downloadState is EmulatorDownloadState.Downloading ->
-                                    "Downloading ${(downloadState.progress * 100).toInt()}%"
+                                    stringResource(
+                                        R.string.settings_emulator_picker_installed_downloading_progress,
+                                        (downloadState.progress * 100).toInt()
+                                    )
                                 downloadState is EmulatorDownloadState.WaitingForInstall ->
-                                    "Installing..."
+                                    stringResource(R.string.settings_emulator_picker_installed_installing)
                                 downloadState is EmulatorDownloadState.Failed ->
-                                    "Download error"
+                                    stringResource(R.string.settings_emulator_picker_installed_download_error)
                                 updateInfo != null -> {
-                                    val current = updateInfo.currentVersion?.let { VersionFormatter.formatForDisplay(it) } ?: "?"
+                                    val current = updateInfo.currentVersion?.let { VersionFormatter.formatForDisplay(it) }
+                                        ?: stringResource(R.string.settings_emulator_picker_version_unknown)
                                     val latest = VersionFormatter.formatForDisplay(updateInfo.latestVersion)
-                                    "$current -> $latest"
+                                    stringResource(R.string.settings_emulator_picker_version_update_arrow, current, latest)
                                 }
-                                else ->
-                                    "Installed" + (item.emulator.versionName?.let { " - ${VersionFormatter.formatForDisplay(it)}" } ?: "")
+                                else -> {
+                                    val versionSuffix = item.emulator.versionName?.let {
+                                        " - ${VersionFormatter.formatForDisplay(it)}"
+                                    } ?: ""
+                                    stringResource(R.string.settings_emulator_picker_installed_label) + versionSuffix
+                                }
                             }
 
                             EmulatorPickerItem(
@@ -226,7 +236,7 @@ fun EmulatorPickerPopup(
                             Column {
                                 Spacer(modifier = Modifier.height(Dimens.spacingSm))
                                 Text(
-                                    text = "AVAILABLE TO DOWNLOAD",
+                                    text = stringResource(R.string.settings_emulator_picker_download_header),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                     modifier = Modifier.padding(horizontal = Dimens.spacingSm)
@@ -243,13 +253,16 @@ fun EmulatorPickerPopup(
 
                             val subtitle = when {
                                 downloadState is EmulatorDownloadState.Downloading ->
-                                    "Downloading ${(downloadState.progress * 100).toInt()}%"
+                                    stringResource(
+                                        R.string.settings_emulator_picker_downloadable_downloading_progress,
+                                        (downloadState.progress * 100).toInt()
+                                    )
                                 downloadState is EmulatorDownloadState.WaitingForInstall ->
-                                    "Installing..."
+                                    stringResource(R.string.settings_emulator_picker_downloadable_installing)
                                 downloadState is EmulatorDownloadState.Failed ->
-                                    "Download error"
-                                isPlayStore -> "Play Store"
-                                else -> "GitHub"
+                                    stringResource(R.string.settings_emulator_picker_downloadable_download_error)
+                                isPlayStore -> stringResource(R.string.settings_emulator_picker_source_play_store)
+                                else -> stringResource(R.string.settings_emulator_picker_source_github)
                             }
 
                             EmulatorPickerItem(
@@ -267,8 +280,8 @@ fun EmulatorPickerPopup(
 
                         is PickerItem.OtherAppItem -> {
                             EmulatorPickerItem(
-                                name = "Other app...",
-                                subtitle = "Launch with any installed app",
+                                name = stringResource(R.string.settings_emulator_picker_other_app_name),
+                                subtitle = stringResource(R.string.settings_emulator_picker_other_app_subtitle),
                                 isFocused = isFocused(item),
                                 isTouchSelected = selectedIndex == item.itemIndex,
                                 isCurrentEmulator = false,
@@ -284,9 +297,9 @@ fun EmulatorPickerPopup(
 
             FooterHints(
                 hints = listOf(
-                    InputButton.DPAD to "Navigate",
-                    InputButton.A to "Select",
-                    InputButton.B to "Close"
+                    InputButton.DPAD to stringResource(R.string.settings_emulator_picker_hint_navigate),
+                    InputButton.A to stringResource(R.string.settings_emulator_picker_hint_select),
+                    InputButton.B to stringResource(R.string.settings_emulator_picker_hint_close)
                 ),
                 onHintClick = { button ->
                     when (button) {
@@ -383,7 +396,7 @@ private fun EmulatorPickerItem(
                 )
                 hasUpdate -> Icon(
                     imageVector = Icons.Default.SystemUpdate,
-                    contentDescription = "Update available",
+                    contentDescription = stringResource(R.string.settings_emulator_picker_update_available_desc),
                     tint = (if (isHighlighted) focusContent
                            else LocalLauncherTheme.current.semanticColors.info).copy(alpha = contentAlpha),
                     modifier = Modifier.size(Dimens.iconSm)

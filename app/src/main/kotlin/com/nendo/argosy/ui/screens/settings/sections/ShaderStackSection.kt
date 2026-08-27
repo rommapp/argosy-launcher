@@ -37,7 +37,9 @@ import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.libretro.shader.ShaderChainManager
 import com.nendo.argosy.ui.screens.settings.ShaderParamDef
@@ -209,7 +211,11 @@ private fun ShaderTabBar(
                     .onSizeChanged { size -> tabWidths[index] = size.width }
             ) {
                 Text(
-                    text = "${index + 1}. ${entry.displayName}",
+                    text = stringResource(
+                        R.string.settings_shell_shaderstack_tab_label,
+                        index + 1,
+                        entry.displayName
+                    ),
                     style = MaterialTheme.typography.labelMedium,
                     color = textColor,
                     maxLines = 1
@@ -304,7 +310,7 @@ private fun ShaderPreviewPanel(
         if (previewBitmap != null) {
             Image(
                 bitmap = previewBitmap,
-                contentDescription = "Shader preview",
+                contentDescription = stringResource(R.string.settings_shell_shaderstack_preview_desc),
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(RoundedCornerShape(Dimens.radiusLg)),
@@ -312,7 +318,7 @@ private fun ShaderPreviewPanel(
             )
         } else {
             Text(
-                text = "No preview",
+                text = stringResource(R.string.settings_shell_shaderstack_no_preview),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -329,7 +335,7 @@ private fun ShaderStackEmptyState() {
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = "No shaders in chain",
+            text = stringResource(R.string.settings_shell_shaderstack_empty),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -345,7 +351,7 @@ private fun ShaderNoParamsState(shaderName: String) {
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = "No adjustable parameters",
+            text = stringResource(R.string.settings_shell_shaderstack_no_params),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )

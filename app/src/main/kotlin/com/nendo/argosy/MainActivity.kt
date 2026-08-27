@@ -52,6 +52,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -62,6 +63,11 @@ internal fun shouldInitializeScreenCapture(prefs: UserPreferences): Boolean =
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    override fun attachBaseContext(newBase: android.content.Context) {
+        val tag = com.nendo.argosy.data.preferences.SessionStateStore(newBase).getAppLanguage()
+        super.attachBaseContext(com.nendo.argosy.core.locale.LocaleHelper.wrap(newBase, tag))
+    }
 
     @Inject lateinit var gameDao: GameDao
     @Inject lateinit var gameRepository: com.nendo.argosy.data.repository.GameRepository
@@ -429,6 +435,9 @@ class MainActivity : ComponentActivity() {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     val rolesSwappedState = dualScreenManager.isRolesSwapped.collectAsState()
                     val dualScreenDeviceState = dualScreenManager.isDualScreenDevice.collectAsState()
+                    androidx.compose.runtime.LaunchedEffect(Unit) {
+                        dualScreenManager.localeChangeToken.drop(1).collect { recreate() }
+                    }
                     ArgosyApp(
                         isDualScreenDevice = dualScreenDeviceState.value,
                         isRolesSwapped = rolesSwappedState.value,

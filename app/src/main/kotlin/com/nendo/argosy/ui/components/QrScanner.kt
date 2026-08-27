@@ -31,7 +31,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -175,7 +177,7 @@ private fun QrScannerView(
         )
 
         Text(
-            text = "Point at the RomM pairing QR code",
+            text = stringResource(R.string.ui_qr_scanner_hint),
             style = MaterialTheme.typography.bodyMedium,
             color = Color.White,
             modifier = Modifier

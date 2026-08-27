@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.quickmenu
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.local.dao.SearchCandidate
@@ -14,6 +15,7 @@ import com.nendo.argosy.util.FuzzySearch
 import com.nendo.argosy.util.formatPlayTime
 import com.nendo.argosy.util.formatRelativeTime
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,7 +37,7 @@ enum class MetadataType {
 data class GameRowUi(
     val id: Long,
     val title: String,
-    val platformName: String,
+    val platformName: String?,
     val coverPath: String?,
     val metadata: String,
     val metadataType: MetadataType = MetadataType.NONE,
@@ -46,7 +48,7 @@ data class GameRowUi(
 data class GameCardUi(
     val id: Long,
     val title: String,
-    val platformName: String,
+    val platformName: String?,
     val coverPath: String?,
     val year: Int?,
     val developer: String?,
@@ -76,6 +78,7 @@ private const val LIST_LIMIT = 20
 
 @HiltViewModel
 class QuickMenuViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val gameRepository: GameRepository,
     private val platformRepository: PlatformRepository,
     private val getTopUnplayedUseCase: GetTopUnplayedUseCase,
@@ -283,7 +286,7 @@ class QuickMenuViewModel @Inject constructor(
 
     private suspend fun loadMostPlayed() {
         val games = gameRepository.getPlayedGames().take(LIST_LIMIT)
-        val rows = games.map { it.toGameRowUi(MetadataType.PLAY_TIME) { formatPlayTime(it.playTimeMinutes) } }
+        val rows = games.map { it.toGameRowUi(MetadataType.PLAY_TIME) { formatPlayTime(context, it.playTimeMinutes) } }
         _uiState.update { it.copy(mostPlayedGames = rows) }
     }
 
@@ -295,7 +298,7 @@ class QuickMenuViewModel @Inject constructor(
 
     private suspend fun loadRecent() {
         val games = gameRepository.getRecentlyPlayed(LIST_LIMIT)
-        val rows = games.map { it.toGameRowUi(MetadataType.RELATIVE_TIME) { formatRelativeTime(it.lastPlayed) } }
+        val rows = games.map { it.toGameRowUi(MetadataType.RELATIVE_TIME) { formatRelativeTime(context, it.lastPlayed) } }
         _uiState.update { it.copy(recentGames = rows) }
     }
 
@@ -374,10 +377,11 @@ class QuickMenuViewModel @Inject constructor(
         )
     }
 
-    private suspend fun getPlatformName(platformId: Long): String {
-        return platformCache.getOrPut(platformId) {
-            platformRepository.getById(platformId)?.name ?: "Unknown"
-        }
+    private suspend fun getPlatformName(platformId: Long): String? {
+        platformCache[platformId]?.let { return it }
+        val name = platformRepository.getById(platformId)?.name ?: return null
+        platformCache[platformId] = name
+        return name
     }
 
     private fun formatRating(rating: Float?): String {

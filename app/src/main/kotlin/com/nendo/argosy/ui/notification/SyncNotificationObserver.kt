@@ -1,10 +1,13 @@
 package com.nendo.argosy.core.notification
 
+import android.content.Context
+import com.nendo.argosy.R
 import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.data.sync.SyncDirection
 import com.nendo.argosy.data.sync.SyncOperation
 import com.nendo.argosy.data.sync.SyncQueueState
 import com.nendo.argosy.data.sync.SyncStatus
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -21,6 +24,7 @@ private const val BATCH_WINDOW_MS = 3_000L
 
 @Singleton
 class SyncNotificationObserver @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val saveSyncRepository: SaveSyncRepository,
     private val notificationManager: NotificationManager
 ) {
@@ -107,9 +111,11 @@ class SyncNotificationObserver @Inject constructor(
 
         if (batch.size == 1) {
             val op = batch.first()
-            val subtitle = op.channelName?.let { "${op.gameName} ($it)" } ?: op.gameName
+            val subtitle = op.channelName?.let {
+                NotificationText.Res(R.string.ui_sync_notice_game_with_slot, listOf(op.gameName, it))
+            } ?: NotificationText.Raw(op.gameName)
             notificationManager.show(
-                title = "Save Synced",
+                title = NotificationText.Res(R.string.ui_sync_notice_success_title),
                 subtitle = subtitle,
                 type = NotificationType.SUCCESS,
                 imagePath = op.coverPath,
@@ -121,9 +127,17 @@ class SyncNotificationObserver @Inject constructor(
         }
 
         val titles = batch.take(3).joinToString(", ") { it.gameName }
-        val subtitle = if (batch.size > 3) "$titles, +${batch.size - 3} more" else titles
+        val subtitle = if (batch.size > 3) {
+            NotificationText.Res(R.string.ui_sync_notice_batch_subtitle, listOf(titles, batch.size - 3))
+        } else {
+            NotificationText.Raw(titles)
+        }
         notificationManager.show(
-            title = "${batch.size} saves synced",
+            title = NotificationText.Plural(
+                R.plurals.ui_sync_notice_batch_title,
+                batch.size,
+                listOf(batch.size)
+            ),
             subtitle = subtitle,
             type = NotificationType.SUCCESS,
             duration = NotificationDuration.MEDIUM,
@@ -134,11 +148,20 @@ class SyncNotificationObserver @Inject constructor(
 
     private fun showFailureNotification(operation: SyncOperation) {
         val title = when (operation.direction) {
-            SyncDirection.UPLOAD -> "Upload Failed"
-            SyncDirection.DOWNLOAD -> "Download Failed"
+            SyncDirection.UPLOAD -> NotificationText.Res(R.string.ui_sync_notice_upload_failed_title)
+            SyncDirection.DOWNLOAD ->
+                NotificationText.Res(R.string.ui_sync_notice_download_failed_title)
         }
-        val gameLine = operation.channelName?.let { "${operation.gameName} ($it)" } ?: operation.gameName
-        val subtitle = operation.error?.let { "$gameLine: $it" } ?: gameLine
+        val gameLine = operation.channelName?.let {
+            context.getString(
+                R.string.ui_sync_notice_failed_game_with_slot,
+                operation.gameName,
+                it
+            )
+        } ?: operation.gameName
+        val subtitle = operation.error?.let {
+            NotificationText.Res(R.string.ui_sync_notice_failed_subtitle, listOf(gameLine, it))
+        } ?: NotificationText.Raw(gameLine)
         notificationManager.show(
             title = title,
             subtitle = subtitle,

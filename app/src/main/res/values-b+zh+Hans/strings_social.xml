@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="social_feed_loading_connecting">正在连接...</string>
+    <string name="social_feed_loading_community">正在加载社区动态...</string>
+    <string name="social_feed_loading_friends">正在加载动态...</string>
+    <string name="social_feed_community_badge">社区动态</string>
+
+    <string name="social_feed_hint_view">查看</string>
+    <string name="social_feed_hint_unlike">取消点赞</string>
+    <string name="social_feed_hint_like">点赞</string>
+    <string name="social_feed_hint_switch_to_friends">好友</string>
+    <string name="social_feed_hint_switch_to_community">社区</string>
+    <string name="social_feed_hint_options">选项</string>
+
+    <string name="social_friends_hint_accept">接受</string>
+    <string name="social_friends_hint_decline">拒绝</string>
+    <string name="social_friends_hint_cancel_request">取消</string>
+    <string name="social_friends_hint_join">加入</string>
+    <string name="social_friends_hint_view_profile">资料</string>
+    <string name="social_friends_hint_favorite">收藏</string>
+
+    <string name="social_notifications_hint_open">打开</string>
+    <string name="social_notifications_hint_read_all">全部已读</string>
+    <string name="social_notifications_loading">正在加载通知...</string>
+
+    <string name="social_profile_hint_avatar">头像</string>
+    <string name="social_profile_hint_view_game">查看游戏</string>
+    <string name="social_profile_hint_settings">设置</string>
+
+    <string name="social_tabbar_feed">动态</string>
+    <string name="social_tabbar_friends">好友</string>
+    <string name="social_tabbar_alerts">提醒</string>
+    <string name="social_tabbar_profile">资料</string>
+    <string name="social_tabbar_unread_overflow">99+</string>
+
+    <string name="social_notconnected_title">未连接</string>
+    <string name="social_notconnected_body">在设置中关联你的账号以查看好友动态</string>
+
+    <string name="social_error_prefix">错误：%1$s</string>
+
+    <string name="social_emptyfeed_title">还没有动态</string>
+    <string name="social_emptyfeed_body_community">关注游戏社区以在这里查看帖子</string>
+    <string name="social_emptyfeed_body_friends">你好友的游戏动态会显示在这里</string>
+
+    <string name="social_feedcontent_header_title">动态</string>
+    <plurals name="social_feedcontent_event_count">
+        <item quantity="other">%1$d条动态</item>
+    </plurals>
+
+    <string name="social_doodlecard_shared_label">分享了一幅涂鸦</string>
+
+    <string name="social_startedplayingfooter_likes_desc">点赞</string>
+    <string name="social_startedplayingfooter_comments_desc">评论</string>
+    <string name="social_feedeventcardfooter_likes_desc">点赞</string>
+    <string name="social_feedeventcardfooter_comments_desc">评论</string>
+
+    <string name="social_feed_desc_started_playing">首次游玩</string>
+    <plurals name="social_feed_desc_play_milestone">
+        <item quantity="other">游玩时长达到%1$d小时</item>
+    </plurals>
+    <string name="social_feed_desc_marathon_session">进行了%1$d小时的马拉松式游玩</string>
+    <string name="social_feed_desc_completed">已通关</string>
+    <string name="social_feed_desc_achievement_unlocked">解锁了成就“%1$s”</string>
+    <string name="social_feed_desc_achievement_unlocked_fallback_name">一项成就</string>
+    <plurals name="social_feed_desc_achievement_milestone">
+        <item quantity="other">获得了%1$d个成就</item>
+    </plurals>
+    <string name="social_feed_desc_perfect_game">完美通关</string>
+    <string name="social_feed_desc_game_added">添加到了游戏库</string>
+    <string name="social_feed_desc_game_favorited">收藏了</string>
+    <string name="social_feed_desc_game_rated">评分为%1$s</string>
+    <string name="social_feed_desc_friend_added">与%1$s成为了好友</string>
+    <string name="social_feed_desc_friend_added_fallback_name">某人</string>
+    <string name="social_feed_desc_collection_shared">分享了合集“%1$s”</string>
+    <string name="social_feed_desc_collection_saved">保存了合集“%1$s”</string>
+    <string name="social_feed_desc_collection_created">创建了合集“%1$s”</string>
+    <plurals name="social_feed_desc_collection_updated">
+        <item quantity="other">向“%2$s”添加了%1$d个游戏</item>
+    </plurals>
+    <string name="social_feed_desc_collection_fallback_name">一个合集</string>
+    <string name="social_feed_desc_doodle">分享了一幅涂鸦</string>
+    <string name="social_feed_desc_discussion_shared_post">分享了一条动态</string>
+    <string name="social_feed_desc_discussion_truncated">%1$s...</string>
+
+    <string name="social_communitysearch_modal_title">查找社区</string>
+    <string name="social_communitysearch_hint_browse">浏览</string>
+    <string name="social_communitysearch_hint_navigate">导航</string>
+    <string name="social_communitysearch_hint_toggle_follow">关注/取消关注</string>
+    <string name="social_communitysearch_hint_close">关闭</string>
+    <string name="social_communitysearch_placeholder">搜索游戏...</string>
+    <string name="social_communitysearch_following">已关注</string>
+    <string name="social_communitysearch_follow">关注</string>
+    <string name="social_communitysearch_no_results">未找到游戏</string>
+
+    <string name="social_feedoptions_modal_title">选项</string>
+    <string name="social_feedoptions_option_find_communities">查找社区</string>
+    <string name="social_feedoptions_option_create_post">发布动态</string>
+    <string name="social_feedoptions_option_view_profile">查看%1$s的资料</string>
+    <string name="social_feedoptions_option_share_screenshot">分享截图</string>
+    <string name="social_feedoptions_option_report_post">举报动态</string>
+    <string name="social_feedoptions_option_hide_post">隐藏动态</string>
+
+    <string name="social_avataroptions_modal_title">头像</string>
+
+    <string name="social_reportreason_modal_title">举报原因</string>
+    <string name="social_reportreason_spam">垃圾信息或重复内容</string>
+    <string name="social_reportreason_harassment">骚扰或欺凌</string>
+    <string name="social_reportreason_inappropriate">不当或冒犯性内容</string>
+    <string name="social_reportreason_misinformation">虚假或误导性信息</string>
+
+    <string name="social_avatar_option_edit_doodle">编辑涂鸦</string>
+    <string name="social_avatar_option_use_doodle">使用涂鸦</string>
+    <string name="social_avatar_option_use_initials">使用首字母</string>
+
+    <string name="social_viewmodel_legacy_joining_title">正在加入%1$s</string>
+    <string name="social_viewmodel_legacy_checking_compatibility">正在检查兼容性...</string>
+
+    <string name="social_posteditor_screen_title">发布动态</string>
+    <string name="social_posteditor_body_counter">%1$d/%2$d</string>
+    <string name="social_posteditor_body_placeholder">在想些什么？</string>
+    <string name="social_posteditor_doodle_remove_desc">移除涂鸦</string>
+    <string name="social_posteditor_doodle_remove_label">移除</string>
+    <string name="social_posteditor_doodle_add_desc">添加涂鸦</string>
+    <string name="social_posteditor_doodle_add_label">添加涂鸦</string>
+    <string name="social_posteditor_game_link_placeholder">关联一个游戏（可选）</string>
+    <string name="social_posteditor_visibility_public">公开</string>
+    <string name="social_posteditor_visibility_friends_only">仅好友可见</string>
+    <string name="social_posteditor_visibility_public_desc">在游戏社区中可见</string>
+    <string name="social_posteditor_visibility_friends_desc">仅好友可见</string>
+
+    <string name="social_posteditor_footer_edit">编辑</string>
+    <string name="social_posteditor_footer_select">选择</string>
+    <string name="social_posteditor_footer_clear">清除</string>
+    <string name="social_posteditor_footer_toggle">切换</string>
+    <string name="social_posteditor_footer_remove_doodle">移除</string>
+    <string name="social_posteditor_footer_add_doodle">添加涂鸦</string>
+    <string name="social_posteditor_footer_post">发布</string>
+    <string name="social_posteditor_footer_discard">放弃</string>
+    <string name="social_posteditor_footer_back">返回</string>
+
+    <string name="social_postconfirm_modal_title">发布动态</string>
+    <string name="social_postconfirm_posting">正在发布...</string>
+    <string name="social_postconfirm_visibility_public">此动态将在游戏社区中公开分享。</string>
+    <string name="social_postconfirm_visibility_friends">此动态将分享给你的好友。</string>
+    <string name="social_postconfirm_option_post">发布</string>
+    <string name="social_postconfirm_option_cancel">取消</string>
+
+    <string name="social_discardpost_modal_title">放弃动态？</string>
+    <string name="social_discardpost_body">你有尚未保存的更改。确定要放弃这条动态吗？</string>
+    <string name="social_discardpost_option_discard">放弃</string>
+    <string name="social_discardpost_option_keep_editing">继续编辑</string>
+
+    <string name="social_postgamepicker_modal_title">选择游戏</string>
+    <string name="social_postgamepicker_hint_browse">浏览</string>
+    <string name="social_postgamepicker_hint_navigate">导航</string>
+    <string name="social_postgamepicker_hint_select">选择</string>
+    <string name="social_postgamepicker_hint_cancel">取消</string>
+    <string name="social_postgamepicker_search_placeholder">搜索游戏...</string>
+    <string name="social_postgamepicker_no_game">无游戏</string>
+
+    <string name="social_friends_empty_title">还没有好友</string>
+    <string name="social_friends_empty_body">在设置中使用你的好友码添加好友</string>
+    <string name="social_friends_header_incoming">收到的请求</string>
+    <string name="social_friends_header_sent">已发送的请求</string>
+    <string name="social_friends_header_accepted">好友</string>
+    <string name="social_friends_request_accept">接受</string>
+    <string name="social_friends_request_decline">拒绝</string>
+    <string name="social_friends_request_cancel">取消</string>
+
+    <string name="social_friendcard_hosting">正在主持%1$s</string>
+    <string name="social_friendcard_playing">正在玩%1$s</string>
+    <string name="social_friendcard_watching">正在看%1$s</string>
+    <string name="social_friendcard_favorite_remove_desc">移除收藏</string>
+    <string name="social_friendcard_favorite_add_desc">添加收藏</string>
+
+    <string name="social_netplaybadge_desc">联机会话</string>
+    <string name="social_netplaybadge_label">联机</string>
+
+    <string name="social_netplayjoin_checking">正在检查...</string>
+    <string name="social_netplayjoin_join">加入</string>
+    <string name="social_netplayjoin_rom_not_found">你没有这个ROM</string>
+    <string name="social_netplayjoin_rom_version_mismatch">ROM版本不同</string>
+    <string name="social_netplayjoin_core_version_mismatch">请更新Argosy以匹配版本</string>
+    <string name="social_netplayjoin_core_not_supported">核心不受支持</string>
+    <string name="social_netplayjoin_session_busy">会话繁忙</string>
+
+    <string name="social_presence_online">在线</string>
+    <string name="social_presence_away">离开</string>
+    <string name="social_presence_in_game">游戏中</string>
+    <string name="social_presence_watching">观看中</string>
+    <string name="social_presence_offline">离线</string>
+
+    <string name="social_profiletab_not_connected">未连接</string>
+    <string name="social_profiletab_most_played_header">游玩最多</string>
+
+    <string name="social_accountcard_presence_playing">正在玩%1$s</string>
+    <string name="social_accountcard_presence_in_game">游戏中</string>
+    <string name="social_accountcard_presence_watching_game">正在看%1$s</string>
+    <string name="social_accountcard_presence_watching">观看中</string>
+    <string name="social_accountcard_presence_online">在线</string>
+    <string name="social_accountcard_presence_away">离开</string>
+    <string name="social_accountcard_member_since_wide">加入于%1$s</string>
+    <string name="social_accountcard_member_since_compact">加入于%1$s</string>
+    <plurals name="social_accountcard_friend_count_wide">
+        <item quantity="other">%1$d位好友</item>
+    </plurals>
+    <plurals name="social_accountcard_friend_count_compact">
+        <item quantity="other">%1$d位好友</item>
+    </plurals>
+
+    <string name="social_relationship_friends_desc">好友</string>
+    <string name="social_relationship_favorite_desc">收藏</string>
+    <string name="social_relationship_not_favorite_desc">未收藏</string>
+    <string name="social_relationship_not_friends_desc">非好友</string>
+    <string name="social_relationship_pending_desc">待处理</string>
+
+    <string name="social_statsgrid_total_play_time">总游戏时长</string>
+    <string name="social_statsgrid_games_played">已玩游戏数</string>
+    <string name="social_statsgrid_friends">好友</string>
+    <string name="social_statsgrid_top_genre">最常玩类型</string>
+    <string name="social_statsgrid_top_platform">最常玩平台</string>
+    <string name="social_statsgrid_fav_decade">最爱年代</string>
+    <string name="social_statsgrid_placeholder_dash">--</string>
+
+    <string name="social_playtimechart_header">最近30天</string>
+    <string name="social_playtimechart_peak">峰值：%1$s</string>
+
+    <plurals name="social_mostplayed_sessions">
+        <item quantity="other">%1$d次游玩</item>
+    </plurals>
+
+    <string name="social_playhours_minutes">%1$dm</string>
+    <string name="social_playhours_hours_decimal">%1$s小时</string>
+    <plurals name="social_playhours_hours_whole">
+        <item quantity="other">%1$d小时</item>
+    </plurals>
+    <string name="social_playhours_hours_thousands">%1$s千小时</string>
+
+    <string name="social_userprofile_hint_view_game">查看游戏</string>
+    <string name="social_userprofile_hint_unfavorite">取消收藏</string>
+    <string name="social_userprofile_hint_favorite">收藏</string>
+    <string name="social_userprofile_hint_add_friend">添加好友</string>
+    <string name="social_userprofile_hint_back">返回</string>
+    <string name="social_userprofile_most_played_header">游玩最多</string>
+
+    <string name="social_notifications_empty_title">暂无通知</string>
+    <string name="social_notifications_empty_body">来自你的动态和好友的活动会显示在这里</string>
+    <string name="social_notifications_unknown_avatar">?</string>
+    <string name="social_notifications_avatar_overflow">+%1$d</string>
+    <string name="social_notifications_default_actor">某人</string>
+    <string name="social_notifications_event_type_fallback">动态</string>
+
+    <string name="social_notifications_comment_zero">有人评论了你的%1$s</string>
+    <string name="social_notifications_comment_one">%1$s评论了你的%2$s</string>
+    <string name="social_notifications_comment_two">%1$s和%2$s评论了你的%3$s</string>
+    <string name="social_notifications_comment_many">%1$s、%2$s等%3$d人评论了你的%4$s</string>
+
+    <string name="social_notifications_like_milestone_default_preview">你的动态</string>
+    <string name="social_notifications_like_milestone_with_count">%1$s获得了%2$d个赞</string>
+    <string name="social_notifications_like_milestone_generic">%1$s达到了点赞里程碑</string>
+
+    <string name="social_notifications_friend_request">%1$s向你发送了好友请求</string>
+    <string name="social_notifications_friend_accepted">%1$s接受了你的好友请求</string>
+    <string name="social_notifications_friend_added">%1$s将你添加为好友</string>
+    <string name="social_notifications_generic_fallback">新通知</string>
+
+    <string name="social_eventdetail_hint_back">返回</string>
+    <string name="social_eventdetail_hint_unlike">取消点赞</string>
+    <string name="social_eventdetail_hint_like">点赞</string>
+    <string name="social_eventdetail_hint_comment">评论</string>
+    <string name="social_eventdetail_hint_view_game">查看游戏</string>
+    <string name="social_eventdetail_hint_profile">资料</string>
+
+    <string name="social_eventdetail_comments_header_portrait">评论（%1$d）</string>
+    <string name="social_eventdetail_comments_header_landscape">评论</string>
+    <string name="social_eventdetail_no_comments_portrait">还没有评论，来抢沙发吧！</string>
+    <string name="social_eventdetail_no_comments_landscape">还没有评论</string>
+    <string name="social_eventdetail_comment_input_placeholder">添加评论...</string>
+    <string name="social_eventdetail_comment_send_desc">发送</string>
+    <string name="social_eventdetail_likes_desc">点赞</string>
+
+    <string name="social_eventdetail_desc_started_playing">首次游玩</string>
+    <plurals name="social_eventdetail_desc_play_milestone">
+        <item quantity="other">游玩时长达到%1$d小时</item>
+    </plurals>
+    <string name="social_eventdetail_desc_marathon_session">进行了%1$d小时的马拉松式游玩</string>
+    <string name="social_eventdetail_desc_completed">已通关</string>
+    <string name="social_eventdetail_desc_achievement_unlocked">解锁了成就“%1$s”</string>
+    <string name="social_eventdetail_desc_achievement_unlocked_fallback_name">一项成就</string>
+    <plurals name="social_eventdetail_desc_achievement_milestone">
+        <item quantity="other">获得了%1$d个成就</item>
+    </plurals>
+    <string name="social_eventdetail_desc_perfect_game">完美通关</string>
+    <string name="social_eventdetail_desc_game_added">添加到了游戏库</string>
+    <string name="social_eventdetail_desc_game_favorited">收藏了</string>
+    <string name="social_eventdetail_desc_game_rated">评分为%1$s</string>
+    <string name="social_eventdetail_desc_friend_added">与%1$s成为了好友</string>
+    <string name="social_eventdetail_desc_friend_added_fallback_name">某人</string>
+    <string name="social_eventdetail_desc_collection_shared">分享了合集“%1$s”</string>
+    <string name="social_eventdetail_desc_collection_saved">保存了合集“%1$s”</string>
+    <string name="social_eventdetail_desc_collection_created">创建了合集“%1$s”</string>
+    <plurals name="social_eventdetail_desc_collection_updated">
+        <item quantity="other">向“%2$s”添加了%1$d个游戏</item>
+    </plurals>
+    <string name="social_eventdetail_desc_collection_fallback_name">一个合集</string>
+    <string name="social_eventdetail_desc_doodle">分享了一幅涂鸦</string>
+    <string name="social_eventdetail_desc_discussion_shared_post">分享了一条动态</string>
+    <string name="social_eventdetail_desc_discussion_truncated">%1$s...</string>
+</resources>

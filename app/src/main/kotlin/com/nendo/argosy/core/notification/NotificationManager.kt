@@ -32,8 +32,8 @@ class NotificationManager @Inject constructor() {
     val statusNotification: StateFlow<StatusNotification?> = _statusNotification.asStateFlow()
 
     fun show(
-        title: String,
-        subtitle: String? = null,
+        title: NotificationText,
+        subtitle: NotificationText? = null,
         type: NotificationType = NotificationType.INFO,
         imagePath: String? = null,
         platformSlug: String? = null,
@@ -108,7 +108,7 @@ class NotificationManager @Inject constructor() {
         _statusNotification.value = null
     }
 
-    fun updateStatus(title: String, subtitle: String? = null, progress: Float? = null) {
+    fun updateStatus(title: NotificationText, subtitle: NotificationText? = null, progress: Float? = null) {
         _statusNotification.value = StatusNotification(
             title = title,
             subtitle = subtitle,
@@ -122,8 +122,8 @@ class NotificationManager @Inject constructor() {
     }
 
     fun showPersistent(
-        title: String,
-        subtitle: String? = null,
+        title: NotificationText,
+        subtitle: NotificationText? = null,
         key: String,
         progress: NotificationProgress? = null,
         platformSlug: String? = null
@@ -146,8 +146,8 @@ class NotificationManager @Inject constructor() {
 
     fun updatePersistent(
         key: String,
-        title: String? = null,
-        subtitle: String? = null,
+        title: NotificationText? = null,
+        subtitle: NotificationText? = null,
         progress: NotificationProgress? = null,
         platformSlug: String? = null
     ) {
@@ -164,8 +164,8 @@ class NotificationManager @Inject constructor() {
 
     fun completePersistent(
         key: String,
-        title: String,
-        subtitle: String? = null,
+        title: NotificationText,
+        subtitle: NotificationText? = null,
         type: NotificationType,
         platformSlug: String? = null
     ) {

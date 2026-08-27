@@ -24,6 +24,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.util.clickableNoFocus
@@ -66,7 +68,11 @@ fun PermissionCard(
     ) {
         Icon(
             imageVector = leadingIcon,
-            contentDescription = if (isGranted) "Granted" else null,
+            contentDescription = if (isGranted) {
+                stringResource(R.string.ui_permission_card_granted)
+            } else {
+                null
+            },
             tint = leadingTint,
             modifier = Modifier.size(Dimens.iconMd)
         )

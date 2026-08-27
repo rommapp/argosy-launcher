@@ -115,9 +115,49 @@
         "app/src/main/**/ui/**/*.kt"
       ],
       "path_exclude": [
-        "app/src/main/**/ui/components/BoxArtFrame.kt"
+        "app/src/main/**/ui/components/BoxArtFrame.kt",
+        "app/src/main/**/ui/common/GlowColorModeUi.kt"
       ],
       "added_regex": "\\bGlowColorMode\\.(AUTO|ACCENT_GRADIENT|COVER)\\b"
+    },
+    {
+      "id": "default-locale-format-in-data",
+      "summary": "Numeric String.format without an explicit Locale below the UI layer",
+      "message": "A %d or %f formatted with the default locale renders non-ASCII digits and a locale-specific decimal separator, and these layers build filenames, path components and comparison keys from that output. A downloaded music track formatted this way went missing on a locale change and re-downloaded under a second name. Pass Locale.ROOT explicitly: String.format(Locale.ROOT, \"%02d - %s\", n, title). Display text in ui/ is exempt and should follow the reader's locale.",
+      "path_include": [
+        "app/src/main/**/data/**/*.kt",
+        "app/src/main/**/domain/**/*.kt",
+        "app/src/main/**/util/**/*.kt"
+      ],
+      "path_exclude": [],
+      "added_regex": "\"[^\"]*%[-#+ 0,(]*\\d*(?:\\.\\d+)?[dfeEgG][^\"]*\"\\s*\\.format\\(\\s*(?!Locale)"
+    },
+    {
+      "id": "default-locale-string-format-call",
+      "summary": "String.format(...) whose first argument is the pattern, not a Locale",
+      "message": "String.format(\"...\") uses Locale.getDefault(), so a %d or %f in the pattern varies by device language. Below the UI layer that output reaches filenames and comparisons. Pass the locale first: String.format(Locale.ROOT, \"...\", args). See the music filename regression in .local-notes/i18n-master-plan.md.",
+      "path_include": [
+        "app/src/main/**/data/**/*.kt",
+        "app/src/main/**/domain/**/*.kt",
+        "app/src/main/**/util/**/*.kt"
+      ],
+      "path_exclude": [],
+      "added_regex": "String\\.format\\(\\s*\"[^\"]*%[-#+ 0,(]*\\d*(?:\\.\\d+)?[dfeEgG]"
+    },
+    {
+      "id": "raw-user-string",
+      "summary": "English prose written straight into a rendering argument",
+      "message": "The app ships in several languages and the string catalogue only stays complete if nothing bypasses it. Put the text in the res/values/strings_<area>.xml that owns this screen and render stringResource(R.string.<area>_<component>_<role>), or pluralStringResource for anything that counts. Two usage sites with identical English get two keys: never share one, because display strings in this repo are byte-identical to save-tree folder names in places and fusing them breaks path resolution. A label that is also a stored value, a map key, an options.indexOf entry, a route or a path component is a separate defect (AS-8) - give the value a token and the label a resource id. Identifiers are not prose: core ids, option tokens, emulator and platform names, paths and package names stay literals, and upstream ones must stay byte-exact. See CONTRIBUTING.md (AS-7) and AGENTS.md (label vs token).",
+      "path_include": [
+        "app/src/main/**/ui/**/*.kt",
+        "app/src/main/**/libretro/ui/**/*.kt",
+        "app/src/main/**/libretro/touch/**/*.kt"
+      ],
+      "path_exclude": [
+        "app/src/main/**/libretro/coreoptions/**",
+        "app/src/main/**/*Registry*.kt"
+      ],
+      "added_regex": "\\b(?:text|title|subtitle|label|message|contentDescription|placeholder|confirmLabel|declineLabel)\\s*=\\s*\"[A-Z][A-Za-z]*(?:[ '.,!?][^\"]*)?\""
     }
   ]
 }

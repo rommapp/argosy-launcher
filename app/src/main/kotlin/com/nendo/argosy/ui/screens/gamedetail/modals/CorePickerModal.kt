@@ -5,6 +5,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.data.emulator.RetroArchCore
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.Modal
@@ -19,8 +21,8 @@ fun CorePickerModal(
     onDismiss: () -> Unit
 ) {
     Modal(
-        title = "SELECT CORE",
-        subtitle = "Cores must be installed in RetroArch first",
+        title = stringResource(R.string.gamedetail_core_picker_title),
+        subtitle = stringResource(R.string.gamedetail_core_picker_subtitle),
         onDismiss = onDismiss
     ) {
         val listState = rememberLazyListState()
@@ -32,7 +34,7 @@ fun CorePickerModal(
         ) {
             item {
                 OptionItem(
-                    label = "Use Platform Default",
+                    label = stringResource(R.string.gamedetail_core_picker_platform_default),
                     isFocused = focusIndex == 0,
                     isSelected = selectedCoreId == null,
                     onClick = { onSelectCore(null) }

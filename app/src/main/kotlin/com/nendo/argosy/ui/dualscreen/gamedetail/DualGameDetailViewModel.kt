@@ -1,6 +1,7 @@
 package com.nendo.argosy.ui.dualscreen.gamedetail
 
 import android.content.Context
+import com.nendo.argosy.R
 import android.content.Intent
 import android.net.Uri
 import androidx.lifecycle.ViewModel
@@ -620,7 +621,7 @@ class DualGameDetailViewModel(
         slotItems.add(
             SaveSlotItem(
                 channelName = null,
-                displayName = "Auto Save",
+                displayName = context.getString(R.string.dual_detail_save_slot_auto),
                 isActive = activeChannel == null,
                 saveCount = autoSaves.size,
                 latestTimestamp = autoSaves.maxByOrNull { it.timestamp }

@@ -3,6 +3,7 @@ package com.nendo.argosy.ui.screens.savesync
 import android.os.Build
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nendo.argosy.R
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PendingConflictDao
 import com.nendo.argosy.data.local.dao.SaveCountByDevice
@@ -48,6 +49,7 @@ private const val JUST_SYNCED_THRESHOLD_MINUTES = 30L
 
 @HiltViewModel
 class SaveSyncViewModel @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val saveSyncDao: SaveSyncDao,
     private val pendingConflictDao: PendingConflictDao,
     private val syncQueueManager: SyncQueueManager,
@@ -148,7 +150,8 @@ class SaveSyncViewModel @Inject constructor(
                     add(
                         DeviceSummary(
                             deviceId = device.id,
-                            deviceName = device.name?.takeIf { it.isNotBlank() } ?: "Unnamed device",
+                            deviceName = device.name?.takeIf { it.isNotBlank() }
+                                ?: context.getString(R.string.savesync_device_unnamed),
                             platform = device.platform,
                             client = device.client,
                             clientVersion = device.clientVersion,
@@ -169,7 +172,7 @@ class SaveSyncViewModel @Inject constructor(
                 add(
                     DeviceSummary(
                         deviceId = null,
-                        deviceName = "Web",
+                        deviceName = context.getString(R.string.savesync_device_web),
                         platform = null,
                         client = "romm",
                         clientVersion = null,
@@ -205,8 +208,12 @@ class SaveSyncViewModel @Inject constructor(
                     direction = op.direction,
                     progress = op.progress,
                     statusLabel = when (op.status) {
-                        SyncStatus.IN_PROGRESS -> if (op.direction == SyncDirection.UPLOAD) "Uploading" else "Downloading"
-                        SyncStatus.PENDING -> "Queued"
+                        SyncStatus.IN_PROGRESS -> if (op.direction == SyncDirection.UPLOAD) {
+                            context.getString(R.string.savesync_progress_status_uploading)
+                        } else {
+                            context.getString(R.string.savesync_progress_status_downloading)
+                        }
+                        SyncStatus.PENDING -> context.getString(R.string.savesync_progress_status_queued)
                         else -> op.status.name
                     }
                 )
@@ -327,7 +334,11 @@ class SaveSyncViewModel @Inject constructor(
                         message = r.message
                     )
                 },
-                onFailure = { ForceSaveCheckUiState.Failed(it.message ?: "Save check failed") }
+                onFailure = {
+                    ForceSaveCheckUiState.Failed(
+                        it.message ?: context.getString(R.string.savesync_force_check_failed_fallback)
+                    )
+                }
             )
         }
     }
@@ -468,12 +479,13 @@ class SaveSyncViewModel @Inject constructor(
     }
 
     private fun effectiveChannelLabel(channelName: String?, game: GameEntity): String {
-        if (channelName.isNullOrBlank()) return "Archived"
-        if (channelName.equals(SaveSyncApiClient.AUTOSAVE_SLOT_NAME, ignoreCase = true)) return "Autosave"
-        if (channelName.equals(SaveSyncApiClient.DEFAULT_SAVE_NAME, ignoreCase = true)) return "Autosave"
-        if (channelName.equals(game.title, ignoreCase = true)) return "Autosave"
+        val autosaveLabel = context.getString(R.string.savesync_channel_autosave)
+        if (channelName.isNullOrBlank()) return context.getString(R.string.savesync_channel_archived)
+        if (channelName.equals(SaveSyncApiClient.AUTOSAVE_SLOT_NAME, ignoreCase = true)) return autosaveLabel
+        if (channelName.equals(SaveSyncApiClient.DEFAULT_SAVE_NAME, ignoreCase = true)) return autosaveLabel
+        if (channelName.equals(game.title, ignoreCase = true)) return autosaveLabel
         val romBaseName = game.localPath?.let { File(it).nameWithoutExtension }
-        if (romBaseName != null && channelName.equals(romBaseName, ignoreCase = true)) return "Autosave"
+        if (romBaseName != null && channelName.equals(romBaseName, ignoreCase = true)) return autosaveLabel
         return channelName
     }
 }

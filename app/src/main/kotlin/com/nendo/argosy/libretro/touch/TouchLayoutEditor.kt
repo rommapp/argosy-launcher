@@ -21,6 +21,8 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -141,7 +143,7 @@ fun TouchLayoutEditor(
             groupPlacements[GroupId.DPAD]?.let { p ->
                 DragWidget(
                     key = "DPAD",
-                    label = "D-PAD",
+                    labelRes = R.string.ingame_touch_editor_dpad_widget_label,
                     tint = Color(0x995574B5),
                     centerXPxInitial = p.anchorX * areaWPx,
                     centerYPxInitial = p.anchorY * areaHPx,
@@ -164,7 +166,7 @@ fun TouchLayoutEditor(
                 groupPlacements[GroupId.LEFT_ANALOG]?.let { p ->
                     DragWidget(
                         key = "LEFT_ANALOG",
-                        label = "L",
+                        labelRes = R.string.ingame_touch_editor_left_stick_widget_label,
                         tint = Color(0x995574B5),
                         centerXPxInitial = p.anchorX * areaWPx,
                         centerYPxInitial = p.anchorY * areaHPx,
@@ -188,7 +190,7 @@ fun TouchLayoutEditor(
             groupPlacements[GroupId.RIGHT_ANALOG]?.let { p ->
                 DragWidget(
                     key = "RIGHT_ANALOG",
-                    label = "R",
+                    labelRes = R.string.ingame_touch_editor_right_stick_widget_label,
                     tint = Color(0x995574B5),
                     centerXPxInitial = p.anchorX * areaWPx,
                     centerYPxInitial = p.anchorY * areaHPx,
@@ -212,7 +214,7 @@ fun TouchLayoutEditor(
             val cy = with(density) { (lay.offsetY + lay.heightDp / 2).toPx() }
             DragWidget(
                 key = lay.key,
-                label = slot.label,
+                labelRes = slot.label,
                 tint = slot.tint ?: Color(0xCC1A1A1A),
                 centerXPxInitial = cx,
                 centerYPxInitial = cy,
@@ -234,7 +236,7 @@ fun TouchLayoutEditor(
             val cy = with(density) { (lay.offsetY + lay.heightDp / 2).toPx() }
             DragWidget(
                 key = lay.key,
-                label = slot.label,
+                labelRes = slot.label,
                 tint = Color(0xCC1A1A1A),
                 centerXPxInitial = cx,
                 centerYPxInitial = cy,
@@ -256,7 +258,7 @@ fun TouchLayoutEditor(
             val cy = with(density) { (lay.offsetY + lay.heightDp / 2).toPx() }
             DragWidget(
                 key = lay.key,
-                label = slot.label,
+                labelRes = slot.label,
                 tint = Color(0xCC1A1A1A),
                 centerXPxInitial = cx,
                 centerYPxInitial = cy,
@@ -296,17 +298,17 @@ fun TouchEditorToolbar(
         ) {
             val compact = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
             Button(onClick = onSave, contentPadding = compact) {
-                Text("Save", style = TextStyle(fontSize = 12.sp))
+                Text(stringResource(R.string.ingame_touch_editor_toolbar_save), style = TextStyle(fontSize = 12.sp))
             }
             OutlinedButton(onClick = onReset, contentPadding = compact) {
-                Text("Reset", style = TextStyle(fontSize = 12.sp))
+                Text(stringResource(R.string.ingame_touch_editor_toolbar_reset), style = TextStyle(fontSize = 12.sp))
             }
             OutlinedButton(onClick = onCancel, contentPadding = compact) {
-                Text("Cancel", style = TextStyle(fontSize = 12.sp))
+                Text(stringResource(R.string.ingame_touch_editor_toolbar_cancel), style = TextStyle(fontSize = 12.sp))
             }
             onTogglePreviewOrientation?.let {
                 OutlinedButton(onClick = it, contentPadding = compact) {
-                    Text("Rotate", style = TextStyle(fontSize = 12.sp))
+                    Text(stringResource(R.string.ingame_touch_editor_toolbar_rotate), style = TextStyle(fontSize = 12.sp))
                 }
             }
         }
@@ -316,7 +318,7 @@ fun TouchEditorToolbar(
 @Composable
 private fun DragWidget(
     key: String,
-    label: String,
+    @androidx.annotation.StringRes labelRes: Int,
     tint: Color,
     centerXPxInitial: Float,
     centerYPxInitial: Float,
@@ -332,6 +334,7 @@ private fun DragWidget(
     allowDisable: Boolean,
     onChange: (GroupPlacement) -> Unit
 ) {
+    val label = stringResource(labelRes)
     val density = LocalDensity.current
     val widthPx = with(density) { widthDp.toPx() }
     val heightPx = with(density) { heightDp.toPx() }

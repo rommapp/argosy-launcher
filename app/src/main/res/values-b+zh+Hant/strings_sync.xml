@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sync_prelaunch_checking_save">正在檢查存檔...</string>
+    <string name="sync_prelaunch_save_found">已找到存檔</string>
+    <string name="sync_prelaunch_save_absent">沒有存檔</string>
+    <string name="sync_prelaunch_connecting">連線中...</string>
+    <string name="sync_prelaunch_connected">已連線</string>
+    <string name="sync_prelaunch_connect_failed">連線失敗</string>
+    <string name="sync_prelaunch_downloading">下載中...</string>
+    <string name="sync_prelaunch_download_complete">下載完成</string>
+    <string name="sync_prelaunch_download_failed">下載失敗</string>
+    <string name="sync_prelaunch_writing">正在寫入存檔...</string>
+    <string name="sync_prelaunch_write_complete">存檔已寫入</string>
+    <string name="sync_prelaunch_write_failed">寫入失敗</string>
+    <string name="sync_prelaunch_launching">正在啟動遊戲...</string>
+
+    <string name="sync_postsession_checking_save">正在檢查存檔...</string>
+    <string name="sync_postsession_save_found">已找到存檔</string>
+    <string name="sync_postsession_save_absent">找不到存檔</string>
+    <string name="sync_postsession_connecting">連線中...</string>
+    <string name="sync_postsession_connected">已連線</string>
+    <string name="sync_postsession_connect_failed">連線失敗</string>
+    <string name="sync_postsession_uploading">上傳中...</string>
+    <string name="sync_postsession_upload_complete">上傳完成</string>
+    <string name="sync_postsession_upload_queued">已排入上傳佇列</string>
+    <string name="sync_postsession_complete">同步完成</string>
+
+    <string name="sync_progress_skipped">已略過同步</string>
+    <string name="sync_progress_hardcore_conflict">硬核存檔衝突</string>
+    <string name="sync_progress_local_modified">本機存檔已變更</string>
+    <string name="sync_progress_save_conflict">存檔衝突</string>
+
+    <string name="sync_blocked_permission_title">需要檔案存取權限</string>
+    <string name="sync_blocked_permission_detail">請授予「所有檔案存取權」以同步%1$s的存檔。</string>
+    <string name="sync_blocked_permission_emulator_fallback">此模擬器</string>
+
+    <string name="sync_blocked_path_not_found_title">找不到存檔資料夾</string>
+    <string name="sync_blocked_path_not_found_detail">找不到%1$s的存檔資料夾，該模擬器可能使用了非標準的存檔位置。</string>
+    <string name="sync_blocked_path_not_found_emulator_fallback">此模擬器</string>
+
+    <string name="sync_blocked_access_denied_title">存檔資料夾存取遭封鎖</string>
+    <string name="sync_blocked_access_denied_detail">您的裝置封鎖了對%1$s存檔資料的存取，這可能是製造商限制（如Samsung、Xiaomi等）或安全性原則所致。</string>
+    <string name="sync_blocked_access_denied_switch_detail">您的裝置封鎖了對%1$s存檔資料的存取，請在%2$s中設定外部存檔路徑（位於Android/data之外），再於Argosy中設定相同路徑。</string>
+    <string name="sync_blocked_access_denied_emulator_fallback">模擬器</string>
+    <string name="sync_blocked_access_denied_configure_fallback">該模擬器</string>
+
+    <string name="sync_service_channel_name">存檔同步</string>
+    <string name="sync_service_channel_description">在背景顯示存檔同步進度</string>
+    <string name="sync_service_preparing">正在準備同步...</string>
+    <string name="sync_service_platform">同步中：%1$s</string>
+    <string name="sync_service_library">正在同步遊戲庫...</string>
+    <string name="sync_service_uploading">上傳中：%1$s</string>
+    <string name="sync_service_downloading">下載中：%1$s</string>
+    <string name="sync_service_saves">正在同步存檔...</string>
+
+    <string name="sync_download_channel_name">下載進度</string>
+    <string name="sync_download_channel_description">在背景顯示下載進度</string>
+    <string name="sync_download_service_preparing">正在準備下載...</string>
+    <string name="sync_download_service_steam_downloading">下載中：%1$s</string>
+    <string name="sync_download_service_extracting">解壓縮中：%1$s</string>
+    <string name="sync_download_service_moving">正在移至ROM儲存空間：%1$s</string>
+    <string name="sync_download_service_downloading">下載中：%1$s</string>
+    <string name="sync_download_service_queued">排隊中：%1$s</string>
+    <string name="sync_download_service_pending">下載等待中...</string>
+    <string name="sync_download_service_media_preparing">%1$s：%2$s</string>
+    <string name="sync_download_service_media_downloading">下載中：%1$s</string>
+
+    <string name="sync_session_channel_name">遊玩時段</string>
+    <string name="sync_session_channel_description">在遊玩期間監控存檔檔案</string>
+    <string name="sync_session_notification_playing">遊玩中</string>
+    <string name="sync_session_notification_save_detected">偵測到存檔</string>
+    <string name="sync_session_game_fallback">遊戲</string>
+
+    <string name="sync_session_save_uploaded_orphan">存檔已上傳</string>
+    <string name="sync_session_save_uploaded">存檔已上傳</string>
+    <string name="sync_session_save_unchanged">存檔沒有變更</string>
+    <string name="sync_session_save_upload_failed">上傳失敗</string>
+    <string name="sync_session_save_upload_failed_subtitle">%1$s：%2$s</string>
+    <string name="sync_session_save_upload_failed_name_fallback">存檔</string>
+
+    <plurals name="sync_conflict_pending_title">
+        <item quantity="other">%1$d個存檔需要您處理</item>
+    </plurals>
+    <string name="sync_conflict_pending_subtitle">請開啟存檔同步以處理，本機存檔不會受到影響。</string>
+
+    <string name="sync_media_signin_title">請登入以下載</string>
+    <string name="sync_media_signin_subtitle">請在設定中連線媒體伺服器</string>
+
+    <plurals name="sync_media_title_count">
+        <item quantity="other">%1$d部作品</item>
+    </plurals>
+
+    <string name="sync_media_refusal_downloaded_title">已下載</string>
+    <string name="sync_media_refusal_downloaded_subtitle">此裝置上已有%1$s，畫質為%2$s</string>
+    <string name="sync_media_refusal_queued_title">已在佇列中</string>
+    <string name="sync_media_refusal_queued_subtitle">%1$s正在等待下載</string>
+    <string name="sync_media_refusal_mixed_title">沒有新項目可下載</string>
+    <string name="sync_media_refusal_mixed_subtitle">已下載%1$s，已排入佇列%2$s</string>
+    <string name="sync_media_refusal_unavailable_title">沒有可下載的項目</string>
+    <string name="sync_media_refusal_unavailable_subtitle">伺服器沒有提供此作品的可用檔案</string>
+
+    <string name="sync_media_unreachable_title">儲存裝置無法使用</string>
+    <string name="sync_media_unreachable_subtitle">%1$s將保持已下載狀態，直到儲存裝置重新連接</string>
+
+    <string name="sync_media_storage_title">%1$s的儲存空間不足</string>
+
+    <string name="sync_media_step_preparing">準備中</string>
+    <string name="sync_media_step_awaiting_transcode">正在等待伺服器開始轉碼</string>
+
+    <string name="sync_media_transcode_unavailable_title">正在下載原始檔案</string>
+    <string name="sync_media_transcode_unavailable_subtitle">%1$s無法轉碼供下載</string>
+
+    <plurals name="sync_media_subtitle_shortfall_title">
+        <item quantity="other">%1$s下載時缺少%2$d條字幕軌</item>
+    </plurals>
+    <string name="sync_media_subtitle_shortfall_burned_in">%1$s已燒錄至畫面中，其餘字幕無法一併下載</string>
+    <string name="sync_media_subtitle_shortfall_refused">伺服器未提供所有字幕軌</string>
+    <string name="sync_media_subtitle_shortfall_transcoded">圖形字幕無法隨較小畫質一併下載</string>
+    <string name="sync_media_subtitle_shortfall_external">圖形字幕與檔案分開存放，無法一併下載</string>
+    <string name="sync_media_subtitle_label_fallback">字幕</string>
+
+    <string name="sync_steam_rate_limited_title">Steam暫時無法使用</string>
+    <string name="sync_steam_rate_limited_subtitle">登入次數已達上限，請於一小時後再試</string>
+    <string name="sync_steam_auth_expired_title">Steam連線階段已逾期</string>
+    <string name="sync_steam_auth_expired_subtitle">請至設定&gt;Steam重新登入</string>
+    <string name="sync_steam_download_signed_out_title">Steam連線階段已逾期</string>
+    <string name="sync_steam_download_signed_out_subtitle">請至設定&gt;Steam登入以進行下載</string>
+    <string name="sync_steam_path_blocked_title">無法下載%1$s</string>
+    <string name="sync_steam_storage_blocked_title">無法下載%1$s</string>
+
+    <string name="sync_steam_qr_rate_limited">已達速率限制，請稍後再試</string>
+    <string name="sync_steam_qr_login_failed">登入失敗：%1$s</string>
+    <string name="sync_steam_qr_not_connected">尚未連線至Steam</string>
+    <string name="sync_steam_qr_start_failed">無法啟動QR Code驗證</string>
+    <string name="sync_steam_qr_polling_failed">輪詢失敗</string>
+    <string name="sync_steam_qr_disconnected">Steam尚未連線</string>
+
+    <string name="sync_launch_core_fallback">無法載入%1$s，已改用%2$s</string>
+</resources>

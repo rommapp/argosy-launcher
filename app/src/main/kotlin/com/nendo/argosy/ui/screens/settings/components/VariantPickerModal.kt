@@ -24,8 +24,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.data.emulator.ApkAssetMatcher
+import com.nendo.argosy.util.formatBytes
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.InputButton
@@ -73,7 +76,7 @@ fun VariantPickerModal(
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
         ) {
             Text(
-                text = "SELECT VERSION",
+                text = stringResource(R.string.settings_variant_picker_title),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -103,9 +106,9 @@ fun VariantPickerModal(
 
             FooterHints(
                 hints = listOf(
-                    InputButton.DPAD to "Navigate",
-                    InputButton.A to "Select",
-                    InputButton.B to "Cancel"
+                    InputButton.DPAD to stringResource(R.string.settings_variant_picker_hint_navigate),
+                    InputButton.A to stringResource(R.string.settings_variant_picker_hint_select),
+                    InputButton.B to stringResource(R.string.settings_variant_picker_hint_cancel)
                 ),
                 onHintClick = { button ->
                     when (button) {
@@ -126,7 +129,7 @@ private fun VariantPickerItem(
     onClick: () -> Unit
 ) {
     val displayName = ApkAssetMatcher.formatVariantDisplay(variant.variant)
-    val fileSize = formatFileSize(variant.fileSize)
+    val fileSize = formatBytes(variant.fileSize)
     val focusContent = lerp(LocalArgosyTheme.current.focusAccent, Color.White, 0.45f)
 
     Row(
@@ -197,7 +200,7 @@ fun EmulatorUpdateModal(
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
         ) {
             Text(
-                text = "Update ${modal.emulatorName}",
+                text = stringResource(R.string.settings_emulator_update_title, modal.emulatorName),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -205,14 +208,14 @@ fun EmulatorUpdateModal(
             when (val state = modal.state) {
                 is com.nendo.argosy.ui.screens.settings.UpdateModalState.Fetching -> {
                     Text(
-                        text = "Checking for updates...",
+                        text = stringResource(R.string.settings_emulator_update_checking),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 is com.nendo.argosy.ui.screens.settings.UpdateModalState.SelectVariant -> {
                     Text(
-                        text = "Select version",
+                        text = stringResource(R.string.settings_emulator_update_select_version),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -233,7 +236,7 @@ fun EmulatorUpdateModal(
                 is com.nendo.argosy.ui.screens.settings.UpdateModalState.Downloading -> {
                     val percent = (state.progress * 100).toInt()
                     Text(
-                        text = "Downloading... $percent%",
+                        text = stringResource(R.string.settings_emulator_update_downloading, percent),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -241,7 +244,7 @@ fun EmulatorUpdateModal(
                 }
                 is com.nendo.argosy.ui.screens.settings.UpdateModalState.WaitingForInstall -> {
                     Text(
-                        text = "Installing...",
+                        text = stringResource(R.string.settings_emulator_update_installing),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -249,14 +252,14 @@ fun EmulatorUpdateModal(
                 }
                 is com.nendo.argosy.ui.screens.settings.UpdateModalState.Installed -> {
                     Text(
-                        text = "Update installed successfully",
+                        text = stringResource(R.string.settings_emulator_update_installed),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
                 is com.nendo.argosy.ui.screens.settings.UpdateModalState.Failed -> {
                     Text(
-                        text = "Update failed: ${state.message}",
+                        text = stringResource(R.string.settings_emulator_update_failed, state.message),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.error
                     )
@@ -266,11 +269,3 @@ fun EmulatorUpdateModal(
     }
 }
 
-private fun formatFileSize(bytes: Long): String {
-    return when {
-        bytes < 1024 -> "$bytes B"
-        bytes < 1024 * 1024 -> "${bytes / 1024} KB"
-        bytes < 1024 * 1024 * 1024 -> String.format("%.1f MB", bytes / (1024.0 * 1024.0))
-        else -> String.format("%.2f GB", bytes / (1024.0 * 1024.0 * 1024.0))
-    }
-}

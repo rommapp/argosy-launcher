@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="library_header_title">游戏库</string>
+    <string name="library_header_all_platforms">所有平台</string>
+    <string name="library_header_previous_platform">上一个平台</string>
+    <string name="library_header_next_platform">下一个平台</string>
+    <plurals name="library_header_game_count">
+        <item quantity="other">%d个游戏</item>
+    </plurals>
+
+    <string name="library_landing_title">游戏库</string>
+    <plurals name="library_landing_platform_count">
+        <item quantity="other">%d个平台</item>
+    </plurals>
+    <plurals name="library_landing_media_library_count">
+        <item quantity="other">%d个媒体库</item>
+    </plurals>
+
+    <string name="library_cell_all_games">全部游戏</string>
+    <plurals name="library_cell_game_count">
+        <item quantity="other">%d个游戏</item>
+    </plurals>
+    <plurals name="library_cell_movie_count">
+        <item quantity="other">%d部电影</item>
+    </plurals>
+    <plurals name="library_cell_show_count">
+        <item quantity="other">%d部剧集</item>
+    </plurals>
+
+    <string name="library_landing_empty_title">还没有平台</string>
+    <string name="library_landing_empty_body">在设置中从Rom Manager同步你的游戏库</string>
+
+    <string name="library_empty_title_platform">未找到%1$s游戏</string>
+    <string name="library_empty_title_all">还没有游戏</string>
+    <string name="library_empty_body">在设置中从Rom Manager同步你的游戏库</string>
+
+    <string name="library_filter_title">筛选游戏</string>
+    <string name="library_filter_active_summary">已启用：%1$s</string>
+    <string name="library_filter_search_placeholder">输入以搜索...</string>
+    <string name="library_filter_recent_searches">最近搜索</string>
+
+    <string name="library_filter_category_sort">排序</string>
+    <string name="library_filter_category_search">搜索</string>
+    <string name="library_filter_category_source">来源</string>
+    <string name="library_filter_category_platform">平台</string>
+    <string name="library_filter_category_genre">类型</string>
+    <string name="library_filter_category_players">玩家人数</string>
+    <string name="library_filter_category_series">系列</string>
+
+    <string name="library_filter_hint_clear">清除</string>
+    <string name="library_filter_hint_close_search">关闭</string>
+    <string name="library_filter_hint_reset">重置</string>
+    <string name="library_filter_hint_toggle">切换</string>
+    <string name="library_filter_hint_select">选择</string>
+    <string name="library_filter_hint_close_options">关闭</string>
+
+    <string name="library_footer_hint_jump_section">跳转分区</string>
+    <string name="library_footer_hint_details">详情</string>
+    <string name="library_footer_hint_unhide">取消隐藏</string>
+    <string name="library_footer_hint_unfavorite">取消收藏</string>
+    <string name="library_footer_hint_favorite">收藏</string>
+    <string name="library_footer_hint_filter">筛选</string>
+    <string name="library_footer_hint_quick_menu">快捷菜单</string>
+
+    <string name="library_quickmenu_title">快捷操作</string>
+    <string name="library_quickmenu_install">安装</string>
+    <string name="library_quickmenu_play">开始</string>
+    <string name="library_quickmenu_download">下载</string>
+    <string name="library_quickmenu_unfavorite">取消收藏</string>
+    <string name="library_quickmenu_favorite">收藏</string>
+    <string name="library_quickmenu_details">详情</string>
+    <string name="library_quickmenu_add_to_collection">添加到合集</string>
+    <string name="library_quickmenu_add_to_grid">添加到网格</string>
+    <string name="library_quickmenu_refresh_data">刷新数据</string>
+    <string name="library_quickmenu_resync_platform">重新同步平台</string>
+    <string name="library_quickmenu_uninstall">卸载</string>
+    <string name="library_quickmenu_delete_download">删除下载</string>
+    <string name="library_quickmenu_show">显示</string>
+    <string name="library_quickmenu_hide">隐藏</string>
+
+    <string name="library_notice_added_to_home_grid">已添加到主页网格</string>
+    <string name="library_notice_game_data_refreshed">游戏数据已刷新</string>
+    <string name="library_notice_android_data_refreshed">游戏数据已刷新</string>
+    <string name="library_notice_download_deleted">下载已删除</string>
+    <string name="library_notice_already_downloaded">游戏已下载</string>
+    <plurals name="library_notice_downloading_discs">
+        <item quantity="other">正在下载%d张光盘</item>
+    </plurals>
+    <string name="library_notice_extraction_failed">解压失败。打开游戏详情以重试。</string>
+    <string name="library_notice_apk_install_failed">无法安装APK</string>
+
+    <string name="library_companion_fact_emulator">模拟器</string>
+    <string name="library_companion_fact_storage">存储</string>
+    <string name="library_companion_storage_downloaded">已下载</string>
+    <string name="library_companion_storage_not_downloaded">未下载</string>
+
+    <string name="library_apps_title">应用</string>
+    <string name="library_apps_title_hidden">已隐藏的应用</string>
+    <string name="library_apps_title_reorder">重新排列应用</string>
+    <string name="library_apps_reorder_hint">以保存</string>
+
+    <plurals name="library_filter_active_count">
+        <item quantity="other">%d个筛选条件</item>
+    </plurals>
+    <string name="library_apps_empty">未找到应用</string>
+
+    <string name="library_apps_hint_move">移动</string>
+    <string name="library_apps_hint_save">保存</string>
+    <string name="library_apps_hint_cancel">取消</string>
+    <string name="library_apps_hint_open">打开</string>
+    <string name="library_apps_hint_back">返回</string>
+    <string name="library_apps_hint_open_on_top">在顶屏打开</string>
+    <string name="library_apps_hint_reorder">重新排列</string>
+    <string name="library_apps_hint_options">选项</string>
+    <string name="library_apps_hint_show_apps">显示应用</string>
+    <string name="library_apps_hint_show_hidden">显示隐藏项</string>
+
+    <string name="library_apps_menu_app_info">应用信息</string>
+    <string name="library_apps_menu_open_on_top">在顶屏打开</string>
+    <string name="library_apps_menu_remove_from_home">从主页移除</string>
+    <string name="library_apps_menu_add_to_home">添加到主页</string>
+    <string name="library_apps_menu_remove_from_second_screen">从副屏幕移除</string>
+    <string name="library_apps_menu_add_to_second_screen">添加到副屏幕</string>
+    <string name="library_apps_menu_show">显示</string>
+    <string name="library_apps_menu_hide">隐藏</string>
+    <string name="library_apps_menu_reorder">重新排列应用</string>
+    <string name="library_apps_menu_uninstall">卸载</string>
+
+    <string name="library_search_placeholder_games_and_media">搜索游戏和媒体内容...</string>
+    <string name="library_search_placeholder_games">搜索游戏...</string>
+    <plurals name="library_search_min_query_hint">
+        <item quantity="other">请至少输入%d个字符以搜索</item>
+    </plurals>
+    <string name="library_search_no_results">没有找到“%1$s”的相关结果</string>
+    <string name="library_search_heading_games">游戏</string>
+    <string name="library_search_heading_media">媒体</string>
+    <string name="library_search_result_platform_unknown">未知</string>
+    <string name="library_search_result_kind_series">剧集</string>
+    <string name="library_search_result_kind_movie">电影</string>
+    <string name="library_search_hint_group_jump">游戏/媒体</string>
+    <string name="library_search_hint_select">选择</string>
+    <string name="library_search_hint_back">返回/清除</string>
+    <plurals name="library_search_result_count">
+        <item quantity="other">%d个结果</item>
+    </plurals>
+</resources>

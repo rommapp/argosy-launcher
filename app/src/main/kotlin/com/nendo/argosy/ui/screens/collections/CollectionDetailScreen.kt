@@ -41,11 +41,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.AlphabetSidebar
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.InputButton
@@ -122,7 +125,7 @@ fun CollectionDetailScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Loading...",
+                            text = stringResource(R.string.collections_detail_loading),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -182,33 +185,39 @@ fun CollectionDetailScreen(
 
         val hints = if (uiState.isSearchActive) {
             listOf(
-                InputButton.A to "Open",
-                InputButton.B to "Close Search"
+                InputButton.A to stringResource(R.string.collections_detail_hint_search_open),
+                InputButton.B to stringResource(R.string.collections_detail_hint_search_close)
             )
         } else {
             val baseHints = listOf(
-                InputButton.DPAD to "Navigate",
-                InputButton.A to "Open",
-                InputButton.B to "Back",
-                InputButton.X to "Search"
+                InputButton.DPAD to stringResource(R.string.collections_detail_hint_navigate),
+                InputButton.A to stringResource(R.string.collections_detail_hint_open),
+                InputButton.B to stringResource(R.string.collections_detail_hint_back),
+                InputButton.X to stringResource(R.string.collections_detail_hint_search)
             )
             val pinHint = if (uiState.collection != null) {
-                listOf(InputButton.Y to if (uiState.isPinned) "Unpin" else "Pin")
+                listOf(
+                    InputButton.Y to stringResource(
+                        if (uiState.isPinned) R.string.collections_detail_hint_unpin else R.string.collections_detail_hint_pin
+                    )
+                )
             } else {
                 emptyList()
             }
             val jumpHint = if (uiState.sectionLabels.size > 1) {
-                listOf(InputButton.LT_RT to "Jump")
+                listOf(InputButton.LT_RT to stringResource(R.string.collections_detail_hint_jump))
             } else {
                 emptyList()
             }
             val optionsHint = if (uiState.collection != null) {
-                listOf(InputButton.SELECT to "Options")
+                listOf(InputButton.SELECT to stringResource(R.string.collections_detail_hint_options))
             } else {
                 emptyList()
             }
             val refreshHint = listOf(
-                InputButton.START to if (uiState.isRefreshing) "Refreshing..." else "Refresh"
+                InputButton.START to stringResource(
+                    if (uiState.isRefreshing) R.string.collections_detail_hint_refreshing else R.string.collections_detail_hint_refresh
+                )
             )
             baseHints + pinHint + jumpHint + optionsHint + refreshHint
         }
@@ -309,7 +318,7 @@ private fun CollectionDetailHeader(
         IconButton(onClick = onBack) {
             Icon(
                 Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back",
+                contentDescription = stringResource(R.string.collections_detail_back_description),
                 tint = MaterialTheme.colorScheme.onSurface
             )
         }
@@ -325,7 +334,7 @@ private fun CollectionDetailHeader(
                 modifier = Modifier
                     .weight(1f)
                     .focusRequester(focusRequester),
-                placeholder = { Text("Search $collectionName") },
+                placeholder = { Text(stringResource(R.string.collections_detail_search_placeholder, collectionName)) },
                 singleLine = true,
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -335,7 +344,7 @@ private fun CollectionDetailHeader(
             IconButton(onClick = onSearchClose) {
                 Icon(
                     Icons.Default.Close,
-                    contentDescription = "Close search",
+                    contentDescription = stringResource(R.string.collections_detail_close_search_description),
                     tint = MaterialTheme.colorScheme.onSurface
                 )
             }
@@ -347,7 +356,7 @@ private fun CollectionDetailHeader(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "$gameCount games",
+                    text = pluralStringResource(R.plurals.collections_detail_header_game_count, gameCount, gameCount),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -355,7 +364,7 @@ private fun CollectionDetailHeader(
             IconButton(onClick = onSearchOpen) {
                 Icon(
                     Icons.Default.Search,
-                    contentDescription = "Search",
+                    contentDescription = stringResource(R.string.collections_detail_search_description),
                     tint = MaterialTheme.colorScheme.onSurface
                 )
             }
@@ -378,13 +387,13 @@ private fun EmptyCollectionDetail() {
             )
             Spacer(modifier = Modifier.height(Dimens.spacingMd))
             Text(
-                text = "No games in this collection",
+                text = stringResource(R.string.collections_detail_empty_title),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(Dimens.spacingSm))
             Text(
-                text = "Add games from the library or game details",
+                text = stringResource(R.string.collections_detail_empty_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
             )

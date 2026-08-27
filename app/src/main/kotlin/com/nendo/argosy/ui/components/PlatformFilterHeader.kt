@@ -33,8 +33,11 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.util.clickableNoFocus
@@ -48,11 +51,11 @@ const val PLATFORM_HEADER_COUNT = 3
 private const val WIDE_SCREEN_DP = 900
 
 private val SORT_OPTIONS = listOf(
-    PlatformFilterLogic.SortMode.DEFAULT to "Default",
-    PlatformFilterLogic.SortMode.NAME_ASC to "Name (A-Z)",
-    PlatformFilterLogic.SortMode.NAME_DESC to "Name (Z-A)",
-    PlatformFilterLogic.SortMode.MOST_GAMES to "Most Games",
-    PlatformFilterLogic.SortMode.LEAST_GAMES to "Least Games"
+    PlatformFilterLogic.SortMode.DEFAULT to R.string.ui_platform_filter_sort_default,
+    PlatformFilterLogic.SortMode.NAME_ASC to R.string.ui_platform_filter_sort_name_asc,
+    PlatformFilterLogic.SortMode.NAME_DESC to R.string.ui_platform_filter_sort_name_desc,
+    PlatformFilterLogic.SortMode.MOST_GAMES to R.string.ui_platform_filter_sort_most_games,
+    PlatformFilterLogic.SortMode.LEAST_GAMES to R.string.ui_platform_filter_sort_least_games
 )
 
 @Composable
@@ -121,7 +124,9 @@ fun PlatformFilterHeader(
                         Box {
                             if (searchQuery.isEmpty()) {
                                 Text(
-                                    text = "Search platforms...",
+                                    text = stringResource(
+                                        R.string.ui_platform_filter_search_placeholder
+                                    ),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                                 )
@@ -132,7 +137,9 @@ fun PlatformFilterHeader(
                 )
                 Icon(
                     imageVector = Icons.Default.Close,
-                    contentDescription = "Clear",
+                    contentDescription = stringResource(
+                        R.string.ui_platform_filter_search_clear
+                    ),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
                         .size(Dimens.iconSm)
@@ -144,7 +151,11 @@ fun PlatformFilterHeader(
             }
         } else {
             Text(
-                text = "$platformCount platforms",
+                text = pluralStringResource(
+                    R.plurals.ui_platform_filter_count,
+                    platformCount,
+                    platformCount
+                ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.weight(1f)
@@ -158,7 +169,7 @@ fun PlatformFilterHeader(
             if (!searchActive) {
                 HeaderIconButton(
                     icon = Icons.Default.Search,
-                    description = "Search",
+                    description = stringResource(R.string.ui_platform_filter_open_search),
                     isFocused = headerFocused && headerIndex == PLATFORM_HEADER_SEARCH,
                     onClick = onOpenSearch
                 )
@@ -167,14 +178,14 @@ fun PlatformFilterHeader(
             Box {
                 HeaderIconButton(
                     icon = Icons.AutoMirrored.Filled.Sort,
-                    description = "Sort",
+                    description = stringResource(R.string.ui_platform_filter_open_sort),
                     isFocused = headerFocused && headerIndex == PLATFORM_HEADER_SORT,
                     onClick = onOpenSortMenu
                 )
                 DropdownMenu(expanded = sortMenuOpen, onDismissRequest = onCloseSortMenu) {
-                    SORT_OPTIONS.forEachIndexed { index, (mode, label) ->
+                    SORT_OPTIONS.forEachIndexed { index, (mode, labelRes) ->
                         DropdownMenuItem(
-                            text = { Text(label) },
+                            text = { Text(stringResource(labelRes)) },
                             onClick = { onSortModeChange(mode) },
                             modifier = Modifier.background(
                                 if (index == sortMenuIndex) LocalArgosyTheme.current.focusAccent.copy(alpha = 0.15f)
@@ -188,9 +199,12 @@ fun PlatformFilterHeader(
             val filterFocused = headerFocused && headerIndex == PLATFORM_HEADER_FILTER
             if (filterMode != PlatformFilterLogic.FilterMode.ALL) {
                 val filterLabel = when (filterMode) {
-                    PlatformFilterLogic.FilterMode.HAS_GAMES -> "Has Games"
-                    PlatformFilterLogic.FilterMode.ENABLED -> "Enabled"
-                    PlatformFilterLogic.FilterMode.ALL -> "All"
+                    PlatformFilterLogic.FilterMode.HAS_GAMES ->
+                        stringResource(R.string.ui_platform_filter_mode_has_games)
+                    PlatformFilterLogic.FilterMode.ENABLED ->
+                        stringResource(R.string.ui_platform_filter_mode_enabled)
+                    PlatformFilterLogic.FilterMode.ALL ->
+                        stringResource(R.string.ui_platform_filter_mode_all)
                 }
                 Row(
                     modifier = Modifier
@@ -217,7 +231,7 @@ fun PlatformFilterHeader(
             } else {
                 HeaderIconButton(
                     icon = Icons.Default.FilterList,
-                    description = "Filter platforms",
+                    description = stringResource(R.string.ui_platform_filter_open_filter),
                     isFocused = filterFocused,
                     onClick = onFilterModeChange
                 )
@@ -226,15 +240,31 @@ fun PlatformFilterHeader(
     }
 }
 
+@Composable
 fun platformFilterHints(
     searchActive: Boolean,
     sortMenuOpen: Boolean,
     headerFocused: Boolean
 ): List<Pair<InputButton, String>> = when {
-    sortMenuOpen -> listOf(InputButton.DPAD to "Navigate", InputButton.A to "Select", InputButton.B to "Back")
-    searchActive -> listOf(InputButton.A to "Done", InputButton.B to "Close")
-    headerFocused -> listOf(InputButton.DPAD to "Navigate", InputButton.A to "Select", InputButton.B to "Close")
-    else -> listOf(InputButton.DPAD to "Navigate", InputButton.A to "Toggle", InputButton.B to "Close")
+    sortMenuOpen -> listOf(
+        InputButton.DPAD to stringResource(R.string.ui_platform_filter_hint_sort_navigate),
+        InputButton.A to stringResource(R.string.ui_platform_filter_hint_sort_select),
+        InputButton.B to stringResource(R.string.ui_platform_filter_hint_sort_back)
+    )
+    searchActive -> listOf(
+        InputButton.A to stringResource(R.string.ui_platform_filter_hint_search_done),
+        InputButton.B to stringResource(R.string.ui_platform_filter_hint_search_close)
+    )
+    headerFocused -> listOf(
+        InputButton.DPAD to stringResource(R.string.ui_platform_filter_hint_header_navigate),
+        InputButton.A to stringResource(R.string.ui_platform_filter_hint_header_select),
+        InputButton.B to stringResource(R.string.ui_platform_filter_hint_header_close)
+    )
+    else -> listOf(
+        InputButton.DPAD to stringResource(R.string.ui_platform_filter_hint_list_navigate),
+        InputButton.A to stringResource(R.string.ui_platform_filter_hint_list_toggle),
+        InputButton.B to stringResource(R.string.ui_platform_filter_hint_list_close)
+    )
 }
 
 @Composable

@@ -6,6 +6,8 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.RemoveCircleOutline
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.Modal
 import com.nendo.argosy.ui.screens.gamedetail.components.OptionItem
 
@@ -32,7 +34,7 @@ fun CollectionOptionsModal(
         if (showDownloadAll && downloadableCount > 0) {
             OptionItem(
                 icon = Icons.Default.Download,
-                label = "Download All ($downloadableCount)",
+                label = stringResource(R.string.collections_options_download_all, downloadableCount),
                 isFocused = focusIndex == currentIndex,
                 onClick = { onOptionSelect(CollectionOption.DOWNLOAD_ALL) }
             )
@@ -40,14 +42,14 @@ fun CollectionOptionsModal(
         }
         OptionItem(
             icon = Icons.Default.Edit,
-            label = "Rename Collection",
+            label = stringResource(R.string.collections_options_rename),
             isFocused = focusIndex == currentIndex,
             onClick = { onOptionSelect(CollectionOption.RENAME) }
         )
         currentIndex++
         OptionItem(
             icon = Icons.Default.DeleteOutline,
-            label = "Delete Collection",
+            label = stringResource(R.string.collections_options_delete),
             isFocused = focusIndex == currentIndex,
             isDangerous = true,
             onClick = { onOptionSelect(CollectionOption.DELETE) }
@@ -56,7 +58,10 @@ fun CollectionOptionsModal(
         if (showRemoveGame) {
             OptionItem(
                 icon = Icons.Default.RemoveCircleOutline,
-                label = "Remove \"${gameTitle ?: "Game"}\"",
+                label = stringResource(
+                    R.string.collections_options_remove_game,
+                    gameTitle ?: stringResource(R.string.collections_options_remove_game_fallback)
+                ),
                 isFocused = focusIndex == currentIndex,
                 isDangerous = true,
                 onClick = { onOptionSelect(CollectionOption.REMOVE_GAME) }

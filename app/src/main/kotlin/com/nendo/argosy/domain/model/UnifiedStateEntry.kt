@@ -29,28 +29,8 @@ data class UnifiedStateEntry(
     val canRestore: Boolean get() = localCacheId != null
     val canBindToChannel: Boolean get() = localCacheId != null && channelName == null
 
-    val displayName: String
-        get() = when {
-            isAutoSlot -> "Auto"
-            channelName != null -> "$channelName (Slot $slotNumber)"
-            else -> "Slot $slotNumber"
-        }
-
-    val slotLabel: String
-        get() = when {
-            isAutoSlot -> "Auto"
-            else -> slotNumber.toString()
-        }
-
     val timestampFormatted: String
         get() = TIMESTAMP_FORMATTER.format(timestamp)
-
-    val sizeFormatted: String
-        get() = when {
-            size < 1024 -> "$size B"
-            size < 1024 * 1024 -> "${size / 1024} KB"
-            else -> String.format("%.1f MB", size / (1024.0 * 1024.0))
-        }
 
     val coreLabel: String?
         get() = when {

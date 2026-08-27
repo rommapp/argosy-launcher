@@ -7,6 +7,7 @@ import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.ui.screens.common.LibrarySyncBus
 import com.nendo.argosy.util.Logger
 import com.nendo.argosy.core.notification.NotificationProgress
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.NotificationType
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -21,28 +22,25 @@ private const val NOTIFICATION_KEY = "romm-sync"
 
 sealed class SyncLibraryResult {
     data class Success(val result: SyncResult) : SyncLibraryResult()
-    data class Error(val message: String) : SyncLibraryResult()
+    data class Error(val reason: SyncLibraryFailureReason) : SyncLibraryResult()
     data object AlreadyInProgress : SyncLibraryResult()
 }
 
-private fun describeSyncFailure(raw: String?): String {
-    val message = raw?.lowercase().orEmpty()
-    return when {
-        "timeout" in message || "timed out" in message ->
-            "Server took too long to respond. It may be busy or your library is very large."
-        "unable to resolve host" in message || "no address associated" in message ->
-            "Can't reach the server. Check your connection and the server address."
-        "connection abort" in message || "connection reset" in message || "failed to connect" in message ->
-            "Lost connection to the server. Sync resumes where it left off next time."
-        raw.isNullOrBlank() -> "Sync failed. Try again."
-        else -> raw
-    }
+/**
+ * Why a library sync could not run or did not finish. [PlatformCountFailed] and [Unexpected]
+ * keep the server or exception text as-is because it is not this app's sentence to translate.
+ */
+sealed class SyncLibraryFailureReason {
+    data object NotConnected : SyncLibraryFailureReason()
+    data class PlatformCountFailed(val serverMessage: String) : SyncLibraryFailureReason()
+    data class Unexpected(val message: String?) : SyncLibraryFailureReason()
 }
 
 class SyncLibraryUseCase @Inject constructor(
     private val romMRepository: RomMRepository,
     private val notificationManager: NotificationManager,
-    private val librarySyncBus: LibrarySyncBus
+    private val librarySyncBus: LibrarySyncBus,
+    private val copy: SyncNotificationCopy
 ) {
     internal var progressDispatcher: CoroutineDispatcher = Dispatchers.IO
     suspend operator fun invoke(
@@ -57,7 +55,7 @@ class SyncLibraryUseCase @Inject constructor(
 
         if (!romMRepository.isConnected()) {
             Logger.info(TAG, "invoke: not connected")
-            return SyncLibraryResult.Error("RomM not connected")
+            return SyncLibraryResult.Error(SyncLibraryFailureReason.NotConnected)
         }
 
         Logger.info(TAG, "invoke: fetching platform count")
@@ -65,19 +63,19 @@ class SyncLibraryUseCase @Inject constructor(
             is RomMResult.Error -> {
                 Logger.error(TAG, "invoke: platform count error: ${summary.message}")
                 notificationManager.show(
-                    title = "Sync could not start",
-                    subtitle = describeSyncFailure(summary.message),
+                    title = copy.libraryStartFailedTitle(),
+                    subtitle = copy.libraryFailureDetail(summary.message),
                     type = NotificationType.ERROR
                 )
-                SyncLibraryResult.Error(summary.message)
+                SyncLibraryResult.Error(SyncLibraryFailureReason.PlatformCountFailed(summary.message))
             }
             is RomMResult.Success -> {
                 val platformCount = summary.data
                 Logger.info(TAG, "invoke: got $platformCount platforms, showing persistent")
 
                 notificationManager.showPersistent(
-                    title = "Syncing Library",
-                    subtitle = "Starting...",
+                    title = copy.libraryProgressTitle(),
+                    subtitle = copy.libraryProgressStarting(),
                     key = NOTIFICATION_KEY,
                     progress = NotificationProgress(0, platformCount)
                 )
@@ -88,10 +86,13 @@ class SyncLibraryUseCase @Inject constructor(
                         val progressJob = CoroutineScope(progressDispatcher).launch {
                             romMRepository.syncProgress.collect { sp ->
                                 if (sp.isSyncing && sp.currentPlatform.isNotEmpty()) {
-                                    val gameInfo = if (sp.gamesTotal > 0) " (${sp.gamesDone}/${sp.gamesTotal} games)" else ""
                                     notificationManager.updatePersistent(
                                         key = NOTIFICATION_KEY,
-                                        subtitle = "${sp.currentPlatform}$gameInfo",
+                                        subtitle = copy.libraryProgressPlatform(
+                                            sp.currentPlatform,
+                                            sp.gamesDone,
+                                            sp.gamesTotal
+                                        ),
                                         progress = NotificationProgress(sp.platformsDone + 1, sp.platformsTotal),
                                         platformSlug = sp.currentPlatformSlug.takeIf { it.isNotBlank() }
                                     )
@@ -106,7 +107,7 @@ class SyncLibraryUseCase @Inject constructor(
 
                         Logger.info(TAG, "invoke: syncLibrary returned - added=${result.gamesAdded}, updated=${result.gamesUpdated}, deleted=${result.gamesDeleted}, errors=${result.errors}")
 
-                        if (result.errors.singleOrNull() == "Sync already in progress") {
+                        if (result.alreadyInProgress) {
                             Logger.info(TAG, "invoke: sync already in progress, returning silently")
                             notificationManager.dismissByKey(NOTIFICATION_KEY)
                             return@withContext SyncLibraryResult.AlreadyInProgress
@@ -115,27 +116,24 @@ class SyncLibraryUseCase @Inject constructor(
                         Logger.info(TAG, "invoke: syncing favorites")
                         romMRepository.syncFavorites()
 
-                        val subtitle = buildString {
-                            append("${result.gamesAdded} added, ${result.gamesUpdated} updated")
-                            if (result.gamesDeleted > 0) {
-                                append(", ${result.gamesDeleted} removed")
-                            }
-                        }
-
                         if (result.errors.isEmpty()) {
                             Logger.info(TAG, "invoke: completing with success")
                             notificationManager.completePersistent(
                                 key = NOTIFICATION_KEY,
-                                title = "Sync complete",
-                                subtitle = subtitle,
+                                title = copy.libraryCompleteTitle(),
+                                subtitle = copy.libraryCompleteCounts(
+                                    result.gamesAdded,
+                                    result.gamesUpdated,
+                                    result.gamesDeleted
+                                ),
                                 type = NotificationType.SUCCESS
                             )
                         } else {
                             Logger.info(TAG, "invoke: completing with errors")
                             notificationManager.completePersistent(
                                 key = NOTIFICATION_KEY,
-                                title = "Sync completed with errors",
-                                subtitle = "${result.errors.size} platform(s) failed",
+                                title = copy.libraryCompletedWithErrorsTitle(),
+                                subtitle = copy.libraryFailedPlatforms(result.errors.size),
                                 type = NotificationType.ERROR
                             )
                         }
@@ -148,12 +146,12 @@ class SyncLibraryUseCase @Inject constructor(
                     withContext(NonCancellable) {
                         notificationManager.completePersistent(
                             key = NOTIFICATION_KEY,
-                            title = "Sync failed",
-                            subtitle = describeSyncFailure(e.message),
+                            title = copy.libraryFailedTitle(),
+                            subtitle = copy.libraryFailureDetail(e.message),
                             type = NotificationType.ERROR
                         )
                     }
-                    SyncLibraryResult.Error(e.message ?: "Sync failed")
+                    SyncLibraryResult.Error(SyncLibraryFailureReason.Unexpected(e.message))
                 }
             }
         }

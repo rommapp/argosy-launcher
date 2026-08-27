@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Owner: ui/screens/savesync, ui/common/savechannel
+      Key prefix: savesync_
+      Keys are named for the usage site, never for the English text, and identical English
+      is never shared between two usage sites.
+
+      Throughout this file "save" is a NOUN, meaning a save file written by an emulated
+      game, never the verb "to save". A "channel" is the named slot a save belongs to on
+      the server; channel names themselves are the user's own data and never appear here.
+    -->
+
+    <!-- Heading over the list of saves whose local and server copies disagree, so the user has
+         to pick one. Noun phrase addressed to the user. -->
+    <string name="savesync_section_attention">Needs your attention</string>
+    <!-- Heading over the list of saves currently being uploaded or downloaded. Adverb phrase
+         describing their state, not a command. -->
+    <string name="savesync_section_in_progress">In progress</string>
+    <!-- Heading over the list of games that have at least one save file on this device or on the
+         server. "Saves" is a plural noun, meaning save files. -->
+    <string name="savesync_section_games">Games with saves</string>
+
+    <!-- Footer hint. Verb: up and down move between the rows of the save list. -->
+    <string name="savesync_footer_navigate">Navigate</string>
+    <!-- Footer hint while a disagreeing save is under the cursor. Verb: left and right move
+         between the three answers (keep the local save, keep the server save, decide later). -->
+    <string name="savesync_footer_choose">Choose</string>
+    <!-- Footer hint naming what the confirm button will do while "keep local" is the chosen
+         answer. Verb phrase: the save file on this device wins and is uploaded. "Local" is an
+         adjective, "the copy on this device". -->
+    <string name="savesync_footer_confirm_keep_local">Keep Local</string>
+    <!-- Footer hint naming what the confirm button will do while "keep server" is the chosen
+         answer. Verb phrase: the save file on the server wins and is downloaded. -->
+    <string name="savesync_footer_confirm_keep_server">Keep Server</string>
+    <!-- Footer hint naming what the confirm button will do while "skip" is the chosen answer.
+         Verb: leaves the disagreement unresolved for now, changing neither copy. -->
+    <string name="savesync_footer_confirm_skip">Skip</string>
+    <!-- Footer hint while a game's save is under the cursor. Verb phrase: leaves this screen for
+         the page describing that game. -->
+    <string name="savesync_footer_open_game">Open game</string>
+    <!-- Footer hint. Verb phrase: asks the server for saves this device has not seen yet. "RomM"
+         is the name of the server software Argosy talks to; leave it untranslated. -->
+    <string name="savesync_footer_scan_server">Scan RomM</string>
+    <!-- Footer hint. Verb: leaves this screen. -->
+    <string name="savesync_footer_back">Back</string>
+
+    <!-- Label over the name of the handheld the user is holding, on the card describing it. Noun
+         phrase naming which device the card is about. -->
+    <string name="savesync_device_this_label">This device</string>
+    <!-- Stands in for the device name when no server is connected, so Argosy does not yet know
+         what this device is registered as. Adjective phrase describing the state, not a command
+         to connect. "RomM" is the server software's name; leave it untranslated. -->
+    <string name="savesync_device_not_connected">Not connected to RomM</string>
+    <!-- The tail of this device's server-issued id, shown beside its name so two devices with
+         the same name can be told apart. %1$s is the last few characters of the id and must not
+         be altered; the leading horizontal ellipsis marks that the front was cut off. -->
+    <string name="savesync_device_id_pill">&#8230;%1$s</string>
+    <!-- Names the app that wrote this device's saves and which release of it. %1$s is the client
+         name as the server reports it, %2$s its version number. The "v" is short for
+         "version". -->
+    <string name="savesync_device_client_versioned">%1$s v%2$s</string>
+    <!-- Names the connected server and its release. %1$s is the version number. "RomM" is the
+         server software's name; leave it untranslated. -->
+    <string name="savesync_device_server_versioned">RomM v%1$s</string>
+    <!-- Shown in place of the server version when a server is reachable but did not say which
+         release it runs. Adjective describing the link to the server. -->
+    <string name="savesync_device_server_connected">Connected</string>
+    <!-- Shown in place of the server version when no server is reachable. Adjective describing
+         the link to the server, not the device's power state. -->
+    <string name="savesync_device_server_offline">Offline</string>
+    <!-- The word under the tally of save files this device holds. The number is drawn separately
+         above it, so this item carries the noun alone. Noun, meaning save files. -->
+    <plurals name="savesync_device_save_count_unit">
+        <item quantity="one">save</item>
+        <item quantity="other">saves</item>
+    </plurals>
+
+    <!-- Heading of the panel listing the other devices that have uploaded saves to the same
+         server. Noun phrase. -->
+    <string name="savesync_other_devices_heading">Other devices</string>
+    <!-- Last line of that panel when more devices exist than fit. %d is how many are not
+         listed. -->
+    <plurals name="savesync_other_devices_more">
+        <item quantity="one">+%d more</item>
+        <item quantity="other">+%d more</item>
+    </plurals>
+
+    <!-- Warning shown when Argosy cannot read some of the folders emulators keep their save files
+         in, so those saves cannot be synced. %d is how many folders. "Save location" is a folder
+         on disk; "save" is a noun. -->
+    <plurals name="savesync_access_notice_title">
+        <item quantity="one">%d save location inaccessible</item>
+        <item quantity="other">%d save locations inaccessible</item>
+    </plurals>
+
+    <!-- Heading shown in place of the list when a server is connected but no save file has been
+         synced yet. "Saves" is a plural noun. -->
+    <string name="savesync_empty_title_connected">No game saves synced yet</string>
+    <!-- Body under that heading. Statement about what will happen, not a command. -->
+    <string name="savesync_empty_message_connected">Saves will appear here as you play</string>
+    <!-- Heading shown in place of the list when no server is connected. Verb phrase addressed to
+         the user. "Saves" is a plural noun, the thing being synced. -->
+    <string name="savesync_empty_title_disconnected">Connect to RomM to sync saves</string>
+    <!-- Body under that heading. Verb phrase addressed to the user. "Settings" names Argosy's own
+         settings screen. -->
+    <string name="savesync_empty_message_disconnected">Open Settings to add your RomM server</string>
+
+    <!-- Names the copy of a disagreeing save that is on this handheld, on the line describing it.
+         Adjective used as a noun, "the local one". -->
+    <string name="savesync_conflict_side_local">Local</string>
+    <!-- Names the copy of a disagreeing save that is on the server. Noun, "the server's one". -->
+    <string name="savesync_conflict_side_server">Server</string>
+    <!-- Names the machine that wrote the local copy of a disagreeing save. Noun phrase, lower
+         case because it sits inside a sentence. -->
+    <string name="savesync_conflict_device_this">this device</string>
+    <!-- Stands in for the machine that wrote the server copy when the server did not say which
+         device that was. Noun phrase, lower case because it sits inside a sentence. -->
+    <string name="savesync_conflict_device_other">another device</string>
+    <!-- One line describing a copy of a disagreeing save. %1$s names the copy (local or server),
+         %2$s is how long ago it was written, %3$s names the device that wrote it. -->
+    <string name="savesync_conflict_side_summary">%1$s - %2$s (%3$s)</string>
+    <!-- Stands in for the write time on that line when the time was never recorded. Adjective. -->
+    <string name="savesync_conflict_time_unknown">unknown</string>
+    <!-- Marks whichever copy of a disagreeing save was written last. Adjective, lower case
+         because it follows the line above. -->
+    <string name="savesync_conflict_newer_badge">newer</string>
+    <!-- Button on a disagreeing save. Verb phrase: the save file on this device wins and is
+         uploaded, discarding the server's copy. -->
+    <string name="savesync_attention_button_keep_local">Keep Local</string>
+    <!-- Button on a disagreeing save. Verb phrase: the save file on the server wins and is
+         downloaded, overwriting this device's copy. -->
+    <string name="savesync_attention_button_keep_server">Keep Server</string>
+    <!-- Button on a disagreeing save. Verb: leaves the disagreement unresolved, changing neither
+         copy. -->
+    <string name="savesync_attention_button_skip">Skip</string>
+
+    <!-- State of a save file being sent to the server right now. Verb in the continuous form,
+         describing what is happening. -->
+    <string name="savesync_progress_status_uploading">Uploading</string>
+    <!-- State of a save file being fetched from the server right now. Verb in the continuous
+         form. -->
+    <string name="savesync_progress_status_downloading">Downloading</string>
+    <!-- State of a save file waiting its turn to be uploaded or downloaded. Adjective describing
+         the transfer, not a command. -->
+    <string name="savesync_progress_status_queued">Queued</string>
+
+    <!-- Badge on a game whose save was synced within the last half hour. Adjective phrase
+         describing the save, not a command. -->
+    <string name="savesync_game_pill_just_synced">Just synced</string>
+    <!-- Badge on a game whose local and server saves disagree. Noun, singular: a disagreement
+         between two copies of one save file. -->
+    <string name="savesync_game_pill_conflict">Conflict</string>
+    <!-- Line under a game saying which machine last wrote its save, when that was this handheld.
+         "Write" is a noun here, meaning the last time the save file was changed. -->
+    <string name="savesync_game_last_write_this_device">Last write - this device</string>
+    <!-- The same line when another machine wrote it. %1$s is that device's name as the server
+         reports it. "Write" is a noun. -->
+    <string name="savesync_game_last_write_device">Last write - %1$s</string>
+    <!-- The same line when the server did not say which machine wrote it. "Write" is a noun. -->
+    <string name="savesync_game_last_write_unknown">Last write - unknown device</string>
+    <!-- Adds the write time to that line. %1$s is one of the three lines above, %2$s is how long
+         ago the save was written. -->
+    <string name="savesync_game_last_write_time">%1$s &#183; %2$s</string>
+
+    <!-- Heading of the card that asks the server for saves this device has never seen. Verb
+         phrase addressed to the user. "Saves" is a plural noun. "RomM" is the server software's
+         name; leave it untranslated. -->
+    <string name="savesync_force_check_title">Scan RomM for missing saves</string>
+    <!-- Body of that card before it has been run, saying what running it does. "Save" is a
+         noun; "channel" is the named slot a save belongs to on the server. -->
+    <string name="savesync_force_check_idle">Walks local games and pulls the latest save in each channel from RomM.</string>
+    <!-- Body of that card while the scan is running. Verb in the continuous form. -->
+    <string name="savesync_force_check_running">Scanning...</string>
+    <!-- Body of that card after a scan that found nothing to fetch. %d is how many games were
+         looked at. "Up to date" is an adjective phrase describing this device's saves. -->
+    <plurals name="savesync_force_check_up_to_date">
+        <item quantity="one">Up to date - inspected %d game, nothing new.</item>
+        <item quantity="other">Up to date - inspected %d games, nothing new.</item>
+    </plurals>
+    <!-- Body of that card after a scan that found saves to fetch. The wording follows %1$d, the
+         number of save files lined up for download. %2$d is how many games were looked at and
+         %3$d how many of the lined-up saves already finished downloading. "Save" is a noun. -->
+    <plurals name="savesync_force_check_queued">
+        <item quantity="one">Queued %1$d save from %2$d games; %3$d downloaded.</item>
+        <item quantity="other">Queued %1$d saves from %2$d games; %3$d downloaded.</item>
+    </plurals>
+    <!-- Body of that card after a scan that went wrong. %1$s is the reason, which arrives from
+         the sync layer already worded. -->
+    <string name="savesync_force_check_failed">Failed: %1$s</string>
+    <!-- Stands in for that reason when the failure carried no wording of its own. "Save check"
+         names the scan this card runs; "save" is a noun. -->
+    <string name="savesync_force_check_failed_fallback">Save check failed</string>
+
+    <!-- Stands in for another device's name in the other-devices panel when the server registered
+         it without one. Noun phrase describing the device. -->
+    <string name="savesync_device_unnamed">Unnamed device</string>
+    <!-- Name given in the other-devices panel to the one entry that gathers every save uploaded
+         from a browser rather than from a registered device. Noun, short for "the web
+         interface". -->
+    <string name="savesync_device_web">Web</string>
+
+    <!-- Shown in place of a save's channel name when the save has none, meaning it was set aside
+         rather than filed under a channel. Adjective describing the save file. -->
+    <string name="savesync_channel_archived">Archived</string>
+    <!-- Shown in place of a save's channel name when the channel is the one the emulator writes
+         to on its own as the game runs. Noun, singular: the save the game keeps updating without
+         being asked. -->
+    <string name="savesync_channel_autosave">Autosave</string>
+</resources>

@@ -13,6 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
 import com.nendo.argosy.ui.theme.Dimens
@@ -34,7 +36,7 @@ fun CustomTileMenuModal(
     onSelect: (Int) -> Unit,
     onDismiss: () -> Unit,
     dangerFromIndex: Int? = null,
-    header: String = "TILE"
+    header: String = stringResource(R.string.ui_custom_tile_menu_header)
 ) {
     val theme = LocalArgosyTheme.current
     Modal(

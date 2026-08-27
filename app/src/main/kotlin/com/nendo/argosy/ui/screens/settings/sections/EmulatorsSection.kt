@@ -14,7 +14,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.screens.settings.PlatformEmulatorConfig
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
@@ -34,7 +38,7 @@ internal sealed class EmulatorsItem(
 ) {
     data object CheckForUpdates : EmulatorsItem("check_updates", "platforms")
 
-    class SectionHeader(key: String, section: String, val title: String) : EmulatorsItem(
+    class SectionHeader(key: String, section: String, val titleRes: Int) : EmulatorsItem(
         key = key, section = section
     ) { override val isFocusable = false }
 
@@ -48,13 +52,13 @@ internal sealed class EmulatorsItem(
             val active = platforms.filter { it.platform.syncEnabled }
             val disabled = platforms.filter { !it.platform.syncEnabled }
             return buildList {
-                add(SectionHeader("header_active", "platforms", "Active Platforms"))
+                add(SectionHeader("header_active", "platforms", R.string.settings_emulators_section_active))
                 add(CheckForUpdates)
                 active.forEach { config ->
                     add(PlatformItem(config, platforms.indexOf(config)))
                 }
                 if (disabled.isNotEmpty()) {
-                    add(SectionHeader("header_disabled", "disabled", "Disabled Platforms"))
+                    add(SectionHeader("header_disabled", "disabled", R.string.settings_emulators_section_disabled))
                     disabled.forEach { config ->
                         add(PlatformItem(config, platforms.indexOf(config)))
                     }
@@ -69,10 +73,10 @@ internal fun createEmulatorsLayout(items: List<EmulatorsItem>) = SettingsLayout<
     isFocusable = { it.isFocusable },
     visibleWhen = { _, _ -> true },
     sectionOf = { it.section },
-    sectionTitle = {
+    sectionTitleRes = {
         when (it) {
-            "platforms" -> "Platforms"
-            "disabled" -> "Disabled Platforms"
+            "platforms" -> R.string.settings_emulators_rail_platforms
+            "disabled" -> R.string.settings_emulators_section_disabled
             else -> null
         }
     }
@@ -111,9 +115,10 @@ fun EmulatorsSection(
         EmulatorsItem.buildItems(emulators.platforms)
     }
 
+    val context = LocalContext.current
     val layout = remember(allItems) { createEmulatorsLayout(allItems) }
     val visibleItems = remember(allItems) { layout.visibleItems(Unit) }
-    val sections = remember(allItems) { layout.buildSections(Unit) }
+    val sections = remember(allItems, context) { layout.buildSections(Unit, context) }
 
     fun isFocused(item: EmulatorsItem): Boolean =
         uiState.focusedIndex == layout.focusIndexOf(item, Unit)
@@ -143,13 +148,22 @@ fun EmulatorsSection(
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
         ) { item ->
                 when (item) {
-                    is EmulatorsItem.SectionHeader -> com.nendo.argosy.ui.screens.settings.components.SectionHeader(item.title)
+                    is EmulatorsItem.SectionHeader ->
+                        com.nendo.argosy.ui.screens.settings.components.SectionHeader(
+                            stringResource(item.titleRes)
+                        )
 
                     EmulatorsItem.CheckForUpdates -> ActionPreference(
-                        title = "Check for Updates",
-                        subtitle = if (emulators.assignedUpdatesAvailable > 0)
-                            "${emulators.assignedUpdatesAvailable} update${if (emulators.assignedUpdatesAvailable > 1) "s" else ""} available"
-                        else "Check for emulator updates",
+                        title = stringResource(R.string.settings_emulators_check_updates_title),
+                        subtitle = if (emulators.assignedUpdatesAvailable > 0) {
+                            pluralStringResource(
+                                R.plurals.settings_emulators_check_updates_available,
+                                emulators.assignedUpdatesAvailable,
+                                emulators.assignedUpdatesAvailable
+                            )
+                        } else {
+                            stringResource(R.string.settings_emulators_check_updates_subtitle)
+                        },
                         isFocused = isFocused(item),
                         onClick = { viewModel.forceCheckEmulatorUpdates() }
                     )
@@ -158,9 +172,19 @@ fun EmulatorsSection(
                         val config = item.config
                         val isDisabled = !config.platform.syncEnabled
                         val gameCount = config.platform.gameCount
-                        val emulatorName = config.effectiveEmulatorName ?: "Not configured"
-                        val subtitle = if (isDisabled) "Disabled"
-                            else if (gameCount > 0) "$gameCount games" else "No games"
+                        val emulatorName = config.effectiveEmulatorName
+                            ?: stringResource(R.string.settings_emulators_platform_unconfigured)
+                        val subtitle = if (isDisabled) {
+                            stringResource(R.string.settings_emulators_platform_disabled)
+                        } else if (gameCount > 0) {
+                            pluralStringResource(
+                                R.plurals.settings_emulators_platform_games,
+                                gameCount,
+                                gameCount
+                            )
+                        } else {
+                            stringResource(R.string.settings_emulators_platform_no_games)
+                        }
                         val hasUpdate = !isDisabled && config.effectiveEmulatorId != null &&
                             config.effectiveEmulatorId in emulators.emulatorUpdateVersions
                         ActionPreference(
@@ -168,7 +192,11 @@ fun EmulatorsSection(
                             subtitle = subtitle,
                             isFocused = isFocused(item),
                             trailingText = if (isDisabled) null else emulatorName,
-                            badge = if (hasUpdate) "Update" else null,
+                            badge = if (hasUpdate) {
+                                stringResource(R.string.settings_emulators_platform_update_badge)
+                            } else {
+                                null
+                            },
                             isEnabled = !isDisabled,
                             onClick = { openFrom(item) { viewModel.navigateToPlatformDetail(item.index) } }
                         )

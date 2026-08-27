@@ -1,6 +1,7 @@
 package com.nendo.argosy.libretro.ui
 
 import android.view.InputDevice
+import androidx.annotation.StringRes
 import com.nendo.argosy.data.local.entity.ControllerOrderEntity
 import com.nendo.argosy.data.local.entity.CoreInputMode
 import com.nendo.argosy.data.local.entity.HotkeyAction
@@ -47,8 +48,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
@@ -65,6 +69,8 @@ import com.nendo.argosy.data.repository.MappingPlatforms
 import com.nendo.argosy.ui.screens.settings.components.InputMappingModal
 import com.nendo.argosy.ui.screens.settings.components.ScopedMapping
 import com.nendo.argosy.ui.screens.settings.sections.HUD_CORNERS
+import com.nendo.argosy.ui.common.hudCornerFromStored
+import com.nendo.argosy.ui.common.labelRes
 import com.nendo.argosy.core.emulator.LibretroSettingDef
 import com.nendo.argosy.ui.screens.settings.libretro.LibretroSettingsAccessor
 import com.nendo.argosy.data.platform.PlatformWeightRegistry
@@ -79,10 +85,10 @@ import com.nendo.argosy.ui.theme.gripReserveBottomInset
 import com.nendo.argosy.ui.util.touchOnly
 
 
-enum class InGameSettingsTab(val label: String) {
-    VIDEO("Video"),
-    CONTROLS("Controls"),
-    CORE_OPTIONS("Core Options")
+enum class InGameSettingsTab(@StringRes val labelRes: Int) {
+    VIDEO(R.string.ingame_settings_tab_video),
+    CONTROLS(R.string.ingame_settings_tab_controls),
+    CORE_OPTIONS(R.string.ingame_settings_tab_core_options)
 }
 
 /**
@@ -190,7 +196,8 @@ internal sealed class InGameControlsItem(
 ) {
     val isFocusable: Boolean get() = this !is Header
 
-    class Header(key: String, section: String, val title: String) : InGameControlsItem(key, section)
+    class Header(key: String, section: String, @StringRes val titleRes: Int) :
+        InGameControlsItem(key, section)
     data object GameSpecificControls : InGameControlsItem("gameSpecificControls", "controllers")
     data object ControllerOrder : InGameControlsItem("controllerOrder", "controllers")
     data class ControllerType(val port: Int) : InGameControlsItem("controllerType$port", "controllers")
@@ -211,7 +218,7 @@ internal sealed class InGameControlsItem(
     companion object {
         val ALL: List<InGameControlsItem>
             get() = listOf(
-                Header("controllersHeader", "controllers", "Controllers"),
+                Header("controllersHeader", "controllers", R.string.ingame_settings_header_controllers),
                 GameSpecificControls,
                 ControllerOrder,
                 ControllerType(0),
@@ -221,15 +228,15 @@ internal sealed class InGameControlsItem(
                 InputMapping,
                 ControllerGrip,
                 Rumble,
-                Header("sticksHeader", "sticks", "Analog Sticks"),
+                Header("sticksHeader", "sticks", R.string.ingame_settings_header_sticks),
                 AnalogAsDpad,
                 DpadAsAnalog,
-                Header("hotkeysHeader", "hotkeys", "Hotkeys"),
+                Header("hotkeysHeader", "hotkeys", R.string.ingame_settings_header_hotkeys),
                 Hotkeys,
                 LimitHotkeysToPlayer1,
                 ToggleFastForward,
                 PreserveFastForwardPitch,
-                Header("touchControlsHeader", "touchControls", "Touch Controls"),
+                Header("touchControlsHeader", "touchControls", R.string.ingame_settings_header_touch),
                 TouchEnabled,
                 TouchHaptic,
                 TouchLockOrientation,
@@ -787,24 +794,33 @@ fun InGameSettingsScreen(
     return inputHandler
 }
 
+@Composable
 private fun buildSettingsFooterHints(tab: InGameSettingsTab): List<Pair<InputButton, String>> {
+    val tabLabel = stringResource(R.string.ingame_settings_footer_tab)
+    val backLabel = stringResource(R.string.ingame_settings_footer_back)
+    val videoAdjust = stringResource(R.string.ingame_settings_footer_video_adjust)
+    val videoSelect = stringResource(R.string.ingame_settings_footer_video_select)
+    val controlsAdjust = stringResource(R.string.ingame_settings_footer_controls_adjust)
+    val controlsSelect = stringResource(R.string.ingame_settings_footer_controls_select)
+    val coreOptionsAdjust = stringResource(R.string.ingame_settings_footer_core_options_adjust)
+    val coreOptionsSelect = stringResource(R.string.ingame_settings_footer_core_options_select)
     return buildList {
-        add(InputButton.LB_RB to "Tab")
+        add(InputButton.LB_RB to tabLabel)
         when (tab) {
             InGameSettingsTab.VIDEO -> {
-                add(InputButton.DPAD_HORIZONTAL to "Adjust")
-                add(InputButton.A to "Select")
+                add(InputButton.DPAD_HORIZONTAL to videoAdjust)
+                add(InputButton.A to videoSelect)
             }
             InGameSettingsTab.CONTROLS -> {
-                add(InputButton.DPAD_HORIZONTAL to "Adjust")
-                add(InputButton.A to "Select")
+                add(InputButton.DPAD_HORIZONTAL to controlsAdjust)
+                add(InputButton.A to controlsSelect)
             }
             InGameSettingsTab.CORE_OPTIONS -> {
-                add(InputButton.DPAD_HORIZONTAL to "Adjust")
-                add(InputButton.A to "Select")
+                add(InputButton.DPAD_HORIZONTAL to coreOptionsAdjust)
+                add(InputButton.A to coreOptionsSelect)
             }
         }
-        add(InputButton.B to "Back")
+        add(InputButton.B to backLabel)
     }
 }
 
@@ -843,7 +859,7 @@ private fun InGameControlsSection(
                         Spacer(modifier = Modifier.height(Dimens.spacingMd))
                     }
                     Text(
-                        text = item.title,
+                        text = stringResource(item.titleRes),
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(
@@ -855,11 +871,11 @@ private fun InGameControlsSection(
                 }
 
                 InGameControlsItem.GameSpecificControls -> SwitchPreference(
-                    title = "Game-specific controls",
+                    title = stringResource(R.string.ingame_settings_game_specific_controls_title),
                     subtitle = if (state.gameSpecificControls) {
-                        "Remaps apply to this game only"
+                        stringResource(R.string.ingame_settings_game_specific_controls_subtitle_on)
                     } else {
-                        "Using your global controller mapping"
+                        stringResource(R.string.ingame_settings_game_specific_controls_subtitle_off)
                     },
                     isEnabled = state.gameSpecificControls,
                     isFocused = isFocused(item),
@@ -867,8 +883,8 @@ private fun InGameControlsSection(
                 )
 
                 InGameControlsItem.Rumble -> SwitchPreference(
-                    title = "Rumble",
-                    subtitle = "Enable controller vibration feedback",
+                    title = stringResource(R.string.ingame_settings_rumble_title),
+                    subtitle = stringResource(R.string.ingame_settings_rumble_subtitle),
                     isEnabled = state.rumbleEnabled,
                     isFocused = isFocused(item),
                     onToggle = { onAction(InGameControlsAction.SetRumble(it)) }
@@ -876,11 +892,15 @@ private fun InGameControlsSection(
 
                 InGameControlsItem.ControllerOrder -> NavigationPreference(
                     icon = Icons.Default.SortByAlpha,
-                    title = "Controller Order",
+                    title = stringResource(R.string.ingame_settings_controller_order_title),
                     subtitle = if (state.controllerOrderCount > 0) {
-                        "${state.controllerOrderCount} controller${if (state.controllerOrderCount > 1) "s" else ""} assigned"
+                        pluralStringResource(
+                            R.plurals.ingame_settings_controller_order_assigned,
+                            state.controllerOrderCount,
+                            state.controllerOrderCount
+                        )
                     } else {
-                        "Assign controller ports"
+                        stringResource(R.string.ingame_settings_controller_order_subtitle_empty)
                     },
                     isFocused = isFocused(item),
                     onClick = { onAction(InGameControlsAction.ShowControllerOrder) }
@@ -891,13 +911,20 @@ private fun InGameControlsSection(
                     if (portState != null) {
                         val focused = isFocused(item)
                         CyclePreference(
-                            title = "Player ${item.port + 1} Controller",
-                            value = portState.options.getOrElse(portState.selectedIndex) { "Default" },
+                            title = stringResource(
+                                R.string.ingame_settings_controller_type_title,
+                                item.port + 1
+                            ),
+                            value = portState.options.getOrElse(portState.selectedIndex) {
+                                stringResource(R.string.ingame_settings_controller_type_default_fallback)
+                            },
                             isFocused = focused,
                             subtitle = when {
-                                portState.pendingRestart -> "Applies next time you launch"
+                                portState.pendingRestart ->
+                                    stringResource(R.string.ingame_settings_controller_type_pending)
                                 portState.isOverridden -> null
-                                else -> "Chosen by the core"
+                                else ->
+                                    stringResource(R.string.ingame_settings_controller_type_core_default)
                             },
                             isCustom = portState.isOverridden,
                             showResetButton = portState.isOverridden && focused,
@@ -914,31 +941,31 @@ private fun InGameControlsSection(
 
                 InGameControlsItem.ControllerGrip -> NavigationPreference(
                     icon = Icons.Default.Gamepad,
-                    title = "Controller Grip",
-                    subtitle = "Shift the UI up out of the area a grip covers",
+                    title = stringResource(R.string.ingame_settings_controller_grip_title),
+                    subtitle = stringResource(R.string.ingame_settings_controller_grip_subtitle),
                     isFocused = isFocused(item),
                     onClick = { onAction(InGameControlsAction.ShowGripSettings) }
                 )
 
                 InGameControlsItem.InputMapping -> NavigationPreference(
                     icon = Icons.Default.Gamepad,
-                    title = "Input Mapping",
-                    subtitle = "Remap buttons for each controller",
+                    title = stringResource(R.string.ingame_settings_input_mapping_title),
+                    subtitle = stringResource(R.string.ingame_settings_input_mapping_subtitle),
                     isFocused = isFocused(item),
                     onClick = { onAction(InGameControlsAction.ShowInputMapping) }
                 )
 
                 InGameControlsItem.AnalogAsDpad -> SwitchPreference(
-                    title = "Left Stick as D-Pad",
-                    subtitle = "Map left analog stick to D-pad inputs",
+                    title = stringResource(R.string.ingame_settings_analog_as_dpad_title),
+                    subtitle = stringResource(R.string.ingame_settings_analog_as_dpad_subtitle),
                     isEnabled = state.analogAsDpad,
                     isFocused = isFocused(item),
                     onToggle = { onAction(InGameControlsAction.SetAnalogAsDpad(it)) }
                 )
 
                 InGameControlsItem.DpadAsAnalog -> SwitchPreference(
-                    title = "D-Pad as Left Stick",
-                    subtitle = "Map D-pad to left analog stick inputs",
+                    title = stringResource(R.string.ingame_settings_dpad_as_analog_title),
+                    subtitle = stringResource(R.string.ingame_settings_dpad_as_analog_subtitle),
                     isEnabled = state.dpadAsAnalog,
                     isFocused = isFocused(item),
                     onToggle = { onAction(InGameControlsAction.SetDpadAsAnalog(it)) }
@@ -946,23 +973,23 @@ private fun InGameControlsSection(
 
                 InGameControlsItem.Hotkeys -> NavigationPreference(
                     icon = Icons.Default.Keyboard,
-                    title = "Hotkeys",
-                    subtitle = "Configure shortcuts for menu, fast forward, rewind",
+                    title = stringResource(R.string.ingame_settings_hotkeys_title),
+                    subtitle = stringResource(R.string.ingame_settings_hotkeys_subtitle),
                     isFocused = isFocused(item),
                     onClick = { onAction(InGameControlsAction.ShowHotkeys) }
                 )
 
                 InGameControlsItem.LimitHotkeysToPlayer1 -> SwitchPreference(
-                    title = "Limit Hotkeys to Player 1",
-                    subtitle = "Only player 1 controller can trigger hotkeys",
+                    title = stringResource(R.string.ingame_settings_limit_hotkeys_title),
+                    subtitle = stringResource(R.string.ingame_settings_limit_hotkeys_subtitle),
                     isEnabled = state.limitHotkeysToPlayer1,
                     isFocused = isFocused(item),
                     onToggle = { onAction(InGameControlsAction.SetLimitHotkeys(it)) }
                 )
 
                 InGameControlsItem.ToggleFastForward -> SwitchPreference(
-                    title = "Toggle Fast Forward",
-                    subtitle = "Press once to start, again to stop (off = hold to fast forward)",
+                    title = stringResource(R.string.ingame_settings_toggle_fast_forward_title),
+                    subtitle = stringResource(R.string.ingame_settings_toggle_fast_forward_subtitle),
                     isEnabled = state.fastForwardMode == com.nendo.argosy.data.local.entity.FastForwardMode.TOGGLE,
                     isFocused = isFocused(item),
                     onToggle = { enabled ->
@@ -974,40 +1001,40 @@ private fun InGameControlsSection(
                 )
 
                 InGameControlsItem.PreserveFastForwardPitch -> SwitchPreference(
-                    title = "Preserve Audio Pitch",
-                    subtitle = "Keep pitch steady while fast forwarding. Uses extra CPU; off by default",
+                    title = stringResource(R.string.ingame_settings_preserve_pitch_title),
+                    subtitle = stringResource(R.string.ingame_settings_preserve_pitch_subtitle),
                     isEnabled = state.fastForwardPreservePitch,
                     isFocused = isFocused(item),
                     onToggle = { onAction(InGameControlsAction.SetFastForwardPreservePitch(it)) }
                 )
 
                 InGameControlsItem.TouchEnabled -> SwitchPreference(
-                    title = "Show touch controls when no gamepad",
-                    subtitle = "Display an on-screen overlay when no controller is connected",
+                    title = stringResource(R.string.ingame_settings_touch_enabled_title),
+                    subtitle = stringResource(R.string.ingame_settings_touch_enabled_subtitle),
                     isEnabled = state.touchEnabled,
                     isFocused = isFocused(item),
                     onToggle = { onAction(InGameControlsAction.SetTouchEnabled(it)) }
                 )
 
                 InGameControlsItem.TouchHaptic -> SwitchPreference(
-                    title = "Haptic feedback",
-                    subtitle = "Vibrate briefly on touch",
+                    title = stringResource(R.string.ingame_settings_touch_haptic_title),
+                    subtitle = stringResource(R.string.ingame_settings_touch_haptic_subtitle),
                     isEnabled = state.touchHaptic,
                     isFocused = isFocused(item),
                     onToggle = { onAction(InGameControlsAction.SetTouchHaptic(it)) }
                 )
 
                 InGameControlsItem.TouchLockOrientation -> SwitchPreference(
-                    title = "Lock orientation in-game",
-                    subtitle = "Don't auto-rotate during play",
+                    title = stringResource(R.string.ingame_settings_touch_lock_orientation_title),
+                    subtitle = stringResource(R.string.ingame_settings_touch_lock_orientation_subtitle),
                     isEnabled = state.touchLockOrientation,
                     isFocused = isFocused(item),
                     onToggle = { onAction(InGameControlsAction.SetTouchLockOrientation(it)) }
                 )
 
                 InGameControlsItem.TouchGenesis6Button -> SwitchPreference(
-                    title = "Genesis 6-button mode",
-                    subtitle = "Show six face buttons for Genesis / Mega Drive",
+                    title = stringResource(R.string.ingame_settings_touch_genesis6_title),
+                    subtitle = stringResource(R.string.ingame_settings_touch_genesis6_subtitle),
                     isEnabled = state.touchGenesis6Button,
                     isFocused = isFocused(item),
                     onToggle = { onAction(InGameControlsAction.SetTouchGenesis6Button(it)) }
@@ -1020,7 +1047,7 @@ private fun InGameControlsSection(
 @Composable
 private fun InGameHudHeader() {
     Text(
-        text = "Status Bar",
+        text = stringResource(R.string.ingame_settings_hud_header),
         style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(
@@ -1040,20 +1067,20 @@ private fun InGameHudRow(
 ) {
     when (item) {
         InGameHudItem.ENABLED -> SwitchPreference(
-            title = "Show status bar",
-            subtitle = "A small readout pinned to a corner while playing",
+            title = stringResource(R.string.ingame_settings_hud_enabled_title),
+            subtitle = stringResource(R.string.ingame_settings_hud_enabled_subtitle),
             isEnabled = state.hudEnabled,
             isFocused = isFocused,
             onToggle = { onAction(InGameControlsAction.SetHudEnabled(it)) }
         )
 
         InGameHudItem.CORNER -> CyclePreference(
-            title = "Corner",
-            value = state.hudCorner,
+            title = stringResource(R.string.ingame_settings_hud_corner_title),
+            value = stringResource(hudCornerFromStored(state.hudCorner).labelRes),
             isFocused = isFocused,
             onClick = { onAction(InGameControlsAction.CycleHudCorner(true)) },
             onPrev = { onAction(InGameControlsAction.CycleHudCorner(false)) },
-            options = HUD_CORNERS,
+            options = HUD_CORNERS.map { stringResource(hudCornerFromStored(it).labelRes) },
             onSelect = { index ->
                 val steps = index - HUD_CORNERS.indexOf(state.hudCorner).coerceAtLeast(0)
                 repeat(kotlin.math.abs(steps)) {
@@ -1063,36 +1090,36 @@ private fun InGameHudRow(
         )
 
         InGameHudItem.BATTERY -> SwitchPreference(
-            title = "Battery",
+            title = stringResource(R.string.ingame_settings_hud_battery_title),
             isEnabled = state.hudShowBattery,
             isFocused = isFocused,
             onToggle = { onAction(InGameControlsAction.SetHudShowBattery(it)) }
         )
 
         InGameHudItem.CLOCK -> SwitchPreference(
-            title = "Clock",
+            title = stringResource(R.string.ingame_settings_hud_clock_title),
             isEnabled = state.hudShowClock,
             isFocused = isFocused,
             onToggle = { onAction(InGameControlsAction.SetHudShowClock(it)) }
         )
 
         InGameHudItem.PLAYTIME -> SwitchPreference(
-            title = "Session time",
+            title = stringResource(R.string.ingame_settings_hud_playtime_title),
             isEnabled = state.hudShowPlaytime,
             isFocused = isFocused,
             onToggle = { onAction(InGameControlsAction.SetHudShowPlaytime(it)) }
         )
 
         InGameHudItem.FPS -> SwitchPreference(
-            title = "FPS",
-            subtitle = "Hidden while fast-forwarding",
+            title = stringResource(R.string.ingame_settings_hud_fps_title),
+            subtitle = stringResource(R.string.ingame_settings_hud_fps_subtitle),
             isEnabled = state.hudShowFps,
             isFocused = isFocused,
             onToggle = { onAction(InGameControlsAction.SetHudShowFps(it)) }
         )
 
         InGameHudItem.LAST_SAVE -> SwitchPreference(
-            title = "Last save state",
+            title = stringResource(R.string.ingame_settings_hud_last_save_title),
             isEnabled = state.hudShowLastSave,
             isFocused = isFocused,
             onToggle = { onAction(InGameControlsAction.SetHudShowLastSave(it)) }
@@ -1116,7 +1143,7 @@ private fun SettingsTabHeader(
         InGameSettingsTab.entries.forEach { tab ->
             val enabled = isTabEnabled(tab)
             SettingsTabIndicator(
-                label = tab.label,
+                label = stringResource(tab.labelRes),
                 isSelected = tab == currentTab,
                 isEnabled = enabled,
                 onClick = { if (enabled) onTabSelect(tab) }

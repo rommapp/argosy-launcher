@@ -25,6 +25,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.data.storage.PlatformUsage
 import com.nendo.argosy.data.storage.StorageCategory
 import com.nendo.argosy.data.storage.WalkState
@@ -104,10 +108,10 @@ internal fun createStorageGamesLayout(items: List<StorageGamesItem>) =
         isFocusable = { it.isFocusable },
         visibleWhen = { _, _ -> true },
         sectionOf = { it.section },
-        sectionTitle = {
+        sectionTitleRes = {
             when (it) {
-                "overview" -> "OVERVIEW"
-                "platforms" -> "PLATFORMS"
+                "overview" -> R.string.settings_storage_games_section_overview
+                "platforms" -> R.string.settings_storage_games_section_platforms
                 else -> null
             }
         }
@@ -143,8 +147,9 @@ fun StorageGamesSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
     val platforms = remember(snapshot, sortMode) { storageGamesPlatforms(uiState) }
     val allItems = remember(platforms) { StorageGamesItem.buildItems(platforms) }
     val layout = remember(allItems) { createStorageGamesLayout(allItems) }
+    val context = LocalContext.current
     val visibleItems = remember(layout) { layout.visibleItems(Unit) }
-    val sections = remember(layout) { layout.buildSections(Unit) }
+    val sections = remember(layout, context) { layout.buildSections(Unit, context) }
 
     val walkingBytes = (gamesWalk as? WalkState.Walking)?.bytes ?: 0L
     val totalGamesBytes = remember(snapshot, platforms, walkingBytes) {
@@ -193,8 +198,8 @@ fun StorageGamesSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
             )
 
             StorageGamesItem.IntegrityToggle -> SwitchPreference(
-                title = "Weekly ROM Integrity Check",
-                subtitle = "Verifies downloaded game files at startup once a week",
+                title = stringResource(R.string.settings_storage_games_integrity_title),
+                subtitle = stringResource(R.string.settings_storage_games_integrity_subtitle),
                 isEnabled = uiState.storage.weeklyIntegrityCheckEnabled,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.toggleWeeklyIntegrityCheck(it) }
@@ -242,12 +247,16 @@ private fun GamesTotalsHeader(
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "$downloadedCount downloaded",
+                text = pluralStringResource(
+                    R.plurals.settings_storage_games_totals_count,
+                    downloadedCount,
+                    downloadedCount
+                ),
                 style = MaterialTheme.typography.titleMedium,
                 color = theme.textPrimary
             )
             Text(
-                text = "${formatBytes(totalBytes)} used",
+                text = stringResource(R.string.settings_storage_games_totals_used, formatBytes(totalBytes)),
                 style = MaterialTheme.typography.bodyMedium,
                 color = theme.textDim
             )
@@ -273,7 +282,7 @@ private fun PlatformsHeaderRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        SectionHeader("PLATFORMS")
+        SectionHeader(stringResource(R.string.settings_storage_games_section_platforms))
         Row(
             modifier = Modifier
                 .clip(RoundedCornerShape(Dimens.radiusSm))
@@ -284,14 +293,16 @@ private fun PlatformsHeaderRow(
         ) {
             Icon(
                 imageVector = Icons.Default.SwapVert,
-                contentDescription = "Toggle sort order",
+                contentDescription = stringResource(R.string.settings_storage_games_sort_toggle_description),
                 tint = theme.textDim,
                 modifier = Modifier.size(Dimens.iconXs)
             )
             Text(
                 text = when (sortMode) {
-                    StorageGamesSortMode.PLATFORM -> "Platform order"
-                    StorageGamesSortMode.SIZE -> "Largest first"
+                    StorageGamesSortMode.PLATFORM ->
+                        stringResource(R.string.settings_storage_games_sort_platform)
+                    StorageGamesSortMode.SIZE ->
+                        stringResource(R.string.settings_storage_games_sort_size)
                 },
                 style = MaterialTheme.typography.labelSmall,
                 color = theme.textDim
@@ -312,15 +323,19 @@ private fun GamesEmptyState(isComputing: Boolean) {
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
     ) {
         Text(
-            text = if (isComputing) "Computing storage usage..." else "No downloaded games",
+            text = if (isComputing) {
+                stringResource(R.string.settings_storage_games_empty_computing_title)
+            } else {
+                stringResource(R.string.settings_storage_games_empty_title)
+            },
             style = MaterialTheme.typography.titleSmall,
             color = theme.textPrimary
         )
         Text(
             text = if (isComputing) {
-                "Per-platform game sizes will appear here once the scan finishes."
+                stringResource(R.string.settings_storage_games_empty_computing_message)
             } else {
-                "Download games from your library and per-platform usage will show up here."
+                stringResource(R.string.settings_storage_games_empty_message)
             },
             style = MaterialTheme.typography.bodySmall,
             color = theme.textDim
@@ -380,7 +395,11 @@ private fun PlatformUsageRow(
             Spacer(modifier = Modifier.width(Dimens.spacingMd))
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = "${usage.downloadedCount} downloaded",
+                    text = pluralStringResource(
+                        R.plurals.settings_storage_games_platform_count,
+                        usage.downloadedCount,
+                        usage.downloadedCount
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = theme.textPrimary
                 )

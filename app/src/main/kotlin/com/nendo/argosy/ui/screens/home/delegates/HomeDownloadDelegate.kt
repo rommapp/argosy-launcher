@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.screens.home.delegates
 
+import android.content.Context
+import com.nendo.argosy.R
 import com.nendo.argosy.data.download.DownloadManager
 import com.nendo.argosy.data.download.DownloadState
 import com.nendo.argosy.data.repository.GameRepository
@@ -9,11 +11,14 @@ import com.nendo.argosy.data.update.ApkInstallManager
 import com.nendo.argosy.domain.usecase.download.DownloadResult
 import com.nendo.argosy.ui.common.appId
 import com.nendo.argosy.ui.common.toIndicator
+import com.nendo.argosy.ui.common.toNotificationText
 import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.core.notification.showSuccess
 import com.nendo.argosy.ui.screens.common.GameActionsDelegate
 import com.nendo.argosy.ui.screens.home.GameDownloadIndicator
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,6 +27,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 class HomeDownloadDelegate @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val downloadManager: DownloadManager,
     private val gameActions: GameActionsDelegate,
     private val apkInstallManager: ApkInstallManager,
@@ -114,14 +120,24 @@ class HomeDownloadDelegate @Inject constructor(
             when (val result = gameActions.queueDownload(gameId)) {
                 is DownloadResult.Queued -> { }
                 is DownloadResult.AlreadyDownloaded -> {
-                    notificationManager.showSuccess("Game already downloaded")
+                    notificationManager.showSuccess(
+                        NotificationText.Res(R.string.home_notice_already_downloaded)
+                    )
                 }
                 is DownloadResult.MultiDiscQueued -> {
-                    notificationManager.showSuccess("Downloading ${result.discCount} discs")
+                    notificationManager.showSuccess(
+                        NotificationText.Plural(
+                            R.plurals.home_notice_discs_queued,
+                            result.discCount,
+                            listOf(result.discCount)
+                        )
+                    )
                 }
-                is DownloadResult.Error -> notificationManager.showError(result.message)
+                is DownloadResult.Error -> notificationManager.showError(result.reason.toNotificationText())
                 is DownloadResult.ExtractionFailed -> {
-                    notificationManager.showError("Extraction failed. Open game details to retry.")
+                    notificationManager.showError(
+                        NotificationText.Res(R.string.home_notice_extraction_failed)
+                    )
                 }
             }
         }
@@ -131,7 +147,9 @@ class HomeDownloadDelegate @Inject constructor(
         scope.launch {
             val success = apkInstallManager.installApkForGame(gameId)
             if (!success) {
-                notificationManager.showError("Could not install APK")
+                notificationManager.showError(
+                    NotificationText.Res(R.string.home_notice_apk_install_failed)
+                )
             }
         }
     }
@@ -143,7 +161,9 @@ class HomeDownloadDelegate @Inject constructor(
     fun deleteLocalFile(scope: CoroutineScope, gameId: Long, onComplete: suspend () -> Unit) {
         scope.launch {
             gameActions.deleteLocalFile(gameId)
-            notificationManager.showSuccess("Download deleted")
+            notificationManager.showSuccess(
+                NotificationText.Res(R.string.home_notice_download_deleted)
+            )
             onComplete()
         }
     }

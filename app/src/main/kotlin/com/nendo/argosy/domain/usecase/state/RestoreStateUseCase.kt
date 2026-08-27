@@ -14,9 +14,17 @@ sealed class RestoreStateResult {
         val currentCoreId: String?,
         val currentVersion: String?
     ) : RestoreStateResult()
-    data class Error(val message: String) : RestoreStateResult()
+    data class Error(val reason: RestoreStateFailureReason) : RestoreStateResult()
     data object NotFound : RestoreStateResult()
     data object NoConfig : RestoreStateResult()
+}
+
+/**
+ * Why [RestoreStateUseCase] could not write a cached save state back to disk.
+ */
+sealed class RestoreStateFailureReason {
+    data object TargetPathUnresolved : RestoreStateFailureReason()
+    data object WriteFailed : RestoreStateFailureReason()
 }
 
 class RestoreStateUseCase @Inject constructor(
@@ -73,13 +81,13 @@ class RestoreStateUseCase @Inject constructor(
             coreName = currentCoreId ?: cache.coreId,
             romPath = romPath,
             gameId = cache.gameId,
-        ) ?: return RestoreStateResult.Error("Could not determine target path")
+        ) ?: return RestoreStateResult.Error(RestoreStateFailureReason.TargetPathUnresolved)
 
         val success = stateCacheManager.restoreState(cacheId, targetPath)
         return if (success) {
             RestoreStateResult.Success
         } else {
-            RestoreStateResult.Error("Failed to restore state file")
+            RestoreStateResult.Error(RestoreStateFailureReason.WriteFailed)
         }
     }
 }

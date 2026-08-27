@@ -16,6 +16,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
@@ -77,5 +79,8 @@ fun MediaSeasonTabs(
     }
 }
 
-private fun seasonLabel(season: MediaSeasonUi): String =
-    season.seasonNumber?.let { "Season $it" } ?: season.name
+@Composable
+private fun seasonLabel(season: MediaSeasonUi): String {
+    val number = season.seasonNumber ?: return season.name
+    return stringResource(R.string.media_season_tab_number, number)
+}

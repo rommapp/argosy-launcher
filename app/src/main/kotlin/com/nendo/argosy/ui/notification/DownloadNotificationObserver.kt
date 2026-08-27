@@ -1,9 +1,13 @@
 package com.nendo.argosy.core.notification
 
+import android.content.Context
+import com.nendo.argosy.R
 import com.nendo.argosy.data.download.DownloadManager
 import com.nendo.argosy.data.download.DownloadProgress
 import com.nendo.argosy.data.download.DownloadQueueState
 import com.nendo.argosy.data.download.DownloadState
+import com.nendo.argosy.ui.common.toNotificationText
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -13,6 +17,7 @@ import javax.inject.Singleton
 
 @Singleton
 class DownloadNotificationObserver @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val downloadManager: DownloadManager,
     private val notificationManager: NotificationManager
 ) {
@@ -66,22 +71,34 @@ class DownloadNotificationObserver @Inject constructor(
             return
         }
 
-        val (title, type, immediate) = when (progress.state) {
-            DownloadState.QUEUED -> Triple("Queued", NotificationType.INFO, false)
-            DownloadState.WAITING_FOR_STORAGE -> Triple("Waiting for Storage", NotificationType.WARNING, true)
+        val (titleRes, type, immediate) = when (progress.state) {
+            DownloadState.QUEUED ->
+                Triple(R.string.ui_download_notice_queued, NotificationType.INFO, false)
+            DownloadState.WAITING_FOR_STORAGE ->
+                Triple(R.string.ui_download_notice_no_space, NotificationType.WARNING, true)
             DownloadState.DOWNLOADING -> return
-            DownloadState.EXTRACTING -> Triple("Extracting", NotificationType.INFO, false)
-            DownloadState.MOVING -> Triple("Moving to ROM Storage", NotificationType.INFO, false)
-            DownloadState.PAUSED -> Triple("Paused", NotificationType.INFO, false)
-            DownloadState.COMPLETED -> Triple("Completed", NotificationType.SUCCESS, true)
-            DownloadState.FAILED -> Triple("Failed", NotificationType.ERROR, true)
+            DownloadState.EXTRACTING ->
+                Triple(R.string.ui_download_notice_extracting, NotificationType.INFO, false)
+            DownloadState.MOVING ->
+                Triple(R.string.ui_download_notice_moving, NotificationType.INFO, false)
+            DownloadState.PAUSED ->
+                Triple(R.string.ui_download_notice_paused, NotificationType.INFO, false)
+            DownloadState.COMPLETED ->
+                Triple(R.string.ui_download_notice_completed, NotificationType.SUCCESS, true)
+            DownloadState.FAILED ->
+                Triple(R.string.ui_download_notice_failed, NotificationType.ERROR, true)
             DownloadState.CANCELLED -> return
         }
 
-        val subtitle = if (progress.state == DownloadState.FAILED && progress.errorReason != null) {
-            "${progress.gameTitle}: ${progress.errorReason}"
+        val title = NotificationText.Res(titleRes)
+        val failureReason = progress.errorReason
+        val subtitle = if (progress.state == DownloadState.FAILED && failureReason != null) {
+            NotificationText.Res(
+                R.string.ui_download_notice_failed_subtitle,
+                listOf(progress.gameTitle, failureReason.toNotificationText().resolve(context))
+            )
         } else {
-            progress.gameTitle
+            NotificationText.Raw(progress.gameTitle)
         }
 
         notificationManager.show(

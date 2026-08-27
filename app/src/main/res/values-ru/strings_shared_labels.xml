@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ================= Media companion facts (dual-screen showcase) ================= -->
+
+    <string name="media_companion_fact_year">Год</string>
+    <string name="media_companion_fact_runtime">Продолжительность</string>
+    <string name="media_companion_fact_rated">Возраст</string>
+    <string name="media_companion_fact_rating">Рейтинг</string>
+
+    <!-- ================= Media item labels (season/episode tag, runtime) ================= -->
+
+    <string name="media_item_episode_label">S%1$d E%2$d</string>
+    <string name="media_item_runtime_hours_minutes">%1$d ч %2$d мин</string>
+    <string name="media_item_runtime_hours">%1$d ч</string>
+    <string name="media_item_runtime_minutes">%1$d мин</string>
+
+    <!-- ================= Jellyfin preference labels (settings tree + media player pickers) ================= -->
+
+    <string name="media_pref_download_quality_original">Исходный файл</string>
+    <string name="media_pref_download_quality_high">Высокое - 1080p</string>
+    <string name="media_pref_download_quality_medium">Среднее - 720p</string>
+    <string name="media_pref_download_quality_low">Низкое - 480p</string>
+
+    <string name="media_pref_streaming_quality_auto">Исходное - Авто</string>
+    <string name="media_pref_streaming_quality_high">Высокое - 1080p</string>
+    <string name="media_pref_streaming_quality_medium">Среднее - 720p</string>
+    <string name="media_pref_streaming_quality_low">Низкое - 480p</string>
+
+    <string name="media_pref_subtitle_mode_off">Выкл</string>
+    <string name="media_pref_subtitle_mode_forced_only">Только принудительные</string>
+    <string name="media_pref_subtitle_mode_preferred">Предпочитаемый язык</string>
+
+    <string name="media_pref_audio_language_english">Английский</string>
+    <string name="media_pref_audio_language_japanese">Японский</string>
+    <string name="media_pref_audio_language_spanish">Испанский</string>
+    <string name="media_pref_audio_language_french">Французский</string>
+    <string name="media_pref_audio_language_german">Немецкий</string>
+    <string name="media_pref_audio_language_italian">Итальянский</string>
+    <string name="media_pref_audio_language_portuguese">Португальский</string>
+    <string name="media_pref_audio_language_russian">Русский</string>
+    <string name="media_pref_audio_language_korean">Корейский</string>
+    <string name="media_pref_audio_language_chinese">Китайский</string>
+
+    <string name="media_pref_subtitle_language_english">Английский</string>
+    <string name="media_pref_subtitle_language_japanese">Японский</string>
+    <string name="media_pref_subtitle_language_spanish">Испанский</string>
+    <string name="media_pref_subtitle_language_french">Французский</string>
+    <string name="media_pref_subtitle_language_german">Немецкий</string>
+    <string name="media_pref_subtitle_language_italian">Итальянский</string>
+    <string name="media_pref_subtitle_language_portuguese">Португальский</string>
+    <string name="media_pref_subtitle_language_russian">Русский</string>
+    <string name="media_pref_subtitle_language_korean">Корейский</string>
+    <string name="media_pref_subtitle_language_chinese">Китайский</string>
+
+    <!-- ================= Unified save-state entry (state channel binding + slot rows) ================= -->
+
+    <string name="unified_state_entry_display_name_auto">Авто</string>
+    <string name="unified_state_entry_display_name_channel">%1$s (Слот %2$d)</string>
+    <string name="unified_state_entry_display_name_slot">Слот %1$d</string>
+    <string name="unified_state_entry_slot_label_auto">Авто</string>
+    <string name="unified_state_entry_size_bytes">%1$d B</string>
+    <string name="unified_state_entry_size_kb">%1$d KB</string>
+    <string name="unified_state_entry_size_mb">%1$.1f MB</string>
+
+    <!-- ================= Variant category labels (file picker groups, download picker) ================= -->
+
+    <string name="variant_category_game">Игра</string>
+    <string name="variant_category_patch">Версии / Патчи</string>
+    <string name="variant_category_translation">Переводы</string>
+    <string name="variant_category_mod">Моды</string>
+    <string name="variant_category_hack">Хаки</string>
+    <string name="variant_category_demo">Демо</string>
+    <string name="variant_category_prototype">Прототип</string>
+    <string name="variant_category_update">Обновления</string>
+    <string name="variant_category_dlc">DLC</string>
+    <string name="variant_category_manual">Руководства</string>
+    <string name="variant_category_cheat">Читы</string>
+    <string name="variant_category_soundtrack">Саундтреки</string>
+    <string name="variant_category_screenshot">Скриншоты</string>
+    <string name="variant_category_unknown">Другое</string>
+
+    <!-- ================= Display preference labels (gradient preset, box art shape) ================= -->
+
+    <string name="gradient_preset_vibrant">Яркий</string>
+    <string name="gradient_preset_balanced">Сбалансированный</string>
+    <string name="gradient_preset_subtle">Приглушённый</string>
+    <string name="gradient_preset_custom">Свой</string>
+    <string name="box_art_shape_native">Исходный</string>
+
+    <!-- ================= Custom home-grid tile menu actions ================= -->
+
+    <string name="custom_tile_menu_action_arrange">Переместить или изменить размер</string>
+    <string name="custom_tile_menu_action_recurate">Изменить, что играет</string>
+    <string name="custom_tile_menu_action_remove">Убрать из сетки</string>
+    <string name="custom_tile_menu_action_start_game_queue">Создать очередь игр</string>
+    <string name="custom_tile_menu_action_set_focus_game">Задать активную игру</string>
+    <string name="custom_tile_menu_action_advance_focus_game">Завершить/пропустить игру</string>
+    <string name="custom_tile_menu_action_page_backdrop">Фон для этой страницы</string>
+    <string name="custom_tile_menu_action_page_music">Музыка для этой страницы</string>
+    <string name="custom_tile_menu_action_delete_page">Удалить страницу</string>
+
+    <!-- ================= Home tile picker category tabs ================= -->
+
+    <string name="tile_picker_category_games">Игры</string>
+    <string name="tile_picker_category_collections">Коллекции</string>
+    <string name="tile_picker_category_apps">Приложения</string>
+    <string name="tile_picker_category_media">Медиа</string>
+
+    <!-- ================= Home grid tile stats ================= -->
+
+    <string name="home_grid_tile_stat_played">Сыграно</string>
+    <string name="home_grid_tile_stat_achievements">Достижения</string>
+    <string name="home_grid_tile_stat_released">Выпущено</string>
+
+    <!-- ================= Media tile setup notice (add-to-grid download prompt) ================= -->
+
+    <string name="ui_media_tile_notice_confirm_add_download">Добавить и скачать</string>
+    <string name="ui_media_tile_notice_decline_cancel">Отмена</string>
+    <string name="media_tile_notice_confirm_download_all">Скачать всё</string>
+    <string name="media_tile_notice_decline_use_downloaded">Использовать скачанное</string>
+    <string name="media_tile_notice_decline_cancel">Отмена</string>
+    <string name="media_tile_notice_derived_message_none">На этом устройстве пока нет ни одного эпизода этого сериала. Плитка воспроизводит скачанные эпизоды, поэтому останется пустой, пока они не появятся.</string>
+    <plurals name="media_tile_notice_derived_message_some">
+        <item quantity="one">Плитка воспроизводит %1$d эпизод, доступный на устройстве, и запускает его заново по завершении.</item>
+        <item quantity="few">Плитка воспроизводит %1$d эпизода, доступных на устройстве, по порядку, возвращаясь к первому по завершении последнего.</item>
+        <item quantity="many">Плитка воспроизводит %1$d эпизодов, доступных на устройстве, по порядку, возвращаясь к первому по завершении последнего.</item>
+        <item quantity="other">Плитка воспроизводит %1$d эпизода, доступных на устройстве, по порядку, возвращаясь к первому по завершении последнего.</item>
+    </plurals>
+    <string name="media_tile_notice_warning_unknown_size">Это большой пакет, и его размер станет известен только после начала каждой загрузки.</string>
+    <string name="media_tile_notice_warning_approximate_size">Примерно %1$s в сумме - точный размер каждой загрузки определяется при её начале.</string>
+    <plurals name="media_tile_notice_missing_episodes">
+        <item quantity="one">%1$d эпизод ещё не на этом устройстве. Добавление плитки запускает его загрузку.</item>
+        <item quantity="few">%1$d эпизода ещё не на этом устройстве. Добавление плитки запускает их загрузку.</item>
+        <item quantity="many">%1$d эпизодов ещё не на этом устройстве. Добавление плитки запускает их загрузку.</item>
+        <item quantity="other">%1$d эпизода ещё не на этом устройстве. Добавление плитки запускает их загрузку.</item>
+    </plurals>
+    <plurals name="media_tile_notice_missing_titles">
+        <item quantity="one">%1$d тайтл ещё не на этом устройстве. Добавление плитки запускает его загрузку.</item>
+        <item quantity="few">%1$d тайтла ещё не на этом устройстве. Добавление плитки запускает их загрузку.</item>
+        <item quantity="many">%1$d тайтлов ещё не на этом устройстве. Добавление плитки запускает их загрузку.</item>
+        <item quantity="other">%1$d тайтла ещё не на этом устройстве. Добавление плитки запускает их загрузку.</item>
+    </plurals>
+
+    <!-- ================= Episode picker season headers ================= -->
+
+    <string name="episode_picker_season_label">Сезон %1$d</string>
+    <string name="episode_picker_specials_label">Спецвыпуски</string>
+    <string name="episode_picker_season_supporting_none">Нет на этом устройстве</string>
+    <string name="episode_picker_season_supporting_all">Все %1$d на этом устройстве</string>
+    <string name="episode_picker_season_supporting_partial">%1$d из %2$d на этом устройстве</string>
+
+    <!-- ================= Storage computed-at label ================= -->
+
+    <string name="storage_computed_label_computing">Вычисление...</string>
+    <string name="storage_computed_label_computed">Вычислено %1$s</string>
+    <string name="storage_computed_label_never">Ещё не вычислено</string>
+
+    <!-- ================= Download foreground notification text (Steam) ================= -->
+
+    <string name="download_indicator_notification_preparing">Подготовка: %1$s</string>
+    <string name="download_indicator_notification_connecting">Подключение к Steam...</string>
+    <string name="download_indicator_notification_fetching_manifest">Получение манифеста: %1$s</string>
+    <string name="download_indicator_notification_unpacking">Распаковка: %1$s</string>
+    <string name="download_indicator_notification_moving">Перемещение: %1$s</string>
+    <string name="download_indicator_notification_cleaning">Очистка: %1$s</string>
+    <string name="download_indicator_notification_paused">Пауза: %1$s</string>
+
+    <!-- ================= Title ID recheck notice ================= -->
+
+    <string name="title_id_recheck_notice_updated">Title ID обновлён на %1$s</string>
+    <string name="title_id_recheck_notice_confirmed">Title ID подтверждён как %1$s</string>
+    <string name="title_id_recheck_notice_not_found">Title ID не найден в %1$s</string>
+    <string name="title_id_recheck_notice_no_file">Файл игры недоступен для чтения</string>
+
+    <!-- ================= Steam launcher picker "no override" option ================= -->
+
+    <string name="gamedetail_steam_launcher_auto">Авто</string>
+
+    <!-- ================= Memcard picker "use the inherited default" entry ================= -->
+
+    <string name="ui_memcard_picker_default">По умолчанию</string>
+    <string name="ui_memcard_picker_default_named">По умолчанию (%1$s)</string>
+
+    <!-- ================= Home media rail episode subtitle (show tile, e.g. "S1 E4 - Episode Name") ================= -->
+
+    <string name="home_media_episode_subtitle_marker_season_episode">S%1$d E%2$d</string>
+    <string name="home_media_episode_subtitle_marker_episode_only">E%1$d</string>
+    <string name="home_media_episode_subtitle_with_name">%1$s - %2$s</string>
+
+</resources>

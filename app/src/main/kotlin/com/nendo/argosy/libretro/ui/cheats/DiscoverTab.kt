@@ -18,6 +18,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import com.nendo.argosy.R
 import com.nendo.argosy.libretro.scanner.MemoryMatch
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.SliderPreference
@@ -97,7 +101,7 @@ private fun ErrorView(message: String) {
                 color = MaterialTheme.colorScheme.error
             )
             Text(
-                text = "This core does not expose system RAM",
+                text = stringResource(R.string.ingame_cheats_discover_ram_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -121,8 +125,8 @@ private fun ActionsView(
     ) {
         if (!hasSnapshot) {
             ActionPreference(
-                title = "Snapshot",
-                subtitle = "Capture current RAM state",
+                title = stringResource(R.string.ingame_cheats_discover_snapshot_title),
+                subtitle = stringResource(R.string.ingame_cheats_discover_snapshot_subtitle),
                 isFocused = focusedIndex == 0,
                 onClick = { onAction(0) }
             )
@@ -134,30 +138,34 @@ private fun ActionsView(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "Take a snapshot to begin",
+                    text = stringResource(R.string.ingame_cheats_discover_snapshot_hint),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         } else if (canCompare) {
             ActionPreference(
-                title = "Changed",
-                subtitle = "Find values that changed since snapshot",
+                title = stringResource(R.string.ingame_cheats_discover_changed_title),
+                subtitle = stringResource(R.string.ingame_cheats_discover_changed_subtitle),
                 isFocused = focusedIndex == 0,
                 onClick = { onAction(0) }
             )
 
             ActionPreference(
-                title = "Same",
-                subtitle = "Find values that stayed the same",
+                title = stringResource(R.string.ingame_cheats_discover_same_title),
+                subtitle = stringResource(R.string.ingame_cheats_discover_same_subtitle),
                 isFocused = focusedIndex == 1,
                 onClick = { onAction(1) }
             )
 
             if (resultCount > 0) {
                 ActionPreference(
-                    title = "View Results",
-                    subtitle = "$resultCount entries from last search",
+                    title = stringResource(R.string.ingame_cheats_discover_view_results_title),
+                    subtitle = pluralStringResource(
+                        R.plurals.ingame_cheats_discover_view_results_subtitle,
+                        resultCount,
+                        resultCount
+                    ),
                     isFocused = focusedIndex == 2,
                     onClick = { onAction(2) }
                 )
@@ -172,7 +180,11 @@ private fun ActionsView(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "$candidateCount candidates",
+                    text = pluralStringResource(
+                        R.plurals.ingame_cheats_discover_actions_candidates,
+                        candidateCount,
+                        candidateCount
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -192,7 +204,11 @@ private fun ActionsView(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = if (resultCount > 0) "Narrow results or view current" else "Pick an action to compare",
+                    text = if (resultCount > 0) {
+                        stringResource(R.string.ingame_cheats_discover_hint_narrow)
+                    } else {
+                        stringResource(R.string.ingame_cheats_discover_hint_pick)
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -206,18 +222,18 @@ private fun ActionsView(
                 verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
             ) {
                 Text(
-                    text = "Play some more and narrow",
+                    text = stringResource(R.string.ingame_cheats_discover_waiting_message),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = "your results to continue",
-                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(Modifier.height(Dimens.spacingMd))
                 Text(
-                    text = "$candidateCount candidates",
+                    text = pluralStringResource(
+                        R.plurals.ingame_cheats_discover_waiting_candidates,
+                        candidateCount,
+                        candidateCount
+                    ),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -242,7 +258,7 @@ private fun ResultsView(
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         SliderPreference(
-            title = "Filter by Value",
+            title = stringResource(R.string.ingame_cheats_discover_filter_title),
             value = valueSearchText.toIntOrNull() ?: 0,
             minValue = 0,
             maxValue = 255,
@@ -263,7 +279,11 @@ private fun ResultsView(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = "$candidateCount candidates",
+                text = pluralStringResource(
+                    R.plurals.ingame_cheats_discover_results_candidates,
+                    candidateCount,
+                    candidateCount
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -275,7 +295,7 @@ private fun ResultsView(
                 )
             } else {
                 Text(
-                    text = "Play game to compare again",
+                    text = stringResource(R.string.ingame_cheats_discover_results_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -292,7 +312,7 @@ private fun ResultsView(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "No matches found",
+                    text = stringResource(R.string.ingame_cheats_discover_results_empty),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -307,12 +327,26 @@ private fun ResultsView(
                     val knownCheatName = knownAddresses[match.address]
                     val addressHex = "0x${match.address.toString(16).uppercase().padStart(6, '0')}"
                     val valueHex = match.currentValue.toString(16).uppercase().padStart(2, '0')
-                    val previousText = match.previousValue?.let { prev ->
-                        " (was ${prev.toString(16).uppercase().padStart(2, '0')})"
-                    } ?: ""
+                    val previousHex = match.previousValue
+                        ?.toString(16)?.uppercase()?.padStart(2, '0')
+                    val subtitle = when {
+                        knownCheatName != null -> stringResource(
+                            R.string.ingame_cheats_discover_result_saved,
+                            knownCheatName
+                        )
+                        previousHex != null -> stringResource(
+                            R.string.ingame_cheats_discover_result_value_previous,
+                            valueHex,
+                            previousHex
+                        )
+                        else -> stringResource(
+                            R.string.ingame_cheats_discover_result_value,
+                            valueHex
+                        )
+                    }
                     ActionPreference(
                         title = addressHex,
-                        subtitle = knownCheatName?.let { "Saved as $it" } ?: "Value $valueHex$previousText",
+                        subtitle = subtitle,
                         isFocused = index == focusedIndex - 1,
                         isEnabled = knownCheatName == null,
                         onClick = { onAction(index + 1) }

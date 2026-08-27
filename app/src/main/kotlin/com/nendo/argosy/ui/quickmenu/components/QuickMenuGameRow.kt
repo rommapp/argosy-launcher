@@ -25,9 +25,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.GameTitle
 import com.nendo.argosy.ui.quickmenu.GameRowUi
@@ -89,7 +91,8 @@ fun QuickMenuGameRow(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = game.platformName,
+                    text = game.platformName
+                        ?: stringResource(R.string.ui_quick_menu_row_platform_unknown),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -97,7 +100,9 @@ fun QuickMenuGameRow(
                 if (game.isDownloaded) {
                     Icon(
                         Icons.Default.CheckCircle,
-                        contentDescription = "Downloaded",
+                        contentDescription = stringResource(
+                            R.string.ui_quick_menu_row_downloaded
+                        ),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(Dimens.iconXs)
                     )

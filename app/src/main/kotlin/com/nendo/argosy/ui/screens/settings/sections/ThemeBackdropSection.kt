@@ -29,6 +29,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.data.preferences.BackdropEdgeStyle
 import com.nendo.argosy.data.preferences.BackdropMotion
 import com.nendo.argosy.data.preferences.BackdropPreset
@@ -71,7 +74,7 @@ internal sealed class ThemeBackdropItem(
         else -> true
     }
 
-    class Header(key: String, section: String, val title: String, visibleWhen: (ThemeBackdropLayoutState) -> Boolean = { true }) :
+    class Header(key: String, section: String, val titleRes: Int, visibleWhen: (ThemeBackdropLayoutState) -> Boolean = { true }) :
         ThemeBackdropItem(key, section, visibleWhen)
 
     class SectionSpacer(key: String, section: String, visibleWhen: (ThemeBackdropLayoutState) -> Boolean = { true }) :
@@ -91,9 +94,11 @@ internal sealed class ThemeBackdropItem(
     data object Reshuffle : ThemeBackdropItem("backdropReshuffle", "pattern", { it.enabled })
 
     companion object {
-        private val PatternHeader = Header("patternHeader", "pattern", "Pattern")
+        private val PatternHeader =
+            Header("patternHeader", "pattern", R.string.settings_backdrop_section_pattern)
         private val LayersSpacer = SectionSpacer("layersSpacer", "layers", { it.enabled })
-        private val LayersHeader = Header("layersHeader", "layers", "Layers", { it.enabled })
+        private val LayersHeader =
+            Header("layersHeader", "layers", R.string.settings_backdrop_section_layers, { it.enabled })
 
         val ALL: List<ThemeBackdropItem>
             get() = listOf(
@@ -108,14 +113,43 @@ private val themeBackdropLayout = SettingsLayout<ThemeBackdropItem, ThemeBackdro
     isFocusable = { it.isFocusable },
     visibleWhen = { item, state -> item.visibleWhen(state) },
     sectionOf = { it.section },
-    sectionTitle = {
+    sectionTitleRes = {
         when (it) {
-            "pattern" -> "Pattern"
-            "layers" -> "Layers"
+            "pattern" -> R.string.settings_backdrop_section_pattern
+            "layers" -> R.string.settings_backdrop_section_layers
             else -> null
         }
     }
 )
+
+private fun backdropPresetLabelRes(preset: BackdropPreset): Int = when (preset) {
+    BackdropPreset.DOTS -> R.string.settings_backdrop_preset_dots
+    BackdropPreset.SCANLINES -> R.string.settings_backdrop_preset_scanlines
+    BackdropPreset.HEX -> R.string.settings_backdrop_preset_hex
+    BackdropPreset.ICON_GRID -> R.string.settings_backdrop_preset_icon_grid
+    BackdropPreset.PLATFORMS -> R.string.settings_backdrop_preset_platforms
+}
+
+private fun backdropEdgeStyleLabelRes(style: BackdropEdgeStyle): Int = when (style) {
+    BackdropEdgeStyle.NONE -> R.string.settings_backdrop_edge_none
+    BackdropEdgeStyle.SOLID -> R.string.settings_backdrop_edge_solid
+    BackdropEdgeStyle.DASHED -> R.string.settings_backdrop_edge_dashed
+    BackdropEdgeStyle.FADED -> R.string.settings_backdrop_edge_faded
+    BackdropEdgeStyle.CONNECTIONS -> R.string.settings_backdrop_edge_connections
+}
+
+private fun backdropVertexIconLabelRes(icon: BackdropVertexIcon): Int = when (icon) {
+    BackdropVertexIcon.NONE -> R.string.settings_backdrop_corner_none
+    BackdropVertexIcon.DOTS -> R.string.settings_backdrop_corner_dots
+    BackdropVertexIcon.PLUS -> R.string.settings_backdrop_corner_plus
+    BackdropVertexIcon.DIAMOND -> R.string.settings_backdrop_corner_diamond
+}
+
+private fun backdropMotionLabelRes(motion: BackdropMotion): Int = when (motion) {
+    BackdropMotion.OFF -> R.string.settings_backdrop_motion_off
+    BackdropMotion.DRIFT -> R.string.settings_backdrop_motion_drift
+    BackdropMotion.SWAY -> R.string.settings_backdrop_motion_sway
+}
 
 internal fun themeBackdropMaxFocusIndex(state: ThemeBackdropLayoutState): Int =
     themeBackdropLayout.maxFocusIndex(state)
@@ -128,12 +162,15 @@ internal fun themeBackdropSections(state: ThemeBackdropLayoutState) = themeBackd
 @Composable
 fun ThemeBackdropSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val config = uiState.display.surfaceBackdrop
+    val context = LocalContext.current
 
     val layoutState = remember(config.enabled, config.motion) {
         ThemeBackdropLayoutState(enabled = config.enabled, motion = config.motion)
     }
     val visibleItems = remember(layoutState) { themeBackdropLayout.visibleItems(layoutState) }
-    val sections = remember(layoutState) { themeBackdropLayout.buildSections(layoutState) }
+    val sections = remember(layoutState, context) {
+        themeBackdropLayout.buildSections(layoutState, context)
+    }
 
     fun isFocused(item: ThemeBackdropItem): Boolean =
         uiState.focusedIndex == themeBackdropLayout.focusIndexOf(item, layoutState)
@@ -154,30 +191,32 @@ fun ThemeBackdropSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) { item ->
         when (item) {
-            is ThemeBackdropItem.Header -> ThemeBackdropSectionHeader(item.title)
+            is ThemeBackdropItem.Header -> ThemeBackdropSectionHeader(stringResource(item.titleRes))
             is ThemeBackdropItem.SectionSpacer -> Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
             ThemeBackdropItem.Enabled -> SwitchPreference(
-                title = "Surface Backdrop",
-                subtitle = "Tiled pattern behind menus and the companion screen",
+                title = stringResource(R.string.settings_backdrop_enabled_title),
+                subtitle = stringResource(R.string.settings_backdrop_enabled_subtitle),
                 isEnabled = config.enabled,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.setBackdropEnabled(it) }
             )
 
             ThemeBackdropItem.Preset -> CyclePreference(
-                title = "Pattern",
-                value = config.preset.displayName,
+                title = stringResource(R.string.settings_backdrop_preset_title),
+                value = stringResource(backdropPresetLabelRes(config.preset)),
                 isFocused = isFocused(item),
                 onClick = { viewModel.cycleBackdropPreset(1) },
                 onPrev = { viewModel.cycleBackdropPreset(-1) },
-                options = remember { BackdropPreset.entries.map { it.displayName } },
+                options = remember(context) {
+                    BackdropPreset.entries.map { context.getString(backdropPresetLabelRes(it)) }
+                },
                 onSelect = { viewModel.setBackdropPreset(BackdropPreset.entries[it]) },
                 pickerRequestToken = pickerToken(item)
             )
 
             ThemeBackdropItem.Density -> SliderPreference(
-                title = "Density",
+                title = stringResource(R.string.settings_backdrop_density_title),
                 value = config.cellSize,
                 minValue = ComponentDefaults.SurfaceBackdrop.cellSizeMinDp,
                 maxValue = ComponentDefaults.SurfaceBackdrop.cellSizeMaxDp,
@@ -188,7 +227,7 @@ fun ThemeBackdropSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
             )
 
             ThemeBackdropItem.Scatter -> SliderPreference(
-                title = "Scatter",
+                title = stringResource(R.string.settings_backdrop_scatter_title),
                 value = config.scatter,
                 minValue = 0,
                 maxValue = 200,
@@ -199,7 +238,7 @@ fun ThemeBackdropSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
             )
 
             ThemeBackdropItem.ScaleJitter -> SliderPreference(
-                title = "Scale Jitter",
+                title = stringResource(R.string.settings_backdrop_scale_jitter_title),
                 value = config.scaleJitter,
                 minValue = 0,
                 maxValue = 200,
@@ -210,7 +249,7 @@ fun ThemeBackdropSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
             )
 
             ThemeBackdropItem.Strength -> SliderPreference(
-                title = "Strength",
+                title = stringResource(R.string.settings_backdrop_strength_title),
                 value = config.strength,
                 minValue = 10,
                 maxValue = 100,
@@ -221,40 +260,46 @@ fun ThemeBackdropSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
             )
 
             ThemeBackdropItem.EdgeLines -> CyclePreference(
-                title = "Edge Lines",
-                value = config.edgeStyle.displayName,
+                title = stringResource(R.string.settings_backdrop_edge_title),
+                value = stringResource(backdropEdgeStyleLabelRes(config.edgeStyle)),
                 isFocused = isFocused(item),
                 onClick = { viewModel.cycleBackdropEdgeStyle(1) },
                 onPrev = { viewModel.cycleBackdropEdgeStyle(-1) },
-                options = remember { BackdropEdgeStyle.entries.map { it.displayName } },
+                options = remember(context) {
+                    BackdropEdgeStyle.entries.map { context.getString(backdropEdgeStyleLabelRes(it)) }
+                },
                 onSelect = { viewModel.setBackdropEdgeStyle(BackdropEdgeStyle.entries[it]) },
                 pickerRequestToken = pickerToken(item)
             )
 
             ThemeBackdropItem.CornerIcons -> CyclePreference(
-                title = "Corner Icons",
-                value = config.vertexIcons.displayName,
+                title = stringResource(R.string.settings_backdrop_corner_title),
+                value = stringResource(backdropVertexIconLabelRes(config.vertexIcons)),
                 isFocused = isFocused(item),
                 onClick = { viewModel.cycleBackdropVertexIcons(1) },
                 onPrev = { viewModel.cycleBackdropVertexIcons(-1) },
-                options = remember { BackdropVertexIcon.entries.map { it.displayName } },
+                options = remember(context) {
+                    BackdropVertexIcon.entries.map { context.getString(backdropVertexIconLabelRes(it)) }
+                },
                 onSelect = { viewModel.setBackdropVertexIcons(BackdropVertexIcon.entries[it]) },
                 pickerRequestToken = pickerToken(item)
             )
 
             ThemeBackdropItem.Motion -> CyclePreference(
-                title = "Motion",
-                value = config.motion.displayName,
+                title = stringResource(R.string.settings_backdrop_motion_title),
+                value = stringResource(backdropMotionLabelRes(config.motion)),
                 isFocused = isFocused(item),
                 onClick = { viewModel.cycleBackdropMotion(1) },
                 onPrev = { viewModel.cycleBackdropMotion(-1) },
-                options = remember { BackdropMotion.entries.map { it.displayName } },
+                options = remember(context) {
+                    BackdropMotion.entries.map { context.getString(backdropMotionLabelRes(it)) }
+                },
                 onSelect = { viewModel.setBackdropMotion(BackdropMotion.entries[it]) },
                 pickerRequestToken = pickerToken(item)
             )
 
             ThemeBackdropItem.Speed -> SliderPreference(
-                title = "Speed",
+                title = stringResource(R.string.settings_backdrop_speed_title),
                 value = config.motionSpeed,
                 minValue = 25,
                 maxValue = 200,
@@ -272,8 +317,8 @@ fun ThemeBackdropSection(uiState: SettingsUiState, viewModel: SettingsViewModel)
             )
 
             ThemeBackdropItem.Reshuffle -> ActionPreference(
-                title = "Reshuffle",
-                subtitle = "Re-roll the pattern's random jitter",
+                title = stringResource(R.string.settings_backdrop_reshuffle_title),
+                subtitle = stringResource(R.string.settings_backdrop_reshuffle_subtitle),
                 icon = Icons.Outlined.Shuffle,
                 isFocused = isFocused(item),
                 onClick = { viewModel.reshuffleBackdropSeed() }
@@ -301,8 +346,11 @@ private fun DriftAnglePreference(
         }
     }
     ActionPreference(
-        title = "Direction",
-        subtitle = "${angle.roundToInt().mod(360)}\u00B0",
+        title = stringResource(R.string.settings_backdrop_direction_title),
+        subtitle = stringResource(
+            R.string.settings_backdrop_direction_value,
+            angle.roundToInt().mod(360)
+        ),
         icon = Icons.Outlined.Explore,
         isFocused = isFocused,
         onClick = { ringVisible = true }

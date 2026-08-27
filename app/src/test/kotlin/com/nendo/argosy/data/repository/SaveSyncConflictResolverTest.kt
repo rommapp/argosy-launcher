@@ -16,7 +16,6 @@ import com.nendo.argosy.data.remote.romm.RomMDeviceSync
 import com.nendo.argosy.data.remote.romm.RomMSave
 import com.nendo.argosy.data.sync.SaveArchiver
 import com.nendo.argosy.data.sync.SavePathResolver
-import com.nendo.argosy.data.sync.platform.SwitchSaveHandler
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -43,7 +42,6 @@ class SaveSyncConflictResolverTest {
     private lateinit var userPreferencesRepository: UserPreferencesRepository
     private lateinit var saveCacheManager: dagger.Lazy<SaveCacheManager>
     private lateinit var apiClient: dagger.Lazy<SaveSyncApiClient>
-    private lateinit var switchSaveHandler: SwitchSaveHandler
     private lateinit var fal: com.nendo.argosy.data.storage.FileAccessLayer
     private lateinit var saveHandlerRegistry: com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry
     private lateinit var appContext: android.content.Context
@@ -76,11 +74,11 @@ class SaveSyncConflictResolverTest {
         saveArchiver = mockk(relaxed = true)
         savePathResolver = mockk(relaxed = true)
         userPreferencesRepository = mockk(relaxed = true)
-        switchSaveHandler = mockk(relaxed = true)
         fal = mockk(relaxed = true)
         saveHandlerRegistry = mockk(relaxed = true)
         appContext = mockk(relaxed = true)
         every { fal.exists(any()) } returns true
+        every { saveHandlerRegistry.isValidCachedSavePath(any(), any()) } returns true
 
         mockCacheManager = mockk(relaxed = true)
         mockApiClient = mockk(relaxed = true)
@@ -107,7 +105,6 @@ class SaveSyncConflictResolverTest {
             syncPreferencesRepository = mockk(relaxed = true),
             saveCacheManager = saveCacheManager,
             apiClient = apiClient,
-            switchSaveHandler = switchSaveHandler,
             fal = fal,
             saveHandlerRegistry = saveHandlerRegistry,
             appContext = appContext

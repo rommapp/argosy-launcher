@@ -15,6 +15,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.Modal
 import com.nendo.argosy.ui.screens.gamedetail.components.OptionItem
@@ -44,52 +46,67 @@ fun PerGameSettingsModal(
 
     fun isFocused(row: PerGameSettingsRow) = focusedRow == row
 
+    val adjustHint = stringResource(R.string.gamedetail_per_game_footer_adjust)
+    val changeResetHint = stringResource(R.string.gamedetail_per_game_footer_change_reset)
+    val selectHint = stringResource(R.string.gamedetail_per_game_footer_select)
+    val changeSavePathHint = stringResource(R.string.gamedetail_per_game_footer_change_save_path)
+    val openSaveLocationHint =
+        stringResource(R.string.gamedetail_per_game_footer_open_save_location)
+    val changeMemcardHint = stringResource(R.string.gamedetail_per_game_footer_change_memcard)
+    val cycleHint = stringResource(R.string.gamedetail_per_game_footer_cycle)
+    val openHint = stringResource(R.string.gamedetail_per_game_footer_open)
+    val backHint = stringResource(R.string.gamedetail_per_game_footer_back)
+
     Modal(
-        title = "Per-Game Settings",
+        title = stringResource(R.string.gamedetail_per_game_title),
         subtitle = gameTitle,
         baseWidth = Dimens.modalWidthXl,
         onDismiss = onDismiss,
         footerHints = buildList {
             when (focusedRow) {
                 PerGameSettingsRow.DISPLAY_TARGET, PerGameSettingsRow.EXTENSION ->
-                    add(InputButton.DPAD_HORIZONTAL to "Adjust")
+                    add(InputButton.DPAD_HORIZONTAL to adjustHint)
                 PerGameSettingsRow.SAVE_PATH ->
-                    if (state.isSavePathOverride) add(InputButton.DPAD_HORIZONTAL to "Change/Reset")
+                    if (state.isSavePathOverride) {
+                        add(InputButton.DPAD_HORIZONTAL to changeResetHint)
+                    }
                 else -> {}
             }
             add(
                 InputButton.A to when (focusedRow) {
-                    PerGameSettingsRow.EMULATOR, PerGameSettingsRow.CORE -> "Select"
-                    PerGameSettingsRow.SAVE_PATH -> "Change"
-                    PerGameSettingsRow.SAVE_BASE_PATH -> "Open"
-                    PerGameSettingsRow.MEMCARD -> "Change"
-                    PerGameSettingsRow.DISPLAY_TARGET, PerGameSettingsRow.EXTENSION -> "Cycle"
-                    PerGameSettingsRow.PLATFORM_SETTINGS, null -> "Open"
+                    PerGameSettingsRow.EMULATOR, PerGameSettingsRow.CORE -> selectHint
+                    PerGameSettingsRow.SAVE_PATH -> changeSavePathHint
+                    PerGameSettingsRow.SAVE_BASE_PATH -> openSaveLocationHint
+                    PerGameSettingsRow.MEMCARD -> changeMemcardHint
+                    PerGameSettingsRow.DISPLAY_TARGET, PerGameSettingsRow.EXTENSION -> cycleHint
+                    PerGameSettingsRow.PLATFORM_SETTINGS, null -> openHint
                 }
             )
-            add(InputButton.B to "Back")
+            add(InputButton.B to backHint)
         }
     ) {
         rows.forEach { row ->
             when (row) {
                 PerGameSettingsRow.EMULATOR -> ValueConfigItem(
-                    label = "Emulator",
-                    value = state.emulatorName ?: "None detected",
+                    label = stringResource(R.string.gamedetail_per_game_emulator_label),
+                    value = state.emulatorName
+                        ?: stringResource(R.string.gamedetail_per_game_emulator_none),
                     isOverride = state.isEmulatorOverride,
                     isFocused = isFocused(row),
                     onClick = onEmulatorClick
                 )
 
                 PerGameSettingsRow.CORE -> ValueConfigItem(
-                    label = "Core",
-                    value = state.coreName ?: "Default",
+                    label = stringResource(R.string.gamedetail_per_game_core_label),
+                    value = state.coreName
+                        ?: stringResource(R.string.gamedetail_per_game_core_default),
                     isOverride = state.isCoreOverride,
                     isFocused = isFocused(row),
                     onClick = onCoreClick
                 )
 
                 PerGameSettingsRow.SAVE_PATH -> PathConfigItem(
-                    label = "Save Path",
+                    label = stringResource(R.string.gamedetail_per_game_save_path_label),
                     path = state.savePath?.let { formatStoragePath(it) },
                     isCustom = state.isSavePathOverride,
                     isFocused = isFocused(row),
@@ -99,40 +116,58 @@ fun PerGameSettingsModal(
                 )
 
                 PerGameSettingsRow.SAVE_BASE_PATH -> ValueConfigItem(
-                    label = "Save Location",
-                    value = state.saveBasePath?.let { formatStoragePath(it) } ?: "Not configured",
+                    label = stringResource(R.string.gamedetail_per_game_save_location_label),
+                    value = state.saveBasePath?.let { formatStoragePath(it) }
+                        ?: stringResource(R.string.gamedetail_per_game_save_location_unset),
                     isOverride = !state.saveBasePathIsInherited && state.saveBasePath != null,
                     isFocused = isFocused(row),
                     onClick = onPlatformSettings
                 )
 
                 PerGameSettingsRow.MEMCARD -> ValueConfigItem(
-                    label = "Memory Card",
+                    label = stringResource(R.string.gamedetail_per_game_memcard_label),
                     value = state.selectedMemcardPath
                         ?.let { path ->
                             state.memcardCards.find { it.path == path }?.name
                                 ?: java.io.File(path).name
                         }
-                        ?: "Default (${state.inheritedMemcardName ?: "Auto"})",
+                        ?: stringResource(
+                            R.string.gamedetail_per_game_memcard_default,
+                            state.inheritedMemcardName
+                                ?: stringResource(
+                                    R.string.gamedetail_per_game_memcard_default_auto
+                                )
+                        ),
                     isOverride = state.selectedMemcardPath != null,
                     isFocused = isFocused(row),
                     onClick = onMemcardClick
                 )
 
                 PerGameSettingsRow.DISPLAY_TARGET -> ValueConfigItem(
-                    label = "Display Target",
+                    label = stringResource(R.string.gamedetail_per_game_display_target_label),
                     value = state.displayTarget?.displayName
-                        ?: "Inherit (${state.inheritedDisplayTarget.displayName})",
+                        ?: stringResource(
+                            R.string.gamedetail_per_game_display_target_inherit,
+                            state.inheritedDisplayTarget.displayName
+                        ),
                     isOverride = state.displayTarget != null,
                     isFocused = isFocused(row),
                     onClick = { onCycleDisplayTarget(1) }
                 )
 
                 PerGameSettingsRow.EXTENSION -> ValueConfigItem(
-                    label = "File Extension",
+                    label = stringResource(R.string.gamedetail_per_game_extension_label),
                     value = state.preferredExtension?.let { ext ->
                         state.extensionOptions.find { it.extension == ext }?.label ?: ext
-                    } ?: "Inherit (${inheritedExtensionLabel(state)})",
+                    } ?: stringResource(
+                        R.string.gamedetail_per_game_extension_inherit,
+                        state.inheritedExtension?.let { inherited ->
+                            state.extensionOptions.find { it.extension == inherited }?.label
+                                ?: inherited
+                        } ?: stringResource(
+                            R.string.gamedetail_per_game_extension_inherit_auto
+                        )
+                    ),
                     isOverride = state.preferredExtension != null,
                     isFocused = isFocused(row),
                     onClick = { onCycleExtension(1) }
@@ -144,7 +179,7 @@ fun PerGameSettingsModal(
                         color = MaterialTheme.colorScheme.outlineVariant
                     )
                     OptionItem(
-                        label = "Platform Settings",
+                        label = stringResource(R.string.gamedetail_per_game_platform_settings),
                         isFocused = isFocused(row),
                         onClick = onPlatformSettings
                     )
@@ -152,11 +187,6 @@ fun PerGameSettingsModal(
             }
         }
     }
-}
-
-private fun inheritedExtensionLabel(state: PerGameSettingsState): String {
-    val inherited = state.inheritedExtension ?: return "Auto"
-    return state.extensionOptions.find { it.extension == inherited }?.label ?: inherited
 }
 
 @Composable
@@ -208,7 +238,7 @@ private fun ValueConfigItem(
             )
             if (!isOverride) {
                 Text(
-                    text = "Inherited",
+                    text = stringResource(R.string.gamedetail_per_game_inherited_tag),
                     style = MaterialTheme.typography.labelSmall,
                     color = secondaryColor
                 )

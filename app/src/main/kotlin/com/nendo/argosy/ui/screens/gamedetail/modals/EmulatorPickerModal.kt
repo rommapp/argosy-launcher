@@ -5,6 +5,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.data.emulator.InstalledEmulator
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.Modal
@@ -19,7 +21,7 @@ fun EmulatorPickerModal(
     onDismiss: () -> Unit
 ) {
     Modal(
-        title = "SELECT EMULATOR",
+        title = stringResource(R.string.gamedetail_emulator_picker_title),
         onDismiss = onDismiss
     ) {
         val listState = rememberLazyListState()
@@ -31,7 +33,7 @@ fun EmulatorPickerModal(
         ) {
             item {
                 OptionItem(
-                    label = "Use Platform Default",
+                    label = stringResource(R.string.gamedetail_emulator_picker_platform_default),
                     isFocused = focusIndex == 0,
                     isSelected = currentEmulatorName == null,
                     onClick = { onSelectEmulator(null) }

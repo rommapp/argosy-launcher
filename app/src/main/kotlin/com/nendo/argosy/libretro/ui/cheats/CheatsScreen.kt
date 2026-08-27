@@ -37,8 +37,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.annotation.StringRes
+import com.nendo.argosy.R
 import com.nendo.argosy.libretro.scanner.MemoryMatch
 import com.nendo.argosy.libretro.scanner.MemoryScanner
 import com.nendo.argosy.libretro.scanner.NarrowResult
@@ -54,9 +59,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-enum class CheatsTab(val label: String) {
-    CHEATS("Cheats"),
-    DISCOVER("Discover")
+enum class CheatsTab(@StringRes val labelRes: Int) {
+    CHEATS(R.string.ingame_cheats_tab_cheats),
+    DISCOVER(R.string.ingame_cheats_tab_discover)
 }
 
 data class CheatDisplayItem(
@@ -106,6 +111,7 @@ fun CheatsScreen(
     var canCompare by remember { mutableStateOf(scanner.canCompare()) }
     var candidateCount by remember { mutableIntStateOf(scanner.getCandidateCount()) }
 
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val dialogInputHandler = remember { mutableStateOf<InputHandler?>(null) }
     var showSearchDialog by remember { mutableStateOf(false) }
@@ -218,7 +224,7 @@ fun CheatsScreen(
                         isLoading = true
                         val ram = withContext(Dispatchers.Default) { onGetRam() }
                         if (ram == null) {
-                            ramError = "RAM not available for this core"
+                            ramError = context.getString(R.string.ingame_cheats_error_ram_unavailable)
                             isLoading = false
                             return@launch
                         }
@@ -246,10 +252,14 @@ fun CheatsScreen(
                                             showingResults = true
                                         }
                                         is NarrowResult.NoChanges -> {
-                                            narrowError = "No changes detected - play more first"
+                                            narrowError = context.getString(
+                                                R.string.ingame_cheats_error_no_changes
+                                            )
                                         }
                                         is NarrowResult.NotReady -> {
-                                            narrowError = "Play more to narrow results"
+                                            narrowError = context.getString(
+                                                R.string.ingame_cheats_error_changed_not_ready
+                                            )
                                         }
                                     }
                                 }
@@ -273,10 +283,14 @@ fun CheatsScreen(
                                             showingResults = true
                                         }
                                         is NarrowResult.NoChanges -> {
-                                            narrowError = "No unchanged values - try 'Changed' instead"
+                                            narrowError = context.getString(
+                                                R.string.ingame_cheats_error_no_unchanged
+                                            )
                                         }
                                         is NarrowResult.NotReady -> {
-                                            narrowError = "Play more to narrow results"
+                                            narrowError = context.getString(
+                                                R.string.ingame_cheats_error_same_not_ready
+                                            )
                                         }
                                     }
                                 }
@@ -308,7 +322,9 @@ fun CheatsScreen(
                             val resultIndex = focusIndex - 1
                             scanResults.getOrNull(resultIndex)?.let { match ->
                                 if (knownAddresses.containsKey(match.address)) {
-                                    narrowError = "Address already saved as cheat"
+                                    narrowError = context.getString(
+                                        R.string.ingame_cheats_error_address_saved
+                                    )
                                 } else {
                                     creatingCheatAddress = match.address
                                     creatingCheatValue = match.currentValue
@@ -321,24 +337,39 @@ fun CheatsScreen(
         }
     }
 
+    val hintVariantSelect = stringResource(R.string.ingame_cheats_footer_variant_select)
+    val hintSearch = stringResource(R.string.ingame_cheats_footer_search)
+    val hintClearSearch = stringResource(R.string.ingame_cheats_footer_clear_search)
+    val hintToggle = stringResource(R.string.ingame_cheats_footer_toggle)
+    val hintEdit = stringResource(R.string.ingame_cheats_footer_edit)
+    val hintVersion = stringResource(R.string.ingame_cheats_footer_version)
+    val hintSnapshot = stringResource(R.string.ingame_cheats_footer_snapshot)
+    val hintDiscoverSelect = stringResource(R.string.ingame_cheats_footer_discover_select)
+    val hintSaveCheat = stringResource(R.string.ingame_cheats_footer_save_cheat)
+    val hintFilter = stringResource(R.string.ingame_cheats_footer_filter)
+    val hintAdjust = stringResource(R.string.ingame_cheats_footer_adjust)
+    val hintReset = stringResource(R.string.ingame_cheats_footer_reset)
+    val hintTab = stringResource(R.string.ingame_cheats_footer_tab)
+    val hintBack = stringResource(R.string.ingame_cheats_footer_back)
+
     fun buildFooterHints(): List<Pair<InputButton, String>> = buildList {
         when (currentTab) {
             CheatsTab.CHEATS -> {
                 if (needsVariantSelection) {
-                    add(InputButton.A to "Select")
+                    add(InputButton.A to hintVariantSelect)
                 } else if (contentFocusIndex == 0) {
-                    add(InputButton.A to "Search")
+                    add(InputButton.A to hintSearch)
                     if (searchQuery.isNotEmpty()) {
-                        add(InputButton.X to "Clear")
+                        add(InputButton.X to hintClearSearch)
                     }
                 } else {
-                    add(InputButton.A to "Toggle")
+                    add(InputButton.A to hintToggle)
                     if (displayCheats.getOrNull(contentFocusIndex - 1) != null) {
-                        add(InputButton.X to "Edit")
+                        add(InputButton.X to hintEdit)
                     }
                 }
                 if (hasMultipleVariants && !needsVariantSelection) {
-                    add(InputButton.Y to "Version")
+                    add(InputButton.Y to hintVersion)
                 }
             }
             CheatsTab.DISCOVER -> {
@@ -346,31 +377,29 @@ fun CheatsScreen(
                 val inWaiting = hasSnapshot && !canCompare && !showingResults
                 when {
                     !hasSnapshot -> {
-                        add(InputButton.A to "Snapshot")
+                        add(InputButton.A to hintSnapshot)
                     }
                     showActions && canCompare -> {
-                        add(InputButton.A to "Select")
+                        add(InputButton.A to hintDiscoverSelect)
                     }
                     showingResults -> {
                         val onResult = contentFocusIndex >= 1
                         if (onResult) {
-                            add(InputButton.A to "Save Cheat")
+                            add(InputButton.A to hintSaveCheat)
                         } else {
-                            add(InputButton.A to "Filter")
-                            add(InputButton.DPAD_HORIZONTAL to "Adjust")
+                            add(InputButton.A to hintFilter)
+                            add(InputButton.DPAD_HORIZONTAL to hintAdjust)
                         }
                     }
-                    inWaiting -> {
-                        // No actions available, just waiting for game to run
-                    }
+                    inWaiting -> Unit
                 }
                 if (hasSnapshot) {
-                    add(InputButton.X to "Reset")
+                    add(InputButton.X to hintReset)
                 }
             }
         }
-        add(InputButton.LB_RB to "Tab")
-        add(InputButton.B to "Back")
+        add(InputButton.LB_RB to hintTab)
+        add(InputButton.B to hintBack)
     }
 
     LaunchedEffect(Unit) {
@@ -755,7 +784,7 @@ private fun LoadingOverlay() {
                 strokeWidth = 3.dp
             )
             Text(
-                text = "Scanning memory...",
+                text = stringResource(R.string.ingame_cheats_loading),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -777,7 +806,7 @@ private fun TabHeader(
     ) {
         CheatsTab.entries.forEach { tab ->
             TabIndicator(
-                label = tab.label,
+                label = stringResource(tab.labelRes),
                 isSelected = tab == currentTab,
                 onClick = { onTabSelect(tab) }
             )
@@ -898,13 +927,13 @@ private fun VariantPicker(
         modifier = modifier.padding(Dimens.spacingSm)
     ) {
         Text(
-            text = "Multiple versions available",
+            text = stringResource(R.string.ingame_cheats_variant_picker_title),
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(bottom = Dimens.spacingXs)
         )
         Text(
-            text = "Select the version that matches your ROM",
+            text = stringResource(R.string.ingame_cheats_variant_picker_message),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = Dimens.spacingMd)
@@ -955,7 +984,7 @@ private fun VariantSelectorModal(
         ) {
             Column(modifier = Modifier.padding(Dimens.spacingLg)) {
                 Text(
-                    text = "Select Version",
+                    text = stringResource(R.string.ingame_cheats_variant_modal_title),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(bottom = Dimens.spacingMd)
@@ -1016,7 +1045,11 @@ private fun VariantRow(
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = variant.region.ifBlank { "Unknown Region" },
+                text = if (variant.region.isBlank()) {
+                    stringResource(R.string.ingame_cheats_variant_unknown_region)
+                } else {
+                    variant.region
+                },
                 style = MaterialTheme.typography.bodyLarge,
                 color = contentColor
             )
@@ -1033,7 +1066,11 @@ private fun VariantRow(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "${variant.cheatCount} cheats",
+                text = pluralStringResource(
+                    R.plurals.ingame_cheats_variant_count,
+                    variant.cheatCount,
+                    variant.cheatCount
+                ),
                 style = MaterialTheme.typography.labelMedium,
                 color = secondaryColor
             )

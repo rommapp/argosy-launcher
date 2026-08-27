@@ -17,9 +17,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.animateScrollToItemCentered
@@ -92,7 +94,7 @@ fun MediaLibraryScreen(
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             Text(
-                text = "MEDIA",
+                text = stringResource(R.string.media_library_heading),
                 style = MaterialTheme.typography.labelLarge,
                 color = theme.focusAccent,
                 modifier = Modifier.padding(
@@ -180,13 +182,23 @@ fun MediaLibraryScreen(
     )
 }
 
-private fun buildLibraryHints(uiState: MediaLibraryUiState): List<Pair<InputButton, String>> = buildList {
-    if (uiState.libraries.size > 1) add(InputButton.LB_RB to "Library")
-    val focused = uiState.focusedItem
-    if (focused?.isPlayable == true) {
-        add(InputButton.Y to if (focused.hasResumePosition) "Resume" else "Play")
+@Composable
+private fun buildLibraryHints(uiState: MediaLibraryUiState): List<Pair<InputButton, String>> {
+    val libraryLabel = stringResource(R.string.media_library_footer_library)
+    val resumeLabel = stringResource(R.string.media_library_footer_resume)
+    val playLabel = stringResource(R.string.media_library_footer_play)
+    val refreshingLabel = stringResource(R.string.media_library_footer_refreshing)
+    val refreshLabel = stringResource(R.string.media_library_footer_refresh)
+    val openLabel = stringResource(R.string.media_library_footer_open)
+    val backLabel = stringResource(R.string.media_library_footer_back)
+    return buildList {
+        if (uiState.libraries.size > 1) add(InputButton.LB_RB to libraryLabel)
+        val focused = uiState.focusedItem
+        if (focused?.isPlayable == true) {
+            add(InputButton.Y to if (focused.hasResumePosition) resumeLabel else playLabel)
+        }
+        add(InputButton.X to if (uiState.isRefreshing) refreshingLabel else refreshLabel)
+        add(InputButton.A to openLabel)
+        add(InputButton.B to backLabel)
     }
-    add(InputButton.X to if (uiState.isRefreshing) "Refreshing" else "Refresh")
-    add(InputButton.A to "Open")
-    add(InputButton.B to "Back")
 }

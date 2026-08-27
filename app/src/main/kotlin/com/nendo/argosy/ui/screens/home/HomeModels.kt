@@ -1,6 +1,9 @@
 package com.nendo.argosy.ui.screens.home
 
+import android.content.Context
 import android.content.Intent
+import androidx.annotation.StringRes
+import com.nendo.argosy.R
 import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.local.entity.getDisplayName
@@ -143,8 +146,7 @@ sealed class HomeRowItem {
         val platformId: Long? = null,
         val platformName: String? = null,
         val logoPath: String? = null,
-        val sourceFilter: String? = null,
-        val label: String = "View All"
+        val sourceFilter: String? = null
     ) : HomeRowItem()
 }
 
@@ -174,16 +176,27 @@ fun PlatformEntity.toHomePlatformUi(emulatorDetector: EmulatorDetector) = HomePl
  * A row that repeats carries the thing it repeats over, the way [Platform] carries a position in the
  * platform list; [MediaLibrary] is the same shape because the libraries a media server offers are
  * discovered at runtime and there is no fixed set of them to name here.
+ *
+ * [shortLabelRes] is the breadcrumb wording for a row that always reads the same way. A row named
+ * after something in the library carries none, and [HomeUiState.shortLabelFor] answers for it.
  */
-sealed class HomeRow(val kind: HomeSectionKind) {
-    data object Favorites : HomeRow(HomeSectionKind.FAVORITES)
+sealed class HomeRow(
+    val kind: HomeSectionKind,
+    @StringRes val shortLabelRes: Int? = null
+) {
+    data object Favorites :
+        HomeRow(HomeSectionKind.FAVORITES, R.string.home_breadcrumb_favorites)
     data class Platform(val index: Int) : HomeRow(HomeSectionKind.PLATFORM)
-    data object Continue : HomeRow(HomeSectionKind.CONTINUE)
-    data object Recommendations : HomeRow(HomeSectionKind.RECOMMENDATIONS)
+    data object Continue :
+        HomeRow(HomeSectionKind.CONTINUE, R.string.home_breadcrumb_continue)
+    data object Recommendations :
+        HomeRow(HomeSectionKind.RECOMMENDATIONS, R.string.home_breadcrumb_recommendations)
     data object Android : HomeRow(HomeSectionKind.ANDROID)
     data object Steam : HomeRow(HomeSectionKind.STEAM)
-    data object ContinueWatching : HomeRow(HomeSectionKind.CONTINUE_WATCHING)
-    data object NextUp : HomeRow(HomeSectionKind.NEXT_UP)
+    data object ContinueWatching :
+        HomeRow(HomeSectionKind.CONTINUE_WATCHING, R.string.home_breadcrumb_continue_watching)
+    data object NextUp :
+        HomeRow(HomeSectionKind.NEXT_UP, R.string.home_breadcrumb_next_up)
     data class MediaLibrary(val index: Int) : HomeRow(HomeSectionKind.MEDIA_LIBRARY)
     data class PinnedRegular(val pinId: Long, val collectionId: Long, val name: String) :
         HomeRow(HomeSectionKind.PINNED_REGULAR)
@@ -379,14 +392,14 @@ data class HomeUiState(
                 if (!hasFavorites) emptyList()
                 else favoriteGames.map { HomeRowItem.Game(it) } +
                     favoriteMediaShown.map { HomeRowItem.Media(it) } +
-                    HomeRowItem.ViewAll(sourceFilter = "FAVORITES", label = "View All")
+                    HomeRowItem.ViewAll(sourceFilter = "FAVORITES")
             }
             is HomeRow.Platform -> platformItems
             HomeRow.Continue -> when {
                 recentGames.isEmpty() -> emptyList()
                 layoutKind == com.nendo.argosy.domain.model.HomeLayoutKind.CAROUSEL ->
                     recentGames.take(CAROUSEL_RECENT_LIMIT).map { HomeRowItem.Game(it) } +
-                        HomeRowItem.ViewAll(sourceFilter = "PLAYABLE", label = "View All")
+                        HomeRowItem.ViewAll(sourceFilter = "PLAYABLE")
                 else -> recentGames.map { HomeRowItem.Game(it) }
             }
             HomeRow.Recommendations -> {
@@ -494,31 +507,19 @@ data class HomeUiState(
         get() = (focusedTile?.target as? com.nendo.argosy.domain.model.HomeTileTargetRef.Media)
             ?.let { tileMedia[it.itemId] }
 
-    val rowTitle: String
-        get() = when (currentRow) {
-            HomeRow.Favorites -> "Favorites"
-            is HomeRow.Platform -> currentPlatform?.name ?: "Unknown"
-            HomeRow.Continue -> "Continue Playing"
-            HomeRow.Recommendations -> "Recommended For You"
-            HomeRow.Android -> "Android"
-            HomeRow.Steam -> "Steam"
-            HomeRow.ContinueWatching -> "Continue Watching"
-            HomeRow.NextUp -> "Next Up"
-            is HomeRow.MediaLibrary -> currentMediaLibrary?.name ?: "Library"
-            is HomeRow.PinnedRegular -> currentRow.name
-            is HomeRow.PinnedVirtual -> currentRow.name
-        }
-
+    /**
+     * The breadcrumb label for a row named after something in the library rather than by wording
+     * that never changes. A platform strips its manufacturer prefix when that lands in 4..9
+     * characters, otherwise keeps the raw name if it is short enough, otherwise falls back to the
+     * acronym. The two store rows answer with their product names, which are not translated.
+     *
+     * Rows worded the same way every time carry [HomeRow.shortLabelRes] and are resolved at the
+     * render site, so they answer with nothing here.
+     */
     fun shortLabelFor(row: HomeRow): String = when (row) {
-        HomeRow.Continue -> "Recent"
-        HomeRow.Recommendations -> "Picks"
-        HomeRow.Favorites -> "Favs"
         HomeRow.Android -> "Android"
         HomeRow.Steam -> "Steam"
-        HomeRow.ContinueWatching -> "Watch"
-        HomeRow.NextUp -> "Next Up"
         is HomeRow.Platform -> platforms.getOrNull(row.index)?.let { p ->
-            // Strip manufacturer prefix when result lands in 4..9 chars; else raw name if short; else acronym.
             val normalized = PlatformDefinitions.normalizeDisplayName(p.name)
             when {
                 normalized.length in 4..9 -> normalized
@@ -529,6 +530,11 @@ data class HomeUiState(
         is HomeRow.MediaLibrary -> mediaLibraries.getOrNull(row.index)?.name?.take(6) ?: "?"
         is HomeRow.PinnedRegular -> row.name.take(6)
         is HomeRow.PinnedVirtual -> row.name.take(6)
+        HomeRow.Continue,
+        HomeRow.Recommendations,
+        HomeRow.Favorites,
+        HomeRow.ContinueWatching,
+        HomeRow.NextUp -> ""
     }
 
     fun breadcrumbItems(maxNeighbors: Int = 2): List<BreadcrumbItem> {
@@ -598,19 +604,24 @@ data class HomeUiState(
      * missing marker rather than to nothing, so a page keeps its shape and says what is wrong. A
      * pinned title the library sync has not stored yet reads the same way, and fills itself in as
      * soon as the library holding it is read.
+     *
+     * [context] is here for the wording a tile falls back to when its target resolves to nothing.
+     * The state itself holds no display text, so the caller passes the one it is composing under.
      */
     fun tileContentFor(
-        tile: com.nendo.argosy.domain.model.HomeTile
+        tile: com.nendo.argosy.domain.model.HomeTile,
+        context: Context
     ): com.nendo.argosy.ui.components.CustomGridTileContent? =
         when (val target = tile.target) {
             is com.nendo.argosy.domain.model.HomeTileTargetRef.Game -> {
                 val game = tileGames[target.gameId]
                 com.nendo.argosy.ui.components.CustomGridTileContent(
                     game = game,
-                    label = game?.title ?: "Missing game",
+                    label = game?.title
+                        ?: context.getString(R.string.home_grid_tile_missing_game),
                     isMissing = game == null,
                     subtitle = game?.platformDisplayName,
-                    stats = game?.let { com.nendo.argosy.ui.components.tileStatsFor(it) }.orEmpty()
+                    stats = game?.let { com.nendo.argosy.ui.components.tileStatsFor(it, context) }.orEmpty()
                 )
             }
             is com.nendo.argosy.domain.model.HomeTileTargetRef.Collection -> {
@@ -618,15 +629,17 @@ data class HomeUiState(
                 val focus = target.focusGameId?.let { tileGames[it] }
                 com.nendo.argosy.ui.components.CustomGridTileContent(
                     game = focus,
-                    label = focus?.title ?: collection?.name ?: "Missing collection",
+                    label = focus?.title ?: collection?.name
+                        ?: context.getString(R.string.home_grid_tile_missing_collection),
                     isMissing = collection == null,
                     coverPath = if (focus == null) collection?.coverPath else null,
-                    subtitle = collection?.name?.takeIf { focus != null } ?: "Collection",
+                    subtitle = collection?.name?.takeIf { focus != null }
+                        ?: context.getString(R.string.home_grid_tile_collection_subtitle),
                     isCollectionQueue = focus != null,
                     stats = collection?.let {
                         listOf(
                             com.nendo.argosy.ui.components.TileStat(
-                                "Games",
+                                context.getString(R.string.home_grid_tile_collection_games_stat),
                                 it.gameCount.toString()
                             )
                         )
@@ -642,10 +655,10 @@ data class HomeUiState(
                 val name = tileApps[target.packageName]
                 com.nendo.argosy.ui.components.CustomGridTileContent(
                     game = null,
-                    label = name ?: "Missing app",
+                    label = name ?: context.getString(R.string.home_grid_tile_missing_app),
                     isMissing = name == null,
                     packageName = target.packageName,
-                    subtitle = "App"
+                    subtitle = context.getString(R.string.home_grid_tile_app_subtitle)
                 )
             }
             is com.nendo.argosy.domain.model.HomeTileTargetRef.Media -> {
@@ -653,7 +666,8 @@ data class HomeUiState(
                 com.nendo.argosy.ui.components.CustomGridTileContent(
                     game = null,
                     media = media,
-                    label = media?.title ?: "Missing title",
+                    label = media?.title
+                        ?: context.getString(R.string.home_grid_tile_missing_media),
                     isMissing = media == null,
                     subtitle = media?.subtitle,
                     posterUrl = media?.posterUrl
@@ -663,12 +677,12 @@ data class HomeUiState(
                 com.nendo.argosy.ui.components.CustomGridTileContent(
                     game = null,
                     label = target.filePath.substringAfterLast('/').substringBeforeLast('.'),
-                    subtitle = "On this device"
+                    subtitle = context.getString(R.string.home_grid_tile_local_media_subtitle)
                 )
             com.nendo.argosy.domain.model.HomeTileTargetRef.Unresolvable ->
                 com.nendo.argosy.ui.components.CustomGridTileContent(
                     game = null,
-                    label = "Unavailable",
+                    label = context.getString(R.string.home_grid_tile_unresolvable),
                     isMissing = true
                 )
         }

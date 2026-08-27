@@ -32,7 +32,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.data.local.entity.ControllerOrderEntity
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.Modal
@@ -70,8 +72,9 @@ fun ControllerOrderModal(
     var activeSlot by remember { mutableIntStateOf(findFirstEmptySlot(assignments)) }
 
     val gamepadInputHandler = LocalGamepadInputHandler.current
+    val defaultControllerName = stringResource(R.string.settings_controller_order_default_name)
 
-    DisposableEffect(gamepadInputHandler) {
+    DisposableEffect(gamepadInputHandler, defaultControllerName) {
         val listener: (KeyEvent) -> Boolean = { event ->
             if (event.action == KeyEvent.ACTION_DOWN) {
                 val device = event.device
@@ -103,7 +106,7 @@ fun ControllerOrderModal(
                         ) {
                             assignments[activeSlot] = AssignedController(
                                 controllerId = controllerId!!,
-                                controllerName = device.name ?: "Controller",
+                                controllerName = device.name ?: defaultControllerName,
                                 device = device
                             )
                             onAssign(activeSlot, device)
@@ -123,13 +126,13 @@ fun ControllerOrderModal(
     }
 
     Modal(
-        title = "Controller Order",
-        subtitle = "Press any button to assign a controller",
+        title = stringResource(R.string.settings_controller_order_title),
+        subtitle = stringResource(R.string.settings_controller_order_subtitle),
         baseWidth = 500.dp,
         onDismiss = onDismiss,
         footerHints = listOf(
-            InputButton.A to "Confirm",
-            InputButton.B to "Unregister/Back"
+            InputButton.A to stringResource(R.string.settings_controller_order_hint_confirm),
+            InputButton.B to stringResource(R.string.settings_controller_order_hint_unregister_back)
         ),
         onFooterHintClick = { button ->
             when (button) {
@@ -216,7 +219,7 @@ private fun ControllerSlot(
         }
 
         Text(
-            text = "P${port + 1}",
+            text = stringResource(R.string.settings_controller_order_slot_label, port + 1),
             style = MaterialTheme.typography.labelLarge,
             color = contentColor
         )
@@ -224,8 +227,8 @@ private fun ControllerSlot(
         Text(
             text = when {
                 assignment != null -> assignment.controllerName.take(12)
-                isActive -> "Press..."
-                else -> "Empty"
+                isActive -> stringResource(R.string.settings_controller_order_slot_pressing)
+                else -> stringResource(R.string.settings_controller_order_slot_empty)
             },
             style = MaterialTheme.typography.bodySmall,
             color = contentColor.copy(alpha = 0.7f),

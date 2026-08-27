@@ -27,7 +27,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 
@@ -73,8 +75,8 @@ fun MediaMessageState(
 fun MediaEmptyState(modifier: Modifier = Modifier) {
     MediaMessageState(
         icon = Icons.Outlined.Inbox,
-        title = "Nothing here yet",
-        message = "This library has no items on the server, or the last refresh has not reached it.",
+        title = stringResource(R.string.media_empty_state_title),
+        message = stringResource(R.string.media_empty_state_message),
         modifier = modifier
     )
 }
@@ -83,7 +85,7 @@ fun MediaEmptyState(modifier: Modifier = Modifier) {
 fun MediaErrorState(message: String, modifier: Modifier = Modifier) {
     MediaMessageState(
         icon = Icons.Outlined.CloudOff,
-        title = "Could not reach the media server",
+        title = stringResource(R.string.media_error_state_title),
         message = message,
         modifier = modifier
     )
@@ -93,8 +95,8 @@ fun MediaErrorState(message: String, modifier: Modifier = Modifier) {
 fun MediaSignedOutState(modifier: Modifier = Modifier) {
     MediaMessageState(
         icon = Icons.Outlined.Movie,
-        title = "No media account",
-        message = "Sign in to a media server from Settings to browse movies and shows.",
+        title = stringResource(R.string.media_signed_out_title),
+        message = stringResource(R.string.media_signed_out_message),
         modifier = modifier
     )
 }

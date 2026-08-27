@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
+import com.nendo.argosy.R
 import com.nendo.argosy.util.Logger
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
@@ -195,7 +196,7 @@ class PlayerEngine @Inject constructor(
         val format = mediaTrackGroup.getFormat(0)
         val fallback = listOfNotNull(format.language, format.sampleMimeType)
             .joinToString(" ")
-            .ifBlank { "Track ${ordinal + 1}" }
+            .ifBlank { context.getString(R.string.media_engine_track_fallback, ordinal + 1) }
         return PlayerTrack(
             streamIndex = ordinal,
             ordinal = ordinal,

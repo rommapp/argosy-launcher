@@ -18,7 +18,7 @@ import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.data.sync.SaveArchiver
 import com.nendo.argosy.data.sync.SavePathResolver
 import com.nendo.argosy.data.sync.platform.SaveContext
-import com.nendo.argosy.data.sync.platform.SwitchSaveHandler
+import com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry
 import com.nendo.argosy.data.titledb.TitleDbRepository
 import com.nendo.argosy.util.Logger
 import com.nendo.argosy.util.SaveDebugLogger
@@ -44,7 +44,7 @@ class SaveUploader @Inject constructor(
     private val saveArchiver: SaveArchiver,
     private val savePathResolver: SavePathResolver,
     private val fal: FileAccessLayer,
-    private val switchSaveHandler: SwitchSaveHandler,
+    private val saveHandlerRegistry: PlatformSaveHandlerRegistry,
     private val apiClient: dagger.Lazy<SaveSyncApiClient>,
     private val conflictDetector: ConflictDetector,
     private val saveCacheManager: dagger.Lazy<SaveCacheManager>,
@@ -109,8 +109,7 @@ class SaveUploader @Inject constructor(
         val serverEmulator = EmulatorRegistry.toServerEmulator(resolvedEmulatorId, preferredCore)
 
         val cachedPath = syncEntity?.localSavePath?.takeIf { path ->
-            val switchOk = if (game.platformSlug == "switch") switchSaveHandler.isValidCachedSavePath(path) else true
-            switchOk && fal.exists(path)
+            saveHandlerRegistry.isValidCachedSavePath(game.platformSlug, path) && fal.exists(path)
         }
         if (syncEntity?.localSavePath != null && cachedPath == null) {
             Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Cached path no longer valid on disk, re-discovering | stalePath=${syncEntity.localSavePath}")

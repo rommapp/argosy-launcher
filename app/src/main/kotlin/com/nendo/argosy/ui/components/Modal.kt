@@ -96,7 +96,7 @@ fun Modal(
 
             if (footerHints != null) {
                 if (inlineFooterHints) {
-                    val shown = footerHints.filterNot { isObviousHint(it.first, it.second) }
+                    val shown = footerHints.filterNot { isObviousHint(it.first) }
                     if (shown.isNotEmpty()) {
                         FooterBarWithState(
                             hints = shown.map { FooterHintItem(it.first, it.second) },

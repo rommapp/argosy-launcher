@@ -23,8 +23,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.ColorUtils
+import com.nendo.argosy.R
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
@@ -255,7 +257,9 @@ fun CyclePreference(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
-                            contentDescription = "Reset to global",
+                            contentDescription = stringResource(
+                                R.string.ui_cycle_preference_reset_to_global
+                            ),
                             tint = MaterialTheme.colorScheme.onPrimaryContainer,
                             modifier = Modifier.size(Dimens.iconSm)
                         )
@@ -458,7 +462,7 @@ fun SwitchPreference(
                     )
                     if (isCustom && !isFocused) {
                         Text(
-                            text = "(Custom)",
+                            text = stringResource(R.string.ui_toggle_preference_custom_marker),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -484,7 +488,9 @@ fun SwitchPreference(
             ) {
                 Icon(
                     imageVector = Icons.Default.Close,
-                    contentDescription = "Reset to global",
+                    contentDescription = stringResource(
+                        R.string.ui_toggle_preference_reset_to_global
+                    ),
                     tint = MaterialTheme.colorScheme.onPrimaryContainer,
                     modifier = Modifier.size(Dimens.iconSm)
                 )
@@ -649,7 +655,9 @@ fun ActionPreference(
             ) {
                 Icon(
                     imageVector = Icons.Default.Close,
-                    contentDescription = "Reset to default",
+                    contentDescription = stringResource(
+                        R.string.ui_action_preference_reset_to_default
+                    ),
                     tint = MaterialTheme.colorScheme.onPrimaryContainer,
                     modifier = Modifier.size(Dimens.iconSm)
                 )
@@ -766,7 +774,7 @@ fun HueSliderPreference(
     onHueChange: (Float?) -> Unit,
     saturation: Float = 0.7f,
     lightness: Float = 0.5f,
-    defaultLabel: String = "Default"
+    defaultLabel: String = stringResource(R.string.ui_hue_slider_default)
 ) {
     val hueSteps = 36
     val hueColors = (0..hueSteps).map { step ->
@@ -985,9 +993,13 @@ fun ImageCachePreference(
 ) {
     DualActionPreference(
         title = title,
-        subtitle = if (isMigrating) "Moving images..." else displayPath,
-        primaryLabel = "Change",
-        secondaryLabel = "Reset",
+        subtitle = if (isMigrating) {
+            stringResource(R.string.ui_image_cache_migrating)
+        } else {
+            displayPath
+        },
+        primaryLabel = stringResource(R.string.ui_image_cache_change),
+        secondaryLabel = stringResource(R.string.ui_image_cache_reset),
         showSecondary = hasCustomPath,
         isFocused = isFocused,
         actionIndex = actionIndex,

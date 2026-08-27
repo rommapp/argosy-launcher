@@ -39,6 +39,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import com.nendo.argosy.ui.components.GameTitle
+import com.nendo.argosy.util.formatBytes
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -66,9 +67,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.screens.gamedetail.GameDetailUi
 import com.nendo.argosy.ui.screens.gamedetail.GameDetailUiState
@@ -82,6 +85,7 @@ import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 import com.nendo.argosy.ui.components.GameCard
 import com.nendo.argosy.ui.screens.home.HomeGameUi
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -174,19 +178,19 @@ fun GameHeader(
                 verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
             ) {
                 game.players?.let { players ->
-                    MetadataChip(label = "Players", value = players)
+                    MetadataChip(label = stringResource(R.string.gamedetail_chip_players_label), value = players)
                 }
                 game.rating?.let { rating ->
                     CommunityRatingChip(rating = rating)
                 }
                 game.timeToBeatMain?.let { time ->
-                    MetadataChip(label = "Main Story", value = time)
+                    MetadataChip(label = stringResource(R.string.gamedetail_chip_main_story_label), value = time)
                 }
                 game.timeToBeatExtra?.let { time ->
-                    MetadataChip(label = "Main + Extras", value = time)
+                    MetadataChip(label = stringResource(R.string.gamedetail_chip_main_extras_label), value = time)
                 }
                 game.timeToBeatCompletionist?.let { time ->
-                    MetadataChip(label = "Completionist", value = time)
+                    MetadataChip(label = stringResource(R.string.gamedetail_chip_completionist_label), value = time)
                 }
             }
 
@@ -197,13 +201,13 @@ fun GameHeader(
                 verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
             ) {
                 RatingChip(
-                    label = "My Rating",
+                    label = stringResource(R.string.gamedetail_chip_my_rating_label),
                     value = game.userRating,
                     icon = Icons.Default.Star,
                     iconColor = ALauncherColors.StarGold
                 )
                 RatingChip(
-                    label = "Difficulty",
+                    label = stringResource(R.string.gamedetail_chip_difficulty_label),
                     value = game.userDifficulty,
                     icon = Icons.Default.Whatshot,
                     iconColor = ALauncherColors.DifficultyRed
@@ -229,6 +233,7 @@ fun ActionButtons(
     uiState: GameDetailUiState,
     viewModel: GameDetailViewModel
 ) {
+    val context = LocalContext.current
     val isButtonDisabled = uiState.downloadStatus in listOf(
         GameDownloadStatus.QUEUED,
         GameDownloadStatus.DOWNLOADING,
@@ -318,13 +323,14 @@ fun ActionButtons(
                             Icon(Icons.Default.PlayArrow, contentDescription = null)
                             Spacer(modifier = Modifier.width(Dimens.spacingSm))
                             Column(modifier = Modifier.weight(1f)) {
-                                Text("PLAY")
+                                Text(stringResource(R.string.gamedetail_action_buttons_play))
                                 Text(
-                                    text = saveInfo.channelName ?: "Auto-save",
+                                    text = saveInfo.channelName
+                                        ?: stringResource(R.string.gamedetail_action_buttons_autosave),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.75f)
                                 )
-                                saveInfo.displayTime?.let { time ->
+                                saveInfo.displayTime(context)?.let { time ->
                                     Text(
                                         text = time,
                                         style = MaterialTheme.typography.labelSmall,
@@ -341,17 +347,17 @@ fun ActionButtons(
                         } else {
                             Icon(Icons.Default.PlayArrow, contentDescription = null)
                             Spacer(modifier = Modifier.width(Dimens.spacingSm))
-                            Text("PLAY")
+                            Text(stringResource(R.string.gamedetail_action_buttons_play))
                         }
                     }
                     GameDownloadStatus.NOT_DOWNLOADED -> {
                         Icon(Icons.Default.Download, contentDescription = null)
                         Spacer(modifier = Modifier.width(Dimens.spacingSm))
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("DOWNLOAD")
+                            Text(stringResource(R.string.gamedetail_action_buttons_download))
                             uiState.downloadSizeBytes?.let { size ->
                                 Text(
-                                    text = formatFileSize(size),
+                                    text = formatBytes(size),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.6f)
                                 )
@@ -361,14 +367,24 @@ fun ActionButtons(
                     GameDownloadStatus.NEEDS_INSTALL -> {
                         Icon(Icons.Default.InstallMobile, contentDescription = null)
                         Spacer(modifier = Modifier.width(Dimens.spacingSm))
-                        Text("INSTALL")
+                        Text(stringResource(R.string.gamedetail_action_buttons_install))
                     }
-                    GameDownloadStatus.QUEUED -> Text("QUEUED...")
-                    GameDownloadStatus.WAITING_FOR_STORAGE -> Text("NO SPACE")
-                    GameDownloadStatus.DOWNLOADING -> Text("${(uiState.downloadProgress * 100).toInt()}%")
-                    GameDownloadStatus.EXTRACTING -> Text("EXTRACTING...")
-                    GameDownloadStatus.PAUSED -> Text("RESUME ${(uiState.downloadProgress * 100).toInt()}%")
-                    GameDownloadStatus.FAILED -> Text("RETRY")
+                    GameDownloadStatus.QUEUED -> Text(stringResource(R.string.gamedetail_action_buttons_queued))
+                    GameDownloadStatus.WAITING_FOR_STORAGE -> Text(stringResource(R.string.gamedetail_action_buttons_no_space))
+                    GameDownloadStatus.DOWNLOADING -> Text(
+                        stringResource(
+                            R.string.gamedetail_action_buttons_downloading_percent,
+                            (uiState.downloadProgress * 100).toInt()
+                        )
+                    )
+                    GameDownloadStatus.EXTRACTING -> Text(stringResource(R.string.gamedetail_action_buttons_extracting))
+                    GameDownloadStatus.PAUSED -> Text(
+                        stringResource(
+                            R.string.gamedetail_action_buttons_resume_percent,
+                            (uiState.downloadProgress * 100).toInt()
+                        )
+                    )
+                    GameDownloadStatus.FAILED -> Text(stringResource(R.string.gamedetail_action_buttons_retry))
                 }
             }
         }
@@ -376,7 +392,11 @@ fun ActionButtons(
         IconButton(onClick = { viewModel.toggleFavorite() }, modifier = Modifier.focusProperties { canFocus = false }) {
             Icon(
                 imageVector = if (game.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                contentDescription = if (game.isFavorite) "Unfavorite" else "Favorite",
+                contentDescription = if (game.isFavorite) {
+                    stringResource(R.string.gamedetail_action_buttons_unfavorite)
+                } else {
+                    stringResource(R.string.gamedetail_action_buttons_favorite)
+                },
                 tint = if (game.isFavorite) Color.Red else MaterialTheme.colorScheme.onSurface
             )
         }
@@ -386,7 +406,7 @@ fun ActionButtons(
         IconButton(onClick = { viewModel.toggleMoreOptions() }, modifier = Modifier.focusProperties { canFocus = false }) {
             Icon(
                 imageVector = Icons.Default.MoreVert,
-                contentDescription = "More options",
+                contentDescription = stringResource(R.string.gamedetail_action_buttons_more_options),
                 tint = MaterialTheme.colorScheme.onSurface
             )
         }
@@ -404,7 +424,7 @@ fun DescriptionSection(
         }
     ) {
         Text(
-            text = "DESCRIPTION",
+            text = stringResource(R.string.gamedetail_section_description_heading),
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.primary
         )
@@ -447,7 +467,7 @@ fun ScreenshotsSection(
         }
     ) {
         Text(
-            text = "SCREENSHOTS",
+            text = stringResource(R.string.gamedetail_section_screenshots_heading),
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.primary
         )
@@ -554,7 +574,7 @@ fun RelatedGamesSection(
         }
     ) {
         Text(
-            text = "RELATED GAMES",
+            text = stringResource(R.string.gamedetail_section_related_heading),
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.primary
         )
@@ -616,12 +636,16 @@ fun AchievementsSection(
                 modifier = Modifier.size(Dimens.iconSm)
             )
             Text(
-                text = "ACHIEVEMENTS",
+                text = stringResource(R.string.gamedetail_section_achievements_heading),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
-                text = "(${achievements.count { it.isUnlocked }}/${achievements.size})",
+                text = stringResource(
+                    R.string.gamedetail_section_achievements_count,
+                    achievements.count { it.isUnlocked },
+                    achievements.size
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
             )
@@ -681,11 +705,3 @@ fun AchievementsSection(
     }
 }
 
-private fun formatFileSize(bytes: Long): String {
-    return when {
-        bytes < 1024 -> "$bytes B"
-        bytes < 1024 * 1024 -> "${bytes / 1024} KB"
-        bytes < 1024 * 1024 * 1024 -> String.format("%.1f MB", bytes / (1024.0 * 1024.0))
-        else -> String.format("%.2f GB", bytes / (1024.0 * 1024.0 * 1024.0))
-    }
-}

@@ -10,6 +10,8 @@ import android.os.Looper
 import android.provider.Settings
 import android.util.Log
 import android.view.WindowManager
+import androidx.annotation.StringRes
+import com.nendo.argosy.R
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.download.DownloadManager
@@ -27,6 +29,7 @@ import com.nendo.argosy.data.social.SocialUser
 import com.nendo.argosy.domain.usecase.game.LaunchGameUseCase
 import com.nendo.argosy.libretro.LibretroActivity
 import com.nendo.argosy.core.notification.NotificationDuration
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.NotificationType
 import com.nendo.argosy.data.emulator.EmulatorUpdateManager
 import com.nendo.argosy.data.emulator.PlaySessionTracker
@@ -85,7 +88,7 @@ import javax.inject.Inject
 data class ArgosyUiState(
     val isFirstRun: Boolean = true,
     val isLoading: Boolean = true,
-    val startupStatus: String = "",
+    @StringRes val startupStatusRes: Int? = null,
     val abIconsSwapped: Boolean = false,
     val xyIconsSwapped: Boolean = false,
     val swapStartSelect: Boolean = false,
@@ -155,7 +158,7 @@ data class ScreenDimmerPreferences(
 
 data class DrawerItem(
     val route: String,
-    val label: String
+    @StringRes val labelRes: Int
 )
 
 @HiltViewModel
@@ -227,7 +230,7 @@ class ArgosyViewModel @Inject constructor(
     }
 
     private val _startupComplete = MutableStateFlow(false)
-    private val _startupStatus = MutableStateFlow("")
+    private val _startupStatus = MutableStateFlow<Int?>(null)
 
     init {
         downloadNotificationObserver.observe(viewModelScope)
@@ -291,7 +294,8 @@ class ArgosyViewModel @Inject constructor(
                 val game = gameRepository.getById(event.gameId)
                 _saveConflictInfo.value = SaveConflictInfo(
                     gameId = event.gameId,
-                    gameName = game?.title ?: "Unknown Game",
+                    gameName = game?.title
+                        ?: application.getString(R.string.ui_save_conflict_unknown_game),
                     emulatorId = event.emulatorId,
                     channelName = event.channelName,
                     localTimestamp = event.localTimestamp,
@@ -335,18 +339,18 @@ class ArgosyViewModel @Inject constructor(
 
     private fun scheduleStartupTasks() {
         viewModelScope.launch {
-            _startupStatus.value = "Initializing..."
+            _startupStatus.value = R.string.ui_startup_status_initializing
             playSessionTracker.endSession()
             val ready = gameRepository.awaitStorageReady(timeoutMs = 10_000L)
             if (ready) {
-                _startupStatus.value = "Loading library..."
+                _startupStatus.value = R.string.ui_startup_status_loading_library
                 gameRepository.validateLocalFiles()
                 gameRepository.discoverLocalFiles()
 
-                _startupStatus.value = "Syncing collections..."
+                _startupStatus.value = R.string.ui_startup_status_syncing_collections
                 syncCollectionsOnStartup()
 
-                _startupStatus.value = "Checking emulators..."
+                _startupStatus.value = R.string.ui_startup_status_checking_emulators
                 runBuiltinEmulatorMigration()
                 libretroMigrationUseCase.cleanupRemovedCores()
                 emulatorUpdateManager.checkIfNeeded()
@@ -357,11 +361,11 @@ class ArgosyViewModel @Inject constructor(
 
                 runWeeklyIntegrityCheckIfDue()
 
-                _startupStatus.value = "Preparing home..."
+                _startupStatus.value = R.string.ui_startup_status_preparing_home
                 homeLibraryDelegate.ensureInitialLoad(viewModelScope)
             } else {
                 android.util.Log.w("ArgosyViewModel", "Storage not ready after timeout, scheduling retry")
-                _startupStatus.value = "Waiting for storage..."
+                _startupStatus.value = R.string.ui_startup_status_waiting_for_storage
                 kotlinx.coroutines.delay(30_000L)
                 scheduleStartupTasks()
                 return@launch
@@ -378,7 +382,7 @@ class ArgosyViewModel @Inject constructor(
         val sevenDaysMs = 7 * 24 * 60 * 60 * 1000L
         if (lastCheck != null && (System.currentTimeMillis() - lastCheck) < sevenDaysMs) return
 
-        _startupStatus.value = "Scanning ROM files..."
+        _startupStatus.value = R.string.ui_startup_status_scanning_roms
         android.util.Log.i("ArgosyViewModel", "Running weekly ROM integrity check")
         gameRepository.validateLocalFiles()
         gameRepository.discoverLocalFiles()
@@ -391,8 +395,12 @@ class ArgosyViewModel @Inject constructor(
             is com.nendo.argosy.domain.usecase.libretro.MigrationResult.Success -> {
                 if (result.coresDownloaded.isNotEmpty()) {
                     notificationManager.show(
-                        title = "Built-in Emulator Ready",
-                        subtitle = "Downloaded ${result.coresDownloaded.size} cores",
+                        title = com.nendo.argosy.core.notification.NotificationText.Res(R.string.ui_builtin_cores_ready_title),
+                        subtitle = com.nendo.argosy.core.notification.NotificationText.Plural(
+                            R.plurals.ui_builtin_cores_ready_subtitle,
+                            result.coresDownloaded.size,
+                            listOf(result.coresDownloaded.size)
+                        ),
                         type = com.nendo.argosy.core.notification.NotificationType.INFO,
                         duration = com.nendo.argosy.core.notification.NotificationDuration.MEDIUM
                     )
@@ -450,7 +458,7 @@ class ArgosyViewModel @Inject constructor(
         ArgosyUiState(
             isFirstRun = !prefs.firstRunComplete && !hasExistingConfig,
             isLoading = !startupDone,
-            startupStatus = status,
+            startupStatusRes = status,
             abIconsSwapped = isNintendoLayout xor prefs.swapAB,
             xyIconsSwapped = isNintendoLayout xor prefs.swapXY,
             swapStartSelect = prefs.swapStartSelect,
@@ -546,16 +554,16 @@ class ArgosyViewModel @Inject constructor(
     )
 
     private val allDrawerItems = listOf(
-        DrawerItem(Screen.Home.route, "Home"),
-        DrawerItem(Screen.Social.route, "Social"),
-        DrawerItem(Screen.QuayPass.route, "Check-In"),
-        DrawerItem(Screen.Collections.route, "Collections"),
-        DrawerItem(Screen.Library.route, "Library"),
-        DrawerItem(Screen.MediaLibrary.route, "Media"),
-        DrawerItem(Screen.Downloads.route, "Downloads"),
-        DrawerItem(Screen.SaveSync.route, "Save Sync"),
-        DrawerItem(Screen.Apps.route, "Apps"),
-        DrawerItem(Screen.Settings.route, "Settings")
+        DrawerItem(Screen.Home.route, R.string.ui_drawer_nav_home),
+        DrawerItem(Screen.Social.route, R.string.ui_drawer_nav_social),
+        DrawerItem(Screen.QuayPass.route, R.string.ui_drawer_nav_quaypass),
+        DrawerItem(Screen.Collections.route, R.string.ui_drawer_nav_collections),
+        DrawerItem(Screen.Library.route, R.string.ui_drawer_nav_library),
+        DrawerItem(Screen.MediaLibrary.route, R.string.ui_drawer_nav_media),
+        DrawerItem(Screen.Downloads.route, R.string.ui_drawer_nav_downloads),
+        DrawerItem(Screen.SaveSync.route, R.string.ui_drawer_nav_save_sync),
+        DrawerItem(Screen.Apps.route, R.string.ui_drawer_nav_apps),
+        DrawerItem(Screen.Settings.route, R.string.ui_drawer_nav_settings)
     )
 
     private var _isDualScreenMode = false
@@ -866,18 +874,25 @@ class ArgosyViewModel @Inject constructor(
         initialValue = QuickSettingsUiState()
     )
 
-    val quickSettingsFooterHints: StateFlow<List<Pair<InputButton, String>>> =
+    /**
+     * Held as resource ids rather than resolved text: this view model outlives the activity
+     * recreation a locale change causes, so a resolved string would stay in the old language.
+     */
+    val quickSettingsFooterHints: StateFlow<List<Pair<InputButton, Int>>> =
         preferencesRepository.userPreferences
-            .map { prefs ->
-                buildList {
-                    add(InputButton.DPAD_VERTICAL to "Navigate")
-                    add(InputButton.B to "Close")
-                }
+            .map {
+                listOf(
+                    InputButton.DPAD_VERTICAL to R.string.ui_quick_settings_hint_navigate,
+                    InputButton.B to R.string.ui_quick_settings_hint_close
+                )
             }
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5000),
-                initialValue = listOf(InputButton.DPAD_VERTICAL to "Navigate", InputButton.B to "Close")
+                initialValue = listOf(
+                    InputButton.DPAD_VERTICAL to R.string.ui_quick_settings_hint_navigate,
+                    InputButton.B to R.string.ui_quick_settings_hint_close
+                )
             )
 
     val screenDimmerPreferences: StateFlow<ScreenDimmerPreferences> = preferencesRepository.userPreferences
@@ -1000,8 +1015,8 @@ class ArgosyViewModel @Inject constructor(
         if (!session.joinable) return
         viewModelScope.launch {
             notificationManager.show(
-                title = "Joining ${session.gameTitle}",
-                subtitle = "Checking compatibility...",
+                title = NotificationText.Raw("Joining ${session.gameTitle}"),
+                subtitle = NotificationText.Raw("Checking compatibility..."),
                 duration = NotificationDuration.LONG
             )
             val preflight = netplayPreflightChecker.check(session)
@@ -1014,8 +1029,8 @@ class ArgosyViewModel @Inject constructor(
                     is NetplayPreflightResult.Joinable -> return@launch
                 }
                 notificationManager.show(
-                    title = "Can't join ${session.gameTitle}",
-                    subtitle = reason,
+                    title = NotificationText.Raw("Can't join ${session.gameTitle}"),
+                    subtitle = NotificationText.Raw(reason),
                     type = NotificationType.ERROR,
                     duration = NotificationDuration.MEDIUM
                 )
@@ -1024,8 +1039,8 @@ class ArgosyViewModel @Inject constructor(
             val gameId = preflight.gameId ?: run {
                 val igdbId = session.gameIgdbId?.toLong() ?: run {
                     notificationManager.show(
-                        title = "Can't join ${session.gameTitle}",
-                        subtitle = "Missing game id for session",
+                        title = NotificationText.Raw("Can't join ${session.gameTitle}"),
+                        subtitle = NotificationText.Raw("Missing game id for session"),
                         type = NotificationType.ERROR,
                         duration = NotificationDuration.MEDIUM
                     )
@@ -1033,8 +1048,8 @@ class ArgosyViewModel @Inject constructor(
                 }
                 gameRepository.getByIgdbId(igdbId)?.id ?: run {
                     notificationManager.show(
-                        title = "Can't join ${session.gameTitle}",
-                        subtitle = "Local game not found",
+                        title = NotificationText.Raw("Can't join ${session.gameTitle}"),
+                        subtitle = NotificationText.Raw("Local game not found"),
                         type = NotificationType.ERROR,
                         duration = NotificationDuration.MEDIUM
                     )
@@ -1054,16 +1069,16 @@ class ArgosyViewModel @Inject constructor(
                 }
                 is LaunchResult.Error -> {
                     notificationManager.show(
-                        title = "Can't join ${session.gameTitle}",
-                        subtitle = result.message,
+                        title = NotificationText.Raw("Can't join ${session.gameTitle}"),
+                        subtitle = NotificationText.Raw(result.message),
                         type = NotificationType.ERROR,
                         duration = NotificationDuration.MEDIUM
                     )
                 }
                 else -> {
                     notificationManager.show(
-                        title = "Can't join ${session.gameTitle}",
-                        subtitle = "Couldn't launch game",
+                        title = NotificationText.Raw("Can't join ${session.gameTitle}"),
+                        subtitle = NotificationText.Raw("Couldn't launch game"),
                         type = NotificationType.ERROR,
                         duration = NotificationDuration.MEDIUM
                     )
@@ -1090,15 +1105,22 @@ class ArgosyViewModel @Inject constructor(
             val preflight = netplayPreflightChecker.check(session)
             if (preflight !is NetplayPreflightResult.Joinable) {
                 val reason = when (preflight) {
-                    NetplayPreflightResult.RomNotFound -> "ROM not found"
-                    NetplayPreflightResult.RomVersionMismatch -> "Different ROM version"
-                    NetplayPreflightResult.CoreVersionMismatch -> "Different core version"
-                    NetplayPreflightResult.CoreNotSupported -> "Core unsupported"
+                    NetplayPreflightResult.RomNotFound ->
+                        application.getString(R.string.ui_netplay_invite_reason_rom_missing)
+                    NetplayPreflightResult.RomVersionMismatch ->
+                        application.getString(R.string.ui_netplay_invite_reason_rom_version)
+                    NetplayPreflightResult.CoreVersionMismatch ->
+                        application.getString(R.string.ui_netplay_invite_reason_core_version)
+                    NetplayPreflightResult.CoreNotSupported ->
+                        application.getString(R.string.ui_netplay_invite_reason_core_unsupported)
                     is NetplayPreflightResult.Joinable -> return@launch
                 }
                 notificationManager.show(
-                    title = "Can't join ${invite.gameTitle}",
-                    subtitle = reason,
+                    title = NotificationText.Res(
+                        R.string.ui_netplay_invite_failed_title,
+                        listOf(invite.gameTitle)
+                    ),
+                    subtitle = NotificationText.Raw(reason),
                     type = NotificationType.ERROR,
                     duration = NotificationDuration.MEDIUM
                 )
@@ -1106,8 +1128,13 @@ class ArgosyViewModel @Inject constructor(
             }
             val igdbId = invite.gameIgdbId?.toLong() ?: run {
                 notificationManager.show(
-                    title = "Can't join ${invite.gameTitle}",
-                    subtitle = "Missing game id for session",
+                    title = NotificationText.Res(
+                        R.string.ui_netplay_invite_failed_title,
+                        listOf(invite.gameTitle)
+                    ),
+                    subtitle = NotificationText.Res(
+                        R.string.ui_netplay_invite_reason_missing_game_id
+                    ),
                     type = NotificationType.ERROR,
                     duration = NotificationDuration.MEDIUM
                 )
@@ -1115,8 +1142,13 @@ class ArgosyViewModel @Inject constructor(
             }
             val game = gameRepository.getByIgdbId(igdbId) ?: run {
                 notificationManager.show(
-                    title = "Can't join ${invite.gameTitle}",
-                    subtitle = "Local game not found",
+                    title = NotificationText.Res(
+                        R.string.ui_netplay_invite_failed_title,
+                        listOf(invite.gameTitle)
+                    ),
+                    subtitle = NotificationText.Res(
+                        R.string.ui_netplay_invite_reason_game_not_local
+                    ),
                     type = NotificationType.ERROR,
                     duration = NotificationDuration.MEDIUM
                 )
@@ -1135,16 +1167,24 @@ class ArgosyViewModel @Inject constructor(
                 }
                 is LaunchResult.Error -> {
                     notificationManager.show(
-                        title = "Can't join ${invite.gameTitle}",
-                        subtitle = result.message,
+                        title = NotificationText.Res(
+                            R.string.ui_netplay_invite_failed_title,
+                            listOf(invite.gameTitle)
+                        ),
+                        subtitle = NotificationText.Raw(result.message),
                         type = NotificationType.ERROR,
                         duration = NotificationDuration.MEDIUM
                     )
                 }
                 else -> {
                     notificationManager.show(
-                        title = "Can't join ${invite.gameTitle}",
-                        subtitle = "Couldn't launch game",
+                        title = NotificationText.Res(
+                            R.string.ui_netplay_invite_failed_title,
+                            listOf(invite.gameTitle)
+                        ),
+                        subtitle = NotificationText.Res(
+                            R.string.ui_netplay_invite_reason_launch_failed
+                        ),
                         type = NotificationType.ERROR,
                         duration = NotificationDuration.MEDIUM
                     )

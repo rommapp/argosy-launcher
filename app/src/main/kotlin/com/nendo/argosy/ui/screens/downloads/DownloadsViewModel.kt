@@ -1,7 +1,11 @@
 package com.nendo.argosy.ui.screens.downloads
 
+import android.content.Context
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.qualifiers.ApplicationContext
+import com.nendo.argosy.R
 import com.nendo.argosy.data.download.DownloadManager
 import com.nendo.argosy.data.download.DownloadProgress
 import com.nendo.argosy.data.download.DownloadQueueState
@@ -34,28 +38,32 @@ data class DownloadGroup(val items: List<DownloadProgress>) {
     val isGroup: Boolean get() = items.size > 1
 
     /** One synthesized record per game: summed bytes, dominant state, n-of-m label. */
-    val aggregate: DownloadProgress
-        get() {
-            if (!isGroup) return primary
-            val state = when {
-                items.any { it.state == DownloadState.DOWNLOADING } -> DownloadState.DOWNLOADING
-                items.any { it.state == DownloadState.EXTRACTING } -> DownloadState.EXTRACTING
-                items.any { it.state == DownloadState.MOVING } -> DownloadState.MOVING
-                items.any { it.state == DownloadState.QUEUED } -> DownloadState.QUEUED
-                items.any { it.state == DownloadState.PAUSED } -> DownloadState.PAUSED
-                items.any { it.state == DownloadState.WAITING_FOR_STORAGE } -> DownloadState.WAITING_FOR_STORAGE
-                items.any { it.state == DownloadState.FAILED } -> DownloadState.FAILED
-                else -> DownloadState.COMPLETED
-            }
-            val done = items.count { it.state == DownloadState.COMPLETED }
-            return primary.copy(
-                bytesDownloaded = items.sumOf { it.bytesDownloaded },
-                totalBytes = items.sumOf { it.totalBytes },
-                bytesPerSecond = items.sumOf { it.bytesPerSecond },
-                state = state,
-                statusMessage = "$done of ${items.size} files"
-            )
+    fun aggregate(context: Context): DownloadProgress {
+        if (!isGroup) return primary
+        val state = when {
+            items.any { it.state == DownloadState.DOWNLOADING } -> DownloadState.DOWNLOADING
+            items.any { it.state == DownloadState.EXTRACTING } -> DownloadState.EXTRACTING
+            items.any { it.state == DownloadState.MOVING } -> DownloadState.MOVING
+            items.any { it.state == DownloadState.QUEUED } -> DownloadState.QUEUED
+            items.any { it.state == DownloadState.PAUSED } -> DownloadState.PAUSED
+            items.any { it.state == DownloadState.WAITING_FOR_STORAGE } -> DownloadState.WAITING_FOR_STORAGE
+            items.any { it.state == DownloadState.FAILED } -> DownloadState.FAILED
+            else -> DownloadState.COMPLETED
         }
+        val done = items.count { it.state == DownloadState.COMPLETED }
+        return primary.copy(
+            bytesDownloaded = items.sumOf { it.bytesDownloaded },
+            totalBytes = items.sumOf { it.totalBytes },
+            bytesPerSecond = items.sumOf { it.bytesPerSecond },
+            state = state,
+            statusMessage = context.resources.getQuantityString(
+                R.plurals.downloads_group_progress,
+                items.size,
+                done,
+                items.size
+            )
+        )
+    }
 }
 
 data class DownloadsUiState(
@@ -144,24 +152,27 @@ data class DownloadsUiState(
     val hasFinishedItems: Boolean
         get() = completedItems.isNotEmpty()
 
-    val toggleLabel: String
+    @get:StringRes
+    val toggleLabelRes: Int
         get() = when (focusedItem?.state) {
-            DownloadState.DOWNLOADING -> "Pause"
-            DownloadState.PAUSED, DownloadState.WAITING_FOR_STORAGE, DownloadState.FAILED -> "Resume"
-            DownloadState.QUEUED -> "Pause"
-            else -> "Toggle"
+            DownloadState.DOWNLOADING -> R.string.downloads_action_pause
+            DownloadState.PAUSED, DownloadState.WAITING_FOR_STORAGE, DownloadState.FAILED -> R.string.downloads_action_resume
+            DownloadState.QUEUED -> R.string.downloads_action_pause
+            else -> R.string.downloads_action_toggle
         }
 
-    val confirmLabel: String
+    @get:StringRes
+    val confirmLabelRes: Int
         get() = when {
-            isFocusedItemFailed -> "Options"
-            isFocusedItemCompleted -> "View"
-            else -> toggleLabel
+            isFocusedItemFailed -> R.string.downloads_action_options
+            isFocusedItemCompleted -> R.string.downloads_action_view
+            else -> toggleLabelRes
         }
 }
 
 @HiltViewModel
 class DownloadsViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val downloadManager: DownloadManager,
     private val preferencesRepository: UserPreferencesRepository,
     private val steamContentManager: SteamContentManager,
@@ -252,15 +263,25 @@ class DownloadsViewModel @Inject constructor(
                         activeAppId = activeDl.appId
                         val (mappedState, statusMsg) = when (steamState) {
                             is SteamDownloadState.Downloading -> {
-                                val depotInfo = if (steamState.totalDepots > 1) " (${steamState.currentDepot}/${steamState.totalDepots} depots)" else ""
+                                val depotInfo = if (steamState.totalDepots > 1) {
+                                    context.getString(
+                                        R.string.downloads_steam_status_depot_progress,
+                                        steamState.currentDepot,
+                                        steamState.totalDepots
+                                    )
+                                } else {
+                                    ""
+                                }
                                 DownloadState.DOWNLOADING to depotInfo.ifEmpty { null }
                             }
-                            is SteamDownloadState.Preparing -> DownloadState.QUEUED to "Preparing..."
-                            is SteamDownloadState.Connecting -> DownloadState.QUEUED to "Connecting to Steam..."
-                            is SteamDownloadState.FetchingManifest -> DownloadState.QUEUED to "Fetching depot manifest..."
-                            is SteamDownloadState.Validating -> DownloadState.EXTRACTING to (steamState.statusDetail.ifEmpty { "Validating..." })
-                            is SteamDownloadState.Moving -> DownloadState.EXTRACTING to "Moving files..."
-                            is SteamDownloadState.Cleaning -> DownloadState.QUEUED to "Cleaning up..."
+                            is SteamDownloadState.Preparing -> DownloadState.QUEUED to context.getString(R.string.downloads_steam_status_preparing)
+                            is SteamDownloadState.Connecting -> DownloadState.QUEUED to context.getString(R.string.downloads_steam_status_connecting)
+                            is SteamDownloadState.FetchingManifest -> DownloadState.QUEUED to context.getString(R.string.downloads_steam_status_fetching_manifest)
+                            is SteamDownloadState.Validating -> DownloadState.EXTRACTING to (
+                                steamState.statusDetail.ifEmpty { context.getString(R.string.downloads_steam_status_validating_fallback) }
+                            )
+                            is SteamDownloadState.Moving -> DownloadState.EXTRACTING to context.getString(R.string.downloads_steam_status_moving)
+                            is SteamDownloadState.Cleaning -> DownloadState.QUEUED to context.getString(R.string.downloads_steam_status_cleaning)
                             is SteamDownloadState.Paused -> DownloadState.PAUSED to null
                             is SteamDownloadState.Completed -> DownloadState.COMPLETED to null
                             is SteamDownloadState.Failed -> DownloadState.FAILED to steamState.error

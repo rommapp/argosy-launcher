@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_breadcrumb_continue">最近</string>
+    <string name="home_breadcrumb_recommendations">推荐</string>
+    <string name="home_breadcrumb_favorites">收藏</string>
+    <string name="home_breadcrumb_continue_watching">观看</string>
+    <string name="home_breadcrumb_next_up">接下来</string>
+
+    <string name="home_footer_grid_engaged_play">播放</string>
+    <string name="home_footer_grid_engaged_pause">暂停</string>
+    <string name="home_footer_grid_engaged_seek">快进/快退</string>
+    <string name="home_footer_grid_engaged_fullscreen">全屏</string>
+    <string name="home_footer_grid_engaged_back">返回网格</string>
+
+    <string name="home_footer_media_notice_choose">选择</string>
+
+    <string name="home_footer_media_setup_episode_tick">勾选</string>
+    <string name="home_footer_media_setup_episode_back">返回</string>
+    <string name="home_footer_media_setup_back">返回</string>
+
+    <string name="home_footer_tile_picker_tab">标签页</string>
+    <string name="home_footer_tile_picker_jump">跳转</string>
+    <string name="home_footer_tile_picker_search">搜索</string>
+
+    <string name="home_footer_grid_edit_resize">调整大小</string>
+    <string name="home_footer_grid_edit_move">移动</string>
+    <string name="home_footer_grid_edit_place">放置</string>
+    <string name="home_footer_grid_edit_cancel">取消</string>
+
+    <string name="home_footer_grid_page">翻页</string>
+    <string name="home_footer_grid_finished">已完成</string>
+    <string name="home_footer_grid_options">选项</string>
+
+    <string name="home_footer_media_item">条目</string>
+    <string name="home_footer_media_section">分区</string>
+    <string name="home_footer_media_row">行</string>
+    <string name="home_footer_media_refresh">刷新</string>
+    <string name="home_footer_media_resume">继续观看</string>
+    <string name="home_footer_media_play">播放</string>
+    <string name="home_footer_media_unfavorite">取消收藏</string>
+    <string name="home_footer_media_details">详情</string>
+
+    <string name="home_footer_game_item">游戏</string>
+    <string name="home_footer_game_section">分区</string>
+    <string name="home_footer_game_platform">平台</string>
+    <string name="home_footer_game_install">安装</string>
+    <string name="home_footer_game_play">开始</string>
+    <string name="home_footer_game_download">下载</string>
+    <string name="home_footer_game_favorite">收藏</string>
+    <string name="home_footer_game_unfavorite">取消收藏</string>
+    <string name="home_footer_game_details">详情</string>
+
+    <string name="home_footer_viewall_item">游戏</string>
+    <string name="home_footer_viewall_section">分区</string>
+    <string name="home_footer_viewall_platform">平台</string>
+    <string name="home_footer_viewall_library">游戏库</string>
+
+    <string name="home_tile_add_title">添加到主页网格？</string>
+    <string name="home_tile_add_message">%1$s下载完成。</string>
+    <string name="home_tile_add_confirm">添加</string>
+    <string name="home_tile_add_cancel">暂不</string>
+
+    <string name="home_media_tile_notice_local_title">从此设备播放</string>
+    <string name="home_media_tile_notice_download_title">下载后即可在此播放</string>
+
+    <string name="home_tile_file_browser_backdrop_title">选择背景图</string>
+    <string name="home_tile_file_browser_video_title">选择视频</string>
+
+    <string name="home_empty_pinned_row">%1$s中没有游戏</string>
+    <string name="home_empty_title">还没有游戏</string>
+    <string name="home_empty_message_configured">同步你的游戏库以开始使用</string>
+    <string name="home_empty_message_unconfigured">在设置中连接Rom Manager服务器以开始使用</string>
+    <string name="home_empty_sync_hint">同步游戏库</string>
+
+    <string name="home_quick_actions_heading">快捷操作</string>
+    <string name="home_quick_actions_install">安装</string>
+    <string name="home_quick_actions_play">开始</string>
+    <string name="home_quick_actions_download">下载</string>
+    <string name="home_quick_actions_favorite">收藏</string>
+    <string name="home_quick_actions_unfavorite">取消收藏</string>
+    <string name="home_quick_actions_details">详情</string>
+    <string name="home_quick_actions_add_to_collection">添加到合集</string>
+    <string name="home_quick_actions_refresh_data">刷新数据</string>
+    <string name="home_quick_actions_resync_platform">重新同步平台</string>
+    <string name="home_quick_actions_delete_download">删除下载</string>
+    <string name="home_quick_actions_remove_from_home">从主页移除</string>
+    <string name="home_quick_actions_hide">隐藏</string>
+
+    <string name="home_media_empty_next_up_title">暂无接下来的内容</string>
+    <string name="home_media_empty_next_up_message">看完一集后，下一集会显示在这里。</string>
+    <string name="home_media_empty_continue_watching_title">没有可继续观看的内容</string>
+    <string name="home_media_empty_continue_watching_message">你看到一半的内容会显示在这里。</string>
+    <string name="home_media_empty_library_title">此媒体库中暂无内容</string>
+    <string name="home_media_empty_library_message">刷新以从你的媒体服务器获取此媒体库。</string>
+
+    <string name="home_grid_tile_missing_game">缺失的游戏</string>
+    <string name="home_grid_tile_missing_collection">缺失的合集</string>
+    <string name="home_grid_tile_collection_subtitle">合集</string>
+    <string name="home_grid_tile_collection_games_stat">游戏</string>
+    <string name="home_grid_tile_missing_app">缺失的应用</string>
+    <string name="home_grid_tile_app_subtitle">应用</string>
+    <string name="home_grid_tile_missing_media">缺失的内容</string>
+    <string name="home_grid_tile_local_media_subtitle">在此设备上</string>
+    <string name="home_grid_tile_unresolvable">不可用</string>
+
+    <string name="home_notice_game_data_refreshed">游戏数据已刷新</string>
+    <string name="home_notice_android_data_refreshed">游戏数据已刷新</string>
+
+    <string name="home_notice_already_downloaded">游戏已下载</string>
+    <plurals name="home_notice_discs_queued">
+        <item quantity="other">正在下载%d张光盘</item>
+    </plurals>
+    <string name="home_notice_extraction_failed">解压失败。打开游戏详情以重试。</string>
+    <string name="home_notice_apk_install_failed">无法安装APK</string>
+    <string name="home_notice_download_deleted">下载已删除</string>
+
+    <string name="home_notice_recommendations_updated">推荐内容已更新</string>
+    <string name="home_notice_recommendations_insufficient">游戏数量不足，无法生成推荐</string>
+
+    <string name="home_notice_playing_next">接下来播放</string>
+
+    <plurals name="home_tile_picker_collection_game_count">
+        <item quantity="other">%d个游戏</item>
+    </plurals>
+    <string name="home_tile_picker_app_emulator">模拟器</string>
+    <string name="home_tile_picker_app_other">应用</string>
+
+    <string name="home_tile_picker_media_series">剧集</string>
+    <string name="home_tile_picker_media_movie">电影</string>
+
+    <string name="home_media_picker_series">剧集</string>
+    <string name="home_media_picker_movie">电影</string>
+
+    <string name="home_media_season_specials">特别篇</string>
+    <string name="home_media_season_number">第%1$d季</string>
+    <string name="home_media_season_none_synced">尚未同步任何内容</string>
+    <string name="home_media_season_local_all">全部%1$d集已在此设备上</string>
+    <string name="home_media_season_local_partial">%1$d/%2$d集已在此设备上</string>
+    <string name="home_media_download_size_gigabytes">%1$.1f GB</string>
+</resources>

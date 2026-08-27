@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.common.savechannel
 
+import android.content.Context
+import com.nendo.argosy.R
 import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.emulator.StateSupportResolver
 import com.nendo.argosy.data.repository.GameRepository
@@ -9,14 +11,18 @@ import com.nendo.argosy.domain.usecase.state.GetUnifiedStatesUseCase
 import com.nendo.argosy.domain.usecase.state.RestoreStateResult
 import com.nendo.argosy.domain.usecase.state.RestoreStateUseCase
 import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.core.notification.showSuccess
+import com.nendo.argosy.ui.common.toNotificationText
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 class SaveChannelStatesDelegate @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val holder: SaveChannelStateHolder,
     private val getUnifiedStatesUseCase: GetUnifiedStatesUseCase,
     private val restoreStateUseCase: RestoreStateUseCase,
@@ -103,9 +109,16 @@ class SaveChannelStatesDelegate @Inject constructor(
             stateCacheManager.clearStateTombstone(serverStateId)
             refreshStates()
             val slotLabel = if (stateEntry.slotNumber == -1) {
-                "auto state"
-            } else "state slot ${stateEntry.slotNumber}"
-            notificationManager.showSuccess("Downloaded $slotLabel")
+                context.getString(R.string.ui_save_channel_notice_download_target_auto)
+            } else {
+                context.getString(
+                    R.string.ui_save_channel_notice_download_target_slot,
+                    stateEntry.slotNumber
+                )
+            }
+            notificationManager.showSuccess(
+                NotificationText.Res(R.string.ui_save_channel_notice_downloaded, listOf(slotLabel))
+            )
         }
     }
 
@@ -141,7 +154,9 @@ class SaveChannelStatesDelegate @Inject constructor(
             val game = gameRepository.getById(currentGameId)
             val romPath = game?.localPath
             if (romPath == null) {
-                notificationManager.showError("Game has no local path")
+                notificationManager.showError(
+                    NotificationText.Res(R.string.ui_save_channel_notice_no_local_path)
+                )
                 return@launch
             }
             val emulatorId = emulatorResolver.getEmulatorIdForGame(currentGameId, game.platformId, game.platformSlug)
@@ -161,9 +176,16 @@ class SaveChannelStatesDelegate @Inject constructor(
             when (result) {
                 is RestoreStateResult.Success -> {
                     val slotLabel = if (stateEntry.slotNumber == -1) {
-                        "auto state"
-                    } else "state slot ${stateEntry.slotNumber}"
-                    notificationManager.showSuccess("Restored $slotLabel")
+                        context.getString(R.string.ui_save_channel_notice_restore_target_auto)
+                    } else {
+                        context.getString(
+                            R.string.ui_save_channel_notice_restore_target_slot,
+                            stateEntry.slotNumber
+                        )
+                    }
+                    notificationManager.showSuccess(
+                        NotificationText.Res(R.string.ui_save_channel_notice_restored_state, listOf(slotLabel))
+                    )
                     _state.update { it.copy(isVisible = false) }
                 }
                 is RestoreStateResult.VersionMismatch -> {
@@ -175,14 +197,16 @@ class SaveChannelStatesDelegate @Inject constructor(
                     }
                 }
                 is RestoreStateResult.Error -> {
-                    notificationManager.showError(result.message)
+                    notificationManager.showError(result.reason.toNotificationText())
                 }
                 is RestoreStateResult.NotFound -> {
-                    notificationManager.showError("State not found in cache")
+                    notificationManager.showError(
+                        NotificationText.Res(R.string.ui_save_channel_notice_state_not_cached)
+                    )
                 }
                 is RestoreStateResult.NoConfig -> {
                     notificationManager.showError(
-                        "No state configuration for this emulator"
+                        NotificationText.Res(R.string.ui_save_channel_notice_state_no_config)
                     )
                 }
             }
@@ -230,9 +254,16 @@ class SaveChannelStatesDelegate @Inject constructor(
                 )
             }
             val slotLabel = if (entry.slotNumber == -1) {
-                "auto state"
-            } else "state slot ${entry.slotNumber}"
-            notificationManager.showSuccess("Deleted $slotLabel")
+                context.getString(R.string.ui_save_channel_notice_delete_target_auto)
+            } else {
+                context.getString(
+                    R.string.ui_save_channel_notice_delete_target_slot,
+                    entry.slotNumber
+                )
+            }
+            notificationManager.showSuccess(
+                NotificationText.Res(R.string.ui_save_channel_notice_deleted_state, listOf(slotLabel))
+            )
         }
     }
 
@@ -290,7 +321,9 @@ class SaveChannelStatesDelegate @Inject constructor(
         scope.launch {
             val copied = stateCacheManager.copyStateToSlot(sourceCacheId, -1)
             if (!copied) {
-                notificationManager.showError("Could not replace the auto state")
+                notificationManager.showError(
+                    NotificationText.Res(R.string.ui_save_channel_notice_replace_auto_failed)
+                )
                 _state.update {
                     it.copy(
                         showStateReplaceAutoConfirmation = false,
@@ -308,7 +341,10 @@ class SaveChannelStatesDelegate @Inject constructor(
                 )
             }
             notificationManager.showSuccess(
-                "Replaced auto state with slot ${sourceEntry.slotNumber}"
+                NotificationText.Res(
+                    R.string.ui_save_channel_notice_replaced_auto,
+                    listOf(sourceEntry.slotNumber)
+                )
             )
         }
     }

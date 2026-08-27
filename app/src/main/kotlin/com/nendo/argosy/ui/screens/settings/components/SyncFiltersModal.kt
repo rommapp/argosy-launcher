@@ -18,13 +18,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.data.preferences.RegionFilterMode
 import com.nendo.argosy.data.preferences.SyncFilterPreferences
 import com.nendo.argosy.ui.components.ActionPreference
@@ -93,12 +94,12 @@ fun SyncFiltersModal(
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
         ) {
             Text(
-                text = "SYNC FILTERS",
+                text = stringResource(R.string.settings_sync_filters_title),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
-                text = "Configure which games to include during library sync",
+                text = stringResource(R.string.settings_sync_filters_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -112,12 +113,12 @@ fun SyncFiltersModal(
                 item {
                     val enabledRegions = syncFilters.enabledRegions
                     val regionsText = if (enabledRegions.isEmpty()) {
-                        "None selected"
+                        stringResource(R.string.settings_sync_filters_regions_none)
                     } else {
                         enabledRegions.joinToString(", ")
                     }
                     ActionPreference(
-                        title = "Regions",
+                        title = stringResource(R.string.settings_sync_filters_regions_title),
                         subtitle = regionsText,
                         isFocused = focusIndex == 0,
                         onClick = onShowRegionPicker
@@ -126,19 +127,19 @@ fun SyncFiltersModal(
                 item {
                     val modeText = regionModeLabel(syncFilters.regionMode)
                     CyclePreference(
-                        title = "Region Mode",
+                        title = stringResource(R.string.settings_sync_filters_region_mode_title),
                         value = modeText,
                         isFocused = focusIndex == 1,
                         onClick = onToggleRegionMode,
                         onPrev = onToggleRegionMode,
-                        options = remember { RegionFilterMode.entries.map { regionModeLabel(it) } },
+                        options = RegionFilterMode.entries.map { regionModeLabel(it) },
                         onSelect = { if (RegionFilterMode.entries[it] != syncFilters.regionMode) onToggleRegionMode() },
                         pickerRequestToken = regionModePickerToken
                     )
                 }
                 item {
                     SwitchPreference(
-                        title = "Exclude Beta",
+                        title = stringResource(R.string.settings_sync_filters_exclude_beta_title),
                         isEnabled = syncFilters.excludeBeta,
                         isFocused = focusIndex == 2,
                         onToggle = onToggleExcludeBeta
@@ -146,7 +147,7 @@ fun SyncFiltersModal(
                 }
                 item {
                     SwitchPreference(
-                        title = "Exclude Prototype",
+                        title = stringResource(R.string.settings_sync_filters_exclude_prototype_title),
                         isEnabled = syncFilters.excludePrototype,
                         isFocused = focusIndex == 3,
                         onToggle = onToggleExcludePrototype
@@ -154,7 +155,7 @@ fun SyncFiltersModal(
                 }
                 item {
                     SwitchPreference(
-                        title = "Exclude Demo",
+                        title = stringResource(R.string.settings_sync_filters_exclude_demo_title),
                         isEnabled = syncFilters.excludeDemo,
                         isFocused = focusIndex == 4,
                         onToggle = onToggleExcludeDemo
@@ -162,7 +163,7 @@ fun SyncFiltersModal(
                 }
                 item {
                     SwitchPreference(
-                        title = "Exclude ROM Hacks",
+                        title = stringResource(R.string.settings_sync_filters_exclude_hack_title),
                         isEnabled = syncFilters.excludeHack,
                         isFocused = focusIndex == 5,
                         onToggle = onToggleExcludeHack
@@ -170,8 +171,8 @@ fun SyncFiltersModal(
                 }
                 item {
                     SwitchPreference(
-                        title = "Remove Orphaned Entries",
-                        subtitle = "Delete games no longer on server",
+                        title = stringResource(R.string.settings_sync_filters_remove_orphans_title),
+                        subtitle = stringResource(R.string.settings_sync_filters_remove_orphans_subtitle),
                         isEnabled = syncFilters.deleteOrphans,
                         isFocused = focusIndex == 6,
                         onToggle = onToggleDeleteOrphans
@@ -183,9 +184,9 @@ fun SyncFiltersModal(
 
             FooterHints(
                 hints = listOf(
-                    InputButton.DPAD to "Navigate",
-                    InputButton.A to "Toggle",
-                    InputButton.B to "Close"
+                    InputButton.DPAD to stringResource(R.string.settings_sync_filters_hint_navigate),
+                    InputButton.A to stringResource(R.string.settings_sync_filters_hint_toggle),
+                    InputButton.B to stringResource(R.string.settings_sync_filters_hint_close)
                 ),
                 onHintClick = { button ->
                     when (button) {
@@ -213,7 +214,8 @@ fun SyncFiltersModal(
     }
 }
 
+@Composable
 private fun regionModeLabel(mode: RegionFilterMode): String = when (mode) {
-    RegionFilterMode.INCLUDE -> "Include selected"
-    RegionFilterMode.EXCLUDE -> "Exclude selected"
+    RegionFilterMode.INCLUDE -> stringResource(R.string.settings_sync_filters_region_mode_include)
+    RegionFilterMode.EXCLUDE -> stringResource(R.string.settings_sync_filters_region_mode_exclude)
 }

@@ -51,10 +51,10 @@ data class CollectionsUiState(
     val totalCollectionItems: Int
         get() = collections.size + 1
 
-    val browseByItems: List<String> = buildList {
-        add("Genres")
-        add("Game Modes")
-        if (series.isNotEmpty()) add("Series")
+    val browseByItems: List<VirtualBrowseKind> = buildList {
+        add(VirtualBrowseKind.GENRES)
+        add(VirtualBrowseKind.GAME_MODES)
+        if (series.isNotEmpty()) add(VirtualBrowseKind.SERIES)
     }
 
     val isNewCollectionItemFocused: Boolean
@@ -399,10 +399,8 @@ class CollectionsViewModel @Inject constructor(
                     }
                 }
                 CollectionSection.BROWSE_BY -> {
-                    when (state.browseByItems.getOrNull(state.focusedIndex)) {
-                        "Genres" -> onVirtualBrowseClick("genres")
-                        "Game Modes" -> onVirtualBrowseClick("modes")
-                        "Series" -> onVirtualBrowseClick("series")
+                    state.browseByItems.getOrNull(state.focusedIndex)?.let {
+                        onVirtualBrowseClick(it.route)
                     }
                 }
             }

@@ -1,6 +1,8 @@
 package com.nendo.argosy.ui.screens.player
 
+import android.content.Context
 import android.net.Uri
+import com.nendo.argosy.R
 import com.nendo.argosy.data.media.MediaAvailability
 import com.nendo.argosy.data.media.MediaAvailabilityVerifier
 import com.nendo.argosy.data.media.MediaSubtitleDelivery
@@ -19,6 +21,7 @@ import com.nendo.argosy.data.remote.jellyfin.PLAY_METHOD_TRANSCODE
 import com.nendo.argosy.data.remote.jellyfin.TICKS_PER_MILLISECOND
 import com.nendo.argosy.data.repository.MediaRepository
 import com.nendo.argosy.util.Logger
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
@@ -53,6 +56,7 @@ private const val STREAM_TYPE_SUBTITLE = "Subtitle"
  * own for this viewing.
  */
 class PlaybackNegotiator @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val apiClient: JellyfinApiClient,
     private val profileBuilder: JellyfinDeviceProfileBuilder,
     private val jellyfinPreferencesRepository: JellyfinPreferencesRepository,
@@ -90,7 +94,9 @@ class PlaybackNegotiator @Inject constructor(
 
         val prefs = jellyfinPreferencesRepository.preferences.first()
         val userId = apiClient.currentUserId()
-            ?: return@withContext PlaybackNegotiation.Failed("Not signed in to Jellyfin")
+            ?: return@withContext PlaybackNegotiation.Failed(
+                context.getString(R.string.media_negotiator_error_not_signed_in)
+            )
 
         val tier = prefs.streamingQuality
         val ceilings = qualityOverride ?: PlayerQualityCeilings(
@@ -118,7 +124,9 @@ class PlaybackNegotiator @Inject constructor(
             is JellyfinResult.Error -> PlaybackNegotiation.Failed(result.message)
             is JellyfinResult.Success -> {
                 val source = pickSource(result.data.mediaSources, mediaSourceId)
-                    ?: return@withContext PlaybackNegotiation.Failed("The server offered no playable version")
+                    ?: return@withContext PlaybackNegotiation.Failed(
+                        context.getString(R.string.media_negotiator_error_no_source)
+                    )
                 mediaRepository.recordSourceFacts(itemId, source)
                 resolve(
                     itemId = itemId,
@@ -225,7 +233,9 @@ class PlaybackNegotiator @Inject constructor(
         val isTranscode = transcodeUrl != null
         val streamUrl = transcodeUrl ?: directPlayUrl(itemId, source)
         if (!isTranscode && !source.supportsDirectPlay && !source.supportsDirectStream) {
-            return PlaybackNegotiation.Failed("This title cannot be played on this device")
+            return PlaybackNegotiation.Failed(
+                context.getString(R.string.media_negotiator_error_unplayable)
+            )
         }
         val isHls = isHlsDelivery(source, streamUrl)
         val startsAtNegotiatedOffset = isTranscode && !isHls
@@ -394,7 +404,9 @@ class PlaybackNegotiator @Inject constructor(
             ordinal = ordinal,
             label = displayTitle
                 ?: title
-                ?: listOfNotNull(language, codec).joinToString(" ").ifBlank { "Track ${ordinal + 1}" },
+                ?: listOfNotNull(language, codec).joinToString(" ").ifBlank {
+                    context.getString(R.string.media_negotiator_track_fallback, ordinal + 1)
+                },
             language = language,
             isTextSubtitle = isSubtitle && subtitleDelivery(this) != null,
             isDefault = isDefault

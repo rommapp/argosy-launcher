@@ -55,6 +55,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -62,6 +63,7 @@ import androidx.compose.ui.unit.dp
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
+import com.nendo.argosy.R
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.data.steam.LibrarySyncState
 import com.nendo.argosy.data.steam.SteamConnectionState
@@ -93,7 +95,7 @@ internal sealed class SteamItem(val key: String, val section: String) {
         else -> true
     }
 
-    class Header(key: String, section: String, val title: String) : SteamItem(key, section)
+    class Header(key: String, section: String, val titleRes: Int) : SteamItem(key, section)
 
     class SectionSpacer(key: String, section: String) : SteamItem(key, section)
 
@@ -134,7 +136,7 @@ internal fun buildSteamItems(steam: SteamSettingsState): List<SteamItem> = build
 
     if (!loggedIn) add(SteamItem.PreLogin)
 
-    add(SteamItem.Header("setupHeader", "setup", "GAMENATIVE"))
+    add(SteamItem.Header("setupHeader", "setup", R.string.settings_steam_section_gamenative))
     if (loggedIn) {
         add(SteamItem.GnStatus)
         if (!steam.gnInstalled) add(SteamItem.GnInstall)
@@ -148,7 +150,7 @@ internal fun buildSteamItems(steam: SteamSettingsState): List<SteamItem> = build
 
     if (loggedIn) {
         add(SteamItem.SectionSpacer("accountSpacer", "account"))
-        add(SteamItem.Header("accountHeader", "account", "ACCOUNT"))
+        add(SteamItem.Header("accountHeader", "account", R.string.settings_steam_section_account))
         add(SteamItem.AccountInfo)
     }
 
@@ -159,7 +161,7 @@ internal fun buildSteamItems(steam: SteamSettingsState): List<SteamItem> = build
 
     if (hasLauncherRows) {
         add(SteamItem.SectionSpacer("librarySpacer", "library"))
-        add(SteamItem.Header("libraryHeader", "library", "LIBRARY"))
+        add(SteamItem.Header("libraryHeader", "library", R.string.settings_steam_section_library))
         if (loggedIn) {
             add(SteamItem.SyncLibrary)
             add(SteamItem.AddManual)
@@ -180,7 +182,7 @@ internal fun buildSteamItems(steam: SteamSettingsState): List<SteamItem> = build
 
     if (loggedIn) {
         add(SteamItem.SectionSpacer("dangerSpacer", "danger"))
-        add(SteamItem.Header("dangerHeader", "danger", "DANGER ZONE"))
+        add(SteamItem.Header("dangerHeader", "danger", R.string.settings_steam_section_danger))
         add(SteamItem.Disconnect)
         add(SteamItem.ResetLibrary)
     }
@@ -191,12 +193,12 @@ internal fun createSteamLayout(items: List<SteamItem>) = SettingsLayout<SteamIte
     isFocusable = { it.isFocusable },
     visibleWhen = { _, _ -> true },
     sectionOf = { it.section },
-    sectionTitle = {
+    sectionTitleRes = {
         when (it) {
-            "setup" -> "GAMENATIVE"
-            "account" -> "ACCOUNT"
-            "library" -> "LIBRARY"
-            "danger" -> "DANGER ZONE"
+            "setup" -> R.string.settings_steam_section_gamenative
+            "account" -> R.string.settings_steam_section_account
+            "library" -> R.string.settings_steam_section_library
+            "danger" -> R.string.settings_steam_section_danger
             else -> null
         }
     }
@@ -214,16 +216,21 @@ internal fun steamSections(steam: SteamSettingsState) =
 internal fun isLoggedIn(steam: SteamSettingsState): Boolean =
     steam.connectionState == SteamConnectionState.LOGGED_IN
 
-private fun gameNativeSubtitle(steam: SteamSettingsState): String = when {
-    steam.isGameNativeScanning -> "Scanning..."
+private fun gameNativeSubtitle(
+    context: android.content.Context,
+    steam: SteamSettingsState
+): String = when {
+    steam.isGameNativeScanning -> context.getString(R.string.settings_steam_gamenative_library_scanning)
     steam.gameNativeSyncDirs.isEmpty() ->
-        "Set GameNative's Frontend Sync folders to import GOG, Epic and Amazon installs and mark Steam games installed"
-    steam.gameNativeMissingDirs.isNotEmpty() -> "Folder missing: " + steam.gameNativeMissingDirs
-        .sortedBy { it.ordinal }
-        .joinToString(", ") { it.displayName }
-    else -> steam.gameNativeSyncDirs.keys
-        .sortedBy { it.ordinal }
-        .joinToString(", ") { it.displayName } + " configured"
+        context.getString(R.string.settings_steam_gamenative_library_unconfigured)
+    steam.gameNativeMissingDirs.isNotEmpty() -> context.getString(
+        R.string.settings_steam_gamenative_library_missing,
+        steam.gameNativeMissingDirs.sortedBy { it.ordinal }.joinToString(", ") { it.displayName }
+    )
+    else -> context.getString(
+        R.string.settings_steam_gamenative_library_configured,
+        steam.gameNativeSyncDirs.keys.sortedBy { it.ordinal }.joinToString(", ") { it.displayName }
+    )
 }
 
 @Composable
@@ -247,14 +254,15 @@ fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         buildSteamItems(steam)
     }
     val layout = remember(allItems) { createSteamLayout(allItems) }
-    val sections = remember(allItems) { layout.buildSections(Unit) }
+    val sections = remember(allItems, context) { layout.buildSections(Unit, context) }
     val isDownloading = steam.downloadingLauncherId != null
     val gameNativeRowSubtitle = remember(
         steam.isGameNativeScanning,
         steam.gameNativeSyncDirs,
-        steam.gameNativeMissingDirs
+        steam.gameNativeMissingDirs,
+        context
     ) {
-        gameNativeSubtitle(steam)
+        gameNativeSubtitle(context, steam)
     }
 
     fun isFocused(item: SteamItem): Boolean =
@@ -273,7 +281,7 @@ fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) { item ->
             when (item) {
-                is SteamItem.Header -> SectionHeader(item.title)
+                is SteamItem.Header -> SectionHeader(stringResource(item.titleRes))
                 is SteamItem.SectionSpacer -> Spacer(modifier = Modifier.height(Dimens.spacingLg))
 
                 SteamItem.PreLogin -> SteamPreLoginPane(
@@ -295,14 +303,26 @@ fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
                 SteamItem.GnStatus -> {
                     val (icon, subtitle, color) = if (steam.gnStoragePath != null) {
-                        Triple(Icons.Default.CheckCircle, "External storage configured", MaterialTheme.colorScheme.primary)
+                        Triple(
+                            Icons.Default.CheckCircle,
+                            stringResource(R.string.settings_steam_gn_status_configured),
+                            MaterialTheme.colorScheme.primary
+                        )
                     } else if (steam.gnInstalled) {
-                        Triple(Icons.Default.Warning, "External storage not configured", MaterialTheme.colorScheme.error)
+                        Triple(
+                            Icons.Default.Warning,
+                            stringResource(R.string.settings_steam_gn_status_unconfigured),
+                            MaterialTheme.colorScheme.error
+                        )
                     } else {
-                        Triple(Icons.Default.Warning, "Not installed", MaterialTheme.colorScheme.error)
+                        Triple(
+                            Icons.Default.Warning,
+                            stringResource(R.string.settings_steam_gn_status_missing),
+                            MaterialTheme.colorScheme.error
+                        )
                     }
                     InfoPreference(
-                        title = "GameNative",
+                        title = stringResource(R.string.settings_steam_gn_status_title),
                         value = subtitle,
                         icon = icon,
                         isFocused = isFocused(item)
@@ -311,8 +331,8 @@ fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
                 SteamItem.GnInstall -> ActionPreference(
                     icon = Icons.Default.Download,
-                    title = "Install GameNative",
-                    subtitle = "Required to launch Steam games",
+                    title = stringResource(R.string.settings_steam_gn_install_title),
+                    subtitle = stringResource(R.string.settings_steam_gn_install_subtitle),
                     isFocused = isFocused(item),
                     onClick = {
                         val intent = Intent(Intent.ACTION_VIEW,
@@ -322,17 +342,21 @@ fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 )
 
                 SteamItem.GnStorageWarning -> InfoPreference(
-                    title = "External Storage",
-                    value = "Open GameNative and enable 'Write to external storage' in Settings",
+                    title = stringResource(R.string.settings_steam_gn_storage_warning_title),
+                    value = stringResource(R.string.settings_steam_gn_storage_warning_value),
                     icon = Icons.Default.Warning,
                     isFocused = isFocused(item)
                 )
 
                 SteamItem.InstallPath -> ActionPreference(
                     icon = Icons.Default.Folder,
-                    title = if (steam.steamInstallPathIsCustom) "Install Path (custom)" else "Install Path",
-                    subtitle = formatPath(steam.steamInstallPath),
-                    trailingButtonLabel = "Change",
+                    title = if (steam.steamInstallPathIsCustom) {
+                        stringResource(R.string.settings_steam_install_path_title_custom)
+                    } else {
+                        stringResource(R.string.settings_steam_install_path_title)
+                    },
+                    subtitle = formatPath(context, steam.steamInstallPath),
+                    trailingButtonLabel = stringResource(R.string.settings_steam_install_path_change),
                     isFocused = isFocused(item),
                     onClick = { viewModel.openSteamInstallPathPicker() },
                     showResetButton = steam.steamInstallPathIsCustom,
@@ -344,7 +368,7 @@ fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                         "$label ($count)"
                     }
                     InfoPreference(
-                        title = "Installed Games",
+                        title = stringResource(R.string.settings_steam_install_triage_title),
                         value = summary,
                         icon = Icons.Default.CheckCircle,
                         isFocused = isFocused(item)
@@ -352,24 +376,29 @@ fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 }
 
                 SteamItem.AccountInfo -> InfoPreference(
-                    title = "Steam Account",
-                    value = steam.username ?: "Connected",
+                    title = stringResource(R.string.settings_steam_account_title),
+                    value = steam.username ?: stringResource(R.string.settings_steam_account_connected),
                     icon = Icons.Default.Cloud,
                     isFocused = isFocused(item)
                 )
 
                 SteamItem.SyncLibrary -> {
                     val syncText = when (val s = steam.syncState) {
-                        is LibrarySyncState.Idle -> "Sync owned games from Steam"
-                        is LibrarySyncState.SyncingLicenses -> "Syncing licenses..."
-                        is LibrarySyncState.FetchingPackages -> "Fetching packages (${s.current}/${s.total})..."
-                        is LibrarySyncState.FetchingApps -> "Fetching games (${s.current}/${s.total})..."
-                        is LibrarySyncState.Complete -> "Added ${s.gamesAdded}, updated ${s.gamesUpdated}"
-                        is LibrarySyncState.Error -> "Error: ${s.message}"
+                        is LibrarySyncState.Idle -> stringResource(R.string.settings_steam_sync_idle)
+                        is LibrarySyncState.SyncingLicenses ->
+                            stringResource(R.string.settings_steam_sync_licenses)
+                        is LibrarySyncState.FetchingPackages ->
+                            stringResource(R.string.settings_steam_sync_packages, s.current, s.total)
+                        is LibrarySyncState.FetchingApps ->
+                            stringResource(R.string.settings_steam_sync_apps, s.current, s.total)
+                        is LibrarySyncState.Complete ->
+                            stringResource(R.string.settings_steam_sync_complete, s.gamesAdded, s.gamesUpdated)
+                        is LibrarySyncState.Error ->
+                            stringResource(R.string.settings_steam_sync_error, s.message)
                     }
                     ActionPreference(
                         icon = Icons.Default.Sync,
-                        title = "Sync Library",
+                        title = stringResource(R.string.settings_steam_sync_title),
                         subtitle = syncText,
                         isFocused = isFocused(item),
                         isEnabled = steam.syncState is LibrarySyncState.Idle ||
@@ -381,17 +410,17 @@ fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
                 SteamItem.AddManual -> ActionPreference(
                     icon = Icons.Default.Cloud,
-                    title = "Add by App ID",
-                    subtitle = "Add a Steam game by its App ID",
+                    title = stringResource(R.string.settings_steam_add_manual_title),
+                    subtitle = stringResource(R.string.settings_steam_add_manual_subtitle),
                     isFocused = isFocused(item),
                     onClick = { viewModel.showAddSteamGameDialog() }
                 )
 
                 SteamItem.GameNativeLibrary -> DualActionPreference(
-                    title = "GameNative Library",
+                    title = stringResource(R.string.settings_steam_gamenative_library_title),
                     subtitle = gameNativeRowSubtitle,
-                    primaryLabel = "Folders",
-                    secondaryLabel = "Scan",
+                    primaryLabel = stringResource(R.string.settings_steam_gamenative_library_folders),
+                    secondaryLabel = stringResource(R.string.settings_steam_gamenative_library_scan),
                     showSecondary = steam.gameNativeSyncDirs.isNotEmpty(),
                     isFocused = isFocused(item),
                     actionIndex = steam.gameNativeActionIndex,
@@ -416,11 +445,11 @@ fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
                 SteamItem.RefreshMetadata -> ActionPreference(
                     icon = Icons.Default.Sync,
-                    title = "Refresh Metadata",
+                    title = stringResource(R.string.settings_steam_refresh_metadata_title),
                     subtitle = if (steam.isSyncing && steam.syncingLauncher == "refresh") {
-                        "Refreshing..."
+                        stringResource(R.string.settings_steam_refresh_metadata_busy)
                     } else {
-                        "Update screenshots and backgrounds"
+                        stringResource(R.string.settings_steam_refresh_metadata_subtitle)
                     },
                     isFocused = isFocused(item),
                     isEnabled = !steam.isSyncing,
@@ -435,11 +464,15 @@ fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                             else Icons.AutoMirrored.Filled.OpenInNew,
                         title = launcher.displayName,
                         subtitle = when {
-                            isThisDownloading && steam.downloadProgress != null ->
-                                "Downloading... ${(steam.downloadProgress * 100).toInt()}%"
-                            isThisDownloading -> "Waiting for install..."
-                            launcher.hasDirectDownload -> "Download APK"
-                            else -> "Open Play Store"
+                            isThisDownloading && steam.downloadProgress != null -> stringResource(
+                                R.string.settings_steam_launcher_downloading,
+                                (steam.downloadProgress * 100).toInt()
+                            )
+                            isThisDownloading ->
+                                stringResource(R.string.settings_steam_launcher_waiting)
+                            launcher.hasDirectDownload ->
+                                stringResource(R.string.settings_steam_launcher_download)
+                            else -> stringResource(R.string.settings_steam_launcher_store)
                         },
                         isFocused = isFocused(item),
                         isEnabled = !isDownloading,
@@ -451,8 +484,8 @@ fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     Spacer(modifier = Modifier.height(Dimens.spacingSm))
                     ActionPreference(
                         icon = Icons.Default.Cloud,
-                        title = "Grant Storage Permission",
-                        subtitle = "Required for Steam integration",
+                        title = stringResource(R.string.settings_steam_storage_note_title),
+                        subtitle = stringResource(R.string.settings_steam_storage_note_subtitle),
                         isFocused = false,
                         onClick = {
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -467,8 +500,8 @@ fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
                 SteamItem.Disconnect -> ActionPreference(
                     icon = Icons.Default.LinkOff,
-                    title = "Disconnect",
-                    subtitle = "Log out of Steam",
+                    title = stringResource(R.string.settings_steam_disconnect_title),
+                    subtitle = stringResource(R.string.settings_steam_disconnect_subtitle),
                     isFocused = isFocused(item),
                     onClick = { viewModel.disconnectSteam() },
                     iconTint = MaterialTheme.colorScheme.error
@@ -476,8 +509,8 @@ fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
                 SteamItem.ResetLibrary -> ActionPreference(
                     icon = Icons.Default.Delete,
-                    title = "Reset Steam Library",
-                    subtitle = "Remove all synced Steam games",
+                    title = stringResource(R.string.settings_steam_reset_library_title),
+                    subtitle = stringResource(R.string.settings_steam_reset_library_subtitle),
                     isFocused = isFocused(item),
                     onClick = { viewModel.resetSteamLibrary() },
                     iconTint = MaterialTheme.colorScheme.error
@@ -559,7 +592,7 @@ private fun GnNotInstalledContent(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "GameNative Required",
+            text = stringResource(R.string.settings_steam_gn_required_title),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface
         )
@@ -567,8 +600,7 @@ private fun GnNotInstalledContent(
         Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
         Text(
-            text = "Steam games are downloaded by Argosy and launched through GameNative. " +
-                "Install GameNative and enable external storage in its settings before continuing.",
+            text = stringResource(R.string.settings_steam_gn_required_message),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -577,7 +609,7 @@ private fun GnNotInstalledContent(
         Spacer(modifier = Modifier.height(Dimens.spacingLg))
 
         FocusableButton(
-            text = "Install GameNative",
+            text = stringResource(R.string.settings_steam_gn_required_action),
             isFocused = isFocused,
             onClick = onInstall
         )
@@ -598,7 +630,7 @@ private fun NotConnectedContent(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Log in to Steam",
+            text = stringResource(R.string.settings_steam_login_title),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface
         )
@@ -606,7 +638,7 @@ private fun NotConnectedContent(
         Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
         Text(
-            text = "Connect your Steam account to sync your library and download games.",
+            text = stringResource(R.string.settings_steam_login_message),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -615,7 +647,7 @@ private fun NotConnectedContent(
         Spacer(modifier = Modifier.height(Dimens.spacingLg))
 
         FocusableButton(
-            text = "Connect",
+            text = stringResource(R.string.settings_steam_login_action),
             isFocused = isFocused,
             onClick = onConnect
         )
@@ -623,7 +655,9 @@ private fun NotConnectedContent(
 }
 
 @Composable
-private fun ConnectingContent(message: String = "Connecting...") {
+private fun ConnectingContent(
+    message: String = stringResource(R.string.settings_steam_connecting)
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -675,7 +709,7 @@ private fun QrAuthContent(
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
         ) {
             Text(
-                text = "Scan with the Steam mobile app",
+                text = stringResource(R.string.settings_steam_qr_title),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center
@@ -684,7 +718,7 @@ private fun QrAuthContent(
             Spacer(modifier = Modifier.height(Dimens.spacingSm))
 
             Text(
-                text = "Open Steam on your phone, tap the guard icon, then 'Confirm sign-in'.",
+                text = stringResource(R.string.settings_steam_qr_message),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -693,7 +727,7 @@ private fun QrAuthContent(
             Spacer(modifier = Modifier.height(Dimens.spacingSm))
 
             FocusableButton(
-                text = "Cancel",
+                text = stringResource(R.string.settings_steam_qr_cancel),
                 isFocused = isFocused,
                 onClick = onCancel
             )
@@ -716,7 +750,7 @@ private fun ErrorContent(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "Connection Error",
+            text = stringResource(R.string.settings_steam_error_title),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.error
         )
@@ -733,7 +767,7 @@ private fun ErrorContent(
         Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
         FocusableButton(
-            text = "Try Again",
+            text = stringResource(R.string.settings_steam_error_retry),
             isFocused = isFocused,
             onClick = onRetry
         )
@@ -794,7 +828,7 @@ private fun QrCodeImage(
         ) {
             Image(
                 bitmap = qrBitmap.asImageBitmap(),
-                contentDescription = "QR Code",
+                contentDescription = stringResource(R.string.settings_steam_qr_image_description),
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -939,13 +973,13 @@ internal fun AddSteamGameDialog(uiState: SettingsUiState, viewModel: SettingsVie
 
     val fieldShape = RoundedCornerShape(Dimens.radiusMd)
     Modal(
-        title = "Add Steam Game",
+        title = stringResource(R.string.settings_steam_add_game_title),
         onDismiss = { if (!isAddingGame) viewModel.dismissAddSteamGameDialog() }
     ) {
         val description = if (selectedLauncherName != null) {
-            "Enter the Steam App ID to add a game for $selectedLauncherName. You can find this in the game's Steam store URL."
+            stringResource(R.string.settings_steam_add_game_message_launcher, selectedLauncherName)
         } else {
-            "Enter the Steam App ID to add a game. You can find this in the game's Steam store URL."
+            stringResource(R.string.settings_steam_add_game_message)
         }
         Text(
             text = description,
@@ -956,8 +990,8 @@ internal fun AddSteamGameDialog(uiState: SettingsUiState, viewModel: SettingsVie
         OutlinedTextField(
             value = uiState.steam.addGameAppId,
             onValueChange = { viewModel.setAddGameAppId(it) },
-            label = { Text("Steam App ID") },
-            placeholder = { Text("e.g. 730") },
+            label = { Text(stringResource(R.string.settings_steam_add_game_field_label)) },
+            placeholder = { Text(stringResource(R.string.settings_steam_add_game_field_hint)) },
             singleLine = true,
             enabled = !isAddingGame,
             isError = uiState.steam.addGameError != null,
@@ -987,7 +1021,7 @@ internal fun AddSteamGameDialog(uiState: SettingsUiState, viewModel: SettingsVie
             horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm, Alignment.End)
         ) {
             ModalActionButton(
-                label = "Cancel",
+                label = stringResource(R.string.settings_steam_add_game_cancel),
                 tint = theme.focusAccent,
                 restLabelColor = theme.textPrimary,
                 focused = focusRow == ADD_GAME_ROW_BUTTONS && buttonIndex == 0,
@@ -1001,7 +1035,7 @@ internal fun AddSteamGameDialog(uiState: SettingsUiState, viewModel: SettingsVie
                 )
             } else {
                 ModalActionButton(
-                    label = "Add",
+                    label = stringResource(R.string.settings_steam_add_game_confirm),
                     tint = theme.focusAccent,
                     restLabelColor = theme.textPrimary,
                     focused = focusRow == ADD_GAME_ROW_BUTTONS && buttonIndex == 1,

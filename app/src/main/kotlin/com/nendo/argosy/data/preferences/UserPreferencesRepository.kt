@@ -123,6 +123,7 @@ class UserPreferencesRepository @Inject constructor(
             libraryDefaultPlatform = display.libraryDefaultPlatform,
             soundConfigs = controls.soundConfigs,
             betaUpdatesEnabled = app.betaUpdatesEnabled,
+            appLanguage = app.appLanguage,
             saveSyncEnabled = sync.saveSyncEnabled,
             secureSaves = sync.secureSaves,
             stateCacheEnabled = sync.stateCacheEnabled,
@@ -469,6 +470,7 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setFileLoggingPath(path: String?) = appPrefs.setFileLoggingPath(path)
     suspend fun setFileLogLevel(level: LogLevel) = appPrefs.setFileLogLevel(level)
     suspend fun setAppAffinityEnabled(enabled: Boolean) = appPrefs.setAppAffinityEnabled(enabled)
+    suspend fun setAppLanguage(tag: String) = appPrefs.setAppLanguage(tag)
 
     // --- Builtin emulator delegates ---
 
@@ -739,6 +741,7 @@ data class UserPreferences(
     val libraryDefaultPlatform: String = "",
     val soundConfigs: Map<SoundType, SoundConfig> = emptyMap(),
     val betaUpdatesEnabled: Boolean = false,
+    val appLanguage: AppLanguage = AppLanguage.SYSTEM,
     val saveSyncEnabled: Boolean = false,
     val secureSaves: Boolean = true,
     val stateCacheEnabled: Boolean = true,

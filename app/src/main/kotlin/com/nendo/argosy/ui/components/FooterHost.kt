@@ -113,7 +113,7 @@ fun FooterHost(
 
 val FooterHostController.isBarVisible: Boolean
     get() = top?.let { entry ->
-        entry.forced || entry.hints.any { !isObviousHint(it.button, it.action) }
+        entry.forced || entry.hints.any { !isObviousHint(it.button) }
     } == true
 
 /** Reserves footer space only while the singleton bar is actually showing. */

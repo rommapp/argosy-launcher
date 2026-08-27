@@ -20,7 +20,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import com.nendo.argosy.R
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
@@ -111,7 +113,7 @@ fun SystemizeResultDialog(result: SystemizeWriteResult, onDismiss: () -> Unit) {
                 horizontalArrangement = Arrangement.End
             ) {
                 ActionButton(
-                    label = "Close",
+                    label = stringResource(R.string.settings_systemize_dialog_close_button),
                     onClick = onDismiss,
                     primary = true,
                     focused = true
@@ -131,12 +133,12 @@ private fun SuccessContent(result: SystemizeWriteResult.Success) {
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) {
         Text(
-            text = "Script Saved",
+            text = stringResource(R.string.settings_systemize_dialog_success_title),
             style = MaterialTheme.typography.titleLarge,
             color = theme.textPrimary
         )
         Text(
-            text = "Detected device: ${result.vendor.deviceLabel}",
+            text = stringResource(R.string.settings_systemize_dialog_detected_device, result.vendor.deviceLabel),
             style = MaterialTheme.typography.bodySmall,
             color = theme.textDim
         )
@@ -148,14 +150,14 @@ private fun SuccessContent(result: SystemizeWriteResult.Success) {
 
         Spacer(Modifier.height(Dimens.spacingXs))
         Text(
-            text = "Next steps",
+            text = stringResource(R.string.settings_systemize_dialog_next_steps_heading),
             style = MaterialTheme.typography.titleSmall,
             color = theme.textPrimary,
             fontWeight = FontWeight.Bold
         )
         result.vendor.steps.forEachIndexed { index, step ->
             Text(
-                text = "${index + 1}. $step",
+                text = stringResource(R.string.settings_systemize_dialog_step_format, index + 1, step),
                 style = MaterialTheme.typography.bodyMedium,
                 color = theme.textPrimary
             )
@@ -163,7 +165,7 @@ private fun SuccessContent(result: SystemizeWriteResult.Success) {
 
         Spacer(Modifier.height(Dimens.spacingXs))
         Text(
-            text = "Needs a rooted device. The change is reversible: remove the Magisk module named \"Argosy Systemize\" and reboot. If your menu wording differs, the script file is still correct - just point your run-as-root option at it.",
+            text = stringResource(R.string.settings_systemize_dialog_success_footnote),
             style = MaterialTheme.typography.bodySmall,
             color = theme.textDim
         )
@@ -180,7 +182,7 @@ private fun ErrorContent(result: SystemizeWriteResult.Error) {
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) {
         Text(
-            text = "Couldn't Save Script",
+            text = stringResource(R.string.settings_systemize_dialog_error_title),
             style = MaterialTheme.typography.titleLarge,
             color = theme.textPrimary
         )
@@ -190,7 +192,7 @@ private fun ErrorContent(result: SystemizeWriteResult.Error) {
             color = theme.textDim
         )
         Text(
-            text = "Storage access may be missing. Grant all-files access in setup and try again.",
+            text = stringResource(R.string.settings_systemize_dialog_error_hint),
             style = MaterialTheme.typography.bodySmall,
             color = theme.textDim
         )

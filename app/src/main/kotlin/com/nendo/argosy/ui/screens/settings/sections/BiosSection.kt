@@ -43,7 +43,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.core.input.SoundType
+import com.nendo.argosy.util.formatBytes
 import com.nendo.argosy.ui.components.ExpandedChildItem
 import com.nendo.argosy.ui.components.ImageCachePreference
 import com.nendo.argosy.ui.screens.settings.BiosFirmwareItem
@@ -199,10 +203,10 @@ fun BiosSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                         } else {
                             "$folderName/bios"
                         }
-                    } ?: "Internal (default)"
+                    } ?: stringResource(R.string.settings_bios_path_internal)
 
                     ImageCachePreference(
-                        title = "BIOS Directory",
+                        title = stringResource(R.string.settings_bios_path_title),
                         displayPath = pathDisplay,
                         hasCustomPath = bios.customBiosPath != null,
                         isFocused = isFocused(item),
@@ -216,7 +220,7 @@ fun BiosSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 BiosItem.PlatformsHeader -> {
                     Spacer(modifier = Modifier.height(Dimens.spacingMd))
                     Text(
-                        text = "PLATFORMS",
+                        text = stringResource(R.string.settings_bios_section_platforms),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(start = Dimens.spacingSm)
@@ -231,7 +235,7 @@ fun BiosSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "No BIOS files synced yet. Sync your library to discover available firmware.",
+                            text = stringResource(R.string.settings_bios_empty_notice),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -257,9 +261,11 @@ fun BiosSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     ExpandedChildItem(
                         title = item.firmware.fileName,
                         value = when {
-                            item.firmware.isDownloaded -> "Downloaded"
-                            isThisDownloading -> "Downloading..."
-                            else -> formatFileSize(item.firmware.fileSizeBytes)
+                            item.firmware.isDownloaded ->
+                                stringResource(R.string.settings_bios_firmware_downloaded)
+                            isThisDownloading ->
+                                stringResource(R.string.settings_bios_firmware_downloading)
+                            else -> formatBytes(item.firmware.fileSizeBytes)
                         },
                         isFocused = isFocused(item),
                         onClick = {
@@ -273,8 +279,7 @@ fun BiosSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 BiosItem.FooterNote -> {
                     Spacer(modifier = Modifier.height(Dimens.spacingMd))
                     Text(
-                        text = "BIOS files are downloaded from your RomM server and stored locally. " +
-                            "Use 'Distribute' to copy them to emulator directories.",
+                        text = stringResource(R.string.settings_bios_footer_note),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         modifier = Modifier.padding(horizontal = Dimens.spacingSm)
@@ -365,7 +370,7 @@ internal fun DistributeResultModal(
                 .padding(Dimens.spacingMd)
         ) {
             Text(
-                text = "Distribution Complete",
+                text = stringResource(R.string.settings_bios_distribute_result_title),
                 style = MaterialTheme.typography.titleLarge,
                 color = theme.textPrimary
             )
@@ -376,7 +381,11 @@ internal fun DistributeResultModal(
                 emulator.platformResults.sumOf { it.filesCopied }
             }
             Text(
-                text = "Copied $totalFiles BIOS files to ${results.size} emulators",
+                text = stringResource(
+                    R.string.settings_bios_distribute_result_message,
+                    totalFiles,
+                    results.size
+                ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = theme.textDim
             )
@@ -416,7 +425,11 @@ internal fun DistributeResultModal(
                                     color = theme.textDim
                                 )
                                 Text(
-                                    text = "${platform.filesCopied} files",
+                                    text = pluralStringResource(
+                                        R.plurals.settings_bios_distribute_result_files,
+                                        platform.filesCopied,
+                                        platform.filesCopied
+                                    ),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = theme.textMute
                                 )
@@ -429,7 +442,7 @@ internal fun DistributeResultModal(
             Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
             ActionButton(
-                label = "OK",
+                label = stringResource(R.string.settings_bios_distribute_result_dismiss),
                 onClick = onDismiss,
                 primary = true,
                 focused = true,
@@ -470,7 +483,7 @@ private fun GpuDriverPromptModal(
                 .padding(Dimens.spacingMd)
         ) {
             Text(
-                text = "GPU Driver Available",
+                text = stringResource(R.string.settings_bios_gpu_prompt_title),
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -479,7 +492,7 @@ private fun GpuDriverPromptModal(
 
             if (gpuName != null) {
                 Text(
-                    text = "Detected: $gpuName",
+                    text = stringResource(R.string.settings_bios_gpu_prompt_detected, gpuName),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -487,7 +500,7 @@ private fun GpuDriverPromptModal(
             }
 
             Text(
-                text = "A custom GPU driver can improve Switch emulation performance on Snapdragon 8 devices.",
+                text = stringResource(R.string.settings_bios_gpu_prompt_message),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -496,7 +509,7 @@ private fun GpuDriverPromptModal(
 
             if (isInstalling) {
                 Text(
-                    text = "Installing driver...",
+                    text = stringResource(R.string.settings_bios_gpu_prompt_installing),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -509,9 +522,9 @@ private fun GpuDriverPromptModal(
                 ) {
                     ActionButton(
                         label = if (driverName != null && driverVersion != null) {
-                            "Install Recommended ($driverVersion)"
+                            stringResource(R.string.settings_bios_gpu_prompt_install_versioned, driverVersion)
                         } else {
-                            "Install Recommended"
+                            stringResource(R.string.settings_bios_gpu_prompt_install)
                         },
                         onClick = onInstallRecommended,
                         focused = focusIndex == 0,
@@ -520,14 +533,14 @@ private fun GpuDriverPromptModal(
                     )
 
                     ActionButton(
-                        label = "Install from File",
+                        label = stringResource(R.string.settings_bios_gpu_prompt_install_from_file),
                         onClick = onInstallFromFile,
                         focused = focusIndex == 1,
                         modifier = Modifier.fillMaxWidth()
                     )
 
                     ActionButton(
-                        label = "Skip",
+                        label = stringResource(R.string.settings_bios_gpu_prompt_skip),
                         onClick = onSkip,
                         focused = focusIndex == 2,
                         modifier = Modifier.fillMaxWidth()
@@ -587,15 +600,20 @@ private fun BiosSummaryCard(
                 Spacer(modifier = Modifier.width(Dimens.spacingSm))
                 Column {
                     Text(
-                        text = "BIOS Status",
+                        text = stringResource(R.string.settings_bios_summary_title),
                         style = MaterialTheme.typography.titleMedium,
                         color = contentColor
                     )
                     Text(
                         text = when {
-                            totalFiles == 0 -> "No BIOS files found"
-                            isComplete -> "All $totalFiles files ready"
-                            else -> "$downloadedFiles of $totalFiles downloaded"
+                            totalFiles == 0 -> stringResource(R.string.settings_bios_summary_empty)
+                            isComplete ->
+                                stringResource(R.string.settings_bios_summary_complete, totalFiles)
+                            else -> stringResource(
+                                R.string.settings_bios_summary_partial,
+                                downloadedFiles,
+                                totalFiles
+                            )
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = contentColor.copy(alpha = 0.7f)
@@ -614,7 +632,10 @@ private fun BiosSummaryCard(
         if (isDownloading) {
             Spacer(modifier = Modifier.height(Dimens.spacingSm))
             Text(
-                text = "Downloading: ${downloadingFileName ?: "..."}",
+                text = stringResource(
+                    R.string.settings_bios_summary_downloading,
+                    downloadingFileName ?: "..."
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = contentColor.copy(alpha = 0.7f)
             )
@@ -634,7 +655,7 @@ private fun BiosSummaryCard(
                     color = contentColor
                 )
                 Text(
-                    text = "Distributing to emulators...",
+                    text = stringResource(R.string.settings_bios_summary_distributing),
                     style = MaterialTheme.typography.bodySmall,
                     color = contentColor.copy(alpha = 0.7f)
                 )
@@ -662,7 +683,11 @@ private fun BiosSummaryCard(
                     )
                     Spacer(modifier = Modifier.width(Dimens.spacingXs))
                     Text(
-                        text = if (missingFiles > 0) "Download $missingFiles" else "Redownload",
+                        text = if (missingFiles > 0) {
+                            stringResource(R.string.settings_bios_summary_download_missing, missingFiles)
+                        } else {
+                            stringResource(R.string.settings_bios_summary_redownload)
+                        },
                         style = MaterialTheme.typography.titleSmall,
                         color = Color.White,
                         maxLines = 1
@@ -672,7 +697,7 @@ private fun BiosSummaryCard(
                 val distributeSelected = isFocused && actionIndex == 1
                 val distributeEnabled = downloadedFiles > 0
                 ActionButton(
-                    label = "Distribute",
+                    label = stringResource(R.string.settings_bios_summary_distribute),
                     onClick = onDistributeAll,
                     focused = distributeSelected,
                     enabled = distributeEnabled,
@@ -756,7 +781,11 @@ private fun BiosPlatformItem(
                 .padding(horizontal = Dimens.spacingSm, vertical = Dimens.spacingXs)
         ) {
             Text(
-                text = if (group.isComplete) "Redownload" else "Download",
+                text = if (group.isComplete) {
+                    stringResource(R.string.settings_bios_platform_redownload)
+                } else {
+                    stringResource(R.string.settings_bios_platform_download)
+                },
                 style = MaterialTheme.typography.labelSmall,
                 color = downloadTextColor
             )

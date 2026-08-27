@@ -23,9 +23,12 @@ import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.VisibilityOff
+import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.GameTitle
 import com.nendo.argosy.ui.components.Modal
@@ -48,50 +51,100 @@ private sealed interface MoreMenuEntry {
     data object Divider : MoreMenuEntry
 }
 
-private fun MoreOptionAction.toMenuEntry(game: GameDetailUi): MoreMenuEntry.Option = when (this) {
-    MoreOptionAction.ManageSaves ->
-        MoreMenuEntry.Option(Icons.Default.Save, "Manage Cached Saves", action = this)
-    MoreOptionAction.RatingsStatus ->
-        MoreMenuEntry.Option(Icons.Default.Star, "Ratings & Status", action = this)
-    MoreOptionAction.ChangeSteamLauncher ->
-        MoreMenuEntry.Option(label = "Change Launcher", value = game.steamLauncherName ?: "Auto", action = this)
-    MoreOptionAction.SpeedrunSplits ->
-        MoreMenuEntry.Option(Icons.Default.Timer, "Speedrun Splits", action = this)
-    MoreOptionAction.RefreshTitleId ->
-        MoreMenuEntry.Option(Icons.Default.Tag, "Title ID", value = game.titleId ?: "Not detected", action = this)
-    MoreOptionAction.SelectDisc ->
-        MoreMenuEntry.Option(Icons.Default.Album, "Select Disc", action = this)
-    MoreOptionAction.SelectVariant ->
-        MoreMenuEntry.Option(Icons.Default.SwapHoriz, "Select Variant", action = this)
-    MoreOptionAction.Files ->
-        MoreMenuEntry.Option(Icons.Default.Checklist, "Files", action = this)
-    MoreOptionAction.RefreshData ->
-        MoreMenuEntry.Option(Icons.Default.Refresh, "Refresh Game Data", action = this)
-    MoreOptionAction.AddToCollection ->
-        MoreMenuEntry.Option(Icons.Default.FolderSpecial, "Add to Collection", action = this)
-    MoreOptionAction.ChangeCover ->
-        MoreMenuEntry.Option(Icons.Default.Image, "Change Cover Art", action = this)
-    MoreOptionAction.ResetCover ->
-        MoreMenuEntry.Option(Icons.Default.Restore, "Reset Cover Art", action = this)
+private fun MoreOptionAction.toMenuEntry(
+    game: GameDetailUi,
+    context: Context
+): MoreMenuEntry.Option = when (this) {
+    MoreOptionAction.ManageSaves -> MoreMenuEntry.Option(
+        Icons.Default.Save,
+        context.getString(R.string.gamedetail_more_options_manage_saves),
+        action = this
+    )
+    MoreOptionAction.RatingsStatus -> MoreMenuEntry.Option(
+        Icons.Default.Star,
+        context.getString(R.string.gamedetail_more_options_ratings_status),
+        action = this
+    )
+    MoreOptionAction.ChangeSteamLauncher -> MoreMenuEntry.Option(
+        label = context.getString(R.string.gamedetail_more_options_change_launcher),
+        value = game.steamLauncherName ?: context.getString(R.string.gamedetail_steam_launcher_auto),
+        action = this
+    )
+    MoreOptionAction.SpeedrunSplits -> MoreMenuEntry.Option(
+        Icons.Default.Timer,
+        context.getString(R.string.gamedetail_more_options_speedrun_splits),
+        action = this
+    )
+    MoreOptionAction.RefreshTitleId -> MoreMenuEntry.Option(
+        Icons.Default.Tag,
+        context.getString(R.string.gamedetail_more_options_title_id),
+        value = game.titleId
+            ?: context.getString(R.string.gamedetail_more_options_title_id_missing),
+        action = this
+    )
+    MoreOptionAction.SelectDisc -> MoreMenuEntry.Option(
+        Icons.Default.Album,
+        context.getString(R.string.gamedetail_more_options_select_disc),
+        action = this
+    )
+    MoreOptionAction.SelectVariant -> MoreMenuEntry.Option(
+        Icons.Default.SwapHoriz,
+        context.getString(R.string.gamedetail_more_options_select_variant),
+        action = this
+    )
+    MoreOptionAction.Files -> MoreMenuEntry.Option(
+        Icons.Default.Checklist,
+        context.getString(R.string.gamedetail_more_options_files),
+        action = this
+    )
+    MoreOptionAction.RefreshData -> MoreMenuEntry.Option(
+        Icons.Default.Refresh,
+        context.getString(R.string.gamedetail_more_options_refresh_data),
+        action = this
+    )
+    MoreOptionAction.AddToCollection -> MoreMenuEntry.Option(
+        Icons.Default.FolderSpecial,
+        context.getString(R.string.gamedetail_more_options_add_to_collection),
+        action = this
+    )
+    MoreOptionAction.ChangeCover -> MoreMenuEntry.Option(
+        Icons.Default.Image,
+        context.getString(R.string.gamedetail_more_options_change_cover),
+        action = this
+    )
+    MoreOptionAction.ResetCover -> MoreMenuEntry.Option(
+        Icons.Default.Restore,
+        context.getString(R.string.gamedetail_more_options_reset_cover),
+        action = this
+    )
     MoreOptionAction.Delete -> MoreMenuEntry.Option(
         icon = Icons.Default.DeleteOutline,
         label = when {
-            game.isAndroidApp -> "Uninstall"
-            game.isExternallyManaged -> "Unlink from ${game.managingLauncherDisplayName ?: "Launcher"}"
-            else -> "Delete Download"
+            game.isAndroidApp -> context.getString(R.string.gamedetail_more_options_uninstall)
+            game.isExternallyManaged -> context.getString(
+                R.string.gamedetail_more_options_unlink_from_launcher,
+                game.managingLauncherDisplayName ?: context.getString(
+                    R.string.gamedetail_more_options_unlink_launcher_fallback
+                )
+            )
+            else -> context.getString(R.string.gamedetail_more_options_delete_download)
         },
         isDangerous = !game.isExternallyManaged,
         action = this
     )
     MoreOptionAction.RemoveFromLibrary -> MoreMenuEntry.Option(
         icon = Icons.Default.RemoveCircleOutline,
-        label = "Remove from Library",
+        label = context.getString(R.string.gamedetail_more_options_remove_from_library),
         isDangerous = true,
         action = this
     )
     MoreOptionAction.ToggleHide -> MoreMenuEntry.Option(
         icon = if (game.isHidden) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-        label = if (game.isHidden) "Show" else "Hide",
+        label = if (game.isHidden) {
+            context.getString(R.string.gamedetail_more_options_show)
+        } else {
+            context.getString(R.string.gamedetail_more_options_hide)
+        },
         isDangerous = !game.isHidden,
         action = this
     )
@@ -128,6 +181,7 @@ fun MoreOptionsModal(
         )
     )
 
+    val context = LocalContext.current
     val entries = buildList<MoreMenuEntry> {
         var dividerAdded = false
         actions.forEach { action ->
@@ -138,7 +192,7 @@ fun MoreOptionsModal(
                 add(MoreMenuEntry.Divider)
                 dividerAdded = true
             }
-            add(action.toMenuEntry(game))
+            add(action.toMenuEntry(game, context))
         }
     }
 

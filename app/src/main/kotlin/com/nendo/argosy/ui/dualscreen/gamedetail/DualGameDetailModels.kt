@@ -3,6 +3,8 @@
  */
 package com.nendo.argosy.ui.dualscreen.gamedetail
 
+import androidx.annotation.StringRes
+import com.nendo.argosy.R
 import com.nendo.argosy.data.emulator.DiscOption
 import com.nendo.argosy.data.model.visibleWithCollapsed
 import com.nendo.argosy.data.platform.PlatformDefinitions
@@ -15,18 +17,18 @@ import com.nendo.argosy.ui.screens.gamedetail.UpdateFileUi
 import org.json.JSONArray
 import org.json.JSONObject
 
-enum class DualGameDetailTab {
-    SAVES,
-    STATES,
-    MEDIA,
-    OPTIONS
+enum class DualGameDetailTab(@StringRes val labelRes: Int) {
+    SAVES(R.string.dual_detail_tab_saves),
+    STATES(R.string.dual_detail_tab_states),
+    MEDIA(R.string.dual_detail_tab_media),
+    OPTIONS(R.string.dual_detail_tab_options)
 }
 
 enum class ActiveModal { NONE, RATING, DIFFICULTY, STATUS, EMULATOR, CORE, SAVE_PATH, DISPLAY_TARGET, MEMORY_CARD, COLLECTION, SAVE_NAME, DISC_PICKER, VARIANT_PICKER, STEAM_INSTALL, FILE_PICKER }
 
-enum class DualStateMenuAction(val label: String) {
-    COPY_TO("Copy to slot"),
-    DELETE("Delete state")
+enum class DualStateMenuAction(@StringRes val labelRes: Int) {
+    COPY_TO(R.string.dual_state_menu_copy_to),
+    DELETE(R.string.dual_state_menu_delete)
 }
 
 enum class DualStatePrompt { DELETE, OVERWRITE }

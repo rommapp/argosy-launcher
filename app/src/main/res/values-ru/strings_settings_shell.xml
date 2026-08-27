@@ -1,0 +1,514 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Owner: settings screen shell (SettingsScreen, routers, footer, missed sections,
+      ManagePinsScreen, BgmPlaylistManagerScreen, libretro settings accessor/item).
+      Key prefix: settings_shell_
+      Keys are named for the usage site, never for the English text; identical English at two
+      different usage sites always gets two keys.
+    -->
+
+    <!-- ===== BuiltinVideoSection / LibretroSettingItem ===== -->
+
+    <string name="settings_shell_libretro_configure_shader_effects_subtitle">Настроить эффекты шейдера</string>
+    <string name="settings_shell_libretro_global_hint_template">Общее: %1$s</string>
+    <string name="settings_shell_libretro_on_label">Вкл</string>
+    <string name="settings_shell_libretro_off_label">Выкл</string>
+
+    <!-- ===== FrameSection ===== -->
+
+    <string name="settings_shell_frame_select_title">Выбор рамки</string>
+    <string name="settings_shell_frame_auto_with_name">Авто (%1$s)</string>
+    <string name="settings_shell_frame_auto_none">Авто (нет)</string>
+    <string name="settings_shell_frame_none_option">Нет</string>
+    <string name="settings_shell_frame_selected_desc">Выбрано</string>
+    <string name="settings_shell_frame_download_desc">Скачать</string>
+    <string name="settings_shell_frame_preview_desc">Предпросмотр рамки</string>
+    <string name="settings_shell_frame_no_selection">Рамка не выбрана</string>
+    <string name="settings_shell_frame_unavailable">Рамка недоступна</string>
+
+    <!-- ===== ShaderStackSection ===== -->
+
+    <string name="settings_shell_shaderstack_tab_label">%1$d. %2$s</string>
+    <string name="settings_shell_shaderstack_preview_desc">Предпросмотр шейдера</string>
+    <string name="settings_shell_shaderstack_no_preview">Нет предпросмотра</string>
+    <string name="settings_shell_shaderstack_empty">В цепочке нет шейдеров</string>
+    <string name="settings_shell_shaderstack_no_params">Нет настраиваемых параметров</string>
+
+    <!-- ===== CoreOptionsSection ===== -->
+
+    <string name="settings_shell_coreoptions_no_platforms">Нет платформ со встроенной поддержкой эмулятора</string>
+    <string name="settings_shell_coreoptions_status_installed_selector">Установлено</string>
+    <string name="settings_shell_coreoptions_status_not_downloaded_selector">Не скачано</string>
+    <string name="settings_shell_coreoptions_status_installed_option">Установлено</string>
+    <string name="settings_shell_coreoptions_status_not_downloaded_option">Не скачано</string>
+    <string name="settings_shell_coreoptions_selector_value_template">%1$s (%2$s)</string>
+    <string name="settings_shell_coreoptions_option_value_template">%1$s (%2$s)</string>
+    <string name="settings_shell_coreoptions_none_available">Нет доступных ядер</string>
+    <string name="settings_shell_coreoptions_core_title">Ядро</string>
+    <string name="settings_shell_coreoptions_redownload">Скачать ядро заново</string>
+    <string name="settings_shell_coreoptions_download">Скачать ядро</string>
+    <string name="settings_shell_coreoptions_downloading">Загрузка&#8230;</string>
+    <string name="settings_shell_coreoptions_reinstall_subtitle">Переустановите, если ядро повреждено или устарело</string>
+    <string name="settings_shell_coreoptions_download_subtitle">Скачайте ядро, чтобы изменить его настройки</string>
+    <string name="settings_shell_coreoptions_delete_core">Удалить ядро</string>
+    <string name="settings_shell_coreoptions_delete_core_subtitle">Освобождает место, сохраняя ваши настройки для него</string>
+    <string name="settings_shell_coreoptions_reset_all">Сбросить всё по умолчанию</string>
+
+    <!-- ===== CoreManagementSection ===== -->
+
+    <string name="settings_shell_coremanagement_no_platforms">Нет поддерживаемых платформ, включённых для синхронизации</string>
+    <string name="settings_shell_coremanagement_header">Выберите ядро для каждой платформы</string>
+    <string name="settings_shell_coremanagement_active_desc">Активно</string>
+    <string name="settings_shell_coremanagement_download_required_desc">Требуется загрузка</string>
+    <string name="settings_shell_coremanagement_netplay_tag">Netplay</string>
+    <string name="settings_shell_coremanagement_update_tag">Обновление</string>
+
+    <!-- ===== BuiltinVideoSection: per-platform save/state path rows ===== -->
+
+    <string name="settings_shell_builtinvideo_reset_all_to_global">Сбросить всё к общим</string>
+    <string name="settings_shell_builtinvideo_save_path_title">Путь к файлам сохранений</string>
+    <string name="settings_shell_builtinvideo_state_path_title">Путь к файлам состояний</string>
+    <string name="settings_shell_builtinvideo_save_trailing_custom">(свой)</string>
+    <string name="settings_shell_builtinvideo_save_trailing_custom_platform">(свой для этой платформы)</string>
+    <string name="settings_shell_builtinvideo_save_trailing_from_global">(из общих)</string>
+    <string name="settings_shell_builtinvideo_state_trailing_custom">(свой)</string>
+    <string name="settings_shell_builtinvideo_state_trailing_custom_platform">(свой для этой платформы)</string>
+    <string name="settings_shell_builtinvideo_state_trailing_from_global">(из общих)</string>
+
+    <!-- ===== SettingsFooter.kt (standalone, unused default footer) ===== -->
+
+    <string name="settings_shell_footer_standalone_navigate">Навигация</string>
+    <string name="settings_shell_footer_standalone_select">Выбрать</string>
+    <string name="settings_shell_footer_standalone_back">Назад</string>
+
+    <!-- ===== SettingsScreen: section header titles ===== -->
+
+    <string name="settings_shell_header_main">НАСТРОЙКИ</string>
+    <string name="settings_shell_header_accounts">АККАУНТЫ</string>
+    <string name="settings_shell_header_saves">СОХРАНЕНИЯ</string>
+    <string name="settings_shell_header_sync_settings">НАСТРОЙКИ СИНХРОНИЗАЦИИ</string>
+    <string name="settings_shell_header_steam">STEAM (ЭКСПЕРИМЕНТАЛЬНО)</string>
+    <string name="settings_shell_header_storage">ХРАНИЛИЩЕ</string>
+    <string name="settings_shell_header_storage_games">ХРАНИЛИЩЕ ИГР</string>
+    <string name="settings_shell_header_storage_media">ХРАНИЛИЩЕ МЕДИА</string>
+    <string name="settings_shell_header_storage_platform_games_fallback">ИГРЫ ПЛАТФОРМЫ</string>
+    <string name="settings_shell_header_storage_caches">КЭШИ И СИСТЕМА</string>
+    <string name="settings_shell_header_theme">ТЕМА</string>
+    <string name="settings_shell_header_audio">АУДИО</string>
+    <string name="settings_shell_header_theme_sounds">ЗВУКИ</string>
+    <string name="settings_shell_header_theme_music">МУЗЫКА</string>
+    <string name="settings_shell_header_theme_fonts">ШРИФТЫ</string>
+    <string name="settings_shell_header_theme_backdrop">ФОН ЭКРАНА</string>
+    <string name="settings_shell_header_interface">ИНТЕРФЕЙС</string>
+    <string name="settings_shell_header_box_art">ОБЛОЖКИ</string>
+    <string name="settings_shell_header_controller_grip">ХВАТ КОНТРОЛЛЕРА</string>
+    <string name="settings_shell_header_home_screen">ГЛАВНЫЙ ЭКРАН</string>
+    <string name="settings_shell_header_library_view">БИБЛИОТЕКА</string>
+    <string name="settings_shell_header_displays">ЭКРАНЫ</string>
+    <string name="settings_shell_header_ambient_led">УПРАВЛЕНИЕ LED</string>
+    <string name="settings_shell_header_navigation">НАВИГАЦИЯ</string>
+    <string name="settings_shell_header_platforms">ПЛАТФОРМЫ</string>
+    <string name="settings_shell_header_builtin_emulator">ВСТРОЕННЫЙ ЭМУЛЯТОР</string>
+    <string name="settings_shell_header_platform_detail_fallback">ПЛАТФОРМА</string>
+    <string name="settings_shell_header_builtin_video">ВСТРОЕННЫЕ A/V И ПРОИЗВОДИТЕЛЬНОСТЬ</string>
+    <string name="settings_shell_header_builtin_controls">ВСТРОЕННОЕ УПРАВЛЕНИЕ</string>
+    <string name="settings_shell_header_core_management">УПРАВЛЕНИЕ ЯДРАМИ</string>
+    <string name="settings_shell_header_core_options">НАСТРОЙКИ ЯДРА</string>
+    <string name="settings_shell_header_bios">ФАЙЛЫ BIOS</string>
+    <string name="settings_shell_header_shader_stack">ЦЕПОЧКА ШЕЙДЕРОВ</string>
+    <string name="settings_shell_header_frame_picker">ВЫБОР РАМКИ</string>
+    <string name="settings_shell_header_permissions">РАЗРЕШЕНИЯ</string>
+    <string name="settings_shell_header_drivers">ДРАЙВЕРЫ GPU</string>
+    <string name="settings_shell_header_about">О ПРИЛОЖЕНИИ</string>
+    <string name="settings_shell_header_social">СОЦИАЛЬНОЕ</string>
+    <string name="settings_shell_header_context_global">Общее</string>
+
+    <string name="settings_shell_context_previous_desc">Предыдущий контекст</string>
+    <string name="settings_shell_context_next_desc">Следующий контекст</string>
+
+    <!-- ===== SettingsScreen: file browser titles ===== -->
+
+    <string name="settings_shell_platform_fallback">Платформа</string>
+    <string name="settings_shell_filebrowser_platform_rom_path_title">Путь к ROM %1$s</string>
+    <string name="settings_shell_filebrowser_gamenative_sync_folder_title">Папка синхронизации %1$s</string>
+    <string name="settings_shell_filebrowser_save_path_title">Путь сохранения</string>
+    <string name="settings_shell_filebrowser_platform_save_path_title">Путь сохранения %1$s</string>
+    <string name="settings_shell_filebrowser_platform_state_path_title">Путь состояний %1$s</string>
+    <string name="settings_shell_filebrowser_builtin_save_path_title">Встроенный путь сохранения</string>
+    <string name="settings_shell_filebrowser_builtin_state_path_title">Встроенный путь состояний</string>
+    <string name="settings_shell_filebrowser_platform_builtin_save_path_title">Встроенный путь сохранения %1$s</string>
+    <string name="settings_shell_filebrowser_platform_builtin_state_path_title">Встроенный путь состояний %1$s</string>
+    <string name="settings_shell_filebrowser_settings_backup_title">Выбор резервной копии настроек</string>
+    <string name="settings_shell_filebrowser_add_music_title">Добавить музыку</string>
+    <string name="settings_shell_filebrowser_music_location_title">Расположение музыки</string>
+    <string name="settings_shell_filebrowser_media_location_title">Расположение медиа</string>
+    <string name="settings_shell_filebrowser_custom_sound_title">Свой звук</string>
+
+    <!-- ===== SettingsScreen: confirm modals ===== -->
+
+    <string name="settings_shell_modal_builtin_migration_save_title">Перенести файлы сохранений?</string>
+    <string name="settings_shell_modal_builtin_migration_state_title">Перенести файлы состояний?</string>
+    <string name="settings_shell_modal_builtin_migration_save_message">В целевой папке уже есть %1$d файлов сохранений. Перенести существующие файлы из старого расположения? Конфликты будут перезаписаны.</string>
+    <string name="settings_shell_modal_builtin_migration_state_message">В целевой папке уже есть %1$d файлов состояний. Перенести существующие файлы из старого расположения? Конфликты будут перезаписаны.</string>
+    <string name="settings_shell_modal_builtin_migration_confirm">Перенести</string>
+    <string name="settings_shell_modal_builtin_migration_skip">Пропустить</string>
+
+    <string name="settings_shell_modal_music_relocation_title">Переместить музыкальные файлы?</string>
+    <string name="settings_shell_modal_music_relocation_message">Текущая папка с музыкой содержит %1$d файлов. Переместить их в новое расположение? Конфликты будут перезаписаны.</string>
+    <string name="settings_shell_modal_music_relocation_confirm">Переместить</string>
+    <string name="settings_shell_modal_music_relocation_skip">Пропустить</string>
+
+    <string name="settings_shell_modal_media_relocation_title">Переместить скачанные медиа?</string>
+    <string name="settings_shell_modal_media_relocation_message">Текущая папка с медиа содержит %1$d файлов. Переместить их в новое расположение? Конфликты будут перезаписаны.</string>
+    <string name="settings_shell_modal_media_relocation_confirm">Переместить</string>
+    <string name="settings_shell_modal_media_relocation_leave">Оставить</string>
+
+    <string name="settings_shell_modal_jellyfin_signout_title">Выйти из Jellyfin?</string>
+    <string name="settings_shell_modal_jellyfin_signout_message">Это устройство забудет вход в Jellyfin. Скачанные медиа останутся на диске, а история просмотра - на сервере.</string>
+    <string name="settings_shell_modal_jellyfin_signout_confirm">Выйти</string>
+
+    <string name="settings_shell_modal_import_settings_title">Импортировать настройки?</string>
+    <string name="settings_shell_modal_import_settings_message">Выберите файл резервной копии - указанные в нём настройки заменят ваши. Всё, что в файле не указано, останется без изменений; аккаунты, серверы, статус синхронизации и расположения файлов никогда не переносятся.</string>
+    <string name="settings_shell_modal_import_settings_confirm">Выбрать файл</string>
+
+    <string name="settings_shell_modal_migrate_downloads_title">Перенести загрузки?</string>
+    <string name="settings_shell_modal_migrate_downloads_message">Переместить %1$d игр (%2$s) в новое расположение?</string>
+    <string name="settings_shell_modal_migrate_downloads_confirm">Перенести</string>
+    <string name="settings_shell_modal_migrate_downloads_skip">Пропустить</string>
+
+    <string name="settings_shell_modal_migrate_platform_title">Перенести ROM %1$s?</string>
+    <string name="settings_shell_modal_migrate_platform_fallback">Платформа</string>
+    <string name="settings_shell_modal_migrate_platform_message">Переместить скачанные игры в новое расположение? Файлы будут скопированы, а затем удалены из старого расположения.</string>
+    <string name="settings_shell_modal_migrate_platform_confirm">Перенести</string>
+    <string name="settings_shell_modal_migrate_platform_skip">Пропустить</string>
+
+    <string name="settings_shell_modal_purge_platform_title">Очистить %1$s?</string>
+    <string name="settings_shell_modal_purge_platform_fallback">Платформа</string>
+    <string name="settings_shell_modal_purge_platform_message">Это удалит все %1$d игр и их локальные файлы ROM. Действие необратимо.</string>
+    <string name="settings_shell_modal_purge_platform_confirm">Очистить</string>
+
+    <string name="settings_shell_modal_sync_first_title">Сначала синхронизируйте сохранения</string>
+    <string name="settings_shell_modal_sync_first_message">Сначала синхронизируйте сохранения - %1$d в ожидании. Сброс библиотеки сейчас безвозвратно удалит невыгруженные сохранения.</string>
+    <string name="settings_shell_modal_sync_first_confirm">Синхронизировать</string>
+
+    <string name="settings_shell_modal_reset_library_title">Сбросить библиотеку?</string>
+    <string name="settings_shell_modal_reset_library_message">Очищает базу данных и кэш изображений. Скачанные файлы останутся на диске. Будут безвозвратно потеряны: время игры, локальные коллекции, история загрузок, статус синхронизации сохранений и настройки отдельных игр. Библиотеку потребуется синхронизировать заново.</string>
+    <string name="settings_shell_modal_reset_library_confirm">Сбросить</string>
+
+    <plurals name="settings_shell_unsynced_saves_warning">
+        <item quantity="one">%d несинхронизированное сохранение будет потеряно.</item>
+        <item quantity="few">%d несинхронизированных сохранения будут потеряны.</item>
+        <item quantity="many">%d несинхронизированных сохранений будет потеряно.</item>
+        <item quantity="other">%d несинхронизированного сохранения будет потеряно.</item>
+    </plurals>
+
+    <string name="settings_shell_modal_delete_game_soundtrack_title">Удалить %1$s?</string>
+    <string name="settings_shell_modal_delete_game_soundtrack_message">Удаляет все скачанные файлы этой игры.%1$s Выберите, удалять ли также её саундтрек.</string>
+    <string name="settings_shell_modal_delete_game_cancel">Отмена</string>
+    <string name="settings_shell_modal_delete_game_only">Удалить игру</string>
+    <string name="settings_shell_modal_delete_game_with_soundtrack">Удалить + саундтрек</string>
+
+    <string name="settings_shell_modal_delete_game_plain_title">Удалить %1$s?</string>
+    <string name="settings_shell_modal_delete_game_plain_message">Удаляет все скачанные файлы этой игры.%1$s Действие необратимо.</string>
+    <string name="settings_shell_modal_delete_game_plain_confirm">Удалить игру</string>
+
+    <string name="settings_shell_modal_romm_signout_title">Выйти из RomM?</string>
+    <plurals name="settings_shell_romm_signout_pending_message">
+        <item quantity="one">Сначала будет выгружено %1$d сохранение. Когда всё окажется на вашем сервере, кэшированные сохранения, состояния и настройки этого аккаунта будут удалены с этого устройства. Скачанные игры останутся.</item>
+        <item quantity="few">Сначала будут выгружены %1$d сохранения. Когда всё окажется на вашем сервере, кэшированные сохранения, состояния и настройки этого аккаунта будут удалены с этого устройства. Скачанные игры останутся.</item>
+        <item quantity="many">Сначала будет выгружено %1$d сохранений. Когда всё окажется на вашем сервере, кэшированные сохранения, состояния и настройки этого аккаунта будут удалены с этого устройства. Скачанные игры останутся.</item>
+        <item quantity="other">Сначала будет выгружено %1$d сохранения. Когда всё окажется на вашем сервере, кэшированные сохранения, состояния и настройки этого аккаунта будут удалены с этого устройства. Скачанные игры останутся.</item>
+    </plurals>
+    <string name="settings_shell_romm_signout_message">Кэшированные сохранения, состояния и настройки этого аккаунта будут удалены с этого устройства, а всё, что уже выгружено, останется на вашем сервере. Скачанные игры останутся.</string>
+    <string name="settings_shell_modal_romm_signout_confirm">Выйти</string>
+
+    <string name="settings_shell_modal_reset_save_cache_title">Сбросить кэш сохранений?</string>
+    <string name="settings_shell_modal_reset_save_cache_message">Это удалит все локально кэшированные снимки сохранений и незавершённые операции синхронизации. Сами файлы сохранений и сохранения на сервере не затрагиваются.</string>
+    <string name="settings_shell_modal_reset_save_cache_confirm">Сбросить</string>
+
+    <string name="settings_shell_modal_clear_save_path_cache_title">Очистить кэш путей сохранений?</string>
+    <string name="settings_shell_modal_clear_save_path_cache_message">Это очистит все обнаруженные пути к файлам сохранений. Пути будут определены заново при следующей синхронизации. Используйте это, если сохранения синхронизируются не туда.</string>
+    <string name="settings_shell_modal_clear_save_path_cache_confirm">Очистить</string>
+
+    <string name="settings_shell_modal_secure_saves_off_title">Отключить защищённые сохранения?</string>
+    <string name="settings_shell_modal_secure_saves_off_message">Отключение этой функции выключает хардкорный режим RetroAchievements. Игры будут запускаться в обычном режиме, пока защищённые сохранения не будут включены снова.</string>
+    <string name="settings_shell_modal_secure_saves_off_confirm">Отключить</string>
+
+    <string name="settings_shell_modal_clear_state_cache_title">Очистить кэш состояний?</string>
+    <string name="settings_shell_modal_clear_state_cache_message">Это удалит все локально кэшированные снимки состояний и незавершённые операции их синхронизации. Файлы сохранений и копии на сервере не затрагиваются.</string>
+    <string name="settings_shell_modal_clear_state_cache_confirm">Очистить</string>
+
+    <string name="settings_shell_modal_caches_clear_confirm">Очистить</string>
+
+    <string name="settings_shell_modal_delete_core_title">Удалить ядро?</string>
+    <string name="settings_shell_modal_delete_core_message">Ядро будет удалено с этого устройства. Играм, использующим его, потребуется скачать его заново перед запуском.</string>
+    <string name="settings_shell_modal_delete_core_confirm">Удалить</string>
+
+    <string name="settings_shell_modal_sync_saves_title">Синхронизировать сохранения?</string>
+    <string name="settings_shell_modal_sync_saves_message">Это проверит все скачанные игры на изменения в сохранениях и синхронизирует их с сервером. Локальные сохранения новее последней синхронизации будут выгружены, а более новые серверные - скачаны.</string>
+    <string name="settings_shell_modal_sync_saves_confirm">Синхронизировать</string>
+
+    <!-- ===== SettingsScreen: AccountModals ===== -->
+
+    <string name="settings_shell_accounts_add_title">Добавить аккаунт?</string>
+    <string name="settings_shell_accounts_switch_title">Переключиться на %1$s?</string>
+    <string name="settings_shell_accounts_fallback_name">аккаунт</string>
+    <string name="settings_shell_accounts_exit_message">Сначала полностью закройте все игры, запущенные вне Argosy. Argosy не видит эти сеансы, и работающая игра может перезаписать сохранения, которые сейчас перемещаются. Сохранения архивируются и проверяются перед удалением.</string>
+    <string name="settings_shell_accounts_add_confirm">Игры закрыты, продолжить</string>
+    <string name="settings_shell_accounts_switch_confirm">Игры закрыты, переключиться</string>
+
+    <string name="settings_shell_accounts_remove_title">Удалить %1$s?</string>
+    <string name="settings_shell_accounts_remove_fallback_name">аккаунт</string>
+    <string name="settings_shell_accounts_removal_message_base">Удаляет с этого устройства сохранения, состояния, отложенные задачи, достижения и наложение библиотеки этого аккаунта. Скачанные игры сохраняются.</string>
+    <string name="settings_shell_accounts_removal_pending_suffix"> Ещё не отправлено: %1$s.</string>
+    <string name="settings_shell_accounts_removal_last_account_suffix"> Это последний аккаунт, поэтому устройство будет отключено от RomM.</string>
+    <string name="settings_shell_accounts_removal_revoke_suffix"> Устройство останется зарегистрированным на сервере RomM; отзовите его там.</string>
+    <string name="settings_shell_accounts_cancel">Отмена</string>
+    <string name="settings_shell_accounts_keep_queued_work">Сохранить отложенные задачи</string>
+    <string name="settings_shell_accounts_discard_and_remove">Отменить и удалить</string>
+    <string name="settings_shell_accounts_remove_confirm">Удалить</string>
+
+    <string name="settings_shell_accounts_switch_failed_title">Переключение не завершено</string>
+    <string name="settings_shell_accounts_switch_failed_message">%1$s Запуск игр останется заблокированным, пока переключение не завершится, чтобы ни одно сохранение не осталось перенесённым наполовину. Повторите попытку, чтобы завершить его.</string>
+    <string name="settings_shell_accounts_retry">Повторить</string>
+    <string name="settings_shell_accounts_not_now">Не сейчас</string>
+
+    <string name="settings_shell_accounts_cannot_switch_title">Пока нельзя переключиться</string>
+    <string name="settings_shell_accounts_ok">ОК</string>
+    <string name="settings_shell_accounts_close">Закрыть</string>
+
+    <string name="settings_shell_accounts_notice_title">Аккаунты</string>
+    <string name="settings_shell_accounts_ok2">ОК</string>
+    <string name="settings_shell_accounts_close2">Закрыть</string>
+
+    <!-- ===== SettingsScreen: footer hints ===== -->
+
+    <string name="settings_shell_footer_navigate">Навигация</string>
+    <string name="settings_shell_footer_navigate_vertical">Навигация</string>
+    <string name="settings_shell_footer_preview_shape">Форма превью</string>
+    <string name="settings_shell_footer_preview_game">Игра превью</string>
+    <string name="settings_shell_footer_shader">Шейдер</string>
+    <string name="settings_shell_footer_reorder">Порядок</string>
+    <string name="settings_shell_footer_adjust_shaderstack">Настроить</string>
+    <string name="settings_shell_footer_reset_shaderstack">Сбросить</string>
+    <string name="settings_shell_footer_remove_shaderstack">Удалить</string>
+    <string name="settings_shell_footer_add_shaderstack">Добавить</string>
+    <string name="settings_shell_footer_platform_builtin">Платформа</string>
+    <string name="settings_shell_footer_reset_to_default_builtinvideo">Сбросить по умолчанию</string>
+    <string name="settings_shell_footer_sample">Пример</string>
+    <string name="settings_shell_footer_reset_to_default_themesounds">Сбросить по умолчанию</string>
+    <string name="settings_shell_footer_platform_coreoptions">Платформа</string>
+    <string name="settings_shell_footer_reset_to_default_coreoptions">Сбросить по умолчанию</string>
+    <string name="settings_shell_footer_force_sync">Синхронизировать</string>
+    <string name="settings_shell_footer_folders_scan">Папки / Сканировать</string>
+    <string name="settings_shell_footer_switch_remove">Сменить / Удалить</string>
+    <string name="settings_shell_footer_refresh">Обновить</string>
+    <string name="settings_shell_footer_sort">Сортировка</string>
+    <string name="settings_shell_footer_category">Категория</string>
+    <string name="settings_shell_footer_delete">Удалить</string>
+    <string name="settings_shell_footer_adjust_platformdetail">Настроить</string>
+    <string name="settings_shell_footer_update_emulator">Обновить эмулятор</string>
+    <string name="settings_shell_footer_reset_platformdetail">Сбросить</string>
+    <string name="settings_shell_footer_toggle_label">Переключить</string>
+    <string name="settings_shell_footer_open_label">Открыть</string>
+    <string name="settings_shell_footer_select_label">Выбрать</string>
+    <string name="settings_shell_footer_select_default">Выбрать</string>
+    <string name="settings_shell_footer_display">Экран</string>
+    <string name="settings_shell_footer_enable">Включить</string>
+    <string name="settings_shell_footer_update">Обновить</string>
+    <string name="settings_shell_footer_reset_builtinvideo_override">Сбросить</string>
+    <string name="settings_shell_footer_reset_builtincontrols_override">Сбросить</string>
+    <string name="settings_shell_footer_back">Назад</string>
+
+    <!-- ===== SettingsScreen: cache clear confirm modals ===== -->
+
+    <string name="settings_shell_caches_image_title">Очистить кэш изображений?</string>
+    <string name="settings_shell_caches_image_message">Это удалит все кэшированные обложки, фоны и скриншоты. Изображения будут скачаны заново с сервера по мере просмотра.</string>
+    <string name="settings_shell_caches_rom_extraction_title">Очистить извлечённые ROM?</string>
+    <string name="settings_shell_caches_rom_extraction_message">Это удалит извлечённые рабочие копии сжатых игр. Они будут извлечены заново при следующем запуске каждой игры.</string>
+    <string name="settings_shell_caches_rom_staging_title">Очистить брошенные временные файлы?</string>
+    <string name="settings_shell_caches_rom_staging_message">Это удалит внутренние рабочие файлы, оставшиеся от незавершённых загрузок. Загрузки, всё ещё стоящие в очереди, сохранят свои файлы и продолжатся с места остановки.</string>
+    <string name="settings_shell_caches_sfx_title">Очистить кэш звуковых эффектов?</string>
+    <string name="settings_shell_caches_sfx_message">Это удалит перекодированные собственные звуковые файлы. Они пересоберутся автоматически при следующей загрузке звуков.</string>
+    <string name="settings_shell_caches_emulator_apks_title">Очистить установщики эмуляторов?</string>
+    <string name="settings_shell_caches_emulator_apks_message">Это удалит скачанные установочные APK эмуляторов. На установленные эмуляторы это не влияет.</string>
+    <string name="settings_shell_caches_misc_downloads_title">Очистить прочие загрузки?</string>
+    <string name="settings_shell_caches_misc_downloads_message">Это удалит обложки статусов друзей и скачанные пакеты драйверов GPU. На установленные драйверы это не влияет.</string>
+    <string name="settings_shell_caches_shaders_catalog_title">Очистить каталог шейдеров?</string>
+    <string name="settings_shell_caches_shaders_catalog_message">Это удалит скачанные шейдеры из каталога. Собственные шейдеры сохранятся, а шейдеры каталога будут скачаны заново по запросу.</string>
+    <string name="settings_shell_caches_frames_title">Очистить оверлеи рамок?</string>
+    <string name="settings_shell_caches_frames_message">Это удалит скачанные оверлеи рамок. Они будут скачаны заново по запросу при выборе.</string>
+    <string name="settings_shell_caches_steam_downloads_title">Очистить данные загрузок Steam?</string>
+    <string name="settings_shell_caches_steam_downloads_message">Это удалит подготовленные загрузки Steam и очистит очередь загрузок. На установленные игры это не влияет, но частичные загрузки начнутся заново.</string>
+
+    <!-- ===== ManagePinsScreen ===== -->
+
+    <string name="settings_shell_managepins_loading">Загрузка&#8230;</string>
+    <string name="settings_shell_managepins_reorder_move">Переместить</string>
+    <string name="settings_shell_managepins_reorder_done">Готово</string>
+    <string name="settings_shell_managepins_reorder_cancel">Отмена</string>
+    <string name="settings_shell_managepins_navigate">Навигация</string>
+    <string name="settings_shell_managepins_reorder_hint">Порядок</string>
+    <string name="settings_shell_managepins_unpin">Открепить</string>
+    <string name="settings_shell_managepins_back_hint">Назад</string>
+    <string name="settings_shell_managepins_back_desc">Назад</string>
+    <string name="settings_shell_managepins_title">Управление закреплёнными коллекциями</string>
+    <string name="settings_shell_managepins_type_collection">Коллекция</string>
+    <string name="settings_shell_managepins_type_genre">Жанр</string>
+    <string name="settings_shell_managepins_type_game_mode">Режим игры</string>
+    <string name="settings_shell_managepins_type_series">Серия</string>
+    <string name="settings_shell_managepins_moving_desc">Перемещение</string>
+    <plurals name="settings_shell_managepins_row_subtitle">
+        <item quantity="one">%1$s - %2$d игра</item>
+        <item quantity="few">%1$s - %2$d игры</item>
+        <item quantity="many">%1$s - %2$d игр</item>
+        <item quantity="other">%1$s - %2$d игры</item>
+    </plurals>
+    <string name="settings_shell_managepins_empty_title">Нет закреплённых коллекций</string>
+    <string name="settings_shell_managepins_empty_subtitle">Закрепляйте коллекции на экране «Коллекции»</string>
+
+    <!-- ===== BgmPlaylistManagerScreen ===== -->
+
+    <string name="settings_shell_bgm_synced_folders">Синхронизированные папки</string>
+    <string name="settings_shell_bgm_tracks">Треки</string>
+    <string name="settings_shell_bgm_reorder_move">Переместить</string>
+    <string name="settings_shell_bgm_reorder_done">Готово</string>
+    <string name="settings_shell_bgm_reorder_cancel">Отмена</string>
+    <string name="settings_shell_bgm_add_music_empty">Добавить музыку</string>
+    <string name="settings_shell_bgm_move_hint">Переместить</string>
+    <string name="settings_shell_bgm_add_music_hint">Добавить музыку</string>
+    <string name="settings_shell_bgm_remove_verb">Удалить</string>
+    <string name="settings_shell_bgm_remove_verb_uncovered">Удалить</string>
+    <string name="settings_shell_bgm_disable_verb">Отключить</string>
+    <string name="settings_shell_bgm_enable_verb">Включить</string>
+    <string name="settings_shell_bgm_back_desc">Назад</string>
+    <string name="settings_shell_bgm_title">Плейлист музыки</string>
+    <string name="settings_shell_bgm_add_label">Добавить</string>
+    <string name="settings_shell_bgm_folder_missing">Папка отсутствует</string>
+    <plurals name="settings_shell_bgm_track_count">
+        <item quantity="one">%1$d трек</item>
+        <item quantity="few">%1$d трека</item>
+        <item quantity="many">%1$d треков</item>
+        <item quantity="other">%1$d трека</item>
+    </plurals>
+    <plurals name="settings_shell_bgm_disabled_suffix_template">
+        <item quantity="one"> (%1$d отключён)</item>
+        <item quantity="few"> (%1$d отключены)</item>
+        <item quantity="many"> (%1$d отключено)</item>
+        <item quantity="other"> (%1$d отключено)</item>
+    </plurals>
+    <string name="settings_shell_bgm_remove_folder_desc">Удалить папку</string>
+    <string name="settings_shell_bgm_moving_desc">Перемещение</string>
+    <string name="settings_shell_bgm_file_missing">Файл отсутствует - пропущен при воспроизведении</string>
+    <string name="settings_shell_bgm_disabled_desc">Отключено - исключено из воспроизведения</string>
+    <string name="settings_shell_bgm_move_up_desc">Переместить вверх</string>
+    <string name="settings_shell_bgm_move_down_desc">Переместить вниз</string>
+    <string name="settings_shell_bgm_remove_desc">Удалить</string>
+    <string name="settings_shell_bgm_empty_state">Нет музыки - добавьте из браузера музыки или локальных файлов</string>
+
+    <!-- ===== Routers: SettingsBuiltinRouter ===== -->
+
+    <string name="settings_shell_router_cores_load_failed">Не удалось загрузить ядра. Попробуйте снова.</string>
+    <string name="settings_shell_router_cannot_download_offline">Нельзя скачать без подключения к сети</string>
+    <string name="settings_shell_router_cannot_update_offline">Нельзя обновить без подключения к сети</string>
+    <string name="settings_shell_router_core_downloading_title">Скачивание %1$s</string>
+    <string name="settings_shell_router_core_downloading_subtitle">Пожалуйста, подождите&#8230;</string>
+    <string name="settings_shell_router_core_downloaded_title">%1$s скачано</string>
+    <string name="settings_shell_router_core_downloaded_subtitle">Ядро теперь доступно</string>
+    <string name="settings_shell_router_core_download_failed_title">Ошибка загрузки</string>
+    <string name="settings_shell_router_core_download_failed_fallback">Неизвестная ошибка</string>
+
+    <!-- ===== Routers: SettingsAboutRouter ===== -->
+
+    <string name="settings_shell_router_settings_exported_title">Настройки экспортированы</string>
+    <string name="settings_shell_router_settings_exported_subtitle">%1$d настроек записано в %2$s</string>
+    <string name="settings_shell_router_settings_imported_title">Настройки импортированы</string>
+    <string name="settings_shell_router_import_subtitle_with_skipped">%1$d применено, %2$d пропущено. Перезапустите, чтобы применить всё.</string>
+    <string name="settings_shell_router_import_subtitle">%1$d применено. Перезапустите, чтобы применить всё.</string>
+
+    <!-- ===== Routers: SettingsFontRouter ===== -->
+
+    <string name="settings_shell_router_font_import_failed_title">Не удалось импортировать шрифт</string>
+    <string name="settings_shell_router_font_error_no_filename">Не удалось прочитать выбранный файл</string>
+    <string name="settings_shell_router_font_error_no_stream">Не удалось прочитать выбранный файл</string>
+    <string name="settings_shell_router_font_error_unsupported_ext">Поддерживаются только шрифты .ttf и .otf</string>
+    <string name="settings_shell_router_font_error_invalid">%1$s не является корректным файлом шрифта</string>
+
+    <!-- ===== Routers: SettingsGeneralRouter ===== -->
+
+    <string name="settings_shell_router_emulator_name_fallback">Неизвестно</string>
+    <string name="settings_shell_router_content_dir_save">(папка ROM)</string>
+    <string name="settings_shell_router_content_dir_state">(папка ROM)</string>
+
+    <!-- ===== Routers: SettingsInitRouter ===== -->
+
+    <string name="settings_shell_router_content_dir_save2">(папка ROM)</string>
+    <string name="settings_shell_router_content_dir_state2">(папка ROM)</string>
+
+    <!-- ===== SettingsViewModel ===== -->
+
+    <string name="settings_shell_vm_artwork_cache_title">Кэш обложек</string>
+    <string name="settings_shell_vm_artwork_cleared_template">Очищено %1$s</string>
+    <string name="settings_shell_vm_artwork_nothing_cached">Нечего очищать в кэше</string>
+    <string name="settings_shell_vm_platform_fallback">Платформа</string>
+    <plurals name="settings_shell_vm_scan_found_template">
+        <item quantity="one">%1$d найдено</item>
+        <item quantity="few">%1$d найдено</item>
+        <item quantity="many">%1$d найдено</item>
+        <item quantity="other">%1$d найдено</item>
+    </plurals>
+    <plurals name="settings_shell_vm_scan_removed_template">
+        <item quantity="one">%1$d удалено</item>
+        <item quantity="few">%1$d удалено</item>
+        <item quantity="many">%1$d удалено</item>
+        <item quantity="other">%1$d удалено</item>
+    </plurals>
+    <string name="settings_shell_vm_scan_no_changes">Без изменений</string>
+    <string name="settings_shell_vm_scan_complete_title">Сканирование завершено</string>
+    <string name="settings_shell_vm_scan_complete_subtitle_template">%1$s: %2$s</string>
+    <string name="settings_shell_vm_scan_complete_title2">Сканирование завершено</string>
+    <plurals name="settings_shell_vm_android_added_template">
+        <item quantity="one">%1$d добавлено</item>
+        <item quantity="few">%1$d добавлено</item>
+        <item quantity="many">%1$d добавлено</item>
+        <item quantity="other">%1$d добавлено</item>
+    </plurals>
+    <string name="settings_shell_vm_android_updated_template">%1$d обновлено</string>
+    <string name="settings_shell_vm_android_scan_result_template">Android: %1$s</string>
+    <string name="settings_shell_vm_android_scan_nothing_new">Android: ничего нового. Остальные добавьте из раздела «Приложения».</string>
+    <string name="settings_shell_vm_folders_restored_title">Папки восстановлены</string>
+    <string name="settings_shell_vm_nothing_moved_title">Ничего не перемещено</string>
+    <plurals name="settings_shell_vm_games_moved_back">
+        <item quantity="one">%1$d игра возвращена в свою папку</item>
+        <item quantity="few">%1$d игры возвращены в свои папки</item>
+        <item quantity="many">%1$d игр возвращено в свои папки</item>
+        <item quantity="other">%1$d игры возвращено в свои папки</item>
+    </plurals>
+    <string name="settings_shell_vm_no_games_moved_back">Не удалось вернуть ни одну игру</string>
+    <string name="settings_shell_vm_pushed_to_retroarch_title">Отправлено в RetroArch</string>
+    <plurals name="settings_shell_vm_retroarch_configs_updated">
+        <item quantity="one">Обновлена %1$d конфигурация RetroArch</item>
+        <item quantity="few">Обновлены %1$d конфигурации RetroArch</item>
+        <item quantity="many">Обновлено %1$d конфигураций RetroArch</item>
+        <item quantity="other">Обновлено %1$d конфигурации RetroArch</item>
+    </plurals>
+    <string name="settings_shell_vm_retroarch_not_found_title">RetroArch не найден</string>
+    <string name="settings_shell_vm_retroarch_not_found_subtitle">Файл retroarch.cfg для обновления не найден</string>
+    <string name="settings_shell_vm_not_signed_in_title">Вход не выполнен</string>
+    <string name="settings_shell_vm_not_signed_in_subtitle">Сначала войдите в RetroAchievements</string>
+    <string name="settings_shell_vm_files_removed_title">Файлы удалены</string>
+    <plurals name="settings_shell_vm_files_removed_subtitle">
+        <item quantity="one">%1$d файл удалён из %2$s</item>
+        <item quantity="few">%1$d файла удалено из %2$s</item>
+        <item quantity="many">%1$d файлов удалено из %2$s</item>
+        <item quantity="other">%1$d файла удалено из %2$s</item>
+    </plurals>
+    <string name="settings_shell_vm_bios_copied_title">BIOS скопирован</string>
+    <plurals name="settings_shell_vm_bios_copied_subtitle">
+        <item quantity="one">%1$d файл скопирован</item>
+        <item quantity="few">%1$d файла скопировано</item>
+        <item quantity="many">%1$d файлов скопировано</item>
+        <item quantity="other">%1$d файла скопировано</item>
+    </plurals>
+</resources>

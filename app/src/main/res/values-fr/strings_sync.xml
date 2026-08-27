@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sync_prelaunch_checking_save">Vérification de la sauvegarde...</string>
+    <string name="sync_prelaunch_save_found">Sauvegarde trouvée</string>
+    <string name="sync_prelaunch_save_absent">Aucune sauvegarde</string>
+    <string name="sync_prelaunch_connecting">Connexion...</string>
+    <string name="sync_prelaunch_connected">Connecté</string>
+    <string name="sync_prelaunch_connect_failed">Échec de la connexion</string>
+    <string name="sync_prelaunch_downloading">Téléchargement...</string>
+    <string name="sync_prelaunch_download_complete">Téléchargement terminé</string>
+    <string name="sync_prelaunch_download_failed">Échec du téléchargement</string>
+    <string name="sync_prelaunch_writing">Écriture de la sauvegarde...</string>
+    <string name="sync_prelaunch_write_complete">Sauvegarde écrite</string>
+    <string name="sync_prelaunch_write_failed">Échec de l\'écriture</string>
+    <string name="sync_prelaunch_launching">Lancement du jeu...</string>
+
+    <string name="sync_postsession_checking_save">Vérification de la sauvegarde...</string>
+    <string name="sync_postsession_save_found">Sauvegarde trouvée</string>
+    <string name="sync_postsession_save_absent">Sauvegarde introuvable</string>
+    <string name="sync_postsession_connecting">Connexion...</string>
+    <string name="sync_postsession_connected">Connecté</string>
+    <string name="sync_postsession_connect_failed">Échec de la connexion</string>
+    <string name="sync_postsession_uploading">Envoi...</string>
+    <string name="sync_postsession_upload_complete">Envoi terminé</string>
+    <string name="sync_postsession_upload_queued">Envoi en file d\'attente</string>
+    <string name="sync_postsession_complete">Synchronisation terminée</string>
+
+    <string name="sync_progress_skipped">Synchronisation ignorée</string>
+    <string name="sync_progress_hardcore_conflict">Conflit de sauvegarde en mode hardcore</string>
+    <string name="sync_progress_local_modified">Sauvegarde locale modifiée</string>
+    <string name="sync_progress_save_conflict">Conflit de sauvegarde</string>
+
+    <string name="sync_blocked_permission_title">Autorisation d\'accès aux fichiers requise</string>
+    <string name="sync_blocked_permission_detail">Accordez l\'autorisation \"Accès à tous les fichiers\" pour synchroniser les sauvegardes de %1$s.</string>
+    <string name="sync_blocked_permission_emulator_fallback">cet émulateur</string>
+
+    <string name="sync_blocked_path_not_found_title">Dossier de sauvegarde introuvable</string>
+    <string name="sync_blocked_path_not_found_detail">Le dossier de sauvegarde de %1$s est introuvable. L\'émulateur utilise peut-être un emplacement de sauvegarde non standard.</string>
+    <string name="sync_blocked_path_not_found_emulator_fallback">cet émulateur</string>
+
+    <string name="sync_blocked_access_denied_title">Accès au dossier de sauvegarde bloqué</string>
+    <string name="sync_blocked_access_denied_detail">Votre appareil bloque l\'accès aux données de sauvegarde de %1$s. Cela peut être dû à des restrictions du fabricant (Samsung, Xiaomi, etc.) ou à des politiques de sécurité.</string>
+    <string name="sync_blocked_access_denied_switch_detail">Votre appareil bloque l\'accès aux données de sauvegarde de %1$s. Configurez un chemin de sauvegarde externe dans %2$s (en dehors d\'Android/data), puis définissez le même chemin dans Argosy.</string>
+    <string name="sync_blocked_access_denied_emulator_fallback">émulateur</string>
+    <string name="sync_blocked_access_denied_configure_fallback">l\'émulateur</string>
+
+    <string name="sync_service_channel_name">Synchronisation des sauvegardes</string>
+    <string name="sync_service_channel_description">Affiche la progression de la synchronisation des sauvegardes en arrière-plan</string>
+    <string name="sync_service_preparing">Préparation de la synchronisation...</string>
+    <string name="sync_service_platform">Synchronisation : %1$s</string>
+    <string name="sync_service_library">Synchronisation de la bibliothèque...</string>
+    <string name="sync_service_uploading">Envoi : %1$s</string>
+    <string name="sync_service_downloading">Téléchargement : %1$s</string>
+    <string name="sync_service_saves">Synchronisation des sauvegardes...</string>
+
+    <string name="sync_download_channel_name">Progression du téléchargement</string>
+    <string name="sync_download_channel_description">Affiche la progression du téléchargement en arrière-plan</string>
+    <string name="sync_download_service_preparing">Préparation du téléchargement...</string>
+    <string name="sync_download_service_steam_downloading">Téléchargement : %1$s</string>
+    <string name="sync_download_service_extracting">Extraction : %1$s</string>
+    <string name="sync_download_service_moving">Déplacement vers le stockage ROM : %1$s</string>
+    <string name="sync_download_service_downloading">Téléchargement : %1$s</string>
+    <string name="sync_download_service_queued">En file d\'attente : %1$s</string>
+    <string name="sync_download_service_pending">Téléchargement en attente...</string>
+    <string name="sync_download_service_media_preparing">%1$s : %2$s</string>
+    <string name="sync_download_service_media_downloading">Téléchargement : %1$s</string>
+
+    <string name="sync_session_channel_name">Session de jeu</string>
+    <string name="sync_session_channel_description">Surveille les fichiers de sauvegarde pendant le jeu</string>
+    <string name="sync_session_notification_playing">En cours de jeu</string>
+    <string name="sync_session_notification_save_detected">Sauvegarde détectée</string>
+    <string name="sync_session_game_fallback">Jeu</string>
+
+    <string name="sync_session_save_uploaded_orphan">Sauvegarde envoyée</string>
+    <string name="sync_session_save_uploaded">Sauvegarde envoyée</string>
+    <string name="sync_session_save_unchanged">Aucun changement de sauvegarde</string>
+    <string name="sync_session_save_upload_failed">Échec de l\'envoi</string>
+    <string name="sync_session_save_upload_failed_subtitle">%1$s : %2$s</string>
+    <string name="sync_session_save_upload_failed_name_fallback">Sauvegarde</string>
+
+    <plurals name="sync_conflict_pending_title">
+        <item quantity="one">%1$d sauvegarde nécessite votre attention</item>
+        <item quantity="many">%1$d sauvegardes nécessitent votre attention</item>
+        <item quantity="other">%1$d sauvegardes nécessitent votre attention</item>
+    </plurals>
+    <string name="sync_conflict_pending_subtitle">Ouvrez Synchro des sauvegardes pour résoudre. Les sauvegardes locales restent inchangées.</string>
+
+    <string name="sync_media_signin_title">Connectez-vous pour télécharger</string>
+    <string name="sync_media_signin_subtitle">Connectez un serveur multimédia depuis les paramètres</string>
+
+    <plurals name="sync_media_title_count">
+        <item quantity="one">%1$d titre</item>
+        <item quantity="many">%1$d titres</item>
+        <item quantity="other">%1$d titres</item>
+    </plurals>
+
+    <string name="sync_media_refusal_downloaded_title">Déjà téléchargé</string>
+    <string name="sync_media_refusal_downloaded_subtitle">%1$s sur cet appareil en %2$s</string>
+    <string name="sync_media_refusal_queued_title">Déjà en file d\'attente</string>
+    <string name="sync_media_refusal_queued_subtitle">%1$s en attente de téléchargement</string>
+    <string name="sync_media_refusal_mixed_title">Rien de nouveau à télécharger</string>
+    <string name="sync_media_refusal_mixed_subtitle">%1$s téléchargés, %2$s en file d\'attente</string>
+    <string name="sync_media_refusal_unavailable_title">Rien à télécharger</string>
+    <string name="sync_media_refusal_unavailable_subtitle">Ce titre n\'a aucun fichier que le serveur puisse fournir</string>
+
+    <string name="sync_media_unreachable_title">Stockage indisponible</string>
+    <string name="sync_media_unreachable_subtitle">%1$s restent téléchargés jusqu\'au retour de leur stockage</string>
+
+    <string name="sync_media_storage_title">Stockage insuffisant pour %1$s</string>
+
+    <string name="sync_media_step_preparing">Préparation</string>
+    <string name="sync_media_step_awaiting_transcode">Attente du démarrage du transcodage par le serveur</string>
+
+    <string name="sync_media_transcode_unavailable_title">Téléchargement du fichier original</string>
+    <string name="sync_media_transcode_unavailable_subtitle">%1$s n\'a pas pu être transcodé pour le téléchargement</string>
+
+    <plurals name="sync_media_subtitle_shortfall_title">
+        <item quantity="one">%1$s téléchargé sans %2$d piste de sous-titres</item>
+        <item quantity="many">%1$s téléchargé sans %2$d pistes de sous-titres</item>
+        <item quantity="other">%1$s téléchargé sans %2$d pistes de sous-titres</item>
+    </plurals>
+    <string name="sync_media_subtitle_shortfall_burned_in">%1$s est incrusté dans l\'image ; les autres n\'ont pas pu être transférés</string>
+    <string name="sync_media_subtitle_shortfall_refused">Le serveur n\'a pas voulu fournir toutes les pistes de sous-titres</string>
+    <string name="sync_media_subtitle_shortfall_transcoded">Les sous-titres image ne peuvent pas être transférés avec une taille réduite</string>
+    <string name="sync_media_subtitle_shortfall_external">Les sous-titres image sont séparés du fichier et ne peuvent pas être transférés avec lui</string>
+    <string name="sync_media_subtitle_label_fallback">Sous-titres</string>
+
+    <string name="sync_steam_rate_limited_title">Steam temporairement indisponible</string>
+    <string name="sync_steam_rate_limited_subtitle">Limite de connexion atteinte. Réessayez dans une heure</string>
+    <string name="sync_steam_auth_expired_title">Session Steam expirée</string>
+    <string name="sync_steam_auth_expired_subtitle">Reconnectez-vous depuis Paramètres &gt; Steam</string>
+    <string name="sync_steam_download_signed_out_title">Session Steam expirée</string>
+    <string name="sync_steam_download_signed_out_subtitle">Connectez-vous depuis Paramètres &gt; Steam pour télécharger</string>
+    <string name="sync_steam_path_blocked_title">Impossible de télécharger %1$s</string>
+    <string name="sync_steam_storage_blocked_title">Impossible de télécharger %1$s</string>
+
+    <string name="sync_steam_qr_rate_limited">Limite atteinte. Réessayez plus tard</string>
+    <string name="sync_steam_qr_login_failed">Échec de la connexion : %1$s</string>
+    <string name="sync_steam_qr_not_connected">Non connecté à Steam</string>
+    <string name="sync_steam_qr_start_failed">Échec du démarrage de l\'authentification QR</string>
+    <string name="sync_steam_qr_polling_failed">Échec de l\'interrogation</string>
+    <string name="sync_steam_qr_disconnected">Steam non connecté</string>
+
+    <string name="sync_launch_core_fallback">Échec du chargement de %1$s, utilisation de %2$s à la place</string>
+</resources>

@@ -52,6 +52,21 @@ submitting. These are the patterns that turn a decent PR into a slow one.
 - **AS-6 Context-window responsiveness.** Addressing whichever review thread is
   most recent while standing maintainer asks go unhandled. Check the full
   review state before pushing.
+- **AS-7 Raw user-facing string.** English prose written straight into a
+  `text =`, `title =`, `subtitle =`, `label =`, `message =` or
+  `contentDescription =` argument instead of `stringResource(R.string.…)`. The
+  app ships in several languages and the catalogue only stays complete if
+  nothing bypasses it. Identifiers are not prose: core ids, option tokens,
+  emulator and platform names, paths and package names stay literals, and the
+  upstream ones must stay byte-exact.
+- **AS-8 Display string doing a second job.** A string that is rendered to the
+  user *and* is also a stored value, a map key, a route, an identity or a path
+  component. This is a defect independent of translation, because renaming the
+  label to read better silently invalidates stored data. Give the value a token
+  and the label a resource id; never make the label carry both. The reverse
+  failure is a deduplicating extractor fusing two byte-identical English
+  strings that mean different things, so identical text at two usage sites gets
+  two keys, always.
 
 ## AI assistance notice
 

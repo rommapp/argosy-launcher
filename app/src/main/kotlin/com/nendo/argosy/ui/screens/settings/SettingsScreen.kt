@@ -39,8 +39,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.backdrop.BackdropRole
 import com.nendo.argosy.ui.theme.backdrop.surfaceBackdrop
@@ -122,7 +125,6 @@ import com.nendo.argosy.ui.screens.settings.sections.ThemeSoundsItem
 import com.nendo.argosy.ui.screens.settings.sections.ThemeSoundsLayoutState
 import com.nendo.argosy.ui.screens.settings.sections.ThemeSoundsSection
 import com.nendo.argosy.ui.screens.settings.sections.themeSoundsItemAtFocusIndex
-import com.nendo.argosy.ui.screens.settings.sections.formatFileSize
 import com.nendo.argosy.ui.screens.settings.libretro.libretroSettingsMaxFocusIndex
 import com.nendo.argosy.ui.icons.InputIcons
 import com.nendo.argosy.ui.theme.Motion
@@ -408,38 +410,43 @@ fun SettingsScreen(
         }
     }
 
+    val platformFallbackName = stringResource(R.string.settings_shell_platform_fallback)
     fun platformName(platformId: Long): String =
-        uiState.emulators.platforms.find { it.platform.id == platformId }?.platform?.name ?: "Platform"
+        uiState.emulators.platforms.find { it.platform.id == platformId }?.platform?.name ?: platformFallbackName
 
+    val platformRomPathTitleTemplate = stringResource(R.string.settings_shell_filebrowser_platform_rom_path_title)
     LaunchedEffect(Unit) {
         viewModel.launchPlatformFolderPicker.collect { platformId ->
-            fileBrowserTitle = "${platformName(platformId)} ROM Path"
+            fileBrowserTitle = platformRomPathTitleTemplate.format(platformName(platformId))
             fileBrowserCallback = { path -> viewModel.setPlatformPath(platformId, path) }
             showFileBrowser = true
         }
     }
 
+    val gameNativeSyncFolderTitleTemplate = stringResource(R.string.settings_shell_filebrowser_gamenative_sync_folder_title)
     LaunchedEffect(Unit) {
         viewModel.openGameNativeSyncDirPickerEvent.collect { folder ->
-            fileBrowserTitle = "${folder.displayName} Sync Folder"
+            fileBrowserTitle = gameNativeSyncFolderTitleTemplate.format(folder.displayName)
             fileBrowserCallback = { path -> viewModel.setGameNativeSyncDir(folder, path) }
             showFileBrowser = true
         }
     }
 
+    val savePathTitle = stringResource(R.string.settings_shell_filebrowser_save_path_title)
     LaunchedEffect(Unit) {
         viewModel.launchSavePathPicker.collect {
             uiState.emulators.savePathModalInfo?.emulatorId?.let { emulatorId ->
-                fileBrowserTitle = "Save Path"
+                fileBrowserTitle = savePathTitle
                 fileBrowserCallback = { path -> viewModel.setEmulatorSavePath(emulatorId, path) }
                 showFileBrowser = true
             }
         }
     }
 
+    val platformSavePathTitleTemplate = stringResource(R.string.settings_shell_filebrowser_platform_save_path_title)
     LaunchedEffect(Unit) {
         viewModel.launchPlatformSavePathPicker.collect { platformId ->
-            fileBrowserTitle = "${platformName(platformId)} Save Path"
+            fileBrowserTitle = platformSavePathTitleTemplate.format(platformName(platformId))
             fileBrowserCallback = { path -> viewModel.setPlatformSavePath(platformId, path) }
             showFileBrowser = true
         }
@@ -451,41 +458,48 @@ fun SettingsScreen(
         }
     }
 
+    val platformStatePathTitleTemplate = stringResource(R.string.settings_shell_filebrowser_platform_state_path_title)
     LaunchedEffect(Unit) {
         viewModel.launchPlatformStatePathPicker.collect { platformId ->
-            fileBrowserTitle = "${platformName(platformId)} State Path"
+            fileBrowserTitle = platformStatePathTitleTemplate.format(platformName(platformId))
             fileBrowserCallback = { path -> viewModel.setPlatformStatePath(platformId, path) }
             showFileBrowser = true
         }
     }
 
+    val builtinSavePathTitle = stringResource(R.string.settings_shell_filebrowser_builtin_save_path_title)
     LaunchedEffect(Unit) {
         viewModel.launchBuiltinSavePathPicker.collect {
-            fileBrowserTitle = "Built-in Save Path"
+            fileBrowserTitle = builtinSavePathTitle
             fileBrowserCallback = { path -> viewModel.setBuiltinSavePath(path) }
             showFileBrowser = true
         }
     }
 
+    val builtinStatePathTitle = stringResource(R.string.settings_shell_filebrowser_builtin_state_path_title)
     LaunchedEffect(Unit) {
         viewModel.launchBuiltinStatePathPicker.collect {
-            fileBrowserTitle = "Built-in State Path"
+            fileBrowserTitle = builtinStatePathTitle
             fileBrowserCallback = { path -> viewModel.setBuiltinStatePath(path) }
             showFileBrowser = true
         }
     }
 
+    val platformBuiltinSavePathTitleTemplate =
+        stringResource(R.string.settings_shell_filebrowser_platform_builtin_save_path_title)
     LaunchedEffect(Unit) {
         viewModel.launchPlatformBuiltinSavePathPicker.collect { platformId ->
-            fileBrowserTitle = "${platformName(platformId)} Built-in Save Path"
+            fileBrowserTitle = platformBuiltinSavePathTitleTemplate.format(platformName(platformId))
             fileBrowserCallback = { path -> viewModel.setPlatformBuiltinSavePath(platformId, path) }
             showFileBrowser = true
         }
     }
 
+    val platformBuiltinStatePathTitleTemplate =
+        stringResource(R.string.settings_shell_filebrowser_platform_builtin_state_path_title)
     LaunchedEffect(Unit) {
         viewModel.launchPlatformBuiltinStatePathPicker.collect { platformId ->
-            fileBrowserTitle = "${platformName(platformId)} Built-in State Path"
+            fileBrowserTitle = platformBuiltinStatePathTitleTemplate.format(platformName(platformId))
             fileBrowserCallback = { path -> viewModel.setPlatformBuiltinStatePath(platformId, path) }
             showFileBrowser = true
         }
@@ -551,60 +565,64 @@ fun SettingsScreen(
                 uiState.currentSection != SettingsSection.FRAME_PICKER) {
                 SettingsHeader(
                     title = when (uiState.currentSection) {
-                        SettingsSection.MAIN -> "SETTINGS"
-                        SettingsSection.ACCOUNTS -> "ACCOUNTS"
-                        SettingsSection.ROMM -> "ROMM"
-                        SettingsSection.SAVES -> "SAVES"
-                        SettingsSection.SYNC_SETTINGS -> "SYNC SETTINGS"
-                        SettingsSection.STEAM_SETTINGS -> "STEAM (EXPERIMENTAL)"
-                        SettingsSection.JELLYFIN -> "JELLYFIN"
-                        SettingsSection.RETRO_ACHIEVEMENTS -> "RETROACHIEVEMENTS"
-                        SettingsSection.STORAGE -> "STORAGE"
-                        SettingsSection.STORAGE_GAMES -> "GAMES STORAGE"
-                        SettingsSection.STORAGE_MEDIA -> "MEDIA STORAGE"
+                        SettingsSection.MAIN -> stringResource(R.string.settings_shell_header_main)
+                        SettingsSection.ACCOUNTS -> stringResource(R.string.settings_shell_header_accounts)
+                        SettingsSection.ROMM -> stringResource(R.string.settings_shell_header_romm)
+                        SettingsSection.SAVES -> stringResource(R.string.settings_shell_header_saves)
+                        SettingsSection.SYNC_SETTINGS -> stringResource(R.string.settings_shell_header_sync_settings)
+                        SettingsSection.STEAM_SETTINGS -> stringResource(R.string.settings_shell_header_steam)
+                        SettingsSection.JELLYFIN -> stringResource(R.string.settings_shell_header_jellyfin)
+                        SettingsSection.RETRO_ACHIEVEMENTS -> stringResource(R.string.settings_shell_header_retroachievements)
+                        SettingsSection.STORAGE -> stringResource(R.string.settings_shell_header_storage)
+                        SettingsSection.STORAGE_GAMES -> stringResource(R.string.settings_shell_header_storage_games)
+                        SettingsSection.STORAGE_MEDIA -> stringResource(R.string.settings_shell_header_storage_media)
                         SettingsSection.STORAGE_PLATFORM_GAMES ->
-                            uiState.storagePlatformGames.platformName.uppercase().ifBlank { "PLATFORM GAMES" }
-                        SettingsSection.STORAGE_CACHES -> "CACHES & SYSTEM"
-                        SettingsSection.THEME -> "THEME"
-                        SettingsSection.AUDIO -> "AUDIO"
-                        SettingsSection.THEME_SOUNDS -> "SOUNDS"
-                        SettingsSection.THEME_MUSIC -> "MUSIC"
-                        SettingsSection.THEME_FONTS -> "FONTS"
-                        SettingsSection.THEME_BACKDROP -> "SURFACE BACKDROP"
-                        SettingsSection.INTERFACE -> "INTERFACE"
-                        SettingsSection.BOX_ART -> "BOX ART"
-                        SettingsSection.CONTROLLER_GRIP -> "CONTROLLER GRIP"
-                        SettingsSection.HOME_SCREEN -> "HOME SCREEN"
-                        SettingsSection.LIBRARY_VIEW -> "LIBRARY"
-                        SettingsSection.DISPLAYS -> "DISPLAYS"
-                        SettingsSection.AMBIENT_LED -> "LED CONTROL"
-                        SettingsSection.NAVIGATION -> "NAVIGATION"
-                        SettingsSection.PLATFORMS -> "PLATFORMS"
-                        SettingsSection.BUILTIN_EMULATOR -> "BUILT-IN EMULATOR"
+                            uiState.storagePlatformGames.platformName.uppercase().ifBlank {
+                                stringResource(R.string.settings_shell_header_storage_platform_games_fallback)
+                            }
+                        SettingsSection.STORAGE_CACHES -> stringResource(R.string.settings_shell_header_storage_caches)
+                        SettingsSection.THEME -> stringResource(R.string.settings_shell_header_theme)
+                        SettingsSection.AUDIO -> stringResource(R.string.settings_shell_header_audio)
+                        SettingsSection.THEME_SOUNDS -> stringResource(R.string.settings_shell_header_theme_sounds)
+                        SettingsSection.THEME_MUSIC -> stringResource(R.string.settings_shell_header_theme_music)
+                        SettingsSection.THEME_FONTS -> stringResource(R.string.settings_shell_header_theme_fonts)
+                        SettingsSection.THEME_BACKDROP -> stringResource(R.string.settings_shell_header_theme_backdrop)
+                        SettingsSection.INTERFACE -> stringResource(R.string.settings_shell_header_interface)
+                        SettingsSection.BOX_ART -> stringResource(R.string.settings_shell_header_box_art)
+                        SettingsSection.CONTROLLER_GRIP -> stringResource(R.string.settings_shell_header_controller_grip)
+                        SettingsSection.HOME_SCREEN -> stringResource(R.string.settings_shell_header_home_screen)
+                        SettingsSection.LIBRARY_VIEW -> stringResource(R.string.settings_shell_header_library_view)
+                        SettingsSection.DISPLAYS -> stringResource(R.string.settings_shell_header_displays)
+                        SettingsSection.AMBIENT_LED -> stringResource(R.string.settings_shell_header_ambient_led)
+                        SettingsSection.NAVIGATION -> stringResource(R.string.settings_shell_header_navigation)
+                        SettingsSection.PLATFORMS -> stringResource(R.string.settings_shell_header_platforms)
+                        SettingsSection.BUILTIN_EMULATOR -> stringResource(R.string.settings_shell_header_builtin_emulator)
                         SettingsSection.PLATFORM_DETAIL -> {
                             val config = uiState.emulators.platforms.getOrNull(uiState.platformDetail.platformIndex)
-                            config?.platform?.name?.uppercase() ?: "PLATFORM"
+                            config?.platform?.name?.uppercase()
+                                ?: stringResource(R.string.settings_shell_header_platform_detail_fallback)
                         }
-                        SettingsSection.BUILTIN_VIDEO -> "BUILT-IN A/V & PERFORMANCE"
-                        SettingsSection.BUILTIN_CONTROLS -> "BUILT-IN CONTROLS"
-                        SettingsSection.CORE_MANAGEMENT -> "MANAGE CORES"
-                        SettingsSection.CORE_OPTIONS -> "CORE OPTIONS"
-                        SettingsSection.BIOS -> "BIOS FILES"
-                        SettingsSection.SHADER_STACK -> "SHADER CHAIN"
-                        SettingsSection.FRAME_PICKER -> "SELECT FRAME"
-                        SettingsSection.PERMISSIONS -> "PERMISSIONS"
-                        SettingsSection.DRIVERS -> "GPU DRIVERS"
-                        SettingsSection.ABOUT -> "ABOUT"
-                        SettingsSection.SOCIAL -> "SOCIAL"
+                        SettingsSection.BUILTIN_VIDEO -> stringResource(R.string.settings_shell_header_builtin_video)
+                        SettingsSection.BUILTIN_CONTROLS -> stringResource(R.string.settings_shell_header_builtin_controls)
+                        SettingsSection.CORE_MANAGEMENT -> stringResource(R.string.settings_shell_header_core_management)
+                        SettingsSection.CORE_OPTIONS -> stringResource(R.string.settings_shell_header_core_options)
+                        SettingsSection.BIOS -> stringResource(R.string.settings_shell_header_bios)
+                        SettingsSection.SHADER_STACK -> stringResource(R.string.settings_shell_header_shader_stack)
+                        SettingsSection.FRAME_PICKER -> stringResource(R.string.settings_shell_header_frame_picker)
+                        SettingsSection.PERMISSIONS -> stringResource(R.string.settings_shell_header_permissions)
+                        SettingsSection.DRIVERS -> stringResource(R.string.settings_shell_header_drivers)
+                        SettingsSection.ABOUT -> stringResource(R.string.settings_shell_header_about)
+                        SettingsSection.SOCIAL -> stringResource(R.string.settings_shell_header_social)
                     },
                     rightContent = if ((uiState.currentSection == SettingsSection.BUILTIN_VIDEO ||
                         uiState.currentSection == SettingsSection.BUILTIN_CONTROLS) &&
                         uiState.builtinVideo.availablePlatforms.isNotEmpty()) {
                         {
+                            val globalContextLabel = stringResource(R.string.settings_shell_header_context_global)
                             val platformName = if (uiState.builtinVideo.isGlobalContext) {
-                                "Global"
+                                globalContextLabel
                             } else {
-                                uiState.builtinVideo.currentPlatformContext?.platformName ?: "Global"
+                                uiState.builtinVideo.currentPlatformContext?.platformName ?: globalContextLabel
                             }
                             PlatformContextIndicator(
                                 platformName = platformName,
@@ -772,51 +790,66 @@ fun SettingsScreen(
     }
 
     val builtinMigration = uiState.pendingBuiltinPathMigration
-    val builtinMigrationTypeLabel = when (builtinMigration?.pathType) {
-        BuiltinPathType.SAVE -> "save"
-        BuiltinPathType.STATE -> "state"
+    val builtinMigrationTitle = when (builtinMigration?.pathType) {
+        BuiltinPathType.SAVE -> stringResource(R.string.settings_shell_modal_builtin_migration_save_title)
+        BuiltinPathType.STATE -> stringResource(R.string.settings_shell_modal_builtin_migration_state_title)
+        null -> ""
+    }
+    val builtinMigrationMessage = when (builtinMigration?.pathType) {
+        BuiltinPathType.SAVE -> stringResource(
+            R.string.settings_shell_modal_builtin_migration_save_message,
+            builtinMigration.existingFileCount
+        )
+        BuiltinPathType.STATE -> stringResource(
+            R.string.settings_shell_modal_builtin_migration_state_message,
+            builtinMigration.existingFileCount
+        )
         null -> ""
     }
     ArgosyConfirmModalHost(
         visible = uiState.showBuiltinPathMigrationDialog && builtinMigration != null,
-        title = "Migrate $builtinMigrationTypeLabel files?",
-        message = "The destination already contains ${builtinMigration?.existingFileCount ?: 0} $builtinMigrationTypeLabel files. Move existing files from the old location? This will overwrite any conflicts.",
-        confirmLabel = "Migrate",
+        title = builtinMigrationTitle,
+        message = builtinMigrationMessage,
+        confirmLabel = stringResource(R.string.settings_shell_modal_builtin_migration_confirm),
         onConfirm = { viewModel.confirmBuiltinPathMigration() },
         onDismiss = { viewModel.cancelBuiltinPathMigration() },
-        neutralLabel = "Skip",
+        neutralLabel = stringResource(R.string.settings_shell_modal_builtin_migration_skip),
         onNeutral = { viewModel.skipBuiltinPathMigration() }
     )
 
     val musicRelocation = uiState.ambientAudio.pendingMusicRelocation
     ArgosyConfirmModalHost(
         visible = musicRelocation != null,
-        title = "Move music files?",
-        message = "The current music folder contains ${musicRelocation?.fileCount ?: 0} files. Move them to the new location? This will overwrite any conflicts.",
-        confirmLabel = "Move",
+        title = stringResource(R.string.settings_shell_modal_music_relocation_title),
+        message = stringResource(
+            R.string.settings_shell_modal_music_relocation_message, musicRelocation?.fileCount ?: 0
+        ),
+        confirmLabel = stringResource(R.string.settings_shell_modal_music_relocation_confirm),
         onConfirm = { viewModel.confirmMusicRelocation() },
         onDismiss = { viewModel.cancelMusicRelocation() },
-        neutralLabel = "Skip",
+        neutralLabel = stringResource(R.string.settings_shell_modal_music_relocation_skip),
         onNeutral = { viewModel.skipMusicRelocation() }
     )
 
     val mediaRelocation = uiState.jellyfin.pendingMediaRelocation
     ArgosyConfirmModalHost(
         visible = mediaRelocation != null,
-        title = "Move downloaded media?",
-        message = "The current media folder contains ${mediaRelocation?.fileCount ?: 0} files. Move them to the new location? This will overwrite any conflicts.",
-        confirmLabel = "Move",
+        title = stringResource(R.string.settings_shell_modal_media_relocation_title),
+        message = stringResource(
+            R.string.settings_shell_modal_media_relocation_message, mediaRelocation?.fileCount ?: 0
+        ),
+        confirmLabel = stringResource(R.string.settings_shell_modal_media_relocation_confirm),
         onConfirm = { viewModel.confirmMediaRelocation() },
         onDismiss = { viewModel.cancelMediaRelocation() },
-        neutralLabel = "Leave",
+        neutralLabel = stringResource(R.string.settings_shell_modal_media_relocation_leave),
         onNeutral = { viewModel.skipMediaRelocation() }
     )
 
     ArgosyConfirmModalHost(
         visible = uiState.jellyfin.showSignOutConfirm,
-        title = "Sign Out of Jellyfin?",
-        message = "This device forgets your Jellyfin login. Downloaded media stays on disk and your watch history stays on the server.",
-        confirmLabel = "Sign Out",
+        title = stringResource(R.string.settings_shell_modal_jellyfin_signout_title),
+        message = stringResource(R.string.settings_shell_modal_jellyfin_signout_message),
+        confirmLabel = stringResource(R.string.settings_shell_modal_jellyfin_signout_confirm),
         destructive = true,
         onConfirm = { viewModel.confirmJellyfinSignOut() },
         onDismiss = { viewModel.cancelJellyfinSignOut() }
@@ -824,33 +857,41 @@ fun SettingsScreen(
 
     ArgosyConfirmModalHost(
         visible = uiState.showImportSettingsConfirm,
-        title = "Import Settings?",
-        message = "Pick a backup file and the settings it names replace yours. Anything the file leaves out is untouched, and accounts, servers, sync state and file locations are never carried.",
-        confirmLabel = "Choose File",
+        title = stringResource(R.string.settings_shell_modal_import_settings_title),
+        message = stringResource(R.string.settings_shell_modal_import_settings_message),
+        confirmLabel = stringResource(R.string.settings_shell_modal_import_settings_confirm),
         onConfirm = { viewModel.confirmImportSettings() },
         onDismiss = { viewModel.cancelImportSettings() }
     )
 
     ArgosyConfirmModalHost(
         visible = uiState.showMigrationDialog,
-        title = "Migrate Downloads?",
-        message = "Move ${uiState.storage.downloadedGamesCount} games (${formatFileSize(uiState.storage.downloadedGamesSize)}) to the new location?",
-        confirmLabel = "Migrate",
+        title = stringResource(R.string.settings_shell_modal_migrate_downloads_title),
+        message = stringResource(
+            R.string.settings_shell_modal_migrate_downloads_message,
+            uiState.storage.downloadedGamesCount,
+            formatBytes(uiState.storage.downloadedGamesSize)
+        ),
+        confirmLabel = stringResource(R.string.settings_shell_modal_migrate_downloads_confirm),
         onConfirm = { viewModel.confirmMigration() },
         onDismiss = { viewModel.cancelMigration() },
-        neutralLabel = "Skip",
+        neutralLabel = stringResource(R.string.settings_shell_modal_migrate_downloads_skip),
         onNeutral = { viewModel.skipMigration() }
     )
 
     val platformMigrationInfo = uiState.storage.showMigratePlatformConfirm
     ArgosyConfirmModalHost(
         visible = platformMigrationInfo != null,
-        title = "Migrate ${platformMigrationInfo?.platformName ?: "Platform"} ROMs?",
-        message = "Move downloaded games to the new location? Files will be copied and then removed from the old location.",
-        confirmLabel = "Migrate",
+        title = stringResource(
+            R.string.settings_shell_modal_migrate_platform_title,
+            platformMigrationInfo?.platformName
+                ?: stringResource(R.string.settings_shell_modal_migrate_platform_fallback)
+        ),
+        message = stringResource(R.string.settings_shell_modal_migrate_platform_message),
+        confirmLabel = stringResource(R.string.settings_shell_modal_migrate_platform_confirm),
         onConfirm = { viewModel.confirmPlatformMigration() },
         onDismiss = { viewModel.cancelPlatformMigration() },
-        neutralLabel = "Skip",
+        neutralLabel = stringResource(R.string.settings_shell_modal_migrate_platform_skip),
         onNeutral = { viewModel.skipPlatformMigration() }
     )
 
@@ -859,9 +900,15 @@ fun SettingsScreen(
     }
     ArgosyConfirmModalHost(
         visible = uiState.storage.showPurgePlatformConfirm != null,
-        title = "Purge ${purgePlatformConfig?.platformName ?: "Platform"}?",
-        message = "This will delete all ${purgePlatformConfig?.gameCount ?: 0} games and their local ROM files. This cannot be undone.",
-        confirmLabel = "Purge",
+        title = stringResource(
+            R.string.settings_shell_modal_purge_platform_title,
+            purgePlatformConfig?.platformName
+                ?: stringResource(R.string.settings_shell_modal_purge_platform_fallback)
+        ),
+        message = stringResource(
+            R.string.settings_shell_modal_purge_platform_message, purgePlatformConfig?.gameCount ?: 0
+        ),
+        confirmLabel = stringResource(R.string.settings_shell_modal_purge_platform_confirm),
         destructive = true,
         onConfirm = { viewModel.confirmPurgePlatform() },
         onDismiss = { viewModel.cancelPurgePlatform() }
@@ -870,9 +917,11 @@ fun SettingsScreen(
     if (uiState.storage.purgeAllPendingUploads > 0) {
         ArgosyConfirmModalHost(
             visible = uiState.storage.showPurgeAllConfirm,
-            title = "Sync Saves First",
-            message = "Sync saves first - ${uiState.storage.purgeAllPendingUploads} pending. Resetting the library now would permanently discard saves that have not been uploaded.",
-            confirmLabel = "Sync Now",
+            title = stringResource(R.string.settings_shell_modal_sync_first_title),
+            message = stringResource(
+                R.string.settings_shell_modal_sync_first_message, uiState.storage.purgeAllPendingUploads
+            ),
+            confirmLabel = stringResource(R.string.settings_shell_modal_sync_first_confirm),
             onConfirm = {
                 viewModel.cancelPurgeAll()
                 viewModel.requestSyncSaves()
@@ -882,9 +931,9 @@ fun SettingsScreen(
     } else {
         ArgosyConfirmModalHost(
             visible = uiState.storage.showPurgeAllConfirm,
-            title = "Reset Library?",
-            message = "Clears the database and image cache. Downloaded files stay on disk. Permanently lost: play time, local collections, download history, save sync state, and per-game settings. You will need to re-sync your library.",
-            confirmLabel = "Reset",
+            title = stringResource(R.string.settings_shell_modal_reset_library_title),
+            message = stringResource(R.string.settings_shell_modal_reset_library_message),
+            confirmLabel = stringResource(R.string.settings_shell_modal_reset_library_confirm),
             destructive = true,
             onConfirm = { viewModel.confirmPurgeAll() },
             onDismiss = { viewModel.cancelPurgeAll() }
@@ -915,18 +964,27 @@ fun SettingsScreen(
     val platformGameDelete = uiState.storagePlatformGames.deleteConfirm
     if (platformGameDelete != null) {
         val saveWarning = if (platformGameDelete.unsyncedSaves > 0) {
-            val noun = if (platformGameDelete.unsyncedSaves == 1) "save" else "saves"
-            " ${platformGameDelete.unsyncedSaves} unsynced $noun will be lost."
-        } else ""
+            " " + pluralStringResource(
+                R.plurals.settings_shell_unsynced_saves_warning,
+                platformGameDelete.unsyncedSaves,
+                platformGameDelete.unsyncedSaves
+            )
+        } else {
+            ""
+        }
         if (platformGameDelete.hasSoundtrack) {
             ArgosyConfirmModalHost(
                 visible = true,
-                title = "Delete ${platformGameDelete.title}?",
-                message = "Removes all downloaded files for this game.$saveWarning Choose whether to also delete its soundtrack.",
-                cancelLabel = "Cancel",
-                neutralLabel = "Delete Game",
+                title = stringResource(
+                    R.string.settings_shell_modal_delete_game_soundtrack_title, platformGameDelete.title
+                ),
+                message = stringResource(
+                    R.string.settings_shell_modal_delete_game_soundtrack_message, saveWarning
+                ),
+                cancelLabel = stringResource(R.string.settings_shell_modal_delete_game_cancel),
+                neutralLabel = stringResource(R.string.settings_shell_modal_delete_game_only),
                 onNeutral = { viewModel.confirmStoragePlatformGameDelete(platformGameDelete.gameId, withSoundtrack = false) },
-                confirmLabel = "Delete + Soundtrack",
+                confirmLabel = stringResource(R.string.settings_shell_modal_delete_game_with_soundtrack),
                 destructive = true,
                 onConfirm = { viewModel.confirmStoragePlatformGameDelete(platformGameDelete.gameId, withSoundtrack = true) },
                 onDismiss = { viewModel.dismissStoragePlatformGameDelete() }
@@ -934,9 +992,13 @@ fun SettingsScreen(
         } else {
             ArgosyConfirmModalHost(
                 visible = true,
-                title = "Delete ${platformGameDelete.title}?",
-                message = "Removes all downloaded files for this game.$saveWarning This cannot be undone.",
-                confirmLabel = "Delete Game",
+                title = stringResource(
+                    R.string.settings_shell_modal_delete_game_plain_title, platformGameDelete.title
+                ),
+                message = stringResource(
+                    R.string.settings_shell_modal_delete_game_plain_message, saveWarning
+                ),
+                confirmLabel = stringResource(R.string.settings_shell_modal_delete_game_plain_confirm),
                 destructive = true,
                 onConfirm = { viewModel.confirmStoragePlatformGameDelete(platformGameDelete.gameId, withSoundtrack = false) },
                 onDismiss = { viewModel.dismissStoragePlatformGameDelete() }
@@ -946,15 +1008,20 @@ fun SettingsScreen(
 
     val platformCategoryDelete = uiState.storagePlatformGames.categoryDeleteConfirm
     if (platformCategoryDelete != null) {
-        val fileNoun = if (platformCategoryDelete.fileCount == 1) "file" else "files"
-        val bucketLabel = com.nendo.argosy.ui.screens.settings.sections
-            .bucketDisplayLabel(platformCategoryDelete.bucket)
+        val bucketLabel = stringResource(
+            com.nendo.argosy.ui.screens.settings.sections
+                .bucketDisplayLabelRes(platformCategoryDelete.bucket)
+        )
         ArgosyConfirmModalHost(
             visible = true,
-            title = "Remove $bucketLabel?",
-            message = "Removes ${platformCategoryDelete.fileCount} $fileNoun " +
-                "(${formatBytes(platformCategoryDelete.totalBytes)}). Re-downloads from your library.",
-            confirmLabel = "Delete",
+            title = stringResource(R.string.settings_storage_category_delete_title, bucketLabel),
+            message = pluralStringResource(
+                R.plurals.settings_storage_category_delete_message,
+                platformCategoryDelete.fileCount,
+                platformCategoryDelete.fileCount,
+                formatBytes(platformCategoryDelete.totalBytes)
+            ),
+            confirmLabel = stringResource(R.string.settings_storage_category_delete_confirm),
             destructive = true,
             onConfirm = {
                 viewModel.confirmStoragePlatformCategoryDelete(
@@ -970,16 +1037,17 @@ fun SettingsScreen(
 
     ArgosyConfirmModalHost(
         visible = uiState.server.showRommSignOutConfirm,
-        title = "Sign Out of RomM?",
+        title = stringResource(R.string.settings_shell_modal_romm_signout_title),
         message = if (uiState.server.rommSignOutPendingUploads > 0) {
-            "${uiState.server.rommSignOutPendingUploads} save(s) will be uploaded first. Once " +
-                "everything is on your server, this account's cached saves, states and settings " +
-                "are removed from this device. Your downloaded games stay."
+            pluralStringResource(
+                R.plurals.settings_shell_romm_signout_pending_message,
+                uiState.server.rommSignOutPendingUploads,
+                uiState.server.rommSignOutPendingUploads
+            )
         } else {
-            "This account's cached saves, states and settings are removed from this device, and " +
-                "everything already uploaded stays on your server. Your downloaded games stay."
+            stringResource(R.string.settings_shell_romm_signout_message)
         },
-        confirmLabel = "Sign Out",
+        confirmLabel = stringResource(R.string.settings_shell_modal_romm_signout_confirm),
         destructive = true,
         onConfirm = { viewModel.confirmRommSignOut() },
         onDismiss = { viewModel.cancelRommSignOut() }
@@ -987,9 +1055,9 @@ fun SettingsScreen(
 
     ArgosyConfirmModalHost(
         visible = uiState.syncSettings.showResetSaveCacheConfirm,
-        title = "Reset Save Cache?",
-        message = "This will delete all locally cached save snapshots and pending sync operations. Your actual save files and server saves are not affected.",
-        confirmLabel = "Reset",
+        title = stringResource(R.string.settings_shell_modal_reset_save_cache_title),
+        message = stringResource(R.string.settings_shell_modal_reset_save_cache_message),
+        confirmLabel = stringResource(R.string.settings_shell_modal_reset_save_cache_confirm),
         destructive = true,
         onConfirm = { viewModel.confirmResetSaveCache() },
         onDismiss = { viewModel.cancelResetSaveCache() }
@@ -997,9 +1065,9 @@ fun SettingsScreen(
 
     ArgosyConfirmModalHost(
         visible = uiState.syncSettings.showClearPathCacheConfirm,
-        title = "Clear Save Path Cache?",
-        message = "This will clear all detected save file paths. Paths will be re-detected on next sync. Use this if saves are syncing to the wrong location.",
-        confirmLabel = "Clear",
+        title = stringResource(R.string.settings_shell_modal_clear_save_path_cache_title),
+        message = stringResource(R.string.settings_shell_modal_clear_save_path_cache_message),
+        confirmLabel = stringResource(R.string.settings_shell_modal_clear_save_path_cache_confirm),
         destructive = true,
         onConfirm = { viewModel.confirmClearPathCache() },
         onDismiss = { viewModel.cancelClearPathCache() }
@@ -1007,9 +1075,9 @@ fun SettingsScreen(
 
     ArgosyConfirmModalHost(
         visible = uiState.syncSettings.showSecureSavesConfirm,
-        title = "Turn Off Secure Saves?",
-        message = "Turning this off disables RetroAchievements hardcore mode. Games will launch in casual mode until Secure Saves is turned back on.",
-        confirmLabel = "Turn Off",
+        title = stringResource(R.string.settings_shell_modal_secure_saves_off_title),
+        message = stringResource(R.string.settings_shell_modal_secure_saves_off_message),
+        confirmLabel = stringResource(R.string.settings_shell_modal_secure_saves_off_confirm),
         destructive = true,
         onConfirm = { viewModel.confirmDisableSecureSaves() },
         onDismiss = { viewModel.cancelDisableSecureSaves() }
@@ -1017,9 +1085,9 @@ fun SettingsScreen(
 
     ArgosyConfirmModalHost(
         visible = uiState.syncSettings.showClearStateCacheConfirm,
-        title = "Clear State Cache?",
-        message = "This will delete all locally cached save state snapshots and their pending sync operations. Save files and server copies are not affected.",
-        confirmLabel = "Clear",
+        title = stringResource(R.string.settings_shell_modal_clear_state_cache_title),
+        message = stringResource(R.string.settings_shell_modal_clear_state_cache_message),
+        confirmLabel = stringResource(R.string.settings_shell_modal_clear_state_cache_confirm),
         destructive = true,
         onConfirm = { viewModel.confirmClearStateCache() },
         onDismiss = { viewModel.cancelClearStateCache() }
@@ -1030,7 +1098,7 @@ fun SettingsScreen(
         visible = pendingCachesClear != null,
         title = cachesClearConfirmTitle(pendingCachesClear),
         message = cachesClearConfirmMessage(pendingCachesClear),
-        confirmLabel = "Clear",
+        confirmLabel = stringResource(R.string.settings_shell_modal_caches_clear_confirm),
         destructive = true,
         onConfirm = { viewModel.confirmCachesClear() },
         onDismiss = { viewModel.cancelCachesClear() }
@@ -1039,10 +1107,9 @@ fun SettingsScreen(
     val pendingDeleteCoreId = uiState.coreOptions.pendingDeleteCoreId
     ArgosyConfirmModalHost(
         visible = pendingDeleteCoreId != null,
-        title = "Delete core?",
-        message = "The core is removed from this device. Games set to use it will need it " +
-            "downloaded again before they run.",
-        confirmLabel = "Delete",
+        title = stringResource(R.string.settings_shell_modal_delete_core_title),
+        message = stringResource(R.string.settings_shell_modal_delete_core_message),
+        confirmLabel = stringResource(R.string.settings_shell_modal_delete_core_confirm),
         destructive = true,
         onConfirm = { viewModel.confirmDeleteCore() },
         onDismiss = { viewModel.cancelDeleteCore() }
@@ -1050,9 +1117,9 @@ fun SettingsScreen(
 
     ArgosyConfirmModal(
         visible = uiState.syncSettings.showForceSyncConfirm,
-        title = "Sync Saves?",
-        message = "This will scan all downloaded games for save changes and sync them with the server. Local saves newer than the last sync will be uploaded, and newer server saves will be downloaded.",
-        confirmLabel = "Sync",
+        title = stringResource(R.string.settings_shell_modal_sync_saves_title),
+        message = stringResource(R.string.settings_shell_modal_sync_saves_message),
+        confirmLabel = stringResource(R.string.settings_shell_modal_sync_saves_confirm),
         onConfirm = { viewModel.confirmSyncSaves() },
         onDismiss = { viewModel.cancelSyncSaves() },
         focusedIndex = uiState.syncSettings.syncConfirmButtonIndex
@@ -1079,7 +1146,7 @@ fun SettingsScreen(
     if (showSettingsBackupBrowser) {
         FileBrowserScreen(
             mode = FileBrowserMode.FILE_SELECTION,
-            title = "Select Settings Backup",
+            title = stringResource(R.string.settings_shell_filebrowser_settings_backup_title),
             onPathSelected = { path ->
                 showSettingsBackupBrowser = false
                 viewModel.importSettingsFrom(path)
@@ -1099,7 +1166,7 @@ fun SettingsScreen(
         FileBrowserScreen(
             mode = FileBrowserMode.FILE_OR_FOLDER_SELECTION,
             fileFilter = FileFilter.AUDIO,
-            title = "Add Music",
+            title = stringResource(R.string.settings_shell_filebrowser_add_music_title),
             onPathSelected = { path ->
                 showBgmAddMusicBrowser = false
                 viewModel.addBgmPlaylistEntry(path)
@@ -1113,7 +1180,7 @@ fun SettingsScreen(
     if (showMusicLocationBrowser) {
         FileBrowserScreen(
             mode = FileBrowserMode.FOLDER_SELECTION,
-            title = "Music Location",
+            title = stringResource(R.string.settings_shell_filebrowser_music_location_title),
             onPathSelected = { path ->
                 showMusicLocationBrowser = false
                 viewModel.onMusicLocationSelected(path)
@@ -1127,7 +1194,7 @@ fun SettingsScreen(
     if (showMediaLocationBrowser) {
         FileBrowserScreen(
             mode = FileBrowserMode.FOLDER_SELECTION,
-            title = "Media Location",
+            title = stringResource(R.string.settings_shell_filebrowser_media_location_title),
             onPathSelected = { path ->
                 showMediaLocationBrowser = false
                 viewModel.onMediaLocationSelected(path)
@@ -1165,7 +1232,7 @@ fun SettingsScreen(
         FileBrowserScreen(
             mode = FileBrowserMode.FILE_SELECTION,
             fileFilter = FileFilter.AUDIO,
-            title = "Custom Sound",
+            title = stringResource(R.string.settings_shell_filebrowser_custom_sound_title),
             onPathSelected = { path ->
                 customSoundTargetType = null
                 viewModel.setCustomSoundFile(soundType, path)
@@ -1281,7 +1348,7 @@ private fun PlatformContextIndicator(
         ) {
             Icon(
                 painter = InputIcons.BumperLeft,
-                contentDescription = "Previous context",
+                contentDescription = stringResource(R.string.settings_shell_context_previous_desc),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(Dimens.iconSm)
             )
@@ -1301,7 +1368,7 @@ private fun PlatformContextIndicator(
         ) {
             Icon(
                 painter = InputIcons.BumperRight,
-                contentDescription = "Next context",
+                contentDescription = stringResource(R.string.settings_shell_context_next_desc),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(Dimens.iconSm)
             )
@@ -1354,36 +1421,52 @@ private fun getFilePathFromUri(context: Context, uri: Uri): String? {
 private fun AccountModals(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val accounts = uiState.accounts
 
+    val accountFallbackName = stringResource(R.string.settings_shell_accounts_fallback_name)
     val exitAccount = accounts.exitPromptAccount
     ArgosyConfirmModalHost(
         visible = accounts.exitPromptAccountId != null,
-        title = if (accounts.exitPromptIsForAdd) "Add an account?" else "Switch to ${exitAccount?.username ?: "account"}?",
-        message = "Fully exit any game you launched outside Argosy first. Argosy cannot see " +
-            "those sessions, and a game still running can write over the saves this moves. " +
-            "Saves are archived and verified before anything is removed.",
-        confirmLabel = if (accounts.exitPromptIsForAdd) "Games Closed, Continue" else "Games Closed, Switch",
+        title = if (accounts.exitPromptIsForAdd) {
+            stringResource(R.string.settings_shell_accounts_add_title)
+        } else {
+            stringResource(R.string.settings_shell_accounts_switch_title, exitAccount?.username ?: accountFallbackName)
+        },
+        message = stringResource(R.string.settings_shell_accounts_exit_message),
+        confirmLabel = if (accounts.exitPromptIsForAdd) {
+            stringResource(R.string.settings_shell_accounts_add_confirm)
+        } else {
+            stringResource(R.string.settings_shell_accounts_switch_confirm)
+        },
         onConfirm = { viewModel.confirmAccountExitPrompt() },
         onDismiss = { viewModel.cancelAccountExitPrompt() }
     )
 
     val removalAccount = accounts.removalAccount
+    val removalFallbackName = stringResource(R.string.settings_shell_accounts_remove_fallback_name)
+    val removalPendingSuffixTemplate = stringResource(R.string.settings_shell_accounts_removal_pending_suffix)
     val removalMessage = buildString {
-        append("Removes this account's saves, states, queued work, achievements and library ")
-        append("overlay from this device. Downloaded games are kept.")
-        accounts.removalPendingSummary?.let { append(" Still unsent: $it.") }
+        append(stringResource(R.string.settings_shell_accounts_removal_message_base))
+        accounts.removalPendingSummary?.let { append(removalPendingSuffixTemplate.format(it)) }
         if (accounts.removalIsLastAccount) {
-            append(" This is the last account, so the device will be signed out of RomM.")
+            append(stringResource(R.string.settings_shell_accounts_removal_last_account_suffix))
         }
-        append(" The device stays registered on the RomM server; revoke it there.")
+        append(stringResource(R.string.settings_shell_accounts_removal_revoke_suffix))
     }
     ArgosyConfirmModalHost(
         visible = accounts.removalAccountId != null && !accounts.isRemoving,
-        title = "Remove ${removalAccount?.username ?: "account"}?",
+        title = stringResource(R.string.settings_shell_accounts_remove_title, removalAccount?.username ?: removalFallbackName),
         message = removalMessage,
-        cancelLabel = "Cancel",
-        neutralLabel = if (accounts.removalHasPendingWork) "Keep Queued Work" else null,
+        cancelLabel = stringResource(R.string.settings_shell_accounts_cancel),
+        neutralLabel = if (accounts.removalHasPendingWork) {
+            stringResource(R.string.settings_shell_accounts_keep_queued_work)
+        } else {
+            null
+        },
         onNeutral = { viewModel.confirmAccountRemoval(UnflushedQueuePolicy.REFUSE) },
-        confirmLabel = if (accounts.removalHasPendingWork) "Discard and Remove" else "Remove",
+        confirmLabel = if (accounts.removalHasPendingWork) {
+            stringResource(R.string.settings_shell_accounts_discard_and_remove)
+        } else {
+            stringResource(R.string.settings_shell_accounts_remove_confirm)
+        },
         destructive = true,
         onConfirm = { viewModel.confirmAccountRemoval(UnflushedQueuePolicy.DISCARD) },
         onDismiss = { viewModel.cancelAccountRemoval() }
@@ -1391,33 +1474,34 @@ private fun AccountModals(uiState: SettingsUiState, viewModel: SettingsViewModel
 
     ArgosyConfirmModalHost(
         visible = accounts.switchFailure != null,
-        title = "Switch did not finish",
-        message = "${accounts.switchFailure.orEmpty()} Game launches stay blocked until the " +
-            "switch completes, so no save is left half moved. Retry to finish it.",
-        confirmLabel = "Retry",
+        title = stringResource(R.string.settings_shell_accounts_switch_failed_title),
+        message = stringResource(
+            R.string.settings_shell_accounts_switch_failed_message, accounts.switchFailure.orEmpty()
+        ),
+        confirmLabel = stringResource(R.string.settings_shell_accounts_retry),
         onConfirm = { viewModel.retryInterruptedAccountSwitch() },
         onDismiss = { viewModel.dismissAccountNotice() },
-        cancelLabel = "Not Now"
+        cancelLabel = stringResource(R.string.settings_shell_accounts_not_now)
     )
 
     ArgosyConfirmModalHost(
         visible = accounts.switchBlocker != null,
-        title = "Cannot switch yet",
+        title = stringResource(R.string.settings_shell_accounts_cannot_switch_title),
         message = accounts.switchBlocker.orEmpty(),
-        confirmLabel = "OK",
+        confirmLabel = stringResource(R.string.settings_shell_accounts_ok),
         onConfirm = { viewModel.dismissAccountNotice() },
         onDismiss = { viewModel.dismissAccountNotice() },
-        cancelLabel = "Close"
+        cancelLabel = stringResource(R.string.settings_shell_accounts_close)
     )
 
     ArgosyConfirmModalHost(
         visible = accounts.notice != null && accounts.switchBlocker == null && accounts.switchFailure == null,
-        title = "Accounts",
+        title = stringResource(R.string.settings_shell_accounts_notice_title),
         message = accounts.notice.orEmpty(),
-        confirmLabel = "OK",
+        confirmLabel = stringResource(R.string.settings_shell_accounts_ok2),
         onConfirm = { viewModel.dismissAccountNotice() },
         onDismiss = { viewModel.dismissAccountNotice() },
-        cancelLabel = "Close"
+        cancelLabel = stringResource(R.string.settings_shell_accounts_close2)
     )
 }
 
@@ -1439,37 +1523,74 @@ private fun SettingsFooter(
         return
     }
 
+    val navigateHint = stringResource(R.string.settings_shell_footer_navigate)
+    val navigateVerticalHint = stringResource(R.string.settings_shell_footer_navigate_vertical)
+    val previewShapeHint = stringResource(R.string.settings_shell_footer_preview_shape)
+    val previewGameHint = stringResource(R.string.settings_shell_footer_preview_game)
+    val shaderHint = stringResource(R.string.settings_shell_footer_shader)
+    val reorderHint = stringResource(R.string.settings_shell_footer_reorder)
+    val adjustShaderStackHint = stringResource(R.string.settings_shell_footer_adjust_shaderstack)
+    val resetShaderStackHint = stringResource(R.string.settings_shell_footer_reset_shaderstack)
+    val removeShaderStackHint = stringResource(R.string.settings_shell_footer_remove_shaderstack)
+    val addShaderStackHint = stringResource(R.string.settings_shell_footer_add_shaderstack)
+    val platformBuiltinHint = stringResource(R.string.settings_shell_footer_platform_builtin)
+    val resetToDefaultBuiltinVideoHint = stringResource(R.string.settings_shell_footer_reset_to_default_builtinvideo)
+    val sampleHint = stringResource(R.string.settings_shell_footer_sample)
+    val resetToDefaultThemeSoundsHint = stringResource(R.string.settings_shell_footer_reset_to_default_themesounds)
+    val platformCoreOptionsHint = stringResource(R.string.settings_shell_footer_platform_coreoptions)
+    val resetToDefaultCoreOptionsHint = stringResource(R.string.settings_shell_footer_reset_to_default_coreoptions)
+    val forceSyncHint = stringResource(R.string.settings_shell_footer_force_sync)
+    val foldersScanHint = stringResource(R.string.settings_shell_footer_folders_scan)
+    val switchRemoveHint = stringResource(R.string.settings_shell_footer_switch_remove)
+    val refreshHint = stringResource(R.string.settings_shell_footer_refresh)
+    val sortHint = stringResource(R.string.settings_shell_footer_sort)
+    val categoryHint = stringResource(R.string.settings_shell_footer_category)
+    val deleteHint = stringResource(R.string.settings_shell_footer_delete)
+    val adjustPlatformDetailHint = stringResource(R.string.settings_shell_footer_adjust_platformdetail)
+    val updateEmulatorHint = stringResource(R.string.settings_shell_footer_update_emulator)
+    val resetPlatformDetailHint = stringResource(R.string.settings_shell_footer_reset_platformdetail)
+    val toggleLabelHint = stringResource(R.string.settings_shell_footer_toggle_label)
+    val openLabelHint = stringResource(R.string.settings_shell_footer_open_label)
+    val selectLabelHint = stringResource(R.string.settings_shell_footer_select_label)
+    val selectDefaultHint = stringResource(R.string.settings_shell_footer_select_default)
+    val displayHint = stringResource(R.string.settings_shell_footer_display)
+    val enableHint = stringResource(R.string.settings_shell_footer_enable)
+    val updateHint = stringResource(R.string.settings_shell_footer_update)
+    val resetBuiltinVideoOverrideHint = stringResource(R.string.settings_shell_footer_reset_builtinvideo_override)
+    val resetBuiltinControlsOverrideHint = stringResource(R.string.settings_shell_footer_reset_builtincontrols_override)
+    val backHint = stringResource(R.string.settings_shell_footer_back)
+
     val hints = buildList {
         if (uiState.currentSection != SettingsSection.BOX_ART &&
             uiState.currentSection != SettingsSection.SHADER_STACK) {
-            add(InputButton.DPAD to "Navigate")
+            add(InputButton.DPAD to navigateHint)
         }
         if (uiState.currentSection == SettingsSection.SHADER_STACK &&
             shaderStack.entries.isNotEmpty() &&
             shaderStack.selectedShaderParams.isNotEmpty()
         ) {
-            add(InputButton.DPAD_VERTICAL to "Navigate")
+            add(InputButton.DPAD_VERTICAL to navigateVerticalHint)
         }
         if (uiState.currentSection == SettingsSection.BOX_ART) {
-            add(InputButton.LB_RB to "Preview Shape")
-            add(InputButton.LT_RT to "Preview Game")
+            add(InputButton.LB_RB to previewShapeHint)
+            add(InputButton.LT_RT to previewGameHint)
         }
         if (uiState.currentSection == SettingsSection.SHADER_STACK) {
             if (shaderStack.entries.isNotEmpty()) {
-                add(InputButton.LB_RB to "Shader")
-                add(InputButton.LT_RT to "Reorder")
+                add(InputButton.LB_RB to shaderHint)
+                add(InputButton.LT_RT to reorderHint)
                 if (shaderStack.selectedShaderParams.isNotEmpty()) {
-                    add(InputButton.DPAD_HORIZONTAL to "Adjust")
-                    add(InputButton.A to "Reset")
+                    add(InputButton.DPAD_HORIZONTAL to adjustShaderStackHint)
+                    add(InputButton.A to resetShaderStackHint)
                 }
-                add(InputButton.Y to "Remove")
+                add(InputButton.Y to removeShaderStackHint)
             }
-            add(InputButton.X to "Add")
+            add(InputButton.X to addShaderStackHint)
         }
         if ((uiState.currentSection == SettingsSection.BUILTIN_VIDEO ||
             uiState.currentSection == SettingsSection.BUILTIN_CONTROLS) &&
             uiState.builtinVideo.availablePlatforms.isNotEmpty()) {
-            add(InputButton.LB_RB to "Platform")
+            add(InputButton.LB_RB to platformBuiltinHint)
         }
         if (uiState.currentSection == SettingsSection.BUILTIN_VIDEO &&
             uiState.builtinVideo.isGlobalContext &&
@@ -1482,27 +1603,27 @@ private fun SettingsFooter(
             val onSavePath = uiState.focusedIndex == settingsMax + 1
             val onStatePath = uiState.focusedIndex == settingsMax + 2
             if ((onSavePath && videoState.isCustomSavePath) || (onStatePath && videoState.isCustomStatePath)) {
-                add(InputButton.Y to "Reset to Default")
+                add(InputButton.Y to resetToDefaultBuiltinVideoHint)
             }
         }
         if (uiState.currentSection == SettingsSection.THEME_SOUNDS && uiState.sounds.enabled) {
             val soundsLayout = ThemeSoundsLayoutState.from(uiState)
             val focusedSoundItem = themeSoundsItemAtFocusIndex(uiState.focusedIndex, soundsLayout)
             if (focusedSoundItem is ThemeSoundsItem.SoundTypeItem) {
-                add(InputButton.X to "Sample")
+                add(InputButton.X to sampleHint)
                 if (uiState.sounds.soundConfigs.containsKey(focusedSoundItem.soundType)) {
-                    add(InputButton.Y to "Reset to Default")
+                    add(InputButton.Y to resetToDefaultThemeSoundsHint)
                 }
             }
         }
         if (uiState.currentSection == SettingsSection.CORE_OPTIONS &&
             uiState.coreOptions.availablePlatforms.isNotEmpty()) {
-            add(InputButton.LB_RB to "Platform")
+            add(InputButton.LB_RB to platformCoreOptionsHint)
             val focusedCoreItem = coreOptionsItemAtFocusIndex(
                 uiState.focusedIndex, uiState.coreOptions
             )
             if (focusedCoreItem is CoreOptionItem.Option && focusedCoreItem.isOverridden) {
-                add(InputButton.Y to "Reset to Default")
+                add(InputButton.Y to resetToDefaultCoreOptionsHint)
             }
         }
         if (uiState.currentSection == SettingsSection.STEAM_SETTINGS) {
@@ -1510,12 +1631,12 @@ private fun SettingsFooter(
                 uiState.focusedIndex, uiState.steam
             )
             if (steamItem == com.nendo.argosy.ui.screens.settings.sections.SteamItem.SyncLibrary) {
-                add(InputButton.X to "Force Sync")
+                add(InputButton.X to forceSyncHint)
             }
             if (steamItem == com.nendo.argosy.ui.screens.settings.sections.SteamItem.GameNativeLibrary &&
                 uiState.steam.gameNativeSyncDirs.isNotEmpty()
             ) {
-                add(InputButton.DPAD_HORIZONTAL to "Folders / Scan")
+                add(InputButton.DPAD_HORIZONTAL to foldersScanHint)
             }
         }
         if (uiState.currentSection == SettingsSection.ACCOUNTS && !uiState.accounts.pairing.active) {
@@ -1524,14 +1645,14 @@ private fun SettingsFooter(
             if (focusedAccount is com.nendo.argosy.ui.screens.settings.sections.AccountsItem.Account &&
                 uiState.accounts.actionsFor(focusedAccount.account).size > 1
             ) {
-                add(InputButton.DPAD_HORIZONTAL to "Switch / Remove")
+                add(InputButton.DPAD_HORIZONTAL to switchRemoveHint)
             }
         }
         if (uiState.currentSection == SettingsSection.STORAGE) {
-            add(InputButton.X to "Refresh")
+            add(InputButton.X to refreshHint)
         }
         if (uiState.currentSection == SettingsSection.STORAGE_GAMES) {
-            add(InputButton.X to "Sort")
+            add(InputButton.X to sortHint)
         }
         if (uiState.currentSection == SettingsSection.STORAGE_PLATFORM_GAMES) {
             val pgInfo = createStoragePlatformGamesLayoutInfo(uiState)
@@ -1541,9 +1662,9 @@ private fun SettingsFooter(
             }
             if (focusedGame != null) {
                 if (focusedGame.buckets.size > 1) {
-                    add(InputButton.DPAD_HORIZONTAL to "Category")
+                    add(InputButton.DPAD_HORIZONTAL to categoryHint)
                 }
-                add(InputButton.Y to "Delete")
+                add(InputButton.Y to deleteHint)
             }
         }
         if (uiState.currentSection == SettingsSection.PLATFORM_DETAIL) {
@@ -1563,12 +1684,12 @@ private fun SettingsFooter(
                 focusedItem is PlatformDetailItem.Extension ||
                 focusedItem is PlatformDetailItem.DisplayTarget ||
                 focusedItem is PlatformDetailItem.Emulator) {
-                add(InputButton.DPAD_HORIZONTAL to "Adjust")
+                add(InputButton.DPAD_HORIZONTAL to adjustPlatformDetailHint)
             }
             if (config != null) {
                 val emulatorId = config.effectiveEmulatorId
                 if (emulatorId != null && emulatorId in uiState.emulators.emulatorUpdateVersions) {
-                    add(InputButton.X to "Update Emulator")
+                    add(InputButton.X to updateEmulatorHint)
                 }
             }
             val canReset = when (focusedItem) {
@@ -1578,16 +1699,16 @@ private fun SettingsFooter(
                 else -> false
             }
             if (canReset) {
-                add(InputButton.Y to "Reset")
+                add(InputButton.Y to resetPlatformDetailHint)
             }
             val aLabel = when (focusedItem) {
-                is PlatformDetailItem.SyncToggle, is PlatformDetailItem.LegacyMode -> "Toggle"
-                is PlatformDetailItem.BuiltinVideo, is PlatformDetailItem.BuiltinControls, is PlatformDetailItem.BuiltinCoreOptions -> "Open"
-                else -> "Select"
+                is PlatformDetailItem.SyncToggle, is PlatformDetailItem.LegacyMode -> toggleLabelHint
+                is PlatformDetailItem.BuiltinVideo, is PlatformDetailItem.BuiltinControls, is PlatformDetailItem.BuiltinCoreOptions -> openLabelHint
+                else -> selectLabelHint
             }
             add(InputButton.A to aLabel)
         } else if (uiState.currentSection != SettingsSection.SHADER_STACK) {
-            add(InputButton.A to "Select")
+            add(InputButton.A to selectDefaultHint)
         }
         if (uiState.currentSection == SettingsSection.PLATFORMS) {
             val emuLayoutInfo = com.nendo.argosy.ui.screens.settings.sections.createEmulatorsLayoutInfo(
@@ -1599,15 +1720,15 @@ private fun SettingsFooter(
             if (focusedItem is com.nendo.argosy.ui.screens.settings.sections.EmulatorsItem.PlatformItem &&
                 focusedItem.config.showDisplayTargetOption
             ) {
-                add(InputButton.LB_RB to "Display")
+                add(InputButton.LB_RB to displayHint)
             }
             if (focusedItem is com.nendo.argosy.ui.screens.settings.sections.EmulatorsItem.PlatformItem) {
                 if (!focusedItem.config.platform.syncEnabled) {
-                    add(InputButton.Y to "Enable")
+                    add(InputButton.Y to enableHint)
                 } else {
                     val emulatorId = focusedItem.config.effectiveEmulatorId
                     if (emulatorId != null && emulatorId in uiState.emulators.emulatorUpdateVersions) {
-                        add(InputButton.X to "Update")
+                        add(InputButton.X to updateHint)
                     }
                 }
             }
@@ -1624,7 +1745,7 @@ private fun SettingsFooter(
                 onUpdate = { _, _ -> }
             )
             if (currentSetting != null && accessor.hasOverride(currentSetting)) {
-                add(InputButton.Y to "Reset")
+                add(InputButton.Y to resetBuiltinVideoOverrideHint)
             }
         }
         if (uiState.currentSection == SettingsSection.BUILTIN_CONTROLS && !uiState.builtinVideo.isGlobalContext) {
@@ -1640,48 +1761,41 @@ private fun SettingsFooter(
                 else -> false
             }
             if (hasOverride) {
-                add(InputButton.Y to "Reset")
+                add(InputButton.Y to resetBuiltinControlsOverrideHint)
             }
         }
-        add(InputButton.B to "Back")
+        add(InputButton.B to backHint)
     }
 
     FooterHints(hints = hints, onHintClick = onHintClick)
     FooterSpacer()
 }
 
+@Composable
 private fun cachesClearConfirmTitle(target: CachesClearTarget?): String = when (target) {
-    CachesClearTarget.IMAGE_CACHE -> "Clear Image Cache?"
-    CachesClearTarget.ROM_EXTRACTION -> "Clear Extracted ROMs?"
-    CachesClearTarget.ROM_STAGING -> "Clear Abandoned Staging?"
-    CachesClearTarget.SFX_CACHE -> "Clear Sound Effects Cache?"
-    CachesClearTarget.EMULATOR_APKS -> "Clear Emulator Installers?"
-    CachesClearTarget.MISC_DOWNLOADS -> "Clear Misc Downloads?"
-    CachesClearTarget.SHADERS_CATALOG -> "Clear Shader Catalog?"
-    CachesClearTarget.FRAMES -> "Clear Frame Overlays?"
-    CachesClearTarget.STEAM_DOWNLOADS -> "Clear Steam Download Data?"
+    CachesClearTarget.IMAGE_CACHE -> stringResource(R.string.settings_shell_caches_image_title)
+    CachesClearTarget.ROM_EXTRACTION -> stringResource(R.string.settings_shell_caches_rom_extraction_title)
+    CachesClearTarget.ROM_STAGING -> stringResource(R.string.settings_shell_caches_rom_staging_title)
+    CachesClearTarget.SFX_CACHE -> stringResource(R.string.settings_shell_caches_sfx_title)
+    CachesClearTarget.EMULATOR_APKS -> stringResource(R.string.settings_shell_caches_emulator_apks_title)
+    CachesClearTarget.MISC_DOWNLOADS -> stringResource(R.string.settings_shell_caches_misc_downloads_title)
+    CachesClearTarget.SHADERS_CATALOG -> stringResource(R.string.settings_shell_caches_shaders_catalog_title)
+    CachesClearTarget.FRAMES -> stringResource(R.string.settings_shell_caches_frames_title)
+    CachesClearTarget.STEAM_DOWNLOADS -> stringResource(R.string.settings_shell_caches_steam_downloads_title)
     null -> ""
 }
 
+@Composable
 private fun cachesClearConfirmMessage(target: CachesClearTarget?): String = when (target) {
-    CachesClearTarget.IMAGE_CACHE ->
-        "This will delete all cached covers, backgrounds, and screenshots. Images re-download from the server as you browse."
-    CachesClearTarget.ROM_EXTRACTION ->
-        "This will delete extracted working copies of compressed games. They re-extract the next time each game launches."
-    CachesClearTarget.ROM_STAGING ->
-        "This will delete internal working files left behind by downloads that never finished. Downloads still in the queue keep theirs and continue where they left off."
-    CachesClearTarget.SFX_CACHE ->
-        "This will delete transcoded custom sound files. They rebuild automatically the next time sounds load."
-    CachesClearTarget.MISC_DOWNLOADS ->
-        "This will delete friend presence covers and downloaded GPU driver packages. Installed drivers are not affected."
-    CachesClearTarget.EMULATOR_APKS ->
-        "This will delete downloaded emulator installer APKs. Installed emulators are not affected."
-    CachesClearTarget.SHADERS_CATALOG ->
-        "This will delete downloaded catalog shaders. Custom shaders are kept, and catalog shaders re-download on demand."
-    CachesClearTarget.FRAMES ->
-        "This will delete downloaded frame overlays. They re-download on demand when selected."
-    CachesClearTarget.STEAM_DOWNLOADS ->
-        "This will delete staged Steam downloads and clear the download queue. Installed games are not affected, but partial downloads restart from zero."
+    CachesClearTarget.IMAGE_CACHE -> stringResource(R.string.settings_shell_caches_image_message)
+    CachesClearTarget.ROM_EXTRACTION -> stringResource(R.string.settings_shell_caches_rom_extraction_message)
+    CachesClearTarget.ROM_STAGING -> stringResource(R.string.settings_shell_caches_rom_staging_message)
+    CachesClearTarget.SFX_CACHE -> stringResource(R.string.settings_shell_caches_sfx_message)
+    CachesClearTarget.MISC_DOWNLOADS -> stringResource(R.string.settings_shell_caches_misc_downloads_message)
+    CachesClearTarget.EMULATOR_APKS -> stringResource(R.string.settings_shell_caches_emulator_apks_message)
+    CachesClearTarget.SHADERS_CATALOG -> stringResource(R.string.settings_shell_caches_shaders_catalog_message)
+    CachesClearTarget.FRAMES -> stringResource(R.string.settings_shell_caches_frames_message)
+    CachesClearTarget.STEAM_DOWNLOADS -> stringResource(R.string.settings_shell_caches_steam_downloads_message)
     null -> ""
 }
 

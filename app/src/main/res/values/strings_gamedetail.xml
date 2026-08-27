@@ -1,0 +1,993 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Owner: ui/screens/gamedetail
+      Key prefix: gamedetail_
+      Keys are named for the usage site, never for the English text, and identical English
+      is never shared between two usage sites.
+
+      This screen is full of homographs. Three to watch:
+      - "Save" is a verb on the action row and a noun everywhere save management is meant.
+      - "State" is a saved snapshot of a running game, and separately a completion status.
+      - "Play" is the verb that launches a game, and the first half of "play time".
+      Every string below says which one it is.
+    -->
+
+    <!-- ============================ Left menu (GameDetailMenu) ============================ -->
+
+    <!-- Row in the left menu of the game page. Noun phrase: opens the settings that apply to this
+         one game only, as opposed to the whole platform. -->
+    <string name="gamedetail_menu_per_game_settings">Per-Game Settings</string>
+    <!-- Row in the left menu. Noun, plural: scrolls to the block of facts about the game
+         (platform, year, developer). -->
+    <string name="gamedetail_menu_details">Details</string>
+    <!-- Row in the left menu. Noun: scrolls to the paragraph describing the game. -->
+    <string name="gamedetail_menu_description">Description</string>
+    <!-- Row in the left menu. Noun, plural: scrolls to the strip of in-game pictures. -->
+    <string name="gamedetail_menu_screenshots">Screenshots</string>
+    <!-- Row in the left menu. Noun, plural: scrolls to the RetroAchievements list. -->
+    <string name="gamedetail_menu_achievements">Achievements</string>
+    <!-- Row in the left menu. Noun phrase: scrolls to other games from the same series or
+         publisher. -->
+    <string name="gamedetail_menu_related_games">Related Games</string>
+
+    <!-- Big button at the top of the left menu while the download is being unpacked. Verb in the
+         continuous form, describing what is happening now. -->
+    <string name="gamedetail_menu_play_button_extracting">Extracting...</string>
+    <!-- Big button at the top of the left menu while the download waits its turn. Adjective
+         describing the download, not a command. -->
+    <string name="gamedetail_menu_play_button_queued">Queued</string>
+    <!-- Big button at the top of the left menu when the device has no room for the download.
+         Statement about the device. -->
+    <string name="gamedetail_menu_play_button_no_space">No Space</string>
+    <!-- Big button at the top of the left menu for a paused download. Verb: carries the download
+         on from where it stopped. Not resuming a saved game. -->
+    <string name="gamedetail_menu_play_button_resume">Resume</string>
+    <!-- Big button at the top of the left menu after a download failed. Verb: tries the download
+         again. -->
+    <string name="gamedetail_menu_play_button_retry">Retry</string>
+    <!-- Big button at the top of the left menu for a game that is on the device. Verb: launches the
+         game. Not the noun in "play time". -->
+    <string name="gamedetail_menu_play_button_play">Play</string>
+    <!-- Big button at the top of the left menu for an Android game whose package is downloaded but
+         not yet installed. Verb: hands the package to the system installer. -->
+    <string name="gamedetail_menu_play_button_install">Install</string>
+    <!-- Big button at the top of the left menu for a game that is not on the device. Verb: fetches
+         it from the server. -->
+    <string name="gamedetail_menu_play_button_download">Download</string>
+    <!-- Big button at the top of the left menu while a download runs. %1$d is how much of the
+         download is finished, as a whole number out of a hundred. -->
+    <string name="gamedetail_menu_play_button_progress_percent">%1$d%%</string>
+
+    <!-- Row in the left menu while save data is being exchanged with the server. Verb in the
+         continuous form. -->
+    <string name="gamedetail_menu_saves_syncing">Syncing...</string>
+    <!-- Row in the left menu naming the save the game will load, when the user has not named one.
+         Noun: the save the emulator writes by itself as the game runs. -->
+    <string name="gamedetail_menu_saves_default_channel">Auto-save</string>
+
+    <!-- Left menu row. Noun: marking the game as a favourite. Not the verb "to favour". -->
+    <string name="gamedetail_menu_favorite_label">Favorite</string>
+    <!-- Spoken description of the heart icon in the narrow icon-only menu, when the game is already
+         a favourite. Verb phrase: pressing it takes the game out of the favourites. -->
+    <string name="gamedetail_menu_favorite_compact_remove_description">Remove from favorites</string>
+    <!-- Spoken description of the heart icon in the narrow icon-only menu, when the game is not a
+         favourite. Verb phrase: pressing it makes it one. -->
+    <string name="gamedetail_menu_favorite_compact_add_description">Add to favorites</string>
+    <!-- Spoken description of the heart icon on the wide menu row, when the game is already a
+         favourite. Verb phrase. -->
+    <string name="gamedetail_menu_favorite_row_remove_description">Remove from favorites</string>
+    <!-- Spoken description of the heart icon on the wide menu row, when the game is not a
+         favourite. Verb phrase. -->
+    <string name="gamedetail_menu_favorite_row_add_description">Add to favorites</string>
+
+    <!-- Left menu row when the game is hidden from the user's friends. Adjective describing the
+         game's visibility, not a command. -->
+    <string name="gamedetail_menu_privacy_private">Private</string>
+    <!-- Left menu row when the game is visible to the user's friends. Adjective describing the
+         game's visibility. -->
+    <string name="gamedetail_menu_privacy_public">Public</string>
+
+    <!-- Left menu row. Noun, plural: opens the menu of everything else that can be done to this
+         game. -->
+    <string name="gamedetail_menu_options_label">Options</string>
+    <!-- Spoken description of the sliders icon in the narrow icon-only menu. Noun, plural. -->
+    <string name="gamedetail_menu_options_compact_description">Options</string>
+    <!-- Spoken description of the sliders icon on the wide menu row. Noun, plural. -->
+    <string name="gamedetail_menu_options_row_description">Options</string>
+
+    <!-- ================================= Footer hints ================================== -->
+
+    <!-- Footer hint on the game page. Noun phrase: the shoulder buttons step to the game before or
+         after this one in the same platform. -->
+    <string name="gamedetail_footer_prev_next_game">Prev/Next Game</string>
+    <!-- Footer hint while a sideways strip (screenshots, achievements, related games) is selected.
+         Verb: the left and right directions move along the strip. -->
+    <string name="gamedetail_footer_section_scroll">Scroll</string>
+
+    <!-- Footer hint on the play row while save data is being exchanged with the server. Verb in the
+         continuous form. -->
+    <string name="gamedetail_footer_play_syncing">Syncing...</string>
+    <!-- Footer hint on the play row for a game that is on the device. Verb: launches the game. -->
+    <string name="gamedetail_footer_play_downloaded">Play</string>
+    <!-- Footer hint on the play row for an Android game whose package is downloaded but not yet
+         installed. Verb: hands the package to the system installer. -->
+    <string name="gamedetail_footer_play_install">Install</string>
+    <!-- Footer hint on the play row for a game that is not on the device. Verb: fetches it from the
+         server. -->
+    <string name="gamedetail_footer_play_download">Download</string>
+    <!-- Footer hint on the play row while the download waits its turn. Adjective describing the
+         download. -->
+    <string name="gamedetail_footer_play_queued">Queued</string>
+    <!-- Footer hint on the play row when the device has no room, so pressing the button tries the
+         download again. Verb. -->
+    <string name="gamedetail_footer_play_retry_no_space">Retry</string>
+    <!-- Footer hint on the play row while a download runs. Verb in the continuous form. -->
+    <string name="gamedetail_footer_play_downloading">Downloading</string>
+    <!-- Footer hint on the play row while the download is being unpacked. Verb in the continuous
+         form. -->
+    <string name="gamedetail_footer_play_extracting">Extracting</string>
+    <!-- Footer hint on the play row for a paused download. Verb: carries the download on. Not
+         resuming a saved game. -->
+    <string name="gamedetail_footer_play_resume">Resume</string>
+    <!-- Footer hint on the play row after a download failed. Verb: tries the download again. -->
+    <string name="gamedetail_footer_play_retry_failed">Retry</string>
+    <!-- Footer hint on the play row in any other state. Verb: launches the game. -->
+    <string name="gamedetail_footer_play_fallback">Play</string>
+
+    <!-- Footer hint while the saves row is selected and a sync is already running. Verb in the
+         continuous form. -->
+    <string name="gamedetail_footer_saves_syncing">Syncing...</string>
+    <!-- Footer hint while the saves row is selected. Verb: exchanges this game's saved progress
+         with the server now. -->
+    <string name="gamedetail_footer_saves_sync">Sync</string>
+
+    <!-- Footer hint while the favourite row is selected and the game is already a favourite. Verb:
+         takes it back out. -->
+    <string name="gamedetail_footer_menu_unfavorite">Unfavorite</string>
+    <!-- Footer hint while the favourite row is selected and the game is not a favourite. Verb:
+         marks it as one. -->
+    <string name="gamedetail_footer_menu_favorite">Favorite</string>
+
+    <!-- Footer hint while the privacy row is selected and the game is currently hidden from
+         friends. Verb phrase: shows it to them. -->
+    <string name="gamedetail_footer_menu_make_public">Make Public</string>
+    <!-- Footer hint while the privacy row is selected and the game is currently visible to friends.
+         Verb phrase: hides it from them. -->
+    <string name="gamedetail_footer_menu_make_private">Make Private</string>
+
+    <!-- Footer hint while the per-game settings row is selected. Verb: opens those settings. -->
+    <string name="gamedetail_footer_configure">Configure</string>
+    <!-- Footer hint while the options row is selected. Noun, plural: opens the menu of further
+         actions. -->
+    <string name="gamedetail_footer_options">Options</string>
+    <!-- Footer hint while the screenshots row is selected. Verb: opens the picture under the cursor
+         full screen. -->
+    <string name="gamedetail_footer_view_screenshot">View</string>
+    <!-- Footer hint while the achievements row is selected. Verb phrase: opens the full list of
+         achievements. -->
+    <string name="gamedetail_footer_view_all_achievements">View All</string>
+    <!-- Footer hint while the related-games row is selected. Verb: goes to that game's page. -->
+    <string name="gamedetail_footer_open_related">Open</string>
+    <!-- Footer hint on the game page. Verb: returns to the previous screen. -->
+    <string name="gamedetail_footer_back">Back</string>
+    <!-- Footer hint on the play row for a game that runs in the built-in emulator. Noun phrase:
+         opens the menu for starting a fresh run rather than continuing a save. -->
+    <string name="gamedetail_footer_new_game">New Game</string>
+    <!-- Footer hint bound to the spare button when the game is hidden from friends. Verb phrase:
+         shows it to them. -->
+    <string name="gamedetail_footer_shortcut_make_public">Make Public</string>
+    <!-- Footer hint bound to the spare button when the game is visible to friends. Verb phrase:
+         hides it from them. -->
+    <string name="gamedetail_footer_shortcut_make_private">Make Private</string>
+    <!-- Footer hint bound to the spare button when the game is already a favourite. Verb: takes it
+         back out. -->
+    <string name="gamedetail_footer_shortcut_unfavorite">Unfavorite</string>
+    <!-- Footer hint bound to the spare button when the game is not a favourite. Verb: marks it as
+         one. -->
+    <string name="gamedetail_footer_shortcut_favorite">Favorite</string>
+
+    <!-- ============================== Page body sections =============================== -->
+
+    <!-- Heading over the paragraph describing the game. Noun. Rendered in caps in English; use
+         whatever casing is normal for a heading in your language. -->
+    <string name="gamedetail_section_description_heading">DESCRIPTION</string>
+    <!-- Heading over the strip of in-game pictures. Noun, plural. Rendered in caps in English. -->
+    <string name="gamedetail_section_screenshots_heading">SCREENSHOTS</string>
+    <!-- Heading over the strip of other games from the same series or publisher. Noun phrase.
+         Rendered in caps in English. -->
+    <string name="gamedetail_section_related_heading">RELATED GAMES</string>
+    <!-- Heading over the achievements strip. Noun, plural. Rendered in caps in English. -->
+    <string name="gamedetail_section_achievements_heading">ACHIEVEMENTS</string>
+    <!-- Tally beside that heading. %1$d is how many achievements the user has earned, %2$d how many
+         the game has in total. -->
+    <string name="gamedetail_section_achievements_count">(%1$d/%2$d)</string>
+
+    <!-- =============================== Header chips ================================== -->
+
+    <!-- Caption under a chip in the game header giving how many people can play at once. Noun,
+         plural. -->
+    <string name="gamedetail_chip_players_label">Players</string>
+    <!-- Caption under a chip giving how long the game takes to finish once, ignoring optional
+         content. Noun phrase: the main line of the game. -->
+    <string name="gamedetail_chip_main_story_label">Main Story</string>
+    <!-- Caption under a chip giving how long the game takes including its optional content. -->
+    <string name="gamedetail_chip_main_extras_label">Main + Extras</string>
+    <!-- Caption under a chip giving how long the game takes to finish completely. Noun: a player
+         who does everything a game offers. -->
+    <string name="gamedetail_chip_completionist_label">Completionist</string>
+    <!-- Caption under the chip holding the score this user gave the game. Noun phrase. -->
+    <string name="gamedetail_chip_my_rating_label">My Rating</string>
+    <!-- Caption under the chip holding how hard this user found the game. Noun. -->
+    <string name="gamedetail_chip_difficulty_label">Difficulty</string>
+    <!-- Caption under the chip holding the score other players gave the game. Noun. -->
+    <string name="gamedetail_chip_community_rating_label">Rating</string>
+    <!-- Caption under the chip holding how long this user has spent in the game. Noun phrase: an
+         amount of time, not an instruction to play. -->
+    <string name="gamedetail_chip_play_time_label">Play Time</string>
+
+    <!-- Score inside a rating or difficulty chip. %1$d is the user's score, out of ten. -->
+    <string name="gamedetail_chip_rating_value">%1$d/10</string>
+    <!-- Drawn inside a rating or difficulty chip the user has not scored yet. A dash, not a
+         word. -->
+    <string name="gamedetail_chip_rating_unset">--</string>
+    <!-- Score inside the community rating chip. %1$d is the share of players who liked the game, as
+         a whole number out of a hundred. -->
+    <string name="gamedetail_chip_community_rating_value">%1$d%%</string>
+
+    <!-- Play time under an hour. %1$d is a number of minutes; "m" is the unit abbreviation. -->
+    <string name="gamedetail_chip_play_time_minutes">%1$dm</string>
+    <!-- Play time of some hours and some minutes. %1$d is hours, %2$d minutes; "h" and "m" are unit
+         abbreviations. -->
+    <string name="gamedetail_chip_play_time_hours_minutes">%1$dh %2$dm</string>
+    <!-- Play time of a whole number of hours. %1$d is hours; "h" is the unit abbreviation. -->
+    <string name="gamedetail_chip_play_time_hours">%1$dh</string>
+    <!-- Play time of many hours, with the number grouped for readability. %1$s is the already
+         grouped number of hours; "h" is the unit abbreviation. -->
+    <string name="gamedetail_chip_play_time_hours_grouped">%1$sh</string>
+
+    <!-- ============================= Collapsed header bar ============================== -->
+
+    <!-- Community score in the slim bar that replaces the header once the page is scrolled. %1$d is
+         a whole number out of a hundred. -->
+    <string name="gamedetail_collapsed_header_rating_percent">%1$d%%</string>
+    <!-- Count of finished sessions in that slim bar. "Play" is a noun here: one sitting with the
+         game, not the verb. %1$d is how many there have been. -->
+    <plurals name="gamedetail_collapsed_header_play_count">
+        <item quantity="one">%1$d play</item>
+        <item quantity="other">%1$d plays</item>
+    </plurals>
+
+    <!-- =============================== Achievement strip =============================== -->
+
+    <!-- Score under an achievement badge in the strip on the game page. "pts" abbreviates points.
+         %1$d is how many the achievement is worth. -->
+    <plurals name="gamedetail_achievement_strip_points">
+        <item quantity="one">%1$d pt</item>
+        <item quantity="other">%1$d pts</item>
+    </plurals>
+
+    <!-- ============================ Full achievement list ============================== -->
+
+    <!-- Second line of the full achievement list's header, under the game's title. Noun, plural,
+         naming what the list holds. -->
+    <string name="gamedetail_achievement_list_subtitle">Achievements</string>
+    <!-- Tally at the right of that header. %1$d is how many are earned, %2$d how many exist, %3$d
+         the same as a whole number out of a hundred. -->
+    <string name="gamedetail_achievement_list_progress">%1$d/%2$d (%3$d%%)</string>
+    <!-- Heading over the earned half of the full achievement list. Adjective describing the
+         achievements below it. %1$d is how many. Rendered in caps in English. -->
+    <string name="gamedetail_achievement_list_unlocked_heading">UNLOCKED (%1$d)</string>
+    <!-- Heading over the unearned half of the list. Adjective describing the achievements below it.
+         %1$d is how many. Rendered in caps in English. -->
+    <string name="gamedetail_achievement_list_locked_heading">LOCKED (%1$d)</string>
+    <!-- Tag on an earned achievement in the full list, when it was earned under RetroAchievements'
+         strict rules (no save states, no cheats). Noun naming that mode. -->
+    <string name="gamedetail_achievement_list_tier_hardcore">Hardcore</string>
+    <!-- Tag on an earned achievement in the full list, when it was earned under the relaxed rules.
+         Noun naming that mode. -->
+    <string name="gamedetail_achievement_list_tier_casual">Casual</string>
+    <!-- Score on an unearned achievement in the full list. "pts" abbreviates points. %1$d is how
+         many the achievement is worth. -->
+    <plurals name="gamedetail_achievement_list_points">
+        <item quantity="one">%1$d pt</item>
+        <item quantity="other">%1$d pts</item>
+    </plurals>
+    <!-- Footer hint in the full achievement list. Verb: up and down move through the list. -->
+    <string name="gamedetail_achievement_list_footer_navigate">Navigate</string>
+    <!-- Footer hint in the full achievement list. Verb: closes the list and returns to the game
+         page. -->
+    <string name="gamedetail_achievement_list_footer_back">Back</string>
+
+    <!-- ============================= Screenshot viewer ================================= -->
+
+    <!-- Position counter under a full-screen screenshot. %1$d is which picture is showing, %2$d how
+         many there are. -->
+    <string name="gamedetail_screenshot_viewer_position">%1$d / %2$d</string>
+    <!-- Footer hint in the full-screen screenshot viewer. Verb: left and right move between
+         pictures. -->
+    <string name="gamedetail_screenshot_viewer_footer_navigate">Navigate</string>
+    <!-- Footer hint in the viewer. Verb: leaves the viewer. -->
+    <string name="gamedetail_screenshot_viewer_footer_close">Close</string>
+    <!-- Footer hint in the viewer. Verb phrase: uses the picture on screen as the game page's
+         backdrop. -->
+    <string name="gamedetail_screenshot_viewer_footer_set_background">Set Background</string>
+
+    <!-- ================================ Option rows =================================== -->
+
+    <!-- Spoken description of the tick beside the option row that is currently in force. Adjective
+         describing that row. -->
+    <string name="gamedetail_option_item_current_description">Current</string>
+    <!-- Trailing value on an option row, wrapped in brackets. %1$s is the value itself. -->
+    <string name="gamedetail_option_item_value">[%1$s]</string>
+
+    <!-- ================================ Save status =================================== -->
+
+    <!-- Name of the save the game will load, when the user has not named one and no time is known.
+         Adjective used as a noun: the most recent save. -->
+    <string name="gamedetail_save_status_latest_label">Latest</string>
+    <!-- Time beside the save status. %1$s is a phrase like "2 hours ago"; the bullet separates it
+         from the status word before it. -->
+    <string name="gamedetail_save_status_time">· %1$s</string>
+    <!-- Save status: the copy on this device and the copy on the server match. Adjective describing
+         the save, not a command. -->
+    <string name="gamedetail_save_status_synced">Synced</string>
+    <!-- Save status: this device holds the more recent save. Adjective phrase describing the
+         save. -->
+    <string name="gamedetail_save_status_local_newer">Local newer</string>
+    <!-- Save status: the server holds the more recent save. Adjective phrase. -->
+    <string name="gamedetail_save_status_server_newer">Server newer</string>
+    <!-- Save status: the save exists on this device only. Adjective describing where it lives. -->
+    <string name="gamedetail_save_status_local_only">Local</string>
+    <!-- Save status: the save is waiting to be sent to the server. Adjective phrase describing the
+         save. -->
+    <string name="gamedetail_save_status_pending_upload">Pending upload</string>
+    <!-- Save status: two saves disagree and the user has to choose between them. Verb phrase
+         describing what the save needs. -->
+    <string name="gamedetail_save_status_needs_resolution">Needs resolution</string>
+    <!-- Save status: this game has no saved progress at all. "Save" is a noun here. -->
+    <string name="gamedetail_save_status_no_save">No save</string>
+    <!-- Save status: save syncing has not been set up for this emulator. Adjective phrase. -->
+    <string name="gamedetail_save_status_not_configured">Not configured</string>
+
+    <!-- ============================ Rename channel modal ================================ -->
+
+    <!-- Heading of the modal that names a new save channel before creating it. Noun phrase.
+         Rendered in caps in English. -->
+    <string name="gamedetail_rename_channel_title">CREATE CHANNEL</string>
+    <!-- Footer hint on that modal. Verb: accepts the typed name. -->
+    <string name="gamedetail_rename_channel_footer_confirm">Confirm</string>
+    <!-- Footer hint on that modal. Verb: closes it without creating the channel. -->
+    <string name="gamedetail_rename_channel_footer_cancel">Cancel</string>
+    <!-- Instruction above the name field. Imperative sentence addressed to the user. -->
+    <string name="gamedetail_rename_channel_description">Enter a name for this save channel</string>
+    <!-- Grey text inside the empty name field. Noun phrase. -->
+    <string name="gamedetail_rename_channel_placeholder">Channel name</string>
+
+    <!-- ============================== More options menu ================================ -->
+
+    <!-- Row in the game's options menu. Verb phrase: opens the saves and save states kept on this
+         device. "Saves" is a noun, plural. -->
+    <string name="gamedetail_more_options_manage_saves">Manage Cached Saves</string>
+    <!-- Row in the options menu. Nouns: the scores the user gave the game and how far through it
+         they are. "Status" here is progress through the game, not a save state. -->
+    <string name="gamedetail_more_options_ratings_status">Ratings &amp; Status</string>
+    <!-- Row in the options menu for a Steam game. Verb phrase: picks which installed app starts the
+         game. -->
+    <string name="gamedetail_more_options_change_launcher">Change Launcher</string>
+    <!-- Row in the options menu. Noun phrase: the timed sections a speedrunner splits a run into. -->
+    <string name="gamedetail_more_options_speedrun_splits">Speedrun Splits</string>
+    <!-- Row in the options menu for consoles that identify a game by a code stamped on the disc or
+         cartridge. Noun phrase naming that code; leave "ID" as is. -->
+    <string name="gamedetail_more_options_title_id">Title ID</string>
+    <!-- Value beside that row when the code could not be read from the game's files. Adjective
+         phrase describing the code. -->
+    <string name="gamedetail_more_options_title_id_missing">Not detected</string>
+    <!-- Row in the options menu for a game released on several discs. Verb phrase: chooses which
+         disc to start from. -->
+    <string name="gamedetail_more_options_select_disc">Select Disc</string>
+    <!-- Row in the options menu when the library holds several editions of the same game. Verb
+         phrase: chooses which edition to launch. -->
+    <string name="gamedetail_more_options_select_variant">Select Variant</string>
+    <!-- Row in the options menu. Noun, plural: opens the list of the game's downloadable files so
+         individual ones can be added or removed. -->
+    <string name="gamedetail_more_options_files">Files</string>
+    <!-- Row in the options menu. Verb phrase: fetches this game's description, artwork and scores
+         from the server again. -->
+    <string name="gamedetail_more_options_refresh_data">Refresh Game Data</string>
+    <!-- Row in the options menu. Verb phrase: opens the list of the user's collections so the game
+         can be put in one. -->
+    <string name="gamedetail_more_options_add_to_collection">Add to Collection</string>
+    <!-- Row in the options menu. Verb phrase: picks a different picture for the game's box art. -->
+    <string name="gamedetail_more_options_change_cover">Change Cover Art</string>
+    <!-- Row in the options menu. Verb phrase: puts the box art back to the one the server
+         supplies. -->
+    <string name="gamedetail_more_options_reset_cover">Reset Cover Art</string>
+    <!-- Row in the options menu for an installed Android app. Verb: removes the app from the
+         device. -->
+    <string name="gamedetail_more_options_uninstall">Uninstall</string>
+    <!-- Row in the options menu for a game another launcher installed and owns. Verb phrase:
+         Argosy forgets the game without deleting it. %1$s is the other launcher's name. -->
+    <string name="gamedetail_more_options_unlink_from_launcher">Unlink from %1$s</string>
+    <!-- Stands in for the other launcher's name in that row when it is not known. Noun, singular:
+         the app that installed the game. -->
+    <string name="gamedetail_more_options_unlink_launcher_fallback">Launcher</string>
+    <!-- Row in the options menu. Verb phrase: erases the copy of the game held on this device,
+         keeping the library entry. -->
+    <string name="gamedetail_more_options_delete_download">Delete Download</string>
+    <!-- Row in the options menu. Verb phrase: drops the game from the library altogether. -->
+    <string name="gamedetail_more_options_remove_from_library">Remove from Library</string>
+    <!-- Row in the options menu for a game that is currently hidden. Verb: brings it back into the
+         library listings. -->
+    <string name="gamedetail_more_options_show">Show</string>
+    <!-- Row in the options menu for a game that is currently visible. Verb: keeps it in the library
+         but stops listing it. -->
+    <string name="gamedetail_more_options_hide">Hide</string>
+
+    <!-- ============================ Ratings and status menu ============================ -->
+
+    <!-- Heading of the ratings and status menu. Nouns: the scores the user gave the game and how
+         far through it they are. Rendered in caps in English. -->
+    <string name="gamedetail_ratings_status_title">RATINGS &amp; STATUS</string>
+    <!-- Footer hint in that menu. Verb: up and down move between the rows. -->
+    <string name="gamedetail_ratings_status_footer_navigate">Navigate</string>
+    <!-- Footer hint in that menu. Verb: opens the row under the cursor. -->
+    <string name="gamedetail_ratings_status_footer_select">Select</string>
+    <!-- Footer hint in that menu. Verb: closes it. -->
+    <string name="gamedetail_ratings_status_footer_back">Back</string>
+    <!-- Row in that menu. Verb phrase: gives the game a score out of ten. -->
+    <string name="gamedetail_ratings_status_rate_game">Rate Game</string>
+    <!-- Value beside that row before the user has scored the game. Adjective phrase describing the
+         game. -->
+    <string name="gamedetail_ratings_status_rate_game_unset">Not rated</string>
+    <!-- Value beside a scored row. %1$d is the user's score, out of ten. -->
+    <string name="gamedetail_ratings_status_score_value">%1$d/10</string>
+    <!-- Row in that menu. Verb phrase: records how hard the user found the game. -->
+    <string name="gamedetail_ratings_status_set_difficulty">Set Difficulty</string>
+    <!-- Value beside the difficulty row before the user has recorded one. Adjective phrase. -->
+    <string name="gamedetail_ratings_status_difficulty_unset">Not set</string>
+    <!-- Row in that menu. Verb phrase: records how far through the game the user is. "Status" here
+         is progress through the game, never a save state. -->
+    <string name="gamedetail_ratings_status_set_status">Set Status</string>
+    <!-- Value beside the status row before the user has recorded one. Adjective phrase. -->
+    <string name="gamedetail_ratings_status_status_unset">Not set</string>
+
+    <!-- ================================ Status picker ================================= -->
+
+    <!-- Heading of the picker for how far through the game the user is. Verb phrase. "Status" is
+         progress through the game, never a save state. Rendered in caps in English. -->
+    <string name="gamedetail_status_picker_title">SET STATUS</string>
+    <!-- Footer hint in that picker. Verb: up and down move between the choices. -->
+    <string name="gamedetail_status_picker_footer_navigate">Navigate</string>
+    <!-- Footer hint in that picker. Verb: settles on the highlighted choice. -->
+    <string name="gamedetail_status_picker_footer_confirm">Confirm</string>
+    <!-- Footer hint in that picker. Verb: leaves without changing anything. -->
+    <string name="gamedetail_status_picker_footer_cancel">Cancel</string>
+
+    <!-- ================================ Rating picker ================================= -->
+
+    <!-- Heading of the picker when scoring the game. Verb phrase. Rendered in caps in English. -->
+    <string name="gamedetail_rating_picker_title_rating">RATE GAME</string>
+    <!-- Heading of the same picker when recording how hard the game was. Verb phrase. Rendered in
+         caps in English. -->
+    <string name="gamedetail_rating_picker_title_difficulty">SET DIFFICULTY</string>
+    <!-- Footer hint in the rating picker. Verb: left and right raise and lower the score. -->
+    <string name="gamedetail_rating_picker_footer_adjust">Adjust</string>
+    <!-- Footer hint in the rating picker. Verb: settles on the score shown. -->
+    <string name="gamedetail_rating_picker_footer_confirm">Confirm</string>
+    <!-- Footer hint in the rating picker. Verb: leaves without changing the score. -->
+    <string name="gamedetail_rating_picker_footer_cancel">Cancel</string>
+    <!-- Shown under the icons in the rating picker while no score is chosen. Adjective phrase. -->
+    <string name="gamedetail_rating_picker_unset">Not set</string>
+    <!-- Shown under the icons once a score is chosen. %1$d is the score, out of ten. -->
+    <string name="gamedetail_rating_picker_value">%1$d/10</string>
+
+    <!-- ============================= Play options modal ================================ -->
+
+    <!-- Heading of the modal that opens before launching a game. Verb phrase. Rendered in caps in
+         English. -->
+    <string name="gamedetail_play_options_title">START GAME</string>
+    <!-- Heading over the rows that carry on from existing saved progress. Verb. Rendered in caps in
+         English. -->
+    <string name="gamedetail_play_options_section_continue">CONTINUE</string>
+    <!-- Heading over the rows that start the game from the beginning. Noun phrase. Rendered in caps
+         in English. -->
+    <string name="gamedetail_play_options_section_new_game">NEW GAME</string>
+    <!-- Row that loads the most recent save. Adjective used as a noun: the newest save. -->
+    <string name="gamedetail_play_options_resume_latest">Latest</string>
+    <!-- Row that launches without first checking the server for a newer save. "Play" is the verb,
+         "syncing" the exchange with the server. -->
+    <string name="gamedetail_play_options_resume_no_sync">Play without syncing</string>
+    <!-- Second line under that row, saying what is skipped. Noun phrase. -->
+    <string name="gamedetail_play_options_resume_no_sync_subtext">Skip the pre-launch save sync check</string>
+    <!-- Row that carries on under RetroAchievements' strict rules. Noun naming that mode. -->
+    <string name="gamedetail_play_options_resume_hardcore">Hardcore</string>
+    <!-- Second line under that row when there is no strict-mode save yet, so an ordinary save is
+         carried over into a strict session. Verb phrase addressed to the user. -->
+    <string name="gamedetail_play_options_resume_hardcore_subtext">Continue this save in hardcore</string>
+    <!-- Row that starts a fresh game under the relaxed RetroAchievements rules. Noun naming that
+         mode. -->
+    <string name="gamedetail_play_options_new_casual">Casual</string>
+    <!-- Second line under that row when the emulator can also write save states. "Save states" are
+         snapshots of a running game; "cheats" are codes that alter it. -->
+    <string name="gamedetail_play_options_new_casual_subtext_states">Save states and cheats available</string>
+    <!-- Second line under that row when the emulator cannot write save states. -->
+    <string name="gamedetail_play_options_new_casual_subtext_cheats">Cheats available</string>
+    <!-- Row that starts a fresh game under the strict RetroAchievements rules. Noun naming that
+         mode. -->
+    <string name="gamedetail_play_options_new_hardcore">Hardcore</string>
+    <!-- Second line under that row, listing what strict mode gives up. "Save states" are snapshots
+         of a running game. -->
+    <string name="gamedetail_play_options_new_hardcore_subtext_online">Online-only, no save states or cheats</string>
+    <!-- Second line under that row when the device is offline, so strict mode cannot start. Verb
+         phrase describing what is missing. -->
+    <string name="gamedetail_play_options_new_hardcore_subtext_offline">Requires internet connection</string>
+
+    <!-- ============================== Permission modal ================================= -->
+
+    <!-- Heading of the modal shown when save syncing needs file access it does not have. Noun
+         phrase. -->
+    <string name="gamedetail_permission_storage_title">Permission Required</string>
+    <!-- Body of that modal. "Save sync" is the exchange of saved progress with the server. -->
+    <string name="gamedetail_permission_storage_message">Save sync is enabled but file access permission is not granted. Grant permission to sync saves, or disable save sync to continue.</string>
+    <!-- Accepting button on that modal. Verb phrase: opens the system screen where access is
+         given. -->
+    <string name="gamedetail_permission_storage_confirm">Grant Permission</string>
+    <!-- Heading of the modal shown when save syncing needs access to one particular folder. Noun
+         phrase. -->
+    <string name="gamedetail_permission_folder_title">Folder Access Required</string>
+    <!-- Body of that modal. "Android/data" is a folder name on the device; leave it untranslated.
+         "Android" on its own is the folder the user has to pick. -->
+    <string name="gamedetail_permission_folder_message">Save sync needs access to the Android/data folder to sync saves from other emulators. Select the Android folder when prompted, or disable save sync to continue.</string>
+    <!-- Accepting button on that modal. Verb phrase: opens the system folder chooser. -->
+    <string name="gamedetail_permission_folder_confirm">Select Folder</string>
+    <!-- Second button on both permission modals. Verb phrase: turns off the exchange of saved
+         progress with the server, so no access is needed. -->
+    <string name="gamedetail_permission_disable_sync">Disable Save Sync</string>
+    <!-- Third button on both permission modals. Verb: closes the modal and changes nothing. -->
+    <string name="gamedetail_permission_cancel">Cancel</string>
+
+    <!-- ============================== Missing disc modal =============================== -->
+
+    <!-- Heading of the modal shown when some discs of a multi-disc game are not on the device.
+         Adjective plus noun, plural. Rendered in caps in English. -->
+    <string name="gamedetail_missing_disc_title">MISSING DISCS</string>
+    <!-- Footer hint on that modal. Verb: fetches the missing discs from the server. -->
+    <string name="gamedetail_missing_disc_footer_download">Download</string>
+    <!-- Footer hint on that modal. Verb: leaves without downloading. -->
+    <string name="gamedetail_missing_disc_footer_cancel">Cancel</string>
+    <!-- Body of that modal. %1$s is a list of disc numbers, such as "1" or "1, 3". "Disc" is one
+         physical disc of the original release. -->
+    <plurals name="gamedetail_missing_disc_message">
+        <item quantity="one">Disc %1$s is not downloaded.\nWould you like to download it?</item>
+        <item quantity="other">Discs %1$s are not downloaded.\nWould you like to download them?</item>
+    </plurals>
+
+    <!-- ============================ Extraction failed modal ============================ -->
+
+    <!-- Heading of the modal shown when unpacking a finished download went wrong. Verb phrase in
+         the past tense. Rendered in caps in English. -->
+    <string name="gamedetail_extraction_failed_title">EXTRACTION FAILED</string>
+    <!-- Footer hint on that modal. Verb: acts on the button under the cursor. -->
+    <string name="gamedetail_extraction_failed_footer_select">Select</string>
+    <!-- Footer hint on that modal. Verb: leaves it. -->
+    <string name="gamedetail_extraction_failed_footer_cancel">Cancel</string>
+    <!-- Body of that modal. %1$s is the name of the file that could not be unpacked. -->
+    <string name="gamedetail_extraction_failed_message">Failed to extract %1$s</string>
+    <!-- Button on that modal. Verb phrase: unpacks the file already on the device again. -->
+    <string name="gamedetail_extraction_failed_retry">Retry Extraction</string>
+    <!-- Button on that modal. Verb: fetches the file from the server afresh. -->
+    <string name="gamedetail_extraction_failed_redownload">Redownload</string>
+
+    <!-- ================================= Pickers ====================================== -->
+
+    <!-- Heading of the picker for which installed app starts a Steam game. Verb phrase. Rendered in
+         caps in English. -->
+    <string name="gamedetail_launcher_picker_title">SELECT LAUNCHER</string>
+
+    <!-- Heading of the picker for which libretro core runs the game. Verb phrase. "Core" is the
+         emulation engine; keep the word. Rendered in caps in English. -->
+    <string name="gamedetail_core_picker_title">SELECT CORE</string>
+    <!-- Second line under that heading. "RetroArch" is the name of another app; leave it
+         untranslated. -->
+    <string name="gamedetail_core_picker_subtitle">Cores must be installed in RetroArch first</string>
+    <!-- First row of the core picker. Verb phrase: falls back to whatever core the platform is set
+         to use. -->
+    <string name="gamedetail_core_picker_platform_default">Use Platform Default</string>
+
+    <!-- Heading of the picker for which emulator app runs the game. Verb phrase. Rendered in caps
+         in English. -->
+    <string name="gamedetail_emulator_picker_title">SELECT EMULATOR</string>
+    <!-- First row of the emulator picker. Verb phrase: falls back to whatever emulator the platform
+         is set to use. -->
+    <string name="gamedetail_emulator_picker_platform_default">Use Platform Default</string>
+
+    <!-- Heading of the picker for which edition of the game to launch. Verb phrase. Rendered in
+         caps in English. -->
+    <string name="gamedetail_variant_picker_title">SELECT VARIANT</string>
+    <!-- Second line under that heading. Verb phrase addressed to the user. -->
+    <string name="gamedetail_variant_picker_subtitle">Choose which version to launch</string>
+    <!-- Row of the variant picker standing for the game as the library first held it, before any
+         alternate edition was added. Noun phrase. -->
+    <string name="gamedetail_variant_picker_original">Default (Original)</string>
+
+    <!-- ================================ Cover picker ================================== -->
+
+    <!-- Heading of the picker for the game's box art. Noun phrase. Rendered in caps in English. -->
+    <string name="gamedetail_cover_picker_title">COVER ART</string>
+    <!-- Footer hint in the cover picker. Verb: the directions move between the pictures. -->
+    <string name="gamedetail_cover_picker_footer_navigate">Navigate</string>
+    <!-- Footer hint in the cover picker. Verb: takes the picture under the cursor. -->
+    <string name="gamedetail_cover_picker_footer_select">Select</string>
+    <!-- Footer hint in the cover picker. Verb: runs the search again with what is typed. -->
+    <string name="gamedetail_cover_picker_footer_search">Search</string>
+    <!-- Footer hint in the cover picker. Adverb phrase: takes the picture from the device's own
+         storage instead of the server. -->
+    <string name="gamedetail_cover_picker_footer_from_file">From file</string>
+    <!-- Footer hint in the cover picker. Verb: leaves the box art as it was. -->
+    <string name="gamedetail_cover_picker_footer_cancel">Cancel</string>
+    <!-- Grey text inside the cover picker's empty search field. Verb phrase addressed to the
+         user. -->
+    <string name="gamedetail_cover_picker_search_placeholder">Search artwork...</string>
+    <!-- Shown in the cover picker when the search came back with nothing. "Title" here is the game,
+         not a heading. -->
+    <string name="gamedetail_cover_picker_empty">No cover art found for this title.</string>
+    <!-- Shown in the cover picker when the search itself failed. %1$s is the reason the server
+         gave. -->
+    <string name="gamedetail_cover_picker_error">Could not search cover art. %1$s</string>
+
+    <!-- ================================= File picker ================================== -->
+
+    <!-- Heading of the file list when opened to add and remove files already decided on. Noun,
+         plural. -->
+    <string name="gamedetail_file_picker_title_manage">Files</string>
+    <!-- Heading of the same list when opened to pick what to download. Verb phrase addressed to the
+         user. -->
+    <string name="gamedetail_file_picker_title_choose">Choose files</string>
+    <!-- Summary line above the file list, in manage mode, when nothing has been ticked or unticked.
+         Noun phrase describing the pending work. -->
+    <string name="gamedetail_file_picker_summary_no_changes">No changes</string>
+    <!-- Part of that summary counting files newly ticked. %1$d is how many, %2$s their combined
+         size. -->
+    <string name="gamedetail_file_picker_summary_added">+%1$d · %2$s</string>
+    <!-- Part of that summary counting files newly unticked. %1$d is how many, %2$s their combined
+         size. -->
+    <string name="gamedetail_file_picker_summary_removed">-%1$d · %2$s</string>
+    <!-- Summary line above the file list when choosing what to download. %1$d is how many files are
+         ticked, %2$d how many there are, %3$s the combined size of the ticked ones. -->
+    <string name="gamedetail_file_picker_summary_selection">%1$d of %2$d · %3$s selected</string>
+    <!-- Confirming button of the file list when choosing what to download. Verb: fetches the ticked
+         files. -->
+    <string name="gamedetail_file_picker_confirm_download">Download</string>
+    <!-- Confirming button in manage mode when only additions are pending. Verb plus %1$d, how many
+         files will be fetched. -->
+    <string name="gamedetail_file_picker_confirm_download_count">Download %1$d</string>
+    <!-- Confirming button in manage mode when only removals are pending. Verb plus %1$d, how many
+         files will be erased from the device. -->
+    <string name="gamedetail_file_picker_confirm_remove_count">Remove %1$d</string>
+    <!-- Confirming button in manage mode when both additions and removals are pending. Verb
+         phrase. -->
+    <string name="gamedetail_file_picker_confirm_apply">Apply Changes</string>
+    <!-- Confirming button in manage mode with nothing pending, so it does nothing. Noun phrase. -->
+    <string name="gamedetail_file_picker_confirm_no_changes">No Changes</string>
+    <!-- Button that unticks every file at once. Verb phrase. -->
+    <string name="gamedetail_file_picker_deselect_all">Deselect All</string>
+    <!-- Button that ticks every file at once. Verb phrase. -->
+    <string name="gamedetail_file_picker_select_all">Select All</string>
+    <!-- Button that leaves the file list without acting. Verb. -->
+    <string name="gamedetail_file_picker_cancel">Cancel</string>
+    <!-- Spoken description of the arrow on a collapsed group heading. Verb: opens the group to show
+         its files. -->
+    <string name="gamedetail_file_picker_expand_description">Expand</string>
+    <!-- Spoken description of the arrow on an open group heading. Verb: folds the group away. -->
+    <string name="gamedetail_file_picker_collapse_description">Collapse</string>
+    <!-- Tag on the file the game will use when several editions exist. Adjective describing that
+         file. Rendered in caps in English. -->
+    <string name="gamedetail_file_picker_default_tag">DEFAULT</string>
+    <!-- Second line on a file row that is on the device and has been unticked. Verb phrase in the
+         future: it will be erased when the changes are applied. -->
+    <string name="gamedetail_file_picker_pending_remove">Will be removed</string>
+    <!-- Second line on a file row that is not on the device and has been ticked. Verb phrase in the
+         future. -->
+    <string name="gamedetail_file_picker_pending_add">Will download</string>
+    <!-- Second line on a file row that is already on the device and staying. Adverb phrase
+         describing where the file is. -->
+    <string name="gamedetail_file_picker_on_device">On device</string>
+
+    <!-- ============================= Per-game settings ================================= -->
+
+    <!-- Heading of the modal holding settings that apply to this one game. Noun phrase. -->
+    <string name="gamedetail_per_game_title">Per-Game Settings</string>
+    <!-- Footer hint on rows that step through a fixed set of choices. Verb: left and right change
+         the value. -->
+    <string name="gamedetail_per_game_footer_adjust">Adjust</string>
+    <!-- Footer hint on the save-path row when this game already has its own path. "Change" and
+         "Reset" are both verbs; left and right pick between the two buttons. -->
+    <string name="gamedetail_per_game_footer_change_reset">Change/Reset</string>
+    <!-- Footer hint on the emulator and core rows. Verb: opens the picker. -->
+    <string name="gamedetail_per_game_footer_select">Select</string>
+    <!-- Footer hint on the save-path row. Verb: opens the folder browser. -->
+    <string name="gamedetail_per_game_footer_change_save_path">Change</string>
+    <!-- Footer hint on the save-location row. Verb: opens the platform's settings, where that
+         location is set. -->
+    <string name="gamedetail_per_game_footer_open_save_location">Open</string>
+    <!-- Footer hint on the memory card row. Verb: opens the card picker. -->
+    <string name="gamedetail_per_game_footer_change_memcard">Change</string>
+    <!-- Footer hint on rows whose value steps round a short list. Verb: moves to the next value. -->
+    <string name="gamedetail_per_game_footer_cycle">Cycle</string>
+    <!-- Footer hint on the platform settings row. Verb: opens that screen. -->
+    <string name="gamedetail_per_game_footer_open">Open</string>
+    <!-- Footer hint in per-game settings. Verb: closes the modal. -->
+    <string name="gamedetail_per_game_footer_back">Back</string>
+
+    <!-- Row label in per-game settings. Noun, singular: the app that runs this game. -->
+    <string name="gamedetail_per_game_emulator_label">Emulator</string>
+    <!-- Value beside that row when no emulator for this platform is installed. Adjective phrase
+         describing the emulator. -->
+    <string name="gamedetail_per_game_emulator_none">None detected</string>
+    <!-- Row label in per-game settings. Noun, singular: the emulation engine inside the emulator.
+         Keep the word "core". -->
+    <string name="gamedetail_per_game_core_label">Core</string>
+    <!-- Value beside that row when the game uses whatever core the platform is set to. Noun. -->
+    <string name="gamedetail_per_game_core_default">Default</string>
+    <!-- Row label in per-game settings. Noun phrase: the folder this game's saved progress is
+         written to. "Save" is a noun here. -->
+    <string name="gamedetail_per_game_save_path_label">Save Path</string>
+    <!-- Row label in per-game settings. Noun phrase: the folder the whole platform's saves live
+         under, which this game inherits. -->
+    <string name="gamedetail_per_game_save_location_label">Save Location</string>
+    <!-- Value beside that row when no such folder has been set. Adjective phrase. -->
+    <string name="gamedetail_per_game_save_location_unset">Not configured</string>
+    <!-- Row label in per-game settings, for consoles that store saves on a removable card. Noun
+         phrase. -->
+    <string name="gamedetail_per_game_memcard_label">Memory Card</string>
+    <!-- Value beside that row when the game uses whatever card the platform is set to. %1$s is that
+         card's name. -->
+    <string name="gamedetail_per_game_memcard_default">Default (%1$s)</string>
+    <!-- Stands in for the card's name in that value when no card has been chosen anywhere.
+         Adjective: the emulator picks one by itself. -->
+    <string name="gamedetail_per_game_memcard_default_auto">Auto</string>
+    <!-- Row label in per-game settings on a dual-screen handheld. Noun phrase: which of the two
+         screens the game opens on. -->
+    <string name="gamedetail_per_game_display_target_label">Display Target</string>
+    <!-- Value beside that row when the game follows the platform's choice. %1$s is that choice. -->
+    <string name="gamedetail_per_game_display_target_inherit">Inherit (%1$s)</string>
+    <!-- Row label in per-game settings. Noun phrase: which of the game's file types to launch when
+         several are present. -->
+    <string name="gamedetail_per_game_extension_label">File Extension</string>
+    <!-- Value beside that row when the game follows the platform's choice. %1$s is that choice. -->
+    <string name="gamedetail_per_game_extension_inherit">Inherit (%1$s)</string>
+    <!-- Stands in for the platform's choice in that value when the platform has not set one.
+         Adjective: the launcher picks by itself. -->
+    <string name="gamedetail_per_game_extension_inherit_auto">Auto</string>
+    <!-- Last row of per-game settings. Noun phrase: opens the settings shared by every game on this
+         platform. -->
+    <string name="gamedetail_per_game_platform_settings">Platform Settings</string>
+    <!-- Tag at the right of a row whose value comes from the platform rather than this game.
+         Adjective describing the value. -->
+    <string name="gamedetail_per_game_inherited_tag">Inherited</string>
+    <!-- Heading of the folder browser opened from the save-path row. Noun phrase. -->
+    <string name="gamedetail_per_game_save_path_browser_title">Save Path</string>
+    <!-- Shown in place of a save path when the emulator writes saves beside the game file itself
+         rather than in a fixed folder. "ROM" is the game file; leave it untranslated. -->
+    <string name="gamedetail_per_game_save_path_content_dir">(ROM directory)</string>
+
+    <!-- Heading of the file browser opened to pick box art from the device. Verb phrase addressed
+         to the user. -->
+    <string name="gamedetail_cover_file_browser_title">Choose cover art</string>
+
+    <!-- =============================== Speedrun splits ================================= -->
+
+    <!-- Heading of the splits modal while one category's sections are open. %1$s is the category's
+         name; "Segments" are the timed sections of a run. -->
+    <string name="gamedetail_speedrun_segments_title">%1$s - Segments</string>
+    <!-- Heading of the splits modal at its top level. Noun phrase: the timed sections a speedrunner
+         divides a run into. -->
+    <string name="gamedetail_speedrun_title">Speedrun Splits</string>
+    <!-- Footer hint while a category's sections are open. Verb phrase: creates another section. -->
+    <string name="gamedetail_speedrun_footer_add_segment">Add Segment</string>
+    <!-- Footer hint while a category's sections are open. Verb: removes the section under the
+         cursor. -->
+    <string name="gamedetail_speedrun_footer_delete">Delete</string>
+    <!-- Footer hint while a category's sections are open. Verb: the shoulder buttons shift the
+         section up or down the order. -->
+    <string name="gamedetail_speedrun_footer_move">Move</string>
+    <!-- Footer hint while a category's sections are open. Verb: goes back to the category list. -->
+    <string name="gamedetail_speedrun_footer_back">Back</string>
+    <!-- Footer hint on the category list. Verb: opens the category under the cursor. -->
+    <string name="gamedetail_speedrun_footer_open">Open</string>
+    <!-- Footer hint on the category list. Noun phrase: creates another category. -->
+    <string name="gamedetail_speedrun_footer_new_category">New Category</string>
+    <!-- Footer hint on the category list. Verb: closes the splits modal. -->
+    <string name="gamedetail_speedrun_footer_close">Close</string>
+    <!-- Row in the section list. %1$d is the section's position in the run, %2$s its name. -->
+    <string name="gamedetail_speedrun_segment_row">%1$d.  %2$s</string>
+    <!-- Name given automatically to the one timed section a brand-new category starts with. Noun
+         phrase naming a segment, not a heading. -->
+    <string name="gamedetail_speedrun_default_segment_name">Segment 1</string>
+    <!-- Row under a category's sections. Verb phrase: gives the category a different name. -->
+    <string name="gamedetail_speedrun_rename_category">Rename Category</string>
+    <!-- Row under a category's sections. Verb phrase: removes the category and everything under
+         it. -->
+    <string name="gamedetail_speedrun_delete_category">Delete Category</string>
+    <!-- First half of the message shown when the user has no speedrun categories yet. A picture of
+         the confirm button follows it, then gamedetail_speedrun_empty_suffix. -->
+    <string name="gamedetail_speedrun_empty_prefix">No categories yet. Press</string>
+    <!-- Second half of that message, after the button picture. Verb phrase addressed to the
+         user. -->
+    <string name="gamedetail_speedrun_empty_suffix">to create one, or import from the community.</string>
+    <!-- Second line under a category in the list. %1$d is how many timed sections it has, %2$d how
+         many times the user has run it. -->
+    <string name="gamedetail_speedrun_category_summary">%1$d segments · %2$d attempts</string>
+    <!-- Row at the end of the category list. Verb phrase: fetches ready-made splits from the
+         speedrunning community. -->
+    <string name="gamedetail_speedrun_import_row">Import Splits...</string>
+    <!-- Heading of the panel shown while the community sites are being queried. Verb in the
+         continuous form. -->
+    <string name="gamedetail_speedrun_import_loading_title">Searching...</string>
+    <!-- Body of that panel. "therun.gg" and "speedrun.com" are website names; leave them
+         untranslated. -->
+    <string name="gamedetail_speedrun_import_loading_message">Looking up categories on therun.gg and speedrun.com</string>
+    <!-- Heading of the panel shown while chosen splits are being copied in. Verb in the continuous
+         form. -->
+    <string name="gamedetail_speedrun_import_importing_title">Importing...</string>
+    <!-- Body of that panel. "Run" here is one attempt at the game. -->
+    <string name="gamedetail_speedrun_import_importing_message">Fetching splits from a top run</string>
+    <!-- Heading of the panel shown when the import went wrong. Noun. -->
+    <string name="gamedetail_speedrun_import_failed_title">Import</string>
+    <!-- Footer hint on that panel. Verb: returns to the category list. -->
+    <string name="gamedetail_speedrun_import_failed_footer_back">Back</string>
+    <!-- Footer hint while previewing one runner's splits. Noun phrase: left and right show a
+         different player's splits for the same category. -->
+    <string name="gamedetail_speedrun_preview_footer_other_runner">Other Runner</string>
+    <!-- Footer hint while previewing splits. Verb: copies them in. -->
+    <string name="gamedetail_speedrun_preview_footer_import">Import</string>
+    <!-- Footer hint while previewing splits. Verb: goes back to the list of categories found. -->
+    <string name="gamedetail_speedrun_preview_footer_back">Back</string>
+    <!-- Attribution above previewed splits. %1$s is the player's name, %2$d their place on the
+         leaderboard. -->
+    <string name="gamedetail_speedrun_preview_attribution">Splits by %1$s (#%2$d)</string>
+    <!-- Row in the preview listing one timed section. %1$d is its position, %2$s its name. -->
+    <string name="gamedetail_speedrun_preview_segment_row">%1$d.  %2$s</string>
+    <!-- Heading of the panel listing the categories found online. Verb phrase. -->
+    <string name="gamedetail_speedrun_import_options_title">Import Splits</string>
+    <!-- Footer hint on that panel. Verb: takes the category under the cursor. -->
+    <string name="gamedetail_speedrun_import_options_footer_import">Import</string>
+    <!-- Footer hint on that panel. Verb: leaves without importing. -->
+    <string name="gamedetail_speedrun_import_options_footer_cancel">Cancel</string>
+    <!-- Second line under a category found on therun.gg, which supplies every timed section. Leave
+         the site name untranslated. -->
+    <string name="gamedetail_speedrun_source_therun">therun.gg · full splits</string>
+    <!-- Second line under a category found on speedrun.com, which supplies the category's name but
+         no sections. Leave the site name untranslated. -->
+    <string name="gamedetail_speedrun_source_speedruncom">speedrun.com · name only</string>
+    <!-- Footer hint while typing a name into the splits modal. Verb: accepts what was typed. -->
+    <string name="gamedetail_speedrun_prompt_confirm">Confirm</string>
+    <!-- Footer hint while typing a name. Verb: discards what was typed. -->
+    <string name="gamedetail_speedrun_prompt_cancel">Cancel</string>
+    <!-- Grey text inside the empty name field. Noun, singular. -->
+    <string name="gamedetail_speedrun_prompt_placeholder">Name</string>
+    <!-- Heading of the panel asking whether to remove a category or section. %1$s is its name. -->
+    <string name="gamedetail_speedrun_confirm_delete_title">Delete \"%1$s\"?</string>
+    <!-- Footer hint on that panel. Verb: goes ahead with the removal. -->
+    <string name="gamedetail_speedrun_confirm_delete_footer_delete">Delete</string>
+    <!-- Footer hint on that panel. Verb: keeps everything. -->
+    <string name="gamedetail_speedrun_confirm_delete_footer_cancel">Cancel</string>
+    <!-- Body of that panel when a whole category is being removed. -->
+    <string name="gamedetail_speedrun_confirm_delete_category_message">This deletes the category, its segments, and all recorded attempts.</string>
+    <!-- Body of that panel when one timed section is being removed. -->
+    <string name="gamedetail_speedrun_confirm_delete_segment_message">This removes the segment from the category.</string>
+    <!-- Heading of the box asking for a new category's name. Noun phrase. -->
+    <string name="gamedetail_speedrun_prompt_new_category">New Category</string>
+    <!-- Heading of the box asking for a category's replacement name. Verb phrase. -->
+    <string name="gamedetail_speedrun_prompt_rename_category">Rename Category</string>
+    <!-- Heading of the box asking for a new timed section's name. Noun phrase. -->
+    <string name="gamedetail_speedrun_prompt_new_segment">New Segment</string>
+    <!-- Heading of the box asking for a section's replacement name. Verb phrase. -->
+    <string name="gamedetail_speedrun_prompt_rename_segment">Rename Segment</string>
+    <!-- Shown when the community sites know nothing about this game. %1$s is the game's title. -->
+    <string name="gamedetail_speedrun_import_none_found">No categories found online for \"%1$s\"</string>
+    <!-- Shown when a chosen runner's splits could not be fetched. %1$s is the category's name. -->
+    <string name="gamedetail_speedrun_import_fetch_failed">Couldn\'t fetch splits for %1$s</string>
+
+    <!-- ============================ Brief on-screen messages =========================== -->
+
+    <!-- Brief message when handing the game to its emulator threw. %1$s is the system's reason. -->
+    <string name="gamedetail_notice_launch_failed">Failed to launch: %1$s</string>
+    <!-- Brief message after the game page's backdrop was replaced with a screenshot. Past tense
+         statement. -->
+    <string name="gamedetail_notice_background_updated">Background updated</string>
+    <!-- Brief message when that replacement did not work. Past tense statement. -->
+    <string name="gamedetail_notice_background_failed">Failed to set background</string>
+    <!-- Brief message after the user's score for the game reached the server. "Rating" is a noun,
+         "saved" means recorded. -->
+    <string name="gamedetail_notice_rating_saved">Rating saved</string>
+    <!-- Brief message after the user's difficulty score reached the server. -->
+    <string name="gamedetail_notice_difficulty_saved">Difficulty saved</string>
+    <!-- Brief message after the user's progress through the game reached the server. "Status" is
+         progress, never a save state. -->
+    <string name="gamedetail_notice_status_saved">Status saved</string>
+    <!-- Brief message when the launcher cannot work out which emulator this game uses, so the saves
+         panel cannot open. -->
+    <string name="gamedetail_notice_no_emulator_for_saves">Cannot determine emulator for saves</string>
+    <!-- Brief message when the same cannot be worked out while confirming a save selection. -->
+    <string name="gamedetail_notice_no_emulator_for_selection">Cannot determine emulator</string>
+    <!-- Brief message when the same cannot be worked out while putting a save back on the device.
+         "Restore" is the noun for that operation. -->
+    <string name="gamedetail_notice_no_emulator_for_restore">Cannot determine emulator for save restore</string>
+    <!-- Brief message when the same cannot be worked out while syncing a save channel. -->
+    <string name="gamedetail_notice_no_emulator_for_sync">Cannot determine emulator</string>
+    <!-- Brief message after a sync found nothing to do. "Saves" is a noun, plural. -->
+    <string name="gamedetail_notice_saves_up_to_date">Saves are up to date</string>
+    <!-- Brief message after this device's save was sent to the server. Past tense statement. -->
+    <string name="gamedetail_notice_save_uploaded">Local save uploaded</string>
+    <!-- Brief message after the server's save was fetched onto this device. Past tense
+         statement. -->
+    <string name="gamedetail_notice_save_downloaded">Server save downloaded</string>
+    <!-- Brief message after the user chose not to sync. Past tense statement about the sync. -->
+    <string name="gamedetail_notice_sync_skipped">Sync skipped</string>
+    <!-- Brief message when an edition of the game exists only on this device, so there is nothing
+         to fetch. "Variant" is one edition of a game. -->
+    <string name="gamedetail_notice_variant_local_only">Cannot download local-only variant</string>
+    <!-- Brief message when an edition starts downloading. %1$s is the file's name. -->
+    <string name="gamedetail_notice_downloading_variant">Downloading %1$s</string>
+    <!-- Brief message counting files queued by the manage-files panel. %1$d is how many. -->
+    <plurals name="gamedetail_notice_files_queued">
+        <item quantity="one">%1$d queued</item>
+        <item quantity="other">%1$d queued</item>
+    </plurals>
+    <!-- Brief message counting files erased by the manage-files panel. %1$d is how many. -->
+    <plurals name="gamedetail_notice_files_removed">
+        <item quantity="one">%1$d removed</item>
+        <item quantity="other">%1$d removed</item>
+    </plurals>
+    <!-- Brief message when several downloads were queued at once. %1$d is how many. -->
+    <plurals name="gamedetail_notice_downloads_queued">
+        <item quantity="one">Queued %1$d download</item>
+        <item quantity="other">Queued %1$d downloads</item>
+    </plurals>
+    <!-- Brief message when a download is asked for on a game that is already on the device. -->
+    <string name="gamedetail_notice_already_downloaded">Game already downloaded</string>
+    <!-- Brief message when a multi-disc game starts downloading. "Disc" is one physical disc of the
+         original release. %1$d is how many. -->
+    <plurals name="gamedetail_notice_discs_queued">
+        <item quantity="one">Downloading %1$d disc</item>
+        <item quantity="other">Downloading %1$d discs</item>
+    </plurals>
+    <!-- Brief message when the discs a multi-disc game was missing start downloading. %1$d is how
+         many. -->
+    <plurals name="gamedetail_notice_missing_discs_queued">
+        <item quantity="one">Downloading %1$d missing disc</item>
+        <item quantity="other">Downloading %1$d missing discs</item>
+    </plurals>
+    <!-- Brief message after unpacking a download worked on the second try. Past tense
+         statement. -->
+    <string name="gamedetail_notice_extraction_succeeded">Extraction succeeded</string>
+    <!-- Brief message after a fresh download of a file that would not unpack was queued. Past tense
+         statement. -->
+    <string name="gamedetail_notice_redownload_started">Redownload started</string>
+    <!-- Brief message when handing an Android package to the system installer failed. "APK" is the
+         Android package file format; leave it untranslated. -->
+    <string name="gamedetail_notice_apk_install_failed">Could not install APK</string>
+    <!-- Brief message after erasing the copy of a game held on this device. Past tense statement
+         about the download. -->
+    <string name="gamedetail_notice_download_deleted">Download deleted</string>
+    <!-- Brief message after dropping a game from the library altogether. Past tense statement. -->
+    <string name="gamedetail_notice_removed_from_library">Removed from library</string>
+    <!-- Brief message when that removal did not work. -->
+    <string name="gamedetail_notice_remove_failed">Could not remove this game</string>
+    <!-- Brief message after refreshing one game's metadata from the game server. Past tense
+         statement. -->
+    <string name="gamedetail_notice_game_data_refreshed">Game data refreshed</string>
+    <!-- Brief message after refreshing one installed Android app's details. Past tense
+         statement. -->
+    <string name="gamedetail_notice_android_data_refreshed">Game data refreshed</string>
+    <!-- Brief message when the app store had nothing to say about an installed Android app. -->
+    <string name="gamedetail_notice_app_data_failed">Could not fetch app data</string>
+    <!-- Brief message when that lookup threw. %1$s is the system's reason. -->
+    <string name="gamedetail_notice_refresh_failed">Failed to refresh: %1$s</string>
+
+    <!-- Stands in for the platform's name in the game header when the library has no platform row
+         for this game. Adjective describing the platform, not a command. -->
+    <string name="gamedetail_header_platform_unknown">Unknown</string>
+</resources>

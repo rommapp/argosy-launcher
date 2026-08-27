@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Owner: typed failure-reason sealed classes across domain/usecase, attached to their
+      NotificationText via a ui/common extension (see DownloadFailureReasonUi.kt and siblings).
+      Key prefix: error_
+      One string per usage site. Identical English at two call sites still gets two keys, because
+      a case here names one specific failure condition, never a shared sentence.
+    -->
+
+    <!-- SyncLibraryUseCase / SyncLibraryFailureReason -->
+    <string name="error_sync_library_not_connected">RomM not connected</string>
+    <string name="error_sync_library_unexpected">Sync failed</string>
+
+    <!-- SyncPlatformUseCase / SyncPlatformFailureReason -->
+    <string name="error_sync_platform_not_connected">RomM not connected</string>
+    <string name="error_sync_platform_not_found">Platform not found</string>
+    <string name="error_sync_platform_unexpected">Sync failed</string>
+
+    <!-- RestoreCachedStatesUseCase / RestoreCachedStatesFailureReason
+         "States" here means save states (in-game snapshots), not completion status. -->
+    <string name="error_restore_cached_states_game_not_found">Game not found</string>
+    <string name="error_restore_cached_states_no_local_path">Game has no local path</string>
+    <!-- The folder a save state belongs in on the emulator's own disk layout. -->
+    <string name="error_restore_cached_states_directory_unresolved">Could not determine where to restore states</string>
+    <string name="error_restore_cached_states_unexpected">Could not restore states</string>
+
+    <!-- SyncStatesOnSessionEndUseCase / StateSyncFailureReason
+         "States" here means save states (in-game snapshots), not completion status. -->
+    <string name="error_state_sync_game_not_found">Game not found</string>
+    <string name="error_state_sync_no_local_path">Game has no local path</string>
+
+    <!-- RestoreStateUseCase / RestoreStateFailureReason
+         "State" here means a save state (an in-game snapshot), not completion status. -->
+    <string name="error_restore_state_target_path_unresolved">Could not determine where to restore this state</string>
+    <string name="error_restore_state_write_failed">Failed to restore state file</string>
+
+    <!-- RestoreCachedSaveUseCase / RestoreCachedSaveFailureReason
+         "Save" here is a noun (a save file), not the verb. -->
+    <string name="error_restore_cached_save_game_not_found">Game not found</string>
+    <string name="error_restore_cached_save_no_local_copy">Game has no local copy</string>
+    <string name="error_restore_cached_save_location_unresolved">Cannot determine save location</string>
+    <string name="error_restore_cached_save_clear_failed">Failed to clear existing save at target path</string>
+    <string name="error_restore_cached_save_no_local_cache_id">No local save to restore</string>
+    <string name="error_restore_cached_save_no_server_save_id">No server save to restore</string>
+    <string name="error_restore_cached_save_restore_failed">Failed to restore save</string>
+
+    <!-- DownloadGameUseCase / DownloadGameFailureReason -->
+    <string name="error_download_game_not_found">Game not found</string>
+    <string name="error_download_game_not_synced">Game is not synced from RomM</string>
+    <!-- %1$s is a file extension such as "png", shown without a leading dot in the arg. -->
+    <string name="error_download_invalid_file_type">Invalid file type: .%1$s</string>
+    <!-- %1$s is the server's own error message, not authored by this app. -->
+    <string name="error_download_rom_info_fetch_failed">Failed to get ROM info: %1$s</string>
+    <string name="error_download_no_discs_found">No discs found for multi-disc game</string>
+    <string name="error_download_all_discs_downloaded">All discs already downloaded</string>
+    <string name="error_download_no_discs_queued">Failed to queue any disc downloads</string>
+    <string name="error_download_game_not_found_for_repair">Game not found</string>
+    <string name="error_download_not_multi_disc">Not a multi-disc game</string>
+
+    <!-- DownloadManager / DownloadFailureReason (queue-level failures, persisted as a
+         stable token via DownloadFailureReasonCodec, never as this English text). -->
+    <!-- %1$s is a raw HTTP content-type such as "text/html", not authored by this app. -->
+    <string name="error_download_invalid_content_type">Invalid file type: %1$s</string>
+    <string name="error_download_file_too_small">File too small to be a ROM</string>
+    <string name="error_download_unexpected">Download failed</string>
+    <string name="error_download_insufficient_unpack_space_internal">Unpacking needs %1$d MB in internal storage, %2$d MB free</string>
+    <string name="error_download_insufficient_unpack_space_rom">Unpacking needs %1$d MB in ROM storage, %2$d MB free</string>
+    <string name="error_download_unpack_escaped_staging">Unpacked game did not land in the staging folder</string>
+    <string name="error_download_staged_path_missing">Staged game has no recorded path</string>
+    <string name="error_download_insufficient_deploy_space">Needs %1$d MB in ROM storage, %2$d MB free</string>
+    <string name="error_download_move_to_storage_failed">Could not move the game into ROM storage</string>
+    <string name="error_download_moved_file_not_found">Moved game was not found in ROM storage</string>
+    <string name="error_download_downloaded_file_missing">Downloaded file not found</string>
+    <string name="error_download_no_download_entry">No download entry found</string>
+    <string name="error_download_no_longer_exists">Downloaded file no longer exists</string>
+    <string name="error_download_extraction_failed">Extraction failed</string>
+
+    <!-- FilePickerFlowUseCase (a DownloadResult.AlreadyDownloaded surfaced as an issue
+         in the cherry-pick file list, distinct from the success-notice wording used
+         elsewhere for the same underlying case). -->
+    <string name="error_filepicker_already_downloaded">Game already downloaded</string>
+</resources>

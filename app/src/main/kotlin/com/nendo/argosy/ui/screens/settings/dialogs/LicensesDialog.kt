@@ -23,7 +23,9 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import com.nendo.argosy.R
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
@@ -118,7 +120,7 @@ fun LicensesDialog(onDismiss: () -> Unit) {
                 .fillMaxHeight(0.7f)
         ) {
             Text(
-                text = "Open Source Licenses",
+                text = stringResource(R.string.settings_licenses_dialog_title),
                 style = MaterialTheme.typography.titleLarge,
                 color = theme.textPrimary,
                 modifier = Modifier.padding(Dimens.spacingLg)
@@ -138,14 +140,14 @@ fun LicensesDialog(onDismiss: () -> Unit) {
 
                 Spacer(Modifier.height(Dimens.spacingMd))
                 Text(
-                    text = "Emulator Cores",
+                    text = stringResource(R.string.settings_licenses_dialog_cores_heading),
                     style = MaterialTheme.typography.titleSmall,
                     color = theme.textPrimary,
                     fontWeight = FontWeight.Bold
                 )
                 Spacer(Modifier.height(Dimens.spacingXs))
                 Text(
-                    text = "Cores are downloaded from the libretro buildbot. See docs.libretro.com/development/licenses for core licenses.",
+                    text = stringResource(R.string.settings_licenses_dialog_cores_body),
                     style = MaterialTheme.typography.bodySmall,
                     color = theme.textDim
                 )
@@ -161,7 +163,7 @@ fun LicensesDialog(onDismiss: () -> Unit) {
                 horizontalArrangement = Arrangement.End
             ) {
                 ActionButton(
-                    label = "Close",
+                    label = stringResource(R.string.settings_licenses_dialog_close_button),
                     onClick = onDismiss,
                     primary = true,
                     focused = true

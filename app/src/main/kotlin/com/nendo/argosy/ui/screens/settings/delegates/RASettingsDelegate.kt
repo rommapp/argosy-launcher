@@ -1,6 +1,8 @@
 package com.nendo.argosy.ui.screens.settings.delegates
 
+import android.content.Context
 import android.util.Log
+import com.nendo.argosy.R
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.RALoginResult
 import com.nendo.argosy.data.repository.RetroAchievementsRepository
@@ -13,6 +15,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
 private const val TAG = "RASettingsDelegate"
@@ -20,7 +23,8 @@ private const val TAG = "RASettingsDelegate"
 class RASettingsDelegate @Inject constructor(
     private val raRepository: RetroAchievementsRepository,
     private val prefsRepository: UserPreferencesRepository,
-    private val libretroSettingsRepo: LibretroSettingsRepository
+    private val libretroSettingsRepo: LibretroSettingsRepository,
+    @ApplicationContext private val context: Context
 ) {
     private val _state = MutableStateFlow(RASettingsState())
     val state: StateFlow<RASettingsState> = _state.asStateFlow()
@@ -112,7 +116,9 @@ class RASettingsDelegate @Inject constructor(
     fun login(scope: CoroutineScope, onFocusReset: () -> Unit) {
         val state = _state.value
         if (state.loginUsername.isBlank() || state.loginPassword.isBlank()) {
-            _state.update { it.copy(loginError = "Username and password required") }
+            _state.update {
+                it.copy(loginError = context.getString(R.string.settings_ra_delegate_login_error_required))
+            }
             return
         }
 

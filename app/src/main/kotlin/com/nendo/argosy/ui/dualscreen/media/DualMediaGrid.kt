@@ -17,7 +17,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.animateScrollToItemCentered
 import com.nendo.argosy.ui.screens.media.MediaItemUi
 import com.nendo.argosy.ui.screens.media.components.MediaPosterGrid
@@ -61,7 +63,7 @@ fun DualMediaGrid(
         if (items.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
-                    text = "Nothing in this library yet",
+                    text = stringResource(R.string.dual_media_grid_empty),
                     style = MaterialTheme.typography.bodyMedium,
                     color = theme.textDim
                 )

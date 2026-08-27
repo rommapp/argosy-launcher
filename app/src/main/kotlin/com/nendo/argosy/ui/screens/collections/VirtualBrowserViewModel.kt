@@ -1,8 +1,10 @@
 package com.nendo.argosy.ui.screens.collections
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nendo.argosy.R
 import com.nendo.argosy.domain.usecase.collection.CategoryType
 import com.nendo.argosy.domain.usecase.collection.CategoryWithCount
 import com.nendo.argosy.domain.usecase.collection.GetVirtualCollectionCategoriesUseCase
@@ -28,7 +30,7 @@ import javax.inject.Inject
 
 data class VirtualBrowserUiState(
     val type: String = "",
-    val title: String = "",
+    @StringRes val titleRes: Int = R.string.collections_browser_title_fallback,
     val categories: List<CategoryWithCount> = emptyList(),
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
@@ -122,7 +124,7 @@ class VirtualBrowserViewModel @Inject constructor(
         val clamped = focusedIndex.coerceIn(0, (visible.size - 1).coerceAtLeast(0))
         VirtualBrowserUiState(
             type = type,
-            title = titleFor(type),
+            titleRes = titleResFor(type),
             categories = visible,
             isLoading = false,
             isRefreshing = isRefreshing,
@@ -140,15 +142,13 @@ class VirtualBrowserViewModel @Inject constructor(
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = VirtualBrowserUiState(type = type, title = titleFor(type))
+        initialValue = VirtualBrowserUiState(type = type, titleRes = titleResFor(type))
     )
 
-    private fun titleFor(type: String): String = when (type) {
-        "genres" -> "Genres"
-        "modes" -> "Game Modes"
-        "series" -> "Series"
-        else -> "Browse"
-    }
+    @StringRes
+    private fun titleResFor(type: String): Int =
+        VirtualBrowseKind.entries.find { it.route == type }?.labelRes
+            ?: R.string.collections_browser_title_fallback
 
     private fun sectionLabelFor(name: String): String {
         val first = name.trim().firstOrNull()?.uppercaseChar() ?: '#'

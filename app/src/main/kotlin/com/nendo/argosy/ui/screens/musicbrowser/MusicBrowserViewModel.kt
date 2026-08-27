@@ -6,6 +6,7 @@ import android.media.MediaPlayer
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nendo.argosy.R
 import com.nendo.argosy.data.local.entity.BgmPlaylistEntity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMMusicFacet
@@ -311,15 +312,22 @@ class MusicBrowserViewModel @Inject constructor(
     fun openFacetChooser() {
         val st = _uiState.value
         if (st.isUnsupported || st.isOffline || st.facetPicker != null) return
-        val options = buildList {
-            add("Artist")
-            add("Album")
-            add("Genre")
-            if (st.mode == MusicBrowserMode.SFX) add(DURATION_FILTER_OPTION)
-            if (st.hasActiveFilters) add("Clear Filters")
+        val chooserOptions = buildList {
+            add(FacetChooserOption.ARTIST)
+            add(FacetChooserOption.ALBUM)
+            add(FacetChooserOption.GENRE)
+            if (st.mode == MusicBrowserMode.SFX) add(FacetChooserOption.MAX_DURATION)
+            if (st.hasActiveFilters) add(FacetChooserOption.CLEAR_FILTERS)
         }
         _uiState.update {
-            it.copy(facetPicker = FacetPickerUi(FacetPickerStage.CHOOSER, title = "Filter By", options = options))
+            it.copy(
+                facetPicker = FacetPickerUi(
+                    stage = FacetPickerStage.CHOOSER,
+                    title = context.getString(R.string.media_music_facet_chooser_title),
+                    options = chooserOptions.map { option -> context.getString(option.labelRes) },
+                    chooserOptions = chooserOptions
+                )
+            )
         }
     }
 
@@ -360,7 +368,7 @@ class MusicBrowserViewModel @Inject constructor(
                 }
                 is RomMResult.Error -> {
                     _uiState.update { it.copy(facetPicker = null) }
-                    postNotice("Could not load filter options")
+                    postNotice(context.getString(R.string.media_music_notice_facet_failed))
                 }
             }
         }
@@ -384,13 +392,13 @@ class MusicBrowserViewModel @Inject constructor(
         if (picker.isLoading) return
         val idx = index ?: picker.focusIndex
         when (picker.stage) {
-            FacetPickerStage.CHOOSER -> when (picker.options.getOrNull(idx)) {
-                "Artist" -> openFacetValues(RomMMusicFacet.ARTISTS)
-                "Album" -> openFacetValues(RomMMusicFacet.ALBUMS)
-                "Genre" -> openFacetValues(RomMMusicFacet.GENRES)
-                DURATION_FILTER_OPTION -> {}
-                "Clear Filters" -> clearFilters()
-                else -> {}
+            FacetPickerStage.CHOOSER -> when (picker.chooserOptions.getOrNull(idx)) {
+                FacetChooserOption.ARTIST -> openFacetValues(RomMMusicFacet.ARTISTS)
+                FacetChooserOption.ALBUM -> openFacetValues(RomMMusicFacet.ALBUMS)
+                FacetChooserOption.GENRE -> openFacetValues(RomMMusicFacet.GENRES)
+                FacetChooserOption.MAX_DURATION -> {}
+                FacetChooserOption.CLEAR_FILTERS -> clearFilters()
+                null -> {}
             }
             FacetPickerStage.VALUES -> {
                 val facet = picker.facet ?: return
@@ -425,17 +433,21 @@ class MusicBrowserViewModel @Inject constructor(
         RomMMusicFacet.GENRES -> _uiState.value.genreFilter
     }
 
-    private fun facetTitle(facet: RomMMusicFacet): String = when (facet) {
-        RomMMusicFacet.ARTISTS -> "Artist"
-        RomMMusicFacet.ALBUMS -> "Album"
-        RomMMusicFacet.GENRES -> "Genre"
-    }
+    private fun facetTitle(facet: RomMMusicFacet): String = context.getString(
+        when (facet) {
+            RomMMusicFacet.ARTISTS -> R.string.media_music_facet_values_title_artist
+            RomMMusicFacet.ALBUMS -> R.string.media_music_facet_values_title_album
+            RomMMusicFacet.GENRES -> R.string.media_music_facet_values_title_genre
+        }
+    )
 
-    private fun allOptionFor(facet: RomMMusicFacet): String = when (facet) {
-        RomMMusicFacet.ARTISTS -> "All Artists"
-        RomMMusicFacet.ALBUMS -> "All Albums"
-        RomMMusicFacet.GENRES -> "All Genres"
-    }
+    private fun allOptionFor(facet: RomMMusicFacet): String = context.getString(
+        when (facet) {
+            RomMMusicFacet.ARTISTS -> R.string.media_music_facet_all_artists
+            RomMMusicFacet.ALBUMS -> R.string.media_music_facet_all_albums
+            RomMMusicFacet.GENRES -> R.string.media_music_facet_all_genres
+        }
+    )
 
     fun togglePreview(index: Int? = null) {
         val st = _uiState.value
@@ -493,7 +505,7 @@ class MusicBrowserViewModel @Inject constructor(
             } catch (_: Exception) {
                 runCatching { player.release() }
                 onPreviewEnded(track.romFileId)
-                postNotice("Preview failed")
+                postNotice(context.getString(R.string.media_music_notice_preview_failed))
             }
         }
     }
@@ -559,7 +571,7 @@ class MusicBrowserViewModel @Inject constructor(
         }
         viewModelScope.launch(Dispatchers.IO) {
             playlistCoordinator.removeOrDisable(path)
-            postNotice("Removed from playlist")
+            postNotice(context.getString(R.string.media_music_notice_removed))
         }
     }
 
@@ -568,7 +580,7 @@ class MusicBrowserViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             ensureDownloaded(track).onSuccess { local ->
                 playlistCoordinator.add(local.localPath, track.title, local.gameFileId)
-                postNotice("Added to playlist")
+                postNotice(context.getString(R.string.media_music_notice_added))
             }
         }
     }
@@ -607,7 +619,7 @@ class MusicBrowserViewModel @Inject constructor(
             },
             onFailure = { error ->
                 _uiState.update { it.copy(downloadingIds = it.downloadingIds - track.romFileId) }
-                postNotice("Download failed")
+                postNotice(context.getString(R.string.media_music_notice_download_failed))
                 Result.failure(error)
             }
         )
@@ -640,7 +652,8 @@ class MusicBrowserViewModel @Inject constructor(
             fileName = decodedName,
             streamUrl = streamUrl,
             platformName = platformName,
-            gameName = gameName?.takeIf { it.isNotBlank() } ?: "Unknown Game",
+            gameName = gameName?.takeIf { it.isNotBlank() }
+                ?: context.getString(R.string.media_music_unknown_game),
             trackNumber = track,
             disc = disc,
             trackTitle = cleanTitle

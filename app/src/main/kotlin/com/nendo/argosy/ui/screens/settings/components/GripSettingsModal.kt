@@ -15,6 +15,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.data.preferences.GripReserveMode
 import com.nendo.argosy.domain.model.GripAutoController
 import com.nendo.argosy.ui.components.CyclePreference
@@ -111,13 +113,13 @@ fun GripSettingsModal(
     }
 
     Modal(
-        title = "Controller Grip",
-        subtitle = "Shift the UI up out of the area a grip covers",
+        title = stringResource(R.string.settings_grip_modal_title),
+        subtitle = stringResource(R.string.settings_grip_modal_subtitle),
         baseWidth = Dimens.modalWidthLg,
         onDismiss = onDismiss,
         footerHints = listOf(
-            InputButton.DPAD_HORIZONTAL to "Adjust",
-            InputButton.B to "Back"
+            InputButton.DPAD_HORIZONTAL to stringResource(R.string.settings_grip_modal_hint_adjust),
+            InputButton.B to stringResource(R.string.settings_grip_modal_hint_back)
         ),
         inlineFooterHints = true,
         onFooterHintClick = { button -> if (button == InputButton.B) onDismiss() }
@@ -130,12 +132,15 @@ fun GripSettingsModal(
                 val rowFocused = index == focusedIndex
                 when (row) {
                     GripSettingsRow.MODE -> CyclePreference(
-                        title = "Mode",
+                        title = stringResource(R.string.settings_grip_modal_mode_title),
                         value = mode.displayName,
                         subtitle = when (mode) {
-                            GripReserveMode.OFF -> "Never shift the UI up"
-                            GripReserveMode.ON -> "Always shift the UI up in portrait"
-                            GripReserveMode.AUTO -> "Shift the UI up when a chosen controller is connected"
+                            GripReserveMode.OFF ->
+                                stringResource(R.string.settings_grip_modal_mode_subtitle_off)
+                            GripReserveMode.ON ->
+                                stringResource(R.string.settings_grip_modal_mode_subtitle_on)
+                            GripReserveMode.AUTO ->
+                                stringResource(R.string.settings_grip_modal_mode_subtitle_auto)
                         },
                         isFocused = rowFocused,
                         onClick = { onCycleMode(1) },
@@ -144,14 +149,14 @@ fun GripSettingsModal(
 
                     GripSettingsRow.CONTROLLERS -> NavigationPreference(
                         icon = Icons.Outlined.Gamepad,
-                        title = "Controllers",
+                        title = stringResource(R.string.settings_grip_modal_controllers_title),
                         subtitle = gripAutoControllerSubtitle(controllers),
                         isFocused = rowFocused,
                         onClick = { showControllers = true }
                     )
 
                     GripSettingsRow.RESERVED_HEIGHT -> SliderPreference(
-                        title = "Reserved Height",
+                        title = stringResource(R.string.settings_grip_modal_reserved_height_title),
                         value = reservePercent,
                         minValue = GRIP_RESERVE_MIN_PERCENT,
                         maxValue = GRIP_RESERVE_MAX_PERCENT,

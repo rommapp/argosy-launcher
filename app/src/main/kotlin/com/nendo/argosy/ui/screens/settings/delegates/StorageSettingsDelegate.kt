@@ -4,9 +4,14 @@ import android.content.Context
 import android.os.Build
 import android.os.Environment
 import android.util.Log
+import com.nendo.argosy.R
 import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationProgress
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.core.notification.showSuccess
+import com.nendo.argosy.ui.common.notificationType
+import com.nendo.argosy.ui.common.toNotificationText
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.DatabaseAdminRepository
 import com.nendo.argosy.data.repository.HardResetBlocker
@@ -40,6 +45,9 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 private const val TAG = "StorageSettingsDelegate"
+private const val MIGRATE_NOTIFICATION_KEY = "migration"
+private const val PLATFORM_MIGRATE_NOTIFICATION_KEY = "platform-migration"
+private const val PLATFORM_PURGE_NOTIFICATION_KEY = "platform-purge"
 
 class StorageSettingsDelegate @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -183,7 +191,7 @@ class StorageSettingsDelegate @Inject constructor(
         if (isPrivate) {
             Log.w(TAG, "Rejected private app path for ROM storage: $path")
             notificationManager.showError(
-                "GameNative cannot read Argosy's private folders. Pick a public location."
+                NotificationText.Res(R.string.notif_storage_private_path_error)
             )
         }
         return isPrivate
@@ -239,7 +247,35 @@ class StorageSettingsDelegate @Inject constructor(
             _isMigrating.value = true
             _pendingStoragePath.value = null
 
-            migrateStorageUseCase(oldPath, newPath)
+            val result = migrateStorageUseCase(oldPath, newPath) { current, total, gameTitle ->
+                if (current == 0) {
+                    notificationManager.showPersistent(
+                        key = MIGRATE_NOTIFICATION_KEY,
+                        title = NotificationText.Res(R.string.notif_storage_migrate_persistent_title),
+                        subtitle = NotificationText.Res(
+                            R.string.notif_storage_migrate_persistent_subtitle_initial,
+                            listOf(total)
+                        ),
+                        progress = NotificationProgress(0, total)
+                    )
+                } else {
+                    notificationManager.updatePersistent(
+                        key = MIGRATE_NOTIFICATION_KEY,
+                        subtitle = NotificationText.Res(
+                            R.string.notif_storage_migrate_persistent_subtitle_progress,
+                            listOf(current, total, gameTitle)
+                        ),
+                        progress = NotificationProgress(current - 1, total)
+                    )
+                }
+            }
+
+            notificationManager.completePersistent(
+                key = MIGRATE_NOTIFICATION_KEY,
+                title = NotificationText.Res(R.string.notif_storage_migrate_complete_title),
+                subtitle = result.toNotificationText(R.string.notif_storage_migrate_complete_subtitle),
+                type = result.notificationType()
+            )
 
             _state.update { it.copy(romStoragePath = newPath) }
             _isMigrating.value = false
@@ -458,12 +494,47 @@ class StorageSettingsDelegate @Inject constructor(
         _state.update { it.copy(showMigratePlatformConfirm = null) }
 
         scope.launch {
-            migratePlatformStorageUseCase(
+            val result = migratePlatformStorageUseCase(
                 platformId = info.platformId,
                 oldPath = info.oldPath,
                 newPath = info.newPath,
                 isResetToGlobal = info.isResetToGlobal
+            ) { current, total, gameTitle ->
+                if (current == 0) {
+                    notificationManager.showPersistent(
+                        key = PLATFORM_MIGRATE_NOTIFICATION_KEY,
+                        title = NotificationText.Res(
+                            R.string.notif_storage_migrate_platform_persistent_title,
+                            listOf(info.platformName)
+                        ),
+                        subtitle = NotificationText.Res(
+                            R.string.notif_storage_migrate_platform_persistent_subtitle_initial,
+                            listOf(total)
+                        ),
+                        progress = NotificationProgress(0, total)
+                    )
+                } else {
+                    notificationManager.updatePersistent(
+                        key = PLATFORM_MIGRATE_NOTIFICATION_KEY,
+                        subtitle = NotificationText.Res(
+                            R.string.notif_storage_migrate_platform_persistent_subtitle_progress,
+                            listOf(current, total, gameTitle)
+                        ),
+                        progress = NotificationProgress(current - 1, total)
+                    )
+                }
+            }
+
+            notificationManager.completePersistent(
+                key = PLATFORM_MIGRATE_NOTIFICATION_KEY,
+                title = NotificationText.Res(
+                    R.string.notif_storage_migrate_platform_complete_title,
+                    listOf(info.platformName)
+                ),
+                subtitle = result.toNotificationText(R.string.notif_storage_migrate_platform_complete_subtitle),
+                type = result.notificationType()
             )
+
             rediscoverPlatform(info.platformId)
             loadPlatformConfigs(scope)
             refreshCollectionStats(scope)
@@ -501,9 +572,38 @@ class StorageSettingsDelegate @Inject constructor(
     fun confirmPurgePlatform(scope: CoroutineScope) {
         val platformId = _state.value.showPurgePlatformConfirm ?: return
         _state.update { it.copy(showPurgePlatformConfirm = null) }
+        val platformName = _state.value.platformConfigs
+            .firstOrNull { it.platformId == platformId }?.platformName
+            ?: platformId.toString()
 
         scope.launch {
-            purgePlatformUseCase(platformId, deleteLocalFiles = true)
+            val result = purgePlatformUseCase(platformId, deleteLocalFiles = true) { current, total, gameTitle ->
+                if (current == 0) {
+                    notificationManager.showPersistent(
+                        key = PLATFORM_PURGE_NOTIFICATION_KEY,
+                        title = NotificationText.Res(R.string.notif_storage_purge_persistent_title, listOf(platformName)),
+                        subtitle = NotificationText.Res(R.string.notif_storage_purge_persistent_subtitle_preparing),
+                        progress = NotificationProgress(0, total.coerceAtLeast(1))
+                    )
+                } else {
+                    notificationManager.updatePersistent(
+                        key = PLATFORM_PURGE_NOTIFICATION_KEY,
+                        subtitle = NotificationText.Res(
+                            R.string.notif_storage_purge_persistent_subtitle_progress,
+                            listOf(current, total, gameTitle)
+                        ),
+                        progress = NotificationProgress(current - 1, total)
+                    )
+                }
+            }
+
+            notificationManager.completePersistent(
+                key = PLATFORM_PURGE_NOTIFICATION_KEY,
+                title = NotificationText.Res(R.string.notif_storage_purge_complete_title, listOf(platformName)),
+                subtitle = result.toNotificationText(R.string.notif_storage_purge_complete_subtitle),
+                type = com.nendo.argosy.core.notification.NotificationType.SUCCESS
+            )
+
             loadPlatformConfigs(scope)
             refreshCollectionStats(scope)
         }
@@ -789,32 +889,46 @@ class StorageSettingsDelegate @Inject constructor(
                     )
                 }
                 refreshCollectionStats(scope)
-                notificationManager.showSuccess("Hard reset complete - sync to rebuild your library")
+                notificationManager.showSuccess(NotificationText.Res(R.string.notif_storage_hardreset_success))
                 _hardResetCompletedEvent.emit(Unit)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 _state.update { it.copy(isHardResetting = false, showHardResetModal = false) }
-                notificationManager.showError("Hard reset failed - ${e.message ?: "try again"}")
+                val detail = e.message ?: context.getString(R.string.notif_storage_hardreset_failed_default_detail)
+                notificationManager.showError(
+                    NotificationText.Res(R.string.notif_storage_hardreset_failed, listOf(detail))
+                )
             }
         }
     }
 
-    private fun hardResetBlockerMessage(blocker: HardResetBlocker): String = when (blocker) {
-        HardResetBlocker.ActiveSession -> "Close the running game before resetting"
+    private fun hardResetBlockerMessage(blocker: HardResetBlocker): NotificationText = when (blocker) {
+        HardResetBlocker.ActiveSession ->
+            NotificationText.Res(R.string.notif_storage_hardreset_blocked_active_session)
         is HardResetBlocker.PendingUploads -> pendingUploadsMessage(blocker)
-        HardResetBlocker.ActiveDownloads -> "Cancel game downloads before resetting"
-        HardResetBlocker.EmulatorDownload -> "Wait for the emulator download to finish first"
-        HardResetBlocker.SteamDownload -> "Cancel Steam downloads before resetting"
-        HardResetBlocker.MediaDownload -> "Cancel the movie or episode download before resetting"
+        HardResetBlocker.ActiveDownloads ->
+            NotificationText.Res(R.string.notif_storage_hardreset_blocked_active_downloads)
+        HardResetBlocker.EmulatorDownload ->
+            NotificationText.Res(R.string.notif_storage_hardreset_blocked_emulator_download)
+        HardResetBlocker.SteamDownload ->
+            NotificationText.Res(R.string.notif_storage_hardreset_blocked_steam_download)
+        HardResetBlocker.MediaDownload ->
+            NotificationText.Res(R.string.notif_storage_hardreset_blocked_media_download)
     }
 
-    private fun pendingUploadsMessage(blocker: HardResetBlocker.PendingUploads): String {
+    private fun pendingUploadsMessage(blocker: HardResetBlocker.PendingUploads): NotificationText {
         val named = blocker.accounts.mapNotNull { it.username }
         return when {
-            named.isEmpty() -> "Sync pending save uploads before resetting"
-            named.size == 1 -> "Sync ${named.first()}'s pending save uploads before resetting"
-            else -> "Sync pending save uploads for ${named.joinToString(", ")} before resetting"
+            named.isEmpty() -> NotificationText.Res(R.string.notif_storage_hardreset_pending_uploads_none)
+            named.size == 1 -> NotificationText.Res(
+                R.string.notif_storage_hardreset_pending_uploads_one,
+                listOf(named.first())
+            )
+            else -> NotificationText.Res(
+                R.string.notif_storage_hardreset_pending_uploads_many,
+                listOf(named.joinToString(", "))
+            )
         }
     }
 

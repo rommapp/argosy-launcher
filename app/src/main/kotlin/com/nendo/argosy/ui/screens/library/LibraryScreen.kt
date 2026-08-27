@@ -82,9 +82,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.Motion
@@ -468,7 +471,8 @@ fun LibraryScreen(
                     )
                 } else {
                     LibraryHeader(
-                        platformName = uiState.currentPlatform?.displayName ?: "All Platforms",
+                        platformName = uiState.currentPlatform?.displayName
+                            ?: stringResource(R.string.library_header_all_platforms),
                         gameCount = uiState.games.size,
                         focusedGameTitle = uiState.focusedGame?.title,
                         onPreviousPlatform = { viewModel.previousPlatform() },
@@ -827,7 +831,7 @@ private fun LibraryHeader(
             ) {
                 if (showLibraryLabel) {
                     Text(
-                        text = "LIBRARY",
+                        text = stringResource(R.string.library_header_title),
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -848,7 +852,7 @@ private fun LibraryHeader(
                     ) {
                         Icon(
                             painter = InputIcons.BumperLeft,
-                            contentDescription = "Previous platform",
+                            contentDescription = stringResource(R.string.library_header_previous_platform),
                             tint = navIconTint,
                             modifier = Modifier.size(Dimens.iconSm)
                         )
@@ -872,7 +876,7 @@ private fun LibraryHeader(
                     ) {
                         Icon(
                             painter = InputIcons.BumperRight,
-                            contentDescription = "Next platform",
+                            contentDescription = stringResource(R.string.library_header_next_platform),
                             tint = navIconTint,
                             modifier = Modifier.size(Dimens.iconSm)
                         )
@@ -880,7 +884,11 @@ private fun LibraryHeader(
                 }
 
                 Text(
-                    text = "$gameCount games",
+                    text = pluralStringResource(
+                        R.plurals.library_header_game_count,
+                        gameCount,
+                        gameCount
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -945,19 +953,26 @@ private fun LibraryPlatformGridHeader(platformCount: Int, mediaLibraryCount: Int
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "LIBRARY",
+                text = stringResource(R.string.library_landing_title),
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurface
             )
+            val platformText = pluralStringResource(
+                R.plurals.library_landing_platform_count,
+                platformCount,
+                platformCount
+            )
+            val mediaText = if (mediaLibraryCount == 0) {
+                null
+            } else {
+                pluralStringResource(
+                    R.plurals.library_landing_media_library_count,
+                    mediaLibraryCount,
+                    mediaLibraryCount
+                )
+            }
             Text(
-                text = listOfNotNull(
-                    if (platformCount == 1) "1 platform" else "$platformCount platforms",
-                    when {
-                        mediaLibraryCount == 0 -> null
-                        mediaLibraryCount == 1 -> "1 library"
-                        else -> "$mediaLibraryCount libraries"
-                    }
-                ).joinToString(" · "),
+                text = listOfNotNull(platformText, mediaText).joinToString(" · "),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -1190,16 +1205,16 @@ private fun LibraryFooter(
 ) {
     val hints = buildList {
         if (showSectionJump) {
-            add(InputButton.LT_RT to "Jump Section")
+            add(InputButton.LT_RT to stringResource(R.string.library_footer_hint_jump_section))
         }
-        add(InputButton.A to "Details")
+        add(InputButton.A to stringResource(R.string.library_footer_hint_details))
         add(InputButton.Y to when {
-            isViewingHidden -> "Unhide"
-            focusedGame?.isFavorite == true -> "Unfavorite"
-            else -> "Favorite"
+            isViewingHidden -> stringResource(R.string.library_footer_hint_unhide)
+            focusedGame?.isFavorite == true -> stringResource(R.string.library_footer_hint_unfavorite)
+            else -> stringResource(R.string.library_footer_hint_favorite)
         })
-        add(InputButton.X to "Filter")
-        add(InputButton.SELECT to "Quick Menu")
+        add(InputButton.X to stringResource(R.string.library_footer_hint_filter))
+        add(InputButton.SELECT to stringResource(R.string.library_footer_hint_quick_menu))
     }
     FooterHints(
         hints = hints,
@@ -1240,13 +1255,17 @@ private fun EmptyLibrary(platformName: String?) {
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = if (platformName != null) "No $platformName games found" else "No games yet",
+                text = if (platformName != null) {
+                    stringResource(R.string.library_empty_title_platform, platformName)
+                } else {
+                    stringResource(R.string.library_empty_title_all)
+                },
                 style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(Dimens.spacingSm))
             Text(
-                text = "Sync your library from Rom Manager in Settings",
+                text = stringResource(R.string.library_empty_body),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
             )
@@ -1263,10 +1282,11 @@ private fun FilterMenuOverlay(
     onSearchQueryChange: (String) -> Unit
 ) {
     val listState = rememberLazyListState()
-    val options = uiState.currentCategoryOptions
+    val filterContext = LocalContext.current
+    val options = uiState.currentCategoryOptions(filterContext)
     val categories = uiState.availableCategories
     val isMultiSelect = uiState.isCurrentCategoryMultiSelect
-    val selectedOptions = uiState.selectedOptionsInCurrentCategory
+    val selectedOptions = uiState.selectedOptionsInCurrentCategory(filterContext)
     val isSearchCategory = uiState.currentFilterCategory == FilterCategory.SEARCH
     val searchQuery = uiState.activeFilters.searchQuery
     val focusRequester = remember { FocusRequester() }
@@ -1316,14 +1336,17 @@ private fun FilterMenuOverlay(
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
         ) {
             Text(
-                text = "FILTER GAMES",
+                text = stringResource(R.string.library_filter_title),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary
             )
 
             if (uiState.activeFilters.activeCount > 0) {
                 Text(
-                    text = "Active: ${uiState.activeFilters.summary}",
+                    text = stringResource(
+                        R.string.library_filter_active_summary,
+                        uiState.activeFilters.summary(LocalContext.current)
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -1366,7 +1389,7 @@ private fun FilterMenuOverlay(
                             .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm)
                     ) {
                         Text(
-                            text = category.label,
+                            text = stringResource(category.labelRes),
                             style = MaterialTheme.typography.labelMedium,
                             color = if (isCurrent) lerp(LocalArgosyTheme.current.focusAccent, Color.White, 0.45f)
                                     else MaterialTheme.colorScheme.onSurfaceVariant
@@ -1407,7 +1430,7 @@ private fun FilterMenuOverlay(
                             Box {
                                 if (searchQuery.isEmpty()) {
                                     Text(
-                                        text = "Type to search...",
+                                        text = stringResource(R.string.library_filter_search_placeholder),
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                                     )
@@ -1420,7 +1443,7 @@ private fun FilterMenuOverlay(
 
                 if (options.isNotEmpty()) {
                     Text(
-                        text = "Recent searches",
+                        text = stringResource(R.string.library_filter_recent_searches),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -1488,14 +1511,18 @@ private fun FilterMenuOverlay(
             FooterHints(
                 hints = if (isSearchCategory) {
                     listOf(
-                        InputButton.X to "Clear",
-                        InputButton.B to "Close"
+                        InputButton.X to stringResource(R.string.library_filter_hint_clear),
+                        InputButton.B to stringResource(R.string.library_filter_hint_close_search)
                     )
                 } else {
                     listOf(
-                        InputButton.X to "Reset",
-                        InputButton.A to if (isMultiSelect) "Toggle" else "Select",
-                        InputButton.B to "Close"
+                        InputButton.X to stringResource(R.string.library_filter_hint_reset),
+                        InputButton.A to if (isMultiSelect) {
+                            stringResource(R.string.library_filter_hint_toggle)
+                        } else {
+                            stringResource(R.string.library_filter_hint_select)
+                        },
+                        InputButton.B to stringResource(R.string.library_filter_hint_close_options)
                     )
                 }
             )
@@ -1566,9 +1593,9 @@ private fun QuickMenuOverlay(
         else -> Icons.Default.Download
     }
     val primaryLabel = when {
-        game.needsInstall -> "Install"
-        game.isDownloaded -> "Play"
-        else -> "Download"
+        game.needsInstall -> stringResource(R.string.library_quickmenu_install)
+        game.isDownloaded -> stringResource(R.string.library_quickmenu_play)
+        else -> stringResource(R.string.library_quickmenu_download)
     }
 
     data class MenuEntry(
@@ -1580,22 +1607,77 @@ private fun QuickMenuOverlay(
 
     val options = buildList {
         add(MenuEntry(primaryIcon, primaryLabel, onClick = onPrimaryAction))
-        add(MenuEntry(if (game.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder, if (game.isFavorite) "Unfavorite" else "Favorite", onClick = onFavorite))
-        add(MenuEntry(Icons.Default.Info, "Details", onClick = onDetails))
-        add(MenuEntry(Icons.AutoMirrored.Filled.PlaylistAdd, "Add to Collection", onClick = onAddToCollection))
+        add(
+            MenuEntry(
+                if (game.isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                if (game.isFavorite) {
+                    stringResource(R.string.library_quickmenu_unfavorite)
+                } else {
+                    stringResource(R.string.library_quickmenu_favorite)
+                },
+                onClick = onFavorite
+            )
+        )
+        add(MenuEntry(Icons.Default.Info, stringResource(R.string.library_quickmenu_details), onClick = onDetails))
+        add(
+            MenuEntry(
+                Icons.AutoMirrored.Filled.PlaylistAdd,
+                stringResource(R.string.library_quickmenu_add_to_collection),
+                onClick = onAddToCollection
+            )
+        )
         if (onAddToGrid != null) {
-            add(MenuEntry(Icons.Default.GridView, "Add to Grid", onClick = onAddToGrid))
+            add(
+                MenuEntry(
+                    Icons.Default.GridView,
+                    stringResource(R.string.library_quickmenu_add_to_grid),
+                    onClick = onAddToGrid
+                )
+            )
         }
         if (game.isRommGame || game.isAndroidApp) {
-            add(MenuEntry(Icons.Default.Refresh, "Refresh Data", onClick = onRefresh))
+            add(
+                MenuEntry(
+                    Icons.Default.Refresh,
+                    stringResource(R.string.library_quickmenu_refresh_data),
+                    onClick = onRefresh
+                )
+            )
         }
-        add(MenuEntry(Icons.Default.Refresh, "Resync Platform", onClick = onResyncPlatform))
+        add(
+            MenuEntry(
+                Icons.Default.Refresh,
+                stringResource(R.string.library_quickmenu_resync_platform),
+                onClick = onResyncPlatform
+            )
+        )
     }
     val dangerousOptions = buildList {
         if (game.isDownloaded || game.needsInstall) {
-            add(MenuEntry(Icons.Default.DeleteOutline, if (game.isAndroidApp && game.isDownloaded) "Uninstall" else "Delete Download", isDangerous = true, onClick = onDelete))
+            add(
+                MenuEntry(
+                    Icons.Default.DeleteOutline,
+                    if (game.isAndroidApp && game.isDownloaded) {
+                        stringResource(R.string.library_quickmenu_uninstall)
+                    } else {
+                        stringResource(R.string.library_quickmenu_delete_download)
+                    },
+                    isDangerous = true,
+                    onClick = onDelete
+                )
+            )
         }
-        add(MenuEntry(label = if (game.isHidden) "Show" else "Hide", isDangerous = !game.isHidden, onClick = onHide))
+        add(
+            MenuEntry(
+                label = if (game.isHidden) {
+                    stringResource(R.string.library_quickmenu_show)
+                } else {
+                    stringResource(R.string.library_quickmenu_hide)
+                },
+                isDangerous = !game.isHidden,
+                onClick = onHide
+            )
+        )
     }
 
     val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
@@ -1623,7 +1705,7 @@ private fun QuickMenuOverlay(
                 .heightIn(max = maxHeight * 0.85f)
         ) {
             Text(
-                text = "QUICK ACTIONS",
+                text = stringResource(R.string.library_quickmenu_title),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )

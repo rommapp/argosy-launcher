@@ -7,7 +7,9 @@ import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
+import com.nendo.argosy.R
 import com.nendo.argosy.data.media.MediaAvailability
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 
@@ -29,13 +31,13 @@ fun MediaDownloadBadge(
     when (availability) {
         MediaAvailability.PRESENT -> Icon(
             imageVector = Icons.Filled.Download,
-            contentDescription = "Downloaded",
+            contentDescription = stringResource(R.string.media_download_badge_present),
             tint = theme.textPrimary,
             modifier = modifier.size(size)
         )
         MediaAvailability.UNAVAILABLE -> Icon(
             imageVector = Icons.Outlined.Download,
-            contentDescription = "Downloaded, on storage that is not connected",
+            contentDescription = stringResource(R.string.media_download_badge_unavailable),
             tint = theme.textMute,
             modifier = modifier.size(size)
         )

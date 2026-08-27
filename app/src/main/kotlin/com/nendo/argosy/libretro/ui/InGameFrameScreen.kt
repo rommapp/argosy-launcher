@@ -28,9 +28,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.libretro.frame.FrameManager
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
@@ -180,7 +182,11 @@ private fun ArrowButton(
                     } else {
                         Icons.AutoMirrored.Filled.KeyboardArrowRight
                     },
-                    contentDescription = if (direction < 0) "Previous" else "Next",
+                    contentDescription = if (direction < 0) {
+                        stringResource(R.string.ingame_frame_previous_description)
+                    } else {
+                        stringResource(R.string.ingame_frame_next_description)
+                    },
                     tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(32.dp)
                 )
@@ -198,7 +204,7 @@ private fun FrameInfoBar(
     val frameName = if (frameId != null) {
         manager.getFrameEntry(frameId)?.displayName ?: frameId
     } else {
-        "No Frame"
+        stringResource(R.string.ingame_frame_none)
     }
 
     val isInstalled = manager.installRefresh.let {
@@ -233,7 +239,7 @@ private fun FrameInfoBar(
                     color = MaterialTheme.colorScheme.primaryContainer
                 ) {
                     Text(
-                        text = "Download",
+                        text = stringResource(R.string.ingame_frame_download_badge),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -244,11 +250,16 @@ private fun FrameInfoBar(
     }
 }
 
+@Composable
 private fun buildFrameFooterHints(canDownload: Boolean): List<Pair<InputButton, String>> {
+    val changeLabel = stringResource(R.string.ingame_frame_footer_change)
+    val selectLabel = stringResource(R.string.ingame_frame_footer_select)
+    val downloadLabel = stringResource(R.string.ingame_frame_footer_download)
+    val cancelLabel = stringResource(R.string.ingame_frame_footer_cancel)
     return buildList {
-        add(InputButton.DPAD_HORIZONTAL to "Change")
-        add(InputButton.A to "Select")
-        if (canDownload) add(InputButton.X to "Download")
-        add(InputButton.B to "Cancel")
+        add(InputButton.DPAD_HORIZONTAL to changeLabel)
+        add(InputButton.A to selectLabel)
+        if (canDownload) add(InputButton.X to downloadLabel)
+        add(InputButton.B to cancelLabel)
     }
 }

@@ -1,6 +1,7 @@
 package com.nendo.argosy.data.steam
 
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.Network
@@ -55,6 +56,11 @@ data class SteamServiceState(
 
 @AndroidEntryPoint
 class SteamService : Service() {
+
+    override fun attachBaseContext(newBase: Context) {
+        val tag = com.nendo.argosy.data.preferences.SessionStateStore(newBase).getAppLanguage()
+        super.attachBaseContext(com.nendo.argosy.core.locale.LocaleHelper.wrap(newBase, tag))
+    }
 
     @Inject
     lateinit var steamAuthManager: SteamAuthManager

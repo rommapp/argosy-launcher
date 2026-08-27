@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.screens.settings
 
+import com.nendo.argosy.R
+import com.nendo.argosy.ui.common.DisplayText
 import com.nendo.argosy.core.emulator.EmulatorDownloadState
 import com.nendo.argosy.data.cache.GradientExtractionConfig
 import com.nendo.argosy.ui.common.GradientExtractionResult
@@ -12,6 +14,7 @@ import com.nendo.argosy.data.emulator.RetroArchCore
 import com.nendo.argosy.data.local.entity.GameListItem
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.local.entity.PlatformLibretroSettingsEntity
+import com.nendo.argosy.data.preferences.AppLanguage
 import com.nendo.argosy.data.preferences.BoxArtBorderStyle
 import com.nendo.argosy.data.preferences.GripReserveMode
 import com.nendo.argosy.data.preferences.BoxArtBorderThickness
@@ -310,7 +313,7 @@ data class ControlsState(
 )
 
 data class SoundValueLabel(
-    val primary: String,
+    val primary: DisplayText,
     val secondary: String? = null,
     val secondaryPrefix: String? = null
 )
@@ -340,13 +343,18 @@ data class SoundState(
     }
 
     fun getSoundValueForType(type: SoundType): SoundValueLabel {
-        val config = soundConfigs[type] ?: return SoundValueLabel("Default")
+        val defaultLabel = DisplayText.Res(R.string.settings_sound_value_default)
+        val config = soundConfigs[type] ?: return SoundValueLabel(defaultLabel)
         val path = config.customFilePath
         if (path != null) {
-            val trackName = path.substringAfterLast('/')
+            val rawTrackName = path.substringAfterLast('/')
                 .substringBeforeLast('.')
                 .replace(TRACK_NUMBER_PREFIX, "")
-                .ifBlank { "Custom" }
+            val trackName = if (rawTrackName.isBlank()) {
+                DisplayText.Res(R.string.settings_sound_value_custom_fallback)
+            } else {
+                DisplayText.Raw(rawTrackName)
+            }
             if (config.isRommSource) {
                 val gameDir = path.substringBeforeLast('/')
                 val gameName = gameDir.substringAfterLast('/')
@@ -356,9 +364,8 @@ data class SoundState(
             }
             return SoundValueLabel(trackName)
         }
-        return SoundValueLabel(
-            SoundPreset.entries.find { it.name == config.presetName }?.displayName ?: "Default"
-        )
+        val presetLabel = SoundPreset.entries.find { it.name == config.presetName }?.displayName
+        return SoundValueLabel(presetLabel?.let { DisplayText.Raw(it) } ?: defaultLabel)
     }
 
     companion object {
@@ -396,7 +403,7 @@ data class EmulatorState(
     val architectureDisplay: String = "",
     val ingameMenuTwoColumn: Boolean = false,
     val hudEnabled: Boolean = false,
-    val hudCorner: String = "Top Left",
+    val hudCorner: String = "TOP_LEFT",
     val hudShowBattery: Boolean = true,
     val hudShowClock: Boolean = true,
     val hudShowPlaytime: Boolean = false,
@@ -1272,10 +1279,17 @@ data class BiosState(
 ) {
     val missingFiles: Int get() = totalFiles - downloadedFiles
     val isComplete: Boolean get() = totalFiles > 0 && downloadedFiles == totalFiles
-    val summaryText: String get() = when {
-        totalFiles == 0 -> "No BIOS files found"
-        isComplete -> "All $totalFiles files downloaded"
-        else -> "$downloadedFiles of $totalFiles downloaded"
+    val summaryText: DisplayText get() = when {
+        totalFiles == 0 -> DisplayText.Res(R.string.settings_main_bios_summary_none)
+        isComplete -> DisplayText.Plural(
+            R.plurals.settings_main_bios_summary_complete,
+            totalFiles,
+            listOf(totalFiles)
+        )
+        else -> DisplayText.Res(
+            R.string.settings_main_bios_summary_partial,
+            listOf(downloadedFiles, totalFiles)
+        )
     }
 }
 
@@ -1314,10 +1328,10 @@ data class DriversState(
     val pickerGroupIndex: Int? = null,
     val pickerReleaseFocusIndex: Int = 0
 ) {
-    val summary: String get() = when {
-        isLoading && groups.isEmpty() -> "Checking drivers..."
-        gpuModel.isNullOrBlank() -> "GPU not detected"
-        else -> "Adreno drivers for ${gpuModel.orEmpty()}"
+    val summary: DisplayText get() = when {
+        isLoading && groups.isEmpty() -> DisplayText.Res(R.string.settings_drivers_summary_checking)
+        gpuModel.isNullOrBlank() -> DisplayText.Res(R.string.settings_drivers_summary_gpu_not_detected)
+        else -> DisplayText.Res(R.string.settings_drivers_summary_available, listOf(gpuModel.orEmpty()))
     }
 }
 
@@ -1444,6 +1458,7 @@ data class SettingsUiState(
     val changelog: ChangelogState = ChangelogState(),
     val aboutUpdateActionIndex: Int = 0,
     val betaUpdatesEnabled: Boolean = false,
+    val appLanguage: AppLanguage = AppLanguage.SYSTEM,
     val fileLoggingEnabled: Boolean = false,
     val fileLoggingPath: String? = null,
     val fileLogLevel: LogLevel = LogLevel.INFO,

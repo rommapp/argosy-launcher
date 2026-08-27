@@ -9,6 +9,19 @@ import com.nendo.argosy.data.repository.SaveSyncResult
 import com.nendo.argosy.domain.model.UnifiedSaveEntry
 import javax.inject.Inject
 
+/**
+ * Why [RestoreCachedSaveUseCase] could not put a cached or server save back into play.
+ */
+sealed class RestoreCachedSaveFailureReason {
+    data object GameNotFound : RestoreCachedSaveFailureReason()
+    data object NoLocalCopy : RestoreCachedSaveFailureReason()
+    data object SaveLocationUnresolved : RestoreCachedSaveFailureReason()
+    data object ClearExistingSaveFailed : RestoreCachedSaveFailureReason()
+    data object NoLocalCacheId : RestoreCachedSaveFailureReason()
+    data object NoServerSaveId : RestoreCachedSaveFailureReason()
+    data object RestoreFailed : RestoreCachedSaveFailureReason()
+}
+
 class RestoreCachedSaveUseCase @Inject constructor(
     private val saveCacheManager: SaveCacheManager,
     private val saveSyncRepository: SaveSyncRepository,
@@ -21,7 +34,7 @@ class RestoreCachedSaveUseCase @Inject constructor(
     sealed class Result {
         data object Restored : Result()
         data object RestoredAndSynced : Result()
-        data class Error(val message: String) : Result()
+        data class Error(val reason: RestoreCachedSaveFailureReason) : Result()
     }
 
     suspend operator fun invoke(
@@ -31,10 +44,10 @@ class RestoreCachedSaveUseCase @Inject constructor(
         syncToServer: Boolean
     ): Result {
         val game = gameDao.getById(gameId)
-            ?: return Result.Error("Game not found")
+            ?: return Result.Error(RestoreCachedSaveFailureReason.GameNotFound)
         if (game.localPath == null) {
             Log.d(TAG, "Skipping restore: game $gameId has no local ROM")
-            return Result.Error("Game has no local copy")
+            return Result.Error(RestoreCachedSaveFailureReason.NoLocalCopy)
         }
 
         val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(gameId, game.platformId, game.platformSlug)
@@ -52,10 +65,10 @@ class RestoreCachedSaveUseCase @Inject constructor(
         ) ?: saveSyncRepository.constructSavePath(
             emulatorId, game.title, game.platformSlug, game.localPath, coreName, game.saveId ?: game.titleId, gameId,
             folderShaped = entry.serverFileName?.endsWith(".zip", ignoreCase = true)
-        ) ?: return Result.Error("Cannot determine save location")
+        ) ?: return Result.Error(RestoreCachedSaveFailureReason.SaveLocationUnresolved)
 
         if (!saveSyncRepository.clearSavesForTitle(targetPath, game.platformSlug, game.saveId ?: game.titleId)) {
-            return Result.Error("Failed to clear existing save at target path")
+            return Result.Error(RestoreCachedSaveFailureReason.ClearExistingSaveFailed)
         }
 
         var cachedHash: String? = null
@@ -63,13 +76,13 @@ class RestoreCachedSaveUseCase @Inject constructor(
             UnifiedSaveEntry.Source.LOCAL,
             UnifiedSaveEntry.Source.BOTH -> {
                 val cacheId = entry.localCacheId
-                    ?: return Result.Error("No local cache ID")
+                    ?: return Result.Error(RestoreCachedSaveFailureReason.NoLocalCacheId)
                 cachedHash = saveCacheManager.getCacheById(cacheId)?.contentHash
                 saveCacheManager.restoreSave(cacheId, targetPath)
             }
             UnifiedSaveEntry.Source.SERVER -> {
                 val serverSaveId = entry.serverSaveId
-                    ?: return Result.Error("No server save ID")
+                    ?: return Result.Error(RestoreCachedSaveFailureReason.NoServerSaveId)
                 val downloaded = saveSyncRepository.downloadSaveById(
                     serverSaveId = serverSaveId,
                     targetPath = targetPath,
@@ -97,7 +110,7 @@ class RestoreCachedSaveUseCase @Inject constructor(
         }
 
         if (!restoreSuccess) {
-            return Result.Error("Failed to restore save")
+            return Result.Error(RestoreCachedSaveFailureReason.RestoreFailed)
         }
 
         val restoredContentHash = when (entry.source) {

@@ -35,6 +35,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -43,6 +44,7 @@ import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
+import com.nendo.argosy.R
 import com.nendo.argosy.libretro.SaveStateManager
 import com.nendo.argosy.util.formatSaveSize
 import com.nendo.argosy.util.formatSaveTimestamp
@@ -221,7 +223,7 @@ fun InGameStateManager(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Manage States",
+                    text = stringResource(R.string.ingame_states_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -229,7 +231,7 @@ fun InGameStateManager(
                 if (channelName != null) {
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "[$channelName]",
+                        text = stringResource(R.string.ingame_states_channel, channelName),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -276,15 +278,15 @@ fun InGameStateManager(
         // Delete confirmation overlay
         if (showDeleteConfirmation) {
             NestedModal(
-                title = "Delete save state?",
+                title = stringResource(R.string.ingame_states_delete_title),
                 onDismiss = onDeleteCancel,
                 footerHints = listOf(
-                    InputButton.A to "Confirm",
-                    InputButton.B to "Cancel"
+                    InputButton.A to stringResource(R.string.ingame_states_delete_confirm),
+                    InputButton.B to stringResource(R.string.ingame_states_delete_cancel)
                 )
             ) {
                 Text(
-                    text = "This action cannot be undone.",
+                    text = stringResource(R.string.ingame_states_delete_body),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -295,11 +297,11 @@ fun InGameStateManager(
 
         if (showLoadConfirmation) {
             NestedModal(
-                title = "Load this state?",
+                title = stringResource(R.string.ingame_states_load_title),
                 onDismiss = onLoadCancel,
                 footerHints = listOf(
-                    InputButton.A to "Load",
-                    InputButton.B to "Cancel"
+                    InputButton.A to stringResource(R.string.ingame_states_load_confirm),
+                    InputButton.B to stringResource(R.string.ingame_states_load_cancel)
                 )
             ) {
                 Column(
@@ -315,7 +317,7 @@ fun InGameStateManager(
                                 .memoryCacheKey("${screenshotFile.absolutePath}_${focusedSlot?.timestamp}")
                                 .diskCachePolicy(CachePolicy.DISABLED)
                                 .build(),
-                            contentDescription = "State preview",
+                            contentDescription = stringResource(R.string.ingame_states_load_preview_description),
                             contentScale = ContentScale.Fit,
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -331,7 +333,7 @@ fun InGameStateManager(
                         )
                     }
                     Text(
-                        text = "Current progress will be replaced.",
+                        text = stringResource(R.string.ingame_states_load_body),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
@@ -379,7 +381,11 @@ private fun SplitLayout(
             } else {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = if (focusedSlot?.file != null) "No Screenshot" else "Empty Slot",
+                        text = if (focusedSlot?.file != null) {
+                            stringResource(R.string.ingame_states_preview_no_screenshot)
+                        } else {
+                            stringResource(R.string.ingame_states_preview_empty_slot)
+                        },
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.White.copy(alpha = 0.5f)
                     )
@@ -483,7 +489,11 @@ private fun CarouselLayout(
             )
         } else {
             Text(
-                text = if (focusedSlot?.file != null) "No Screenshot" else "No State Saved",
+                text = if (focusedSlot?.file != null) {
+                    stringResource(R.string.ingame_states_carousel_no_screenshot)
+                } else {
+                    stringResource(R.string.ingame_states_carousel_no_state)
+                },
                 style = MaterialTheme.typography.titleMedium,
                 color = Color.White.copy(alpha = 0.5f)
             )
@@ -550,7 +560,7 @@ private fun CarouselLayout(
                     }
                 } else {
                     Text(
-                        text = "Empty",
+                        text = stringResource(R.string.ingame_states_carousel_empty),
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.White.copy(alpha = 0.4f)
                     )
@@ -652,33 +662,40 @@ private fun SlotCard(
     }
 }
 
+@Composable
 private fun slotLabel(slotNumber: Int): String {
     return when (slotNumber) {
-        SaveStateManager.AUTO_SLOT -> "Auto"
-        else -> "Slot $slotNumber"
+        SaveStateManager.AUTO_SLOT -> stringResource(R.string.ingame_states_slot_auto)
+        else -> stringResource(R.string.ingame_states_slot_numbered, slotNumber)
     }
 }
 
+@Composable
 private fun buildFooterHints(
     isOccupied: Boolean,
     viewMode: StateManagerViewMode,
     loadAllowed: Boolean
 ): List<FooterHintItem> {
     val modeLabel = when (viewMode) {
-        StateManagerViewMode.SPLIT -> "Carousel"
-        StateManagerViewMode.CAROUSEL -> "Grid"
+        StateManagerViewMode.SPLIT -> stringResource(R.string.ingame_states_footer_mode_carousel)
+        StateManagerViewMode.CAROUSEL -> stringResource(R.string.ingame_states_footer_mode_grid)
     }
+    val loadLabel = stringResource(R.string.ingame_states_footer_load)
+    val saveOverLabel = stringResource(R.string.ingame_states_footer_save_over)
+    val deleteLabel = stringResource(R.string.ingame_states_footer_delete)
+    val saveLabel = stringResource(R.string.ingame_states_footer_save)
+    val backLabel = stringResource(R.string.ingame_states_footer_back)
     return buildList {
         if (isOccupied) {
             if (loadAllowed) {
-                add(FooterHintItem(InputButton.A, "Load"))
+                add(FooterHintItem(InputButton.A, loadLabel))
             }
-            add(FooterHintItem(InputButton.X, "Save Over"))
-            add(FooterHintItem(InputButton.Y, "Delete"))
+            add(FooterHintItem(InputButton.X, saveOverLabel))
+            add(FooterHintItem(InputButton.Y, deleteLabel))
         } else {
-            add(FooterHintItem(InputButton.X, "Save"))
+            add(FooterHintItem(InputButton.X, saveLabel))
         }
         add(FooterHintItem(InputButton.SELECT, modeLabel))
-        add(FooterHintItem(InputButton.B, "Back"))
+        add(FooterHintItem(InputButton.B, backLabel))
     }
 }

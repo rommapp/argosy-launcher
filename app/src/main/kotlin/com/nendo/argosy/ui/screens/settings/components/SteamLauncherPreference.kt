@@ -24,6 +24,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.primitives.ActionButton
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
@@ -95,7 +97,7 @@ fun SteamLauncherPreference(
             verticalAlignment = Alignment.CenterVertically
         ) {
             ActionButton(
-                label = "Add",
+                label = stringResource(R.string.settings_steam_launcher_pref_add_button),
                 onClick = onAdd,
                 focused = isFocused,
                 enabled = isEnabled

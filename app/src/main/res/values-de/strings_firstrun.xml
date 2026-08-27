@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="firstrun_welcome_intro">Willkommen! Lassen Sie uns alles einrichten.</string>
+    <string name="firstrun_welcome_button_start">Los geht\'s</string>
+
+    <string name="firstrun_romm_url_title">Rom Manager-Anmeldung</string>
+    <string name="firstrun_romm_url_field_label">Server-URL</string>
+    <string name="firstrun_romm_url_hint">Geben Sie die Adresse Ihres RomM-Servers ein, wir ermitteln dann die passende Anmeldemethode.</string>
+    <string name="firstrun_romm_url_button_continue">Weiter</string>
+    <string name="firstrun_romm_url_button_checking">Wird geprüft...</string>
+    <string name="firstrun_romm_url_button_back">Zurück</string>
+    <string name="firstrun_romm_url_error_blank">Geben Sie eine Server-URL ein</string>
+
+    <string name="firstrun_pairing_code_title">Kopplungscode eingeben</string>
+    <string name="firstrun_pairing_code_hint">Erstellen Sie einen API-Token in der RomM-Weboberfläche und geben Sie dann den 8-stelligen Code ein.</string>
+    <string name="firstrun_pairing_code_clear_description">Code löschen</string>
+    <string name="firstrun_pairing_code_button_connect">Verbinden</string>
+    <string name="firstrun_pairing_code_button_connecting">Wird verbunden...</string>
+    <string name="firstrun_pairing_code_button_edit_url">URL bearbeiten</string>
+    <string name="firstrun_pairing_code_button_scan">QR-Code scannen</string>
+    <string name="firstrun_pairing_code_button_device_pairing">Stattdessen QR-Kopplung verwenden</string>
+    <string name="firstrun_pairing_code_error_incomplete">Geben Sie den vollständigen 8-stelligen Kopplungscode ein</string>
+
+    <string name="firstrun_device_pairing_title">Zum Koppeln scannen</string>
+    <string name="firstrun_device_pairing_hint">Scannen Sie diesen Code mit Ihrem Smartphone oder melden Sie sich hier auf diesem Gerät an, und bestätigen Sie es dann in RomM.</string>
+    <string name="firstrun_device_pairing_no_browser">Kein Browser auf diesem Gerät. Scannen Sie den Code oder verwenden Sie stattdessen einen Kopplungscode.</string>
+    <string name="firstrun_device_pairing_button_sign_in">Auf diesem Gerät anmelden</string>
+    <string name="firstrun_device_pairing_button_manual_code">Kopplungscode verwenden</string>
+    <string name="firstrun_device_pairing_button_back">Zurück</string>
+    <string name="firstrun_device_pairing_error_denied">Kopplung wurde vom Server abgelehnt</string>
+    <string name="firstrun_device_pairing_error_expired">Kopplungscode abgelaufen, bitte erneut starten</string>
+    <string name="firstrun_device_pairing_error_unexpected">Unerwartetes Kopplungsergebnis</string>
+
+    <string name="firstrun_romm_success_title">Erfolgreich verbunden!</string>
+    <string name="firstrun_romm_success_server">Server: %1$s</string>
+    <string name="firstrun_romm_success_library">%1$s auf %2$s</string>
+    <plurals name="firstrun_romm_success_game_count">
+        <item quantity="one">%d Spiel</item>
+        <item quantity="other">%d Spiele</item>
+    </plurals>
+    <plurals name="firstrun_romm_success_platform_count">
+        <item quantity="one">%d Plattform</item>
+        <item quantity="other">%d Plattformen</item>
+    </plurals>
+    <string name="firstrun_romm_success_button_continue">Weiter</string>
+    <string name="firstrun_romm_success_error_library_fetch">Bibliothek konnte nicht abgerufen werden: %1$s</string>
+
+    <string name="firstrun_permissions_title">Berechtigungen</string>
+    <string name="firstrun_permissions_intro">Argosy benötigt diese, um Ihre Bibliothek und Ihre Emulatoren zu verwalten.</string>
+    <string name="firstrun_permissions_storage_title">Speicher verwalten (erforderlich)</string>
+    <string name="firstrun_permissions_storage_description">Erforderlich, um Ordner zu durchsuchen, Spiele herunterzuladen und Spielstände zu synchronisieren.</string>
+    <string name="firstrun_permissions_notifications_title">Benachrichtigungen</string>
+    <string name="firstrun_permissions_notifications_description">Zeigt den Fortschritt von Downloads und Synchronisierungen.</string>
+    <string name="firstrun_permissions_overlay_title">Über anderen Apps anzeigen</string>
+    <string name="firstrun_permissions_overlay_description">Aktiviert Overlays zur Erkennung von Spielständen im Spiel.</string>
+    <string name="firstrun_permissions_usage_title">Nutzungszugriff</string>
+    <string name="firstrun_permissions_usage_description">Aktiviert die genaue Erfassung der Spielzeit und die Fortsetzung.</string>
+    <string name="firstrun_permissions_button_continue">Weiter</string>
+    <string name="firstrun_permissions_note_optional">Die anderen Berechtigungen können Sie später in den Einstellungen erteilen.</string>
+    <string name="firstrun_permissions_note_storage_required">Erteilen Sie den Speicherzugriff, um fortzufahren. Die anderen sind optional und können später in den Einstellungen erteilt werden.</string>
+
+    <string name="firstrun_rom_path_title">Spielepfad</string>
+    <string name="firstrun_rom_path_description">Wählen Sie, wo Ihre Spieldateien gespeichert werden. Wir erstellen automatisch Unterordner für jede Konsole.</string>
+    <string name="firstrun_rom_path_button_continue">Weiter</string>
+    <string name="firstrun_rom_path_button_change_folder">Anderen Ordner wählen</string>
+    <string name="firstrun_rom_path_button_choose_folder">Ordner wählen</string>
+
+    <string name="firstrun_image_cache_optional_badge">OPTIONAL</string>
+    <string name="firstrun_image_cache_title">Speicherort des Bild-Caches</string>
+    <string name="firstrun_image_cache_description">Standardmäßig wird das Spielcover-Artwork im internen Cache der App gespeichert. Bei begrenztem Speicherplatz können Sie einen externen Speicherort wählen.</string>
+    <string name="firstrun_image_cache_button_continue">Weiter</string>
+    <string name="firstrun_image_cache_button_change_folder">Anderen Ordner wählen</string>
+    <string name="firstrun_image_cache_button_choose_folder">Externen Ordner wählen</string>
+    <string name="firstrun_image_cache_button_use_default">Standard verwenden (intern)</string>
+    <string name="firstrun_image_cache_folder_note">Bilder werden in einem Unterordner namens \'%1$s\' gespeichert.</string>
+
+    <string name="firstrun_platform_select_eyebrow">PLATTFORMEN AUSWÄHLEN</string>
+    <string name="firstrun_platform_select_title">Wählen Sie, welche Plattformen synchronisiert werden sollen</string>
+    <plurals name="firstrun_platform_select_selected_count">
+        <item quantity="one">%1$d von %2$d Plattform ausgewählt</item>
+        <item quantity="other">%1$d von %2$d Plattformen ausgewählt</item>
+    </plurals>
+    <plurals name="firstrun_platform_select_game_count">
+        <item quantity="one">%d Spiel</item>
+        <item quantity="other">%d Spiele</item>
+    </plurals>
+    <string name="firstrun_platform_select_button_select_all">Alle auswählen</string>
+    <string name="firstrun_platform_select_button_deselect_all">Alle abwählen</string>
+    <string name="firstrun_platform_select_button_continue">Weiter</string>
+
+    <string name="firstrun_core_prompt_title">Emulator-Cores herunterladen?</string>
+    <plurals name="firstrun_core_prompt_available_count">
+        <item quantity="one">%d libretro-Core ist für Ihre gewählten Plattformen verfügbar.</item>
+        <item quantity="other">%d libretro-Cores sind für Ihre gewählten Plattformen verfügbar.</item>
+    </plurals>
+    <string name="firstrun_core_prompt_explainer">Diese ermöglichen integrierte Emulation ohne separate Emulator-Apps.</string>
+    <string name="firstrun_core_prompt_all_installed">Alle Cores für Ihre gewählten Plattformen sind bereits installiert.</string>
+    <string name="firstrun_core_prompt_button_download">Cores herunterladen</string>
+    <string name="firstrun_core_prompt_button_skip">Überspringen (integrierten Emulator deaktivieren)</string>
+    <string name="firstrun_core_prompt_button_continue">Weiter</string>
+    <string name="firstrun_core_prompt_note_skip">Beim Überspringen wird der integrierte Emulator deaktiviert. Sie können ihn später in den Einstellungen wieder aktivieren und Cores herunterladen.</string>
+
+    <string name="firstrun_core_download_title">Emulator-Cores werden heruntergeladen</string>
+    <string name="firstrun_core_download_none_needed">Keine Cores für die gewählten Plattformen nötig</string>
+    <string name="firstrun_core_download_button_continue_no_cores">Weiter</string>
+    <plurals name="firstrun_core_download_progress_count">
+        <item quantity="one">%1$d von %2$d Core wird heruntergeladen...</item>
+        <item quantity="other">%1$d von %2$d Cores werden heruntergeladen...</item>
+    </plurals>
+    <plurals name="firstrun_core_download_partial_count">
+        <item quantity="one">%1$d von %2$d Core heruntergeladen</item>
+        <item quantity="other">%1$d von %2$d Cores heruntergeladen</item>
+    </plurals>
+    <string name="firstrun_core_download_all_done">Alle Cores heruntergeladen</string>
+    <string name="firstrun_core_download_note_skip">Überspringen, wenn Sie eigenständige Emulatoren bevorzugen</string>
+    <string name="firstrun_core_download_button_skip">Überspringen</string>
+    <string name="firstrun_core_download_button_continue">Weiter</string>
+    <string name="firstrun_core_download_status_complete_description">Abgeschlossen</string>
+    <string name="firstrun_core_download_status_failed_description">Fehlgeschlagen</string>
+    <string name="firstrun_core_download_retry_description">Wiederholen</string>
+    <string name="firstrun_core_download_button_retry">Wiederholen</string>
+
+    <string name="firstrun_complete_title">Fertig!</string>
+    <string name="firstrun_complete_library">%1$s auf %2$s bereit zur Synchronisierung</string>
+    <plurals name="firstrun_complete_game_count">
+        <item quantity="one">%d Spiel</item>
+        <item quantity="other">%d Spiele</item>
+    </plurals>
+    <plurals name="firstrun_complete_platform_count">
+        <item quantity="one">%d Plattform</item>
+        <item quantity="other">%d Plattformen</item>
+    </plurals>
+    <string name="firstrun_complete_hint">Synchronisieren Sie Ihre Bibliothek über die Sammlungseinstellungen, um zu beginnen.</string>
+    <string name="firstrun_complete_button_start">Los geht\'s</string>
+</resources>

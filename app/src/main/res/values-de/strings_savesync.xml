@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="savesync_section_attention">Braucht Ihre Aufmerksamkeit</string>
+    <string name="savesync_section_in_progress">In Bearbeitung</string>
+    <string name="savesync_section_games">Spiele mit Spielständen</string>
+
+    <string name="savesync_footer_navigate">Navigieren</string>
+    <string name="savesync_footer_choose">Wählen</string>
+    <string name="savesync_footer_confirm_keep_local">Lokalen behalten</string>
+    <string name="savesync_footer_confirm_keep_server">Server behalten</string>
+    <string name="savesync_footer_confirm_skip">Überspringen</string>
+    <string name="savesync_footer_open_game">Spiel öffnen</string>
+    <string name="savesync_footer_scan_server">RomM durchsuchen</string>
+    <string name="savesync_footer_back">Zurück</string>
+
+    <string name="savesync_device_this_label">Dieses Gerät</string>
+    <string name="savesync_device_not_connected">Nicht mit RomM verbunden</string>
+    <string name="savesync_device_id_pill">…%1$s</string>
+    <string name="savesync_device_client_versioned">%1$s v%2$s</string>
+    <string name="savesync_device_server_versioned">RomM v%1$s</string>
+    <string name="savesync_device_server_connected">Verbunden</string>
+    <string name="savesync_device_server_offline">Offline</string>
+    <plurals name="savesync_device_save_count_unit">
+        <item quantity="one">Spielstand</item>
+        <item quantity="other">Spielstände</item>
+    </plurals>
+
+    <string name="savesync_other_devices_heading">Andere Geräte</string>
+    <plurals name="savesync_other_devices_more">
+        <item quantity="one">+%d weiterer</item>
+        <item quantity="other">+%d weitere</item>
+    </plurals>
+
+    <plurals name="savesync_access_notice_title">
+        <item quantity="one">%d Speicherort nicht zugänglich</item>
+        <item quantity="other">%d Speicherorte nicht zugänglich</item>
+    </plurals>
+
+    <string name="savesync_empty_title_connected">Noch keine Spielstände synchronisiert</string>
+    <string name="savesync_empty_message_connected">Spielstände erscheinen hier, während Sie spielen</string>
+    <string name="savesync_empty_title_disconnected">Verbinden Sie sich mit RomM, um Spielstände zu synchronisieren</string>
+    <string name="savesync_empty_message_disconnected">Öffnen Sie die Einstellungen, um Ihren RomM-Server hinzuzufügen</string>
+
+    <string name="savesync_conflict_side_local">Lokal</string>
+    <string name="savesync_conflict_side_server">Server</string>
+    <string name="savesync_conflict_device_this">dieses Gerät</string>
+    <string name="savesync_conflict_device_other">ein anderes Gerät</string>
+    <string name="savesync_conflict_side_summary">%1$s - %2$s (%3$s)</string>
+    <string name="savesync_conflict_time_unknown">unbekannt</string>
+    <string name="savesync_conflict_newer_badge">neuer</string>
+    <string name="savesync_attention_button_keep_local">Lokalen behalten</string>
+    <string name="savesync_attention_button_keep_server">Server behalten</string>
+    <string name="savesync_attention_button_skip">Überspringen</string>
+
+    <string name="savesync_progress_status_uploading">Wird hochgeladen</string>
+    <string name="savesync_progress_status_downloading">Wird heruntergeladen</string>
+    <string name="savesync_progress_status_queued">Wartend</string>
+
+    <string name="savesync_game_pill_just_synced">Gerade synchronisiert</string>
+    <string name="savesync_game_pill_conflict">Konflikt</string>
+    <string name="savesync_game_last_write_this_device">Letzte Änderung - dieses Gerät</string>
+    <string name="savesync_game_last_write_device">Letzte Änderung - %1$s</string>
+    <string name="savesync_game_last_write_unknown">Letzte Änderung - unbekanntes Gerät</string>
+    <string name="savesync_game_last_write_time">%1$s · %2$s</string>
+
+    <string name="savesync_force_check_title">RomM nach fehlenden Spielständen durchsuchen</string>
+    <string name="savesync_force_check_idle">Durchsucht lokale Spiele und ruft den neuesten Spielstand jedes Kanals von RomM ab.</string>
+    <string name="savesync_force_check_running">Wird durchsucht...</string>
+    <plurals name="savesync_force_check_up_to_date">
+        <item quantity="one">Aktuell - %d Spiel geprüft, nichts Neues.</item>
+        <item quantity="other">Aktuell - %d Spiele geprüft, nichts Neues.</item>
+    </plurals>
+    <plurals name="savesync_force_check_queued">
+        <item quantity="one">%1$d Spielstand aus %2$d Spielen eingereiht; %3$d heruntergeladen.</item>
+        <item quantity="other">%1$d Spielstände aus %2$d Spielen eingereiht; %3$d heruntergeladen.</item>
+    </plurals>
+    <string name="savesync_force_check_failed">Fehlgeschlagen: %1$s</string>
+    <string name="savesync_force_check_failed_fallback">Spielstand-Prüfung fehlgeschlagen</string>
+
+    <string name="savesync_device_unnamed">Unbenanntes Gerät</string>
+    <string name="savesync_device_web">Web</string>
+
+    <string name="savesync_channel_archived">Archiviert</string>
+    <string name="savesync_channel_autosave">Autospeicherung</string>
+</resources>

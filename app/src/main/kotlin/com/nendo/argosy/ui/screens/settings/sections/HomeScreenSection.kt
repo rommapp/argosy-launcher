@@ -15,7 +15,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.data.preferences.HomeBackgroundMode
 import com.nendo.argosy.domain.model.HomeLayoutKind
 import com.nendo.argosy.ui.components.ActionPreference
@@ -46,7 +49,7 @@ internal sealed class HomeScreenItem(
 ) {
     val isFocusable: Boolean get() = this !is Header && this !is LayoutPreview
 
-    class Header(key: String, section: String, val title: String) : HomeScreenItem(key, section)
+    class Header(key: String, section: String, val titleRes: Int) : HomeScreenItem(key, section)
 
     data object Background : HomeScreenItem(
         key = "homeBackgroundMode",
@@ -129,10 +132,12 @@ internal sealed class HomeScreenItem(
         private fun drawsBackgroundArt(state: DisplayState): Boolean =
             state.homeLayout.selected == HomeLayoutKind.CAROUSEL
 
-        private val BackgroundHeader = Header("backgroundHeader", "background", "Background")
-        private val VideoHeader = Header("videoHeader", "video", "Video Wallpaper")
-        private val LayoutHeader = Header("layoutHeader", "layout", "Layout")
-        private val ContentHeader = Header("contentHeader", "content", "Content")
+        private val BackgroundHeader =
+            Header("backgroundHeader", "background", R.string.settings_home_screen_section_background)
+        private val VideoHeader = Header("videoHeader", "video", R.string.settings_home_screen_section_video)
+        private val LayoutHeader = Header("layoutHeader", "layout", R.string.settings_home_screen_section_layout)
+        private val ContentHeader =
+            Header("contentHeader", "content", R.string.settings_home_screen_section_content)
 
         val ALL: List<HomeScreenItem>
             get() = listOf(
@@ -160,16 +165,21 @@ private val homeScreenLayout = SettingsLayout<HomeScreenItem, DisplayState>(
     isFocusable = { it.isFocusable },
     visibleWhen = { item, state -> item.visibleWhen(state) },
     sectionOf = { it.section },
-    sectionTitle = {
+    sectionTitleRes = {
         when (it) {
-            "layout" -> "Layout"
-            "background" -> "Background"
-            "video" -> "Video Wallpaper"
-            "content" -> "Content"
+            "layout" -> R.string.settings_home_screen_section_layout
+            "background" -> R.string.settings_home_screen_section_background
+            "video" -> R.string.settings_home_screen_section_video
+            "content" -> R.string.settings_home_screen_section_content
             else -> null
         }
     }
 )
+
+private fun homeBackgroundModeLabelRes(mode: HomeBackgroundMode): Int = when (mode) {
+    HomeBackgroundMode.GAME_ART -> R.string.settings_home_screen_background_mode_game_art
+    HomeBackgroundMode.PATTERN -> R.string.settings_home_screen_background_mode_pattern
+}
 
 internal fun homeScreenMaxFocusIndex(display: DisplayState): Int = homeScreenLayout.maxFocusIndex(display)
 
@@ -184,6 +194,7 @@ internal fun homeScreenFocusIndexOf(item: HomeScreenItem, display: DisplayState)
 @Composable
 fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val display = uiState.display
+    val context = LocalContext.current
 
     val visibleItems = remember(
         display.useGameBackground,
@@ -199,9 +210,10 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         display.videoWallpaperEnabled,
         display.surfaceBackdrop.enabled,
         display.homeBackgroundMode,
-        display.homeLayout.selected
+        display.homeLayout.selected,
+        context
     ) {
-        homeScreenLayout.buildSections(display)
+        homeScreenLayout.buildSections(display, context)
     }
 
     fun isFocused(item: HomeScreenItem): Boolean =
@@ -223,23 +235,25 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) { item ->
             when (item) {
-                is HomeScreenItem.Header -> HomeScreenSectionHeader(item.title)
+                is HomeScreenItem.Header -> HomeScreenSectionHeader(stringResource(item.titleRes))
 
                 HomeScreenItem.Background -> CyclePreference(
-                    title = "Background",
-                    subtitle = "Game art or the backdrop pattern",
-                    value = display.homeBackgroundMode.displayName,
+                    title = stringResource(R.string.settings_home_screen_background_title),
+                    subtitle = stringResource(R.string.settings_home_screen_background_subtitle),
+                    value = stringResource(homeBackgroundModeLabelRes(display.homeBackgroundMode)),
                     isFocused = isFocused(item),
                     onClick = { viewModel.cycleHomeBackgroundMode() },
                     onPrev = { viewModel.cycleHomeBackgroundMode(-1) },
-                    options = remember { HomeBackgroundMode.entries.map { it.displayName } },
+                    options = remember(context) {
+                        HomeBackgroundMode.entries.map { context.getString(homeBackgroundModeLabelRes(it)) }
+                    },
                     onSelect = { index -> viewModel.setHomeBackgroundMode(HomeBackgroundMode.entries[index]) },
                     pickerRequestToken = pickerToken(item)
                 )
 
                 HomeScreenItem.GameArtwork -> SwitchPreference(
-                    title = "Game Artwork",
-                    subtitle = "Use game cover as background",
+                    title = stringResource(R.string.settings_home_screen_game_artwork_title),
+                    subtitle = stringResource(R.string.settings_home_screen_game_artwork_subtitle),
                     isEnabled = display.useGameBackground,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.setUseGameBackground(it) }
@@ -247,13 +261,13 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
                 HomeScreenItem.CustomImage -> {
                     val subtitle = if (display.customBackgroundPath != null) {
-                        "Custom image selected"
+                        stringResource(R.string.settings_home_screen_custom_image_subtitle_set)
                     } else {
-                        "No image selected"
+                        stringResource(R.string.settings_home_screen_custom_image_subtitle_empty)
                     }
                     ActionPreference(
                         icon = Icons.Outlined.PhotoLibrary,
-                        title = "Custom Image",
+                        title = stringResource(R.string.settings_home_screen_custom_image_title),
                         subtitle = subtitle,
                         isFocused = isFocused(item),
                         onClick = { viewModel.openBackgroundPicker() }
@@ -261,7 +275,7 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 }
 
                 HomeScreenItem.Blur -> SliderPreference(
-                    title = "Blur",
+                    title = stringResource(R.string.settings_home_screen_blur_title),
                     value = display.backgroundBlur / 10,
                     minValue = 0,
                     maxValue = 10,
@@ -270,7 +284,7 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 )
 
                 HomeScreenItem.Saturation -> SliderPreference(
-                    title = "Saturation",
+                    title = stringResource(R.string.settings_home_screen_saturation_title),
                     value = display.backgroundSaturation / 10,
                     minValue = 0,
                     maxValue = 10,
@@ -279,7 +293,7 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 )
 
                 HomeScreenItem.Opacity -> SliderPreference(
-                    title = "Opacity",
+                    title = stringResource(R.string.settings_home_screen_opacity_title),
                     value = display.backgroundOpacity / 10,
                     minValue = 0,
                     maxValue = 10,
@@ -288,22 +302,24 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 )
 
                 HomeScreenItem.VideoWallpaper -> SwitchPreference(
-                    title = "Show Video Wallpaper",
-                    subtitle = "Play video backgrounds on home screen",
+                    title = stringResource(R.string.settings_home_screen_video_wallpaper_title),
+                    subtitle = stringResource(R.string.settings_home_screen_video_wallpaper_subtitle),
                     isEnabled = display.videoWallpaperEnabled,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.setVideoWallpaperEnabled(!display.videoWallpaperEnabled) }
                 )
 
                 HomeScreenItem.VideoDelay -> {
-                    val delayText = videoDelayLabel(display.videoWallpaperDelaySeconds)
+                    val delayText = videoDelayLabel(context, display.videoWallpaperDelaySeconds)
                     CyclePreference(
-                        title = "Delay Before Playback",
+                        title = stringResource(R.string.settings_home_screen_video_delay_title),
                         value = delayText,
                         isFocused = isFocused(item),
                         onClick = { viewModel.cycleVideoWallpaperDelay() },
                         onPrev = { viewModel.cycleVideoWallpaperDelay(-1) },
-                        options = remember { DisplaySettingsDelegate.VIDEO_DELAY_SECONDS.map { videoDelayLabel(it) } },
+                        options = remember(context) {
+                            DisplaySettingsDelegate.VIDEO_DELAY_SECONDS.map { videoDelayLabel(context, it) }
+                        },
                         onSelect = { index ->
                             val currentIndex = DisplaySettingsDelegate.VIDEO_DELAY_SECONDS
                                 .indexOf(display.videoWallpaperDelaySeconds).coerceAtLeast(0)
@@ -315,8 +331,8 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
                 HomeScreenItem.VideoMuted -> {
                     SwitchPreference(
-                        title = "Muted Playback",
-                        subtitle = "Mute video audio",
+                        title = stringResource(R.string.settings_home_screen_video_muted_title),
+                        subtitle = stringResource(R.string.settings_home_screen_video_muted_subtitle),
                         isEnabled = display.videoWallpaperMuted,
                         isFocused = isFocused(item),
                         onToggle = { viewModel.setVideoWallpaperMuted(it) }
@@ -363,8 +379,8 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 )
 
                 HomeScreenItem.InstalledOnly -> SwitchPreference(
-                    title = "Installed Games Only",
-                    subtitle = "Only show downloaded games on home screen",
+                    title = stringResource(R.string.settings_home_screen_installed_only_title),
+                    subtitle = stringResource(R.string.settings_home_screen_installed_only_subtitle),
                     isEnabled = display.installedOnlyHome,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.setInstalledOnlyHome(it) }
@@ -373,11 +389,16 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     }
 }
 
-private fun videoDelayLabel(seconds: Int): String = when (seconds) {
-    0 -> "Instant"
-    1 -> "1 second"
-    else -> "$seconds seconds"
-}
+private fun videoDelayLabel(context: android.content.Context, seconds: Int): String =
+    if (seconds == 0) {
+        context.getString(R.string.settings_home_screen_video_delay_instant)
+    } else {
+        context.resources.getQuantityString(
+            R.plurals.settings_home_screen_video_delay_seconds,
+            seconds,
+            seconds
+        )
+    }
 
 @Composable
 private fun HomeScreenSectionHeader(title: String) {

@@ -1,8 +1,10 @@
 package com.nendo.argosy.ui.screens.media
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.DualScreenManagerHolder
+import com.nendo.argosy.R
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.data.media.MediaAvailabilityVerifier
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -15,6 +17,7 @@ import com.nendo.argosy.ui.screens.media.delegates.MediaDownloadPromptOutcome
 import com.nendo.argosy.ui.screens.media.delegates.MediaSeriesDelegate
 import com.nendo.argosy.ui.screens.media.delegates.MediaSiblingsDelegate
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -31,6 +34,7 @@ private const val PLAY_TARGET_WAIT_MS = 10_000L
 
 @HiltViewModel
 class MediaDetailViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val mediaRepository: MediaRepository,
     private val seriesDelegate: MediaSeriesDelegate,
     private val siblingsDelegate: MediaSiblingsDelegate,
@@ -144,7 +148,7 @@ class MediaDetailViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     isLoading = false,
-                    errorMessage = "This title is no longer in the library."
+                    errorMessage = context.getString(R.string.media_detail_item_missing)
                 )
             }
             return
@@ -174,7 +178,7 @@ class MediaDetailViewModel @Inject constructor(
      */
     fun republishCompanionDetail() {
         DualScreenManagerHolder.instance?.setCompanionDetail(
-            _uiState.value.item?.toCompanionDetail()
+            _uiState.value.item?.toCompanionDetail(context)
         )
     }
 
@@ -416,7 +420,7 @@ class MediaDetailViewModel @Inject constructor(
     }
 
     private fun menuSubtitleFor(target: MediaItemUi, item: MediaItemUi): String? =
-        if (target.itemId == item.itemId) item.year?.toString() else target.episodeLabel ?: item.title
+        if (target.itemId == item.itemId) item.year?.toString() else target.episodeLabel(context) ?: item.title
 
     fun moveMenuFocus(delta: Int) {
         _uiState.update { state ->
@@ -758,7 +762,7 @@ class MediaDetailViewModel @Inject constructor(
                 resumePrompt = MediaResumePrompt(
                     itemId = item.itemId,
                     title = item.title,
-                    subtitle = item.episodeLabel ?: item.seriesName ?: item.year?.toString(),
+                    subtitle = item.episodeLabel(context) ?: item.seriesName ?: item.year?.toString(),
                     resumeTicks = item.resumeTicks
                 )
             )

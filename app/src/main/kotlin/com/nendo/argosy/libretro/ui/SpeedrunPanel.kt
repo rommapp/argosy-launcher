@@ -21,10 +21,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.nendo.argosy.R
 import com.nendo.argosy.libretro.speedrun.SpeedrunPhase
 import com.nendo.argosy.libretro.speedrun.SpeedrunRunState
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
@@ -80,7 +82,7 @@ fun SpeedrunPanel(
             )
             if (state.phase == SpeedrunPhase.PAUSED) {
                 Text(
-                    text = "PAUSED",
+                    text = stringResource(R.string.ingame_speedrun_paused),
                     style = MaterialTheme.typography.labelSmall,
                     fontSize = (10 * scale).sp,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
@@ -181,12 +183,18 @@ private fun SegmentRow(
 @Composable
 private fun PanelFooter(state: SpeedrunRunState, scale: Float) {
     Column(modifier = Modifier.padding(top = (6 * scale).dp)) {
-        state.pbTimeMs?.let { FooterRow("Personal Best", formatRunTime(it), scale) }
-        state.sessionBestMs?.let { FooterRow("Session Best", formatRunTime(it), scale) }
-        state.sumOfBestMs?.let { FooterRow("Sum of Best", formatRunTime(it), scale) }
+        state.pbTimeMs?.let {
+            FooterRow(stringResource(R.string.ingame_speedrun_personal_best), formatRunTime(it), scale)
+        }
+        state.sessionBestMs?.let {
+            FooterRow(stringResource(R.string.ingame_speedrun_session_best), formatRunTime(it), scale)
+        }
+        state.sumOfBestMs?.let {
+            FooterRow(stringResource(R.string.ingame_speedrun_sum_of_best), formatRunTime(it), scale)
+        }
         if (state.attemptCount > 0) {
             Text(
-                text = "Attempt ${state.attemptCount}",
+                text = stringResource(R.string.ingame_speedrun_attempt, state.attemptCount),
                 fontSize = (10 * scale).sp,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
             )

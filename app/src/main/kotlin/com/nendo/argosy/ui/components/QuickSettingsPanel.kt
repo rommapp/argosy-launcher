@@ -53,6 +53,9 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.annotation.StringRes
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.data.preferences.ThemeMode
 import com.nendo.argosy.ui.primitives.ArgosyToggle
 import com.nendo.argosy.ui.quaypass.QuayPassIcons
@@ -65,21 +68,21 @@ import com.nendo.argosy.ui.theme.LocalArgosyTheme
 private fun quickFocusBackground(isFocused: Boolean): Color =
     if (isFocused) LocalArgosyTheme.current.focusAccent.copy(alpha = 0.15f) else Color.Transparent
 
-enum class FanMode(val value: Int, val label: String) {
-    QUIET(1, "Quiet"),
-    SMART(4, "Smart"),
-    SPORT(5, "Sport"),
-    CUSTOM(6, "Turbo+");
+enum class FanMode(val value: Int, @StringRes val labelRes: Int) {
+    QUIET(1, R.string.ui_quick_settings_fan_quiet),
+    SMART(4, R.string.ui_quick_settings_fan_smart),
+    SPORT(5, R.string.ui_quick_settings_fan_sport),
+    CUSTOM(6, R.string.ui_quick_settings_fan_custom);
 
     companion object {
         fun fromValue(value: Int) = entries.find { it.value == value } ?: SMART
     }
 }
 
-enum class PerformanceMode(val value: Int, val label: String) {
-    STANDARD(0, "Standard"),
-    HIGH(1, "High Performance"),
-    MAX(2, "Max Performance");
+enum class PerformanceMode(val value: Int, @StringRes val labelRes: Int) {
+    STANDARD(0, R.string.ui_quick_settings_performance_standard),
+    HIGH(1, R.string.ui_quick_settings_performance_high),
+    MAX(2, R.string.ui_quick_settings_performance_max);
 
     companion object {
         fun fromValue(value: Int) = entries.find { it.value == value } ?: STANDARD
@@ -198,7 +201,9 @@ fun QuickSettingsPanel(
     onSwapDisplays: () -> Unit = {},
     onQuayPassToggle: () -> Unit = {},
     onDismiss: () -> Unit,
-    footerHints: List<Pair<InputButton, String>> = listOf(InputButton.B to "Close"),
+    footerHints: List<Pair<InputButton, String>> = listOf(
+        InputButton.B to stringResource(R.string.ui_quick_settings_footer_close)
+    ),
     onHintClick: ((InputButton) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
@@ -247,7 +252,7 @@ fun QuickSettingsPanel(
                     .padding(vertical = Dimens.spacingLg)
             ) {
                 Text(
-                    text = "Quick Settings",
+                    text = stringResource(R.string.ui_quick_settings_title),
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(horizontal = Dimens.spacingLg)
@@ -285,21 +290,25 @@ fun QuickSettingsPanel(
 
                             QuickSettingsItem.Performance -> QuickSettingItemTwoLine(
                                 icon = Icons.Default.Speed,
-                                label = "Performance",
-                                value = state.performanceMode.label,
+                                label = stringResource(R.string.ui_quick_settings_performance),
+                                value = stringResource(state.performanceMode.labelRes),
                                 isFocused = isFocused(item),
                                 isDisabled = permissionMissing,
-                                disabledReason = "Permission required",
+                                disabledReason = stringResource(
+                                    R.string.ui_quick_settings_performance_disabled
+                                ),
                                 onClick = onPerformanceModeCycle
                             )
 
                             QuickSettingsItem.Fan -> QuickSettingItem(
                                 icon = Icons.Default.Toys,
-                                label = "Fan",
-                                value = state.fanMode.label,
+                                label = stringResource(R.string.ui_quick_settings_fan),
+                                value = stringResource(state.fanMode.labelRes),
                                 isFocused = isFocused(item),
                                 isDisabled = permissionMissing,
-                                disabledReason = "Permission required",
+                                disabledReason = stringResource(
+                                    R.string.ui_quick_settings_fan_disabled
+                                ),
                                 onClick = onFanModeCycle
                             )
 
@@ -315,7 +324,7 @@ fun QuickSettingsPanel(
                                     ThemeMode.DARK -> Icons.Default.DarkMode
                                     ThemeMode.SYSTEM -> Icons.Default.SettingsBrightness
                                 },
-                                label = "Theme",
+                                label = stringResource(R.string.ui_quick_settings_theme),
                                 value = state.themeMode.displayName,
                                 isFocused = isFocused(item),
                                 onClick = onThemeCycle
@@ -335,7 +344,7 @@ fun QuickSettingsPanel(
 
                             QuickSettingsItem.Haptic -> QuickSettingToggle(
                                 icon = Icons.Default.Vibration,
-                                label = "Haptics",
+                                label = stringResource(R.string.ui_quick_settings_haptics),
                                 isEnabled = state.hapticEnabled,
                                 isFocused = isFocused(item),
                                 onClick = onHapticToggle
@@ -349,7 +358,7 @@ fun QuickSettingsPanel(
 
                             QuickSettingsItem.UISounds -> QuickSettingToggle(
                                 icon = if (state.soundEnabled) Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff,
-                                label = "UI Sounds",
+                                label = stringResource(R.string.ui_quick_settings_ui_sounds),
                                 isEnabled = state.soundEnabled,
                                 isFocused = isFocused(item),
                                 onClick = onSoundToggle
@@ -357,7 +366,7 @@ fun QuickSettingsPanel(
 
                             QuickSettingsItem.BGM -> QuickSettingToggle(
                                 icon = if (state.ambientAudioEnabled) Icons.Default.MusicNote else Icons.Default.MusicOff,
-                                label = "BGM",
+                                label = stringResource(R.string.ui_quick_settings_bgm),
                                 isEnabled = state.ambientAudioEnabled,
                                 isFocused = isFocused(item),
                                 onClick = onAmbientToggle
@@ -365,7 +374,7 @@ fun QuickSettingsPanel(
 
                             QuickSettingsItem.SwapDisplays -> QuickSettingToggle(
                                 icon = Icons.Default.SwapHoriz,
-                                label = "Swap Displays",
+                                label = stringResource(R.string.ui_quick_settings_swap_displays),
                                 isEnabled = state.isRolesSwapped,
                                 isFocused = isFocused(item),
                                 onClick = onSwapDisplays
@@ -373,7 +382,7 @@ fun QuickSettingsPanel(
 
                             QuickSettingsItem.QuayPass -> QuickSettingToggle(
                                 icon = if (state.quayPassEnabled) QuayPassIcons.On else QuayPassIcons.Off,
-                                label = "QuayPass",
+                                label = stringResource(R.string.ui_quick_settings_quaypass),
                                 isEnabled = state.quayPassEnabled,
                                 isFocused = isFocused(item),
                                 onClick = onQuayPassToggle
@@ -589,7 +598,7 @@ private fun FanSpeedSlider(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = "Speed",
+                text = stringResource(R.string.ui_quick_settings_fan_speed),
                 style = MaterialTheme.typography.labelMedium,
                 color = if (isFocused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -634,7 +643,7 @@ private fun VibrationStrengthSlider(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = "Strength",
+                text = stringResource(R.string.ui_quick_settings_vibration_strength),
                 style = MaterialTheme.typography.labelMedium,
                 color = if (isFocused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -657,7 +666,7 @@ private fun SystemVolumeSlider(
     volume: Float,
     isFocused: Boolean,
     onVolumeChange: (Float) -> Unit,
-    label: String = "Volume"
+    label: String = stringResource(R.string.ui_quick_settings_volume)
 ) {
     val percentage = (volume * 100).toInt()
 
@@ -711,7 +720,7 @@ private fun ScreenBrightnessSlider(
     brightness: Float,
     isFocused: Boolean,
     onBrightnessChange: (Float) -> Unit,
-    label: String = "Brightness"
+    label: String = stringResource(R.string.ui_quick_settings_brightness)
 ) {
     val percentage = (brightness * 100).toInt()
 

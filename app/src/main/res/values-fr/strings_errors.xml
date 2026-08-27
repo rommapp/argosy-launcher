@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="error_sync_library_not_connected">RomM non connecté</string>
+    <string name="error_sync_library_unexpected">Échec de la synchronisation</string>
+
+    <string name="error_sync_platform_not_connected">RomM non connecté</string>
+    <string name="error_sync_platform_not_found">Plateforme introuvable</string>
+    <string name="error_sync_platform_unexpected">Échec de la synchronisation</string>
+
+    <string name="error_restore_cached_states_game_not_found">Jeu introuvable</string>
+    <string name="error_restore_cached_states_no_local_path">Le jeu n\'a pas de chemin local</string>
+    <string name="error_restore_cached_states_directory_unresolved">Impossible de déterminer où restaurer les états de sauvegarde</string>
+    <string name="error_restore_cached_states_unexpected">Impossible de restaurer les états de sauvegarde</string>
+
+    <string name="error_state_sync_game_not_found">Jeu introuvable</string>
+    <string name="error_state_sync_no_local_path">Le jeu n\'a pas de chemin local</string>
+
+    <string name="error_restore_state_target_path_unresolved">Impossible de déterminer où restaurer cet état de sauvegarde</string>
+    <string name="error_restore_state_write_failed">Échec de la restauration du fichier d\'état de sauvegarde</string>
+
+    <string name="error_restore_cached_save_game_not_found">Jeu introuvable</string>
+    <string name="error_restore_cached_save_no_local_copy">Le jeu n\'a pas de copie locale</string>
+    <string name="error_restore_cached_save_location_unresolved">Impossible de déterminer l\'emplacement de la sauvegarde</string>
+    <string name="error_restore_cached_save_clear_failed">Échec de la suppression de la sauvegarde existante à l\'emplacement cible</string>
+    <string name="error_restore_cached_save_no_local_cache_id">Aucune sauvegarde locale à restaurer</string>
+    <string name="error_restore_cached_save_no_server_save_id">Aucune sauvegarde serveur à restaurer</string>
+    <string name="error_restore_cached_save_restore_failed">Échec de la restauration de la sauvegarde</string>
+
+    <string name="error_download_game_not_found">Jeu introuvable</string>
+    <string name="error_download_game_not_synced">Le jeu n\'est pas synchronisé depuis RomM</string>
+    <string name="error_download_invalid_file_type">Type de fichier invalide : .%1$s</string>
+    <string name="error_download_rom_info_fetch_failed">Échec de la récupération des informations de la ROM : %1$s</string>
+    <string name="error_download_no_discs_found">Aucun disque trouvé pour ce jeu multi-disques</string>
+    <string name="error_download_all_discs_downloaded">Tous les disques sont déjà téléchargés</string>
+    <string name="error_download_no_discs_queued">Échec de la mise en file d\'attente des disques</string>
+    <string name="error_download_game_not_found_for_repair">Jeu introuvable</string>
+    <string name="error_download_not_multi_disc">Ce n\'est pas un jeu multi-disques</string>
+
+    <string name="error_download_invalid_content_type">Type de fichier invalide : %1$s</string>
+    <string name="error_download_file_too_small">Fichier trop petit pour être une ROM</string>
+    <string name="error_download_unexpected">Échec du téléchargement</string>
+    <string name="error_download_insufficient_unpack_space_internal">L\'extraction nécessite %1$d MB dans le stockage interne, %2$d MB disponibles</string>
+    <string name="error_download_insufficient_unpack_space_rom">L\'extraction nécessite %1$d MB dans le stockage ROM, %2$d MB disponibles</string>
+    <string name="error_download_unpack_escaped_staging">Le jeu extrait n\'a pas atterri dans le dossier de préparation</string>
+    <string name="error_download_staged_path_missing">Le jeu préparé n\'a pas de chemin enregistré</string>
+    <string name="error_download_insufficient_deploy_space">Nécessite %1$d MB dans le stockage ROM, %2$d MB disponibles</string>
+    <string name="error_download_move_to_storage_failed">Impossible de déplacer le jeu vers le stockage ROM</string>
+    <string name="error_download_moved_file_not_found">Le jeu déplacé est introuvable dans le stockage ROM</string>
+    <string name="error_download_downloaded_file_missing">Fichier téléchargé introuvable</string>
+    <string name="error_download_no_download_entry">Aucune entrée de téléchargement trouvée</string>
+    <string name="error_download_no_longer_exists">Le fichier téléchargé n\'existe plus</string>
+    <string name="error_download_extraction_failed">Échec de l\'extraction</string>
+
+    <string name="error_filepicker_already_downloaded">Jeu déjà téléchargé</string>
+</resources>

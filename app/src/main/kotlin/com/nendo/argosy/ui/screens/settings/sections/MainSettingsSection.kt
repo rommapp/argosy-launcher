@@ -2,6 +2,7 @@ package com.nendo.argosy.ui.screens.settings.sections
 
 import android.content.Intent
 import android.provider.Settings
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -20,6 +21,7 @@ import androidx.compose.material.icons.filled.Gamepad
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Palette
@@ -33,6 +35,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
+import com.nendo.argosy.data.preferences.AppLanguage
+import com.nendo.argosy.ui.common.resolve
+import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.NavigationPreference
 import com.nendo.argosy.ui.screens.settings.ConnectionStatus
@@ -50,59 +57,119 @@ import com.nendo.argosy.util.formatClockDateTime
 internal sealed class MainSettingsItem(
     val key: String,
     val icon: ImageVector,
-    val title: String,
+    @StringRes val titleRes: Int,
     val section: String
 ) {
     val isFocusable: Boolean get() = this !is Header
 
-    class Header(key: String, section: String, title: String) :
-        MainSettingsItem(key, Icons.Default.Info, title, section)
+    class Header(key: String, section: String, @StringRes titleRes: Int) :
+        MainSettingsItem(key, Icons.Default.Info, titleRes, section)
 
-    data object Theme : MainSettingsItem("theme", Icons.Default.Palette, "Theme", "launcher")
-    data object Interface : MainSettingsItem("interface", Icons.Default.Dashboard, "Interface", "launcher")
-    data object Navigation : MainSettingsItem("navigation", Icons.Default.TouchApp, "Navigation", "launcher")
-    data object Audio : MainSettingsItem("audio", Icons.Default.GraphicEq, "Audio", "launcher")
-    data object Displays : MainSettingsItem("displays", Icons.Default.Devices, "Displays", "launcher")
+    data object Theme :
+        MainSettingsItem("theme", Icons.Default.Palette, R.string.settings_main_theme_title, "launcher")
+    data object Interface : MainSettingsItem(
+        "interface",
+        Icons.Default.Dashboard,
+        R.string.settings_main_interface_title,
+        "launcher"
+    )
+    data object Language : MainSettingsItem(
+        "language",
+        Icons.Default.Language,
+        R.string.settings_main_language_title,
+        "launcher"
+    )
+    data object Navigation : MainSettingsItem(
+        "navigation",
+        Icons.Default.TouchApp,
+        R.string.settings_main_navigation_title,
+        "launcher"
+    )
+    data object Audio :
+        MainSettingsItem("audio", Icons.Default.GraphicEq, R.string.settings_main_audio_title, "launcher")
+    data object Displays : MainSettingsItem(
+        "displays",
+        Icons.Default.Devices,
+        R.string.settings_main_displays_title,
+        "launcher"
+    )
 
-    data object BuiltinEmulator :
-        MainSettingsItem("builtin_emulator", Icons.Default.Build, "Built-in Emulator", "gameplay")
-    data object Saves : MainSettingsItem("saves", Icons.Default.Save, "Saves", "gameplay")
+    data object BuiltinEmulator : MainSettingsItem(
+        "builtin_emulator",
+        Icons.Default.Build,
+        R.string.settings_main_builtin_emulator_title,
+        "gameplay"
+    )
+    data object Saves :
+        MainSettingsItem("saves", Icons.Default.Save, R.string.settings_main_saves_title, "gameplay")
     data object RetroAchievements : MainSettingsItem(
         "retroAchievements",
         Icons.Default.EmojiEvents,
-        "RetroAchievements",
+        R.string.settings_main_retroachievements_title,
         "gameplay"
     )
-    data object Bios : MainSettingsItem("bios", Icons.Default.Memory, "BIOS Files", "gameplay")
-    data object Drivers :
-        MainSettingsItem("drivers", Icons.Default.DeveloperBoard, "GPU Drivers", "gameplay")
+    data object Bios :
+        MainSettingsItem("bios", Icons.Default.Memory, R.string.settings_main_bios_title, "gameplay")
+    data object Drivers : MainSettingsItem(
+        "drivers",
+        Icons.Default.DeveloperBoard,
+        R.string.settings_main_drivers_title,
+        "gameplay"
+    )
 
-    data object Platforms : MainSettingsItem("platforms", Icons.Default.Gamepad, "Platforms", "library")
-    data object Storage : MainSettingsItem("storage", Icons.Default.Storage, "Storage", "library")
+    data object Platforms : MainSettingsItem(
+        "platforms",
+        Icons.Default.Gamepad,
+        R.string.settings_main_platforms_title,
+        "library"
+    )
+    data object Storage :
+        MainSettingsItem("storage", Icons.Default.Storage, R.string.settings_main_storage_title, "library")
 
-    data object RomM : MainSettingsItem("romm", Icons.Default.Dns, "RomM", "connections")
-    data object Steam : MainSettingsItem("steam", Icons.Default.CloudQueue, "Steam", "connections")
-    data object Jellyfin : MainSettingsItem("jellyfin", Icons.Default.Movie, "Jellyfin", "connections")
-    data object Social : MainSettingsItem("social", Icons.Default.Group, "Social", "connections")
+    data object RomM :
+        MainSettingsItem("romm", Icons.Default.Dns, R.string.settings_main_romm_title, "connections")
+    data object Steam : MainSettingsItem(
+        "steam",
+        Icons.Default.CloudQueue,
+        R.string.settings_main_steam_title,
+        "connections"
+    )
+    data object Jellyfin : MainSettingsItem(
+        "jellyfin",
+        Icons.Default.Movie,
+        R.string.settings_main_jellyfin_title,
+        "connections"
+    )
+    data object Social :
+        MainSettingsItem("social", Icons.Default.Group, R.string.settings_main_social_title, "connections")
 
-    data object Permissions :
-        MainSettingsItem("permissions", Icons.Default.Security, "Permissions", "system")
-    data object DeviceSettings :
-        MainSettingsItem("device", Icons.Default.PhoneAndroid, "Android Settings", "system")
-    data object About : MainSettingsItem("about", Icons.Default.Info, "About", "system")
+    data object Permissions : MainSettingsItem(
+        "permissions",
+        Icons.Default.Security,
+        R.string.settings_main_permissions_title,
+        "system"
+    )
+    data object DeviceSettings : MainSettingsItem(
+        "device",
+        Icons.Default.PhoneAndroid,
+        R.string.settings_main_device_title,
+        "system"
+    )
+    data object About :
+        MainSettingsItem("about", Icons.Default.Info, R.string.settings_main_about_title, "system")
 
     companion object {
         val ALL: List<MainSettingsItem>
             get() = listOf(
-                Header("launcherHeader", "launcher", "LAUNCHER"),
-                Theme, Interface, Navigation, Audio, Displays,
-                Header("gameplayHeader", "gameplay", "GAMEPLAY"),
+                Header("launcherHeader", "launcher", R.string.settings_main_section_launcher),
+                Theme, Interface, Language, Navigation, Audio, Displays,
+                Header("gameplayHeader", "gameplay", R.string.settings_main_section_gameplay),
                 BuiltinEmulator, Saves, RetroAchievements, Bios, Drivers,
-                Header("libraryHeader", "library", "LIBRARY"),
+                Header("libraryHeader", "library", R.string.settings_main_section_library),
                 Platforms, Storage,
-                Header("connectionsHeader", "connections", "CONNECTIONS"),
+                Header("connectionsHeader", "connections", R.string.settings_main_section_connections),
                 RomM, Steam, Jellyfin, Social,
-                Header("systemHeader", "system", "SYSTEM"),
+                Header("systemHeader", "system", R.string.settings_main_section_system),
                 Permissions, DeviceSettings, About
             )
     }
@@ -121,6 +188,18 @@ internal fun mainSettingsMaxFocusIndex(): Int =
 internal fun mainSettingsItemAtFocusIndex(index: Int): MainSettingsItem? =
     mainSettingsLayout.itemAtFocusIndex(index, Unit)
 
+internal fun languageLabelRes(language: AppLanguage): Int = when (language) {
+    AppLanguage.SYSTEM -> R.string.settings_main_language_system_default
+    AppLanguage.ENGLISH -> R.string.settings_main_language_name_en
+    AppLanguage.FRENCH -> R.string.settings_main_language_name_fr
+    AppLanguage.SPANISH -> R.string.settings_main_language_name_es
+    AppLanguage.GERMAN -> R.string.settings_main_language_name_de
+    AppLanguage.CHINESE_SIMPLIFIED -> R.string.settings_main_language_name_zh_hans
+    AppLanguage.CHINESE_TRADITIONAL -> R.string.settings_main_language_name_zh_hant
+    AppLanguage.RUSSIAN -> R.string.settings_main_language_name_ru
+    AppLanguage.HINDI -> R.string.settings_main_language_name_hi
+}
+
 @Composable
 fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val context = LocalContext.current
@@ -133,63 +212,92 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
 
     fun getSubtitle(item: MainSettingsItem): String = when (item) {
         is MainSettingsItem.Header -> ""
-        MainSettingsItem.DeviceSettings -> "System settings"
+        MainSettingsItem.DeviceSettings -> context.getString(R.string.settings_main_device_subtitle)
         MainSettingsItem.RomM -> when (uiState.server.connectionStatus) {
-            ConnectionStatus.NOT_CONFIGURED -> "Server not configured"
-            ConnectionStatus.CHECKING -> "Checking connection..."
-            ConnectionStatus.OFFLINE -> "Server offline"
+            ConnectionStatus.NOT_CONFIGURED ->
+                context.getString(R.string.settings_main_romm_subtitle_unconfigured)
+            ConnectionStatus.CHECKING -> context.getString(R.string.settings_main_romm_subtitle_checking)
+            ConnectionStatus.OFFLINE -> context.getString(R.string.settings_main_romm_subtitle_offline)
             ConnectionStatus.ONLINE -> {
                 uiState.server.lastRommSync?.let { instant ->
-                    "Last sync: ${formatClockDateTime(context, instant.toEpochMilli())}"
-                } ?: "Never synced"
+                    context.getString(
+                        R.string.settings_main_romm_subtitle_last_sync,
+                        formatClockDateTime(context, instant.toEpochMilli())
+                    )
+                } ?: context.getString(R.string.settings_main_romm_subtitle_never_synced)
             }
         }
         MainSettingsItem.Saves -> if (uiState.syncSettings.saveSyncEnabled) {
-            "Sync on"
+            context.getString(R.string.settings_main_saves_subtitle_on)
         } else {
-            "Sync off"
+            context.getString(R.string.settings_main_saves_subtitle_off)
         }
         MainSettingsItem.RetroAchievements -> if (uiState.retroAchievements.isLoggedIn) {
-            "Logged in as ${uiState.retroAchievements.username}"
+            context.getString(
+                R.string.settings_main_retroachievements_subtitle_logged_in,
+                uiState.retroAchievements.username
+            )
         } else {
-            "Not logged in"
+            context.getString(R.string.settings_main_retroachievements_subtitle_logged_out)
         }
         MainSettingsItem.Storage -> if (uiState.storage.downloadedGamesCount > 0) {
-            "${uiState.storage.downloadedGamesCount} downloaded"
+            context.resources.getQuantityString(
+                R.plurals.settings_main_storage_subtitle_downloaded,
+                uiState.storage.downloadedGamesCount,
+                uiState.storage.downloadedGamesCount
+            )
         } else {
-            "No downloads"
+            context.getString(R.string.settings_main_storage_subtitle_empty)
         }
-        MainSettingsItem.Theme -> "Colors, backdrop, fonts"
-        MainSettingsItem.Interface -> "Grid density, scale, home screen"
-        MainSettingsItem.Navigation -> "Button layout, haptic feedback"
-        MainSettingsItem.Audio -> "Sounds and music"
-        MainSettingsItem.Displays -> "Dimmer, dual-screen, LED"
-        MainSettingsItem.Platforms -> "${uiState.emulators.platforms.size} platforms"
-        MainSettingsItem.BuiltinEmulator -> if (uiState.emulators.builtinLibretroEnabled) "Enabled" else "Disabled"
-        MainSettingsItem.Bios -> uiState.bios.summaryText
-        MainSettingsItem.Drivers -> uiState.drivers.summary
+        MainSettingsItem.Theme -> context.getString(R.string.settings_main_theme_subtitle)
+        MainSettingsItem.Interface -> context.getString(R.string.settings_main_interface_subtitle)
+        MainSettingsItem.Language -> ""
+        MainSettingsItem.Navigation -> context.getString(R.string.settings_main_navigation_subtitle)
+        MainSettingsItem.Audio -> context.getString(R.string.settings_main_audio_subtitle)
+        MainSettingsItem.Displays -> context.getString(R.string.settings_main_displays_subtitle)
+        MainSettingsItem.Platforms -> context.resources.getQuantityString(
+            R.plurals.settings_main_platforms_subtitle,
+            uiState.emulators.platforms.size,
+            uiState.emulators.platforms.size
+        )
+        MainSettingsItem.BuiltinEmulator -> if (uiState.emulators.builtinLibretroEnabled) {
+            context.getString(R.string.settings_main_builtin_emulator_subtitle_on)
+        } else {
+            context.getString(R.string.settings_main_builtin_emulator_subtitle_off)
+        }
+        MainSettingsItem.Bios -> uiState.bios.summaryText.resolve(context)
+        MainSettingsItem.Drivers -> uiState.drivers.summary.resolve(context)
         MainSettingsItem.Steam -> if (uiState.steam.username != null) {
             uiState.steam.username
         } else {
-            "Not signed in"
+            context.getString(R.string.settings_main_steam_subtitle_signed_out)
         }
         MainSettingsItem.Jellyfin -> when {
-            !uiState.jellyfin.hasServer -> "Server not configured"
+            !uiState.jellyfin.hasServer ->
+                context.getString(R.string.settings_main_jellyfin_subtitle_unconfigured)
             uiState.jellyfin.isSignedIn -> uiState.jellyfin.userName.takeIf { it.isNotBlank() }
-                ?.let { "Signed in as $it" } ?: "Signed in"
-            else -> "Not signed in"
+                ?.let { context.getString(R.string.settings_main_jellyfin_subtitle_signed_in_as, it) }
+                ?: context.getString(R.string.settings_main_jellyfin_subtitle_signed_in)
+            else -> context.getString(R.string.settings_main_jellyfin_subtitle_signed_out)
         }
         MainSettingsItem.Social -> when (uiState.social.authStatus) {
-            SocialAuthStatus.CONNECTED -> "Linked as ${uiState.social.displayName ?: uiState.social.username}"
-            SocialAuthStatus.CONNECTING -> "Connecting..."
-            else -> "Not linked"
+            SocialAuthStatus.CONNECTED -> context.getString(
+                R.string.settings_main_social_subtitle_linked,
+                uiState.social.displayName ?: uiState.social.username
+            )
+            SocialAuthStatus.CONNECTING -> context.getString(R.string.settings_main_social_subtitle_connecting)
+            else -> context.getString(R.string.settings_main_social_subtitle_unlinked)
         }
         MainSettingsItem.Permissions -> if (uiState.permissions.allGranted) {
-            "All granted"
+            context.getString(R.string.settings_main_permissions_subtitle_all)
         } else {
-            "${uiState.permissions.grantedCount}/${uiState.permissions.totalCount} granted"
+            context.getString(
+                R.string.settings_main_permissions_subtitle_partial,
+                uiState.permissions.grantedCount,
+                uiState.permissions.totalCount
+            )
         }
-        MainSettingsItem.About -> "Version ${uiState.appVersion}"
+        MainSettingsItem.About -> context.getString(R.string.settings_main_about_subtitle, uiState.appVersion)
     }
 
     fun handleClick(item: MainSettingsItem) {
@@ -205,6 +313,7 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
             MainSettingsItem.Storage -> viewModel.navigateToSection(SettingsSection.STORAGE)
             MainSettingsItem.Theme -> viewModel.navigateToSection(SettingsSection.THEME)
             MainSettingsItem.Interface -> viewModel.navigateToSection(SettingsSection.INTERFACE)
+            MainSettingsItem.Language -> viewModel.requestEnumPicker(MainSettingsItem.Language.key)
             MainSettingsItem.Navigation -> viewModel.navigateToSection(SettingsSection.NAVIGATION)
             MainSettingsItem.Audio -> viewModel.navigateToSection(SettingsSection.AUDIO)
             MainSettingsItem.Displays -> viewModel.navigateToSection(SettingsSection.DISPLAYS)
@@ -220,6 +329,9 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
         }
     }
 
+    fun pickerToken(item: MainSettingsItem): Int =
+        if (uiState.enumPickerKey == item.key) uiState.enumPickerToken else 0
+
     FocusedScroll(
         listState = listState,
         focusedIndex = mainSettingsLayout.focusToListIndex(uiState.focusedIndex, Unit)
@@ -233,15 +345,29 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) {
         items(visibleItems, key = { it.key }) { item ->
-            if (item is MainSettingsItem.Header) {
-                if (item.key != "launcherHeader") {
-                    Spacer(modifier = Modifier.height(Dimens.spacingSm))
+            when (item) {
+                is MainSettingsItem.Header -> {
+                    if (item.key != "launcherHeader") {
+                        Spacer(modifier = Modifier.height(Dimens.spacingSm))
+                    }
+                    SectionHeader(stringResource(item.titleRes))
                 }
-                SectionHeader(item.title)
-            } else {
-                NavigationPreference(
+                MainSettingsItem.Language -> CyclePreference(
+                    title = stringResource(item.titleRes),
+                    value = stringResource(languageLabelRes(uiState.appLanguage)),
+                    subtitle = stringResource(R.string.settings_main_language_subtitle),
+                    isFocused = isFocused(item),
+                    onClick = { viewModel.cycleAppLanguage() },
+                    onPrev = { viewModel.cycleAppLanguage(-1) },
+                    options = remember(context) {
+                        AppLanguage.entries.map { context.getString(languageLabelRes(it)) }
+                    },
+                    onSelect = { index -> viewModel.setAppLanguage(AppLanguage.entries[index].tag) },
+                    pickerRequestToken = pickerToken(item)
+                )
+                else -> NavigationPreference(
                     icon = item.icon,
-                    title = item.title,
+                    title = stringResource(item.titleRes),
                     subtitle = getSubtitle(item),
                     isFocused = isFocused(item),
                     onClick = { handleClick(item) }

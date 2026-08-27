@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.player
 
+import android.content.Context
 import androidx.annotation.OptIn
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -8,6 +9,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.Tracks
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import com.nendo.argosy.R
 import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.media.MediaAvailability
 import com.nendo.argosy.data.media.MediaPlaybackTracker
@@ -21,6 +23,7 @@ import com.nendo.argosy.ui.screens.player.delegates.PlayerQualityDelegate
 import com.nendo.argosy.ui.screens.player.delegates.PlayerTrackDelegate
 import com.nendo.argosy.util.Logger
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -95,6 +98,7 @@ sealed interface PlayerEvent {
 @OptIn(UnstableApi::class)
 @HiltViewModel
 class PlayerViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val engine: PlayerEngine,
     private val apiClient: JellyfinApiClient,
     private val negotiator: PlaybackNegotiator,
@@ -118,6 +122,7 @@ class PlayerViewModel @Inject constructor(
     val chrome = PlayerChromeDelegate(_uiState, viewModelScope)
 
     val tracks = PlayerTrackDelegate(
+        context = context,
         state = _uiState,
         engine = engine,
         playerOf = { _player.value },
@@ -193,7 +198,9 @@ class PlayerViewModel @Inject constructor(
                 it.copy(
                     isLoading = false,
                     isBuffering = false,
-                    errorMessage = "This title could not be played"
+                    errorMessage = context.getString(
+                        R.string.media_player_error_playback_failed
+                    )
                 )
             }
             endMediaSession(currentItemPositionMs())
@@ -345,9 +352,9 @@ class PlayerViewModel @Inject constructor(
     private fun streamingFallbackNotice(playback: NegotiatedPlayback): String? = when {
         playback.isLocalFile -> null
         playback.localCopy == MediaAvailability.UNAVAILABLE ->
-            "Streaming - your download is on storage that is not connected"
+            context.getString(R.string.media_player_notice_stream_unavailable_copy)
         playback.localCopy == MediaAvailability.ABSENT ->
-            "Streaming - your download is no longer on this device"
+            context.getString(R.string.media_player_notice_stream_absent_copy)
         else -> null
     }
 
@@ -379,7 +386,12 @@ class PlayerViewModel @Inject constructor(
     private fun open(playback: NegotiatedPlayback, startPositionMs: Long) {
         val header = authorizationHeader
         if (header == null && !playback.isLocalFile) {
-            _uiState.update { it.copy(isLoading = false, errorMessage = "Not signed in to Jellyfin") }
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    errorMessage = context.getString(R.string.media_player_error_not_signed_in)
+                )
+            }
             endMediaSession(startPositionMs)
             return
         }

@@ -1,5 +1,6 @@
 package com.nendo.argosy.libretro.touch
 
+import com.nendo.argosy.R
 import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.data.repository.MappingPlatforms
 import com.nendo.argosy.libretro.LibretroCoreRegistry
@@ -100,7 +101,10 @@ class TouchLayoutRegistryTest {
         assertEquals(FaceShape.Stack2x3, spec.face)
         assertEquals(6, spec.faceSlots.size)
         assertEquals(ShoulderShape.TopPair, spec.shoulders)
-        assertTrue(spec.system.any { it.label.equals("Mode", ignoreCase = true) })
+        assertTrue(
+            "Saturn's system row should carry its Mode button caption",
+            spec.system.any { it.label == R.string.ingame_touch_saturn_sys_select }
+        )
     }
 
     @Test
@@ -108,7 +112,10 @@ class TouchLayoutRegistryTest {
         val spec = TouchLayoutRegistry.forPlatform("arcade")
         assertEquals(FaceShape.Row6, spec.face)
         assertEquals(6, spec.faceSlots.size)
-        assertTrue(spec.system.any { it.label.equals("Coin", ignoreCase = true) })
+        assertTrue(
+            "Arcade's system row should carry its Coin button caption",
+            spec.system.any { it.label == R.string.ingame_touch_arcade_sys_select }
+        )
     }
 
     @Test

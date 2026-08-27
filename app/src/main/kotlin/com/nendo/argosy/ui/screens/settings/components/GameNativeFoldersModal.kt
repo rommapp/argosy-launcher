@@ -5,6 +5,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.data.launcher.GameNativeSyncFolder
 import com.nendo.argosy.ui.components.DualActionPreference
 import com.nendo.argosy.ui.components.InputButton
@@ -26,18 +29,17 @@ fun GameNativeFoldersModal(
     onClear: (GameNativeSyncFolder) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val context = LocalContext.current
     Modal(
-        title = "GameNative Folders",
-        subtitle = "Point each store at the folder GameNative exports its installs to. " +
-            "Steam markers only mark owned games as installed; the other stores add and " +
-            "remove their games to match.",
+        title = stringResource(R.string.settings_gamenative_folders_title),
+        subtitle = stringResource(R.string.settings_gamenative_folders_subtitle),
         baseWidth = Dimens.modalWidthXl,
         onDismiss = onDismiss,
         inlineFooterHints = true,
         footerHints = listOf(
-            InputButton.DPAD_HORIZONTAL to "Set / Clear",
-            InputButton.A to "Select",
-            InputButton.B to "Back"
+            InputButton.DPAD_HORIZONTAL to stringResource(R.string.settings_gamenative_folders_hint_set),
+            InputButton.A to stringResource(R.string.settings_gamenative_folders_hint_select),
+            InputButton.B to stringResource(R.string.settings_gamenative_folders_hint_back)
         )
     ) {
         LazyColumn(
@@ -51,9 +53,13 @@ fun GameNativeFoldersModal(
                 val path = paths[folder]
                 DualActionPreference(
                     title = folder.displayName,
-                    subtitle = formatPath(path),
-                    primaryLabel = if (path == null) "Set" else "Change",
-                    secondaryLabel = "Clear",
+                    subtitle = formatPath(context, path),
+                    primaryLabel = if (path == null) {
+                        stringResource(R.string.settings_gamenative_folders_action_set)
+                    } else {
+                        stringResource(R.string.settings_gamenative_folders_action_change)
+                    },
+                    secondaryLabel = stringResource(R.string.settings_gamenative_folders_action_clear),
                     showSecondary = path != null,
                     isFocused = focusIndex == index,
                     actionIndex = actionIndex,

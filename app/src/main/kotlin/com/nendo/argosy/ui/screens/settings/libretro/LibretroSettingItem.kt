@@ -4,6 +4,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.core.emulator.LibretroSettingDef
 import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.NavigationPreference
@@ -19,19 +21,23 @@ fun LibretroSettingItem(
     pickerRequestToken: Int = 0,
     modifier: Modifier = Modifier
 ) {
-    val value = accessor.getDisplayValue(setting)
+    val displayValue = accessor.getDisplayValue(setting)
     val hasOverride = accessor.hasOverride(setting)
     val globalValue = accessor.getGlobalValue(setting)
 
     val subtitle = when {
-        isPerPlatform && hasOverride -> "Global: ${formatGlobalHint(setting, globalValue)}"
-        else -> setting.subtitle
+        isPerPlatform && hasOverride -> stringResource(
+            R.string.settings_shell_libretro_global_hint_template,
+            formatGlobalHint(setting, globalValue)
+        )
+        else -> setting.subtitle?.let { stringResource(it) }
     }
 
     if (accessor.isActionItem(setting)) {
+        val resolvedValue = displayValue.resolve()
         val (actionTitle, actionSubtitle) = when (setting.key) {
-            "frame" -> setting.title to value
-            else -> value to "Configure shader effects"
+            "frame" -> stringResource(setting.title) to resolvedValue
+            else -> resolvedValue to stringResource(R.string.settings_shell_libretro_configure_shader_effects_subtitle)
         }
         NavigationPreference(
             icon = Icons.Default.Tune,
@@ -45,9 +51,9 @@ fun LibretroSettingItem(
 
     if (accessor.isSwitch(setting)) {
         SwitchPreference(
-            title = setting.title,
+            title = stringResource(setting.title),
             subtitle = subtitle,
-            isEnabled = value.toBooleanStrictOrNull() ?: (value == "On"),
+            isEnabled = accessor.isSwitchEnabled(setting),
             isFocused = isFocused,
             isCustom = isPerPlatform && hasOverride,
             showResetButton = isPerPlatform && hasOverride && isFocused,
@@ -55,13 +61,16 @@ fun LibretroSettingItem(
             onReset = { accessor.reset(setting) }
         )
     } else {
-        val cycleOptions = (setting.type as? LibretroSettingDef.SettingType.Cycle)
-            ?.options
+        val cycleType = setting.type as? LibretroSettingDef.SettingType.Cycle
+        val cycleOptions = cycleType?.labels
             ?.takeIf { enablePicker && it.size > 1 }
+            ?.map { stringResource(it) }
+        val resolvedValue = displayValue.resolve()
+        val cycleValue = cycleType?.labelResFor(resolvedValue)?.let { stringResource(it) } ?: resolvedValue
         CyclePreference(
-            title = setting.title,
+            title = stringResource(setting.title),
             subtitle = subtitle,
-            value = value,
+            value = cycleValue,
             isFocused = isFocused,
             isCustom = isPerPlatform && hasOverride,
             showResetButton = isPerPlatform && hasOverride && isFocused,
@@ -69,9 +78,10 @@ fun LibretroSettingItem(
             onPrev = { accessor.cycle(setting, -1) },
             onReset = { accessor.reset(setting) },
             options = cycleOptions,
-            onSelect = cycleOptions?.let { opts ->
+            onSelect = cycleOptions?.let { _ ->
                 { index: Int ->
-                    val current = opts.indexOf(accessor.getDisplayValue(setting)).coerceAtLeast(0)
+                    val current = cycleType.options
+                        .indexOf(accessor.getValue(setting)).coerceAtLeast(0)
                     accessor.cycle(setting, index - current)
                 }
             },
@@ -80,9 +90,21 @@ fun LibretroSettingItem(
     }
 }
 
+@Composable
+private fun SettingDisplayValue.resolve(): String = when (this) {
+    is SettingDisplayValue.Raw -> text
+    is SettingDisplayValue.Resource -> stringResource(resId)
+}
+
+@Composable
 private fun formatGlobalHint(setting: LibretroSettingDef, globalValue: String): String {
-    return when (setting.type) {
-        LibretroSettingDef.SettingType.Switch -> if (globalValue == "true") "On" else "Off"
-        is LibretroSettingDef.SettingType.Cycle -> globalValue
+    return when (val type = setting.type) {
+        LibretroSettingDef.SettingType.Switch -> if (globalValue == "true") {
+            stringResource(R.string.settings_shell_libretro_on_label)
+        } else {
+            stringResource(R.string.settings_shell_libretro_off_label)
+        }
+        is LibretroSettingDef.SettingType.Cycle ->
+            type.labelResFor(globalValue)?.let { stringResource(it) } ?: globalValue
     }
 }

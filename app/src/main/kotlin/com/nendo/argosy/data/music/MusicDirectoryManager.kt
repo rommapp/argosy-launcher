@@ -10,6 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -44,7 +45,7 @@ class MusicDirectoryManager @Inject constructor(
         val extension = fileName.substringAfterLast('.', "")
         val baseTitle = sanitize(title ?: fileName.substringBeforeLast('.'))
         val baseName = if (trackNumber != null) {
-            "%02d - %s".format(trackNumber, baseTitle)
+            String.format(Locale.ROOT, "%02d - %s", trackNumber, baseTitle)
         } else {
             baseTitle
         }

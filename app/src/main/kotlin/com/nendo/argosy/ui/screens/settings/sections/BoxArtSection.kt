@@ -16,7 +16,10 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.data.cache.GradientPreset
 import com.nendo.argosy.data.preferences.BoxArtBorderStyle
 import com.nendo.argosy.data.preferences.BoxArtBorderThickness
@@ -33,6 +36,8 @@ import com.nendo.argosy.data.preferences.PlatformIndicatorContent
 import com.nendo.argosy.data.preferences.PlatformIndicatorStyle
 import com.nendo.argosy.data.preferences.SystemIconPadding
 import com.nendo.argosy.data.preferences.SystemIconPosition
+import com.nendo.argosy.ui.common.label
+import com.nendo.argosy.ui.common.labelRes
 import com.nendo.argosy.ui.common.rememberCoverAspectRatio
 import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.GameCard
@@ -45,6 +50,7 @@ import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.BoxArtStyleConfig
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalBoxArtStyle
+import java.util.Locale
 
 internal sealed class BoxArtItem(
     val key: String,
@@ -53,7 +59,7 @@ internal sealed class BoxArtItem(
 ) {
     val isFocusable: Boolean get() = this !is Header
 
-    class Header(key: String, section: String, val title: String, visibleWhen: (DisplayState) -> Boolean = { true })
+    class Header(key: String, section: String, val titleRes: Int, visibleWhen: (DisplayState) -> Boolean = { true })
         : BoxArtItem(key, section, visibleWhen)
 
     data object Shape : BoxArtItem("shape", "styling")
@@ -170,14 +176,14 @@ internal sealed class BoxArtItem(
     )
 
     companion object {
-        private val StylingHeader = Header("stylingHeader", "styling", "Styling")
-        private val IconHeader = Header("iconHeader", "icon", "System Icon")
-        private val OuterHeader = Header("outerHeader", "outer", "Outer Effect")
-        private val InnerHeader = Header("innerHeader", "inner", "Inner Effect")
+        private val StylingHeader = Header("stylingHeader", "styling", R.string.settings_box_art_section_styling)
+        private val IconHeader = Header("iconHeader", "icon", R.string.settings_box_art_section_icon)
+        private val OuterHeader = Header("outerHeader", "outer", R.string.settings_box_art_section_outer)
+        private val InnerHeader = Header("innerHeader", "inner", R.string.settings_box_art_section_inner)
         private val GradientHeader = Header(
             key = "gradientHeader",
             section = "gradient",
-            title = "Gradient Colors",
+            titleRes = R.string.settings_box_art_section_gradient,
             visibleWhen = { it.boxArtBorderStyle == BoxArtBorderStyle.GRADIENT && it.gradientAdvancedMode }
         )
 
@@ -210,13 +216,13 @@ private val boxArtLayout = SettingsLayout<BoxArtItem, DisplayState>(
     isFocusable = { it.isFocusable },
     visibleWhen = { item, state -> item.visibleWhen(state) },
     sectionOf = { it.section },
-    sectionTitle = {
+    sectionTitleRes = {
         when (it) {
-            "styling" -> "Styling"
-            "icon" -> "System Icon"
-            "outer" -> "Outer Effect"
-            "inner" -> "Inner Effect"
-            "gradient" -> "Gradient Colors"
+            "styling" -> R.string.settings_box_art_section_styling
+            "icon" -> R.string.settings_box_art_section_icon
+            "outer" -> R.string.settings_box_art_section_outer
+            "inner" -> R.string.settings_box_art_section_inner
+            "gradient" -> R.string.settings_box_art_section_gradient
             else -> null
         }
     }
@@ -237,8 +243,9 @@ fun BoxArtSection(
     val extractionResult = uiState.gradientExtractionResult
     val showGradientSection = display.boxArtBorderStyle == BoxArtBorderStyle.GRADIENT
 
+    val context = LocalContext.current
     val visibleItems = remember(display) { boxArtLayout.visibleItems(display) }
-    val sections = remember(display) { boxArtLayout.buildSections(display) }
+    val sections = remember(display, context) { boxArtLayout.buildSections(display, context) }
 
     fun isFocused(item: BoxArtItem): Boolean =
         uiState.focusedIndex == boxArtLayout.focusIndexOf(item, display)
@@ -267,106 +274,108 @@ fun BoxArtSection(
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
         ) { item ->
                 when (item) {
-                    is BoxArtItem.Header -> BoxArtSectionHeader(item.title)
+                    is BoxArtItem.Header -> BoxArtSectionHeader(stringResource(item.titleRes))
 
                     BoxArtItem.Shape -> CyclePreference(
-                        title = "Shape",
-                        value = display.boxArtShape.displayName,
+                        title = stringResource(R.string.settings_box_art_shape_title),
+                        value = display.boxArtShape.label(context),
                         isFocused = isFocused(item),
                         onClick = { viewModel.cycleBoxArtShape() },
                         onPrev = { viewModel.cycleBoxArtShape(-1) },
-                        options = remember { BoxArtShape.entries.map { it.displayName } },
+                        options = remember(context) { BoxArtShape.entries.map { it.label(context) } },
                         onSelect = { viewModel.cycleBoxArtShape(it - display.boxArtShape.ordinal) },
                         pickerRequestToken = pickerToken(item)
                     )
                     BoxArtItem.CornerRadius -> CyclePreference(
-                        title = "Corner Radius",
-                        value = display.boxArtCornerRadius.displayName(),
+                        title = stringResource(R.string.settings_box_art_corner_radius_title),
+                        value = display.boxArtCornerRadius.displayName(context),
                         isFocused = isFocused(item),
                         onClick = { viewModel.cycleBoxArtCornerRadius() },
                         onPrev = { viewModel.cycleBoxArtCornerRadius(-1) },
-                        options = remember { BoxArtCornerRadius.entries.map { it.displayName() } },
+                        options = remember(context) { BoxArtCornerRadius.entries.map { it.displayName(context) } },
                         onSelect = { viewModel.cycleBoxArtCornerRadius(it - display.boxArtCornerRadius.ordinal) },
                         pickerRequestToken = pickerToken(item)
                     )
                     BoxArtItem.BorderThickness -> CyclePreference(
-                        title = "Border Thickness",
-                        value = display.boxArtBorderThickness.displayName(),
+                        title = stringResource(R.string.settings_box_art_border_thickness_title),
+                        value = display.boxArtBorderThickness.displayName(context),
                         isFocused = isFocused(item),
                         onClick = { viewModel.cycleBoxArtBorderThickness() },
                         onPrev = { viewModel.cycleBoxArtBorderThickness(-1) },
-                        options = remember { BoxArtBorderThickness.entries.map { it.displayName() } },
+                        options = remember(context) { BoxArtBorderThickness.entries.map { it.displayName(context) } },
                         onSelect = { viewModel.cycleBoxArtBorderThickness(it - display.boxArtBorderThickness.ordinal) },
                         pickerRequestToken = pickerToken(item)
                     )
                     BoxArtItem.BorderStyle -> CyclePreference(
-                        title = "Border Style",
-                        value = display.boxArtBorderStyle.displayName(),
+                        title = stringResource(R.string.settings_box_art_border_style_title),
+                        value = display.boxArtBorderStyle.displayName(context),
                         isFocused = isFocused(item),
                         onClick = { viewModel.cycleBoxArtBorderStyle() },
                         onPrev = { viewModel.cycleBoxArtBorderStyle(-1) },
-                        options = remember { BoxArtBorderStyle.entries.map { it.displayName() } },
+                        options = remember(context) { BoxArtBorderStyle.entries.map { it.displayName(context) } },
                         onSelect = { viewModel.cycleBoxArtBorderStyle(it - display.boxArtBorderStyle.ordinal) },
                         pickerRequestToken = pickerToken(item)
                     )
                     BoxArtItem.GlassTint -> CyclePreference(
-                        title = "Glass Tint",
-                        value = display.glassBorderTint.displayName(),
+                        title = stringResource(R.string.settings_box_art_glass_tint_title),
+                        value = display.glassBorderTint.displayName(context),
                         isFocused = isFocused(item),
                         onClick = { viewModel.cycleGlassBorderTint() },
                         onPrev = { viewModel.cycleGlassBorderTint(-1) },
-                        options = remember { GlassBorderTint.entries.map { it.displayName() } },
+                        options = remember(context) { GlassBorderTint.entries.map { it.displayName(context) } },
                         onSelect = { viewModel.cycleGlassBorderTint(it - display.glassBorderTint.ordinal) },
                         pickerRequestToken = pickerToken(item)
                     )
                     BoxArtItem.GradientPresetItem -> CyclePreference(
-                        title = "Color Preset",
-                        value = display.gradientPreset.displayName(),
+                        title = stringResource(R.string.settings_box_art_gradient_preset_title),
+                        value = context.getString(display.gradientPreset.labelRes),
                         isFocused = isFocused(item),
                         onClick = { viewModel.cycleGradientPreset() },
                         onPrev = { viewModel.cycleGradientPreset(-1) },
-                        options = remember { GRADIENT_PRESET_CHOICES.map { it.displayName() } },
+                        options = remember(context) { GRADIENT_PRESET_CHOICES.map { context.getString(it.labelRes) } },
                         onSelect = { viewModel.setGradientPreset(GRADIENT_PRESET_CHOICES[it]) },
                         pickerRequestToken = pickerToken(item)
                     )
                     BoxArtItem.GradientAdvanced -> SwitchPreference(
-                        title = "Advanced",
+                        title = stringResource(R.string.settings_box_art_gradient_advanced_title),
                         isEnabled = display.gradientAdvancedMode,
                         isFocused = isFocused(item),
                         onToggle = { viewModel.toggleGradientAdvancedMode() }
                     )
 
                     BoxArtItem.IndicatorStyle -> CyclePreference(
-                        title = "Style",
-                        value = display.platformIndicatorStyle.displayName(),
+                        title = stringResource(R.string.settings_box_art_indicator_style_title),
+                        value = display.platformIndicatorStyle.displayName(context),
                         isFocused = isFocused(item),
                         onClick = { viewModel.cyclePlatformIndicatorStyle() },
                         onPrev = { viewModel.cyclePlatformIndicatorStyle(-1) },
-                        options = remember { PlatformIndicatorStyle.entries.map { it.displayName() } },
+                        options = remember(context) { PlatformIndicatorStyle.entries.map { it.displayName(context) } },
                         onSelect = { viewModel.cyclePlatformIndicatorStyle(it - display.platformIndicatorStyle.ordinal) },
                         pickerRequestToken = pickerToken(item)
                     )
                     BoxArtItem.IndicatorContent -> CyclePreference(
-                        title = "Display",
-                        value = display.platformIndicatorContent.displayName(),
+                        title = stringResource(R.string.settings_box_art_indicator_content_title),
+                        value = display.platformIndicatorContent.displayName(context),
                         isFocused = isFocused(item),
                         onClick = { viewModel.cyclePlatformIndicatorContent() },
                         onPrev = { viewModel.cyclePlatformIndicatorContent(-1) },
-                        options = remember { PlatformIndicatorContent.entries.map { it.displayName() } },
+                        options = remember(context) { PlatformIndicatorContent.entries.map { it.displayName(context) } },
                         onSelect = { viewModel.cyclePlatformIndicatorContent(it - display.platformIndicatorContent.ordinal) },
                         pickerRequestToken = pickerToken(item)
                     )
                     BoxArtItem.IconPos -> CyclePreference(
-                        title = when (display.platformIndicatorStyle) {
-                            PlatformIndicatorStyle.SPINE -> "Spine Corner"
-                            PlatformIndicatorStyle.TAB -> "Tab Corner"
-                            PlatformIndicatorStyle.OFF -> "Corner"
-                        },
-                        value = display.systemIconPosition.displayName(),
+                        title = stringResource(
+                            when (display.platformIndicatorStyle) {
+                                PlatformIndicatorStyle.SPINE -> R.string.settings_box_art_icon_position_title_spine
+                                PlatformIndicatorStyle.TAB -> R.string.settings_box_art_icon_position_title_tab
+                                PlatformIndicatorStyle.OFF -> R.string.settings_box_art_icon_position_title
+                            }
+                        ),
+                        value = display.systemIconPosition.displayName(context),
                         isFocused = isFocused(item),
                         onClick = { viewModel.cycleSystemIconPosition() },
                         onPrev = { viewModel.cycleSystemIconPosition(-1) },
-                        options = remember { SystemIconPosition.CORNERS.map { it.displayName() } },
+                        options = remember(context) { SystemIconPosition.CORNERS.map { it.displayName(context) } },
                         onSelect = { index ->
                             val currentIndex = SystemIconPosition.CORNERS
                                 .indexOf(display.systemIconPosition).coerceAtLeast(0)
@@ -375,80 +384,80 @@ fun BoxArtSection(
                         pickerRequestToken = pickerToken(item)
                     )
                     BoxArtItem.IconPad -> CyclePreference(
-                        title = "Padding",
-                        value = display.systemIconPadding.displayName(),
+                        title = stringResource(R.string.settings_box_art_icon_padding_title),
+                        value = display.systemIconPadding.displayName(context),
                         isFocused = isFocused(item),
                         onClick = { viewModel.cycleSystemIconPadding() },
                         onPrev = { viewModel.cycleSystemIconPadding(-1) },
-                        options = remember { SystemIconPadding.entries.map { it.displayName() } },
+                        options = remember(context) { SystemIconPadding.entries.map { it.displayName(context) } },
                         onSelect = { viewModel.cycleSystemIconPadding(it - display.systemIconPadding.ordinal) },
                         pickerRequestToken = pickerToken(item)
                     )
 
                     BoxArtItem.OuterEffect -> CyclePreference(
-                        title = "Effect",
-                        value = display.boxArtOuterEffect.displayName(),
+                        title = stringResource(R.string.settings_box_art_outer_effect_title),
+                        value = display.boxArtOuterEffect.displayName(context),
                         isFocused = isFocused(item),
                         onClick = { viewModel.cycleBoxArtOuterEffect() },
                         onPrev = { viewModel.cycleBoxArtOuterEffect(-1) },
-                        options = remember { BoxArtOuterEffect.entries.map { it.displayName() } },
+                        options = remember(context) { BoxArtOuterEffect.entries.map { it.displayName(context) } },
                         onSelect = { viewModel.cycleBoxArtOuterEffect(it - display.boxArtOuterEffect.ordinal) },
                         pickerRequestToken = pickerToken(item)
                     )
                     BoxArtItem.OuterThickness -> CyclePreference(
-                        title = "Thickness",
-                        value = display.boxArtOuterEffectThickness.displayName(),
+                        title = stringResource(R.string.settings_box_art_outer_thickness_title),
+                        value = display.boxArtOuterEffectThickness.displayName(context),
                         isFocused = isFocused(item),
                         onClick = { viewModel.cycleBoxArtOuterEffectThickness() },
                         onPrev = { viewModel.cycleBoxArtOuterEffectThickness(-1) },
-                        options = remember { BoxArtOuterEffectThickness.entries.map { it.displayName() } },
+                        options = remember(context) { BoxArtOuterEffectThickness.entries.map { it.displayName(context) } },
                         onSelect = { viewModel.cycleBoxArtOuterEffectThickness(it - display.boxArtOuterEffectThickness.ordinal) },
                         pickerRequestToken = pickerToken(item)
                     )
                     BoxArtItem.GlowIntensity -> CyclePreference(
-                        title = "Intensity",
-                        value = display.boxArtGlowStrength.displayName(),
+                        title = stringResource(R.string.settings_box_art_glow_strength_title),
+                        value = display.boxArtGlowStrength.displayName(context),
                         isFocused = isFocused(item),
                         onClick = { viewModel.cycleBoxArtGlowStrength() },
                         onPrev = { viewModel.cycleBoxArtGlowStrength(-1) },
-                        options = remember { BoxArtGlowStrength.entries.map { it.displayName() } },
+                        options = remember(context) { BoxArtGlowStrength.entries.map { it.displayName(context) } },
                         onSelect = { viewModel.cycleBoxArtGlowStrength(it - display.boxArtGlowStrength.ordinal) },
                         pickerRequestToken = pickerToken(item)
                     )
                     BoxArtItem.GlowColor -> CyclePreference(
-                        title = "Color",
-                        value = display.glowColorMode.displayName(),
+                        title = stringResource(R.string.settings_box_art_glow_color_title),
+                        value = context.getString(display.glowColorMode.labelRes),
                         isFocused = isFocused(item),
                         onClick = { viewModel.cycleGlowColorMode() },
                         onPrev = { viewModel.cycleGlowColorMode(-1) },
-                        options = remember { GlowColorMode.entries.map { it.displayName() } },
+                        options = remember(context) { GlowColorMode.entries.map { context.getString(it.labelRes) } },
                         onSelect = { viewModel.cycleGlowColorMode(it - display.glowColorMode.ordinal) },
                         pickerRequestToken = pickerToken(item)
                     )
 
                     BoxArtItem.InnerEffect -> CyclePreference(
-                        title = "Effect",
-                        value = display.boxArtInnerEffect.displayName(),
+                        title = stringResource(R.string.settings_box_art_inner_effect_title),
+                        value = display.boxArtInnerEffect.displayName(context),
                         isFocused = isFocused(item),
                         onClick = { viewModel.cycleBoxArtInnerEffect() },
                         onPrev = { viewModel.cycleBoxArtInnerEffect(-1) },
-                        options = remember { BoxArtInnerEffect.entries.map { it.displayName() } },
+                        options = remember(context) { BoxArtInnerEffect.entries.map { it.displayName(context) } },
                         onSelect = { viewModel.cycleBoxArtInnerEffect(it - display.boxArtInnerEffect.ordinal) },
                         pickerRequestToken = pickerToken(item)
                     )
                     BoxArtItem.InnerThickness -> CyclePreference(
-                        title = "Thickness",
-                        value = display.boxArtInnerEffectThickness.displayName(),
+                        title = stringResource(R.string.settings_box_art_inner_thickness_title),
+                        value = display.boxArtInnerEffectThickness.displayName(context),
                         isFocused = isFocused(item),
                         onClick = { viewModel.cycleBoxArtInnerEffectThickness() },
                         onPrev = { viewModel.cycleBoxArtInnerEffectThickness(-1) },
-                        options = remember { BoxArtInnerEffectThickness.entries.map { it.displayName() } },
+                        options = remember(context) { BoxArtInnerEffectThickness.entries.map { it.displayName(context) } },
                         onSelect = { viewModel.cycleBoxArtInnerEffectThickness(it - display.boxArtInnerEffectThickness.ordinal) },
                         pickerRequestToken = pickerToken(item)
                     )
 
                     BoxArtItem.SampleGrid -> GradientTuningCycle(
-                        title = "Sample Grid",
+                        title = stringResource(R.string.settings_box_art_sample_grid_title),
                         value = "${gradientConfig.samplesX}x${gradientConfig.samplesY}",
                         options = remember { listOf("8x12", "10x15", "12x18", "16x24") },
                         isFocused = isFocused(item),
@@ -456,7 +465,7 @@ fun BoxArtSection(
                         onCycle = { viewModel.cycleGradientSampleGrid(it) }
                     )
                     BoxArtItem.SampleRadius -> GradientTuningCycle(
-                        title = "Sample Radius",
+                        title = stringResource(R.string.settings_box_art_sample_radius_title),
                         value = gradientConfig.radius.toString(),
                         options = remember { listOf("1", "2", "3", "4") },
                         isFocused = isFocused(item),
@@ -464,23 +473,23 @@ fun BoxArtSection(
                         onCycle = { viewModel.cycleGradientRadius(it) }
                     )
                     BoxArtItem.MinSaturation -> GradientTuningCycle(
-                        title = "Min Saturation",
-                        value = "%.0f%%".format(gradientConfig.minSaturation * 100),
+                        title = stringResource(R.string.settings_box_art_min_saturation_title),
+                        value = String.format(Locale.ROOT, "%.0f%%", gradientConfig.minSaturation * 100),
                         options = remember { listOf("20%", "25%", "30%", "35%", "40%", "45%", "50%") },
                         isFocused = isFocused(item),
                         pickerRequestToken = pickerToken(item),
                         onCycle = { viewModel.cycleGradientMinSaturation(it) }
                     )
                     BoxArtItem.MinBrightness -> GradientTuningCycle(
-                        title = "Min Brightness",
-                        value = "%.0f%%".format(gradientConfig.minValue * 100),
+                        title = stringResource(R.string.settings_box_art_min_brightness_title),
+                        value = String.format(Locale.ROOT, "%.0f%%", gradientConfig.minValue * 100),
                         options = remember { listOf("10%", "15%", "20%", "25%") },
                         isFocused = isFocused(item),
                         pickerRequestToken = pickerToken(item),
                         onCycle = { viewModel.cycleGradientMinValue(it) }
                     )
                     BoxArtItem.HueDistance -> GradientTuningCycle(
-                        title = "Hue Distance",
+                        title = stringResource(R.string.settings_box_art_hue_distance_title),
                         value = "${gradientConfig.minHueDistance}deg",
                         options = remember { listOf("20deg", "30deg", "40deg", "50deg", "60deg") },
                         isFocused = isFocused(item),
@@ -488,16 +497,16 @@ fun BoxArtSection(
                         onCycle = { viewModel.cycleGradientHueDistance(it) }
                     )
                     BoxArtItem.SaturationBoost -> GradientTuningCycle(
-                        title = "Saturation Boost",
-                        value = "+%.0f%%".format(gradientConfig.saturationBump * 100),
+                        title = stringResource(R.string.settings_box_art_saturation_boost_title),
+                        value = String.format(Locale.ROOT, "+%.0f%%", gradientConfig.saturationBump * 100),
                         options = remember { listOf("+30%", "+35%", "+40%", "+45%", "+50%", "+55%") },
                         isFocused = isFocused(item),
                         pickerRequestToken = pickerToken(item),
                         onCycle = { viewModel.cycleGradientSaturationBump(it) }
                     )
                     BoxArtItem.BrightnessClamp -> GradientTuningCycle(
-                        title = "Brightness Clamp",
-                        value = ">=%.0f%%".format(gradientConfig.valueClamp * 100),
+                        title = stringResource(R.string.settings_box_art_brightness_clamp_title),
+                        value = String.format(Locale.ROOT, ">=%.0f%%", gradientConfig.valueClamp * 100),
                         options = remember { listOf(">=70%", ">=75%", ">=80%", ">=85%", ">=90%") },
                         isFocused = isFocused(item),
                         pickerRequestToken = pickerToken(item),
@@ -587,7 +596,12 @@ fun BoxArtSection(
 
             if (showGradientSection && display.gradientAdvancedMode && extractionResult != null) {
                 Text(
-                    text = "${extractionResult.extractionTimeMs}ms | ${extractionResult.sampleCount} samples | ${extractionResult.colorFamiliesUsed} families",
+                    text = stringResource(
+                        R.string.settings_box_art_gradient_diagnostics,
+                        extractionResult.extractionTimeMs,
+                        extractionResult.sampleCount,
+                        extractionResult.colorFamiliesUsed
+                    ),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = Dimens.spacingMd)
@@ -607,104 +621,123 @@ private fun BoxArtSectionHeader(title: String) {
     )
 }
 
-private fun BoxArtCornerRadius.displayName(): String = when (this) {
-    BoxArtCornerRadius.NONE -> "None"
-    BoxArtCornerRadius.SMALL -> "Small"
-    BoxArtCornerRadius.MEDIUM -> "Medium"
-    BoxArtCornerRadius.LARGE -> "Large"
-    BoxArtCornerRadius.EXTRA_LARGE -> "XL"
-}
+private fun BoxArtCornerRadius.displayName(context: android.content.Context): String = context.getString(
+    when (this) {
+        BoxArtCornerRadius.NONE -> R.string.settings_box_art_corner_radius_none
+        BoxArtCornerRadius.SMALL -> R.string.settings_box_art_corner_radius_small
+        BoxArtCornerRadius.MEDIUM -> R.string.settings_box_art_corner_radius_medium
+        BoxArtCornerRadius.LARGE -> R.string.settings_box_art_corner_radius_large
+        BoxArtCornerRadius.EXTRA_LARGE -> R.string.settings_box_art_corner_radius_xl
+    }
+)
 
-private fun BoxArtBorderThickness.displayName(): String = when (this) {
-    BoxArtBorderThickness.NONE -> "None"
-    BoxArtBorderThickness.THIN -> "Thin"
-    BoxArtBorderThickness.MEDIUM -> "Medium"
-    BoxArtBorderThickness.THICK -> "Thick"
-}
+private fun BoxArtBorderThickness.displayName(context: android.content.Context): String = context.getString(
+    when (this) {
+        BoxArtBorderThickness.NONE -> R.string.settings_box_art_border_thickness_none
+        BoxArtBorderThickness.THIN -> R.string.settings_box_art_border_thickness_thin
+        BoxArtBorderThickness.MEDIUM -> R.string.settings_box_art_border_thickness_medium
+        BoxArtBorderThickness.THICK -> R.string.settings_box_art_border_thickness_thick
+    }
+)
 
-private fun BoxArtBorderStyle.displayName(): String = when (this) {
-    BoxArtBorderStyle.SOLID -> "Solid"
-    BoxArtBorderStyle.GLASS -> "Glass"
-    BoxArtBorderStyle.GRADIENT -> "Gradient"
-}
+private fun BoxArtBorderStyle.displayName(context: android.content.Context): String = context.getString(
+    when (this) {
+        BoxArtBorderStyle.SOLID -> R.string.settings_box_art_border_style_solid
+        BoxArtBorderStyle.GLASS -> R.string.settings_box_art_border_style_glass
+        BoxArtBorderStyle.GRADIENT -> R.string.settings_box_art_border_style_gradient
+    }
+)
 
-private fun GlassBorderTint.displayName(): String = when (this) {
-    GlassBorderTint.OFF -> "Off"
-    GlassBorderTint.TINT_5 -> "5%"
-    GlassBorderTint.TINT_10 -> "10%"
-    GlassBorderTint.TINT_15 -> "15%"
-    GlassBorderTint.TINT_20 -> "20%"
-    GlassBorderTint.TINT_25 -> "25%"
-}
+private fun GlassBorderTint.displayName(context: android.content.Context): String = context.getString(
+    when (this) {
+        GlassBorderTint.OFF -> R.string.settings_box_art_glass_tint_off
+        GlassBorderTint.TINT_5 -> R.string.settings_box_art_glass_tint_5
+        GlassBorderTint.TINT_10 -> R.string.settings_box_art_glass_tint_10
+        GlassBorderTint.TINT_15 -> R.string.settings_box_art_glass_tint_15
+        GlassBorderTint.TINT_20 -> R.string.settings_box_art_glass_tint_20
+        GlassBorderTint.TINT_25 -> R.string.settings_box_art_glass_tint_25
+    }
+)
 
-private fun BoxArtGlowStrength.displayName(): String = when (this) {
-    BoxArtGlowStrength.OFF -> "Off"
-    BoxArtGlowStrength.LOW -> "Low"
-    BoxArtGlowStrength.MEDIUM -> "Medium"
-    BoxArtGlowStrength.HIGH -> "High"
-    BoxArtGlowStrength.SHADOW_SMALL -> "Shadow S"
-    BoxArtGlowStrength.SHADOW_LARGE -> "Shadow L"
-}
+private fun BoxArtGlowStrength.displayName(context: android.content.Context): String = context.getString(
+    when (this) {
+        BoxArtGlowStrength.OFF -> R.string.settings_box_art_glow_strength_off
+        BoxArtGlowStrength.LOW -> R.string.settings_box_art_glow_strength_low
+        BoxArtGlowStrength.MEDIUM -> R.string.settings_box_art_glow_strength_medium
+        BoxArtGlowStrength.HIGH -> R.string.settings_box_art_glow_strength_high
+        BoxArtGlowStrength.SHADOW_SMALL -> R.string.settings_box_art_glow_strength_shadow_small
+        BoxArtGlowStrength.SHADOW_LARGE -> R.string.settings_box_art_glow_strength_shadow_large
+    }
+)
 
-private fun SystemIconPosition.displayName(): String = when (this) {
-    SystemIconPosition.OFF -> "Off"
-    SystemIconPosition.TOP_LEFT -> "Top-Left"
-    SystemIconPosition.TOP_RIGHT -> "Top-Right"
-    SystemIconPosition.BOTTOM_LEFT -> "Bottom-Left"
-    SystemIconPosition.BOTTOM_RIGHT -> "Bottom-Right"
-}
+private fun SystemIconPosition.displayName(context: android.content.Context): String = context.getString(
+    when (this) {
+        SystemIconPosition.OFF -> R.string.settings_box_art_icon_position_off
+        SystemIconPosition.TOP_LEFT -> R.string.settings_box_art_icon_position_top_left
+        SystemIconPosition.TOP_RIGHT -> R.string.settings_box_art_icon_position_top_right
+        SystemIconPosition.BOTTOM_LEFT -> R.string.settings_box_art_icon_position_bottom_left
+        SystemIconPosition.BOTTOM_RIGHT -> R.string.settings_box_art_icon_position_bottom_right
+    }
+)
 
-private fun SystemIconPadding.displayName(): String = when (this) {
-    SystemIconPadding.SMALL -> "Small"
-    SystemIconPadding.MEDIUM -> "Medium"
-    SystemIconPadding.LARGE -> "Large"
-}
+private fun SystemIconPadding.displayName(context: android.content.Context): String = context.getString(
+    when (this) {
+        SystemIconPadding.SMALL -> R.string.settings_box_art_icon_padding_small
+        SystemIconPadding.MEDIUM -> R.string.settings_box_art_icon_padding_medium
+        SystemIconPadding.LARGE -> R.string.settings_box_art_icon_padding_large
+    }
+)
 
-private fun PlatformIndicatorStyle.displayName(): String = when (this) {
-    PlatformIndicatorStyle.OFF -> "Off"
-    PlatformIndicatorStyle.TAB -> "Tab"
-    PlatformIndicatorStyle.SPINE -> "Spine"
-}
+private fun PlatformIndicatorStyle.displayName(context: android.content.Context): String = context.getString(
+    when (this) {
+        PlatformIndicatorStyle.OFF -> R.string.settings_box_art_indicator_style_off
+        PlatformIndicatorStyle.TAB -> R.string.settings_box_art_indicator_style_tab
+        PlatformIndicatorStyle.SPINE -> R.string.settings_box_art_indicator_style_spine
+    }
+)
 
-private fun PlatformIndicatorContent.displayName(): String = when (this) {
-    PlatformIndicatorContent.NAME -> "Name"
-    PlatformIndicatorContent.ICON -> "Icon"
-    PlatformIndicatorContent.NAME_AND_ICON -> "Name + Icon"
-}
+private fun PlatformIndicatorContent.displayName(context: android.content.Context): String = context.getString(
+    when (this) {
+        PlatformIndicatorContent.NAME -> R.string.settings_box_art_indicator_content_name
+        PlatformIndicatorContent.ICON -> R.string.settings_box_art_indicator_content_icon
+        PlatformIndicatorContent.NAME_AND_ICON -> R.string.settings_box_art_indicator_content_both
+    }
+)
 
-private fun BoxArtOuterEffect.displayName(): String = when (this) {
-    BoxArtOuterEffect.OFF -> "Off"
-    BoxArtOuterEffect.GLOW -> "Glow"
-    BoxArtOuterEffect.SHADOW -> "Shadow"
-    BoxArtOuterEffect.SHINE -> "Shine"
-}
+private fun BoxArtOuterEffect.displayName(context: android.content.Context): String = context.getString(
+    when (this) {
+        BoxArtOuterEffect.OFF -> R.string.settings_box_art_outer_effect_off
+        BoxArtOuterEffect.GLOW -> R.string.settings_box_art_outer_effect_glow
+        BoxArtOuterEffect.SHADOW -> R.string.settings_box_art_outer_effect_shadow
+        BoxArtOuterEffect.SHINE -> R.string.settings_box_art_outer_effect_shine
+    }
+)
 
-private fun BoxArtOuterEffectThickness.displayName(): String = when (this) {
-    BoxArtOuterEffectThickness.THIN -> "Thin"
-    BoxArtOuterEffectThickness.MEDIUM -> "Medium"
-    BoxArtOuterEffectThickness.THICK -> "Thick"
-}
+private fun BoxArtOuterEffectThickness.displayName(context: android.content.Context): String = context.getString(
+    when (this) {
+        BoxArtOuterEffectThickness.THIN -> R.string.settings_box_art_outer_thickness_thin
+        BoxArtOuterEffectThickness.MEDIUM -> R.string.settings_box_art_outer_thickness_medium
+        BoxArtOuterEffectThickness.THICK -> R.string.settings_box_art_outer_thickness_thick
+    }
+)
 
-private fun GlowColorMode.displayName(): String = when (this) {
-    GlowColorMode.AUTO -> "Auto"
-    GlowColorMode.ACCENT -> "Accent"
-    GlowColorMode.ACCENT_GRADIENT -> "Theme Gradient"
-    GlowColorMode.COVER -> "Cover"
-}
+private fun BoxArtInnerEffect.displayName(context: android.content.Context): String = context.getString(
+    when (this) {
+        BoxArtInnerEffect.OFF -> R.string.settings_box_art_inner_effect_off
+        BoxArtInnerEffect.GLOW -> R.string.settings_box_art_inner_effect_glow
+        BoxArtInnerEffect.SHADOW -> R.string.settings_box_art_inner_effect_shadow
+        BoxArtInnerEffect.GLASS -> R.string.settings_box_art_inner_effect_glass
+        BoxArtInnerEffect.SHINE -> R.string.settings_box_art_inner_effect_shine
+    }
+)
 
-private fun BoxArtInnerEffect.displayName(): String = when (this) {
-    BoxArtInnerEffect.OFF -> "Off"
-    BoxArtInnerEffect.GLOW -> "Glow"
-    BoxArtInnerEffect.SHADOW -> "Shadow"
-    BoxArtInnerEffect.GLASS -> "Glass"
-    BoxArtInnerEffect.SHINE -> "Shine"
-}
-
-private fun BoxArtInnerEffectThickness.displayName(): String = when (this) {
-    BoxArtInnerEffectThickness.THIN -> "Thin"
-    BoxArtInnerEffectThickness.MEDIUM -> "Medium"
-    BoxArtInnerEffectThickness.THICK -> "Thick"
-}
+private fun BoxArtInnerEffectThickness.displayName(context: android.content.Context): String = context.getString(
+    when (this) {
+        BoxArtInnerEffectThickness.THIN -> R.string.settings_box_art_inner_thickness_thin
+        BoxArtInnerEffectThickness.MEDIUM -> R.string.settings_box_art_inner_thickness_medium
+        BoxArtInnerEffectThickness.THICK -> R.string.settings_box_art_inner_thickness_thick
+    }
+)
 
 @Composable
 private fun GradientTuningCycle(

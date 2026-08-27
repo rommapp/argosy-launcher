@@ -34,7 +34,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import com.nendo.argosy.R
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
@@ -172,16 +174,19 @@ fun MediaResumeModalContent(
             Spacer(Modifier.height(Dimens.spacingLg))
             ResumeOptionRow(
                 icon = Icons.Default.Replay,
-                label = "Start Over",
-                supporting = "Play from the beginning",
+                label = stringResource(R.string.media_resume_start_over_label),
+                supporting = stringResource(R.string.media_resume_start_over_supporting),
                 focused = focusedIndex == START_OVER_INDEX,
                 onClick = { onStartOver(content.itemId) }
             )
             Spacer(Modifier.height(Dimens.spacingSm))
             ResumeOptionRow(
                 icon = Icons.Default.PlayArrow,
-                label = "Resume",
-                supporting = "Continue from ${formatPosition(content.resumeTicks)}",
+                label = stringResource(R.string.media_resume_resume_label),
+                supporting = stringResource(
+                    R.string.media_resume_resume_supporting,
+                    formatPosition(content.resumeTicks)
+                ),
                 focused = focusedIndex == RESUME_INDEX,
                 onClick = { onResume(content.itemId) }
             )

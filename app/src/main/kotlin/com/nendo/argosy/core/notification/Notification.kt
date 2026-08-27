@@ -20,15 +20,14 @@ data class NotificationProgress(
     val total: Int
 ) {
     val fraction: Float get() = if (total > 0) current.toFloat() / total else 0f
-    val displayText: String get() = "$current / $total"
 }
 
 data class Notification(
     val id: String = UUID.randomUUID().toString(),
     val key: String? = null,
     val type: NotificationType = NotificationType.INFO,
-    val title: String,
-    val subtitle: String? = null,
+    val title: NotificationText,
+    val subtitle: NotificationText? = null,
     val imagePath: String? = null,
     /**
      * Draws this platform's own icon in place of the launcher's mark. Carried as a slug rather
@@ -42,8 +41,8 @@ data class Notification(
 )
 
 data class StatusNotification(
-    val title: String,
-    val subtitle: String? = null,
+    val title: NotificationText,
+    val subtitle: NotificationText? = null,
     val progress: Float? = null,
     val isActive: Boolean = true
 )

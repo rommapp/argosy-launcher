@@ -36,6 +36,7 @@ import androidx.compose.ui.input.pointer.PointerId
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -361,7 +362,7 @@ private fun FaceCluster(
         if (overrides[lay.key]?.disabled == true) return@mapNotNull null
         ClusterButton(
             key = lay.key,
-            label = slot.label,
+            labelRes = slot.label,
             tint = slot.tint,
             offsetX = lay.offsetX,
             offsetY = lay.offsetY,
@@ -398,7 +399,7 @@ private fun ShoulderBar(
         } else null
         ClusterButton(
             key = lay.key,
-            label = slot.label,
+            labelRes = slot.label,
             tint = tint,
             offsetX = lay.offsetX,
             offsetY = lay.offsetY,
@@ -428,7 +429,7 @@ private fun SystemBar(
         if (overrides[lay.key]?.disabled == true) return@mapNotNull null
         ClusterButton(
             key = lay.key,
-            label = slot.label,
+            labelRes = slot.label,
             tint = null,
             offsetX = lay.offsetX,
             offsetY = lay.offsetY,
@@ -443,7 +444,7 @@ private fun SystemBar(
 
 private data class ClusterButton(
     val key: Any,
-    val label: String,
+    @androidx.annotation.StringRes val labelRes: Int,
     val tint: Color?,
     val offsetX: Dp,
     val offsetY: Dp,
@@ -486,7 +487,7 @@ private fun ClusterDispatcher(
 
     buttons.forEach { b ->
         ButtonChipVisual(
-            label = b.label,
+            labelRes = b.labelRes,
             tint = b.tint,
             sizeDp = b.heightDp,
             widthDp = b.widthDp,
@@ -544,7 +545,7 @@ private data class Quad(val button: ClusterButton, val x: Dp, val y: Dp, val w: 
 
 @Composable
 private fun ButtonChipVisual(
-    label: String,
+    @androidx.annotation.StringRes labelRes: Int,
     tint: Color?,
     sizeDp: Dp,
     widthDp: Dp,
@@ -556,6 +557,7 @@ private fun ButtonChipVisual(
     val bg = tint ?: Color(0xCC1A1A1A)
     val pressedBg = (tint ?: Color(0xFF3A6FC8)).copy(alpha = 0.95f)
     val border = Color(0xFFE6E6E6)
+    val label = stringResource(labelRes)
     val measurer = rememberTextMeasurer()
     val drawWPx = with(density) { widthDp.toPx() }
     val drawHPx = with(density) { sizeDp.toPx() }

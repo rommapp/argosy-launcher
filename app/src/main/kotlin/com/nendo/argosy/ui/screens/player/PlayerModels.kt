@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.screens.player
 
+import androidx.annotation.StringRes
+import com.nendo.argosy.R
 import com.nendo.argosy.data.media.MediaAvailability
 import java.util.Locale
 
@@ -95,9 +97,9 @@ data class PlayerNextEpisode(
     val label: String
 )
 
-enum class PlayerSkipKind(val label: String) {
-    INTRO("Skip Intro"),
-    CREDITS("Skip Credits")
+enum class PlayerSkipKind(@StringRes val labelRes: Int) {
+    INTRO(R.string.media_player_skip_intro),
+    CREDITS(R.string.media_player_skip_credits)
 }
 
 data class PlayerSkipSegment(

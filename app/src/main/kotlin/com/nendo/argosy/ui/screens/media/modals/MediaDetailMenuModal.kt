@@ -25,7 +25,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import com.nendo.argosy.R
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.input.InputHandler
@@ -157,14 +159,29 @@ private val MediaMenuAction.key: String
         MediaMenuAction.GoToLibrary -> "library"
     }
 
-private fun MediaMenuAction.labelFor(menu: MediaMenuState): String = when (this) {
-    MediaMenuAction.ToggleWatched -> if (menu.targetPlayed) "Mark Unwatched" else "Mark Watched"
-    MediaMenuAction.ToggleFavorite -> if (menu.targetIsFavorite) "Remove Favorite" else "Favorite"
-    MediaMenuAction.Download -> "Download"
-    MediaMenuAction.RemoveDownloads -> "Remove Downloads"
-    MediaMenuAction.RefreshSeries -> if (menu.isBusy) "Refreshing" else "Refresh From Server"
-    MediaMenuAction.GoToLibrary -> "Go to Library"
-}
+@Composable
+private fun MediaMenuAction.labelFor(menu: MediaMenuState): String = stringResource(
+    when (this) {
+        MediaMenuAction.ToggleWatched -> if (menu.targetPlayed) {
+            R.string.media_detail_menu_mark_unwatched
+        } else {
+            R.string.media_detail_menu_mark_watched
+        }
+        MediaMenuAction.ToggleFavorite -> if (menu.targetIsFavorite) {
+            R.string.media_detail_menu_remove_favorite
+        } else {
+            R.string.media_detail_menu_favorite
+        }
+        MediaMenuAction.Download -> R.string.media_detail_menu_download
+        MediaMenuAction.RemoveDownloads -> R.string.media_detail_menu_remove_downloads
+        MediaMenuAction.RefreshSeries -> if (menu.isBusy) {
+            R.string.media_detail_menu_refreshing
+        } else {
+            R.string.media_detail_menu_refresh_from_server
+        }
+        MediaMenuAction.GoToLibrary -> R.string.media_detail_menu_go_to_library
+    }
+)
 
 private fun MediaMenuAction.iconFor(menu: MediaMenuState): ImageVector = when (this) {
     MediaMenuAction.ToggleWatched ->

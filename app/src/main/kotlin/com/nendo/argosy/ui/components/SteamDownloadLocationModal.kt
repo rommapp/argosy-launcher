@@ -14,7 +14,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.util.clickableNoFocus
@@ -49,7 +51,7 @@ fun SteamDownloadLocationModal(
         LazyColumn(state = listState) {
             item {
                 SteamLocationRow(
-                    label = "Download via Argosy",
+                    label = stringResource(R.string.ui_steam_location_download),
                     subtitle = null,
                     isFocused = focusIndex == 0,
                     onClick = onDownloadToSd
@@ -58,8 +60,11 @@ fun SteamDownloadLocationModal(
             markOptions.forEachIndexed { index, option ->
                 item {
                     SteamLocationRow(
-                        label = "Mark as Installed",
-                        subtitle = "Managed by ${option.displayName}",
+                        label = stringResource(R.string.ui_steam_location_mark_installed),
+                        subtitle = stringResource(
+                            R.string.ui_steam_location_managed_by,
+                            option.displayName
+                        ),
                         isFocused = focusIndex == index + 1,
                         onClick = { onMarkAsInstalled(option.launcherPackage) }
                     )

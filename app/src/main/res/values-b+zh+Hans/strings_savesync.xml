@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="savesync_section_attention">需要处理</string>
+    <string name="savesync_section_in_progress">进行中</string>
+    <string name="savesync_section_games">有存档的游戏</string>
+
+    <string name="savesync_footer_navigate">导航</string>
+    <string name="savesync_footer_choose">选择</string>
+    <string name="savesync_footer_confirm_keep_local">保留本地</string>
+    <string name="savesync_footer_confirm_keep_server">保留服务器</string>
+    <string name="savesync_footer_confirm_skip">跳过</string>
+    <string name="savesync_footer_open_game">打开游戏</string>
+    <string name="savesync_footer_scan_server">扫描RomM</string>
+    <string name="savesync_footer_back">返回</string>
+
+    <string name="savesync_device_this_label">本设备</string>
+    <string name="savesync_device_not_connected">未连接到RomM</string>
+    <string name="savesync_device_id_pill">&#8230;%1$s</string>
+    <string name="savesync_device_client_versioned">%1$s v%2$s</string>
+    <string name="savesync_device_server_versioned">RomM v%1$s</string>
+    <string name="savesync_device_server_connected">已连接</string>
+    <string name="savesync_device_server_offline">离线</string>
+    <plurals name="savesync_device_save_count_unit">
+        <item quantity="other">存档</item>
+    </plurals>
+
+    <string name="savesync_other_devices_heading">其他设备</string>
+    <plurals name="savesync_other_devices_more">
+        <item quantity="other">还有%d个</item>
+    </plurals>
+
+    <plurals name="savesync_access_notice_title">
+        <item quantity="other">%d个存档位置无法访问</item>
+    </plurals>
+
+    <string name="savesync_empty_title_connected">还没有同步任何存档</string>
+    <string name="savesync_empty_message_connected">存档会在你游玩时显示在这里</string>
+    <string name="savesync_empty_title_disconnected">连接到RomM以同步存档</string>
+    <string name="savesync_empty_message_disconnected">打开设置以添加你的RomM服务器</string>
+
+    <string name="savesync_conflict_side_local">本地</string>
+    <string name="savesync_conflict_side_server">服务器</string>
+    <string name="savesync_conflict_device_this">此设备</string>
+    <string name="savesync_conflict_device_other">另一台设备</string>
+    <string name="savesync_conflict_side_summary">%1$s - %2$s（%3$s）</string>
+    <string name="savesync_conflict_time_unknown">未知</string>
+    <string name="savesync_conflict_newer_badge">较新</string>
+    <string name="savesync_attention_button_keep_local">保留本地</string>
+    <string name="savesync_attention_button_keep_server">保留服务器</string>
+    <string name="savesync_attention_button_skip">跳过</string>
+
+    <string name="savesync_progress_status_uploading">正在上传</string>
+    <string name="savesync_progress_status_downloading">正在下载</string>
+    <string name="savesync_progress_status_queued">排队中</string>
+
+    <string name="savesync_game_pill_just_synced">刚刚同步</string>
+    <string name="savesync_game_pill_conflict">冲突</string>
+    <string name="savesync_game_last_write_this_device">最后写入 - 此设备</string>
+    <string name="savesync_game_last_write_device">最后写入 - %1$s</string>
+    <string name="savesync_game_last_write_unknown">最后写入 - 未知设备</string>
+    <string name="savesync_game_last_write_time">%1$s &#183; %2$s</string>
+
+    <string name="savesync_force_check_title">扫描RomM以查找缺失的存档</string>
+    <string name="savesync_force_check_idle">遍历本地游戏，并从RomM拉取每个通道中的最新存档。</string>
+    <string name="savesync_force_check_running">正在扫描...</string>
+    <plurals name="savesync_force_check_up_to_date">
+        <item quantity="other">已是最新，已检查%d个游戏，没有新内容。</item>
+    </plurals>
+    <plurals name="savesync_force_check_queued">
+        <item quantity="other">已从%2$d个游戏中排队%1$d个存档，已下载%3$d个。</item>
+    </plurals>
+    <string name="savesync_force_check_failed">失败：%1$s</string>
+    <string name="savesync_force_check_failed_fallback">存档检查失败</string>
+
+    <string name="savesync_device_unnamed">未命名设备</string>
+    <string name="savesync_device_web">网页</string>
+
+    <string name="savesync_channel_archived">已归档</string>
+    <string name="savesync_channel_autosave">自动存档</string>
+</resources>

@@ -7,7 +7,9 @@ import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.SteamDownloadQueueDao
 import com.nendo.argosy.data.local.entity.SteamDownloadDbState
 import com.nendo.argosy.data.local.entity.SteamDownloadQueueEntity
+import com.nendo.argosy.R
 import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.NotificationType
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.storage.StorageAttributionRepository
@@ -449,8 +451,8 @@ class SteamContentManager @Inject constructor(
         if (steamAuthManager.sessionDead) {
             Log.e(TAG, "Steam session dead, cannot auto-connect")
             notificationManager.show(
-                title = "Steam session expired",
-                subtitle = "Sign in from Settings > Steam to download",
+                title = NotificationText.Res(R.string.sync_steam_download_signed_out_title),
+                subtitle = NotificationText.Res(R.string.sync_steam_download_signed_out_subtitle),
                 type = NotificationType.WARNING,
                 key = "steam_not_signed_in"
             )
@@ -508,8 +510,8 @@ class SteamContentManager @Inject constructor(
         if (!canQueue(appId)) return
         if (steamAuthManager.sessionDead) {
             notificationManager.show(
-                title = "Steam session expired",
-                subtitle = "Sign in from Settings > Steam to download",
+                title = NotificationText.Res(R.string.sync_steam_download_signed_out_title),
+                subtitle = NotificationText.Res(R.string.sync_steam_download_signed_out_subtitle),
                 type = NotificationType.WARNING,
                 key = "steam_not_signed_in"
             )
@@ -735,8 +737,8 @@ class SteamContentManager @Inject constructor(
                     val msg = "Install path not accessible: ${installDir.absolutePath}"
                     Log.w(TAG, msg)
                     notificationManager.show(
-                        title = "Cannot download $gameName",
-                        subtitle = msg,
+                        title = NotificationText.Res(R.string.sync_steam_path_blocked_title, listOf(gameName)),
+                        subtitle = NotificationText.Res(R.string.notif_steam_path_not_accessible, listOf(installDir.absolutePath)),
                         type = NotificationType.WARNING,
                         key = "steam_path_$appId"
                     )
@@ -827,7 +829,15 @@ class SteamContentManager @Inject constructor(
                     if (destFreeBytes < requiredDestBytes) {
                         val msg = "Not enough storage (${destFreeBytes / 1024 / 1024}MB free, need ${requiredDestBytes / 1024 / 1024}MB)"
                         Log.w(TAG, msg)
-                        notificationManager.show(title = "Cannot download $gameName", subtitle = msg, type = NotificationType.WARNING, key = "steam_storage_$appId")
+                        notificationManager.show(
+                            title = NotificationText.Res(R.string.sync_steam_storage_blocked_title, listOf(gameName)),
+                            subtitle = NotificationText.Res(
+                                R.string.notif_steam_storage_blocked_subtitle,
+                                listOf(destFreeBytes / 1024 / 1024, requiredDestBytes / 1024 / 1024)
+                            ),
+                            type = NotificationType.WARNING,
+                            key = "steam_storage_$appId"
+                        )
                         val pausedState = SteamDownloadState.Paused(appId, gameName, 0f)
                         _downloadState.value = pausedState
                         _activeDownload.value = _activeDownload.value?.copy(state = pausedState)

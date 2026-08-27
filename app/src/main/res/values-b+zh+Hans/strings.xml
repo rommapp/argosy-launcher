@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="secondary_home_label">Argosy伴侣屏</string>
+    <string name="focus_accessibility_description">在双屏游戏过程中，让手柄焦点保持在游戏画面上</string>
+</resources>

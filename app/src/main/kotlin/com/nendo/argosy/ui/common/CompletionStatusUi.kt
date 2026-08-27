@@ -11,6 +11,20 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import com.nendo.argosy.domain.model.CompletionStatus
 import com.nendo.argosy.ui.theme.ALauncherColors
 
+/**
+ * The display label. `CompletionStatus` lives in `domain/` and must not import `R`, so the
+ * label is attached here beside the icon and colour. `apiValue` stays the wire value.
+ */
+@get:androidx.annotation.StringRes
+val CompletionStatus.labelRes: Int
+    get() = when (this) {
+        CompletionStatus.INCOMPLETE -> com.nendo.argosy.R.string.completion_status_incomplete
+        CompletionStatus.FINISHED -> com.nendo.argosy.R.string.completion_status_finished
+        CompletionStatus.COMPLETED_100 -> com.nendo.argosy.R.string.completion_status_completed_100
+        CompletionStatus.RETIRED -> com.nendo.argosy.R.string.completion_status_retired
+        CompletionStatus.NEVER_PLAYING -> com.nendo.argosy.R.string.completion_status_never_playing
+    }
+
 val CompletionStatus.icon: ImageVector
     get() = when (this) {
         CompletionStatus.INCOMPLETE -> Icons.Filled.PlayCircle

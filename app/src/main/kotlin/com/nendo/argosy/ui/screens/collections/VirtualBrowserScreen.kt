@@ -47,12 +47,15 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import coil.compose.AsyncImage
+import com.nendo.argosy.R
 import com.nendo.argosy.domain.usecase.collection.CategoryWithCount
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.AlphabetSidebar
@@ -108,9 +111,10 @@ fun VirtualBrowserScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
+        val title = stringResource(uiState.titleRes)
         Column(modifier = Modifier.fillMaxSize()) {
             VirtualBrowserHeader(
-                title = uiState.title,
+                title = title,
                 categoryCount = uiState.categories.size,
                 isSearchActive = uiState.isSearchActive,
                 searchQuery = uiState.searchQuery,
@@ -127,14 +131,14 @@ fun VirtualBrowserScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Loading...",
+                            text = stringResource(R.string.collections_browser_loading),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
                 uiState.categories.isEmpty() -> {
-                    EmptyVirtualBrowser(type = uiState.title)
+                    EmptyVirtualBrowser(type = title)
                 }
                 else -> {
                     Box(modifier = Modifier.fillMaxSize()) {
@@ -179,28 +183,34 @@ fun VirtualBrowserScreen(
         Box(modifier = Modifier.align(Alignment.BottomCenter)) {
             val hints = if (uiState.isSearchActive) {
                 listOf(
-                    InputButton.A to "Select",
-                    InputButton.B to "Close Search"
+                    InputButton.A to stringResource(R.string.collections_browser_hint_search_select),
+                    InputButton.B to stringResource(R.string.collections_browser_hint_search_close)
                 )
             } else {
                 val baseHints = listOf(
-                    InputButton.DPAD to "Navigate",
-                    InputButton.A to "Select",
-                    InputButton.B to "Back",
-                    InputButton.X to "Search"
+                    InputButton.DPAD to stringResource(R.string.collections_browser_hint_navigate),
+                    InputButton.A to stringResource(R.string.collections_browser_hint_select),
+                    InputButton.B to stringResource(R.string.collections_browser_hint_back),
+                    InputButton.X to stringResource(R.string.collections_browser_hint_search)
                 )
                 val pinHint = if (uiState.focusedCategory != null) {
-                    listOf(InputButton.Y to if (uiState.isFocusedCategoryPinned) "Unpin" else "Pin")
+                    listOf(
+                        InputButton.Y to stringResource(
+                            if (uiState.isFocusedCategoryPinned) R.string.collections_browser_hint_unpin else R.string.collections_browser_hint_pin
+                        )
+                    )
                 } else {
                     emptyList()
                 }
                 val jumpHint = if (uiState.sectionLabels.size > 1) {
-                    listOf(InputButton.LT_RT to "Jump")
+                    listOf(InputButton.LT_RT to stringResource(R.string.collections_browser_hint_jump))
                 } else {
                     emptyList()
                 }
                 val refreshHint = listOf(
-                    InputButton.START to if (uiState.isRefreshing) "Refreshing..." else "Refresh"
+                    InputButton.START to stringResource(
+                        if (uiState.isRefreshing) R.string.collections_browser_hint_refreshing else R.string.collections_browser_hint_refresh
+                    )
                 )
                 baseHints + pinHint + jumpHint + refreshHint
             }
@@ -263,7 +273,7 @@ private fun VirtualBrowserHeader(
         IconButton(onClick = onBack) {
             Icon(
                 Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back",
+                contentDescription = stringResource(R.string.collections_browser_back_description),
                 tint = MaterialTheme.colorScheme.onSurface
             )
         }
@@ -279,7 +289,7 @@ private fun VirtualBrowserHeader(
                 modifier = Modifier
                     .weight(1f)
                     .focusRequester(focusRequester),
-                placeholder = { Text("Search $title") },
+                placeholder = { Text(stringResource(R.string.collections_browser_search_placeholder, title)) },
                 singleLine = true,
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -289,7 +299,7 @@ private fun VirtualBrowserHeader(
             IconButton(onClick = onSearchClose) {
                 Icon(
                     Icons.Default.Close,
-                    contentDescription = "Close search",
+                    contentDescription = stringResource(R.string.collections_browser_close_search_description),
                     tint = MaterialTheme.colorScheme.onSurface
                 )
             }
@@ -301,7 +311,7 @@ private fun VirtualBrowserHeader(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "$categoryCount categories",
+                    text = pluralStringResource(R.plurals.collections_browser_header_category_count, categoryCount, categoryCount),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -309,7 +319,7 @@ private fun VirtualBrowserHeader(
             IconButton(onClick = onSearchOpen) {
                 Icon(
                     Icons.Default.Search,
-                    contentDescription = "Search",
+                    contentDescription = stringResource(R.string.collections_browser_search_description),
                     tint = MaterialTheme.colorScheme.onSurface
                 )
             }
@@ -370,7 +380,7 @@ private fun CategoryRow(
                         Spacer(modifier = Modifier.width(Dimens.spacingSm))
                         Icon(
                             Icons.Default.PushPin,
-                            contentDescription = "Pinned",
+                            contentDescription = stringResource(R.string.collections_browser_category_pinned_description),
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(Dimens.spacingMd)
                         )
@@ -378,7 +388,7 @@ private fun CategoryRow(
                 }
                 Spacer(modifier = Modifier.height(Dimens.spacingXs))
                 Text(
-                    text = "${category.gameCount} games",
+                    text = pluralStringResource(R.plurals.collections_browser_row_game_count, category.gameCount, category.gameCount),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -487,7 +497,7 @@ private fun EmptyVirtualBrowser(type: String) {
                 modifier = Modifier.size(Dimens.iconXl + Dimens.spacingMd)
             )
             Text(
-                text = "No $type found",
+                text = stringResource(R.string.collections_browser_empty, type),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

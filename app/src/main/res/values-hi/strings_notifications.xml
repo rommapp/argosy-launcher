@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notif_generic_error_title">त्रुटि</string>
+
+    <!-- Storage settings: global ROM folder migration, per-platform migration, and
+         per-platform purge (StorageSettingsDelegate). -->
+
+    <string name="notif_storage_private_path_error">GameNative Argosy के निजी फ़ोल्डर नहीं पढ़ सकता। कोई सार्वजनिक लोकेशन चुनें।</string>
+
+    <string name="notif_storage_migrate_persistent_title">गेम ले जाए जा रहे हैं</string>
+    <string name="notif_storage_migrate_persistent_subtitle_initial">0 / %1$d</string>
+    <string name="notif_storage_migrate_persistent_subtitle_progress">%1$d/%2$d: %3$s</string>
+    <string name="notif_storage_migrate_complete_title">माइग्रेशन पूर्ण</string>
+    <string name="notif_storage_migrate_complete_subtitle">%1$d ले जाए गए, %2$d गायब, %3$d विफल</string>
+
+    <string name="notif_storage_migrate_platform_persistent_title">%1$s ROM ले जाए जा रहे हैं</string>
+    <string name="notif_storage_migrate_platform_persistent_subtitle_initial">0 / %1$d</string>
+    <string name="notif_storage_migrate_platform_persistent_subtitle_progress">%1$d/%2$d: %3$s</string>
+    <string name="notif_storage_migrate_platform_complete_title">%1$s माइग्रेशन पूर्ण</string>
+    <string name="notif_storage_migrate_platform_complete_subtitle">%1$d ले जाए गए, %2$d गायब, %3$d विफल</string>
+
+    <string name="notif_storage_purge_persistent_title">%1$s पर्ज हो रहा है</string>
+    <string name="notif_storage_purge_persistent_subtitle_preparing">तैयारी हो रही है…</string>
+    <string name="notif_storage_purge_persistent_subtitle_progress">%1$d/%2$d: %3$s</string>
+    <string name="notif_storage_purge_complete_title">%1$s पर्ज हुआ</string>
+    <string name="notif_storage_purge_complete_subtitle">%1$d गेम हटाए गए, %2$dMB खाली हुआ</string>
+
+    <string name="notif_storage_hardreset_blocked_active_session">रीसेट करने से पहले चल रहा गेम बंद करें</string>
+    <string name="notif_storage_hardreset_blocked_active_downloads">रीसेट करने से पहले गेम डाउनलोड रद्द करें</string>
+    <string name="notif_storage_hardreset_blocked_emulator_download">पहले एमुलेटर डाउनलोड पूरा होने का इंतज़ार करें</string>
+    <string name="notif_storage_hardreset_blocked_steam_download">रीसेट करने से पहले Steam डाउनलोड रद्द करें</string>
+    <string name="notif_storage_hardreset_blocked_media_download">रीसेट करने से पहले मूवी या एपिसोड डाउनलोड रद्द करें</string>
+    <string name="notif_storage_hardreset_pending_uploads_none">रीसेट करने से पहले लंबित सेव अपलोड सिंक करें</string>
+    <string name="notif_storage_hardreset_pending_uploads_one">रीसेट करने से पहले %1$s के लंबित सेव अपलोड सिंक करें</string>
+    <string name="notif_storage_hardreset_pending_uploads_many">रीसेट करने से पहले %1$s के लिए लंबित सेव अपलोड सिंक करें</string>
+    <string name="notif_storage_hardreset_success">हार्ड रीसेट पूर्ण - अपनी लाइब्रेरी फिर से बनाने के लिए सिंक करें</string>
+    <string name="notif_storage_hardreset_failed">हार्ड रीसेट विफल - %1$s</string>
+    <string name="notif_storage_hardreset_failed_default_detail">फिर कोशिश करें</string>
+
+    <!-- Steam content downloads (SteamContentManager). -->
+
+    <string name="notif_steam_path_not_accessible">इंस्टॉल पाथ एक्सेस नहीं हो सका: %1$s</string>
+    <string name="notif_steam_storage_blocked_subtitle">पर्याप्त स्टोरेज नहीं (%1$dMB खाली, %2$dMB चाहिए)</string>
+
+    <!-- Friend presence notifications (SocialRepository). -->
+
+    <string name="notif_social_friend_started_playing">%1$s खेलना शुरू किया</string>
+    <string name="notif_social_friend_online">अब ऑनलाइन है</string>
+
+    <!-- Settings: image cache and download validation (SettingsGeneralRouter). -->
+
+    <string name="notif_settings_cache_validate_title">इमेज कैश जांची जा रही है</string>
+    <string name="notif_settings_cache_validate_starting">शुरू हो रहा है…</string>
+    <string name="notif_settings_cache_validate_cleaned">%1$d फ़ाइलें साफ़ कीं, %2$d पाथ हटाए</string>
+    <string name="notif_settings_cache_validate_healthy">इमेज कैश ठीक है</string>
+
+    <string name="notif_settings_downloads_validate_title">डाउनलोड जांचे जा रहे हैं</string>
+    <string name="notif_settings_downloads_validate_checking">ROM फ़ाइलें जांची जा रही हैं…</string>
+    <string name="notif_settings_downloads_validate_discovering">फ़ाइलें खोजी जा रही हैं…</string>
+    <string name="notif_settings_downloads_validate_result">%1$d अमान्य पाथ हटाए, %2$d फ़ाइलें नई मिलीं</string>
+
+    <!-- Settings: storage cache-clearing guards (StorageCachesDelegate). -->
+
+    <string name="notif_storage_caches_emulator_busy_precheck">पहले एमुलेटर डाउनलोड पूरा होने का इंतज़ार करें</string>
+    <string name="notif_storage_caches_driver_busy">पहले ड्राइवर डाउनलोड पूरा होने का इंतज़ार करें</string>
+    <string name="notif_storage_caches_steam_busy_precheck">पहले Steam डाउनलोड रद्द करें</string>
+    <string name="notif_storage_caches_rom_extraction_busy">गेम चलते समय एक्सट्रैक्ट किए गए ROM साफ़ नहीं किए जा सकते</string>
+    <string name="notif_storage_caches_emulator_busy_runclear">पहले एमुलेटर डाउनलोड पूरा होने का इंतज़ार करें</string>
+    <string name="notif_storage_caches_steam_busy_runclear">पहले Steam डाउनलोड रद्द करें</string>
+
+    <!-- Settings: manual save sync and image cache relocation (SyncSettingsDelegate). -->
+
+    <string name="notif_sync_settings_manual_syncing">सेव सिंक हो रहे हैं…</string>
+    <string name="notif_sync_settings_manual_not_connected">कनेक्ट नहीं है</string>
+    <string name="notif_sync_settings_manual_up_to_date">सेव पहले से अपडेट हैं</string>
+    <string name="notif_sync_settings_manual_synced">%1$d आइटम सिंक हुए</string>
+    <string name="notif_sync_settings_manual_synced_with_failures">%1$d आइटम सिंक हुए (%2$d विफल)</string>
+    <string name="notif_sync_settings_manual_failed">सेव सिंक विफल: %1$s</string>
+
+    <string name="notif_sync_settings_scan_scanning">लोकल सेव स्कैन हो रहे हैं…</string>
+    <string name="notif_sync_settings_scan_found">सिंक करने के लिए %1$d लोकल सेव मिले</string>
+    <string name="notif_sync_settings_scan_syncing">सेव सिंक हो रहे हैं…</string>
+    <string name="notif_sync_settings_scan_not_connected">कनेक्ट नहीं है</string>
+    <string name="notif_sync_settings_scan_up_to_date">सेव पहले से अपडेट हैं</string>
+    <string name="notif_sync_settings_scan_synced">%1$d आइटम सिंक हुए</string>
+    <string name="notif_sync_settings_scan_synced_with_failures">%1$d आइटम सिंक हुए (%2$d विफल)</string>
+    <string name="notif_sync_settings_scan_failed">सेव सिंक विफल: %1$s</string>
+
+    <string name="notif_sync_settings_imagecache_moving_custom">कैश्ड इमेज ले जाई जा रही हैं…</string>
+    <string name="notif_sync_settings_imagecache_moved_custom">इमेज सफलतापूर्वक ले जाई गईं</string>
+    <string name="notif_sync_settings_imagecache_move_failed_custom">कुछ इमेज ले जाने में विफल</string>
+    <string name="notif_sync_settings_imagecache_moving_reset">कैश्ड इमेज ले जाई जा रही हैं…</string>
+    <string name="notif_sync_settings_imagecache_moved_reset">इमेज सफलतापूर्वक ले जाई गईं</string>
+    <string name="notif_sync_settings_imagecache_move_failed_reset">कुछ इमेज ले जाने में विफल</string>
+
+    <string name="notif_sync_settings_platforms_fetch_failed">प्लेटफ़ॉर्म प्राप्त करने में विफल: %1$s</string>
+    <string name="notif_sync_settings_reset_save_cache_blocked">गेम चलते समय सेव कैश रीसेट नहीं किया जा सकता</string>
+    <string name="notif_sync_settings_clear_state_cache_blocked">गेम चलते समय स्टेट कैश साफ़ नहीं किया जा सकता</string>
+
+    <!-- Settings: Steam library management (SteamSettingsDelegate). -->
+
+    <string name="notif_steam_settings_gamenative_unconfigured">कोई GameNative फ़ोल्डर कॉन्फ़िगर नहीं है</string>
+    <string name="notif_steam_settings_gamenative_scan_title">GameNative लाइब्रेरी</string>
+    <string name="notif_steam_settings_install_path_changed_title">इंस्टॉल पाथ बदला गया</string>
+    <plurals name="notif_steam_settings_install_path_changed_subtitle">
+        <item quantity="one">%1$d डाउनलोड जो चल रहा है वह अपनी मूल लोकेशन पर पूरा होगा। नए डाउनलोड नए टारगेट का उपयोग करेंगे।</item>
+        <item quantity="other">%1$d डाउनलोड जो चल रहे हैं वे अपनी मूल लोकेशन पर पूरे होंगे। नए डाउनलोड नए टारगेट का उपयोग करेंगे।</item>
+    </plurals>
+    <string name="notif_steam_settings_launcher_download_failed">डाउनलोड विफल: %1$s</string>
+    <string name="notif_steam_settings_library_reset">%1$d Steam गेम हटाए गए</string>
+    <string name="notif_steam_settings_game_added">जोड़ा गया: %1$s</string>
+    <string name="notif_steam_settings_library_synced">%1$d Steam गेम जोड़े गए</string>
+
+    <!-- Settings: Jellyfin media library sync (JellyfinSettingsDelegate). -->
+
+    <string name="notif_jellyfin_settings_sync_title">मीडिया सिंक हो रहा है</string>
+    <string name="notif_jellyfin_settings_sync_starting">शुरू हो रहा है…</string>
+    <string name="notif_jellyfin_settings_sync_up_to_date">मीडिया अपडेट है</string>
+    <string name="notif_jellyfin_settings_sync_partial">कुछ लाइब्रेरी छूट गईं</string>
+    <string name="notif_jellyfin_settings_sync_failed_title">मीडिया सिंक विफल</string>
+    <plurals name="notif_jellyfin_settings_sync_libraries_count">
+        <item quantity="one">%1$d लाइब्रेरी</item>
+        <item quantity="other">%1$d लाइब्रेरी</item>
+    </plurals>
+    <plurals name="notif_jellyfin_settings_sync_titles_count">
+        <item quantity="one">%1$d टाइटल</item>
+        <item quantity="other">%1$d टाइटल</item>
+    </plurals>
+    <string name="notif_jellyfin_settings_sync_counts_summary">%1$s, %2$s</string>
+    <string name="notif_jellyfin_settings_relocate_blocked_media_download">अपना मीडिया फ़ोल्डर ले जाने से पहले मूवी या एपिसोड डाउनलोड रद्द करें</string>
+
+    <!-- Collection detail: bulk download queue (CollectionDetailViewModel). -->
+
+    <string name="notif_collection_downloads_queued_title">डाउनलोड कतार में जोड़े गए</string>
+    <plurals name="notif_collection_downloads_queued_subtitle">
+        <item quantity="one">%1$d गेम डाउनलोड कतार में जोड़ा गया</item>
+        <item quantity="other">%1$d गेम डाउनलोड कतार में जोड़े गए</item>
+    </plurals>
+
+    <!-- Virtual category browser: bulk download queue (VirtualCategoryViewModel). -->
+
+    <string name="notif_virtualcategory_downloads_queued_title">डाउनलोड कतार में जोड़े गए</string>
+    <plurals name="notif_virtualcategory_downloads_queued_subtitle">
+        <item quantity="one">%1$d गेम डाउनलोड कतार में जोड़ा गया</item>
+        <item quantity="other">%1$d गेम डाउनलोड कतार में जोड़े गए</item>
+    </plurals>
+
+    <!-- Companion (dual-screen) file management and save-state commands
+         (DualScreenManager). -->
+
+    <string name="notif_dualscreen_reserved_slot_name">\'%1$s\' एक आरक्षित नाम है</string>
+    <string name="notif_dualscreen_files_queued">%1$d कतार में</string>
+    <string name="notif_dualscreen_files_removed">%1$d हटाई गईं</string>
+    <plurals name="notif_dualscreen_downloads_queued">
+        <item quantity="one">%1$d डाउनलोड कतार में जोड़ा गया</item>
+        <item quantity="other">%1$d डाउनलोड कतार में जोड़े गए</item>
+    </plurals>
+    <string name="notif_dualscreen_no_local_path">गेम का कोई लोकल पाथ नहीं है</string>
+    <string name="notif_dualscreen_state_slot_auto">ऑटो स्टेट</string>
+    <string name="notif_dualscreen_state_slot_numbered">स्टेट स्लॉट %1$d</string>
+    <string name="notif_dualscreen_state_restored">%1$s रीस्टोर हुआ</string>
+    <string name="notif_dualscreen_state_version_mismatch">%1$s एक अलग कोर वर्शन से बनाया गया था</string>
+    <string name="notif_dualscreen_state_restore_failed">%1$s रीस्टोर नहीं हो सका</string>
+    <string name="notif_dualscreen_state_deleted">%1$s हटाया गया</string>
+    <string name="notif_dualscreen_state_copied">%1$s को %2$s में कॉपी किया गया</string>
+    <string name="notif_dualscreen_state_copy_failed">%1$s कॉपी नहीं हो सका</string>
+
+    <!-- Game launch failures (GameLaunchDelegate). -->
+
+    <string name="notif_gamelaunch_no_emulator">इस प्लेटफ़ॉर्म के लिए कोई एमुलेटर इंस्टॉल्ड नहीं है</string>
+    <string name="notif_gamelaunch_no_rom_file">ROM फ़ाइल नहीं मिली</string>
+    <string name="notif_gamelaunch_no_steam_launcher">Steam लॉन्चर इंस्टॉल्ड नहीं है</string>
+    <string name="notif_gamelaunch_no_core_base">%1$s के लिए कोई कोर उपलब्ध नहीं है</string>
+    <string name="notif_gamelaunch_no_core_with_reason">%1$s के लिए कोई कोर उपलब्ध नहीं है: %2$s</string>
+    <string name="notif_gamelaunch_missing_discs">गायब डिस्क: %1$s। ठीक करने के लिए गेम विवरण देखें।</string>
+    <string name="notif_gamelaunch_missing_bios">%1$s के लिए BIOS गायब है। लॉन्च करने से पहले इसे सेटिंग्स में इंस्टॉल करें।</string>
+    <string name="notif_gamelaunch_no_scummvm_id">%1$s के लिए .scummvm फ़ाइल गायब है</string>
+    <string name="notif_gamelaunch_no_android_app">Android ऐप इंस्टॉल्ड नहीं है: %1$s</string>
+    <string name="notif_gamelaunch_disc_launch_failed">डिस्क लॉन्च करने में विफल</string>
+    <string name="notif_gamelaunch_launch_failed">लॉन्च करने में विफल</string>
+
+    <!-- Social feed (SocialScreen). -->
+
+    <string name="notif_social_share_screenshot_soon_quickaction">स्क्रीनशॉट शेयर करना जल्द आ रहा है</string>
+    <string name="notif_social_share_screenshot_soon_feedmenu">स्क्रीनशॉट शेयर करना जल्द आ रहा है</string>
+    <string name="notif_social_post_reported">पोस्ट रिपोर्ट की गई और छिपाई गई</string>
+
+    <!-- Social profile: most-played game shortcut (SocialViewModel). -->
+
+    <string name="notif_social_game_not_in_library">गेम लाइब्रेरी में नहीं है</string>
+
+    <!-- User profile screen: most-played game shortcut (UserProfileScreen). -->
+
+    <string name="notif_userprofile_game_not_in_library_input">गेम लाइब्रेरी में नहीं है</string>
+    <string name="notif_userprofile_game_not_in_library_touch">गेम लाइब्रेरी में नहीं है</string>
+
+    <string name="notif_sync_library_start_failed_title">सिंक शुरू नहीं हो सका</string>
+    <string name="notif_sync_library_progress_title">लाइब्रेरी सिंक हो रही है</string>
+    <string name="notif_sync_library_progress_starting">शुरू हो रहा है...</string>
+    <string name="notif_sync_library_progress_platform_games">%1$s (%2$d/%3$d गेम)</string>
+    <string name="notif_sync_library_complete_title">सिंक पूर्ण</string>
+    <string name="notif_sync_library_complete_counts">%1$d जोड़े गए, %2$d अपडेट हुए</string>
+    <string name="notif_sync_library_complete_counts_with_removed">%1$d जोड़े गए, %2$d अपडेट हुए, %3$d हटाए गए</string>
+    <string name="notif_sync_library_completed_with_errors_title">सिंक त्रुटियों के साथ पूर्ण हुआ</string>
+    <plurals name="notif_sync_library_failed_platforms">
+        <item quantity="one">%1$d प्लेटफ़ॉर्म विफल</item>
+        <item quantity="other">%1$d प्लेटफ़ॉर्म विफल</item>
+    </plurals>
+    <string name="notif_sync_library_failed_title">सिंक विफल</string>
+
+    <string name="notif_sync_failure_timeout">सर्वर को जवाब देने में बहुत समय लगा। हो सकता है यह व्यस्त हो या आपकी लाइब्रेरी बहुत बड़ी हो।</string>
+    <string name="notif_sync_failure_unreachable">सर्वर तक नहीं पहुंचा जा सका। अपना कनेक्शन और सर्वर पता जांचें।</string>
+    <string name="notif_sync_failure_connection_lost">सर्वर से कनेक्शन टूट गया। सिंक अगली बार वहीं से जारी रहेगा जहां यह रुका था।</string>
+    <string name="notif_sync_failure_unknown">सिंक विफल। फिर कोशिश करें।</string>
+
+    <string name="notif_sync_platform_progress_title">%1$s सिंक हो रहा है</string>
+    <string name="notif_sync_platform_progress_fetching">गेम प्राप्त हो रहे हैं...</string>
+    <string name="notif_sync_platform_complete_title">%1$s सिंक हुआ</string>
+    <string name="notif_sync_platform_complete_counts">%1$d जोड़े गए, %2$d अपडेट हुए</string>
+    <string name="notif_sync_platform_complete_counts_with_removed">%1$d जोड़े गए, %2$d अपडेट हुए, %3$d हटाए गए</string>
+    <string name="notif_sync_platform_completed_with_errors_title">सिंक त्रुटियों के साथ पूर्ण हुआ</string>
+    <string name="notif_sync_platform_error_unknown">अज्ञात त्रुटि</string>
+    <string name="notif_sync_platform_failed_title">सिंक विफल</string>
+</resources>

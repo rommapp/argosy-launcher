@@ -1,0 +1,2195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Owner: ui/screens/settings
+      Key prefix: settings_
+      Keys are named for the usage site, never for the English text, and identical English
+      is never shared between two usage sites.
+
+      Exception: a settings_*_section_* key names one group of rows. It is shown twice on wide
+      screens, as the sticky heading over the group and as that group's entry in the nav rail
+      beside it, so the two render sites share a key on purpose.
+    -->
+
+    <!-- ===== Top level of the settings screen ===== -->
+
+    <string name="settings_main_section_launcher">LAUNCHER</string>
+    <string name="settings_main_section_gameplay">GAMEPLAY</string>
+    <string name="settings_main_section_library">BIBLIOTHEK</string>
+    <string name="settings_main_section_connections">VERBINDUNGEN</string>
+    <string name="settings_main_section_system">SYSTEM</string>
+
+    <string name="settings_main_theme_title">Design</string>
+    <string name="settings_main_theme_subtitle">Farben, Hintergrund, Schriftarten</string>
+    <string name="settings_main_interface_title">Oberfläche</string>
+    <string name="settings_main_interface_subtitle">Rasterdichte, Skalierung, Startbildschirm</string>
+    <string name="settings_main_navigation_title">Navigation</string>
+    <string name="settings_main_navigation_subtitle">Tastenbelegung, haptisches Feedback</string>
+    <string name="settings_main_audio_title">Audio</string>
+    <string name="settings_main_audio_subtitle">Sounds und Musik</string>
+    <string name="settings_main_displays_title">Bildschirme</string>
+    <string name="settings_main_displays_subtitle">Dimmer, Dual-Screen, LED</string>
+
+    <string name="settings_main_builtin_emulator_title">Integrierter Emulator</string>
+    <string name="settings_main_builtin_emulator_subtitle_on">Aktiviert</string>
+    <string name="settings_main_builtin_emulator_subtitle_off">Deaktiviert</string>
+    <string name="settings_main_saves_title">Spielstände</string>
+    <string name="settings_main_saves_subtitle_on">Sync an</string>
+    <string name="settings_main_saves_subtitle_off">Sync aus</string>
+    <string name="settings_main_retroachievements_subtitle_logged_in">Angemeldet als %1$s</string>
+    <string name="settings_main_retroachievements_subtitle_logged_out">Nicht angemeldet</string>
+    <string name="settings_main_bios_title">BIOS-Dateien</string>
+    <string name="settings_main_drivers_title">GPU-Treiber</string>
+
+    <string name="settings_main_platforms_title">Plattformen</string>
+    <plurals name="settings_main_platforms_subtitle">
+        <item quantity="one">%d Plattform</item>
+        <item quantity="other">%d Plattformen</item>
+    </plurals>
+    <string name="settings_main_storage_title">Speicher</string>
+    <plurals name="settings_main_storage_subtitle_downloaded">
+        <item quantity="one">%d heruntergeladen</item>
+        <item quantity="other">%d heruntergeladen</item>
+    </plurals>
+    <string name="settings_main_storage_subtitle_empty">Keine Downloads</string>
+
+    <string name="settings_main_romm_subtitle_unconfigured">Server nicht konfiguriert</string>
+    <string name="settings_main_romm_subtitle_checking">Verbindung wird geprüft…</string>
+    <string name="settings_main_romm_subtitle_offline">Server offline</string>
+    <string name="settings_main_romm_subtitle_last_sync">Letzte Synchro: %1$s</string>
+    <string name="settings_main_romm_subtitle_never_synced">Nie synchronisiert</string>
+    <string name="settings_main_steam_subtitle_signed_out">Nicht angemeldet</string>
+    <string name="settings_main_jellyfin_subtitle_unconfigured">Server nicht konfiguriert</string>
+    <string name="settings_main_jellyfin_subtitle_signed_in_as">Angemeldet als %1$s</string>
+    <string name="settings_main_jellyfin_subtitle_signed_in">Angemeldet</string>
+    <string name="settings_main_jellyfin_subtitle_signed_out">Nicht angemeldet</string>
+    <string name="settings_main_social_title">Sozial</string>
+    <string name="settings_main_social_subtitle_linked">Verknüpft als %1$s</string>
+    <string name="settings_main_social_subtitle_connecting">Verbindung wird hergestellt…</string>
+    <string name="settings_main_social_subtitle_unlinked">Nicht verknüpft</string>
+
+    <string name="settings_main_permissions_title">Berechtigungen</string>
+    <string name="settings_main_permissions_subtitle_all">Alle erteilt</string>
+    <string name="settings_main_permissions_subtitle_partial">%1$d/%2$d erteilt</string>
+    <string name="settings_main_device_title">Android-Einstellungen</string>
+    <string name="settings_main_device_subtitle">Systemeinstellungen</string>
+    <string name="settings_main_about_title">Über</string>
+    <string name="settings_main_about_subtitle">Version %1$s</string>
+
+    <!-- ===== Audio section ===== -->
+
+    <string name="settings_audio_sounds_title">Sounds</string>
+    <string name="settings_audio_sounds_subtitle_on">An, %1$d%%</string>
+    <string name="settings_audio_sounds_subtitle_off">Aus</string>
+    <string name="settings_audio_music_title">Musik</string>
+    <string name="settings_audio_music_subtitle_on">An, %1$d%%</string>
+    <string name="settings_audio_music_subtitle_off">Aus</string>
+
+    <!-- ===== Theme section ===== -->
+
+    <string name="settings_theme_section_appearance">Erscheinungsbild</string>
+    <string name="settings_theme_section_identity">Identität</string>
+
+    <string name="settings_theme_mode_title">Modus</string>
+    <string name="settings_theme_mode_light">Hell</string>
+    <string name="settings_theme_mode_dark">Dunkel</string>
+    <string name="settings_theme_mode_system">System</string>
+
+    <string name="settings_theme_accent_color_title">Akzentfarbe</string>
+    <string name="settings_theme_secondary_color_title">Sekundärfarbe</string>
+    <string name="settings_theme_accent_footer_title">Akzentfarbe für Footer</string>
+    <string name="settings_theme_accent_footer_subtitle">Akzentfarbe als Footer-Hintergrund verwenden</string>
+    <string name="settings_theme_tint_bleed_title">Oberflächentönung</string>
+
+    <string name="settings_theme_backdrop_title">Hintergrundmuster</string>
+    <string name="settings_theme_backdrop_subtitle_off">Aus</string>
+    <string name="settings_theme_fonts_title">Schriftarten</string>
+    <string name="settings_theme_fonts_subtitle_default">Standard</string>
+
+    <!-- ===== Interface section ===== -->
+
+    <string name="settings_interface_ui_scale_title">UI-Skalierung</string>
+    <string name="settings_interface_compact_footer_title">Kompakter Footer</string>
+    <string name="settings_interface_compact_footer_subtitle">Schmalere Bedienleiste verwenden</string>
+    <string name="settings_interface_controller_grip_title">Controller-Griff</string>
+    <string name="settings_interface_controller_grip_subtitle">Schiebt die Oberfläche aus dem vom Griff verdeckten Bereich</string>
+    <string name="settings_interface_home_screen_title">Startbildschirm</string>
+    <string name="settings_interface_home_screen_subtitle">Layout, Inhalt und Hintergrund</string>
+    <string name="settings_interface_library_view_title">Bibliothek</string>
+    <string name="settings_interface_library_view_subtitle">Rasterdichte und Standardfilter</string>
+    <string name="settings_interface_box_art_title">Cover</string>
+    <string name="settings_interface_box_art_subtitle">Coverform, Rahmen und Effekte</string>
+
+    <!-- ===== Navigation section ===== -->
+
+    <string name="settings_navigation_section_controller">Controller</string>
+    <string name="settings_navigation_section_feedback">Feedback</string>
+    <string name="settings_navigation_section_menus">Menüs</string>
+
+    <string name="settings_navigation_controller_layout_title">Controller-Layout</string>
+    <string name="settings_navigation_controller_layout_auto">Auto</string>
+    <string name="settings_navigation_controller_layout_detected_device">Erkannt: %1$s (%2$s)</string>
+    <string name="settings_navigation_controller_layout_detected">Erkannt: %1$s</string>
+    <string name="settings_navigation_controller_layout_undetected">Kein Controller erkannt</string>
+
+    <string name="settings_navigation_swap_ab_title">A/B tauschen</string>
+    <string name="settings_navigation_swap_ab_subtitle">Bestätigen- und Zurück-Taste tauschen</string>
+    <string name="settings_navigation_swap_xy_title">X/Y tauschen</string>
+    <string name="settings_navigation_swap_xy_subtitle">Kontextmenü- und Zweitaktion-Taste tauschen</string>
+    <string name="settings_navigation_swap_start_select_title">Start/Select tauschen</string>
+    <string name="settings_navigation_swap_start_select_subtitle">Funktionen von Start und Select vertauschen</string>
+
+    <string name="settings_navigation_haptic_title">Haptisches Feedback</string>
+    <string name="settings_navigation_vibration_title">Vibrationsstärke</string>
+
+    <string name="settings_navigation_menu_wrap_title">Listenumlauf</string>
+    <string name="settings_navigation_menu_wrap_subtitle">Nach dem letzten Eintrag zum ersten springen</string>
+    <string name="settings_navigation_menu_wrap_off">Aus</string>
+    <string name="settings_navigation_menu_wrap_hard_stop">Harter Stopp</string>
+    <string name="settings_navigation_menu_wrap_auto">Auto</string>
+
+    <string name="settings_navigation_select_l_combo_title">Select + L</string>
+    <string name="settings_navigation_select_l_combo_subtitle">Select halten und L1 drücken</string>
+    <string name="settings_navigation_select_r_combo_title">Select + R</string>
+    <string name="settings_navigation_select_r_combo_subtitle">Select halten und R1 drücken</string>
+    <string name="settings_navigation_combo_quick_menu">Schnellmenü</string>
+    <string name="settings_navigation_combo_quick_settings">Schnelleinstellungen</string>
+    <string name="settings_navigation_combo_none">Keine</string>
+
+    <!-- ===== Displays section ===== -->
+
+    <string name="settings_displays_section_screen_safety">Bildschirmschutz</string>
+    <string name="settings_displays_section_displays">Bildschirme</string>
+
+    <string name="settings_displays_screen_dimmer_title">Bildschirm-Dimmer</string>
+    <string name="settings_displays_screen_dimmer_subtitle">Dimmt den Bildschirm bei Inaktivität, um Einbrennen zu verhindern</string>
+    <string name="settings_displays_dim_after_title">Abdunkeln nach</string>
+    <plurals name="settings_displays_dim_after_value">
+        <item quantity="one">%d Min.</item>
+        <item quantity="other">%d Min.</item>
+    </plurals>
+    <string name="settings_displays_dim_level_title">Dimmstufe</string>
+
+    <string name="settings_displays_dual_screen_title">Dual-Screen-Modus aktivieren</string>
+    <string name="settings_displays_dual_screen_subtitle">Zweiten Bildschirm als Begleitbildschirm nutzen</string>
+    <string name="settings_displays_dual_screen_subtitle_unsupported">Dieses System erlaubt keine Companion-App auf dem zweiten Bildschirm; zum erneuten Versuch aus- und wieder einschalten</string>
+
+    <string name="settings_displays_display_roles_title">Bildschirmrollen</string>
+    <string name="settings_displays_display_roles_subtitle">Welcher physische Bildschirm Haupt- bzw. Begleitbildschirm ist; Vertauscht tauscht oben und unten</string>
+    <string name="settings_displays_display_roles_auto">Auto</string>
+    <string name="settings_displays_display_roles_standard">Standard</string>
+    <string name="settings_displays_display_roles_swapped">Vertauscht</string>
+
+    <string name="settings_displays_ambient_led_title">LED-Steuerung</string>
+    <string name="settings_displays_ambient_led_subtitle">LED-Farben und -Effekte des Thumbsticks</string>
+
+    <!-- ===== Controller grip section ===== -->
+
+    <string name="settings_grip_mode_title">Modus</string>
+    <string name="settings_grip_mode_off">Aus</string>
+    <string name="settings_grip_mode_on">An</string>
+    <string name="settings_grip_mode_auto">Auto</string>
+    <string name="settings_grip_mode_subtitle_off">Oberfläche nie verschieben</string>
+    <string name="settings_grip_mode_subtitle_on">Oberfläche im Hochformat immer nach oben verschieben</string>
+    <string name="settings_grip_mode_subtitle_auto">Oberfläche automatisch verschieben, wenn ein gewählter Controller verbunden ist</string>
+
+    <string name="settings_grip_controllers_title">Controller</string>
+    <string name="settings_grip_controllers_subtitle_empty">Keine Controller gewählt</string>
+    <plurals name="settings_grip_controllers_subtitle_count">
+        <item quantity="one">%d Controller</item>
+        <item quantity="other">%d Controller</item>
+    </plurals>
+    <string name="settings_grip_reserved_height_title">Reservierte Höhe</string>
+
+    <!-- ===== Home screen section ===== -->
+
+    <string name="settings_home_screen_section_layout">Layout</string>
+    <string name="settings_home_screen_section_background">Hintergrund</string>
+    <string name="settings_home_screen_section_video">Video-Hintergrund</string>
+    <string name="settings_home_screen_section_content">Inhalt</string>
+
+    <string name="settings_home_screen_background_title">Hintergrund</string>
+    <string name="settings_home_screen_background_subtitle">Spielgrafik oder Hintergrundmuster</string>
+    <string name="settings_home_screen_background_mode_game_art">Spielgrafik</string>
+    <string name="settings_home_screen_background_mode_pattern">Muster</string>
+
+    <string name="settings_home_screen_game_artwork_title">Spielgrafik</string>
+    <string name="settings_home_screen_game_artwork_subtitle">Spielcover als Hintergrund verwenden</string>
+    <string name="settings_home_screen_custom_image_title">Eigenes Bild</string>
+    <string name="settings_home_screen_custom_image_subtitle_set">Eigenes Bild ausgewählt</string>
+    <string name="settings_home_screen_custom_image_subtitle_empty">Kein Bild ausgewählt</string>
+
+    <string name="settings_home_screen_blur_title">Unschärfe</string>
+    <string name="settings_home_screen_saturation_title">Sättigung</string>
+    <string name="settings_home_screen_opacity_title">Deckkraft</string>
+
+    <string name="settings_home_screen_video_wallpaper_title">Video-Hintergrund anzeigen</string>
+    <string name="settings_home_screen_video_wallpaper_subtitle">Video-Hintergründe auf dem Startbildschirm abspielen</string>
+    <string name="settings_home_screen_video_delay_title">Verzögerung vor Wiedergabe</string>
+    <string name="settings_home_screen_video_delay_instant">Sofort</string>
+    <plurals name="settings_home_screen_video_delay_seconds">
+        <item quantity="one">%d Sekunde</item>
+        <item quantity="other">%d Sekunden</item>
+    </plurals>
+    <string name="settings_home_screen_video_muted_title">Stumme Wiedergabe</string>
+    <string name="settings_home_screen_video_muted_subtitle">Videoton stummschalten</string>
+
+    <string name="settings_home_screen_installed_only_title">Nur installierte Spiele</string>
+    <string name="settings_home_screen_installed_only_subtitle">Nur heruntergeladene Spiele auf dem Startbildschirm anzeigen</string>
+
+    <!-- ===== Saves section ===== -->
+
+    <string name="settings_saves_section_sync">SYNC</string>
+    <string name="settings_saves_section_manage">VERWALTEN</string>
+
+    <string name="settings_saves_save_sync_title">Spielstand-Sync</string>
+    <string name="settings_saves_save_sync_subtitle">Spielstände mit Server synchronisieren</string>
+    <string name="settings_saves_save_sync_locked_value">Nicht verfügbar</string>
+    <string name="settings_saves_save_sync_locked_subtitle">Erfordert einen RomM-Server</string>
+
+    <string name="settings_saves_secure_saves_title">Sichere Spielstände</string>
+    <string name="settings_saves_secure_saves_subtitle_on">Argosy verwaltet und erzwingt Spielstanddateien</string>
+    <string name="settings_saves_secure_saves_subtitle_off">Argosy versucht, außerhalb des Launchers verwaltete Spielstände zu synchronisieren</string>
+    <string name="settings_saves_secure_saves_locked_value">Nicht verfügbar</string>
+    <string name="settings_saves_secure_saves_locked_subtitle">Erfordert einen RomM-Server</string>
+
+    <string name="settings_saves_cache_limit_title">Lokaler Spielstand-Cache</string>
+    <plurals name="settings_saves_cache_limit_value">
+        <item quantity="one">%d Spielstand pro Spiel</item>
+        <item quantity="other">%d Spielstände pro Spiel</item>
+    </plurals>
+
+    <string name="settings_saves_manage_sync_title">Spielstand-Sync verwalten</string>
+    <string name="settings_saves_manage_sync_subtitle">Konflikte prüfen und jetzt synchronisieren</string>
+    <plurals name="settings_saves_manage_sync_pending">
+        <item quantity="one">%d ausstehend</item>
+        <item quantity="other">%d ausstehend</item>
+    </plurals>
+    <string name="settings_saves_caches_title">Spielstand-Caches</string>
+    <string name="settings_saves_caches_subtitle">Zwischengespeicherte Spielstände und erkannte Pfade löschen</string>
+
+    <!-- ===== Sync settings section ===== -->
+
+    <string name="settings_sync_section_media">MEDIEN</string>
+    <string name="settings_sync_section_download_defaults">DOWNLOAD-STANDARDS</string>
+
+    <string name="settings_sync_platform_filters_title">Plattformfilter</string>
+    <string name="settings_sync_platform_filters_subtitle_count">%1$d/%2$d Plattformen</string>
+    <string name="settings_sync_platform_filters_subtitle_empty">Plattformen für Sync auswählen</string>
+
+    <string name="settings_sync_metadata_filters_title">Metadatenfilter</string>
+    <string name="settings_sync_metadata_filters_subtitle_none">Keine Filter angewendet</string>
+    <plurals name="settings_sync_metadata_filters_regions">
+        <item quantity="one">%1$d Region (%2$s)</item>
+        <item quantity="other">%1$d Regionen (%2$s)</item>
+    </plurals>
+    <string name="settings_sync_metadata_filters_region_mode_exclude">ohne</string>
+    <string name="settings_sync_metadata_filters_region_mode_include">nur</string>
+    <string name="settings_sync_metadata_filters_excluded">ohne %1$s</string>
+    <string name="settings_sync_metadata_filters_beta">beta</string>
+    <string name="settings_sync_metadata_filters_prototype">proto</string>
+    <string name="settings_sync_metadata_filters_demo">demo</string>
+    <string name="settings_sync_metadata_filters_hack">hacks</string>
+
+    <string name="settings_sync_cache_screenshots_title">Screenshots zwischenspeichern</string>
+    <string name="settings_sync_cache_screenshots_subtitle">Boxart und Hintergründe werden immer zwischengespeichert</string>
+    <string name="settings_sync_cache_box_art_title">3D-Boxart zwischenspeichern</string>
+    <string name="settings_sync_cache_box_art_subtitle">Rückseite und Rücken-Scans für 3D-Boxdarstellungen herunterladen</string>
+    <string name="settings_sync_upload_screenshots_title">Screenshots hochladen</string>
+    <string name="settings_sync_upload_screenshots_subtitle">Während des Spielens aufgenommene Screenshots an RomM senden</string>
+    <string name="settings_sync_upload_screenshots_subtitle_unsupported">Erfordert RomM 5.0 oder neuer</string>
+    <string name="settings_sync_upload_screenshots_subtitle_needs_usage">Nutzungszugriff für genaue Spielzuordnung erteilen</string>
+
+    <string name="settings_sync_image_cache_title">Bildercache-Speicherort</string>
+    <string name="settings_sync_image_cache_path_internal">Intern (Standard)</string>
+    <string name="settings_sync_image_cache_progress_title">Bilder werden zwischengespeichert</string>
+    <string name="settings_sync_image_cache_progress_percent">%1$d%%</string>
+
+    <string name="settings_sync_download_category_other">Andere Ordner</string>
+    <string name="settings_sync_download_category_subtitle">%1$s standardmäßig in Downloads einbeziehen</string>
+
+    <!-- ===== RetroAchievements section ===== -->
+
+    <string name="settings_ra_logged_in_label">Angemeldet als</string>
+    <string name="settings_ra_username_unknown">Unbekannt</string>
+    <string name="settings_ra_connected_icon_description">Verbunden</string>
+
+    <string name="settings_ra_section_pending_sync">AUSSTEHENDE SYNC</string>
+    <plurals name="settings_ra_pending_sync_count">
+        <item quantity="one">%d Erfolg wartet auf Sync</item>
+        <item quantity="other">%d Erfolge warten auf Sync</item>
+    </plurals>
+
+    <string name="settings_ra_section_account">KONTO</string>
+    <string name="settings_ra_logout_title">Abmelden</string>
+    <string name="settings_ra_logout_title_busy">Wird abgemeldet…</string>
+    <string name="settings_ra_logout_subtitle">Von RetroAchievements abmelden</string>
+
+    <string name="settings_ra_play_mode_title">Bevorzugter Spielmodus</string>
+    <string name="settings_ra_play_mode_subtitle_locked">Erfordert Sichere Spielstände</string>
+    <string name="settings_ra_play_mode_ask">Fragen</string>
+    <string name="settings_ra_play_mode_casual">Standardmäßig Casual</string>
+    <string name="settings_ra_play_mode_hardcore">Standardmäßig Hardcore</string>
+    <string name="settings_ra_play_mode_subtitle_ask">Beim Start zwischen Casual und Hardcore wählen lassen</string>
+    <string name="settings_ra_play_mode_subtitle_casual">Erlaubt Savestates, Cheats und Rewind. Verdient Softcore-Erfolge.</string>
+    <string name="settings_ra_play_mode_subtitle_hardcore">Deaktiviert Savestates, Cheats und Rewind. Verdient Hardcore-Erfolge.</string>
+    <string name="settings_ra_play_mode_subtitle_default">Bevorzugter Modus beim Starten eines Spiels</string>
+
+    <string name="settings_ra_section_retroarch">RETROARCH</string>
+    <string name="settings_ra_push_retroarch_title">An RetroArch übertragen</string>
+    <string name="settings_ra_push_retroarch_subtitle">Diese Anmeldung in RetroArchs Konfiguration schreiben</string>
+
+    <string name="settings_ra_intro_subtitle">Erfolge beim Spielen klassischer Spiele verdienen</string>
+    <string name="settings_ra_login_row_title">Anmelden</string>
+    <string name="settings_ra_login_row_subtitle">Mit Ihrem RetroAchievements-Konto anmelden</string>
+
+    <string name="settings_ra_section_offline_proxy">OFFLINE-PROXY</string>
+    <string name="settings_ra_proxy_title">RetroAchievements-Proxy</string>
+    <string name="settings_ra_proxy_subtitle">Erfolge über einen lokalen RAOfflineProxy leiten</string>
+    <string name="settings_ra_proxy_address_label">Proxy-Adresse</string>
+
+    <string name="settings_ra_login_form_title">RetroAchievements-Anmeldung</string>
+    <string name="settings_ra_login_username_label">Benutzername</string>
+    <string name="settings_ra_login_password_label">Passwort</string>
+    <string name="settings_ra_login_submit_title">Anmelden</string>
+    <string name="settings_ra_login_submit_title_busy">Wird angemeldet…</string>
+    <string name="settings_ra_login_submit_subtitle">Bei RetroAchievements anmelden</string>
+    <string name="settings_ra_login_cancel_title">Abbrechen</string>
+    <string name="settings_ra_login_cancel_subtitle">Zurück zu den RetroAchievements-Einstellungen</string>
+
+    <!-- ===== BIOS section ===== -->
+
+    <string name="settings_bios_path_title">BIOS-Verzeichnis</string>
+    <string name="settings_bios_path_internal">Intern (Standard)</string>
+
+    <string name="settings_bios_section_platforms">PLATTFORMEN</string>
+    <string name="settings_bios_empty_notice">Noch keine BIOS-Dateien synchronisiert. Synchronisieren Sie Ihre Bibliothek, um verfügbare Firmware zu finden.</string>
+    <string name="settings_bios_footer_note">BIOS-Dateien werden von Ihrem RomM-Server heruntergeladen und lokal gespeichert. Verwenden Sie \'Verteilen\', um sie in Emulator-Verzeichnisse zu kopieren.</string>
+
+    <string name="settings_bios_firmware_downloaded">Heruntergeladen</string>
+    <string name="settings_bios_firmware_downloading">Wird heruntergeladen…</string>
+
+    <string name="settings_bios_summary_title">BIOS-Status</string>
+    <string name="settings_bios_summary_empty">Keine BIOS-Dateien gefunden</string>
+    <string name="settings_bios_summary_complete">Alle %1$d Dateien bereit</string>
+    <string name="settings_bios_summary_partial">%1$d von %2$d heruntergeladen</string>
+    <string name="settings_bios_summary_downloading">Wird heruntergeladen: %1$s</string>
+    <string name="settings_bios_summary_distributing">Wird an Emulatoren verteilt…</string>
+    <string name="settings_bios_summary_download_missing">%1$d herunterladen</string>
+    <string name="settings_bios_summary_redownload">Erneut herunterladen</string>
+    <string name="settings_bios_summary_distribute">Verteilen</string>
+
+    <string name="settings_bios_platform_redownload">Erneut herunterladen</string>
+    <string name="settings_bios_platform_download">Herunterladen</string>
+
+    <string name="settings_bios_distribute_result_title">Verteilung abgeschlossen</string>
+    <string name="settings_bios_distribute_result_message">%1$d BIOS-Dateien an %2$d Emulatoren kopiert</string>
+    <plurals name="settings_bios_distribute_result_files">
+        <item quantity="one">%d Datei</item>
+        <item quantity="other">%d Dateien</item>
+    </plurals>
+    <string name="settings_bios_distribute_result_dismiss">OK</string>
+
+    <string name="settings_bios_gpu_prompt_title">GPU-Treiber verfügbar</string>
+    <string name="settings_bios_gpu_prompt_detected">Erkannt: %1$s</string>
+    <string name="settings_bios_gpu_prompt_message">Ein benutzerdefinierter GPU-Treiber kann die Switch-Emulationsleistung auf Snapdragon-8-Geräten verbessern.</string>
+    <string name="settings_bios_gpu_prompt_installing">Treiber wird installiert…</string>
+    <string name="settings_bios_gpu_prompt_install_versioned">Empfohlenen installieren (%1$s)</string>
+    <string name="settings_bios_gpu_prompt_install">Empfohlenen installieren</string>
+    <string name="settings_bios_gpu_prompt_install_from_file">Aus Datei installieren</string>
+    <string name="settings_bios_gpu_prompt_skip">Überspringen</string>
+
+    <!-- ===== GPU drivers section ===== -->
+
+    <string name="settings_drivers_gpu_label">GPU</string>
+    <string name="settings_drivers_gpu_unknown">Unbekannt</string>
+    <string name="settings_drivers_recommended_label">EMPFOHLEN</string>
+    <string name="settings_drivers_section_downloaded">HERUNTERGELADEN</string>
+    <string name="settings_drivers_source_no_releases">Keine Releases</string>
+    <plurals name="settings_drivers_source_releases">
+        <item quantity="one">%1$d Release - neuestes %2$s</item>
+        <item quantity="other">%1$d Releases - neuestes %2$s</item>
+    </plurals>
+
+    <!-- ===== Permissions section ===== -->
+
+    <string name="settings_permissions_intro">Argosy benötigt bestimmte Berechtigungen für den vollen Funktionsumfang. Tippen Sie auf eine Berechtigung, um sie zu erteilen.</string>
+    <string name="settings_permissions_storage_title">Speicherzugriff</string>
+    <string name="settings_permissions_storage_description">Erforderlich zum Herunterladen von Spielen, Synchronisieren von Spielstanddateien und Zugriff auf ROM-Dateien auf Ihrem Gerät.</string>
+    <string name="settings_permissions_usage_stats_title">Nutzungsdatenzugriff</string>
+    <string name="settings_permissions_usage_stats_description">Ermöglicht genaue Spielzeiterfassung und nahtlose Fortsetzung von Spielsitzungen beim Wechseln zwischen Apps.</string>
+    <string name="settings_permissions_notifications_title">Benachrichtigungen</string>
+    <string name="settings_permissions_notifications_description">Zeigt den Downloadfortschritt beim Herunterladen von Spielen im Hintergrund an.</string>
+    <string name="settings_permissions_write_settings_title">Systemeinstellungszugriff</string>
+    <string name="settings_permissions_write_settings_description">Ermöglicht die Steuerung von Geräteleistungsmodus und Lüftereinstellungen über das Schnelleinstellungen-Panel.</string>
+    <string name="settings_permissions_screen_capture_title">Bildschirmaufnahme</string>
+    <string name="settings_permissions_screen_capture_description">Ermöglicht Ambient-LED-Beleuchtung, die Bildschirmfarben während des Spielens abtastet.</string>
+    <string name="settings_permissions_display_overlay_title">Über anderen Apps anzeigen</string>
+    <string name="settings_permissions_display_overlay_description">Zeigt Benachrichtigungen zur Spielstanderkennung beim Spielen in externen Emulatoren an.</string>
+    <string name="settings_permissions_status_footer">Status: %1$d/%2$d Berechtigungen erteilt</string>
+
+    <!-- ===== About section ===== -->
+
+    <string name="settings_about_section_version">VERSION</string>
+    <string name="settings_about_section_backup">SICHERUNG</string>
+    <string name="settings_about_section_system_app">SYSTEM-APP</string>
+    <string name="settings_about_section_debug">DEBUG</string>
+
+    <string name="settings_about_update_title_check">Nach Updates suchen</string>
+    <string name="settings_about_update_title_downloading">Wird heruntergeladen…</string>
+    <string name="settings_about_update_title_available">Update verfügbar</string>
+    <string name="settings_about_update_subtitle_debug">In Debug-Builds deaktiviert</string>
+    <string name="settings_about_update_subtitle_progress">%1$d%%</string>
+    <string name="settings_about_update_subtitle_checking">Wird geprüft…</string>
+    <string name="settings_about_update_subtitle_error">Fehler: %1$s</string>
+    <string name="settings_about_update_subtitle_available">%1$s ist bereit zum Herunterladen</string>
+    <string name="settings_about_update_subtitle_current_prerelease">Aktuell (Vorabversion)</string>
+    <string name="settings_about_update_subtitle_current">Aktuell</string>
+    <string name="settings_about_update_subtitle_on_prerelease">Vorabversion wird ausgeführt</string>
+    <string name="settings_about_update_subtitle_idle">Nach neuen Versionen suchen</string>
+    <string name="settings_about_update_action_download">Herunterladen</string>
+    <string name="settings_about_update_action_check">Prüfen</string>
+    <string name="settings_about_update_action_changelog">Änderungsprotokoll</string>
+    <string name="settings_about_changelog_preview_title">Neu in %1$s</string>
+
+    <string name="settings_about_beta_updates_title">Beta-Updates</string>
+    <string name="settings_about_beta_updates_subtitle_on">Erhält Vorabversionen</string>
+    <string name="settings_about_beta_updates_subtitle_off">Nur stabile Releases</string>
+
+    <string name="settings_about_export_title">Einstellungen exportieren</string>
+    <string name="settings_about_export_subtitle">Schreibt Ihre Erscheinungsbild- und Navigationseinstellungen nach %1$s. Konten, Server und Sync-Status sind nicht enthalten.</string>
+    <string name="settings_about_import_title">Einstellungen importieren</string>
+    <string name="settings_about_import_subtitle">Einstellungen aus einer Sicherungsdatei anwenden</string>
+
+    <string name="settings_about_systemize_title">Abstürze bei anspruchsvollen Emulatoren verhindern</string>
+    <string name="settings_about_systemize_subtitle">Argosy kann erzwungen beendet werden, wenn ein anspruchsvoller Emulator den Großteil des RAM belegt. Auf einem gerooteten Gerät schreibt dies ein Skript, das Argosy zu einer System-App macht, damit sie nicht mehr beendet wird.</string>
+    <string name="settings_about_restart_title">Argosy neu starten</string>
+    <string name="settings_about_restart_subtitle">Launcher schließen und neu öffnen</string>
+
+    <string name="settings_about_file_logging_title">Datei-Protokollierung</string>
+    <string name="settings_about_file_logging_enable_title">Datei-Protokollierung aktivieren</string>
+    <string name="settings_about_file_logging_enable_subtitle">Protokolle zur Fehlersuche in eine Datei schreiben</string>
+    <string name="settings_about_log_path_internal">Intern</string>
+    <string name="settings_about_log_path_sd_card">SD-Karte/%1$s</string>
+    <string name="settings_about_log_level_title">Protokollstufe</string>
+    <string name="settings_about_save_debug_title">Spielstand-Debug-Protokollierung</string>
+    <string name="settings_about_save_debug_subtitle_on">Detaillierte Spielstandvorgänge werden protokolliert</string>
+    <string name="settings_about_save_debug_subtitle_off">Protokolliert Spielstand-Sync-, Cache- und Kanalereignisse</string>
+
+    <string name="settings_about_version_romm_value">v%1$s</string>
+    <string name="settings_about_licenses_label">Lizenzen</string>
+
+    <!-- ===== Surface backdrop section ===== -->
+
+    <string name="settings_backdrop_section_pattern">Muster</string>
+    <string name="settings_backdrop_section_layers">Ebenen</string>
+
+    <string name="settings_backdrop_enabled_title">Hintergrundmuster</string>
+    <string name="settings_backdrop_enabled_subtitle">Gekacheltes Muster hinter Menüs und dem Begleitbildschirm</string>
+
+    <string name="settings_backdrop_preset_title">Muster</string>
+    <string name="settings_backdrop_preset_dots">Punkte</string>
+    <string name="settings_backdrop_preset_scanlines">Scanlines</string>
+    <string name="settings_backdrop_preset_hex">Hex</string>
+    <string name="settings_backdrop_preset_icon_grid">Icon-Raster</string>
+    <string name="settings_backdrop_preset_platforms">Plattformen</string>
+
+    <string name="settings_backdrop_density_title">Dichte</string>
+    <string name="settings_backdrop_scatter_title">Streuung</string>
+    <string name="settings_backdrop_scale_jitter_title">Größenschwankung</string>
+    <string name="settings_backdrop_strength_title">Stärke</string>
+    <string name="settings_backdrop_edge_title">Kantenlinien</string>
+    <string name="settings_backdrop_edge_none">Keine</string>
+    <string name="settings_backdrop_edge_solid">Durchgezogen</string>
+    <string name="settings_backdrop_edge_dashed">Gestrichelt</string>
+    <string name="settings_backdrop_edge_faded">Verblassend</string>
+    <string name="settings_backdrop_edge_connections">Verbindungen</string>
+
+    <string name="settings_backdrop_corner_title">Eck-Symbole</string>
+    <string name="settings_backdrop_corner_none">Keine</string>
+    <string name="settings_backdrop_corner_dots">Punkte</string>
+    <string name="settings_backdrop_corner_plus">Plus</string>
+    <string name="settings_backdrop_corner_diamond">Raute</string>
+
+    <string name="settings_backdrop_motion_title">Bewegung</string>
+    <string name="settings_backdrop_motion_off">Aus</string>
+    <string name="settings_backdrop_motion_drift">Drift</string>
+    <string name="settings_backdrop_motion_sway">Schwingen</string>
+    <string name="settings_backdrop_speed_title">Geschwindigkeit</string>
+    <string name="settings_backdrop_direction_title">Richtung</string>
+    <string name="settings_backdrop_direction_value">%1$d°</string>
+    <string name="settings_backdrop_reshuffle_title">Neu mischen</string>
+    <string name="settings_backdrop_reshuffle_subtitle">Zufälligen Versatz des Musters neu würfeln</string>
+
+    <!-- ===== Fonts section ===== -->
+
+    <string name="settings_fonts_section_display">Titelschrift</string>
+    <string name="settings_fonts_section_body">Fließtextschrift</string>
+    <string name="settings_fonts_section_preview">Vorschau</string>
+
+    <string name="settings_fonts_display_slot_title">Titelschrift</string>
+    <string name="settings_fonts_display_slot_subtitle">Titel, Überschriften und Dachzeilen</string>
+    <string name="settings_fonts_slot_default">Standard</string>
+    <string name="settings_fonts_display_scale_title">Titelschrift-Skalierung</string>
+    <string name="settings_fonts_display_revert_title">Auf Standard zurücksetzen</string>
+    <string name="settings_fonts_display_revert_subtitle">Importierte Titelschrift entfernen</string>
+
+    <string name="settings_fonts_body_slot_title">Fließtextschrift</string>
+    <string name="settings_fonts_body_slot_subtitle">Aller übriger UI-Text</string>
+    <string name="settings_fonts_body_scale_title">Fließtextschrift-Skalierung</string>
+    <string name="settings_fonts_body_revert_title">Auf Standard zurücksetzen</string>
+    <string name="settings_fonts_body_revert_subtitle">Importierte Fließtextschrift entfernen</string>
+
+    <string name="settings_fonts_guideline_formats">Nur TTF- und OTF-Dateien; Schriftarten werden beim Import geprüft.</string>
+    <string name="settings_fonts_guideline_legibility">Bevorzugen Sie Schriftarten, die auf 3 Meter TV-Entfernung lesbar bleiben.</string>
+    <string name="settings_fonts_guideline_weights">Deckt die Schriftschnitte 400, 500 und 600 ab, sonst wirken Überschriften eventuell unecht fett.</string>
+    <string name="settings_fonts_guideline_fallback">Fehlende Zeichen (z. B. CJK) werden je Zeichen durch die Systemschrift ersetzt.</string>
+
+    <string name="settings_fonts_preview_heading">Weiterspielen</string>
+    <string name="settings_fonts_preview_body">Setzen Sie fort, wo Sie aufgehört haben. Spielstände, Savestates und Spielzeit bleiben über Ihre Bibliothek hinweg synchron.</string>
+    <string name="settings_fonts_preview_row">Fokussierte Menüzeile</string>
+    <string name="settings_fonts_preview_specimen">Aa Bb 0123</string>
+
+    <!-- ===== Background music section ===== -->
+
+    <string name="settings_music_section_music">Hintergrundmusik</string>
+    <string name="settings_music_section_storage">Speicher</string>
+
+    <string name="settings_music_toggle_title">Hintergrundmusik</string>
+    <string name="settings_music_toggle_subtitle">Musik während der Nutzung des Launchers abspielen</string>
+    <string name="settings_music_volume_title">Lautstärke</string>
+
+    <string name="settings_music_playlist_title">Musik-Playlist</string>
+    <string name="settings_music_playlist_empty">Keine Titel</string>
+    <plurals name="settings_music_playlist_count">
+        <item quantity="one">%d Titel</item>
+        <item quantity="other">%d Titel</item>
+    </plurals>
+
+    <string name="settings_music_browse_server_title">Server-Musik durchsuchen</string>
+    <string name="settings_music_browse_server_subtitle">Titel von RomM anhören und herunterladen</string>
+    <string name="settings_music_browse_local_title">Lokale Musik durchsuchen</string>
+    <string name="settings_music_browse_local_subtitle">Dateien oder Ordner zur Playlist hinzufügen</string>
+    <string name="settings_music_location_title">Musikspeicherort</string>
+
+    <string name="settings_music_shuffle_title">Zufallswiedergabe</string>
+    <string name="settings_music_shuffle_subtitle">Wiedergabereihenfolge zufällig mischen</string>
+    <string name="settings_music_game_themes_title">Spielmelodien</string>
+    <string name="settings_music_game_themes_subtitle">Titelmelodie eines Spiels auf seiner Detailseite abspielen</string>
+
+    <!-- ===== Interface sounds section ===== -->
+
+    <string name="settings_sounds_section_ui_sounds">UI-Sounds</string>
+    <string name="settings_sounds_section_customize">Anpassen</string>
+
+    <string name="settings_sounds_toggle_title">UI-Sounds</string>
+    <string name="settings_sounds_toggle_subtitle">Töne bei Navigation und Auswahl abspielen</string>
+    <string name="settings_sounds_volume_title">Lautstärke</string>
+
+    <string name="settings_sounds_type_silent">Stumm</string>
+    <string name="settings_sounds_type_navigate">Navigieren</string>
+    <string name="settings_sounds_type_boundary">Grenze</string>
+    <string name="settings_sounds_type_section_change">Bereichswechsel</string>
+    <string name="settings_sounds_type_select">Auswählen</string>
+    <string name="settings_sounds_type_back">Zurück</string>
+    <string name="settings_sounds_type_open_modal">Dialog öffnen</string>
+    <string name="settings_sounds_type_close_modal">Dialog schließen</string>
+    <string name="settings_sounds_type_favorite">Favorisieren</string>
+    <string name="settings_sounds_type_unfavorite">Favorit entfernen</string>
+    <string name="settings_sounds_type_download_start">Download-Start</string>
+    <string name="settings_sounds_type_download_complete">Download abgeschlossen</string>
+    <string name="settings_sounds_type_download_cancel">Download abgebrochen</string>
+    <string name="settings_sounds_type_error">Fehler</string>
+    <string name="settings_sounds_type_volume_preview">Lautstärkevorschau</string>
+    <string name="settings_sounds_type_toggle">Umschalten</string>
+    <string name="settings_sounds_type_launch_game">Spiel starten</string>
+
+    <!-- ===== Ambient LED section ===== -->
+
+    <string name="settings_led_section_general">Allgemein</string>
+    <string name="settings_led_section_cover_art">Cover</string>
+    <string name="settings_led_section_reactive_audio">Audioreaktiv</string>
+    <string name="settings_led_section_reactive_screen">Bildschirmreaktiv</string>
+
+    <string name="settings_led_enable_title">LEDs aktivieren</string>
+    <string name="settings_led_enable_subtitle">Hauptschalter für die Thumbstick-Beleuchtung</string>
+    <string name="settings_led_brightness_title">Helligkeit</string>
+
+    <string name="settings_led_custom_color_title">Eigene Standardfarbe</string>
+    <string name="settings_led_custom_color_subtitle_on">Eigener Farbton wird verwendet</string>
+    <string name="settings_led_custom_color_subtitle_off">Akzentfarbe wird verwendet</string>
+    <string name="settings_led_custom_color_hue_title">Standardfarbton</string>
+
+    <string name="settings_led_achievement_flash_title">Erfolgsblitz</string>
+    <string name="settings_led_achievement_flash_subtitle">Thumbsticks blinken auf, wenn ein Erfolg freigeschaltet wird</string>
+
+    <string name="settings_led_cover_art_title">Coverfarben</string>
+    <string name="settings_led_cover_art_subtitle">LEDs entsprechen dem Farbverlauf des Spielcovers</string>
+    <string name="settings_led_transition_title">Übergangsgeschwindigkeit</string>
+    <string name="settings_led_transition_instant">Sofort</string>
+    <string name="settings_led_transition_100ms">100ms</string>
+    <string name="settings_led_transition_250ms">250ms</string>
+    <string name="settings_led_transition_500ms">500ms</string>
+    <string name="settings_led_transition_1s">1s</string>
+    <string name="settings_led_transition_milliseconds">%1$dms</string>
+
+    <string name="settings_led_audio_brightness_title">Audio-Helligkeit</string>
+    <string name="settings_led_audio_brightness_subtitle">LEDs pulsieren mit der Musik</string>
+    <string name="settings_led_audio_colors_title">Audio-Farben</string>
+    <string name="settings_led_audio_colors_subtitle">Intensität wechselt zwischen Farbbereichen</string>
+
+    <string name="settings_led_screen_colors_title">Bildschirmfarben</string>
+    <string name="settings_led_screen_colors_subtitle">LEDs entsprechen dem Bildschirminhalt des Spiels</string>
+    <string name="settings_led_screen_colors_subtitle_locked">Erfordert Berechtigung zur Bildschirmaufnahme</string>
+    <string name="settings_led_color_mode_title">Farbauswahl</string>
+    <string name="settings_led_color_mode_dominant">Dominante Farben</string>
+    <string name="settings_led_color_mode_vibrant_muted">Kräftig &amp; Gedämpft</string>
+    <string name="settings_led_color_mode_hue_families">Farbtonfamilien</string>
+
+    <!-- ===== Storage section ===== -->
+
+    <string name="settings_storage_section_overview">ÜBERSICHT</string>
+    <string name="settings_storage_section_locations">DATEISPEICHERORTE</string>
+    <string name="settings_storage_section_downloads">DOWNLOADS</string>
+    <string name="settings_storage_section_danger">GEFAHRENZONE</string>
+
+    <string name="settings_storage_recompute_title">Neu berechnen</string>
+
+    <string name="settings_storage_meter_games">Spiele</string>
+    <string name="settings_storage_meter_media">Medien</string>
+    <string name="settings_storage_meter_steam">Steam &amp; PC</string>
+    <string name="settings_storage_meter_apps">Apps</string>
+    <string name="settings_storage_meter_caches">Caches &amp; System</string>
+    <string name="settings_storage_meter_music">Musik</string>
+
+    <string name="settings_storage_games_tile_title">Spiele</string>
+    <plurals name="settings_storage_games_tile_count">
+        <item quantity="one">%d Spiel</item>
+        <item quantity="other">%d Spiele</item>
+    </plurals>
+    <string name="settings_storage_media_tile_title">Medien</string>
+    <plurals name="settings_storage_media_tile_count">
+        <item quantity="one">%d Titel heruntergeladen</item>
+        <item quantity="other">%d Titel heruntergeladen</item>
+    </plurals>
+    <string name="settings_storage_music_tile_title">Musik</string>
+    <string name="settings_storage_music_tile_action">Playlist verwalten</string>
+    <string name="settings_storage_caches_tile_title">Caches &amp; System</string>
+    <plurals name="settings_storage_caches_tile_count">
+        <item quantity="one">%d Datei</item>
+        <item quantity="other">%d Dateien</item>
+    </plurals>
+    <string name="settings_storage_steam_tile_title">Steam &amp; PC</string>
+    <string name="settings_storage_steam_tile_subtitle">Stores, Installationen und Staging</string>
+
+    <string name="settings_storage_rom_path_title">Globaler ROM-Pfad</string>
+    <string name="settings_storage_rom_path_free">%1$s frei</string>
+    <string name="settings_storage_image_cache_title">Bildercache</string>
+    <string name="settings_storage_image_cache_migrating">Bilder werden verschoben…</string>
+    <string name="settings_storage_image_cache_internal">Intern (Standard)</string>
+    <string name="settings_storage_music_location_title">Musikspeicherort</string>
+    <string name="settings_storage_music_location_default">Standard</string>
+    <string name="settings_storage_bios_folder_title">BIOS-Ordner</string>
+    <string name="settings_storage_bios_folder_migrating">Dateien werden verschoben…</string>
+    <string name="settings_storage_bios_folder_internal">Intern (Standard)</string>
+    <string name="settings_storage_builtin_save_path_title">Integrierter Spielstand-Pfad</string>
+    <string name="settings_storage_builtin_save_path_internal">Intern (Standard)</string>
+    <string name="settings_storage_builtin_state_path_title">Integrierter Savestate-Pfad</string>
+    <string name="settings_storage_builtin_state_path_internal">Intern (Standard)</string>
+
+    <string name="settings_storage_max_downloads_title">Max. gleichzeitige Downloads</string>
+    <string name="settings_storage_threshold_title">Schwelle für Sofort-Download</string>
+    <string name="settings_storage_threshold_value">%1$d MB</string>
+    <string name="settings_storage_threshold_subtitle">Dateien unter dieser Größe werden sofort heruntergeladen</string>
+    <string name="settings_storage_internal_staging_title">Auf internem Speicher entpacken</string>
+    <string name="settings_storage_internal_staging_subtitle">Komprimierte Spiele intern herunterladen und entpacken, dann das fertige Spiel in Ihren ROM-Ordner verschieben. Bei knappem internem Speicher wird auf den ROM-Ordner zurückgegriffen.</string>
+
+    <string name="settings_storage_reset_library_title">Bibliothek zurücksetzen</string>
+    <string name="settings_storage_reset_library_subtitle">Löscht die Datenbank und den Bildercache. Heruntergeladene Dateien bleiben auf dem Gerät.</string>
+    <string name="settings_storage_reset_library_busy">Wird zurückgesetzt…</string>
+    <string name="settings_storage_hard_reset_title">Hard-Reset</string>
+    <string name="settings_storage_hard_reset_subtitle">Löscht heruntergeladene Spiele, die Bibliotheksdatenbank und jeden Cache. Einstellungen und Anmeldungen bleiben erhalten.</string>
+    <string name="settings_storage_hard_reset_busy">Wird zurückgesetzt…</string>
+
+    <!-- ===== Storage: games ===== -->
+
+    <string name="settings_storage_games_section_overview">ÜBERSICHT</string>
+    <string name="settings_storage_games_section_platforms">PLATTFORMEN</string>
+
+    <string name="settings_storage_games_integrity_title">Wöchentliche ROM-Integritätsprüfung</string>
+    <string name="settings_storage_games_integrity_subtitle">Prüft heruntergeladene Spieldateien einmal pro Woche beim Start</string>
+
+    <plurals name="settings_storage_games_totals_count">
+        <item quantity="one">%d heruntergeladen</item>
+        <item quantity="other">%d heruntergeladen</item>
+    </plurals>
+    <string name="settings_storage_games_totals_used">%1$s belegt</string>
+
+    <string name="settings_storage_games_sort_toggle_description">Sortierreihenfolge umschalten</string>
+    <string name="settings_storage_games_sort_platform">Plattformreihenfolge</string>
+    <string name="settings_storage_games_sort_size">Größte zuerst</string>
+
+    <string name="settings_storage_games_empty_computing_title">Speichernutzung wird berechnet…</string>
+    <string name="settings_storage_games_empty_computing_message">Größen je Plattform erscheinen hier, sobald der Scan abgeschlossen ist.</string>
+    <string name="settings_storage_games_empty_title">Keine heruntergeladenen Spiele</string>
+    <string name="settings_storage_games_empty_message">Laden Sie Spiele aus Ihrer Bibliothek herunter, und die Nutzung je Plattform wird hier angezeigt.</string>
+
+    <plurals name="settings_storage_games_platform_count">
+        <item quantity="one">%d heruntergeladen</item>
+        <item quantity="other">%d heruntergeladen</item>
+    </plurals>
+
+    <!-- ===== Storage: media ===== -->
+
+    <string name="settings_storage_media_artwork_title">Artwork-Cache</string>
+    <string name="settings_storage_media_artwork_subtitle">Beim Durchsuchen geladene Poster und Backdrops, gemeinsam genutzt mit anderer Onlinegrafik</string>
+    <plurals name="settings_storage_media_artwork_files">
+        <item quantity="one">%d Datei</item>
+        <item quantity="other">%d Dateien</item>
+    </plurals>
+
+    <string name="settings_storage_media_section_libraries">BIBLIOTHEKEN</string>
+    <string name="settings_storage_media_section_locations">SPEICHERORTE</string>
+
+    <plurals name="settings_storage_media_totals_count">
+        <item quantity="one">%d Titel heruntergeladen</item>
+        <item quantity="other">%d Titel heruntergeladen</item>
+    </plurals>
+    <string name="settings_storage_media_totals_used">%1$s belegt</string>
+    <string name="settings_storage_media_totals_offline">%1$s auf nicht angeschlossenem Speicher</string>
+
+    <string name="settings_storage_media_empty_computing_title">Speichernutzung wird berechnet…</string>
+    <string name="settings_storage_media_empty_computing_message">Größen je Bibliothek erscheinen hier, sobald der Scan abgeschlossen ist.</string>
+    <string name="settings_storage_media_empty_title">Noch keine Medienbibliotheken</string>
+    <string name="settings_storage_media_empty_message">Melden Sie sich bei einem Medienserver an, und heruntergeladene Filme und Folgen erscheinen hier je Bibliothek.</string>
+
+    <plurals name="settings_storage_media_library_count">
+        <item quantity="one">%d heruntergeladen</item>
+        <item quantity="other">%d heruntergeladen</item>
+    </plurals>
+    <plurals name="settings_storage_media_library_offline">
+        <item quantity="one">%1$d wartend auf nicht angeschlossenem Speicher, zuletzt gemessen %2$s</item>
+        <item quantity="other">%1$d wartend auf nicht angeschlossenem Speicher, zuletzt gemessen %2$s</item>
+    </plurals>
+    <plurals name="settings_storage_media_library_missing">
+        <item quantity="one">%d nicht mehr auf dem Datenträger</item>
+        <item quantity="other">%d nicht mehr auf dem Datenträger</item>
+    </plurals>
+
+    <string name="settings_storage_media_location_offline">Nicht angeschlossen, zuletzt gemessen %1$s</string>
+    <plurals name="settings_storage_media_location_current">
+        <item quantity="one">Neue Downloads landen hier, %d Datei</item>
+        <item quantity="other">Neue Downloads landen hier, %d Dateien</item>
+    </plurals>
+    <plurals name="settings_storage_media_location_stale">
+        <item quantity="one">Von einem früheren Download-Ordner zurückgelassen, %d Datei</item>
+        <item quantity="other">Von einem früheren Download-Ordner zurückgelassen, %d Dateien</item>
+    </plurals>
+    <string name="settings_storage_media_location_unavailable">Nicht verfügbar</string>
+
+    <!-- ===== Storage: one console's games ===== -->
+
+    <string name="settings_storage_platform_games_loading">Wird geladen…</string>
+    <string name="settings_storage_platform_games_empty_title">Keine heruntergeladenen Spiele</string>
+    <string name="settings_storage_platform_games_empty_message">Heruntergeladene Spiele für %1$s erscheinen hier mit einer Aufschlüsselung nach Kategorie.</string>
+
+    <string name="settings_storage_bucket_base">Basis</string>
+    <string name="settings_storage_bucket_updates">Updates</string>
+    <string name="settings_storage_bucket_dlc">DLC</string>
+    <string name="settings_storage_bucket_hacks">Hacks</string>
+    <string name="settings_storage_bucket_soundtrack">Soundtrack</string>
+    <string name="settings_storage_bucket_other">Sonstiges</string>
+    <plurals name="settings_storage_bucket_stats">
+        <item quantity="one">%1$d - %2$s</item>
+        <item quantity="other">%1$d - %2$s</item>
+    </plurals>
+
+    <string name="settings_storage_category_delete_title">%1$s entfernen?</string>
+    <plurals name="settings_storage_category_delete_message">
+        <item quantity="one">Entfernt %1$d Datei (%2$s). Wird erneut aus Ihrer Bibliothek heruntergeladen.</item>
+        <item quantity="other">Entfernt %1$d Dateien (%2$s). Wird erneut aus Ihrer Bibliothek heruntergeladen.</item>
+    </plurals>
+    <string name="settings_storage_category_delete_confirm">Löschen</string>
+
+    <!-- ===== Storage: caches ===== -->
+
+    <string name="settings_caches_section_sync">SYNC-CACHES</string>
+    <string name="settings_caches_section_media">MEDIEN-CACHES</string>
+    <string name="settings_caches_section_system">SYSTEM</string>
+
+    <plurals name="settings_caches_pending_uploads_title">
+        <item quantity="one">%d Spielstand wartet auf Upload</item>
+        <item quantity="other">%d Spielstände warten auf Upload</item>
+    </plurals>
+    <string name="settings_caches_pending_uploads_subtitle_online">Jetzt synchronisieren, bevor Sync-Caches geleert werden</string>
+    <string name="settings_caches_pending_uploads_subtitle_offline">Zum Synchronisieren erneut mit dem Server verbinden</string>
+
+    <string name="settings_caches_save_cache_title">Spielstand-Cache zurücksetzen</string>
+    <string name="settings_caches_save_cache_busy">Wird zurückgesetzt…</string>
+    <plurals name="settings_caches_save_cache_pending">
+        <item quantity="one">%d Spielstand wartet auf Upload</item>
+        <item quantity="other">%d Spielstände warten auf Upload</item>
+    </plurals>
+    <plurals name="settings_caches_save_cache_count">
+        <item quantity="one">%d zwischengespeicherter Spielstand oder Savestate</item>
+        <item quantity="other">%d zwischengespeicherte Spielstände und Savestates</item>
+    </plurals>
+    <string name="settings_caches_save_cache_empty">Keine zwischengespeicherten Einträge</string>
+
+    <string name="settings_caches_state_cache_title">Savestate-Cache leeren</string>
+    <string name="settings_caches_state_cache_busy">Wird geleert…</string>
+    <plurals name="settings_caches_state_cache_pending">
+        <item quantity="one">%d Spielstand wartet auf Upload</item>
+        <item quantity="other">%d Spielstände warten auf Upload</item>
+    </plurals>
+    <plurals name="settings_caches_state_cache_count">
+        <item quantity="one">%d zwischengespeicherter Savestate</item>
+        <item quantity="other">%d zwischengespeicherte Savestates</item>
+    </plurals>
+    <string name="settings_caches_state_cache_empty">Keine zwischengespeicherten Savestates</string>
+
+    <string name="settings_caches_path_cache_title">Spielstand-Pfad-Cache leeren</string>
+    <string name="settings_caches_path_cache_busy">Wird geleert…</string>
+    <plurals name="settings_caches_path_cache_pending">
+        <item quantity="one">%d Spielstand wartet auf Upload</item>
+        <item quantity="other">%d Spielstände warten auf Upload</item>
+    </plurals>
+    <plurals name="settings_caches_path_cache_count">
+        <item quantity="one">%d zwischengespeicherter Pfad</item>
+        <item quantity="other">%d zwischengespeicherte Pfade</item>
+    </plurals>
+    <string name="settings_caches_path_cache_empty">Keine zwischengespeicherten Pfade</string>
+
+    <string name="settings_caches_state_toggle_title">Savestates zwischenspeichern</string>
+    <string name="settings_caches_state_toggle_subtitle">Savestate-Schnappschüsse für Cloud-Sync am Sitzungsende behalten</string>
+    <string name="settings_caches_save_limit_title">Lokaler Spielstand-Cache</string>
+    <plurals name="settings_caches_save_limit_value">
+        <item quantity="one">%d Spielstand pro Spiel</item>
+        <item quantity="other">%d Spielstände pro Spiel</item>
+    </plurals>
+
+    <string name="settings_caches_image_cache_title">Bildercache</string>
+    <string name="settings_caches_image_cache_busy">Wird geleert…</string>
+    <plurals name="settings_caches_image_cache_subtitle">
+        <item quantity="one">%d Datei - Cover werden beim Durchsuchen neu geladen</item>
+        <item quantity="other">%d Dateien - Cover werden beim Durchsuchen neu geladen</item>
+    </plurals>
+    <string name="settings_caches_validate_title">Bildercache prüfen</string>
+    <string name="settings_caches_validate_busy">Wird geprüft…</string>
+    <string name="settings_caches_validate_subtitle">Fehlende oder beschädigte zwischengespeicherte Bilder reparieren</string>
+
+    <string name="settings_caches_screenshots_title">Screenshots zwischenspeichern</string>
+    <string name="settings_caches_screenshots_subtitle">Boxart und Hintergründe werden immer zwischengespeichert</string>
+    <string name="settings_caches_box_art_title">3D-Boxart zwischenspeichern</string>
+    <string name="settings_caches_box_art_subtitle">Rückseite und Rücken-Scans für 3D-Boxdarstellungen herunterladen</string>
+
+    <string name="settings_caches_rom_extraction_title">Extrahierte ROMs</string>
+    <string name="settings_caches_rom_extraction_busy">Wird geleert…</string>
+    <string name="settings_caches_rom_extraction_subtitle">Arbeitskopien komprimierter Spiele - werden beim Start neu extrahiert</string>
+    <string name="settings_caches_rom_staging_title">Verwaiste Download-Zwischendateien</string>
+    <string name="settings_caches_rom_staging_busy">Wird geleert…</string>
+    <string name="settings_caches_rom_staging_subtitle">Überbleibsel von intern entpackten, nie abgeschlossenen Downloads</string>
+    <string name="settings_caches_sfx_title">Soundeffekt-Cache</string>
+    <string name="settings_caches_sfx_busy">Wird geleert…</string>
+    <string name="settings_caches_sfx_subtitle">Transkodierte eigene Sounds - werden automatisch neu erstellt</string>
+    <string name="settings_caches_emulator_apks_title">Emulator-Installer</string>
+    <string name="settings_caches_emulator_apks_busy">Wird geleert…</string>
+    <string name="settings_caches_emulator_apks_subtitle">Heruntergeladene APKs - können nach der Installation gefahrlos entfernt werden</string>
+    <string name="settings_caches_misc_downloads_title">Sonstige Downloads</string>
+    <string name="settings_caches_misc_downloads_busy">Wird geleert…</string>
+    <string name="settings_caches_misc_downloads_subtitle">Freundes-Präsenzbilder und GPU-Treiber-Downloads</string>
+
+    <string name="settings_caches_shaders_title">Shader-Katalog</string>
+    <string name="settings_caches_shaders_busy">Wird geleert…</string>
+    <string name="settings_caches_shaders_subtitle">Heruntergeladene Shader - werden bei Bedarf erneut heruntergeladen</string>
+    <string name="settings_caches_frames_title">Rahmen-Overlays</string>
+    <string name="settings_caches_frames_busy">Wird geleert…</string>
+    <string name="settings_caches_frames_subtitle">Heruntergeladene Rahmen - werden bei Bedarf erneut heruntergeladen</string>
+
+    <string name="settings_caches_steam_clear_title">Download-Daten leeren</string>
+    <string name="settings_caches_steam_clear_busy">Wird geleert…</string>
+    <string name="settings_caches_steam_clear_blocked">Zuerst Steam-Downloads abbrechen</string>
+    <string name="settings_caches_steam_clear_subtitle">Entfernt vorbereitete Downloads und die Warteschlange - installierte Spiele bleiben</string>
+
+    <string name="settings_caches_info_artwork_title">Artwork-Cache</string>
+    <string name="settings_caches_info_artwork_subtitle">Poster, Backdrops und andere Onlinegrafik - werden bei Bedarf erneut heruntergeladen</string>
+    <string name="settings_caches_info_bios_title">BIOS-Dateien</string>
+    <string name="settings_caches_info_bios_subtitle">Von Emulatoren benötigt - kein Cache</string>
+    <string name="settings_caches_info_cores_title">Cores &amp; System</string>
+    <string name="settings_caches_info_cores_subtitle">Integrierte Emulator-Cores und Support-Dateien</string>
+    <string name="settings_caches_info_shaders_title">Eigene Shader</string>
+    <string name="settings_caches_info_shaders_subtitle">Nutzerinhalt - wird nie gelöscht</string>
+    <string name="settings_caches_info_fonts_title">Schriftarten</string>
+    <string name="settings_caches_info_fonts_subtitle">Nutzerinhalt - wird nie gelöscht</string>
+    <string name="settings_caches_info_database_title">Datenbank</string>
+    <plurals name="settings_caches_info_database_subtitle">
+        <item quantity="one">%d Bibliotheksdatenbankdatei</item>
+        <item quantity="other">%d Bibliotheksdatenbankdateien</item>
+    </plurals>
+    <string name="settings_caches_info_steam_total_title">Steam &amp; PC gesamt</string>
+    <string name="settings_caches_info_steam_total_subtitle">Enthält installierte Store-Spiele</string>
+    <string name="settings_caches_info_steam_staging_title">Download-Zwischenspeicher</string>
+    <string name="settings_caches_info_steam_staging_subtitle">Teilweise Downloads, die auf Bereitstellung warten</string>
+    <string name="settings_caches_info_steam_staging_computing">Wird berechnet…</string>
+
+    <!-- ===== Steam section ===== -->
+
+    <string name="settings_steam_section_account">KONTO</string>
+    <string name="settings_steam_section_library">BIBLIOTHEK</string>
+    <string name="settings_steam_section_danger">GEFAHRENZONE</string>
+
+    <string name="settings_steam_gn_status_configured">Externer Speicher konfiguriert</string>
+    <string name="settings_steam_gn_status_unconfigured">Externer Speicher nicht konfiguriert</string>
+    <string name="settings_steam_gn_status_missing">Nicht installiert</string>
+    <string name="settings_steam_gn_install_title">GameNative installieren</string>
+    <string name="settings_steam_gn_install_subtitle">Erforderlich, um Steam-Spiele zu starten</string>
+    <string name="settings_steam_gn_storage_warning_title">Externer Speicher</string>
+    <string name="settings_steam_gn_storage_warning_value">Öffnen Sie GameNative und aktivieren Sie \'Write to external storage\' in den Einstellungen</string>
+
+    <string name="settings_steam_install_path_title">Installationspfad</string>
+    <string name="settings_steam_install_path_title_custom">Installationspfad (benutzerdefiniert)</string>
+    <string name="settings_steam_install_path_change">Ändern</string>
+    <string name="settings_steam_install_triage_title">Installierte Spiele</string>
+    <string name="settings_steam_account_title">Steam-Konto</string>
+    <string name="settings_steam_account_connected">Verbunden</string>
+
+    <string name="settings_steam_sync_title">Bibliothek synchronisieren</string>
+    <string name="settings_steam_sync_idle">Eigene Spiele von Steam synchronisieren</string>
+    <string name="settings_steam_sync_licenses">Lizenzen werden synchronisiert…</string>
+    <string name="settings_steam_sync_packages">Pakete werden abgerufen (%1$d/%2$d)…</string>
+    <string name="settings_steam_sync_apps">Spiele werden abgerufen (%1$d/%2$d)…</string>
+    <string name="settings_steam_sync_complete">%1$d hinzugefügt, %2$d aktualisiert</string>
+    <string name="settings_steam_sync_error">Fehler: %1$s</string>
+
+    <string name="settings_steam_add_manual_title">Nach App-ID hinzufügen</string>
+    <string name="settings_steam_add_manual_subtitle">Ein Steam-Spiel anhand seiner App-ID hinzufügen</string>
+
+    <string name="settings_steam_gamenative_library_title">GameNative-Bibliothek</string>
+    <string name="settings_steam_gamenative_library_folders">Ordner</string>
+    <string name="settings_steam_gamenative_library_scan">Scannen</string>
+    <string name="settings_steam_gamenative_library_scanning">Wird gescannt…</string>
+    <string name="settings_steam_gamenative_library_unconfigured">Legen Sie die Frontend-Sync-Ordner von GameNative fest, um GOG-, Epic- und Amazon-Installationen zu importieren und Steam-Spiele als installiert zu markieren</string>
+    <string name="settings_steam_gamenative_library_missing">Ordner fehlt: %1$s</string>
+    <string name="settings_steam_gamenative_library_configured">%1$s konfiguriert</string>
+
+    <string name="settings_steam_refresh_metadata_title">Metadaten aktualisieren</string>
+    <string name="settings_steam_refresh_metadata_busy">Wird aktualisiert…</string>
+    <string name="settings_steam_refresh_metadata_subtitle">Screenshots und Hintergründe aktualisieren</string>
+
+    <string name="settings_steam_launcher_downloading">Wird heruntergeladen… %1$d%%</string>
+    <string name="settings_steam_launcher_waiting">Warten auf Installation…</string>
+    <string name="settings_steam_launcher_download">APK herunterladen</string>
+    <string name="settings_steam_launcher_store">Play Store öffnen</string>
+
+    <string name="settings_steam_storage_note_title">Speicherberechtigung erteilen</string>
+    <string name="settings_steam_storage_note_subtitle">Erforderlich für die Steam-Integration</string>
+    <string name="settings_steam_disconnect_title">Trennen</string>
+    <string name="settings_steam_disconnect_subtitle">Von Steam abmelden</string>
+    <string name="settings_steam_reset_library_title">Steam-Bibliothek zurücksetzen</string>
+    <string name="settings_steam_reset_library_subtitle">Alle synchronisierten Steam-Spiele entfernen</string>
+
+    <string name="settings_steam_gn_required_title">GameNative erforderlich</string>
+    <string name="settings_steam_gn_required_message">Steam-Spiele werden von Argosy heruntergeladen und über GameNative gestartet. Installieren Sie GameNative und aktivieren Sie den externen Speicher in dessen Einstellungen, bevor Sie fortfahren.</string>
+    <string name="settings_steam_gn_required_action">GameNative installieren</string>
+
+    <string name="settings_steam_login_title">Bei Steam anmelden</string>
+    <string name="settings_steam_login_message">Verbinden Sie Ihr Steam-Konto, um Ihre Bibliothek zu synchronisieren und Spiele herunterzuladen.</string>
+    <string name="settings_steam_login_action">Verbinden</string>
+    <string name="settings_steam_connecting">Verbindung wird hergestellt…</string>
+
+    <string name="settings_steam_qr_title">Mit der Steam-App scannen</string>
+    <string name="settings_steam_qr_message">Öffnen Sie Steam auf Ihrem Telefon, tippen Sie auf das Guard-Symbol und dann auf \'Anmeldung bestätigen\'.</string>
+    <string name="settings_steam_qr_cancel">Abbrechen</string>
+    <string name="settings_steam_qr_image_description">QR-Code</string>
+
+    <string name="settings_steam_error_title">Verbindungsfehler</string>
+    <string name="settings_steam_error_retry">Erneut versuchen</string>
+
+    <string name="settings_steam_add_game_title">Steam-Spiel hinzufügen</string>
+    <string name="settings_steam_add_game_message">Geben Sie die Steam-App-ID ein, um ein Spiel hinzuzufügen. Sie finden diese in der Steam-Store-URL des Spiels.</string>
+    <string name="settings_steam_add_game_message_launcher">Geben Sie die Steam-App-ID ein, um ein Spiel für %1$s hinzuzufügen. Sie finden diese in der Steam-Store-URL des Spiels.</string>
+    <string name="settings_steam_add_game_field_label">Steam-App-ID</string>
+    <string name="settings_steam_add_game_field_hint">z. B. 730</string>
+    <string name="settings_steam_add_game_cancel">Abbrechen</string>
+    <string name="settings_steam_add_game_confirm">Hinzufügen</string>
+
+    <!-- ===== Social section ===== -->
+
+    <string name="settings_social_section_account">KONTO</string>
+    <string name="settings_social_section_privacy">PRIVATSPHÄRE</string>
+    <string name="settings_social_section_notifications">BENACHRICHTIGUNGEN</string>
+
+    <string name="settings_social_account_handle">\@%1$s</string>
+    <string name="settings_social_edit_avatar_title">Avatar-Doodle bearbeiten</string>
+    <string name="settings_social_edit_avatar_subtitle">Eigenen Avatar zeichnen</string>
+    <string name="settings_social_use_doodle_title">Doodle-Avatar verwenden</string>
+    <string name="settings_social_use_doodle_subtitle_on">Zeigt Ihr Doodle</string>
+    <string name="settings_social_use_doodle_subtitle_off">Zeigt Ihre Initialen</string>
+
+    <string name="settings_social_online_status_title">Online-Status</string>
+    <string name="settings_social_online_status_subtitle_on">Für Freunde als online sichtbar</string>
+    <string name="settings_social_online_status_subtitle_off">Für Freunde als offline sichtbar</string>
+    <string name="settings_social_now_playing_title">Aktuelles Spiel anzeigen</string>
+    <string name="settings_social_now_playing_subtitle_locked">Zuerst Online-Status aktivieren</string>
+    <string name="settings_social_now_playing_subtitle_on">Zeigt Freunden, welches Spiel Sie spielen</string>
+    <string name="settings_social_now_playing_subtitle_off">Spielaktivität vor Freunden verbergen</string>
+
+    <string name="settings_social_notify_online_title">Freund kommt online</string>
+    <string name="settings_social_notify_online_subtitle_locked">Zuerst Online-Status aktivieren</string>
+    <string name="settings_social_notify_online_subtitle_on">Benachrichtigung anzeigen, wenn Freunde online kommen</string>
+    <string name="settings_social_notify_online_subtitle_off">Benachrichtigungen deaktiviert</string>
+    <string name="settings_social_notify_playing_title">Freund startet ein Spiel</string>
+    <string name="settings_social_notify_playing_subtitle_locked">Zuerst Online-Status aktivieren</string>
+    <string name="settings_social_notify_playing_subtitle_on">Benachrichtigung anzeigen, wenn Freunde ein Spiel starten</string>
+    <string name="settings_social_notify_playing_subtitle_off">Benachrichtigungen deaktiviert</string>
+    <string name="settings_social_suppress_title">Beim Spielen stummschalten</string>
+    <string name="settings_social_suppress_subtitle_locked">Zuerst Online-Status aktivieren</string>
+    <string name="settings_social_suppress_subtitle_on">Freundes-Benachrichtigungen werden während des Spielens ausgeblendet</string>
+    <string name="settings_social_suppress_subtitle_off">Freundes-Benachrichtigungen werden immer angezeigt</string>
+
+    <string name="settings_social_quaypass_subtitle_on">Begegnet nahen Reisenden beim Check-In</string>
+    <string name="settings_social_quaypass_subtitle_off">Aus</string>
+
+    <string name="settings_social_unlink_title">Konto trennen</string>
+    <string name="settings_social_unlink_subtitle">Von Sozialfunktionen trennen</string>
+
+    <string name="settings_social_not_linked_title">Anmelden, um Sozialfunktionen zu aktivieren</string>
+    <string name="settings_social_not_linked_message">Verbinden Sie sich mit Freunden, teilen Sie Sammlungen und sehen Sie, was andere spielen.</string>
+    <string name="settings_social_not_linked_action">Konto verknüpfen</string>
+    <string name="settings_social_connecting">Verbindung wird hergestellt…</string>
+
+    <string name="settings_social_qr_title">Zum Verknüpfen Ihres Kontos scannen</string>
+    <string name="settings_social_qr_visit_prefix">Oder besuchen Sie </string>
+    <string name="settings_social_qr_visit_suffix"> und geben Sie ein:</string>
+    <string name="settings_social_qr_cancel">Abbrechen</string>
+    <string name="settings_social_qr_image_description">QR-Code</string>
+
+    <string name="settings_social_error_title">Verbindungsfehler</string>
+    <string name="settings_social_error_generic">Ein Fehler ist aufgetreten</string>
+    <string name="settings_social_error_retry">Erneut versuchen</string>
+
+    <!-- ===== Jellyfin section ===== -->
+
+    <string name="settings_jellyfin_section_server">SERVER</string>
+    <string name="settings_jellyfin_section_library">BIBLIOTHEK</string>
+    <string name="settings_jellyfin_section_playback">WIEDERGABE</string>
+    <string name="settings_jellyfin_section_downloads">DOWNLOADS</string>
+    <string name="settings_jellyfin_section_privacy">PRIVATSPHÄRE</string>
+
+    <string name="settings_jellyfin_server_title">Medienserver</string>
+    <string name="settings_jellyfin_server_unconfigured">Nicht konfiguriert</string>
+
+    <string name="settings_jellyfin_account_sign_out">Abmelden</string>
+    <string name="settings_jellyfin_account_cancel">Anmeldung abbrechen</string>
+    <string name="settings_jellyfin_account_sign_in">Anmelden</string>
+    <string name="settings_jellyfin_account_signed_in_as">Angemeldet als %1$s</string>
+    <string name="settings_jellyfin_account_signed_in">Angemeldet</string>
+    <string name="settings_jellyfin_account_awaiting_approval">Wartet auf Bestätigung in Ihrer Jellyfin-App</string>
+    <string name="settings_jellyfin_account_requesting_code">Code wird vom Server angefordert</string>
+    <string name="settings_jellyfin_account_quick_connect">Bestätigen Sie einen Quick-Connect-Code in Ihrer Jellyfin-App</string>
+    <string name="settings_jellyfin_account_password">Mit Ihrem Jellyfin-Benutzernamen und -Passwort anmelden</string>
+
+    <string name="settings_jellyfin_quick_connect_label">Quick-Connect-Code</string>
+    <string name="settings_jellyfin_quick_connect_message">Öffnen Sie Jellyfin auf einem Gerät, auf dem Sie bereits angemeldet sind, gehen Sie zu Quick Connect und geben Sie diesen Code ein. Er läuft nach wenigen Minuten ab.</string>
+    <string name="settings_jellyfin_password_sign_in_title">Mit Passwort anmelden</string>
+    <string name="settings_jellyfin_password_sign_in_subtitle">Ihren Jellyfin-Benutzernamen und Ihr Passwort statt eines Codes verwenden</string>
+
+    <string name="settings_jellyfin_sync_title">Bibliothek synchronisieren</string>
+    <string name="settings_jellyfin_sync_progress">%1$s (%2$d von %3$d)</string>
+    <string name="settings_jellyfin_sync_reading">Ihre Bibliotheken werden gelesen</string>
+    <string name="settings_jellyfin_sync_signed_out">Anmelden, um Ihre Filme und Serien zu übernehmen</string>
+    <string name="settings_jellyfin_sync_last">Zuletzt: %1$s</string>
+    <string name="settings_jellyfin_sync_subtitle">Ihre Filme, Serien und Folgen mit dem Server abgleichen</string>
+
+    <string name="settings_jellyfin_streaming_title">Streaming-Qualität</string>
+    <string name="settings_jellyfin_streaming_subtitle_auto">Spielt jeden Titel unverändert ab, was den Server nichts kostet</string>
+    <string name="settings_jellyfin_streaming_subtitle_capped">Titel, die größer sind als dies, werden vom Server während der Wiedergabe transkodiert. Bereits kleinere spielen unverändert</string>
+
+    <string name="settings_jellyfin_audio_language_title">Audiosprache</string>
+    <string name="settings_jellyfin_audio_language_subtitle">Wird zuerst gewählt, wenn ein Titel mehr als eine Audiospur enthält</string>
+
+    <string name="settings_jellyfin_subtitles_title">Untertitel</string>
+    <string name="settings_jellyfin_subtitles_subtitle_off">Keine Untertitelspur ausgewählt</string>
+    <string name="settings_jellyfin_subtitles_subtitle_forced">Nur als erzwungen markierte Spuren</string>
+    <string name="settings_jellyfin_subtitles_subtitle_preferred">Eine Spur in Ihrer bevorzugten Sprache wählen</string>
+    <string name="settings_jellyfin_subtitle_language_title">Untertitelsprache</string>
+
+    <string name="settings_jellyfin_burn_in_title">Bild-Untertitel einbrennen</string>
+    <string name="settings_jellyfin_burn_in_subtitle_on">Neue Wiedergaben starten mit vom Server gerenderten Bildspuren, was einen Transkodierungsvorgang erzwingt. Ändern Sie dies für einen einzelnen Titel im Untertitel-Auswahlmenü</string>
+    <string name="settings_jellyfin_burn_in_subtitle_off">Neue Wiedergaben starten mit deaktivierten Bildspuren. Aktivieren Sie eine für einen einzelnen Titel im Untertitel-Auswahlmenü</string>
+
+    <string name="settings_jellyfin_confirm_exit_title">Vor Verlassen des Players nachfragen</string>
+    <string name="settings_jellyfin_confirm_exit_subtitle_on">Schließen des Players fragt zuerst nach Bestätigung</string>
+    <string name="settings_jellyfin_confirm_exit_subtitle_off">Schließen des Players beendet sofort</string>
+
+    <string name="settings_jellyfin_download_quality_title">Download-Qualität</string>
+    <string name="settings_jellyfin_download_subtitle_original">Lädt die Datei so herunter, wie sie auf dem Server liegt</string>
+    <string name="settings_jellyfin_download_subtitle_capped">Titel, die größer sind als dies, werden vor dem Download transkodiert. Bereits kleinere werden unverändert heruntergeladen</string>
+
+    <string name="settings_jellyfin_media_location_title">Medienspeicherort</string>
+    <string name="settings_jellyfin_media_location_internal">Interner Speicher</string>
+
+    <string name="settings_jellyfin_share_presence_title">Zeigen, was Sie gerade schauen</string>
+    <string name="settings_jellyfin_share_presence_subtitle_on">Den Titel, den Sie schauen, mit Freunden teilen</string>
+    <string name="settings_jellyfin_share_presence_subtitle_off">Medienaktivität vor Freunden verbergen</string>
+
+    <!-- ===== RomM server section ===== -->
+
+    <string name="settings_romm_section_server">SERVER</string>
+    <string name="settings_romm_section_library">BIBLIOTHEK</string>
+
+    <string name="settings_romm_server_title">Rom Manager</string>
+    <string name="settings_romm_server_checking">Verbindung wird geprüft…</string>
+    <string name="settings_romm_server_connected">Verbunden</string>
+    <string name="settings_romm_server_offline">%1$s (offline)</string>
+    <string name="settings_romm_server_unconfigured">Nicht konfiguriert</string>
+
+    <string name="settings_romm_sign_out_title">Abmelden</string>
+    <string name="settings_romm_sign_out_title_busy">Wird abgemeldet…</string>
+    <string name="settings_romm_sign_out_signed_in_as">Angemeldet als %1$s</string>
+    <string name="settings_romm_sign_out_subtitle">Dieses RomM-Konto vergessen</string>
+
+    <string name="settings_romm_accounts_title">Konten</string>
+    <string name="settings_romm_accounts_empty">Kein Konto verknüpft</string>
+    <string name="settings_romm_accounts_single">1 Konto</string>
+    <string name="settings_romm_accounts_multiple">%1$s von %2$d</string>
+    <string name="settings_romm_accounts_none_active">Kein aktives Konto</string>
+
+    <string name="settings_romm_sync_settings_title">Sync-Einstellungen</string>
+    <string name="settings_romm_sync_settings_subtitle">Filter und Medienoptionen</string>
+
+    <string name="settings_romm_sync_library_title">Bibliothek synchronisieren</string>
+    <string name="settings_romm_sync_platforms">%1$d/%2$d Plattformen</string>
+    <string name="settings_romm_sync_platforms_and_last">%1$s - %2$s</string>
+    <string name="settings_romm_sync_last">Zuletzt: %1$s</string>
+    <string name="settings_romm_sync_never">Nie synchronisiert</string>
+
+    <!-- ===== Accounts section ===== -->
+
+    <string name="settings_accounts_section_paired">VERKNÜPFTE KONTEN</string>
+    <string name="settings_accounts_active_badge">AKTIV</string>
+    <string name="settings_accounts_action_switch">Wechseln</string>
+    <string name="settings_accounts_action_remove">Entfernen</string>
+    <string name="settings_accounts_remove_blocked_only">Dies ist das einzige Konto auf diesem Gerät. Melden Sie sich bei RomM ab, um es zu verlassen.</string>
+    <string name="settings_accounts_remove_blocked_active">Wechseln Sie zu einem anderen Konto, bevor Sie dieses entfernen.</string>
+
+    <string name="settings_accounts_add_title">Konto hinzufügen</string>
+    <string name="settings_accounts_add_subtitle">Weiteren Nutzer auf %1$s verknüpfen</string>
+    <string name="settings_accounts_add_subtitle_locked">Zuerst unter RomM anmelden</string>
+
+    <string name="settings_accounts_needs_sync_saves">SPIELSTÄNDE WARTEN AUF SYNC</string>
+    <string name="settings_accounts_needs_sync_states">SAVESTATES WARTEN AUF SYNC</string>
+    <string name="settings_accounts_needs_sync_message">Diese wurden leer gelassen, weil die Kopie auf diesem Gerät bekanntermaßen älter als die des Servers war. Synchronisieren, um sie zu füllen.</string>
+
+    <string name="settings_accounts_empty_title">Noch kein RomM-Konto verknüpft</string>
+    <string name="settings_accounts_empty_message">Melden Sie sich unter RomM an. Sobald ein Konto verknüpft ist, können Sie hier weitere hinzufügen.</string>
+    <string name="settings_accounts_loading">Konten werden geladen…</string>
+
+    <string name="settings_accounts_switch_title">Konto wird gewechselt</string>
+    <string name="settings_accounts_switch_resuming">Unterbrochener Wechsel wird abgeschlossen</string>
+    <string name="settings_accounts_switch_working">Wird ausgeführt</string>
+    <string name="settings_accounts_switch_message">Spielstände werden archiviert und geprüft, bevor etwas entfernt wird. Lassen Sie diesen Bildschirm geöffnet.</string>
+
+    <string name="settings_accounts_pairing_title">Zum Hinzufügen eines Kontos scannen</string>
+    <string name="settings_accounts_pairing_message">Melden Sie sich auf Ihrem Telefon als der hinzuzufügende Nutzer bei RomM an, scannen Sie diesen Code und bestätigen Sie dieses Gerät. Argosy meldet sich nach Bestätigung als dieser Nutzer an.</string>
+    <string name="settings_accounts_pairing_retry">Erneut versuchen</string>
+    <string name="settings_accounts_pairing_cancel">Abbrechen</string>
+
+    <!-- ===== Built-in emulator section ===== -->
+
+    <string name="settings_builtin_enable_title">Integrierten Emulator aktivieren</string>
+    <string name="settings_builtin_enable_subtitle">LibRetro-Cores für unterstützte Plattformen verwenden</string>
+    <string name="settings_builtin_architecture_title">Architektur</string>
+
+    <string name="settings_builtin_video_title">A/V &amp; Leistung</string>
+    <string name="settings_builtin_video_subtitle">Shader, Anzeige, Leistung, Speichern</string>
+    <string name="settings_builtin_controls_title">Steuerung</string>
+    <string name="settings_builtin_controls_subtitle">Rumble, Eingabezuordnung, Hotkeys</string>
+
+    <string name="settings_builtin_cores_title">Cores verwalten</string>
+    <string name="settings_builtin_cores_subtitle">%1$d von %2$d Cores installiert</string>
+    <plurals name="settings_builtin_cores_updates_badge">
+        <item quantity="one">%d Update</item>
+        <item quantity="other">%d Updates</item>
+    </plurals>
+    <string name="settings_builtin_core_options_title">Core-Optionen</string>
+    <string name="settings_builtin_core_options_subtitle">Einstellungen und Overrides je Core</string>
+
+    <string name="settings_builtin_two_column_title">Zweispaltiges Menü</string>
+    <string name="settings_builtin_two_column_subtitle_on">In-Game-Menü nutzt zwei Spalten auf breiten Bildschirmen</string>
+    <string name="settings_builtin_two_column_subtitle_off">In-Game-Menü nutzt eine Spalte</string>
+
+    <string name="settings_builtin_section_hud">Statusleiste</string>
+    <string name="settings_builtin_hud_enabled_title">In-Game-Statusleiste</string>
+    <string name="settings_builtin_hud_enabled_subtitle_on">Zeigt eine kleine Statusleiste über dem Spiel</string>
+    <string name="settings_builtin_hud_enabled_subtitle_off">Keine Statusleiste beim Spielen</string>
+    <string name="settings_builtin_hud_corner_title">Ecke der Statusleiste</string>
+    <string name="settings_builtin_hud_battery_title">Akkustand anzeigen</string>
+    <string name="settings_builtin_hud_clock_title">Uhrzeit anzeigen</string>
+    <string name="settings_builtin_hud_playtime_title">Sitzungszeit anzeigen</string>
+    <string name="settings_builtin_hud_playtime_subtitle">Zeit seit Beginn dieser Sitzung</string>
+    <string name="settings_builtin_hud_fps_title">FPS anzeigen</string>
+    <string name="settings_builtin_hud_fps_subtitle">Angezeigte Bilder pro Sekunde; beim Vorspulen ausgeblendet</string>
+    <string name="settings_builtin_hud_last_save_title">Letzten Savestate anzeigen</string>
+    <string name="settings_builtin_hud_last_save_subtitle">Wie lange ein Savestate zuletzt geschrieben wurde</string>
+
+    <!-- ===== Built-in emulator: controls ===== -->
+
+    <string name="settings_builtin_controls_section_controllers">Controller</string>
+    <string name="settings_builtin_controls_section_sticks">Analogsticks</string>
+    <string name="settings_builtin_controls_section_hotkeys">Hotkeys</string>
+    <string name="settings_builtin_controls_section_speedrun">Speedrun-Timer</string>
+    <string name="settings_builtin_controls_section_touch">Touch-Steuerung</string>
+
+    <string name="settings_builtin_controls_platform_override">Plattform-Override</string>
+    <string name="settings_builtin_controls_platform_default">Plattform-Standard</string>
+    <string name="settings_builtin_controls_percent_value">%1$d%%</string>
+
+    <string name="settings_builtin_controls_rumble_title">Rumble</string>
+    <string name="settings_builtin_controls_rumble_subtitle">Vibrations-Feedback des Controllers aktivieren</string>
+    <string name="settings_builtin_controls_order_title">Controller-Reihenfolge</string>
+    <string name="settings_builtin_controls_order_subtitle">Spielerreihenfolge durch Drücken einer Taste an jedem Controller festlegen</string>
+    <plurals name="settings_builtin_controls_order_assigned">
+        <item quantity="one">%d Controller zugewiesen</item>
+        <item quantity="other">%d Controller zugewiesen</item>
+    </plurals>
+    <string name="settings_builtin_controls_mapping_title">Eingabezuordnung</string>
+    <string name="settings_builtin_controls_mapping_subtitle">Tasten für jeden Controller neu belegen</string>
+
+    <string name="settings_builtin_controls_analog_as_dpad_title">Linker Stick als D-Pad</string>
+    <string name="settings_builtin_controls_analog_as_dpad_subtitle">Linken Analogstick auf D-Pad-Eingaben abbilden</string>
+    <string name="settings_builtin_controls_dpad_as_analog_title">D-Pad als linker Stick</string>
+    <string name="settings_builtin_controls_dpad_as_analog_subtitle">D-Pad auf Eingaben des linken Analogsticks abbilden</string>
+
+    <string name="settings_builtin_controls_hotkeys_title">Hotkeys</string>
+    <string name="settings_builtin_controls_hotkeys_subtitle">Kurzbefehle für Menü, Vorspulen, Rewind konfigurieren</string>
+    <string name="settings_builtin_controls_limit_hotkeys_title">Hotkeys auf Spieler 1 beschränken</string>
+    <string name="settings_builtin_controls_limit_hotkeys_subtitle">Nur der Controller von Spieler 1 kann Hotkeys auslösen</string>
+    <string name="settings_builtin_controls_toggle_ff_title">Vorspulen umschalten</string>
+    <string name="settings_builtin_controls_toggle_ff_subtitle">Einmal drücken zum Starten, erneut zum Stoppen (aus = halten zum Vorspulen)</string>
+    <string name="settings_builtin_controls_ff_pitch_title">Tonhöhe beibehalten</string>
+    <string name="settings_builtin_controls_ff_pitch_subtitle">Tonhöhe beim Vorspulen konstant halten. Benötigt zusätzliche CPU; standardmäßig aus</string>
+    <string name="settings_builtin_controls_reset_all">Alle auf Global zurücksetzen</string>
+
+    <string name="settings_speedrun_start_on_reset_title">Timer bei Reset starten</string>
+    <string name="settings_speedrun_start_on_reset_subtitle">Zurücksetzen des Spiels startet einen neuen zeitgestoppten Versuch (aus = manueller Start per Split-Hotkey)</string>
+    <string name="settings_speedrun_panel_side_title">Split-Panel links</string>
+    <string name="settings_speedrun_panel_side_subtitle">Split-Panel am linken Rand anzeigen (aus = rechts)</string>
+    <string name="settings_speedrun_panel_width_title">Breite des Split-Panels</string>
+    <string name="settings_speedrun_panel_width_subtitle">Panel-Text skaliert automatisch</string>
+
+    <string name="settings_touch_enabled_title">Touch-Steuerung ohne Gamepad anzeigen</string>
+    <string name="settings_touch_enabled_subtitle">Bildschirmüberlagerung anzeigen, wenn kein Controller verbunden ist</string>
+    <string name="settings_touch_current_percent">Aktuell %1$d%%</string>
+    <string name="settings_touch_opacity_landscape_title">Deckkraft im Querformat</string>
+    <string name="settings_touch_opacity_portrait_title">Deckkraft im Hochformat</string>
+    <string name="settings_touch_size_title">Tastengröße</string>
+    <string name="settings_touch_haptic_title">Haptisches Feedback</string>
+    <string name="settings_touch_haptic_subtitle">Bei Berührung kurz vibrieren</string>
+    <string name="settings_touch_fade_title">Bei Inaktivität ausblenden</string>
+    <string name="settings_touch_fade_subtitle">Steuerung nach 5 s ohne Eingabe abdunkeln</string>
+    <string name="settings_touch_swap_handed_title">Links-/Rechts-Eingaben tauschen</string>
+    <string name="settings_touch_swap_handed_subtitle">Layout horizontal spiegeln</string>
+    <string name="settings_touch_lock_orientation_title">Ausrichtung im Spiel sperren</string>
+    <string name="settings_touch_lock_orientation_subtitle">Während des Spielens nicht automatisch drehen</string>
+    <string name="settings_touch_mirror_title">Steuerung bei 180°-Drehung spiegeln</string>
+    <string name="settings_touch_mirror_subtitle">Steuerung bei gedrehtem Telefon auf derselben physischen Seite halten</string>
+    <string name="settings_touch_coloured_faces_title">Farbige PSX-Tasten</string>
+    <string name="settings_touch_coloured_faces_subtitle">△ □ ○ ✕ in ihren klassischen Farben einfärben</string>
+    <string name="settings_touch_genesis6_title">Genesis-6-Tasten-Modus</string>
+    <string name="settings_touch_genesis6_subtitle">Alle sechs Tasten für Genesis / Mega Drive anzeigen</string>
+    <string name="settings_touch_customize_title">Layouts anpassen…</string>
+    <string name="settings_touch_customize_subtitle">Touch-Steuerung je Plattform ziehen und skalieren</string>
+
+    <!-- ===== Box art section ===== -->
+
+    <string name="settings_box_art_section_styling">Stil</string>
+    <string name="settings_box_art_section_icon">Systemsymbol</string>
+    <string name="settings_box_art_section_outer">Äußerer Effekt</string>
+    <string name="settings_box_art_section_inner">Innerer Effekt</string>
+    <string name="settings_box_art_section_gradient">Verlaufsfarben</string>
+
+    <string name="settings_box_art_shape_title">Form</string>
+    <string name="settings_box_art_corner_radius_title">Eckenradius</string>
+    <string name="settings_box_art_corner_radius_none">Keine</string>
+    <string name="settings_box_art_corner_radius_small">Klein</string>
+    <string name="settings_box_art_corner_radius_medium">Mittel</string>
+    <string name="settings_box_art_corner_radius_large">Groß</string>
+    <string name="settings_box_art_corner_radius_xl">XL</string>
+
+    <string name="settings_box_art_border_thickness_title">Rahmenstärke</string>
+    <string name="settings_box_art_border_thickness_none">Keine</string>
+    <string name="settings_box_art_border_thickness_thin">Dünn</string>
+    <string name="settings_box_art_border_thickness_medium">Mittel</string>
+    <string name="settings_box_art_border_thickness_thick">Dick</string>
+
+    <string name="settings_box_art_border_style_title">Rahmenstil</string>
+    <string name="settings_box_art_border_style_solid">Durchgezogen</string>
+    <string name="settings_box_art_border_style_glass">Glas</string>
+    <string name="settings_box_art_border_style_gradient">Verlauf</string>
+
+    <string name="settings_box_art_glass_tint_title">Glaseinfärbung</string>
+    <string name="settings_box_art_glass_tint_off">Aus</string>
+    <string name="settings_box_art_glass_tint_5">5%</string>
+    <string name="settings_box_art_glass_tint_10">10%</string>
+    <string name="settings_box_art_glass_tint_15">15%</string>
+    <string name="settings_box_art_glass_tint_20">20%</string>
+    <string name="settings_box_art_glass_tint_25">25%</string>
+
+    <string name="settings_box_art_gradient_preset_title">Farbvorlage</string>
+    <string name="settings_box_art_gradient_advanced_title">Erweitert</string>
+
+    <string name="settings_box_art_indicator_style_title">Stil</string>
+    <string name="settings_box_art_indicator_style_off">Aus</string>
+    <string name="settings_box_art_indicator_style_tab">Reiter</string>
+    <string name="settings_box_art_indicator_style_spine">Buchrücken</string>
+    <string name="settings_box_art_indicator_content_title">Anzeige</string>
+    <string name="settings_box_art_indicator_content_name">Name</string>
+    <string name="settings_box_art_indicator_content_icon">Symbol</string>
+    <string name="settings_box_art_indicator_content_both">Name + Symbol</string>
+
+    <string name="settings_box_art_icon_position_title">Ecke</string>
+    <string name="settings_box_art_icon_position_title_spine">Buchrücken-Ecke</string>
+    <string name="settings_box_art_icon_position_title_tab">Reiter-Ecke</string>
+    <string name="settings_box_art_icon_position_off">Aus</string>
+    <string name="settings_box_art_icon_position_top_left">Oben links</string>
+    <string name="settings_box_art_icon_position_top_right">Oben rechts</string>
+    <string name="settings_box_art_icon_position_bottom_left">Unten links</string>
+    <string name="settings_box_art_icon_position_bottom_right">Unten rechts</string>
+    <string name="settings_box_art_icon_padding_title">Abstand</string>
+    <string name="settings_box_art_icon_padding_small">Klein</string>
+    <string name="settings_box_art_icon_padding_medium">Mittel</string>
+    <string name="settings_box_art_icon_padding_large">Groß</string>
+
+    <string name="settings_box_art_outer_effect_title">Effekt</string>
+    <string name="settings_box_art_outer_effect_off">Aus</string>
+    <string name="settings_box_art_outer_effect_glow">Leuchten</string>
+    <string name="settings_box_art_outer_effect_shadow">Schatten</string>
+    <string name="settings_box_art_outer_effect_shine">Glanz</string>
+    <string name="settings_box_art_outer_thickness_title">Stärke</string>
+    <string name="settings_box_art_outer_thickness_thin">Dünn</string>
+    <string name="settings_box_art_outer_thickness_medium">Mittel</string>
+    <string name="settings_box_art_outer_thickness_thick">Dick</string>
+
+    <string name="settings_box_art_glow_strength_title">Intensität</string>
+    <string name="settings_box_art_glow_strength_off">Aus</string>
+    <string name="settings_box_art_glow_strength_low">Niedrig</string>
+    <string name="settings_box_art_glow_strength_medium">Mittel</string>
+    <string name="settings_box_art_glow_strength_high">Hoch</string>
+    <string name="settings_box_art_glow_strength_shadow_small">Schatten S</string>
+    <string name="settings_box_art_glow_strength_shadow_large">Schatten L</string>
+
+    <string name="settings_box_art_glow_color_title">Farbe</string>
+    <string name="settings_box_art_glow_color_auto">Auto</string>
+    <string name="settings_box_art_glow_color_accent">Akzent</string>
+    <string name="settings_box_art_glow_color_theme_gradient">Design-Verlauf</string>
+    <string name="settings_box_art_glow_color_cover">Cover</string>
+
+    <string name="settings_box_art_inner_effect_title">Effekt</string>
+    <string name="settings_box_art_inner_effect_off">Aus</string>
+    <string name="settings_box_art_inner_effect_glow">Leuchten</string>
+    <string name="settings_box_art_inner_effect_shadow">Schatten</string>
+    <string name="settings_box_art_inner_effect_glass">Glas</string>
+    <string name="settings_box_art_inner_effect_shine">Glanz</string>
+    <string name="settings_box_art_inner_thickness_title">Stärke</string>
+    <string name="settings_box_art_inner_thickness_thin">Dünn</string>
+    <string name="settings_box_art_inner_thickness_medium">Mittel</string>
+    <string name="settings_box_art_inner_thickness_thick">Dick</string>
+
+    <string name="settings_box_art_sample_grid_title">Abtastraster</string>
+    <string name="settings_box_art_sample_radius_title">Abtastradius</string>
+    <string name="settings_box_art_min_saturation_title">Min. Sättigung</string>
+    <string name="settings_box_art_min_brightness_title">Min. Helligkeit</string>
+    <string name="settings_box_art_hue_distance_title">Farbtonabstand</string>
+    <string name="settings_box_art_saturation_boost_title">Sättigungsverstärkung</string>
+    <string name="settings_box_art_brightness_clamp_title">Helligkeitsbegrenzung</string>
+    <string name="settings_box_art_gradient_diagnostics">%1$dms | %2$d Samples | %3$d Gruppen</string>
+
+    <!-- ===== Platforms list ===== -->
+
+    <string name="settings_emulators_section_active">Aktive Plattformen</string>
+    <string name="settings_emulators_section_disabled">Deaktivierte Plattformen</string>
+    <string name="settings_emulators_rail_platforms">Plattformen</string>
+
+    <string name="settings_emulators_check_updates_title">Nach Updates suchen</string>
+    <string name="settings_emulators_check_updates_subtitle">Nach Emulator-Updates suchen</string>
+    <plurals name="settings_emulators_check_updates_available">
+        <item quantity="one">%d Update verfügbar</item>
+        <item quantity="other">%d Updates verfügbar</item>
+    </plurals>
+
+    <string name="settings_emulators_platform_disabled">Deaktiviert</string>
+    <plurals name="settings_emulators_platform_games">
+        <item quantity="one">%d Spiel</item>
+        <item quantity="other">%d Spiele</item>
+    </plurals>
+    <string name="settings_emulators_platform_no_games">Keine Spiele</string>
+    <string name="settings_emulators_platform_unconfigured">Nicht konfiguriert</string>
+    <string name="settings_emulators_platform_update_badge">Update</string>
+
+    <!-- ===== One platform's settings ===== -->
+
+    <string name="settings_platform_section_emulator">Emulator</string>
+    <string name="settings_platform_section_platform">Plattform</string>
+    <string name="settings_platform_section_bios">BIOS</string>
+    <string name="settings_platform_section_sync">Speicher &amp; Sync</string>
+    <string name="settings_platform_section_downloads">Download-Standards</string>
+
+    <string name="settings_platform_none_selected">Keine Plattform ausgewählt</string>
+
+    <string name="settings_platform_emulator_change">Emulator ändern</string>
+    <string name="settings_platform_emulator_select_app">App auswählen</string>
+    <string name="settings_platform_emulator_not_installed">Nicht installiert</string>
+    <string name="settings_platform_emulator_update_available">Update verfügbar</string>
+
+    <string name="settings_platform_core_title">Core</string>
+    <string name="settings_platform_core_default">Standard</string>
+    <string name="settings_platform_core_netplay_tag">Netplay</string>
+    <string name="settings_platform_extension_title">Dateiendung</string>
+    <string name="settings_platform_extension_default">Standard</string>
+    <string name="settings_platform_display_target_title">Zielbildschirm</string>
+    <string name="settings_platform_legacy_mode_title">Legacy-Modus</string>
+    <string name="settings_platform_legacy_mode_subtitle">file://-URI für Drastic verwenden</string>
+    <string name="settings_platform_launch_args_title">Startparameter</string>
+    <string name="settings_platform_launch_args_subtitle">Anpassen, wie Argosy diesen Emulator startet</string>
+    <string name="settings_platform_builtin_video_title">Integrierte A/V &amp; Leistung</string>
+    <string name="settings_platform_builtin_video_subtitle">Overrides für Anzeige, Leistung und Speichern</string>
+    <string name="settings_platform_builtin_controls_title">Integrierte Steuerung</string>
+    <string name="settings_platform_builtin_controls_subtitle">Overrides für Rumble, Stick-Zuordnung</string>
+    <string name="settings_platform_core_options_title">Core-Optionen</string>
+    <string name="settings_platform_core_options_subtitle">Core-Einstellungen für diese Plattform</string>
+
+    <string name="settings_platform_stat_total_games">Spiele in der Bibliothek</string>
+    <string name="settings_platform_stat_downloaded">Heruntergeladen</string>
+    <string name="settings_platform_stat_favorites">Favoriten</string>
+    <string name="settings_platform_stat_play_time">Spielzeit</string>
+    <string name="settings_platform_stat_sync">Sync</string>
+    <string name="settings_platform_stat_sync_progress">Sync %1$d/%2$d</string>
+    <string name="settings_platform_stat_sync_busy">Wird synchronisiert…</string>
+
+    <string name="settings_platform_package_path_title">Paketpfad</string>
+    <string name="settings_platform_package_path_accessible">Zugänglich</string>
+    <string name="settings_platform_package_path_blocked">Blockiert</string>
+    <string name="settings_platform_package_path_checking">Wird geprüft…</string>
+
+    <string name="settings_platform_bios_status_title">Status</string>
+    <string name="settings_platform_bios_status_all">Alle heruntergeladen</string>
+    <string name="settings_platform_bios_status_partial">%1$d von %2$d heruntergeladen</string>
+    <string name="settings_platform_bios_status_none">Nicht heruntergeladen</string>
+
+    <string name="settings_platform_clear_art_title">Zwischengespeicherte Grafik löschen</string>
+    <string name="settings_platform_clear_art_subtitle">Heruntergeladene Cover und Screenshots für diese Plattform löschen, damit sie erneut geladen werden. Selbst gewählte Cover bleiben erhalten</string>
+    <string name="settings_platform_move_earlier_title">Nach vorne verschieben</string>
+    <string name="settings_platform_move_earlier_subtitle">Diese Plattform überall, wo Plattformen aufgelistet werden, weiter vorne anzeigen</string>
+    <string name="settings_platform_move_later_title">Nach hinten verschieben</string>
+    <string name="settings_platform_move_later_subtitle">Diese Plattform überall, wo Plattformen aufgelistet werden, weiter hinten anzeigen</string>
+    <string name="settings_platform_scan_busy">Wird gescannt…</string>
+    <string name="settings_platform_scan_files_title">Nach Dateien suchen</string>
+    <string name="settings_platform_scan_files_subtitle">Nach neuen oder fehlenden ROM-Dateien suchen</string>
+    <string name="settings_platform_scan_apps_title">Nach Spielen suchen</string>
+    <string name="settings_platform_scan_apps_subtitle">Installierte Apps hinzufügen, die sich als Spiele ausweisen</string>
+
+    <string name="settings_platform_path_unconfigured">Nicht konfiguriert</string>
+    <string name="settings_platform_path_custom_tag">(benutzerdefiniert)</string>
+    <string name="settings_platform_rom_path_title">ROM-Pfad</string>
+    <string name="settings_platform_save_path_title">Spielstand-Pfad</string>
+    <string name="settings_platform_save_path_blocked">Zugriff blockiert -- eigenen Spielstand-Pfad festlegen</string>
+    <string name="settings_platform_state_path_title">Savestate-Pfad</string>
+    <string name="settings_platform_retroarch_config_loaded">Aus %1$s</string>
+    <string name="settings_platform_retroarch_config_unreadable">%1$s konnte nicht gelesen werden -- den von RetroArch verwendeten Ordner festlegen</string>
+    <string name="settings_platform_retroarch_config_missing">Keine RetroArch-Konfiguration gefunden -- den von RetroArch verwendeten Ordner festlegen</string>
+
+    <string name="settings_platform_memcard_title">Memory Card</string>
+    <string name="settings_platform_memcard_override_value">Nutzt Spielstand-Pfad-Override</string>
+    <string name="settings_platform_memcard_override_subtitle">Memory Card durch eigenen Spielstand-Pfad festgelegt</string>
+    <string name="settings_platform_memcard_none_value">Keine gefunden</string>
+    <string name="settings_platform_memcard_none_subtitle">Keine Ordner-Memory-Cards gefunden -- eine in %1$s konvertieren, um Spielstand-Sync zu aktivieren</string>
+    <string name="settings_platform_memcard_this_emulator">diesem Emulator</string>
+    <string name="settings_platform_memcard_auto_value">Auto</string>
+    <string name="settings_platform_memcard_unselected_value">Nicht ausgewählt</string>
+    <string name="settings_platform_memcard_unselected_subtitle">Mehrere Memory Cards erkannt -- eine auswählen, um Spielstand-Sync zu aktivieren</string>
+
+    <string name="settings_platform_sync_toggle_title">Sync aktiviert</string>
+    <string name="settings_platform_sync_toggle_subtitle">Diese Plattform in den Bibliotheks-Sync einbeziehen</string>
+    <string name="settings_platform_combine_content_title">Inhalte zusammenführen</string>
+    <string name="settings_platform_combine_content_subtitle">Alle Spiele in einem Ordner, alle Updates und DLC in extcontent</string>
+    <string name="settings_platform_sync_now_title">Jetzt synchronisieren</string>
+    <string name="settings_platform_sync_now_busy">Sync läuft…</string>
+    <string name="settings_platform_sync_now_subtitle">Diese Plattform mit RomM synchronisieren</string>
+
+    <string name="settings_platform_download_defaults_title">Download-Standards</string>
+    <string name="settings_platform_download_defaults_subtitle">Vorausgewählte Dateitypen</string>
+    <plurals name="settings_platform_download_defaults_overrides">
+        <item quantity="one">%d Plattform-Override</item>
+        <item quantity="other">%d Plattform-Overrides</item>
+    </plurals>
+    <string name="settings_platform_download_defaults_modal_title">DOWNLOAD-STANDARDS</string>
+    <string name="settings_platform_download_defaults_modal_subtitle">Beim Herunterladen vorausgewählte Dateitypen</string>
+    <string name="settings_platform_download_default_inherited">Von global übernommen</string>
+    <string name="settings_platform_download_default_override">Plattform-Override</string>
+    <string name="settings_platform_download_defaults_reset_title">Auf Global zurücksetzen</string>
+    <string name="settings_platform_download_defaults_reset_subtitle">Alle Plattform-Overrides löschen</string>
+
+    <string name="settings_platform_remove_files_title">Lokale Dateien entfernen</string>
+    <plurals name="settings_platform_remove_files_subtitle">
+        <item quantity="one">%d heruntergeladene Datei</item>
+        <item quantity="other">%d heruntergeladene Dateien</item>
+    </plurals>
+    <string name="settings_platform_remove_confirm_title">Lokale Dateien entfernen</string>
+    <plurals name="settings_platform_remove_confirm_message">
+        <item quantity="one">%1$d ROM-Datei für %2$s löschen? Spiele bleiben in Ihrer Bibliothek, müssen aber zum Spielen erneut heruntergeladen werden.</item>
+        <item quantity="other">%1$d ROM-Dateien für %2$s löschen? Spiele bleiben in Ihrer Bibliothek, müssen aber zum Spielen erneut heruntergeladen werden.</item>
+    </plurals>
+    <string name="settings_platform_remove_confirm_action">Löschen</string>
+
+    <string name="settings_platform_combine_restore_title">Spielordner wiederherstellen</string>
+    <plurals name="settings_platform_combine_restore_message">
+        <item quantity="one">Inhalte zusammenführen ist aus. %d Spiel mit Updates oder DLC zurück in seinen eigenen Ordner verschieben? Alles andere bleibt, wo es ist.</item>
+        <item quantity="other">Inhalte zusammenführen ist aus. %d Spiele mit Updates oder DLC zurück in ihre eigenen Ordner verschieben? Alles andere bleibt, wo es ist.</item>
+    </plurals>
+    <string name="settings_platform_combine_restore_action">Verschieben</string>
+
+    <string name="settings_platform_bios_download_title">Alle herunterladen</string>
+    <string name="settings_platform_bios_downloading_file">%1$s wird heruntergeladen…</string>
+    <string name="settings_platform_bios_downloading">Wird heruntergeladen…</string>
+    <plurals name="settings_platform_bios_download_missing">
+        <item quantity="one">%d Datei</item>
+        <item quantity="other">%d Dateien</item>
+    </plurals>
+    <string name="settings_platform_bios_install_title">Auf Emulator installieren</string>
+    <string name="settings_platform_bios_install_subtitle">BIOS nach %1$s kopieren</string>
+    <string name="settings_platform_bios_install_fallback">Emulator</string>
+    <string name="settings_platform_bios_copy_title">Kopieren nach…</string>
+    <string name="settings_platform_bios_copy_subtitle">BIOS-Dateien in einen anderen Ordner kopieren</string>
+
+    <!-- ===== GameNative folders panel ===== -->
+
+    <string name="settings_gamenative_folders_title">GameNative-Ordner</string>
+    <string name="settings_gamenative_folders_subtitle">Weisen Sie jedem Store den Ordner zu, in den GameNative seine Installationen exportiert. Steam-Markierungen kennzeichnen nur besessene Spiele als installiert; die anderen Stores fügen ihre Spiele hinzu und entfernen sie entsprechend.</string>
+    <string name="settings_gamenative_folders_hint_set">Festlegen / Löschen</string>
+    <string name="settings_gamenative_folders_hint_select">Auswählen</string>
+    <string name="settings_gamenative_folders_hint_back">Zurück</string>
+    <string name="settings_gamenative_folders_action_set">Festlegen</string>
+    <string name="settings_gamenative_folders_action_change">Ändern</string>
+    <string name="settings_gamenative_folders_action_clear">Löschen</string>
+
+    <!-- ===== Controller grip panel ===== -->
+
+    <string name="settings_grip_modal_title">Controller-Griff</string>
+    <string name="settings_grip_modal_subtitle">Schiebt die Oberfläche aus dem vom Griff verdeckten Bereich</string>
+    <string name="settings_grip_modal_hint_adjust">Anpassen</string>
+    <string name="settings_grip_modal_hint_back">Zurück</string>
+    <string name="settings_grip_modal_mode_title">Modus</string>
+    <string name="settings_grip_modal_mode_subtitle_off">Oberfläche nie verschieben</string>
+    <string name="settings_grip_modal_mode_subtitle_on">Oberfläche im Hochformat immer nach oben verschieben</string>
+    <string name="settings_grip_modal_mode_subtitle_auto">Oberfläche verschieben, wenn ein gewählter Controller verbunden ist</string>
+    <string name="settings_grip_modal_controllers_title">Controller</string>
+    <string name="settings_grip_modal_reserved_height_title">Reservierte Höhe</string>
+
+    <!-- ===== Library view section (Settings > Interface > Library) ===== -->
+
+    <string name="settings_library_section_layout">Layout</string>
+    <string name="settings_library_section_defaults">Standards</string>
+
+    <string name="settings_library_grid_density_title">Rasterdichte</string>
+    <string name="settings_library_grid_density_compact">Kompakt</string>
+    <string name="settings_library_grid_density_normal">Normal</string>
+    <string name="settings_library_grid_density_spacious">Geräumig</string>
+
+    <string name="settings_library_default_sort_title">Standardsortierung</string>
+    <string name="settings_library_default_sort_value_ascending">%1$s ^</string>
+    <string name="settings_library_default_sort_value_descending">%1$s v</string>
+
+    <string name="settings_library_installed_first_title">Installierte zuerst</string>
+    <string name="settings_library_installed_first_subtitle">Heruntergeladene Spiele vor den anderen gruppieren</string>
+    <string name="settings_library_favorites_first_title">Favoriten zuerst</string>
+    <string name="settings_library_favorites_first_subtitle">Ihre Favoriten vor den anderen gruppieren</string>
+
+    <string name="settings_library_default_platform_title">Standardplattform</string>
+    <string name="settings_library_default_source_title">Standardfilter</string>
+
+    <!-- ===== Hotkeys modal (Settings > components > HotkeysModal) ===== -->
+
+    <string name="settings_hotkeys_title">Hotkeys</string>
+    <string name="settings_hotkeys_subtitle_default">Tastenkombinationen konfigurieren</string>
+    <string name="settings_hotkeys_subtitle_platform_only">Bearbeitet nur %1$s</string>
+    <string name="settings_hotkeys_subtitle_all">Bearbeitet alle Systeme</string>
+    <string name="settings_hotkeys_hint_record">Aufnehmen</string>
+    <string name="settings_hotkeys_hint_back">Zurück</string>
+    <string name="settings_hotkeys_hint_hold_delay">Halteverzögerung</string>
+    <string name="settings_hotkeys_hint_clear">Löschen</string>
+    <string name="settings_hotkeys_section_system">System-Hotkeys</string>
+    <string name="settings_hotkeys_section_core">Core-Hotkeys</string>
+    <string name="settings_hotkeys_section_core_named">Core-Hotkeys - %1$s</string>
+    <string name="settings_hotkeys_core_empty">-- keine Einstellungen verfügbar --</string>
+    <string name="settings_hotkeys_scope_only_for">Nur für %1$s</string>
+    <string name="settings_hotkeys_scope_overrides">Überschreibt die geteilten Hotkeys</string>
+    <string name="settings_hotkeys_scope_using_shared">Nutzt die geteilten Hotkeys</string>
+    <string name="settings_hotkeys_icon_console_desc">Wird von der Konsole auf diesem System verwendet</string>
+    <string name="settings_hotkeys_icon_hold_delay_desc">Halteverzögerung</string>
+    <string name="settings_hotkeys_hold_delay_seconds">%1$ds</string>
+    <string name="settings_hotkeys_combo_inherited">Übernommen</string>
+    <string name="settings_hotkeys_combo_inherited_suffix">%1$s · übernommen</string>
+    <string name="settings_hotkeys_recording_title">Hotkey wird aufgenommen</string>
+    <string name="settings_hotkeys_hint_cancel">Abbrechen</string>
+    <string name="settings_hotkeys_recording_saved">Gespeichert!</string>
+    <string name="settings_hotkeys_recording_prompt">1-3 Tasten halten…</string>
+    <string name="settings_hotkeys_recording_holding">Weiter halten…</string>
+    <string name="settings_hotkeys_action_in_game_menu">In-Game-Menü</string>
+    <string name="settings_hotkeys_action_reset_game">Spiel zurücksetzen</string>
+    <string name="settings_hotkeys_action_quick_save">Schnellspeichern</string>
+    <string name="settings_hotkeys_action_quick_load">Schnellladen</string>
+    <string name="settings_hotkeys_action_fast_forward">Vorspulen</string>
+    <string name="settings_hotkeys_action_rewind">Rewind</string>
+    <string name="settings_hotkeys_action_quick_suspend">Schnell-Suspend</string>
+    <string name="settings_hotkeys_action_cycle_core_option">Core-Option durchschalten</string>
+    <string name="settings_hotkeys_action_core_input">Core-Eingabe</string>
+    <string name="settings_hotkeys_action_split">Split</string>
+    <string name="settings_hotkeys_action_undo_split">Split rückgängig</string>
+    <string name="settings_hotkeys_action_skip_split">Split überspringen</string>
+    <string name="settings_hotkeys_action_toggle_timer">Timer starten/pausieren</string>
+    <string name="settings_hotkeys_action_reset_timer">Timer zurücksetzen</string>
+
+    <!-- ===== Input mapping modal (Settings > components > InputMappingModal) ===== -->
+
+    <string name="settings_input_mapping_title">Eingabezuordnung</string>
+    <string name="settings_input_mapping_subtitle">Controller zum Konfigurieren auswählen</string>
+    <string name="settings_input_mapping_controller_select_hint">Auswählen</string>
+    <string name="settings_input_mapping_controller_back_hint">Zurück</string>
+    <string name="settings_input_mapping_empty">Keine Controller verbunden</string>
+    <string name="settings_input_mapping_unknown_layout">Unbekanntes Layout</string>
+    <string name="settings_input_mapping_platform_remap_hint">Neu belegen</string>
+    <string name="settings_input_mapping_platform_add_hint">Hinzufügen</string>
+    <string name="settings_input_mapping_platform_clear_hint">Löschen</string>
+    <string name="settings_input_mapping_platform_back_hint">Zurück</string>
+    <string name="settings_input_mapping_prev_platform_desc">Vorherige Plattform</string>
+    <string name="settings_input_mapping_next_platform_desc">Nächste Plattform</string>
+    <string name="settings_input_mapping_platform_label">Plattform: %1$s</string>
+    <string name="settings_input_mapping_not_bound">Nicht belegt</string>
+    <string name="settings_input_mapping_recording_back_hint">Halten zum Abbrechen</string>
+    <string name="settings_input_mapping_recording_title">Taste drücken</string>
+    <string name="settings_input_mapping_recording_subtitle">Eingabe für %1$s wird aufgenommen</string>
+    <string name="settings_input_mapping_recording_cancelling">Wird abgebrochen…</string>
+    <string name="settings_input_mapping_recording_waiting">Warten auf Eingabe…</string>
+
+    <!-- ===== Launch args modal (Settings > components > LaunchArgsModal) ===== -->
+
+    <string name="settings_launch_args_title">Startparameter - %1$s / %2$s</string>
+    <string name="settings_launch_args_hint_change">Ändern</string>
+    <string name="settings_launch_args_hint_reset_field">Feld zurücksetzen</string>
+    <string name="settings_launch_args_hint_reset_all">Alle zurücksetzen</string>
+    <string name="settings_launch_args_hint_back">Zurück</string>
+    <string name="settings_launch_args_intro">Überschreiben Sie, wie Argosy diesen Emulator auf dieser Plattform startet. Resume-Modus-Flags sind unabhängig von Overrides fest.</string>
+    <string name="settings_launch_args_data_uri_label">Data-URI</string>
+    <string name="settings_launch_args_data_uri_subtitle">Setzt Intent.data (`-d` in der Shell). Wird von ACTION_VIEW-Emulatoren verwendet, die die ROM aus der Data-URI des Intents lesen.</string>
+    <string name="settings_launch_args_extras_label">Extras</string>
+    <string name="settings_launch_args_extras_subtitle">Schreibt jedes pfadartige Extra (z. B. bootPath, ROM, AutoStartFile) in dieses Format um. `None` entfernt sie.</string>
+    <string name="settings_launch_args_clip_data_uri_label">ClipData-URI</string>
+    <string name="settings_launch_args_clip_data_uri_subtitle">Hängt die ROM-URI an Intent.clipData an. Erforderlich, damit FLAG_GRANT_READ_URI_PERMISSION den Zugriff tatsächlich an den Empfänger delegiert.</string>
+    <string name="settings_launch_args_locked_binding_subtitle">Für diesen Emulator fest -- kein Dateipfad.</string>
+    <string name="settings_launch_args_flag_on">An</string>
+    <string name="settings_launch_args_flag_off">Aus</string>
+    <string name="settings_launch_args_mime_type_label">MIME-Typ</string>
+    <string name="settings_launch_args_mime_type_default">Standard (%1$s)</string>
+    <string name="settings_launch_args_mime_type_subtitle">MIME-Typ, der mit der ROM-URI gesendet wird. Die meisten Emulatoren ignorieren dies und filtern nach Dateiendung.</string>
+    <string name="settings_launch_args_custom_extras_label">Eigene Extras</string>
+    <string name="settings_launch_args_custom_extras_none">Keine</string>
+    <string name="settings_launch_args_custom_extras_subtitle">Zusätzliche Intent-Werte, die beim Start angehängt werden. Format: `-e KEY VALUE` für Strings, `--ez KEY true` für Booleans. Durch Leerzeichen getrennt.</string>
+    <string name="settings_launch_args_custom_extras_title">Eigene Extras</string>
+    <string name="settings_launch_args_custom_extras_save_hint">Speichern</string>
+    <string name="settings_launch_args_custom_extras_cancel_hint">Abbrechen</string>
+    <string name="settings_launch_args_custom_extras_help">Zusätzliche Intent-Werte, durch Leerzeichen getrennt. Verwenden Sie `-e KEY VALUE` für einen String oder `--ez KEY true` für einen Boolean.</string>
+    <string name="settings_launch_args_custom_extras_placeholder">-e KEY value</string>
+    <string name="settings_launch_args_custom_badge">(benutzerdefiniert)</string>
+    <string name="settings_launch_args_binding_default">Standard (%1$s)</string>
+    <string name="settings_launch_args_binding_none">Keine</string>
+    <string name="settings_launch_args_binding_absolute_path">Absoluter Pfad</string>
+    <string name="settings_launch_args_binding_file_provider">FileProvider-URI</string>
+    <string name="settings_launch_args_binding_document_uri">Document-URI (SAF)</string>
+    <string name="settings_launch_args_flag_new_task_subtitle">Startet in einer separaten Android-Aufgabe. Von fast jedem Emulator benötigt.</string>
+    <string name="settings_launch_args_flag_clear_task_subtitle">Löscht jede vorhandene Instanz des Emulators vor dem Start.</string>
+    <string name="settings_launch_args_flag_no_history_subtitle">Blendet den Emulator aus der Liste der zuletzt verwendeten Apps aus.</string>
+    <string name="settings_launch_args_flag_single_top_subtitle">Nutzt eine vorhandene Emulator-Instanz erneut, wenn sie oben in ihrer Aufgabe liegt.</string>
+    <string name="settings_launch_args_flag_grant_uri_subtitle">Delegiert Lesezugriff auf die ROM-URI. Erforderlich bei content://-URIs.</string>
+    <string name="settings_launch_args_flag_clear_top_subtitle">Löscht Aktivitäten über dem Ziel, wenn eine Aufgabe wiederverwendet wird.</string>
+
+    <!-- ===== Sync filters modal (Settings > components > SyncFiltersModal) ===== -->
+
+    <string name="settings_sync_filters_title">SYNC-FILTER</string>
+    <string name="settings_sync_filters_subtitle">Festlegen, welche Spiele beim Bibliotheks-Sync einbezogen werden</string>
+    <string name="settings_sync_filters_regions_none">Keine ausgewählt</string>
+    <string name="settings_sync_filters_regions_title">Regionen</string>
+    <string name="settings_sync_filters_region_mode_title">Regionsmodus</string>
+    <string name="settings_sync_filters_exclude_beta_title">Beta ausschließen</string>
+    <string name="settings_sync_filters_exclude_prototype_title">Prototyp ausschließen</string>
+    <string name="settings_sync_filters_exclude_demo_title">Demo ausschließen</string>
+    <string name="settings_sync_filters_exclude_hack_title">ROM-Hacks ausschließen</string>
+    <string name="settings_sync_filters_remove_orphans_title">Verwaiste Einträge entfernen</string>
+    <string name="settings_sync_filters_remove_orphans_subtitle">Spiele löschen, die nicht mehr auf dem Server sind</string>
+    <string name="settings_sync_filters_hint_navigate">Navigieren</string>
+    <string name="settings_sync_filters_hint_toggle">Umschalten</string>
+    <string name="settings_sync_filters_hint_close">Schließen</string>
+    <string name="settings_sync_filters_region_mode_include">Ausgewählte einschließen</string>
+    <string name="settings_sync_filters_region_mode_exclude">Ausgewählte ausschließen</string>
+
+    <!-- ===== Platform filters modal (Settings > components > PlatformFiltersModal) ===== -->
+
+    <string name="settings_platform_filters_title">PLATTFORMFILTER</string>
+    <string name="settings_platform_filters_subtitle">Wählen Sie, welche Plattformen beim Bibliotheks-Sync einbezogen werden</string>
+    <string name="settings_platform_filters_loading">Plattformen werden abgerufen…</string>
+    <string name="settings_platform_filters_empty">Keine Plattformen verfügbar</string>
+    <string name="settings_platform_filters_no_games">Keine Spiele</string>
+    <plurals name="settings_platform_filters_rom_count">
+        <item quantity="one">%1$d Spiel</item>
+        <item quantity="other">%1$d Spiele</item>
+    </plurals>
+
+    <!-- ===== RomM config form (Settings > components > RomMConfigForm) ===== -->
+
+    <string name="settings_romm_config_server_url_label">Server-URL</string>
+    <string name="settings_romm_config_server_url_placeholder">https://romm.example.com</string>
+    <string name="settings_romm_config_auth_method_title">Authentifizierungsmethode</string>
+    <string name="settings_romm_config_auth_method_device">Geräte-Pairing</string>
+    <string name="settings_romm_config_auth_method_pairing_code">Pairing-Code</string>
+    <string name="settings_romm_config_device_instructions">Koppeln Sie dieses Gerät, indem Sie mit Ihrem Telefon einen QR-Code scannen, und bestätigen Sie es dann in RomM. Erfordert RomM 5.0 oder neuer.</string>
+    <string name="settings_romm_config_pairing_code_instructions">Erstellen Sie ein API-Token in der RomM-Weboberfläche und klicken Sie dann auf Gerät koppeln, um einen Code zu erhalten.</string>
+    <string name="settings_romm_config_connect_generating_title">Code wird generiert…</string>
+    <string name="settings_romm_config_connect_connecting_title">Verbindung wird hergestellt…</string>
+    <string name="settings_romm_config_connect_pair_title">Gerät koppeln</string>
+    <string name="settings_romm_config_connect_title">Verbinden</string>
+    <string name="settings_romm_config_connect_device_subtitle">Einen Pairing-QR-Code generieren</string>
+    <string name="settings_romm_config_connect_subtitle">Mit RomM-Server verbinden</string>
+    <string name="settings_romm_config_scan_title">QR-Code scannen</string>
+    <string name="settings_romm_config_scan_subtitle">Pairing-QR-Code aus der RomM-Weboberfläche scannen</string>
+    <string name="settings_romm_config_cancel_title">Abbrechen</string>
+    <string name="settings_romm_config_cancel_subtitle">Zurück zu den Servereinstellungen</string>
+    <string name="settings_romm_device_pairing_title">Zum Koppeln scannen</string>
+    <string name="settings_romm_device_pairing_subtitle">Scannen Sie diesen Code mit Ihrem Telefon und bestätigen Sie dann dieses Gerät in RomM.</string>
+    <string name="settings_romm_device_pairing_cancel_title">Abbrechen</string>
+    <string name="settings_romm_device_pairing_cancel_subtitle">Pairing stoppen</string>
+
+    <!-- ===== Jellyfin config form (Settings > components > JellyfinConfigForm) ===== -->
+
+    <string name="settings_jellyfin_config_server_address_label">Serveradresse</string>
+    <string name="settings_jellyfin_config_server_address_placeholder">https://jellyfin.example.com</string>
+    <string name="settings_jellyfin_config_save_title">Speichern</string>
+    <string name="settings_jellyfin_config_save_subtitle">Diese Adresse für Ihre Medienbibliothek verwenden</string>
+    <string name="settings_jellyfin_config_cancel_title">Abbrechen</string>
+    <string name="settings_jellyfin_config_cancel_subtitle">Zurück zu den Jellyfin-Einstellungen</string>
+
+    <!-- ===== Jellyfin sign-in form (Settings > components > JellyfinSignInForm) ===== -->
+
+    <string name="settings_jellyfin_signin_username_label">Benutzername</string>
+    <string name="settings_jellyfin_signin_password_label">Passwort</string>
+    <string name="settings_jellyfin_signin_submitting_title">Wird angemeldet…</string>
+    <string name="settings_jellyfin_signin_submit_title">Anmelden</string>
+    <string name="settings_jellyfin_signin_submit_subtitle">Dieses Konto für Ihre Medienbibliothek verwenden</string>
+    <string name="settings_jellyfin_signin_cancel_title">Abbrechen</string>
+    <string name="settings_jellyfin_signin_cancel_subtitle">Zurück zu den Jellyfin-Einstellungen</string>
+
+    <!-- ===== Emulator picker popup (Settings > components > EmulatorPickerPopup) ===== -->
+
+    <string name="settings_emulator_picker_title">EMULATOR AUSWÄHLEN</string>
+    <string name="settings_emulator_picker_auto_name">Auto</string>
+    <string name="settings_emulator_picker_auto_subtitle">Empfohlenen Emulator verwenden</string>
+    <string name="settings_emulator_picker_installed_downloading_progress">Wird heruntergeladen %1$d%%</string>
+    <string name="settings_emulator_picker_installed_installing">Wird installiert…</string>
+    <string name="settings_emulator_picker_installed_download_error">Download-Fehler</string>
+    <string name="settings_emulator_picker_version_unknown">?</string>
+    <string name="settings_emulator_picker_version_update_arrow">%1$s -&gt; %2$s</string>
+    <string name="settings_emulator_picker_installed_label">Installiert</string>
+    <string name="settings_emulator_picker_download_header">ZUM DOWNLOAD VERFÜGBAR</string>
+    <string name="settings_emulator_picker_downloadable_downloading_progress">Wird heruntergeladen %1$d%%</string>
+    <string name="settings_emulator_picker_downloadable_installing">Wird installiert…</string>
+    <string name="settings_emulator_picker_downloadable_download_error">Download-Fehler</string>
+    <string name="settings_emulator_picker_other_app_name">Andere App…</string>
+    <string name="settings_emulator_picker_other_app_subtitle">Mit einer beliebigen installierten App starten</string>
+    <string name="settings_emulator_picker_hint_navigate">Navigieren</string>
+    <string name="settings_emulator_picker_hint_select">Auswählen</string>
+    <string name="settings_emulator_picker_hint_close">Schließen</string>
+    <string name="settings_emulator_picker_update_available_desc">Update verfügbar</string>
+
+    <!-- ===== Variant picker modal (Settings > components > VariantPickerModal) ===== -->
+
+    <string name="settings_variant_picker_title">VERSION AUSWÄHLEN</string>
+    <string name="settings_variant_picker_hint_navigate">Navigieren</string>
+    <string name="settings_variant_picker_hint_select">Auswählen</string>
+    <string name="settings_variant_picker_hint_cancel">Abbrechen</string>
+
+    <!-- ===== Emulator update modal (Settings > components > EmulatorUpdateModal) ===== -->
+
+    <string name="settings_emulator_update_title">%1$s aktualisieren</string>
+    <string name="settings_emulator_update_checking">Nach Updates wird gesucht…</string>
+    <string name="settings_emulator_update_select_version">Version auswählen</string>
+    <string name="settings_emulator_update_downloading">Wird heruntergeladen… %1$d%%</string>
+    <string name="settings_emulator_update_installing">Wird installiert…</string>
+    <string name="settings_emulator_update_installed">Update erfolgreich installiert</string>
+    <string name="settings_emulator_update_failed">Update fehlgeschlagen: %1$s</string>
+
+    <!-- ===== Region picker popup (Settings > components > RegionPickerPopup) ===== -->
+
+    <string name="settings_region_picker_title">REGIONEN AUSWÄHLEN</string>
+    <string name="settings_region_picker_subtitle_ordering">Regionen für den Sync umschalten. Halten und ziehen, um die Priorität festzulegen; die oberste Übereinstimmung gewinnt, wenn ein Spiel mehrere Versionen hat</string>
+    <string name="settings_region_picker_subtitle_toggle">Regionen für den Sync ein-/ausschließen</string>
+    <string name="settings_region_picker_hint_move">Verschieben</string>
+    <string name="settings_region_picker_hint_accept">Übernehmen</string>
+    <string name="settings_region_picker_hint_cancel">Abbrechen</string>
+    <string name="settings_region_picker_hint_navigate">Navigieren</string>
+    <string name="settings_region_picker_hint_toggle">Umschalten</string>
+    <string name="settings_region_picker_hint_prioritize">Priorisieren</string>
+    <string name="settings_region_picker_hint_close">Schließen</string>
+
+    <!-- ===== Driver version picker modal (Settings > components > DriverVersionPickerModal) ===== -->
+
+    <string name="settings_driver_picker_title">VERSION AUSWÄHLEN</string>
+    <string name="settings_driver_picker_empty">Keine Releases verfügbar</string>
+    <string name="settings_driver_picker_hint_hide">Ausblenden</string>
+    <string name="settings_driver_picker_hint_close">Schließen</string>
+    <string name="settings_driver_picker_hint_navigate">Navigieren</string>
+    <string name="settings_driver_picker_hint_download">Herunterladen</string>
+    <string name="settings_driver_picker_hint_cancel">Abbrechen</string>
+    <string name="settings_driver_picker_downloaded_desc">Heruntergeladen</string>
+    <string name="settings_driver_picker_latest_badge">Neueste</string>
+    <string name="settings_driver_picker_prerelease_badge">Pre</string>
+    <string name="settings_driver_picker_no_asset">Keine herunterladbare Datei</string>
+    <plurals name="settings_driver_picker_assets_count">
+        <item quantity="one">%1$s · %2$d Asset</item>
+        <item quantity="other">%1$s · %2$d Assets</item>
+    </plurals>
+    <string name="settings_driver_picker_saved_to_header">GESPEICHERT UNTER</string>
+    <string name="settings_driver_picker_download_progress">%1$s / %2$s</string>
+
+    <!-- ===== Shader picker modal (Settings > components > ShaderPickerModal) ===== -->
+
+    <string name="settings_shader_picker_title">SHADER HINZUFÜGEN</string>
+    <string name="settings_shader_picker_hint_section">Abschnitt</string>
+    <string name="settings_shader_picker_hint_add">Hinzufügen</string>
+    <string name="settings_shader_picker_hint_cancel">Abbrechen</string>
+    <string name="settings_shader_picker_custom_badge">Eigen</string>
+    <string name="settings_shader_picker_download_badge">Herunterladen</string>
+
+    <!-- ===== Sound picker popup (Settings > components > SoundPickerPopup) ===== -->
+
+    <string name="settings_sound_picker_hint_select">Auswählen</string>
+    <string name="settings_sound_picker_hint_close">Schließen</string>
+
+    <!-- ===== App picker modal (Settings > components > AppPickerModal) ===== -->
+
+    <string name="settings_app_picker_title">App auswählen - %1$s</string>
+    <string name="settings_app_picker_intro">Für diese Plattform ist kein bekannter Emulator installiert. Wählen Sie eine beliebige App zum Starten von Spielen; wie Argosy sie aufruft, können Sie danach über Startparameter anpassen.</string>
+    <string name="settings_app_picker_empty">Keine startfähigen Apps gefunden.</string>
+
+    <!-- ===== Controller order modal (Settings > components > ControllerOrderModal) ===== -->
+
+    <string name="settings_controller_order_title">Controller-Reihenfolge</string>
+    <string name="settings_controller_order_subtitle">Beliebige Taste drücken, um einen Controller zuzuweisen</string>
+    <string name="settings_controller_order_hint_confirm">Bestätigen</string>
+    <string name="settings_controller_order_hint_unregister_back">Entfernen/Zurück</string>
+    <string name="settings_controller_order_default_name">Controller</string>
+    <string name="settings_controller_order_slot_label">P%1$d</string>
+    <string name="settings_controller_order_slot_pressing">Drücken…</string>
+    <string name="settings_controller_order_slot_empty">Leer</string>
+
+    <!-- ===== Grip controller modal (Settings > components > GripControllerModal) ===== -->
+
+    <string name="settings_grip_controller_default_name">Controller</string>
+    <string name="settings_grip_controller_title">Controller-Griff</string>
+    <string name="settings_grip_controller_subtitle_capturing">Eine beliebige Taste am Controller-Griff drücken</string>
+    <string name="settings_grip_controller_subtitle_list">Die Oberfläche verschiebt sich automatisch nach oben, wenn einer dieser Controller verbunden ist</string>
+    <string name="settings_grip_controller_hint_cancel">Abbrechen</string>
+    <string name="settings_grip_controller_hint_add">Hinzufügen</string>
+    <string name="settings_grip_controller_hint_back">Zurück</string>
+    <string name="settings_grip_controller_hint_remove">Entfernen</string>
+    <string name="settings_grip_controller_listening_title">Wird erkannt…</string>
+    <string name="settings_grip_controller_listening_subtitle">Drücken Sie eine Taste am gewünschten Controller</string>
+    <string name="settings_grip_controller_add_new_label">Neu hinzufügen</string>
+
+    <!-- ===== Hard reset modal (Settings > components > HardResetModal) ===== -->
+
+    <string name="settings_hard_reset_title">Hard-Reset</string>
+    <string name="settings_hard_reset_subtitle">Dies kann nicht rückgängig gemacht werden</string>
+    <plurals name="settings_hard_reset_games_summary">
+        <item quantity="one">%1$d heruntergeladenes Spiel - %2$s auf dem Datenträger</item>
+        <item quantity="other">%1$d heruntergeladene Spiele - %2$s auf dem Datenträger</item>
+    </plurals>
+    <string name="settings_hard_reset_deletes_header">Löscht</string>
+    <string name="settings_hard_reset_deletes_files">Alle heruntergeladenen Spieldateien auf dem Datenträger</string>
+    <string name="settings_hard_reset_deletes_database">Die gesamte Bibliotheksdatenbank - Spielzeit, Sammlungen, Downloadverlauf, spielspezifische Einstellungen</string>
+    <string name="settings_hard_reset_deletes_caches">Jeden Cache - Bilder, Spielstände und Savestates, extrahierte ROMs, Soundeffekte, Emulator-Installer, Steam-Staging, Präsenzbilder</string>
+    <string name="settings_hard_reset_keeps_header">Behält</string>
+    <string name="settings_hard_reset_keeps_sign_ins">Einstellungen und Anmeldungen - RomM und Steam bleiben verbunden</string>
+    <string name="settings_hard_reset_keeps_synced_saves">Bereits mit dem Server synchronisierte Spielstände</string>
+    <string name="settings_hard_reset_keeps_emulator_apps">Emulator-Apps und ihre eigenen Speicherdaten</string>
+    <string name="settings_hard_reset_keeps_music">Ihren Musikordner</string>
+    <plurals name="settings_hard_reset_pending_uploads">
+        <item quantity="one">%1$d Spielstand wartet auf Upload</item>
+        <item quantity="other">%1$d Spielstände warten auf Upload</item>
+    </plurals>
+    <string name="settings_hard_reset_sync_first_connected">Synchronisieren Sie diese zuerst - ein Zurücksetzen jetzt würde sie für immer verwerfen.</string>
+    <string name="settings_hard_reset_sync_first_disconnected">Verbinden Sie sich erneut mit dem Server und synchronisieren Sie diese zuerst - ein Zurücksetzen jetzt würde sie für immer verwerfen.</string>
+    <string name="settings_hard_reset_in_progress">Wird zurückgesetzt…</string>
+    <string name="settings_hard_reset_cancel_button">Abbrechen</string>
+    <string name="settings_hard_reset_sync_now_button">Jetzt synchronisieren</string>
+    <string name="settings_hard_reset_hold_button">Halten zum Zurücksetzen</string>
+
+    <!-- ===== Platform settings modal (Settings > components > PlatformSettingsModal) ===== -->
+
+    <string name="settings_platform_modal_sync_label">Mit Server synchronisieren</string>
+    <string name="settings_platform_modal_rom_path_label">ROM-Pfad</string>
+    <string name="settings_platform_modal_save_path_label">Spielstand-Pfad</string>
+    <string name="settings_platform_modal_state_path_label">Savestate-Pfad</string>
+    <string name="settings_platform_modal_resync_label">Plattform neu synchronisieren</string>
+    <string name="settings_platform_modal_purge_label">Alle Daten löschen</string>
+
+    <!-- ===== Path config item (shared row inside PlatformSettingsModal and the per-game
+         settings modal) ===== -->
+
+    <string name="settings_path_config_coming_soon">(demnächst)</string>
+    <string name="settings_path_config_reset_button">Zurücksetzen</string>
+    <string name="settings_path_config_change_button">Ändern</string>
+    <string name="settings_path_config_auto_label">(auto)</string>
+
+    <!-- ===== Release changelog modal (Settings > components > ReleaseChangelogModal) ===== -->
+
+    <string name="settings_changelog_loading">Releases werden geladen…</string>
+    <string name="settings_changelog_empty">Keine Releases gefunden</string>
+    <string name="settings_changelog_beta_badge">beta</string>
+    <string name="settings_changelog_load_more_loading">Wird geladen…</string>
+    <string name="settings_changelog_load_more_label">Mehr laden</string>
+
+    <!-- ===== Save path modal (Settings > components > SavePathModal) ===== -->
+
+    <string name="settings_save_path_modal_title">%1$s - %2$s</string>
+    <string name="settings_save_path_modal_intro">Eigene Pfade helfen bei der Spielstanderkennung, wenn Argosy keine Spielstände zum Synchronisieren findet. Dies ändert nicht, wo Ihr Emulator Spielstände speichert.</string>
+    <string name="settings_save_path_modal_save_path_label">Spielstand-Pfad</string>
+    <string name="settings_save_path_modal_note_missing">Dieser Ordner ist gerade nicht auf dem Gerät. Spielstände werden erst gefunden, wenn er es ist.</string>
+    <string name="settings_save_path_modal_note_moved">Verschoben dorthin, wo %1$s Spielstände tatsächlich ablegt, unterhalb des gewählten Ordners.</string>
+    <string name="settings_save_path_modal_note_shape">Der Spielstand jedes Spiels liegt unter %1$s innerhalb dieses Ordners.</string>
+    <string name="settings_save_path_modal_beside_rom_title">Neben ROM speichern</string>
+    <string name="settings_save_path_modal_beside_rom_subtitle_builtin">Spielstände im Ordner jedes Spiels ablegen.</string>
+    <string name="settings_save_path_modal_beside_rom_subtitle_external">Nach Spielständen im Ordner jedes Spiels suchen. Stellen Sie Ihren Emulator zusätzlich so ein, dass er neben der ROM speichert.</string>
+    <string name="settings_save_path_modal_state_path_label">Savestate-Pfad</string>
+
+    <!-- ===== Save path option item (shared row inside SavePathModal) ===== -->
+
+    <string name="settings_save_path_option_custom_badge">(benutzerdefiniert)</string>
+    <string name="settings_save_path_option_coming_soon">(demnächst)</string>
+    <string name="settings_save_path_option_reset_button">Zurücksetzen</string>
+    <string name="settings_save_path_option_change_button">Ändern</string>
+    <string name="settings_save_path_option_not_configured">Nicht konfiguriert</string>
+
+    <!-- ===== Steam launcher preference row (Settings > components > SteamLauncherPreference) ===== -->
+
+    <string name="settings_steam_launcher_pref_add_button">Hinzufügen</string>
+
+    <!-- ===== Accounts settings delegate (Settings > delegates > AccountsSettingsDelegate) ===== -->
+
+    <string name="settings_accounts_delegate_fallback_username">RomM-Nutzer %1$d</string>
+    <string name="settings_accounts_delegate_notice_no_server">Melden Sie sich zuerst unter RomM bei einem RomM-Server an.</string>
+    <string name="settings_accounts_delegate_progress_preparing">Wird vorbereitet</string>
+    <string name="settings_accounts_delegate_progress_resuming">Wird fortgesetzt</string>
+    <string name="settings_accounts_delegate_progress_archiving">Spielstände werden archiviert %1$d von %2$d</string>
+    <string name="settings_accounts_delegate_progress_swapping">Konten werden getauscht</string>
+    <string name="settings_accounts_delegate_progress_restoring">Spielstände werden wiederhergestellt %1$d von %2$d</string>
+    <string name="settings_accounts_delegate_progress_finishing">Wird abgeschlossen</string>
+    <string name="settings_accounts_delegate_pairing_error_no_server">Auf diesem Gerät ist noch kein Server konfiguriert.</string>
+    <string name="settings_accounts_delegate_notice_added">%1$s hinzugefügt. Weiterhin wie zuvor angemeldet; zum Wechseln wechseln.</string>
+    <string name="settings_accounts_delegate_fallback_account_label">das Konto</string>
+    <string name="settings_accounts_delegate_notice_signed_in">Angemeldet als %1$s.</string>
+    <string name="settings_accounts_delegate_notice_account_added">Konto hinzugefügt.</string>
+    <string name="settings_accounts_delegate_pairing_denied">Pairing wurde auf dem Server abgelehnt</string>
+    <string name="settings_accounts_delegate_pairing_expired">Pairing-Code abgelaufen, bitte erneut starten</string>
+    <string name="settings_accounts_delegate_removal_unknown_account">Dieses Konto ist nicht mehr auf diesem Gerät.</string>
+    <string name="settings_accounts_delegate_removal_switch_in_progress">Ein Kontowechsel läuft noch. Lassen Sie ihn abschließen und versuchen Sie es erneut.</string>
+    <string name="settings_accounts_delegate_removal_refused_prefix">Die wartenden Aufgaben wurden behalten, daher wurde das Konto nicht entfernt. %1$s</string>
+    <string name="settings_accounts_delegate_removal_refused_fallback">Es steht nichts aus.</string>
+    <string name="settings_accounts_delegate_removal_removed">Konto entfernt.</string>
+    <string name="settings_accounts_delegate_removal_archived">%1$d Spielstände vor dem Löschen archiviert.</string>
+    <string name="settings_accounts_delegate_removal_aborted">%1$d Spielstände haben sich während der Archivierung geändert und wurden auf dem Gerät belassen.</string>
+    <string name="settings_accounts_delegate_removal_registered_note">Das Gerät bleibt beim RomM-Server registriert; widerrufen Sie es dort.</string>
+    <string name="settings_accounts_delegate_completion_switched">Konto gewechselt.</string>
+    <string name="settings_accounts_delegate_completion_aborted">%1$d Dateien haben sich während der Archivierung geändert und wurden unverändert belassen.</string>
+    <string name="settings_accounts_delegate_completion_needs_sync">%1$d Slots wurden leer gelassen, weil die lokale Kopie bekanntermaßen hinter dem Server zurücklag.</string>
+    <string name="settings_accounts_delegate_blocker_already_switching">Ein Wechsel läuft bereits. Warten Sie, bis er abgeschlossen ist.</string>
+    <string name="settings_accounts_delegate_blocker_active_session">Eine Spielsitzung ist noch geöffnet. Schließen Sie das Spiel und versuchen Sie es erneut.</string>
+    <string name="settings_accounts_delegate_blocker_external_game">%1$s war vor %2$ds im Vordergrund. Beenden Sie es vollständig und versuchen Sie es erneut.</string>
+    <string name="settings_accounts_delegate_blocker_active_downloads">Spiel-Downloads laufen noch. Lassen Sie sie abschließen oder brechen Sie sie ab.</string>
+    <string name="settings_accounts_delegate_blocker_emulator_download">Ein Emulator-Download läuft noch. Lassen Sie ihn abschließen oder brechen Sie ihn ab.</string>
+    <string name="settings_accounts_delegate_blocker_steam_download">Ein Steam-Download läuft noch. Lassen Sie ihn abschließen oder brechen Sie ihn ab.</string>
+    <string name="settings_accounts_delegate_blocker_media_download">Ein Film oder eine Folge wird noch heruntergeladen. Lassen Sie es abschließen oder brechen Sie es ab.</string>
+    <string name="settings_accounts_delegate_blocker_library_sync">Ein Bibliotheks-Sync läuft. Lassen Sie ihn abschließen und versuchen Sie es erneut.</string>
+    <string name="settings_accounts_delegate_blocker_netplay_session">Eine Netplay-Sitzung ist geöffnet. Verlassen Sie sie und versuchen Sie es erneut.</string>
+    <string name="settings_accounts_delegate_blocker_exit_confirmation">Bestätigen Sie, dass jedes außerhalb von Argosy gestartete Spiel vollständig beendet ist.</string>
+    <string name="settings_accounts_delegate_blocker_unknown_account">Dieses Konto ist nicht mehr auf diesem Gerät.</string>
+
+    <!-- ===== Steam settings delegate (Settings > delegates > SteamSettingsDelegate) ===== -->
+
+    <string name="settings_steam_delegate_invalid_app_id">Bitte geben Sie eine gültige Steam-App-ID ein</string>
+    <string name="settings_steam_delegate_volume_other_label">Andere</string>
+
+    <!-- ===== Jellyfin settings delegate (Settings > delegates > JellyfinSettingsDelegate) ===== -->
+
+    <string name="settings_jellyfin_delegate_config_error_empty">Geben Sie eine Serveradresse ein</string>
+    <string name="settings_jellyfin_delegate_config_error_scheme">Die Adresse muss mit http:// oder https:// beginnen</string>
+    <string name="settings_jellyfin_delegate_signin_error_empty">Geben Sie Ihren Benutzernamen und Ihr Passwort ein</string>
+
+    <!-- ===== Server settings delegate (Settings > delegates > ServerSettingsDelegate) ===== -->
+
+    <string name="settings_server_delegate_signout_switch_in_progress">Ein Kontowechsel wird noch abgeschlossen. Versuchen Sie es gleich noch einmal.</string>
+    <string name="settings_server_delegate_signout_refused">Weiterhin angemeldet: %1$s konnte nicht an Ihren Server gesendet werden. Verbinden und synchronisieren Sie, dann melden Sie sich ab.</string>
+    <string name="settings_server_delegate_pairing_denied">Pairing wurde auf dem Server abgelehnt</string>
+    <string name="settings_server_delegate_pairing_expired">Pairing-Code abgelaufen, bitte erneut starten</string>
+    <string name="settings_server_delegate_pairing_unexpected_result">Unerwartetes Pairing-Ergebnis</string>
+    <string name="settings_server_delegate_pairing_code_incomplete">Geben Sie den vollständigen 8-stelligen Pairing-Code ein</string>
+
+    <!-- ===== Drivers settings delegate (Settings > delegates > DriversSettingsDelegate) ===== -->
+
+    <string name="settings_drivers_delegate_download_failed">Download fehlgeschlagen</string>
+
+    <!-- ===== RetroAchievements settings delegate (Settings > delegates > RASettingsDelegate) ===== -->
+
+    <string name="settings_ra_delegate_login_error_required">Benutzername und Passwort erforderlich</string>
+
+    <!-- ===== Licenses dialog (Settings > dialogs > LicensesDialog) ===== -->
+
+    <string name="settings_licenses_dialog_title">Open-Source-Lizenzen</string>
+    <string name="settings_licenses_dialog_cores_heading">Emulator-Cores</string>
+    <string name="settings_licenses_dialog_cores_body">Cores werden vom libretro buildbot heruntergeladen. Core-Lizenzen finden Sie unter docs.libretro.com/development/licenses.</string>
+    <string name="settings_licenses_dialog_close_button">Schließen</string>
+
+    <!-- ===== Systemize result dialog (Settings > dialogs > SystemizeResultDialog) ===== -->
+
+    <string name="settings_systemize_dialog_close_button">Schließen</string>
+    <string name="settings_systemize_dialog_success_title">Skript gespeichert</string>
+    <string name="settings_systemize_dialog_detected_device">Erkanntes Gerät: %1$s</string>
+    <string name="settings_systemize_dialog_next_steps_heading">Nächste Schritte</string>
+    <string name="settings_systemize_dialog_step_format">%1$d. %2$s</string>
+    <string name="settings_systemize_dialog_success_footnote">Erfordert ein gerootetes Gerät. Die Änderung ist umkehrbar: Entfernen Sie das Magisk-Modul \"Argosy Systemize\" und starten Sie neu. Falls Ihr Menütext abweicht, ist die Skriptdatei trotzdem korrekt - richten Sie Ihre Root-Ausführungsoption einfach darauf aus.</string>
+    <string name="settings_systemize_dialog_error_title">Skript konnte nicht gespeichert werden</string>
+    <string name="settings_systemize_dialog_error_hint">Möglicherweise fehlt der Speicherzugriff. Erteilen Sie in der Einrichtung Zugriff auf alle Dateien und versuchen Sie es erneut.</string>
+
+    <!-- ===== LibretroSettingItem / LibretroSettingsAccessor ===== -->
+
+    <string name="settings_libretro_shell_configure_shader_chain_title">Shader-Kette konfigurieren</string>
+    <string name="settings_libretro_shell_frame_value_auto">Auto</string>
+    <string name="settings_libretro_shell_frame_value_none">Keiner</string>
+
+    <!-- ===== SettingsModels: SoundState.getSoundValueForType ===== -->
+
+    <string name="settings_sound_value_default">Standard</string>
+    <string name="settings_sound_value_custom_fallback">Eigen</string>
+
+    <!-- ===== SettingsModels: BiosState.summaryText ===== -->
+
+    <string name="settings_main_bios_summary_none">Keine BIOS-Dateien gefunden</string>
+    <plurals name="settings_main_bios_summary_complete">
+        <item quantity="one">%1$d Datei heruntergeladen</item>
+        <item quantity="other">Alle %1$d Dateien heruntergeladen</item>
+    </plurals>
+    <string name="settings_main_bios_summary_partial">%1$d von %2$d heruntergeladen</string>
+
+    <!-- ===== SettingsModels: DriversState.summary ===== -->
+
+    <string name="settings_drivers_summary_checking">Treiber werden geprüft…</string>
+    <string name="settings_drivers_summary_gpu_not_detected">GPU nicht erkannt</string>
+    <string name="settings_drivers_summary_available">Adreno-Treiber für %1$s</string>
+
+    <!-- ===== LaunchArgsModal: Intent flag labels ===== -->
+
+    <string name="settings_launch_args_flag_new_task_label">Neue Aufgabe</string>
+    <string name="settings_launch_args_flag_clear_task_label">Aufgabe löschen</string>
+    <string name="settings_launch_args_flag_no_history_label">Kein Verlauf</string>
+    <string name="settings_launch_args_flag_single_top_label">Single Top</string>
+    <string name="settings_launch_args_flag_grant_uri_label">Lese-URI gewähren</string>
+    <string name="settings_launch_args_flag_clear_top_label">Oben leeren</string>
+
+    <!-- ===== HudCorner display labels ===== -->
+
+    <string name="settings_hudcorner_top_left">Oben links</string>
+    <string name="settings_hudcorner_top_right">Oben rechts</string>
+    <string name="settings_hudcorner_bottom_left">Unten links</string>
+    <string name="settings_hudcorner_bottom_right">Unten rechts</string>
+
+    <!-- ===== ShaderPickerModal: category headers ===== -->
+
+    <string name="shader_category_crt">CRT</string>
+    <string name="shader_category_handheld">Handheld</string>
+    <string name="shader_category_scaling">Skalierung</string>
+    <string name="shader_category_scanlines">Scanlines</string>
+    <string name="shader_category_sharpening">Schärfung</string>
+    <string name="shader_category_anti_aliasing">Kantenglättung</string>
+    <string name="shader_category_other">Andere</string>
+
+    <!-- ===== LibretroSettingDef (core/emulator): title, subtitle, Cycle.labels ===== -->
+
+    <string name="settings_libretro_def_section_shaders">Shader</string>
+    <string name="settings_libretro_def_section_display">Anzeige</string>
+    <string name="settings_libretro_def_section_performance">Leistung</string>
+    <string name="settings_libretro_def_section_saving">Speichern</string>
+
+    <string name="settings_libretro_def_shader_title">Shader</string>
+    <string name="settings_libretro_def_filter_title">Filter</string>
+    <string name="settings_libretro_def_aspect_ratio_title">Seitenverhältnis</string>
+    <string name="settings_libretro_def_portrait_position_title">Bildschirmposition im Hochformat</string>
+    <string name="settings_libretro_def_portrait_position_subtitle">Wo das Spiel sitzt, wenn der Bildschirm senkrecht ist</string>
+    <string name="settings_libretro_def_rotation_title">Bildschirmdrehung</string>
+    <string name="settings_libretro_def_overscan_crop_title">Overscan zuschneiden</string>
+    <string name="settings_libretro_def_frame_title">Rahmen</string>
+    <string name="settings_libretro_def_frame_subtitle">Dekorativer Rahmen um das Spiel</string>
+    <string name="settings_libretro_def_black_frame_insertion_title">Schwarzbildeinfügung</string>
+    <string name="settings_libretro_def_black_frame_insertion_subtitle">Reduziert Bewegungsunschärfe (erfordert 120-Hz-Bildschirm oder höher)</string>
+    <string name="settings_libretro_def_fast_forward_enabled_title">Vorspulen aktivieren</string>
+    <string name="settings_libretro_def_fast_forward_speed_title">Vorspulgeschwindigkeit</string>
+    <string name="settings_libretro_def_rewind_enabled_title">Rewind aktivieren</string>
+    <string name="settings_libretro_def_rewind_enabled_subtitle">Kann auf leistungshungrigeren Plattformen zu Rucklern führen</string>
+    <string name="settings_libretro_def_rewind_speed_title">Rewind-Geschwindigkeit</string>
+    <string name="settings_libretro_def_rewind_buffer_duration_title">Rewind-Puffer</string>
+    <string name="settings_libretro_def_rewind_buffer_duration_subtitle">Sekunden an Spielverlauf, die im Speicher gehalten werden</string>
+    <string name="settings_libretro_def_skip_duplicate_frames_title">Doppelte Frames überspringen</string>
+    <string name="settings_libretro_def_skip_duplicate_frames_subtitle">Reduziert CPU-Last durch Überspringen unveränderter Frames</string>
+    <string name="settings_libretro_def_low_latency_audio_title">Audio mit geringer Latenz</string>
+    <string name="settings_libretro_def_low_latency_audio_subtitle">Reduziert Audioverzögerung für bessere Reaktionsfähigkeit</string>
+    <string name="settings_libretro_def_audio_volume_title">Lautstärke</string>
+    <string name="settings_libretro_def_audio_volume_subtitle" formatted="false">Emulator-Ausgabepegel (100% ist unverändert)</string>
+    <string name="settings_libretro_def_vsync_title">VSync</string>
+    <string name="settings_libretro_def_vsync_subtitle">Mit Bildwiederholrate synchronisieren</string>
+    <string name="settings_libretro_def_auto_save_state_title">Savestate beim Beenden</string>
+    <string name="settings_libretro_def_auto_save_state_subtitle">Gilt nur für Casual-Spiele</string>
+    <string name="settings_libretro_def_auto_restore_state_title">Savestate beim Start wiederherstellen</string>
+    <string name="settings_libretro_def_auto_restore_state_subtitle">Gilt nur für Casual-Spiele</string>
+    <string name="settings_libretro_def_hw_core_save_states_title">Dolphin- und Flycast-Savestates</string>
+    <string name="settings_libretro_def_hw_core_save_states_subtitle">Experimentell; diese Cores können schwarz bleiben oder nicht fortsetzen. Wirkt sich erst beim nächsten Start aus, nur Casual-Spiele</string>
+
+    <string name="settings_libretro_def_shader_option_none">Keiner</string>
+    <string name="settings_libretro_def_shader_option_custom">Eigen</string>
+
+    <string name="settings_libretro_def_filter_option_auto">Auto</string>
+    <string name="settings_libretro_def_filter_option_nearest">Nearest</string>
+    <string name="settings_libretro_def_filter_option_bilinear">Bilinear</string>
+
+    <string name="settings_libretro_def_aspect_ratio_option_core_provided">Vom Core vorgegeben</string>
+    <string name="settings_libretro_def_aspect_ratio_option_integer">Ganzzahlig</string>
+    <string name="settings_libretro_def_aspect_ratio_option_stretch">Strecken</string>
+
+    <string name="settings_libretro_def_portrait_position_option_auto">Auto</string>
+    <string name="settings_libretro_def_portrait_position_option_top">Oben</string>
+    <string name="settings_libretro_def_portrait_position_option_center">Mitte</string>
+    <string name="settings_libretro_def_portrait_position_option_bottom">Unten</string>
+
+    <string name="settings_libretro_def_rotation_option_auto">Auto</string>
+    <string name="settings_libretro_def_rotation_option_0">0°</string>
+    <string name="settings_libretro_def_rotation_option_90">90°</string>
+    <string name="settings_libretro_def_rotation_option_180">180°</string>
+    <string name="settings_libretro_def_rotation_option_270">270°</string>
+
+    <string name="settings_libretro_def_overscan_crop_option_off">Aus</string>
+
+    <string name="settings_libretro_def_frame_option_none">Keiner</string>
+
+    <!-- ===== Top level of the settings screen: Language row ===== -->
+
+    <string name="settings_main_language_title">Sprache</string>
+    <string name="settings_main_language_subtitle">Ändert den Text im gesamten Launcher</string>
+    <string name="settings_main_language_system_default">Systemstandard</string>
+</resources>
+

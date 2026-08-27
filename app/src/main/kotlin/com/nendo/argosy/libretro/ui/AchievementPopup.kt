@@ -38,9 +38,12 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.nendo.argosy.R
 import kotlinx.coroutines.delay
 
 data class AchievementUnlock(
@@ -193,7 +196,11 @@ private fun AchievementPopupContent(achievement: AchievementUnlock) {
 
             Column {
                 Text(
-                    text = if (achievement.isHardcore) "HARDCORE UNLOCKED" else "ACHIEVEMENT UNLOCKED",
+                    text = if (achievement.isHardcore) {
+                        stringResource(R.string.ingame_achievement_hardcore_heading)
+                    } else {
+                        stringResource(R.string.ingame_achievement_heading)
+                    },
                     style = MaterialTheme.typography.labelSmall.copy(
                         shadow = textShadow
                     ),
@@ -209,7 +216,11 @@ private fun AchievementPopupContent(achievement: AchievementUnlock) {
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "+${achievement.points} points",
+                    text = pluralStringResource(
+                        R.plurals.ingame_achievement_points,
+                        achievement.points,
+                        achievement.points
+                    ),
                     style = MaterialTheme.typography.labelSmall.copy(
                         shadow = textShadow
                     ),

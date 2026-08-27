@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Owner: ui/screens/home
+      Key prefix: home_
+      Keys are named for the usage site, never for the English text, and identical English
+      is never shared between two usage sites.
+    -->
+
+    <!-- Breadcrumb chip across the top of the home screen, naming the row of recently played
+         games. Shortened noun ("recent games"), not the verb "to recent". Keep it short: the
+         chips sit side by side and long words push their neighbours off screen. -->
+    <string name="home_breadcrumb_continue">Recent</string>
+    <!-- Breadcrumb chip naming the row of games the launcher suggests. Noun, plural, short for
+         "our picks". Keep it short. -->
+    <string name="home_breadcrumb_recommendations">Picks</string>
+    <!-- Breadcrumb chip naming the row of games and titles the user marked as favourites. Noun,
+         plural, deliberately abbreviated. Keep it short. -->
+    <string name="home_breadcrumb_favorites">Favs</string>
+    <!-- Breadcrumb chip naming the row of films and episodes the user stopped part way through.
+         Noun ("things to watch"), not the verb "to watch". Keep it short. -->
+    <string name="home_breadcrumb_continue_watching">Watch</string>
+    <!-- Breadcrumb chip naming the row of episodes that follow ones the user finished. Noun
+         phrase, "the next thing". Keep it short. -->
+    <string name="home_breadcrumb_next_up">Next Up</string>
+
+    <!-- Footer hint on the curated grid while a video tile is playing. Verb: pressing the button
+         resumes playback of that tile. Not "a game to play". -->
+    <string name="home_footer_grid_engaged_play">Play</string>
+    <!-- Footer hint on the curated grid while a video tile is playing. Verb: pressing the button
+         halts playback of that tile. -->
+    <string name="home_footer_grid_engaged_pause">Pause</string>
+    <!-- Footer hint on the curated grid while a video tile is playing. Verb: the left and right
+         directions scrub back and forward through the video. -->
+    <string name="home_footer_grid_engaged_seek">Seek</string>
+    <!-- Footer hint on the curated grid while a media tile is playing. Verb: takes the playing
+         tile up to the whole screen. -->
+    <string name="home_footer_grid_engaged_fullscreen">Fullscreen</string>
+    <!-- Footer hint on the curated grid while a tile is playing. Verb phrase: leaves playback and
+         returns to the grid of tiles. -->
+    <string name="home_footer_grid_engaged_back">Back to grid</string>
+
+    <!-- Footer hint while the curated grid asks whether a media tile should play from this device
+         or be downloaded. Verb: the left and right directions move between the two answers. -->
+    <string name="home_footer_media_notice_choose">Choose</string>
+
+    <!-- Footer hint while picking episodes for a media tile. Verb: adds or removes the tick beside
+         the episode under the cursor. -->
+    <string name="home_footer_media_setup_episode_tick">Tick</string>
+    <!-- Footer hint while picking episodes for a media tile. Verb: returns to the previous step of
+         the setup. -->
+    <string name="home_footer_media_setup_episode_back">Back</string>
+    <!-- Footer hint on the other steps of media tile setup. Verb: returns to the previous step. -->
+    <string name="home_footer_media_setup_back">Back</string>
+
+    <!-- Footer hint in the tile picker. Noun: the shoulder buttons move between the picker's
+         category tabs (games, collections, apps, media). -->
+    <string name="home_footer_tile_picker_tab">Tab</string>
+    <!-- Footer hint in the tile picker. Verb: the triggers skip several rows at a time down the
+         list. -->
+    <string name="home_footer_tile_picker_jump">Jump</string>
+    <!-- Footer hint in the tile picker. Verb: opens the text field for filtering the list. -->
+    <string name="home_footer_tile_picker_search">Search</string>
+
+    <!-- Footer hint while rearranging the curated grid. Verb: switches the directions from moving
+         the tile to changing how many cells it covers. -->
+    <string name="home_footer_grid_edit_resize">Resize</string>
+    <!-- Footer hint while rearranging the curated grid. Verb: switches the directions from
+         changing the tile's size back to moving it around the page. -->
+    <string name="home_footer_grid_edit_move">Move</string>
+    <!-- Footer hint while rearranging the curated grid. Verb: drops the tile where it now sits and
+         ends the rearrangement. -->
+    <string name="home_footer_grid_edit_place">Place</string>
+    <!-- Footer hint while rearranging the curated grid. Verb: abandons the rearrangement and puts
+         the tile back where it started. -->
+    <string name="home_footer_grid_edit_cancel">Cancel</string>
+
+    <!-- Footer hint on the curated grid. Noun: the shoulder buttons turn to the previous or next
+         page of tiles. -->
+    <string name="home_footer_grid_page">Page</string>
+    <!-- Footer hint on a curated grid tile that stands for a collection being played through in
+         order. Adjective describing the game on the tile: marks it done and moves the tile on to
+         the next game in the collection. -->
+    <string name="home_footer_grid_finished">Finished</string>
+    <!-- Footer hint on the curated grid. Noun, plural: opens the menu of actions for the tile
+         under the cursor. -->
+    <string name="home_footer_grid_options">Options</string>
+
+    <!-- Footer hint on a row of films and episodes. Noun: the directions move between the tiles in
+         the row. -->
+    <string name="home_footer_media_item">Item</string>
+    <!-- Footer hint on a row of films and episodes, grid layout. Noun: the shoulder buttons move
+         between the home screen's rows. -->
+    <string name="home_footer_media_section">Section</string>
+    <!-- Footer hint on a row of films and episodes, carousel layout. Noun: up and down move
+         between the home screen's rows. -->
+    <string name="home_footer_media_row">Row</string>
+    <!-- Footer hint on an empty row of films and episodes. Verb: fetches the row again from the
+         media server. -->
+    <string name="home_footer_media_refresh">Refresh</string>
+    <!-- Footer hint on a film or episode that was stopped part way through. Verb: starts playing
+         again from where it was left. -->
+    <string name="home_footer_media_resume">Resume</string>
+    <!-- Footer hint on a film or episode that has not been started. Verb: begins playback. Not the
+         noun "a play". -->
+    <string name="home_footer_media_play">Play</string>
+    <!-- Footer hint on a film or episode in the favourites row. Verb: takes the title back out of
+         the favourites. -->
+    <string name="home_footer_media_unfavorite">Unfavorite</string>
+    <!-- Footer hint on a film or episode. Noun, plural: opens the page describing the title. -->
+    <string name="home_footer_media_details">Details</string>
+
+    <!-- Footer hint on a row of games. Noun: the directions move between the games in the row. -->
+    <string name="home_footer_game_item">Game</string>
+    <!-- Footer hint on a row of games, grid layout. Noun: the shoulder buttons move between the
+         home screen's rows. -->
+    <string name="home_footer_game_section">Section</string>
+    <!-- Footer hint on a row of games, carousel layout. Noun: up and down move between the home
+         screen's rows, which are mostly one platform each. -->
+    <string name="home_footer_game_platform">Platform</string>
+    <!-- Footer hint on an Android game whose package is downloaded but not yet installed. Verb:
+         hands the package to the system installer. -->
+    <string name="home_footer_game_install">Install</string>
+    <!-- Footer hint on a game that is on the device. Verb: launches the game. Not the noun in
+         "play time". -->
+    <string name="home_footer_game_play">Play</string>
+    <!-- Footer hint on a game that is not on the device yet. Verb: fetches it from the server. -->
+    <string name="home_footer_game_download">Download</string>
+    <!-- Footer hint on a game that is not a favourite. Verb: marks it as one. -->
+    <string name="home_footer_game_favorite">Favorite</string>
+    <!-- Footer hint on a game that is already a favourite. Verb: takes it back out. -->
+    <string name="home_footer_game_unfavorite">Unfavorite</string>
+    <!-- Footer hint on a game. Noun, plural: opens the page describing the game. -->
+    <string name="home_footer_game_details">Details</string>
+
+    <!-- Footer hint while the last card of a row is under the cursor. Noun: the directions move
+         between the games in the row. -->
+    <string name="home_footer_viewall_item">Game</string>
+    <!-- Footer hint while the last card of a row is under the cursor, grid layout. Noun: the
+         shoulder buttons move between the home screen's rows. -->
+    <string name="home_footer_viewall_section">Section</string>
+    <!-- Footer hint while the last card of a row is under the cursor, carousel layout. Noun: up
+         and down move between the home screen's rows. -->
+    <string name="home_footer_viewall_platform">Platform</string>
+    <!-- Footer hint on the card that ends a row. Noun: opens the full library list. -->
+    <string name="home_footer_viewall_library">Library</string>
+
+    <!-- Title of the prompt offered when a download finishes, asking whether the game should get a
+         tile on the curated home grid. -->
+    <string name="home_tile_add_title">Add to home grid?</string>
+    <!-- Body of that prompt. %1$s is the game's title. -->
+    <string name="home_tile_add_message">%1$s finished downloading.</string>
+    <!-- Accepting button on that prompt. Verb: puts the tile on the grid. -->
+    <string name="home_tile_add_confirm">Add</string>
+    <!-- Declining button on that prompt. Adverb phrase: leaves the grid alone this time. -->
+    <string name="home_tile_add_cancel">Not now</string>
+
+    <!-- Title of the notice shown when a chosen media tile is already on this device, so it will
+         play from local files. Statement about the tile, not an instruction. -->
+    <string name="home_media_tile_notice_local_title">Plays from this device</string>
+    <!-- Title of the notice shown when a chosen media tile is only on the server. Instruction: the
+         title has to be downloaded before the tile can play it. -->
+    <string name="home_media_tile_notice_download_title">Download to play here</string>
+
+    <!-- Title of the file browser opened to pick an image or video to sit behind a curated grid
+         page. "Backdrop" is the page's background art. -->
+    <string name="home_tile_file_browser_backdrop_title">Choose a backdrop</string>
+    <!-- Title of the file browser opened to pick a video file for a tile on the curated grid. -->
+    <string name="home_tile_file_browser_video_title">Choose a video</string>
+
+    <!-- Shown in place of a row for a pinned collection that holds nothing. %1$s is the
+         collection's name. -->
+    <string name="home_empty_pinned_row">No games in %1$s</string>
+    <!-- Heading shown on the home screen when the library is completely empty. -->
+    <string name="home_empty_title">No games yet</string>
+    <!-- Body under that heading when a game server is already connected. Verb phrase addressed to
+         the user. -->
+    <string name="home_empty_message_configured">Sync your library to get started</string>
+    <!-- Body under that heading when no game server has been connected. "Rom Manager" is the name
+         of the server software Argosy talks to; leave it untranslated. "Settings" names Argosy's
+         own settings screen. -->
+    <string name="home_empty_message_unconfigured">Connect to a Rom Manager server in Settings to get started</string>
+    <!-- Button hint under that heading. Verb phrase: fetches the whole library from the server. -->
+    <string name="home_empty_sync_hint">Sync Library</string>
+
+    <!-- Heading of the menu that opens over a game on the home screen. Rendered in caps in
+         English; use whatever casing is normal for a heading in your language. -->
+    <string name="home_quick_actions_heading">QUICK ACTIONS</string>
+    <!-- Row in that menu, for an Android game whose package is downloaded but not installed. Verb:
+         hands the package to the system installer. -->
+    <string name="home_quick_actions_install">Install</string>
+    <!-- Row in that menu, for a game that is on the device. Verb: launches the game. -->
+    <string name="home_quick_actions_play">Play</string>
+    <!-- Row in that menu, for a game that is not on the device. Verb: fetches it from the
+         server. -->
+    <string name="home_quick_actions_download">Download</string>
+    <!-- Row in that menu. Verb: marks the game as a favourite. -->
+    <string name="home_quick_actions_favorite">Favorite</string>
+    <!-- Row in that menu. Verb: takes the game back out of the favourites. -->
+    <string name="home_quick_actions_unfavorite">Unfavorite</string>
+    <!-- Row in that menu. Noun, plural: opens the page describing the game. -->
+    <string name="home_quick_actions_details">Details</string>
+    <!-- Row in that menu. Verb phrase: opens the list of the user's collections so the game can be
+         put in one. -->
+    <string name="home_quick_actions_add_to_collection">Add to Collection</string>
+    <!-- Row in that menu. Verb phrase: fetches this one game's metadata from the server again. -->
+    <string name="home_quick_actions_refresh_data">Refresh Data</string>
+    <!-- Row in that menu. Verb phrase: fetches every game of this platform from the server
+         again. -->
+    <string name="home_quick_actions_resync_platform">Resync Platform</string>
+    <!-- Row in that menu. Verb phrase: erases the copy of the game held on this device, keeping
+         the library entry. -->
+    <string name="home_quick_actions_delete_download">Delete Download</string>
+    <!-- Row in that menu, for an installed Android app. Verb phrase: drops the app from Argosy's
+         home screen without uninstalling it. -->
+    <string name="home_quick_actions_remove_from_home">Remove from Home</string>
+    <!-- Row in that menu. Verb: keeps the game in the library but stops showing it. -->
+    <string name="home_quick_actions_hide">Hide</string>
+
+    <!-- Heading shown in place of the Next Up row when there is nothing to follow on from. -->
+    <string name="home_media_empty_next_up_title">Nothing up next</string>
+    <!-- Body under that heading. -->
+    <string name="home_media_empty_next_up_message">Finish an episode and the next one shows up here.</string>
+    <!-- Heading shown in place of the Continue Watching row when nothing was left part played. -->
+    <string name="home_media_empty_continue_watching_title">Nothing to continue</string>
+    <!-- Body under that heading. -->
+    <string name="home_media_empty_continue_watching_message">Anything you stop part way through shows up here.</string>
+    <!-- Heading shown in place of a media library row that holds nothing. "Library" here is one of
+         the collections a media server offers, not Argosy's game library. -->
+    <string name="home_media_empty_library_title">Nothing in this library</string>
+    <!-- Body under that heading. Verb phrase addressed to the user. -->
+    <string name="home_media_empty_library_message">Refresh to fetch this library from your media server.</string>
+
+    <!-- Drawn on a tile of the curated home grid whose game is no longer in the library. Adjective
+         phrase describing the game, not a command to find it. -->
+    <string name="home_grid_tile_missing_game">Missing game</string>
+    <!-- Drawn on a tile of the curated home grid whose collection has been deleted. Adjective
+         phrase describing the collection. -->
+    <string name="home_grid_tile_missing_collection">Missing collection</string>
+    <!-- Second line on a tile of the curated home grid that stands for a whole collection. Noun,
+         singular, naming what kind of thing the tile is. -->
+    <string name="home_grid_tile_collection_subtitle">Collection</string>
+    <!-- Label of the figure on a collection tile of the curated home grid, with the number of
+         games underneath it. Noun, plural. -->
+    <string name="home_grid_tile_collection_games_stat">Games</string>
+    <!-- Drawn on a tile of the curated home grid whose app is no longer installed. Adjective
+         phrase describing the app. -->
+    <string name="home_grid_tile_missing_app">Missing app</string>
+    <!-- Second line on a tile of the curated home grid that launches an installed Android app.
+         Noun, singular, short for "application". -->
+    <string name="home_grid_tile_app_subtitle">App</string>
+    <!-- Drawn on a tile of the curated home grid whose film or episode the library no longer
+         holds. "Title" here is a film or a series, not a heading. -->
+    <string name="home_grid_tile_missing_media">Missing title</string>
+    <!-- Second line on a tile of the curated home grid that plays a video file stored on the
+         handheld itself rather than on a server. -->
+    <string name="home_grid_tile_local_media_subtitle">On this device</string>
+    <!-- Drawn on a tile of the curated home grid pointing at something that can no longer be
+         worked out at all. Adjective describing the tile's target. -->
+    <string name="home_grid_tile_unresolvable">Unavailable</string>
+
+    <!-- Brief message after refreshing one game's metadata from the game server. Past tense
+         statement, not a command. -->
+    <string name="home_notice_game_data_refreshed">Game data refreshed</string>
+    <!-- Brief message after refreshing one installed Android app's details. Past tense
+         statement. -->
+    <string name="home_notice_android_data_refreshed">Game data refreshed</string>
+
+    <!-- Brief message shown when a download is asked for on a game that is already on the
+         device. -->
+    <string name="home_notice_already_downloaded">Game already downloaded</string>
+    <!-- Brief message when a multi-disc game starts downloading. "Disc" is one physical disc of
+         the original release. -->
+    <plurals name="home_notice_discs_queued">
+        <item quantity="one">Downloading %d disc</item>
+        <item quantity="other">Downloading %d discs</item>
+    </plurals>
+    <!-- Brief message when unpacking a finished download failed. "Game details" names the page
+         reached by opening a game. -->
+    <string name="home_notice_extraction_failed">Extraction failed. Open game details to retry.</string>
+    <!-- Brief message when handing an Android package to the system installer failed. "APK" is the
+         Android package file format; leave it untranslated. -->
+    <string name="home_notice_apk_install_failed">Could not install APK</string>
+    <!-- Brief message after erasing the copy of a game held on this device. Past tense statement
+         about the download, not a command. -->
+    <string name="home_notice_download_deleted">Download deleted</string>
+
+    <!-- Brief message after rebuilding the row of suggested games. Past tense statement. -->
+    <string name="home_notice_recommendations_updated">Recommendations updated</string>
+    <!-- Brief message when the library is too small to suggest anything from. -->
+    <string name="home_notice_recommendations_insufficient">Not enough games to generate recommendations</string>
+
+    <!-- Brief message when a collection being played through in order moves on. The next game's
+         title is shown underneath. Adverb phrase describing what happens next, not a command. -->
+    <string name="home_notice_playing_next">Playing next</string>
+
+    <!-- Second line under a collection in the tile picker, saying how many games it holds. -->
+    <plurals name="home_tile_picker_collection_game_count">
+        <item quantity="one">%d game</item>
+        <item quantity="other">%d games</item>
+    </plurals>
+    <!-- Second line under an installed app in the tile picker, when Argosy recognises the app as
+         an emulator. Noun, singular. -->
+    <string name="home_tile_picker_app_emulator">Emulator</string>
+    <!-- Second line under an installed app in the tile picker, for anything else. Noun, singular,
+         short for "application". -->
+    <string name="home_tile_picker_app_other">App</string>
+
+    <!-- Second line under a television series already placed on the curated grid, saying what kind
+         of thing the tile stands for. Noun, singular: one series. -->
+    <string name="home_tile_picker_media_series">Series</string>
+    <!-- Second line under a film already placed on the curated grid. Noun, singular. -->
+    <string name="home_tile_picker_media_movie">Movie</string>
+
+    <!-- Second line under a television series in the media half of the tile picker. Noun,
+         singular: one series. -->
+    <string name="home_media_picker_series">Series</string>
+    <!-- Second line under a film in the media half of the tile picker. Noun, singular. -->
+    <string name="home_media_picker_movie">Movie</string>
+
+    <!-- Name of the season holding a series' one-off episodes, the season a media server numbers
+         zero. Noun, plural. -->
+    <string name="home_media_season_specials">Specials</string>
+    <!-- Name of a numbered season of a television series. %1$d is the season number. -->
+    <string name="home_media_season_number">Season %1$d</string>
+    <!-- Second line under a season none of whose episodes have been fetched from the media server
+         yet. -->
+    <string name="home_media_season_none_synced">Nothing synced yet</string>
+    <!-- Second line under a season whose episodes are all downloaded. %1$d is how many episodes
+         that is. -->
+    <string name="home_media_season_local_all">All %1$d on this device</string>
+    <!-- Second line under a season some of whose episodes are downloaded. %1$d is how many are on
+         the device, %2$d how many the season has. -->
+    <string name="home_media_season_local_partial">%1$d of %2$d on this device</string>
+    <!-- Rough size of a batch of episodes about to be downloaded. %1$.1f is a number of gigabytes.
+         "GB" is the unit symbol. -->
+    <string name="home_media_download_size_gigabytes">%1$.1f GB</string>
+</resources>

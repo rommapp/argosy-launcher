@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.screens.media.delegates
 
+import android.content.Context
+import com.nendo.argosy.R
 import com.nendo.argosy.data.download.MediaDownloadManager
 import com.nendo.argosy.data.download.MediaSizeEstimate
 import com.nendo.argosy.data.download.MediaSubtitleOutlook
@@ -9,6 +11,7 @@ import com.nendo.argosy.data.media.MediaAvailabilityVerifier
 import com.nendo.argosy.data.media.mediaAvailabilityOf
 import com.nendo.argosy.data.preferences.MediaDownloadQuality
 import com.nendo.argosy.data.repository.MediaRepository
+import com.nendo.argosy.ui.common.labelRes
 import com.nendo.argosy.ui.components.EpisodePickerEntry
 import com.nendo.argosy.ui.components.EpisodePickerQuickAction
 import com.nendo.argosy.ui.components.EpisodePickerRow
@@ -20,6 +23,7 @@ import com.nendo.argosy.ui.screens.media.MediaDownloadPrompt
 import com.nendo.argosy.ui.screens.media.MediaDownloadStep
 import com.nendo.argosy.ui.screens.media.MediaDownloadSummary
 import com.nendo.argosy.ui.screens.media.MediaItemUi
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -30,6 +34,10 @@ private const val NEXT_FIVE = 5
 private const val NEXT_TEN = 10
 private const val BYTES_PER_GIGABYTE = 1024.0 * 1024.0 * 1024.0
 private const val STORAGE_HEADROOM_BYTES = 200L * 1024 * 1024
+
+private const val OPTION_KEY_KEEP = "keep"
+private const val OPTION_KEY_REMOVE = "remove"
+private const val OPTION_KEY_REMOVE_DOWNLOAD = "remove_download"
 
 /**
  * The answer to asking for a download prompt: either the prompt itself, or the reason there is
@@ -54,6 +62,7 @@ sealed interface MediaDownloadPromptOutcome {
  */
 @Singleton
 class MediaDownloadDelegate @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val mediaRepository: MediaRepository,
     private val mediaDownloadManager: MediaDownloadManager,
     private val availabilityVerifier: MediaAvailabilityVerifier,
@@ -140,18 +149,20 @@ class MediaDownloadDelegate @Inject constructor(
         }
         if (rows.isEmpty()) {
             return MediaDownloadPromptOutcome.Refused(
-                if (fetchFailed) {
-                    "Couldn't get this show's episodes from the server"
-                } else {
-                    "No episodes were found for this show"
-                }
+                context.getString(
+                    if (fetchFailed) {
+                        R.string.media_download_refused_fetch_failed
+                    } else {
+                        R.string.media_download_refused_no_episodes
+                    }
+                )
             )
         }
         return MediaDownloadPromptOutcome.Ready(
             MediaDownloadPrompt(
                 step = MediaDownloadStep.EPISODES,
                 title = item.title,
-                subtitle = "Choose episodes",
+                subtitle = context.getString(R.string.media_download_episodes_subtitle),
                 episodes = EpisodePickerState(
                     selection = EpisodeSelection(rows = rows),
                     quickActions = quickActionsFor(item.itemId)
@@ -170,12 +181,12 @@ class MediaDownloadDelegate @Inject constructor(
         return listOf(
             EpisodePickerQuickAction(
                 key = "next-$NEXT_FIVE",
-                label = "Next $NEXT_FIVE",
+                label = context.getString(R.string.media_download_quick_action_next, NEXT_FIVE),
                 itemIds = rolling.take(NEXT_FIVE)
             ),
             EpisodePickerQuickAction(
                 key = "next-$NEXT_TEN",
-                label = "Next $NEXT_TEN",
+                label = context.getString(R.string.media_download_quick_action_next, NEXT_TEN),
                 itemIds = rolling
             )
         )
@@ -264,24 +275,32 @@ class MediaDownloadDelegate @Inject constructor(
         MediaDownloadPrompt(
             step = MediaDownloadStep.CONFIRM,
             title = title,
-            subtitle = "${downloadCount(targets.size)} on this device",
+            subtitle = context.getString(
+                R.string.media_download_confirm_subtitle,
+                downloadCount(targets.size)
+            ),
             options = listOf(
                 MediaDownloadOption(
-                    label = "Keep",
-                    supporting = "Nothing is deleted"
+                    key = OPTION_KEY_KEEP,
+                    label = context.getString(R.string.media_download_confirm_keep),
+                    supporting = context.getString(R.string.media_download_confirm_keep_supporting)
                 ),
                 MediaDownloadOption(
-                    label = "Remove",
-                    supporting = "Deletes ${downloadCount(targets.size)} from this device",
+                    key = OPTION_KEY_REMOVE,
+                    label = context.getString(R.string.media_download_confirm_remove),
+                    supporting = context.getString(
+                        R.string.media_download_confirm_remove_supporting,
+                        downloadCount(targets.size)
+                    ),
                     isRemoval = true
                 )
             ),
             targets = targets,
-            warning = "The files come back only by downloading them again"
+            warning = context.getString(R.string.media_download_confirm_warning)
         )
 
     private fun downloadCount(count: Int): String =
-        if (count == 1) "1 download" else "$count downloads"
+        context.resources.getQuantityString(R.plurals.media_download_count, count, count)
 
     private suspend fun qualityPrompt(
         title: String,
@@ -296,8 +315,9 @@ class MediaDownloadDelegate @Inject constructor(
             MediaDownloadQuality.entries.forEach { quality ->
                 add(
                     MediaDownloadOption(
+                        key = quality.name,
                         quality = quality,
-                        label = quality.displayName,
+                        label = context.getString(quality.labelRes),
                         supporting = supportingFor(quality, estimates[quality])
                     )
                 )
@@ -305,8 +325,11 @@ class MediaDownloadDelegate @Inject constructor(
             if (allowRemove) {
                 add(
                     MediaDownloadOption(
-                        label = "Remove Download",
-                        supporting = "Deletes the copy on this device",
+                        key = OPTION_KEY_REMOVE_DOWNLOAD,
+                        label = context.getString(R.string.media_download_quality_remove),
+                        supporting = context.getString(
+                            R.string.media_download_quality_remove_supporting
+                        ),
                         isRemoval = true
                     )
                 )
@@ -314,7 +337,7 @@ class MediaDownloadDelegate @Inject constructor(
         }
         val largest = estimates.values.maxOfOrNull { it.bytes } ?: 0L
         val warning = if (largest > 0 && largest + STORAGE_HEADROOM_BYTES > available) {
-            "Video files are large and this may not fit"
+            context.getString(R.string.media_download_storage_warning)
         } else {
             null
         }
@@ -343,16 +366,18 @@ class MediaDownloadDelegate @Inject constructor(
      */
     private fun subtitleNote(outlook: MediaSubtitleOutlook): String {
         val pictureOnly = outlook.hasImageSubtitles && !outlook.hasTextSubtitles
-        return when {
-            !outlook.anythingKnown ->
-                "Text subtitles download with the video, picture subtitles come only with Original"
-            !outlook.hasTextSubtitles && !outlook.hasImageSubtitles -> "No subtitles on this title"
-            !outlook.hasImageSubtitles -> "Subtitles download with the video"
-            pictureOnly && outlook.burnsInImageSubtitles ->
-                "Picture subtitles are drawn into a smaller copy and cannot be turned off"
-            pictureOnly -> "Picture subtitles come only with Original"
-            else -> "Text subtitles download with the video, picture subtitles come only with Original"
-        }
+        return context.getString(
+            when {
+                !outlook.anythingKnown -> R.string.media_download_note_mixed
+                !outlook.hasTextSubtitles && !outlook.hasImageSubtitles ->
+                    R.string.media_download_note_none
+                !outlook.hasImageSubtitles -> R.string.media_download_note_text_only
+                pictureOnly && outlook.burnsInImageSubtitles ->
+                    R.string.media_download_note_burned_in
+                pictureOnly -> R.string.media_download_note_picture_only
+                else -> R.string.media_download_note_mixed
+            }
+        )
     }
 
     /**
@@ -364,15 +389,30 @@ class MediaDownloadDelegate @Inject constructor(
         quality: MediaDownloadQuality,
         estimate: MediaSizeEstimate?
     ): String = when {
-        estimate == null && quality == MediaDownloadQuality.ORIGINAL -> "Source file, size varies"
-        estimate == null -> "Server transcode"
-        estimate.isSourceSize -> "Source file - ${formatGigabytes(estimate.bytes)}"
-        else -> "About ${formatGigabytes(estimate.bytes)}"
+        estimate == null && quality == MediaDownloadQuality.ORIGINAL ->
+            context.getString(R.string.media_download_quality_source_unknown)
+        estimate == null -> context.getString(R.string.media_download_quality_transcode)
+        estimate.isSourceSize -> context.getString(
+            R.string.media_download_quality_source_size,
+            formatGigabytes(estimate.bytes)
+        )
+        else -> context.getString(
+            R.string.media_download_quality_estimate,
+            formatGigabytes(estimate.bytes)
+        )
     }
 
     private fun subtitleFor(targetCount: Int, availableBytes: Long): String {
-        val scope = if (targetCount == 1) "1 title" else "$targetCount titles"
-        return "$scope - ${formatGigabytes(availableBytes)} free"
+        val scope = context.resources.getQuantityString(
+            R.plurals.media_download_title_count,
+            targetCount,
+            targetCount
+        )
+        return context.getString(
+            R.string.media_download_quality_subtitle,
+            scope,
+            formatGigabytes(availableBytes)
+        )
     }
 
     /**
@@ -384,11 +424,18 @@ class MediaDownloadDelegate @Inject constructor(
         val episodes = mediaRepository.getSeriesEpisodes(seriesId)
         if (episodes.isEmpty()) return emptyList()
         return buildEpisodePickerRows(
+            context = context,
             entries = episodes.map { episode ->
                 EpisodePickerEntry(
                     itemId = episode.itemId,
                     seasonNumber = episode.parentIndexNumber,
-                    label = episode.indexNumber?.let { "$it. ${episode.name}" } ?: episode.name,
+                    label = episode.indexNumber?.let {
+                        context.getString(
+                            R.string.media_download_episode_row_label,
+                            it,
+                            episode.name
+                        )
+                    } ?: episode.name,
                     isDownloaded = episode.localPath != null
                 )
             },
@@ -432,5 +479,8 @@ class MediaDownloadDelegate @Inject constructor(
             .filter { it.localPath != null }
             .map { it.itemId }
 
-    private fun formatGigabytes(bytes: Long): String = "%.1f GB".format(bytes / BYTES_PER_GIGABYTE)
+    private fun formatGigabytes(bytes: Long): String = context.getString(
+        R.string.media_download_size_gigabytes,
+        bytes / BYTES_PER_GIGABYTE
+    )
 }

@@ -474,6 +474,49 @@ object SavePathRegistry {
             usesFolderBasedSaves = true
         ),
 
+        /**
+         * PS3 - folder-based saves, one directory per artifact under a single hardcoded user.
+         * aPS3e pins the user to `00000001`; desktop RPCS3 can hold several, so a desktop layout
+         * added later must discover that level rather than inherit this constant.
+         */
+        "aps3e" to SavePathConfig(
+            emulatorId = "aps3e",
+            defaultPaths = listOf(
+                "{extStorage}/Android/data/aenu.aps3e/files/aps3e/config/dev_hdd0/home/00000001/savedata"
+            ),
+            saveExtensions = listOf("*"),
+            usesFolderBasedSaves = true
+        ),
+
+        /**
+         * Xbox 360 - content is keyed by profile before title, so the base stops at `content` and
+         * the XUID level below it is discovered per install. AX360E is deliberately absent: its
+         * layout has not been read from the app, and a guessed path resolves to a directory the
+         * emulator never writes.
+         */
+        "xendroid" to SavePathConfig(
+            emulatorId = "xendroid",
+            defaultPaths = listOf(
+                "{extStorage}/Android/data/xendroid.compose/files/compose/content"
+            ),
+            saveExtensions = listOf("*"),
+            usesFolderBasedSaves = true
+        ),
+
+        /**
+         * Xbox - identifiable but not syncable, and the empty path list is the point. Saves are
+         * written to `E:\UDATA\<save_id>\` inside a FATX filesystem inside the `.qcow2` or `.img`
+         * hard-disk image the emulator boots, and hakuX takes that image from a file picker rather
+         * than placing it anywhere fixed. There is no host directory to name, so naming a
+         * plausible one would offer the user a save folder that stays empty forever.
+         */
+        "hakux" to SavePathConfig(
+            emulatorId = "hakux",
+            defaultPaths = emptyList(),
+            saveExtensions = emptyList(),
+            supported = false
+        ),
+
         // Wii U - folder-based saves by title ID
         "cemu" to SavePathConfig(
             emulatorId = "cemu",
@@ -665,7 +708,10 @@ object SavePathRegistry {
         "info.cemu.cemu" to "cemu",
         "org.vita3k.emulator" to "vita3k",
         "org.vita3k.emulator.ikhoeyZX" to "vita3k-zx",
-        "com.github.stenzek.duckstation" to "duckstation"
+        "com.github.stenzek.duckstation" to "duckstation",
+        "aenu.aps3e" to "aps3e",
+        "xendroid.compose" to "xendroid",
+        "com.rfandango.haku_x" to "hakux"
     )
 
     private val packagePrefixToConfigId = mapOf(

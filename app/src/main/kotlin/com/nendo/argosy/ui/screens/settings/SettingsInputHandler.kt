@@ -63,6 +63,7 @@ class SettingsInputHandler(
         put(SettingsSection.STORAGE_CACHES, StorageCachesSectionInput(viewModel))
         put(SettingsSection.DRIVERS, DriversSectionInput(viewModel))
         for (s in listOf(
+            SettingsSection.MAIN,
             SettingsSection.ACCOUNTS,
             SettingsSection.BIOS, SettingsSection.ROMM, SettingsSection.SAVES,
             SettingsSection.CONTROLLER_GRIP,

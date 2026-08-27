@@ -8,6 +8,8 @@ import com.nendo.argosy.data.preferences.AccountScopedDataStore
 import com.nendo.argosy.data.preferences.dataStore
 import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.data.storage.FileAccessLayerImpl
+import com.nendo.argosy.data.sync.SyncNotificationCopyResources
+import com.nendo.argosy.domain.usecase.sync.SyncNotificationCopy
 import com.nendo.argosy.hardware.AyaneoLEDController
 import com.nendo.argosy.hardware.LEDController
 import com.nendo.argosy.hardware.OdinLEDController
@@ -30,6 +32,10 @@ abstract class AppModule {
     @Binds
     @Singleton
     abstract fun bindFileAccessLayer(impl: FileAccessLayerImpl): FileAccessLayer
+
+    @Binds
+    @Singleton
+    abstract fun bindSyncNotificationCopy(impl: SyncNotificationCopyResources): SyncNotificationCopy
 
     companion object {
 

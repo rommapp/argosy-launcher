@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="collections_browse_genres">Genres</string>
+    <string name="collections_browse_game_modes">Modes de jeu</string>
+    <string name="collections_browse_series">Séries</string>
+
+    <string name="collections_section_mine">MES COLLECTIONS</string>
+    <string name="collections_section_browse_by">PARCOURIR PAR</string>
+
+    <string name="collections_pinned_description">Épinglée</string>
+
+    <string name="collections_new">Nouvelle collection</string>
+
+    <plurals name="collections_game_count">
+        <item quantity="one">%d jeu</item>
+        <item quantity="many">%d jeux</item>
+        <item quantity="other">%d jeux</item>
+    </plurals>
+    <plurals name="collections_category_count">
+        <item quantity="one">%d catégorie</item>
+        <item quantity="many">%d catégories</item>
+        <item quantity="other">%d catégories</item>
+    </plurals>
+
+    <string name="collections_options_download_all">Tout télécharger (%1$d)</string>
+    <string name="collections_options_rename">Renommer la collection</string>
+    <string name="collections_options_delete">Supprimer la collection</string>
+    <string name="collections_options_remove_game">Retirer \"%1$s\"</string>
+    <string name="collections_options_remove_game_fallback">Jeu</string>
+
+    <string name="collections_delete_dialog_title">Supprimer la collection</string>
+    <string name="collections_delete_dialog_message">Voulez-vous vraiment supprimer \"%1$s\" ? La collection sera supprimée, mais pas les jeux qu\'elle contient.</string>
+    <string name="collections_delete_dialog_confirm">Supprimer</string>
+
+    <string name="collections_create_dialog_title">Créer une collection</string>
+    <string name="collections_create_dialog_name_label">Nom de la collection</string>
+    <string name="collections_create_dialog_confirm">Créer</string>
+
+    <string name="collections_edit_dialog_title">Modifier la collection</string>
+    <string name="collections_edit_dialog_name_label">Nom de la collection</string>
+    <string name="collections_edit_dialog_confirm">Enregistrer</string>
+
+    <string name="collections_removegame_dialog_title">Retirer le jeu</string>
+    <string name="collections_removegame_dialog_message">Retirer \"%1$s\" de \"%2$s\" ?</string>
+    <string name="collections_removegame_dialog_confirm">Retirer</string>
+
+    <string name="collections_namedialog_cancel">Annuler</string>
+
+    <string name="collections_screen_hint_navigate">Naviguer</string>
+    <string name="collections_screen_hint_select">Sélectionner</string>
+    <string name="collections_screen_hint_back">Retour</string>
+    <string name="collections_screen_hint_refreshing">Actualisation…</string>
+    <string name="collections_screen_hint_refresh">Actualiser</string>
+    <string name="collections_screen_hint_unpin">Désépingler</string>
+    <string name="collections_screen_hint_pin">Épingler</string>
+    <string name="collections_screen_hint_options">Options</string>
+
+    <string name="collections_detail_loading">Chargement…</string>
+    <string name="collections_detail_hint_search_open">Ouvrir</string>
+    <string name="collections_detail_hint_search_close">Fermer la recherche</string>
+    <string name="collections_detail_hint_navigate">Naviguer</string>
+    <string name="collections_detail_hint_open">Ouvrir</string>
+    <string name="collections_detail_hint_back">Retour</string>
+    <string name="collections_detail_hint_search">Rechercher</string>
+    <string name="collections_detail_hint_unpin">Désépingler</string>
+    <string name="collections_detail_hint_pin">Épingler</string>
+    <string name="collections_detail_hint_jump">Aller à</string>
+    <string name="collections_detail_hint_options">Options</string>
+    <string name="collections_detail_hint_refreshing">Actualisation…</string>
+    <string name="collections_detail_hint_refresh">Actualiser</string>
+    <string name="collections_detail_back_description">Retour</string>
+    <string name="collections_detail_search_placeholder">Rechercher dans %1$s</string>
+    <string name="collections_detail_close_search_description">Fermer la recherche</string>
+    <string name="collections_detail_search_description">Rechercher</string>
+    <string name="collections_detail_empty_title">Aucun jeu dans cette collection</string>
+    <string name="collections_detail_empty_subtitle">Ajoutez des jeux depuis la bibliothèque ou la fiche du jeu</string>
+    <plurals name="collections_detail_header_game_count">
+        <item quantity="one">%d jeu</item>
+        <item quantity="many">%d jeux</item>
+        <item quantity="other">%d jeux</item>
+    </plurals>
+
+    <string name="collections_browser_loading">Chargement…</string>
+    <string name="collections_browser_hint_search_select">Sélectionner</string>
+    <string name="collections_browser_hint_search_close">Fermer la recherche</string>
+    <string name="collections_browser_hint_navigate">Naviguer</string>
+    <string name="collections_browser_hint_select">Sélectionner</string>
+    <string name="collections_browser_hint_back">Retour</string>
+    <string name="collections_browser_hint_search">Rechercher</string>
+    <string name="collections_browser_hint_unpin">Désépingler</string>
+    <string name="collections_browser_hint_pin">Épingler</string>
+    <string name="collections_browser_hint_jump">Aller à</string>
+    <string name="collections_browser_hint_refreshing">Actualisation…</string>
+    <string name="collections_browser_hint_refresh">Actualiser</string>
+    <string name="collections_browser_back_description">Retour</string>
+    <string name="collections_browser_search_placeholder">Rechercher dans %1$s</string>
+    <string name="collections_browser_close_search_description">Fermer la recherche</string>
+    <string name="collections_browser_search_description">Rechercher</string>
+    <string name="collections_browser_category_pinned_description">Épinglée</string>
+    <string name="collections_browser_title_fallback">Parcourir</string>
+    <string name="collections_browser_empty">Aucun %1$s trouvé</string>
+    <plurals name="collections_browser_header_category_count">
+        <item quantity="one">%d catégorie</item>
+        <item quantity="many">%d catégories</item>
+        <item quantity="other">%d catégories</item>
+    </plurals>
+    <plurals name="collections_browser_row_game_count">
+        <item quantity="one">%d jeu</item>
+        <item quantity="many">%d jeux</item>
+        <item quantity="other">%d jeux</item>
+    </plurals>
+
+    <string name="collections_category_loading">Chargement…</string>
+    <string name="collections_category_hint_search_open">Ouvrir</string>
+    <string name="collections_category_hint_search_close">Fermer la recherche</string>
+    <string name="collections_category_hint_navigate">Naviguer</string>
+    <string name="collections_category_hint_open">Ouvrir</string>
+    <string name="collections_category_hint_back">Retour</string>
+    <string name="collections_category_hint_search">Rechercher</string>
+    <string name="collections_category_hint_unpin">Désépingler</string>
+    <string name="collections_category_hint_pin">Épingler</string>
+    <string name="collections_category_hint_jump">Aller à</string>
+    <string name="collections_category_hint_refreshing">Actualisation…</string>
+    <string name="collections_category_hint_refresh">Actualiser</string>
+    <string name="collections_category_hint_download_all">Tout télécharger (%1$d)</string>
+    <string name="collections_category_downloadall_title">Mise en file des téléchargements</string>
+    <plurals name="collections_category_downloadall_progress">
+        <item quantity="one">%1$d sur %2$d jeu</item>
+        <item quantity="many">%1$d sur %2$d jeux</item>
+        <item quantity="other">%1$d sur %2$d jeux</item>
+    </plurals>
+    <string name="collections_category_back_description">Retour</string>
+    <string name="collections_category_search_placeholder">Rechercher dans %1$s</string>
+    <string name="collections_category_close_search_description">Fermer la recherche</string>
+    <string name="collections_category_search_description">Rechercher</string>
+    <string name="collections_category_empty_title">Aucun jeu dans cette catégorie</string>
+    <plurals name="collections_category_header_game_count">
+        <item quantity="one">%d jeu</item>
+        <item quantity="many">%d jeux</item>
+        <item quantity="other">%d jeux</item>
+    </plurals>
+    <string name="collections_detail_platform_unknown">Inconnu</string>
+    <string name="collections_category_platform_unknown">Inconnu</string>
+
+    <string name="collections_widecard_rating_value">%1$d/10</string>
+    <string name="collections_widecard_difficulty_value">%1$d/10</string>
+
+    <string name="downloads_empty_title">Aucun téléchargement</string>
+    <string name="downloads_empty_subtitle">Les téléchargements apparaîtront ici</string>
+    <string name="downloads_section_header_moving">Déplacement vers le stockage ROM</string>
+    <string name="downloads_section_header_extracting">Extraction</string>
+    <string name="downloads_section_header_downloading">Téléchargement</string>
+    <string name="downloads_section_header_active">Actifs</string>
+    <string name="downloads_section_header_queued">En file d\'attente</string>
+    <string name="downloads_section_header_finished">Terminés</string>
+    <string name="downloads_hint_navigate">Naviguer</string>
+    <string name="downloads_hint_remove">Retirer</string>
+    <string name="downloads_hint_cancel">Annuler</string>
+    <string name="downloads_hint_clear_finished">Effacer les terminés</string>
+    <string name="downloads_hint_back">Retour</string>
+    <string name="downloads_failed_dialog_title">Échec du téléchargement</string>
+    <string name="downloads_failed_dialog_message">Le téléchargement de \"%1$s\" a échoué. Que voulez-vous faire ?</string>
+    <string name="downloads_failed_dialog_confirm">Réessayer</string>
+    <string name="downloads_failed_dialog_clear">Effacer</string>
+    <string name="downloads_file_state_done">Terminé</string>
+    <string name="downloads_file_state_extracting">Extraction</string>
+    <string name="downloads_file_state_moving">Déplacement</string>
+    <string name="downloads_file_state_failed">Échec</string>
+    <string name="downloads_file_state_queued">En file d\'attente</string>
+    <string name="downloads_file_state_percent">%1$d%%</string>
+    <string name="downloads_item_status_moving">Déplacement vers le stockage ROM…</string>
+    <string name="downloads_item_status_extracting_fallback">Extraction…</string>
+    <string name="downloads_item_status_insufficient_storage">Requis : %1$s, disponible : %2$s</string>
+    <string name="downloads_item_status_failed_fallback">Échec du téléchargement</string>
+    <string name="downloads_item_status_queued_fallback">En file d\'attente</string>
+    <string name="downloads_completed_status_failed_fallback">Échec du téléchargement</string>
+    <string name="downloads_completed_status_installed">Installé</string>
+    <string name="downloads_speed_suffix">%1$s/s</string>
+
+    <string name="downloads_action_pause">Pause</string>
+    <string name="downloads_action_resume">Reprendre</string>
+    <string name="downloads_action_toggle">Basculer</string>
+    <string name="downloads_action_options">Options</string>
+    <string name="downloads_action_view">Voir</string>
+
+    <string name="downloads_steam_status_preparing">Préparation…</string>
+    <string name="downloads_steam_status_connecting">Connexion à Steam…</string>
+    <string name="downloads_steam_status_fetching_manifest">Récupération du manifeste du dépôt…</string>
+    <string name="downloads_steam_status_validating_fallback">Validation…</string>
+    <string name="downloads_steam_status_moving">Déplacement des fichiers…</string>
+    <string name="downloads_steam_status_cleaning">Nettoyage…</string>
+    <string name="downloads_steam_status_depot_progress">" (%1$d/%2$d dépôts)"</string>
+
+    <plurals name="downloads_group_progress">
+        <item quantity="one">%1$d sur %2$d fichier</item>
+        <item quantity="many">%1$d sur %2$d fichiers</item>
+        <item quantity="other">%1$d sur %2$d fichiers</item>
+    </plurals>
+
+    <string name="touchlayout_editor_title">Personnaliser les commandes tactiles</string>
+    <string name="touchlayout_editor_orientation_portrait">Portrait</string>
+    <string name="touchlayout_editor_orientation_landscape">Paysage</string>
+    <string name="touchlayout_editor_close">Fermer</string>
+</resources>

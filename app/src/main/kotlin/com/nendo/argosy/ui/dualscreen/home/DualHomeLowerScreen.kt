@@ -69,8 +69,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import com.nendo.argosy.R
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -273,7 +275,11 @@ fun DualHomeLowerScreen(
 
         if (!isCustomGrid) {
             Text(
-                text = "$platformName ($totalCount)",
+                text = stringResource(
+                    R.string.dual_home_carousel_header,
+                    platformName,
+                    totalCount
+                ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = LocalArgosyTheme.current.textDim,
                 modifier = Modifier
@@ -652,7 +658,7 @@ fun DualHomeLibraryGrid(
     columns: Int,
     sectionLabels: List<String>,
     currentSectionLabel: String,
-    platformLabel: String = "All",
+    platformLabel: String = stringResource(R.string.dual_library_grid_platform_fallback),
     showSectionOverlay: Boolean = false,
     overlaySectionLabel: String = "",
     repairedCoverPaths: Map<Long, String> = emptyMap(),
@@ -699,7 +705,7 @@ fun DualHomeLibraryGrid(
                 .surfaceBackdrop(BackdropRole.CONTENT)
         ) {
             Text(
-                text = "$platformLabel ($gameCount)",
+                text = stringResource(R.string.dual_library_grid_header, platformLabel, gameCount),
                 style = MaterialTheme.typography.bodyMedium,
                 color = LocalArgosyTheme.current.textDim,
                 modifier = Modifier
@@ -934,7 +940,7 @@ fun DualFilterOverlay(
                 val isActive = cat == category
                 TextButton(onClick = { onCategoryTapped(cat) }) {
                     Text(
-                        text = cat.label,
+                        text = stringResource(cat.labelRes),
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
                         color = if (isActive) theme.focusAccent else theme.textDim
@@ -1022,7 +1028,7 @@ private fun DualSearchContent(
             OutlinedTextField(
                 value = query,
                 onValueChange = onQueryChange,
-                placeholder = { Text("Search games...") },
+                placeholder = { Text(stringResource(R.string.dual_filter_search_placeholder)) },
                 singleLine = true,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1035,7 +1041,7 @@ private fun DualSearchContent(
 
         if (query.isNotBlank()) {
             Text(
-                text = "Filtering by: \"$query\"",
+                text = stringResource(R.string.dual_filter_search_active, query),
                 style = MaterialTheme.typography.bodySmall,
                 color = LocalArgosyTheme.current.textDim
             )

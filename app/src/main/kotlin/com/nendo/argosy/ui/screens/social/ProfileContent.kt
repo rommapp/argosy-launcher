@@ -41,9 +41,12 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.data.social.DailyPlaytime
 import com.nendo.argosy.data.social.MostPlayedGame
 import com.nendo.argosy.data.social.PresenceStatus
@@ -57,6 +60,8 @@ import com.nendo.argosy.ui.components.friends.SocialAvatar
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.util.clickableNoFocus
 import java.time.LocalDate
+import java.time.format.TextStyle
+import java.util.Locale
 import kotlin.math.roundToInt
 
 private const val PROFILE_DISPLAY_SECTIONS = 3
@@ -140,10 +145,14 @@ fun AccountInfoCard(
                     val presence = profile.presence
                     if (presence != null && profile.relationship != "self") {
                         val presenceText = when (presence.presenceStatus) {
-                            PresenceStatus.IN_GAME -> presence.gameTitle?.let { "playing $it" } ?: "in game"
-                            PresenceStatus.WATCHING -> presence.gameTitle?.let { "watching $it" } ?: "watching"
-                            PresenceStatus.ONLINE -> "online"
-                            PresenceStatus.AWAY -> "away"
+                            PresenceStatus.IN_GAME -> presence.gameTitle?.let {
+                                stringResource(R.string.social_accountcard_presence_playing, it)
+                            } ?: stringResource(R.string.social_accountcard_presence_in_game)
+                            PresenceStatus.WATCHING -> presence.gameTitle?.let {
+                                stringResource(R.string.social_accountcard_presence_watching_game, it)
+                            } ?: stringResource(R.string.social_accountcard_presence_watching)
+                            PresenceStatus.ONLINE -> stringResource(R.string.social_accountcard_presence_online)
+                            PresenceStatus.AWAY -> stringResource(R.string.social_accountcard_presence_away)
                             PresenceStatus.OFFLINE -> null
                         }
                         val presenceColor = when (presence.presenceStatus) {
@@ -181,13 +190,17 @@ fun AccountInfoCard(
                     val memberSince = formatMemberSince(profile.memberSince)
                     if (memberSince != null) {
                         Text(
-                            text = "Member since $memberSince",
+                            text = stringResource(R.string.social_accountcard_member_since_wide, memberSince),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                         )
                     }
                     Text(
-                        text = "${profile.friendCount} friends",
+                        text = pluralStringResource(
+                            R.plurals.social_accountcard_friend_count_wide,
+                            profile.friendCount,
+                            profile.friendCount
+                        ),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                     )
@@ -205,13 +218,17 @@ fun AccountInfoCard(
                 val memberSince = formatMemberSince(profile.memberSince)
                 if (memberSince != null) {
                     Text(
-                        text = "Member since $memberSince",
+                        text = stringResource(R.string.social_accountcard_member_since_compact, memberSince),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                     )
                 }
                 Text(
-                    text = "${profile.friendCount} friends",
+                    text = pluralStringResource(
+                        R.plurals.social_accountcard_friend_count_compact,
+                        profile.friendCount,
+                        profile.friendCount
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                 )
@@ -227,13 +244,16 @@ private fun RelationshipIcons(profile: UserProfileData) {
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 Icon(
                     imageVector = Icons.Outlined.HowToReg,
-                    contentDescription = "Friends",
+                    contentDescription = stringResource(R.string.social_relationship_friends_desc),
                     modifier = Modifier.size(18.dp),
                     tint = MaterialTheme.colorScheme.primary
                 )
                 Icon(
                     imageVector = if (profile.isFavorite) Icons.Filled.Star else Icons.Filled.StarBorder,
-                    contentDescription = if (profile.isFavorite) "Favorite" else "Not favorite",
+                    contentDescription = stringResource(
+                        if (profile.isFavorite) R.string.social_relationship_favorite_desc
+                        else R.string.social_relationship_not_favorite_desc
+                    ),
                     modifier = Modifier.size(18.dp),
                     tint = if (profile.isFavorite) Color(0xFFFFC107) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
                 )
@@ -242,7 +262,7 @@ private fun RelationshipIcons(profile: UserProfileData) {
         "none" -> {
             Icon(
                 imageVector = Icons.Filled.PersonAdd,
-                contentDescription = "Not friends",
+                contentDescription = stringResource(R.string.social_relationship_not_friends_desc),
                 modifier = Modifier.size(18.dp),
                 tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
             )
@@ -250,7 +270,7 @@ private fun RelationshipIcons(profile: UserProfileData) {
         "pending_outgoing", "pending_incoming" -> {
             Icon(
                 imageVector = Icons.Outlined.Schedule,
-                contentDescription = "Pending",
+                contentDescription = stringResource(R.string.social_relationship_pending_desc),
                 modifier = Modifier.size(18.dp),
                 tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
             )
@@ -265,13 +285,14 @@ fun ProfileStatsGrid(profile: UserProfileData, modifier: Modifier = Modifier) {
     }
     val columns = if (isWide) 3 else 2
 
+    val dash = stringResource(R.string.social_statsgrid_placeholder_dash)
     val stats = listOf(
-        formatPlayHours(profile.totalPlayHours) to "Total Play Time",
-        "${profile.gameCount}" to "Games Played",
-        "${profile.friendCount}" to "Friends",
-        (profile.topGenre ?: "--") to "Top Genre",
-        (profile.topPlatform ?: "--") to "Top Platform",
-        (profile.favoriteDecade ?: "--") to "Fav. Decade"
+        formatPlayHours(profile.totalPlayHours) to stringResource(R.string.social_statsgrid_total_play_time),
+        "${profile.gameCount}" to stringResource(R.string.social_statsgrid_games_played),
+        "${profile.friendCount}" to stringResource(R.string.social_statsgrid_friends),
+        (profile.topGenre ?: dash) to stringResource(R.string.social_statsgrid_top_genre),
+        (profile.topPlatform ?: dash) to stringResource(R.string.social_statsgrid_top_platform),
+        (profile.favoriteDecade ?: dash) to stringResource(R.string.social_statsgrid_fav_decade)
     )
 
     Card(
@@ -355,13 +376,13 @@ fun PlaytimeLineChart(dailyPlaytime: List<DailyPlaytime>, modifier: Modifier = M
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "LAST 30 DAYS",
+                    text = stringResource(R.string.social_playtimechart_header),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = "peak: $peakLabel",
+                    text = stringResource(R.string.social_playtimechart_peak, peakLabel),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                 )
@@ -548,7 +569,11 @@ private fun MostPlayedGameRow(
                 color = textColor
             )
             Text(
-                text = "${game.sessionCount} sessions",
+                text = pluralStringResource(
+                    R.plurals.social_mostplayed_sessions,
+                    game.sessionCount,
+                    game.sessionCount
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = textColor.copy(alpha = 0.5f)
             )
@@ -556,19 +581,24 @@ private fun MostPlayedGameRow(
     }
 }
 
+@Composable
 private fun formatPlayHours(hours: Double): String {
     return when {
-        hours < 1.0 -> "${(hours * 60).roundToInt()}m"
-        hours < 100.0 -> "%.1f hrs".format(hours)
-        hours < 1000.0 -> "${hours.roundToInt()} hrs"
-        else -> "%.1fk hrs".format(hours / 1000)
+        hours < 1.0 -> stringResource(R.string.social_playhours_minutes, (hours * 60).roundToInt())
+        hours < 100.0 -> stringResource(R.string.social_playhours_hours_decimal, "%.1f".format(hours))
+        hours < 1000.0 -> pluralStringResource(
+            R.plurals.social_playhours_hours_whole,
+            hours.roundToInt(),
+            hours.roundToInt()
+        )
+        else -> stringResource(R.string.social_playhours_hours_thousands, "%.1f".format(hours / 1000))
     }
 }
 
 private fun formatMemberSince(isoDate: String): String? {
     return try {
         val date = LocalDate.parse(isoDate.take(10))
-        val month = date.month.name.lowercase().replaceFirstChar { it.uppercase() }.take(3)
+        val month = date.month.getDisplayName(TextStyle.SHORT, Locale.getDefault())
         "$month ${date.year}"
     } catch (e: Exception) {
         null

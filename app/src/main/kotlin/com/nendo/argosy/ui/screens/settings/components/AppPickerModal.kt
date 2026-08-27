@@ -25,8 +25,10 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
+import com.nendo.argosy.R
 import com.nendo.argosy.data.platform.LaunchableApp
 import com.nendo.argosy.ui.components.Modal
 import com.nendo.argosy.ui.screens.settings.AppPickerModalState
@@ -50,13 +52,12 @@ fun AppPickerModal(
     }
 
     Modal(
-        title = "Select App  -  ${state.platformName}",
+        title = stringResource(R.string.settings_app_picker_title, state.platformName),
         baseWidth = Dimens.modalWidthXl,
         onDismiss = onDismiss
     ) {
         Text(
-            text = "Argosy has no known emulator installed for this platform. Pick any app to " +
-                "launch games with; you can tune how Argosy calls it via Launch Args afterwards.",
+            text = stringResource(R.string.settings_app_picker_intro),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = Dimens.spacingMd)
@@ -70,7 +71,7 @@ fun AppPickerModal(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "No launchable apps found.",
+                    text = stringResource(R.string.settings_app_picker_empty),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

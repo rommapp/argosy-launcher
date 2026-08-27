@@ -41,8 +41,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.input.GamepadEvent
 import com.nendo.argosy.ui.input.LocalGamepadInputHandler
 import com.nendo.argosy.data.repository.ControllerInfo
@@ -420,13 +422,13 @@ private fun ControllerListContent(
     onDismiss: () -> Unit
 ) {
     Modal(
-        title = "Input Mapping",
-        subtitle = "Select a controller to configure",
+        title = stringResource(R.string.settings_input_mapping_title),
+        subtitle = stringResource(R.string.settings_input_mapping_subtitle),
         baseWidth = 450.dp,
         onDismiss = onDismiss,
         footerHints = listOf(
-            InputButton.A to "Select",
-            InputButton.B to "Back"
+            InputButton.A to stringResource(R.string.settings_input_mapping_controller_select_hint),
+            InputButton.B to stringResource(R.string.settings_input_mapping_controller_back_hint)
         ),
         onFooterHintClick = { button -> if (button == InputButton.B) onDismiss() }
     ) {
@@ -448,7 +450,7 @@ private fun ControllerListContent(
                         tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
                     )
                     Text(
-                        text = "No controllers connected",
+                        text = stringResource(R.string.settings_input_mapping_empty),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                         textAlign = TextAlign.Center
@@ -516,7 +518,7 @@ private fun ControllerRow(
                 color = contentColor
             )
             Text(
-                text = controller.detectedLayout?.name ?: "Unknown layout",
+                text = controller.detectedLayout?.name ?: stringResource(R.string.settings_input_mapping_unknown_layout),
                 style = MaterialTheme.typography.bodySmall,
                 color = contentColor.copy(alpha = 0.6f)
             )
@@ -541,10 +543,10 @@ private fun PlatformMappingContent(
     FocusedScroll(listState, focusedIndex)
 
     val footerHints = listOf(
-        InputButton.A to "Remap",
-        InputButton.X to "Add",
-        InputButton.Y to "Clear",
-        InputButton.B to "Back"
+        InputButton.A to stringResource(R.string.settings_input_mapping_platform_remap_hint),
+        InputButton.X to stringResource(R.string.settings_input_mapping_platform_add_hint),
+        InputButton.Y to stringResource(R.string.settings_input_mapping_platform_clear_hint),
+        InputButton.B to stringResource(R.string.settings_input_mapping_platform_back_hint)
     )
 
     Modal(
@@ -564,20 +566,20 @@ private fun PlatformMappingContent(
                 if (!platformLocked) {
                     Icon(
                         painter = InputIcons.BumperLeft,
-                        contentDescription = "Previous platform",
+                        contentDescription = stringResource(R.string.settings_input_mapping_prev_platform_desc),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(Dimens.iconSm)
                     )
                 }
                 Text(
-                    text = "Platform: ${platform.displayName}",
+                    text = stringResource(R.string.settings_input_mapping_platform_label, platform.displayName),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 if (!platformLocked) {
                     Icon(
                         painter = InputIcons.BumperRight,
-                        contentDescription = "Next platform",
+                        contentDescription = stringResource(R.string.settings_input_mapping_next_platform_desc),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(Dimens.iconSm)
                     )
@@ -659,7 +661,7 @@ private fun ButtonMappingRow(
         )
         if (boundSources.isEmpty()) {
             Text(
-                text = "Not bound",
+                text = stringResource(R.string.settings_input_mapping_not_bound),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.error.copy(alpha = 0.7f * emphasis),
                 modifier = Modifier.weight(0.65f),
@@ -712,11 +714,11 @@ private fun RecordingOverlay(
 ) {
     val isCancelling = cancelProgress > 0f
     Modal(
-        title = "Press a button",
-        subtitle = "Recording input for $targetButton",
+        title = stringResource(R.string.settings_input_mapping_recording_title),
+        subtitle = stringResource(R.string.settings_input_mapping_recording_subtitle, targetButton),
         baseWidth = 350.dp,
         onDismiss = onDismiss,
-        footerHints = listOf(InputButton.B to "Hold to Cancel"),
+        footerHints = listOf(InputButton.B to stringResource(R.string.settings_input_mapping_recording_back_hint)),
         onFooterHintClick = { button -> if (button == InputButton.B) onDismiss() }
     ) {
         Box(
@@ -737,7 +739,11 @@ private fun RecordingOverlay(
                         else MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    text = if (isCancelling) "Cancelling..." else "Waiting for input...",
+                    text = if (isCancelling) {
+                        stringResource(R.string.settings_input_mapping_recording_cancelling)
+                    } else {
+                        stringResource(R.string.settings_input_mapping_recording_waiting)
+                    },
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface
                 )

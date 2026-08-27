@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.components
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -38,9 +39,11 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.domain.model.GridCell
 import com.nendo.argosy.domain.model.HomeTile
 import com.nendo.argosy.domain.model.TileRect
@@ -601,7 +604,7 @@ fun CustomGridAddPage(
                 modifier = Modifier.size(Dimens.iconXl)
             )
             Text(
-                text = "Add a page",
+                text = stringResource(R.string.ui_custom_grid_add_page),
                 style = MaterialTheme.typography.bodyMedium,
                 color = if (isFocused) theme.textPrimary else theme.textDim
             )
@@ -873,18 +876,31 @@ private const val WIDE_TILE_COVER_ASPECT = 0.7f
  * What a wide game tile says beside its cover. Only facts that exist are offered: a game with no
  * achievements and no play time shows nothing rather than a row of zeroes, which reads as broken.
  */
-fun tileStatsFor(game: com.nendo.argosy.ui.screens.home.HomeGameUi): List<TileStat> = buildList {
-    if (game.playTimeMinutes > 0) add(TileStat("Played", formatPlayTime(game.playTimeMinutes)))
-    if (game.achievementCount > 0) {
-        add(TileStat("Achievements", "${game.earnedAchievementCount}/${game.achievementCount}"))
+fun tileStatsFor(game: com.nendo.argosy.ui.screens.home.HomeGameUi, context: Context): List<TileStat> = buildList {
+    if (game.playTimeMinutes > 0) {
+        add(TileStat(context.getString(R.string.home_grid_tile_stat_played), formatPlayTime(context, game.playTimeMinutes)))
     }
-    if (game.releaseYear != null) add(TileStat("Released", game.releaseYear.toString()))
+    if (game.achievementCount > 0) {
+        add(
+            TileStat(
+                context.getString(R.string.home_grid_tile_stat_achievements),
+                "${game.earnedAchievementCount}/${game.achievementCount}"
+            )
+        )
+    }
+    if (game.releaseYear != null) {
+        add(TileStat(context.getString(R.string.home_grid_tile_stat_released), game.releaseYear.toString()))
+    }
 }
 
-private fun formatPlayTime(minutes: Int): String {
+private fun formatPlayTime(context: Context, minutes: Int): String {
     val hours = minutes / 60
     val remainder = minutes % 60
-    return if (hours > 0) "${hours}h ${remainder}m" else "${remainder}m"
+    return if (hours > 0) {
+        context.getString(R.string.common_homegrid_playtime_hours_minutes, hours, remainder)
+    } else {
+        context.getString(R.string.common_homegrid_playtime_minutes, remainder)
+    }
 }
 
 /**

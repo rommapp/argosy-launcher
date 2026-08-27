@@ -56,7 +56,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
+import com.nendo.argosy.R
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -66,6 +69,8 @@ import com.nendo.argosy.domain.model.SyncState
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.ModalInputEffect
+import com.nendo.argosy.ui.common.detailMessage
+import com.nendo.argosy.ui.common.statusMessage
 import com.nendo.argosy.ui.primitives.ActionButton
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
@@ -113,7 +118,7 @@ fun SyncOverlay(
     val displayRotation = if (isActiveSync) rotation else 0f
 
     val channelName = syncProgress?.displayChannelName
-    val rawStatusMessage = syncProgress?.statusMessage ?: ""
+    val rawStatusMessage = syncProgress?.statusMessage() ?: ""
 
     var debouncedStatusMessage by remember { mutableStateOf("") }
 
@@ -156,7 +161,8 @@ fun SyncOverlay(
                 }
                 isLocalModified && syncProgress is SyncProgress.LocalModified -> {
                     LocalModifiedContent(
-                        gameTitle = gameTitle ?: "Game",
+                        gameTitle = gameTitle
+                            ?: stringResource(R.string.ui_sync_overlay_unknown_game),
                         focusIndex = localModifiedFocusIndex,
                         onKeepLocal = onKeepLocalModified,
                         onRestoreSelected = onRestoreSelected
@@ -221,9 +227,9 @@ private fun ActiveSyncContent(
 
         Text(
             text = buildAnnotatedString {
-                append("Channel: ")
+                append(stringResource(R.string.ui_sync_overlay_slot_prefix))
                 withStyle(SpanStyle(color = LocalLauncherTheme.current.semanticColors.info)) {
-                    append(channelName ?: "Latest")
+                    append(channelName ?: stringResource(R.string.ui_sync_overlay_slot_default))
                 }
             },
             style = MaterialTheme.typography.bodyMedium,
@@ -355,12 +361,12 @@ private fun BlockedSyncContent(
         Spacer(modifier = Modifier.height(Dimens.spacingLg))
 
         Text(
-            text = syncProgress.statusMessage,
+            text = syncProgress.statusMessage(),
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onSurface
         )
 
-        syncProgress.detailMessage?.let { detail ->
+        syncProgress.detailMessage()?.let { detail ->
             Spacer(modifier = Modifier.height(Dimens.spacingSm))
             Text(
                 text = detail,
@@ -387,7 +393,7 @@ private fun BlockedSyncContent(
         ) {
             if (showGrantPermission && onGrantPermission != null) {
                 ActionButton(
-                    label = "Grant Permission",
+                    label = stringResource(R.string.ui_sync_overlay_blocked_grant),
                     onClick = onGrantPermission,
                     focused = focusedIndex == grantIndex,
                     primary = true,
@@ -397,7 +403,7 @@ private fun BlockedSyncContent(
 
             if (showOpenSettings && onOpenSettings != null) {
                 ActionButton(
-                    label = "Configure Save Path",
+                    label = stringResource(R.string.ui_sync_overlay_blocked_configure_path),
                     onClick = onOpenSettings,
                     focused = focusedIndex == settingsIndex,
                     primary = true,
@@ -405,7 +411,7 @@ private fun BlockedSyncContent(
                 )
             } else if (showDisableSync && onDisableSync != null) {
                 ActionButton(
-                    label = "Disable Sync",
+                    label = stringResource(R.string.ui_sync_overlay_blocked_disable),
                     onClick = onDisableSync,
                     focused = focusedIndex == disableIndex,
                     modifier = Modifier.weight(1f)
@@ -416,7 +422,7 @@ private fun BlockedSyncContent(
         if (onSkip != null) {
             Spacer(modifier = Modifier.height(Dimens.spacingSm))
             ActionButton(
-                label = "Skip for Now",
+                label = stringResource(R.string.ui_sync_overlay_blocked_skip),
                 onClick = onSkip,
                 focused = focusedIndex == skipIndex
             )
@@ -449,7 +455,7 @@ private fun HardcoreConflictContent(
         Spacer(modifier = Modifier.height(Dimens.spacingLg))
 
         Text(
-            text = "Hardcore Save Conflict",
+            text = stringResource(R.string.ui_sync_overlay_hardcore_title),
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onSurface
         )
@@ -457,7 +463,7 @@ private fun HardcoreConflictContent(
         Spacer(modifier = Modifier.height(Dimens.spacingSm))
 
         Text(
-            text = "The server version of \"$gameName\" no longer meets the requirements for hardcore mode.",
+            text = stringResource(R.string.ui_sync_overlay_hardcore_message, gameName),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -466,7 +472,7 @@ private fun HardcoreConflictContent(
         Spacer(modifier = Modifier.height(Dimens.spacingSm))
 
         Text(
-            text = "This can happen if the save was modified outside of Argosy.",
+            text = stringResource(R.string.ui_sync_overlay_hardcore_note),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -479,8 +485,8 @@ private fun HardcoreConflictContent(
         ) {
             if (onKeepHardcore != null) {
                 ConflictOption(
-                    label = "Keep Hardcore",
-                    subtitle = "Upload local save to server",
+                    label = stringResource(R.string.ui_sync_overlay_hardcore_keep),
+                    subtitle = stringResource(R.string.ui_sync_overlay_hardcore_keep_subtitle),
                     isFocused = focusIndex == 0,
                     onClick = onKeepHardcore
                 )
@@ -488,8 +494,10 @@ private fun HardcoreConflictContent(
 
             if (onDowngradeToCasual != null) {
                 ConflictOption(
-                    label = "Downgrade to Casual",
-                    subtitle = "Use server save, lose hardcore status",
+                    label = stringResource(R.string.ui_sync_overlay_hardcore_downgrade),
+                    subtitle = stringResource(
+                        R.string.ui_sync_overlay_hardcore_downgrade_subtitle
+                    ),
                     isFocused = focusIndex == 1,
                     onClick = onDowngradeToCasual
                 )
@@ -497,8 +505,8 @@ private fun HardcoreConflictContent(
 
             if (onKeepLocal != null) {
                 ConflictOption(
-                    label = "Skip Sync",
-                    subtitle = "Launch without syncing",
+                    label = stringResource(R.string.ui_sync_overlay_hardcore_skip),
+                    subtitle = stringResource(R.string.ui_sync_overlay_hardcore_skip_subtitle),
                     isFocused = focusIndex == 2,
                     onClick = onKeepLocal
                 )
@@ -531,7 +539,7 @@ private fun LocalModifiedContent(
         Spacer(modifier = Modifier.height(Dimens.spacingLg))
 
         Text(
-            text = "Local Save Modified",
+            text = stringResource(R.string.ui_sync_overlay_local_modified_title),
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onSurface
         )
@@ -539,7 +547,7 @@ private fun LocalModifiedContent(
         Spacer(modifier = Modifier.height(Dimens.spacingSm))
 
         Text(
-            text = "Your local save for \"$gameTitle\" has changes that haven't been backed up.",
+            text = stringResource(R.string.ui_sync_overlay_local_modified_message, gameTitle),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -548,7 +556,7 @@ private fun LocalModifiedContent(
         Spacer(modifier = Modifier.height(Dimens.spacingSm))
 
         Text(
-            text = "Would you like to keep your local progress or restore the previously selected save?",
+            text = stringResource(R.string.ui_sync_overlay_local_modified_question),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -561,8 +569,10 @@ private fun LocalModifiedContent(
         ) {
             if (onKeepLocal != null) {
                 ConflictOption(
-                    label = "Apply Local",
-                    subtitle = "Set local save as the latest version",
+                    label = stringResource(R.string.ui_sync_overlay_local_modified_apply),
+                    subtitle = stringResource(
+                        R.string.ui_sync_overlay_local_modified_apply_subtitle
+                    ),
                     isFocused = focusIndex == 0,
                     onClick = onKeepLocal
                 )
@@ -570,8 +580,10 @@ private fun LocalModifiedContent(
 
             if (onRestoreSelected != null) {
                 ConflictOption(
-                    label = "Use Synced Save",
-                    subtitle = "Overwrite local with last synced version (backup created)",
+                    label = stringResource(R.string.ui_sync_overlay_local_modified_restore),
+                    subtitle = stringResource(
+                        R.string.ui_sync_overlay_local_modified_restore_subtitle
+                    ),
                     isFocused = focusIndex == 1,
                     onClick = onRestoreSelected
                 )
@@ -609,7 +621,7 @@ private fun PostSessionConflictContent(
         Spacer(modifier = Modifier.height(Dimens.spacingLg))
 
         Text(
-            text = "Save Conflict",
+            text = stringResource(R.string.ui_sync_overlay_post_session_title),
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onSurface
         )
@@ -617,7 +629,11 @@ private fun PostSessionConflictContent(
         Spacer(modifier = Modifier.height(Dimens.spacingSm))
 
         Text(
-            text = "\"$gameTitle\" -- ${channelName ?: "Default Save"}",
+            text = stringResource(
+                R.string.ui_sync_overlay_post_session_subject,
+                gameTitle,
+                channelName ?: stringResource(R.string.ui_sync_overlay_post_session_default_slot)
+            ),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.primary,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -626,7 +642,7 @@ private fun PostSessionConflictContent(
         Spacer(modifier = Modifier.height(Dimens.spacingSm))
 
         Text(
-            text = "The server has a newer save. Overwriting will replace it with your local save.",
+            text = stringResource(R.string.ui_sync_overlay_post_session_message),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -634,9 +650,14 @@ private fun PostSessionConflictContent(
 
         Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
-        val localLabel = formatRelativeTimeShort(localTimestamp)
-        val serverLabel = formatRelativeTimeShort(serverTimestamp)
-        val deviceSuffix = if (serverDeviceName != null) " ($serverDeviceName)" else ""
+        val context = LocalContext.current
+        val localLabel = formatRelativeTimeShort(context, localTimestamp)
+        val serverLabel = formatRelativeTimeShort(context, serverTimestamp)
+        val serverLabelText = if (serverDeviceName != null) {
+            stringResource(R.string.ui_sync_overlay_post_session_server_named, serverDeviceName)
+        } else {
+            stringResource(R.string.ui_sync_overlay_post_session_server)
+        }
 
         Row(
             modifier = Modifier.fillMaxWidth(0.85f),
@@ -644,13 +665,13 @@ private fun PostSessionConflictContent(
         ) {
             TimestampLabel(
                 icon = Icons.Default.PhoneAndroid,
-                label = "Local",
+                label = stringResource(R.string.ui_sync_overlay_post_session_local),
                 timestamp = localLabel,
                 isNewer = localIsNewer
             )
             TimestampLabel(
                 icon = Icons.Default.Cloud,
-                label = "Server$deviceSuffix",
+                label = serverLabelText,
                 timestamp = serverLabel,
                 isNewer = !localIsNewer
             )
@@ -661,16 +682,20 @@ private fun PostSessionConflictContent(
         Column(modifier = Modifier.fillMaxWidth(0.85f)) {
             if (onSkipSync != null) {
                 ConflictOption(
-                    label = "Skip Sync",
-                    subtitle = "Keep your local save, do not upload",
+                    label = stringResource(R.string.ui_sync_overlay_post_session_skip),
+                    subtitle = stringResource(
+                        R.string.ui_sync_overlay_post_session_skip_subtitle
+                    ),
                     isFocused = focusIndex == 0,
                     onClick = onSkipSync
                 )
             }
             if (onOverwrite != null) {
                 ConflictOption(
-                    label = "Overwrite Server",
-                    subtitle = "Replace the server save with your local version",
+                    label = stringResource(R.string.ui_sync_overlay_post_session_overwrite),
+                    subtitle = stringResource(
+                        R.string.ui_sync_overlay_post_session_overwrite_subtitle
+                    ),
                     isFocused = focusIndex == 1,
                     onClick = onOverwrite
                 )
@@ -769,7 +794,7 @@ fun SyncOverlay(
 
     val message = when (syncState) {
         is SyncState.Error -> syncState.message
-        else -> "Syncing..."
+        else -> stringResource(R.string.ui_sync_overlay_legacy_status)
     }
 
     val isDarkTheme = LocalLauncherTheme.current.isDarkTheme

@@ -225,6 +225,24 @@ open class FolderSaveHandler(
     /** Hook after the restore target dir is created; PS2 marks a fresh folder card as formatted. */
     protected open fun ensureContainerPrepared(targetFolder: File) {}
 
+    /**
+     * Newest mtime anywhere under [folderPath]. Layouts that discover an intermediate level pick
+     * between candidate trees on it, because the directory itself is not touched when a save
+     * inside it is written.
+     */
+    protected fun newestFileTime(folderPath: String): Long {
+        var newest = 0L
+        fal.listFiles(folderPath)?.forEach { child ->
+            if (child.isFile) {
+                if (child.lastModified > newest) newest = child.lastModified
+            } else if (child.isDirectory) {
+                val childNewest = newestFileTime(child.path)
+                if (childNewest > newest) newest = childNewest
+            }
+        }
+        return newest
+    }
+
     private fun pruneNonCanonicalSiblings(canonicalTarget: File, saveId: String) {
         val parent = canonicalTarget.parentFile ?: return
         fal.listFiles(parent.path).orEmpty()

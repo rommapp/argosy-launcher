@@ -1,8 +1,11 @@
 package com.nendo.argosy.ui.screens.gamedetail.delegates
 
+import android.content.Context
+import com.nendo.argosy.R
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.data.speedrun.SpeedrunRepository
 import com.nendo.argosy.ui.input.SoundFeedbackManager
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -57,6 +60,7 @@ data class SpeedrunSplitsState(
 )
 
 class SpeedrunSplitsDelegate @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val speedrunRepository: SpeedrunRepository,
     private val seedService: com.nendo.argosy.data.speedrun.SpeedrunSeedService,
     private val soundManager: SoundFeedbackManager
@@ -104,7 +108,12 @@ class SpeedrunSplitsDelegate @Inject constructor(
             _state.update {
                 it.copy(
                     import = if (entries.isEmpty()) {
-                        SpeedrunImport.Failed("No categories found online for \"$gameTitle\"")
+                        SpeedrunImport.Failed(
+                            context.getString(
+                                R.string.gamedetail_speedrun_import_none_found,
+                                gameTitle
+                            )
+                        )
                     } else {
                         SpeedrunImport.Options(entries)
                     }
@@ -143,7 +152,7 @@ class SpeedrunSplitsDelegate @Inject constructor(
                             speedrunRepository.createCategory(
                                 gameId = gameId,
                                 name = entry.label,
-                                segmentNames = listOf("Segment 1"),
+                                segmentNames = listOf(context.getString(R.string.gamedetail_speedrun_default_segment_name)),
                                 sourceLabel = "speedrun.com"
                             )
                             _state.update { it.copy(import = null) }
@@ -193,7 +202,12 @@ class SpeedrunSplitsDelegate @Inject constructor(
                     import = when {
                         result != null -> SpeedrunImport.Preview(entry, result.second, result.first, options)
                         fallback != null -> fallback
-                        else -> SpeedrunImport.Failed("Couldn't fetch splits for ${entry.label}")
+                        else -> SpeedrunImport.Failed(
+                            context.getString(
+                                R.string.gamedetail_speedrun_import_fetch_failed,
+                                entry.label
+                            )
+                        )
                     }
                 )
             }
@@ -221,11 +235,27 @@ class SpeedrunSplitsDelegate @Inject constructor(
                 s.focusIndex < s.segments.size -> {
                     val segment = s.segments[s.focusIndex]
                     _state.update {
-                        it.copy(prompt = SpeedrunPrompt.Text("Rename Segment", segment, SpeedrunPrompt.Text.Target.RENAME_SEGMENT))
+                        it.copy(
+                            prompt = SpeedrunPrompt.Text(
+                                context.getString(
+                                    R.string.gamedetail_speedrun_prompt_rename_segment
+                                ),
+                                segment,
+                                SpeedrunPrompt.Text.Target.RENAME_SEGMENT
+                            )
+                        )
                     }
                 }
                 s.focusIndex == s.segments.size -> _state.update {
-                    it.copy(prompt = SpeedrunPrompt.Text("Rename Category", editing.name, SpeedrunPrompt.Text.Target.RENAME_CATEGORY))
+                    it.copy(
+                        prompt = SpeedrunPrompt.Text(
+                            context.getString(
+                                R.string.gamedetail_speedrun_prompt_rename_category
+                            ),
+                            editing.name,
+                            SpeedrunPrompt.Text.Target.RENAME_CATEGORY
+                        )
+                    )
                 }
                 else -> _state.update {
                     it.copy(prompt = SpeedrunPrompt.ConfirmDelete(editing.name, isCategory = true))
@@ -246,9 +276,21 @@ class SpeedrunSplitsDelegate @Inject constructor(
         if (s.prompt != null) return
         _state.update {
             if (s.editingCategory != null) {
-                it.copy(prompt = SpeedrunPrompt.Text("New Segment", "", SpeedrunPrompt.Text.Target.NEW_SEGMENT))
+                it.copy(
+                    prompt = SpeedrunPrompt.Text(
+                        context.getString(R.string.gamedetail_speedrun_prompt_new_segment),
+                        "",
+                        SpeedrunPrompt.Text.Target.NEW_SEGMENT
+                    )
+                )
             } else {
-                it.copy(prompt = SpeedrunPrompt.Text("New Category", "", SpeedrunPrompt.Text.Target.NEW_CATEGORY))
+                it.copy(
+                    prompt = SpeedrunPrompt.Text(
+                        context.getString(R.string.gamedetail_speedrun_prompt_new_category),
+                        "",
+                        SpeedrunPrompt.Text.Target.NEW_CATEGORY
+                    )
+                )
             }
         }
     }
@@ -301,7 +343,11 @@ class SpeedrunSplitsDelegate @Inject constructor(
     private fun createCategory(name: String) {
         val currentScope = scope ?: return
         currentScope.launch(Dispatchers.IO) {
-            speedrunRepository.createCategory(gameId, name, listOf("Segment 1"))
+            speedrunRepository.createCategory(
+                gameId,
+                name,
+                listOf(context.getString(R.string.gamedetail_speedrun_default_segment_name))
+            )
             reloadCategories(clearPrompt = true)
         }
     }

@@ -1,0 +1,423 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="gamedetail_menu_per_game_settings">Настройки игры</string>
+    <string name="gamedetail_menu_details">Детали</string>
+    <string name="gamedetail_menu_description">Описание</string>
+    <string name="gamedetail_menu_screenshots">Скриншоты</string>
+    <string name="gamedetail_menu_achievements">Достижения</string>
+    <string name="gamedetail_menu_related_games">Похожие игры</string>
+
+    <string name="gamedetail_menu_play_button_extracting">Распаковка...</string>
+    <string name="gamedetail_menu_play_button_queued">В очереди</string>
+    <string name="gamedetail_menu_play_button_no_space">Нет места</string>
+    <string name="gamedetail_menu_play_button_resume">Продолжить</string>
+    <string name="gamedetail_menu_play_button_retry">Повторить</string>
+    <string name="gamedetail_menu_play_button_play">Играть</string>
+    <string name="gamedetail_menu_play_button_install">Установить</string>
+    <string name="gamedetail_menu_play_button_download">Скачать</string>
+    <string name="gamedetail_menu_play_button_progress_percent">%1$d%%</string>
+
+    <string name="gamedetail_menu_saves_syncing">Синхронизация...</string>
+    <string name="gamedetail_menu_saves_default_channel">Автосохранение</string>
+
+    <string name="gamedetail_menu_favorite_label">Избранное</string>
+    <string name="gamedetail_menu_favorite_compact_remove_description">Убрать из избранного</string>
+    <string name="gamedetail_menu_favorite_compact_add_description">Добавить в избранное</string>
+    <string name="gamedetail_menu_favorite_row_remove_description">Убрать из избранного</string>
+    <string name="gamedetail_menu_favorite_row_add_description">Добавить в избранное</string>
+
+    <string name="gamedetail_menu_privacy_private">Приватно</string>
+    <string name="gamedetail_menu_privacy_public">Публично</string>
+
+    <string name="gamedetail_menu_options_label">Параметры</string>
+    <string name="gamedetail_menu_options_compact_description">Параметры</string>
+    <string name="gamedetail_menu_options_row_description">Параметры</string>
+
+    <string name="gamedetail_footer_prev_next_game">Пред./След. игра</string>
+    <string name="gamedetail_footer_section_scroll">Прокрутка</string>
+
+    <string name="gamedetail_footer_play_syncing">Синхронизация...</string>
+    <string name="gamedetail_footer_play_downloaded">Играть</string>
+    <string name="gamedetail_footer_play_install">Установить</string>
+    <string name="gamedetail_footer_play_download">Скачать</string>
+    <string name="gamedetail_footer_play_queued">В очереди</string>
+    <string name="gamedetail_footer_play_retry_no_space">Повторить</string>
+    <string name="gamedetail_footer_play_downloading">Загрузка</string>
+    <string name="gamedetail_footer_play_extracting">Распаковка</string>
+    <string name="gamedetail_footer_play_resume">Продолжить</string>
+    <string name="gamedetail_footer_play_retry_failed">Повторить</string>
+    <string name="gamedetail_footer_play_fallback">Играть</string>
+
+    <string name="gamedetail_footer_saves_syncing">Синхронизация...</string>
+    <string name="gamedetail_footer_saves_sync">Синхро</string>
+
+    <string name="gamedetail_footer_menu_unfavorite">Убрать из избранного</string>
+    <string name="gamedetail_footer_menu_favorite">В избранное</string>
+
+    <string name="gamedetail_footer_menu_make_public">Сделать публичным</string>
+    <string name="gamedetail_footer_menu_make_private">Сделать приватным</string>
+
+    <string name="gamedetail_footer_configure">Настроить</string>
+    <string name="gamedetail_footer_options">Параметры</string>
+    <string name="gamedetail_footer_view_screenshot">Просмотр</string>
+    <string name="gamedetail_footer_view_all_achievements">Все</string>
+    <string name="gamedetail_footer_open_related">Открыть</string>
+    <string name="gamedetail_footer_back">Назад</string>
+    <string name="gamedetail_footer_new_game">Новая игра</string>
+    <string name="gamedetail_footer_shortcut_make_public">Сделать публичным</string>
+    <string name="gamedetail_footer_shortcut_make_private">Сделать приватным</string>
+    <string name="gamedetail_footer_shortcut_unfavorite">Убрать из избранного</string>
+    <string name="gamedetail_footer_shortcut_favorite">В избранное</string>
+
+    <string name="gamedetail_section_description_heading">ОПИСАНИЕ</string>
+    <string name="gamedetail_section_screenshots_heading">СКРИНШОТЫ</string>
+    <string name="gamedetail_section_related_heading">ПОХОЖИЕ ИГРЫ</string>
+    <string name="gamedetail_section_achievements_heading">ДОСТИЖЕНИЯ</string>
+    <string name="gamedetail_section_achievements_count">(%1$d/%2$d)</string>
+
+    <string name="gamedetail_chip_players_label">Игроки</string>
+    <string name="gamedetail_chip_main_story_label">Основной сюжет</string>
+    <string name="gamedetail_chip_main_extras_label">Сюжет + доп. контент</string>
+    <string name="gamedetail_chip_completionist_label">Полное прохождение</string>
+    <string name="gamedetail_chip_my_rating_label">Моя оценка</string>
+    <string name="gamedetail_chip_difficulty_label">Сложность</string>
+    <string name="gamedetail_chip_community_rating_label">Рейтинг</string>
+    <string name="gamedetail_chip_play_time_label">Время в игре</string>
+
+    <string name="gamedetail_chip_rating_value">%1$d/10</string>
+    <string name="gamedetail_chip_rating_unset">--</string>
+    <string name="gamedetail_chip_community_rating_value">%1$d%%</string>
+
+    <string name="gamedetail_chip_play_time_minutes">%1$dm</string>
+    <string name="gamedetail_chip_play_time_hours_minutes">%1$dh %2$dm</string>
+    <string name="gamedetail_chip_play_time_hours">%1$dh</string>
+    <string name="gamedetail_chip_play_time_hours_grouped">%1$sh</string>
+
+    <string name="gamedetail_collapsed_header_rating_percent">%1$d%%</string>
+    <plurals name="gamedetail_collapsed_header_play_count">
+        <item quantity="one">%1$d запуск</item>
+        <item quantity="few">%1$d запуска</item>
+        <item quantity="many">%1$d запусков</item>
+        <item quantity="other">%1$d запуска</item>
+    </plurals>
+
+    <plurals name="gamedetail_achievement_strip_points">
+        <item quantity="one">%1$d очк.</item>
+        <item quantity="few">%1$d очк.</item>
+        <item quantity="many">%1$d очк.</item>
+        <item quantity="other">%1$d очк.</item>
+    </plurals>
+
+    <string name="gamedetail_achievement_list_subtitle">Достижения</string>
+    <string name="gamedetail_achievement_list_progress">%1$d/%2$d (%3$d%%)</string>
+    <string name="gamedetail_achievement_list_unlocked_heading">РАЗБЛОКИРОВАНО (%1$d)</string>
+    <string name="gamedetail_achievement_list_locked_heading">ЗАБЛОКИРОВАНО (%1$d)</string>
+    <string name="gamedetail_achievement_list_tier_hardcore">Хардкор</string>
+    <string name="gamedetail_achievement_list_tier_casual">Казуальный</string>
+    <plurals name="gamedetail_achievement_list_points">
+        <item quantity="one">%1$d очк.</item>
+        <item quantity="few">%1$d очк.</item>
+        <item quantity="many">%1$d очк.</item>
+        <item quantity="other">%1$d очк.</item>
+    </plurals>
+    <string name="gamedetail_achievement_list_footer_navigate">Навигация</string>
+    <string name="gamedetail_achievement_list_footer_back">Назад</string>
+
+    <string name="gamedetail_screenshot_viewer_position">%1$d / %2$d</string>
+    <string name="gamedetail_screenshot_viewer_footer_navigate">Навигация</string>
+    <string name="gamedetail_screenshot_viewer_footer_close">Закрыть</string>
+    <string name="gamedetail_screenshot_viewer_footer_set_background">Сделать фоном</string>
+
+    <string name="gamedetail_option_item_current_description">Текущий</string>
+    <string name="gamedetail_option_item_value">[%1$s]</string>
+
+    <string name="gamedetail_save_status_latest_label">Последнее</string>
+    <string name="gamedetail_save_status_time">· %1$s</string>
+    <string name="gamedetail_save_status_synced">Синхронизировано</string>
+    <string name="gamedetail_save_status_local_newer">Локальное новее</string>
+    <string name="gamedetail_save_status_server_newer">Серверное новее</string>
+    <string name="gamedetail_save_status_local_only">Локально</string>
+    <string name="gamedetail_save_status_pending_upload">Ожидает отправки</string>
+    <string name="gamedetail_save_status_needs_resolution">Требуется решение</string>
+    <string name="gamedetail_save_status_no_save">Нет сохранения</string>
+    <string name="gamedetail_save_status_not_configured">Не настроено</string>
+
+    <string name="gamedetail_rename_channel_title">СОЗДАТЬ КАНАЛ</string>
+    <string name="gamedetail_rename_channel_footer_confirm">Подтвердить</string>
+    <string name="gamedetail_rename_channel_footer_cancel">Отмена</string>
+    <string name="gamedetail_rename_channel_description">Введите имя для этого канала сохранения</string>
+    <string name="gamedetail_rename_channel_placeholder">Имя канала</string>
+
+    <string name="gamedetail_more_options_manage_saves">Управление кэшем сохранений</string>
+    <string name="gamedetail_more_options_ratings_status">Оценки и статус</string>
+    <string name="gamedetail_more_options_change_launcher">Сменить лаунчер</string>
+    <string name="gamedetail_more_options_speedrun_splits">Сплиты спидрана</string>
+    <string name="gamedetail_more_options_title_id">ID игры</string>
+    <string name="gamedetail_more_options_title_id_missing">Не обнаружен</string>
+    <string name="gamedetail_more_options_select_disc">Выбрать диск</string>
+    <string name="gamedetail_more_options_select_variant">Выбрать вариант</string>
+    <string name="gamedetail_more_options_files">Файлы</string>
+    <string name="gamedetail_more_options_refresh_data">Обновить данные игры</string>
+    <string name="gamedetail_more_options_add_to_collection">Добавить в коллекцию</string>
+    <string name="gamedetail_more_options_change_cover">Сменить обложку</string>
+    <string name="gamedetail_more_options_reset_cover">Сбросить обложку</string>
+    <string name="gamedetail_more_options_uninstall">Удалить приложение</string>
+    <string name="gamedetail_more_options_unlink_from_launcher">Отвязать от %1$s</string>
+    <string name="gamedetail_more_options_unlink_launcher_fallback">Лаунчер</string>
+    <string name="gamedetail_more_options_delete_download">Удалить загрузку</string>
+    <string name="gamedetail_more_options_remove_from_library">Удалить из библиотеки</string>
+    <string name="gamedetail_more_options_show">Показать</string>
+    <string name="gamedetail_more_options_hide">Скрыть</string>
+
+    <string name="gamedetail_ratings_status_title">ОЦЕНКИ И СТАТУС</string>
+    <string name="gamedetail_ratings_status_footer_navigate">Навигация</string>
+    <string name="gamedetail_ratings_status_footer_select">Выбрать</string>
+    <string name="gamedetail_ratings_status_footer_back">Назад</string>
+    <string name="gamedetail_ratings_status_rate_game">Оценить игру</string>
+    <string name="gamedetail_ratings_status_rate_game_unset">Не оценено</string>
+    <string name="gamedetail_ratings_status_score_value">%1$d/10</string>
+    <string name="gamedetail_ratings_status_set_difficulty">Задать сложность</string>
+    <string name="gamedetail_ratings_status_difficulty_unset">Не задано</string>
+    <string name="gamedetail_ratings_status_set_status">Задать статус</string>
+    <string name="gamedetail_ratings_status_status_unset">Не задано</string>
+
+    <string name="gamedetail_status_picker_title">ЗАДАТЬ СТАТУС</string>
+    <string name="gamedetail_status_picker_footer_navigate">Навигация</string>
+    <string name="gamedetail_status_picker_footer_confirm">Подтвердить</string>
+    <string name="gamedetail_status_picker_footer_cancel">Отмена</string>
+
+    <string name="gamedetail_rating_picker_title_rating">ОЦЕНИТЬ ИГРУ</string>
+    <string name="gamedetail_rating_picker_title_difficulty">ЗАДАТЬ СЛОЖНОСТЬ</string>
+    <string name="gamedetail_rating_picker_footer_adjust">Изменить</string>
+    <string name="gamedetail_rating_picker_footer_confirm">Подтвердить</string>
+    <string name="gamedetail_rating_picker_footer_cancel">Отмена</string>
+    <string name="gamedetail_rating_picker_unset">Не задано</string>
+    <string name="gamedetail_rating_picker_value">%1$d/10</string>
+
+    <string name="gamedetail_play_options_title">НАЧАТЬ ИГРУ</string>
+    <string name="gamedetail_play_options_section_continue">ПРОДОЛЖИТЬ</string>
+    <string name="gamedetail_play_options_section_new_game">НОВАЯ ИГРА</string>
+    <string name="gamedetail_play_options_resume_latest">Последнее</string>
+    <string name="gamedetail_play_options_resume_no_sync">Играть без синхронизации</string>
+    <string name="gamedetail_play_options_resume_no_sync_subtext">Пропустить проверку синхронизации перед запуском</string>
+    <string name="gamedetail_play_options_resume_hardcore">Хардкор</string>
+    <string name="gamedetail_play_options_resume_hardcore_subtext">Продолжить это сохранение в хардкоре</string>
+    <string name="gamedetail_play_options_new_casual">Казуальный</string>
+    <string name="gamedetail_play_options_new_casual_subtext_states">Доступны состояния и читы</string>
+    <string name="gamedetail_play_options_new_casual_subtext_cheats">Доступны читы</string>
+    <string name="gamedetail_play_options_new_hardcore">Хардкор</string>
+    <string name="gamedetail_play_options_new_hardcore_subtext_online">Только онлайн, без состояний и читов</string>
+    <string name="gamedetail_play_options_new_hardcore_subtext_offline">Требуется подключение к интернету</string>
+
+    <string name="gamedetail_permission_storage_title">Требуется разрешение</string>
+    <string name="gamedetail_permission_storage_message">Синхронизация сохранений включена, но разрешение на доступ к файлам не предоставлено. Предоставьте разрешение для синхронизации сохранений или отключите синхронизацию, чтобы продолжить.</string>
+    <string name="gamedetail_permission_storage_confirm">Предоставить разрешение</string>
+    <string name="gamedetail_permission_folder_title">Требуется доступ к папке</string>
+    <string name="gamedetail_permission_folder_message">Для синхронизации сохранений с других эмуляторов нужен доступ к папке Android/data. Выберите папку Android, когда появится запрос, или отключите синхронизацию, чтобы продолжить.</string>
+    <string name="gamedetail_permission_folder_confirm">Выбрать папку</string>
+    <string name="gamedetail_permission_disable_sync">Отключить синхронизацию сохранений</string>
+    <string name="gamedetail_permission_cancel">Отмена</string>
+
+    <string name="gamedetail_missing_disc_title">ОТСУТСТВУЮЩИЕ ДИСКИ</string>
+    <string name="gamedetail_missing_disc_footer_download">Скачать</string>
+    <string name="gamedetail_missing_disc_footer_cancel">Отмена</string>
+    <plurals name="gamedetail_missing_disc_message">
+        <item quantity="one">Диск %1$s не загружен.\nЗагрузить его?</item>
+        <item quantity="few">Диски %1$s не загружены.\nЗагрузить их?</item>
+        <item quantity="many">Диски %1$s не загружены.\nЗагрузить их?</item>
+        <item quantity="other">Диски %1$s не загружены.\nЗагрузить их?</item>
+    </plurals>
+
+    <string name="gamedetail_extraction_failed_title">ОШИБКА РАСПАКОВКИ</string>
+    <string name="gamedetail_extraction_failed_footer_select">Выбрать</string>
+    <string name="gamedetail_extraction_failed_footer_cancel">Отмена</string>
+    <string name="gamedetail_extraction_failed_message">Не удалось распаковать %1$s</string>
+    <string name="gamedetail_extraction_failed_retry">Повторить распаковку</string>
+    <string name="gamedetail_extraction_failed_redownload">Загрузить заново</string>
+
+    <string name="gamedetail_launcher_picker_title">ВЫБОР ЛАУНЧЕРА</string>
+
+    <string name="gamedetail_core_picker_title">ВЫБОР ЯДРА</string>
+    <string name="gamedetail_core_picker_subtitle">Ядра нужно сначала установить в RetroArch</string>
+    <string name="gamedetail_core_picker_platform_default">Использовать значение платформы по умолчанию</string>
+
+    <string name="gamedetail_emulator_picker_title">ВЫБОР ЭМУЛЯТОРА</string>
+    <string name="gamedetail_emulator_picker_platform_default">Использовать значение платформы по умолчанию</string>
+
+    <string name="gamedetail_variant_picker_title">ВЫБОР ВАРИАНТА</string>
+    <string name="gamedetail_variant_picker_subtitle">Выберите версию для запуска</string>
+    <string name="gamedetail_variant_picker_original">По умолчанию (Оригинал)</string>
+
+    <string name="gamedetail_cover_picker_title">ОБЛОЖКА</string>
+    <string name="gamedetail_cover_picker_footer_navigate">Навигация</string>
+    <string name="gamedetail_cover_picker_footer_select">Выбрать</string>
+    <string name="gamedetail_cover_picker_footer_search">Поиск</string>
+    <string name="gamedetail_cover_picker_footer_from_file">Из файла</string>
+    <string name="gamedetail_cover_picker_footer_cancel">Отмена</string>
+    <string name="gamedetail_cover_picker_search_placeholder">Поиск обложек...</string>
+    <string name="gamedetail_cover_picker_empty">Обложки для этой игры не найдены.</string>
+    <string name="gamedetail_cover_picker_error">Не удалось найти обложки. %1$s</string>
+
+    <string name="gamedetail_file_picker_title_manage">Файлы</string>
+    <string name="gamedetail_file_picker_title_choose">Выберите файлы</string>
+    <string name="gamedetail_file_picker_summary_no_changes">Нет изменений</string>
+    <string name="gamedetail_file_picker_summary_added">+%1$d · %2$s</string>
+    <string name="gamedetail_file_picker_summary_removed">-%1$d · %2$s</string>
+    <string name="gamedetail_file_picker_summary_selection">%1$d из %2$d · %3$s выбрано</string>
+    <string name="gamedetail_file_picker_confirm_download">Скачать</string>
+    <string name="gamedetail_file_picker_confirm_download_count">Скачать %1$d</string>
+    <string name="gamedetail_file_picker_confirm_remove_count">Удалить %1$d</string>
+    <string name="gamedetail_file_picker_confirm_apply">Применить изменения</string>
+    <string name="gamedetail_file_picker_confirm_no_changes">Нет изменений</string>
+    <string name="gamedetail_file_picker_deselect_all">Снять выбор со всех</string>
+    <string name="gamedetail_file_picker_select_all">Выбрать все</string>
+    <string name="gamedetail_file_picker_cancel">Отмена</string>
+    <string name="gamedetail_file_picker_expand_description">Развернуть</string>
+    <string name="gamedetail_file_picker_collapse_description">Свернуть</string>
+    <string name="gamedetail_file_picker_default_tag">ПО УМОЛЧАНИЮ</string>
+    <string name="gamedetail_file_picker_pending_remove">Будет удалён</string>
+    <string name="gamedetail_file_picker_pending_add">Будет загружен</string>
+    <string name="gamedetail_file_picker_on_device">На устройстве</string>
+
+    <string name="gamedetail_per_game_title">Настройки игры</string>
+    <string name="gamedetail_per_game_footer_adjust">Изменить</string>
+    <string name="gamedetail_per_game_footer_change_reset">Изменить/Сбросить</string>
+    <string name="gamedetail_per_game_footer_select">Выбрать</string>
+    <string name="gamedetail_per_game_footer_change_save_path">Изменить</string>
+    <string name="gamedetail_per_game_footer_open_save_location">Открыть</string>
+    <string name="gamedetail_per_game_footer_change_memcard">Изменить</string>
+    <string name="gamedetail_per_game_footer_cycle">Сменить</string>
+    <string name="gamedetail_per_game_footer_open">Открыть</string>
+    <string name="gamedetail_per_game_footer_back">Назад</string>
+
+    <string name="gamedetail_per_game_emulator_label">Эмулятор</string>
+    <string name="gamedetail_per_game_emulator_none">Не обнаружен</string>
+    <string name="gamedetail_per_game_core_label">Ядро</string>
+    <string name="gamedetail_per_game_core_default">По умолчанию</string>
+    <string name="gamedetail_per_game_save_path_label">Путь сохранения</string>
+    <string name="gamedetail_per_game_save_location_label">Расположение сохранений</string>
+    <string name="gamedetail_per_game_save_location_unset">Не настроено</string>
+    <string name="gamedetail_per_game_memcard_label">Карта памяти</string>
+    <string name="gamedetail_per_game_memcard_default">По умолчанию (%1$s)</string>
+    <string name="gamedetail_per_game_memcard_default_auto">Авто</string>
+    <string name="gamedetail_per_game_display_target_label">Целевой экран</string>
+    <string name="gamedetail_per_game_display_target_inherit">Наследовано (%1$s)</string>
+    <string name="gamedetail_per_game_extension_label">Расширение файла</string>
+    <string name="gamedetail_per_game_extension_inherit">Наследовано (%1$s)</string>
+    <string name="gamedetail_per_game_extension_inherit_auto">Авто</string>
+    <string name="gamedetail_per_game_platform_settings">Настройки платформы</string>
+    <string name="gamedetail_per_game_inherited_tag">Наследовано</string>
+    <string name="gamedetail_per_game_save_path_browser_title">Путь сохранения</string>
+    <string name="gamedetail_per_game_save_path_content_dir">(папка ROM)</string>
+
+    <string name="gamedetail_cover_file_browser_title">Выберите обложку</string>
+
+    <string name="gamedetail_speedrun_segments_title">%1$s - Сегменты</string>
+    <string name="gamedetail_speedrun_title">Сплиты спидрана</string>
+    <string name="gamedetail_speedrun_footer_add_segment">Добавить сегмент</string>
+    <string name="gamedetail_speedrun_footer_delete">Удалить</string>
+    <string name="gamedetail_speedrun_footer_move">Переместить</string>
+    <string name="gamedetail_speedrun_footer_back">Назад</string>
+    <string name="gamedetail_speedrun_footer_open">Открыть</string>
+    <string name="gamedetail_speedrun_footer_new_category">Новая категория</string>
+    <string name="gamedetail_speedrun_footer_close">Закрыть</string>
+    <string name="gamedetail_speedrun_segment_row">%1$d.  %2$s</string>
+    <string name="gamedetail_speedrun_default_segment_name">Сегмент 1</string>
+    <string name="gamedetail_speedrun_rename_category">Переименовать категорию</string>
+    <string name="gamedetail_speedrun_delete_category">Удалить категорию</string>
+    <string name="gamedetail_speedrun_empty_prefix">Пока нет категорий. Нажмите</string>
+    <string name="gamedetail_speedrun_empty_suffix">чтобы создать её, или импортируйте из сообщества.</string>
+    <string name="gamedetail_speedrun_category_summary">%1$d сегментов · %2$d попыток</string>
+    <string name="gamedetail_speedrun_import_row">Импортировать сплиты...</string>
+    <string name="gamedetail_speedrun_import_loading_title">Поиск...</string>
+    <string name="gamedetail_speedrun_import_loading_message">Поиск категорий на therun.gg и speedrun.com</string>
+    <string name="gamedetail_speedrun_import_importing_title">Импорт...</string>
+    <string name="gamedetail_speedrun_import_importing_message">Загрузка сплитов из лучшего прохождения</string>
+    <string name="gamedetail_speedrun_import_failed_title">Импорт</string>
+    <string name="gamedetail_speedrun_import_failed_footer_back">Назад</string>
+    <string name="gamedetail_speedrun_preview_footer_other_runner">Другой спидраннер</string>
+    <string name="gamedetail_speedrun_preview_footer_import">Импорт</string>
+    <string name="gamedetail_speedrun_preview_footer_back">Назад</string>
+    <string name="gamedetail_speedrun_preview_attribution">Сплиты от %1$s (#%2$d)</string>
+    <string name="gamedetail_speedrun_preview_segment_row">%1$d.  %2$s</string>
+    <string name="gamedetail_speedrun_import_options_title">Импорт сплитов</string>
+    <string name="gamedetail_speedrun_import_options_footer_import">Импорт</string>
+    <string name="gamedetail_speedrun_import_options_footer_cancel">Отмена</string>
+    <string name="gamedetail_speedrun_source_therun">therun.gg · полные сплиты</string>
+    <string name="gamedetail_speedrun_source_speedruncom">speedrun.com · только название</string>
+    <string name="gamedetail_speedrun_prompt_confirm">Подтвердить</string>
+    <string name="gamedetail_speedrun_prompt_cancel">Отмена</string>
+    <string name="gamedetail_speedrun_prompt_placeholder">Название</string>
+    <string name="gamedetail_speedrun_confirm_delete_title">Удалить \"%1$s\"?</string>
+    <string name="gamedetail_speedrun_confirm_delete_footer_delete">Удалить</string>
+    <string name="gamedetail_speedrun_confirm_delete_footer_cancel">Отмена</string>
+    <string name="gamedetail_speedrun_confirm_delete_category_message">Это удалит категорию, её сегменты и все записанные попытки.</string>
+    <string name="gamedetail_speedrun_confirm_delete_segment_message">Это удалит сегмент из категории.</string>
+    <string name="gamedetail_speedrun_prompt_new_category">Новая категория</string>
+    <string name="gamedetail_speedrun_prompt_rename_category">Переименовать категорию</string>
+    <string name="gamedetail_speedrun_prompt_new_segment">Новый сегмент</string>
+    <string name="gamedetail_speedrun_prompt_rename_segment">Переименовать сегмент</string>
+    <string name="gamedetail_speedrun_import_none_found">Категории для \"%1$s\" в сети не найдены</string>
+    <string name="gamedetail_speedrun_import_fetch_failed">Не удалось загрузить сплиты для %1$s</string>
+
+    <string name="gamedetail_notice_launch_failed">Не удалось запустить: %1$s</string>
+    <string name="gamedetail_notice_background_updated">Фон обновлён</string>
+    <string name="gamedetail_notice_background_failed">Не удалось обновить фон</string>
+    <string name="gamedetail_notice_rating_saved">Оценка сохранена</string>
+    <string name="gamedetail_notice_difficulty_saved">Сложность сохранена</string>
+    <string name="gamedetail_notice_status_saved">Статус сохранён</string>
+    <string name="gamedetail_notice_no_emulator_for_saves">Не удалось определить эмулятор для сохранений</string>
+    <string name="gamedetail_notice_no_emulator_for_selection">Не удалось определить эмулятор</string>
+    <string name="gamedetail_notice_no_emulator_for_restore">Не удалось определить эмулятор для восстановления сохранения</string>
+    <string name="gamedetail_notice_no_emulator_for_sync">Не удалось определить эмулятор</string>
+    <string name="gamedetail_notice_saves_up_to_date">Сохранения актуальны</string>
+    <string name="gamedetail_notice_save_uploaded">Локальное сохранение отправлено</string>
+    <string name="gamedetail_notice_save_downloaded">Серверное сохранение загружено</string>
+    <string name="gamedetail_notice_sync_skipped">Синхронизация пропущена</string>
+    <string name="gamedetail_notice_variant_local_only">Нельзя скачать локальный вариант</string>
+    <string name="gamedetail_notice_downloading_variant">Загрузка %1$s</string>
+    <plurals name="gamedetail_notice_files_queued">
+        <item quantity="one">%1$d в очереди</item>
+        <item quantity="few">%1$d в очереди</item>
+        <item quantity="many">%1$d в очереди</item>
+        <item quantity="other">%1$d в очереди</item>
+    </plurals>
+    <plurals name="gamedetail_notice_files_removed">
+        <item quantity="one">%1$d удалено</item>
+        <item quantity="few">%1$d удалено</item>
+        <item quantity="many">%1$d удалено</item>
+        <item quantity="other">%1$d удалено</item>
+    </plurals>
+    <plurals name="gamedetail_notice_downloads_queued">
+        <item quantity="one">В очередь добавлена %1$d загрузка</item>
+        <item quantity="few">В очередь добавлены %1$d загрузки</item>
+        <item quantity="many">В очередь добавлено %1$d загрузок</item>
+        <item quantity="other">В очередь добавлено %1$d загрузки</item>
+    </plurals>
+    <string name="gamedetail_notice_already_downloaded">Игра уже загружена</string>
+    <plurals name="gamedetail_notice_discs_queued">
+        <item quantity="one">Загрузка %1$d диска</item>
+        <item quantity="few">Загрузка %1$d дисков</item>
+        <item quantity="many">Загрузка %1$d дисков</item>
+        <item quantity="other">Загрузка %1$d диска</item>
+    </plurals>
+    <plurals name="gamedetail_notice_missing_discs_queued">
+        <item quantity="one">Загрузка %1$d недостающего диска</item>
+        <item quantity="few">Загрузка %1$d недостающих дисков</item>
+        <item quantity="many">Загрузка %1$d недостающих дисков</item>
+        <item quantity="other">Загрузка %1$d недостающего диска</item>
+    </plurals>
+    <string name="gamedetail_notice_extraction_succeeded">Распаковка выполнена успешно</string>
+    <string name="gamedetail_notice_redownload_started">Повторная загрузка началась</string>
+    <string name="gamedetail_notice_apk_install_failed">Не удалось установить APK</string>
+    <string name="gamedetail_notice_download_deleted">Загрузка удалена</string>
+    <string name="gamedetail_notice_removed_from_library">Удалено из библиотеки</string>
+    <string name="gamedetail_notice_remove_failed">Не удалось удалить эту игру</string>
+    <string name="gamedetail_notice_game_data_refreshed">Данные игры обновлены</string>
+    <string name="gamedetail_notice_android_data_refreshed">Данные игры обновлены</string>
+    <string name="gamedetail_notice_app_data_failed">Не удалось получить данные приложения</string>
+    <string name="gamedetail_notice_refresh_failed">Не удалось обновить: %1$s</string>
+
+    <string name="gamedetail_header_platform_unknown">Неизвестно</string>
+</resources>

@@ -1,15 +1,17 @@
 package com.nendo.argosy.core.notification
 
-fun NotificationManager.showError(message: String) {
+import com.nendo.argosy.R
+
+fun NotificationManager.showError(message: NotificationText) {
     show(
-        title = "Error",
+        title = NotificationText.Res(R.string.notif_generic_error_title),
         subtitle = message,
         type = NotificationType.ERROR,
         duration = NotificationDuration.LONG
     )
 }
 
-fun NotificationManager.showSuccess(message: String) {
+fun NotificationManager.showSuccess(message: NotificationText) {
     show(
         title = message,
         type = NotificationType.SUCCESS,

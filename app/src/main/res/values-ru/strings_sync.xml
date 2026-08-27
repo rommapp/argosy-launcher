@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sync_prelaunch_checking_save">Проверка сохранения...</string>
+    <string name="sync_prelaunch_save_found">Сохранение найдено</string>
+    <string name="sync_prelaunch_save_absent">Нет файла сохранения</string>
+    <string name="sync_prelaunch_connecting">Подключение...</string>
+    <string name="sync_prelaunch_connected">Подключено</string>
+    <string name="sync_prelaunch_connect_failed">Ошибка подключения</string>
+    <string name="sync_prelaunch_downloading">Загрузка...</string>
+    <string name="sync_prelaunch_download_complete">Загрузка завершена</string>
+    <string name="sync_prelaunch_download_failed">Ошибка загрузки</string>
+    <string name="sync_prelaunch_writing">Запись сохранения...</string>
+    <string name="sync_prelaunch_write_complete">Сохранение записано</string>
+    <string name="sync_prelaunch_write_failed">Ошибка записи</string>
+    <string name="sync_prelaunch_launching">Запуск игры...</string>
+
+    <string name="sync_postsession_checking_save">Проверка сохранения...</string>
+    <string name="sync_postsession_save_found">Сохранение найдено</string>
+    <string name="sync_postsession_save_absent">Сохранение не найдено</string>
+    <string name="sync_postsession_connecting">Подключение...</string>
+    <string name="sync_postsession_connected">Подключено</string>
+    <string name="sync_postsession_connect_failed">Ошибка подключения</string>
+    <string name="sync_postsession_uploading">Отправка...</string>
+    <string name="sync_postsession_upload_complete">Отправка завершена</string>
+    <string name="sync_postsession_upload_queued">Отправка в очереди</string>
+    <string name="sync_postsession_complete">Синхронизация завершена</string>
+
+    <string name="sync_progress_skipped">Синхронизация пропущена</string>
+    <string name="sync_progress_hardcore_conflict">Конфликт сохранения в режиме хардкор</string>
+    <string name="sync_progress_local_modified">Локальное сохранение изменено</string>
+    <string name="sync_progress_save_conflict">Конфликт сохранений</string>
+
+    <string name="sync_blocked_permission_title">Требуется разрешение на доступ к файлам</string>
+    <string name="sync_blocked_permission_detail">Предоставьте разрешение \"Доступ ко всем файлам\", чтобы синхронизировать сохранения для %1$s.</string>
+    <string name="sync_blocked_permission_emulator_fallback">этого эмулятора</string>
+
+    <string name="sync_blocked_path_not_found_title">Папка сохранений не найдена</string>
+    <string name="sync_blocked_path_not_found_detail">Папка сохранений для %1$s не найдена. Возможно, эмулятор использует нестандартное расположение сохранений.</string>
+    <string name="sync_blocked_path_not_found_emulator_fallback">этого эмулятора</string>
+
+    <string name="sync_blocked_access_denied_title">Доступ к папке сохранений заблокирован</string>
+    <string name="sync_blocked_access_denied_detail">Ваше устройство блокирует доступ к данным сохранений %1$s. Это может быть связано с ограничениями производителя (Samsung, Xiaomi и др.) или политиками безопасности.</string>
+    <string name="sync_blocked_access_denied_switch_detail">Ваше устройство блокирует доступ к данным сохранений %1$s. Настройте внешний путь сохранения в %2$s (вне Android/data), затем укажите тот же путь в Argosy.</string>
+    <string name="sync_blocked_access_denied_emulator_fallback">эмулятора</string>
+    <string name="sync_blocked_access_denied_configure_fallback">эмуляторе</string>
+
+    <string name="sync_service_channel_name">Синхронизация сохранений</string>
+    <string name="sync_service_channel_description">Показывает прогресс синхронизации сохранений в фоне</string>
+    <string name="sync_service_preparing">Подготовка синхронизации...</string>
+    <string name="sync_service_platform">Синхронизация: %1$s</string>
+    <string name="sync_service_library">Синхронизация библиотеки...</string>
+    <string name="sync_service_uploading">Отправка: %1$s</string>
+    <string name="sync_service_downloading">Загрузка: %1$s</string>
+    <string name="sync_service_saves">Синхронизация сохранений...</string>
+
+    <string name="sync_download_channel_name">Прогресс загрузки</string>
+    <string name="sync_download_channel_description">Показывает прогресс загрузки в фоне</string>
+    <string name="sync_download_service_preparing">Подготовка загрузки...</string>
+    <string name="sync_download_service_steam_downloading">Загрузка: %1$s</string>
+    <string name="sync_download_service_extracting">Распаковка: %1$s</string>
+    <string name="sync_download_service_moving">Перемещение в хранилище ROM: %1$s</string>
+    <string name="sync_download_service_downloading">Загрузка: %1$s</string>
+    <string name="sync_download_service_queued">В очереди: %1$s</string>
+    <string name="sync_download_service_pending">Загрузка ожидает...</string>
+    <string name="sync_download_service_media_preparing">%1$s: %2$s</string>
+    <string name="sync_download_service_media_downloading">Загрузка: %1$s</string>
+
+    <string name="sync_session_channel_name">Игровая сессия</string>
+    <string name="sync_session_channel_description">Отслеживает файлы сохранений во время игры</string>
+    <string name="sync_session_notification_playing">Игра идёт</string>
+    <string name="sync_session_notification_save_detected">Обнаружено сохранение</string>
+    <string name="sync_session_game_fallback">Игра</string>
+
+    <string name="sync_session_save_uploaded_orphan">Сохранение отправлено</string>
+    <string name="sync_session_save_uploaded">Сохранение отправлено</string>
+    <string name="sync_session_save_unchanged">Нет изменений в сохранении</string>
+    <string name="sync_session_save_upload_failed">Ошибка отправки</string>
+    <string name="sync_session_save_upload_failed_subtitle">%1$s: %2$s</string>
+    <string name="sync_session_save_upload_failed_name_fallback">Сохранение</string>
+
+    <plurals name="sync_conflict_pending_title">
+        <item quantity="one">%1$d сохранение требует вашего внимания</item>
+        <item quantity="few">%1$d сохранения требуют вашего внимания</item>
+        <item quantity="many">%1$d сохранений требуют вашего внимания</item>
+        <item quantity="other">%1$d сохранения требуют вашего внимания</item>
+    </plurals>
+    <string name="sync_conflict_pending_subtitle">Откройте синхронизацию сохранений, чтобы решить. Локальные сохранения не изменятся.</string>
+
+    <string name="sync_media_signin_title">Войдите, чтобы скачать</string>
+    <string name="sync_media_signin_subtitle">Подключите медиасервер в настройках</string>
+
+    <plurals name="sync_media_title_count">
+        <item quantity="one">%1$d тайтл</item>
+        <item quantity="few">%1$d тайтла</item>
+        <item quantity="many">%1$d тайтлов</item>
+        <item quantity="other">%1$d тайтла</item>
+    </plurals>
+
+    <string name="sync_media_refusal_downloaded_title">Уже загружено</string>
+    <string name="sync_media_refusal_downloaded_subtitle">%1$s на этом устройстве в качестве %2$s</string>
+    <string name="sync_media_refusal_queued_title">Уже в очереди</string>
+    <string name="sync_media_refusal_queued_subtitle">%1$s ожидает загрузки</string>
+    <string name="sync_media_refusal_mixed_title">Нечего скачивать</string>
+    <string name="sync_media_refusal_mixed_subtitle">%1$s загружено, %2$s в очереди</string>
+    <string name="sync_media_refusal_unavailable_title">Нечего скачивать</string>
+    <string name="sync_media_refusal_unavailable_subtitle">У этого тайтла нет файла, который сервер может предоставить</string>
+
+    <string name="sync_media_unreachable_title">Хранилище недоступно</string>
+    <string name="sync_media_unreachable_subtitle">%1$s останутся загруженными до возврата хранилища</string>
+
+    <string name="sync_media_storage_title">Недостаточно места для %1$s</string>
+
+    <string name="sync_media_step_preparing">Подготовка</string>
+    <string name="sync_media_step_awaiting_transcode">Ожидание начала перекодирования на сервере</string>
+
+    <string name="sync_media_transcode_unavailable_title">Загрузка оригинального файла</string>
+    <string name="sync_media_transcode_unavailable_subtitle">%1$s не удалось перекодировать для загрузки</string>
+
+    <plurals name="sync_media_subtitle_shortfall_title">
+        <item quantity="one">%1$s загружен без %2$d дорожки субтитров</item>
+        <item quantity="few">%1$s загружен без %2$d дорожек субтитров</item>
+        <item quantity="many">%1$s загружен без %2$d дорожек субтитров</item>
+        <item quantity="other">%1$s загружен без %2$d дорожки субтитров</item>
+    </plurals>
+    <string name="sync_media_subtitle_shortfall_burned_in">%1$s вшита в изображение; остальные не удалось перенести</string>
+    <string name="sync_media_subtitle_shortfall_refused">Сервер не предоставил все дорожки субтитров</string>
+    <string name="sync_media_subtitle_shortfall_transcoded">Субтитры-изображения не могут быть перенесены при уменьшенном размере</string>
+    <string name="sync_media_subtitle_shortfall_external">Субтитры-изображения хранятся отдельно от файла и не могут быть перенесены вместе с ним</string>
+    <string name="sync_media_subtitle_label_fallback">Субтитры</string>
+
+    <string name="sync_steam_rate_limited_title">Steam временно недоступен</string>
+    <string name="sync_steam_rate_limited_subtitle">Превышен лимит входов. Повторите через час</string>
+    <string name="sync_steam_auth_expired_title">Сессия Steam истекла</string>
+    <string name="sync_steam_auth_expired_subtitle">Войдите снова через Настройки &gt; Steam</string>
+    <string name="sync_steam_download_signed_out_title">Сессия Steam истекла</string>
+    <string name="sync_steam_download_signed_out_subtitle">Войдите через Настройки &gt; Steam, чтобы скачать</string>
+    <string name="sync_steam_path_blocked_title">Не удалось скачать %1$s</string>
+    <string name="sync_steam_storage_blocked_title">Не удалось скачать %1$s</string>
+
+    <string name="sync_steam_qr_rate_limited">Превышен лимит. Повторите позже</string>
+    <string name="sync_steam_qr_login_failed">Ошибка входа: %1$s</string>
+    <string name="sync_steam_qr_not_connected">Нет подключения к Steam</string>
+    <string name="sync_steam_qr_start_failed">Не удалось начать авторизацию по QR</string>
+    <string name="sync_steam_qr_polling_failed">Ошибка опроса</string>
+    <string name="sync_steam_qr_disconnected">Steam не подключен</string>
+
+    <string name="sync_launch_core_fallback">Не удалось загрузить %1$s, используется %2$s</string>
+</resources>

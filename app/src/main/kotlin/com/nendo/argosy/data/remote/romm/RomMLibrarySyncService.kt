@@ -119,7 +119,7 @@ class RomMLibrarySyncService @Inject constructor(
         onProgress: ((current: Int, total: Int, platformName: String) -> Unit)? = null
     ): SyncResult = withContext(NonCancellable + Dispatchers.IO) {
         if (!syncMutex.tryLock()) {
-            return@withContext SyncResult(0, 0, 0, 0, listOf("Sync already in progress"))
+            return@withContext SyncResult(0, 0, 0, 0, emptyList(), alreadyInProgress = true)
         }
 
         try {
@@ -132,7 +132,7 @@ class RomMLibrarySyncService @Inject constructor(
 
     suspend fun syncPlatform(platformId: Long): SyncResult = withContext(NonCancellable + Dispatchers.IO) {
         if (!syncMutex.tryLock()) {
-            return@withContext SyncResult(0, 0, 0, 0, listOf("Sync already in progress"))
+            return@withContext SyncResult(0, 0, 0, 0, emptyList(), alreadyInProgress = true)
         }
 
         try {

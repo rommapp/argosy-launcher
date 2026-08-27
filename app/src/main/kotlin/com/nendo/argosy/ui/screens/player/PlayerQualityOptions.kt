@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.screens.player
 
+import androidx.annotation.StringRes
+import com.nendo.argosy.R
 import java.util.Locale
 
 /**
@@ -27,21 +29,31 @@ data class PlayerSourceVideo(
 /**
  * The three wheels of the quality picker, in the order they are walked left to right.
  */
-enum class QualityWheel(val title: String) {
-    RESOLUTION("Resolution"),
-    FRAMERATE("Frame Rate"),
-    BITRATE("Bit Rate")
+enum class QualityWheel(@StringRes val titleRes: Int) {
+    RESOLUTION(R.string.media_player_quality_wheel_resolution),
+    FRAMERATE(R.string.media_player_quality_wheel_framerate),
+    BITRATE(R.string.media_player_quality_wheel_bitrate)
 }
 
 /**
  * One row on a wheel. A null [value] is the "Original" row - no ceiling on that axis.
+ *
+ * [labelRes] carries the row's words where they are words rather than a measurement, and the
+ * composable that draws the wheel resolves it. The ladder rows keep a plain [label] because a
+ * height, a frame rate and a bit rate are written the same way in every language, and the wheels
+ * are built from a state property that has no resources to read.
  */
 data class QualityWheelOption(
     val label: String,
-    val value: Int?
+    val value: Int?,
+    @StringRes val labelRes: Int? = null
 )
 
-private const val ORIGINAL_LABEL = "Original"
+private val ORIGINAL_OPTION = QualityWheelOption(
+    label = "",
+    value = null,
+    labelRes = R.string.media_player_quality_option_original
+)
 private const val KBPS_PER_MBPS = 1000
 
 private val RESOLUTION_LADDER = listOf(2160, 1440, 1080, 720, 480, 360)
@@ -90,13 +102,13 @@ fun availableQualityWheels(source: PlayerSourceVideo?): List<QualityWheel> =
     }
 
 fun resolutionWheelOptions(source: PlayerSourceVideo?): List<QualityWheelOption> =
-    listOf(QualityWheelOption(ORIGINAL_LABEL, null)) +
+    listOf(ORIGINAL_OPTION) +
         RESOLUTION_LADDER
             .filter { source?.height == null || it < source.height }
             .map { QualityWheelOption("${it}p", it) }
 
 fun framerateWheelOptions(source: PlayerSourceVideo?): List<QualityWheelOption> =
-    listOf(QualityWheelOption(ORIGINAL_LABEL, null)) +
+    listOf(ORIGINAL_OPTION) +
         FRAMERATE_LADDER
             .filter { source?.framerate == null || it < source.framerate }
             .map { QualityWheelOption("$it fps", it) }
@@ -106,7 +118,7 @@ fun bitrateWheelOptions(source: PlayerSourceVideo?, selectedMaxHeight: Int?): Li
     val usefulCeiling = effectiveHeight?.let { height ->
         MAX_USEFUL_BITRATE_BY_HEIGHT.firstOrNull { height >= it.first }?.second
     }
-    return listOf(QualityWheelOption(ORIGINAL_LABEL, null)) +
+    return listOf(ORIGINAL_OPTION) +
         BITRATE_LADDER_KBPS
             .filter { usefulCeiling == null || it <= usefulCeiling }
             .filter { source?.bitrateKbps == null || it < source.bitrateKbps }
@@ -146,14 +158,15 @@ fun clampBitrateToLadder(
 }
 
 /**
- * How the ceilings read on the chrome's caption line: each capped axis by its value, or "Original"
- * when nothing is capped.
+ * How the ceilings read on the chrome's caption line: each capped axis by its value, or
+ * [originalLabel] when nothing is capped. The caption's own wording is passed in because this file
+ * is reached from a state property with no resources to read.
  */
-fun PlayerQualityCeilings.summaryLabel(): String {
+fun PlayerQualityCeilings.summaryLabel(originalLabel: String): String {
     val parts = listOfNotNull(
         maxHeight?.let { "${it}p" },
         maxFramerate?.let { "$it fps" },
         maxBitrateKbps?.let { bitrateLabel(it) }
     )
-    return if (parts.isEmpty()) ORIGINAL_LABEL else parts.joinToString(" ")
+    return if (parts.isEmpty()) originalLabel else parts.joinToString(" ")
 }

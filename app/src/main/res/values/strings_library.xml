@@ -1,0 +1,359 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Owner: ui/screens/library, ui/screens/apps, ui/screens/search
+      Key prefix: library_
+      Keys are named for the usage site, never for the English text, and identical English
+      is never shared between two usage sites.
+    -->
+
+    <!-- Heading over the game list. Rendered in caps in English; use whatever casing is
+         normal for a heading in your language. Noun, the user's game library. -->
+    <string name="library_header_title">LIBRARY</string>
+    <!-- Value of the platform stepper in the game list header when no platform is chosen, so
+         the list is showing every platform at once. Noun phrase, not a command. -->
+    <string name="library_header_all_platforms">All Platforms</string>
+    <!-- Screen reader text for the left bumper arrow beside the platform name. It steps the
+         list back one platform. Verb phrase describing the action. -->
+    <string name="library_header_previous_platform">Previous platform</string>
+    <!-- Screen reader text for the right bumper arrow beside the platform name. It steps the
+         list forward one platform. Verb phrase describing the action. -->
+    <string name="library_header_next_platform">Next platform</string>
+    <!-- How many games the game list is currently showing, in its header. -->
+    <plurals name="library_header_game_count">
+        <item quantity="one">%d game</item>
+        <item quantity="other">%d games</item>
+    </plurals>
+
+    <!-- Heading over the platform landing grid, the screen that chooses which platform or
+         media library to open. Same word as the game list heading, deliberately a separate
+         key. Caps as above. -->
+    <string name="library_landing_title">LIBRARY</string>
+    <!-- How many game platforms the landing grid is offering. Noun, a console or computer
+         family such as SNES, not a raised surface. -->
+    <plurals name="library_landing_platform_count">
+        <item quantity="one">%d platform</item>
+        <item quantity="other">%d platforms</item>
+    </plurals>
+    <!-- How many media libraries the landing grid is offering, alongside the platform count.
+         A media library is one collection on the user's movie or TV server. -->
+    <plurals name="library_landing_media_library_count">
+        <item quantity="one">%d library</item>
+        <item quantity="other">%d libraries</item>
+    </plurals>
+
+    <!-- Name of the landing cell that opens every game at once, with no platform filter.
+         Noun phrase, not a command. -->
+    <string name="library_cell_all_games">All Games</string>
+    <!-- Small print under a platform cell on the landing grid: how many games it holds. -->
+    <plurals name="library_cell_game_count">
+        <item quantity="one">%d game</item>
+        <item quantity="other">%d games</item>
+    </plurals>
+    <!-- Small print under a movie library cell on the landing grid: how many films it holds.
+         Noun. -->
+    <plurals name="library_cell_movie_count">
+        <item quantity="one">%d movie</item>
+        <item quantity="other">%d movies</item>
+    </plurals>
+    <!-- Small print under a TV library cell on the landing grid: how many series it holds.
+         Noun meaning a television programme, never the verb "to show". -->
+    <plurals name="library_cell_show_count">
+        <item quantity="one">%d show</item>
+        <item quantity="other">%d shows</item>
+    </plurals>
+
+    <!-- Headline shown in place of the landing grid when the user has no platforms at all. -->
+    <string name="library_landing_empty_title">No platforms yet</string>
+    <!-- Body text under the empty landing grid. "Rom Manager" is the name of the server
+         product Argosy syncs from and stays untranslated. "Settings" names Argosy's own
+         settings screen. -->
+    <string name="library_landing_empty_body">Sync your library from Rom Manager in Settings</string>
+
+    <!-- Headline shown in place of the game list when a chosen platform has no games.
+         %1$s is the platform's name, for example "SNES". -->
+    <string name="library_empty_title_platform">No %1$s games found</string>
+    <!-- Headline shown in place of the game list when no platform is chosen and the whole
+         library is empty. -->
+    <string name="library_empty_title_all">No games yet</string>
+    <!-- Body text under the empty game list. Same sentence as the empty landing grid,
+         deliberately a separate key. -->
+    <string name="library_empty_body">Sync your library from Rom Manager in Settings</string>
+
+    <!-- Heading of the filter modal over the game list. Verb phrase, an instruction the panel
+         carries out. Caps in English. -->
+    <string name="library_filter_title">FILTER GAMES</string>
+    <!-- Line under the filter modal heading summarising which filters are on. %1$s is that
+         summary, which is assembled elsewhere and is not translated here. -->
+    <string name="library_filter_active_summary">Active: %1$s</string>
+    <!-- Placeholder inside the filter modal's text field, shown while it is empty. -->
+    <string name="library_filter_search_placeholder">Type to search...</string>
+    <!-- Heading over the list of the user's previous search terms in the filter modal.
+         Adjective plus noun, the searches themselves, not an instruction to search again. -->
+    <string name="library_filter_recent_searches">Recent searches</string>
+
+    <!-- Tab in the filter modal. Chooses the order the game list is arranged in. Noun. -->
+    <string name="library_filter_category_sort">Sort</string>
+    <!-- Tab in the filter modal. Opens a text field that narrows the list by title. Noun. -->
+    <string name="library_filter_category_search">Search</string>
+    <!-- Tab in the filter modal. Narrows the list by where a game came from, for example
+         favourites or hidden. Noun. -->
+    <string name="library_filter_category_source">Source</string>
+    <!-- Tab in the filter modal. Narrows the list by console or computer family. Noun,
+         singular, naming the category rather than one platform. -->
+    <string name="library_filter_category_platform">Platform</string>
+    <!-- Tab in the filter modal. Narrows the list by game genre. Noun, singular, naming the
+         category. -->
+    <string name="library_filter_category_genre">Genre</string>
+    <!-- Tab in the filter modal. Narrows the list by how many people can play, for example
+         single player or co-op. Noun, plural. -->
+    <string name="library_filter_category_players">Players</string>
+    <!-- Tab in the filter modal. Narrows the list by game franchise, for example Mario.
+         Noun, a family of games, never a television series. -->
+    <string name="library_filter_category_series">Series</string>
+
+    <!-- Button hint in the filter modal while the search tab is open. Verb, empties the text
+         field. -->
+    <string name="library_filter_hint_clear">Clear</string>
+    <!-- Button hint in the filter modal while the search tab is open. Verb, dismisses the
+         modal. -->
+    <string name="library_filter_hint_close_search">Close</string>
+    <!-- Button hint in the filter modal on every tab other than search. Verb, puts the open
+         tab's filter back to its default. -->
+    <string name="library_filter_hint_reset">Reset</string>
+    <!-- Button hint in the filter modal on a tab where several options can be on at once.
+         Verb, turns the focused option on or off. -->
+    <string name="library_filter_hint_toggle">Toggle</string>
+    <!-- Button hint in the filter modal on a tab where exactly one option applies. Verb,
+         chooses the focused option. -->
+    <string name="library_filter_hint_select">Select</string>
+    <!-- Button hint in the filter modal on every tab other than search. Verb, dismisses the
+         modal. Same word as the search tab's hint, deliberately a separate key. -->
+    <string name="library_filter_hint_close_options">Close</string>
+
+    <!-- Button hint under the game list. Verb phrase, jumps the cursor to the next alphabet
+         or date section of the list. -->
+    <string name="library_footer_hint_jump_section">Jump Section</string>
+    <!-- Button hint under the game list. Noun, opens the focused game's detail screen. -->
+    <string name="library_footer_hint_details">Details</string>
+    <!-- Button hint under the game list while the hidden games are being viewed. Verb, puts
+         the focused game back into the normal list. -->
+    <string name="library_footer_hint_unhide">Unhide</string>
+    <!-- Button hint under the game list when the focused game is already a favourite. Verb,
+         removes it from favourites. -->
+    <string name="library_footer_hint_unfavorite">Unfavorite</string>
+    <!-- Button hint under the game list when the focused game is not a favourite. Verb, adds
+         it to favourites. -->
+    <string name="library_footer_hint_favorite">Favorite</string>
+    <!-- Button hint under the game list. Verb, opens the filter modal. -->
+    <string name="library_footer_hint_filter">Filter</string>
+    <!-- Button hint under the game list. Noun phrase, opens the focused game's short action
+         menu. -->
+    <string name="library_footer_hint_quick_menu">Quick Menu</string>
+
+    <!-- Heading of the quick action menu over the game list. Noun phrase. Caps in English. -->
+    <string name="library_quickmenu_title">QUICK ACTIONS</string>
+    <!-- Top entry of the quick action menu when the game is an app that has been downloaded
+         but not yet installed. Verb, installs it. -->
+    <string name="library_quickmenu_install">Install</string>
+    <!-- Top entry of the quick action menu when the game is already on the device. Verb,
+         starts the game. Not the noun "play" and not play time. -->
+    <string name="library_quickmenu_play">Play</string>
+    <!-- Top entry of the quick action menu when the game is not on the device yet. Verb,
+         fetches it from the server. -->
+    <string name="library_quickmenu_download">Download</string>
+    <!-- Quick action menu entry when the game is already a favourite. Verb, removes it from
+         favourites. -->
+    <string name="library_quickmenu_unfavorite">Unfavorite</string>
+    <!-- Quick action menu entry when the game is not a favourite. Verb, adds it to
+         favourites. -->
+    <string name="library_quickmenu_favorite">Favorite</string>
+    <!-- Quick action menu entry. Noun, opens the game's detail screen. Same word as the
+         footer hint, deliberately a separate key. -->
+    <string name="library_quickmenu_details">Details</string>
+    <!-- Quick action menu entry. Verb phrase, puts the game into one of the user's own
+         collections. -->
+    <string name="library_quickmenu_add_to_collection">Add to Collection</string>
+    <!-- Quick action menu entry. Verb phrase, puts the game onto the user's curated home
+         grid. "Grid" is that home screen layout, not a table. -->
+    <string name="library_quickmenu_add_to_grid">Add to Grid</string>
+    <!-- Quick action menu entry. Verb phrase, fetches this one game's metadata again from
+         the server. -->
+    <string name="library_quickmenu_refresh_data">Refresh Data</string>
+    <!-- Quick action menu entry. Verb phrase, syncs the whole platform the game belongs to. -->
+    <string name="library_quickmenu_resync_platform">Resync Platform</string>
+    <!-- Quick action menu entry for an installed Android app. Verb, removes the app from the
+         device. -->
+    <string name="library_quickmenu_uninstall">Uninstall</string>
+    <!-- Quick action menu entry for a downloaded game. Verb phrase, deletes the local copy
+         and leaves the game on the server. -->
+    <string name="library_quickmenu_delete_download">Delete Download</string>
+    <!-- Quick action menu entry when the game is hidden. Verb, puts it back into the normal
+         list. Not the noun "show". -->
+    <string name="library_quickmenu_show">Show</string>
+    <!-- Quick action menu entry when the game is visible. Verb, takes it out of the normal
+         list. -->
+    <string name="library_quickmenu_hide">Hide</string>
+
+    <!-- Toast confirming a game was added to the curated home grid. -->
+    <string name="library_notice_added_to_home_grid">Added to home grid</string>
+    <!-- Toast confirming one game's metadata was fetched again from the game server. -->
+    <string name="library_notice_game_data_refreshed">Game data refreshed</string>
+    <!-- Toast confirming one installed Android app's metadata was read again. Same sentence
+         as the server refresh above, deliberately a separate key. -->
+    <string name="library_notice_android_data_refreshed">Game data refreshed</string>
+    <!-- Toast confirming the local copy of a game was deleted. "Download" is a noun here,
+         the downloaded file. -->
+    <string name="library_notice_download_deleted">Download deleted</string>
+    <!-- Toast shown when a download was asked for but the game is already on the device. -->
+    <string name="library_notice_already_downloaded">Game already downloaded</string>
+    <!-- Toast confirming a multi-disc game was queued. Counts the discs being fetched. -->
+    <plurals name="library_notice_downloading_discs">
+        <item quantity="one">Downloading %d disc</item>
+        <item quantity="other">Downloading %d discs</item>
+    </plurals>
+    <!-- Toast shown when a downloaded archive could not be unpacked. "game details" names
+         Argosy's game detail screen, where the retry lives. -->
+    <string name="library_notice_extraction_failed">Extraction failed. Open game details to retry.</string>
+    <!-- Toast shown when Android refused to install a downloaded app package. -->
+    <string name="library_notice_apk_install_failed">Could not install APK</string>
+
+    <!-- Label of a fact on the second screen while the game list is being browsed. Noun, the
+         emulator program that would run the focused game. Its value is a program name and is
+         not translated. -->
+    <string name="library_companion_fact_emulator">Emulator</string>
+    <!-- Label of a fact on the second screen while the game list is being browsed. Noun,
+         whether the focused game is held on this device. -->
+    <string name="library_companion_fact_storage">Storage</string>
+    <!-- Value of the storage fact when the game is held on this device. Adjective describing
+         the game, not the verb "to download". -->
+    <string name="library_companion_storage_downloaded">Downloaded</string>
+    <!-- Value of the storage fact when the game is only on the server. Adjective describing
+         the game. -->
+    <string name="library_companion_storage_not_downloaded">Not downloaded</string>
+
+    <!-- Heading of the installed apps screen in its normal state. Noun, plural, the apps
+         installed on the device. -->
+    <string name="library_apps_title">Apps</string>
+    <!-- Heading of the installed apps screen while it is listing the apps the user has
+         hidden. Adjective plus noun. -->
+    <string name="library_apps_title_hidden">Hidden Apps</string>
+    <!-- Heading of the installed apps screen while the user is dragging apps into a new
+         order. Verb phrase. -->
+    <string name="library_apps_title_reorder">Reorder Apps</string>
+    <!-- Aside beside the reorder heading. "A" is the name of a gamepad button and stays as
+         the letter A. -->
+    <!-- Aside beside the Reorder Apps heading, telling the user how to finish. The button
+         itself is drawn as an icon beside this text, because which physical button confirms
+         is a user setting, so do not name a button in the translation. Verb, imperative. -->
+    <string name="library_apps_reorder_hint">to save</string>
+
+    <!-- Summary shown when more than one library filter is active, standing in for naming
+         them all. -->
+    <plurals name="library_filter_active_count">
+        <item quantity="one">%d filter</item>
+        <item quantity="other">%d filters</item>
+    </plurals>
+    <!-- Shown in place of the app grid when no installed app matches the current view. -->
+    <string name="library_apps_empty">No apps found</string>
+
+    <!-- Button hint on the apps screen while reordering. Verb, moves the held app one place. -->
+    <string name="library_apps_hint_move">Move</string>
+    <!-- Button hint on the apps screen while reordering. Verb, keeps the new order. Not the
+         noun for a saved game. -->
+    <string name="library_apps_hint_save">Save</string>
+    <!-- Button hint on the apps screen while reordering. Verb, abandons the new order. -->
+    <string name="library_apps_hint_cancel">Cancel</string>
+    <!-- Button hint on the apps screen. Verb, starts the focused app. -->
+    <string name="library_apps_hint_open">Open</string>
+    <!-- Button hint on the apps screen. Verb, leaves the screen. -->
+    <string name="library_apps_hint_back">Back</string>
+    <!-- Button hint on the apps screen for a device with two screens. Verb phrase, starts the
+         focused app on the upper screen. -->
+    <string name="library_apps_hint_open_on_top">Open on Top</string>
+    <!-- Button hint on the apps screen for a device with one screen. Verb, begins arranging
+         the apps into a new order. -->
+    <string name="library_apps_hint_reorder">Reorder</string>
+    <!-- Button hint on the apps screen. Noun, plural, opens the focused app's action menu. -->
+    <string name="library_apps_hint_options">Options</string>
+    <!-- Button hint on the apps screen while the hidden apps are listed. Verb phrase, returns
+         to the normal list. -->
+    <string name="library_apps_hint_show_apps">Show Apps</string>
+    <!-- Button hint on the apps screen while the normal list is shown. Verb phrase, lists the
+         hidden apps instead. -->
+    <string name="library_apps_hint_show_hidden">Show Hidden</string>
+
+    <!-- Entry in an app's action menu. Noun phrase, opens Android's own page about the app. -->
+    <string name="library_apps_menu_app_info">App Info</string>
+    <!-- Entry in an app's action menu on a device with two screens. Verb phrase, starts the
+         app on the upper screen. -->
+    <string name="library_apps_menu_open_on_top">Open on Top Screen</string>
+    <!-- Entry in an app's action menu when the app is already on Argosy's home screen. Verb
+         phrase, takes it off. -->
+    <string name="library_apps_menu_remove_from_home">Remove from Home</string>
+    <!-- Entry in an app's action menu when the app is not on Argosy's home screen. Verb
+         phrase, puts it there. -->
+    <string name="library_apps_menu_add_to_home">Add to Home</string>
+    <!-- Entry in an app's action menu when the app is already on the second screen's home.
+         Verb phrase, takes it off. -->
+    <string name="library_apps_menu_remove_from_second_screen">Remove from Second Screen</string>
+    <!-- Entry in an app's action menu when the app is not on the second screen's home. Verb
+         phrase, puts it there. -->
+    <string name="library_apps_menu_add_to_second_screen">Add to Second Screen</string>
+    <!-- Entry in an app's action menu when the app is hidden. Verb, puts it back into the
+         normal list. Not the noun "show". -->
+    <string name="library_apps_menu_show">Show</string>
+    <!-- Entry in an app's action menu when the app is visible. Verb, takes it out of the
+         normal list. -->
+    <string name="library_apps_menu_hide">Hide</string>
+    <!-- Entry in an app's action menu. Verb phrase, begins arranging the apps into a new
+         order. Same phrase as the reorder heading, deliberately a separate key. -->
+    <string name="library_apps_menu_reorder">Reorder Apps</string>
+    <!-- Entry in an app's action menu. Verb, removes the app from the device. Same word as
+         the game quick menu entry, deliberately a separate key. -->
+    <string name="library_apps_menu_uninstall">Uninstall</string>
+
+    <!-- Placeholder in the search field when a media account is signed in, so both games and
+         films or shows can be found. -->
+    <string name="library_search_placeholder_games_and_media">Search games and media...</string>
+    <!-- Placeholder in the search field when no media account is signed in, so only games can
+         be found. -->
+    <string name="library_search_placeholder_games">Search games...</string>
+    <!-- Shown in place of results while the typed query is still too short to search on.
+         Counts characters. -->
+    <plurals name="library_search_min_query_hint">
+        <item quantity="one">Type at least %d character to search</item>
+        <item quantity="other">Type at least %d characters to search</item>
+    </plurals>
+    <!-- Shown in place of results when nothing matched. %1$s is what the user typed, and the
+         quotation marks around it are part of the sentence. -->
+    <string name="library_search_no_results">No results for \"%1$s\"</string>
+    <!-- Heading over the game half of the search results, shown only when the other half also
+         has results. Noun, plural. -->
+    <string name="library_search_heading_games">Games</string>
+    <!-- Heading over the film and TV half of the search results, shown only when the other
+         half also has results. Noun, films and television together. -->
+    <string name="library_search_heading_media">Media</string>
+    <!-- Stands in for a game's platform name in a search result when the platform cannot be
+         resolved. Adjective describing the missing platform. -->
+    <string name="library_search_result_platform_unknown">Unknown</string>
+    <!-- Stands in for the library name of a search result that is a television programme.
+         Noun, a TV series, never a game franchise. -->
+    <string name="library_search_result_kind_series">Series</string>
+    <!-- Stands in for the library name of a search result that is a film. Noun. -->
+    <string name="library_search_result_kind_movie">Movie</string>
+    <!-- Button hint under the search results, shown only when both kinds matched. The
+         shoulder buttons jump between the two groups; the slash separates the two
+         destinations. -->
+    <string name="library_search_hint_group_jump">Games / Media</string>
+    <!-- Button hint under the search results. Verb, opens the focused result. -->
+    <string name="library_search_hint_select">Select</string>
+    <!-- Button hint under the search results. One button does both: it empties the query
+         while there is one, and leaves the screen once there is not. -->
+    <string name="library_search_hint_back">Back/Clear</string>
+    <!-- Count of matches, shown at the end of the search results footer. -->
+    <plurals name="library_search_result_count">
+        <item quantity="one">%d result</item>
+        <item quantity="other">%d results</item>
+    </plurals>
+</resources>

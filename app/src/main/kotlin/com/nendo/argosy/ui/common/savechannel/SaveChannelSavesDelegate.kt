@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.common.savechannel
 
+import android.content.Context
+import com.nendo.argosy.R
 import com.nendo.argosy.data.emulator.TitleIdDownloadObserver
 import com.nendo.argosy.data.repository.ActiveSaveRepository
 import com.nendo.argosy.data.repository.GameRepository
@@ -18,15 +20,19 @@ import com.nendo.argosy.domain.usecase.savechannel.DeleteSaveChannelUseCase
 import com.nendo.argosy.domain.usecase.savechannel.RenameSaveChannelUseCase
 import com.nendo.argosy.domain.usecase.savechannel.RestoreSaveChannelPointUseCase
 import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.core.notification.showSuccess
+import com.nendo.argosy.ui.common.toNotificationText
 import com.nendo.argosy.ui.screens.gamedetail.components.SaveStatusEvent
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 class SaveChannelSavesDelegate @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val holder: SaveChannelStateHolder,
     private val getUnifiedSavesUseCase: GetUnifiedSavesUseCase,
     private val restoreCachedSaveUseCase: RestoreCachedSaveUseCase,
@@ -69,7 +75,7 @@ class SaveChannelSavesDelegate @Inject constructor(
         slotItems.add(
             SaveSlotItem(
                 channelName = SaveSyncApiClient.AUTOSAVE_SLOT_NAME,
-                displayName = "Autosave",
+                displayName = context.getString(R.string.ui_save_channel_slot_autosave),
                 isActive = effectiveActiveChannel.equals(SaveSyncApiClient.AUTOSAVE_SLOT_NAME, ignoreCase = true),
                 saveCount = autosaveSaves.size,
                 latestTimestamp = autosaveSaves.maxByOrNull { it.timestamp }?.timestamp?.toEpochMilli()
@@ -127,7 +133,7 @@ class SaveChannelSavesDelegate @Inject constructor(
             slotItems.add(
                 SaveSlotItem(
                     channelName = null,
-                    displayName = "Archived",
+                    displayName = context.getString(R.string.ui_save_channel_slot_archived),
                     isActive = false,
                     saveCount = archivalSaves.size,
                     latestTimestamp = archivalSaves.maxByOrNull {
@@ -356,8 +362,11 @@ class SaveChannelSavesDelegate @Inject constructor(
                         onSaveStatusChanged(
                             SaveStatusEvent(channelName = channelName, timestamp = entryTimestamp)
                         )
-                        val label = channelName ?: "Auto Save"
-                        notificationManager.showSuccess("Using save slot: $label")
+                        val label = channelName
+                            ?: context.getString(R.string.ui_save_channel_notice_activate_default)
+                        notificationManager.showSuccess(
+                            NotificationText.Res(R.string.ui_save_channel_notice_using_slot, listOf(label))
+                        )
                         _state.update {
                             it.copy(
                                 activeSaveTimestamp = entryTimestamp,
@@ -368,7 +377,7 @@ class SaveChannelSavesDelegate @Inject constructor(
                         onRestored()
                     }
                     is RestoreCachedSaveUseCase.Result.Error -> {
-                        notificationManager.showError(result.message)
+                        notificationManager.showError(result.reason.toNotificationText())
                         _state.update { it.copy(isVisible = false) }
                     }
                 }
@@ -377,12 +386,17 @@ class SaveChannelSavesDelegate @Inject constructor(
                     currentGameId, emulatorId
                 )
                 if (!cleared) {
-                    notificationManager.showError("Failed to clear existing save")
+                    notificationManager.showError(
+                        NotificationText.Res(R.string.ui_save_channel_notice_clear_failed)
+                    )
                     _state.update { it.copy(isVisible = false) }
                     return@launch
                 }
-                val label = channelName ?: "Auto Save"
-                notificationManager.showSuccess("Switched to: $label")
+                val label = channelName
+                    ?: context.getString(R.string.ui_save_channel_notice_switch_default)
+                notificationManager.showSuccess(
+                    NotificationText.Res(R.string.ui_save_channel_notice_switched_to, listOf(label))
+                )
                 _state.update { it.copy(isVisible = false) }
                 onRestored()
             }
@@ -464,8 +478,13 @@ class SaveChannelSavesDelegate @Inject constructor(
                     activeSaveRepository.setActiveSaveApplied(currentGameId, true)
                     saveSyncRepository.markUserSelectedRestorePoint(currentGameId, emulatorId, targetChannel)
                     val msg = if (targetChannel != null) {
-                        "Restored to $targetChannel"
-                    } else "Save restored"
+                        NotificationText.Res(
+                            R.string.ui_save_channel_notice_restored_to_slot,
+                            listOf(targetChannel)
+                        )
+                    } else {
+                        NotificationText.Res(R.string.ui_save_channel_notice_restored)
+                    }
                     notificationManager.showSuccess(msg)
                     refreshEntries()
                     onRestored()
@@ -474,14 +493,19 @@ class SaveChannelSavesDelegate @Inject constructor(
                     activeSaveRepository.setActiveSaveApplied(currentGameId, true)
                     saveSyncRepository.markUserSelectedRestorePoint(currentGameId, emulatorId, targetChannel)
                     val msg = if (targetChannel != null) {
-                        "Restored to $targetChannel and synced"
-                    } else "Save restored and synced"
+                        NotificationText.Res(
+                            R.string.ui_save_channel_notice_restored_to_slot_synced,
+                            listOf(targetChannel)
+                        )
+                    } else {
+                        NotificationText.Res(R.string.ui_save_channel_notice_restored_synced)
+                    }
                     notificationManager.showSuccess(msg)
                     refreshEntries()
                     onRestored()
                 }
                 is RestoreCachedSaveUseCase.Result.Error -> {
-                    notificationManager.showError(result.message)
+                    notificationManager.showError(result.reason.toNotificationText())
                 }
             }
         }
@@ -549,12 +573,16 @@ class SaveChannelSavesDelegate @Inject constructor(
         val newName = state.renameText.trim()
 
         if (newName.isBlank()) {
-            notificationManager.showError("Slot name cannot be empty")
+            notificationManager.showError(
+                NotificationText.Res(R.string.ui_save_channel_notice_slot_name_empty)
+            )
             return
         }
 
         if (isReservedSlotName(newName)) {
-            notificationManager.showError("'$newName' is a reserved name")
+            notificationManager.showError(
+                NotificationText.Res(R.string.ui_save_channel_notice_slot_name_reserved, listOf(newName))
+            )
             return
         }
 
@@ -562,7 +590,12 @@ class SaveChannelSavesDelegate @Inject constructor(
             RenameMode.NEW_SLOT -> {
                 scope.launch {
                     if (saveCacheManager.channelExists(currentGameId, newName)) {
-                        notificationManager.showError("Slot '$newName' already exists")
+                        notificationManager.showError(
+                            NotificationText.Res(
+                                R.string.ui_save_channel_notice_new_slot_exists,
+                                listOf(newName)
+                            )
+                        )
                         return@launch
                     }
                     confirmCreateNewSlot(scope, newName)
@@ -575,12 +608,19 @@ class SaveChannelSavesDelegate @Inject constructor(
             RenameMode.SAVE_AS -> {
                 if (entry == null) return
                 if (newName == entry.channelName) {
-                    notificationManager.showError("New slot name must differ from the source")
+                    notificationManager.showError(
+                        NotificationText.Res(R.string.ui_save_channel_notice_save_as_same_name)
+                    )
                     return
                 }
                 scope.launch {
                     if (saveCacheManager.channelExists(currentGameId, newName)) {
-                        notificationManager.showError("Slot '$newName' already exists")
+                        notificationManager.showError(
+                            NotificationText.Res(
+                                R.string.ui_save_channel_notice_save_as_slot_exists,
+                                listOf(newName)
+                            )
+                        )
                         return@launch
                     }
                     confirmCreateChannel(scope, entry, newName)
@@ -608,7 +648,9 @@ class SaveChannelSavesDelegate @Inject constructor(
                 SaveStatusEvent(channelName = name, timestamp = null)
             )
             holder.pendingSaveStatusChanged = null
-            notificationManager.showSuccess("Created save slot '$name'")
+            notificationManager.showSuccess(
+                NotificationText.Res(R.string.ui_save_channel_notice_new_slot_created, listOf(name))
+            )
         }
     }
 
@@ -637,10 +679,14 @@ class SaveChannelSavesDelegate @Inject constructor(
                         renameText = ""
                     )
                 }
-                notificationManager.showSuccess("Created save slot '$newName'")
+                notificationManager.showSuccess(
+                    NotificationText.Res(R.string.ui_save_channel_notice_save_as_created, listOf(newName))
+                )
                 scope.launch { syncCoordinator.processQueue() }
             } else {
-                notificationManager.showError("Failed to create save slot")
+                notificationManager.showError(
+                    NotificationText.Res(R.string.ui_save_channel_notice_save_as_failed)
+                )
             }
         }
     }
@@ -668,7 +714,9 @@ class SaveChannelSavesDelegate @Inject constructor(
                     renameText = ""
                 )
             }
-            notificationManager.showSuccess("Renamed to '$newName'")
+            notificationManager.showSuccess(
+                NotificationText.Res(R.string.ui_save_channel_notice_renamed, listOf(newName))
+            )
         }
     }
 
@@ -734,7 +782,9 @@ class SaveChannelSavesDelegate @Inject constructor(
                     )
                 )
             }
-            notificationManager.showSuccess("Deleted save slot '$channelName'")
+            notificationManager.showSuccess(
+                NotificationText.Res(R.string.ui_save_channel_notice_slot_deleted, listOf(channelName))
+            )
         }
     }
 
@@ -796,11 +846,13 @@ class SaveChannelSavesDelegate @Inject constructor(
                     )
                 } else {
                     notificationManager.showSuccess(
-                        "Migrated '$channelName'"
+                        NotificationText.Res(R.string.ui_save_channel_notice_migrated, listOf(channelName))
                     )
                 }
             } else {
-                notificationManager.showError("Failed to migrate save")
+                notificationManager.showError(
+                    NotificationText.Res(R.string.ui_save_channel_notice_migrate_failed)
+                )
                 _state.update {
                     it.copy(
                         showMigrateConfirmation = false,
@@ -851,7 +903,9 @@ class SaveChannelSavesDelegate @Inject constructor(
                     )
                 )
             }
-            notificationManager.showSuccess("Deleted '$channelName'")
+            notificationManager.showSuccess(
+                NotificationText.Res(R.string.ui_save_channel_notice_legacy_deleted, listOf(channelName))
+            )
         }
     }
 
@@ -890,7 +944,9 @@ class SaveChannelSavesDelegate @Inject constructor(
                 )
             }
             updateHistoryForFocusedSlot()
-            notificationManager.showSuccess("Saves synced from server")
+            notificationManager.showSuccess(
+                NotificationText.Res(R.string.ui_save_channel_notice_saves_synced)
+            )
         }
     }
 

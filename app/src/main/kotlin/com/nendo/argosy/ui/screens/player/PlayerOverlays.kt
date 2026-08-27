@@ -24,7 +24,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.Modal
 import com.nendo.argosy.ui.components.WheelPicker
@@ -81,14 +83,15 @@ private fun QualityOverlay(
 ) {
     val theme = LocalArgosyTheme.current
     val draft = state.qualityDraft ?: state.activeQuality
+    val originalLabel = stringResource(R.string.media_player_quality_option_original)
     Modal(
-        title = "Quality",
+        title = stringResource(R.string.media_player_overlay_quality_title),
         baseWidth = Dimens.modalWidthLg,
         onDismiss = onDismiss,
         footerHints = listOf(
-            InputButton.DPAD to "Choose",
-            InputButton.A to "Apply",
-            InputButton.B to "Cancel"
+            InputButton.DPAD to stringResource(R.string.media_player_overlay_quality_hint_choose),
+            InputButton.A to stringResource(R.string.media_player_overlay_quality_hint_apply),
+            InputButton.B to stringResource(R.string.media_player_overlay_quality_hint_cancel)
         )
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)) {
@@ -96,14 +99,16 @@ private fun QualityOverlay(
                 val options = remember(wheel, state.sourceVideo, draft) {
                     qualityWheelOptions(wheel, state.sourceVideo, draft)
                 }
-                val labels = remember(options) { options.map { it.label } }
+                val labels = remember(options, originalLabel) {
+                    options.map { if (it.labelRes != null) originalLabel else it.label }
+                }
                 Column(
                     modifier = Modifier.weight(1f),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
                 ) {
                     Text(
-                        text = wheel.title,
+                        text = stringResource(wheel.titleRes),
                         style = MaterialTheme.typography.labelMedium,
                         color = theme.textDim,
                         maxLines = 1,
@@ -127,7 +132,7 @@ private fun QualityOverlay(
             horizontalArrangement = Arrangement.Center
         ) {
             Text(
-                text = "Apply",
+                text = stringResource(R.string.media_player_overlay_quality_apply_button),
                 style = MaterialTheme.typography.labelLarge,
                 color = theme.focusAccent,
                 modifier = Modifier
@@ -147,10 +152,13 @@ private fun AudioTrackOverlay(
     onDismiss: () -> Unit
 ) {
     Modal(
-        title = "Audio",
+        title = stringResource(R.string.media_player_overlay_audio_title),
         baseWidth = Dimens.modalWidthLg,
         onDismiss = onDismiss,
-        footerHints = listOf(InputButton.A to "Select", InputButton.B to "Close")
+        footerHints = listOf(
+            InputButton.A to stringResource(R.string.media_player_overlay_audio_hint_select),
+            InputButton.B to stringResource(R.string.media_player_overlay_audio_hint_close)
+        )
     ) {
         OverlayList(selectedIndex = state.overlayIndex, itemCount = state.audioTracks.size) { index ->
             val track = state.audioTracks[index]
@@ -180,26 +188,29 @@ private fun SubtitleTrackOverlay(
 ) {
     val theme = LocalArgosyTheme.current
     Modal(
-        title = "Subtitles",
+        title = stringResource(R.string.media_player_overlay_subtitles_title),
         baseWidth = Dimens.modalWidthLg,
         onDismiss = onDismiss,
-        footerHints = listOf(InputButton.A to "Select", InputButton.B to "Close")
+        footerHints = listOf(
+            InputButton.A to stringResource(R.string.media_player_overlay_subtitles_hint_select),
+            InputButton.B to stringResource(R.string.media_player_overlay_subtitles_hint_close)
+        )
     ) {
         OverlayList(selectedIndex = state.overlayIndex, itemCount = state.overlayItemCount) { index ->
             when {
                 index == SUBTITLE_OFF_ROW -> OverlayRow(
-                    label = "Off",
+                    label = stringResource(R.string.media_player_subtitle_row_off),
                     supporting = null,
                     selected = state.selectedSubtitleStreamIndex == null,
                     focused = index == state.overlayIndex,
                     onClick = { onSelect(index) }
                 )
                 index == state.burnInRowIndex -> OverlayRow(
-                    label = "Burn In Picture Subtitles",
+                    label = stringResource(R.string.media_player_subtitle_row_burn_in),
                     supporting = if (state.burnInImageSubtitles) {
-                        "On for this playback - the server re-encodes the video"
+                        stringResource(R.string.media_player_subtitle_burn_in_on)
                     } else {
-                        "Off - picture subtitles cannot be shown"
+                        stringResource(R.string.media_player_subtitle_burn_in_off)
                     },
                     selected = state.burnInImageSubtitles,
                     focused = index == state.overlayIndex,
@@ -209,7 +220,11 @@ private fun SubtitleTrackOverlay(
                     val track = state.subtitleTracks[index - 1]
                     OverlayRow(
                         label = track.label,
-                        supporting = if (track.isTextSubtitle) track.language else "Picture subtitle",
+                        supporting = if (track.isTextSubtitle) {
+                            track.language
+                        } else {
+                            stringResource(R.string.media_player_subtitle_row_picture)
+                        },
                         selected = track.streamIndex == state.selectedSubtitleStreamIndex,
                         focused = index == state.overlayIndex,
                         onClick = { onSelect(index) }
@@ -235,10 +250,13 @@ private fun ChapterOverlay(
     onDismiss: () -> Unit
 ) {
     Modal(
-        title = "Chapters",
+        title = stringResource(R.string.media_player_overlay_chapters_title),
         baseWidth = Dimens.modalWidthLg,
         onDismiss = onDismiss,
-        footerHints = listOf(InputButton.A to "Play From Here", InputButton.B to "Close")
+        footerHints = listOf(
+            InputButton.A to stringResource(R.string.media_player_overlay_chapters_hint_play),
+            InputButton.B to stringResource(R.string.media_player_overlay_chapters_hint_close)
+        )
     ) {
         OverlayList(selectedIndex = state.overlayIndex, itemCount = state.chapters.size) { index ->
             val chapter = state.chapters[index]

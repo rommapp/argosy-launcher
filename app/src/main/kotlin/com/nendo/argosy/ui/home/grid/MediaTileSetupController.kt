@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.home.grid
 
+import android.content.Context
+import com.nendo.argosy.R
 import com.nendo.argosy.data.local.entity.MediaTilePlayMode
 import com.nendo.argosy.domain.model.HomeTileTargetRef
 import com.nendo.argosy.ui.components.CustomGridState
@@ -34,6 +36,7 @@ private const val CONFIRM_BUTTON = 1
  * reader has answered the notice - which is the whole reason the notice exists.
  */
 class MediaTileSetupController(
+    private val context: Context,
     private val scope: CoroutineScope,
     private val catalog: MediaTileCatalog?,
     private val read: () -> CustomGridState,
@@ -134,7 +137,7 @@ class MediaTileSetupController(
                 picker = EpisodePickerState(),
                 selected = emptyList(),
                 scopeId = null,
-                error = null
+                errorRes = null
             )
         }
         return true
@@ -178,7 +181,7 @@ class MediaTileSetupController(
                 update {
                     it.copy(
                         isLoading = false,
-                        error = "No episodes have been synced for that season yet"
+                        errorRes = R.string.ui_media_tile_error_season_not_synced
                     )
                 }
                 return@launch
@@ -207,7 +210,14 @@ class MediaTileSetupController(
     }
 
     private fun loadSeasons(seriesId: String) {
-        update { it.copy(step = MediaTileStep.SEASON, focusIndex = 0, isLoading = true, error = null) }
+        update {
+            it.copy(
+                step = MediaTileStep.SEASON,
+                focusIndex = 0,
+                isLoading = true,
+                errorRes = null
+            )
+        }
         scope.launch {
             val seasons = catalog?.seasons(seriesId).orEmpty()
             update { it.copy(seasons = seasons, isLoading = false) }
@@ -220,14 +230,14 @@ class MediaTileSetupController(
                 step = MediaTileStep.EPISODES,
                 focusIndex = 0,
                 isLoading = true,
-                error = null,
+                errorRes = null,
                 picker = EpisodePickerState(),
                 selected = emptyList()
             )
         }
         scope.launch {
             val episodes = catalog?.episodes(seriesId, seasonId).orEmpty()
-            val rows = buildEpisodePickerRows(episodes)
+            val rows = buildEpisodePickerRows(context, episodes)
             update {
                 it.copy(
                     picker = EpisodePickerState(selection = EpisodeSelection(rows = rows)),
@@ -243,14 +253,14 @@ class MediaTileSetupController(
      * a size: the reader agrees to it before anything is queued.
      */
     private fun settleFromSeries(seriesId: String) {
-        update { it.copy(isLoading = true, error = null) }
+        update { it.copy(isLoading = true, errorRes = null) }
         scope.launch {
             val episodes = catalog?.episodes(seriesId, seasonId = null).orEmpty()
             if (episodes.isEmpty()) {
                 update {
                     it.copy(
                         isLoading = false,
-                        error = "No episodes have been synced for this series yet"
+                        errorRes = R.string.ui_media_tile_error_series_not_synced
                     )
                 }
                 return@launch
@@ -264,7 +274,7 @@ class MediaTileSetupController(
      * device, so the download is optional.
      */
     private fun offerBulkDownload(targets: List<String>) {
-        update { it.copy(selected = emptyList(), isLoading = true, error = null) }
+        update { it.copy(selected = emptyList(), isLoading = true, errorRes = null) }
         scope.launch {
             val plan = catalog?.planDownloads(targets) ?: MediaTileDownloadPlan()
             val settled = setup ?: return@launch
@@ -282,8 +292,12 @@ class MediaTileSetupController(
                         warning = noticeWarning(plan.missingIds.size, plan.approximateSize),
                         downloadIds = plan.missingIds,
                         buttonIndex = if (onDevice > 0) CANCEL_BUTTON else CONFIRM_BUTTON,
-                        confirmLabel = "Download all",
-                        declineLabel = if (onDevice > 0) "Use downloaded" else "Cancel",
+                        confirmLabelRes = R.string.media_tile_notice_confirm_download_all,
+                        declineLabelRes = if (onDevice > 0) {
+                            R.string.media_tile_notice_decline_use_downloaded
+                        } else {
+                            R.string.media_tile_notice_decline_cancel
+                        },
                         placesOnDecline = onDevice > 0
                     )
                 )
@@ -292,11 +306,12 @@ class MediaTileSetupController(
     }
 
     private fun derivedModeMessage(onDevice: Int): String = when (onDevice) {
-        0 -> "No episodes of this show are on this device yet. This tile plays downloaded episodes, " +
-            "so it stays empty until some arrive."
-        1 -> "This tile plays the 1 episode on this device, and starts it again when it ends."
-        else -> "This tile plays the $onDevice episodes on this device, in order, looping back to " +
-            "the first when it reaches the end."
+        0 -> context.getString(R.string.media_tile_notice_derived_message_none)
+        else -> context.resources.getQuantityString(
+            R.plurals.media_tile_notice_derived_message_some,
+            onDevice,
+            onDevice
+        )
     }
 
     /**
@@ -306,7 +321,7 @@ class MediaTileSetupController(
     private fun settle(targets: List<String>) {
         val current = setup ?: return
         val selected = if (current.mode == MediaTilePlayMode.PLAYLIST) targets else emptyList()
-        update { it.copy(selected = selected, isLoading = true, error = null) }
+        update { it.copy(selected = selected, isLoading = true, errorRes = null) }
         scope.launch {
             val plan = catalog?.planDownloads(targets) ?: MediaTileDownloadPlan()
             val settled = setup ?: return@launch
@@ -351,13 +366,12 @@ class MediaTileSetupController(
     }
 
     private fun noticeMessage(missing: Int, isSeries: Boolean): String {
-        val subject = if (isSeries) "episode" else "title"
-        return if (missing == 1) {
-            "1 $subject is not on this device yet. Adding this tile starts its download."
+        val plural = if (isSeries) {
+            R.plurals.media_tile_notice_missing_episodes
         } else {
-            "$missing ${subject}s are not on this device yet. " +
-                "Adding this tile starts their downloads."
+            R.plurals.media_tile_notice_missing_titles
         }
+        return context.resources.getQuantityString(plural, missing, missing)
     }
 
     /**
@@ -368,9 +382,8 @@ class MediaTileSetupController(
     private fun noticeWarning(missing: Int, approximateSize: String?): String? {
         if (missing <= MEDIA_TILE_SIZE_WARNING_THRESHOLD) return null
         if (approximateSize == null) {
-            return "That is a large batch, and its size is only known once each download starts."
+            return context.getString(R.string.media_tile_notice_warning_unknown_size)
         }
-        return "Roughly $approximateSize in total, give or take - " +
-            "each download settles its own size when it starts."
+        return context.getString(R.string.media_tile_notice_warning_approximate_size, approximateSize)
     }
 }

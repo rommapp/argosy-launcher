@@ -34,12 +34,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
+import com.nendo.argosy.R
 import com.nendo.argosy.libretro.SaveStateManager
 import com.nendo.argosy.ui.components.FooterBarWithState
 import com.nendo.argosy.ui.components.FooterHintItem
@@ -121,13 +123,13 @@ fun QuickLoadTimeline(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "No quick saves",
+                        text = stringResource(R.string.ingame_quickload_empty_title),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "Use Quick Save to build a history",
+                        text = stringResource(R.string.ingame_quickload_empty_message),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -149,7 +151,7 @@ fun QuickLoadTimeline(
             ) {
                 Column(modifier = Modifier.fillMaxHeight().padding(20.dp)) {
                     Text(
-                        text = "Quick Load",
+                        text = stringResource(R.string.ingame_quickload_title),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface,
@@ -180,8 +182,14 @@ fun QuickLoadTimeline(
                     Spacer(modifier = Modifier.height(12.dp))
                     FooterBarWithState(
                         hints = listOf(
-                            FooterHintItem(InputButton.A, "Load"),
-                            FooterHintItem(InputButton.B, "Back")
+                            FooterHintItem(
+                                InputButton.A,
+                                stringResource(R.string.ingame_quickload_footer_load)
+                            ),
+                            FooterHintItem(
+                                InputButton.B,
+                                stringResource(R.string.ingame_quickload_footer_back)
+                            )
                         ),
                         onHintClick = { button ->
                             when (button) {
@@ -218,13 +226,13 @@ private fun TimelinePreview(
                     .memoryCacheKey("${screenshotFile.absolutePath}_${slot?.timestamp}")
                     .diskCachePolicy(CachePolicy.DISABLED)
                     .build(),
-                contentDescription = "Quick save preview",
+                contentDescription = stringResource(R.string.ingame_quickload_preview_description),
                 contentScale = ContentScale.Fit,
                 modifier = Modifier.fillMaxSize().padding(8.dp)
             )
         } else {
             Text(
-                text = "No Screenshot",
+                text = stringResource(R.string.ingame_quickload_preview_no_screenshot),
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.White.copy(alpha = 0.5f)
             )
@@ -274,7 +282,11 @@ private fun TimelineList(
     ) {
         itemsIndexed(entries, key = { _, entry -> entry.slotNumber }) { index, entry ->
             TimelineRow(
-                label = if (index == 0) "Latest" else "Quick save",
+                label = if (index == 0) {
+                    stringResource(R.string.ingame_quickload_row_latest)
+                } else {
+                    stringResource(R.string.ingame_quickload_row_entry)
+                },
                 slot = entry,
                 isFocused = index == focusedIndex,
                 onClick = { onFocusChange(index) },

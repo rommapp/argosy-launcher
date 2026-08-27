@@ -8,6 +8,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.screens.gamedetail.components.OptionItem
 import com.nendo.argosy.ui.screens.settings.BuiltinVideoState
@@ -126,7 +128,7 @@ fun BuiltinVideoSection(
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 Spacer(modifier = Modifier.height(Dimens.spacingSm))
                 OptionItem(
-                    label = "Reset All to Global",
+                    label = stringResource(R.string.settings_shell_builtinvideo_reset_all_to_global),
                     isFocused = uiState.focusedIndex == resetAllFocusIndex,
                     isDangerous = true,
                     onClick = { viewModel.resetAllPlatformLibretroSettings() }
@@ -137,12 +139,14 @@ fun BuiltinVideoSection(
             {
                 item(key = "save_path") {
                     ActionPreference(
-                        title = "Save File Path",
+                        title = stringResource(R.string.settings_shell_builtinvideo_save_path_title),
                         subtitle = formatStoragePath(effectiveSavePath),
                         trailingText = when {
-                            isGlobal && videoState.isCustomSavePath -> "(custom)"
-                            !isGlobal && hasPlatformSaveOverride -> "(custom for this platform)"
-                            !isGlobal -> "(from global)"
+                            isGlobal && videoState.isCustomSavePath ->
+                                stringResource(R.string.settings_shell_builtinvideo_save_trailing_custom)
+                            !isGlobal && hasPlatformSaveOverride ->
+                                stringResource(R.string.settings_shell_builtinvideo_save_trailing_custom_platform)
+                            !isGlobal -> stringResource(R.string.settings_shell_builtinvideo_save_trailing_from_global)
                             else -> null
                         },
                         isFocused = uiState.focusedIndex == savePathFocusIndex,
@@ -159,12 +163,14 @@ fun BuiltinVideoSection(
                 }
                 item(key = "state_path") {
                     ActionPreference(
-                        title = "State Path",
+                        title = stringResource(R.string.settings_shell_builtinvideo_state_path_title),
                         subtitle = formatStoragePath(effectiveStatePath),
                         trailingText = when {
-                            isGlobal && videoState.isCustomStatePath -> "(custom)"
-                            !isGlobal && hasPlatformStateOverride -> "(custom for this platform)"
-                            !isGlobal -> "(from global)"
+                            isGlobal && videoState.isCustomStatePath ->
+                                stringResource(R.string.settings_shell_builtinvideo_state_trailing_custom)
+                            !isGlobal && hasPlatformStateOverride ->
+                                stringResource(R.string.settings_shell_builtinvideo_state_trailing_custom_platform)
+                            !isGlobal -> stringResource(R.string.settings_shell_builtinvideo_state_trailing_from_global)
                             else -> null
                         },
                         isFocused = uiState.focusedIndex == statePathFocusIndex,

@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sync_prelaunch_checking_save">Spielstand wird geprüft...</string>
+    <string name="sync_prelaunch_save_found">Spielstand gefunden</string>
+    <string name="sync_prelaunch_save_absent">Kein Spielstand</string>
+    <string name="sync_prelaunch_connecting">Verbindung wird hergestellt...</string>
+    <string name="sync_prelaunch_connected">Verbunden</string>
+    <string name="sync_prelaunch_connect_failed">Verbindung fehlgeschlagen</string>
+    <string name="sync_prelaunch_downloading">Wird heruntergeladen...</string>
+    <string name="sync_prelaunch_download_complete">Download abgeschlossen</string>
+    <string name="sync_prelaunch_download_failed">Download fehlgeschlagen</string>
+    <string name="sync_prelaunch_writing">Spielstand wird geschrieben...</string>
+    <string name="sync_prelaunch_write_complete">Spielstand geschrieben</string>
+    <string name="sync_prelaunch_write_failed">Schreibvorgang fehlgeschlagen</string>
+    <string name="sync_prelaunch_launching">Spiel wird gestartet...</string>
+
+    <string name="sync_postsession_checking_save">Spielstand wird geprüft...</string>
+    <string name="sync_postsession_save_found">Spielstand gefunden</string>
+    <string name="sync_postsession_save_absent">Spielstand nicht gefunden</string>
+    <string name="sync_postsession_connecting">Verbindung wird hergestellt...</string>
+    <string name="sync_postsession_connected">Verbunden</string>
+    <string name="sync_postsession_connect_failed">Verbindung fehlgeschlagen</string>
+    <string name="sync_postsession_uploading">Wird hochgeladen...</string>
+    <string name="sync_postsession_upload_complete">Upload abgeschlossen</string>
+    <string name="sync_postsession_upload_queued">Upload eingereiht</string>
+    <string name="sync_postsession_complete">Synchronisierung abgeschlossen</string>
+
+    <string name="sync_progress_skipped">Synchronisierung übersprungen</string>
+    <string name="sync_progress_hardcore_conflict">Hardcore-Spielstandkonflikt</string>
+    <string name="sync_progress_local_modified">Lokaler Spielstand geändert</string>
+    <string name="sync_progress_save_conflict">Spielstandkonflikt</string>
+
+    <string name="sync_blocked_permission_title">Dateizugriffsberechtigung erforderlich</string>
+    <string name="sync_blocked_permission_detail">Erteilen Sie die Berechtigung \"Zugriff auf alle Dateien\", um Spielstände für %1$s zu synchronisieren.</string>
+    <string name="sync_blocked_permission_emulator_fallback">diesen Emulator</string>
+
+    <string name="sync_blocked_path_not_found_title">Speicherordner nicht gefunden</string>
+    <string name="sync_blocked_path_not_found_detail">Der Speicherordner für %1$s wurde nicht gefunden. Der Emulator verwendet möglicherweise einen nicht standardmäßigen Speicherort.</string>
+    <string name="sync_blocked_path_not_found_emulator_fallback">diesen Emulator</string>
+
+    <string name="sync_blocked_access_denied_title">Zugriff auf Speicherordner blockiert</string>
+    <string name="sync_blocked_access_denied_detail">Ihr Gerät blockiert den Zugriff auf die Spielstanddaten von %1$s. Dies kann an Herstellerbeschränkungen (Samsung, Xiaomi usw.) oder an Sicherheitsrichtlinien liegen.</string>
+    <string name="sync_blocked_access_denied_switch_detail">Ihr Gerät blockiert den Zugriff auf die Spielstanddaten von %1$s. Legen Sie in %2$s einen externen Speicherpfad fest (außerhalb von Android/data) und stellen Sie denselben Pfad dann in Argosy ein.</string>
+    <string name="sync_blocked_access_denied_emulator_fallback">Emulator</string>
+    <string name="sync_blocked_access_denied_configure_fallback">den Emulator</string>
+
+    <string name="sync_service_channel_name">Spielstand-Sync</string>
+    <string name="sync_service_channel_description">Zeigt den Fortschritt der Spielstand-Synchronisierung im Hintergrund</string>
+    <string name="sync_service_preparing">Synchronisierung wird vorbereitet...</string>
+    <string name="sync_service_platform">Synchronisierung: %1$s</string>
+    <string name="sync_service_library">Bibliothek wird synchronisiert...</string>
+    <string name="sync_service_uploading">Wird hochgeladen: %1$s</string>
+    <string name="sync_service_downloading">Wird heruntergeladen: %1$s</string>
+    <string name="sync_service_saves">Spielstände werden synchronisiert...</string>
+
+    <string name="sync_download_channel_name">Download-Fortschritt</string>
+    <string name="sync_download_channel_description">Zeigt den Download-Fortschritt im Hintergrund</string>
+    <string name="sync_download_service_preparing">Download wird vorbereitet...</string>
+    <string name="sync_download_service_steam_downloading">Wird heruntergeladen: %1$s</string>
+    <string name="sync_download_service_extracting">Wird entpackt: %1$s</string>
+    <string name="sync_download_service_moving">Wird in ROM-Speicher verschoben: %1$s</string>
+    <string name="sync_download_service_downloading">Wird heruntergeladen: %1$s</string>
+    <string name="sync_download_service_queued">In Warteschlange: %1$s</string>
+    <string name="sync_download_service_pending">Download ausstehend...</string>
+    <string name="sync_download_service_media_preparing">%1$s: %2$s</string>
+    <string name="sync_download_service_media_downloading">Wird heruntergeladen: %1$s</string>
+
+    <string name="sync_session_channel_name">Spielsitzung</string>
+    <string name="sync_session_channel_description">Überwacht Spielstanddateien während des Spiels</string>
+    <string name="sync_session_notification_playing">Wird gespielt</string>
+    <string name="sync_session_notification_save_detected">Spielstand erkannt</string>
+    <string name="sync_session_game_fallback">Spiel</string>
+
+    <string name="sync_session_save_uploaded_orphan">Spielstand hochgeladen</string>
+    <string name="sync_session_save_uploaded">Spielstand hochgeladen</string>
+    <string name="sync_session_save_unchanged">Keine Änderungen am Spielstand</string>
+    <string name="sync_session_save_upload_failed">Upload fehlgeschlagen</string>
+    <string name="sync_session_save_upload_failed_subtitle">%1$s: %2$s</string>
+    <string name="sync_session_save_upload_failed_name_fallback">Spielstand</string>
+
+    <plurals name="sync_conflict_pending_title">
+        <item quantity="one">%1$d Spielstand braucht Ihre Aufmerksamkeit</item>
+        <item quantity="other">%1$d Spielstände brauchen Ihre Aufmerksamkeit</item>
+    </plurals>
+    <string name="sync_conflict_pending_subtitle">Öffnen Sie Spielstand-Sync zum Beheben. Lokale Spielstände bleiben unverändert.</string>
+
+    <string name="sync_media_signin_title">Zum Herunterladen anmelden</string>
+    <string name="sync_media_signin_subtitle">Verbinden Sie einen Medienserver in den Einstellungen</string>
+
+    <plurals name="sync_media_title_count">
+        <item quantity="one">%1$d Titel</item>
+        <item quantity="other">%1$d Titel</item>
+    </plurals>
+
+    <string name="sync_media_refusal_downloaded_title">Bereits heruntergeladen</string>
+    <string name="sync_media_refusal_downloaded_subtitle">%1$s auf diesem Gerät in %2$s</string>
+    <string name="sync_media_refusal_queued_title">Bereits in der Warteschlange</string>
+    <string name="sync_media_refusal_queued_subtitle">%1$s wartet auf den Download</string>
+    <string name="sync_media_refusal_mixed_title">Nichts Neues zum Herunterladen</string>
+    <string name="sync_media_refusal_mixed_subtitle">%1$s heruntergeladen, %2$s in Warteschlange</string>
+    <string name="sync_media_refusal_unavailable_title">Nichts zum Herunterladen</string>
+    <string name="sync_media_refusal_unavailable_subtitle">Dieser Titel hat keine Datei, die der Server bereitstellen kann</string>
+
+    <string name="sync_media_unreachable_title">Speicher nicht verfügbar</string>
+    <string name="sync_media_unreachable_subtitle">%1$s bleiben heruntergeladen, bis der Speicher wieder verfügbar ist</string>
+
+    <string name="sync_media_storage_title">Nicht genügend Speicherplatz für %1$s</string>
+
+    <string name="sync_media_step_preparing">Wird vorbereitet</string>
+    <string name="sync_media_step_awaiting_transcode">Warten, bis der Server die Transcodierung startet</string>
+
+    <string name="sync_media_transcode_unavailable_title">Originaldatei wird heruntergeladen</string>
+    <string name="sync_media_transcode_unavailable_subtitle">%1$s konnte nicht für den Download transcodiert werden</string>
+
+    <plurals name="sync_media_subtitle_shortfall_title">
+        <item quantity="one">%1$s ohne %2$d Untertitelspur heruntergeladen</item>
+        <item quantity="other">%1$s ohne %2$d Untertitelspuren heruntergeladen</item>
+    </plurals>
+    <string name="sync_media_subtitle_shortfall_burned_in">%1$s ist ins Bild eingebrannt; die übrigen konnten nicht übertragen werden</string>
+    <string name="sync_media_subtitle_shortfall_refused">Der Server wollte nicht alle Untertitelspuren herausgeben</string>
+    <string name="sync_media_subtitle_shortfall_transcoded">Bilduntertitel können bei einer kleineren Größe nicht übertragen werden</string>
+    <string name="sync_media_subtitle_shortfall_external">Bilduntertitel sind von der Datei getrennt und können nicht mit ihr übertragen werden</string>
+    <string name="sync_media_subtitle_label_fallback">Untertitel</string>
+
+    <string name="sync_steam_rate_limited_title">Steam vorübergehend nicht verfügbar</string>
+    <string name="sync_steam_rate_limited_subtitle">Anmeldelimit erreicht. Versuchen Sie es in einer Stunde erneut</string>
+    <string name="sync_steam_auth_expired_title">Steam-Sitzung abgelaufen</string>
+    <string name="sync_steam_auth_expired_subtitle">Melden Sie sich erneut unter Einstellungen &gt; Steam an</string>
+    <string name="sync_steam_download_signed_out_title">Steam-Sitzung abgelaufen</string>
+    <string name="sync_steam_download_signed_out_subtitle">Melden Sie sich unter Einstellungen &gt; Steam an, um herunterzuladen</string>
+    <string name="sync_steam_path_blocked_title">%1$s kann nicht heruntergeladen werden</string>
+    <string name="sync_steam_storage_blocked_title">%1$s kann nicht heruntergeladen werden</string>
+
+    <string name="sync_steam_qr_rate_limited">Limit erreicht. Später erneut versuchen</string>
+    <string name="sync_steam_qr_login_failed">Anmeldung fehlgeschlagen: %1$s</string>
+    <string name="sync_steam_qr_not_connected">Nicht mit Steam verbunden</string>
+    <string name="sync_steam_qr_start_failed">QR-Authentifizierung konnte nicht gestartet werden</string>
+    <string name="sync_steam_qr_polling_failed">Abfrage fehlgeschlagen</string>
+    <string name="sync_steam_qr_disconnected">Steam nicht verbunden</string>
+
+    <string name="sync_launch_core_fallback">%1$s konnte nicht geladen werden, %2$s wird stattdessen verwendet</string>
+</resources>

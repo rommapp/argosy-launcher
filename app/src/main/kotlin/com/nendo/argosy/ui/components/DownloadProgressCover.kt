@@ -28,9 +28,11 @@ import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import kotlin.math.sin
@@ -65,7 +67,7 @@ fun DownloadProgressBadge(
         if (paused) {
             Icon(
                 imageVector = Icons.Default.Pause,
-                contentDescription = "Paused",
+                contentDescription = stringResource(R.string.ui_download_badge_paused),
                 tint = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.size(badgeSize / 2)
             )
@@ -212,7 +214,7 @@ fun DownloadProgressCover(
             if (paused) {
                 Icon(
                     imageVector = Icons.Default.Pause,
-                    contentDescription = "Paused",
+                    contentDescription = stringResource(R.string.ui_download_cover_paused),
                     tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(badgeSize / 2)
                 )

@@ -1,0 +1,804 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sort_title">A-Z</string>
+    <string name="sort_rating">रेटिंग</string>
+    <string name="sort_user_rating">यूज़र रेटिंग</string>
+    <string name="sort_difficulty">कठिनाई</string>
+    <string name="sort_release_year">रिलीज़ वर्ष</string>
+    <string name="sort_play_count">खेलने की संख्या</string>
+    <string name="sort_play_time">खेलने का समय</string>
+    <string name="sort_last_played">आखिरी बार खेला गया</string>
+    <string name="sort_recently_added">हाल ही में जोड़ा गया</string>
+
+    <string name="source_filter_all">सभी गेम</string>
+    <string name="source_filter_playable">खेलने योग्य</string>
+    <string name="source_filter_favorites">पसंदीदा</string>
+    <string name="source_filter_hidden">छिपे हुए</string>
+
+    <string name="completion_status_incomplete">अधूरा</string>
+    <string name="completion_status_finished">पूरा हुआ</string>
+    <string name="completion_status_completed_100">100%</string>
+    <string name="completion_status_retired">रिटायर</string>
+    <string name="completion_status_never_playing">नहीं खेलेंगे</string>
+
+    <!-- Save manager (ui/common/savechannel) -->
+
+    <string name="ui_save_channel_title">सेव प्रबंधन</string>
+    <string name="ui_save_channel_slots_heading">सेव स्लॉट</string>
+    <string name="ui_save_channel_history_heading_named">इतिहास (%1$s)</string>
+    <string name="ui_save_channel_history_heading">इतिहास</string>
+    <string name="ui_save_channel_history_empty">अभी तक कोई सेव नहीं</string>
+    <string name="ui_save_channel_tab_saves">सेव</string>
+    <string name="ui_save_channel_tab_states">स्टेट</string>
+    <string name="ui_save_channel_states_empty">कोई स्टेट स्लॉट उपलब्ध नहीं</string>
+    <string name="ui_save_channel_states_heading_named">%1$s में स्टेट</string>
+    <string name="ui_save_channel_states_heading_default">डिफ़ॉल्ट स्लॉट में स्टेट</string>
+    <string name="ui_save_channel_slot_new">नया स्लॉट</string>
+    <string name="ui_save_channel_slot_legacy_tag">[लीगेसी]</string>
+    <string name="ui_save_channel_history_active_point">सक्रिय रीस्टोर पॉइंट</string>
+    <string name="ui_save_channel_history_latest">नवीनतम</string>
+    <string name="ui_save_channel_history_tag_synced">[सिंक हुआ]</string>
+    <string name="ui_save_channel_history_tag_local">[लोकल]</string>
+    <string name="ui_save_channel_active_default">नवीनतम</string>
+    <string name="ui_save_channel_slot_autosave">ऑटोसेव</string>
+    <string name="ui_save_channel_slot_archived">आर्काइव्ड</string>
+
+    <string name="ui_save_channel_footer_migrate">माइग्रेट</string>
+    <string name="ui_save_channel_footer_delete_legacy_slot">हटाएं</string>
+    <string name="ui_save_channel_footer_activate">सक्रिय</string>
+    <string name="ui_save_channel_footer_rename">नाम बदलें</string>
+    <string name="ui_save_channel_footer_delete_slot">हटाएं</string>
+    <string name="ui_save_channel_footer_restore_save">रीस्टोर</string>
+    <string name="ui_save_channel_footer_save_as">कॉपी करें</string>
+    <string name="ui_save_channel_footer_restore_state">रीस्टोर</string>
+    <string name="ui_save_channel_footer_preview_state">प्रीव्यू</string>
+    <string name="ui_save_channel_footer_delete_state">हटाएं</string>
+    <string name="ui_save_channel_footer_download_state">डाउनलोड</string>
+    <string name="ui_save_channel_footer_tab_states">स्टेट</string>
+    <string name="ui_save_channel_footer_tab_saves">सेव</string>
+    <string name="ui_save_channel_footer_sync">सिंक</string>
+
+    <string name="ui_save_channel_restore_title">सेव रीस्टोर करें</string>
+    <string name="ui_save_channel_restore_confirm">रीस्टोर करें</string>
+    <string name="ui_save_channel_restore_cancel">रद्द करें</string>
+    <string name="ui_save_channel_restore_message">इस सेव को अपनी मौजूदा गेम स्थिति में रीस्टोर करें?</string>
+
+    <string name="ui_save_channel_rename_title_save_as">अलग नाम से सेव करें</string>
+    <string name="ui_save_channel_rename_title_new_slot">नया सेव स्लॉट</string>
+    <string name="ui_save_channel_rename_title_rename">सेव स्लॉट का नाम बदलें</string>
+    <string name="ui_save_channel_rename_confirm_save_as">सहेजें</string>
+    <string name="ui_save_channel_rename_confirm_new_slot">बनाएं</string>
+    <string name="ui_save_channel_rename_confirm_rename">नाम बदलें</string>
+    <string name="ui_save_channel_rename_prompt_save_as">इस सेव स्लॉट के लिए एक नाम दर्ज करें</string>
+    <string name="ui_save_channel_rename_prompt_new_slot">इस सेव स्लॉट के लिए एक नाम दर्ज करें</string>
+    <string name="ui_save_channel_rename_prompt_rename">एक नया नाम दर्ज करें</string>
+    <string name="ui_save_channel_rename_footer_confirm">पुष्टि करें</string>
+    <string name="ui_save_channel_rename_footer_cancel">रद्द करें</string>
+    <string name="ui_save_channel_rename_placeholder">स्लॉट का नाम</string>
+    <string name="ui_save_channel_rename_cancel_button">रद्द करें</string>
+
+    <string name="ui_save_channel_migrate_title">सेव माइग्रेट करें</string>
+    <string name="ui_save_channel_migrate_confirm">माइग्रेट करें</string>
+    <string name="ui_save_channel_migrate_cancel">रद्द करें</string>
+    <string name="ui_save_channel_migrate_message">\"%1$s\" को नए सेव सिस्टम में माइग्रेट करें?</string>
+    <string name="ui_save_channel_migrate_note">इससे यह एक नामित सेव स्लॉट के रूप में दर्ज हो जाएगा।</string>
+
+    <string name="ui_save_channel_delete_legacy_title">लीगेसी सेव हटाएं</string>
+    <string name="ui_save_channel_delete_legacy_confirm">हटाएं</string>
+    <string name="ui_save_channel_delete_legacy_cancel">रद्द करें</string>
+    <plurals name="ui_save_channel_delete_legacy_message">
+        <item quantity="one">\"%1$s\" और %2$d बैकअप हटाएं?</item>
+        <item quantity="other">\"%1$s\" और %2$d बैकअप हटाएं?</item>
+    </plurals>
+    <string name="ui_save_channel_delete_legacy_note">इससे यह सर्वर और लोकल स्टोरेज दोनों से हट जाएगा। इसे वापस नहीं लाया जा सकता।</string>
+
+    <string name="ui_save_channel_delete_slot_title">सेव स्लॉट हटाएं</string>
+    <string name="ui_save_channel_delete_slot_confirm">हटाएं</string>
+    <string name="ui_save_channel_delete_slot_cancel">रद्द करें</string>
+    <string name="ui_save_channel_delete_slot_message">\"%1$s\" हटाएं?</string>
+    <string name="ui_save_channel_delete_slot_note">इससे यह सर्वर और लोकल स्टोरेज दोनों से हट जाएगा। इसे वापस नहीं लाया जा सकता।</string>
+
+    <string name="ui_save_channel_version_mismatch_title">कोर वर्शन मिसमैच</string>
+    <string name="ui_save_channel_version_mismatch_confirm">फिर भी लोड करें</string>
+    <string name="ui_save_channel_version_mismatch_cancel">रद्द करें</string>
+    <string name="ui_save_channel_version_mismatch_saved_with">यह स्टेट इसके साथ सेव किया गया था:</string>
+    <string name="ui_save_channel_version_mismatch_saved_core_unknown">अज्ञात</string>
+    <string name="ui_save_channel_version_mismatch_current">मौजूदा कोर वर्शन:</string>
+    <string name="ui_save_channel_version_mismatch_current_core_unknown">अज्ञात</string>
+    <string name="ui_save_channel_version_mismatch_warning">लोड करने से क्रैश या करप्शन हो सकता है।</string>
+
+    <string name="ui_save_channel_delete_state_title">स्टेट हटाएं</string>
+    <string name="ui_save_channel_delete_state_confirm">हटाएं</string>
+    <string name="ui_save_channel_delete_state_cancel">रद्द करें</string>
+    <string name="ui_save_channel_delete_state_target_auto">ऑटो स्टेट</string>
+    <string name="ui_save_channel_delete_state_target_slot">स्लॉट %1$d</string>
+    <string name="ui_save_channel_delete_state_message">%1$s हटाएं?</string>
+    <string name="ui_save_channel_delete_state_note">इससे यह कैश से हट जाएगा।</string>
+
+    <string name="ui_save_channel_replace_auto_title">ऑटो स्टेट बदलें</string>
+    <string name="ui_save_channel_replace_auto_confirm">बदलें</string>
+    <string name="ui_save_channel_replace_auto_cancel">रद्द करें</string>
+    <string name="ui_save_channel_replace_auto_message">ऑटो स्टेट को स्लॉट %1$d से बदलें?</string>
+    <string name="ui_save_channel_replace_auto_note">मौजूदा ऑटो स्टेट ओवरराइट हो जाएगा।</string>
+
+    <string name="ui_save_channel_notice_download_target_auto">ऑटो स्टेट</string>
+    <string name="ui_save_channel_notice_download_target_slot">स्टेट स्लॉट %1$d</string>
+    <string name="ui_save_channel_notice_downloaded">%1$s डाउनलोड हुआ</string>
+    <string name="ui_save_channel_notice_no_local_path">गेम का कोई लोकल पाथ नहीं है</string>
+    <string name="ui_save_channel_notice_restore_target_auto">ऑटो स्टेट</string>
+    <string name="ui_save_channel_notice_restore_target_slot">स्टेट स्लॉट %1$d</string>
+    <string name="ui_save_channel_notice_restored_state">%1$s रीस्टोर हुआ</string>
+    <string name="ui_save_channel_notice_state_not_cached">स्टेट कैश में नहीं मिला</string>
+    <string name="ui_save_channel_notice_state_no_config">इस एमुलेटर के लिए कोई स्टेट कॉन्फ़िगरेशन नहीं है</string>
+    <string name="ui_save_channel_notice_delete_target_auto">ऑटो स्टेट</string>
+    <string name="ui_save_channel_notice_delete_target_slot">स्टेट स्लॉट %1$d</string>
+    <string name="ui_save_channel_notice_deleted_state">%1$s हटाया गया</string>
+    <string name="ui_save_channel_notice_replace_auto_failed">ऑटो स्टेट नहीं बदला जा सका</string>
+    <string name="ui_save_channel_notice_replaced_auto">ऑटो स्टेट को स्लॉट %1$d से बदला गया</string>
+
+    <string name="ui_save_channel_notice_activate_default">ऑटो सेव</string>
+    <string name="ui_save_channel_notice_using_slot">सेव स्लॉट इस्तेमाल हो रहा है: %1$s</string>
+    <string name="ui_save_channel_notice_clear_failed">मौजूदा सेव साफ़ करने में विफल</string>
+    <string name="ui_save_channel_notice_switch_default">ऑटो सेव</string>
+    <string name="ui_save_channel_notice_switched_to">इस पर स्विच किया गया: %1$s</string>
+    <string name="ui_save_channel_notice_restored_to_slot">%1$s में रीस्टोर किया गया</string>
+    <string name="ui_save_channel_notice_restored">सेव रीस्टोर हुआ</string>
+    <string name="ui_save_channel_notice_restored_to_slot_synced">%1$s में रीस्टोर किया गया और सिंक हुआ</string>
+    <string name="ui_save_channel_notice_restored_synced">सेव रीस्टोर हुआ और सिंक हुआ</string>
+    <string name="ui_save_channel_notice_slot_name_empty">स्लॉट का नाम खाली नहीं हो सकता</string>
+    <string name="ui_save_channel_notice_slot_name_reserved">\'%1$s\' एक आरक्षित नाम है</string>
+    <string name="ui_save_channel_notice_new_slot_exists">स्लॉट \'%1$s\' पहले से मौजूद है</string>
+    <string name="ui_save_channel_notice_new_slot_created">सेव स्लॉट \'%1$s\' बनाया गया</string>
+    <string name="ui_save_channel_notice_save_as_same_name">नए स्लॉट का नाम स्रोत से अलग होना चाहिए</string>
+    <string name="ui_save_channel_notice_save_as_slot_exists">स्लॉट \'%1$s\' पहले से मौजूद है</string>
+    <string name="ui_save_channel_notice_save_as_created">सेव स्लॉट \'%1$s\' बनाया गया</string>
+    <string name="ui_save_channel_notice_save_as_failed">सेव स्लॉट बनाने में विफल</string>
+    <string name="ui_save_channel_notice_renamed">नाम बदलकर \'%1$s\' किया गया</string>
+    <string name="ui_save_channel_notice_slot_deleted">सेव स्लॉट \'%1$s\' हटाया गया</string>
+    <string name="ui_save_channel_notice_migrated">\'%1$s\' माइग्रेट किया गया</string>
+    <string name="ui_save_channel_notice_migrate_failed">सेव माइग्रेट करने में विफल</string>
+    <string name="ui_save_channel_notice_legacy_deleted">\'%1$s\' हटाया गया</string>
+    <string name="ui_save_channel_notice_saves_synced">सर्वर से सेव सिंक हुए</string>
+
+    <string name="ui_state_slot_row_empty">(खाली)</string>
+    <string name="ui_state_slot_row_tag_synced">[सिंक हुआ]</string>
+    <string name="ui_state_slot_row_tag_pending">[लंबित]</string>
+    <string name="ui_state_slot_row_tag_server">[सर्वर]</string>
+    <string name="ui_state_slot_row_tag_local">[लोकल]</string>
+
+    <!-- Shared modals and controls (ui/components, ui/primitives) -->
+
+    <string name="ui_confirm_modal_cancel">रद्द करें</string>
+
+    <string name="ui_modal_search_placeholder">खोजें...</string>
+
+    <string name="ui_disc_picker_title">डिस्क चुनें</string>
+    <string name="ui_disc_picker_subtitle">लॉन्च करने के लिए डिस्क चुनें</string>
+    <string name="ui_disc_picker_row">डिस्क %1$d</string>
+
+    <string name="ui_memcard_picker_title">मेमोरी कार्ड चुनें</string>
+    <string name="ui_memcard_picker_subtitle">सेव सिंक चयनित फ़ोल्डर मेमोरी कार्ड का उपयोग करता है</string>
+    <string name="ui_memcard_picker_empty">खाली</string>
+    <plurals name="ui_memcard_picker_save_count">
+        <item quantity="one">%d गेम सेव</item>
+        <item quantity="other">%d गेम सेव</item>
+    </plurals>
+    <string name="ui_memcard_picker_summary_dated">%1$s - %2$s</string>
+
+    <string name="ui_netplay_invite_title">नेटप्ले आमंत्रण</string>
+    <string name="ui_netplay_invite_message">%1$s ने आपको खेलने के लिए आमंत्रित किया</string>
+    <string name="ui_netplay_invite_dismiss">खारिज करें</string>
+    <string name="ui_netplay_invite_join">जॉइन करें</string>
+
+    <string name="ui_changelog_title">%1$s में नया क्या है</string>
+    <string name="ui_changelog_footer_continue">जारी रखें</string>
+    <string name="ui_changelog_action_required">आवश्यक कार्रवाई: %1$s</string>
+    <string name="ui_changelog_action_relogin_romm">RomM में फिर से लॉगिन करें</string>
+    <string name="ui_changelog_action_resync_library">लाइब्रेरी फिर सिंक करें</string>
+    <string name="ui_changelog_action_clear_cache">कैश साफ़ करें</string>
+    <string name="ui_changelog_action_set_steam_path">Steam इंस्टॉल पाथ सेट करें</string>
+
+    <string name="ui_background_conflict_title">सेव सिंक कॉन्फ्लिक्ट</string>
+    <string name="ui_background_conflict_default_slot">डिफ़ॉल्ट सेव</string>
+    <string name="ui_background_conflict_message_local_changed">पिछले सिंक के बाद से आपकी लोकल सेव बदल गई है। तय करें कौन सी सेव मान्य होगी।</string>
+    <string name="ui_background_conflict_message_server_newer">सर्वर पर एक नई सेव मौजूद है। तय करें कौन सी सेव मान्य होगी।</string>
+    <string name="ui_background_conflict_choice_local">लोकल</string>
+    <string name="ui_background_conflict_choice_server">सर्वर</string>
+    <string name="ui_background_conflict_choice_skip">छोड़ें</string>
+    <string name="ui_background_conflict_choice_skip_subtitle">अभी दोनों रखें</string>
+    <string name="ui_background_conflict_age_future">भविष्य में</string>
+    <string name="ui_background_conflict_age_now">अभी-अभी</string>
+    <plurals name="ui_background_conflict_age_minutes">
+        <item quantity="one">%d मिनट पहले</item>
+        <item quantity="other">%d मिनट पहले</item>
+    </plurals>
+    <plurals name="ui_background_conflict_age_hours">
+        <item quantity="one">%d घंटा पहले</item>
+        <item quantity="other">%d घंटे पहले</item>
+    </plurals>
+    <plurals name="ui_background_conflict_age_days">
+        <item quantity="one">%d दिन पहले</item>
+        <item quantity="other">%d दिन पहले</item>
+    </plurals>
+    <plurals name="ui_background_conflict_age_months">
+        <item quantity="one">%d महीना पहले</item>
+        <item quantity="other">%d महीने पहले</item>
+    </plurals>
+
+    <string name="ui_save_conflict_title">सेव कॉन्फ्लिक्ट</string>
+    <string name="ui_save_conflict_default_slot">डिफ़ॉल्ट सेव</string>
+    <string name="ui_save_conflict_message">सर्वर पर एक नई सेव मौजूद है। ओवरराइट करने पर यह आपकी लोकल सेव से बदल जाएगी।</string>
+    <string name="ui_save_conflict_source_local">लोकल</string>
+    <string name="ui_save_conflict_source_server">सर्वर</string>
+    <string name="ui_save_conflict_skip">सिंक छोड़ें</string>
+    <string name="ui_save_conflict_overwrite">ओवरराइट करें</string>
+    <string name="ui_save_conflict_unknown_game">अज्ञात गेम</string>
+    <string name="ui_save_conflict_age_future">भविष्य में</string>
+    <string name="ui_save_conflict_age_now">अभी-अभी</string>
+    <plurals name="ui_save_conflict_age_minutes">
+        <item quantity="one">%d मिनट पहले</item>
+        <item quantity="other">%d मिनट पहले</item>
+    </plurals>
+    <plurals name="ui_save_conflict_age_hours">
+        <item quantity="one">%d घंटा पहले</item>
+        <item quantity="other">%d घंटे पहले</item>
+    </plurals>
+    <plurals name="ui_save_conflict_age_days">
+        <item quantity="one">%d दिन पहले</item>
+        <item quantity="other">%d दिन पहले</item>
+    </plurals>
+    <plurals name="ui_save_conflict_age_months">
+        <item quantity="one">%d महीना पहले</item>
+        <item quantity="other">%d महीने पहले</item>
+    </plurals>
+
+    <string name="ui_view_all_outline_label">सभी देखें</string>
+    <string name="ui_view_all_remaining_count">+%1$d</string>
+    <string name="ui_view_all_accent_label">सभी देखें</string>
+
+    <string name="ui_new_badge_label">नया</string>
+
+    <string name="ui_expandable_preference_collapse">समेटें</string>
+    <string name="ui_expandable_preference_expand">विस्तार करें</string>
+
+    <string name="ui_permission_card_granted">स्वीकृत</string>
+
+    <string name="ui_game_card_favorite">पसंदीदा</string>
+    <string name="ui_game_card_downloaded">डाउनलोड हो चुका</string>
+
+    <string name="ui_download_badge_paused">रुका हुआ</string>
+    <string name="ui_download_cover_paused">रुका हुआ</string>
+
+    <string name="ui_section_breadcrumb_previous">पिछला सेक्शन</string>
+    <string name="ui_section_breadcrumb_next">अगला सेक्शन</string>
+
+    <string name="ui_qr_code_description">%1$s के लिए QR कोड</string>
+    <string name="ui_qr_scanner_hint">RomM पेयरिंग QR कोड पर पॉइंट करें</string>
+
+    <string name="ui_custom_tile_menu_header">टाइल</string>
+
+    <string name="ui_add_to_collection_title">कलेक्शन में जोड़ें</string>
+    <string name="ui_add_to_collection_empty">अभी तक कोई कलेक्शन नहीं</string>
+    <string name="ui_add_to_collection_create">नया कलेक्शन बनाएं</string>
+    <string name="ui_add_to_collection_member">कलेक्शन में मौजूद</string>
+
+    <string name="ui_steam_location_download">Argosy के ज़रिए डाउनलोड करें</string>
+    <string name="ui_steam_location_mark_installed">इंस्टॉल्ड के रूप में चिह्नित करें</string>
+    <string name="ui_steam_location_managed_by">%1$s द्वारा प्रबंधित</string>
+
+    <string name="ui_direction_ring_title">दिशा</string>
+    <string name="ui_direction_ring_rotate">घुमाएं</string>
+    <string name="ui_direction_ring_set">सेट करें</string>
+    <string name="ui_direction_ring_cancel">रद्द करें</string>
+
+    <string name="ui_core_crash_title">कोर क्रैश हुआ</string>
+    <string name="ui_core_crash_footer_select">चुनें</string>
+    <string name="ui_core_crash_footer_dismiss_options">खारिज करें</string>
+    <string name="ui_core_crash_footer_launch">गेम लॉन्च करें</string>
+    <string name="ui_core_crash_footer_dismiss_ready">खारिज करें</string>
+    <string name="ui_core_crash_footer_dismiss_done">खारिज करें</string>
+    <string name="ui_core_crash_footer_cancel_download">रद्द करें</string>
+    <string name="ui_core_crash_message">\'%1$s\' आपके पिछले सेशन में क्रैश हो गया था। रिकवर करने का तरीका चुनें।</string>
+
+    <string name="ui_episode_picker_selection_none">अभी तक कुछ नहीं चुना गया</string>
+    <plurals name="ui_episode_picker_selection_count">
+        <item quantity="one">%d एपिसोड चुना गया</item>
+        <item quantity="other">%d एपिसोड चुने गए</item>
+    </plurals>
+    <string name="ui_episode_picker_cancel">रद्द करें</string>
+
+    <string name="ui_media_tile_mode_sequential">अगला एपिसोड</string>
+    <string name="ui_media_tile_mode_sequential_supporting">आप जहां भी देखें, वहीं से आगे बढ़ता है</string>
+    <string name="ui_media_tile_mode_random">रैंडम एपिसोड</string>
+    <string name="ui_media_tile_mode_random_supporting">एक एपिसोड चुनता है और उसे देख लेने तक वही रखता है</string>
+    <string name="ui_media_tile_mode_season">एक सीज़न</string>
+    <string name="ui_media_tile_mode_season_supporting">एक ही सीज़न को क्रम से चलाता है</string>
+    <string name="ui_media_tile_mode_playlist">चुने हुए एपिसोड</string>
+    <string name="ui_media_tile_mode_playlist_supporting">आपके चुने हुए क्रम में, आपके चुने एपिसोड चलाता है</string>
+    <string name="ui_media_tile_step_mode">यह टाइल क्या चलाए?</string>
+    <string name="ui_media_tile_step_season">एक सीज़न चुनें</string>
+    <string name="ui_media_tile_step_episodes">एपिसोड चुनें</string>
+    <string name="ui_media_tile_empty_seasons">इस सीरीज़ के लिए अभी तक कोई सीज़न सिंक नहीं हुआ है</string>
+    <string name="ui_media_tile_empty_episodes">इस सीरीज़ के लिए अभी तक कोई एपिसोड सिंक नहीं हुआ है</string>
+    <string name="ui_media_tile_episodes_confirm">इन एपिसोड का उपयोग करें</string>
+    <string name="ui_media_tile_error_season_not_synced">उस सीज़न के लिए अभी तक कोई एपिसोड सिंक नहीं हुआ है</string>
+    <string name="ui_media_tile_error_series_not_synced">इस सीरीज़ के लिए अभी तक कोई एपिसोड सिंक नहीं हुआ है</string>
+
+    <string name="ui_tile_picker_title">ग्रिड में जोड़ें</string>
+    <string name="ui_tile_picker_subtitle_matching">\"%1$s\" से मेल खाता</string>
+    <string name="ui_tile_picker_empty_games">जोड़ने के लिए कोई इंस्टॉल्ड गेम नहीं</string>
+    <string name="ui_tile_picker_empty_collections">अभी तक कोई कलेक्शन नहीं</string>
+    <string name="ui_tile_picker_empty_apps">कोई ऐप नहीं मिला</string>
+    <string name="ui_tile_picker_empty_media">जोड़ने के लिए कोई टाइटल नहीं</string>
+    <string name="ui_tile_picker_empty_search">उस खोज से कुछ मेल नहीं खाता</string>
+    <string name="ui_tile_picker_delete_page">पेज हटाएं</string>
+
+    <string name="ui_page_chooser_title_focus_game">अगला खेलें</string>
+    <string name="ui_page_chooser_title_backdrop">बैकड्रॉप</string>
+    <string name="ui_page_chooser_title_music">म्यूज़िक</string>
+    <string name="ui_page_chooser_subtitle_focus_game">यह टाइल जो गेम चलाती है</string>
+    <string name="ui_page_chooser_subtitle_game_art">आर्टवर्क और स्क्रीनशॉट</string>
+    <string name="ui_page_chooser_subtitle_backdrop">यह पेज अपनी टाइलों के पीछे क्या दिखाता है</string>
+    <string name="ui_page_chooser_subtitle_music">यह पेज क्या चलाता है</string>
+    <string name="ui_page_chooser_footer_navigate">नेविगेट</string>
+    <string name="ui_page_chooser_footer_choose">चुनें</string>
+    <string name="ui_page_chooser_footer_back">वापस</string>
+    <string name="ui_page_chooser_search_placeholder">गेम खोजें...</string>
+    <string name="ui_page_chooser_loading">लोड हो रहा है...</string>
+    <string name="ui_page_chooser_empty">यहां चुनने के लिए कुछ नहीं है।</string>
+    <string name="ui_page_chooser_focus_game_current">अभी खेला जा रहा है</string>
+    <string name="ui_page_chooser_source_game_art">किसी गेम की आर्टवर्क</string>
+    <string name="ui_page_chooser_source_game_art_subtitle">आपकी लाइब्रेरी में मौजूद कवर और स्क्रीनशॉट</string>
+    <string name="ui_page_chooser_source_file">इस डिवाइस की एक फ़ाइल</string>
+    <string name="ui_page_chooser_source_file_subtitle">एक तस्वीर, एनिमेशन या छोटा वीडियो</string>
+    <string name="ui_page_chooser_source_none">कोई बैकड्रॉप नहीं</string>
+    <string name="ui_page_chooser_source_none_subtitle">लॉन्चर की अपनी बैकग्राउंड दिखाएं</string>
+    <string name="ui_page_chooser_art_background">बैकग्राउंड आर्ट</string>
+    <string name="ui_page_chooser_art_cover">कवर</string>
+    <string name="ui_page_chooser_art_screenshot">स्क्रीनशॉट %1$d</string>
+    <string name="ui_page_chooser_music_launcher">लॉन्चर म्यूज़िक</string>
+    <string name="ui_page_chooser_music_tile_audio">इस पेज का वीडियो</string>
+    <string name="ui_page_chooser_music_soundtracks_header">आपके साउंडट्रैक</string>
+
+    <string name="ui_custom_grid_add_page">एक पेज जोड़ें</string>
+
+    <string name="ui_friend_options_join">जॉइन करें</string>
+    <string name="ui_friend_options_view_profile">प्रोफ़ाइल देखें</string>
+    <string name="ui_friend_options_my_code">मेरा फ्रेंड कोड</string>
+    <string name="ui_friend_options_add_friend">फ्रेंड जोड़ें</string>
+    <string name="ui_friend_options_footer_select">चुनें</string>
+    <string name="ui_friend_options_footer_close">बंद करें</string>
+    <string name="ui_friend_options_presence_in_game">गेम में</string>
+    <string name="ui_friend_options_presence_hosting">%1$s होस्ट कर रहे हैं</string>
+    <string name="ui_friend_options_presence_playing">%1$s खेल रहे हैं</string>
+    <string name="ui_friend_options_presence_online">ऑनलाइन</string>
+    <string name="ui_friend_options_presence_away">दूर</string>
+    <string name="ui_friend_options_presence_watching_title">%1$s देख रहे हैं</string>
+    <string name="ui_friend_options_presence_watching">देख रहे हैं</string>
+    <string name="ui_friend_options_presence_offline">ऑफ़लाइन</string>
+
+    <string name="ui_friends_options_title">फ्रेंड्स</string>
+    <string name="ui_friends_options_footer_select">चुनें</string>
+    <string name="ui_friends_options_footer_close">बंद करें</string>
+    <string name="ui_friends_options_add_by_code">कोड से फ्रेंड जोड़ें</string>
+    <string name="ui_friends_options_show_code">मेरा फ्रेंड कोड दिखाएं</string>
+
+    <string name="ui_friend_code_title">मेरा फ्रेंड कोड</string>
+    <string name="ui_friend_code_footer_regenerate">रीजनरेट</string>
+    <string name="ui_friend_code_footer_close">बंद करें</string>
+    <string name="ui_friend_code_instructions">फ्रेंड जोड़ने के लिए कोड स्कैन करें या दर्ज करें</string>
+    <string name="ui_friend_code_regenerate_row">कोड रीजनरेट करें</string>
+    <string name="ui_friend_code_regenerate_warning">रीजनरेट करने से आपका मौजूदा कोड अमान्य हो जाएगा</string>
+
+    <string name="ui_add_friend_title">फ्रेंड जोड़ें</string>
+    <string name="ui_add_friend_footer_submit">सबमिट करें</string>
+    <string name="ui_add_friend_footer_cancel">रद्द करें</string>
+    <string name="ui_add_friend_instructions">अपने फ्रेंड का 6-अक्षर वाला कोड दर्ज करें</string>
+    <string name="ui_add_friend_code_placeholder">ABC123</string>
+    <string name="ui_add_friend_error_length">कोड 6 अक्षरों का होना चाहिए</string>
+
+    <string name="ui_netplay_join_unknown_game">अज्ञात</string>
+    <string name="ui_netplay_join_heading">%1$s में जॉइन हो रहे हैं</string>
+    <string name="ui_netplay_join_unknown_host">नेटप्ले</string>
+    <string name="ui_netplay_join_status_joining">सेशन में जॉइन हो रहे हैं</string>
+    <string name="ui_netplay_join_status_matching_core">कोर मैच किया जा रहा है</string>
+    <string name="ui_netplay_join_status_downloading_core">कोर डाउनलोड हो रहा है</string>
+    <string name="ui_netplay_join_status_core_ready">कोर तैयार है</string>
+    <string name="ui_netplay_join_status_verifying">गेम वेरिफाई किया जा रहा है</string>
+    <string name="ui_netplay_join_status_verified">वेरिफाइड</string>
+    <string name="ui_netplay_join_candidates_single_missing">ROM डाउनलोड नहीं हुआ। इंस्टॉल करने के लिए चुनें।</string>
+    <string name="ui_netplay_join_candidates_single_failed">वेरिफाई विफल रहा। फिर से कोशिश करने के लिए चुनें।</string>
+    <string name="ui_netplay_join_candidates_none_installed">कोई इंस्टॉल्ड ROM मेल नहीं खाता। डाउनलोड के लिए एक चुनें।</string>
+    <string name="ui_netplay_join_candidates_multiple">कई मैच मिले। एक ROM चुनें।</string>
+    <string name="ui_netplay_join_candidate_installed">इंस्टॉल्ड</string>
+    <string name="ui_netplay_join_candidate_not_installed">इंस्टॉल्ड नहीं</string>
+    <string name="ui_netplay_join_variants_prompt">ROM हैश मेल नहीं खाया। एक वैरिएंट चुनें।</string>
+
+    <!-- Platform filter header (ui/components/PlatformFilterHeader.kt) -->
+
+    <string name="ui_platform_filter_sort_default">डिफ़ॉल्ट</string>
+    <string name="ui_platform_filter_sort_name_asc">नाम (A-Z)</string>
+    <string name="ui_platform_filter_sort_name_desc">नाम (Z-A)</string>
+    <string name="ui_platform_filter_sort_most_games">सबसे ज़्यादा गेम</string>
+    <string name="ui_platform_filter_sort_least_games">सबसे कम गेम</string>
+    <string name="ui_platform_filter_search_placeholder">प्लेटफ़ॉर्म खोजें...</string>
+    <string name="ui_platform_filter_search_clear">साफ़ करें</string>
+    <plurals name="ui_platform_filter_count">
+        <item quantity="one">%d प्लेटफ़ॉर्म</item>
+        <item quantity="other">%d प्लेटफ़ॉर्म</item>
+    </plurals>
+    <string name="ui_platform_filter_open_search">खोजें</string>
+    <string name="ui_platform_filter_open_sort">सॉर्ट करें</string>
+    <string name="ui_platform_filter_open_filter">प्लेटफ़ॉर्म फ़िल्टर करें</string>
+    <string name="ui_platform_filter_mode_has_games">गेम मौजूद</string>
+    <string name="ui_platform_filter_mode_enabled">सक्षम</string>
+    <string name="ui_platform_filter_mode_all">सभी</string>
+    <string name="ui_platform_filter_hint_sort_navigate">नेविगेट</string>
+    <string name="ui_platform_filter_hint_sort_select">चुनें</string>
+    <string name="ui_platform_filter_hint_sort_back">वापस</string>
+    <string name="ui_platform_filter_hint_search_done">हो गया</string>
+    <string name="ui_platform_filter_hint_search_close">बंद करें</string>
+    <string name="ui_platform_filter_hint_header_navigate">नेविगेट</string>
+    <string name="ui_platform_filter_hint_header_select">चुनें</string>
+    <string name="ui_platform_filter_hint_header_close">बंद करें</string>
+    <string name="ui_platform_filter_hint_list_navigate">नेविगेट</string>
+    <string name="ui_platform_filter_hint_list_toggle">टॉगल</string>
+    <string name="ui_platform_filter_hint_list_close">बंद करें</string>
+
+    <!-- Storage meter, preference rows, home layout rows (ui/components) -->
+
+    <string name="ui_volume_meter_other">अन्य ऐप और फ़ाइलें</string>
+    <string name="ui_volume_meter_free">%1$s खाली</string>
+
+    <string name="ui_cycle_preference_reset_to_global">ग्लोबल पर रीसेट करें</string>
+    <string name="ui_toggle_preference_reset_to_global">ग्लोबल पर रीसेट करें</string>
+    <string name="ui_toggle_preference_custom_marker">(कस्टम)</string>
+    <string name="ui_action_preference_reset_to_default">डिफ़ॉल्ट पर रीसेट करें</string>
+    <string name="ui_hue_slider_default">डिफ़ॉल्ट</string>
+    <string name="ui_image_cache_migrating">इमेज ले जाई जा रही हैं...</string>
+    <string name="ui_image_cache_change">बदलें</string>
+    <string name="ui_image_cache_reset">रीसेट करें</string>
+
+    <string name="ui_home_layout_box_art_subtitle_none">किसी भी गेम में स्पाइन आर्ट नहीं है, इसलिए हर गेम 2D कवर के रूप में दिखेगा</string>
+    <string name="ui_home_layout_box_art_subtitle">स्पाइन वाले गेम को बॉक्स के रूप में और बाकी को कवर के रूप में बनाएं</string>
+    <string name="ui_home_layout_row_alignment">रो पोज़िशन</string>
+    <string name="ui_home_layout_focus_position">फ़ोकस एंकर</string>
+    <string name="ui_home_layout_inverted">क्रम उलटें</string>
+    <string name="ui_home_layout_resting_scale">स्थिर आकार</string>
+    <string name="ui_home_layout_neighbour_push">पड़ोसी कार्ड धकेलें</string>
+    <string name="ui_home_layout_platform_badge">प्लेटफ़ॉर्म बैज</string>
+    <string name="ui_home_layout_scroll_axis">स्क्रॉल दिशा</string>
+    <string name="ui_home_layout_show_titles">टाइटल दिखाएं</string>
+    <string name="ui_home_layout_show_all_games">हर गेम दिखाएं</string>
+    <string name="ui_home_layout_show_all_games_subtitle">\'सभी देखें\' पर रुकने के बजाय पूरे प्लेटफ़ॉर्म की लाइब्रेरी स्क्रॉल करें</string>
+    <string name="ui_home_layout_carousel_box_art">3D बॉक्स आर्ट</string>
+    <string name="ui_home_layout_auto_grid_box_art">3D बॉक्स आर्ट</string>
+    <string name="ui_home_layout_custom_grid_lanes">आड़े सेल</string>
+    <string name="ui_home_layout_custom_grid_auto_add">नए डाउनलोड जोड़ें</string>
+    <string name="ui_home_layout_custom_grid_empty_slots">खाली स्लॉट दिखाएं</string>
+    <string name="ui_home_layout_custom_grid_empty_slots_subtitle">जिन सेल पर कुछ नहीं है उन्हें आउटलाइन करें</string>
+    <string name="ui_home_layout_custom_grid_persist_pages">खाली पेज बनाए रखें</string>
+    <string name="ui_home_layout_custom_grid_persist_pages_subtitle">जोड़ा गया पेज खाली रहते हुए भी बना रहता है</string>
+    <string name="ui_home_layout_custom_grid_auto_fit">ऑटो-फिट सेल</string>
+    <string name="ui_home_layout_custom_grid_auto_fit_subtitle">जिन टाइल पर प्लेसमेंट होता है उन्हें मना करने के बजाय हटाएं या छोटा करें</string>
+    <string name="ui_home_layout_rail_libraries">मीडिया लाइब्रेरी</string>
+    <string name="ui_home_layout_rail_libraries_subtitle">आपके मीडिया सर्वर की हर लाइब्रेरी के लिए एक रो</string>
+    <string name="ui_home_layout_rail_continue_watching">देखना जारी रखें</string>
+    <string name="ui_home_layout_rail_continue_watching_subtitle">आपकी अधूरी मूवी और एपिसोड की एक रो</string>
+    <string name="ui_home_layout_rail_next_up">आगे क्या</string>
+    <string name="ui_home_layout_rail_next_up_subtitle">आप जो शो देख रहे हैं उनके अगले एपिसोड की एक रो</string>
+    <string name="ui_home_layout_auto_add_off">बंद</string>
+    <string name="ui_home_layout_auto_add_auto">अपने आप</string>
+    <string name="ui_home_layout_auto_add_prompt">पहले पूछें</string>
+    <string name="ui_home_layout_kind_carousel">कैरोसेल</string>
+    <string name="ui_home_layout_kind_auto_grid">ऑटो ग्रिड</string>
+    <string name="ui_home_layout_kind_custom_grid">कस्टम ग्रिड</string>
+    <string name="ui_home_layout_alignment_top">ऊपर</string>
+    <string name="ui_home_layout_alignment_center">बीच में</string>
+    <string name="ui_home_layout_alignment_bottom">नीचे</string>
+    <string name="ui_home_layout_focus_leading">शुरुआत में</string>
+    <string name="ui_home_layout_focus_center">बीच में</string>
+    <string name="ui_home_layout_axis_vertical">वर्टिकल</string>
+    <string name="ui_home_layout_axis_horizontal">हॉरिज़ॉन्टल</string>
+    <string name="ui_home_layout_lanes_columns">कॉलम</string>
+    <string name="ui_home_layout_lanes_rows">रो</string>
+
+    <!-- Quick settings panel (ui/components/QuickSettingsPanel.kt) -->
+
+    <string name="ui_quick_settings_title">क्विक सेटिंग्स</string>
+    <string name="ui_quick_settings_footer_close">बंद करें</string>
+    <string name="ui_quick_settings_hint_navigate">नेविगेट</string>
+    <string name="ui_quick_settings_hint_close">बंद करें</string>
+    <string name="ui_quick_settings_performance">परफॉर्मेंस</string>
+    <string name="ui_quick_settings_performance_disabled">अनुमति आवश्यक</string>
+    <string name="ui_quick_settings_fan">फैन</string>
+    <string name="ui_quick_settings_fan_disabled">अनुमति आवश्यक</string>
+    <string name="ui_quick_settings_fan_quiet">शांत</string>
+    <string name="ui_quick_settings_fan_smart">स्मार्ट</string>
+    <string name="ui_quick_settings_fan_sport">स्पोर्ट</string>
+    <string name="ui_quick_settings_fan_custom">टर्बो+</string>
+    <string name="ui_quick_settings_performance_standard">स्टैंडर्ड</string>
+    <string name="ui_quick_settings_performance_high">हाई परफॉर्मेंस</string>
+    <string name="ui_quick_settings_performance_max">मैक्स परफॉर्मेंस</string>
+    <string name="ui_quick_settings_fan_speed">स्पीड</string>
+    <string name="ui_quick_settings_vibration_strength">तीव्रता</string>
+    <string name="ui_quick_settings_theme">थीम</string>
+    <string name="ui_quick_settings_haptics">हैप्टिक्स</string>
+    <string name="ui_quick_settings_ui_sounds">UI साउंड</string>
+    <string name="ui_quick_settings_bgm">BGM</string>
+    <string name="ui_quick_settings_swap_displays">डिस्प्ले बदलें</string>
+    <string name="ui_quick_settings_quaypass">QuayPass</string>
+    <string name="ui_quick_settings_volume">वॉल्यूम</string>
+    <string name="ui_quick_settings_brightness">ब्राइटनेस</string>
+
+    <!-- Main drawer (ui/components/MainDrawer.kt) -->
+
+    <string name="ui_drawer_tab_navigation">नेव</string>
+    <string name="ui_drawer_tab_friends">फ्रेंड्स</string>
+    <string name="ui_drawer_footer_favorite">पसंदीदा</string>
+    <string name="ui_drawer_footer_options">विकल्प</string>
+    <string name="ui_drawer_footer_join">जॉइन करें</string>
+    <string name="ui_drawer_friends_empty">अभी तक कोई फ्रेंड नहीं</string>
+    <string name="ui_drawer_friends_online">ऑनलाइन (%1$d)</string>
+    <string name="ui_drawer_friends_offline">ऑफ़लाइन (%1$d)</string>
+    <string name="ui_drawer_friend_hosting">%1$s होस्ट कर रहे हैं</string>
+    <string name="ui_drawer_friend_playing">%1$s खेल रहे हैं</string>
+    <string name="ui_drawer_friend_in_game">गेम में</string>
+    <string name="ui_drawer_friend_favorite">पसंदीदा</string>
+    <string name="ui_drawer_account_none">कोई खाता नहीं</string>
+    <string name="ui_drawer_account_caption">खाता</string>
+    <string name="ui_drawer_server_connected">RomM कनेक्टेड</string>
+    <string name="ui_drawer_server_offline">RomM ऑफ़लाइन</string>
+    <string name="ui_drawer_nav_home">होम</string>
+    <string name="ui_drawer_nav_social">सोशल</string>
+    <string name="ui_drawer_nav_quaypass">चेक-इन</string>
+    <string name="ui_drawer_nav_collections">कलेक्शन</string>
+    <string name="ui_drawer_nav_library">लाइब्रेरी</string>
+    <string name="ui_drawer_nav_media">मीडिया</string>
+    <string name="ui_drawer_nav_downloads">डाउनलोड</string>
+    <string name="ui_drawer_nav_save_sync">सेव सिंक</string>
+    <string name="ui_drawer_nav_apps">ऐप्स</string>
+    <string name="ui_drawer_nav_settings">सेटिंग्स</string>
+
+    <!-- Sync overlay (ui/components/SyncOverlay.kt) -->
+
+    <string name="ui_sync_overlay_unknown_game">गेम</string>
+    <string name="ui_sync_overlay_slot_prefix">"स्लॉट: "</string>
+    <string name="ui_sync_overlay_slot_default">नवीनतम</string>
+    <string name="ui_sync_overlay_blocked_grant">अनुमति दें</string>
+    <string name="ui_sync_overlay_blocked_configure_path">सेव पाथ कॉन्फ़िगर करें</string>
+    <string name="ui_sync_overlay_blocked_disable">सिंक अक्षम करें</string>
+    <string name="ui_sync_overlay_blocked_skip">अभी के लिए छोड़ें</string>
+    <string name="ui_sync_overlay_hardcore_title">हार्डकोर सेव कॉन्फ्लिक्ट</string>
+    <string name="ui_sync_overlay_hardcore_message">\"%1$s\" का सर्वर वर्शन अब हार्डकोर मोड की शर्तें पूरी नहीं करता।</string>
+    <string name="ui_sync_overlay_hardcore_note">ऐसा तब हो सकता है जब सेव को Argosy के बाहर बदला गया हो।</string>
+    <string name="ui_sync_overlay_hardcore_keep">हार्डकोर बनाए रखें</string>
+    <string name="ui_sync_overlay_hardcore_keep_subtitle">लोकल सेव सर्वर पर अपलोड करें</string>
+    <string name="ui_sync_overlay_hardcore_downgrade">कैज़ुअल में डाउनग्रेड करें</string>
+    <string name="ui_sync_overlay_hardcore_downgrade_subtitle">सर्वर सेव का उपयोग करें, हार्डकोर स्टेटस खोएं</string>
+    <string name="ui_sync_overlay_hardcore_skip">सिंक छोड़ें</string>
+    <string name="ui_sync_overlay_hardcore_skip_subtitle">बिना सिंक किए लॉन्च करें</string>
+    <string name="ui_sync_overlay_local_modified_title">लोकल सेव में बदलाव</string>
+    <string name="ui_sync_overlay_local_modified_message">\"%1$s\" के लिए आपकी लोकल सेव में ऐसे बदलाव हैं जिनका बैकअप नहीं लिया गया है।</string>
+    <string name="ui_sync_overlay_local_modified_question">क्या आप अपनी लोकल प्रगति रखना चाहेंगे या पहले चुनी गई सेव रीस्टोर करना चाहेंगे?</string>
+    <string name="ui_sync_overlay_local_modified_apply">लोकल लागू करें</string>
+    <string name="ui_sync_overlay_local_modified_apply_subtitle">लोकल सेव को नवीनतम वर्शन के रूप में सेट करें</string>
+    <string name="ui_sync_overlay_local_modified_restore">सिंक की गई सेव इस्तेमाल करें</string>
+    <string name="ui_sync_overlay_local_modified_restore_subtitle">लोकल को आखिरी सिंक किए गए वर्शन से ओवरराइट करें (बैकअप बनेगा)</string>
+    <string name="ui_sync_overlay_post_session_title">सेव कॉन्फ्लिक्ट</string>
+    <string name="ui_sync_overlay_post_session_subject">\"%1$s\" -- %2$s</string>
+    <string name="ui_sync_overlay_post_session_default_slot">डिफ़ॉल्ट सेव</string>
+    <string name="ui_sync_overlay_post_session_message">सर्वर पर एक नई सेव मौजूद है। ओवरराइट करने पर यह आपकी लोकल सेव से बदल जाएगी।</string>
+    <string name="ui_sync_overlay_post_session_local">लोकल</string>
+    <string name="ui_sync_overlay_post_session_server">सर्वर</string>
+    <string name="ui_sync_overlay_post_session_server_named">सर्वर (%1$s)</string>
+    <string name="ui_sync_overlay_post_session_skip">सिंक छोड़ें</string>
+    <string name="ui_sync_overlay_post_session_skip_subtitle">अपनी लोकल सेव रखें, अपलोड न करें</string>
+    <string name="ui_sync_overlay_post_session_overwrite">सर्वर ओवरराइट करें</string>
+    <string name="ui_sync_overlay_post_session_overwrite_subtitle">सर्वर सेव को अपने लोकल वर्शन से बदलें</string>
+    <string name="ui_sync_overlay_legacy_status">सिंक हो रहा है...</string>
+
+    <!-- Quick menu (ui/quickmenu) -->
+
+    <string name="ui_quick_menu_orb_search">खोजें</string>
+    <string name="ui_quick_menu_orb_random">रैंडम</string>
+    <string name="ui_quick_menu_orb_most_played">सबसे ज़्यादा खेला</string>
+    <string name="ui_quick_menu_orb_top_unplayed">टॉप न्यू</string>
+    <string name="ui_quick_menu_orb_recent">हाल का</string>
+    <string name="ui_quick_menu_orb_favorites">पसंदीदा</string>
+    <string name="ui_quick_menu_empty_most_played">अभी तक कोई गेम नहीं खेला गया</string>
+    <string name="ui_quick_menu_empty_top_unplayed">कोई रेटेड गेम नहीं मिला</string>
+    <string name="ui_quick_menu_empty_recent">कोई हाल का गेम नहीं</string>
+    <string name="ui_quick_menu_empty_favorites">अभी तक कोई पसंदीदा नहीं</string>
+    <string name="ui_quick_menu_empty_random">कोई गेम उपलब्ध नहीं</string>
+    <string name="ui_quick_menu_search_placeholder">गेम खोजें...</string>
+    <string name="ui_quick_menu_search_prompt">खोजने के लिए कम से कम 2 अक्षर टाइप करें</string>
+    <string name="ui_quick_menu_search_no_results">\"%1$s\" के लिए कोई गेम नहीं मिला</string>
+    <string name="ui_quick_menu_recent_searches_heading">हाल की खोजें</string>
+    <string name="ui_quick_menu_row_platform_unknown">अज्ञात</string>
+    <string name="ui_quick_menu_row_downloaded">डाउनलोड हो चुका</string>
+    <string name="ui_quick_menu_random_platform_unknown">अज्ञात</string>
+    <string name="ui_quick_menu_random_downloaded">डाउनलोड हो चुका</string>
+
+    <!-- File browser (ui/filebrowser) -->
+
+    <string name="ui_file_browser_title_folder">फ़ोल्डर चुनें</string>
+    <string name="ui_file_browser_title_file">फ़ाइल चुनें</string>
+    <string name="ui_file_browser_title_file_or_folder">फ़ाइल या फ़ोल्डर चुनें</string>
+    <string name="ui_file_browser_permission_title">स्टोरेज एक्सेस आवश्यक</string>
+    <string name="ui_file_browser_permission_message">फ़ोल्डर ब्राउज़ करने, गेम डाउनलोड करने और सेव सिंक करने के लिए Argosy को All files access चाहिए। इसे अनुमति दें, फिर यहां वापस आएं।</string>
+    <string name="ui_file_browser_permission_button">एक्सेस दें</string>
+    <string name="ui_file_browser_permission_footer_grant">एक्सेस दें</string>
+    <string name="ui_file_browser_permission_footer_back">वापस</string>
+    <string name="ui_file_browser_error_unreadable">डायरेक्टरी एक्सेस नहीं हो सकी</string>
+    <string name="ui_file_browser_empty_folder">खाली फ़ोल्डर</string>
+    <string name="ui_file_browser_footer_select_file">फ़ाइल चुनें</string>
+    <string name="ui_file_browser_footer_select_file_or_folder">फ़ाइल चुनें</string>
+    <string name="ui_file_browser_footer_open_folder">खोलें</string>
+    <string name="ui_file_browser_footer_back">वापस</string>
+    <string name="ui_file_browser_footer_new_folder">नया फ़ोल्डर</string>
+    <string name="ui_file_browser_footer_use_folder">फ़ोल्डर इस्तेमाल करें</string>
+    <string name="ui_file_browser_new_folder_title">नया फ़ोल्डर</string>
+    <string name="ui_file_browser_new_folder_field_label">फ़ोल्डर का नाम</string>
+    <string name="ui_file_browser_new_folder_cancel">रद्द करें</string>
+    <string name="ui_file_browser_new_folder_confirm">बनाएं</string>
+    <string name="ui_file_browser_new_folder_error_empty">फ़ोल्डर का नाम खाली नहीं हो सकता</string>
+    <string name="ui_file_browser_new_folder_error_invalid">अमान्य फ़ोल्डर नाम</string>
+    <string name="ui_file_browser_new_folder_error_exists">फ़ोल्डर पहले से मौजूद है</string>
+    <string name="ui_file_browser_new_folder_error_failed">फ़ोल्डर बनाने में विफल</string>
+
+    <!-- App shell and startup (ui/ArgosyApp.kt, ui/ArgosyViewModel.kt) -->
+
+    <string name="ui_startup_status_initializing">शुरू हो रहा है...</string>
+    <string name="ui_startup_status_loading_library">लाइब्रेरी लोड हो रही है...</string>
+    <string name="ui_startup_status_syncing_collections">कलेक्शन सिंक हो रहे हैं...</string>
+    <string name="ui_startup_status_checking_emulators">एमुलेटर जांचे जा रहे हैं...</string>
+    <string name="ui_startup_status_preparing_home">होम तैयार हो रहा है...</string>
+    <string name="ui_startup_status_waiting_for_storage">स्टोरेज का इंतज़ार हो रहा है...</string>
+    <string name="ui_startup_status_scanning_roms">ROM फ़ाइलें स्कैन हो रही हैं...</string>
+    <string name="ui_builtin_cores_ready_title">बिल्ट-इन एमुलेटर तैयार</string>
+    <plurals name="ui_builtin_cores_ready_subtitle">
+        <item quantity="one">%d कोर डाउनलोड हुआ</item>
+        <item quantity="other">%d कोर डाउनलोड हुए</item>
+    </plurals>
+    <string name="ui_netplay_invite_failed_title">%1$s में जॉइन नहीं हो सका</string>
+    <string name="ui_netplay_invite_reason_rom_missing">ROM नहीं मिला</string>
+    <string name="ui_netplay_invite_reason_rom_version">अलग ROM वर्शन</string>
+    <string name="ui_netplay_invite_reason_core_version">अलग कोर वर्शन</string>
+    <string name="ui_netplay_invite_reason_core_unsupported">कोर समर्थित नहीं है</string>
+    <string name="ui_netplay_invite_reason_missing_game_id">सेशन के लिए गेम आईडी गायब है</string>
+    <string name="ui_netplay_invite_reason_game_not_local">लोकल गेम नहीं मिला</string>
+    <string name="ui_netplay_invite_reason_launch_failed">गेम लॉन्च नहीं हो सका</string>
+    <string name="ui_dual_file_picker_hint_tab">टैब</string>
+    <string name="ui_dual_file_picker_hint_select">चुनें</string>
+    <string name="ui_dual_file_picker_hint_back">वापस</string>
+    <string name="ui_dual_collections_hint_navigate">नेविगेट</string>
+    <string name="ui_dual_collections_hint_open">खोलें</string>
+    <string name="ui_dual_collections_hint_back">वापस</string>
+
+    <!-- Transient notifications (ui/notification) -->
+
+    <string name="ui_download_notice_queued">कतार में</string>
+    <string name="ui_download_notice_no_space">स्टोरेज का इंतज़ार</string>
+    <string name="ui_download_notice_extracting">एक्सट्रैक्ट हो रहा है</string>
+    <string name="ui_download_notice_moving">ROM स्टोरेज में ले जाया जा रहा है</string>
+    <string name="ui_download_notice_paused">रुका हुआ</string>
+    <string name="ui_download_notice_completed">पूर्ण</string>
+    <string name="ui_download_notice_failed">विफल</string>
+    <string name="ui_download_notice_failed_subtitle">%1$s: %2$s</string>
+
+    <string name="ui_sync_notice_success_title">सेव सिंक हुआ</string>
+    <string name="ui_sync_notice_game_with_slot">%1$s (%2$s)</string>
+    <plurals name="ui_sync_notice_batch_title">
+        <item quantity="one">%d सेव सिंक हुआ</item>
+        <item quantity="other">%d सेव सिंक हुए</item>
+    </plurals>
+    <string name="ui_sync_notice_batch_subtitle">%1$s, +%2$d और</string>
+    <string name="ui_sync_notice_upload_failed_title">अपलोड विफल</string>
+    <string name="ui_sync_notice_download_failed_title">डाउनलोड विफल</string>
+    <string name="ui_sync_notice_failed_game_with_slot">%1$s (%2$s)</string>
+    <string name="ui_sync_notice_failed_subtitle">%1$s: %2$s</string>
+
+    <!-- Rendered outside this file's own area; each key keeps its owner's prefix. -->
+
+    <string name="util_formatters_relative_today">आज</string>
+    <string name="util_formatters_relative_yesterday">कल</string>
+    <plurals name="util_formatters_relative_days_ago">
+        <item quantity="one">%dदि पहले</item>
+        <item quantity="other">%dदि पहले</item>
+    </plurals>
+    <plurals name="util_formatters_relative_weeks_ago">
+        <item quantity="one">%dहफ़ पहले</item>
+        <item quantity="other">%dहफ़ पहले</item>
+    </plurals>
+
+    <string name="util_formatters_relative_str_now">अभी</string>
+    <plurals name="util_formatters_relative_str_minutes_ago">
+        <item quantity="one">%dमि पहले</item>
+        <item quantity="other">%dमि पहले</item>
+    </plurals>
+    <plurals name="util_formatters_relative_str_hours_ago">
+        <item quantity="one">%dघं पहले</item>
+        <item quantity="other">%dघं पहले</item>
+    </plurals>
+    <plurals name="util_formatters_relative_str_days_ago">
+        <item quantity="one">%dदि पहले</item>
+        <item quantity="other">%dदि पहले</item>
+    </plurals>
+    <plurals name="util_formatters_relative_str_weeks_ago">
+        <item quantity="one">%dहफ़ पहले</item>
+        <item quantity="other">%dहफ़ पहले</item>
+    </plurals>
+
+    <string name="util_formatters_relative_verbose_just_now">अभी-अभी</string>
+    <plurals name="util_formatters_relative_verbose_minutes_ago">
+        <item quantity="one">%d मिनट पहले</item>
+        <item quantity="other">%d मिनट पहले</item>
+    </plurals>
+    <plurals name="util_formatters_relative_verbose_hours_ago">
+        <item quantity="one">%d घंटा पहले</item>
+        <item quantity="other">%d घंटे पहले</item>
+    </plurals>
+    <plurals name="util_formatters_relative_verbose_days_ago">
+        <item quantity="one">%d दिन पहले</item>
+        <item quantity="other">%d दिन पहले</item>
+    </plurals>
+    <plurals name="util_formatters_relative_verbose_weeks_ago">
+        <item quantity="one">%d हफ़्ता पहले</item>
+        <item quantity="other">%d हफ़्ते पहले</item>
+    </plurals>
+
+    <string name="util_formatters_relative_short_future">भविष्य में</string>
+    <string name="util_formatters_relative_short_just_now">अभी-अभी</string>
+    <plurals name="util_formatters_relative_short_minutes_ago">
+        <item quantity="one">%dमि पहले</item>
+        <item quantity="other">%dमि पहले</item>
+    </plurals>
+    <plurals name="util_formatters_relative_short_hours_ago">
+        <item quantity="one">%dघं पहले</item>
+        <item quantity="other">%dघं पहले</item>
+    </plurals>
+    <plurals name="util_formatters_relative_short_days_ago">
+        <item quantity="one">%dदि पहले</item>
+        <item quantity="other">%dदि पहले</item>
+    </plurals>
+
+    <string name="util_formatters_save_timestamp_today">आज %1$s</string>
+    <string name="util_formatters_save_timestamp_yesterday">कल</string>
+    <plurals name="util_formatters_save_timestamp_days_ago">
+        <item quantity="one">%d दिन पहले</item>
+        <item quantity="other">%d दिन पहले</item>
+    </plurals>
+
+    <string name="util_formatters_playtime_minutes">%1$dm</string>
+    <string name="util_formatters_playtime_hours_minutes">%1$dh %2$dm</string>
+    <string name="util_formatters_playtime_hours">%1$dh</string>
+
+    <string name="common_homegrid_playtime_hours_minutes">%1$dh %2$dm</string>
+    <string name="common_homegrid_playtime_minutes">%1$dm</string>
+
+    <string name="notif_steam_sync_error_no_cached_licenses">कोई कैश्ड लाइसेंस नहीं -- पहले Steam से कनेक्ट करें</string>
+    <string name="notif_steam_sync_error_no_active_account">कोई सक्रिय खाता नहीं</string>
+    <string name="notif_steam_sync_error_not_connected">Steam से कनेक्ट नहीं है</string>
+    <string name="notif_steam_sync_error_could_not_connect_sync">Steam से कनेक्ट नहीं हो सका</string>
+    <string name="notif_steam_sync_error_could_not_connect_overwrite">Steam से कनेक्ट नहीं हो सका</string>
+
+    <string name="media_library_viewmodel_refresh_label">रीफ्रेश हो रहा है</string>
+
+    <string name="gamedetail_action_buttons_play">खेलें</string>
+    <string name="gamedetail_action_buttons_autosave">ऑटो-सेव</string>
+    <string name="gamedetail_action_buttons_download">डाउनलोड</string>
+    <string name="gamedetail_action_buttons_install">इंस्टॉल</string>
+    <string name="gamedetail_action_buttons_queued">कतार में...</string>
+    <string name="gamedetail_action_buttons_no_space">जगह नहीं</string>
+    <string name="gamedetail_action_buttons_downloading_percent">%1$d%%</string>
+    <string name="gamedetail_action_buttons_extracting">एक्सट्रैक्ट हो रहा है...</string>
+    <string name="gamedetail_action_buttons_resume_percent">रिज़्यूम %1$d%%</string>
+    <string name="gamedetail_action_buttons_retry">पुनः प्रयास करें</string>
+    <string name="gamedetail_action_buttons_unfavorite">पसंदीदा से हटाएं</string>
+    <string name="gamedetail_action_buttons_favorite">पसंदीदा बनाएं</string>
+    <string name="gamedetail_action_buttons_more_options">और विकल्प</string>
+
+    <string name="home_grid_local_video_row_title">इस डिवाइस पर एक वीडियो चुनें</string>
+    <string name="home_grid_local_video_row_subtitle">सीधे आपके स्टोरेज से चलता है</string>
+</resources>

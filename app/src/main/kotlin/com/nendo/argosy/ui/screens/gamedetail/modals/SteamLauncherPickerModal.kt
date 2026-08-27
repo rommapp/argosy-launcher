@@ -5,6 +5,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.data.launcher.SteamLauncher
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.Modal
@@ -19,7 +21,7 @@ fun SteamLauncherPickerModal(
     onDismiss: () -> Unit
 ) {
     Modal(
-        title = "SELECT LAUNCHER",
+        title = stringResource(R.string.gamedetail_launcher_picker_title),
         onDismiss = onDismiss
     ) {
         val listState = rememberLazyListState()
@@ -31,9 +33,9 @@ fun SteamLauncherPickerModal(
         ) {
             item {
                 OptionItem(
-                    label = "Auto",
+                    label = stringResource(R.string.gamedetail_steam_launcher_auto),
                     isFocused = focusIndex == 0,
-                    isSelected = currentLauncherName == null || currentLauncherName == "Auto",
+                    isSelected = currentLauncherName == null,
                     onClick = { onSelectLauncher(null) }
                 )
             }

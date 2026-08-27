@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="collections_browse_genres">類型</string>
+    <string name="collections_browse_game_modes">遊戲模式</string>
+    <string name="collections_browse_series">系列</string>
+
+    <string name="collections_section_mine">我的合輯</string>
+    <string name="collections_section_browse_by">分類瀏覽</string>
+
+    <string name="collections_pinned_description">已釘選</string>
+
+    <string name="collections_new">新增合輯</string>
+
+    <plurals name="collections_game_count">
+        <item quantity="other">%d款遊戲</item>
+    </plurals>
+    <plurals name="collections_category_count">
+        <item quantity="other">%d個類別</item>
+    </plurals>
+
+    <string name="collections_options_download_all">全部下載 (%1$d)</string>
+    <string name="collections_options_rename">重新命名合輯</string>
+    <string name="collections_options_delete">刪除合輯</string>
+    <string name="collections_options_remove_game">移除「%1$s」</string>
+    <string name="collections_options_remove_game_fallback">遊戲</string>
+
+    <string name="collections_delete_dialog_title">刪除合輯</string>
+    <string name="collections_delete_dialog_message">確定要刪除「%1$s」嗎？此操作只會移除合輯，不會刪除其中的遊戲。</string>
+    <string name="collections_delete_dialog_confirm">刪除</string>
+
+    <string name="collections_create_dialog_title">建立合輯</string>
+    <string name="collections_create_dialog_name_label">合輯名稱</string>
+    <string name="collections_create_dialog_confirm">建立</string>
+
+    <string name="collections_edit_dialog_title">編輯合輯</string>
+    <string name="collections_edit_dialog_name_label">合輯名稱</string>
+    <string name="collections_edit_dialog_confirm">儲存</string>
+
+    <string name="collections_removegame_dialog_title">移除遊戲</string>
+    <string name="collections_removegame_dialog_message">要將「%1$s」從「%2$s」中移除嗎？</string>
+    <string name="collections_removegame_dialog_confirm">移除</string>
+
+    <string name="collections_namedialog_cancel">取消</string>
+
+    <string name="collections_screen_hint_navigate">移動</string>
+    <string name="collections_screen_hint_select">選擇</string>
+    <string name="collections_screen_hint_back">返回</string>
+    <string name="collections_screen_hint_refreshing">重新整理中&#8230;</string>
+    <string name="collections_screen_hint_refresh">重新整理</string>
+    <string name="collections_screen_hint_unpin">取消釘選</string>
+    <string name="collections_screen_hint_pin">釘選</string>
+    <string name="collections_screen_hint_options">選項</string>
+
+    <string name="collections_detail_loading">載入中&#8230;</string>
+    <string name="collections_detail_hint_search_open">開啟</string>
+    <string name="collections_detail_hint_search_close">關閉搜尋</string>
+    <string name="collections_detail_hint_navigate">移動</string>
+    <string name="collections_detail_hint_open">開啟</string>
+    <string name="collections_detail_hint_back">返回</string>
+    <string name="collections_detail_hint_search">搜尋</string>
+    <string name="collections_detail_hint_unpin">取消釘選</string>
+    <string name="collections_detail_hint_pin">釘選</string>
+    <string name="collections_detail_hint_jump">跳至</string>
+    <string name="collections_detail_hint_options">選項</string>
+    <string name="collections_detail_hint_refreshing">重新整理中&#8230;</string>
+    <string name="collections_detail_hint_refresh">重新整理</string>
+    <string name="collections_detail_back_description">返回</string>
+    <string name="collections_detail_search_placeholder">搜尋%1$s</string>
+    <string name="collections_detail_close_search_description">關閉搜尋</string>
+    <string name="collections_detail_search_description">搜尋</string>
+    <string name="collections_detail_empty_title">此合輯中沒有遊戲</string>
+    <string name="collections_detail_empty_subtitle">從遊戲庫或遊戲詳情頁面新增遊戲</string>
+    <plurals name="collections_detail_header_game_count">
+        <item quantity="other">%d款遊戲</item>
+    </plurals>
+
+    <string name="collections_browser_loading">載入中&#8230;</string>
+    <string name="collections_browser_hint_search_select">選擇</string>
+    <string name="collections_browser_hint_search_close">關閉搜尋</string>
+    <string name="collections_browser_hint_navigate">移動</string>
+    <string name="collections_browser_hint_select">選擇</string>
+    <string name="collections_browser_hint_back">返回</string>
+    <string name="collections_browser_hint_search">搜尋</string>
+    <string name="collections_browser_hint_unpin">取消釘選</string>
+    <string name="collections_browser_hint_pin">釘選</string>
+    <string name="collections_browser_hint_jump">跳至</string>
+    <string name="collections_browser_hint_refreshing">重新整理中&#8230;</string>
+    <string name="collections_browser_hint_refresh">重新整理</string>
+    <string name="collections_browser_back_description">返回</string>
+    <string name="collections_browser_search_placeholder">搜尋%1$s</string>
+    <string name="collections_browser_close_search_description">關閉搜尋</string>
+    <string name="collections_browser_search_description">搜尋</string>
+    <string name="collections_browser_category_pinned_description">已釘選</string>
+    <string name="collections_browser_title_fallback">瀏覽</string>
+    <string name="collections_browser_empty">找不到%1$s</string>
+    <plurals name="collections_browser_header_category_count">
+        <item quantity="other">%d個類別</item>
+    </plurals>
+    <plurals name="collections_browser_row_game_count">
+        <item quantity="other">%d款遊戲</item>
+    </plurals>
+
+    <string name="collections_category_loading">載入中&#8230;</string>
+    <string name="collections_category_hint_search_open">開啟</string>
+    <string name="collections_category_hint_search_close">關閉搜尋</string>
+    <string name="collections_category_hint_navigate">移動</string>
+    <string name="collections_category_hint_open">開啟</string>
+    <string name="collections_category_hint_back">返回</string>
+    <string name="collections_category_hint_search">搜尋</string>
+    <string name="collections_category_hint_unpin">取消釘選</string>
+    <string name="collections_category_hint_pin">釘選</string>
+    <string name="collections_category_hint_jump">跳至</string>
+    <string name="collections_category_hint_refreshing">重新整理中&#8230;</string>
+    <string name="collections_category_hint_refresh">重新整理</string>
+    <string name="collections_category_hint_download_all">全部下載 (%1$d)</string>
+    <string name="collections_category_downloadall_title">正在加入下載佇列</string>
+    <plurals name="collections_category_downloadall_progress">
+        <item quantity="other">%1$d/%2$d款遊戲</item>
+    </plurals>
+    <string name="collections_category_back_description">返回</string>
+    <string name="collections_category_search_placeholder">搜尋%1$s</string>
+    <string name="collections_category_close_search_description">關閉搜尋</string>
+    <string name="collections_category_search_description">搜尋</string>
+    <string name="collections_category_empty_title">此類別中沒有遊戲</string>
+    <plurals name="collections_category_header_game_count">
+        <item quantity="other">%d款遊戲</item>
+    </plurals>
+    <string name="collections_detail_platform_unknown">未知</string>
+    <string name="collections_category_platform_unknown">未知</string>
+
+    <string name="collections_widecard_rating_value">%1$d/10</string>
+    <string name="collections_widecard_difficulty_value">%1$d/10</string>
+
+    <string name="downloads_empty_title">沒有下載項目</string>
+    <string name="downloads_empty_subtitle">下載項目將顯示於此</string>
+    <string name="downloads_section_header_moving">正在移至ROM儲存空間</string>
+    <string name="downloads_section_header_extracting">解壓縮中</string>
+    <string name="downloads_section_header_downloading">下載中</string>
+    <string name="downloads_section_header_active">進行中</string>
+    <string name="downloads_section_header_queued">排隊中</string>
+    <string name="downloads_section_header_finished">已完成</string>
+    <string name="downloads_hint_navigate">移動</string>
+    <string name="downloads_hint_remove">移除</string>
+    <string name="downloads_hint_cancel">取消</string>
+    <string name="downloads_hint_clear_finished">清除已完成</string>
+    <string name="downloads_hint_back">返回</string>
+    <string name="downloads_failed_dialog_title">下載失敗</string>
+    <string name="downloads_failed_dialog_message">「%1$s」下載失敗，您要如何處理？</string>
+    <string name="downloads_failed_dialog_confirm">重試</string>
+    <string name="downloads_failed_dialog_clear">清除</string>
+    <string name="downloads_file_state_done">已完成</string>
+    <string name="downloads_file_state_extracting">解壓縮中</string>
+    <string name="downloads_file_state_moving">移動中</string>
+    <string name="downloads_file_state_failed">失敗</string>
+    <string name="downloads_file_state_queued">排隊中</string>
+    <string name="downloads_file_state_percent">%1$d%%</string>
+    <string name="downloads_item_status_moving">正在移至ROM儲存空間&#8230;</string>
+    <string name="downloads_item_status_extracting_fallback">解壓縮中&#8230;</string>
+    <string name="downloads_item_status_insufficient_storage">需要%1$s，可用%2$s</string>
+    <string name="downloads_item_status_failed_fallback">下載失敗</string>
+    <string name="downloads_item_status_queued_fallback">排隊中</string>
+    <string name="downloads_completed_status_failed_fallback">下載失敗</string>
+    <string name="downloads_completed_status_installed">已安裝</string>
+    <string name="downloads_speed_suffix">%1$s/s</string>
+
+    <string name="downloads_action_pause">暫停</string>
+    <string name="downloads_action_resume">繼續</string>
+    <string name="downloads_action_toggle">切換</string>
+    <string name="downloads_action_options">選項</string>
+    <string name="downloads_action_view">檢視</string>
+
+    <string name="downloads_steam_status_preparing">準備中&#8230;</string>
+    <string name="downloads_steam_status_connecting">正在連線至Steam&#8230;</string>
+    <string name="downloads_steam_status_fetching_manifest">正在取得depot清單&#8230;</string>
+    <string name="downloads_steam_status_validating_fallback">驗證中&#8230;</string>
+    <string name="downloads_steam_status_moving">正在移動檔案&#8230;</string>
+    <string name="downloads_steam_status_cleaning">清理中&#8230;</string>
+    <string name="downloads_steam_status_depot_progress">" (%1$d/%2$d個depot)"</string>
+
+    <plurals name="downloads_group_progress">
+        <item quantity="other">%1$d/%2$d個檔案</item>
+    </plurals>
+
+    <string name="touchlayout_editor_title">自訂觸控操作</string>
+    <string name="touchlayout_editor_orientation_portrait">直向</string>
+    <string name="touchlayout_editor_orientation_landscape">橫向</string>
+    <string name="touchlayout_editor_close">關閉</string>
+</resources>

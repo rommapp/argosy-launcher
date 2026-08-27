@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ================= Media companion facts (dual-screen showcase) ================= -->
+
+    <string name="media_companion_fact_year">Jahr</string>
+    <string name="media_companion_fact_runtime">Laufzeit</string>
+    <string name="media_companion_fact_rated">Freigabe</string>
+    <string name="media_companion_fact_rating">Bewertung</string>
+
+    <!-- ================= Media item labels (season/episode tag, runtime) ================= -->
+
+    <string name="media_item_episode_label">S%1$d E%2$d</string>
+    <string name="media_item_runtime_hours_minutes">%1$dh %2$dm</string>
+    <string name="media_item_runtime_hours">%1$dh</string>
+    <string name="media_item_runtime_minutes">%1$dm</string>
+
+    <!-- ================= Jellyfin preference labels (settings tree + media player pickers) ================= -->
+
+    <string name="media_pref_download_quality_original">Originaldatei</string>
+    <string name="media_pref_download_quality_high">Hoch - 1080p</string>
+    <string name="media_pref_download_quality_medium">Mittel - 720p</string>
+    <string name="media_pref_download_quality_low">Niedrig - 480p</string>
+
+    <string name="media_pref_streaming_quality_auto">Original - Automatisch</string>
+    <string name="media_pref_streaming_quality_high">Hoch - 1080p</string>
+    <string name="media_pref_streaming_quality_medium">Mittel - 720p</string>
+    <string name="media_pref_streaming_quality_low">Niedrig - 480p</string>
+
+    <string name="media_pref_subtitle_mode_off">Aus</string>
+    <string name="media_pref_subtitle_mode_forced_only">Nur erzwungen</string>
+    <string name="media_pref_subtitle_mode_preferred">Bevorzugte Sprache</string>
+
+    <string name="media_pref_audio_language_english">Englisch</string>
+    <string name="media_pref_audio_language_japanese">Japanisch</string>
+    <string name="media_pref_audio_language_spanish">Spanisch</string>
+    <string name="media_pref_audio_language_french">Französisch</string>
+    <string name="media_pref_audio_language_german">Deutsch</string>
+    <string name="media_pref_audio_language_italian">Italienisch</string>
+    <string name="media_pref_audio_language_portuguese">Portugiesisch</string>
+    <string name="media_pref_audio_language_russian">Russisch</string>
+    <string name="media_pref_audio_language_korean">Koreanisch</string>
+    <string name="media_pref_audio_language_chinese">Chinesisch</string>
+
+    <string name="media_pref_subtitle_language_english">Englisch</string>
+    <string name="media_pref_subtitle_language_japanese">Japanisch</string>
+    <string name="media_pref_subtitle_language_spanish">Spanisch</string>
+    <string name="media_pref_subtitle_language_french">Französisch</string>
+    <string name="media_pref_subtitle_language_german">Deutsch</string>
+    <string name="media_pref_subtitle_language_italian">Italienisch</string>
+    <string name="media_pref_subtitle_language_portuguese">Portugiesisch</string>
+    <string name="media_pref_subtitle_language_russian">Russisch</string>
+    <string name="media_pref_subtitle_language_korean">Koreanisch</string>
+    <string name="media_pref_subtitle_language_chinese">Chinesisch</string>
+
+    <!-- ================= Unified save-state entry (state channel binding + slot rows) ================= -->
+
+    <string name="unified_state_entry_display_name_auto">Auto</string>
+    <string name="unified_state_entry_display_name_channel">%1$s (Slot %2$d)</string>
+    <string name="unified_state_entry_display_name_slot">Slot %1$d</string>
+    <string name="unified_state_entry_slot_label_auto">Auto</string>
+    <string name="unified_state_entry_size_bytes">%1$d B</string>
+    <string name="unified_state_entry_size_kb">%1$d KB</string>
+    <string name="unified_state_entry_size_mb">%1$.1f MB</string>
+
+    <!-- ================= Variant category labels (file picker groups, download picker) ================= -->
+
+    <string name="variant_category_game">Spiel</string>
+    <string name="variant_category_patch">Versionen / Patches</string>
+    <string name="variant_category_translation">Übersetzungen</string>
+    <string name="variant_category_mod">Mods</string>
+    <string name="variant_category_hack">Hacks</string>
+    <string name="variant_category_demo">Demo</string>
+    <string name="variant_category_prototype">Prototyp</string>
+    <string name="variant_category_update">Updates</string>
+    <string name="variant_category_dlc">DLC</string>
+    <string name="variant_category_manual">Handbücher</string>
+    <string name="variant_category_cheat">Cheats</string>
+    <string name="variant_category_soundtrack">Soundtracks</string>
+    <string name="variant_category_screenshot">Screenshots</string>
+    <string name="variant_category_unknown">Andere</string>
+
+    <!-- ================= Display preference labels (gradient preset, box art shape) ================= -->
+
+    <string name="gradient_preset_vibrant">Kräftig</string>
+    <string name="gradient_preset_balanced">Ausgewogen</string>
+    <string name="gradient_preset_subtle">Dezent</string>
+    <string name="gradient_preset_custom">Benutzerdefiniert</string>
+    <string name="box_art_shape_native">Nativ</string>
+
+    <!-- ================= Custom home-grid tile menu actions ================= -->
+
+    <string name="custom_tile_menu_action_arrange">Verschieben oder Größe ändern</string>
+    <string name="custom_tile_menu_action_recurate">Ändern, was gespielt wird</string>
+    <string name="custom_tile_menu_action_remove">Aus dem Raster entfernen</string>
+    <string name="custom_tile_menu_action_start_game_queue">Spielewarteschlange erstellen</string>
+    <string name="custom_tile_menu_action_set_focus_game">Aktives Spiel festlegen</string>
+    <string name="custom_tile_menu_action_advance_focus_game">Spiel beenden/überspringen</string>
+    <string name="custom_tile_menu_action_page_backdrop">Hintergrund für diese Seite</string>
+    <string name="custom_tile_menu_action_page_music">Musik für diese Seite</string>
+    <string name="custom_tile_menu_action_delete_page">Seite löschen</string>
+
+    <!-- ================= Home tile picker category tabs ================= -->
+
+    <string name="tile_picker_category_games">Spiele</string>
+    <string name="tile_picker_category_collections">Sammlungen</string>
+    <string name="tile_picker_category_apps">Apps</string>
+    <string name="tile_picker_category_media">Medien</string>
+
+    <!-- ================= Home grid tile stats ================= -->
+
+    <string name="home_grid_tile_stat_played">Gespielt</string>
+    <string name="home_grid_tile_stat_achievements">Erfolge</string>
+    <string name="home_grid_tile_stat_released">Erschienen</string>
+
+    <!-- ================= Media tile setup notice (add-to-grid download prompt) ================= -->
+
+    <string name="ui_media_tile_notice_confirm_add_download">Hinzufügen und herunterladen</string>
+    <string name="ui_media_tile_notice_decline_cancel">Abbrechen</string>
+    <string name="media_tile_notice_confirm_download_all">Alle herunterladen</string>
+    <string name="media_tile_notice_decline_use_downloaded">Heruntergeladene verwenden</string>
+    <string name="media_tile_notice_decline_cancel">Abbrechen</string>
+    <string name="media_tile_notice_derived_message_none">Noch keine Folge dieser Serie ist auf diesem Gerät. Diese Kachel spielt heruntergeladene Folgen ab und bleibt daher leer, bis welche vorhanden sind.</string>
+    <plurals name="media_tile_notice_derived_message_some">
+        <item quantity="one">Diese Kachel spielt die einzige Folge auf diesem Gerät ab und startet sie am Ende erneut.</item>
+        <item quantity="other">Diese Kachel spielt die %1$d Folgen auf diesem Gerät der Reihe nach ab und beginnt am Ende wieder von vorn.</item>
+    </plurals>
+    <string name="media_tile_notice_warning_unknown_size">Das ist ein großes Paket, dessen Größe erst beim Start jedes Downloads bekannt ist.</string>
+    <string name="media_tile_notice_warning_approximate_size">Insgesamt etwa %1$s, je nachdem - jeder Download ermittelt seine eigene Größe erst beim Start.</string>
+    <plurals name="media_tile_notice_missing_episodes">
+        <item quantity="one">%1$d Folge ist noch nicht auf diesem Gerät. Das Hinzufügen dieser Kachel startet den Download.</item>
+        <item quantity="other">%1$d Folgen sind noch nicht auf diesem Gerät. Das Hinzufügen dieser Kachel startet deren Download.</item>
+    </plurals>
+    <plurals name="media_tile_notice_missing_titles">
+        <item quantity="one">%1$d Titel ist noch nicht auf diesem Gerät. Das Hinzufügen dieser Kachel startet den Download.</item>
+        <item quantity="other">%1$d Titel sind noch nicht auf diesem Gerät. Das Hinzufügen dieser Kachel startet deren Download.</item>
+    </plurals>
+
+    <!-- ================= Episode picker season headers ================= -->
+
+    <string name="episode_picker_season_label">Staffel %1$d</string>
+    <string name="episode_picker_specials_label">Specials</string>
+    <string name="episode_picker_season_supporting_none">Keine auf diesem Gerät</string>
+    <string name="episode_picker_season_supporting_all">Alle %1$d auf diesem Gerät</string>
+    <string name="episode_picker_season_supporting_partial">%1$d von %2$d auf diesem Gerät</string>
+
+    <!-- ================= Storage computed-at label ================= -->
+
+    <string name="storage_computed_label_computing">Wird berechnet...</string>
+    <string name="storage_computed_label_computed">Berechnet %1$s</string>
+    <string name="storage_computed_label_never">Noch nicht berechnet</string>
+
+    <!-- ================= Download foreground notification text (Steam) ================= -->
+
+    <string name="download_indicator_notification_preparing">Vorbereitung: %1$s</string>
+    <string name="download_indicator_notification_connecting">Verbindung zu Steam wird hergestellt...</string>
+    <string name="download_indicator_notification_fetching_manifest">Manifest wird abgerufen: %1$s</string>
+    <string name="download_indicator_notification_unpacking">Entpacken: %1$s</string>
+    <string name="download_indicator_notification_moving">Verschieben: %1$s</string>
+    <string name="download_indicator_notification_cleaning">Aufräumen: %1$s</string>
+    <string name="download_indicator_notification_paused">Pausiert: %1$s</string>
+
+    <!-- ================= Title ID recheck notice ================= -->
+
+    <string name="title_id_recheck_notice_updated">Title ID aktualisiert auf %1$s</string>
+    <string name="title_id_recheck_notice_confirmed">Title ID bestätigt als %1$s</string>
+    <string name="title_id_recheck_notice_not_found">Keine Title ID in %1$s gefunden</string>
+    <string name="title_id_recheck_notice_no_file">Spieldatei kann nicht gelesen werden</string>
+
+    <!-- ================= Steam launcher picker "no override" option ================= -->
+
+    <string name="gamedetail_steam_launcher_auto">Auto</string>
+
+    <!-- ================= Memcard picker "use the inherited default" entry ================= -->
+
+    <string name="ui_memcard_picker_default">Standard</string>
+    <string name="ui_memcard_picker_default_named">Standard (%1$s)</string>
+
+    <!-- ================= Home media rail episode subtitle (show tile, e.g. "S1 E4 - Episode Name") ================= -->
+
+    <string name="home_media_episode_subtitle_marker_season_episode">S%1$d E%2$d</string>
+    <string name="home_media_episode_subtitle_marker_episode_only">E%1$d</string>
+    <string name="home_media_episode_subtitle_with_name">%1$s - %2$s</string>
+
+</resources>

@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.screens.home
 
+import android.content.Context
+import com.nendo.argosy.R
 import com.nendo.argosy.data.local.entity.MediaItemEntity
 import com.nendo.argosy.data.local.entity.MediaItemType
 import com.nendo.argosy.data.local.entity.MediaUserDataEntity
@@ -18,6 +20,7 @@ private const val FINISHED_FRACTION = 0.95f
  * is no show at all does the tile fall back to the episode's own still.
  */
 fun MediaItemEntity.toHomeMediaUi(
+    context: Context,
     repository: MediaRepository,
     userData: MediaUserDataEntity? = null,
     series: MediaItemEntity? = null,
@@ -38,7 +41,7 @@ fun MediaItemEntity.toHomeMediaUi(
     return HomeMediaUi(
         itemId = itemId,
         title = if (isEpisode) seriesName ?: series?.name ?: name else name,
-        subtitle = if (isEpisode) episodeSubtitle() else productionYear?.toString(),
+        subtitle = if (isEpisode) episodeSubtitle(context) else productionYear?.toString(),
         posterUrl = repository.posterUrl(posterId, posterTag),
         seriesId = seriesId,
         isEpisode = isEpisode,
@@ -54,15 +57,21 @@ fun MediaItemEntity.toHomeMediaUi(
  * The episode a tile will actually play, spelled out. Numbering is dropped when the server did not
  * give it rather than printed as a blank, because a special has a name and no numbers.
  */
-private fun MediaItemEntity.episodeSubtitle(): String {
+private fun MediaItemEntity.episodeSubtitle(context: Context): String {
     val season = parentIndexNumber
     val episode = indexNumber
     val marker = when {
-        season != null && episode != null -> "S$season E$episode"
-        episode != null -> "E$episode"
+        season != null && episode != null ->
+            context.getString(R.string.home_media_episode_subtitle_marker_season_episode, season, episode)
+        episode != null ->
+            context.getString(R.string.home_media_episode_subtitle_marker_episode_only, episode)
         else -> null
     }
-    return listOfNotNull(marker, name).joinToString(" - ")
+    return if (marker != null) {
+        context.getString(R.string.home_media_episode_subtitle_with_name, marker, name)
+    } else {
+        name
+    }
 }
 
 private fun mediaProgressFraction(positionTicks: Long, runTimeTicks: Long?, played: Boolean): Float {

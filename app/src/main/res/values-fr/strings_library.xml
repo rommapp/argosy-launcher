@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="library_header_title">BIBLIOTHÈQUE</string>
+    <string name="library_header_all_platforms">Toutes les plateformes</string>
+    <string name="library_header_previous_platform">Plateforme précédente</string>
+    <string name="library_header_next_platform">Plateforme suivante</string>
+    <plurals name="library_header_game_count">
+        <item quantity="one">%d jeu</item>
+        <item quantity="many">%d jeux</item>
+        <item quantity="other">%d jeux</item>
+    </plurals>
+
+    <string name="library_landing_title">BIBLIOTHÈQUE</string>
+    <plurals name="library_landing_platform_count">
+        <item quantity="one">%d plateforme</item>
+        <item quantity="many">%d plateformes</item>
+        <item quantity="other">%d plateformes</item>
+    </plurals>
+    <plurals name="library_landing_media_library_count">
+        <item quantity="one">%d bibliothèque</item>
+        <item quantity="many">%d bibliothèques</item>
+        <item quantity="other">%d bibliothèques</item>
+    </plurals>
+
+    <string name="library_cell_all_games">Tous les jeux</string>
+    <plurals name="library_cell_game_count">
+        <item quantity="one">%d jeu</item>
+        <item quantity="many">%d jeux</item>
+        <item quantity="other">%d jeux</item>
+    </plurals>
+    <plurals name="library_cell_movie_count">
+        <item quantity="one">%d film</item>
+        <item quantity="many">%d films</item>
+        <item quantity="other">%d films</item>
+    </plurals>
+    <plurals name="library_cell_show_count">
+        <item quantity="one">%d série</item>
+        <item quantity="many">%d séries</item>
+        <item quantity="other">%d séries</item>
+    </plurals>
+
+    <string name="library_landing_empty_title">Aucune plateforme pour l\'instant</string>
+    <string name="library_landing_empty_body">Synchronisez votre bibliothèque depuis Rom Manager dans les paramètres</string>
+
+    <string name="library_empty_title_platform">Aucun jeu %1$s trouvé</string>
+    <string name="library_empty_title_all">Aucun jeu pour l\'instant</string>
+    <string name="library_empty_body">Synchronisez votre bibliothèque depuis Rom Manager dans les paramètres</string>
+
+    <string name="library_filter_title">FILTRER LES JEUX</string>
+    <string name="library_filter_active_summary">Actifs : %1$s</string>
+    <string name="library_filter_search_placeholder">Tapez pour rechercher...</string>
+    <string name="library_filter_recent_searches">Recherches récentes</string>
+
+    <string name="library_filter_category_sort">Trier</string>
+    <string name="library_filter_category_search">Rechercher</string>
+    <string name="library_filter_category_source">Source</string>
+    <string name="library_filter_category_platform">Plateforme</string>
+    <string name="library_filter_category_genre">Genre</string>
+    <string name="library_filter_category_players">Joueurs</string>
+    <string name="library_filter_category_series">Séries</string>
+
+    <string name="library_filter_hint_clear">Effacer</string>
+    <string name="library_filter_hint_close_search">Fermer</string>
+    <string name="library_filter_hint_reset">Réinitialiser</string>
+    <string name="library_filter_hint_toggle">Basculer</string>
+    <string name="library_filter_hint_select">Sélectionner</string>
+    <string name="library_filter_hint_close_options">Fermer</string>
+
+    <string name="library_footer_hint_jump_section">Sauter de section</string>
+    <string name="library_footer_hint_details">Détails</string>
+    <string name="library_footer_hint_unhide">Réafficher</string>
+    <string name="library_footer_hint_unfavorite">Retirer des favoris</string>
+    <string name="library_footer_hint_favorite">Ajouter aux favoris</string>
+    <string name="library_footer_hint_filter">Filtrer</string>
+    <string name="library_footer_hint_quick_menu">Menu rapide</string>
+
+    <string name="library_quickmenu_title">ACTIONS RAPIDES</string>
+    <string name="library_quickmenu_install">Installer</string>
+    <string name="library_quickmenu_play">Jouer</string>
+    <string name="library_quickmenu_download">Télécharger</string>
+    <string name="library_quickmenu_unfavorite">Retirer des favoris</string>
+    <string name="library_quickmenu_favorite">Ajouter aux favoris</string>
+    <string name="library_quickmenu_details">Détails</string>
+    <string name="library_quickmenu_add_to_collection">Ajouter à une collection</string>
+    <string name="library_quickmenu_add_to_grid">Ajouter à la grille</string>
+    <string name="library_quickmenu_refresh_data">Actualiser les données</string>
+    <string name="library_quickmenu_resync_platform">Resynchroniser la plateforme</string>
+    <string name="library_quickmenu_uninstall">Désinstaller</string>
+    <string name="library_quickmenu_delete_download">Supprimer le téléchargement</string>
+    <string name="library_quickmenu_show">Afficher</string>
+    <string name="library_quickmenu_hide">Masquer</string>
+
+    <string name="library_notice_added_to_home_grid">Ajouté à la grille d\'accueil</string>
+    <string name="library_notice_game_data_refreshed">Données du jeu actualisées</string>
+    <string name="library_notice_android_data_refreshed">Données du jeu actualisées</string>
+    <string name="library_notice_download_deleted">Téléchargement supprimé</string>
+    <string name="library_notice_already_downloaded">Jeu déjà téléchargé</string>
+    <plurals name="library_notice_downloading_discs">
+        <item quantity="one">Téléchargement de %d disque</item>
+        <item quantity="many">Téléchargement de %d disques</item>
+        <item quantity="other">Téléchargement de %d disques</item>
+    </plurals>
+    <string name="library_notice_extraction_failed">Échec de l\'extraction. Ouvrez la fiche du jeu pour réessayer.</string>
+    <string name="library_notice_apk_install_failed">Impossible d\'installer l\'APK</string>
+
+    <string name="library_companion_fact_emulator">Émulateur</string>
+    <string name="library_companion_fact_storage">Stockage</string>
+    <string name="library_companion_storage_downloaded">Téléchargé</string>
+    <string name="library_companion_storage_not_downloaded">Non téléchargé</string>
+
+    <string name="library_apps_title">Applications</string>
+    <string name="library_apps_title_hidden">Applications masquées</string>
+    <string name="library_apps_title_reorder">Réorganiser les applications</string>
+    <string name="library_apps_reorder_hint">pour enregistrer</string>
+
+    <plurals name="library_filter_active_count">
+        <item quantity="one">%d filtre</item>
+        <item quantity="many">%d filtres</item>
+        <item quantity="other">%d filtres</item>
+    </plurals>
+    <string name="library_apps_empty">Aucune application trouvée</string>
+
+    <string name="library_apps_hint_move">Déplacer</string>
+    <string name="library_apps_hint_save">Enregistrer</string>
+    <string name="library_apps_hint_cancel">Annuler</string>
+    <string name="library_apps_hint_open">Ouvrir</string>
+    <string name="library_apps_hint_back">Retour</string>
+    <string name="library_apps_hint_open_on_top">Ouvrir en haut</string>
+    <string name="library_apps_hint_reorder">Réorganiser</string>
+    <string name="library_apps_hint_options">Options</string>
+    <string name="library_apps_hint_show_apps">Afficher les applications</string>
+    <string name="library_apps_hint_show_hidden">Afficher les masquées</string>
+
+    <string name="library_apps_menu_app_info">Infos sur l\'application</string>
+    <string name="library_apps_menu_open_on_top">Ouvrir sur l\'écran du haut</string>
+    <string name="library_apps_menu_remove_from_home">Retirer de l\'accueil</string>
+    <string name="library_apps_menu_add_to_home">Ajouter à l\'accueil</string>
+    <string name="library_apps_menu_remove_from_second_screen">Retirer du second écran</string>
+    <string name="library_apps_menu_add_to_second_screen">Ajouter au second écran</string>
+    <string name="library_apps_menu_show">Afficher</string>
+    <string name="library_apps_menu_hide">Masquer</string>
+    <string name="library_apps_menu_reorder">Réorganiser les applications</string>
+    <string name="library_apps_menu_uninstall">Désinstaller</string>
+
+    <string name="library_search_placeholder_games_and_media">Rechercher des jeux et des médias...</string>
+    <string name="library_search_placeholder_games">Rechercher des jeux...</string>
+    <plurals name="library_search_min_query_hint">
+        <item quantity="one">Tapez au moins %d caractère pour rechercher</item>
+        <item quantity="many">Tapez au moins %d caractères pour rechercher</item>
+        <item quantity="other">Tapez au moins %d caractères pour rechercher</item>
+    </plurals>
+    <string name="library_search_no_results">Aucun résultat pour \"%1$s\"</string>
+    <string name="library_search_heading_games">Jeux</string>
+    <string name="library_search_heading_media">Médias</string>
+    <string name="library_search_result_platform_unknown">Inconnue</string>
+    <string name="library_search_result_kind_series">Série</string>
+    <string name="library_search_result_kind_movie">Film</string>
+    <string name="library_search_hint_group_jump">Jeux / Médias</string>
+    <string name="library_search_hint_select">Sélectionner</string>
+    <string name="library_search_hint_back">Retour/Effacer</string>
+    <plurals name="library_search_result_count">
+        <item quantity="one">%d résultat</item>
+        <item quantity="many">%d résultats</item>
+        <item quantity="other">%d résultats</item>
+    </plurals>
+</resources>

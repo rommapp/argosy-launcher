@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- SyncLibraryUseCase / SyncLibraryFailureReason -->
+    <string name="error_sync_library_not_connected">RomM कनेक्ट नहीं है</string>
+    <string name="error_sync_library_unexpected">सिंक विफल</string>
+
+    <!-- SyncPlatformUseCase / SyncPlatformFailureReason -->
+    <string name="error_sync_platform_not_connected">RomM कनेक्ट नहीं है</string>
+    <string name="error_sync_platform_not_found">प्लेटफ़ॉर्म नहीं मिला</string>
+    <string name="error_sync_platform_unexpected">सिंक विफल</string>
+
+    <!-- RestoreCachedStatesUseCase / RestoreCachedStatesFailureReason -->
+    <string name="error_restore_cached_states_game_not_found">गेम नहीं मिला</string>
+    <string name="error_restore_cached_states_no_local_path">गेम का कोई लोकल पाथ नहीं है</string>
+    <string name="error_restore_cached_states_directory_unresolved">स्टेट कहां रीस्टोर करें, यह तय नहीं हो सका</string>
+    <string name="error_restore_cached_states_unexpected">स्टेट रीस्टोर नहीं हो सके</string>
+
+    <!-- SyncStatesOnSessionEndUseCase / StateSyncFailureReason -->
+    <string name="error_state_sync_game_not_found">गेम नहीं मिला</string>
+    <string name="error_state_sync_no_local_path">गेम का कोई लोकल पाथ नहीं है</string>
+
+    <!-- RestoreStateUseCase / RestoreStateFailureReason -->
+    <string name="error_restore_state_target_path_unresolved">यह स्टेट कहां रीस्टोर करें, यह तय नहीं हो सका</string>
+    <string name="error_restore_state_write_failed">स्टेट फ़ाइल रीस्टोर करने में विफल</string>
+
+    <!-- RestoreCachedSaveUseCase / RestoreCachedSaveFailureReason -->
+    <string name="error_restore_cached_save_game_not_found">गेम नहीं मिला</string>
+    <string name="error_restore_cached_save_no_local_copy">गेम की कोई लोकल कॉपी नहीं है</string>
+    <string name="error_restore_cached_save_location_unresolved">सेव लोकेशन तय नहीं हो सकी</string>
+    <string name="error_restore_cached_save_clear_failed">टारगेट पाथ पर मौजूदा सेव साफ़ करने में विफल</string>
+    <string name="error_restore_cached_save_no_local_cache_id">रीस्टोर करने के लिए कोई लोकल सेव नहीं है</string>
+    <string name="error_restore_cached_save_no_server_save_id">रीस्टोर करने के लिए कोई सर्वर सेव नहीं है</string>
+    <string name="error_restore_cached_save_restore_failed">सेव रीस्टोर करने में विफल</string>
+
+    <!-- DownloadGameUseCase / DownloadGameFailureReason -->
+    <string name="error_download_game_not_found">गेम नहीं मिला</string>
+    <string name="error_download_game_not_synced">गेम RomM से सिंक नहीं है</string>
+    <string name="error_download_invalid_file_type">अमान्य फ़ाइल प्रकार: .%1$s</string>
+    <string name="error_download_rom_info_fetch_failed">ROM जानकारी प्राप्त करने में विफल: %1$s</string>
+    <string name="error_download_no_discs_found">मल्टी-डिस्क गेम के लिए कोई डिस्क नहीं मिली</string>
+    <string name="error_download_all_discs_downloaded">सभी डिस्क पहले से डाउनलोड हो चुकी हैं</string>
+    <string name="error_download_no_discs_queued">किसी भी डिस्क डाउनलोड को कतार में जोड़ने में विफल</string>
+    <string name="error_download_game_not_found_for_repair">गेम नहीं मिला</string>
+    <string name="error_download_not_multi_disc">यह मल्टी-डिस्क गेम नहीं है</string>
+
+    <!-- DownloadManager / DownloadFailureReason -->
+    <string name="error_download_invalid_content_type">अमान्य फ़ाइल प्रकार: %1$s</string>
+    <string name="error_download_file_too_small">ROM होने के लिए फ़ाइल बहुत छोटी है</string>
+    <string name="error_download_unexpected">डाउनलोड विफल</string>
+    <string name="error_download_insufficient_unpack_space_internal">अनपैक करने के लिए इंटरनल स्टोरेज में %1$d MB चाहिए, %2$d MB खाली है</string>
+    <string name="error_download_insufficient_unpack_space_rom">अनपैक करने के लिए ROM स्टोरेज में %1$d MB चाहिए, %2$d MB खाली है</string>
+    <string name="error_download_unpack_escaped_staging">अनपैक किया गया गेम स्टेजिंग फ़ोल्डर में नहीं पहुंचा</string>
+    <string name="error_download_staged_path_missing">स्टेज किए गए गेम का कोई दर्ज पाथ नहीं है</string>
+    <string name="error_download_insufficient_deploy_space">ROM स्टोरेज में %1$d MB चाहिए, %2$d MB खाली है</string>
+    <string name="error_download_move_to_storage_failed">गेम को ROM स्टोरेज में ले जाया नहीं जा सका</string>
+    <string name="error_download_moved_file_not_found">ले जाया गया गेम ROM स्टोरेज में नहीं मिला</string>
+    <string name="error_download_downloaded_file_missing">डाउनलोड की गई फ़ाइल नहीं मिली</string>
+    <string name="error_download_no_download_entry">कोई डाउनलोड एंट्री नहीं मिली</string>
+    <string name="error_download_no_longer_exists">डाउनलोड की गई फ़ाइल अब मौजूद नहीं है</string>
+    <string name="error_download_extraction_failed">एक्सट्रैक्शन विफल</string>
+
+    <!-- FilePickerFlowUseCase -->
+    <string name="error_filepicker_already_downloaded">गेम पहले से डाउनलोड हो चुका है</string>
+</resources>

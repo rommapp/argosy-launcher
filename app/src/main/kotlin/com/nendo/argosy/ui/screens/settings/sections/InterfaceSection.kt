@@ -14,6 +14,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
@@ -79,7 +81,7 @@ private val interfaceLayout = SettingsLayout<InterfaceItem, InterfaceLayoutState
     isFocusable = { it.isFocusable },
     visibleWhen = { item, state -> item.visibleWhen(state) },
     sectionOf = { it.section },
-    sectionTitle = { null }
+    sectionTitleRes = { null }
 )
 
 internal fun interfaceMaxFocusIndex(state: InterfaceLayoutState): Int = interfaceLayout.maxFocusIndex(state)
@@ -139,7 +141,7 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 is InterfaceItem.Header -> InterfaceSectionHeader(item.title)
 
                 InterfaceItem.UiScale -> SliderPreference(
-                    title = "UI Scale",
+                    title = stringResource(R.string.settings_interface_ui_scale_title),
                     value = display.uiScale,
                     minValue = 50,
                     maxValue = 150,
@@ -150,8 +152,8 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 )
 
                 InterfaceItem.CompactFooter -> SwitchPreference(
-                    title = "Compact Footer",
-                    subtitle = "Use a thinner control guide bar",
+                    title = stringResource(R.string.settings_interface_compact_footer_title),
+                    subtitle = stringResource(R.string.settings_interface_compact_footer_subtitle),
                     isEnabled = display.compactFooter,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.setCompactFooter(it) }
@@ -159,32 +161,32 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
                 InterfaceItem.ControllerGrip -> NavigationPreference(
                     icon = Icons.Outlined.Gamepad,
-                    title = "Controller Grip",
-                    subtitle = "Shift the UI up out of the area a grip covers",
+                    title = stringResource(R.string.settings_interface_controller_grip_title),
+                    subtitle = stringResource(R.string.settings_interface_controller_grip_subtitle),
                     isFocused = isFocused(item),
                     onClick = { openFrom(item) { viewModel.navigateToControllerGrip() } }
                 )
 
                 InterfaceItem.HomeScreen -> NavigationPreference(
                     icon = Icons.Outlined.Home,
-                    title = "Home Screen",
-                    subtitle = "Layout, content and background",
+                    title = stringResource(R.string.settings_interface_home_screen_title),
+                    subtitle = stringResource(R.string.settings_interface_home_screen_subtitle),
                     isFocused = isFocused(item),
                     onClick = { openFrom(item) { viewModel.navigateToHomeScreen() } }
                 )
 
                 InterfaceItem.LibraryView -> NavigationPreference(
                     icon = Icons.Outlined.GridView,
-                    title = "Library",
-                    subtitle = "Grid density and default filters",
+                    title = stringResource(R.string.settings_interface_library_view_title),
+                    subtitle = stringResource(R.string.settings_interface_library_view_subtitle),
                     isFocused = isFocused(item),
                     onClick = { openFrom(item) { viewModel.navigateToLibraryView() } }
                 )
 
                 InterfaceItem.BoxArt -> NavigationPreference(
                     icon = Icons.Outlined.Image,
-                    title = "Box Art",
-                    subtitle = "Cover shape, borders and effects",
+                    title = stringResource(R.string.settings_interface_box_art_title),
+                    subtitle = stringResource(R.string.settings_interface_box_art_subtitle),
                     isFocused = isFocused(item),
                     onClick = { openFrom(item) { viewModel.navigateToBoxArt() } }
                 )

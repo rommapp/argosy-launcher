@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="savesync_section_attention">Требует внимания</string>
+    <string name="savesync_section_in_progress">В процессе</string>
+    <string name="savesync_section_games">Игры с сохранениями</string>
+
+    <string name="savesync_footer_navigate">Навигация</string>
+    <string name="savesync_footer_choose">Выбрать</string>
+    <string name="savesync_footer_confirm_keep_local">Оставить локальное</string>
+    <string name="savesync_footer_confirm_keep_server">Оставить серверное</string>
+    <string name="savesync_footer_confirm_skip">Пропустить</string>
+    <string name="savesync_footer_open_game">Открыть игру</string>
+    <string name="savesync_footer_scan_server">Сканировать RomM</string>
+    <string name="savesync_footer_back">Назад</string>
+
+    <string name="savesync_device_this_label">Это устройство</string>
+    <string name="savesync_device_not_connected">Нет подключения к RomM</string>
+    <string name="savesync_device_id_pill">…%1$s</string>
+    <string name="savesync_device_client_versioned">%1$s v%2$s</string>
+    <string name="savesync_device_server_versioned">RomM v%1$s</string>
+    <string name="savesync_device_server_connected">Подключено</string>
+    <string name="savesync_device_server_offline">Не в сети</string>
+    <!-- Just the unit word: the count is rendered beside it, never inside it, so there is no
+         argument to carry, and the declension still follows the count correctly. -->
+    <plurals name="savesync_device_save_count_unit" tools:ignore="ImpliedQuantity">
+        <item quantity="one">сохранение</item>
+        <item quantity="few">сохранения</item>
+        <item quantity="many">сохранений</item>
+        <item quantity="other">сохранения</item>
+    </plurals>
+
+    <string name="savesync_other_devices_heading">Другие устройства</string>
+    <plurals name="savesync_other_devices_more">
+        <item quantity="one">+%d ещё</item>
+        <item quantity="few">+%d ещё</item>
+        <item quantity="many">+%d ещё</item>
+        <item quantity="other">+%d ещё</item>
+    </plurals>
+
+    <plurals name="savesync_access_notice_title">
+        <item quantity="one">%d расположение сохранений недоступно</item>
+        <item quantity="few">%d расположения сохранений недоступны</item>
+        <item quantity="many">%d расположений сохранений недоступно</item>
+        <item quantity="other">%d расположения сохранений недоступно</item>
+    </plurals>
+
+    <string name="savesync_empty_title_connected">Пока нет синхронизированных сохранений</string>
+    <string name="savesync_empty_message_connected">Сохранения появятся здесь по мере игры</string>
+    <string name="savesync_empty_title_disconnected">Подключитесь к RomM, чтобы синхронизировать сохранения</string>
+    <string name="savesync_empty_message_disconnected">Откройте настройки, чтобы добавить сервер RomM</string>
+
+    <string name="savesync_conflict_side_local">Локальное</string>
+    <string name="savesync_conflict_side_server">Серверное</string>
+    <string name="savesync_conflict_device_this">это устройство</string>
+    <string name="savesync_conflict_device_other">другое устройство</string>
+    <string name="savesync_conflict_side_summary">%1$s - %2$s (%3$s)</string>
+    <string name="savesync_conflict_time_unknown">неизвестно</string>
+    <string name="savesync_conflict_newer_badge">новее</string>
+    <string name="savesync_attention_button_keep_local">Оставить локальное</string>
+    <string name="savesync_attention_button_keep_server">Оставить серверное</string>
+    <string name="savesync_attention_button_skip">Пропустить</string>
+
+    <string name="savesync_progress_status_uploading">Отправка</string>
+    <string name="savesync_progress_status_downloading">Загрузка</string>
+    <string name="savesync_progress_status_queued">В очереди</string>
+
+    <string name="savesync_game_pill_just_synced">Только что синхронизировано</string>
+    <string name="savesync_game_pill_conflict">Конфликт</string>
+    <string name="savesync_game_last_write_this_device">Последняя запись - это устройство</string>
+    <string name="savesync_game_last_write_device">Последняя запись - %1$s</string>
+    <string name="savesync_game_last_write_unknown">Последняя запись - неизвестное устройство</string>
+    <string name="savesync_game_last_write_time">%1$s · %2$s</string>
+
+    <string name="savesync_force_check_title">Проверить RomM на пропущенные сохранения</string>
+    <string name="savesync_force_check_idle">Проверяет локальные игры и загружает из RomM последнее сохранение каждого канала.</string>
+    <string name="savesync_force_check_running">Проверка...</string>
+    <plurals name="savesync_force_check_up_to_date">
+        <item quantity="one">Всё актуально - проверена %d игра, ничего нового.</item>
+        <item quantity="few">Всё актуально - проверено %d игры, ничего нового.</item>
+        <item quantity="many">Всё актуально - проверено %d игр, ничего нового.</item>
+        <item quantity="other">Всё актуально - проверено %d игры, ничего нового.</item>
+    </plurals>
+    <plurals name="savesync_force_check_queued">
+        <item quantity="one">В очередь добавлено %1$d сохранение из %2$d игр; загружено %3$d.</item>
+        <item quantity="few">В очередь добавлено %1$d сохранения из %2$d игр; загружено %3$d.</item>
+        <item quantity="many">В очередь добавлено %1$d сохранений из %2$d игр; загружено %3$d.</item>
+        <item quantity="other">В очередь добавлено %1$d сохранения из %2$d игр; загружено %3$d.</item>
+    </plurals>
+    <string name="savesync_force_check_failed">Ошибка: %1$s</string>
+    <string name="savesync_force_check_failed_fallback">Не удалось проверить сохранения</string>
+
+    <string name="savesync_device_unnamed">Устройство без имени</string>
+    <string name="savesync_device_web">Веб</string>
+
+    <string name="savesync_channel_archived">В архиве</string>
+    <string name="savesync_channel_autosave">Автосохранение</string>
+</resources>

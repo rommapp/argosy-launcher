@@ -9,8 +9,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.CenteredModal
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.components.InputButton
@@ -20,18 +23,14 @@ fun MissingDiscModal(
     missingDiscNumbers: List<Int>,
     onDismiss: () -> Unit
 ) {
-    val discText = if (missingDiscNumbers.size == 1) {
-        "Disc ${missingDiscNumbers.first()}"
-    } else {
-        "Discs ${missingDiscNumbers.joinToString(", ")}"
-    }
+    val discNumbers = missingDiscNumbers.joinToString(", ")
 
     CenteredModal(
-        title = "MISSING DISCS",
+        title = stringResource(R.string.gamedetail_missing_disc_title),
         onDismiss = onDismiss,
         footerHints = listOf(
-            InputButton.A to "Download",
-            InputButton.B to "Cancel"
+            InputButton.A to stringResource(R.string.gamedetail_missing_disc_footer_download),
+            InputButton.B to stringResource(R.string.gamedetail_missing_disc_footer_cancel)
         )
     ) {
         Icon(
@@ -44,7 +43,11 @@ fun MissingDiscModal(
         )
 
         Text(
-            text = "$discText not downloaded.\nWould you like to download the missing discs?",
+            text = pluralStringResource(
+                R.plurals.gamedetail_missing_disc_message,
+                missingDiscNumbers.size,
+                discNumbers
+            ),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,

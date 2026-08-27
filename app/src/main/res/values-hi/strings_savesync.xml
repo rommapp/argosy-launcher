@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="savesync_section_attention">आपके ध्यान की जरूरत है</string>
+    <string name="savesync_section_in_progress">प्रगति में</string>
+    <string name="savesync_section_games">सेव वाले गेम</string>
+
+    <string name="savesync_footer_navigate">नेविगेट</string>
+    <string name="savesync_footer_choose">चुनें</string>
+    <string name="savesync_footer_confirm_keep_local">लोकल रखें</string>
+    <string name="savesync_footer_confirm_keep_server">सर्वर रखें</string>
+    <string name="savesync_footer_confirm_skip">छोड़ें</string>
+    <string name="savesync_footer_open_game">गेम खोलें</string>
+    <string name="savesync_footer_scan_server">RomM स्कैन करें</string>
+    <string name="savesync_footer_back">वापस</string>
+
+    <string name="savesync_device_this_label">यह डिवाइस</string>
+    <string name="savesync_device_not_connected">RomM से कनेक्ट नहीं है</string>
+    <string name="savesync_device_id_pill">&#8230;%1$s</string>
+    <string name="savesync_device_client_versioned">%1$s v%2$s</string>
+    <string name="savesync_device_server_versioned">RomM v%1$s</string>
+    <string name="savesync_device_server_connected">कनेक्टेड</string>
+    <string name="savesync_device_server_offline">ऑफ़लाइन</string>
+    <!-- Just the unit word: the count is rendered beside it, never inside it, so there is no
+         argument to carry. -->
+    <plurals name="savesync_device_save_count_unit" tools:ignore="ImpliedQuantity">
+        <item quantity="one">सेव</item>
+        <item quantity="other">सेव</item>
+    </plurals>
+
+    <string name="savesync_other_devices_heading">अन्य डिवाइस</string>
+    <plurals name="savesync_other_devices_more">
+        <item quantity="one">+%d और</item>
+        <item quantity="other">+%d और</item>
+    </plurals>
+
+    <plurals name="savesync_access_notice_title">
+        <item quantity="one">%d सेव लोकेशन एक्सेस नहीं हो सकी</item>
+        <item quantity="other">%d सेव लोकेशन एक्सेस नहीं हो सकीं</item>
+    </plurals>
+
+    <string name="savesync_empty_title_connected">अभी तक कोई गेम सेव सिंक नहीं हुआ</string>
+    <string name="savesync_empty_message_connected">जैसे ही आप खेलेंगे, सेव यहां दिखने लगेंगे</string>
+    <string name="savesync_empty_title_disconnected">सेव सिंक करने के लिए RomM से कनेक्ट करें</string>
+    <string name="savesync_empty_message_disconnected">अपना RomM सर्वर जोड़ने के लिए सेटिंग्स खोलें</string>
+
+    <string name="savesync_conflict_side_local">लोकल</string>
+    <string name="savesync_conflict_side_server">सर्वर</string>
+    <string name="savesync_conflict_device_this">यह डिवाइस</string>
+    <string name="savesync_conflict_device_other">एक अन्य डिवाइस</string>
+    <string name="savesync_conflict_side_summary">%1$s - %2$s (%3$s)</string>
+    <string name="savesync_conflict_time_unknown">अज्ञात</string>
+    <string name="savesync_conflict_newer_badge">नया</string>
+    <string name="savesync_attention_button_keep_local">लोकल रखें</string>
+    <string name="savesync_attention_button_keep_server">सर्वर रखें</string>
+    <string name="savesync_attention_button_skip">छोड़ें</string>
+
+    <string name="savesync_progress_status_uploading">अपलोड हो रहा है</string>
+    <string name="savesync_progress_status_downloading">डाउनलोड हो रहा है</string>
+    <string name="savesync_progress_status_queued">कतार में</string>
+
+    <string name="savesync_game_pill_just_synced">अभी-अभी सिंक हुआ</string>
+    <string name="savesync_game_pill_conflict">कॉन्फ्लिक्ट</string>
+    <string name="savesync_game_last_write_this_device">आखिरी राइट - यह डिवाइस</string>
+    <string name="savesync_game_last_write_device">आखिरी राइट - %1$s</string>
+    <string name="savesync_game_last_write_unknown">आखिरी राइट - अज्ञात डिवाइस</string>
+    <string name="savesync_game_last_write_time">%1$s &#183; %2$s</string>
+
+    <string name="savesync_force_check_title">गायब सेव के लिए RomM स्कैन करें</string>
+    <string name="savesync_force_check_idle">लोकल गेम जांचता है और हर चैनल की नवीनतम सेव RomM से लाता है।</string>
+    <string name="savesync_force_check_running">स्कैन हो रहा है...</string>
+    <plurals name="savesync_force_check_up_to_date">
+        <item quantity="one">अपडेट है - %d गेम जांचा, कुछ नया नहीं।</item>
+        <item quantity="other">अपडेट है - %d गेम जांचे, कुछ नया नहीं।</item>
+    </plurals>
+    <plurals name="savesync_force_check_queued">
+        <item quantity="one">%2$d गेम में से %1$d सेव कतार में जोड़ी गई; %3$d डाउनलोड हुई।</item>
+        <item quantity="other">%2$d गेम में से %1$d सेव कतार में जोड़ी गईं; %3$d डाउनलोड हुईं।</item>
+    </plurals>
+    <string name="savesync_force_check_failed">विफल: %1$s</string>
+    <string name="savesync_force_check_failed_fallback">सेव जांच विफल</string>
+
+    <string name="savesync_device_unnamed">अनाम डिवाइस</string>
+    <string name="savesync_device_web">वेब</string>
+
+    <string name="savesync_channel_archived">आर्काइव्ड</string>
+    <string name="savesync_channel_autosave">ऑटोसेव</string>
+</resources>

@@ -12,7 +12,9 @@ import com.nendo.argosy.ui.input.HapticPattern
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.theme.GRIP_RESERVE_MAX_PERCENT
 import com.nendo.argosy.ui.theme.GRIP_RESERVE_MIN_PERCENT
+import com.nendo.argosy.R
 import com.nendo.argosy.core.notification.NotificationProgress
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.NotificationType
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.ui.screens.settings.sections.BiosItem
@@ -286,7 +288,8 @@ internal fun routeShowSavePathModal(vm: SettingsViewModel, config: PlatformEmula
     vm.emulatorDelegate.showSavePathModal(
         scope = vm.viewModelScope,
         emulatorId = emulatorId,
-        emulatorName = config.effectiveEmulatorName ?: config.selectedEmulator ?: "Unknown",
+        emulatorName = config.effectiveEmulatorName ?: config.selectedEmulator
+            ?: vm.context.getString(R.string.settings_shell_router_emulator_name_fallback),
         platformName = config.platform.name,
         savePath = config.effectiveSavePath,
         isUserOverride = config.isUserSavePathOverride,
@@ -772,7 +775,9 @@ private fun routeComputeEvaluatedSavePath(vm: SettingsViewModel, platformId: Lon
 
     if (basePathOverride == null) {
         val raConfig = vm.retroArchConfigParser.parse(packageName)
-        if (raConfig?.savefilesInContentDir == true) return "(ROM directory)"
+        if (raConfig?.savefilesInContentDir == true) {
+            return vm.context.getString(R.string.settings_shell_router_content_dir_save)
+        }
     }
 
     // No specific ROM is in scope at the settings screen, so the content-dir sort suffix
@@ -805,7 +810,9 @@ private fun routeComputeEvaluatedStatePath(vm: SettingsViewModel, platformId: Lo
 
     if (basePathOverride == null) {
         val raStateConfig = vm.retroArchConfigParser.parseStateConfig(packageName)
-        if (raStateConfig?.savestatesInContentDir == true) return "(ROM directory)"
+        if (raStateConfig?.savestatesInContentDir == true) {
+            return vm.context.getString(R.string.settings_shell_router_content_dir_state)
+        }
     }
 
     val coreName = emulatorConfig.selectedCore
@@ -853,8 +860,8 @@ internal fun routeValidateImageCache(vm: SettingsViewModel) {
     vm.viewModelScope.launch {
         try {
             vm.notificationManager.showPersistent(
-                title = "Validating Image Cache",
-                subtitle = "Starting...",
+                title = NotificationText.Res(R.string.notif_settings_cache_validate_title),
+                subtitle = NotificationText.Res(R.string.notif_settings_cache_validate_starting),
                 key = key,
                 progress = NotificationProgress(0, 100)
             )
@@ -863,15 +870,18 @@ internal fun routeValidateImageCache(vm: SettingsViewModel) {
                 val progress = if (total > 0) (current * 100) / total else 0
                 vm.notificationManager.updatePersistent(
                     key = key,
-                    subtitle = phase,
+                    subtitle = NotificationText.Raw(phase),
                     progress = NotificationProgress(progress, 100)
                 )
             }
 
             val (message, type) = if (result.deletedFiles > 0 || result.clearedPaths > 0) {
-                "Cleaned ${result.deletedFiles} files, cleared ${result.clearedPaths} paths" to NotificationType.SUCCESS
+                NotificationText.Res(
+                    R.string.notif_settings_cache_validate_cleaned,
+                    listOf(result.deletedFiles, result.clearedPaths)
+                ) to NotificationType.SUCCESS
             } else {
-                "Image cache is healthy" to NotificationType.SUCCESS
+                NotificationText.Res(R.string.notif_settings_cache_validate_healthy) to NotificationType.SUCCESS
             }
             vm.notificationManager.completePersistent(key, message, type = type)
         } finally {
@@ -890,8 +900,8 @@ internal fun routeValidateDownloads(vm: SettingsViewModel) {
     vm.viewModelScope.launch {
         try {
             vm.notificationManager.showPersistent(
-                title = "Validating Downloads",
-                subtitle = "Checking ROM files...",
+                title = NotificationText.Res(R.string.notif_settings_downloads_validate_title),
+                subtitle = NotificationText.Res(R.string.notif_settings_downloads_validate_checking),
                 key = key,
                 progress = NotificationProgress(0, 100)
             )
@@ -900,13 +910,16 @@ internal fun routeValidateDownloads(vm: SettingsViewModel) {
 
             vm.notificationManager.updatePersistent(
                 key = key,
-                subtitle = "Discovering files...",
+                subtitle = NotificationText.Res(R.string.notif_settings_downloads_validate_discovering),
                 progress = NotificationProgress(50, 100)
             )
 
             val discovered = vm.gameRepository.discoverLocalFiles()
 
-            val message = "Cleared $invalidated invalid paths, discovered $discovered files"
+            val message = NotificationText.Res(
+                R.string.notif_settings_downloads_validate_result,
+                listOf(invalidated, discovered)
+            )
             vm.notificationManager.completePersistent(key, message, type = NotificationType.SUCCESS)
         } finally {
             vm._uiState.update { it.copy(storage = it.storage.copy(isValidatingDownloads = false)) }

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="error_sync_library_not_connected">RomM не подключен</string>
+    <string name="error_sync_library_unexpected">Ошибка синхронизации</string>
+
+    <string name="error_sync_platform_not_connected">RomM не подключен</string>
+    <string name="error_sync_platform_not_found">Платформа не найдена</string>
+    <string name="error_sync_platform_unexpected">Ошибка синхронизации</string>
+
+    <string name="error_restore_cached_states_game_not_found">Игра не найдена</string>
+    <string name="error_restore_cached_states_no_local_path">У игры нет локального пути</string>
+    <string name="error_restore_cached_states_directory_unresolved">Не удалось определить, куда восстанавливать состояния</string>
+    <string name="error_restore_cached_states_unexpected">Не удалось восстановить состояния</string>
+
+    <string name="error_state_sync_game_not_found">Игра не найдена</string>
+    <string name="error_state_sync_no_local_path">У игры нет локального пути</string>
+
+    <string name="error_restore_state_target_path_unresolved">Не удалось определить, куда восстанавливать это состояние</string>
+    <string name="error_restore_state_write_failed">Не удалось восстановить файл состояния</string>
+
+    <string name="error_restore_cached_save_game_not_found">Игра не найдена</string>
+    <string name="error_restore_cached_save_no_local_copy">У игры нет локальной копии</string>
+    <string name="error_restore_cached_save_location_unresolved">Не удалось определить расположение сохранения</string>
+    <string name="error_restore_cached_save_clear_failed">Не удалось очистить существующее сохранение по целевому пути</string>
+    <string name="error_restore_cached_save_no_local_cache_id">Нет локального сохранения для восстановления</string>
+    <string name="error_restore_cached_save_no_server_save_id">Нет серверного сохранения для восстановления</string>
+    <string name="error_restore_cached_save_restore_failed">Не удалось восстановить сохранение</string>
+
+    <string name="error_download_game_not_found">Игра не найдена</string>
+    <string name="error_download_game_not_synced">Игра не синхронизирована из RomM</string>
+    <string name="error_download_invalid_file_type">Недопустимый тип файла: .%1$s</string>
+    <string name="error_download_rom_info_fetch_failed">Не удалось получить сведения о ROM: %1$s</string>
+    <string name="error_download_no_discs_found">Не найдены диски для игры с несколькими дисками</string>
+    <string name="error_download_all_discs_downloaded">Все диски уже загружены</string>
+    <string name="error_download_no_discs_queued">Не удалось поставить в очередь ни один диск</string>
+    <string name="error_download_game_not_found_for_repair">Игра не найдена</string>
+    <string name="error_download_not_multi_disc">Это не игра с несколькими дисками</string>
+
+    <string name="error_download_invalid_content_type">Недопустимый тип файла: %1$s</string>
+    <string name="error_download_file_too_small">Файл слишком мал, чтобы быть ROM</string>
+    <string name="error_download_unexpected">Ошибка загрузки</string>
+    <string name="error_download_insufficient_unpack_space_internal">Для распаковки нужно %1$d MB во внутреннем хранилище, доступно %2$d MB</string>
+    <string name="error_download_insufficient_unpack_space_rom">Для распаковки нужно %1$d MB в хранилище ROM, доступно %2$d MB</string>
+    <string name="error_download_unpack_escaped_staging">Распакованная игра не попала в промежуточную папку</string>
+    <string name="error_download_staged_path_missing">У подготовленной игры нет записанного пути</string>
+    <string name="error_download_insufficient_deploy_space">Нужно %1$d MB в хранилище ROM, доступно %2$d MB</string>
+    <string name="error_download_move_to_storage_failed">Не удалось переместить игру в хранилище ROM</string>
+    <string name="error_download_moved_file_not_found">Перемещённая игра не найдена в хранилище ROM</string>
+    <string name="error_download_downloaded_file_missing">Загруженный файл не найден</string>
+    <string name="error_download_no_download_entry">Запись о загрузке не найдена</string>
+    <string name="error_download_no_longer_exists">Загруженный файл больше не существует</string>
+    <string name="error_download_extraction_failed">Ошибка распаковки</string>
+
+    <string name="error_filepicker_already_downloaded">Игра уже загружена</string>
+</resources>

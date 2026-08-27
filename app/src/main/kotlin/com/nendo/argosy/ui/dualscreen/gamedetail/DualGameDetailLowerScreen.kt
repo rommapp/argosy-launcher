@@ -84,6 +84,7 @@ import com.nendo.argosy.data.preferences.EmulatorDisplayTarget
 import com.nendo.argosy.domain.model.CompletionStatus
 import com.nendo.argosy.ui.common.color
 import com.nendo.argosy.domain.model.UnifiedStateEntry
+import com.nendo.argosy.ui.common.displayName
 import com.nendo.argosy.ui.common.icon
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.common.savechannel.SaveFocusColumn
@@ -95,6 +96,9 @@ import com.nendo.argosy.ui.screens.gamedetail.components.icon
 import com.nendo.argosy.util.formatSaveSize
 import com.nendo.argosy.util.formatSaveTimestamp
 import com.nendo.argosy.ui.util.touchOnly
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
+import com.nendo.argosy.ui.common.labelRes
 
 private const val COPY_SOURCE_ALPHA = 0.35f
 
@@ -124,7 +128,7 @@ fun DualGameDetailLowerScreen(
     onStateMenuDismiss: () -> Unit = {},
     onStatePromptSelect: (Int) -> Unit = {},
     onStatePromptDismiss: () -> Unit = {},
-    stateMenuEntries: List<String> = emptyList(),
+    stateMenuEntries: List<DualStateMenuAction> = emptyList(),
     onScreenshotSelected: (Int) -> Unit,
     onScreenshotView: (Int) -> Unit,
     onOptionSelected: (GameDetailOption) -> Unit,
@@ -211,37 +215,49 @@ fun DualGameDetailLowerScreen(
         if (state.stateMenuVisible && stateMenuEntries.isNotEmpty()) {
             val slot = stateEntries.getOrNull(selectedStateIndex)
             CustomTileMenuModal(
-                header = "STATE",
-                title = slot?.displayName.orEmpty(),
-                entries = stateMenuEntries,
+                header = stringResource(R.string.dual_detail_state_menu_header),
+                title = slot?.displayName(LocalContext.current).orEmpty(),
+                entries = stateMenuEntries.map { stringResource(it.labelRes) },
                 focusIndex = state.stateMenuFocusIndex,
                 onSelect = onStateMenuSelect,
                 onDismiss = onStateMenuDismiss,
-                dangerFromIndex = stateMenuEntries.lastIndex
-                    .takeIf { stateMenuEntries.lastOrNull() == DualStateMenuAction.DELETE.label }
+                dangerFromIndex = stateMenuEntries
+                    .indexOfFirst { it == DualStateMenuAction.DELETE }
+                    .takeIf { it >= 0 }
             )
         }
 
         state.statePrompt?.let { prompt ->
             val slotLabel = if (state.statePromptSlot < 0) {
-                "The auto state"
+                stringResource(R.string.dual_detail_state_prompt_auto_slot)
             } else {
-                "Slot ${state.statePromptSlot}"
+                stringResource(
+                    R.string.dual_detail_state_prompt_numbered_slot,
+                    state.statePromptSlot
+                )
             }
             ArgosyConfirmModal(
                 title = when (prompt) {
-                    DualStatePrompt.DELETE -> "Delete state"
-                    DualStatePrompt.OVERWRITE -> "Overwrite state"
+                    DualStatePrompt.DELETE ->
+                        stringResource(R.string.dual_detail_state_prompt_delete_title)
+                    DualStatePrompt.OVERWRITE ->
+                        stringResource(R.string.dual_detail_state_prompt_overwrite_title)
                 },
                 message = when (prompt) {
-                    DualStatePrompt.DELETE ->
-                        "$slotLabel will be removed from this device and the server."
-                    DualStatePrompt.OVERWRITE ->
-                        "$slotLabel already holds a state. It will be replaced by the copy."
+                    DualStatePrompt.DELETE -> stringResource(
+                        R.string.dual_detail_state_prompt_delete_message,
+                        slotLabel
+                    )
+                    DualStatePrompt.OVERWRITE -> stringResource(
+                        R.string.dual_detail_state_prompt_overwrite_message,
+                        slotLabel
+                    )
                 },
                 confirmLabel = when (prompt) {
-                    DualStatePrompt.DELETE -> "Delete"
-                    DualStatePrompt.OVERWRITE -> "Overwrite"
+                    DualStatePrompt.DELETE ->
+                        stringResource(R.string.dual_detail_state_prompt_delete_confirm)
+                    DualStatePrompt.OVERWRITE ->
+                        stringResource(R.string.dual_detail_state_prompt_overwrite_confirm)
                 },
                 onConfirm = { onStatePromptSelect(1) },
                 onDismiss = onStatePromptDismiss,
@@ -283,7 +299,7 @@ private fun TabHeader(
                     .padding(horizontal = Dimens.spacingLg, vertical = Dimens.spacingSm)
             ) {
                 Text(
-                    text = tab.name,
+                    text = stringResource(tab.labelRes),
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                     color = if (isSelected) {
@@ -317,7 +333,7 @@ private fun SavesTabContent(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "Loading saves...",
+                text = stringResource(R.string.dual_detail_saves_loading),
                 style = MaterialTheme.typography.bodyLarge,
                 color = theme.textDim
             )
@@ -371,7 +387,7 @@ private fun SavesTabContent(
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "Applying save...",
+                        text = stringResource(R.string.dual_detail_saves_applying),
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color.White
                     )
@@ -406,7 +422,7 @@ private fun SaveSlotsColumn(
 
     Column(modifier = modifier.padding(top = 12.dp)) {
         Text(
-            text = "Save Slots",
+            text = stringResource(R.string.dual_detail_saves_slots_heading),
             style = MaterialTheme.typography.labelMedium,
             color = theme.textDim,
             modifier = Modifier.padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingXs)
@@ -519,7 +535,7 @@ private fun NewSlotRow(
             modifier = Modifier.size(Dimens.iconSm)
         )
         Text(
-            text = "New Slot",
+            text = stringResource(R.string.dual_detail_saves_new_slot),
             style = MaterialTheme.typography.bodyMedium,
             color = theme.focusAccent
         )
@@ -546,7 +562,11 @@ private fun SaveHistoryColumn(
 
     Column(modifier = modifier.padding(top = 12.dp)) {
         Text(
-            text = if (slotName != null) "History ($slotName)" else "History",
+            text = if (slotName != null) {
+                stringResource(R.string.dual_detail_saves_history_heading_named, slotName)
+            } else {
+                stringResource(R.string.dual_detail_saves_history_heading)
+            },
             style = MaterialTheme.typography.labelMedium,
             color = theme.textDim,
             modifier = Modifier.padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingXs)
@@ -560,7 +580,7 @@ private fun SaveHistoryColumn(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "No saves yet",
+                    text = stringResource(R.string.dual_detail_saves_history_empty),
                     style = MaterialTheme.typography.bodyLarge,
                     color = theme.textDim
                 )
@@ -621,14 +641,16 @@ private fun HistoryRow(
                 if (item.isActiveRestorePoint) {
                     Icon(
                         imageVector = Icons.Filled.CheckCircle,
-                        contentDescription = "Active restore point",
+                        contentDescription = stringResource(
+                            R.string.dual_detail_saves_active_restore_point_description
+                        ),
                         tint = theme.focusAccent,
                         modifier = Modifier.size(Dimens.iconXs)
                     )
                 }
                 if (item.isLatest) {
                     Text(
-                        text = "Latest",
+                        text = stringResource(R.string.dual_detail_saves_latest),
                         style = MaterialTheme.typography.labelSmall,
                         color = theme.focusAccent
                     )
@@ -641,7 +663,11 @@ private fun HistoryRow(
             )
         }
 
-        val syncTag = if (item.isSynced) "Synced" else "Local"
+        val syncTag = if (item.isSynced) {
+            stringResource(R.string.dual_detail_saves_sync_synced)
+        } else {
+            stringResource(R.string.dual_detail_saves_sync_local)
+        }
         val syncColor = if (item.isSynced) Color(0xFF4CAF50) else theme.textDim
         Text(
             text = "[$syncTag]",
@@ -665,7 +691,7 @@ private fun StatesTabContent(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "No state slots",
+                text = stringResource(R.string.dual_detail_states_empty),
                 style = MaterialTheme.typography.bodyLarge,
                 color = theme.textDim
             )
@@ -695,7 +721,7 @@ private fun StatesTabContent(
     ) {
         if (copySourceSlot != null) {
             Text(
-                text = "Choose a slot to copy into",
+                text = stringResource(R.string.dual_detail_states_copy_prompt),
                 style = MaterialTheme.typography.labelMedium,
                 color = theme.focusAccent,
                 modifier = Modifier.padding(horizontal = Dimens.spacingXs)
@@ -785,14 +811,21 @@ private fun StateSlotCard(
                 )
             } else {
                 Text(
-                    text = if (isEmpty) "Empty" else "No shot",
+                    text = if (isEmpty) {
+                        stringResource(R.string.dual_detail_states_slot_empty)
+                    } else {
+                        stringResource(R.string.dual_detail_states_slot_no_shot)
+                    },
                     style = MaterialTheme.typography.labelSmall,
                     color = theme.textDim
                 )
             }
         }
         Text(
-            text = "Slot ${entry.slotNumber}",
+            text = stringResource(
+                R.string.dual_detail_states_slot_number,
+                entry.slotNumber
+            ),
             style = MaterialTheme.typography.labelMedium,
             color = if (isSelected) theme.textPrimary else theme.textDim,
             modifier = Modifier.padding(top = Dimens.spacingXs)
@@ -813,7 +846,7 @@ private fun MediaTabContent(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "No screenshots",
+                text = stringResource(R.string.dual_detail_media_empty),
                 style = MaterialTheme.typography.bodyLarge,
                 color = theme.textDim
             )
@@ -871,7 +904,7 @@ private fun ScreenshotThumbnail(
     ) {
         AsyncImage(
             model = rememberFileImageModel(path),
-            contentDescription = "Screenshot",
+            contentDescription = stringResource(R.string.dual_detail_media_screenshot_description),
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
         )
@@ -915,13 +948,19 @@ private fun OptionsTabContent(
     onOptionSelected: (GameDetailOption) -> Unit
 ) {
     val theme = LocalArgosyTheme.current
-    val emulatorText = emulatorName ?: "Platform Default"
-    val coreText = coreName ?: "Default"
-    val savePathText = if (savePathOverride != null) "Custom" else "Default"
+    val emulatorText = emulatorName
+        ?: stringResource(R.string.dual_detail_option_emulator_default)
+    val coreText = coreName ?: stringResource(R.string.dual_detail_option_core_default)
+    val savePathText = if (savePathOverride != null) {
+        stringResource(R.string.dual_detail_option_save_path_custom)
+    } else {
+        stringResource(R.string.dual_detail_option_save_path_default)
+    }
     val displayTargetText = EmulatorDisplayTarget
         .fromString(displayTargetName ?: platformDisplayTargetName).displayName
-    val memoryCardText = memoryCardName ?: "Auto"
-    val variantText = variantName ?: "Default"
+    val memoryCardText = memoryCardName
+        ?: stringResource(R.string.dual_detail_option_memory_card_auto)
+    val variantText = variantName ?: stringResource(R.string.dual_detail_option_variant_default)
     val completionStatus = CompletionStatus.fromApiValue(status)
 
     val dlState = downloadState
@@ -929,14 +968,28 @@ private fun OptionsTabContent(
 
     fun entryFor(option: GameDetailOption): OptionEntry = when (option) {
         GameDetailOption.PLAY -> {
+            val percentDone = ((downloadProgress ?: 0f) * 100).toInt()
+            val idleLabel = context.getString(
+                if (isPlayable) {
+                    R.string.dual_detail_option_play
+                } else {
+                    R.string.dual_detail_option_download
+                }
+            )
             val label = when (dlState) {
-                "EXTRACTING" -> "Extracting..."
-                "DOWNLOADING" -> "Downloading ${((downloadProgress ?: 0f) * 100).toInt()}%"
-                "QUEUED" -> "Queued..."
-                "PAUSED" -> "Paused ${((downloadProgress ?: 0f) * 100).toInt()}%"
-                "WAITING_FOR_STORAGE" -> "No Space"
-                null -> if (isPlayable) "Play" else "Download"
-                else -> if (isPlayable) "Play" else "Download"
+                "EXTRACTING" -> context.getString(R.string.dual_detail_option_play_extracting)
+                "DOWNLOADING" -> context.getString(
+                    R.string.dual_detail_option_play_downloading,
+                    percentDone
+                )
+                "QUEUED" -> context.getString(R.string.dual_detail_option_play_queued)
+                "PAUSED" -> context.getString(
+                    R.string.dual_detail_option_play_paused,
+                    percentDone
+                )
+                "WAITING_FOR_STORAGE" ->
+                    context.getString(R.string.dual_detail_option_play_no_space)
+                else -> idleLabel
             }
             val icon = when (dlState) {
                 "EXTRACTING" -> Icons.Filled.FolderZip
@@ -953,7 +1006,11 @@ private fun OptionsTabContent(
             } else null
 
             val showSaveInfo = isPlayable && dlState == null && activeSaveTimestamp != null
-            val slotLabel = if (showSaveInfo) activeChannel ?: "Auto-save" else null
+            val slotLabel = if (showSaveInfo) {
+                activeChannel ?: context.getString(R.string.dual_detail_option_auto_save_slot)
+            } else {
+                null
+            }
             val dateLabel = if (showSaveInfo) {
                 formatSaveTimestamp(context, activeSaveTimestamp!!)
             } else {
@@ -981,7 +1038,8 @@ private fun OptionsTabContent(
             )
         }
         GameDetailOption.RATING -> OptionEntry(
-            option, Icons.Filled.Star, "Rating",
+            option, Icons.Filled.Star,
+            context.getString(R.string.dual_detail_option_rating),
             visualContent = {
                 PipDisplay(
                     filled = userRating ?: 0,
@@ -993,7 +1051,8 @@ private fun OptionsTabContent(
             }
         )
         GameDetailOption.DIFFICULTY -> OptionEntry(
-            option, Icons.Filled.Whatshot, "Difficulty",
+            option, Icons.Filled.Whatshot,
+            context.getString(R.string.dual_detail_option_difficulty),
             visualContent = {
                 PipDisplay(
                     filled = userDifficulty,
@@ -1007,7 +1066,7 @@ private fun OptionsTabContent(
         GameDetailOption.STATUS -> OptionEntry(
             option,
             completionStatus?.icon ?: Icons.Filled.CheckCircle,
-            "Status",
+            context.getString(R.string.dual_detail_option_status),
             visualContent = {
                 if (completionStatus != null) {
                     Row(
@@ -1021,14 +1080,14 @@ private fun OptionsTabContent(
                             modifier = Modifier.size(16.dp)
                         )
                         Text(
-                            text = completionStatus.label,
+                            text = stringResource(completionStatus.labelRes),
                             style = MaterialTheme.typography.bodyMedium,
                             color = completionStatus.color
                         )
                     }
                 } else {
                     Text(
-                        text = "Not set",
+                        text = stringResource(R.string.dual_detail_option_status_not_set),
                         style = MaterialTheme.typography.bodyMedium,
                         color = theme.textDim
                     )
@@ -1039,51 +1098,76 @@ private fun OptionsTabContent(
             option,
             if (isFavorite) Icons.Filled.Favorite
             else Icons.Filled.FavoriteBorder,
-            if (isFavorite) "Remove from Favorites"
-            else "Add to Favorites"
+            context.getString(
+                if (isFavorite) {
+                    R.string.dual_detail_option_unfavorite
+                } else {
+                    R.string.dual_detail_option_favorite
+                }
+            )
         )
         GameDetailOption.CHANGE_EMULATOR -> OptionEntry(
-            option, Icons.Filled.Settings, "Change Emulator", emulatorText
+            option, Icons.Filled.Settings,
+            context.getString(R.string.dual_detail_option_change_emulator), emulatorText
         )
         GameDetailOption.CHANGE_CORE -> OptionEntry(
-            option, Icons.Filled.Settings, "Change Core", coreText
+            option, Icons.Filled.Settings,
+            context.getString(R.string.dual_detail_option_change_core), coreText
         )
         GameDetailOption.SAVE_PATH -> OptionEntry(
-            option, Icons.Filled.Folder, "Save Path", savePathText,
+            option, Icons.Filled.Folder,
+            context.getString(R.string.dual_detail_option_save_path), savePathText,
             subLabel = savePathOverride
         )
         GameDetailOption.DISPLAY_TARGET -> OptionEntry(
-            option, Icons.Filled.Tv, "Display Target", displayTargetText
+            option, Icons.Filled.Tv,
+            context.getString(R.string.dual_detail_option_display_target), displayTargetText
         )
         GameDetailOption.MEMORY_CARD -> OptionEntry(
-            option, Icons.Filled.SdCard, "Memory Card", memoryCardText
+            option, Icons.Filled.SdCard,
+            context.getString(R.string.dual_detail_option_memory_card), memoryCardText
         )
         GameDetailOption.SELECT_VARIANT -> OptionEntry(
-            option, Icons.Filled.Settings, "Select Variant", variantText
+            option, Icons.Filled.Settings,
+            context.getString(R.string.dual_detail_option_select_variant), variantText
         )
         GameDetailOption.SELECT_DISC -> OptionEntry(
-            option, Icons.Filled.Album, "Select Disc"
+            option, Icons.Filled.Album,
+            context.getString(R.string.dual_detail_option_select_disc)
         )
         GameDetailOption.TITLE_ID -> OptionEntry(
-            option, Icons.Filled.Tag, "Title ID", titleId ?: "Not detected"
+            option, Icons.Filled.Tag,
+            context.getString(R.string.dual_detail_option_title_id),
+            titleId ?: context.getString(R.string.dual_detail_option_title_id_missing)
         )
         GameDetailOption.FILES -> OptionEntry(
-            option, Icons.Filled.Checklist, "Files"
+            option, Icons.Filled.Checklist,
+            context.getString(R.string.dual_detail_option_files)
         )
         GameDetailOption.ADD_TO_COLLECTION -> OptionEntry(
-            option, Icons.Filled.FolderSpecial, "Add to Collection"
+            option, Icons.Filled.FolderSpecial,
+            context.getString(R.string.dual_detail_option_add_to_collection)
         )
         GameDetailOption.REFRESH_METADATA -> OptionEntry(
-            option, Icons.Filled.Refresh, "Refresh Metadata"
+            option, Icons.Filled.Refresh,
+            context.getString(R.string.dual_detail_option_refresh_metadata)
         )
         GameDetailOption.DELETE -> OptionEntry(
-            option, Icons.Filled.Delete, "Delete from Library",
+            option, Icons.Filled.Delete,
+            context.getString(R.string.dual_detail_option_delete),
             tint = theme.destructive
         )
         GameDetailOption.HIDE -> if (isHidden) {
-            OptionEntry(option, Icons.Filled.Visibility, "Unhide Game")
+            OptionEntry(
+                option, Icons.Filled.Visibility,
+                context.getString(R.string.dual_detail_option_unhide)
+            )
         } else {
-            OptionEntry(option, Icons.Filled.VisibilityOff, "Hide Game", tint = theme.destructive)
+            OptionEntry(
+                option, Icons.Filled.VisibilityOff,
+                context.getString(R.string.dual_detail_option_hide),
+                tint = theme.destructive
+            )
         }
     }
 

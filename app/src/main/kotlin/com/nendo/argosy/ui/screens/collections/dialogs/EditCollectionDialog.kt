@@ -1,6 +1,8 @@
 package com.nendo.argosy.ui.screens.collections.dialogs
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 
 @Composable
 fun EditCollectionDialog(
@@ -9,9 +11,9 @@ fun EditCollectionDialog(
     onSave: (String) -> Unit
 ) {
     CollectionNameDialog(
-        title = "Edit Collection",
-        label = "Collection name",
-        confirmLabel = "Save",
+        title = stringResource(R.string.collections_edit_dialog_title),
+        label = stringResource(R.string.collections_edit_dialog_name_label),
+        confirmLabel = stringResource(R.string.collections_edit_dialog_confirm),
         initialName = currentName,
         gamepadInput = true,
         onDismiss = onDismiss,

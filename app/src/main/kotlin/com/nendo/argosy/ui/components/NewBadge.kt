@@ -10,11 +10,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.theme.ALauncherColors
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
@@ -92,7 +94,7 @@ fun NewBadge(
         contentAlignment = Alignment.Center
     ) {
         Text(
-            text = "NEW",
+            text = stringResource(R.string.ui_new_badge_label),
             color = textColor,
             fontSize = (height.value * 0.32f).sp,
             fontWeight = FontWeight.Black,

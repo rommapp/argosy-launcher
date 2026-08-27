@@ -2,6 +2,7 @@ package com.nendo.argosy.ui.screens.social
 
 import android.content.Intent
 import android.util.Log
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.emulator.LaunchResult
@@ -21,7 +22,9 @@ import com.nendo.argosy.data.social.UserProfileData
 import com.nendo.argosy.domain.usecase.game.LaunchGameUseCase
 import com.nendo.argosy.libretro.LibretroActivity
 import com.nendo.argosy.ui.input.InputHandler
+import com.nendo.argosy.R
 import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.screens.doodle.GamePickerItem
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -44,10 +47,10 @@ private const val TAG = "SocialViewModel"
 enum class SocialTab { FEED, FRIENDS, NOTIFICATIONS, PROFILE }
 enum class FeedMode { FRIENDS, COMMUNITY }
 
-enum class AvatarModalOption(val label: String) {
-    EDIT_DOODLE("Edit doodle"),
-    USE_DOODLE("Use doodle"),
-    USE_INITIALS("Use initials")
+enum class AvatarModalOption(@StringRes val labelRes: Int) {
+    EDIT_DOODLE(R.string.social_avatar_option_edit_doodle),
+    USE_DOODLE(R.string.social_avatar_option_use_doodle),
+    USE_INITIALS(R.string.social_avatar_option_use_initials)
 }
 
 private const val PROFILE_DISPLAY_SECTIONS = 3
@@ -206,8 +209,8 @@ class SocialViewModel @Inject constructor(
     private fun legacyLaunchNetplayJoin(friend: Friend, session: NetplaySession) {
         viewModelScope.launch {
             notificationManager.show(
-                title = "Joining ${session.gameTitle}",
-                subtitle = "Checking compatibility...",
+                title = NotificationText.Res(R.string.social_viewmodel_legacy_joining_title, listOf(session.gameTitle)),
+                subtitle = NotificationText.Res(R.string.social_viewmodel_legacy_checking_compatibility),
                 duration = com.nendo.argosy.core.notification.NotificationDuration.LONG
             )
             val preflight = netplayPreflightChecker.check(session)
@@ -901,7 +904,9 @@ class SocialViewModel @Inject constructor(
                                 if (localGame != null) {
                                     onNavigateToGameDetail(localGame.id.toInt())
                                 } else {
-                                    notificationManager.show(title = "Game not in library")
+                                    notificationManager.show(
+                                        title = NotificationText.Res(R.string.notif_social_game_not_in_library)
+                                    )
                                 }
                             }
                         }

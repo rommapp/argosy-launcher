@@ -1,6 +1,8 @@
 package com.nendo.argosy.ui.screens.settings.delegates
 
+import android.content.Context
 import android.util.Log
+import com.nendo.argosy.R
 import com.nendo.argosy.data.remote.romm.DeviceAuthOutcome
 import com.nendo.argosy.data.sync.AccountRemovalResult
 import com.nendo.argosy.data.remote.romm.RomMCapabilities
@@ -19,12 +21,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
 private const val TAG = "ServerSettingsDelegate"
 
 class ServerSettingsDelegate @Inject constructor(
-    private val romMRepository: RomMRepository
+    private val romMRepository: RomMRepository,
+    @ApplicationContext private val context: Context
 ) {
     private val _state = MutableStateFlow(ServerState())
     val state: StateFlow<ServerState> = _state.asStateFlow()
@@ -176,7 +180,9 @@ class ServerSettingsDelegate @Inject constructor(
                     _state.update {
                         it.copy(
                             rommSigningOut = false,
-                            rommConfigError = "An account switch is still finishing. Try again in a moment."
+                            rommConfigError = context.getString(
+                                R.string.settings_server_delegate_signout_switch_in_progress
+                            )
                         )
                     }
                     return@launch
@@ -185,8 +191,10 @@ class ServerSettingsDelegate @Inject constructor(
                     _state.update {
                         it.copy(
                             rommSigningOut = false,
-                            rommConfigError = "Still signed in: ${result.pending.describe()} could not " +
-                                "be sent to your server. Reconnect and sync, then sign out."
+                            rommConfigError = context.getString(
+                                R.string.settings_server_delegate_signout_refused,
+                                result.pending.describe()
+                            )
                         )
                     }
                     return@launch
@@ -298,9 +306,12 @@ class ServerSettingsDelegate @Inject constructor(
                 }
                 onSuccess()
             }
-            DeviceAuthOutcome.Denied -> failPairing("Pairing was denied on the server")
-            DeviceAuthOutcome.Expired -> failPairing("Pairing code expired, start again")
-            is DeviceAuthOutcome.AddedAccount -> failPairing("Unexpected pairing result")
+            DeviceAuthOutcome.Denied ->
+                failPairing(context.getString(R.string.settings_server_delegate_pairing_denied))
+            DeviceAuthOutcome.Expired ->
+                failPairing(context.getString(R.string.settings_server_delegate_pairing_expired))
+            is DeviceAuthOutcome.AddedAccount ->
+                failPairing(context.getString(R.string.settings_server_delegate_pairing_unexpected_result))
             is DeviceAuthOutcome.Failed -> failPairing(outcome.message)
         }
     }
@@ -322,7 +333,10 @@ class ServerSettingsDelegate @Inject constructor(
         val code = state.rommConfigPairingCode.replace("-", "").replace(" ", "")
         if (code.length != 8) {
             _state.update {
-                it.copy(rommConnecting = false, rommConfigError = "Enter the full 8-character pairing code")
+                it.copy(
+                    rommConnecting = false,
+                    rommConfigError = context.getString(R.string.settings_server_delegate_pairing_code_incomplete)
+                )
             }
             return
         }

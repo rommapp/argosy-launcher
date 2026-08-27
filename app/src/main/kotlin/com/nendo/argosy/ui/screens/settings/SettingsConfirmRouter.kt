@@ -168,6 +168,10 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
                 MainSettingsItem.Storage -> vm.navigateToSection(SettingsSection.STORAGE)
                 MainSettingsItem.Theme -> vm.navigateToSection(SettingsSection.THEME)
                 MainSettingsItem.Interface -> vm.navigateToSection(SettingsSection.INTERFACE)
+                MainSettingsItem.Language -> {
+                    vm.requestEnumPicker(MainSettingsItem.Language.key)
+                    return InputResult.handled(SoundType.OPEN_MODAL)
+                }
                 MainSettingsItem.Navigation -> vm.navigateToSection(SettingsSection.NAVIGATION)
                 MainSettingsItem.Audio -> vm.navigateToSection(SettingsSection.AUDIO)
                 MainSettingsItem.Displays -> vm.navigateToSection(SettingsSection.DISPLAYS)

@@ -1,6 +1,9 @@
 package com.nendo.argosy.data.steam
 
+import android.content.Context
 import android.util.Log
+import androidx.annotation.StringRes
+import com.nendo.argosy.R
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.repository.SteamRepository
@@ -32,6 +35,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.Closeable
 import java.time.Instant
 import javax.inject.Inject
@@ -46,7 +50,13 @@ sealed class LibrarySyncState {
     data class FetchingPackages(val current: Int, val total: Int) : LibrarySyncState()
     data class FetchingApps(val current: Int, val total: Int) : LibrarySyncState()
     data class Complete(val gamesAdded: Int, val gamesUpdated: Int) : LibrarySyncState()
-    data class Error(val message: String) : LibrarySyncState()
+
+    /**
+     * [messageRes] carries an authored, translatable sentence; it is null only when [message]
+     * came from somewhere Argosy does not author (a server or SDK message), which is the one
+     * case [message] is allowed to reach the screen untranslated.
+     */
+    data class Error(@StringRes val messageRes: Int? = null, val message: String) : LibrarySyncState()
 }
 
 private enum class SyncPhase {
@@ -57,6 +67,7 @@ private enum class SyncPhase {
 
 @Singleton
 class SteamLibraryManager @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val gameDao: GameDao,
     private val platformDao: PlatformDao,
     private val steamAccountDao: SteamAccountDao,
@@ -142,7 +153,10 @@ class SteamLibraryManager @Inject constructor(
             val licenses = getLicenses()
             if (licenses.isEmpty()) {
                 Log.w(TAG, "Force sync: no cached licenses available, need reconnect")
-                _syncState.value = LibrarySyncState.Error("No cached licenses -- connect to Steam first")
+                _syncState.value = LibrarySyncState.Error(
+                    messageRes = R.string.notif_steam_sync_error_no_cached_licenses,
+                    message = context.getString(R.string.notif_steam_sync_error_no_cached_licenses)
+                )
                 return@launch
             }
             Log.d(TAG, "Force sync: re-processing ${licenses.size} licenses")
@@ -186,7 +200,10 @@ class SteamLibraryManager @Inject constructor(
             val account = steamAccountDao.getAnyAccount()
             if (account == null) {
                 Log.e(TAG, "No saved account for license storage")
-                _syncState.value = LibrarySyncState.Error("No active account")
+                _syncState.value = LibrarySyncState.Error(
+                    messageRes = R.string.notif_steam_sync_error_no_active_account,
+                    message = context.getString(R.string.notif_steam_sync_error_no_active_account)
+                )
                 return
             }
             currentAccountId = account.id
@@ -524,7 +541,10 @@ class SteamLibraryManager @Inject constructor(
         }
 
         val apps = steamApps ?: run {
-            _syncState.value = LibrarySyncState.Error("Not connected to Steam")
+            _syncState.value = LibrarySyncState.Error(
+                messageRes = R.string.notif_steam_sync_error_not_connected,
+                message = context.getString(R.string.notif_steam_sync_error_not_connected)
+            )
             return
         }
 

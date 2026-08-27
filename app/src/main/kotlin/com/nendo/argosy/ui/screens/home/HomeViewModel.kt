@@ -3,6 +3,7 @@ package com.nendo.argosy.ui.screens.home
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nendo.argosy.R
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.preferences.BoxArtBorderStyle
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -14,6 +15,7 @@ import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.ui.navigation.GameNavigationContext
 import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.core.event.AchievementUpdateBus
 import com.nendo.argosy.ui.screens.common.CollectionModalDelegate
@@ -109,6 +111,7 @@ class HomeViewModel @Inject constructor(
     private val sessionStateStore by lazy { com.nendo.argosy.data.preferences.SessionStateStore(context) }
 
     private val customGrid = com.nendo.argosy.ui.home.grid.CustomGridCoordinator(
+        context = context,
         scope = viewModelScope,
         repository = homeTileRepository,
         pageRepository = homeGridPageRepository,
@@ -747,8 +750,8 @@ class HomeViewModel @Inject constructor(
     private suspend fun advanceCollectionFocus(collectionId: Long, currentGameId: Long): Long? {
         val result = advanceCollectionFocusUseCase(collectionId, currentGameId) ?: return null
         notificationManager.show(
-            title = "Playing next",
-            subtitle = result.nextTitle,
+            title = NotificationText.Res(R.string.home_notice_playing_next),
+            subtitle = NotificationText.Raw(result.nextTitle),
             type = com.nendo.argosy.core.notification.NotificationType.SUCCESS,
             duration = com.nendo.argosy.core.notification.NotificationDuration.SHORT
         )
@@ -1402,7 +1405,7 @@ class HomeViewModel @Inject constructor(
         gradientExtractionDelegate.extractForMedia(viewModelScope, itemId, bitmap, prioritize = isFocused)
     }
     fun repairCoverImage(gameId: Long, failedPath: String) = libraryDelegate.repairCoverImage(viewModelScope, gameId, failedPath)
-    fun showLaunchError(message: String) = notificationManager.showError(message)
+    fun showLaunchError(message: String) = notificationManager.showError(NotificationText.Raw(message))
 
     // --- Public API: Lifecycle ---
 

@@ -1,8 +1,10 @@
 package com.nendo.argosy.ui.screens.collections
 
+import android.content.Context
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.qualifiers.ApplicationContext
 import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.getDisplayName
@@ -13,8 +15,10 @@ import com.nendo.argosy.domain.usecase.collection.PinCollectionUseCase
 import com.nendo.argosy.domain.usecase.collection.RefreshAllCollectionsUseCase
 import com.nendo.argosy.domain.usecase.collection.UnpinCollectionUseCase
 import com.nendo.argosy.domain.usecase.download.DownloadGameUseCase
+import com.nendo.argosy.R
 import com.nendo.argosy.core.notification.NotificationDuration
 import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.NotificationType
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
@@ -71,6 +75,7 @@ private data class CategorySearchState(val active: Boolean = false, val query: S
 
 @HiltViewModel
 class VirtualCategoryViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     savedStateHandle: SavedStateHandle,
     private val getGamesByCategoryUseCase: GetGamesByCategoryUseCase,
     private val platformRepository: PlatformRepository,
@@ -128,7 +133,11 @@ class VirtualCategoryViewModel @Inject constructor(
     ) { games, platforms, focusedIndex, (isPinned, isRefreshing, downloadProgress), search ->
         val platformMap = platforms.associate { it.id to it.getDisplayName() }
         val sorted = games
-            .map { game -> game.toCollectionGameUi(platformMap[game.platformId] ?: "Unknown") }
+            .map { game ->
+                game.toCollectionGameUi(
+                    platformMap[game.platformId] ?: context.getString(R.string.collections_category_platform_unknown)
+                )
+            }
             .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.title })
         val visible = if (search.query.isBlank()) {
             sorted
@@ -288,8 +297,12 @@ class VirtualCategoryViewModel @Inject constructor(
             )
 
             notificationManager.show(
-                title = "Downloads Queued",
-                subtitle = "$queued game${if (queued > 1) "s" else ""} added to download queue",
+                title = NotificationText.Res(R.string.notif_virtualcategory_downloads_queued_title),
+                subtitle = NotificationText.Plural(
+                    R.plurals.notif_virtualcategory_downloads_queued_subtitle,
+                    queued,
+                    listOf(queued)
+                ),
                 type = NotificationType.INFO,
                 duration = NotificationDuration.MEDIUM
             )

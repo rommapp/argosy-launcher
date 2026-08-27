@@ -23,9 +23,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
@@ -75,7 +77,7 @@ fun JellyfinSignInForm(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         OutlinedTextField(
             value = jellyfin.loginUsername,
             onValueChange = { viewModel.setJellyfinLoginUsername(it) },
-            label = { Text("Username") },
+            label = { Text(stringResource(R.string.settings_jellyfin_signin_username_label)) },
             leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
             singleLine = true,
             shape = inputShape,
@@ -98,7 +100,7 @@ fun JellyfinSignInForm(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         OutlinedTextField(
             value = jellyfin.loginPassword,
             onValueChange = { viewModel.setJellyfinLoginPassword(it) },
-            label = { Text("Password") },
+            label = { Text(stringResource(R.string.settings_jellyfin_signin_password_label)) },
             singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
             shape = inputShape,
@@ -139,16 +141,20 @@ fun JellyfinSignInForm(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         Spacer(modifier = Modifier.height(Dimens.spacingSm))
 
         ActionPreference(
-            title = if (jellyfin.isSigningIn) "Signing In..." else "Sign In",
-            subtitle = "Use this account for your media library",
+            title = if (jellyfin.isSigningIn) {
+                stringResource(R.string.settings_jellyfin_signin_submitting_title)
+            } else {
+                stringResource(R.string.settings_jellyfin_signin_submit_title)
+            },
+            subtitle = stringResource(R.string.settings_jellyfin_signin_submit_subtitle),
             isFocused = uiState.focusedIndex == JELLYFIN_LOGIN_SUBMIT_INDEX,
             isEnabled = !jellyfin.isSigningIn,
             onClick = { viewModel.submitJellyfinPasswordSignIn() }
         )
 
         ActionPreference(
-            title = "Cancel",
-            subtitle = "Return to Jellyfin settings",
+            title = stringResource(R.string.settings_jellyfin_signin_cancel_title),
+            subtitle = stringResource(R.string.settings_jellyfin_signin_cancel_subtitle),
             isFocused = uiState.focusedIndex == JELLYFIN_LOGIN_CANCEL_INDEX,
             onClick = { viewModel.hideJellyfinLoginForm() }
         )

@@ -15,6 +15,10 @@ import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.NavigationPreference
 import com.nendo.argosy.ui.components.SliderPreference
 import com.nendo.argosy.ui.components.SwitchPreference
@@ -49,7 +53,7 @@ internal sealed class ThemeMusicItem(
     class Header(
         key: String,
         section: String,
-        val title: String,
+        val titleRes: Int,
         visibleWhen: (ThemeMusicLayoutState) -> Boolean = { true }
     ) : ThemeMusicItem(key, section, visibleWhen)
 
@@ -70,7 +74,8 @@ internal sealed class ThemeMusicItem(
 
     companion object {
         private val StorageSpacer = SectionSpacer("storageSpacer", "storage", { it.bgmEnabled })
-        private val StorageHeader = Header("storageHeader", "storage", "Storage", { it.bgmEnabled })
+        private val StorageHeader =
+            Header("storageHeader", "storage", R.string.settings_music_section_storage, { it.bgmEnabled })
 
         val ALL: List<ThemeMusicItem>
             get() = listOf(
@@ -85,10 +90,10 @@ private val themeMusicLayout = SettingsLayout<ThemeMusicItem, ThemeMusicLayoutSt
     isFocusable = { it.isFocusable },
     visibleWhen = { item, state -> item.visibleWhen(state) },
     sectionOf = { it.section },
-    sectionTitle = {
+    sectionTitleRes = {
         when (it) {
-            "music" -> "Background Music"
-            "storage" -> "Storage"
+            "music" -> R.string.settings_music_section_music
+            "storage" -> R.string.settings_music_section_storage
             else -> null
         }
     }
@@ -106,6 +111,7 @@ internal fun themeMusicSections(state: ThemeMusicLayoutState) = themeMusicLayout
 fun ThemeMusicSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val bgmEnabled = uiState.ambientAudio.enabled
     val musicApiSupported = uiState.server.musicApiSupported
+    val context = LocalContext.current
 
     val layoutState = remember(bgmEnabled, musicApiSupported) {
         ThemeMusicLayoutState(bgmEnabled, musicApiSupported)
@@ -114,8 +120,8 @@ fun ThemeMusicSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val visibleItems = remember(layoutState) {
         themeMusicLayout.visibleItems(layoutState)
     }
-    val sections = remember(layoutState) {
-        themeMusicLayout.buildSections(layoutState)
+    val sections = remember(layoutState, context) {
+        themeMusicLayout.buildSections(layoutState, context)
     }
 
     fun isFocused(item: ThemeMusicItem): Boolean =
@@ -135,7 +141,7 @@ fun ThemeMusicSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     ) { item ->
         when (item) {
             is ThemeMusicItem.Header -> Text(
-                text = item.title.uppercase(),
+                text = stringResource(item.titleRes).uppercase(),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(vertical = Dimens.spacingXs)
@@ -144,8 +150,8 @@ fun ThemeMusicSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             is ThemeMusicItem.SectionSpacer -> Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
             ThemeMusicItem.BgmToggle -> SwitchPreference(
-                title = "Background Music",
-                subtitle = "Play music while using the launcher",
+                title = stringResource(R.string.settings_music_toggle_title),
+                subtitle = stringResource(R.string.settings_music_toggle_subtitle),
                 isEnabled = uiState.ambientAudio.enabled,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.setAmbientAudioEnabled(it) }
@@ -156,7 +162,7 @@ fun ThemeMusicSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 val currentIndex = volumeLevels.indexOfFirst { it >= uiState.ambientAudio.volume }.takeIf { it >= 0 } ?: 0
                 val sliderValue = currentIndex + 1
                 SliderPreference(
-                    title = "Volume",
+                    title = stringResource(R.string.settings_music_volume_title),
                     value = sliderValue,
                     minValue = 1,
                     maxValue = 5,
@@ -167,14 +173,18 @@ fun ThemeMusicSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
             ThemeMusicItem.BgmPlaylist -> {
                 val entryCount = uiState.ambientAudio.playlistEntryCount
-                val countLabel = when (entryCount) {
-                    0 -> "No tracks"
-                    1 -> "1 track"
-                    else -> "$entryCount tracks"
+                val countLabel = if (entryCount == 0) {
+                    stringResource(R.string.settings_music_playlist_empty)
+                } else {
+                    pluralStringResource(
+                        R.plurals.settings_music_playlist_count,
+                        entryCount,
+                        entryCount
+                    )
                 }
                 NavigationPreference(
                     icon = Icons.Outlined.MusicNote,
-                    title = "Music Playlist",
+                    title = stringResource(R.string.settings_music_playlist_title),
                     subtitle = countLabel,
                     isFocused = isFocused(item),
                     onClick = { viewModel.openBgmPlaylistManager() }
@@ -183,39 +193,39 @@ fun ThemeMusicSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
             ThemeMusicItem.BrowseServerMusic -> NavigationPreference(
                 icon = Icons.Outlined.LibraryMusic,
-                title = "Browse Server Music",
-                subtitle = "Preview and download tracks from RomM",
+                title = stringResource(R.string.settings_music_browse_server_title),
+                subtitle = stringResource(R.string.settings_music_browse_server_subtitle),
                 isFocused = isFocused(item),
                 onClick = { viewModel.openMusicBrowserBgm() }
             )
 
             ThemeMusicItem.BrowseLocalMusic -> NavigationPreference(
                 icon = Icons.Outlined.FolderOpen,
-                title = "Browse Local Music",
-                subtitle = "Add files or folders to the playlist",
+                title = stringResource(R.string.settings_music_browse_local_title),
+                subtitle = stringResource(R.string.settings_music_browse_local_subtitle),
                 isFocused = isFocused(item),
                 onClick = { viewModel.openBgmAddMusicBrowser() }
             )
 
             ThemeMusicItem.MusicLocation -> NavigationPreference(
                 icon = Icons.Outlined.Folder,
-                title = "Music Location",
+                title = stringResource(R.string.settings_music_location_title),
                 subtitle = uiState.ambientAudio.musicDirPath ?: "",
                 isFocused = isFocused(item),
                 onClick = { viewModel.openMusicLocationPicker() }
             )
 
             ThemeMusicItem.BgmShuffle -> SwitchPreference(
-                title = "Shuffle",
-                subtitle = "Randomize playback order",
+                title = stringResource(R.string.settings_music_shuffle_title),
+                subtitle = stringResource(R.string.settings_music_shuffle_subtitle),
                 isEnabled = uiState.ambientAudio.shuffle,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.setAmbientAudioShuffle(it) }
             )
 
             ThemeMusicItem.GameThemeToggle -> SwitchPreference(
-                title = "Game Themes",
-                subtitle = "Play a game's title theme on its details page",
+                title = stringResource(R.string.settings_music_game_themes_title),
+                subtitle = stringResource(R.string.settings_music_game_themes_subtitle),
                 isEnabled = uiState.ambientAudio.gameDetailThemeEnabled,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.setGameDetailThemeEnabled(it) }

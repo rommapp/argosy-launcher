@@ -16,6 +16,7 @@ import com.nendo.argosy.core.input.ControllerDetector
 import com.nendo.argosy.core.input.DetectedLayout
 import com.nendo.argosy.ui.screens.settings.delegates.StorageSettingsDelegate
 import com.nendo.argosy.util.AppPaths
+import com.nendo.argosy.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
@@ -413,7 +414,8 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             val effectiveSavePath = when {
                 savePathConfig == null -> null
                 retroArchSave != null -> when (val display = retroArchSave.path) {
-                    is com.nendo.argosy.data.emulator.RetroArchPathResolver.DisplayPath.ContentDirectory -> "(ROM directory)"
+                    is com.nendo.argosy.data.emulator.RetroArchPathResolver.DisplayPath.ContentDirectory ->
+                        vm.context.getString(R.string.settings_shell_router_content_dir_save2)
                     is com.nendo.argosy.data.emulator.RetroArchPathResolver.DisplayPath.Resolved -> display.path
                     com.nendo.argosy.data.emulator.RetroArchPathResolver.DisplayPath.Unknown -> null
                 }
@@ -714,7 +716,8 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
                         romPath = null,
                     )
                     when (val display = vm.retroArchPathResolver.displayStatePath(req)) {
-                        is com.nendo.argosy.data.emulator.RetroArchPathResolver.DisplayPath.ContentDirectory -> "(ROM directory)"
+                        is com.nendo.argosy.data.emulator.RetroArchPathResolver.DisplayPath.ContentDirectory ->
+                            vm.context.getString(R.string.settings_shell_router_content_dir_state2)
                         is com.nendo.argosy.data.emulator.RetroArchPathResolver.DisplayPath.Resolved -> display.path
                         com.nendo.argosy.data.emulator.RetroArchPathResolver.DisplayPath.Unknown -> null
                     }
@@ -784,6 +787,7 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
         vm._uiState.update {
             it.copy(
                 betaUpdatesEnabled = prefs.betaUpdatesEnabled,
+                appLanguage = prefs.appLanguage,
                 fileLoggingEnabled = prefs.fileLoggingEnabled,
                 fileLoggingPath = prefs.fileLoggingPath,
                 fileLogLevel = prefs.fileLogLevel,

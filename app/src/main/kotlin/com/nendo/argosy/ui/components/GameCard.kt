@@ -70,6 +70,8 @@ import com.nendo.argosy.ui.components.boxart.GlassRingShape
 import com.nendo.argosy.ui.components.boxart.GradientMaskShape
 import com.nendo.argosy.ui.components.boxart.InnerEffectShape
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalDensity
@@ -707,12 +709,12 @@ private fun BoxScope.StatusIndicators(
         IndicatorBadge(
             visible = isFavorite,
             icon = Icons.Default.Favorite,
-            contentDescription = "Favorite"
+            contentDescription = stringResource(R.string.ui_game_card_favorite)
         )
         IndicatorBadge(
             visible = isDownloaded,
             icon = Icons.Default.CheckCircle,
-            contentDescription = "Downloaded"
+            contentDescription = stringResource(R.string.ui_game_card_downloaded)
         )
     }
 }

@@ -1,5 +1,8 @@
 package com.nendo.argosy.ui.components
 
+import android.content.Context
+import com.nendo.argosy.R
+
 private const val SPECIALS_SEASON = 0
 private const val SPECIALS_KEY = "specials"
 private const val ACTION_COUNT = 2
@@ -188,6 +191,7 @@ data class EpisodePickerState(
  * left of it; a chooser that only arranges episodes leaves it pickable.
  */
 fun buildEpisodePickerRows(
+    context: Context,
     entries: List<EpisodePickerEntry>,
     lockDownloaded: Boolean = false
 ): List<EpisodePickerRow> {
@@ -204,8 +208,10 @@ fun buildEpisodePickerRows(
                     EpisodePickerRow(
                         isHeader = true,
                         seasonKey = seasonKey,
-                        label = season?.let { "Season $it" } ?: "Specials",
+                        label = season?.let { context.getString(R.string.episode_picker_season_label, it) }
+                            ?: context.getString(R.string.episode_picker_specials_label),
                         supporting = seasonSupporting(
+                            context = context,
                             onDevice = episodes.count { it.isDownloaded },
                             total = episodes.size
                         )
@@ -228,9 +234,9 @@ fun buildEpisodePickerRows(
     }
 }
 
-private fun seasonSupporting(onDevice: Int, total: Int): String? = when {
+private fun seasonSupporting(context: Context, onDevice: Int, total: Int): String? = when {
     total == 0 -> null
-    onDevice == 0 -> "None on this device"
-    onDevice == total -> "All $total on this device"
-    else -> "$onDevice of $total on this device"
+    onDevice == 0 -> context.getString(R.string.episode_picker_season_supporting_none)
+    onDevice == total -> context.getString(R.string.episode_picker_season_supporting_all, total)
+    else -> context.getString(R.string.episode_picker_season_supporting_partial, onDevice, total)
 }

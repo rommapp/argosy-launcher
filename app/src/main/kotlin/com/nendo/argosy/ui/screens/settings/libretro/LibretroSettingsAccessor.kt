@@ -1,16 +1,31 @@
 package com.nendo.argosy.ui.screens.settings.libretro
 
+import androidx.annotation.StringRes
+import com.nendo.argosy.R
 import com.nendo.argosy.core.emulator.LibretroSettingDef
 import com.nendo.argosy.data.local.entity.PlatformLibretroSettingsEntity
 import com.nendo.argosy.ui.screens.settings.BuiltinVideoState
 
+sealed interface SettingDisplayValue {
+    data class Raw(val text: String) : SettingDisplayValue
+    data class Resource(@StringRes val resId: Int) : SettingDisplayValue
+}
+
 interface LibretroSettingsAccessor {
     fun getValue(setting: LibretroSettingDef): String
-    fun getDisplayValue(setting: LibretroSettingDef): String = getValue(setting)
+    fun getDisplayValue(setting: LibretroSettingDef): SettingDisplayValue =
+        SettingDisplayValue.Raw(getValue(setting))
     fun getGlobalValue(setting: LibretroSettingDef): String
     fun hasOverride(setting: LibretroSettingDef): Boolean
     fun isActionItem(setting: LibretroSettingDef): Boolean = false
     fun isSwitch(setting: LibretroSettingDef): Boolean = setting.type == LibretroSettingDef.SettingType.Switch
+
+    /**
+     * Boolean state for a switch row, read from the raw stored/parsed value rather than any
+     * display string. Display formatting must never feed back into this.
+     */
+    fun isSwitchEnabled(setting: LibretroSettingDef): Boolean =
+        getValue(setting).toBooleanStrictOrNull() ?: false
     fun cycle(setting: LibretroSettingDef, direction: Int)
     fun toggle(setting: LibretroSettingDef)
     fun reset(setting: LibretroSettingDef)
@@ -26,11 +41,11 @@ class GlobalLibretroSettingsAccessor(
 
     override fun getValue(setting: LibretroSettingDef): String = getGlobalValue(setting)
 
-    override fun getDisplayValue(setting: LibretroSettingDef): String = when {
-        setting == LibretroSettingDef.Shader -> state.shaderDisplayValue
-        setting == LibretroSettingDef.Frame -> if (state.framesEnabled) "On" else "Off"
-        setting.key == "filter" && state.shader == "Custom" -> "Configure Shader Chain"
-        else -> getValue(setting)
+    override fun getDisplayValue(setting: LibretroSettingDef): SettingDisplayValue = when {
+        setting == LibretroSettingDef.Shader -> SettingDisplayValue.Raw(state.shaderDisplayValue)
+        setting.key == "filter" && state.shader == "Custom" ->
+            SettingDisplayValue.Resource(R.string.settings_libretro_shell_configure_shader_chain_title)
+        else -> SettingDisplayValue.Raw(getValue(setting))
     }
 
     override fun getGlobalValue(setting: LibretroSettingDef): String = when (setting) {
@@ -107,23 +122,19 @@ class PlatformLibretroSettingsAccessor(
         return override ?: getGlobalValue(setting)
     }
 
-    override fun getDisplayValue(setting: LibretroSettingDef): String {
+    override fun getDisplayValue(setting: LibretroSettingDef): SettingDisplayValue {
         if (setting == LibretroSettingDef.Frame) {
             val value = platformSettings?.frame
             return when {
-                value == null -> "Auto"
-                value == "none" -> "None"
-                else -> value.replaceFirstChar { it.uppercase() }
+                value == null -> SettingDisplayValue.Resource(R.string.settings_libretro_shell_frame_value_auto)
+                value == "none" -> SettingDisplayValue.Resource(R.string.settings_libretro_shell_frame_value_none)
+                else -> SettingDisplayValue.Raw(value.replaceFirstChar { it.uppercase() })
             }
         }
         if (setting == LibretroSettingDef.Filter && getEffectiveShader() == "Custom") {
-            return "Configure Shader Chain"
+            return SettingDisplayValue.Resource(R.string.settings_libretro_shell_configure_shader_chain_title)
         }
-        val value = getValue(setting)
-        return when (setting.type) {
-            LibretroSettingDef.SettingType.Switch -> if (value == "true") "On" else "Off"
-            is LibretroSettingDef.SettingType.Cycle -> value
-        }
+        return SettingDisplayValue.Raw(getValue(setting))
     }
 
     private fun getEffectiveShader(): String {
@@ -236,14 +247,13 @@ class InGameLibretroSettingsAccessor(
     private val onActionCallback: (LibretroSettingDef) -> Unit = {}
 ) : LibretroSettingsAccessor {
     override fun getValue(setting: LibretroSettingDef): String = getCurrentValue(setting)
-    override fun getDisplayValue(setting: LibretroSettingDef): String = when (setting) {
+    override fun getDisplayValue(setting: LibretroSettingDef): SettingDisplayValue = when (setting) {
         LibretroSettingDef.Filter -> if (getCurrentValue(LibretroSettingDef.Shader) == "Custom") {
-            "Configure Shader Chain"
+            SettingDisplayValue.Resource(R.string.settings_libretro_shell_configure_shader_chain_title)
         } else {
-            getValue(setting)
+            SettingDisplayValue.Raw(getValue(setting))
         }
-        LibretroSettingDef.Frame -> getValue(setting)
-        else -> getValue(setting)
+        else -> SettingDisplayValue.Raw(getValue(setting))
     }
     override fun getGlobalValue(setting: LibretroSettingDef): String = globalValue(setting)
     override fun hasOverride(setting: LibretroSettingDef): Boolean =

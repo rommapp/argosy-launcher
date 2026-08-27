@@ -12,7 +12,6 @@ import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.sync.ConflictInfo
 import com.nendo.argosy.data.sync.SaveArchiver
 import com.nendo.argosy.data.sync.SavePathResolver
-import com.nendo.argosy.data.sync.platform.SwitchSaveHandler
 import com.nendo.argosy.util.Logger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -35,7 +34,6 @@ class SaveSyncConflictResolver @Inject constructor(
     private val syncPreferencesRepository: SyncPreferencesRepository,
     private val saveCacheManager: dagger.Lazy<SaveCacheManager>,
     private val apiClient: dagger.Lazy<SaveSyncApiClient>,
-    private val switchSaveHandler: SwitchSaveHandler,
     private val fal: com.nendo.argosy.data.storage.FileAccessLayer,
     private val saveHandlerRegistry: com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry,
     @dagger.hilt.android.qualifiers.ApplicationContext private val appContext: android.content.Context
@@ -153,8 +151,7 @@ class SaveSyncConflictResolver @Inject constructor(
         }
 
         val cachedPath = syncEntity?.localSavePath?.takeIf { path ->
-            val switchOk = if (game.platformSlug == "switch") switchSaveHandler.isValidCachedSavePath(path) else true
-            switchOk && fal.exists(path)
+            saveHandlerRegistry.isValidCachedSavePath(game.platformSlug, path) && fal.exists(path)
         }
         if (cachedPath != null) return cachedPath
         if (syncEntity?.localSavePath != null) {

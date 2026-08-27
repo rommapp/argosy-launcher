@@ -1,0 +1,532 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ingame_netplay_quality_excellent">极佳</string>
+    <string name="ingame_netplay_quality_good">良好</string>
+    <string name="ingame_netplay_quality_fair">一般</string>
+    <string name="ingame_netplay_quality_poor">较差</string>
+    <string name="ingame_netplay_quality_bad">很差</string>
+
+    <string name="ingame_menu_swap_disc">更换光盘</string>
+    <string name="ingame_menu_resume">继续游戏</string>
+    <string name="ingame_menu_quick_save">快速保存</string>
+    <string name="ingame_menu_quick_load">快速读取</string>
+    <string name="ingame_menu_manage_states">管理即时存档</string>
+    <string name="ingame_menu_cheats">金手指</string>
+    <string name="ingame_menu_invite_friend">邀请好友...</string>
+    <string name="ingame_menu_open_to_all_friends">开放给所有好友</string>
+    <string name="ingame_menu_close_netplay_server">关闭联机服务器</string>
+    <string name="ingame_menu_leave_netplay_session">离开联机会话</string>
+    <string name="ingame_menu_open_netplay_server">开启联机服务器</string>
+    <string name="ingame_menu_settings">设置</string>
+    <string name="ingame_menu_stop_speedrun_timer">停止速通计时</string>
+    <string name="ingame_menu_speedrun_timer">速通计时器</string>
+    <string name="ingame_menu_touch_controls">触屏控件</string>
+    <string name="ingame_menu_reset">重置</string>
+    <string name="ingame_menu_quit">退出游戏</string>
+    <string name="ingame_menu_hardcore_badge">硬核</string>
+    <string name="ingame_menu_quick_save_history_action">快速存档历史</string>
+
+    <string name="ingame_disc_title">更换光盘</string>
+    <string name="ingame_disc_current">"%1$s（当前）"</string>
+
+    <string name="ingame_states_title">管理即时存档</string>
+    <string name="ingame_states_channel">[%1$s]</string>
+    <string name="ingame_states_delete_title">删除即时存档？</string>
+    <string name="ingame_states_delete_confirm">确认</string>
+    <string name="ingame_states_delete_cancel">取消</string>
+    <string name="ingame_states_delete_body">此操作无法撤销。</string>
+    <string name="ingame_states_load_title">读取此即时存档？</string>
+    <string name="ingame_states_load_confirm">读取</string>
+    <string name="ingame_states_load_cancel">取消</string>
+    <string name="ingame_states_load_preview_description">即时存档预览</string>
+    <string name="ingame_states_load_body">当前进度将被替换。</string>
+    <string name="ingame_states_slot_auto">自动</string>
+    <string name="ingame_states_slot_numbered">槽位%1$d</string>
+    <string name="ingame_states_preview_no_screenshot">无截图</string>
+    <string name="ingame_states_preview_empty_slot">空槽位</string>
+    <string name="ingame_states_carousel_no_screenshot">无截图</string>
+    <string name="ingame_states_carousel_no_state">未保存即时存档</string>
+    <string name="ingame_states_carousel_empty">空</string>
+    <string name="ingame_states_footer_load">读取</string>
+    <string name="ingame_states_footer_save_over">覆盖保存</string>
+    <string name="ingame_states_footer_delete">删除</string>
+    <string name="ingame_states_footer_save">保存</string>
+    <string name="ingame_states_footer_mode_carousel">轮播视图</string>
+    <string name="ingame_states_footer_mode_grid">网格视图</string>
+    <string name="ingame_states_footer_back">返回</string>
+
+    <string name="ingame_quickload_empty_title">没有快速存档</string>
+    <string name="ingame_quickload_empty_message">使用快速保存来创建历史记录</string>
+    <string name="ingame_quickload_title">快速读取</string>
+    <string name="ingame_quickload_footer_load">读取</string>
+    <string name="ingame_quickload_footer_back">返回</string>
+    <string name="ingame_quickload_preview_description">快速存档预览</string>
+    <string name="ingame_quickload_preview_no_screenshot">无截图</string>
+    <string name="ingame_quickload_row_latest">最新</string>
+    <string name="ingame_quickload_row_entry">快速存档</string>
+
+    <string name="ingame_autorestore_title">从即时存档恢复？</string>
+    <string name="ingame_autorestore_confirm">是</string>
+    <string name="ingame_autorestore_decline">否</string>
+
+    <string name="ingame_achievement_hardcore_heading">硬核解锁</string>
+    <string name="ingame_achievement_heading">成就解锁</string>
+    <plurals name="ingame_achievement_points">
+        <item quantity="other">+%d分</item>
+    </plurals>
+
+    <string name="ingame_raconnect_title">RetroAchievements已连接</string>
+    <string name="ingame_raconnect_hardcore">硬核模式</string>
+    <string name="ingame_raconnect_casual">休闲模式</string>
+    <string name="ingame_raconnect_earned">已获得%1$d/%2$d个</string>
+
+    <string name="ingame_speedrun_paused">已暂停</string>
+    <string name="ingame_speedrun_personal_best">个人最佳</string>
+    <string name="ingame_speedrun_session_best">本次最佳</string>
+    <string name="ingame_speedrun_sum_of_best">理论最佳总和</string>
+    <string name="ingame_speedrun_attempt">第%1$d次尝试</string>
+
+    <string name="ingame_netplay_progress_requesting_join">正在请求加入...</string>
+    <string name="ingame_netplay_progress_waiting_for_host">等待主机接受...</string>
+    <string name="ingame_netplay_progress_connecting">正在连接...</string>
+    <string name="ingame_netplay_progress_measuring">正在测量连接...</string>
+    <string name="ingame_netplay_progress_loading_state">正在加载游戏状态...</string>
+    <string name="ingame_netplay_progress_ready">已就绪！</string>
+    <string name="ingame_netplay_progress_failed">无法连接</string>
+    <string name="ingame_netplay_progress_title">联机</string>
+    <string name="ingame_netplay_progress_dismiss">确定</string>
+
+    <string name="ingame_netplay_reconnecting">正在重新连接...</string>
+    <string name="ingame_netplay_reconnecting_with_ping">正在重新连接...（上次：%1$dms）</string>
+
+    <string name="ingame_netplay_disconnect_title">好友已断开连接</string>
+    <string name="ingame_netplay_disconnect_message">%1$s已断开连接。是保持会话开放以便他们重新加入，还是关闭并退出？</string>
+    <string name="ingame_netplay_disconnect_keep_open">保持开放</string>
+    <string name="ingame_netplay_disconnect_close">关闭并结束游戏</string>
+
+    <string name="ingame_netplay_quality_warning_title">连接警告</string>
+    <string name="ingame_netplay_quality_warning_message">连接质量为%1$s（延迟%2$dms，抖动%3$dms）。游戏画面可能会卡顿。</string>
+    <string name="ingame_netplay_quality_warning_accept">仍然继续</string>
+    <string name="ingame_netplay_quality_warning_decline">取消</string>
+
+    <string name="ingame_netplay_friend_picker_title">邀请好友</string>
+    <string name="ingame_netplay_friend_picker_empty">没有在线好友</string>
+    <string name="ingame_netplay_friend_picker_close">关闭</string>
+    <string name="ingame_netplay_friend_online">在线</string>
+    <string name="ingame_netplay_friend_offline">离线</string>
+
+    <string name="ingame_netplay_mode_picker_title">开启联机服务器</string>
+    <string name="ingame_netplay_mode_open_label">对好友开放</string>
+    <string name="ingame_netplay_mode_open_description">任何人都可以加入</string>
+    <string name="ingame_netplay_mode_private_label">私密</string>
+    <string name="ingame_netplay_mode_private_description">需要你的批准</string>
+    <string name="ingame_netplay_mode_invite_label">邀请好友...</string>
+    <string name="ingame_netplay_mode_invite_description">选择特定好友</string>
+
+    <string name="ingame_netplay_join_request_title">加入请求</string>
+    <string name="ingame_netplay_join_request_message">%1$s想要加入你的会话</string>
+    <string name="ingame_netplay_join_request_accept">接受</string>
+    <string name="ingame_netplay_join_request_decline">拒绝</string>
+
+    <string name="ingame_netplay_hud_mode_open">开放</string>
+    <string name="ingame_netplay_hud_mode_private">私密</string>
+    <string name="ingame_netplay_hud_mode_invite_only">仅限邀请</string>
+    <plurals name="ingame_netplay_hud_players">
+        <item quantity="other">%d名玩家</item>
+    </plurals>
+    <string name="ingame_netplay_hud_host_tag">[主机]</string>
+    <string name="ingame_netplay_hud_observers">观战者</string>
+
+    <string name="ingame_settings_tab_video">画面</string>
+    <string name="ingame_settings_tab_controls">控制</string>
+    <string name="ingame_settings_tab_core_options">核心选项</string>
+
+    <string name="ingame_settings_footer_tab">标签页</string>
+    <string name="ingame_settings_footer_video_adjust">调整</string>
+    <string name="ingame_settings_footer_video_select">选择</string>
+    <string name="ingame_settings_footer_controls_adjust">调整</string>
+    <string name="ingame_settings_footer_controls_select">选择</string>
+    <string name="ingame_settings_footer_core_options_adjust">调整</string>
+    <string name="ingame_settings_footer_core_options_select">选择</string>
+    <string name="ingame_settings_footer_back">返回</string>
+
+    <string name="ingame_settings_header_controllers">控制器</string>
+    <string name="ingame_settings_header_sticks">摇杆</string>
+    <string name="ingame_settings_header_hotkeys">快捷键</string>
+    <string name="ingame_settings_header_touch">触屏控件</string>
+
+    <string name="ingame_settings_game_specific_controls_title">单个游戏控制</string>
+    <string name="ingame_settings_game_specific_controls_subtitle_on">重新映射仅适用于此游戏</string>
+    <string name="ingame_settings_game_specific_controls_subtitle_off">使用全局控制器映射</string>
+    <string name="ingame_settings_rumble_title">震动</string>
+    <string name="ingame_settings_rumble_subtitle">启用控制器震动反馈</string>
+    <string name="ingame_settings_controller_order_title">控制器顺序</string>
+    <plurals name="ingame_settings_controller_order_assigned">
+        <item quantity="other">已分配%d个控制器</item>
+    </plurals>
+    <string name="ingame_settings_controller_order_subtitle_empty">分配控制器端口</string>
+    <string name="ingame_settings_controller_type_title">玩家%1$d控制器</string>
+    <string name="ingame_settings_controller_type_pending">将在下次启动时生效</string>
+    <string name="ingame_settings_controller_type_core_default">由核心选择</string>
+    <string name="ingame_settings_controller_grip_title">控制器手柄支架</string>
+    <string name="ingame_settings_controller_grip_subtitle">将界面上移，避开手柄支架遮挡的区域</string>
+    <string name="ingame_settings_input_mapping_title">按键映射</string>
+    <string name="ingame_settings_input_mapping_subtitle">为每个控制器重新映射按键</string>
+    <string name="ingame_settings_analog_as_dpad_title">左摇杆模拟方向键</string>
+    <string name="ingame_settings_analog_as_dpad_subtitle">将左摇杆映射为方向键输入</string>
+    <string name="ingame_settings_dpad_as_analog_title">方向键模拟左摇杆</string>
+    <string name="ingame_settings_dpad_as_analog_subtitle">将方向键映射为左摇杆输入</string>
+
+    <string name="ingame_settings_hotkeys_title">快捷键</string>
+    <string name="ingame_settings_hotkeys_subtitle">配置菜单、快进、快退的快捷键</string>
+    <string name="ingame_settings_limit_hotkeys_title">快捷键仅限1号玩家</string>
+    <string name="ingame_settings_limit_hotkeys_subtitle">只有1号玩家的控制器可以触发快捷键</string>
+    <string name="ingame_settings_toggle_fast_forward_title">快进切换模式</string>
+    <string name="ingame_settings_toggle_fast_forward_subtitle">按一次开始，再按一次停止（关闭时需按住以快进）</string>
+    <string name="ingame_settings_preserve_pitch_title">保持音调</string>
+    <string name="ingame_settings_preserve_pitch_subtitle">快进时保持音调稳定。会占用额外CPU资源，默认关闭</string>
+    <string name="ingame_settings_touch_enabled_title">无手柄时显示触屏控件</string>
+    <string name="ingame_settings_touch_enabled_subtitle">未连接控制器时显示屏幕上的控件</string>
+    <string name="ingame_settings_touch_haptic_title">触觉反馈</string>
+    <string name="ingame_settings_touch_haptic_subtitle">触摸时短暂震动</string>
+    <string name="ingame_settings_touch_lock_orientation_title">游戏中锁定屏幕方向</string>
+    <string name="ingame_settings_touch_lock_orientation_subtitle">游玩时不自动旋转</string>
+    <string name="ingame_settings_touch_genesis6_title">Genesis六键模式</string>
+    <string name="ingame_settings_touch_genesis6_subtitle">为Genesis/Mega Drive显示六个面板按钮</string>
+
+    <string name="ingame_settings_hud_header">状态栏</string>
+    <string name="ingame_settings_hud_enabled_title">显示状态栏</string>
+    <string name="ingame_settings_hud_enabled_subtitle">游玩时固定在角落的小型信息栏</string>
+    <string name="ingame_settings_hud_corner_title">位置</string>
+    <string name="ingame_settings_hud_battery_title">电量</string>
+    <string name="ingame_settings_hud_clock_title">时钟</string>
+    <string name="ingame_settings_hud_playtime_title">本次时长</string>
+    <string name="ingame_settings_hud_fps_title">FPS</string>
+    <string name="ingame_settings_hud_fps_subtitle">快进时隐藏</string>
+    <string name="ingame_settings_hud_last_save_title">上次即时存档</string>
+
+    <string name="ingame_coreoptions_per_game_title">单个游戏设置</string>
+    <string name="ingame_coreoptions_per_game_subtitle_on">更改仅适用于此游戏</string>
+    <string name="ingame_coreoptions_per_game_subtitle_off">使用此核心的全局默认设置</string>
+
+    <string name="ingame_frame_previous_description">上一个</string>
+    <string name="ingame_frame_next_description">下一个</string>
+    <string name="ingame_frame_none">无边框</string>
+    <string name="ingame_frame_download_badge">下载</string>
+    <string name="ingame_frame_footer_change">更改</string>
+    <string name="ingame_frame_footer_select">选择</string>
+    <string name="ingame_frame_footer_download">下载</string>
+    <string name="ingame_frame_footer_cancel">取消</string>
+
+    <string name="ingame_shader_footer_picker_browse">浏览</string>
+    <string name="ingame_shader_footer_picker_select">选择</string>
+    <string name="ingame_shader_footer_picker_cancel">取消</string>
+    <string name="ingame_shader_footer_shader">着色器</string>
+    <string name="ingame_shader_footer_reorder">排序</string>
+    <string name="ingame_shader_footer_adjust">调整</string>
+    <string name="ingame_shader_footer_add">添加</string>
+    <string name="ingame_shader_footer_remove">移除</string>
+    <string name="ingame_shader_footer_reset">重置</string>
+    <string name="ingame_shader_footer_back">返回</string>
+
+    <string name="ingame_cheats_tab_cheats">金手指</string>
+    <string name="ingame_cheats_tab_discover">查找</string>
+
+    <string name="ingame_cheats_error_ram_unavailable">此核心不支持RAM访问</string>
+    <string name="ingame_cheats_error_no_changes">未检测到变化，请先多玩一会儿</string>
+    <string name="ingame_cheats_error_changed_not_ready">请多玩一会儿以缩小结果范围</string>
+    <string name="ingame_cheats_error_no_unchanged">没有未变化的值，请尝试“变化的值”</string>
+    <string name="ingame_cheats_error_same_not_ready">请多玩一会儿以缩小结果范围</string>
+    <string name="ingame_cheats_error_address_saved">该地址已保存为金手指</string>
+
+    <string name="ingame_cheats_footer_variant_select">选择</string>
+    <string name="ingame_cheats_footer_search">搜索</string>
+    <string name="ingame_cheats_footer_clear_search">清除</string>
+    <string name="ingame_cheats_footer_toggle">切换</string>
+    <string name="ingame_cheats_footer_edit">编辑</string>
+    <string name="ingame_cheats_footer_version">版本</string>
+    <string name="ingame_cheats_footer_snapshot">快照</string>
+    <string name="ingame_cheats_footer_discover_select">选择</string>
+    <string name="ingame_cheats_footer_save_cheat">保存金手指</string>
+    <string name="ingame_cheats_footer_filter">筛选</string>
+    <string name="ingame_cheats_footer_adjust">调整</string>
+    <string name="ingame_cheats_footer_reset">重置</string>
+    <string name="ingame_cheats_footer_tab">标签页</string>
+    <string name="ingame_cheats_footer_back">返回</string>
+
+    <string name="ingame_cheats_loading">正在扫描内存...</string>
+    <string name="ingame_cheats_variant_picker_title">有多个版本可用</string>
+    <string name="ingame_cheats_variant_picker_message">请选择与你的ROM匹配的版本</string>
+    <string name="ingame_cheats_variant_modal_title">选择版本</string>
+    <string name="ingame_cheats_variant_unknown_region">未知地区</string>
+    <plurals name="ingame_cheats_variant_count">
+        <item quantity="other">%d个金手指</item>
+    </plurals>
+
+    <plurals name="ingame_cheats_available_count">
+        <item quantity="other">%d个金手指</item>
+    </plurals>
+    <string name="ingame_cheats_available_enabled">已启用%1$d/%2$d个</string>
+    <string name="ingame_cheats_available_empty_search">没有匹配的金手指</string>
+    <string name="ingame_cheats_available_empty">没有可用的金手指</string>
+    <string name="ingame_cheats_available_search_placeholder">搜索金手指...</string>
+    <string name="ingame_cheats_available_search_clear">清除</string>
+
+    <string name="ingame_cheats_discover_ram_hint">此核心未开放系统RAM</string>
+    <string name="ingame_cheats_discover_snapshot_title">快照</string>
+    <string name="ingame_cheats_discover_snapshot_subtitle">捕获当前RAM状态</string>
+    <string name="ingame_cheats_discover_snapshot_hint">拍摄一张快照以开始</string>
+    <string name="ingame_cheats_discover_changed_title">变化的值</string>
+    <string name="ingame_cheats_discover_changed_subtitle">查找自快照以来发生变化的值</string>
+    <string name="ingame_cheats_discover_same_title">相同的值</string>
+    <string name="ingame_cheats_discover_same_subtitle">查找保持不变的值</string>
+    <string name="ingame_cheats_discover_view_results_title">查看结果</string>
+    <plurals name="ingame_cheats_discover_view_results_subtitle">
+        <item quantity="other">上次搜索的%d个结果</item>
+    </plurals>
+    <plurals name="ingame_cheats_discover_actions_candidates">
+        <item quantity="other">%d个候选项</item>
+    </plurals>
+    <string name="ingame_cheats_discover_hint_narrow">缩小结果范围或查看当前值</string>
+    <string name="ingame_cheats_discover_hint_pick">选择一种比较方式</string>
+    <string name="ingame_cheats_discover_waiting_message">请多玩一会儿并缩小结果范围以继续</string>
+    <plurals name="ingame_cheats_discover_waiting_candidates">
+        <item quantity="other">%d个候选项</item>
+    </plurals>
+    <string name="ingame_cheats_discover_filter_title">按值筛选</string>
+    <plurals name="ingame_cheats_discover_results_candidates">
+        <item quantity="other">%d个候选项</item>
+    </plurals>
+    <string name="ingame_cheats_discover_results_hint">游玩游戏以再次比较</string>
+    <string name="ingame_cheats_discover_results_empty">未找到匹配项</string>
+    <string name="ingame_cheats_discover_result_saved">已保存为%1$s</string>
+    <string name="ingame_cheats_discover_result_value">值%1$s</string>
+    <string name="ingame_cheats_discover_result_value_previous">值%1$s（之前为%2$s）</string>
+
+    <string name="ingame_cheats_dialog_search_title">搜索金手指</string>
+    <string name="ingame_cheats_dialog_search_placeholder">输入金手指名称...</string>
+    <string name="ingame_cheats_dialog_search_clear">清除</string>
+    <string name="ingame_cheats_dialog_search_cancel">取消</string>
+    <string name="ingame_cheats_dialog_search_confirm">搜索</string>
+    <string name="ingame_cheats_dialog_create_title">创建金手指</string>
+    <string name="ingame_cheats_dialog_create_confirm">创建</string>
+    <string name="ingame_cheats_dialog_edit_title">编辑金手指</string>
+    <string name="ingame_cheats_dialog_edit_confirm">保存</string>
+    <string name="ingame_cheats_dialog_address">地址：0x%1$s</string>
+    <string name="ingame_cheats_dialog_name_label">金手指名称</string>
+    <string name="ingame_cheats_dialog_value_label">值（%1$d-%2$d）</string>
+    <string name="ingame_cheats_dialog_value_error">请输入%1$d到%2$d之间的值</string>
+    <string name="ingame_cheats_dialog_delete_row">删除金手指</string>
+    <string name="ingame_cheats_dialog_delete_title">删除金手指</string>
+    <string name="ingame_cheats_dialog_delete_message">确定要删除“%1$s”吗？</string>
+    <string name="ingame_cheats_dialog_delete_confirm">删除</string>
+    <string name="ingame_cheats_dialog_cancel">取消</string>
+
+    <string name="ingame_cheats_available_header_recent">最近使用</string>
+    <string name="ingame_cheats_available_header_custom">自定义</string>
+    <string name="ingame_cheats_available_header_available">可用</string>
+
+    <string name="ingame_libretro_rom_not_found">未找到游戏文件</string>
+    <string name="ingame_libretro_rom_not_readable">无法访问游戏文件</string>
+
+    <string name="ingame_libretro_core_error_load_library">模拟器核心加载失败</string>
+    <string name="ingame_libretro_core_error_load_game">无法加载游戏文件</string>
+    <string name="ingame_libretro_core_error_gl_incompatible">设备图形不受支持</string>
+    <string name="ingame_libretro_core_error_serialization">存档文件已损坏</string>
+    <string name="ingame_libretro_core_error_cheat">金手指系统出错</string>
+    <string name="ingame_libretro_core_error_unknown">发生了意外错误</string>
+
+    <string name="ingame_libretro_sram_load_failed_fresh_save">加载存档失败，已使用新存档</string>
+    <string name="ingame_libretro_casual_save_in_hardcore">正在硬核模式下继续休闲存档</string>
+
+    <string name="ingame_libretro_disc_swap_inserted">已插入%1$s</string>
+    <string name="ingame_libretro_disc_swap_fallback_name">光盘%1$d</string>
+
+    <string name="ingame_libretro_speedrun_default_category_name">练习</string>
+    <string name="ingame_libretro_speedrun_default_segment_name">分段%1$d</string>
+    <string name="ingame_libretro_speedrun_picker_title">速通类别</string>
+
+    <string name="ingame_libretro_quicktimeline_load_unsupported_core">此核心不支持即时存档</string>
+    <string name="ingame_libretro_quicktimeline_load_success">即时存档已加载</string>
+    <string name="ingame_libretro_quicktimeline_load_failure">加载即时存档失败</string>
+
+    <string name="ingame_libretro_closing_overlay_validating">正在验证存档内容</string>
+
+    <string name="ingame_libretro_controller_port_device_fallback">设备%1$d</string>
+
+    <string name="ingame_libretro_menu_quicksave_unsupported_core">此核心不支持即时存档</string>
+    <string name="ingame_libretro_menu_quicksave_success">即时存档已保存</string>
+    <string name="ingame_libretro_menu_quicksave_failure">保存即时存档失败</string>
+
+    <string name="ingame_libretro_menu_quickload_unsupported_core">此核心不支持即时存档</string>
+    <string name="ingame_libretro_menu_quickload_success">即时存档已加载</string>
+    <string name="ingame_libretro_menu_quickload_failure">加载即时存档失败</string>
+
+    <string name="ingame_libretro_state_save_unsupported_core">此核心不支持即时存档</string>
+    <string name="ingame_libretro_state_saved_to_auto">即时存档已保存到自动槽位</string>
+    <string name="ingame_libretro_state_saved_to_slot">即时存档已保存到槽位%1$d</string>
+    <string name="ingame_libretro_state_save_failure">保存即时存档失败</string>
+    <string name="ingame_libretro_state_save_serialize_failed">序列化即时存档失败</string>
+
+    <string name="ingame_libretro_state_load_unsupported_core">此核心不支持即时存档</string>
+    <string name="ingame_libretro_state_loaded_from_auto">已从自动槽位加载即时存档</string>
+    <string name="ingame_libretro_state_loaded_from_slot">已从槽位%1$d加载即时存档</string>
+    <string name="ingame_libretro_state_load_failure">加载即时存档失败</string>
+
+    <string name="ingame_libretro_resume_success">已继续</string>
+    <string name="ingame_libretro_resume_restore_failure">恢复即时存档失败</string>
+    <string name="ingame_libretro_auto_restore_success">即时存档已恢复</string>
+    <string name="ingame_libretro_auto_restore_failure">恢复即时存档失败</string>
+    <string name="ingame_libretro_auto_restore_response_unsupported_core">此核心不支持即时存档</string>
+    <string name="ingame_libretro_auto_restore_response_success">即时存档已恢复</string>
+    <string name="ingame_libretro_auto_restore_response_failure">恢复即时存档失败</string>
+
+    <string name="ingame_libretro_hud_fps_format">%1$s fps</string>
+    <string name="ingame_libretro_hud_duration_hm">%1$d:%2$02d</string>
+    <string name="ingame_libretro_hud_duration_minutes">%1$dm</string>
+    <string name="ingame_libretro_hud_last_save_just_now">刚刚保存</string>
+    <string name="ingame_libretro_hud_last_save_minutes_ago">%1$d分钟前保存</string>
+    <string name="ingame_libretro_hud_last_save_hours_ago">%1$d小时前保存</string>
+
+    <string name="ingame_libretro_quickaction_save_hardcore_blocked">硬核模式下已禁用即时存档</string>
+    <string name="ingame_libretro_quickaction_save_unsupported_core">此核心不支持即时存档</string>
+    <string name="ingame_libretro_quickaction_save_success">即时存档已保存</string>
+    <string name="ingame_libretro_quickaction_save_failure">保存失败</string>
+    <string name="ingame_libretro_quickaction_load_hardcore_blocked">硬核模式下已禁用即时存档</string>
+    <string name="ingame_libretro_quickaction_load_unsupported_core">此核心不支持即时存档</string>
+    <string name="ingame_libretro_quickaction_load_success">即时存档已加载</string>
+    <string name="ingame_libretro_quickaction_load_failure">加载即时存档失败</string>
+    <string name="ingame_libretro_quickaction_screenshot_capture_failed">截图失败</string>
+    <string name="ingame_libretro_quickaction_screenshot_success">截图已保存</string>
+    <string name="ingame_libretro_quickaction_screenshot_failure">截图失败</string>
+
+    <string name="ingame_netplay_quality_row_peer_guest">访客：%1$s</string>
+    <string name="ingame_netplay_quality_row_peer_host">主机：%1$s</string>
+    <string name="ingame_netplay_quality_row_ping_known">%1$dms  %2$s</string>
+    <string name="ingame_netplay_quality_row_ping_unknown">--  %1$s</string>
+
+    <string name="ingame_settings_controller_type_default_fallback">默认</string>
+
+    <string name="ingame_netplay_hud_player1_header">P1</string>
+    <string name="ingame_netplay_hud_player2_header">P2</string>
+
+    <string name="ingame_touch_editor_dpad_widget_label">方向键</string>
+    <string name="ingame_touch_editor_left_stick_widget_label">L</string>
+    <string name="ingame_touch_editor_right_stick_widget_label">R</string>
+    <string name="ingame_touch_editor_toolbar_save">保存</string>
+    <string name="ingame_touch_editor_toolbar_reset">重置</string>
+    <string name="ingame_touch_editor_toolbar_cancel">取消</string>
+    <string name="ingame_touch_editor_toolbar_rotate">旋转</string>
+
+    <string name="ingame_recovery_display_playing_placeholder">游玩中...</string>
+    <string name="ingame_recovery_display_status_in_game">游戏中</string>
+    <string name="ingame_recovery_display_playing_fallback">游玩中...</string>
+
+    <string name="ingame_touch_nes_sys_select">Select</string>
+    <string name="ingame_touch_nes_sys_start">Start</string>
+
+    <string name="ingame_touch_gb_sys_select">Select</string>
+    <string name="ingame_touch_gb_sys_start">Start</string>
+
+    <string name="ingame_touch_gba_sys_select">Select</string>
+    <string name="ingame_touch_gba_sys_start">Start</string>
+
+    <string name="ingame_touch_sms_sys_start">Start</string>
+
+    <string name="ingame_touch_gameandwatch_sys_select">Select</string>
+    <string name="ingame_touch_gameandwatch_sys_start">Start</string>
+
+    <string name="ingame_touch_ngp_sys_start">Option</string>
+
+    <string name="ingame_touch_wonderswan_sys_start">Start</string>
+
+    <string name="ingame_touch_coleco_sys_select">Select</string>
+    <string name="ingame_touch_coleco_sys_start">Start</string>
+
+    <string name="ingame_touch_pico8_sys_select">Select</string>
+    <string name="ingame_touch_pico8_sys_start">Start</string>
+
+    <string name="ingame_touch_c64_sys_select">Select</string>
+    <string name="ingame_touch_c64_sys_start">Start</string>
+
+    <string name="ingame_touch_lynx_shoulder_l">Opt 1</string>
+    <string name="ingame_touch_lynx_shoulder_r">Opt 2</string>
+    <string name="ingame_touch_lynx_sys_start">Pause</string>
+
+    <string name="ingame_touch_snes_sys_select">Select</string>
+    <string name="ingame_touch_snes_sys_start">Start</string>
+
+    <string name="ingame_touch_pcengine_sys_select">Select</string>
+    <string name="ingame_touch_pcengine_sys_start">Run</string>
+
+    <string name="ingame_touch_pcfx_shoulder_l2">Mode 1</string>
+    <string name="ingame_touch_pcfx_shoulder_r2">Mode 2</string>
+    <string name="ingame_touch_pcfx_sys_select">Select</string>
+    <string name="ingame_touch_pcfx_sys_start">Run</string>
+
+    <string name="ingame_touch_saturn_sys_select">Mode</string>
+    <string name="ingame_touch_saturn_sys_start">Start</string>
+
+    <string name="ingame_touch_vb_sys_select">Select</string>
+    <string name="ingame_touch_vb_sys_start">Start</string>
+
+    <string name="ingame_touch_psx_sys_select">Select</string>
+    <string name="ingame_touch_psx_sys_start">Start</string>
+
+    <string name="ingame_touch_ps2_sys_select">Select</string>
+    <string name="ingame_touch_ps2_sys_start">Start</string>
+
+    <string name="ingame_touch_psp_sys_select">Select</string>
+    <string name="ingame_touch_psp_sys_start">Start</string>
+
+    <string name="ingame_touch_vita_sys_select">Select</string>
+    <string name="ingame_touch_vita_sys_start">Start</string>
+
+    <string name="ingame_touch_dreamcast_sys_start">Start</string>
+
+    <string name="ingame_touch_n64_sys_start">Start</string>
+
+    <string name="ingame_touch_gamecube_sys_start">Start</string>
+
+    <string name="ingame_touch_nds_sys_select">Select</string>
+    <string name="ingame_touch_nds_sys_start">Start</string>
+
+    <string name="ingame_touch_arcade_sys_select">Coin</string>
+    <string name="ingame_touch_arcade_sys_start">Start</string>
+
+    <string name="ingame_touch_neogeo_sys_select">Select</string>
+    <string name="ingame_touch_neogeo_sys_start">Start</string>
+
+    <string name="ingame_touch_genesis_sys_select">Mode</string>
+    <string name="ingame_touch_genesis_sys_start">Start</string>
+
+    <string name="ingame_touch_intellivision_face_y">上</string>
+    <string name="ingame_touch_intellivision_face_b">左</string>
+    <string name="ingame_touch_intellivision_face_a">右</string>
+    <string name="ingame_touch_intellivision_face_x">上次按键</string>
+    <string name="ingame_touch_intellivision_shoulder_l2">清除</string>
+    <string name="ingame_touch_intellivision_shoulder_r2">确认</string>
+    <string name="ingame_touch_intellivision_sys_select">切换</string>
+    <string name="ingame_touch_intellivision_sys_start">Pause</string>
+
+    <string name="ingame_touch_atari2600_face_b">开火</string>
+    <string name="ingame_touch_atari2600_sys_select">Select</string>
+    <string name="ingame_touch_atari2600_sys_start">Reset</string>
+
+    <string name="ingame_touch_atari5200_shoulder_l">Pause</string>
+    <string name="ingame_touch_atari5200_shoulder_r">Reset</string>
+    <string name="ingame_touch_atari5200_sys_select">Select</string>
+    <string name="ingame_touch_atari5200_sys_start">Start</string>
+
+    <string name="ingame_touch_atari7800_sys_select">Select</string>
+    <string name="ingame_touch_atari7800_sys_start">Reset</string>
+
+    <string name="ingame_touch_jaguar_sys_select">Pause</string>
+    <string name="ingame_touch_jaguar_sys_start">Option</string>
+
+    <string name="ingame_touch_threedo_sys_select">停止</string>
+    <string name="ingame_touch_threedo_sys_start">播放/暂停</string>
+
+    <string name="ingame_touch_generic_sys_select">Select</string>
+    <string name="ingame_touch_generic_sys_start">Start</string>
+</resources>

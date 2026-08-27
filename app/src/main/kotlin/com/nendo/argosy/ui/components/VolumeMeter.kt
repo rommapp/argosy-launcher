@@ -26,8 +26,11 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import android.graphics.Color as AndroidColor
 import kotlin.math.abs
 import kotlin.math.min
@@ -156,7 +159,10 @@ fun VolumeMeterHero(
                         modifier = Modifier.weight(1f)
                     )
                     Text(
-                        text = "${formatBytes(volume.availableBytes)} free",
+                        text = stringResource(
+                            R.string.ui_volume_meter_free,
+                            formatBytes(volume.availableBytes)
+                        ),
                         style = MaterialTheme.typography.bodySmall,
                         color = theme.textDim
                     )
@@ -192,7 +198,7 @@ fun VolumeMeterHero(
                 LegendEntry(
                     swatchColor = otherColor,
                     swatchRadius = swatchRadius,
-                    label = "Other apps & files",
+                    label = stringResource(R.string.ui_volume_meter_other),
                     bytes = otherBytes
                 )
             }
@@ -201,11 +207,14 @@ fun VolumeMeterHero(
 }
 
 /** "Computed X ago" label for storage stats; states: refreshing, computed, never computed. */
+@Composable
 fun storageComputedLabel(computedAtMillis: Long?, isRefreshing: Boolean): String = when {
-    isRefreshing -> "Computing..."
-    computedAtMillis != null && computedAtMillis > 0L ->
-        "Computed ${formatRelativeTimeShort(Instant.ofEpochMilli(computedAtMillis))}"
-    else -> "Not computed yet"
+    isRefreshing -> stringResource(R.string.storage_computed_label_computing)
+    computedAtMillis != null && computedAtMillis > 0L -> stringResource(
+        R.string.storage_computed_label_computed,
+        formatRelativeTimeShort(LocalContext.current, Instant.ofEpochMilli(computedAtMillis))
+    )
+    else -> stringResource(R.string.storage_computed_label_never)
 }
 
 @Composable

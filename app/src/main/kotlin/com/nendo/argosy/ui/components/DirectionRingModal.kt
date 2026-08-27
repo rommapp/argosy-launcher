@@ -39,7 +39,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntSize
+import com.nendo.argosy.R
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
@@ -187,7 +189,7 @@ fun DirectionRingModal(
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
                             Text(
-                                text = "Direction",
+                                text = stringResource(R.string.ui_direction_ring_title),
                                 style = MaterialTheme.typography.titleMedium,
                                 color = theme.textPrimary,
                             )
@@ -202,9 +204,18 @@ fun DirectionRingModal(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd),
                             ) {
-                                RingHint(InputButton.DPAD, "Rotate")
-                                RingHint(InputButton.A, "Set")
-                                RingHint(InputButton.B, "Cancel")
+                                RingHint(
+                                    InputButton.DPAD,
+                                    stringResource(R.string.ui_direction_ring_rotate)
+                                )
+                                RingHint(
+                                    InputButton.A,
+                                    stringResource(R.string.ui_direction_ring_set)
+                                )
+                                RingHint(
+                                    InputButton.B,
+                                    stringResource(R.string.ui_direction_ring_cancel)
+                                )
                             }
                         }
                     }

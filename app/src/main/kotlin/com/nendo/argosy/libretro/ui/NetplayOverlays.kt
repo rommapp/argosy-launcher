@@ -33,11 +33,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.sp
 import com.nendo.argosy.data.social.NetplaySessionMode
 import androidx.compose.foundation.layout.width
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.theme.gripReserveBottomInset
@@ -57,13 +60,20 @@ fun NetplayConnectionProgressOverlay(
 ): InputHandler {
     val currentOnDismiss = rememberUpdatedState(onDismiss)
     val label = when (state.stage) {
-        NetplayProgressStage.RequestingJoin -> "Requesting join..."
-        NetplayProgressStage.WaitingForHost -> "Waiting for host to accept..."
-        NetplayProgressStage.Connecting -> "Connecting..."
-        NetplayProgressStage.Measuring -> "Measuring connection..."
-        NetplayProgressStage.LoadingState -> "Loading game state..."
-        NetplayProgressStage.Ready -> state.message ?: "Ready!"
-        NetplayProgressStage.Failed -> state.message ?: "Couldn't connect"
+        NetplayProgressStage.RequestingJoin ->
+            stringResource(R.string.ingame_netplay_progress_requesting_join)
+        NetplayProgressStage.WaitingForHost ->
+            stringResource(R.string.ingame_netplay_progress_waiting_for_host)
+        NetplayProgressStage.Connecting ->
+            stringResource(R.string.ingame_netplay_progress_connecting)
+        NetplayProgressStage.Measuring ->
+            stringResource(R.string.ingame_netplay_progress_measuring)
+        NetplayProgressStage.LoadingState ->
+            stringResource(R.string.ingame_netplay_progress_loading_state)
+        NetplayProgressStage.Ready ->
+            state.message ?: stringResource(R.string.ingame_netplay_progress_ready)
+        NetplayProgressStage.Failed ->
+            state.message ?: stringResource(R.string.ingame_netplay_progress_failed)
     }
     val isTerminal = state.stage == NetplayProgressStage.Failed
 
@@ -96,7 +106,7 @@ fun NetplayConnectionProgressOverlay(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    text = "Netplay",
+                    text = stringResource(R.string.ingame_netplay_progress_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -115,7 +125,7 @@ fun NetplayConnectionProgressOverlay(
                 )
                 if (isTerminal) {
                     NetplayPromptButton(
-                        text = "OK",
+                        text = stringResource(R.string.ingame_netplay_progress_dismiss),
                         isFocused = true,
                         onClick = { currentOnDismiss.value() }
                     )
@@ -129,7 +139,11 @@ fun NetplayConnectionProgressOverlay(
 
 @Composable
 fun NetplayReconnectingOverlay(lastRttMs: Int? = null) {
-    val detail = if (lastRttMs != null) "Reconnecting... (last: ${lastRttMs}ms)" else "Reconnecting..."
+    val detail = if (lastRttMs != null) {
+        stringResource(R.string.ingame_netplay_reconnecting_with_ping, lastRttMs)
+    } else {
+        stringResource(R.string.ingame_netplay_reconnecting)
+    }
     NetplayScrim {
         Surface(
             modifier = Modifier
@@ -210,13 +224,16 @@ fun NetplayHostDisconnectPrompt(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    text = "Friend Disconnected",
+                    text = stringResource(R.string.ingame_netplay_disconnect_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "$peerDisplayName lost connection. Keep the session open for them to rejoin, or close and exit?",
+                    text = stringResource(
+                        R.string.ingame_netplay_disconnect_message,
+                        peerDisplayName
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onSurface
@@ -226,13 +243,13 @@ fun NetplayHostDisconnectPrompt(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     NetplayPromptButton(
-                        text = "Keep Open",
+                        text = stringResource(R.string.ingame_netplay_disconnect_keep_open),
                         isFocused = focusedIndex == 0,
                         onClick = onKeepOpen,
                         modifier = Modifier.weight(1f)
                     )
                     NetplayPromptButton(
-                        text = "Close and End Game",
+                        text = stringResource(R.string.ingame_netplay_disconnect_close),
                         isFocused = focusedIndex == 1,
                         onClick = onCloseAndEnd,
                         modifier = Modifier.weight(1f)
@@ -297,13 +314,18 @@ fun NetplayQualityWarningPrompt(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    text = "Connection Warning",
+                    text = stringResource(R.string.ingame_netplay_quality_warning_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "Connection quality is $ratingLabel (${rttMs}ms ping, ${jitterMs}ms jitter). Gameplay may be choppy.",
+                    text = stringResource(
+                        R.string.ingame_netplay_quality_warning_message,
+                        ratingLabel,
+                        rttMs,
+                        jitterMs
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onSurface
@@ -313,13 +335,13 @@ fun NetplayQualityWarningPrompt(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     NetplayPromptButton(
-                        text = "Continue Anyway",
+                        text = stringResource(R.string.ingame_netplay_quality_warning_accept),
                         isFocused = focusedIndex == 0,
                         onClick = onAccept,
                         modifier = Modifier.weight(1f)
                     )
                     NetplayPromptButton(
-                        text = "Cancel",
+                        text = stringResource(R.string.ingame_netplay_quality_warning_decline),
                         isFocused = focusedIndex == 1,
                         onClick = onDecline,
                         modifier = Modifier.weight(1f)
@@ -394,21 +416,21 @@ fun NetplayFriendPickerDialog(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "Invite Friend",
+                    text = stringResource(R.string.ingame_netplay_friend_picker_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 if (friends.isEmpty()) {
                     Text(
-                        text = "No online friends available",
+                        text = stringResource(R.string.ingame_netplay_friend_picker_empty),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     NetplayPromptButton(
-                        text = "Close",
+                        text = stringResource(R.string.ingame_netplay_friend_picker_close),
                         isFocused = true,
                         onClick = onDismiss
                     )
@@ -488,7 +510,11 @@ private fun FriendPickerRow(
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = if (friend.isOnline) "Online" else "Offline",
+                text = if (friend.isOnline) {
+                    stringResource(R.string.ingame_netplay_friend_online)
+                } else {
+                    stringResource(R.string.ingame_netplay_friend_offline)
+                },
                 style = MaterialTheme.typography.labelSmall,
                 color = textColor.copy(alpha = 0.7f)
             )
@@ -563,11 +589,24 @@ fun NetplayModePickerDialog(
     val currentOnDismiss = rememberUpdatedState(onDismiss)
 
     data class ModeOption(val label: String, val description: String, val onSelect: () -> Unit)
-    val options = remember {
+    val openLabel = stringResource(R.string.ingame_netplay_mode_open_label)
+    val openDescription = stringResource(R.string.ingame_netplay_mode_open_description)
+    val privateLabel = stringResource(R.string.ingame_netplay_mode_private_label)
+    val privateDescription = stringResource(R.string.ingame_netplay_mode_private_description)
+    val inviteLabel = stringResource(R.string.ingame_netplay_mode_invite_label)
+    val inviteDescription = stringResource(R.string.ingame_netplay_mode_invite_description)
+    val options = remember(
+        openLabel,
+        openDescription,
+        privateLabel,
+        privateDescription,
+        inviteLabel,
+        inviteDescription
+    ) {
         listOf(
-            ModeOption("Open to Friends", "Anyone can join") { currentOnSelectOpen.value() },
-            ModeOption("Private", "Requires your approval") { currentOnSelectPrivate.value() },
-            ModeOption("Invite Friend...","Pick a specific friend") { currentOnSelectInvite.value() }
+            ModeOption(openLabel, openDescription) { currentOnSelectOpen.value() },
+            ModeOption(privateLabel, privateDescription) { currentOnSelectPrivate.value() },
+            ModeOption(inviteLabel, inviteDescription) { currentOnSelectInvite.value() }
         )
     }
 
@@ -610,7 +649,7 @@ fun NetplayModePickerDialog(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = "Open Netplay Server",
+                    text = stringResource(R.string.ingame_netplay_mode_picker_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -718,13 +757,13 @@ fun NetplayJoinRequestDialog(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    text = "Join Request",
+                    text = stringResource(R.string.ingame_netplay_join_request_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "$username wants to join your session",
+                    text = stringResource(R.string.ingame_netplay_join_request_message, username),
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onSurface
@@ -734,13 +773,13 @@ fun NetplayJoinRequestDialog(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     NetplayPromptButton(
-                        text = "Accept",
+                        text = stringResource(R.string.ingame_netplay_join_request_accept),
                         isFocused = focusedIndex == 0,
                         onClick = onAccept,
                         modifier = Modifier.weight(1f)
                     )
                     NetplayPromptButton(
-                        text = "Decline",
+                        text = stringResource(R.string.ingame_netplay_join_request_decline),
                         isFocused = focusedIndex == 1,
                         onClick = onDecline,
                         modifier = Modifier.weight(1f)
@@ -810,9 +849,10 @@ fun NetplayBorderHud(
     val guestDotColor = parseAvatarColor(guestAvatarColor)
 
     val modeLabel = when (sessionMode) {
-        NetplaySessionMode.OPEN -> "Open"
-        NetplaySessionMode.PRIVATE -> "Private"
-        NetplaySessionMode.INVITE_ONLY -> "Invite Only"
+        NetplaySessionMode.OPEN -> stringResource(R.string.ingame_netplay_hud_mode_open)
+        NetplaySessionMode.PRIVATE -> stringResource(R.string.ingame_netplay_hud_mode_private)
+        NetplaySessionMode.INVITE_ONLY ->
+            stringResource(R.string.ingame_netplay_hud_mode_invite_only)
     }
 
     val pingColor = when {
@@ -864,13 +904,21 @@ fun NetplayBorderHud(
                 }
             }
             Text(
-                text = "$playerCount player${if (playerCount != 1) "s" else ""}",
+                text = pluralStringResource(
+                    R.plurals.ingame_netplay_hud_players,
+                    playerCount,
+                    playerCount
+                ),
                 style = statusStyle,
                 color = tagColor,
                 maxLines = 1
             )
             Spacer(modifier = Modifier.height(4.dp))
-            Text(text = "P1", style = sectionHeaderStyle, color = headerColor)
+            Text(
+                text = stringResource(R.string.ingame_netplay_hud_player1_header),
+                style = sectionHeaderStyle,
+                color = headerColor
+            )
             Row(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -889,11 +937,19 @@ fun NetplayBorderHud(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f, fill = false)
                 )
-                Text(text = "[HOST]", style = nameStyle, color = accentColor)
+                Text(
+                    text = stringResource(R.string.ingame_netplay_hud_host_tag),
+                    style = nameStyle,
+                    color = accentColor
+                )
             }
             if (guestUsername != null && playerCount >= 2) {
                 Spacer(modifier = Modifier.height(2.dp))
-                Text(text = "P2", style = sectionHeaderStyle, color = headerColor)
+                Text(
+                    text = stringResource(R.string.ingame_netplay_hud_player2_header),
+                    style = sectionHeaderStyle,
+                    color = headerColor
+                )
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -916,7 +972,11 @@ fun NetplayBorderHud(
             }
             if (observers.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(text = "Observers", style = sectionHeaderStyle, color = headerColor)
+                Text(
+                    text = stringResource(R.string.ingame_netplay_hud_observers),
+                    style = sectionHeaderStyle,
+                    color = headerColor
+                )
                 for ((name, avatarColor) in observers) {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(4.dp),

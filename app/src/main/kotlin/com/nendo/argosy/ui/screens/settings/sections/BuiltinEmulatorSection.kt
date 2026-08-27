@@ -10,6 +10,9 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.FocusedScroll
@@ -20,6 +23,9 @@ import com.nendo.argosy.ui.screens.settings.BUILTIN_ARCHITECTURE_PICKER_KEY
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.common.legacyLabel
+import com.nendo.argosy.ui.common.labelRes
+import com.nendo.argosy.ui.common.hudCornerFromStored
 
 internal enum class BuiltinEmulatorItem {
     ENABLE,
@@ -61,8 +67,8 @@ fun BuiltinEmulatorSection(
     ) {
         item(key = "builtin_toggle") {
             SwitchPreference(
-                title = "Enable Built-in Emulator",
-                subtitle = "Use LibRetro cores for supported platforms",
+                title = stringResource(R.string.settings_builtin_enable_title),
+                subtitle = stringResource(R.string.settings_builtin_enable_subtitle),
                 isEnabled = builtinEnabled,
                 isFocused = uiState.focusedIndex == BuiltinEmulatorItem.ENABLE.focusIndex,
                 onToggle = { viewModel.setBuiltinLibretroEnabled(it) }
@@ -72,7 +78,7 @@ fun BuiltinEmulatorSection(
             item(key = "builtin_architecture") {
                 val architectureOptions = remember { ARCHITECTURE_OPTIONS }
                 CyclePreference(
-                    title = "Architecture",
+                    title = stringResource(R.string.settings_builtin_architecture_title),
                     value = emulators.architectureDisplay,
                     isFocused = uiState.focusedIndex == BuiltinEmulatorItem.ARCHITECTURE.focusIndex,
                     onClick = { viewModel.cycleBuiltinArchitecture(1) },
@@ -87,8 +93,8 @@ fun BuiltinEmulatorSection(
             }
             item(key = "builtin_video") {
                 ActionPreference(
-                    title = "A/V & Performance",
-                    subtitle = "Shaders, display, performance, saving",
+                    title = stringResource(R.string.settings_builtin_video_title),
+                    subtitle = stringResource(R.string.settings_builtin_video_subtitle),
                     isFocused = uiState.focusedIndex == BuiltinEmulatorItem.VIDEO.focusIndex,
                     onClick = {
                         viewModel.setFocusIndex(BuiltinEmulatorItem.VIDEO.focusIndex)
@@ -98,8 +104,8 @@ fun BuiltinEmulatorSection(
             }
             item(key = "builtin_controls") {
                 ActionPreference(
-                    title = "Controls",
-                    subtitle = "Rumble, input mapping, hotkeys",
+                    title = stringResource(R.string.settings_builtin_controls_title),
+                    subtitle = stringResource(R.string.settings_builtin_controls_subtitle),
                     isFocused = uiState.focusedIndex == BuiltinEmulatorItem.CONTROLS.focusIndex,
                     onClick = {
                         viewModel.setFocusIndex(BuiltinEmulatorItem.CONTROLS.focusIndex)
@@ -110,20 +116,32 @@ fun BuiltinEmulatorSection(
             item(key = "builtin_cores") {
                 val updatesAvailable = emulators.coreUpdatesAvailable
                 ActionPreference(
-                    title = "Manage Cores",
-                    subtitle = "${emulators.installedCoreCount} of ${emulators.totalCoreCount} cores installed",
+                    title = stringResource(R.string.settings_builtin_cores_title),
+                    subtitle = stringResource(
+                        R.string.settings_builtin_cores_subtitle,
+                        emulators.installedCoreCount,
+                        emulators.totalCoreCount
+                    ),
                     isFocused = uiState.focusedIndex == BuiltinEmulatorItem.CORE_MANAGEMENT.focusIndex,
                     onClick = {
                         viewModel.setFocusIndex(BuiltinEmulatorItem.CORE_MANAGEMENT.focusIndex)
                         viewModel.navigateToCoreManagement()
                     },
-                    badge = if (updatesAvailable > 0) "$updatesAvailable update${if (updatesAvailable > 1) "s" else ""}" else null
+                    badge = if (updatesAvailable > 0) {
+                        pluralStringResource(
+                            R.plurals.settings_builtin_cores_updates_badge,
+                            updatesAvailable,
+                            updatesAvailable
+                        )
+                    } else {
+                        null
+                    }
                 )
             }
             item(key = "builtin_core_options") {
                 ActionPreference(
-                    title = "Core Options",
-                    subtitle = "Per-core settings and overrides",
+                    title = stringResource(R.string.settings_builtin_core_options_title),
+                    subtitle = stringResource(R.string.settings_builtin_core_options_subtitle),
                     isFocused = uiState.focusedIndex == BuiltinEmulatorItem.CORE_OPTIONS.focusIndex,
                     onClick = {
                         viewModel.setFocusIndex(BuiltinEmulatorItem.CORE_OPTIONS.focusIndex)
@@ -133,11 +151,11 @@ fun BuiltinEmulatorSection(
             }
             item(key = "builtin_two_column_menu") {
                 SwitchPreference(
-                    title = "Two-Column Menu",
+                    title = stringResource(R.string.settings_builtin_two_column_title),
                     subtitle = if (emulators.ingameMenuTwoColumn) {
-                        "In-game menu uses two columns on wide displays"
+                        stringResource(R.string.settings_builtin_two_column_subtitle_on)
                     } else {
-                        "In-game menu uses a single column"
+                        stringResource(R.string.settings_builtin_two_column_subtitle_off)
                     },
                     isEnabled = emulators.ingameMenuTwoColumn,
                     isFocused = uiState.focusedIndex == BuiltinEmulatorItem.TWO_COLUMN.focusIndex,
@@ -146,15 +164,15 @@ fun BuiltinEmulatorSection(
             }
             item(key = "builtin_hud_header") {
                 Spacer(modifier = Modifier.height(Dimens.spacingMd))
-                SectionHeader("Status Bar")
+                SectionHeader(stringResource(R.string.settings_builtin_section_hud))
             }
             item(key = "builtin_hud_enabled") {
                 SwitchPreference(
-                    title = "In-Game Status Bar",
+                    title = stringResource(R.string.settings_builtin_hud_enabled_title),
                     subtitle = if (emulators.hudEnabled) {
-                        "Shows a small status bar over the game"
+                        stringResource(R.string.settings_builtin_hud_enabled_subtitle_on)
                     } else {
-                        "No status bar while playing"
+                        stringResource(R.string.settings_builtin_hud_enabled_subtitle_off)
                     },
                     isEnabled = emulators.hudEnabled,
                     isFocused = uiState.focusedIndex == BuiltinEmulatorItem.HUD_ENABLED.focusIndex,
@@ -164,18 +182,21 @@ fun BuiltinEmulatorSection(
             if (emulators.hudEnabled) {
                 item(key = "builtin_hud_corner") {
                     CyclePreference(
-                        title = "Status Bar Corner",
-                        value = emulators.hudCorner,
+                        title = stringResource(R.string.settings_builtin_hud_corner_title),
+                        value = stringResource(hudCornerFromStored(emulators.hudCorner).labelRes),
                         isFocused = uiState.focusedIndex == BuiltinEmulatorItem.HUD_CORNER.focusIndex,
                         onClick = { viewModel.cycleHudCorner(true) },
                         onPrev = { viewModel.cycleHudCorner(false) },
-                        options = HUD_CORNERS,
-                        onSelect = { index -> HUD_CORNERS.getOrNull(index)?.let { viewModel.setHudCorner(it) } }
+                        options = com.nendo.argosy.ui.components.HudCorner.entries.map { stringResource(it.labelRes) },
+                        onSelect = { index ->
+                            com.nendo.argosy.ui.components.HudCorner.entries.getOrNull(index)
+                                ?.let { viewModel.setHudCorner(it.name) }
+                        }
                     )
                 }
                 item(key = "builtin_hud_battery") {
                     SwitchPreference(
-                        title = "Show Battery",
+                        title = stringResource(R.string.settings_builtin_hud_battery_title),
                         isEnabled = emulators.hudShowBattery,
                         isFocused = uiState.focusedIndex == BuiltinEmulatorItem.HUD_BATTERY.focusIndex,
                         onToggle = { viewModel.setHudShowBattery(it) }
@@ -183,7 +204,7 @@ fun BuiltinEmulatorSection(
                 }
                 item(key = "builtin_hud_clock") {
                     SwitchPreference(
-                        title = "Show Clock",
+                        title = stringResource(R.string.settings_builtin_hud_clock_title),
                         isEnabled = emulators.hudShowClock,
                         isFocused = uiState.focusedIndex == BuiltinEmulatorItem.HUD_CLOCK.focusIndex,
                         onToggle = { viewModel.setHudShowClock(it) }
@@ -191,8 +212,8 @@ fun BuiltinEmulatorSection(
                 }
                 item(key = "builtin_hud_playtime") {
                     SwitchPreference(
-                        title = "Show Session Time",
-                        subtitle = "Time since this session started",
+                        title = stringResource(R.string.settings_builtin_hud_playtime_title),
+                        subtitle = stringResource(R.string.settings_builtin_hud_playtime_subtitle),
                         isEnabled = emulators.hudShowPlaytime,
                         isFocused = uiState.focusedIndex == BuiltinEmulatorItem.HUD_PLAYTIME.focusIndex,
                         onToggle = { viewModel.setHudShowPlaytime(it) }
@@ -200,8 +221,8 @@ fun BuiltinEmulatorSection(
                 }
                 item(key = "builtin_hud_fps") {
                     SwitchPreference(
-                        title = "Show FPS",
-                        subtitle = "Presented frames per second; hidden while fast-forwarding",
+                        title = stringResource(R.string.settings_builtin_hud_fps_title),
+                        subtitle = stringResource(R.string.settings_builtin_hud_fps_subtitle),
                         isEnabled = emulators.hudShowFps,
                         isFocused = uiState.focusedIndex == BuiltinEmulatorItem.HUD_FPS.focusIndex,
                         onToggle = { viewModel.setHudShowFps(it) }
@@ -209,8 +230,8 @@ fun BuiltinEmulatorSection(
                 }
                 item(key = "builtin_hud_last_save") {
                     SwitchPreference(
-                        title = "Show Last Save State",
-                        subtitle = "How long ago a save state was written",
+                        title = stringResource(R.string.settings_builtin_hud_last_save_title),
+                        subtitle = stringResource(R.string.settings_builtin_hud_last_save_subtitle),
                         isEnabled = emulators.hudShowLastSave,
                         isFocused = uiState.focusedIndex == BuiltinEmulatorItem.HUD_LAST_SAVE.focusIndex,
                         onToggle = { viewModel.setHudShowLastSave(it) }
@@ -221,4 +242,10 @@ fun BuiltinEmulatorSection(
     }
 }
 
-internal val HUD_CORNERS = listOf("Top Left", "Top Right", "Bottom Left", "Bottom Right")
+/**
+ * Legacy, unlocalized corner names. Kept only for [com.nendo.argosy.libretro.ui.InGameSettingsScreen]'s
+ * value-based index lookup against the stored HUD corner; never render this list. Display uses
+ * [com.nendo.argosy.ui.common.labelRes] instead.
+ */
+internal val HUD_CORNERS: List<String> =
+    com.nendo.argosy.ui.components.HudCorner.entries.map { it.legacyLabel }

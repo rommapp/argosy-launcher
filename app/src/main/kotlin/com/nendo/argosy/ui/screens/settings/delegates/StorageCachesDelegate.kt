@@ -1,7 +1,9 @@
 package com.nendo.argosy.ui.screens.settings.delegates
 
 import android.content.Context
+import com.nendo.argosy.R
 import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.data.emulator.DriverFetcherRepository
 import com.nendo.argosy.data.emulator.EmulatorDownloadManager
@@ -74,13 +76,15 @@ class StorageCachesDelegate @Inject constructor(
 
     fun requestClear(target: CachesClearTarget, driverDownloadActive: Boolean = false) {
         if (target in _state.value.busyClears) return
-        val blockedReason = when (target) {
+        val blockedReason: NotificationText? = when (target) {
             CachesClearTarget.EMULATOR_APKS ->
-                "Wait for the emulator download to finish first".takeIf { emulatorDownloadManager.hasActiveDownload() }
+                NotificationText.Res(R.string.notif_storage_caches_emulator_busy_precheck)
+                    .takeIf { emulatorDownloadManager.hasActiveDownload() }
             CachesClearTarget.MISC_DOWNLOADS ->
-                "Wait for the driver download to finish first".takeIf { driverDownloadActive }
+                NotificationText.Res(R.string.notif_storage_caches_driver_busy).takeIf { driverDownloadActive }
             CachesClearTarget.STEAM_DOWNLOADS ->
-                "Cancel Steam downloads first".takeIf { steamContentManager.hasBlockingDownloadState() }
+                NotificationText.Res(R.string.notif_storage_caches_steam_busy_precheck)
+                    .takeIf { steamContentManager.hasBlockingDownloadState() }
             else -> null
         }
         if (blockedReason != null) {
@@ -117,7 +121,9 @@ class StorageCachesDelegate @Inject constructor(
         }
         CachesClearTarget.ROM_EXTRACTION -> {
             val performed = databaseAdminRepository.clearRomExtractionCache()
-            if (!performed) notificationManager.showError("Cannot clear extracted ROMs while a game is running")
+            if (!performed) {
+                notificationManager.showError(NotificationText.Res(R.string.notif_storage_caches_rom_extraction_busy))
+            }
             performed
         }
         CachesClearTarget.ROM_STAGING -> {
@@ -130,7 +136,9 @@ class StorageCachesDelegate @Inject constructor(
         }
         CachesClearTarget.EMULATOR_APKS -> {
             val performed = emulatorDownloadManager.clearApkCache()
-            if (!performed) notificationManager.showError("Wait for the emulator download to finish first")
+            if (!performed) {
+                notificationManager.showError(NotificationText.Res(R.string.notif_storage_caches_emulator_busy_runclear))
+            }
             performed
         }
         CachesClearTarget.MISC_DOWNLOADS -> {
@@ -152,7 +160,7 @@ class StorageCachesDelegate @Inject constructor(
             val performed = steamContentManager.clearDownloadData()
             if (!performed) {
                 _state.update { it.copy(steamDownloadBusy = true) }
-                notificationManager.showError("Cancel Steam downloads first")
+                notificationManager.showError(NotificationText.Res(R.string.notif_storage_caches_steam_busy_runclear))
             }
             performed
         }

@@ -28,11 +28,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.primitives.ArgosyConfirmModal
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
@@ -143,10 +146,10 @@ fun PlayerScreen(viewModel: PlayerViewModel) {
 
         ArgosyConfirmModal(
             visible = state.showExitConfirm,
-            title = "Leave the player?",
-            message = "Playback will stop. You can pick up where you left off.",
-            confirmLabel = "Leave",
-            cancelLabel = "Keep Watching",
+            title = stringResource(R.string.media_player_exit_title),
+            message = stringResource(R.string.media_player_exit_message),
+            confirmLabel = stringResource(R.string.media_player_exit_confirm),
+            cancelLabel = stringResource(R.string.media_player_exit_cancel),
             onConfirm = { viewModel.confirmExit() },
             onDismiss = { viewModel.dismissExitConfirm() },
             focusedIndex = state.exitConfirmIndex
@@ -233,8 +236,16 @@ private fun PlayerErrorPanel(
             color = theme.textPrimary
         )
         Row(horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)) {
-            PanelButton(label = "Try Again", focused = true, onClick = onRetry)
-            PanelButton(label = "Close", focused = false, onClick = onClose)
+            PanelButton(
+                label = stringResource(R.string.media_player_error_retry),
+                focused = true,
+                onClick = onRetry
+            )
+            PanelButton(
+                label = stringResource(R.string.media_player_error_close),
+                focused = false,
+                onClick = onClose
+            )
         }
     }
 }
@@ -264,7 +275,11 @@ private fun PlayerAutoplayPanel(
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
     ) {
         Text(
-            text = "Up next in $secondsRemaining",
+            text = pluralStringResource(
+                R.plurals.media_player_autoplay_countdown,
+                secondsRemaining,
+                secondsRemaining
+            ),
             style = MaterialTheme.typography.labelMedium,
             color = theme.textDim
         )
@@ -274,8 +289,16 @@ private fun PlayerAutoplayPanel(
             color = theme.textPrimary
         )
         Row(horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)) {
-            PanelButton(label = "Play Now", focused = true, onClick = onPlayNow)
-            PanelButton(label = "Stop", focused = false, onClick = onCancel)
+            PanelButton(
+                label = stringResource(R.string.media_player_autoplay_play_now),
+                focused = true,
+                onClick = onPlayNow
+            )
+            PanelButton(
+                label = stringResource(R.string.media_player_autoplay_stop),
+                focused = false,
+                onClick = onCancel
+            )
         }
     }
 }

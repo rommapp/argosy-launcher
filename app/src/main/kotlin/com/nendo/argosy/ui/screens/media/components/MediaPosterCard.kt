@@ -24,12 +24,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.common.AlwaysCrossfadeFactory
 import com.nendo.argosy.ui.components.boxArtFrame
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
@@ -133,7 +135,7 @@ private fun MediaTileBadges(item: MediaItemUi, modifier: Modifier = Modifier) {
         if (item.played) {
             Icon(
                 imageVector = Icons.Default.CheckCircle,
-                contentDescription = "Watched",
+                contentDescription = stringResource(R.string.media_poster_card_watched),
                 tint = theme.focusAccent,
                 modifier = Modifier.size(Dimens.iconSm)
             )

@@ -24,8 +24,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import android.content.Context
+import com.nendo.argosy.R
 import com.nendo.argosy.data.sync.ConflictInfo
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
@@ -43,12 +47,13 @@ fun BackgroundSyncConflictDialog(
     onKeepServer: () -> Unit,
     onSkip: () -> Unit
 ) {
-    val localTimeStr = conflictInfo.localTimestamp.toRelativeString()
-    val serverTimeStr = conflictInfo.serverTimestamp.toRelativeString()
+    val context = LocalContext.current
+    val localTimeStr = conflictInfo.localTimestamp.toRelativeString(context)
+    val serverTimeStr = conflictInfo.serverTimestamp.toRelativeString(context)
     val localIsNewer = conflictInfo.localTimestamp.isAfter(conflictInfo.serverTimestamp)
 
     Modal(
-        title = "Save Sync Conflict",
+        title = stringResource(R.string.ui_background_conflict_title),
         baseWidth = 400.dp,
         onDismiss = onSkip,
         titleContent = {
@@ -65,7 +70,8 @@ fun BackgroundSyncConflictDialog(
                 )
                 Spacer(modifier = Modifier.width(Dimens.spacingMd))
                 Text(
-                    text = conflictInfo.channelName ?: "Default Save",
+                    text = conflictInfo.channelName
+                        ?: stringResource(R.string.ui_background_conflict_default_slot),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.secondary
@@ -74,10 +80,11 @@ fun BackgroundSyncConflictDialog(
         }
     ) {
         Text(
-            text = if (conflictInfo.isHashConflict)
-                "Your local save has changed since the last sync. Pick which save wins."
-            else
-                "A newer save exists on the server. Pick which save wins.",
+            text = if (conflictInfo.isHashConflict) {
+                stringResource(R.string.ui_background_conflict_message_local_changed)
+            } else {
+                stringResource(R.string.ui_background_conflict_message_server_newer)
+            },
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -87,7 +94,7 @@ fun BackgroundSyncConflictDialog(
         Column(verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)) {
             ConflictChoiceRow(
                 icon = Icons.Default.PhoneAndroid,
-                label = "Local",
+                label = stringResource(R.string.ui_background_conflict_choice_local),
                 timestamp = localTimeStr,
                 isNewer = localIsNewer,
                 isFocused = focusIndex == 0,
@@ -95,7 +102,7 @@ fun BackgroundSyncConflictDialog(
             )
             ConflictChoiceRow(
                 icon = Icons.Default.Cloud,
-                label = "Server",
+                label = stringResource(R.string.ui_background_conflict_choice_server),
                 subtitle = conflictInfo.serverDeviceName,
                 timestamp = serverTimeStr,
                 isNewer = !localIsNewer,
@@ -103,8 +110,8 @@ fun BackgroundSyncConflictDialog(
                 onClick = onKeepServer
             )
             ConflictChoiceRow(
-                label = "Skip",
-                subtitle = "Keep both for now",
+                label = stringResource(R.string.ui_background_conflict_choice_skip),
+                subtitle = stringResource(R.string.ui_background_conflict_choice_skip_subtitle),
                 isFocused = focusIndex == 2,
                 onClick = onSkip
             )
@@ -183,15 +190,32 @@ private fun ConflictChoiceRow(
     }
 }
 
-private fun Instant.toRelativeString(): String {
+private fun Instant.toRelativeString(context: Context): String {
     val now = Instant.now()
     val duration = Duration.between(this, now)
+    val resources = context.resources
     return when {
-        duration.isNegative -> "in the future"
-        duration.toMinutes() < 1 -> "just now"
-        duration.toHours() < 1 -> "${duration.toMinutes()} minutes ago"
-        duration.toDays() < 1 -> "${duration.toHours()} hours ago"
-        duration.toDays() < 30 -> "${duration.toDays()} days ago"
-        else -> "${duration.toDays() / 30} months ago"
+        duration.isNegative -> context.getString(R.string.ui_background_conflict_age_future)
+        duration.toMinutes() < 1 -> context.getString(R.string.ui_background_conflict_age_now)
+        duration.toHours() < 1 -> resources.getQuantityString(
+            R.plurals.ui_background_conflict_age_minutes,
+            duration.toMinutes().toInt(),
+            duration.toMinutes().toInt()
+        )
+        duration.toDays() < 1 -> resources.getQuantityString(
+            R.plurals.ui_background_conflict_age_hours,
+            duration.toHours().toInt(),
+            duration.toHours().toInt()
+        )
+        duration.toDays() < 30 -> resources.getQuantityString(
+            R.plurals.ui_background_conflict_age_days,
+            duration.toDays().toInt(),
+            duration.toDays().toInt()
+        )
+        else -> resources.getQuantityString(
+            R.plurals.ui_background_conflict_age_months,
+            (duration.toDays() / 30).toInt(),
+            (duration.toDays() / 30).toInt()
+        )
     }
 }

@@ -31,11 +31,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.data.model.FilePickerRow
+import com.nendo.argosy.data.model.VariantCategory
 import com.nendo.argosy.data.model.allSelectableSelected
+import com.nendo.argosy.ui.common.labelRes
 import com.nendo.argosy.ui.components.ArgosyCheckState
 import com.nendo.argosy.ui.components.ArgosyCheckbox
 import com.nendo.argosy.ui.components.FocusedScroll
@@ -46,6 +50,8 @@ import com.nendo.argosy.ui.util.clickableNoFocus
 import com.nendo.argosy.util.formatBytes
 
 enum class GroupCheckState { ALL, NONE, PARTIAL }
+
+private const val FOLDER_GROUP_KEY_PREFIX = "folder:"
 
 /**
  * Cherry-pick file selection for a download. Focus indices rows.size, rows.size + 1 and
@@ -83,11 +89,14 @@ fun FilePickerModal(
         allRows.count { !it.isHeader && !it.isLocked && it.isDownloaded && !isRowSelected(it) }
     } else 0
     val confirmLabel = when {
-        !manageMode -> "Download"
-        pendingAdds > 0 && pendingRemoves == 0 -> "Download $pendingAdds"
-        pendingRemoves > 0 && pendingAdds == 0 -> "Remove $pendingRemoves"
-        pendingAdds > 0 && pendingRemoves > 0 -> "Apply Changes"
-        else -> "No Changes"
+        !manageMode -> stringResource(R.string.gamedetail_file_picker_confirm_download)
+        pendingAdds > 0 && pendingRemoves == 0 ->
+            stringResource(R.string.gamedetail_file_picker_confirm_download_count, pendingAdds)
+        pendingRemoves > 0 && pendingAdds == 0 ->
+            stringResource(R.string.gamedetail_file_picker_confirm_remove_count, pendingRemoves)
+        pendingAdds > 0 && pendingRemoves > 0 ->
+            stringResource(R.string.gamedetail_file_picker_confirm_apply)
+        else -> stringResource(R.string.gamedetail_file_picker_confirm_no_changes)
     }
     val confirmEnabled = !manageMode || pendingAdds + pendingRemoves > 0
     val confirmTint = if (manageMode && pendingRemoves > 0) theme.destructive else theme.focusAccent
@@ -167,14 +176,18 @@ fun FilePickerModal(
                     horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm, Alignment.End)
                 ) {
                     ModalActionButton(
-                        label = if (everythingSelected) "Deselect All" else "Select All",
+                        label = if (everythingSelected) {
+                            stringResource(R.string.gamedetail_file_picker_deselect_all)
+                        } else {
+                            stringResource(R.string.gamedetail_file_picker_select_all)
+                        },
                         tint = theme.focusAccent,
                         restLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
                         focused = focusIndex == rows.size,
                         onClick = onSelectAll
                     )
                     ModalActionButton(
-                        label = "Cancel",
+                        label = stringResource(R.string.gamedetail_file_picker_cancel),
                         tint = theme.focusAccent,
                         restLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
                         focused = focusIndex == rows.size + 1,
@@ -243,8 +256,13 @@ private fun FilePickerGroupHeader(
             }
         )
         Spacer(modifier = Modifier.width(Dimens.spacingSm))
+        val headerText = if (row.groupKey.startsWith(FOLDER_GROUP_KEY_PREFIX)) {
+            row.label
+        } else {
+            stringResource(VariantCategory.fromKey(row.groupKey).labelRes)
+        }
         Text(
-            text = row.label.uppercase(),
+            text = headerText.uppercase(),
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface,
@@ -253,7 +271,11 @@ private fun FilePickerGroupHeader(
         if (onToggleCollapse != null) {
             Icon(
                 imageVector = if (isCollapsed) Icons.Default.ExpandMore else Icons.Default.ExpandLess,
-                contentDescription = if (isCollapsed) "Expand" else "Collapse",
+                contentDescription = if (isCollapsed) {
+                    stringResource(R.string.gamedetail_file_picker_expand_description)
+                } else {
+                    stringResource(R.string.gamedetail_file_picker_collapse_description)
+                },
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.clickableNoFocus { onToggleCollapse() }
             )
@@ -302,7 +324,7 @@ private fun FilePickerFileRow(
                 if (row.isDefaultVersion) {
                     Spacer(modifier = Modifier.width(Dimens.spacingSm))
                     Text(
-                        text = "DEFAULT",
+                        text = stringResource(R.string.gamedetail_file_picker_default_tag),
                         style = MaterialTheme.typography.labelSmall,
                         color = theme.focusAccent
                     )
@@ -310,17 +332,17 @@ private fun FilePickerFileRow(
             }
             when {
                 pendingRemove -> Text(
-                    text = "Will be removed",
+                    text = stringResource(R.string.gamedetail_file_picker_pending_remove),
                     style = MaterialTheme.typography.labelSmall,
                     color = theme.destructive
                 )
                 pendingAdd -> Text(
-                    text = "Will download",
+                    text = stringResource(R.string.gamedetail_file_picker_pending_add),
                     style = MaterialTheme.typography.labelSmall,
                     color = theme.focusAccent
                 )
                 row.isDownloaded -> Text(
-                    text = "On device",
+                    text = stringResource(R.string.gamedetail_file_picker_on_device),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

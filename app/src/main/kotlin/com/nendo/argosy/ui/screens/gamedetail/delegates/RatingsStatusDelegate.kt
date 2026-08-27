@@ -1,12 +1,16 @@
 package com.nendo.argosy.ui.screens.gamedetail.delegates
 
+import android.content.Context
+import com.nendo.argosy.R
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.core.notification.showSuccess
 import com.nendo.argosy.ui.screens.gamedetail.RatingType
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,6 +30,7 @@ data class RatingsStatusState(
 )
 
 class RatingsStatusDelegate @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val romMRepository: RomMRepository,
     private val notificationManager: NotificationManager,
     private val soundManager: SoundFeedbackManager
@@ -112,12 +117,16 @@ class RatingsStatusDelegate @Inject constructor(
 
             when (result) {
                 is com.nendo.argosy.data.remote.romm.RomMResult.Success -> {
-                    val label = if (type == RatingType.OPINION) "Rating" else "Difficulty"
-                    notificationManager.showSuccess("$label saved")
+                    val message = if (type == RatingType.OPINION) {
+                        NotificationText.Res(R.string.gamedetail_notice_rating_saved)
+                    } else {
+                        NotificationText.Res(R.string.gamedetail_notice_difficulty_saved)
+                    }
+                    notificationManager.showSuccess(message)
                     onSuccess()
                 }
                 is com.nendo.argosy.data.remote.romm.RomMResult.Error -> {
-                    notificationManager.showError(result.message)
+                    notificationManager.showError(NotificationText.Raw(result.message))
                 }
             }
             _state.update { it.copy(showRatingPicker = false, showRatingsStatusMenu = true) }
@@ -163,11 +172,13 @@ class RatingsStatusDelegate @Inject constructor(
 
             when (result) {
                 is com.nendo.argosy.data.remote.romm.RomMResult.Success -> {
-                    notificationManager.showSuccess("Status saved")
+                    notificationManager.showSuccess(
+                        NotificationText.Res(R.string.gamedetail_notice_status_saved)
+                    )
                     onSuccess()
                 }
                 is com.nendo.argosy.data.remote.romm.RomMResult.Error -> {
-                    notificationManager.showError(result.message)
+                    notificationManager.showError(NotificationText.Raw(result.message))
                 }
             }
             _state.update { it.copy(showStatusPicker = false, showRatingsStatusMenu = true) }

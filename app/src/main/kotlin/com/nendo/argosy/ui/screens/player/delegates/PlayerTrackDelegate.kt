@@ -1,8 +1,10 @@
 package com.nendo.argosy.ui.screens.player.delegates
 
+import android.content.Context
 import androidx.annotation.OptIn
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.screens.player.NegotiatedPlayback
 import com.nendo.argosy.ui.screens.player.PlayerEngine
 import com.nendo.argosy.ui.screens.player.PlayerUiState
@@ -23,6 +25,7 @@ import kotlinx.coroutines.flow.update
  */
 @OptIn(UnstableApi::class)
 class PlayerTrackDelegate(
+    private val context: Context,
     private val state: MutableStateFlow<PlayerUiState>,
     private val engine: PlayerEngine,
     private val playerOf: () -> ExoPlayer?,
@@ -65,8 +68,10 @@ class PlayerTrackDelegate(
             state.update {
                 it.copy(
                     overlayIndex = it.burnInRowIndex,
-                    subtitleNotice = "${track.label} is a picture, not text. It can only be shown " +
-                        "by having the server draw it into the video."
+                    subtitleNotice = context.getString(
+                        R.string.media_player_subtitle_picture_notice,
+                        track.label
+                    )
                 )
             }
             return

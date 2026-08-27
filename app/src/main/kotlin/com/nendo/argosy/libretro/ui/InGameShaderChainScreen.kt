@@ -16,6 +16,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.libretro.shader.ShaderChainManager
 import com.nendo.argosy.ui.components.FooterBar
 import com.nendo.argosy.ui.components.InputButton
@@ -180,22 +182,33 @@ fun InGameShaderChainScreen(
     return inputHandler
 }
 
+@Composable
 private fun buildShaderChainFooterHints(
     pickerOpen: Boolean
 ): List<Pair<InputButton, String>> {
+    val browseLabel = stringResource(R.string.ingame_shader_footer_picker_browse)
+    val pickerSelectLabel = stringResource(R.string.ingame_shader_footer_picker_select)
+    val pickerCancelLabel = stringResource(R.string.ingame_shader_footer_picker_cancel)
+    val shaderLabel = stringResource(R.string.ingame_shader_footer_shader)
+    val reorderLabel = stringResource(R.string.ingame_shader_footer_reorder)
+    val adjustLabel = stringResource(R.string.ingame_shader_footer_adjust)
+    val addLabel = stringResource(R.string.ingame_shader_footer_add)
+    val removeLabel = stringResource(R.string.ingame_shader_footer_remove)
+    val resetLabel = stringResource(R.string.ingame_shader_footer_reset)
+    val backLabel = stringResource(R.string.ingame_shader_footer_back)
     return buildList {
         if (pickerOpen) {
-            add(InputButton.DPAD_VERTICAL to "Browse")
-            add(InputButton.A to "Select")
-            add(InputButton.B to "Cancel")
+            add(InputButton.DPAD_VERTICAL to browseLabel)
+            add(InputButton.A to pickerSelectLabel)
+            add(InputButton.B to pickerCancelLabel)
         } else {
-            add(InputButton.LB_RB to "Shader")
-            add(InputButton.LT_RT to "Reorder")
-            add(InputButton.DPAD_HORIZONTAL to "Adjust")
-            add(InputButton.X to "Add")
-            add(InputButton.Y to "Remove")
-            add(InputButton.A to "Reset")
-            add(InputButton.B to "Back")
+            add(InputButton.LB_RB to shaderLabel)
+            add(InputButton.LT_RT to reorderLabel)
+            add(InputButton.DPAD_HORIZONTAL to adjustLabel)
+            add(InputButton.X to addLabel)
+            add(InputButton.Y to removeLabel)
+            add(InputButton.A to resetLabel)
+            add(InputButton.B to backLabel)
         }
     }
 }

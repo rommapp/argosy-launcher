@@ -29,7 +29,8 @@ data class AppPreferences(
     val fileLoggingEnabled: Boolean = false,
     val fileLoggingPath: String? = null,
     val fileLogLevel: LogLevel = LogLevel.INFO,
-    val appAffinityEnabled: Boolean = false
+    val appAffinityEnabled: Boolean = false,
+    val appLanguage: AppLanguage = AppLanguage.SYSTEM
 )
 
 @Singleton
@@ -54,6 +55,7 @@ class AppPreferencesRepository @Inject constructor(
         val FILE_LOGGING_PATH = stringPreferencesKey("file_logging_path")
         val FILE_LOG_LEVEL = stringPreferencesKey("file_log_level")
         val APP_AFFINITY_ENABLED = booleanPreferencesKey("app_affinity_enabled")
+        val APP_LANGUAGE = stringPreferencesKey("app_language")
     }
 
     val preferences: Flow<AppPreferences> = dataStore.data.map { prefs ->
@@ -95,7 +97,8 @@ class AppPreferencesRepository @Inject constructor(
             fileLoggingEnabled = prefs[Keys.FILE_LOGGING_ENABLED] ?: false,
             fileLoggingPath = prefs[Keys.FILE_LOGGING_PATH],
             fileLogLevel = LogLevel.fromString(prefs[Keys.FILE_LOG_LEVEL]),
-            appAffinityEnabled = true
+            appAffinityEnabled = true,
+            appLanguage = AppLanguage.fromString(prefs[Keys.APP_LANGUAGE])
         )
     }
 
@@ -203,6 +206,10 @@ class AppPreferencesRepository @Inject constructor(
 
     suspend fun setAppAffinityEnabled(enabled: Boolean) {
         dataStore.edit { it[Keys.APP_AFFINITY_ENABLED] = enabled }
+    }
+
+    suspend fun setAppLanguage(tag: String) {
+        dataStore.edit { it[Keys.APP_LANGUAGE] = tag }
     }
 
     private fun parseRecommendationPenalties(raw: String?): Map<Long, Float> {

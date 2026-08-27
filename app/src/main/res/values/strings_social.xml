@@ -1,0 +1,413 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Owner: ui/screens/social/** (SocialScreen, SocialViewModel, FeedOptionsModal,
+      FeedOptionsDelegate, PostEditorScreen/ViewModel, FriendsTabContent, ProfileTabContent,
+      ProfileContent, UserProfileScreen, NotificationsTabContent, FeedEventDetailScreen).
+      Key prefix: social_
+      Keys are named for the usage site, never for the English text, and identical English
+      is never shared between two usage sites (some display names below are byte-identical
+      across cards and dialogs on purpose).
+    -->
+
+    <!-- SocialScreen.kt - top-level feed/friends/notifications/profile tab screen -->
+
+    <string name="social_feed_loading_connecting">Connecting...</string>
+    <string name="social_feed_loading_community">Loading community feed...</string>
+    <string name="social_feed_loading_friends">Loading feed...</string>
+    <!-- Collection: not used here, banner label for the community-mode feed view -->
+    <string name="social_feed_community_badge">Community Feed</string>
+
+    <string name="social_feed_hint_view">View</string>
+    <string name="social_feed_hint_unlike">Unlike</string>
+    <string name="social_feed_hint_like">Like</string>
+    <!-- Footer hint that switches the feed to the friends-only view -->
+    <string name="social_feed_hint_switch_to_friends">Friends</string>
+    <!-- Footer hint that switches the feed to game-community posts -->
+    <string name="social_feed_hint_switch_to_community">Community</string>
+    <string name="social_feed_hint_options">Options</string>
+
+    <string name="social_friends_hint_accept">Accept</string>
+    <string name="social_friends_hint_decline">Decline</string>
+    <string name="social_friends_hint_cancel_request">Cancel</string>
+    <string name="social_friends_hint_join">Join</string>
+    <string name="social_friends_hint_view_profile">Profile</string>
+    <string name="social_friends_hint_favorite">Favorite</string>
+
+    <string name="social_notifications_hint_open">Open</string>
+    <string name="social_notifications_hint_read_all">Read All</string>
+    <string name="social_notifications_loading">Loading notifications...</string>
+
+    <string name="social_profile_hint_avatar">Avatar</string>
+    <string name="social_profile_hint_view_game">View Game</string>
+    <string name="social_profile_hint_settings">Settings</string>
+
+    <string name="social_tabbar_feed">Feed</string>
+    <string name="social_tabbar_friends">Friends</string>
+    <string name="social_tabbar_alerts">Alerts</string>
+    <string name="social_tabbar_profile">Profile</string>
+    <!-- Unread-count badge overflow, e.g. "99+"; not a translatable phrase, kept as a
+         resource for consistency with the rest of the badge text. -->
+    <string name="social_tabbar_unread_overflow">99+</string>
+
+    <string name="social_notconnected_title">Not Connected</string>
+    <string name="social_notconnected_body">Link your account in Settings to see friend activity</string>
+
+    <!-- Generic connection error prefix. %1$s is the raw error detail. -->
+    <string name="social_error_prefix">Error: %1$s</string>
+
+    <string name="social_emptyfeed_title">No Activity Yet</string>
+    <!-- Follow: verb, action of subscribing to a game community feed -->
+    <string name="social_emptyfeed_body_community">Follow game communities to see posts here</string>
+    <string name="social_emptyfeed_body_friends">Your friends\' gaming activity will appear here</string>
+
+    <string name="social_feedcontent_header_title">Activity</string>
+    <!-- Count of events currently loaded in the friends/community feed. -->
+    <plurals name="social_feedcontent_event_count">
+        <item quantity="one">%1$d event</item>
+        <item quantity="other">%1$d events</item>
+    </plurals>
+
+    <!-- Secondary line on a doodle feed card, below the author/title row. -->
+    <string name="social_doodlecard_shared_label">shared a doodle</string>
+
+    <string name="social_startedplayingfooter_likes_desc">Likes</string>
+    <string name="social_startedplayingfooter_comments_desc">Comments</string>
+    <string name="social_feedeventcardfooter_likes_desc">Likes</string>
+    <string name="social_feedeventcardfooter_comments_desc">Comments</string>
+
+    <!-- Feed event description fragments (SocialScreen.formatEventDescription). Each is
+         rendered as a standalone secondary line under the event's title card; they are
+         NOT concatenated with other strings at runtime; several read as sentence
+         fragments (trailing "in") because the associated game title is shown separately
+         as the card's own heading, not appended after this text - see report. -->
+    <!-- Play: noun, refers to a player's first recorded session with a game. -->
+    <string name="social_feed_desc_started_playing">First Play</string>
+    <!-- %1$d is the total hours played milestone reached. -->
+    <plurals name="social_feed_desc_play_milestone">
+        <item quantity="one">reached %1$d hour in</item>
+        <item quantity="other">reached %1$d hours in</item>
+    </plurals>
+    <!-- %1$d is the marathon session length in whole hours. -->
+    <string name="social_feed_desc_marathon_session">had a %1$dh marathon session in</string>
+    <string name="social_feed_desc_completed">completed</string>
+    <!-- %1$s is the unlocked achievement's name. -->
+    <string name="social_feed_desc_achievement_unlocked">unlocked \"%1$s\" in</string>
+    <string name="social_feed_desc_achievement_unlocked_fallback_name">an achievement</string>
+    <!-- %1$d is the total achievements-unlocked milestone reached. -->
+    <plurals name="social_feed_desc_achievement_milestone">
+        <item quantity="one">earned %1$d achievement in</item>
+        <item quantity="other">earned %1$d achievements in</item>
+    </plurals>
+    <string name="social_feed_desc_perfect_game">mastered</string>
+    <string name="social_feed_desc_game_added">added to their library</string>
+    <string name="social_feed_desc_game_favorited">favorited</string>
+    <!-- %1$s is a run of literal star characters representing the rating; not translated. -->
+    <string name="social_feed_desc_game_rated">rated %1$s</string>
+    <!-- %1$s is the new friend's display name. -->
+    <string name="social_feed_desc_friend_added">became friends with %1$s</string>
+    <string name="social_feed_desc_friend_added_fallback_name">someone</string>
+    <!-- Collection: noun, a user-curated group of games. %1$s is the collection name. -->
+    <string name="social_feed_desc_collection_shared">shared collection \"%1$s\"</string>
+    <string name="social_feed_desc_collection_saved">saved collection \"%1$s\"</string>
+    <string name="social_feed_desc_collection_created">created collection \"%1$s\"</string>
+    <!-- %1$d games added, %2$s the collection name. -->
+    <plurals name="social_feed_desc_collection_updated">
+        <item quantity="one">added %1$d game to \"%2$s\"</item>
+        <item quantity="other">added %1$d games to \"%2$s\"</item>
+    </plurals>
+    <string name="social_feed_desc_collection_fallback_name">a collection</string>
+    <string name="social_feed_desc_doodle">shared a doodle</string>
+    <string name="social_feed_desc_discussion_shared_post">shared a post</string>
+    <!-- %1$s is the truncated post body; the literal dots are a continuation marker. -->
+    <string name="social_feed_desc_discussion_truncated">%1$s...</string>
+
+    <!-- CommunitySearchDialog -->
+    <string name="social_communitysearch_modal_title">Find Communities</string>
+    <string name="social_communitysearch_hint_browse">Browse</string>
+    <string name="social_communitysearch_hint_navigate">Navigate</string>
+    <!-- Follow: verb, toggles subscription to a game community from the search result row. -->
+    <string name="social_communitysearch_hint_toggle_follow">Follow/Unfollow</string>
+    <string name="social_communitysearch_hint_close">Close</string>
+    <string name="social_communitysearch_placeholder">Search for a game...</string>
+    <!-- Follow: adjective, describes the current subscribed state of a game community. -->
+    <string name="social_communitysearch_following">Following</string>
+    <!-- Follow: verb, action label to subscribe to a game community. -->
+    <string name="social_communitysearch_follow">Follow</string>
+    <string name="social_communitysearch_no_results">No games found</string>
+
+    <!-- FeedOptionsModal.kt - post options / avatar options / report reason modals -->
+
+    <string name="social_feedoptions_modal_title">Options</string>
+    <string name="social_feedoptions_option_find_communities">Find Communities</string>
+    <string name="social_feedoptions_option_create_post">Create Post</string>
+    <!-- %1$s is the feed event author's display name. -->
+    <string name="social_feedoptions_option_view_profile">View %1$s\'s Profile</string>
+    <string name="social_feedoptions_option_share_screenshot">Share Screenshot</string>
+    <string name="social_feedoptions_option_report_post">Report Post</string>
+    <string name="social_feedoptions_option_hide_post">Hide Post</string>
+
+    <string name="social_avataroptions_modal_title">Avatar</string>
+
+    <string name="social_reportreason_modal_title">Report Reason</string>
+    <string name="social_reportreason_spam">Spam or repetitive content</string>
+    <string name="social_reportreason_harassment">Harassment or bullying</string>
+    <string name="social_reportreason_inappropriate">Inappropriate or offensive</string>
+    <string name="social_reportreason_misinformation">False or misleading info</string>
+
+    <!-- SocialViewModel.kt - AvatarModalOption labels, dead legacy netplay-join path -->
+
+    <string name="social_avatar_option_edit_doodle">Edit doodle</string>
+    <string name="social_avatar_option_use_doodle">Use doodle</string>
+    <string name="social_avatar_option_use_initials">Use initials</string>
+
+    <!-- %1$s is the game title of the netplay session being joined. -->
+    <string name="social_viewmodel_legacy_joining_title">Joining %1$s</string>
+    <string name="social_viewmodel_legacy_checking_compatibility">Checking compatibility...</string>
+
+    <!-- PostEditorScreen.kt / PostEditorViewModel.kt -->
+
+    <string name="social_posteditor_screen_title">Create Post</string>
+    <!-- Body character counter. %1$d current length, %2$d max length. -->
+    <string name="social_posteditor_body_counter">%1$d/%2$d</string>
+    <string name="social_posteditor_body_placeholder">What\'s on your mind?</string>
+    <string name="social_posteditor_doodle_remove_desc">Remove doodle</string>
+    <string name="social_posteditor_doodle_remove_label">Remove</string>
+    <string name="social_posteditor_doodle_add_desc">Add doodle</string>
+    <string name="social_posteditor_doodle_add_label">Add Doodle</string>
+    <string name="social_posteditor_game_link_placeholder">Link a game (optional)</string>
+    <string name="social_posteditor_visibility_public">Public</string>
+    <string name="social_posteditor_visibility_friends_only">Friends Only</string>
+    <string name="social_posteditor_visibility_public_desc">Visible in game community</string>
+    <string name="social_posteditor_visibility_friends_desc">Only visible to friends</string>
+
+    <string name="social_posteditor_footer_edit">Edit</string>
+    <string name="social_posteditor_footer_select">Select</string>
+    <string name="social_posteditor_footer_clear">Clear</string>
+    <string name="social_posteditor_footer_toggle">Toggle</string>
+    <string name="social_posteditor_footer_remove_doodle">Remove</string>
+    <string name="social_posteditor_footer_add_doodle">Add Doodle</string>
+    <string name="social_posteditor_footer_post">Post</string>
+    <string name="social_posteditor_footer_discard">Discard</string>
+    <string name="social_posteditor_footer_back">Back</string>
+
+    <string name="social_postconfirm_modal_title">Create Post</string>
+    <string name="social_postconfirm_posting">Posting...</string>
+    <string name="social_postconfirm_visibility_public">This post will be shared publicly in the game community.</string>
+    <string name="social_postconfirm_visibility_friends">This post will be shared with your friends.</string>
+    <string name="social_postconfirm_option_post">Post</string>
+    <string name="social_postconfirm_option_cancel">Cancel</string>
+
+    <string name="social_discardpost_modal_title">Discard Post?</string>
+    <string name="social_discardpost_body">You have unsaved changes. Are you sure you want to discard this post?</string>
+    <string name="social_discardpost_option_discard">Discard</string>
+    <string name="social_discardpost_option_keep_editing">Keep Editing</string>
+
+    <string name="social_postgamepicker_modal_title">Select Game</string>
+    <string name="social_postgamepicker_hint_browse">Browse</string>
+    <string name="social_postgamepicker_hint_navigate">Navigate</string>
+    <string name="social_postgamepicker_hint_select">Select</string>
+    <string name="social_postgamepicker_hint_cancel">Cancel</string>
+    <string name="social_postgamepicker_search_placeholder">Search games...</string>
+    <string name="social_postgamepicker_no_game">No game</string>
+
+    <!-- FriendsTabContent.kt -->
+
+    <string name="social_friends_empty_title">No Friends Yet</string>
+    <string name="social_friends_empty_body">Add friends using your friend code in Settings</string>
+    <string name="social_friends_header_incoming">Incoming Requests</string>
+    <string name="social_friends_header_sent">Sent Requests</string>
+    <string name="social_friends_header_accepted">Friends</string>
+    <string name="social_friends_request_accept">Accept</string>
+    <string name="social_friends_request_decline">Decline</string>
+    <string name="social_friends_request_cancel">Cancel</string>
+
+    <!-- Play: verb, describes a friend hosting a netplay session of the named game. -->
+    <string name="social_friendcard_hosting">Hosting %1$s</string>
+    <!-- Play: verb, describes a friend currently playing the named game. -->
+    <string name="social_friendcard_playing">Playing %1$s</string>
+    <string name="social_friendcard_watching">Watching %1$s</string>
+    <string name="social_friendcard_favorite_remove_desc">Remove favorite</string>
+    <string name="social_friendcard_favorite_add_desc">Add favorite</string>
+
+    <string name="social_netplaybadge_desc">Netplay session</string>
+    <string name="social_netplaybadge_label">Netplay</string>
+
+    <string name="social_netplayjoin_checking">Checking...</string>
+    <string name="social_netplayjoin_join">Join</string>
+    <string name="social_netplayjoin_rom_not_found">You don\'t have this ROM</string>
+    <string name="social_netplayjoin_rom_version_mismatch">Different ROM version</string>
+    <string name="social_netplayjoin_core_version_mismatch">Update Argosy to match</string>
+    <string name="social_netplayjoin_core_not_supported">Core unsupported</string>
+    <string name="social_netplayjoin_session_busy">Session busy</string>
+
+    <string name="social_presence_online">Online</string>
+    <string name="social_presence_away">Away</string>
+    <string name="social_presence_in_game">In Game</string>
+    <string name="social_presence_watching">Watching</string>
+    <string name="social_presence_offline">Offline</string>
+
+    <!-- ProfileTabContent.kt -->
+
+    <string name="social_profiletab_not_connected">Not connected</string>
+    <string name="social_profiletab_most_played_header">MOST PLAYED</string>
+
+    <!-- ProfileContent.kt - AccountInfoCard, ProfileStatsGrid, PlaytimeLineChart,
+         MostPlayedGameItem -->
+
+    <!-- Play: verb, presence status showing the game a user is currently playing. -->
+    <string name="social_accountcard_presence_playing">playing %1$s</string>
+    <string name="social_accountcard_presence_in_game">in game</string>
+    <string name="social_accountcard_presence_watching_game">watching %1$s</string>
+    <string name="social_accountcard_presence_watching">watching</string>
+    <string name="social_accountcard_presence_online">online</string>
+    <string name="social_accountcard_presence_away">away</string>
+    <!-- %1$s is an abbreviated month and year, e.g. "Jan 2024". Shown in the wide layout. -->
+    <string name="social_accountcard_member_since_wide">Member since %1$s</string>
+    <!-- Same text as social_accountcard_member_since_wide but rendered at a different
+         usage site (the compact/non-wide layout branch); kept as its own key. -->
+    <string name="social_accountcard_member_since_compact">Member since %1$s</string>
+    <plurals name="social_accountcard_friend_count_wide">
+        <item quantity="one">%1$d friend</item>
+        <item quantity="other">%1$d friends</item>
+    </plurals>
+    <plurals name="social_accountcard_friend_count_compact">
+        <item quantity="one">%1$d friend</item>
+        <item quantity="other">%1$d friends</item>
+    </plurals>
+
+    <string name="social_relationship_friends_desc">Friends</string>
+    <string name="social_relationship_favorite_desc">Favorite</string>
+    <string name="social_relationship_not_favorite_desc">Not favorite</string>
+    <string name="social_relationship_not_friends_desc">Not friends</string>
+    <string name="social_relationship_pending_desc">Pending</string>
+
+    <string name="social_statsgrid_total_play_time">Total Play Time</string>
+    <string name="social_statsgrid_games_played">Games Played</string>
+    <string name="social_statsgrid_friends">Friends</string>
+    <string name="social_statsgrid_top_genre">Top Genre</string>
+    <string name="social_statsgrid_top_platform">Top Platform</string>
+    <string name="social_statsgrid_fav_decade">Fav. Decade</string>
+    <string name="social_statsgrid_placeholder_dash">--</string>
+
+    <string name="social_playtimechart_header">LAST 30 DAYS</string>
+    <!-- %1$s is the pre-formatted peak play-time label, e.g. "3.2 hrs". -->
+    <string name="social_playtimechart_peak">peak: %1$s</string>
+
+    <plurals name="social_mostplayed_sessions">
+        <item quantity="one">%1$d session</item>
+        <item quantity="other">%1$d sessions</item>
+    </plurals>
+
+    <!-- Play-time formatting units (ProfileContent.formatPlayHours). -->
+    <!-- "m" is the abbreviation for minutes; %1$d is the minute count. -->
+    <string name="social_playhours_minutes">%1$dm</string>
+    <!-- "hrs" is the abbreviation for hours; %1$s is a decimal hour value, e.g. "3.2". -->
+    <string name="social_playhours_hours_decimal">%1$s hrs</string>
+    <!-- "hr"/"hrs" is the abbreviation for hour(s); %1$d is a whole hour count. -->
+    <plurals name="social_playhours_hours_whole">
+        <item quantity="one">%1$d hr</item>
+        <item quantity="other">%1$d hrs</item>
+    </plurals>
+    <!-- "k hrs" is thousands-of-hours abbreviation; %1$s is a decimal value, e.g. "1.2". -->
+    <string name="social_playhours_hours_thousands">%1$sk hrs</string>
+
+    <!-- UserProfileScreen.kt -->
+
+    <string name="social_userprofile_hint_view_game">View Game</string>
+    <string name="social_userprofile_hint_unfavorite">Unfavorite</string>
+    <string name="social_userprofile_hint_favorite">Favorite</string>
+    <string name="social_userprofile_hint_add_friend">Add Friend</string>
+    <string name="social_userprofile_hint_back">Back</string>
+    <string name="social_userprofile_most_played_header">MOST PLAYED</string>
+
+    <!-- NotificationsTabContent.kt -->
+
+    <string name="social_notifications_empty_title">No Notifications</string>
+    <string name="social_notifications_empty_body">Activity from your posts and friends will appear here</string>
+    <!-- Placeholder avatar glyph shown when a notification has no resolved actor. -->
+    <string name="social_notifications_unknown_avatar">?</string>
+    <!-- Avatar-stack overflow badge, e.g. "+3". %1$d is the extra actor count. -->
+    <string name="social_notifications_avatar_overflow">+%1$d</string>
+    <string name="social_notifications_default_actor">Someone</string>
+    <!-- Fallback noun used in place of the notification's event type when the server
+         does not supply one, e.g. "commented on your post". -->
+    <string name="social_notifications_event_type_fallback">post</string>
+
+    <!-- Comment notification text, branched by how many people commented.
+         %1$s the event type noun (e.g. "post"). -->
+    <string name="social_notifications_comment_zero">Someone commented on your %1$s</string>
+    <!-- %1$s the commenter's name, %2$s the event type noun. -->
+    <string name="social_notifications_comment_one">%1$s commented on your %2$s</string>
+    <!-- %1$s first commenter, %2$s second commenter, %3$s the event type noun. -->
+    <string name="social_notifications_comment_two">%1$s and %2$s commented on your %3$s</string>
+    <!-- %1$s first commenter, %2$s second commenter, %3$d remaining commenter count,
+         %4$s the event type noun. -->
+    <string name="social_notifications_comment_many">%1$s, %2$s, and %3$d others commented on your %4$s</string>
+
+    <string name="social_notifications_like_milestone_default_preview">Your post</string>
+    <!-- %1$s the post preview text, %2$d the like count reached. -->
+    <string name="social_notifications_like_milestone_with_count">%1$s reached %2$d likes</string>
+    <!-- %1$s the post preview text. -->
+    <string name="social_notifications_like_milestone_generic">%1$s reached a like milestone</string>
+
+    <!-- %1$s the sender's display name. -->
+    <string name="social_notifications_friend_request">%1$s sent you a friend request</string>
+    <string name="social_notifications_friend_accepted">%1$s accepted your friend request</string>
+    <string name="social_notifications_friend_added">%1$s added you as a friend</string>
+    <string name="social_notifications_generic_fallback">New notification</string>
+
+    <!-- FeedEventDetailScreen.kt -->
+
+    <string name="social_eventdetail_hint_back">Back</string>
+    <string name="social_eventdetail_hint_unlike">Unlike</string>
+    <string name="social_eventdetail_hint_like">Like</string>
+    <string name="social_eventdetail_hint_comment">Comment</string>
+    <string name="social_eventdetail_hint_view_game">View Game</string>
+    <string name="social_eventdetail_hint_profile">Profile</string>
+
+    <!-- %1$d is the comment count, shown in the portrait layout's inline header. -->
+    <string name="social_eventdetail_comments_header_portrait">Comments (%1$d)</string>
+    <string name="social_eventdetail_comments_header_landscape">Comments</string>
+    <string name="social_eventdetail_no_comments_portrait">No comments yet. Be the first!</string>
+    <string name="social_eventdetail_no_comments_landscape">No comments yet</string>
+    <string name="social_eventdetail_comment_input_placeholder">Add a comment...</string>
+    <string name="social_eventdetail_comment_send_desc">Send</string>
+    <string name="social_eventdetail_likes_desc">Likes</string>
+
+    <!-- Feed event description fragments (FeedEventDetailScreen.formatEventDescription).
+         A separate copy of the composer in SocialScreen.kt, rendered only for event types
+         with no dedicated media/metadata branch; kept as its own key set per usage site. -->
+    <!-- Play: noun, refers to a player's first recorded session with a game. -->
+    <string name="social_eventdetail_desc_started_playing">First Play</string>
+    <plurals name="social_eventdetail_desc_play_milestone">
+        <item quantity="one">reached %1$d hour</item>
+        <item quantity="other">reached %1$d hours</item>
+    </plurals>
+    <string name="social_eventdetail_desc_marathon_session">had a %1$dh marathon session</string>
+    <string name="social_eventdetail_desc_completed">completed</string>
+    <string name="social_eventdetail_desc_achievement_unlocked">unlocked \"%1$s\"</string>
+    <string name="social_eventdetail_desc_achievement_unlocked_fallback_name">an achievement</string>
+    <plurals name="social_eventdetail_desc_achievement_milestone">
+        <item quantity="one">earned %1$d achievement</item>
+        <item quantity="other">earned %1$d achievements</item>
+    </plurals>
+    <string name="social_eventdetail_desc_perfect_game">mastered</string>
+    <string name="social_eventdetail_desc_game_added">added to library</string>
+    <string name="social_eventdetail_desc_game_favorited">favorited</string>
+    <string name="social_eventdetail_desc_game_rated">rated %1$s</string>
+    <string name="social_eventdetail_desc_friend_added">became friends with %1$s</string>
+    <string name="social_eventdetail_desc_friend_added_fallback_name">someone</string>
+    <!-- Collection: noun, a user-curated group of games. -->
+    <string name="social_eventdetail_desc_collection_shared">shared collection \"%1$s\"</string>
+    <string name="social_eventdetail_desc_collection_saved">saved collection \"%1$s\"</string>
+    <string name="social_eventdetail_desc_collection_created">created collection \"%1$s\"</string>
+    <plurals name="social_eventdetail_desc_collection_updated">
+        <item quantity="one">added %1$d game to \"%2$s\"</item>
+        <item quantity="other">added %1$d games to \"%2$s\"</item>
+    </plurals>
+    <string name="social_eventdetail_desc_collection_fallback_name">a collection</string>
+    <string name="social_eventdetail_desc_doodle">shared a doodle</string>
+    <string name="social_eventdetail_desc_discussion_shared_post">shared a post</string>
+    <string name="social_eventdetail_desc_discussion_truncated">%1$s...</string>
+</resources>

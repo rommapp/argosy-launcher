@@ -30,7 +30,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.libretro.LibretroCoreRegistry
 import com.nendo.argosy.libretro.touch.LayoutDefaults
 import com.nendo.argosy.libretro.touch.ResolvedLayout
@@ -133,7 +135,7 @@ fun TouchLayoutEditorModal(
                 .padding(12.dp)
         ) {
             Text(
-                text = "Customize touch controls",
+                text = stringResource(R.string.touchlayout_editor_title),
                 style = MaterialTheme.typography.titleMedium,
                 color = Color.White
             )
@@ -154,7 +156,13 @@ fun TouchLayoutEditorModal(
                 Spacer(modifier = Modifier.padding(8.dp))
 
                 ActionButton(
-                    label = if (orientation == Configuration.ORIENTATION_PORTRAIT) "Portrait" else "Landscape",
+                    label = stringResource(
+                        if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+                            R.string.touchlayout_editor_orientation_portrait
+                        } else {
+                            R.string.touchlayout_editor_orientation_landscape
+                        }
+                    ),
                     onClick = {
                         orientation = if (orientation == Configuration.ORIENTATION_PORTRAIT) {
                             Configuration.ORIENTATION_LANDSCAPE
@@ -166,7 +174,7 @@ fun TouchLayoutEditorModal(
 
                 Spacer(modifier = Modifier.padding(8.dp))
 
-                ActionButton(label = "Close", onClick = onDismiss, primary = true)
+                ActionButton(label = stringResource(R.string.touchlayout_editor_close), onClick = onDismiss, primary = true)
             }
         }
 

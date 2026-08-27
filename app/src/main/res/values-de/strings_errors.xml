@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="error_sync_library_not_connected">RomM nicht verbunden</string>
+    <string name="error_sync_library_unexpected">Synchronisierung fehlgeschlagen</string>
+
+    <string name="error_sync_platform_not_connected">RomM nicht verbunden</string>
+    <string name="error_sync_platform_not_found">Plattform nicht gefunden</string>
+    <string name="error_sync_platform_unexpected">Synchronisierung fehlgeschlagen</string>
+
+    <string name="error_restore_cached_states_game_not_found">Spiel nicht gefunden</string>
+    <string name="error_restore_cached_states_no_local_path">Spiel hat keinen lokalen Pfad</string>
+    <string name="error_restore_cached_states_directory_unresolved">Speicherort für Savestates konnte nicht ermittelt werden</string>
+    <string name="error_restore_cached_states_unexpected">Savestates konnten nicht wiederhergestellt werden</string>
+
+    <string name="error_state_sync_game_not_found">Spiel nicht gefunden</string>
+    <string name="error_state_sync_no_local_path">Spiel hat keinen lokalen Pfad</string>
+
+    <string name="error_restore_state_target_path_unresolved">Speicherort für diesen Savestate konnte nicht ermittelt werden</string>
+    <string name="error_restore_state_write_failed">Savestate-Datei konnte nicht wiederhergestellt werden</string>
+
+    <string name="error_restore_cached_save_game_not_found">Spiel nicht gefunden</string>
+    <string name="error_restore_cached_save_no_local_copy">Spiel hat keine lokale Kopie</string>
+    <string name="error_restore_cached_save_location_unresolved">Speicherort des Spielstands konnte nicht ermittelt werden</string>
+    <string name="error_restore_cached_save_clear_failed">Vorhandener Spielstand am Zielpfad konnte nicht gelöscht werden</string>
+    <string name="error_restore_cached_save_no_local_cache_id">Kein lokaler Spielstand zum Wiederherstellen</string>
+    <string name="error_restore_cached_save_no_server_save_id">Kein Server-Spielstand zum Wiederherstellen</string>
+    <string name="error_restore_cached_save_restore_failed">Spielstand konnte nicht wiederhergestellt werden</string>
+
+    <string name="error_download_game_not_found">Spiel nicht gefunden</string>
+    <string name="error_download_game_not_synced">Spiel ist nicht mit RomM synchronisiert</string>
+    <string name="error_download_invalid_file_type">Ungültiger Dateityp: .%1$s</string>
+    <string name="error_download_rom_info_fetch_failed">ROM-Informationen konnten nicht abgerufen werden: %1$s</string>
+    <string name="error_download_no_discs_found">Keine Discs für dieses Multi-Disc-Spiel gefunden</string>
+    <string name="error_download_all_discs_downloaded">Alle Discs bereits heruntergeladen</string>
+    <string name="error_download_no_discs_queued">Discs konnten nicht in die Warteschlange eingereiht werden</string>
+    <string name="error_download_game_not_found_for_repair">Spiel nicht gefunden</string>
+    <string name="error_download_not_multi_disc">Kein Multi-Disc-Spiel</string>
+
+    <string name="error_download_invalid_content_type">Ungültiger Dateityp: %1$s</string>
+    <string name="error_download_file_too_small">Datei zu klein, um eine ROM zu sein</string>
+    <string name="error_download_unexpected">Download fehlgeschlagen</string>
+    <string name="error_download_insufficient_unpack_space_internal">Zum Entpacken werden %1$d MB im internen Speicher benötigt, %2$d MB verfügbar</string>
+    <string name="error_download_insufficient_unpack_space_rom">Zum Entpacken werden %1$d MB im ROM-Speicher benötigt, %2$d MB verfügbar</string>
+    <string name="error_download_unpack_escaped_staging">Entpacktes Spiel landete nicht im Zwischenordner</string>
+    <string name="error_download_staged_path_missing">Zwischengespeichertes Spiel hat keinen erfassten Pfad</string>
+    <string name="error_download_insufficient_deploy_space">Benötigt %1$d MB im ROM-Speicher, %2$d MB verfügbar</string>
+    <string name="error_download_move_to_storage_failed">Spiel konnte nicht in den ROM-Speicher verschoben werden</string>
+    <string name="error_download_moved_file_not_found">Verschobenes Spiel im ROM-Speicher nicht gefunden</string>
+    <string name="error_download_downloaded_file_missing">Heruntergeladene Datei nicht gefunden</string>
+    <string name="error_download_no_download_entry">Kein Download-Eintrag gefunden</string>
+    <string name="error_download_no_longer_exists">Heruntergeladene Datei existiert nicht mehr</string>
+    <string name="error_download_extraction_failed">Extraktion fehlgeschlagen</string>
+
+    <string name="error_filepicker_already_downloaded">Spiel bereits heruntergeladen</string>
+</resources>

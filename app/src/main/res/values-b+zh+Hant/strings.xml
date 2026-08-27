@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="secondary_home_label">Argosy 夥伴</string>
+    <string name="focus_accessibility_description">雙螢幕遊玩期間，將手把焦點固定在遊戲畫面上</string>
+</resources>

@@ -21,6 +21,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.data.storage.MediaLibraryUsage
 import com.nendo.argosy.data.storage.MediaLocationUsage
 import com.nendo.argosy.data.storage.StorageCategory
@@ -105,7 +108,7 @@ internal fun createStorageMediaLayout(items: List<StorageMediaItem>) =
         isFocusable = { it.isFocusable },
         visibleWhen = { _, _ -> true },
         sectionOf = { MEDIA_SECTION },
-        sectionTitle = { null }
+        sectionTitleRes = { null }
     )
 
 internal data class StorageMediaLayoutInfo(
@@ -193,17 +196,23 @@ fun StorageMediaSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
 
             StorageMediaItem.ArtworkCache -> {
                 val theme = LocalArgosyTheme.current
+                val artworkFileCount = artworkUsage?.fileCount ?: 0
                 MediaDetailRow(
-                    title = "Artwork cache",
-                    subtitle = "Posters and backdrops fetched while browsing, shared with other online artwork",
+                    title = stringResource(R.string.settings_storage_media_artwork_title),
+                    subtitle = stringResource(R.string.settings_storage_media_artwork_subtitle),
                     trailingPrimary = formatBytes(artworkUsage?.bytes ?: 0L),
-                    trailingSecondary = "${artworkUsage?.fileCount ?: 0} files",
+                    trailingSecondary = pluralStringResource(
+                        R.plurals.settings_storage_media_artwork_files,
+                        artworkFileCount,
+                        artworkFileCount
+                    ),
                     titleColor = theme.textPrimary,
                     trailingColor = theme.textDim
                 )
             }
 
-            StorageMediaItem.LibrariesHeader -> SectionHeader("LIBRARIES")
+            StorageMediaItem.LibrariesHeader ->
+                SectionHeader(stringResource(R.string.settings_storage_media_section_libraries))
 
             StorageMediaItem.LibrariesEmpty -> MediaEmptyState(
                 isComputing = snapshot == null ||
@@ -213,7 +222,7 @@ fun StorageMediaSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
             StorageMediaItem.LocationsHeader -> {
                 Column {
                     Spacer(modifier = Modifier.height(Dimens.spacingMd))
-                    SectionHeader("LOCATIONS")
+                    SectionHeader(stringResource(R.string.settings_storage_media_section_locations))
                 }
             }
 
@@ -248,18 +257,25 @@ private fun MediaTotalsHeader(
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = if (downloadedCount == 1) "1 title downloaded" else "$downloadedCount titles downloaded",
+                text = pluralStringResource(
+                    R.plurals.settings_storage_media_totals_count,
+                    downloadedCount,
+                    downloadedCount
+                ),
                 style = MaterialTheme.typography.titleMedium,
                 color = theme.textPrimary
             )
             Text(
-                text = "${formatBytes(totalBytes)} used",
+                text = stringResource(R.string.settings_storage_media_totals_used, formatBytes(totalBytes)),
                 style = MaterialTheme.typography.bodyMedium,
                 color = theme.textDim
             )
             if (offlineBytes > 0L) {
                 Text(
-                    text = "${formatBytes(offlineBytes)} on storage that is not connected",
+                    text = stringResource(
+                        R.string.settings_storage_media_totals_offline,
+                        formatBytes(offlineBytes)
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = theme.textMute
                 )
@@ -287,15 +303,19 @@ private fun MediaEmptyState(isComputing: Boolean) {
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
     ) {
         Text(
-            text = if (isComputing) "Computing storage usage..." else "No media libraries yet",
+            text = if (isComputing) {
+                stringResource(R.string.settings_storage_media_empty_computing_title)
+            } else {
+                stringResource(R.string.settings_storage_media_empty_title)
+            },
             style = MaterialTheme.typography.titleSmall,
             color = theme.textPrimary
         )
         Text(
             text = if (isComputing) {
-                "Per-library sizes will appear here once the scan finishes."
+                stringResource(R.string.settings_storage_media_empty_computing_message)
             } else {
-                "Sign in to a media server and downloaded movies and episodes show up here per library."
+                stringResource(R.string.settings_storage_media_empty_message)
             },
             style = MaterialTheme.typography.bodySmall,
             color = theme.textDim
@@ -342,7 +362,11 @@ private fun MediaLibraryRow(
             Spacer(modifier = Modifier.width(Dimens.spacingMd))
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = if (usage.downloadedCount == 1) "1 downloaded" else "${usage.downloadedCount} downloaded",
+                    text = pluralStringResource(
+                        R.plurals.settings_storage_media_library_count,
+                        usage.downloadedCount,
+                        usage.downloadedCount
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = theme.textPrimary
                 )
@@ -360,15 +384,23 @@ private fun MediaLibraryRow(
         )
         if (usage.offlineCount > 0) {
             Text(
-                text = "${usage.offlineCount} waiting on storage that is not connected, " +
-                    "${formatBytes(usage.offlineBytes)} when last measured",
+                text = pluralStringResource(
+                    R.plurals.settings_storage_media_library_offline,
+                    usage.offlineCount,
+                    usage.offlineCount,
+                    formatBytes(usage.offlineBytes)
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = theme.textMute
             )
         }
         if (usage.missingCount > 0) {
             Text(
-                text = "${usage.missingCount} no longer on disk",
+                text = pluralStringResource(
+                    R.plurals.settings_storage_media_library_missing,
+                    usage.missingCount,
+                    usage.missingCount
+                ),
                 style = MaterialTheme.typography.bodySmall,
                 color = theme.destructive
             )
@@ -380,14 +412,29 @@ private fun MediaLibraryRow(
 private fun MediaLocationRow(usage: MediaLocationUsage) {
     val theme = LocalArgosyTheme.current
     val subtitle = when {
-        !usage.isAvailable -> "Not connected, ${formatBytes(usage.bytes)} when last measured"
-        usage.isCurrentTarget -> "New downloads land here, ${usage.fileCount} files"
-        else -> "Left here by an earlier download folder, ${usage.fileCount} files"
+        !usage.isAvailable -> stringResource(
+            R.string.settings_storage_media_location_offline,
+            formatBytes(usage.bytes)
+        )
+        usage.isCurrentTarget -> pluralStringResource(
+            R.plurals.settings_storage_media_location_current,
+            usage.fileCount,
+            usage.fileCount
+        )
+        else -> pluralStringResource(
+            R.plurals.settings_storage_media_location_stale,
+            usage.fileCount,
+            usage.fileCount
+        )
     }
     MediaDetailRow(
         title = formatStoragePath(usage.path),
         subtitle = subtitle,
-        trailingPrimary = if (usage.isAvailable) formatBytes(usage.bytes) else "Unavailable",
+        trailingPrimary = if (usage.isAvailable) {
+            formatBytes(usage.bytes)
+        } else {
+            stringResource(R.string.settings_storage_media_location_unavailable)
+        },
         trailingSecondary = null,
         titleColor = theme.textPrimary,
         trailingColor = if (usage.isAvailable) theme.textDim else theme.textMute

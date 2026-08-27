@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="notif_generic_error_title">错误</string>
+
+    <string name="notif_storage_private_path_error">GameNative无法读取Argosy的私有文件夹。请选择一个公共位置。</string>
+
+    <string name="notif_storage_migrate_persistent_title">正在移动游戏</string>
+    <string name="notif_storage_migrate_persistent_subtitle_initial">0/%1$d</string>
+    <string name="notif_storage_migrate_persistent_subtitle_progress">%1$d/%2$d：%3$s</string>
+    <string name="notif_storage_migrate_complete_title">迁移完成</string>
+    <string name="notif_storage_migrate_complete_subtitle">已移动%1$d个，缺失%2$d个，失败%3$d个</string>
+
+    <string name="notif_storage_migrate_platform_persistent_title">正在移动%1$s的ROM</string>
+    <string name="notif_storage_migrate_platform_persistent_subtitle_initial">0/%1$d</string>
+    <string name="notif_storage_migrate_platform_persistent_subtitle_progress">%1$d/%2$d：%3$s</string>
+    <string name="notif_storage_migrate_platform_complete_title">%1$s迁移完成</string>
+    <string name="notif_storage_migrate_platform_complete_subtitle">已移动%1$d个，缺失%2$d个，失败%3$d个</string>
+
+    <string name="notif_storage_purge_persistent_title">正在清除%1$s</string>
+    <string name="notif_storage_purge_persistent_subtitle_preparing">正在准备&#8230;</string>
+    <string name="notif_storage_purge_persistent_subtitle_progress">%1$d/%2$d：%3$s</string>
+    <string name="notif_storage_purge_complete_title">%1$s已清除</string>
+    <string name="notif_storage_purge_complete_subtitle">已删除%1$d个游戏，释放%2$dMB空间</string>
+
+    <string name="notif_storage_hardreset_blocked_active_session">请先关闭正在运行的游戏，然后再重置</string>
+    <string name="notif_storage_hardreset_blocked_active_downloads">请先取消游戏下载，然后再重置</string>
+    <string name="notif_storage_hardreset_blocked_emulator_download">请先等待模拟器下载完成</string>
+    <string name="notif_storage_hardreset_blocked_steam_download">请先取消Steam下载，然后再重置</string>
+    <string name="notif_storage_hardreset_blocked_media_download">请先取消电影或剧集下载，然后再重置</string>
+    <string name="notif_storage_hardreset_pending_uploads_none">请先同步待上传的存档，然后再重置</string>
+    <string name="notif_storage_hardreset_pending_uploads_one">请先同步%1$s的待上传存档，然后再重置</string>
+    <string name="notif_storage_hardreset_pending_uploads_many">请先同步%1$s的待上传存档，然后再重置</string>
+    <string name="notif_storage_hardreset_success">硬重置完成，请同步以重建你的游戏库</string>
+    <string name="notif_storage_hardreset_failed">硬重置失败：%1$s</string>
+    <string name="notif_storage_hardreset_failed_default_detail">请重试</string>
+
+    <string name="notif_steam_path_not_accessible">安装路径无法访问：%1$s</string>
+    <string name="notif_steam_storage_blocked_subtitle">存储空间不足（剩余%1$dMB，需要%2$dMB）</string>
+
+    <string name="notif_social_friend_started_playing">开始玩%1$s</string>
+    <string name="notif_social_friend_online">刚刚上线</string>
+
+    <string name="notif_settings_cache_validate_title">正在验证图片缓存</string>
+    <string name="notif_settings_cache_validate_starting">正在开始&#8230;</string>
+    <string name="notif_settings_cache_validate_cleaned">已清理%1$d个文件，清空%2$d条缓存路径</string>
+    <string name="notif_settings_cache_validate_healthy">图片缓存状态良好</string>
+
+    <string name="notif_settings_downloads_validate_title">正在验证下载内容</string>
+    <string name="notif_settings_downloads_validate_checking">正在检查ROM文件&#8230;</string>
+    <string name="notif_settings_downloads_validate_discovering">正在发现文件&#8230;</string>
+    <string name="notif_settings_downloads_validate_result">已清除%1$d条无效路径，发现%2$d个文件</string>
+
+    <string name="notif_storage_caches_emulator_busy_precheck">请先等待模拟器下载完成</string>
+    <string name="notif_storage_caches_driver_busy">请先等待驱动下载完成</string>
+    <string name="notif_storage_caches_steam_busy_precheck">请先取消Steam下载</string>
+    <string name="notif_storage_caches_rom_extraction_busy">游戏运行中，无法清除已解压的ROM</string>
+    <string name="notif_storage_caches_emulator_busy_runclear">请先等待模拟器下载完成</string>
+    <string name="notif_storage_caches_steam_busy_runclear">请先取消Steam下载</string>
+
+    <string name="notif_sync_settings_manual_syncing">正在同步存档&#8230;</string>
+    <string name="notif_sync_settings_manual_not_connected">未连接</string>
+    <string name="notif_sync_settings_manual_up_to_date">存档已是最新</string>
+    <string name="notif_sync_settings_manual_synced">已同步%1$d项</string>
+    <string name="notif_sync_settings_manual_synced_with_failures">已同步%1$d项（%2$d项失败）</string>
+    <string name="notif_sync_settings_manual_failed">存档同步失败：%1$s</string>
+
+    <string name="notif_sync_settings_scan_scanning">正在扫描本地存档&#8230;</string>
+    <string name="notif_sync_settings_scan_found">发现%1$d个本地存档待同步</string>
+    <string name="notif_sync_settings_scan_syncing">正在同步存档&#8230;</string>
+    <string name="notif_sync_settings_scan_not_connected">未连接</string>
+    <string name="notif_sync_settings_scan_up_to_date">存档已是最新</string>
+    <string name="notif_sync_settings_scan_synced">已同步%1$d项</string>
+    <string name="notif_sync_settings_scan_synced_with_failures">已同步%1$d项（%2$d项失败）</string>
+    <string name="notif_sync_settings_scan_failed">存档同步失败：%1$s</string>
+
+    <string name="notif_sync_settings_imagecache_moving_custom">正在移动缓存图片&#8230;</string>
+    <string name="notif_sync_settings_imagecache_moved_custom">图片移动成功</string>
+    <string name="notif_sync_settings_imagecache_move_failed_custom">部分图片移动失败</string>
+    <string name="notif_sync_settings_imagecache_moving_reset">正在移动缓存图片&#8230;</string>
+    <string name="notif_sync_settings_imagecache_moved_reset">图片移动成功</string>
+    <string name="notif_sync_settings_imagecache_move_failed_reset">部分图片移动失败</string>
+
+    <string name="notif_sync_settings_platforms_fetch_failed">获取平台列表失败：%1$s</string>
+    <string name="notif_sync_settings_reset_save_cache_blocked">游戏运行中，无法重置存档缓存</string>
+    <string name="notif_sync_settings_clear_state_cache_blocked">游戏运行中，无法清除即时存档缓存</string>
+
+    <string name="notif_steam_settings_gamenative_unconfigured">未配置GameNative文件夹</string>
+    <string name="notif_steam_settings_gamenative_scan_title">GameNative游戏库</string>
+    <string name="notif_steam_settings_install_path_changed_title">安装路径已更改</string>
+    <plurals name="notif_steam_settings_install_path_changed_subtitle">
+        <item quantity="other">%1$d个正在进行的下载将在原位置完成，新下载将使用新目标位置。</item>
+    </plurals>
+    <string name="notif_steam_settings_launcher_download_failed">下载失败：%1$s</string>
+    <string name="notif_steam_settings_library_reset">已移除%1$d个Steam游戏</string>
+    <string name="notif_steam_settings_game_added">已添加：%1$s</string>
+    <string name="notif_steam_settings_library_synced">已添加%1$d个Steam游戏</string>
+
+    <string name="notif_jellyfin_settings_sync_title">正在同步媒体</string>
+    <string name="notif_jellyfin_settings_sync_starting">正在开始&#8230;</string>
+    <string name="notif_jellyfin_settings_sync_up_to_date">媒体内容已是最新</string>
+    <string name="notif_jellyfin_settings_sync_partial">部分媒体库未能同步</string>
+    <string name="notif_jellyfin_settings_sync_failed_title">媒体同步失败</string>
+    <plurals name="notif_jellyfin_settings_sync_libraries_count">
+        <item quantity="other">%1$d个媒体库</item>
+    </plurals>
+    <plurals name="notif_jellyfin_settings_sync_titles_count">
+        <item quantity="other">%1$d个内容</item>
+    </plurals>
+    <string name="notif_jellyfin_settings_sync_counts_summary">%1$s，%2$s</string>
+    <string name="notif_jellyfin_settings_relocate_blocked_media_download">请先取消电影或剧集下载，然后再移动你的媒体文件夹</string>
+
+    <string name="notif_collection_downloads_queued_title">下载已加入队列</string>
+    <plurals name="notif_collection_downloads_queued_subtitle">
+        <item quantity="other">已将%1$d个游戏加入下载队列</item>
+    </plurals>
+
+    <string name="notif_virtualcategory_downloads_queued_title">下载已加入队列</string>
+    <plurals name="notif_virtualcategory_downloads_queued_subtitle">
+        <item quantity="other">已将%1$d个游戏加入下载队列</item>
+    </plurals>
+
+    <string name="notif_dualscreen_reserved_slot_name">“%1$s”是保留名称</string>
+    <string name="notif_dualscreen_files_queued">已排队%1$d个</string>
+    <string name="notif_dualscreen_files_removed">已移除%1$d个</string>
+    <plurals name="notif_dualscreen_downloads_queued">
+        <item quantity="other">已将%1$d个下载加入队列</item>
+    </plurals>
+    <string name="notif_dualscreen_no_local_path">游戏没有本地路径</string>
+    <string name="notif_dualscreen_state_slot_auto">自动即时存档</string>
+    <string name="notif_dualscreen_state_slot_numbered">即时存档槽位%1$d</string>
+    <string name="notif_dualscreen_state_restored">已恢复%1$s</string>
+    <string name="notif_dualscreen_state_version_mismatch">%1$s是由不同的核心版本创建的</string>
+    <string name="notif_dualscreen_state_restore_failed">无法恢复%1$s</string>
+    <string name="notif_dualscreen_state_deleted">已删除%1$s</string>
+    <string name="notif_dualscreen_state_copied">已将%1$s复制到%2$s</string>
+    <string name="notif_dualscreen_state_copy_failed">无法复制%1$s</string>
+
+    <string name="notif_gamelaunch_no_emulator">此平台未安装模拟器</string>
+    <string name="notif_gamelaunch_no_rom_file">未找到ROM文件</string>
+    <string name="notif_gamelaunch_no_steam_launcher">未安装Steam启动器</string>
+    <string name="notif_gamelaunch_no_core_base">没有可用于%1$s的核心</string>
+    <string name="notif_gamelaunch_no_core_with_reason">没有可用于%1$s的核心：%2$s</string>
+    <string name="notif_gamelaunch_missing_discs">缺少光盘：%1$s。请查看游戏详情以修复。</string>
+    <string name="notif_gamelaunch_missing_bios">缺少%1$s的BIOS。请在启动前于设置中安装。</string>
+    <string name="notif_gamelaunch_no_scummvm_id">缺少%1$s的.scummvm文件</string>
+    <string name="notif_gamelaunch_no_android_app">未安装Android应用：%1$s</string>
+    <string name="notif_gamelaunch_disc_launch_failed">启动光盘失败</string>
+    <string name="notif_gamelaunch_launch_failed">启动失败</string>
+
+    <string name="notif_social_share_screenshot_soon_quickaction">分享截图功能即将上线</string>
+    <string name="notif_social_share_screenshot_soon_feedmenu">分享截图功能即将上线</string>
+    <string name="notif_social_post_reported">已举报并隐藏该动态</string>
+
+    <string name="notif_social_game_not_in_library">游戏不在游戏库中</string>
+
+    <string name="notif_userprofile_game_not_in_library_input">游戏不在游戏库中</string>
+    <string name="notif_userprofile_game_not_in_library_touch">游戏不在游戏库中</string>
+
+    <string name="notif_sync_library_start_failed_title">同步无法启动</string>
+    <string name="notif_sync_library_progress_title">正在同步游戏库</string>
+    <string name="notif_sync_library_progress_starting">正在开始...</string>
+    <string name="notif_sync_library_progress_platform_games">%1$s（%2$d/%3$d个游戏）</string>
+    <string name="notif_sync_library_complete_title">同步完成</string>
+    <string name="notif_sync_library_complete_counts">新增%1$d个，更新%2$d个</string>
+    <string name="notif_sync_library_complete_counts_with_removed">新增%1$d个，更新%2$d个，移除%3$d个</string>
+    <string name="notif_sync_library_completed_with_errors_title">同步完成，但存在错误</string>
+    <plurals name="notif_sync_library_failed_platforms">
+        <item quantity="other">%1$d个平台同步失败</item>
+    </plurals>
+    <string name="notif_sync_library_failed_title">同步失败</string>
+
+    <string name="notif_sync_failure_timeout">服务器响应超时，可能正忙或你的游戏库过大。</string>
+    <string name="notif_sync_failure_unreachable">无法连接到服务器。请检查你的网络连接和服务器地址。</string>
+    <string name="notif_sync_failure_connection_lost">与服务器的连接已断开。下次同步会从中断处继续。</string>
+    <string name="notif_sync_failure_unknown">同步失败，请重试。</string>
+
+    <string name="notif_sync_platform_progress_title">正在同步%1$s</string>
+    <string name="notif_sync_platform_progress_fetching">正在获取游戏...</string>
+    <string name="notif_sync_platform_complete_title">%1$s已同步</string>
+    <string name="notif_sync_platform_complete_counts">新增%1$d个，更新%2$d个</string>
+    <string name="notif_sync_platform_complete_counts_with_removed">新增%1$d个，更新%2$d个，移除%3$d个</string>
+    <string name="notif_sync_platform_completed_with_errors_title">同步完成，但存在错误</string>
+    <string name="notif_sync_platform_error_unknown">未知错误</string>
+    <string name="notif_sync_platform_failed_title">同步失败</string>
+</resources>

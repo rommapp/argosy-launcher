@@ -8,6 +8,8 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.SwitchPreference
@@ -39,11 +41,11 @@ internal fun InGameCoreOptionsSection(
         if (perGameToggleVisible) {
             item(key = "__per_game_settings_toggle__") {
                 SwitchPreference(
-                    title = "Game-specific settings",
+                    title = stringResource(R.string.ingame_coreoptions_per_game_title),
                     subtitle = if (perGameEnabled) {
-                        "Changes apply to this game only"
+                        stringResource(R.string.ingame_coreoptions_per_game_subtitle_on)
                     } else {
-                        "Using global defaults for this core"
+                        stringResource(R.string.ingame_coreoptions_per_game_subtitle_off)
                     },
                     isEnabled = perGameEnabled,
                     isFocused = focusedIndex == 0,

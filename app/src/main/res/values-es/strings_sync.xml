@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sync_prelaunch_checking_save">Comprobando partida guardada...</string>
+    <string name="sync_prelaunch_save_found">Partida guardada encontrada</string>
+    <string name="sync_prelaunch_save_absent">Sin partida guardada</string>
+    <string name="sync_prelaunch_connecting">Conectando...</string>
+    <string name="sync_prelaunch_connected">Conectado</string>
+    <string name="sync_prelaunch_connect_failed">Error de conexión</string>
+    <string name="sync_prelaunch_downloading">Descargando...</string>
+    <string name="sync_prelaunch_download_complete">Descarga completa</string>
+    <string name="sync_prelaunch_download_failed">Error al descargar</string>
+    <string name="sync_prelaunch_writing">Escribiendo partida guardada...</string>
+    <string name="sync_prelaunch_write_complete">Partida guardada escrita</string>
+    <string name="sync_prelaunch_write_failed">Error al escribir</string>
+    <string name="sync_prelaunch_launching">Iniciando juego...</string>
+
+    <string name="sync_postsession_checking_save">Comprobando partida guardada...</string>
+    <string name="sync_postsession_save_found">Partida guardada encontrada</string>
+    <string name="sync_postsession_save_absent">Partida guardada no encontrada</string>
+    <string name="sync_postsession_connecting">Conectando...</string>
+    <string name="sync_postsession_connected">Conectado</string>
+    <string name="sync_postsession_connect_failed">Error de conexión</string>
+    <string name="sync_postsession_uploading">Subiendo...</string>
+    <string name="sync_postsession_upload_complete">Subida completa</string>
+    <string name="sync_postsession_upload_queued">Subida en cola</string>
+    <string name="sync_postsession_complete">Sincronización completa</string>
+
+    <string name="sync_progress_skipped">Sincronización omitida</string>
+    <string name="sync_progress_hardcore_conflict">Conflicto de guardado en modo hardcore</string>
+    <string name="sync_progress_local_modified">Partida guardada local modificada</string>
+    <string name="sync_progress_save_conflict">Conflicto de partida guardada</string>
+
+    <string name="sync_blocked_permission_title">Se requiere permiso de acceso a archivos</string>
+    <string name="sync_blocked_permission_detail">Concede el permiso \"Acceso a todos los archivos\" para sincronizar las partidas guardadas de %1$s.</string>
+    <string name="sync_blocked_permission_emulator_fallback">este emulador</string>
+
+    <string name="sync_blocked_path_not_found_title">Carpeta de guardado no encontrada</string>
+    <string name="sync_blocked_path_not_found_detail">No se encontró la carpeta de guardado de %1$s. El emulador podría usar una ubicación de guardado no estándar.</string>
+    <string name="sync_blocked_path_not_found_emulator_fallback">este emulador</string>
+
+    <string name="sync_blocked_access_denied_title">Acceso a la carpeta de guardado bloqueado</string>
+    <string name="sync_blocked_access_denied_detail">Tu dispositivo está bloqueando el acceso a los datos de guardado de %1$s. Esto puede deberse a restricciones del fabricante (Samsung, Xiaomi, etc.) o a políticas de seguridad.</string>
+    <string name="sync_blocked_access_denied_switch_detail">Tu dispositivo está bloqueando el acceso a los datos de guardado de %1$s. Configura una ruta de guardado externa en %2$s (fuera de Android/data) y luego establece la misma ruta en Argosy.</string>
+    <string name="sync_blocked_access_denied_emulator_fallback">emulador</string>
+    <string name="sync_blocked_access_denied_configure_fallback">el emulador</string>
+
+    <string name="sync_service_channel_name">Sincronización de guardado</string>
+    <string name="sync_service_channel_description">Muestra el progreso de la sincronización de guardado en segundo plano</string>
+    <string name="sync_service_preparing">Preparando sincronización...</string>
+    <string name="sync_service_platform">Sincronizando: %1$s</string>
+    <string name="sync_service_library">Sincronizando biblioteca...</string>
+    <string name="sync_service_uploading">Subiendo: %1$s</string>
+    <string name="sync_service_downloading">Descargando: %1$s</string>
+    <string name="sync_service_saves">Sincronizando partidas guardadas...</string>
+
+    <string name="sync_download_channel_name">Progreso de descarga</string>
+    <string name="sync_download_channel_description">Muestra el progreso de descarga en segundo plano</string>
+    <string name="sync_download_service_preparing">Preparando descarga...</string>
+    <string name="sync_download_service_steam_downloading">Descargando: %1$s</string>
+    <string name="sync_download_service_extracting">Extrayendo: %1$s</string>
+    <string name="sync_download_service_moving">Moviendo al almacenamiento de ROM: %1$s</string>
+    <string name="sync_download_service_downloading">Descargando: %1$s</string>
+    <string name="sync_download_service_queued">En cola: %1$s</string>
+    <string name="sync_download_service_pending">Descarga pendiente...</string>
+    <string name="sync_download_service_media_preparing">%1$s: %2$s</string>
+    <string name="sync_download_service_media_downloading">Descargando: %1$s</string>
+
+    <string name="sync_session_channel_name">Sesión de juego</string>
+    <string name="sync_session_channel_description">Supervisa los archivos de guardado durante el juego</string>
+    <string name="sync_session_notification_playing">Jugando</string>
+    <string name="sync_session_notification_save_detected">Partida guardada detectada</string>
+    <string name="sync_session_game_fallback">Juego</string>
+
+    <string name="sync_session_save_uploaded_orphan">Partida guardada subida</string>
+    <string name="sync_session_save_uploaded">Partida guardada subida</string>
+    <string name="sync_session_save_unchanged">Sin cambios en la partida guardada</string>
+    <string name="sync_session_save_upload_failed">Error al subir</string>
+    <string name="sync_session_save_upload_failed_subtitle">%1$s: %2$s</string>
+    <string name="sync_session_save_upload_failed_name_fallback">Partida guardada</string>
+
+    <plurals name="sync_conflict_pending_title">
+        <item quantity="one">%1$d partida guardada necesita tu atención</item>
+        <item quantity="many">%1$d partidas guardadas necesitan tu atención</item>
+        <item quantity="other">%1$d partidas guardadas necesitan tu atención</item>
+    </plurals>
+    <string name="sync_conflict_pending_subtitle">Abre Sincronización de guardado para resolverlo. Las partidas guardadas locales no cambian.</string>
+
+    <string name="sync_media_signin_title">Inicia sesión para descargar</string>
+    <string name="sync_media_signin_subtitle">Conecta un servidor de medios desde Ajustes</string>
+
+    <plurals name="sync_media_title_count">
+        <item quantity="one">%1$d título</item>
+        <item quantity="many">%1$d títulos</item>
+        <item quantity="other">%1$d títulos</item>
+    </plurals>
+
+    <string name="sync_media_refusal_downloaded_title">Ya descargado</string>
+    <string name="sync_media_refusal_downloaded_subtitle">%1$s en este dispositivo a %2$s</string>
+    <string name="sync_media_refusal_queued_title">Ya está en la cola</string>
+    <string name="sync_media_refusal_queued_subtitle">%1$s esperando para descargar</string>
+    <string name="sync_media_refusal_mixed_title">Nada nuevo para descargar</string>
+    <string name="sync_media_refusal_mixed_subtitle">%1$s descargados, %2$s en cola</string>
+    <string name="sync_media_refusal_unavailable_title">Nada para descargar</string>
+    <string name="sync_media_refusal_unavailable_subtitle">Este título no tiene ningún archivo que el servidor pueda entregar</string>
+
+    <string name="sync_media_unreachable_title">Almacenamiento no disponible</string>
+    <string name="sync_media_unreachable_subtitle">%1$s permanecen descargados hasta que su almacenamiento vuelva</string>
+
+    <string name="sync_media_storage_title">No hay suficiente almacenamiento para %1$s</string>
+
+    <string name="sync_media_step_preparing">Preparando</string>
+    <string name="sync_media_step_awaiting_transcode">Esperando a que el servidor inicie la transcodificación</string>
+
+    <string name="sync_media_transcode_unavailable_title">Descargando el archivo original</string>
+    <string name="sync_media_transcode_unavailable_subtitle">No se pudo transcodificar %1$s para la descarga</string>
+
+    <plurals name="sync_media_subtitle_shortfall_title">
+        <item quantity="one">%1$s se descargó sin %2$d pista de subtítulos</item>
+        <item quantity="many">%1$s se descargó sin %2$d pistas de subtítulos</item>
+        <item quantity="other">%1$s se descargó sin %2$d pistas de subtítulos</item>
+    </plurals>
+    <string name="sync_media_subtitle_shortfall_burned_in">%1$s está incrustado en la imagen; el resto no se pudo transferir</string>
+    <string name="sync_media_subtitle_shortfall_refused">El servidor no quiso entregar todas las pistas de subtítulos</string>
+    <string name="sync_media_subtitle_shortfall_transcoded">Los subtítulos de imagen no se pueden transferir con un tamaño reducido</string>
+    <string name="sync_media_subtitle_shortfall_external">Los subtítulos de imagen están separados del archivo y no se pueden transferir con él</string>
+    <string name="sync_media_subtitle_label_fallback">Subtítulos</string>
+
+    <string name="sync_steam_rate_limited_title">Steam no disponible temporalmente</string>
+    <string name="sync_steam_rate_limited_subtitle">Límite de inicios de sesión alcanzado. Inténtalo de nuevo en una hora</string>
+    <string name="sync_steam_auth_expired_title">Sesión de Steam vencida</string>
+    <string name="sync_steam_auth_expired_subtitle">Vuelve a iniciar sesión desde Ajustes &gt; Steam</string>
+    <string name="sync_steam_download_signed_out_title">Sesión de Steam vencida</string>
+    <string name="sync_steam_download_signed_out_subtitle">Inicia sesión desde Ajustes &gt; Steam para descargar</string>
+    <string name="sync_steam_path_blocked_title">No se puede descargar %1$s</string>
+    <string name="sync_steam_storage_blocked_title">No se puede descargar %1$s</string>
+
+    <string name="sync_steam_qr_rate_limited">Límite alcanzado. Inténtalo de nuevo más tarde</string>
+    <string name="sync_steam_qr_login_failed">Error al iniciar sesión: %1$s</string>
+    <string name="sync_steam_qr_not_connected">No conectado a Steam</string>
+    <string name="sync_steam_qr_start_failed">Error al iniciar la autenticación por QR</string>
+    <string name="sync_steam_qr_polling_failed">Error de sondeo</string>
+    <string name="sync_steam_qr_disconnected">Steam no conectado</string>
+
+    <string name="sync_launch_core_fallback">Error al cargar %1$s; se usó %2$s en su lugar</string>
+</resources>

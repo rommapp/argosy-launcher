@@ -14,6 +14,7 @@ import android.view.View
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.nendo.argosy.R
 import com.nendo.argosy.util.hideSystemBars
 
 class RecoveryDisplayPresentation(
@@ -63,7 +64,7 @@ class RecoveryDisplayPresentation(
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
 
                 gameNameText = TextView(context).apply {
-                    text = "Playing..."
+                    text = context.getString(R.string.ingame_recovery_display_playing_placeholder)
                     setTextColor(Color.WHITE)
                     textSize = 16f
                     typeface = Typeface.DEFAULT_BOLD
@@ -84,7 +85,7 @@ class RecoveryDisplayPresentation(
 
             // Right side: Status
             statusText = TextView(context).apply {
-                text = "In Game"
+                text = context.getString(R.string.ingame_recovery_display_status_in_game)
                 setTextColor(Color.argb(180, 255, 255, 255))
                 textSize = 14f
             }
@@ -93,7 +94,7 @@ class RecoveryDisplayPresentation(
     }
 
     fun updateGameInfo(gameName: String?, platformName: String?) {
-        gameNameText?.text = gameName ?: "Playing..."
+        gameNameText?.text = gameName ?: context.getString(R.string.ingame_recovery_display_playing_fallback)
         if (platformName != null) {
             platformText?.text = platformName
             platformText?.visibility = View.VISIBLE

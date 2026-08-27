@@ -36,8 +36,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.components.EpisodePickerContent
 import com.nendo.argosy.ui.components.FocusedScroll
@@ -221,7 +223,7 @@ fun MediaDownloadModalContent(
             if (content.step == MediaDownloadStep.EPISODES) {
                 EpisodePickerContent(
                     state = content.episodes,
-                    confirmLabel = "Download",
+                    confirmLabel = stringResource(R.string.media_download_episodes_confirm),
                     onPressAt = { index ->
                         onFocus(index)
                         onConfirm()
@@ -239,7 +241,7 @@ fun MediaDownloadModalContent(
                 ) {
                     itemsIndexed(
                         items = content.options,
-                        key = { _, option -> option.quality?.name ?: option.label }
+                        key = { _, option -> option.quality?.name ?: option.key }
                     ) { index, option ->
                         MediaDownloadOptionRow(
                             option = option,

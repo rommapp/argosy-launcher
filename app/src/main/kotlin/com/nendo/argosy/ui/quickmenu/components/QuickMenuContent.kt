@@ -45,9 +45,11 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import coil.compose.AsyncImage
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.animateScrollToItemCentered
 import com.nendo.argosy.ui.quickmenu.GameCardUi
@@ -97,28 +99,28 @@ fun QuickMenuContent(
                 games = uiState.mostPlayedGames,
                 focusedIndex = uiState.focusedContentIndex,
                 isFocused = isFocused,
-                emptyMessage = "No games played yet",
+                emptyMessage = stringResource(R.string.ui_quick_menu_empty_most_played),
                 onGameSelect = onGameSelect
             )
             QuickMenuOrb.TOP_UNPLAYED -> ListContent(
                 games = uiState.topUnplayedGames,
                 focusedIndex = uiState.focusedContentIndex,
                 isFocused = isFocused,
-                emptyMessage = "No rated games found",
+                emptyMessage = stringResource(R.string.ui_quick_menu_empty_top_unplayed),
                 onGameSelect = onGameSelect
             )
             QuickMenuOrb.RECENT -> ListContent(
                 games = uiState.recentGames,
                 focusedIndex = uiState.focusedContentIndex,
                 isFocused = isFocused,
-                emptyMessage = "No recent games",
+                emptyMessage = stringResource(R.string.ui_quick_menu_empty_recent),
                 onGameSelect = onGameSelect
             )
             QuickMenuOrb.FAVORITES -> ListContent(
                 games = uiState.favoriteGames,
                 focusedIndex = uiState.focusedContentIndex,
                 isFocused = isFocused,
-                emptyMessage = "No favorites yet",
+                emptyMessage = stringResource(R.string.ui_quick_menu_empty_favorites),
                 onGameSelect = onGameSelect
             )
         }
@@ -168,7 +170,7 @@ private fun SearchContent(
             Box(modifier = Modifier.weight(1f)) {
                 if (query.isEmpty()) {
                     Text(
-                        text = "Search games...",
+                        text = stringResource(R.string.ui_quick_menu_search_placeholder),
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                     )
@@ -198,10 +200,12 @@ private fun SearchContent(
                     onRecentSearchSelect = onRecentSearchSelect,
                 )
             } else {
-                EmptyState(message = "Type at least 2 characters to search")
+                EmptyState(message = stringResource(R.string.ui_quick_menu_search_prompt))
             }
         } else if (results.isEmpty()) {
-            EmptyState(message = "No games found for \"$query\"")
+            EmptyState(
+                message = stringResource(R.string.ui_quick_menu_search_no_results, query)
+            )
         } else {
             GameList(
                 games = results,
@@ -221,7 +225,7 @@ private fun RandomContent(
     modifier: Modifier = Modifier
 ) {
     if (game == null) {
-        EmptyState(message = "No games available")
+        EmptyState(message = stringResource(R.string.ui_quick_menu_empty_random))
         return
     }
 
@@ -273,7 +277,8 @@ private fun RandomContent(
             Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
             Text(
-                text = game.platformName,
+                text = game.platformName
+                    ?: stringResource(R.string.ui_quick_menu_random_platform_unknown),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -329,7 +334,9 @@ private fun RandomContent(
                 if (game.isDownloaded) {
                     Icon(
                         Icons.Default.CheckCircle,
-                        contentDescription = "Downloaded",
+                        contentDescription = stringResource(
+                            R.string.ui_quick_menu_random_downloaded
+                        ),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(Dimens.iconMd)
                     )
@@ -411,7 +418,7 @@ private fun RecentSearchesList(
 
     Column(modifier = modifier) {
         Text(
-            text = "Recent Searches",
+            text = stringResource(R.string.ui_quick_menu_recent_searches_heading),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = Dimens.spacingSm)

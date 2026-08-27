@@ -37,6 +37,8 @@ import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -50,6 +52,21 @@ import kotlinx.coroutines.delay
 
 private val PERSISTENT_BAR_HEIGHT = 52.dp  // Static: matches specific UI design spec
 private val FOOTER_CLEARANCE = 56.dp  // Static: matches specific UI design spec
+
+@Composable
+fun NotificationText.resolve(): String = when (this) {
+    is NotificationText.Raw -> value
+    is NotificationText.Res -> stringResource(id, *args.toTypedArray())
+    is NotificationText.Plural -> pluralStringResource(id, count, *args.toTypedArray())
+}
+
+fun NotificationText.resolve(context: android.content.Context): String = when (this) {
+    is NotificationText.Raw -> value
+    is NotificationText.Res -> context.getString(id, *args.toTypedArray())
+    is NotificationText.Plural -> context.resources.getQuantityString(id, count, *args.toTypedArray())
+}
+
+private fun NotificationProgress.displayText(): String = "$current / $total"
 
 @Composable
 fun NotificationHost(
@@ -151,7 +168,7 @@ private fun StatusNotificationBar(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = status.title,
+                    text = status.title.resolve(),
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Medium,
                     color = textColor,
@@ -160,7 +177,7 @@ private fun StatusNotificationBar(
                 )
                 status.subtitle?.let { subtitle ->
                     Text(
-                        text = subtitle,
+                        text = subtitle.resolve(),
                         style = MaterialTheme.typography.labelSmall,
                         color = textColor.copy(alpha = 0.7f),
                         maxLines = 1,
@@ -238,7 +255,7 @@ private fun NotificationBar(
         Column(modifier = Modifier.weight(1f)) {
             val isError = notification.type == NotificationType.ERROR
             Text(
-                text = notification.title,
+                text = notification.title.resolve(),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Medium,
                 color = textColor,
@@ -247,7 +264,7 @@ private fun NotificationBar(
             )
             notification.subtitle?.let { subtitle ->
                 Text(
-                    text = subtitle,
+                    text = subtitle.resolve(),
                     style = MaterialTheme.typography.bodySmall,
                     color = textColor.copy(alpha = 0.7f),
                     maxLines = if (isError) 3 else 1,
@@ -309,7 +326,7 @@ private fun PersistentNotificationBar(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = notification.title,
+                    text = notification.title.resolve(),
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Medium,
                     color = textColor,
@@ -318,7 +335,7 @@ private fun PersistentNotificationBar(
                 )
                 notification.subtitle?.let { subtitle ->
                     Text(
-                        text = subtitle,
+                        text = subtitle.resolve(),
                         style = MaterialTheme.typography.labelSmall,
                         color = textColor.copy(alpha = 0.7f),
                         maxLines = 1,
@@ -329,7 +346,7 @@ private fun PersistentNotificationBar(
 
             notification.progress?.let { progress ->
                 Text(
-                    text = progress.displayText,
+                    text = progress.displayText(),
                     style = MaterialTheme.typography.labelSmall,
                     color = accentColor
                 )

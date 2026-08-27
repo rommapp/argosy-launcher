@@ -8,6 +8,8 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.nendo.argosy.ui.components.InputButton
@@ -81,21 +83,21 @@ fun FriendsOptionsModal(
     }
 
     Modal(
-        title = "Friends",
+        title = stringResource(R.string.ui_friends_options_title),
         onDismiss = onDismiss,
         footerHints = listOf(
-            InputButton.A to "Select",
-            InputButton.B to "Close"
+            InputButton.A to stringResource(R.string.ui_friends_options_footer_select),
+            InputButton.B to stringResource(R.string.ui_friends_options_footer_close)
         ),
         content = {
             OptionItem(
-                label = "Add Friend by Code",
+                label = stringResource(R.string.ui_friends_options_add_by_code),
                 icon = Icons.Default.PersonAdd,
                 isFocused = focusIndex.intValue == 0,
                 onClick = { onSelectOption(FriendsOption.ADD_FRIEND) }
             )
             OptionItem(
-                label = "Show My Friend Code",
+                label = stringResource(R.string.ui_friends_options_show_code),
                 icon = Icons.Default.QrCode,
                 isFocused = focusIndex.intValue == 1,
                 onClick = { onSelectOption(FriendsOption.SHOW_CODE) }

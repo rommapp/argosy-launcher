@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.screens.settings.delegates
 
+import android.content.Context
+import com.nendo.argosy.R
 import com.nendo.argosy.data.emulator.DriverFetcherRepository
 import com.nendo.argosy.ui.screens.settings.DriverArtifactUi
 import com.nendo.argosy.ui.screens.settings.DriverDownloadState
@@ -13,10 +15,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
 class DriversSettingsDelegate @Inject constructor(
-    private val driverFetcher: DriverFetcherRepository
+    private val driverFetcher: DriverFetcherRepository,
+    @ApplicationContext private val context: Context
 ) {
     private val _state = MutableStateFlow(DriversState())
     val state: StateFlow<DriversState> = _state.asStateFlow()
@@ -129,7 +133,10 @@ class DriversSettingsDelegate @Inject constructor(
                 .onFailure { error ->
                     _state.update {
                         it.copy(
-                            activeDownload = it.activeDownload?.copy(error = error.message ?: "Download failed")
+                            activeDownload = it.activeDownload?.copy(
+                                error = error.message
+                                    ?: context.getString(R.string.settings_drivers_delegate_download_failed)
+                            )
                         )
                     }
                 }

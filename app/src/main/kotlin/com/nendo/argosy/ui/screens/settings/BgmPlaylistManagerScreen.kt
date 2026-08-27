@@ -42,7 +42,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.nendo.argosy.R
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.InputButton
@@ -177,7 +180,7 @@ fun BgmPlaylistManagerScreen(
                 ) {
                     if (sourceCount > 0) {
                         item(key = "sources-header") {
-                            BgmPlaylistGroupHeader("Synced Folders")
+                            BgmPlaylistGroupHeader(stringResource(R.string.settings_shell_bgm_synced_folders))
                         }
                         itemsIndexed(uiState.folderSources, key = { _, row -> "source-${row.id}" }) { index, row ->
                             BgmFolderSourceRow(
@@ -188,7 +191,7 @@ fun BgmPlaylistManagerScreen(
                             )
                         }
                         item(key = "tracks-header") {
-                            BgmPlaylistGroupHeader("Tracks")
+                            BgmPlaylistGroupHeader(stringResource(R.string.settings_shell_bgm_tracks))
                         }
                     }
                     itemsIndexed(uiState.entries, key = { _, row -> "track-${row.id}" }) { index, row ->
@@ -213,22 +216,22 @@ fun BgmPlaylistManagerScreen(
 
         val hints = when {
             uiState.isReordering -> listOf(
-                InputButton.DPAD_VERTICAL to "Move",
-                InputButton.A to "Done",
-                InputButton.B to "Cancel"
+                InputButton.DPAD_VERTICAL to stringResource(R.string.settings_shell_bgm_reorder_move),
+                InputButton.A to stringResource(R.string.settings_shell_bgm_reorder_done),
+                InputButton.B to stringResource(R.string.settings_shell_bgm_reorder_cancel)
             )
             uiState.isEmpty -> listOf(
-                InputButton.X to "Add Music"
+                InputButton.X to stringResource(R.string.settings_shell_bgm_add_music_empty)
             )
             else -> buildList {
                 val focusedEntry = uiState.focusedEntry
-                if (focusedEntry != null) add(InputButton.A to "Move")
-                add(InputButton.X to "Add Music")
+                if (focusedEntry != null) add(InputButton.A to stringResource(R.string.settings_shell_bgm_move_hint))
+                add(InputButton.X to stringResource(R.string.settings_shell_bgm_add_music_hint))
                 val trackVerb = when {
-                    focusedEntry == null -> "Remove"
-                    !focusedEntry.isFolderCovered -> "Remove"
-                    focusedEntry.enabled -> "Disable"
-                    else -> "Enable"
+                    focusedEntry == null -> stringResource(R.string.settings_shell_bgm_remove_verb)
+                    !focusedEntry.isFolderCovered -> stringResource(R.string.settings_shell_bgm_remove_verb_uncovered)
+                    focusedEntry.enabled -> stringResource(R.string.settings_shell_bgm_disable_verb)
+                    else -> stringResource(R.string.settings_shell_bgm_enable_verb)
                 }
                 add(InputButton.Y to trackVerb)
             }
@@ -263,7 +266,7 @@ private fun BgmPlaylistHeader(
         IconButton(onClick = onBack) {
             Icon(
                 Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back",
+                contentDescription = stringResource(R.string.settings_shell_bgm_back_desc),
                 tint = MaterialTheme.colorScheme.onSurface
             )
         }
@@ -271,7 +274,7 @@ private fun BgmPlaylistHeader(
         Spacer(modifier = Modifier.width(Dimens.spacingSm))
 
         Text(
-            text = "Music Playlist",
+            text = stringResource(R.string.settings_shell_bgm_title),
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f)
@@ -293,7 +296,7 @@ private fun BgmPlaylistHeader(
             )
             Spacer(modifier = Modifier.width(Dimens.spacingXs))
             Text(
-                text = "Add",
+                text = stringResource(R.string.settings_shell_bgm_add_label),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -351,13 +354,23 @@ private fun BgmFolderSourceRow(
             )
             if (row.isMissing) {
                 Text(
-                    text = "Folder missing",
+                    text = stringResource(R.string.settings_shell_bgm_folder_missing),
                     style = MaterialTheme.typography.bodySmall,
                     color = warningColor
                 )
             } else {
-                val countLabel = if (row.trackCount == 1) "1 track" else "${row.trackCount} tracks"
-                val disabledSuffix = if (row.disabledCount > 0) " (${row.disabledCount} disabled)" else ""
+                val countLabel = pluralStringResource(
+                    R.plurals.settings_shell_bgm_track_count, row.trackCount, row.trackCount
+                )
+                val disabledSuffix = if (row.disabledCount > 0) {
+                    pluralStringResource(
+                        R.plurals.settings_shell_bgm_disabled_suffix_template,
+                        row.disabledCount,
+                        row.disabledCount
+                    )
+                } else {
+                    ""
+                }
                 Text(
                     text = countLabel + disabledSuffix,
                     style = MaterialTheme.typography.bodySmall,
@@ -370,7 +383,7 @@ private fun BgmFolderSourceRow(
         IconButton(onClick = onRemove) {
             Icon(
                 Icons.Default.Close,
-                contentDescription = "Remove folder",
+                contentDescription = stringResource(R.string.settings_shell_bgm_remove_folder_desc),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -429,7 +442,7 @@ private fun BgmPlaylistEntryRow(
                 ) {
                     Icon(
                         Icons.Default.DragHandle,
-                        contentDescription = "Moving",
+                        contentDescription = stringResource(R.string.settings_shell_bgm_moving_desc),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(Dimens.iconMd)
                     )
@@ -448,12 +461,12 @@ private fun BgmPlaylistEntryRow(
             )
             when {
                 row.isMissing -> Text(
-                    text = "File missing - skipped during playback",
+                    text = stringResource(R.string.settings_shell_bgm_file_missing),
                     style = MaterialTheme.typography.bodySmall,
                     color = warningColor
                 )
                 !row.enabled -> Text(
-                    text = "Disabled - excluded from playback",
+                    text = stringResource(R.string.settings_shell_bgm_disabled_desc),
                     style = MaterialTheme.typography.bodySmall,
                     color = if (isFocused) focusedContentColor.copy(alpha = 0.7f)
                     else MaterialTheme.colorScheme.onSurfaceVariant
@@ -480,7 +493,7 @@ private fun BgmPlaylistEntryRow(
         IconButton(onClick = onMoveUp, enabled = canMoveUp) {
             Icon(
                 Icons.Default.KeyboardArrowUp,
-                contentDescription = "Move up",
+                contentDescription = stringResource(R.string.settings_shell_bgm_move_up_desc),
                 tint = if (canMoveUp) MaterialTheme.colorScheme.onSurfaceVariant
                 else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
             )
@@ -488,7 +501,7 @@ private fun BgmPlaylistEntryRow(
         IconButton(onClick = onMoveDown, enabled = canMoveDown) {
             Icon(
                 Icons.Default.KeyboardArrowDown,
-                contentDescription = "Move down",
+                contentDescription = stringResource(R.string.settings_shell_bgm_move_down_desc),
                 tint = if (canMoveDown) MaterialTheme.colorScheme.onSurfaceVariant
                 else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
             )
@@ -505,7 +518,7 @@ private fun BgmPlaylistEntryRow(
             IconButton(onClick = onRemove) {
                 Icon(
                     Icons.Default.Close,
-                    contentDescription = "Remove",
+                    contentDescription = stringResource(R.string.settings_shell_bgm_remove_desc),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -528,7 +541,7 @@ private fun BgmPlaylistEmptyState() {
             )
             Spacer(modifier = Modifier.height(Dimens.spacingMd))
             Text(
-                text = "No music - add from the music browser or local files",
+                text = stringResource(R.string.settings_shell_bgm_empty_state),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

@@ -17,6 +17,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.util.touchOnly
 
@@ -43,6 +45,7 @@ fun DualHomeLowerContent(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val forwardingMode by viewModel.forwardingMode.collectAsState()
+    val context = androidx.compose.ui.platform.LocalContext.current
     val mediaDownloadIndicators = androidx.compose.runtime.remember(
         uiState.mediaItems,
         uiState.mediaDownloadProgress
@@ -70,7 +73,7 @@ fun DualHomeLowerContent(
                         viewModel.openMediaMenuForFocused()
                     },
                     selectedIndex = uiState.selectedIndex,
-                    platformName = uiState.platformName,
+                    platformName = uiState.platformName(context),
                     totalCount = uiState.totalCount,
                     hasMoreGames = uiState.hasMoreGames,
                     isViewAllFocused = uiState.isViewAllFocused,
@@ -78,7 +81,7 @@ fun DualHomeLowerContent(
                     appBarFocused = uiState.focusZone == DualHomeFocusZone.APP_BAR,
                     appBarIndex = uiState.appBarIndex,
                     viewMode = uiState.viewMode,
-                    sectionLabels = uiState.sections.map { it.shortTitle },
+                    sectionLabels = uiState.sections.map { it.resolveShortTitle(context) },
                     currentSectionIndex = uiState.currentSectionIndex,
                     onPreviousSection = { viewModel.previousSection() },
                     onNextSection = { viewModel.nextSection() },
@@ -96,7 +99,7 @@ fun DualHomeLowerContent(
                     autoGridConfig = uiState.autoGridConfig,
                     layoutKind = uiState.layoutKind,
                     customGridState = uiState.customGrid,
-                    customGridContentFor = { tile -> uiState.tileContentFor(tile) },
+                    customGridContentFor = { tile -> uiState.tileContentFor(tile, context) },
                     customGridConfig = uiState.customGridConfig,
                     backgroundBlur = uiState.backgroundBlur,
                     onCustomGridCellTap = { cell ->
@@ -199,7 +202,7 @@ fun DualHomeLowerContent(
                         onSeasonSelected = { mediaVm.selectSeason(it) },
                         onEpisodeTapped = { viewModel.confirmMediaInfoRow(it) },
                         onBackTapped = { viewModel.exitMediaInfo() },
-                        backHint = "Back"
+                        backHint = stringResource(R.string.dual_media_footer_back_home)
                     )
                 }
             }
@@ -240,10 +243,13 @@ fun DualHomeLowerContent(
         val pendingTileAdd = uiState.customGrid.pendingAdd
         if (pendingTileAdd != null) {
             com.nendo.argosy.ui.primitives.ArgosyConfirmModal(
-                title = "Add to home grid?",
-                message = "${pendingTileAdd.title} finished downloading.",
-                confirmLabel = "Add",
-                cancelLabel = "Not now",
+                title = stringResource(R.string.dual_home_tile_add_title),
+                message = stringResource(
+                    R.string.dual_home_tile_add_message,
+                    pendingTileAdd.title
+                ),
+                confirmLabel = stringResource(R.string.dual_home_tile_add_confirm),
+                cancelLabel = stringResource(R.string.dual_home_tile_add_cancel),
                 focusedIndex = uiState.customGrid.pendingAddFocusIndex,
                 onConfirm = viewModel::confirmPendingTileAdd,
                 onDismiss = viewModel::dismissPendingTileAdd
@@ -252,9 +258,16 @@ fun DualHomeLowerContent(
 
         if (uiState.collectionPickerGameId != null) {
             com.nendo.argosy.ui.components.CustomTileMenuModal(
-                title = "Add to Collection",
+                title = stringResource(R.string.dual_home_collection_picker_title),
                 entries = uiState.collectionPickerEntries.map { entry ->
-                    if (entry.isMember) "${entry.name}  -  added" else entry.name
+                    if (entry.isMember) {
+                        context.getString(
+                            R.string.dual_home_collection_picker_member,
+                            entry.name
+                        )
+                    } else {
+                        entry.name
+                    }
                 },
                 focusIndex = uiState.collectionPickerFocusIndex,
                 onSelect = { index ->
@@ -268,14 +281,14 @@ fun DualHomeLowerContent(
         uiState.mediaMenu?.let { menu ->
             com.nendo.argosy.ui.components.CustomTileMenuModal(
                 title = menu.item.title,
-                entries = menu.actions.map { it.label },
+                entries = menu.actions.map { context.getString(it.labelRes) },
                 focusIndex = menu.focusIndex,
                 onSelect = { index ->
                     viewModel.moveMediaMenuFocus(index - menu.focusIndex)
                     viewModel.confirmMediaMenu()
                 },
                 onDismiss = viewModel::closeMediaMenu,
-                header = "MEDIA"
+                header = stringResource(R.string.dual_home_media_menu_header)
             )
         }
 
@@ -291,7 +304,7 @@ fun DualHomeLowerContent(
             val libraryGame = viewModel.focusedLibraryGame()
             com.nendo.argosy.ui.components.CustomTileMenuModal(
                 title = libraryGame?.title.orEmpty(),
-                entries = viewModel.libraryMenuActions().map { it.label },
+                entries = viewModel.libraryMenuActions().map { context.getString(it.labelRes) },
                 focusIndex = uiState.libraryMenuFocusIndex,
                 onSelect = { index ->
                     viewModel.moveLibraryMenuFocus(index - uiState.libraryMenuFocusIndex)
@@ -307,8 +320,8 @@ fun DualHomeLowerContent(
         if (uiState.showTileMenu) {
             val tile = viewModel.focusedTile()
             com.nendo.argosy.ui.components.CustomTileMenuModal(
-                title = tile?.let { uiState.tileContentFor(it)?.label }.orEmpty(),
-                entries = uiState.customGrid.menuActions.map { it.label },
+                title = tile?.let { uiState.tileContentFor(it, context)?.label }.orEmpty(),
+                entries = uiState.customGrid.menuActions.map { context.getString(it.labelRes) },
                 focusIndex = uiState.tileMenuFocusIndex,
                 onSelect = { index ->
                     viewModel.moveTileMenuFocus(index - uiState.tileMenuFocusIndex)

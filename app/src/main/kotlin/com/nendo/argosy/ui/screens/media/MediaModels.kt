@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.media
 
+import androidx.annotation.StringRes
 import com.nendo.argosy.data.media.MediaAvailability
 import com.nendo.argosy.data.preferences.MediaDownloadQuality
 import com.nendo.argosy.ui.components.EpisodePickerState
@@ -115,27 +116,19 @@ data class MediaDownloadSummary(
      * flight, not work already finished.
      */
     val activeCount: Int get() = pending
-
-    val label: String
-        get() = when {
-            known == 0 -> "Download"
-            isComplete && pending == 0 -> "Downloaded$availabilitySuffix"
-            pending > 0 -> "$downloaded of $known, $pending queued$availabilitySuffix"
-            downloaded > 0 -> "$downloaded of $known$availabilitySuffix"
-            else -> "Download"
-        }
-
-    private val availabilitySuffix: String
-        get() = when {
-            unavailable == 0 -> ""
-            known == 1 -> " - not connected"
-            else -> " - $unavailable not connected"
-        }
 }
 
 enum class MediaDownloadStep { EPISODES, QUALITY, CONFIRM }
 
+/**
+ * One row of the download prompt.
+ *
+ * [key] identifies the row for the list that draws it. A row without a [quality] used to be
+ * recognised by its own label, which made the words on screen load-bearing and would have broken
+ * the list the moment they were translated.
+ */
 data class MediaDownloadOption(
+    val key: String,
     val quality: MediaDownloadQuality? = null,
     val label: String,
     val supporting: String? = null,
@@ -267,7 +260,6 @@ data class MediaItemUi(
     val thumbUrl: String,
     val overview: String? = null,
     val year: Int? = null,
-    val runtimeLabel: String? = null,
     val communityRating: Float? = null,
     val officialRating: String? = null,
     val genres: String? = null,
@@ -291,13 +283,6 @@ data class MediaItemUi(
     val isPlayable: Boolean get() = !isSeries
 
     val isDownloaded: Boolean get() = availability.hasLocalCopy
-
-    val episodeLabel: String?
-        get() {
-            val season = seasonNumber ?: return null
-            val episode = episodeNumber ?: return null
-            return "S$season E$episode"
-        }
 }
 
 /**
@@ -320,7 +305,7 @@ data class MediaLibraryUiState(
     val isSignedIn: Boolean = true,
     val isLoading: Boolean = true,
     val isRefreshing: Boolean = false,
-    val refreshLabel: String? = null,
+    @StringRes val refreshLabel: Int? = null,
     val errorMessage: String? = null,
     val resumePrompt: MediaResumePrompt? = null
 ) {

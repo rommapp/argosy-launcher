@@ -48,11 +48,14 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import coil.compose.AsyncImage
+import com.nendo.argosy.R
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.FooterSpacer
@@ -165,7 +168,12 @@ fun GameDetailScreen(
                             context.startActivity(event.intent, event.options)
                         }
                     } catch (e: Exception) {
-                        viewModel.showLaunchError("Failed to launch: ${e.message}")
+                        viewModel.showLaunchError(
+                            NotificationText.Res(
+                                R.string.gamedetail_notice_launch_failed,
+                                listOf(e.message ?: "null")
+                            )
+                        )
                     }
                 }
                 is LaunchEvent.NavigateBack -> onBack()
@@ -795,43 +803,81 @@ private fun GameDetailContent(
             ) {
                 val canShowPlayOptions = uiState.downloadStatus == GameDownloadStatus.DOWNLOADED &&
                     game.isBuiltInEmulator
+                val prevNextGameHint = stringResource(R.string.gamedetail_footer_prev_next_game)
+                val sectionScrollHint = stringResource(R.string.gamedetail_footer_section_scroll)
+                val playSyncingHint = stringResource(R.string.gamedetail_footer_play_syncing)
+                val playDownloadedHint = stringResource(R.string.gamedetail_footer_play_downloaded)
+                val playInstallHint = stringResource(R.string.gamedetail_footer_play_install)
+                val playDownloadHint = stringResource(R.string.gamedetail_footer_play_download)
+                val playQueuedHint = stringResource(R.string.gamedetail_footer_play_queued)
+                val playRetryNoSpaceHint =
+                    stringResource(R.string.gamedetail_footer_play_retry_no_space)
+                val playDownloadingHint = stringResource(R.string.gamedetail_footer_play_downloading)
+                val playExtractingHint = stringResource(R.string.gamedetail_footer_play_extracting)
+                val playResumeHint = stringResource(R.string.gamedetail_footer_play_resume)
+                val playRetryFailedHint =
+                    stringResource(R.string.gamedetail_footer_play_retry_failed)
+                val playFallbackHint = stringResource(R.string.gamedetail_footer_play_fallback)
+                val savesSyncingHint = stringResource(R.string.gamedetail_footer_saves_syncing)
+                val savesSyncHint = stringResource(R.string.gamedetail_footer_saves_sync)
+                val menuUnfavoriteHint = stringResource(R.string.gamedetail_footer_menu_unfavorite)
+                val menuFavoriteHint = stringResource(R.string.gamedetail_footer_menu_favorite)
+                val menuMakePublicHint = stringResource(R.string.gamedetail_footer_menu_make_public)
+                val menuMakePrivateHint =
+                    stringResource(R.string.gamedetail_footer_menu_make_private)
+                val configureHint = stringResource(R.string.gamedetail_footer_configure)
+                val optionsHint = stringResource(R.string.gamedetail_footer_options)
+                val viewScreenshotHint = stringResource(R.string.gamedetail_footer_view_screenshot)
+                val viewAllAchievementsHint =
+                    stringResource(R.string.gamedetail_footer_view_all_achievements)
+                val openRelatedHint = stringResource(R.string.gamedetail_footer_open_related)
+                val backHint = stringResource(R.string.gamedetail_footer_back)
+                val newGameHint = stringResource(R.string.gamedetail_footer_new_game)
+                val shortcutMakePublicHint =
+                    stringResource(R.string.gamedetail_footer_shortcut_make_public)
+                val shortcutMakePrivateHint =
+                    stringResource(R.string.gamedetail_footer_shortcut_make_private)
+                val shortcutUnfavoriteHint =
+                    stringResource(R.string.gamedetail_footer_shortcut_unfavorite)
+                val shortcutFavoriteHint =
+                    stringResource(R.string.gamedetail_footer_shortcut_favorite)
                 FooterHints(
                     hints = buildList {
-                        add(InputButton.LB_RB to "Prev/Next Game")
+                        add(InputButton.LB_RB to prevNextGameHint)
                         if (focusedItem == MenuItem.Screenshots || focusedItem == MenuItem.Achievements || focusedItem == MenuItem.RelatedGames) {
-                            add(InputButton.DPAD_HORIZONTAL to "Scroll")
+                            add(InputButton.DPAD_HORIZONTAL to sectionScrollHint)
                         }
                         when (focusedItem) {
                             MenuItem.Play -> add(InputButton.A to when {
-                                isAnySyncing -> "Syncing..."
-                                uiState.downloadStatus == GameDownloadStatus.DOWNLOADED -> "Play"
-                                uiState.downloadStatus == GameDownloadStatus.NEEDS_INSTALL -> "Install"
-                                uiState.downloadStatus == GameDownloadStatus.NOT_DOWNLOADED -> "Download"
-                                uiState.downloadStatus == GameDownloadStatus.QUEUED -> "Queued"
-                                uiState.downloadStatus == GameDownloadStatus.WAITING_FOR_STORAGE -> "Retry"
-                                uiState.downloadStatus == GameDownloadStatus.DOWNLOADING -> "Downloading"
-                                uiState.downloadStatus == GameDownloadStatus.EXTRACTING -> "Extracting"
-                                uiState.downloadStatus == GameDownloadStatus.PAUSED -> "Resume"
-                                uiState.downloadStatus == GameDownloadStatus.FAILED -> "Retry"
-                                else -> "Play"
+                                isAnySyncing -> playSyncingHint
+                                uiState.downloadStatus == GameDownloadStatus.DOWNLOADED -> playDownloadedHint
+                                uiState.downloadStatus == GameDownloadStatus.NEEDS_INSTALL -> playInstallHint
+                                uiState.downloadStatus == GameDownloadStatus.NOT_DOWNLOADED -> playDownloadHint
+                                uiState.downloadStatus == GameDownloadStatus.QUEUED -> playQueuedHint
+                                uiState.downloadStatus == GameDownloadStatus.WAITING_FOR_STORAGE -> playRetryNoSpaceHint
+                                uiState.downloadStatus == GameDownloadStatus.DOWNLOADING -> playDownloadingHint
+                                uiState.downloadStatus == GameDownloadStatus.EXTRACTING -> playExtractingHint
+                                uiState.downloadStatus == GameDownloadStatus.PAUSED -> playResumeHint
+                                uiState.downloadStatus == GameDownloadStatus.FAILED -> playRetryFailedHint
+                                else -> playFallbackHint
                             })
-                            MenuItem.Saves -> add(InputButton.A to if (uiState.isSyncingSaves) "Syncing..." else "Sync")
-                            MenuItem.Favorite -> add(InputButton.A to if (game.isFavorite) "Unfavorite" else "Favorite")
-                            MenuItem.Privacy -> add(InputButton.A to if (uiState.isPrivate) "Make Public" else "Make Private")
-                            MenuItem.PerGameSettings -> add(InputButton.A to "Configure")
-                            MenuItem.Options -> add(InputButton.A to "Options")
-                            MenuItem.Screenshots -> add(InputButton.A to "View")
-                            MenuItem.Achievements -> add(InputButton.A to "View All")
-                            MenuItem.RelatedGames -> add(InputButton.A to "Open")
+                            MenuItem.Saves -> add(InputButton.A to if (uiState.isSyncingSaves) savesSyncingHint else savesSyncHint)
+                            MenuItem.Favorite -> add(InputButton.A to if (game.isFavorite) menuUnfavoriteHint else menuFavoriteHint)
+                            MenuItem.Privacy -> add(InputButton.A to if (uiState.isPrivate) menuMakePublicHint else menuMakePrivateHint)
+                            MenuItem.PerGameSettings -> add(InputButton.A to configureHint)
+                            MenuItem.Options -> add(InputButton.A to optionsHint)
+                            MenuItem.Screenshots -> add(InputButton.A to viewScreenshotHint)
+                            MenuItem.Achievements -> add(InputButton.A to viewAllAchievementsHint)
+                            MenuItem.RelatedGames -> add(InputButton.A to openRelatedHint)
                             MenuItem.Details, MenuItem.Description, null -> {}
                         }
-                        add(InputButton.B to "Back")
+                        add(InputButton.B to backHint)
                         if (canShowPlayOptions && focusedItem == MenuItem.Play) {
-                            add(InputButton.X to "New Game")
+                            add(InputButton.X to newGameHint)
                         } else if (uiState.hasSocialAccount && game.igdbId != null) {
-                            add(InputButton.X to if (uiState.isPrivate) "Make Public" else "Make Private")
+                            add(InputButton.X to if (uiState.isPrivate) shortcutMakePublicHint else shortcutMakePrivateHint)
                         }
-                        add(InputButton.Y to if (game.isFavorite) "Unfavorite" else "Favorite")
+                        add(InputButton.Y to if (game.isFavorite) shortcutUnfavoriteHint else shortcutFavoriteHint)
                     },
                     onHintClick = { button ->
                         when (button) {
@@ -924,7 +970,7 @@ private fun GameDetailModals(
     if (uiState.perGameSettings.showPathBrowser) {
         com.nendo.argosy.ui.filebrowser.FileBrowserScreen(
             mode = com.nendo.argosy.ui.filebrowser.FileBrowserMode.FOLDER_SELECTION,
-            title = "Save Path",
+            title = stringResource(R.string.gamedetail_per_game_save_path_browser_title),
             onPathSelected = viewModel::setPerGameSavePath,
             onDismiss = viewModel::dismissPerGameSavePathBrowser
         )
@@ -992,23 +1038,44 @@ private fun GameDetailModals(
                 ?.let { it in pickerState.filePickerSelectedVersions }
                 ?: (row.rommFileId in pickerState.filePickerSelected)
         }
+        val adds = fileRows.filter { !it.isHeader && !it.isLocked && !it.isDownloaded && isSelected(it) }
+        val removes = fileRows.filter { !it.isHeader && !it.isLocked && it.isDownloaded && !isSelected(it) }
+        val selected = fileRows.filter { !it.isHeader && isSelected(it) }
+        val noChangesSummary = stringResource(R.string.gamedetail_file_picker_summary_no_changes)
+        val addedSummary = stringResource(
+            R.string.gamedetail_file_picker_summary_added,
+            adds.size,
+            com.nendo.argosy.util.formatBytes(adds.sumOf { it.sizeBytes })
+        )
+        val removedSummary = stringResource(
+            R.string.gamedetail_file_picker_summary_removed,
+            removes.size,
+            com.nendo.argosy.util.formatBytes(removes.sumOf { it.sizeBytes })
+        )
+        val selectionSummary = stringResource(
+            R.string.gamedetail_file_picker_summary_selection,
+            selected.size,
+            fileRows.count { !it.isHeader },
+            com.nendo.argosy.util.formatBytes(selected.sumOf { it.sizeBytes })
+        )
         val summary = if (pickerState.filePickerManageMode) {
-            val adds = fileRows.filter { !it.isHeader && !it.isLocked && !it.isDownloaded && isSelected(it) }
-            val removes = fileRows.filter { !it.isHeader && !it.isLocked && it.isDownloaded && !isSelected(it) }
             when {
-                adds.isEmpty() && removes.isEmpty() -> "No changes"
+                adds.isEmpty() && removes.isEmpty() -> noChangesSummary
                 else -> buildList {
-                    if (adds.isNotEmpty()) add("+${adds.size} · ${com.nendo.argosy.util.formatBytes(adds.sumOf { it.sizeBytes })}")
-                    if (removes.isNotEmpty()) add("-${removes.size} · ${com.nendo.argosy.util.formatBytes(removes.sumOf { it.sizeBytes })}")
+                    if (adds.isNotEmpty()) add(addedSummary)
+                    if (removes.isNotEmpty()) add(removedSummary)
                 }.joinToString("   ")
             }
         } else {
-            val selected = fileRows.filter { !it.isHeader && isSelected(it) }
-            "${selected.size} of ${fileRows.count { !it.isHeader }} · ${com.nendo.argosy.util.formatBytes(selected.sumOf { it.sizeBytes })} selected"
+            selectionSummary
         }
         FilePickerModal(
             gameTitle = uiState.game?.title ?: "",
-            title = if (pickerState.filePickerManageMode) "Files" else "Choose files",
+            title = if (pickerState.filePickerManageMode) {
+                stringResource(R.string.gamedetail_file_picker_title_manage)
+            } else {
+                stringResource(R.string.gamedetail_file_picker_title_choose)
+            },
             rows = pickerState.visibleFilePickerRows,
             selectedIds = pickerState.filePickerSelected,
             selectedVersionIds = pickerState.filePickerSelectedVersions,
@@ -1137,7 +1204,7 @@ private fun GameDetailModals(
     if (pickerState.showCoverFileBrowser) {
         com.nendo.argosy.ui.filebrowser.FileBrowserScreen(
             mode = com.nendo.argosy.ui.filebrowser.FileBrowserMode.FILE_SELECTION,
-            title = "Choose cover art",
+            title = stringResource(R.string.gamedetail_cover_file_browser_title),
             fileFilter = com.nendo.argosy.ui.filebrowser.FileFilter(
                 extensions = setOf("png", "jpg", "jpeg", "webp")
             ),

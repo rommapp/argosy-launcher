@@ -36,9 +36,13 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.common.rememberCoverAspectRatio
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.Box3dCover
@@ -317,25 +321,34 @@ private fun TitleSection(
 @Composable
 private fun RatingChipContent(game: GameDetailUi) {
     game.players?.let { players ->
-        MetadataChip(label = "Players", value = players)
+        MetadataChip(
+            label = stringResource(R.string.gamedetail_chip_players_label),
+            value = players
+        )
     }
     game.rating?.let { rating ->
         CommunityRatingChip(rating = rating)
     }
     game.timeToBeatMain?.let { time ->
-        MetadataChip(label = "Main Story", value = time)
+        MetadataChip(
+            label = stringResource(R.string.gamedetail_chip_main_story_label),
+            value = time
+        )
     }
     game.timeToBeatCompletionist?.let { time ->
-        MetadataChip(label = "Completionist", value = time)
+        MetadataChip(
+            label = stringResource(R.string.gamedetail_chip_completionist_label),
+            value = time
+        )
     }
     RatingChip(
-        label = "My Rating",
+        label = stringResource(R.string.gamedetail_chip_my_rating_label),
         value = game.userRating,
         icon = Icons.Default.Star,
         iconColor = ALauncherColors.StarGold
     )
     RatingChip(
-        label = "Difficulty",
+        label = stringResource(R.string.gamedetail_chip_difficulty_label),
         value = game.userDifficulty,
         icon = Icons.Default.Whatshot,
         iconColor = ALauncherColors.DifficultyRed
@@ -415,6 +428,7 @@ internal fun CollapsedHeader(
     game: GameDetailUi,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -473,7 +487,10 @@ internal fun CollapsedHeader(
                                 modifier = Modifier.size(16.dp)
                             )
                             Text(
-                                text = "${rating.toInt()}%",
+                                text = stringResource(
+                                    R.string.gamedetail_collapsed_header_rating_percent,
+                                    rating.toInt()
+                                ),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -524,14 +541,18 @@ internal fun CollapsedHeader(
                 ) {
                     if (game.playTimeMinutes > 0) {
                         Text(
-                            text = formatPlayTime(game.playTimeMinutes),
+                            text = formatPlayTime(context, game.playTimeMinutes),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     if (game.playCount > 0) {
                         Text(
-                            text = if (game.playCount == 1) "1 play" else "${game.playCount} plays",
+                            text = pluralStringResource(
+                                R.plurals.gamedetail_collapsed_header_play_count,
+                                game.playCount,
+                                game.playCount
+                            ),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                         )

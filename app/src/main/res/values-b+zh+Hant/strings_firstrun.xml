@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="firstrun_welcome_intro">歡迎使用！讓我們開始設定吧。</string>
+    <string name="firstrun_welcome_button_start">開始設定</string>
+
+    <string name="firstrun_romm_url_title">Rom Manager登入</string>
+    <string name="firstrun_romm_url_field_label">伺服器網址</string>
+    <string name="firstrun_romm_url_hint">請輸入您的RomM伺服器位址，我們會自動偵測登入方式。</string>
+    <string name="firstrun_romm_url_button_continue">繼續</string>
+    <string name="firstrun_romm_url_button_checking">檢查中...</string>
+    <string name="firstrun_romm_url_button_back">返回</string>
+    <string name="firstrun_romm_url_error_blank">請輸入伺服器網址</string>
+
+    <string name="firstrun_pairing_code_title">輸入配對代碼</string>
+    <string name="firstrun_pairing_code_hint">請在RomM網頁介面建立API權杖，然後輸入8碼代碼。</string>
+    <string name="firstrun_pairing_code_clear_description">清除代碼</string>
+    <string name="firstrun_pairing_code_button_connect">連線</string>
+    <string name="firstrun_pairing_code_button_connecting">連線中...</string>
+    <string name="firstrun_pairing_code_button_edit_url">編輯網址</string>
+    <string name="firstrun_pairing_code_button_scan">掃描QR Code</string>
+    <string name="firstrun_pairing_code_button_device_pairing">改用QR Code配對</string>
+    <string name="firstrun_pairing_code_error_incomplete">請輸入完整的8碼配對代碼</string>
+
+    <string name="firstrun_device_pairing_title">掃描以配對</string>
+    <string name="firstrun_device_pairing_hint">請用手機掃描此代碼，或直接在此裝置上登入，然後在RomM中核准此裝置。</string>
+    <string name="firstrun_device_pairing_no_browser">此裝置上沒有瀏覽器，請改為掃描代碼或使用配對代碼。</string>
+    <string name="firstrun_device_pairing_button_sign_in">在此裝置上登入</string>
+    <string name="firstrun_device_pairing_button_manual_code">使用配對代碼</string>
+    <string name="firstrun_device_pairing_button_back">返回</string>
+    <string name="firstrun_device_pairing_error_denied">伺服器拒絕了此次配對</string>
+    <string name="firstrun_device_pairing_error_expired">配對代碼已逾期，請重新開始</string>
+    <string name="firstrun_device_pairing_error_unexpected">未預期的配對結果</string>
+
+    <string name="firstrun_romm_success_title">連線成功！</string>
+    <string name="firstrun_romm_success_server">伺服器：%1$s</string>
+    <string name="firstrun_romm_success_library">%1$s，橫跨%2$s</string>
+    <plurals name="firstrun_romm_success_game_count">
+        <item quantity="other">%d款遊戲</item>
+    </plurals>
+    <plurals name="firstrun_romm_success_platform_count">
+        <item quantity="other">%d個平台</item>
+    </plurals>
+    <string name="firstrun_romm_success_button_continue">繼續</string>
+    <string name="firstrun_romm_success_error_library_fetch">無法取得遊戲庫：%1$s</string>
+
+    <string name="firstrun_permissions_title">權限</string>
+    <string name="firstrun_permissions_intro">Argosy需要這些權限來管理您的遊戲庫與模擬器。</string>
+    <string name="firstrun_permissions_storage_title">管理儲存空間（必要）</string>
+    <string name="firstrun_permissions_storage_description">瀏覽資料夾、下載遊戲及同步存檔皆需要此權限。</string>
+    <string name="firstrun_permissions_notifications_title">通知</string>
+    <string name="firstrun_permissions_notifications_description">顯示下載與同步進度。</string>
+    <string name="firstrun_permissions_overlay_title">顯示在其他應用程式上層</string>
+    <string name="firstrun_permissions_overlay_description">啟用遊戲內存檔偵測浮層。</string>
+    <string name="firstrun_permissions_usage_title">使用狀況存取權</string>
+    <string name="firstrun_permissions_usage_description">啟用精確的遊玩時間記錄與繼續遊玩功能。</string>
+    <string name="firstrun_permissions_button_continue">繼續</string>
+    <string name="firstrun_permissions_note_optional">您可以稍後在設定中授予其他權限。</string>
+    <string name="firstrun_permissions_note_storage_required">請授予儲存空間存取權以繼續。其他權限為選用，可稍後於設定中授予。</string>
+
+    <string name="firstrun_rom_path_title">遊戲路徑</string>
+    <string name="firstrun_rom_path_description">請選擇遊戲檔案的儲存位置，我們會自動為每個主機建立子資料夾。</string>
+    <string name="firstrun_rom_path_button_continue">繼續</string>
+    <string name="firstrun_rom_path_button_change_folder">選擇其他資料夾</string>
+    <string name="firstrun_rom_path_button_choose_folder">選擇資料夾</string>
+
+    <string name="firstrun_image_cache_optional_badge">選用</string>
+    <string name="firstrun_image_cache_title">圖片快取位置</string>
+    <string name="firstrun_image_cache_description">遊戲美術圖預設會儲存在應用程式的內部快取中。若您的裝置儲存空間有限，可以選擇外部位置。</string>
+    <string name="firstrun_image_cache_button_continue">繼續</string>
+    <string name="firstrun_image_cache_button_change_folder">選擇其他資料夾</string>
+    <string name="firstrun_image_cache_button_choose_folder">選擇外部資料夾</string>
+    <string name="firstrun_image_cache_button_use_default">使用預設值（內部）</string>
+    <string name="firstrun_image_cache_folder_note">圖片將儲存在「%1$s」子資料夾中。</string>
+
+    <string name="firstrun_platform_select_eyebrow">選擇平台</string>
+    <string name="firstrun_platform_select_title">選擇要同步的平台</string>
+    <plurals name="firstrun_platform_select_selected_count">
+        <item quantity="other">已選擇%1$d/%2$d個平台</item>
+    </plurals>
+    <plurals name="firstrun_platform_select_game_count">
+        <item quantity="other">%d款遊戲</item>
+    </plurals>
+    <string name="firstrun_platform_select_button_select_all">全選</string>
+    <string name="firstrun_platform_select_button_deselect_all">取消全選</string>
+    <string name="firstrun_platform_select_button_continue">繼續</string>
+
+    <string name="firstrun_core_prompt_title">要下載模擬器核心嗎？</string>
+    <plurals name="firstrun_core_prompt_available_count">
+        <item quantity="other">您選擇的平台可使用%d個libretro核心。</item>
+    </plurals>
+    <string name="firstrun_core_prompt_explainer">這些核心可讓您使用內建模擬功能，不需要額外安裝其他模擬器應用程式。</string>
+    <string name="firstrun_core_prompt_all_installed">您選擇的平台所需的核心皆已安裝。</string>
+    <string name="firstrun_core_prompt_button_download">下載核心</string>
+    <string name="firstrun_core_prompt_button_skip">略過（停用內建模擬器）</string>
+    <string name="firstrun_core_prompt_button_continue">繼續</string>
+    <string name="firstrun_core_prompt_note_skip">略過將停用內建模擬器，您可以稍後於設定中重新啟用並下載核心。</string>
+
+    <string name="firstrun_core_download_title">正在下載模擬器核心</string>
+    <string name="firstrun_core_download_none_needed">所選平台不需要任何核心</string>
+    <string name="firstrun_core_download_button_continue_no_cores">繼續</string>
+    <plurals name="firstrun_core_download_progress_count">
+        <item quantity="other">正在下載核心（%1$d/%2$d）...</item>
+    </plurals>
+    <plurals name="firstrun_core_download_partial_count">
+        <item quantity="other">已下載%1$d/%2$d個核心</item>
+    </plurals>
+    <string name="firstrun_core_download_all_done">所有核心皆已下載</string>
+    <string name="firstrun_core_download_note_skip">若您偏好使用獨立模擬器，可以略過此步驟</string>
+    <string name="firstrun_core_download_button_skip">略過</string>
+    <string name="firstrun_core_download_button_continue">繼續</string>
+    <string name="firstrun_core_download_status_complete_description">已完成</string>
+    <string name="firstrun_core_download_status_failed_description">失敗</string>
+    <string name="firstrun_core_download_retry_description">重試</string>
+    <string name="firstrun_core_download_button_retry">重試</string>
+
+    <string name="firstrun_complete_title">設定完成！</string>
+    <string name="firstrun_complete_library">%1$s，橫跨%2$s，已準備好同步</string>
+    <plurals name="firstrun_complete_game_count">
+        <item quantity="other">%d款遊戲</item>
+    </plurals>
+    <plurals name="firstrun_complete_platform_count">
+        <item quantity="other">%d個平台</item>
+    </plurals>
+    <string name="firstrun_complete_hint">請至合輯設定同步您的遊戲庫以開始使用。</string>
+    <string name="firstrun_complete_button_start">開始遊玩</string>
+</resources>

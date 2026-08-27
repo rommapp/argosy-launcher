@@ -16,7 +16,7 @@ import com.nendo.argosy.data.sync.SaveArchiver
 import com.nendo.argosy.data.sync.SavePathResolver
 import com.nendo.argosy.data.sync.platform.PlatformSaveHandler
 import com.nendo.argosy.data.sync.platform.PreparedSave
-import com.nendo.argosy.data.sync.platform.SwitchSaveHandler
+import com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry
 import com.nendo.argosy.data.titledb.TitleDbRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -48,7 +48,7 @@ class SaveUploaderTest {
     private val saveArchiver = mockk<SaveArchiver>(relaxed = true)
     private val savePathResolver = mockk<SavePathResolver>(relaxed = true)
     private val fal = mockk<FileAccessLayer>(relaxed = true)
-    private val switchSaveHandler = mockk<SwitchSaveHandler>(relaxed = true)
+    private val saveHandlerRegistry = mockk<PlatformSaveHandlerRegistry>(relaxed = true)
     private val conflictDetector = mockk<ConflictDetector>(relaxed = true)
     private val saveCacheManager = mockk<SaveCacheManager>(relaxed = true)
     private val romMApi = mockk<RomMApi>(relaxed = true)
@@ -101,6 +101,7 @@ class SaveUploaderTest {
             isTemporary = false
         )
 
+        every { saveHandlerRegistry.isValidCachedSavePath(any(), any()) } returns true
         every { conflictDetector.detectUploadConflict(any(), any(), any(), any(), any(), any(), any()) } returns null
         every { conflictDetector.pickLatestServerSave(any(), any(), any(), any()) } returns null
         every { conflictDetector.pickExistingServerSave(any(), any(), any(), any()) } returns null
@@ -115,7 +116,7 @@ class SaveUploaderTest {
             saveArchiver = saveArchiver,
             savePathResolver = savePathResolver,
             fal = fal,
-            switchSaveHandler = switchSaveHandler,
+            saveHandlerRegistry = saveHandlerRegistry,
             apiClient = dagger.Lazy { apiClient },
             conflictDetector = conflictDetector,
             saveCacheManager = dagger.Lazy { saveCacheManager },

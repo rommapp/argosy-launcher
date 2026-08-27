@@ -327,6 +327,19 @@ class SessionStateStore(context: Context) {
     fun isFirstRunComplete(): Boolean = prefs.getBoolean(KEY_FIRST_RUN_COMPLETE, false)
 
     /**
+     * The launcher's chosen display language as a BCP 47 tag, or the "system" sentinel. Written
+     * with commit() because every Activity and foreground service reads it during attachBaseContext
+     * or notification setup, before Hilt injection has run and before DataStore's async flow could
+     * possibly have caught up.
+     */
+    fun setAppLanguage(tag: String) {
+        prefs.edit().putString(KEY_APP_LANGUAGE, tag).commit()
+    }
+
+    fun getAppLanguage(): String =
+        prefs.getString(KEY_APP_LANGUAGE, AppLanguage.SYSTEM.tag) ?: AppLanguage.SYSTEM.tag
+
+    /**
      * A RomM account switch that is under way. Written with commit() rather than apply() because
      * the whole point of the marker is that it outlives the process that set it: an apply() that
      * has not reached disk when the app is killed leaves the disk half torn down with no record
@@ -425,5 +438,6 @@ class SessionStateStore(context: Context) {
         private const val KEY_SWITCH_FROM_USER = "account_switch_from_user"
         private const val KEY_SWITCH_TO_USER = "account_switch_to_user"
         private const val KEY_SWITCH_STARTED_AT = "account_switch_started_at"
+        private const val KEY_APP_LANGUAGE = "app_language"
     }
 }

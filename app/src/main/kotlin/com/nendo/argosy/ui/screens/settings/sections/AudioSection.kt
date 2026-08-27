@@ -9,6 +9,8 @@ import androidx.compose.material.icons.outlined.MusicNote
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.NavigationPreference
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
@@ -69,16 +71,24 @@ fun AudioSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         when (item) {
             AudioItem.Sounds -> NavigationPreference(
                 icon = Icons.Outlined.MusicNote,
-                title = "Sounds",
-                subtitle = if (uiState.sounds.enabled) "On, ${uiState.sounds.volume}%" else "Off",
+                title = stringResource(R.string.settings_audio_sounds_title),
+                subtitle = if (uiState.sounds.enabled) {
+                    stringResource(R.string.settings_audio_sounds_subtitle_on, uiState.sounds.volume)
+                } else {
+                    stringResource(R.string.settings_audio_sounds_subtitle_off)
+                },
                 isFocused = isFocused(item),
                 onClick = { openFrom(item) { viewModel.navigateToThemeSounds() } }
             )
 
             AudioItem.Music -> NavigationPreference(
                 icon = Icons.Outlined.LibraryMusic,
-                title = "Music",
-                subtitle = if (uiState.ambientAudio.enabled) "On, ${uiState.ambientAudio.volume}%" else "Off",
+                title = stringResource(R.string.settings_audio_music_title),
+                subtitle = if (uiState.ambientAudio.enabled) {
+                    stringResource(R.string.settings_audio_music_subtitle_on, uiState.ambientAudio.volume)
+                } else {
+                    stringResource(R.string.settings_audio_music_subtitle_off)
+                },
                 isFocused = isFocused(item),
                 onClick = { openFrom(item) { viewModel.navigateToThemeMusic() } }
             )

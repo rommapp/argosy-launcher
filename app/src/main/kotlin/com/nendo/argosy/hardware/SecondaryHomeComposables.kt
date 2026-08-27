@@ -26,6 +26,7 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.R
 import com.nendo.argosy.ui.dualscreen.ControlRoleContent
@@ -385,9 +386,12 @@ fun ShowcaseRoleContent(
                         footerHints = {
                             FooterBar(
                                 hints = listOf(
-                                    InputButton.LB_RB to "Tab",
-                                    InputButton.A to "Select",
-                                    InputButton.B to "Back"
+                                    InputButton.LB_RB to
+                                        stringResource(R.string.dual_showcase_detail_footer_tab),
+                                    InputButton.A to
+                                        stringResource(R.string.dual_showcase_detail_footer_select),
+                                    InputButton.B to
+                                        stringResource(R.string.dual_showcase_detail_footer_back)
                                 )
                             )
                         }
@@ -398,9 +402,15 @@ fun ShowcaseRoleContent(
                         footerHints = {
                             FooterBar(
                                 hints = listOf(
-                                    InputButton.DPAD to "Navigate",
-                                    InputButton.A to "Open",
-                                    InputButton.B to "Back"
+                                    InputButton.DPAD to stringResource(
+                                        R.string.dual_showcase_collections_footer_navigate
+                                    ),
+                                    InputButton.A to stringResource(
+                                        R.string.dual_showcase_collections_footer_open
+                                    ),
+                                    InputButton.B to stringResource(
+                                        R.string.dual_showcase_collections_footer_back
+                                    )
                                 )
                             )
                         }
@@ -540,7 +550,7 @@ fun DualGameDetailContent(
             viewModel.confirmStateOverlay()
         },
         onStatePromptDismiss = { viewModel.dismissStateOverlay() },
-        stateMenuEntries = viewModel.stateMenuActions().map { it.label },
+        stateMenuEntries = viewModel.stateMenuActions(),
         onScreenshotSelected = { index ->
             viewModel.setScreenshotIndex(index)
         },

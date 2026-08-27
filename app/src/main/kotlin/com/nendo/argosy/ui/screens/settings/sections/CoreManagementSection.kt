@@ -31,8 +31,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.screens.settings.CoreChipState
@@ -116,7 +118,7 @@ fun CoreManagementSection(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "No supported platforms enabled for sync",
+                text = stringResource(R.string.settings_shell_coremanagement_no_platforms),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -137,7 +139,7 @@ fun CoreManagementSection(
             when (val item = visibleItems[index]) {
                 CoreManagementItem.Header -> {
                     Text(
-                        text = "Select cores for each platform",
+                        text = stringResource(R.string.settings_shell_coremanagement_header),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(bottom = Dimens.spacingSm)
@@ -294,7 +296,7 @@ private fun CoreChipContent(
             core.isActive -> {
                 Icon(
                     imageVector = Icons.Default.Check,
-                    contentDescription = "Active",
+                    contentDescription = stringResource(R.string.settings_shell_coremanagement_active_desc),
                     tint = statusColor,
                     modifier = Modifier.size(14.dp)
                 )
@@ -302,7 +304,7 @@ private fun CoreChipContent(
             !core.isInstalled -> {
                 Icon(
                     imageVector = Icons.Default.Download,
-                    contentDescription = "Download required",
+                    contentDescription = stringResource(R.string.settings_shell_coremanagement_download_required_desc),
                     tint = textColor.copy(alpha = 0.7f),
                     modifier = Modifier.size(14.dp)
                 )
@@ -315,13 +317,13 @@ private fun CoreChipContent(
         )
         if (core.netplaySupported) {
             CoreTag(
-                text = "Netplay",
+                text = stringResource(R.string.settings_shell_coremanagement_netplay_tag),
                 color = semanticColors.info
             )
         }
         if (core.updateAvailable && core.isInstalled) {
             CoreTag(
-                text = "Update",
+                text = stringResource(R.string.settings_shell_coremanagement_update_tag),
                 color = semanticColors.warning
             )
         }

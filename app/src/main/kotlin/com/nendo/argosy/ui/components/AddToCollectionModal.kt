@@ -26,7 +26,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 
@@ -51,7 +53,7 @@ fun AddToCollectionModal(
     FocusedScroll(listState = listState, focusedIndex = focusIndex)
 
     Modal(
-        title = "ADD TO COLLECTION",
+        title = stringResource(R.string.ui_add_to_collection_title),
         onDismiss = onDismiss
     ) {
         LazyColumn(state = listState) {
@@ -66,7 +68,7 @@ fun AddToCollectionModal(
             if (filteredCollections.isEmpty() && !showCreateOption) {
                 item {
                     Text(
-                        text = "No collections yet",
+                        text = stringResource(R.string.ui_add_to_collection_empty),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(vertical = Dimens.spacingMd)
@@ -122,7 +124,7 @@ private fun CreateCollectionRow(
         Spacer(modifier = Modifier.width(Dimens.spacingMd))
 
         Text(
-            text = "Create New Collection",
+            text = stringResource(R.string.ui_add_to_collection_create),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.primary
         )
@@ -176,7 +178,7 @@ private fun CollectionCheckRow(
         if (collection.isInCollection) {
             Icon(
                 Icons.Default.Check,
-                contentDescription = "In collection",
+                contentDescription = stringResource(R.string.ui_add_to_collection_member),
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(Dimens.iconMd)
             )

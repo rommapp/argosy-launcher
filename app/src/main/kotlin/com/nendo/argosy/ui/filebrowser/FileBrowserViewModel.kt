@@ -2,8 +2,10 @@ package com.nendo.argosy.ui.filebrowser
 
 import android.os.Build
 import android.os.Environment
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nendo.argosy.R
 import com.nendo.argosy.core.storage.StorageVolume
 import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.data.storage.FileInfo
@@ -86,7 +88,7 @@ class FileBrowserViewModel @Inject constructor(
 
     fun navigate(path: String) {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, error = null) }
+            _state.update { it.copy(isLoading = true, errorRes = null) }
 
             val result = withContext(Dispatchers.IO) {
                 loadDirectory(path)
@@ -106,7 +108,7 @@ class FileBrowserViewModel @Inject constructor(
                 is DirectoryListing.Error -> {
                     _state.update { state ->
                         state.copy(
-                            error = result.message,
+                            errorRes = result.messageRes,
                             isLoading = false
                         )
                     }
@@ -117,7 +119,7 @@ class FileBrowserViewModel @Inject constructor(
 
     private sealed interface DirectoryListing {
         data class Success(val entries: List<FileEntry>) : DirectoryListing
-        data class Error(val message: String) : DirectoryListing
+        data class Error(@StringRes val messageRes: Int) : DirectoryListing
     }
 
     private fun loadDirectory(path: String): DirectoryListing {
@@ -125,7 +127,7 @@ class FileBrowserViewModel @Inject constructor(
         val fileFilter = _state.value.fileFilter
 
         val children = fileAccessLayer.listFiles(path)
-            ?: return DirectoryListing.Error("Cannot access directory")
+            ?: return DirectoryListing.Error(R.string.ui_file_browser_error_unreadable)
 
         val entries = mutableListOf<FileEntry>()
 
@@ -264,7 +266,7 @@ class FileBrowserViewModel @Inject constructor(
             it.copy(
                 showCreateFolderDialog = true,
                 newFolderName = "",
-                createFolderError = null
+                createFolderErrorRes = null
             )
         }
     }
@@ -274,13 +276,13 @@ class FileBrowserViewModel @Inject constructor(
             it.copy(
                 showCreateFolderDialog = false,
                 newFolderName = "",
-                createFolderError = null
+                createFolderErrorRes = null
             )
         }
     }
 
     fun setNewFolderName(name: String) {
-        _state.update { it.copy(newFolderName = name, createFolderError = null) }
+        _state.update { it.copy(newFolderName = name, createFolderErrorRes = null) }
     }
 
     fun confirmCreateFolder() {
@@ -288,12 +290,16 @@ class FileBrowserViewModel @Inject constructor(
         val folderName = state.newFolderName.trim()
 
         if (folderName.isEmpty()) {
-            _state.update { it.copy(createFolderError = "Folder name cannot be empty") }
+            _state.update {
+                it.copy(createFolderErrorRes = R.string.ui_file_browser_new_folder_error_empty)
+            }
             return
         }
 
         if (folderName.contains("/") || folderName.contains("\\")) {
-            _state.update { it.copy(createFolderError = "Invalid folder name") }
+            _state.update {
+                it.copy(createFolderErrorRes = R.string.ui_file_browser_new_folder_error_invalid)
+            }
             return
         }
 
@@ -301,11 +307,21 @@ class FileBrowserViewModel @Inject constructor(
             val newPath = "${state.currentPath.trimEnd('/')}/$folderName"
             val success = withContext(Dispatchers.IO) {
                 if (fileAccessLayer.exists(newPath)) {
-                    _state.update { it.copy(createFolderError = "Folder already exists") }
+                    _state.update {
+                        it.copy(
+                            createFolderErrorRes =
+                                R.string.ui_file_browser_new_folder_error_exists
+                        )
+                    }
                     return@withContext false
                 }
                 if (!fileAccessLayer.mkdirs(newPath)) {
-                    _state.update { it.copy(createFolderError = "Failed to create folder") }
+                    _state.update {
+                        it.copy(
+                            createFolderErrorRes =
+                                R.string.ui_file_browser_new_folder_error_failed
+                        )
+                    }
                     return@withContext false
                 }
                 true

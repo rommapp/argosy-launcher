@@ -35,9 +35,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.FooterSpacer
 import com.nendo.argosy.ui.components.InputButton
@@ -98,7 +101,10 @@ fun AchievementListOverlay(
                         item {
                             Spacer(modifier = Modifier.height(Dimens.spacingMd))
                             SectionLabel(
-                                text = "UNLOCKED (${unlocked.size})",
+                                text = stringResource(
+                                    R.string.gamedetail_achievement_list_unlocked_heading,
+                                    unlocked.size
+                                ),
                                 color = ALauncherColors.TrophyAmber
                             )
                         }
@@ -111,7 +117,10 @@ fun AchievementListOverlay(
                         if (!isUnlockedItem && index == unlocked.size) {
                             Spacer(modifier = Modifier.height(Dimens.spacingMd))
                             SectionLabel(
-                                text = "LOCKED (${locked.size})",
+                                text = stringResource(
+                                    R.string.gamedetail_achievement_list_locked_heading,
+                                    locked.size
+                                ),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -128,8 +137,10 @@ fun AchievementListOverlay(
 
                 FooterHints(
                     hints = listOf(
-                        InputButton.DPAD_VERTICAL to "Navigate",
-                        InputButton.B to "Back"
+                        InputButton.DPAD_VERTICAL to
+                            stringResource(R.string.gamedetail_achievement_list_footer_navigate),
+                        InputButton.B to
+                            stringResource(R.string.gamedetail_achievement_list_footer_back)
                     )
                 )
                 FooterSpacer()
@@ -169,13 +180,18 @@ private fun AchievementListHeader(
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = "Achievements",
+                text = stringResource(R.string.gamedetail_achievement_list_subtitle),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         Text(
-            text = "$unlocked/$total ($percentage%)",
+            text = stringResource(
+                R.string.gamedetail_achievement_list_progress,
+                unlocked,
+                total,
+                percentage
+            ),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.primary
         )
@@ -270,7 +286,11 @@ private fun AchievementRow(
         if (!isLocked) {
             val tierColor = if (achievement.isUnlockedHardcore) ALauncherColors.StarGold
             else ALauncherColors.Orange
-            val tierLabel = if (achievement.isUnlockedHardcore) "Hardcore" else "Casual"
+            val tierLabel = if (achievement.isUnlockedHardcore) {
+                stringResource(R.string.gamedetail_achievement_list_tier_hardcore)
+            } else {
+                stringResource(R.string.gamedetail_achievement_list_tier_casual)
+            }
 
             Text(
                 text = tierLabel,
@@ -279,7 +299,11 @@ private fun AchievementRow(
             )
         } else {
             Text(
-                text = "${achievement.points} pts",
+                text = pluralStringResource(
+                    R.plurals.gamedetail_achievement_list_points,
+                    achievement.points,
+                    achievement.points
+                ),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

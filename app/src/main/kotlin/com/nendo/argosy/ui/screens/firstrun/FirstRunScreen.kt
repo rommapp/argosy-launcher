@@ -62,6 +62,8 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.SoftwareKeyboardController
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.ImeAction
@@ -81,6 +83,7 @@ import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.TextField
+import com.nendo.argosy.R
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.ui.components.PermissionCard
 import com.nendo.argosy.ui.components.PlatformFilterHeader
@@ -238,7 +241,7 @@ fun FirstRunScreen(
                     browserMissing = uiState.rommBrowserMissing,
                     hasCamera = uiState.rommHasCamera,
                     isConnecting = uiState.isConnecting,
-                    error = uiState.connectionError,
+                    error = firstRunErrorText(uiState.connectionError),
                     focusedIndex = uiState.focusedIndex,
                     rommFocusField = uiState.rommFocusField,
                     onUrlChange = viewModel::setRommUrl,
@@ -395,14 +398,14 @@ private fun WelcomeStep(isFocused: Boolean, onGetStarted: () -> Unit) {
         )
         Spacer(modifier = Modifier.height(Dimens.spacingLg))
         Text(
-            text = "Welcome! Let's get you set up.",
+            text = stringResource(R.string.firstrun_welcome_intro),
             style = MaterialTheme.typography.titleLarge,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurface
         )
         Spacer(modifier = Modifier.height(Dimens.spacingXxl))
         FocusableButton(
-            text = "Get Started",
+            text = stringResource(R.string.firstrun_welcome_button_start),
             isFocused = isFocused,
             onClick = onGetStarted
         )
@@ -481,13 +484,13 @@ private fun RommLoginStep(
             }
         }
         StepColumn {
-            StepHeader(title = "Rom Manager Login")
+            StepHeader(title = stringResource(R.string.firstrun_romm_url_title))
             Spacer(modifier = Modifier.height(Dimens.spacingLg))
 
             OutlinedTextField(
                 value = url,
                 onValueChange = onUrlChange,
-                label = { Text("Server URL") },
+                label = { Text(stringResource(R.string.firstrun_romm_url_field_label)) },
                 placeholder = { Text("https://romm.example.com") },
                 singleLine = true,
                 shape = inputShape,
@@ -521,7 +524,7 @@ private fun RommLoginStep(
             Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
             Text(
-                text = "Enter your RomM server address and we'll detect how to sign in.",
+                text = stringResource(R.string.firstrun_romm_url_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -543,14 +546,18 @@ private fun RommLoginStep(
 
             Row {
                 FocusableButton(
-                    text = if (isConnecting) "Checking..." else "Continue",
+                    text = if (isConnecting) {
+                        stringResource(R.string.firstrun_romm_url_button_checking)
+                    } else {
+                        stringResource(R.string.firstrun_romm_url_button_continue)
+                    },
                     isFocused = focusedIndex == 1,
                     enabled = !isConnecting && url.isNotBlank(),
                     onClick = onCommitUrl
                 )
                 Spacer(modifier = Modifier.width(Dimens.spacingMd))
                 FocusableOutlinedButton(
-                    text = "Back",
+                    text = stringResource(R.string.firstrun_romm_url_button_back),
                     isFocused = focusedIndex == 2,
                     enabled = !isConnecting,
                     onClick = onBack
@@ -569,7 +576,7 @@ private fun RommLoginStep(
     }
 
     StepColumn {
-        StepHeader(title = "Enter pairing code")
+        StepHeader(title = stringResource(R.string.firstrun_pairing_code_title))
         Spacer(modifier = Modifier.height(Dimens.spacingSm))
 
         Text(
@@ -582,7 +589,7 @@ private fun RommLoginStep(
         Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
         Text(
-            text = "Create an API token in the RomM web UI, then enter the 8-character code.",
+            text = stringResource(R.string.firstrun_pairing_code_hint),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -607,7 +614,7 @@ private fun RommLoginStep(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Clear,
-                        contentDescription = "Clear code",
+                        contentDescription = stringResource(R.string.firstrun_pairing_code_clear_description),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -629,14 +636,18 @@ private fun RommLoginStep(
 
         Row {
             FocusableButton(
-                text = if (isConnecting) "Connecting..." else "Connect",
+                text = if (isConnecting) {
+                    stringResource(R.string.firstrun_pairing_code_button_connecting)
+                } else {
+                    stringResource(R.string.firstrun_pairing_code_button_connect)
+                },
                 isFocused = focusedIndex == 1,
                 enabled = !isConnecting && codeComplete,
                 onClick = onConnect
             )
             Spacer(modifier = Modifier.width(Dimens.spacingMd))
             FocusableOutlinedButton(
-                text = "Edit URL",
+                text = stringResource(R.string.firstrun_pairing_code_button_edit_url),
                 isFocused = focusedIndex == 2,
                 enabled = !isConnecting,
                 onClick = onEditUrl
@@ -647,7 +658,7 @@ private fun RommLoginStep(
         if (hasCamera) {
             Spacer(modifier = Modifier.height(Dimens.spacingSm))
             FocusableOutlinedButton(
-                text = "Scan QR Code",
+                text = stringResource(R.string.firstrun_pairing_code_button_scan),
                 isFocused = focusedIndex == nextIndex,
                 enabled = !isConnecting,
                 onClick = onScan
@@ -658,7 +669,7 @@ private fun RommLoginStep(
         if (supportsDeviceAuth) {
             Spacer(modifier = Modifier.height(Dimens.spacingSm))
             FocusableOutlinedButton(
-                text = "Use QR pairing instead",
+                text = stringResource(R.string.firstrun_pairing_code_button_device_pairing),
                 isFocused = focusedIndex == nextIndex,
                 enabled = !isConnecting,
                 onClick = onUseDevicePairing
@@ -679,11 +690,11 @@ private fun DevicePairingStep(
     onCancel: () -> Unit
 ) {
     StepColumn {
-        StepHeader(title = "Scan to pair")
+        StepHeader(title = stringResource(R.string.firstrun_device_pairing_title))
         Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
         Text(
-            text = "Scan this code with your phone, or sign in here on this device, then approve it in RomM.",
+            text = stringResource(R.string.firstrun_device_pairing_hint),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -728,7 +739,7 @@ private fun DevicePairingStep(
         if (browserMissing) {
             Spacer(modifier = Modifier.height(Dimens.spacingMd))
             Text(
-                text = "No browser on this device. Scan the code or use a pairing code instead.",
+                text = stringResource(R.string.firstrun_device_pairing_no_browser),
                 color = MaterialTheme.colorScheme.error,
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
@@ -740,14 +751,14 @@ private fun DevicePairingStep(
 
         Row {
             FocusableButton(
-                text = "Sign in on this device",
+                text = stringResource(R.string.firstrun_device_pairing_button_sign_in),
                 isFocused = focusedIndex == 0,
                 enabled = verificationUrl != null,
                 onClick = onOpenVerificationUrl
             )
             Spacer(modifier = Modifier.width(Dimens.spacingMd))
             FocusableOutlinedButton(
-                text = "Use a pairing code",
+                text = stringResource(R.string.firstrun_device_pairing_button_manual_code),
                 isFocused = focusedIndex == 1,
                 enabled = true,
                 onClick = onUseManualCode
@@ -757,7 +768,7 @@ private fun DevicePairingStep(
         Spacer(modifier = Modifier.height(Dimens.spacingSm))
 
         FocusableOutlinedButton(
-            text = "Back",
+            text = stringResource(R.string.firstrun_device_pairing_button_back),
             isFocused = focusedIndex == 2,
             enabled = true,
             onClick = onCancel
@@ -782,23 +793,27 @@ private fun RommSuccessStep(
         )
         Spacer(modifier = Modifier.height(Dimens.spacingMd))
         Text(
-            text = "Connected successfully!",
+            text = stringResource(R.string.firstrun_romm_success_title),
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.primary
         )
         Spacer(modifier = Modifier.height(Dimens.spacingLg))
         Text(
-            text = "Server: $serverName",
+            text = stringResource(R.string.firstrun_romm_success_server, serverName),
             style = MaterialTheme.typography.bodyLarge
         )
         Text(
-            text = "$gameCount games across $platformCount platforms",
+            text = stringResource(
+                R.string.firstrun_romm_success_library,
+                pluralStringResource(R.plurals.firstrun_romm_success_game_count, gameCount, gameCount),
+                pluralStringResource(R.plurals.firstrun_romm_success_platform_count, platformCount, platformCount)
+            ),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(Dimens.spacingLg))
         FocusableButton(
-            text = "Continue",
+            text = stringResource(R.string.firstrun_romm_success_button_continue),
             isFocused = isFocused,
             onClick = onContinue
         )
@@ -819,10 +834,10 @@ private fun PermissionsStep(
     onContinue: () -> Unit
 ) {
     StepColumn {
-        StepHeader(title = "Permissions")
+        StepHeader(title = stringResource(R.string.firstrun_permissions_title))
         Spacer(modifier = Modifier.height(Dimens.spacingSm))
         Text(
-            text = "Argosy needs these to manage your library and emulators.",
+            text = stringResource(R.string.firstrun_permissions_intro),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -836,32 +851,32 @@ private fun PermissionsStep(
         ) {
             PermissionCard(
                 icon = Icons.Default.Folder,
-                title = "Manage Storage (Required)",
-                description = "Required to browse folders, download games, and sync saves.",
+                title = stringResource(R.string.firstrun_permissions_storage_title),
+                description = stringResource(R.string.firstrun_permissions_storage_description),
                 isGranted = hasStorage,
                 isFocused = focusedIndex == 0,
                 onClick = onRequestStorage
             )
             PermissionCard(
                 icon = Icons.Default.Notifications,
-                title = "Notifications",
-                description = "Shows download and sync progress.",
+                title = stringResource(R.string.firstrun_permissions_notifications_title),
+                description = stringResource(R.string.firstrun_permissions_notifications_description),
                 isGranted = hasNotifications,
                 isFocused = focusedIndex == 1,
                 onClick = onRequestNotifications
             )
             PermissionCard(
                 icon = Icons.Default.Visibility,
-                title = "Display Over Other Apps",
-                description = "Enables in-game save detection overlays.",
+                title = stringResource(R.string.firstrun_permissions_overlay_title),
+                description = stringResource(R.string.firstrun_permissions_overlay_description),
                 isGranted = hasOverlay,
                 isFocused = focusedIndex == 2,
                 onClick = onRequestOverlay
             )
             PermissionCard(
                 icon = Icons.Default.Timer,
-                title = "Usage Access",
-                description = "Enables accurate play time tracking and resume.",
+                title = stringResource(R.string.firstrun_permissions_usage_title),
+                description = stringResource(R.string.firstrun_permissions_usage_description),
                 isGranted = hasUsageStats,
                 isFocused = focusedIndex == 3,
                 onClick = onRequestUsageStats
@@ -870,7 +885,7 @@ private fun PermissionsStep(
 
         Spacer(modifier = Modifier.height(Dimens.spacingLg))
         FocusableButton(
-            text = "Continue",
+            text = stringResource(R.string.firstrun_permissions_button_continue),
             isFocused = focusedIndex == 4,
             enabled = hasStorage,
             onClick = onContinue
@@ -878,9 +893,9 @@ private fun PermissionsStep(
         Spacer(modifier = Modifier.height(Dimens.spacingSm))
         Text(
             text = if (hasStorage) {
-                "You can grant the other permissions later in Settings."
+                stringResource(R.string.firstrun_permissions_note_optional)
             } else {
-                "Grant storage access to continue. The others are optional and can be granted later in Settings."
+                stringResource(R.string.firstrun_permissions_note_storage_required)
             },
             style = MaterialTheme.typography.bodySmall,
             textAlign = TextAlign.Center,
@@ -902,10 +917,10 @@ private fun RomPathStep(
     onContinue: () -> Unit
 ) {
     StepColumn {
-        StepHeader(title = "Games Path")
+        StepHeader(title = stringResource(R.string.firstrun_rom_path_title))
         Spacer(modifier = Modifier.height(Dimens.spacingMd))
         Text(
-            text = "Choose where your game files will be stored. We'll create subfolders for each console automatically.",
+            text = stringResource(R.string.firstrun_rom_path_description),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -939,19 +954,19 @@ private fun RomPathStep(
             }
             Spacer(modifier = Modifier.height(Dimens.spacingLg))
             FocusableButton(
-                text = "Continue",
+                text = stringResource(R.string.firstrun_rom_path_button_continue),
                 isFocused = focusedIndex == 0,
                 onClick = onContinue
             )
             Spacer(modifier = Modifier.height(Dimens.spacingSm))
             FocusableOutlinedButton(
-                text = "Choose Different Folder",
+                text = stringResource(R.string.firstrun_rom_path_button_change_folder),
                 isFocused = focusedIndex == 1,
                 onClick = onChooseFolder
             )
         } else {
             FocusableButton(
-                text = "Choose Folder",
+                text = stringResource(R.string.firstrun_rom_path_button_choose_folder),
                 isFocused = focusedIndex == 0,
                 icon = Icons.Default.Folder,
                 onClick = onChooseFolder
@@ -959,6 +974,13 @@ private fun RomPathStep(
         }
     }
 }
+
+/**
+ * On-disk name of the folder the app creates inside the chosen image cache location.
+ * It is a real directory name, so it is passed into the note as a format argument
+ * instead of being written into translatable text.
+ */
+private const val IMAGE_CACHE_FOLDER_NAME = "argosy_images"
 
 @Composable
 private fun ImageCacheStep(
@@ -971,18 +993,18 @@ private fun ImageCacheStep(
 ) {
     StepColumn {
         Text(
-            text = "OPTIONAL",
+            text = stringResource(R.string.firstrun_image_cache_optional_badge),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.primary
         )
         Spacer(modifier = Modifier.height(Dimens.spacingSm))
         Text(
-            text = "Image Cache Location",
+            text = stringResource(R.string.firstrun_image_cache_title),
             style = MaterialTheme.typography.headlineSmall
         )
         Spacer(modifier = Modifier.height(Dimens.spacingMd))
         Text(
-            text = "By default, game artwork is stored in the app's internal cache. If your device has limited storage, you can choose an external location.",
+            text = stringResource(R.string.firstrun_image_cache_description),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -990,7 +1012,7 @@ private fun ImageCacheStep(
         Spacer(modifier = Modifier.height(Dimens.spacingLg))
 
         if (folderSelected && currentPath != null) {
-            val displayPath = "${currentPath.substringAfterLast("/")}/argosy_images"
+            val displayPath = "${currentPath.substringAfterLast("/")}/$IMAGE_CACHE_FOLDER_NAME"
             Card(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant
@@ -1016,26 +1038,26 @@ private fun ImageCacheStep(
             }
             Spacer(modifier = Modifier.height(Dimens.spacingLg))
             FocusableButton(
-                text = "Continue",
+                text = stringResource(R.string.firstrun_image_cache_button_continue),
                 isFocused = focusedIndex == 0,
                 onClick = onContinue
             )
             Spacer(modifier = Modifier.height(Dimens.spacingSm))
             FocusableOutlinedButton(
-                text = "Choose Different Folder",
+                text = stringResource(R.string.firstrun_image_cache_button_change_folder),
                 isFocused = focusedIndex == 1,
                 onClick = onChooseFolder
             )
         } else {
             FocusableButton(
-                text = "Choose External Folder",
+                text = stringResource(R.string.firstrun_image_cache_button_choose_folder),
                 isFocused = focusedIndex == 0,
                 icon = Icons.Default.Folder,
                 onClick = onChooseFolder
             )
             Spacer(modifier = Modifier.height(Dimens.spacingSm))
             FocusableOutlinedButton(
-                text = "Use Default (Internal)",
+                text = stringResource(R.string.firstrun_image_cache_button_use_default),
                 isFocused = focusedIndex == 1,
                 onClick = onSkip
             )
@@ -1043,7 +1065,7 @@ private fun ImageCacheStep(
 
         Spacer(modifier = Modifier.height(Dimens.spacingSm))
         Text(
-            text = "Images will be stored in an 'argosy_images' subfolder.",
+            text = stringResource(R.string.firstrun_image_cache_folder_note, IMAGE_CACHE_FOLDER_NAME),
             style = MaterialTheme.typography.bodySmall,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -1092,18 +1114,23 @@ private fun PlatformSelectStep(
             .padding(horizontal = Dimens.spacingXl, vertical = Dimens.spacingMd)
     ) {
         Text(
-            text = "SELECT PLATFORMS",
+            text = stringResource(R.string.firstrun_platform_select_eyebrow),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.primary
         )
         Spacer(modifier = Modifier.height(Dimens.spacingSm))
         Text(
-            text = "Choose which platforms to sync",
+            text = stringResource(R.string.firstrun_platform_select_title),
             style = MaterialTheme.typography.headlineSmall
         )
         Spacer(modifier = Modifier.height(Dimens.spacingSm))
         Text(
-            text = "$enabledCount of ${platforms.size} platforms selected",
+            text = pluralStringResource(
+                R.plurals.firstrun_platform_select_selected_count,
+                platforms.size,
+                enabledCount,
+                platforms.size
+            ),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -1140,7 +1167,11 @@ private fun PlatformSelectStep(
                 val isFocused = !headerFocused && index == focusedIndex
                 SwitchPreference(
                     title = platform.name,
-                    subtitle = "${platform.gameCount} games",
+                    subtitle = pluralStringResource(
+                        R.plurals.firstrun_platform_select_game_count,
+                        platform.gameCount,
+                        platform.gameCount
+                    ),
                     isEnabled = platform.syncEnabled,
                     isFocused = isFocused,
                     onToggle = { onToggle(platform.id) }
@@ -1155,13 +1186,17 @@ private fun PlatformSelectStep(
             horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
         ) {
             FocusableOutlinedButton(
-                text = if (allEnabled) "Deselect All" else "Select All",
+                text = if (allEnabled) {
+                    stringResource(R.string.firstrun_platform_select_button_deselect_all)
+                } else {
+                    stringResource(R.string.firstrun_platform_select_button_select_all)
+                },
                 isFocused = isOnButtons && buttonFocusIndex == 0,
                 onClick = onToggleAll
             )
             Spacer(modifier = Modifier.weight(1f))
             FocusableButton(
-                text = "Continue",
+                text = stringResource(R.string.firstrun_platform_select_button_continue),
                 isFocused = isOnButtons && buttonFocusIndex == 1,
                 onClick = onContinue
             )
@@ -1185,28 +1220,32 @@ private fun CorePromptStep(
         )
         Spacer(modifier = Modifier.height(Dimens.spacingMd))
         Text(
-            text = "Download Emulator Cores?",
+            text = stringResource(R.string.firstrun_core_prompt_title),
             style = MaterialTheme.typography.headlineSmall
         )
         Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
         if (missingCoreCount > 0) {
             Text(
-                text = "$missingCoreCount libretro cores are available for your selected platforms.",
+                text = pluralStringResource(
+                    R.plurals.firstrun_core_prompt_available_count,
+                    missingCoreCount,
+                    missingCoreCount
+                ),
                 style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(Dimens.spacingSm))
             Text(
-                text = "These enable built-in emulation without needing separate emulator apps.",
+                text = stringResource(R.string.firstrun_core_prompt_explainer),
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         } else {
             Text(
-                text = "All cores for your selected platforms are already installed.",
+                text = stringResource(R.string.firstrun_core_prompt_all_installed),
                 style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -1217,7 +1256,7 @@ private fun CorePromptStep(
 
         if (missingCoreCount > 0) {
             FocusableButton(
-                text = "Download Cores",
+                text = stringResource(R.string.firstrun_core_prompt_button_download),
                 isFocused = focusedIndex == 0,
                 icon = Icons.Default.Download,
                 onClick = onDownload
@@ -1226,7 +1265,11 @@ private fun CorePromptStep(
         }
 
         FocusableOutlinedButton(
-            text = if (missingCoreCount > 0) "Skip (Disable Built-in Emulator)" else "Continue",
+            text = if (missingCoreCount > 0) {
+                stringResource(R.string.firstrun_core_prompt_button_skip)
+            } else {
+                stringResource(R.string.firstrun_core_prompt_button_continue)
+            },
             isFocused = if (missingCoreCount > 0) focusedIndex == 1 else focusedIndex == 0,
             onClick = onSkip
         )
@@ -1234,7 +1277,7 @@ private fun CorePromptStep(
         if (missingCoreCount > 0) {
             Spacer(modifier = Modifier.height(Dimens.spacingSm))
             Text(
-                text = "Skipping turns off the built-in emulator. You can re-enable it and download cores later from Settings.",
+                text = stringResource(R.string.firstrun_core_prompt_note_skip),
                 style = MaterialTheme.typography.bodySmall,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -1269,30 +1312,43 @@ private fun CoreDownloadStep(
         )
         Spacer(modifier = Modifier.height(Dimens.spacingMd))
         Text(
-            text = "Downloading Emulator Cores",
+            text = stringResource(R.string.firstrun_core_download_title),
             style = MaterialTheme.typography.headlineSmall
         )
         Spacer(modifier = Modifier.height(Dimens.spacingSm))
 
         if (coreDownloads.isEmpty()) {
             Text(
-                text = "No cores needed for selected platforms",
+                text = stringResource(R.string.firstrun_core_download_none_needed),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(Dimens.spacingLg))
             FocusableButton(
-                text = "Continue",
+                text = stringResource(R.string.firstrun_core_download_button_continue_no_cores),
                 isFocused = focusedIndex == 0,
                 onClick = onContinue
             )
         } else {
             Text(
                 text = if (isComplete) {
-                    if (failedCount > 0) "$completeCount of ${coreDownloads.size} cores downloaded"
-                    else "All cores downloaded"
+                    if (failedCount > 0) {
+                        pluralStringResource(
+                            R.plurals.firstrun_core_download_partial_count,
+                            coreDownloads.size,
+                            completeCount,
+                            coreDownloads.size
+                        )
+                    } else {
+                        stringResource(R.string.firstrun_core_download_all_done)
+                    }
                 } else {
-                    "Downloading $completeCount of ${coreDownloads.size} cores..."
+                    pluralStringResource(
+                        R.plurals.firstrun_core_download_progress_count,
+                        coreDownloads.size,
+                        completeCount,
+                        coreDownloads.size
+                    )
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -1316,7 +1372,7 @@ private fun CoreDownloadStep(
             Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
             Text(
-                text = "Skip if you prefer to use standalone emulators",
+                text = stringResource(R.string.firstrun_core_download_note_skip),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -1328,13 +1384,13 @@ private fun CoreDownloadStep(
                 horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
             ) {
                 FocusableOutlinedButton(
-                    text = "Skip",
+                    text = stringResource(R.string.firstrun_core_download_button_skip),
                     isFocused = focusedIndex == 1,
                     onClick = onSkip
                 )
                 Spacer(modifier = Modifier.weight(1f))
                 FocusableButton(
-                    text = "Continue",
+                    text = stringResource(R.string.firstrun_core_download_button_continue),
                     isFocused = focusedIndex == 0,
                     enabled = isComplete,
                     onClick = onContinue
@@ -1395,7 +1451,7 @@ private fun CoreDownloadItem(
             CoreDownloadStatus.COMPLETE -> {
                 Icon(
                     imageVector = Icons.Default.CheckCircle,
-                    contentDescription = "Complete",
+                    contentDescription = stringResource(R.string.firstrun_core_download_status_complete_description),
                     tint = MaterialTheme.colorScheme.primary
                 )
             }
@@ -1403,18 +1459,21 @@ private fun CoreDownloadItem(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.Error,
-                        contentDescription = "Failed",
+                        contentDescription = stringResource(R.string.firstrun_core_download_status_failed_description),
                         tint = MaterialTheme.colorScheme.error
                     )
                     Spacer(modifier = Modifier.width(Dimens.spacingSm))
                     ActionButton(onClick = onRetry) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
-                            contentDescription = "Retry",
+                            contentDescription = stringResource(R.string.firstrun_core_download_retry_description),
                             modifier = Modifier.size(Dimens.iconXs)
                         )
                         Spacer(modifier = Modifier.width(Dimens.spacingXs))
-                        Text("Retry", style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            text = stringResource(R.string.firstrun_core_download_button_retry),
+                            style = MaterialTheme.typography.bodySmall
+                        )
                     }
                 }
             }
@@ -1437,20 +1496,24 @@ private fun CompleteStep(
             modifier = Modifier.padding(bottom = Dimens.spacingMd)
         )
         Text(
-            text = "All Set!",
+            text = stringResource(R.string.firstrun_complete_title),
             style = MaterialTheme.typography.displaySmall,
             color = MaterialTheme.colorScheme.primary
         )
         Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
         Text(
-            text = "$gameCount games across $platformCount platforms ready to sync",
+            text = stringResource(
+                R.string.firstrun_complete_library,
+                pluralStringResource(R.plurals.firstrun_complete_game_count, gameCount, gameCount),
+                pluralStringResource(R.plurals.firstrun_complete_platform_count, platformCount, platformCount)
+            ),
             style = MaterialTheme.typography.titleMedium,
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(Dimens.spacingSm))
         Text(
-            text = "Sync your library from Collection settings to get started.",
+            text = stringResource(R.string.firstrun_complete_hint),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -1458,11 +1521,19 @@ private fun CompleteStep(
 
         Spacer(modifier = Modifier.height(Dimens.spacingLg))
         FocusableButton(
-            text = "Start Playing",
+            text = stringResource(R.string.firstrun_complete_button_start),
             isFocused = isFocused,
             onClick = onStart
         )
     }
+}
+
+@Composable
+private fun firstRunErrorText(error: FirstRunError?): String? {
+    if (error == null) return null
+    val textRes = error.textRes ?: return error.serverMessage
+    val arg = error.arg
+    return if (arg != null) stringResource(textRes, arg) else stringResource(textRes)
 }
 
 @Composable

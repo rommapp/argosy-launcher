@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="library_header_title">БИБЛИОТЕКА</string>
+    <string name="library_header_all_platforms">Все платформы</string>
+    <string name="library_header_previous_platform">Предыдущая платформа</string>
+    <string name="library_header_next_platform">Следующая платформа</string>
+    <plurals name="library_header_game_count">
+        <item quantity="one">%d игра</item>
+        <item quantity="few">%d игры</item>
+        <item quantity="many">%d игр</item>
+        <item quantity="other">%d игры</item>
+    </plurals>
+
+    <string name="library_landing_title">БИБЛИОТЕКА</string>
+    <plurals name="library_landing_platform_count">
+        <item quantity="one">%d платформа</item>
+        <item quantity="few">%d платформы</item>
+        <item quantity="many">%d платформ</item>
+        <item quantity="other">%d платформы</item>
+    </plurals>
+    <plurals name="library_landing_media_library_count">
+        <item quantity="one">%d библиотека</item>
+        <item quantity="few">%d библиотеки</item>
+        <item quantity="many">%d библиотек</item>
+        <item quantity="other">%d библиотеки</item>
+    </plurals>
+
+    <string name="library_cell_all_games">Все игры</string>
+    <plurals name="library_cell_game_count">
+        <item quantity="one">%d игра</item>
+        <item quantity="few">%d игры</item>
+        <item quantity="many">%d игр</item>
+        <item quantity="other">%d игры</item>
+    </plurals>
+    <plurals name="library_cell_movie_count">
+        <item quantity="one">%d фильм</item>
+        <item quantity="few">%d фильма</item>
+        <item quantity="many">%d фильмов</item>
+        <item quantity="other">%d фильма</item>
+    </plurals>
+    <plurals name="library_cell_show_count">
+        <item quantity="one">%d сериал</item>
+        <item quantity="few">%d сериала</item>
+        <item quantity="many">%d сериалов</item>
+        <item quantity="other">%d сериала</item>
+    </plurals>
+
+    <string name="library_landing_empty_title">Пока нет платформ</string>
+    <string name="library_landing_empty_body">Синхронизируйте библиотеку с Rom Manager в настройках</string>
+
+    <string name="library_empty_title_platform">Игры %1$s не найдены</string>
+    <string name="library_empty_title_all">Пока нет игр</string>
+    <string name="library_empty_body">Синхронизируйте библиотеку с Rom Manager в настройках</string>
+
+    <string name="library_filter_title">ФИЛЬТР ИГР</string>
+    <string name="library_filter_active_summary">Активно: %1$s</string>
+    <string name="library_filter_search_placeholder">Введите текст для поиска...</string>
+    <string name="library_filter_recent_searches">Недавние запросы</string>
+
+    <string name="library_filter_category_sort">Сортировка</string>
+    <string name="library_filter_category_search">Поиск</string>
+    <string name="library_filter_category_source">Источник</string>
+    <string name="library_filter_category_platform">Платформа</string>
+    <string name="library_filter_category_genre">Жанр</string>
+    <string name="library_filter_category_players">Игроки</string>
+    <string name="library_filter_category_series">Серии</string>
+
+    <string name="library_filter_hint_clear">Очистить</string>
+    <string name="library_filter_hint_close_search">Закрыть</string>
+    <string name="library_filter_hint_reset">Сбросить</string>
+    <string name="library_filter_hint_toggle">Переключить</string>
+    <string name="library_filter_hint_select">Выбрать</string>
+    <string name="library_filter_hint_close_options">Закрыть</string>
+
+    <string name="library_footer_hint_jump_section">К разделу</string>
+    <string name="library_footer_hint_details">Детали</string>
+    <string name="library_footer_hint_unhide">Показать</string>
+    <string name="library_footer_hint_unfavorite">Убрать из избранного</string>
+    <string name="library_footer_hint_favorite">В избранное</string>
+    <string name="library_footer_hint_filter">Фильтр</string>
+    <string name="library_footer_hint_quick_menu">Быстрое меню</string>
+
+    <string name="library_quickmenu_title">БЫСТРЫЕ ДЕЙСТВИЯ</string>
+    <string name="library_quickmenu_install">Установить</string>
+    <string name="library_quickmenu_play">Играть</string>
+    <string name="library_quickmenu_download">Скачать</string>
+    <string name="library_quickmenu_unfavorite">Убрать из избранного</string>
+    <string name="library_quickmenu_favorite">В избранное</string>
+    <string name="library_quickmenu_details">Детали</string>
+    <string name="library_quickmenu_add_to_collection">Добавить в коллекцию</string>
+    <string name="library_quickmenu_add_to_grid">Добавить на сетку</string>
+    <string name="library_quickmenu_refresh_data">Обновить данные</string>
+    <string name="library_quickmenu_resync_platform">Пересинхронизировать платформу</string>
+    <string name="library_quickmenu_uninstall">Удалить приложение</string>
+    <string name="library_quickmenu_delete_download">Удалить загрузку</string>
+    <string name="library_quickmenu_show">Показать</string>
+    <string name="library_quickmenu_hide">Скрыть</string>
+
+    <string name="library_notice_added_to_home_grid">Добавлено на главный экран</string>
+    <string name="library_notice_game_data_refreshed">Данные игры обновлены</string>
+    <string name="library_notice_android_data_refreshed">Данные игры обновлены</string>
+    <string name="library_notice_download_deleted">Загрузка удалена</string>
+    <string name="library_notice_already_downloaded">Игра уже загружена</string>
+    <plurals name="library_notice_downloading_discs">
+        <item quantity="one">Загрузка %d диска</item>
+        <item quantity="few">Загрузка %d дисков</item>
+        <item quantity="many">Загрузка %d дисков</item>
+        <item quantity="other">Загрузка %d диска</item>
+    </plurals>
+    <string name="library_notice_extraction_failed">Не удалось распаковать. Откройте страницу игры, чтобы повторить.</string>
+    <string name="library_notice_apk_install_failed">Не удалось установить APK</string>
+
+    <string name="library_companion_fact_emulator">Эмулятор</string>
+    <string name="library_companion_fact_storage">Хранилище</string>
+    <string name="library_companion_storage_downloaded">Загружено</string>
+    <string name="library_companion_storage_not_downloaded">Не загружено</string>
+
+    <string name="library_apps_title">Приложения</string>
+    <string name="library_apps_title_hidden">Скрытые приложения</string>
+    <string name="library_apps_title_reorder">Изменение порядка приложений</string>
+    <string name="library_apps_reorder_hint">чтобы сохранить</string>
+
+    <plurals name="library_filter_active_count">
+        <item quantity="one">%d фильтр</item>
+        <item quantity="few">%d фильтра</item>
+        <item quantity="many">%d фильтров</item>
+        <item quantity="other">%d фильтра</item>
+    </plurals>
+    <string name="library_apps_empty">Приложения не найдены</string>
+
+    <string name="library_apps_hint_move">Переместить</string>
+    <string name="library_apps_hint_save">Сохранить</string>
+    <string name="library_apps_hint_cancel">Отмена</string>
+    <string name="library_apps_hint_open">Открыть</string>
+    <string name="library_apps_hint_back">Назад</string>
+    <string name="library_apps_hint_open_on_top">Открыть сверху</string>
+    <string name="library_apps_hint_reorder">Изменить порядок</string>
+    <string name="library_apps_hint_options">Параметры</string>
+    <string name="library_apps_hint_show_apps">Показать приложения</string>
+    <string name="library_apps_hint_show_hidden">Показать скрытые</string>
+
+    <string name="library_apps_menu_app_info">Сведения о приложении</string>
+    <string name="library_apps_menu_open_on_top">Открыть на верхнем экране</string>
+    <string name="library_apps_menu_remove_from_home">Убрать с главного экрана</string>
+    <string name="library_apps_menu_add_to_home">Добавить на главный экран</string>
+    <string name="library_apps_menu_remove_from_second_screen">Убрать со второго экрана</string>
+    <string name="library_apps_menu_add_to_second_screen">Добавить на второй экран</string>
+    <string name="library_apps_menu_show">Показать</string>
+    <string name="library_apps_menu_hide">Скрыть</string>
+    <string name="library_apps_menu_reorder">Изменение порядка приложений</string>
+    <string name="library_apps_menu_uninstall">Удалить приложение</string>
+
+    <string name="library_search_placeholder_games_and_media">Поиск игр и медиа...</string>
+    <string name="library_search_placeholder_games">Поиск игр...</string>
+    <plurals name="library_search_min_query_hint">
+        <item quantity="one">Введите минимум %d символ для поиска</item>
+        <item quantity="few">Введите минимум %d символа для поиска</item>
+        <item quantity="many">Введите минимум %d символов для поиска</item>
+        <item quantity="other">Введите минимум %d символа для поиска</item>
+    </plurals>
+    <string name="library_search_no_results">Нет результатов для \"%1$s\"</string>
+    <string name="library_search_heading_games">Игры</string>
+    <string name="library_search_heading_media">Медиа</string>
+    <string name="library_search_result_platform_unknown">Неизвестно</string>
+    <string name="library_search_result_kind_series">Сериал</string>
+    <string name="library_search_result_kind_movie">Фильм</string>
+    <string name="library_search_hint_group_jump">Игры / Медиа</string>
+    <string name="library_search_hint_select">Выбрать</string>
+    <string name="library_search_hint_back">Назад/Очистить</string>
+    <plurals name="library_search_result_count">
+        <item quantity="one">%d результат</item>
+        <item quantity="few">%d результата</item>
+        <item quantity="many">%d результатов</item>
+        <item quantity="other">%d результата</item>
+    </plurals>
+</resources>

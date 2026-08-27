@@ -36,9 +36,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.FocusedScroll
@@ -128,19 +131,19 @@ private fun RALoggedInContent(
                 Spacer(modifier = Modifier.width(Dimens.spacingMd))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Logged in as",
+                        text = stringResource(R.string.settings_ra_logged_in_label),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = raState.username ?: "Unknown",
+                        text = raState.username ?: stringResource(R.string.settings_ra_username_unknown),
                         style = MaterialTheme.typography.titleMedium,
                         color = ALauncherColors.StarGold
                     )
                 }
                 Icon(
                     imageVector = Icons.Default.CheckCircle,
-                    contentDescription = "Connected",
+                    contentDescription = stringResource(R.string.settings_ra_connected_icon_description),
                     tint = Color(0xFF4CAF50),
                     modifier = Modifier.size(24.dp)
                 )
@@ -150,7 +153,7 @@ private fun RALoggedInContent(
         if (raState.pendingAchievementsCount > 0) {
             item {
                 Spacer(modifier = Modifier.height(Dimens.spacingMd))
-                SectionHeader("PENDING SYNC")
+                SectionHeader(stringResource(R.string.settings_ra_section_pending_sync))
             }
             item {
                 Row(
@@ -164,7 +167,11 @@ private fun RALoggedInContent(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "${raState.pendingAchievementsCount} achievement(s) waiting to sync",
+                        text = pluralStringResource(
+                            R.plurals.settings_ra_pending_sync_count,
+                            raState.pendingAchievementsCount,
+                            raState.pendingAchievementsCount
+                        ),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -174,13 +181,17 @@ private fun RALoggedInContent(
 
         item {
             Spacer(modifier = Modifier.height(Dimens.spacingMd))
-            SectionHeader("ACCOUNT")
+            SectionHeader(stringResource(R.string.settings_ra_section_account))
         }
         item {
             ActionPreference(
                 icon = Icons.AutoMirrored.Filled.Logout,
-                title = if (raState.isLoggingOut) "Logging out..." else "Logout",
-                subtitle = "Sign out of RetroAchievements",
+                title = if (raState.isLoggingOut) {
+                    stringResource(R.string.settings_ra_logout_title_busy)
+                } else {
+                    stringResource(R.string.settings_ra_logout_title)
+                },
+                subtitle = stringResource(R.string.settings_ra_logout_subtitle),
                 isFocused = focusedIndex == 0,
                 onClick = { viewModel.logoutFromRA() }
             )
@@ -189,22 +200,26 @@ private fun RALoggedInContent(
         item {
             if (!secureSaves) {
                 ActionPreference(
-                    title = "Play Mode Preference",
-                    subtitle = "Requires Secure Saves",
+                    title = stringResource(R.string.settings_ra_play_mode_title),
+                    subtitle = stringResource(R.string.settings_ra_play_mode_subtitle_locked),
                     isFocused = focusedIndex == 1,
                     isEnabled = false,
                     onClick = {}
                 )
             } else {
-                val cycleOptions = listOf("Ask", "Default to Casual", "Default to Hardcore")
+                val cycleOptions = listOf(
+                    stringResource(R.string.settings_ra_play_mode_ask),
+                    stringResource(R.string.settings_ra_play_mode_casual),
+                    stringResource(R.string.settings_ra_play_mode_hardcore)
+                )
                 val tokenOptions = listOf("ask", "casual", "hardcore")
                 val currentLabel = when (raState.defaultToHardcore) {
-                    "hardcore" -> "Default to Hardcore"
-                    "casual" -> "Default to Casual"
-                    else -> "Ask"
+                    "hardcore" -> cycleOptions[2]
+                    "casual" -> cycleOptions[1]
+                    else -> cycleOptions[0]
                 }
                 CyclePreference(
-                    title = "Play Mode Preference",
+                    title = stringResource(R.string.settings_ra_play_mode_title),
                     value = currentLabel,
                     isFocused = focusedIndex == 1,
                     onClick = { viewModel.cycleRADefaultMode(1) },
@@ -215,10 +230,10 @@ private fun RALoggedInContent(
                         viewModel.setBuiltinDefaultToHardcore(nextToken)
                     },
                     subtitle = when (raState.defaultToHardcore) {
-                        "ask" -> "Prompt on launch to choose between Casual and Hardcore"
-                        "casual" -> "Allows save states, cheats, and rewind. Earn softcore achievements."
-                        "hardcore" -> "Disables save states, cheats, and rewind. Earn hardcore achievements."
-                        else -> "Preferred mode when launching a game"
+                        "ask" -> stringResource(R.string.settings_ra_play_mode_subtitle_ask)
+                        "casual" -> stringResource(R.string.settings_ra_play_mode_subtitle_casual)
+                        "hardcore" -> stringResource(R.string.settings_ra_play_mode_subtitle_hardcore)
+                        else -> stringResource(R.string.settings_ra_play_mode_subtitle_default)
                     }
                 )
             }
@@ -229,14 +244,14 @@ private fun RALoggedInContent(
         if (raState.canPushToRetroArch) {
             item {
                 Spacer(modifier = Modifier.height(Dimens.spacingMd))
-                SectionHeader("RETROARCH")
+                SectionHeader(stringResource(R.string.settings_ra_section_retroarch))
             }
             item {
                 val pushIndex = if (raState.proxyEnabled) 4 else 3
                 ActionPreference(
                     icon = Icons.Default.Sync,
-                    title = "Push to RetroArch",
-                    subtitle = "Write this login into RetroArch's config",
+                    title = stringResource(R.string.settings_ra_push_retroarch_title),
+                    subtitle = stringResource(R.string.settings_ra_push_retroarch_subtitle),
                     isFocused = focusedIndex == pushIndex,
                     onClick = { viewModel.pushRACredentialsToRetroArch() }
                 )
@@ -279,11 +294,11 @@ private fun RALoggedOutContent(
                 Spacer(modifier = Modifier.width(Dimens.spacingMd))
                 Column {
                     Text(
-                        text = "RetroAchievements",
+                        text = stringResource(R.string.settings_ra_intro_title),
                         style = MaterialTheme.typography.titleMedium
                     )
                     Text(
-                        text = "Earn achievements while playing classic games",
+                        text = stringResource(R.string.settings_ra_intro_subtitle),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -297,8 +312,8 @@ private fun RALoggedOutContent(
         item {
             ActionPreference(
                 icon = Icons.AutoMirrored.Filled.Login,
-                title = "Login",
-                subtitle = "Sign in with your RetroAchievements account",
+                title = stringResource(R.string.settings_ra_login_row_title),
+                subtitle = stringResource(R.string.settings_ra_login_row_subtitle),
                 isFocused = focusedIndex == 0,
                 onClick = { viewModel.showRALoginForm() }
             )
@@ -317,12 +332,12 @@ private fun LazyListScope.raProxyItems(
 ) {
     item {
         Spacer(modifier = Modifier.height(Dimens.spacingMd))
-        SectionHeader("OFFLINE PROXY")
+        SectionHeader(stringResource(R.string.settings_ra_section_offline_proxy))
     }
     item {
         SwitchPreference(
-            title = "RetroAchievements proxy",
-            subtitle = "Route achievements through a local RAOfflineProxy",
+            title = stringResource(R.string.settings_ra_proxy_title),
+            subtitle = stringResource(R.string.settings_ra_proxy_subtitle),
             isEnabled = raState.proxyEnabled,
             isFocused = focusedIndex == proxyToggleIndex,
             onToggle = { viewModel.setRAProxyEnabled(it) }
@@ -341,7 +356,7 @@ private fun LazyListScope.raProxyItems(
             OutlinedTextField(
                 value = raState.proxyAddress,
                 onValueChange = { viewModel.setRAProxyAddress(it) },
-                label = { Text("Proxy address") },
+                label = { Text(stringResource(R.string.settings_ra_proxy_address_label)) },
                 placeholder = { Text("127.0.0.1:8080") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
@@ -403,7 +418,7 @@ private fun RALoginForm(
             )
             Spacer(modifier = Modifier.width(Dimens.spacingSm))
             Text(
-                text = "RetroAchievements Login",
+                text = stringResource(R.string.settings_ra_login_form_title),
                 style = MaterialTheme.typography.titleMedium,
                 color = ALauncherColors.StarGold
             )
@@ -414,7 +429,7 @@ private fun RALoginForm(
         OutlinedTextField(
             value = raState.loginUsername,
             onValueChange = { viewModel.setRALoginUsername(it) },
-            label = { Text("Username") },
+            label = { Text(stringResource(R.string.settings_ra_login_username_label)) },
             leadingIcon = {
                 Icon(Icons.Default.Person, contentDescription = null)
             },
@@ -433,7 +448,7 @@ private fun RALoginForm(
         OutlinedTextField(
             value = raState.loginPassword,
             onValueChange = { viewModel.setRALoginPassword(it) },
-            label = { Text("Password") },
+            label = { Text(stringResource(R.string.settings_ra_login_password_label)) },
             singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -460,15 +475,19 @@ private fun RALoginForm(
         Spacer(modifier = Modifier.height(Dimens.spacingSm))
 
         ActionPreference(
-            title = if (raState.isLoggingIn) "Logging in..." else "Login",
-            subtitle = "Sign in to RetroAchievements",
+            title = if (raState.isLoggingIn) {
+                stringResource(R.string.settings_ra_login_submit_title_busy)
+            } else {
+                stringResource(R.string.settings_ra_login_submit_title)
+            },
+            subtitle = stringResource(R.string.settings_ra_login_submit_subtitle),
             isFocused = focusedIndex == 2,
             onClick = { viewModel.loginToRA() }
         )
 
         ActionPreference(
-            title = "Cancel",
-            subtitle = "Return to RetroAchievements settings",
+            title = stringResource(R.string.settings_ra_login_cancel_title),
+            subtitle = stringResource(R.string.settings_ra_login_cancel_subtitle),
             isFocused = focusedIndex == 3,
             onClick = { viewModel.hideRALoginForm() }
         )

@@ -19,6 +19,11 @@ import com.nendo.argosy.util.SecondaryHomeComponent
 
 class CompanionGuardService : Service() {
 
+    override fun attachBaseContext(newBase: Context) {
+        val tag = com.nendo.argosy.data.preferences.SessionStateStore(newBase).getAppLanguage()
+        super.attachBaseContext(com.nendo.argosy.core.locale.LocaleHelper.wrap(newBase, tag))
+    }
+
     companion object {
         private const val TAG = "CompanionGuard"
 
@@ -90,7 +95,7 @@ class CompanionGuardService : Service() {
         )
             .setSmallIcon(R.drawable.ic_helm)
             .setContentTitle(getString(R.string.app_name))
-            .setContentText("Dual display active")
+            .setContentText(getString(R.string.dual_notification_guard_text))
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
             .setOnlyAlertOnce(true)

@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.screens.player
 
+import android.content.Context
+import com.nendo.argosy.R
 import com.nendo.argosy.data.local.entity.MediaItemEntity
 import com.nendo.argosy.data.local.entity.MediaItemType
 import com.nendo.argosy.data.remote.jellyfin.JellyfinApiClient
@@ -7,6 +9,7 @@ import com.nendo.argosy.data.remote.jellyfin.JellyfinItem
 import com.nendo.argosy.data.remote.jellyfin.JellyfinResult
 import com.nendo.argosy.data.remote.jellyfin.TICKS_PER_MILLISECOND
 import com.nendo.argosy.data.repository.MediaRepository
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -46,6 +49,7 @@ data class PlayerItemDetail(
  * what the scrubber and the resume rule are measured against.
  */
 class PlayerItemLoader @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val apiClient: JellyfinApiClient,
     private val mediaRepository: MediaRepository,
     private val resolvePlayTarget: com.nendo.argosy.domain.usecase.media.ResolveMediaPlayTargetUseCase
@@ -67,9 +71,11 @@ class PlayerItemLoader @Inject constructor(
             serverResumeMs = (item.userData?.playbackPositionTicks ?: 0L) / TICKS_PER_MILLISECOND,
             playedPercent = item.userData?.playedPercentage ?: stored.playedPercent,
             chapters = item.chapters.orEmpty().mapIndexed { index, chapter ->
+                val number: Int = index + 1
+                val fallbackName = context.getString(R.string.media_player_chapter_fallback, number)
                 PlayerChapter(
                     startMs = chapter.startPositionTicks / TICKS_PER_MILLISECOND,
-                    name = chapter.name?.takeIf { it.isNotBlank() } ?: "Chapter ${index + 1}"
+                    name = chapter.name?.takeIf { it.isNotBlank() } ?: fallbackName
                 )
             },
             skipSegments = loadSkipSegments(itemId),
@@ -170,9 +176,18 @@ class PlayerItemLoader @Inject constructor(
     }
 
     private fun MediaItemEntity.episodeLabel(): String {
+        val season = parentIndexNumber
+        val episode = indexNumber
         val number = when {
-            parentIndexNumber != null && indexNumber != null -> "S$parentIndexNumber E$indexNumber"
-            indexNumber != null -> "Episode $indexNumber"
+            season != null && episode != null -> context.getString(
+                R.string.media_player_stored_episode_code,
+                season,
+                episode
+            )
+            episode != null -> context.getString(
+                R.string.media_player_stored_episode_number,
+                episode
+            )
             else -> null
         }
         return listOfNotNull(number, name.takeIf { it.isNotBlank() }).joinToString("  ")
@@ -207,8 +222,15 @@ class PlayerItemLoader @Inject constructor(
             val season = parentIndexNumber
             val episode = indexNumber
             val number = when {
-                season != null && episode != null -> "S$season E$episode"
-                episode != null -> "Episode $episode"
+                season != null && episode != null -> context.getString(
+                    R.string.media_player_server_episode_code,
+                    season,
+                    episode
+                )
+                episode != null -> context.getString(
+                    R.string.media_player_server_episode_number,
+                    episode
+                )
                 else -> null
             }
             listOfNotNull(number, name?.takeIf { it.isNotBlank() }).joinToString("  ")

@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_breadcrumb_continue">हाल का</string>
+    <string name="home_breadcrumb_recommendations">पसंद</string>
+    <string name="home_breadcrumb_favorites">पसंदीदा</string>
+    <string name="home_breadcrumb_continue_watching">देखें</string>
+    <string name="home_breadcrumb_next_up">आगे</string>
+
+    <string name="home_footer_grid_engaged_play">प्ले</string>
+    <string name="home_footer_grid_engaged_pause">पॉज़</string>
+    <string name="home_footer_grid_engaged_seek">सीक</string>
+    <string name="home_footer_grid_engaged_fullscreen">फुलस्क्रीन</string>
+    <string name="home_footer_grid_engaged_back">ग्रिड पर वापस</string>
+
+    <string name="home_footer_media_notice_choose">चुनें</string>
+
+    <string name="home_footer_media_setup_episode_tick">टिक</string>
+    <string name="home_footer_media_setup_episode_back">वापस</string>
+    <string name="home_footer_media_setup_back">वापस</string>
+
+    <string name="home_footer_tile_picker_tab">टैब</string>
+    <string name="home_footer_tile_picker_jump">जंप</string>
+    <string name="home_footer_tile_picker_search">खोजें</string>
+
+    <string name="home_footer_grid_edit_resize">साइज़</string>
+    <string name="home_footer_grid_edit_move">मूव</string>
+    <string name="home_footer_grid_edit_place">रखें</string>
+    <string name="home_footer_grid_edit_cancel">रद्द करें</string>
+
+    <string name="home_footer_grid_page">पेज</string>
+    <string name="home_footer_grid_finished">पूर्ण</string>
+    <string name="home_footer_grid_options">विकल्प</string>
+
+    <string name="home_footer_media_item">आइटम</string>
+    <string name="home_footer_media_section">सेक्शन</string>
+    <string name="home_footer_media_row">रो</string>
+    <string name="home_footer_media_refresh">रीफ्रेश</string>
+    <string name="home_footer_media_resume">रिज़्यूम</string>
+    <string name="home_footer_media_play">प्ले</string>
+    <string name="home_footer_media_unfavorite">पसंदीदा हटाएं</string>
+    <string name="home_footer_media_details">विवरण</string>
+
+    <string name="home_footer_game_item">गेम</string>
+    <string name="home_footer_game_section">सेक्शन</string>
+    <string name="home_footer_game_platform">प्लेटफ़ॉर्म</string>
+    <string name="home_footer_game_install">इंस्टॉल</string>
+    <string name="home_footer_game_play">प्ले</string>
+    <string name="home_footer_game_download">डाउनलोड</string>
+    <string name="home_footer_game_favorite">पसंदीदा</string>
+    <string name="home_footer_game_unfavorite">पसंदीदा हटाएं</string>
+    <string name="home_footer_game_details">विवरण</string>
+
+    <string name="home_footer_viewall_item">गेम</string>
+    <string name="home_footer_viewall_section">सेक्शन</string>
+    <string name="home_footer_viewall_platform">प्लेटफ़ॉर्म</string>
+    <string name="home_footer_viewall_library">लाइब्रेरी</string>
+
+    <string name="home_tile_add_title">होम ग्रिड में जोड़ें?</string>
+    <string name="home_tile_add_message">%1$s डाउनलोड हो चुका है।</string>
+    <string name="home_tile_add_confirm">जोड़ें</string>
+    <string name="home_tile_add_cancel">अभी नहीं</string>
+
+    <string name="home_media_tile_notice_local_title">इस डिवाइस से चलता है</string>
+    <string name="home_media_tile_notice_download_title">यहां चलाने के लिए डाउनलोड करें</string>
+
+    <string name="home_tile_file_browser_backdrop_title">एक बैकड्रॉप चुनें</string>
+    <string name="home_tile_file_browser_video_title">एक वीडियो चुनें</string>
+
+    <string name="home_empty_pinned_row">%1$s में कोई गेम नहीं</string>
+    <string name="home_empty_title">अभी तक कोई गेम नहीं</string>
+    <string name="home_empty_message_configured">शुरू करने के लिए अपनी लाइब्रेरी सिंक करें</string>
+    <string name="home_empty_message_unconfigured">शुरू करने के लिए सेटिंग्स में Rom Manager सर्वर से कनेक्ट करें</string>
+    <string name="home_empty_sync_hint">लाइब्रेरी सिंक करें</string>
+
+    <string name="home_quick_actions_heading">क्विक एक्शन</string>
+    <string name="home_quick_actions_install">इंस्टॉल</string>
+    <string name="home_quick_actions_play">प्ले</string>
+    <string name="home_quick_actions_download">डाउनलोड</string>
+    <string name="home_quick_actions_favorite">पसंदीदा</string>
+    <string name="home_quick_actions_unfavorite">पसंदीदा हटाएं</string>
+    <string name="home_quick_actions_details">विवरण</string>
+    <string name="home_quick_actions_add_to_collection">कलेक्शन में जोड़ें</string>
+    <string name="home_quick_actions_refresh_data">डेटा रीफ्रेश करें</string>
+    <string name="home_quick_actions_resync_platform">प्लेटफ़ॉर्म रीसिंक करें</string>
+    <string name="home_quick_actions_delete_download">डाउनलोड हटाएं</string>
+    <string name="home_quick_actions_remove_from_home">होम से हटाएं</string>
+    <string name="home_quick_actions_hide">छिपाएं</string>
+
+    <string name="home_media_empty_next_up_title">आगे कुछ नहीं</string>
+    <string name="home_media_empty_next_up_message">एक एपिसोड पूरा करें और अगला यहां दिखेगा।</string>
+    <string name="home_media_empty_continue_watching_title">जारी रखने के लिए कुछ नहीं</string>
+    <string name="home_media_empty_continue_watching_message">जो भी आप बीच में छोड़ेंगे वह यहां दिखेगा।</string>
+    <string name="home_media_empty_library_title">इस लाइब्रेरी में कुछ नहीं</string>
+    <string name="home_media_empty_library_message">अपने मीडिया सर्वर से यह लाइब्रेरी लाने के लिए रीफ्रेश करें।</string>
+
+    <string name="home_grid_tile_missing_game">गेम गायब</string>
+    <string name="home_grid_tile_missing_collection">कलेक्शन गायब</string>
+    <string name="home_grid_tile_collection_subtitle">कलेक्शन</string>
+    <string name="home_grid_tile_collection_games_stat">गेम</string>
+    <string name="home_grid_tile_missing_app">ऐप गायब</string>
+    <string name="home_grid_tile_app_subtitle">ऐप</string>
+    <string name="home_grid_tile_missing_media">टाइटल गायब</string>
+    <string name="home_grid_tile_local_media_subtitle">इस डिवाइस पर</string>
+    <string name="home_grid_tile_unresolvable">अनुपलब्ध</string>
+
+    <string name="home_notice_game_data_refreshed">गेम डेटा रीफ्रेश हुआ</string>
+    <string name="home_notice_android_data_refreshed">गेम डेटा रीफ्रेश हुआ</string>
+
+    <string name="home_notice_already_downloaded">गेम पहले से डाउनलोड हो चुका है</string>
+    <plurals name="home_notice_discs_queued">
+        <item quantity="one">%d डिस्क डाउनलोड हो रही है</item>
+        <item quantity="other">%d डिस्क डाउनलोड हो रही हैं</item>
+    </plurals>
+    <string name="home_notice_extraction_failed">एक्सट्रैक्शन विफल। फिर से कोशिश करने के लिए गेम विवरण खोलें।</string>
+    <string name="home_notice_apk_install_failed">APK इंस्टॉल नहीं हो सका</string>
+    <string name="home_notice_download_deleted">डाउनलोड हटाया गया</string>
+
+    <string name="home_notice_recommendations_updated">सुझाव अपडेट हुए</string>
+    <string name="home_notice_recommendations_insufficient">सुझाव बनाने के लिए पर्याप्त गेम नहीं हैं</string>
+
+    <string name="home_notice_playing_next">आगे चल रहा है</string>
+
+    <plurals name="home_tile_picker_collection_game_count">
+        <item quantity="one">%d गेम</item>
+        <item quantity="other">%d गेम</item>
+    </plurals>
+    <string name="home_tile_picker_app_emulator">एमुलेटर</string>
+    <string name="home_tile_picker_app_other">ऐप</string>
+
+    <string name="home_tile_picker_media_series">सीरीज़</string>
+    <string name="home_tile_picker_media_movie">मूवी</string>
+
+    <string name="home_media_picker_series">सीरीज़</string>
+    <string name="home_media_picker_movie">मूवी</string>
+
+    <string name="home_media_season_specials">स्पेशल</string>
+    <string name="home_media_season_number">सीज़न %1$d</string>
+    <string name="home_media_season_none_synced">अभी तक कुछ सिंक नहीं हुआ</string>
+    <string name="home_media_season_local_all">सभी %1$d इस डिवाइस पर</string>
+    <string name="home_media_season_local_partial">%2$d में से %1$d इस डिवाइस पर</string>
+    <string name="home_media_download_size_gigabytes">%1$.1f GB</string>
+</resources>

@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ================= Media companion facts (dual-screen showcase) ================= -->
+
+    <string name="media_companion_fact_year">年份</string>
+    <!-- Fact label on the dual-screen showcase. Noun: total playback duration of the title. -->
+    <string name="media_companion_fact_runtime">片長</string>
+    <!-- Fact label on the dual-screen showcase. Adjective: the age/content certificate (e.g. PG-13), not the verb "to rate". -->
+    <string name="media_companion_fact_rated">分級</string>
+    <!-- Fact label on the dual-screen showcase. Noun: the community score out of 10, not the verb "to rate". -->
+    <string name="media_companion_fact_rating">評分</string>
+
+    <!-- ================= Media item labels (season/episode tag, runtime) ================= -->
+
+    <!-- Season/episode tag on a media row, e.g. "S1 E4". %1$d is the season number, %2$d the episode number. -->
+    <string name="media_item_episode_label">S%1$d E%2$d</string>
+    <string name="media_item_runtime_hours_minutes">%1$d小時%2$d分</string>
+    <string name="media_item_runtime_hours">%1$d小時</string>
+    <string name="media_item_runtime_minutes">%1$d分</string>
+
+    <!-- ================= Jellyfin preference labels (settings tree + media player pickers) ================= -->
+
+    <string name="media_pref_download_quality_original">原始檔案</string>
+    <string name="media_pref_download_quality_high">高畫質 - 1080p</string>
+    <string name="media_pref_download_quality_medium">中畫質 - 720p</string>
+    <string name="media_pref_download_quality_low">低畫質 - 480p</string>
+
+    <string name="media_pref_streaming_quality_auto">原始 - 自動</string>
+    <string name="media_pref_streaming_quality_high">高畫質 - 1080p</string>
+    <string name="media_pref_streaming_quality_medium">中畫質 - 720p</string>
+    <string name="media_pref_streaming_quality_low">低畫質 - 480p</string>
+
+    <string name="media_pref_subtitle_mode_off">關閉</string>
+    <string name="media_pref_subtitle_mode_forced_only">僅強制字幕</string>
+    <string name="media_pref_subtitle_mode_preferred">慣用語言</string>
+
+    <string name="media_pref_audio_language_english">英文</string>
+    <string name="media_pref_audio_language_japanese">日文</string>
+    <string name="media_pref_audio_language_spanish">西班牙文</string>
+    <string name="media_pref_audio_language_french">法文</string>
+    <string name="media_pref_audio_language_german">德文</string>
+    <string name="media_pref_audio_language_italian">義大利文</string>
+    <string name="media_pref_audio_language_portuguese">葡萄牙文</string>
+    <string name="media_pref_audio_language_russian">俄文</string>
+    <string name="media_pref_audio_language_korean">韓文</string>
+    <string name="media_pref_audio_language_chinese">中文</string>
+
+    <string name="media_pref_subtitle_language_english">英文</string>
+    <string name="media_pref_subtitle_language_japanese">日文</string>
+    <string name="media_pref_subtitle_language_spanish">西班牙文</string>
+    <string name="media_pref_subtitle_language_french">法文</string>
+    <string name="media_pref_subtitle_language_german">德文</string>
+    <string name="media_pref_subtitle_language_italian">義大利文</string>
+    <string name="media_pref_subtitle_language_portuguese">葡萄牙文</string>
+    <string name="media_pref_subtitle_language_russian">俄文</string>
+    <string name="media_pref_subtitle_language_korean">韓文</string>
+    <string name="media_pref_subtitle_language_chinese">中文</string>
+
+    <!-- ================= Unified save-state entry (state channel binding + slot rows) ================= -->
+
+    <string name="unified_state_entry_display_name_auto">自動</string>
+    <!-- Name of a save-state slot bound to a channel. %1$s is the channel name (a save-sync grouping, not a broadcast/media channel), %2$d the slot number. -->
+    <string name="unified_state_entry_display_name_channel">%1$s（插槽%2$d）</string>
+    <string name="unified_state_entry_display_name_slot">插槽%1$d</string>
+    <string name="unified_state_entry_slot_label_auto">自動</string>
+    <string name="unified_state_entry_size_bytes">%1$d B</string>
+    <string name="unified_state_entry_size_kb">%1$d KB</string>
+    <string name="unified_state_entry_size_mb">%1$.1f MB</string>
+
+    <!-- ================= Variant category labels (file picker groups, download picker) ================= -->
+
+    <string name="variant_category_game">遊戲</string>
+    <string name="variant_category_patch">版本／修補檔</string>
+    <string name="variant_category_translation">漢化翻譯</string>
+    <string name="variant_category_mod">模組</string>
+    <string name="variant_category_hack">改版</string>
+    <string name="variant_category_demo">試玩版</string>
+    <string name="variant_category_prototype">原型</string>
+    <string name="variant_category_update">更新</string>
+    <string name="variant_category_dlc">DLC</string>
+    <string name="variant_category_manual">說明書</string>
+    <string name="variant_category_cheat">金手指</string>
+    <string name="variant_category_soundtrack">原聲帶</string>
+    <string name="variant_category_screenshot">螢幕截圖</string>
+    <string name="variant_category_unknown">其他</string>
+
+    <!-- ================= Display preference labels (gradient preset, box art shape) ================= -->
+
+    <string name="gradient_preset_vibrant">鮮豔</string>
+    <string name="gradient_preset_balanced">均衡</string>
+    <string name="gradient_preset_subtle">柔和</string>
+    <string name="gradient_preset_custom">自訂</string>
+    <!-- Box art shape option meaning the cover keeps its own aspect ratio, as opposed to the other options which are fixed ratios like "3:4" that must not be translated. -->
+    <string name="box_art_shape_native">原始比例</string>
+
+    <!-- ================= Custom home-grid tile menu actions ================= -->
+
+    <string name="custom_tile_menu_action_arrange">移動或調整大小</string>
+    <string name="custom_tile_menu_action_recurate">變更播放內容</string>
+    <string name="custom_tile_menu_action_remove">從格線中移除</string>
+    <string name="custom_tile_menu_action_start_game_queue">建立遊戲佇列</string>
+    <string name="custom_tile_menu_action_set_focus_game">設定使用中的遊戲</string>
+    <string name="custom_tile_menu_action_advance_focus_game">完成／跳過遊戲</string>
+    <string name="custom_tile_menu_action_page_backdrop">此頁面的背景</string>
+    <string name="custom_tile_menu_action_page_music">此頁面的音樂</string>
+    <string name="custom_tile_menu_action_delete_page">刪除頁面</string>
+
+    <!-- ================= Home tile picker category tabs ================= -->
+
+    <string name="tile_picker_category_games">遊戲</string>
+    <!-- Tab label in the home tile picker. Noun, plural: the game-collections feature, not a media/streaming collection. -->
+    <string name="tile_picker_category_collections">合輯</string>
+    <string name="tile_picker_category_apps">應用程式</string>
+    <string name="tile_picker_category_media">媒體</string>
+
+    <!-- ================= Home grid tile stats ================= -->
+
+    <!-- Stat label on a home-grid game tile. Adjective, past participle: this game has been played, paired with a play-time value. -->
+    <string name="home_grid_tile_stat_played">已玩</string>
+    <string name="home_grid_tile_stat_achievements">成就</string>
+    <string name="home_grid_tile_stat_released">發行</string>
+
+    <!-- ================= Media tile setup notice (add-to-grid download prompt) ================= -->
+
+    <string name="ui_media_tile_notice_confirm_add_download">新增並下載</string>
+    <string name="ui_media_tile_notice_decline_cancel">取消</string>
+    <string name="media_tile_notice_confirm_download_all">全部下載</string>
+    <string name="media_tile_notice_decline_use_downloaded">使用已下載項目</string>
+    <string name="media_tile_notice_decline_cancel">取消</string>
+    <string name="media_tile_notice_derived_message_none">此節目目前沒有任何一集在此裝置上。這個方塊只播放已下載的集數，因此在有新集數下載完成前會保持空白。</string>
+    <plurals name="media_tile_notice_derived_message_some">
+        <item quantity="other">這個方塊會依序播放此裝置上的%1$d集，播完後會回到第一集重新開始。</item>
+    </plurals>
+    <string name="media_tile_notice_warning_unknown_size">這是一個大型批次，其大小要等到每個下載開始後才會知道。</string>
+    <string name="media_tile_notice_warning_approximate_size">總計約%1$s，實際大小依各下載開始後才會確定。</string>
+    <plurals name="media_tile_notice_missing_episodes">
+        <item quantity="other">尚有%1$d集不在此裝置上，加入這個方塊即會開始下載。</item>
+    </plurals>
+    <plurals name="media_tile_notice_missing_titles">
+        <item quantity="other">尚有%1$d部作品不在此裝置上，加入這個方塊即會開始下載。</item>
+    </plurals>
+
+    <!-- ================= Episode picker season headers ================= -->
+
+    <string name="episode_picker_season_label">第%1$d季</string>
+    <string name="episode_picker_specials_label">特別篇</string>
+    <string name="episode_picker_season_supporting_none">此裝置上尚無</string>
+    <string name="episode_picker_season_supporting_all">此裝置上已有全部%1$d集</string>
+    <string name="episode_picker_season_supporting_partial">此裝置上已有%2$d集中的%1$d集</string>
+
+    <!-- ================= Storage computed-at label ================= -->
+
+    <string name="storage_computed_label_computing">計算中…</string>
+    <string name="storage_computed_label_computed">已計算%1$s</string>
+    <string name="storage_computed_label_never">尚未計算</string>
+
+    <!-- ================= Download foreground notification text (Steam) ================= -->
+
+    <string name="download_indicator_notification_preparing">準備中：%1$s</string>
+    <string name="download_indicator_notification_connecting">正在連線至Steam…</string>
+    <string name="download_indicator_notification_fetching_manifest">正在取得資訊清單：%1$s</string>
+    <string name="download_indicator_notification_unpacking">解壓縮中：%1$s</string>
+    <string name="download_indicator_notification_moving">移動中：%1$s</string>
+    <string name="download_indicator_notification_cleaning">清理中：%1$s</string>
+    <string name="download_indicator_notification_paused">已暫停：%1$s</string>
+
+    <!-- ================= Title ID recheck notice ================= -->
+
+    <string name="title_id_recheck_notice_updated">Title ID已更新為%1$s</string>
+    <string name="title_id_recheck_notice_confirmed">Title ID已確認為%1$s</string>
+    <string name="title_id_recheck_notice_not_found">在%1$s中找不到Title ID</string>
+    <string name="title_id_recheck_notice_no_file">無法讀取遊戲檔案</string>
+
+    <!-- ================= Steam launcher picker "no override" option ================= -->
+
+    <!-- The Steam launcher picker's default option: let the app choose which installed launcher opens the game, rather than a specific one the player pinned. -->
+    <string name="gamedetail_steam_launcher_auto">自動</string>
+
+    <!-- ================= Memcard picker "use the inherited default" entry ================= -->
+
+    <string name="ui_memcard_picker_default">預設</string>
+    <!-- The memcard picker's "use whatever the platform default is" entry, when that default is itself a named card. %1$s is the inherited memcard's on-disk folder name and is never translated. -->
+    <string name="ui_memcard_picker_default_named">預設（%1$s）</string>
+
+    <!-- ================= Home media rail episode subtitle (show tile, e.g. "S1 E4 - Episode Name") ================= -->
+
+    <!-- Season/episode marker on a home media tile's subtitle line, e.g. "S1 E4". Same wording as media_item_episode_label but a separate screen; do not merge the two keys. -->
+    <string name="home_media_episode_subtitle_marker_season_episode">S%1$d E%2$d</string>
+    <!-- Episode-only marker for a special with no season number, e.g. "E4". -->
+    <string name="home_media_episode_subtitle_marker_episode_only">E%1$d</string>
+    <!-- Combines the season/episode marker with the episode's own title on a home media tile. %1$s is the marker (e.g. "S1 E4"), %2$s the episode title. -->
+    <string name="home_media_episode_subtitle_with_name">%1$s - %2$s</string>
+
+</resources>

@@ -154,9 +154,11 @@ class SwitchSaveHandler @Inject constructor(
         return titleId.uppercase() in DEVICE_SAVE_TITLE_IDS
     }
 
-    fun isValidCachedSavePath(path: String): Boolean {
-        // Expected structure: <base>/save/<userFolder>/<profileFolder>/<titleId>
-        // Where userFolder=16 hex, profileFolder=16|32 hex, titleId=16 hex starting with 01
+    /**
+     * Shape is `<base>/save/<userFolder>/<profileFolder>/<titleId>`, where the user folder is 16
+     * hex, the profile folder 16 or 32 hex, and the title id 16 hex beginning `01`.
+     */
+    override fun isValidCachedSavePath(path: String): Boolean {
         val parts = path.split("/")
         if (parts.size < 4) return false
 

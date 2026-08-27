@@ -1,18 +1,22 @@
 package com.nendo.argosy.ui.screens.home.delegates
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import com.nendo.argosy.R
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.core.notification.showSuccess
 import com.nendo.argosy.ui.screens.common.GameActionsDelegate
 import com.nendo.argosy.ui.screens.common.RefreshAndroidResult
 import com.nendo.argosy.ui.screens.home.HomeGameUi
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,6 +49,7 @@ data class GameMenuState(
 )
 
 class HomeGameMenuDelegate @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val gameActions: GameActionsDelegate,
     private val gameRepository: GameRepository,
     private val soundManager: SoundFeedbackManager,
@@ -143,11 +148,13 @@ class HomeGameMenuDelegate @Inject constructor(
         scope.launch {
             when (val result = gameActions.refreshGameData(gameId)) {
                 is RomMResult.Success -> {
-                    notificationManager.showSuccess("Game data refreshed")
+                    notificationManager.showSuccess(
+                        NotificationText.Res(R.string.home_notice_game_data_refreshed)
+                    )
                     onComplete()
                 }
                 is RomMResult.Error -> {
-                    notificationManager.showError(result.message)
+                    notificationManager.showError(NotificationText.Raw(result.message))
                 }
             }
             toggleGameMenu()
@@ -158,11 +165,13 @@ class HomeGameMenuDelegate @Inject constructor(
         scope.launch {
             when (val result = gameActions.refreshAndroidGameData(gameId)) {
                 is RefreshAndroidResult.Success -> {
-                    notificationManager.showSuccess("Game data refreshed")
+                    notificationManager.showSuccess(
+                        NotificationText.Res(R.string.home_notice_android_data_refreshed)
+                    )
                     onComplete()
                 }
                 is RefreshAndroidResult.Error -> {
-                    notificationManager.showError(result.message)
+                    notificationManager.showError(NotificationText.Raw(result.message))
                 }
             }
             toggleGameMenu()

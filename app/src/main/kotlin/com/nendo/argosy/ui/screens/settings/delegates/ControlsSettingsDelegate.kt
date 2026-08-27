@@ -1,6 +1,8 @@
 package com.nendo.argosy.ui.screens.settings.delegates
 
 import android.app.Application
+import androidx.annotation.StringRes
+import com.nendo.argosy.R
 import com.nendo.argosy.data.preferences.MenuWrapMode
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.core.input.ControllerDetector
@@ -142,16 +144,18 @@ class ControlsSettingsDelegate @Inject constructor(
             return COMBO_CYCLE[(index + direction).mod(COMBO_CYCLE.size)]
         }
 
-        fun comboDisplayName(value: String): String = when (value) {
-            "quick_menu" -> "Quick Menu"
-            "quick_settings" -> "Quick Settings"
-            else -> "None"
+        @StringRes
+        fun comboDisplayNameRes(value: String): Int = when (value) {
+            "quick_menu" -> R.string.settings_navigation_combo_quick_menu
+            "quick_settings" -> R.string.settings_navigation_combo_quick_settings
+            else -> R.string.settings_navigation_combo_none
         }
 
-        fun layoutDisplayName(value: String): String = when (value) {
-            "nintendo" -> "Nintendo"
-            "xbox" -> "Xbox"
-            else -> "Auto"
+        @StringRes
+        fun layoutDisplayNameRes(value: String): Int = when (value) {
+            "nintendo" -> R.string.settings_navigation_controller_layout_nintendo
+            "xbox" -> R.string.settings_navigation_controller_layout_xbox
+            else -> R.string.settings_navigation_controller_layout_auto
         }
     }
 

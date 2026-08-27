@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="library_header_title">遊戲庫</string>
+    <string name="library_header_all_platforms">所有平台</string>
+    <string name="library_header_previous_platform">上一個平台</string>
+    <string name="library_header_next_platform">下一個平台</string>
+    <plurals name="library_header_game_count">
+        <item quantity="other">%d款遊戲</item>
+    </plurals>
+
+    <string name="library_landing_title">遊戲庫</string>
+    <plurals name="library_landing_platform_count">
+        <item quantity="other">%d個平台</item>
+    </plurals>
+    <plurals name="library_landing_media_library_count">
+        <item quantity="other">%d個媒體庫</item>
+    </plurals>
+
+    <string name="library_cell_all_games">所有遊戲</string>
+    <plurals name="library_cell_game_count">
+        <item quantity="other">%d款遊戲</item>
+    </plurals>
+    <plurals name="library_cell_movie_count">
+        <item quantity="other">%d部電影</item>
+    </plurals>
+    <plurals name="library_cell_show_count">
+        <item quantity="other">%d部影集</item>
+    </plurals>
+
+    <string name="library_landing_empty_title">尚無平台</string>
+    <string name="library_landing_empty_body">請在設定中從Rom Manager同步您的遊戲庫</string>
+
+    <string name="library_empty_title_platform">找不到%1$s遊戲</string>
+    <string name="library_empty_title_all">尚無遊戲</string>
+    <string name="library_empty_body">請在設定中從Rom Manager同步您的遊戲庫</string>
+
+    <string name="library_filter_title">篩選遊戲</string>
+    <string name="library_filter_active_summary">已套用：%1$s</string>
+    <string name="library_filter_search_placeholder">輸入以搜尋...</string>
+    <string name="library_filter_recent_searches">最近搜尋</string>
+
+    <string name="library_filter_category_sort">排序</string>
+    <string name="library_filter_category_search">搜尋</string>
+    <string name="library_filter_category_source">來源</string>
+    <string name="library_filter_category_platform">平台</string>
+    <string name="library_filter_category_genre">類型</string>
+    <string name="library_filter_category_players">玩家人數</string>
+    <string name="library_filter_category_series">系列</string>
+
+    <string name="library_filter_hint_clear">清除</string>
+    <string name="library_filter_hint_close_search">關閉</string>
+    <string name="library_filter_hint_reset">重設</string>
+    <string name="library_filter_hint_toggle">切換</string>
+    <string name="library_filter_hint_select">選擇</string>
+    <string name="library_filter_hint_close_options">關閉</string>
+
+    <string name="library_footer_hint_jump_section">跳至區段</string>
+    <string name="library_footer_hint_details">詳情</string>
+    <string name="library_footer_hint_unhide">取消隱藏</string>
+    <string name="library_footer_hint_unfavorite">取消最愛</string>
+    <string name="library_footer_hint_favorite">最愛</string>
+    <string name="library_footer_hint_filter">篩選</string>
+    <string name="library_footer_hint_quick_menu">快速選單</string>
+
+    <string name="library_quickmenu_title">快速操作</string>
+    <string name="library_quickmenu_install">安裝</string>
+    <string name="library_quickmenu_play">遊玩</string>
+    <string name="library_quickmenu_download">下載</string>
+    <string name="library_quickmenu_unfavorite">取消最愛</string>
+    <string name="library_quickmenu_favorite">加入最愛</string>
+    <string name="library_quickmenu_details">詳情</string>
+    <string name="library_quickmenu_add_to_collection">加入合輯</string>
+    <string name="library_quickmenu_add_to_grid">加入網格</string>
+    <string name="library_quickmenu_refresh_data">重新整理資料</string>
+    <string name="library_quickmenu_resync_platform">重新同步平台</string>
+    <string name="library_quickmenu_uninstall">解除安裝</string>
+    <string name="library_quickmenu_delete_download">刪除下載</string>
+    <string name="library_quickmenu_show">顯示</string>
+    <string name="library_quickmenu_hide">隱藏</string>
+
+    <string name="library_notice_added_to_home_grid">已加入主畫面網格</string>
+    <string name="library_notice_game_data_refreshed">遊戲資料已重新整理</string>
+    <string name="library_notice_android_data_refreshed">遊戲資料已重新整理</string>
+    <string name="library_notice_download_deleted">下載已刪除</string>
+    <string name="library_notice_already_downloaded">遊戲已下載</string>
+    <plurals name="library_notice_downloading_discs">
+        <item quantity="other">正在下載%d片光碟</item>
+    </plurals>
+    <string name="library_notice_extraction_failed">解壓縮失敗，請開啟遊戲詳情頁面重試。</string>
+    <string name="library_notice_apk_install_failed">無法安裝APK</string>
+
+    <string name="library_companion_fact_emulator">模擬器</string>
+    <string name="library_companion_fact_storage">儲存狀態</string>
+    <string name="library_companion_storage_downloaded">已下載</string>
+    <string name="library_companion_storage_not_downloaded">尚未下載</string>
+
+    <string name="library_apps_title">應用程式</string>
+    <string name="library_apps_title_hidden">已隱藏的應用程式</string>
+    <string name="library_apps_title_reorder">重新排序應用程式</string>
+    <string name="library_apps_reorder_hint">以儲存</string>
+
+    <plurals name="library_filter_active_count">
+        <item quantity="other">%d個篩選條件</item>
+    </plurals>
+    <string name="library_apps_empty">找不到應用程式</string>
+
+    <string name="library_apps_hint_move">移動</string>
+    <string name="library_apps_hint_save">儲存</string>
+    <string name="library_apps_hint_cancel">取消</string>
+    <string name="library_apps_hint_open">開啟</string>
+    <string name="library_apps_hint_back">返回</string>
+    <string name="library_apps_hint_open_on_top">在上方開啟</string>
+    <string name="library_apps_hint_reorder">重新排序</string>
+    <string name="library_apps_hint_options">選項</string>
+    <string name="library_apps_hint_show_apps">顯示應用程式</string>
+    <string name="library_apps_hint_show_hidden">顯示已隱藏項目</string>
+
+    <string name="library_apps_menu_app_info">應用程式資訊</string>
+    <string name="library_apps_menu_open_on_top">在上方螢幕開啟</string>
+    <string name="library_apps_menu_remove_from_home">從主畫面移除</string>
+    <string name="library_apps_menu_add_to_home">加入主畫面</string>
+    <string name="library_apps_menu_remove_from_second_screen">從副螢幕移除</string>
+    <string name="library_apps_menu_add_to_second_screen">加入副螢幕</string>
+    <string name="library_apps_menu_show">顯示</string>
+    <string name="library_apps_menu_hide">隱藏</string>
+    <string name="library_apps_menu_reorder">重新排序應用程式</string>
+    <string name="library_apps_menu_uninstall">解除安裝</string>
+
+    <string name="library_search_placeholder_games_and_media">搜尋遊戲與媒體...</string>
+    <string name="library_search_placeholder_games">搜尋遊戲...</string>
+    <plurals name="library_search_min_query_hint">
+        <item quantity="other">請至少輸入%d個字元進行搜尋</item>
+    </plurals>
+    <string name="library_search_no_results">找不到「%1$s」的結果</string>
+    <string name="library_search_heading_games">遊戲</string>
+    <string name="library_search_heading_media">媒體</string>
+    <string name="library_search_result_platform_unknown">未知</string>
+    <string name="library_search_result_kind_series">影集</string>
+    <string name="library_search_result_kind_movie">電影</string>
+    <string name="library_search_hint_group_jump">遊戲/媒體</string>
+    <string name="library_search_hint_select">選擇</string>
+    <string name="library_search_hint_back">返回/清除</string>
+    <plurals name="library_search_result_count">
+        <item quantity="other">%d筆結果</item>
+    </plurals>
+</resources>

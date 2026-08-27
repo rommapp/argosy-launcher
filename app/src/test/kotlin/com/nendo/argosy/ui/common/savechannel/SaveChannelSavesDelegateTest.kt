@@ -1,10 +1,13 @@
 package com.nendo.argosy.ui.common.savechannel
 
+import android.content.Context
+import com.nendo.argosy.R
 import com.nendo.argosy.data.repository.SaveCacheManager
 import com.nendo.argosy.data.repository.SaveSyncApiClient
 import com.nendo.argosy.domain.model.UnifiedSaveEntry
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -24,7 +27,11 @@ class SaveChannelSavesDelegateTest {
     fun setup() {
         holder = SaveChannelStateHolder()
         saveCacheManager = mockk(relaxed = true)
+        val context = mockk<Context>(relaxed = true)
+        every { context.getString(R.string.ui_save_channel_slot_autosave) } returns "Autosave"
+        every { context.getString(R.string.ui_save_channel_slot_archived) } returns "Archived"
         delegate = SaveChannelSavesDelegate(
+            context = context,
             holder = holder,
             getUnifiedSavesUseCase = mockk(relaxed = true),
             restoreCachedSaveUseCase = mockk(relaxed = true),

@@ -1,0 +1,412 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Owner: in-app NotificationManager text (core/notification, data/, domain/, ui/ callers)
+      Key prefix: notif_
+      Keys are named for the usage site, never for the English text, and identical English
+      is never shared between two usage sites.
+    -->
+
+    <!-- Generic notification title used when only an error detail message is supplied.
+         Noun, labels the notification category, not a command. -->
+    <string name="notif_generic_error_title">Error</string>
+
+    <!-- Storage settings: global ROM folder migration, per-platform migration, and
+         per-platform purge (StorageSettingsDelegate). -->
+
+    <!-- Error when the user tries to point ROM storage at one of Argosy's own private
+         app folders. Statement of fact, not a command. -->
+    <string name="notif_storage_private_path_error">GameNative cannot read Argosy\'s private folders. Pick a public location.</string>
+
+    <!-- Persistent notification title while all downloaded games are being moved to a
+         new global storage folder. Present participle. -->
+    <string name="notif_storage_migrate_persistent_title">Moving games</string>
+    <!-- Persistent notification subtitle before the first game has been moved. %1$d is
+         the total game count. -->
+    <string name="notif_storage_migrate_persistent_subtitle_initial">0 / %1$d</string>
+    <!-- Persistent notification subtitle while moving games. %1$d is the current game
+         number, %2$d the total, %3$s the game's title (untranslated, user content). -->
+    <string name="notif_storage_migrate_persistent_subtitle_progress">%1$d/%2$d: %3$s</string>
+    <!-- Title shown when the global ROM folder migration finishes. Adjective phrase
+         describing the migration, not a command. -->
+    <string name="notif_storage_migrate_complete_title">Migration complete</string>
+    <!-- Subtitle summarizing migration results. %1$d moved, %2$d missing on disk,
+         %3$d failed to copy. -->
+    <string name="notif_storage_migrate_complete_subtitle">Moved %1$d, %2$d missing, %3$d failed</string>
+
+    <!-- Persistent notification title while one platform's games are being moved to a
+         new folder. %1$s is the platform display name. Present participle. -->
+    <string name="notif_storage_migrate_platform_persistent_title">Moving %1$s ROMs</string>
+    <!-- Persistent notification subtitle before the first game has been moved. %1$d is
+         the total game count for this platform. -->
+    <string name="notif_storage_migrate_platform_persistent_subtitle_initial">0 / %1$d</string>
+    <!-- Persistent notification subtitle while moving a platform's games. %1$d current,
+         %2$d total, %3$s the game's title (untranslated, user content). -->
+    <string name="notif_storage_migrate_platform_persistent_subtitle_progress">%1$d/%2$d: %3$s</string>
+    <!-- Title shown when a single platform's migration finishes. %1$s is the platform
+         display name. Adjective phrase, not a command. -->
+    <string name="notif_storage_migrate_platform_complete_title">%1$s migration complete</string>
+    <!-- Subtitle summarizing a per-platform migration. %1$d moved, %2$d missing on disk,
+         %3$d failed to copy. -->
+    <string name="notif_storage_migrate_platform_complete_subtitle">Moved %1$d, %2$d missing, %3$d failed</string>
+
+    <!-- Persistent notification title while a platform's downloaded files and library
+         entries are being deleted. %1$s is the platform display name. Present participle,
+         "Purge" here is a verb (to delete completely). -->
+    <string name="notif_storage_purge_persistent_title">Purging %1$s</string>
+    <!-- Persistent notification subtitle shown before file deletion begins. -->
+    <string name="notif_storage_purge_persistent_subtitle_preparing">Preparing&#8230;</string>
+    <!-- Persistent notification subtitle while deleting a platform's files. %1$d current,
+         %2$d total, %3$s the game's title (untranslated, user content). -->
+    <string name="notif_storage_purge_persistent_subtitle_progress">%1$d/%2$d: %3$s</string>
+    <!-- Title shown when a platform purge finishes. %1$s is the platform display name.
+         Past participle describing the platform, not a command. -->
+    <string name="notif_storage_purge_complete_title">%1$s purged</string>
+    <!-- Subtitle summarizing a platform purge. %1$d library rows deleted, %2$d megabytes
+         of disk space freed. -->
+    <string name="notif_storage_purge_complete_subtitle">Deleted %1$d games, freed %2$dMB</string>
+
+    <!-- Hard reset blocked: a game is currently running. Command telling the user what to
+         do before retrying. -->
+    <string name="notif_storage_hardreset_blocked_active_session">Close the running game before resetting</string>
+    <!-- Hard reset blocked: one or more games are still downloading. Command. -->
+    <string name="notif_storage_hardreset_blocked_active_downloads">Cancel game downloads before resetting</string>
+    <!-- Hard reset blocked: an emulator package is still downloading. Command. -->
+    <string name="notif_storage_hardreset_blocked_emulator_download">Wait for the emulator download to finish first</string>
+    <!-- Hard reset blocked: a Steam game is still downloading. Command. -->
+    <string name="notif_storage_hardreset_blocked_steam_download">Cancel Steam downloads before resetting</string>
+    <!-- Hard reset blocked: a movie or TV episode is still downloading. Command. -->
+    <string name="notif_storage_hardreset_blocked_media_download">Cancel the movie or episode download before resetting</string>
+    <!-- Hard reset blocked: unsynced save uploads exist but no account username could be
+         resolved. Command. -->
+    <string name="notif_storage_hardreset_pending_uploads_none">Sync pending save uploads before resetting</string>
+    <!-- Hard reset blocked: one account has unsynced save uploads. %1$s is the account's
+         username (untranslated, user content). Command. -->
+    <string name="notif_storage_hardreset_pending_uploads_one">Sync %1$s\'s pending save uploads before resetting</string>
+    <!-- Hard reset blocked: multiple accounts have unsynced save uploads. %1$s is a
+         comma-separated list of usernames (untranslated, user content). Command. -->
+    <string name="notif_storage_hardreset_pending_uploads_many">Sync pending save uploads for %1$s before resetting</string>
+    <!-- Success notification after a hard reset finishes. Statement plus a suggested next
+         step, not a command to the reader. -->
+    <string name="notif_storage_hardreset_success">Hard reset complete - sync to rebuild your library</string>
+    <!-- Failure notification when a hard reset throws. %1$s is either the exception detail
+         or the fallback below. -->
+    <string name="notif_storage_hardreset_failed">Hard reset failed - %1$s</string>
+    <!-- Fallback detail used in notif_storage_hardreset_failed when the exception carries
+         no message. Imperative suggestion. -->
+    <string name="notif_storage_hardreset_failed_default_detail">try again</string>
+
+    <!-- Steam content downloads (SteamContentManager). -->
+
+    <!-- Subtitle when a Steam game's install folder is not writable. %1$s is the
+         absolute filesystem path (untranslated). -->
+    <string name="notif_steam_path_not_accessible">Install path not accessible: %1$s</string>
+    <!-- Subtitle when there is not enough free space to download a Steam game. %1$d is
+         megabytes free, %2$d megabytes required. -->
+    <string name="notif_steam_storage_blocked_subtitle">Not enough storage (%1$dMB free, need %2$dMB)</string>
+
+    <!-- Friend presence notifications (SocialRepository). -->
+
+    <!-- Subtitle when a friend starts playing a game. %1$s is the game's title
+         (untranslated, user content). -->
+    <string name="notif_social_friend_started_playing">Started playing %1$s</string>
+    <!-- Subtitle when a friend comes online. Statement of fact, not a command. -->
+    <string name="notif_social_friend_online">Is now online</string>
+
+    <!-- Settings: image cache and download validation (SettingsGeneralRouter). -->
+
+    <!-- Persistent notification title while the image cache is being checked for
+         corrupt or orphaned files. Present participle. -->
+    <string name="notif_settings_cache_validate_title">Validating Image Cache</string>
+    <!-- Persistent notification subtitle shown before the check begins. -->
+    <string name="notif_settings_cache_validate_starting">Starting&#8230;</string>
+    <!-- Completion subtitle when the cache check removed files. %1$d files deleted,
+         %2$d cache paths cleared. -->
+    <string name="notif_settings_cache_validate_cleaned">Cleaned %1$d files, cleared %2$d paths</string>
+    <!-- Completion subtitle when the cache check found nothing to remove. Adjective
+         phrase describing the cache's condition. -->
+    <string name="notif_settings_cache_validate_healthy">Image cache is healthy</string>
+
+    <!-- Persistent notification title while downloaded ROM files are being checked
+         against the library. Present participle. -->
+    <string name="notif_settings_downloads_validate_title">Validating Downloads</string>
+    <!-- Persistent notification subtitle for the first validation pass. -->
+    <string name="notif_settings_downloads_validate_checking">Checking ROM files&#8230;</string>
+    <!-- Persistent notification subtitle for the second, discovery pass. -->
+    <string name="notif_settings_downloads_validate_discovering">Discovering files&#8230;</string>
+    <!-- Completion subtitle for a downloads validation pass. %1$d stale paths cleared,
+         %2$d files newly discovered on disk. -->
+    <string name="notif_settings_downloads_validate_result">Cleared %1$d invalid paths, discovered %2$d files</string>
+
+    <!-- Settings: storage cache-clearing guards (StorageCachesDelegate). -->
+
+    <!-- Blocks opening the emulator-cache clear confirmation while a download is active. -->
+    <string name="notif_storage_caches_emulator_busy_precheck">Wait for the emulator download to finish first</string>
+    <!-- Blocks opening the driver-cache clear confirmation while a driver download is active. -->
+    <string name="notif_storage_caches_driver_busy">Wait for the driver download to finish first</string>
+    <!-- Blocks opening the Steam-cache clear confirmation while a Steam download is active. -->
+    <string name="notif_storage_caches_steam_busy_precheck">Cancel Steam downloads first</string>
+    <!-- Blocks the ROM extraction cache clear itself while a game is running. -->
+    <string name="notif_storage_caches_rom_extraction_busy">Cannot clear extracted ROMs while a game is running</string>
+    <!-- Blocks the emulator cache clear itself when it could not run because a download started
+         in the meantime. -->
+    <string name="notif_storage_caches_emulator_busy_runclear">Wait for the emulator download to finish first</string>
+    <!-- Blocks the Steam cache clear itself when it could not run because a download started in
+         the meantime. -->
+    <string name="notif_storage_caches_steam_busy_runclear">Cancel Steam downloads first</string>
+
+    <!-- Settings: manual save sync and image cache relocation (SyncSettingsDelegate). -->
+
+    <!-- Notification shown while a manually-triggered save sync (no local scan step) runs. -->
+    <string name="notif_sync_settings_manual_syncing">Syncing saves&#8230;</string>
+    <!-- Sync outcome: RomM was not reachable. -->
+    <string name="notif_sync_settings_manual_not_connected">Not connected</string>
+    <!-- Sync outcome: nothing needed to be sent or received. -->
+    <string name="notif_sync_settings_manual_up_to_date">Saves are up to date</string>
+    <!-- Sync outcome: %1$d saves/states were synced, none failed. "item(s)" refers to save or
+         state files together, not a single grammatical category. -->
+    <string name="notif_sync_settings_manual_synced">Synced %1$d item(s)</string>
+    <!-- Sync outcome: %1$d saves/states were synced, %2$d of them failed. -->
+    <string name="notif_sync_settings_manual_synced_with_failures">Synced %1$d item(s) (%2$d failed)</string>
+    <!-- Sync outcome: the sync pass threw. %1$s is the exception detail. -->
+    <string name="notif_sync_settings_manual_failed">Save sync failed: %1$s</string>
+
+    <!-- Notification shown while a save sync that first scans local files runs. -->
+    <string name="notif_sync_settings_scan_scanning">Scanning local saves&#8230;</string>
+    <!-- Notification after the local scan step finds unsynced files. %1$d is the count. -->
+    <string name="notif_sync_settings_scan_found">Found %1$d local saves to sync</string>
+    <!-- Notification for the sync step that follows the local scan. -->
+    <string name="notif_sync_settings_scan_syncing">Syncing saves&#8230;</string>
+    <!-- Sync outcome: RomM was not reachable. -->
+    <string name="notif_sync_settings_scan_not_connected">Not connected</string>
+    <!-- Sync outcome: nothing needed to be sent or received. -->
+    <string name="notif_sync_settings_scan_up_to_date">Saves are up to date</string>
+    <!-- Sync outcome: %1$d saves/states were synced, none failed. -->
+    <string name="notif_sync_settings_scan_synced">Synced %1$d item(s)</string>
+    <!-- Sync outcome: %1$d saves/states were synced, %2$d of them failed. -->
+    <string name="notif_sync_settings_scan_synced_with_failures">Synced %1$d item(s) (%2$d failed)</string>
+    <!-- Sync outcome: the sync pass threw. %1$s is the exception detail. -->
+    <string name="notif_sync_settings_scan_failed">Save sync failed: %1$s</string>
+
+    <!-- Notification while cached images are moved to a user-chosen folder. -->
+    <string name="notif_sync_settings_imagecache_moving_custom">Moving cached images&#8230;</string>
+    <!-- Completion notification for the move above. -->
+    <string name="notif_sync_settings_imagecache_moved_custom">Images moved successfully</string>
+    <!-- Failure notification for the move above. -->
+    <string name="notif_sync_settings_imagecache_move_failed_custom">Failed to move some images</string>
+    <!-- Notification while cached images are moved back to the default location. -->
+    <string name="notif_sync_settings_imagecache_moving_reset">Moving cached images&#8230;</string>
+    <!-- Completion notification for the move above. -->
+    <string name="notif_sync_settings_imagecache_moved_reset">Images moved successfully</string>
+    <!-- Failure notification for the move above. -->
+    <string name="notif_sync_settings_imagecache_move_failed_reset">Failed to move some images</string>
+
+    <!-- Failure notification when refreshing the platform filter list from RomM fails. %1$s is
+         the exception detail. -->
+    <string name="notif_sync_settings_platforms_fetch_failed">Failed to fetch platforms: %1$s</string>
+    <!-- Blocks resetting the save cache while a game is running. -->
+    <string name="notif_sync_settings_reset_save_cache_blocked">Cannot reset save cache while a game is running</string>
+    <!-- Blocks clearing the save-state cache while a game is running. "State" here is a save
+         state (an emulator snapshot), not a completion status. -->
+    <string name="notif_sync_settings_clear_state_cache_blocked">Cannot clear state cache while a game is running</string>
+
+    <!-- Settings: Steam library management (SteamSettingsDelegate). -->
+
+    <!-- Error when a GameNative folder rescan finds no configured install folders. -->
+    <string name="notif_steam_settings_gamenative_unconfigured">No GameNative folders configured</string>
+    <!-- Title for the notification summarizing a GameNative folder rescan. Proper noun (the
+         launcher's library feature), not a command. -->
+    <string name="notif_steam_settings_gamenative_scan_title">GameNative Library</string>
+    <!-- Title shown after the Steam install volume changes while downloads are active. Past
+         participle describing the setting, not a command. -->
+    <string name="notif_steam_settings_install_path_changed_title">Install path changed</string>
+    <!-- Subtitle explaining that in-flight downloads keep their original destination. %1$d is
+         the number of downloads affected. -->
+    <plurals name="notif_steam_settings_install_path_changed_subtitle">
+        <item quantity="one">%1$d download in progress will finish at its original location. New downloads use the new target.</item>
+        <item quantity="other">%1$d downloads in progress will finish at their original location. New downloads use the new target.</item>
+    </plurals>
+    <!-- Error when downloading a Steam launcher release fails. %1$s is the exception detail. -->
+    <string name="notif_steam_settings_launcher_download_failed">Download failed: %1$s</string>
+    <!-- Notification after a manual Steam library reset. %1$d is the number of games removed. -->
+    <string name="notif_steam_settings_library_reset">Removed %1$d Steam games</string>
+    <!-- Notification after manually adding a single Steam game. %1$s is the game's title
+         (untranslated, user content). -->
+    <string name="notif_steam_settings_game_added">Added: %1$s</string>
+    <!-- Notification after an automatic Steam library sync adds games. %1$d is the count. -->
+    <string name="notif_steam_settings_library_synced">Added %1$d Steam games</string>
+
+    <!-- Settings: Jellyfin media library sync (JellyfinSettingsDelegate). -->
+
+    <!-- Persistent notification title while the Jellyfin media library syncs. -->
+    <string name="notif_jellyfin_settings_sync_title">Syncing Media</string>
+    <!-- Persistent notification subtitle before the first library starts. -->
+    <string name="notif_jellyfin_settings_sync_starting">Starting&#8230;</string>
+    <!-- Completion title when the sync finished with no errors. Adjective phrase, not a
+         command. -->
+    <string name="notif_jellyfin_settings_sync_up_to_date">Media up to date</string>
+    <!-- Completion title when one or more libraries could not sync. Statement of fact. -->
+    <string name="notif_jellyfin_settings_sync_partial">Some libraries were missed</string>
+    <!-- Completion title when the sync could not run at all. Adjective phrase, not a command. -->
+    <string name="notif_jellyfin_settings_sync_failed_title">Media sync failed</string>
+    <!-- Count of Jellyfin libraries synced, embedded in notif_jellyfin_settings_sync_counts_summary. -->
+    <plurals name="notif_jellyfin_settings_sync_libraries_count">
+        <item quantity="one">%1$d library</item>
+        <item quantity="other">%1$d libraries</item>
+    </plurals>
+    <!-- Count of media titles added, embedded in notif_jellyfin_settings_sync_counts_summary. -->
+    <plurals name="notif_jellyfin_settings_sync_titles_count">
+        <item quantity="one">%1$d title</item>
+        <item quantity="other">%1$d titles</item>
+    </plurals>
+    <!-- Joins the resolved library and title counts into the completion subtitle. %1$s is the
+         library count phrase, %2$s the title count phrase. -->
+    <string name="notif_jellyfin_settings_sync_counts_summary">%1$s, %2$s</string>
+    <!-- Blocks moving the media folder while a movie or episode download is active. -->
+    <string name="notif_jellyfin_settings_relocate_blocked_media_download">Cancel the movie or episode download before moving your media folder</string>
+
+    <!-- Collection detail: bulk download queue (CollectionDetailViewModel). -->
+
+    <!-- Title after queuing every downloadable game in a collection. Adjective phrase,
+         not a command. -->
+    <string name="notif_collection_downloads_queued_title">Downloads Queued</string>
+    <!-- Subtitle for the notification above. %1$d is the number of games queued. -->
+    <plurals name="notif_collection_downloads_queued_subtitle">
+        <item quantity="one">%1$d game added to download queue</item>
+        <item quantity="other">%1$d games added to download queue</item>
+    </plurals>
+
+    <!-- Virtual category browser: bulk download queue (VirtualCategoryViewModel). -->
+
+    <!-- Title after queuing every downloadable game in a virtual category. Adjective phrase,
+         not a command. -->
+    <string name="notif_virtualcategory_downloads_queued_title">Downloads Queued</string>
+    <!-- Subtitle for the notification above. %1$d is the number of games queued. -->
+    <plurals name="notif_virtualcategory_downloads_queued_subtitle">
+        <item quantity="one">%1$d game added to download queue</item>
+        <item quantity="other">%1$d games added to download queue</item>
+    </plurals>
+
+    <!-- Companion (dual-screen) file management and save-state commands
+         (DualScreenManager). -->
+
+    <!-- A save slot name the user typed collides with a reserved name. %1$s is that name
+         (untranslated, user content). -->
+    <string name="notif_dualscreen_reserved_slot_name">\'%1$s\' is a reserved name</string>
+    <!-- One part of a joined summary after managing a game's files: %1$d files were queued
+         for download. Embedded with notif_dualscreen_files_removed, comma-separated. -->
+    <string name="notif_dualscreen_files_queued">%1$d queued</string>
+    <!-- One part of a joined summary after managing a game's files: %1$d files were removed
+         from the queue. Embedded with notif_dualscreen_files_queued, comma-separated. -->
+    <string name="notif_dualscreen_files_removed">%1$d removed</string>
+    <!-- Notification after queuing file downloads from the companion file picker. %1$d is the
+         number of downloads queued. -->
+    <plurals name="notif_dualscreen_downloads_queued">
+        <item quantity="one">Queued %1$d download</item>
+        <item quantity="other">Queued %1$d downloads</item>
+    </plurals>
+    <!-- Error when a save-state action targets a game with no local ROM file. -->
+    <string name="notif_dualscreen_no_local_path">Game has no local path</string>
+    <!-- Label for a save state slot restored automatically rather than by number. -->
+    <string name="notif_dualscreen_state_slot_auto">auto state</string>
+    <!-- Label for a numbered save state slot. %1$d is the slot number. -->
+    <string name="notif_dualscreen_state_slot_numbered">state slot %1$d</string>
+    <!-- Notification after restoring a save state. %1$s is the slot label (state_slot_auto or
+         state_slot_numbered above). -->
+    <string name="notif_dualscreen_state_restored">Restored %1$s</string>
+    <!-- Error when a save state was written by a different emulator core version than the one
+         active now. %1$s is the slot label. "State" here is a save state, not a completion
+         status. -->
+    <string name="notif_dualscreen_state_version_mismatch">%1$s was made by a different core version</string>
+    <!-- Generic error when restoring a save state fails. %1$s is the slot label. -->
+    <string name="notif_dualscreen_state_restore_failed">Could not restore %1$s</string>
+    <!-- Notification after deleting a save state. %1$s is the slot label. -->
+    <string name="notif_dualscreen_state_deleted">Deleted %1$s</string>
+    <!-- Notification after copying a save state to another slot. %1$s is the source slot
+         label, %2$s the destination slot label. -->
+    <string name="notif_dualscreen_state_copied">Copied %1$s to %2$s</string>
+    <!-- Error when copying a save state to another slot fails. %1$s is the source slot label. -->
+    <string name="notif_dualscreen_state_copy_failed">Could not copy %1$s</string>
+
+    <!-- Game launch failures (GameLaunchDelegate). -->
+
+    <string name="notif_gamelaunch_no_emulator">No emulator installed for this platform</string>
+    <string name="notif_gamelaunch_no_rom_file">ROM file not found</string>
+    <string name="notif_gamelaunch_no_steam_launcher">Steam launcher not installed</string>
+    <!-- %1$s is the platform slug (untranslated, upstream identifier). -->
+    <string name="notif_gamelaunch_no_core_base">No core available for %1$s</string>
+    <!-- %1$s is the platform slug (untranslated, upstream identifier), %2$s is the
+         diagnostic reason. -->
+    <string name="notif_gamelaunch_no_core_with_reason">No core available for %1$s: %2$s</string>
+    <!-- %1$s is a comma-separated list of missing disc numbers. -->
+    <string name="notif_gamelaunch_missing_discs">Missing discs: %1$s. View game details to repair.</string>
+    <!-- %1$s is the platform slug (untranslated, upstream identifier). -->
+    <string name="notif_gamelaunch_missing_bios">Missing BIOS for %1$s. Install it in Settings before launching.</string>
+    <!-- %1$s is the game's name (untranslated, user content). -->
+    <string name="notif_gamelaunch_no_scummvm_id">Missing .scummvm file for %1$s</string>
+    <!-- %1$s is the Android package name (untranslated, upstream identifier). -->
+    <string name="notif_gamelaunch_no_android_app">Android app not installed: %1$s</string>
+    <string name="notif_gamelaunch_disc_launch_failed">Failed to launch disc</string>
+    <string name="notif_gamelaunch_launch_failed">Failed to launch</string>
+
+    <!-- Social feed (SocialScreen). -->
+
+    <!-- Placeholder shown when the user picks Share Screenshot from the quick-action bar,
+         a feature not yet built. -->
+    <string name="notif_social_share_screenshot_soon_quickaction">Share screenshot coming soon</string>
+    <!-- Placeholder shown when the user picks Share Screenshot from the feed options modal,
+         a feature not yet built. -->
+    <string name="notif_social_share_screenshot_soon_feedmenu">Share screenshot coming soon</string>
+    <!-- Confirms a post was reported and removed from the viewer's own feed. -->
+    <string name="notif_social_post_reported">Post reported and hidden</string>
+
+    <!-- Social profile: most-played game shortcut (SocialViewModel). -->
+
+    <!-- The most-played game a friend's profile links to is not in the viewer's own library. -->
+    <string name="notif_social_game_not_in_library">Game not in library</string>
+
+    <!-- User profile screen: most-played game shortcut (UserProfileScreen). -->
+
+    <!-- The most-played game a profile links to is not in the viewer's own library, reached via
+         gamepad input handler. -->
+    <string name="notif_userprofile_game_not_in_library_input">Game not in library</string>
+    <!-- The most-played game a profile links to is not in the viewer's own library, reached via
+         touch tap. -->
+    <string name="notif_userprofile_game_not_in_library_touch">Game not in library</string>
+
+    <!-- Library sync notifications. "Sync" is the verb for pulling the RomM server's library
+         down to the device. Library sync and per-platform sync keep separate strings even
+         where the English matches, so either can be reworded alone. -->
+    <string name="notif_sync_library_start_failed_title">Sync could not start</string>
+    <string name="notif_sync_library_progress_title">Syncing Library</string>
+    <!-- Shown before the first platform is reported. -->
+    <string name="notif_sync_library_progress_starting">Starting...</string>
+    <!-- %1$s is the platform being synced, %2$d games done of %3$d. -->
+    <string name="notif_sync_library_progress_platform_games">%1$s (%2$d/%3$d games)</string>
+    <string name="notif_sync_library_complete_title">Sync complete</string>
+    <!-- Counts of games. "added" and "updated" are past-tense verbs describing what sync did. -->
+    <string name="notif_sync_library_complete_counts">%1$d added, %2$d updated</string>
+    <string name="notif_sync_library_complete_counts_with_removed">%1$d added, %2$d updated, %3$d removed</string>
+    <string name="notif_sync_library_completed_with_errors_title">Sync completed with errors</string>
+    <plurals name="notif_sync_library_failed_platforms">
+        <item quantity="one">%1$d platform failed</item>
+        <item quantity="other">%1$d platforms failed</item>
+    </plurals>
+    <string name="notif_sync_library_failed_title">Sync failed</string>
+
+    <!-- Explanations for a sync that could not run, chosen by matching the server error. -->
+    <string name="notif_sync_failure_timeout">Server took too long to respond. It may be busy or your library is very large.</string>
+    <string name="notif_sync_failure_unreachable">Can\'t reach the server. Check your connection and the server address.</string>
+    <string name="notif_sync_failure_connection_lost">Lost connection to the server. Sync resumes where it left off next time.</string>
+    <string name="notif_sync_failure_unknown">Sync failed. Try again.</string>
+
+    <!-- Single-platform sync notifications. %1$s is the platform name. -->
+    <string name="notif_sync_platform_progress_title">Syncing %1$s</string>
+    <string name="notif_sync_platform_progress_fetching">Fetching games...</string>
+    <string name="notif_sync_platform_complete_title">%1$s synced</string>
+    <string name="notif_sync_platform_complete_counts">%1$d added, %2$d updated</string>
+    <string name="notif_sync_platform_complete_counts_with_removed">%1$d added, %2$d updated, %3$d removed</string>
+    <string name="notif_sync_platform_completed_with_errors_title">Sync completed with errors</string>
+    <string name="notif_sync_platform_error_unknown">Unknown error</string>
+    <string name="notif_sync_platform_failed_title">Sync failed</string>
+</resources>

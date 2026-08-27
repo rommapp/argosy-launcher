@@ -47,8 +47,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -56,6 +59,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import coil.compose.AsyncImage
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.InputButton
@@ -158,7 +162,7 @@ fun SaveSyncScreen(
             }
 
             if (uiState.attentionRows.isNotEmpty()) {
-                item { SectionHeader("Needs your attention") }
+                item { SectionHeader(stringResource(R.string.savesync_section_attention)) }
                 itemsIndexed(uiState.attentionRows, key = { _, row -> row.key }) { index, row ->
                     AttentionRowCard(
                         row = row,
@@ -173,7 +177,7 @@ fun SaveSyncScreen(
             }
 
             if (uiState.inProgressRows.isNotEmpty()) {
-                item { SectionHeader("In progress") }
+                item { SectionHeader(stringResource(R.string.savesync_section_in_progress)) }
                 val offset = uiState.attentionRows.size
                 itemsIndexed(uiState.inProgressRows, key = { _, row -> row.key }) { index, row ->
                     InProgressRowCard(
@@ -184,7 +188,7 @@ fun SaveSyncScreen(
             }
 
             if (uiState.gameRows.isNotEmpty()) {
-                item { SectionHeader("Games with saves") }
+                item { SectionHeader(stringResource(R.string.savesync_section_games)) }
                 val offset = uiState.attentionRows.size + uiState.inProgressRows.size
                 itemsIndexed(uiState.gameRows, key = { _, row -> row.key }) { index, row ->
                     GameSaveRowCard(
@@ -231,29 +235,41 @@ private fun SaveSyncUiState.lazyIndexForFocused(): Int {
     return lazyIndex + 1 + (focusedIndex - attn - prog)
 }
 
-private fun buildFooterHints(state: SaveSyncUiState): List<Pair<InputButton, String>> = buildList {
-    if (state.allRows.isNotEmpty()) {
-        add(InputButton.DPAD_VERTICAL to "Navigate")
-    }
-    when (val focused = state.focusedRow) {
-        is AttentionRow -> {
-            add(InputButton.DPAD_HORIZONTAL to "Choose")
-            add(InputButton.A to state.attentionAction.confirmLabel())
+@Composable
+private fun buildFooterHints(state: SaveSyncUiState): List<Pair<InputButton, String>> {
+    val navigateLabel = stringResource(R.string.savesync_footer_navigate)
+    val chooseLabel = stringResource(R.string.savesync_footer_choose)
+    val confirmLabel = state.attentionAction.confirmLabel()
+    val openGameLabel = stringResource(R.string.savesync_footer_open_game)
+    val scanLabel = stringResource(R.string.savesync_footer_scan_server)
+    val backLabel = stringResource(R.string.savesync_footer_back)
+    return buildList {
+        if (state.allRows.isNotEmpty()) {
+            add(InputButton.DPAD_VERTICAL to navigateLabel)
         }
-        is GameSaveRow -> if (!focused.hasConflict) add(InputButton.A to "Open game")
-        else -> Unit
+        when (val focused = state.focusedRow) {
+            is AttentionRow -> {
+                add(InputButton.DPAD_HORIZONTAL to chooseLabel)
+                add(InputButton.A to confirmLabel)
+            }
+            is GameSaveRow -> if (!focused.hasConflict) add(InputButton.A to openGameLabel)
+            else -> Unit
+        }
+        if (state.deviceCard.isConnected) {
+            add(InputButton.Y to scanLabel)
+        }
+        add(InputButton.B to backLabel)
     }
-    if (state.deviceCard.isConnected) {
-        add(InputButton.Y to "Scan RomM")
-    }
-    add(InputButton.B to "Back")
 }
 
-private fun AttentionAction.confirmLabel(): String = when (this) {
-    AttentionAction.KEEP_LOCAL -> "Keep Local"
-    AttentionAction.KEEP_SERVER -> "Keep Server"
-    AttentionAction.SKIP -> "Skip"
-}
+@Composable
+private fun AttentionAction.confirmLabel(): String = stringResource(
+    when (this) {
+        AttentionAction.KEEP_LOCAL -> R.string.savesync_footer_confirm_keep_local
+        AttentionAction.KEEP_SERVER -> R.string.savesync_footer_confirm_keep_server
+        AttentionAction.SKIP -> R.string.savesync_footer_confirm_skip
+    }
+)
 
 @Composable
 private fun ThisDeviceCardView(card: ThisDeviceCard, modifier: Modifier = Modifier) {
@@ -287,7 +303,7 @@ private fun ThisDeviceCardView(card: ThisDeviceCard, modifier: Modifier = Modifi
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "This device",
+                        text = stringResource(R.string.savesync_device_this_label),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
@@ -298,7 +314,7 @@ private fun ThisDeviceCardView(card: ThisDeviceCard, modifier: Modifier = Modifi
                 }
                 Spacer(modifier = Modifier.height(Dimens.spacingXs))
                 Text(
-                    text = card.deviceName ?: "Not connected to RomM",
+                    text = card.deviceName ?: stringResource(R.string.savesync_device_not_connected),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -324,13 +340,19 @@ private fun VersionsLine(
 ) {
     val fadedColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
     val clientLabel = client?.takeIf { it.isNotBlank() }?.let { name ->
-        val versionSuffix = clientVersion?.takeIf { it.isNotBlank() }?.let { " v$it" } ?: ""
-        "${name.replaceFirstChar { it.titlecase() }}$versionSuffix"
+        val displayName = name.replaceFirstChar { it.titlecase() }
+        val version = clientVersion?.takeIf { it.isNotBlank() }
+        if (version == null) {
+            displayName
+        } else {
+            stringResource(R.string.savesync_device_client_versioned, displayName, version)
+        }
     }
     val serverLabel = when {
-        connected && !serverVersion.isNullOrBlank() -> "RomM v$serverVersion"
-        connected -> "Connected"
-        else -> "Offline"
+        connected && !serverVersion.isNullOrBlank() ->
+            stringResource(R.string.savesync_device_server_versioned, serverVersion)
+        connected -> stringResource(R.string.savesync_device_server_connected)
+        else -> stringResource(R.string.savesync_device_server_offline)
     }
     if (clientLabel == null && serverLabel.isBlank()) return
     Row(
@@ -365,7 +387,7 @@ private fun DeviceIdPill(deviceIdShort: String) {
             .padding(horizontal = Dimens.spacingSm, vertical = Dimens.spacingXs)
     ) {
         Text(
-            text = "…$deviceIdShort",
+            text = stringResource(R.string.savesync_device_id_pill, deviceIdShort),
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.SemiBold,
             color = color
@@ -383,7 +405,7 @@ private fun SaveCountChip(saveCount: Int) {
             color = MaterialTheme.colorScheme.primary
         )
         Text(
-            text = if (saveCount == 1) "save" else "saves",
+            text = pluralStringResource(R.plurals.savesync_device_save_count_unit, saveCount),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -413,7 +435,7 @@ private fun OtherDevicesPanel(devices: List<DeviceSummary>, hiddenCount: Int, mo
     ) {
         Column(modifier = Modifier.padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm)) {
             Text(
-                text = "Other devices",
+                text = stringResource(R.string.savesync_other_devices_heading),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 modifier = Modifier.padding(bottom = Dimens.spacingXs)
@@ -423,7 +445,11 @@ private fun OtherDevicesPanel(devices: List<DeviceSummary>, hiddenCount: Int, mo
             }
             if (hiddenCount > 0) {
                 Text(
-                    text = "+$hiddenCount more",
+                    text = pluralStringResource(
+                        R.plurals.savesync_other_devices_more,
+                        hiddenCount,
+                        hiddenCount
+                    ),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
                     modifier = Modifier.padding(top = Dimens.spacingXs)
@@ -499,9 +525,12 @@ private fun AccessNoticeCard(notice: SaveAccessNoticeUi) {
                 modifier = Modifier.size(Dimens.iconMd)
             )
             Column(modifier = Modifier.weight(1f)) {
-                val label = if (notice.count == 1) "1 save location inaccessible" else "${notice.count} save locations inaccessible"
                 Text(
-                    text = label,
+                    text = pluralStringResource(
+                        R.plurals.savesync_access_notice_title,
+                        notice.count,
+                        notice.count
+                    ),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -545,13 +574,21 @@ private fun EmptyState(isConnected: Boolean) {
             )
             Spacer(modifier = Modifier.height(Dimens.spacingMd))
             Text(
-                text = if (isConnected) "No game saves synced yet" else "Connect to RomM to sync saves",
+                text = if (isConnected) {
+                    stringResource(R.string.savesync_empty_title_connected)
+                } else {
+                    stringResource(R.string.savesync_empty_title_disconnected)
+                },
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(Dimens.spacingSm))
             Text(
-                text = if (isConnected) "Saves will appear here as you play" else "Open Settings to add your RomM server",
+                text = if (isConnected) {
+                    stringResource(R.string.savesync_empty_message_connected)
+                } else {
+                    stringResource(R.string.savesync_empty_message_disconnected)
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
             )
@@ -615,17 +652,18 @@ private fun AttentionRowCard(
                 Spacer(modifier = Modifier.height(Dimens.spacingSm))
                 ConflictSide(
                     icon = Icons.Default.PhoneAndroid,
-                    label = "Local",
+                    label = stringResource(R.string.savesync_conflict_side_local),
                     time = row.localTime,
-                    device = "this device",
+                    device = stringResource(R.string.savesync_conflict_device_this),
                     isNewer = row.isLocalNewer
                 )
                 Spacer(modifier = Modifier.height(Dimens.spacingXs))
                 ConflictSide(
                     icon = Icons.Default.Cloud,
-                    label = "Server",
+                    label = stringResource(R.string.savesync_conflict_side_server),
                     time = row.serverTime,
-                    device = row.serverDeviceName ?: "another device",
+                    device = row.serverDeviceName
+                        ?: stringResource(R.string.savesync_conflict_device_other),
                     isNewer = !row.isLocalNewer
                 )
                 Spacer(modifier = Modifier.height(Dimens.spacingMd))
@@ -634,19 +672,19 @@ private fun AttentionRowCard(
                     horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
                 ) {
                     ActionButton(
-                        label = "Keep Local",
+                        label = stringResource(R.string.savesync_attention_button_keep_local),
                         isSelected = isFocused && selectedAction == AttentionAction.KEEP_LOCAL,
                         onClick = { onActionClick(AttentionAction.KEEP_LOCAL) },
                         modifier = Modifier.weight(1f)
                     )
                     ActionButton(
-                        label = "Keep Server",
+                        label = stringResource(R.string.savesync_attention_button_keep_server),
                         isSelected = isFocused && selectedAction == AttentionAction.KEEP_SERVER,
                         onClick = { onActionClick(AttentionAction.KEEP_SERVER) },
                         modifier = Modifier.weight(1f)
                     )
                     ActionButton(
-                        label = "Skip",
+                        label = stringResource(R.string.savesync_attention_button_skip),
                         isSelected = isFocused && selectedAction == AttentionAction.SKIP,
                         onClick = { onActionClick(AttentionAction.SKIP) },
                         modifier = Modifier.weight(1f)
@@ -673,15 +711,22 @@ private fun ConflictSide(
             modifier = Modifier.size(Dimens.iconSm)
         )
         Spacer(modifier = Modifier.width(Dimens.spacingXs))
+        val timeText = time?.let { formatRelativeTimeVerbose(LocalContext.current, it) }
+            ?: stringResource(R.string.savesync_conflict_time_unknown)
         Text(
-            text = "$label - ${time?.let { formatRelativeTimeVerbose(it) } ?: "unknown"} ($device)",
+            text = stringResource(
+                R.string.savesync_conflict_side_summary,
+                label,
+                timeText,
+                device
+            ),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurface
         )
         if (isNewer) {
             Spacer(modifier = Modifier.width(Dimens.spacingXs))
             Text(
-                text = "newer",
+                text = stringResource(R.string.savesync_conflict_newer_badge),
                 style = MaterialTheme.typography.labelSmall,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
@@ -828,13 +873,21 @@ private fun GameSaveRowCard(row: GameSaveRow, isFocused: Boolean) {
                     )
                 )
                 val deviceText = when {
-                    row.isLastSyncThisDevice -> "Last write - this device"
-                    row.lastSyncDeviceName != null -> "Last write - ${row.lastSyncDeviceName}"
-                    else -> "Last write - unknown device"
+                    row.isLastSyncThisDevice ->
+                        stringResource(R.string.savesync_game_last_write_this_device)
+                    row.lastSyncDeviceName != null ->
+                        stringResource(R.string.savesync_game_last_write_device, row.lastSyncDeviceName)
+                    else -> stringResource(R.string.savesync_game_last_write_unknown)
                 }
-                val timeSuffix = saveTime?.let { " · ${formatRelativeTimeVerbose(it)}" } ?: ""
+                val lastWriteText = saveTime?.let {
+                    stringResource(
+                        R.string.savesync_game_last_write_time,
+                        deviceText,
+                        formatRelativeTimeVerbose(LocalContext.current, it)
+                    )
+                } ?: deviceText
                 Text(
-                    text = "$deviceText$timeSuffix",
+                    text = lastWriteText,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -873,10 +926,16 @@ private fun CoverThumbnail(coverPath: String?, size: androidx.compose.ui.unit.Dp
 }
 
 @Composable
-private fun JustSyncedPill() = Pill(text = "Just synced", color = MaterialTheme.colorScheme.primary)
+private fun JustSyncedPill() = Pill(
+    text = stringResource(R.string.savesync_game_pill_just_synced),
+    color = MaterialTheme.colorScheme.primary
+)
 
 @Composable
-private fun ConflictPill() = Pill(text = "Conflict", color = MaterialTheme.colorScheme.error)
+private fun ConflictPill() = Pill(
+    text = stringResource(R.string.savesync_game_pill_conflict),
+    color = MaterialTheme.colorScheme.error
+)
 
 @Composable
 private fun Pill(text: String, color: androidx.compose.ui.graphics.Color) {
@@ -922,7 +981,7 @@ private fun ForceSaveCheckCard(
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Scan RomM for missing saves",
+                    text = stringResource(R.string.savesync_force_check_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -930,14 +989,26 @@ private fun ForceSaveCheckCard(
                 Spacer(modifier = Modifier.height(Dimens.spacingXs))
                 val subtitle = when (state) {
                     ForceSaveCheckUiState.Idle ->
-                        "Walks local games and pulls the latest save in each channel from RomM."
-                    ForceSaveCheckUiState.Running -> "Scanning..."
+                        stringResource(R.string.savesync_force_check_idle)
+                    ForceSaveCheckUiState.Running ->
+                        stringResource(R.string.savesync_force_check_running)
                     is ForceSaveCheckUiState.Complete -> when {
                         state.message != null -> state.message
-                        state.queued == 0 -> "Up to date - inspected ${state.inspected} games, nothing new."
-                        else -> "Queued ${state.queued} save(s) from ${state.inspected} games; ${state.downloaded} downloaded."
+                        state.queued == 0 -> pluralStringResource(
+                            R.plurals.savesync_force_check_up_to_date,
+                            state.inspected,
+                            state.inspected
+                        )
+                        else -> pluralStringResource(
+                            R.plurals.savesync_force_check_queued,
+                            state.queued,
+                            state.queued,
+                            state.inspected,
+                            state.downloaded
+                        )
                     }
-                    is ForceSaveCheckUiState.Failed -> "Failed: ${state.message}"
+                    is ForceSaveCheckUiState.Failed ->
+                        stringResource(R.string.savesync_force_check_failed, state.message)
                 }
                 Text(
                     text = subtitle,

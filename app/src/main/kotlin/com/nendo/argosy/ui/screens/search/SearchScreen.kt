@@ -46,10 +46,13 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.FooterHints
@@ -121,9 +124,17 @@ fun SearchScreen(
         when {
             uiState.isSearching -> LoadingState()
             uiState.query.length < MIN_QUERY_LENGTH -> {
-                EmptyState(message = "Type at least 2 characters to search")
+                EmptyState(
+                    message = pluralStringResource(
+                        R.plurals.library_search_min_query_hint,
+                        MIN_QUERY_LENGTH,
+                        MIN_QUERY_LENGTH
+                    )
+                )
             }
-            !uiState.hasResults -> EmptyState(message = "No results for \"${uiState.query}\"")
+            !uiState.hasResults -> EmptyState(
+                message = stringResource(R.string.library_search_no_results, uiState.query)
+            )
             else -> {
                 SearchResults(
                     state = uiState,
@@ -189,9 +200,9 @@ private fun SearchHeader(
                 if (query.isEmpty()) {
                     Text(
                         text = if (mediaSearchable) {
-                            "Search games and media..."
+                            stringResource(R.string.library_search_placeholder_games_and_media)
                         } else {
-                            "Search games..."
+                            stringResource(R.string.library_search_placeholder_games)
                         },
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -253,7 +264,9 @@ private fun SearchResults(
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) {
         if (showHeadings && state.gameResults.isNotEmpty()) {
-            item(key = "heading:games") { GroupHeading(text = "Games") }
+            item(key = "heading:games") {
+                GroupHeading(text = stringResource(R.string.library_search_heading_games))
+            }
         }
         itemsIndexed(state.gameResults, key = { _, result -> result.key }) { index, result ->
             SearchResultRow(
@@ -265,7 +278,9 @@ private fun SearchResults(
         }
 
         if (showHeadings && state.mediaResults.isNotEmpty()) {
-            item(key = "heading:media") { GroupHeading(text = "Media") }
+            item(key = "heading:media") {
+                GroupHeading(text = stringResource(R.string.library_search_heading_media))
+            }
         }
         itemsIndexed(state.mediaResults, key = { _, result -> result.key }) { index, result ->
             val focusIndex = state.gameResults.size + index
@@ -361,7 +376,8 @@ private fun RowScope.GameResultContent(result: SearchResultUi.Game) {
 
     ResultLabels(
         title = result.title,
-        primaryDetail = result.platformName,
+        primaryDetail = result.platformName
+            ?: stringResource(R.string.library_search_result_platform_unknown),
         details = listOfNotNull(result.releaseYear?.toString(), result.developer)
     )
 }
@@ -404,7 +420,7 @@ private fun RowScope.MediaResultContent(result: SearchResultUi.Media) {
 
     ResultLabels(
         title = result.title,
-        primaryDetail = result.libraryName ?: result.kindLabel,
+        primaryDetail = result.libraryName ?: stringResource(result.kindLabelRes),
         details = listOfNotNull(result.releaseYear?.toString())
     )
 }
@@ -486,11 +502,14 @@ private fun SearchFooter(
     showGroupJump: Boolean,
     onHintClick: ((InputButton) -> Unit)? = null
 ) {
-    val hints = remember(showGroupJump) {
+    val groupJumpHint = stringResource(R.string.library_search_hint_group_jump)
+    val selectHint = stringResource(R.string.library_search_hint_select)
+    val backHint = stringResource(R.string.library_search_hint_back)
+    val hints = remember(showGroupJump, groupJumpHint, selectHint, backHint) {
         buildList {
-            if (showGroupJump) add(InputButton.LB_RB to "Games / Media")
-            add(InputButton.A to "Select")
-            add(InputButton.B to "Back/Clear")
+            if (showGroupJump) add(InputButton.LB_RB to groupJumpHint)
+            add(InputButton.A to selectHint)
+            add(InputButton.B to backHint)
         }
     }
     FooterHints(
@@ -499,7 +518,11 @@ private fun SearchFooter(
         trailingContent = if (resultCount > 0) {
             {
                 Text(
-                    text = "$resultCount results",
+                    text = pluralStringResource(
+                        R.plurals.library_search_result_count,
+                        resultCount,
+                        resultCount
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ===== Step 1: welcome ===== -->
+
+    <string name="firstrun_welcome_intro">स्वागत है! चलिए आपकी सेटअप शुरू करते हैं।</string>
+    <string name="firstrun_welcome_button_start">शुरू करें</string>
+
+    <!-- ===== Step 2a: entering the RomM server address ===== -->
+
+    <string name="firstrun_romm_url_title">Rom Manager लॉगिन</string>
+    <string name="firstrun_romm_url_field_label">सर्वर URL</string>
+    <string name="firstrun_romm_url_hint">अपना RomM सर्वर पता दर्ज करें, हम साइन इन करने का तरीका पता कर लेंगे।</string>
+    <string name="firstrun_romm_url_button_continue">जारी रखें</string>
+    <string name="firstrun_romm_url_button_checking">जांच हो रही है...</string>
+    <string name="firstrun_romm_url_button_back">वापस</string>
+    <string name="firstrun_romm_url_error_blank">एक सर्वर URL दर्ज करें</string>
+
+    <!-- ===== Step 2b: signing in with a pairing code typed by hand ===== -->
+
+    <string name="firstrun_pairing_code_title">पेयरिंग कोड दर्ज करें</string>
+    <string name="firstrun_pairing_code_hint">RomM वेब UI में एक API टोकन बनाएं, फिर 8-अक्षर वाला कोड दर्ज करें।</string>
+    <string name="firstrun_pairing_code_clear_description">कोड साफ़ करें</string>
+    <string name="firstrun_pairing_code_button_connect">कनेक्ट करें</string>
+    <string name="firstrun_pairing_code_button_connecting">कनेक्ट हो रहा है...</string>
+    <string name="firstrun_pairing_code_button_edit_url">URL संपादित करें</string>
+    <string name="firstrun_pairing_code_button_scan">QR कोड स्कैन करें</string>
+    <string name="firstrun_pairing_code_button_device_pairing">इसके बजाय QR पेयरिंग इस्तेमाल करें</string>
+    <string name="firstrun_pairing_code_error_incomplete">पूरा 8-अक्षर वाला पेयरिंग कोड दर्ज करें</string>
+
+    <!-- ===== Step 2c: signing in by approving this device elsewhere ===== -->
+
+    <string name="firstrun_device_pairing_title">पेयर करने के लिए स्कैन करें</string>
+    <string name="firstrun_device_pairing_hint">इस कोड को अपने फ़ोन से स्कैन करें, या यहीं इस डिवाइस पर साइन इन करें, फिर इसे RomM में स्वीकृत करें।</string>
+    <string name="firstrun_device_pairing_no_browser">इस डिवाइस पर कोई ब्राउज़र नहीं है। कोड स्कैन करें या इसके बजाय पेयरिंग कोड इस्तेमाल करें।</string>
+    <string name="firstrun_device_pairing_button_sign_in">इस डिवाइस पर साइन इन करें</string>
+    <string name="firstrun_device_pairing_button_manual_code">पेयरिंग कोड इस्तेमाल करें</string>
+    <string name="firstrun_device_pairing_button_back">वापस</string>
+    <string name="firstrun_device_pairing_error_denied">सर्वर पर पेयरिंग अस्वीकार कर दी गई</string>
+    <string name="firstrun_device_pairing_error_expired">पेयरिंग कोड समय समाप्त हो गया, फिर से शुरू करें</string>
+    <string name="firstrun_device_pairing_error_unexpected">अप्रत्याशित पेयरिंग परिणाम</string>
+
+    <!-- ===== Step 3: sign-in succeeded ===== -->
+
+    <string name="firstrun_romm_success_title">सफलतापूर्वक कनेक्ट हुआ!</string>
+    <string name="firstrun_romm_success_server">सर्वर: %1$s</string>
+    <string name="firstrun_romm_success_library">%2$s में %1$s</string>
+    <plurals name="firstrun_romm_success_game_count">
+        <item quantity="one">%d गेम</item>
+        <item quantity="other">%d गेम</item>
+    </plurals>
+    <plurals name="firstrun_romm_success_platform_count">
+        <item quantity="one">%d प्लेटफ़ॉर्म</item>
+        <item quantity="other">%d प्लेटफ़ॉर्म</item>
+    </plurals>
+    <string name="firstrun_romm_success_button_continue">जारी रखें</string>
+    <string name="firstrun_romm_success_error_library_fetch">लाइब्रेरी प्राप्त करने में विफल: %1$s</string>
+
+    <!-- ===== Step 4: Android permissions ===== -->
+
+    <string name="firstrun_permissions_title">अनुमतियां</string>
+    <string name="firstrun_permissions_intro">आपकी लाइब्रेरी और एमुलेटर प्रबंधित करने के लिए Argosy को इनकी जरूरत है।</string>
+    <string name="firstrun_permissions_storage_title">स्टोरेज प्रबंधित करें (आवश्यक)</string>
+    <string name="firstrun_permissions_storage_description">फ़ोल्डर ब्राउज़ करने, गेम डाउनलोड करने और सेव सिंक करने के लिए आवश्यक।</string>
+    <string name="firstrun_permissions_notifications_title">सूचनाएं</string>
+    <string name="firstrun_permissions_notifications_description">डाउनलोड और सिंक की प्रगति दिखाता है।</string>
+    <string name="firstrun_permissions_overlay_title">अन्य ऐप्स के ऊपर दिखाएं</string>
+    <string name="firstrun_permissions_overlay_description">इन-गेम सेव डिटेक्शन ओवरले सक्षम करता है।</string>
+    <string name="firstrun_permissions_usage_title">उपयोग एक्सेस</string>
+    <string name="firstrun_permissions_usage_description">सटीक खेलने के समय की ट्रैकिंग और रिज़्यूम सक्षम करता है।</string>
+    <string name="firstrun_permissions_button_continue">जारी रखें</string>
+    <string name="firstrun_permissions_note_optional">आप बाकी अनुमतियां बाद में सेटिंग्स से दे सकते हैं।</string>
+    <string name="firstrun_permissions_note_storage_required">जारी रखने के लिए स्टोरेज एक्सेस दें। बाकी वैकल्पिक हैं और बाद में सेटिंग्स से दी जा सकती हैं।</string>
+
+    <!-- ===== Step 5: where downloaded games are kept ===== -->
+
+    <string name="firstrun_rom_path_title">गेम्स पाथ</string>
+    <string name="firstrun_rom_path_description">चुनें कि आपकी गेम फ़ाइलें कहां रखी जाएंगी। हम हर कंसोल के लिए अपने आप सबफ़ोल्डर बना देंगे।</string>
+    <string name="firstrun_rom_path_button_continue">जारी रखें</string>
+    <string name="firstrun_rom_path_button_change_folder">अलग फ़ोल्डर चुनें</string>
+    <string name="firstrun_rom_path_button_choose_folder">फ़ोल्डर चुनें</string>
+
+    <!-- ===== Step 6: where cover art is cached ===== -->
+
+    <string name="firstrun_image_cache_optional_badge">वैकल्पिक</string>
+    <string name="firstrun_image_cache_title">इमेज कैश लोकेशन</string>
+    <string name="firstrun_image_cache_description">डिफ़ॉल्ट रूप से, गेम आर्टवर्क ऐप के इंटरनल कैश में रखा जाता है। अगर आपके डिवाइस में स्टोरेज सीमित है, तो आप एक बाहरी लोकेशन चुन सकते हैं।</string>
+    <string name="firstrun_image_cache_button_continue">जारी रखें</string>
+    <string name="firstrun_image_cache_button_change_folder">अलग फ़ोल्डर चुनें</string>
+    <string name="firstrun_image_cache_button_choose_folder">बाहरी फ़ोल्डर चुनें</string>
+    <string name="firstrun_image_cache_button_use_default">डिफ़ॉल्ट (इंटरनल) इस्तेमाल करें</string>
+    <string name="firstrun_image_cache_folder_note">इमेज एक \'%1$s\' सबफ़ोल्डर में रखी जाएंगी।</string>
+
+    <!-- ===== Step 7: choosing which platforms to sync ===== -->
+
+    <string name="firstrun_platform_select_eyebrow">प्लेटफ़ॉर्म चुनें</string>
+    <string name="firstrun_platform_select_title">चुनें कि किन प्लेटफ़ॉर्म को सिंक करना है</string>
+    <plurals name="firstrun_platform_select_selected_count">
+        <item quantity="one">%2$d में से %1$d प्लेटफ़ॉर्म चुना गया</item>
+        <item quantity="other">%2$d में से %1$d प्लेटफ़ॉर्म चुने गए</item>
+    </plurals>
+    <plurals name="firstrun_platform_select_game_count">
+        <item quantity="one">%d गेम</item>
+        <item quantity="other">%d गेम</item>
+    </plurals>
+    <string name="firstrun_platform_select_button_select_all">सभी चुनें</string>
+    <string name="firstrun_platform_select_button_deselect_all">सभी अनचुनें</string>
+    <string name="firstrun_platform_select_button_continue">जारी रखें</string>
+
+    <!-- ===== Step 8: offering to download emulator cores ===== -->
+
+    <string name="firstrun_core_prompt_title">एमुलेटर कोर डाउनलोड करें?</string>
+    <plurals name="firstrun_core_prompt_available_count">
+        <item quantity="one">आपके चुने प्लेटफ़ॉर्म के लिए %d libretro कोर उपलब्ध है।</item>
+        <item quantity="other">आपके चुने प्लेटफ़ॉर्म के लिए %d libretro कोर उपलब्ध हैं।</item>
+    </plurals>
+    <string name="firstrun_core_prompt_explainer">ये बिना अलग एमुलेटर ऐप के बिल्ट-इन एमुलेशन को सक्षम करते हैं।</string>
+    <string name="firstrun_core_prompt_all_installed">आपके चुने प्लेटफ़ॉर्म के लिए सभी कोर पहले से इंस्टॉल्ड हैं।</string>
+    <string name="firstrun_core_prompt_button_download">कोर डाउनलोड करें</string>
+    <string name="firstrun_core_prompt_button_skip">छोड़ें (बिल्ट-इन एमुलेटर बंद करें)</string>
+    <string name="firstrun_core_prompt_button_continue">जारी रखें</string>
+    <string name="firstrun_core_prompt_note_skip">छोड़ने पर बिल्ट-इन एमुलेटर बंद हो जाता है। आप इसे बाद में सेटिंग्स से फिर से सक्षम कर सकते हैं और कोर डाउनलोड कर सकते हैं।</string>
+
+    <!-- ===== Step 9: downloading the cores ===== -->
+
+    <string name="firstrun_core_download_title">एमुलेटर कोर डाउनलोड हो रहे हैं</string>
+    <string name="firstrun_core_download_none_needed">चुने गए प्लेटफ़ॉर्म के लिए किसी कोर की जरूरत नहीं</string>
+    <string name="firstrun_core_download_button_continue_no_cores">जारी रखें</string>
+    <plurals name="firstrun_core_download_progress_count">
+        <item quantity="one">%2$d में से %1$d कोर डाउनलोड हो रहा है...</item>
+        <item quantity="other">%2$d में से %1$d कोर डाउनलोड हो रहे हैं...</item>
+    </plurals>
+    <plurals name="firstrun_core_download_partial_count">
+        <item quantity="one">%2$d में से %1$d कोर डाउनलोड हुआ</item>
+        <item quantity="other">%2$d में से %1$d कोर डाउनलोड हुए</item>
+    </plurals>
+    <string name="firstrun_core_download_all_done">सभी कोर डाउनलोड हो गए</string>
+    <string name="firstrun_core_download_note_skip">अगर आप स्टैंडअलोन एमुलेटर इस्तेमाल करना पसंद करते हैं तो छोड़ दें</string>
+    <string name="firstrun_core_download_button_skip">छोड़ें</string>
+    <string name="firstrun_core_download_button_continue">जारी रखें</string>
+    <string name="firstrun_core_download_status_complete_description">पूर्ण</string>
+    <string name="firstrun_core_download_status_failed_description">विफल</string>
+    <string name="firstrun_core_download_retry_description">पुनः प्रयास करें</string>
+    <string name="firstrun_core_download_button_retry">पुनः प्रयास</string>
+
+    <!-- ===== Step 10: setup finished ===== -->
+
+    <string name="firstrun_complete_title">सब तैयार है!</string>
+    <string name="firstrun_complete_library">%2$s में %1$s सिंक के लिए तैयार</string>
+    <plurals name="firstrun_complete_game_count">
+        <item quantity="one">%d गेम</item>
+        <item quantity="other">%d गेम</item>
+    </plurals>
+    <plurals name="firstrun_complete_platform_count">
+        <item quantity="one">%d प्लेटफ़ॉर्म</item>
+        <item quantity="other">%d प्लेटफ़ॉर्म</item>
+    </plurals>
+    <string name="firstrun_complete_hint">शुरू करने के लिए कलेक्शन सेटिंग्स से अपनी लाइब्रेरी सिंक करें।</string>
+    <string name="firstrun_complete_button_start">खेलना शुरू करें</string>
+</resources>

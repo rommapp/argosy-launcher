@@ -44,11 +44,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.AlphabetSidebar
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.InputButton
@@ -121,7 +124,7 @@ fun VirtualCategoryScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Loading...",
+                            text = stringResource(R.string.collections_category_loading),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -181,22 +184,35 @@ fun VirtualCategoryScreen(
         FooterHints(
             hints = if (uiState.isSearchActive) {
                 listOf(
-                    InputButton.A to "Open",
-                    InputButton.B to "Close Search"
+                    InputButton.A to stringResource(R.string.collections_category_hint_search_open),
+                    InputButton.B to stringResource(R.string.collections_category_hint_search_close)
                 )
             } else {
                 buildList {
-                    add(InputButton.DPAD to "Navigate")
-                    add(InputButton.A to "Open")
-                    add(InputButton.B to "Back")
-                    add(InputButton.X to "Search")
-                    add(InputButton.Y to if (uiState.isPinned) "Unpin" else "Pin")
+                    add(InputButton.DPAD to stringResource(R.string.collections_category_hint_navigate))
+                    add(InputButton.A to stringResource(R.string.collections_category_hint_open))
+                    add(InputButton.B to stringResource(R.string.collections_category_hint_back))
+                    add(InputButton.X to stringResource(R.string.collections_category_hint_search))
+                    add(
+                        InputButton.Y to stringResource(
+                            if (uiState.isPinned) R.string.collections_category_hint_unpin else R.string.collections_category_hint_pin
+                        )
+                    )
                     if (uiState.sectionLabels.size > 1) {
-                        add(InputButton.LT_RT to "Jump")
+                        add(InputButton.LT_RT to stringResource(R.string.collections_category_hint_jump))
                     }
-                    add(InputButton.START to if (uiState.isRefreshing) "Refreshing..." else "Refresh")
+                    add(
+                        InputButton.START to stringResource(
+                            if (uiState.isRefreshing) R.string.collections_category_hint_refreshing else R.string.collections_category_hint_refresh
+                        )
+                    )
                     if (uiState.canDownloadAll) {
-                        add(InputButton.SELECT to "Download All (${uiState.downloadableGamesCount})")
+                        add(
+                            InputButton.SELECT to stringResource(
+                                R.string.collections_category_hint_download_all,
+                                uiState.downloadableGamesCount
+                            )
+                        )
                     }
                 }
             },
@@ -278,7 +294,7 @@ private fun DownloadAllModal(
                 Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
                 Text(
-                    text = "Queuing Downloads",
+                    text = stringResource(R.string.collections_category_downloadall_title),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -286,7 +302,12 @@ private fun DownloadAllModal(
                 Spacer(modifier = Modifier.height(Dimens.spacingSm))
 
                 Text(
-                    text = "$currentIndex of $totalCount games",
+                    text = pluralStringResource(
+                        R.plurals.collections_category_downloadall_progress,
+                        totalCount,
+                        currentIndex,
+                        totalCount
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -319,7 +340,7 @@ private fun VirtualCategoryHeader(
         IconButton(onClick = onBack) {
             Icon(
                 Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back",
+                contentDescription = stringResource(R.string.collections_category_back_description),
                 tint = MaterialTheme.colorScheme.onSurface
             )
         }
@@ -335,7 +356,7 @@ private fun VirtualCategoryHeader(
                 modifier = Modifier
                     .weight(1f)
                     .focusRequester(focusRequester),
-                placeholder = { Text("Search $categoryName") },
+                placeholder = { Text(stringResource(R.string.collections_category_search_placeholder, categoryName)) },
                 singleLine = true,
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -345,7 +366,7 @@ private fun VirtualCategoryHeader(
             IconButton(onClick = onSearchClose) {
                 Icon(
                     Icons.Default.Close,
-                    contentDescription = "Close search",
+                    contentDescription = stringResource(R.string.collections_category_close_search_description),
                     tint = MaterialTheme.colorScheme.onSurface
                 )
             }
@@ -357,7 +378,7 @@ private fun VirtualCategoryHeader(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "$gameCount games",
+                    text = pluralStringResource(R.plurals.collections_category_header_game_count, gameCount, gameCount),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -365,7 +386,7 @@ private fun VirtualCategoryHeader(
             IconButton(onClick = onSearchOpen) {
                 Icon(
                     Icons.Default.Search,
-                    contentDescription = "Search",
+                    contentDescription = stringResource(R.string.collections_category_search_description),
                     tint = MaterialTheme.colorScheme.onSurface
                 )
             }
@@ -388,7 +409,7 @@ private fun EmptyVirtualCategory() {
             )
             Spacer(modifier = Modifier.height(Dimens.spacingMd))
             Text(
-                text = "No games in this category",
+                text = stringResource(R.string.collections_category_empty_title),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

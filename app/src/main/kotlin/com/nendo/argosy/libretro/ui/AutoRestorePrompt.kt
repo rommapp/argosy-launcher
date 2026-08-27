@@ -23,9 +23,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.theme.gripReserveBottomInset
@@ -97,7 +99,7 @@ fun AutoRestorePrompt(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    text = "Resume from save state?",
+                    text = stringResource(R.string.ingame_autorestore_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
@@ -109,13 +111,13 @@ fun AutoRestorePrompt(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     PromptButton(
-                        text = "Yes",
+                        text = stringResource(R.string.ingame_autorestore_confirm),
                         isFocused = focusedIndex == 0,
                         onClick = onRestore,
                         modifier = Modifier.weight(1f)
                     )
                     PromptButton(
-                        text = "No",
+                        text = stringResource(R.string.ingame_autorestore_decline),
                         isFocused = focusedIndex == 1,
                         onClick = onSkip,
                         modifier = Modifier.weight(1f)

@@ -1,7 +1,9 @@
 package com.nendo.argosy.ui.screens.settings
 
 import android.content.Intent
+import androidx.annotation.StringRes
 import androidx.lifecycle.viewModelScope
+import com.nendo.argosy.R
 import com.nendo.argosy.data.emulator.LaunchMethod
 import com.nendo.argosy.data.emulator.RomBindingFormat
 import com.nendo.argosy.data.local.entity.EmulatorLaunchArgsEntity
@@ -215,32 +217,32 @@ internal sealed class LaunchArgsRow {
     data object DataBinding : LaunchArgsRow()
     data object ExtraBinding : LaunchArgsRow()
     data object ClipDataBinding : LaunchArgsRow()
-    data class LockedBinding(val label: String, val value: String) : LaunchArgsRow() {
+    data class LockedBinding(@StringRes val labelRes: Int, val value: String) : LaunchArgsRow() {
         override val interactive: Boolean get() = false
     }
-    data class Flag(val label: String, val bit: Int) : LaunchArgsRow()
+    data class Flag(@StringRes val labelRes: Int, val bit: Int) : LaunchArgsRow()
     data object MimeType : LaunchArgsRow()
     data object CustomExtras : LaunchArgsRow()
 }
 
 internal fun launchArgsModalRows(state: LaunchArgsModalState): List<LaunchArgsRow> = buildList {
     if (state.dataBindingLocked) {
-        add(LaunchArgsRow.LockedBinding("Data URI", state.defaultDataBinding))
+        add(LaunchArgsRow.LockedBinding(R.string.settings_launch_args_data_uri_label, state.defaultDataBinding))
     } else {
         add(LaunchArgsRow.DataBinding)
     }
     if (state.extraBindingLocked) {
-        add(LaunchArgsRow.LockedBinding("Extras", state.defaultExtraBinding))
+        add(LaunchArgsRow.LockedBinding(R.string.settings_launch_args_extras_label, state.defaultExtraBinding))
     } else {
         add(LaunchArgsRow.ExtraBinding)
     }
     add(LaunchArgsRow.ClipDataBinding)
-    add(LaunchArgsRow.Flag("New task", Intent.FLAG_ACTIVITY_NEW_TASK))
-    add(LaunchArgsRow.Flag("Clear task", Intent.FLAG_ACTIVITY_CLEAR_TASK))
-    add(LaunchArgsRow.Flag("No history", Intent.FLAG_ACTIVITY_NO_HISTORY))
-    add(LaunchArgsRow.Flag("Single top", Intent.FLAG_ACTIVITY_SINGLE_TOP))
-    add(LaunchArgsRow.Flag("Grant read URI", Intent.FLAG_GRANT_READ_URI_PERMISSION))
-    add(LaunchArgsRow.Flag("Clear top", Intent.FLAG_ACTIVITY_CLEAR_TOP))
+    add(LaunchArgsRow.Flag(R.string.settings_launch_args_flag_new_task_label, Intent.FLAG_ACTIVITY_NEW_TASK))
+    add(LaunchArgsRow.Flag(R.string.settings_launch_args_flag_clear_task_label, Intent.FLAG_ACTIVITY_CLEAR_TASK))
+    add(LaunchArgsRow.Flag(R.string.settings_launch_args_flag_no_history_label, Intent.FLAG_ACTIVITY_NO_HISTORY))
+    add(LaunchArgsRow.Flag(R.string.settings_launch_args_flag_single_top_label, Intent.FLAG_ACTIVITY_SINGLE_TOP))
+    add(LaunchArgsRow.Flag(R.string.settings_launch_args_flag_grant_uri_label, Intent.FLAG_GRANT_READ_URI_PERMISSION))
+    add(LaunchArgsRow.Flag(R.string.settings_launch_args_flag_clear_top_label, Intent.FLAG_ACTIVITY_CLEAR_TOP))
     add(LaunchArgsRow.MimeType)
     add(LaunchArgsRow.CustomExtras)
 }

@@ -42,13 +42,19 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.animateScrollToItemCentered
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
 import com.nendo.argosy.ui.screens.media.MediaDetailRow
 import com.nendo.argosy.ui.screens.media.MediaDetailSection
 import com.nendo.argosy.ui.screens.media.MediaDetailUiState
+import com.nendo.argosy.ui.screens.media.MediaDownloadSummary
+import com.nendo.argosy.ui.screens.media.episodeLabel
 import com.nendo.argosy.ui.screens.media.formatPosition
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
@@ -260,26 +266,76 @@ private fun MediaCountChip(count: Int, modifier: Modifier = Modifier) {
     )
 }
 
+@Composable
 private fun playLabel(uiState: MediaDetailUiState): String {
     val target = uiState.playTarget
+    val episodeLabel = target?.episodeLabel(LocalContext.current)
     return when {
-        target == null -> "Play"
-        target.hasResumePosition -> "Resume ${formatPosition(target.resumeTicks)}"
-        target.episodeLabel != null -> "Play ${target.episodeLabel}"
-        else -> "Play"
+        target == null -> stringResource(R.string.media_rail_play)
+        target.hasResumePosition -> stringResource(
+            R.string.media_rail_play_resume,
+            formatPosition(target.resumeTicks)
+        )
+        episodeLabel != null -> stringResource(R.string.media_rail_play_episode, episodeLabel)
+        else -> stringResource(R.string.media_rail_play)
     }
 }
 
+@Composable
 private fun labelFor(row: MediaDetailRow, uiState: MediaDetailUiState): String = when (row) {
     MediaDetailRow.PLAY -> playLabel(uiState)
-    MediaDetailRow.DOWNLOAD -> uiState.downloadSummary.label
-    MediaDetailRow.FAVORITE -> if (uiState.item?.isFavorite == true) "Favorited" else "Favorite"
-    MediaDetailRow.WATCHED -> if (uiState.item?.played == true) "Watched" else "Mark Watched"
-    MediaDetailRow.OPTIONS -> "Options"
-    MediaDetailRow.SEASONS -> "Seasons"
-    MediaDetailRow.EPISODES -> "Episodes"
-    MediaDetailRow.CAST -> "Cast"
-    MediaDetailRow.SIMILAR -> "More Like This"
+    MediaDetailRow.DOWNLOAD -> downloadLabel(uiState.downloadSummary)
+    MediaDetailRow.FAVORITE -> if (uiState.item?.isFavorite == true) {
+        stringResource(R.string.media_rail_favorited)
+    } else {
+        stringResource(R.string.media_rail_favorite)
+    }
+    MediaDetailRow.WATCHED -> if (uiState.item?.played == true) {
+        stringResource(R.string.media_rail_watched)
+    } else {
+        stringResource(R.string.media_rail_mark_watched)
+    }
+    MediaDetailRow.OPTIONS -> stringResource(R.string.media_rail_options)
+    MediaDetailRow.SEASONS -> stringResource(R.string.media_rail_seasons)
+    MediaDetailRow.EPISODES -> stringResource(R.string.media_rail_episodes)
+    MediaDetailRow.CAST -> stringResource(R.string.media_rail_cast)
+    MediaDetailRow.SIMILAR -> stringResource(R.string.media_rail_similar)
+}
+
+/**
+ * How much of this title is on the device, as one line. Copies on storage that is not connected are
+ * reported as a note beside the count rather than taken out of it.
+ */
+@Composable
+private fun downloadLabel(summary: MediaDownloadSummary): String {
+    val base = when {
+        summary.known == 0 -> stringResource(R.string.media_rail_download)
+        summary.isComplete && summary.pending == 0 ->
+            stringResource(R.string.media_rail_download_complete)
+        summary.pending > 0 -> stringResource(
+            R.string.media_rail_download_progress_queued,
+            summary.downloaded,
+            summary.known,
+            summary.pending
+        )
+        summary.downloaded > 0 -> stringResource(
+            R.string.media_rail_download_progress,
+            summary.downloaded,
+            summary.known
+        )
+        else -> stringResource(R.string.media_rail_download)
+    }
+    if (summary.unavailable == 0) return base
+    val note = if (summary.known == 1) {
+        stringResource(R.string.media_rail_download_note_one_unavailable)
+    } else {
+        pluralStringResource(
+            R.plurals.media_rail_download_note_unavailable,
+            summary.unavailable,
+            summary.unavailable
+        )
+    }
+    return stringResource(R.string.media_rail_download_with_note, base, note)
 }
 
 private fun iconFor(row: MediaDetailRow, uiState: MediaDetailUiState): ImageVector = when (row) {

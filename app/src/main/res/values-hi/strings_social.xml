@@ -1,0 +1,342 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- SocialScreen.kt - top-level feed/friends/notifications/profile tab screen -->
+
+    <string name="social_feed_loading_connecting">कनेक्ट हो रहा है...</string>
+    <string name="social_feed_loading_community">कम्युनिटी फ़ीड लोड हो रहा है...</string>
+    <string name="social_feed_loading_friends">फ़ीड लोड हो रहा है...</string>
+    <string name="social_feed_community_badge">कम्युनिटी फ़ीड</string>
+
+    <string name="social_feed_hint_view">देखें</string>
+    <string name="social_feed_hint_unlike">लाइक हटाएं</string>
+    <string name="social_feed_hint_like">लाइक करें</string>
+    <string name="social_feed_hint_switch_to_friends">फ्रेंड्स</string>
+    <string name="social_feed_hint_switch_to_community">कम्युनिटी</string>
+    <string name="social_feed_hint_options">विकल्प</string>
+
+    <string name="social_friends_hint_accept">स्वीकार करें</string>
+    <string name="social_friends_hint_decline">अस्वीकार करें</string>
+    <string name="social_friends_hint_cancel_request">रद्द करें</string>
+    <string name="social_friends_hint_join">जॉइन करें</string>
+    <string name="social_friends_hint_view_profile">प्रोफ़ाइल</string>
+    <string name="social_friends_hint_favorite">पसंदीदा</string>
+
+    <string name="social_notifications_hint_open">खोलें</string>
+    <string name="social_notifications_hint_read_all">सभी पढ़ें</string>
+    <string name="social_notifications_loading">सूचनाएं लोड हो रही हैं...</string>
+
+    <string name="social_profile_hint_avatar">अवतार</string>
+    <string name="social_profile_hint_view_game">गेम देखें</string>
+    <string name="social_profile_hint_settings">सेटिंग्स</string>
+
+    <string name="social_tabbar_feed">फ़ीड</string>
+    <string name="social_tabbar_friends">फ्रेंड्स</string>
+    <string name="social_tabbar_alerts">अलर्ट</string>
+    <string name="social_tabbar_profile">प्रोफ़ाइल</string>
+    <string name="social_tabbar_unread_overflow">99+</string>
+
+    <string name="social_notconnected_title">कनेक्ट नहीं है</string>
+    <string name="social_notconnected_body">फ्रेंड की गतिविधि देखने के लिए सेटिंग्स में अपना खाता लिंक करें</string>
+
+    <string name="social_error_prefix">त्रुटि: %1$s</string>
+
+    <string name="social_emptyfeed_title">अभी तक कोई गतिविधि नहीं</string>
+    <string name="social_emptyfeed_body_community">यहां पोस्ट देखने के लिए गेम कम्युनिटी को फॉलो करें</string>
+    <string name="social_emptyfeed_body_friends">आपके फ्रेंड्स की गेमिंग गतिविधि यहां दिखेगी</string>
+
+    <string name="social_feedcontent_header_title">गतिविधि</string>
+    <plurals name="social_feedcontent_event_count">
+        <item quantity="one">%1$d इवेंट</item>
+        <item quantity="other">%1$d इवेंट</item>
+    </plurals>
+
+    <string name="social_doodlecard_shared_label">एक डूडल शेयर किया</string>
+
+    <string name="social_startedplayingfooter_likes_desc">लाइक</string>
+    <string name="social_startedplayingfooter_comments_desc">कमेंट</string>
+    <string name="social_feedeventcardfooter_likes_desc">लाइक</string>
+    <string name="social_feedeventcardfooter_comments_desc">कमेंट</string>
+
+    <string name="social_feed_desc_started_playing">पहली बार खेला</string>
+    <plurals name="social_feed_desc_play_milestone">
+        <item quantity="one">%1$d घंटा पूरा किया</item>
+        <item quantity="other">%1$d घंटे पूरे किए</item>
+    </plurals>
+    <string name="social_feed_desc_marathon_session">%1$dh का मैराथन सेशन खेला</string>
+    <string name="social_feed_desc_completed">पूरा किया</string>
+    <string name="social_feed_desc_achievement_unlocked">\"%1$s\" अनलॉक किया</string>
+    <string name="social_feed_desc_achievement_unlocked_fallback_name">एक अचीवमेंट</string>
+    <plurals name="social_feed_desc_achievement_milestone">
+        <item quantity="one">%1$d अचीवमेंट अर्जित किया</item>
+        <item quantity="other">%1$d अचीवमेंट अर्जित किए</item>
+    </plurals>
+    <string name="social_feed_desc_perfect_game">मास्टर किया</string>
+    <string name="social_feed_desc_game_added">अपनी लाइब्रेरी में जोड़ा</string>
+    <string name="social_feed_desc_game_favorited">पसंदीदा बनाया</string>
+    <string name="social_feed_desc_game_rated">%1$s रेटिंग दी</string>
+    <string name="social_feed_desc_friend_added">%1$s से दोस्ती की</string>
+    <string name="social_feed_desc_friend_added_fallback_name">किसी से</string>
+    <string name="social_feed_desc_collection_shared">\"%1$s\" कलेक्शन शेयर किया</string>
+    <string name="social_feed_desc_collection_saved">\"%1$s\" कलेक्शन सेव किया</string>
+    <string name="social_feed_desc_collection_created">\"%1$s\" कलेक्शन बनाया</string>
+    <plurals name="social_feed_desc_collection_updated">
+        <item quantity="one">\"%2$s\" में %1$d गेम जोड़ा</item>
+        <item quantity="other">\"%2$s\" में %1$d गेम जोड़े</item>
+    </plurals>
+    <string name="social_feed_desc_collection_fallback_name">एक कलेक्शन</string>
+    <string name="social_feed_desc_doodle">एक डूडल शेयर किया</string>
+    <string name="social_feed_desc_discussion_shared_post">एक पोस्ट शेयर की</string>
+    <string name="social_feed_desc_discussion_truncated">%1$s...</string>
+
+    <!-- CommunitySearchDialog -->
+    <string name="social_communitysearch_modal_title">कम्युनिटी खोजें</string>
+    <string name="social_communitysearch_hint_browse">ब्राउज़ करें</string>
+    <string name="social_communitysearch_hint_navigate">नेविगेट</string>
+    <string name="social_communitysearch_hint_toggle_follow">फॉलो/अनफॉलो</string>
+    <string name="social_communitysearch_hint_close">बंद करें</string>
+    <string name="social_communitysearch_placeholder">किसी गेम को खोजें...</string>
+    <string name="social_communitysearch_following">फॉलो कर रहे हैं</string>
+    <string name="social_communitysearch_follow">फॉलो करें</string>
+    <string name="social_communitysearch_no_results">कोई गेम नहीं मिला</string>
+
+    <!-- FeedOptionsModal.kt - post options / avatar options / report reason modals -->
+
+    <string name="social_feedoptions_modal_title">विकल्प</string>
+    <string name="social_feedoptions_option_find_communities">कम्युनिटी खोजें</string>
+    <string name="social_feedoptions_option_create_post">पोस्ट बनाएं</string>
+    <string name="social_feedoptions_option_view_profile">%1$s की प्रोफ़ाइल देखें</string>
+    <string name="social_feedoptions_option_share_screenshot">स्क्रीनशॉट शेयर करें</string>
+    <string name="social_feedoptions_option_report_post">पोस्ट रिपोर्ट करें</string>
+    <string name="social_feedoptions_option_hide_post">पोस्ट छिपाएं</string>
+
+    <string name="social_avataroptions_modal_title">अवतार</string>
+
+    <string name="social_reportreason_modal_title">रिपोर्ट का कारण</string>
+    <string name="social_reportreason_spam">स्पैम या दोहराया गया कंटेंट</string>
+    <string name="social_reportreason_harassment">उत्पीड़न या बुलिंग</string>
+    <string name="social_reportreason_inappropriate">अनुचित या आपत्तिजनक</string>
+    <string name="social_reportreason_misinformation">गलत या भ्रामक जानकारी</string>
+
+    <!-- SocialViewModel.kt - AvatarModalOption labels, dead legacy netplay-join path -->
+
+    <string name="social_avatar_option_edit_doodle">डूडल संपादित करें</string>
+    <string name="social_avatar_option_use_doodle">डूडल इस्तेमाल करें</string>
+    <string name="social_avatar_option_use_initials">इनिशियल इस्तेमाल करें</string>
+
+    <string name="social_viewmodel_legacy_joining_title">%1$s में जॉइन हो रहे हैं</string>
+    <string name="social_viewmodel_legacy_checking_compatibility">अनुकूलता जांची जा रही है...</string>
+
+    <!-- PostEditorScreen.kt / PostEditorViewModel.kt -->
+
+    <string name="social_posteditor_screen_title">पोस्ट बनाएं</string>
+    <string name="social_posteditor_body_counter">%1$d/%2$d</string>
+    <string name="social_posteditor_body_placeholder">आपके मन में क्या है?</string>
+    <string name="social_posteditor_doodle_remove_desc">डूडल हटाएं</string>
+    <string name="social_posteditor_doodle_remove_label">हटाएं</string>
+    <string name="social_posteditor_doodle_add_desc">डूडल जोड़ें</string>
+    <string name="social_posteditor_doodle_add_label">डूडल जोड़ें</string>
+    <string name="social_posteditor_game_link_placeholder">एक गेम लिंक करें (वैकल्पिक)</string>
+    <string name="social_posteditor_visibility_public">सार्वजनिक</string>
+    <string name="social_posteditor_visibility_friends_only">केवल फ्रेंड्स</string>
+    <string name="social_posteditor_visibility_public_desc">गेम कम्युनिटी में दिखाई देगा</string>
+    <string name="social_posteditor_visibility_friends_desc">केवल फ्रेंड्स को दिखाई देगा</string>
+
+    <string name="social_posteditor_footer_edit">संपादित करें</string>
+    <string name="social_posteditor_footer_select">चुनें</string>
+    <string name="social_posteditor_footer_clear">साफ़ करें</string>
+    <string name="social_posteditor_footer_toggle">टॉगल</string>
+    <string name="social_posteditor_footer_remove_doodle">हटाएं</string>
+    <string name="social_posteditor_footer_add_doodle">डूडल जोड़ें</string>
+    <string name="social_posteditor_footer_post">पोस्ट करें</string>
+    <string name="social_posteditor_footer_discard">हटाएं</string>
+    <string name="social_posteditor_footer_back">वापस</string>
+
+    <string name="social_postconfirm_modal_title">पोस्ट बनाएं</string>
+    <string name="social_postconfirm_posting">पोस्ट हो रहा है...</string>
+    <string name="social_postconfirm_visibility_public">यह पोस्ट गेम कम्युनिटी में सार्वजनिक रूप से शेयर की जाएगी।</string>
+    <string name="social_postconfirm_visibility_friends">यह पोस्ट आपके फ्रेंड्स के साथ शेयर की जाएगी।</string>
+    <string name="social_postconfirm_option_post">पोस्ट करें</string>
+    <string name="social_postconfirm_option_cancel">रद्द करें</string>
+
+    <string name="social_discardpost_modal_title">पोस्ट छोड़ें?</string>
+    <string name="social_discardpost_body">आपके पास बिना सेव किए बदलाव हैं। क्या आप वाकई यह पोस्ट छोड़ना चाहते हैं?</string>
+    <string name="social_discardpost_option_discard">छोड़ें</string>
+    <string name="social_discardpost_option_keep_editing">संपादन जारी रखें</string>
+
+    <string name="social_postgamepicker_modal_title">गेम चुनें</string>
+    <string name="social_postgamepicker_hint_browse">ब्राउज़ करें</string>
+    <string name="social_postgamepicker_hint_navigate">नेविगेट</string>
+    <string name="social_postgamepicker_hint_select">चुनें</string>
+    <string name="social_postgamepicker_hint_cancel">रद्द करें</string>
+    <string name="social_postgamepicker_search_placeholder">गेम खोजें...</string>
+    <string name="social_postgamepicker_no_game">कोई गेम नहीं</string>
+
+    <!-- FriendsTabContent.kt -->
+
+    <string name="social_friends_empty_title">अभी तक कोई फ्रेंड नहीं</string>
+    <string name="social_friends_empty_body">सेटिंग्स में अपने फ्रेंड कोड से फ्रेंड जोड़ें</string>
+    <string name="social_friends_header_incoming">आने वाले अनुरोध</string>
+    <string name="social_friends_header_sent">भेजे गए अनुरोध</string>
+    <string name="social_friends_header_accepted">फ्रेंड्स</string>
+    <string name="social_friends_request_accept">स्वीकार करें</string>
+    <string name="social_friends_request_decline">अस्वीकार करें</string>
+    <string name="social_friends_request_cancel">रद्द करें</string>
+
+    <string name="social_friendcard_hosting">%1$s होस्ट कर रहे हैं</string>
+    <string name="social_friendcard_playing">%1$s खेल रहे हैं</string>
+    <string name="social_friendcard_watching">%1$s देख रहे हैं</string>
+    <string name="social_friendcard_favorite_remove_desc">पसंदीदा हटाएं</string>
+    <string name="social_friendcard_favorite_add_desc">पसंदीदा जोड़ें</string>
+
+    <string name="social_netplaybadge_desc">नेटप्ले सेशन</string>
+    <string name="social_netplaybadge_label">नेटप्ले</string>
+
+    <string name="social_netplayjoin_checking">जांच हो रही है...</string>
+    <string name="social_netplayjoin_join">जॉइन करें</string>
+    <string name="social_netplayjoin_rom_not_found">आपके पास यह ROM नहीं है</string>
+    <string name="social_netplayjoin_rom_version_mismatch">अलग ROM वर्शन</string>
+    <string name="social_netplayjoin_core_version_mismatch">मेल खाने के लिए Argosy अपडेट करें</string>
+    <string name="social_netplayjoin_core_not_supported">कोर समर्थित नहीं है</string>
+    <string name="social_netplayjoin_session_busy">सेशन व्यस्त है</string>
+
+    <string name="social_presence_online">ऑनलाइन</string>
+    <string name="social_presence_away">दूर</string>
+    <string name="social_presence_in_game">गेम में</string>
+    <string name="social_presence_watching">देख रहे हैं</string>
+    <string name="social_presence_offline">ऑफ़लाइन</string>
+
+    <!-- ProfileTabContent.kt -->
+
+    <string name="social_profiletab_not_connected">कनेक्ट नहीं है</string>
+    <string name="social_profiletab_most_played_header">सबसे ज़्यादा खेले गए</string>
+
+    <!-- ProfileContent.kt - AccountInfoCard, ProfileStatsGrid, PlaytimeLineChart,
+         MostPlayedGameItem -->
+
+    <string name="social_accountcard_presence_playing">%1$s खेल रहे हैं</string>
+    <string name="social_accountcard_presence_in_game">गेम में</string>
+    <string name="social_accountcard_presence_watching_game">%1$s देख रहे हैं</string>
+    <string name="social_accountcard_presence_watching">देख रहे हैं</string>
+    <string name="social_accountcard_presence_online">ऑनलाइन</string>
+    <string name="social_accountcard_presence_away">दूर</string>
+    <string name="social_accountcard_member_since_wide">%1$s से सदस्य</string>
+    <string name="social_accountcard_member_since_compact">%1$s से सदस्य</string>
+    <plurals name="social_accountcard_friend_count_wide">
+        <item quantity="one">%1$d फ्रेंड</item>
+        <item quantity="other">%1$d फ्रेंड</item>
+    </plurals>
+    <plurals name="social_accountcard_friend_count_compact">
+        <item quantity="one">%1$d फ्रेंड</item>
+        <item quantity="other">%1$d फ्रेंड</item>
+    </plurals>
+
+    <string name="social_relationship_friends_desc">फ्रेंड्स</string>
+    <string name="social_relationship_favorite_desc">पसंदीदा</string>
+    <string name="social_relationship_not_favorite_desc">पसंदीदा नहीं</string>
+    <string name="social_relationship_not_friends_desc">फ्रेंड नहीं</string>
+    <string name="social_relationship_pending_desc">लंबित</string>
+
+    <string name="social_statsgrid_total_play_time">कुल खेलने का समय</string>
+    <string name="social_statsgrid_games_played">खेले गए गेम</string>
+    <string name="social_statsgrid_friends">फ्रेंड्स</string>
+    <string name="social_statsgrid_top_genre">टॉप जॉनर</string>
+    <string name="social_statsgrid_top_platform">टॉप प्लेटफ़ॉर्म</string>
+    <string name="social_statsgrid_fav_decade">पसंदीदा दशक</string>
+    <string name="social_statsgrid_placeholder_dash">--</string>
+
+    <string name="social_playtimechart_header">पिछले 30 दिन</string>
+    <string name="social_playtimechart_peak">शिखर: %1$s</string>
+
+    <plurals name="social_mostplayed_sessions">
+        <item quantity="one">%1$d सेशन</item>
+        <item quantity="other">%1$d सेशन</item>
+    </plurals>
+
+    <string name="social_playhours_minutes">%1$dm</string>
+    <string name="social_playhours_hours_decimal">%1$s घंटे</string>
+    <plurals name="social_playhours_hours_whole">
+        <item quantity="one">%1$d घंटा</item>
+        <item quantity="other">%1$d घंटे</item>
+    </plurals>
+    <string name="social_playhours_hours_thousands">%1$sk घंटे</string>
+
+    <!-- UserProfileScreen.kt -->
+
+    <string name="social_userprofile_hint_view_game">गेम देखें</string>
+    <string name="social_userprofile_hint_unfavorite">पसंदीदा हटाएं</string>
+    <string name="social_userprofile_hint_favorite">पसंदीदा</string>
+    <string name="social_userprofile_hint_add_friend">फ्रेंड जोड़ें</string>
+    <string name="social_userprofile_hint_back">वापस</string>
+    <string name="social_userprofile_most_played_header">सबसे ज़्यादा खेले गए</string>
+
+    <!-- NotificationsTabContent.kt -->
+
+    <string name="social_notifications_empty_title">कोई सूचना नहीं</string>
+    <string name="social_notifications_empty_body">आपकी पोस्ट और फ्रेंड्स की गतिविधि यहां दिखेगी</string>
+    <string name="social_notifications_unknown_avatar">?</string>
+    <string name="social_notifications_avatar_overflow">+%1$d</string>
+    <string name="social_notifications_default_actor">कोई</string>
+    <string name="social_notifications_event_type_fallback">पोस्ट</string>
+
+    <string name="social_notifications_comment_zero">किसी ने आपकी %1$s पर कमेंट किया</string>
+    <string name="social_notifications_comment_one">%1$s ने आपकी %2$s पर कमेंट किया</string>
+    <string name="social_notifications_comment_two">%1$s और %2$s ने आपकी %3$s पर कमेंट किया</string>
+    <string name="social_notifications_comment_many">%1$s, %2$s और %3$d अन्य ने आपकी %4$s पर कमेंट किया</string>
+
+    <string name="social_notifications_like_milestone_default_preview">आपकी पोस्ट</string>
+    <string name="social_notifications_like_milestone_with_count">%1$s को %2$d लाइक मिले</string>
+    <string name="social_notifications_like_milestone_generic">%1$s को एक लाइक माइलस्टोन मिला</string>
+
+    <string name="social_notifications_friend_request">%1$s ने आपको फ्रेंड रिक्वेस्ट भेजी</string>
+    <string name="social_notifications_friend_accepted">%1$s ने आपकी फ्रेंड रिक्वेस्ट स्वीकार की</string>
+    <string name="social_notifications_friend_added">%1$s ने आपको फ्रेंड के रूप में जोड़ा</string>
+    <string name="social_notifications_generic_fallback">नई सूचना</string>
+
+    <!-- FeedEventDetailScreen.kt -->
+
+    <string name="social_eventdetail_hint_back">वापस</string>
+    <string name="social_eventdetail_hint_unlike">लाइक हटाएं</string>
+    <string name="social_eventdetail_hint_like">लाइक करें</string>
+    <string name="social_eventdetail_hint_comment">कमेंट करें</string>
+    <string name="social_eventdetail_hint_view_game">गेम देखें</string>
+    <string name="social_eventdetail_hint_profile">प्रोफ़ाइल</string>
+
+    <string name="social_eventdetail_comments_header_portrait">कमेंट (%1$d)</string>
+    <string name="social_eventdetail_comments_header_landscape">कमेंट</string>
+    <string name="social_eventdetail_no_comments_portrait">अभी तक कोई कमेंट नहीं। सबसे पहले आप करें!</string>
+    <string name="social_eventdetail_no_comments_landscape">अभी तक कोई कमेंट नहीं</string>
+    <string name="social_eventdetail_comment_input_placeholder">एक कमेंट जोड़ें...</string>
+    <string name="social_eventdetail_comment_send_desc">भेजें</string>
+    <string name="social_eventdetail_likes_desc">लाइक</string>
+
+    <string name="social_eventdetail_desc_started_playing">पहली बार खेला</string>
+    <plurals name="social_eventdetail_desc_play_milestone">
+        <item quantity="one">%1$d घंटा पूरा किया</item>
+        <item quantity="other">%1$d घंटे पूरे किए</item>
+    </plurals>
+    <string name="social_eventdetail_desc_marathon_session">%1$dh का मैराथन सेशन खेला</string>
+    <string name="social_eventdetail_desc_completed">पूरा किया</string>
+    <string name="social_eventdetail_desc_achievement_unlocked">\"%1$s\" अनलॉक किया</string>
+    <string name="social_eventdetail_desc_achievement_unlocked_fallback_name">एक अचीवमेंट</string>
+    <plurals name="social_eventdetail_desc_achievement_milestone">
+        <item quantity="one">%1$d अचीवमेंट अर्जित किया</item>
+        <item quantity="other">%1$d अचीवमेंट अर्जित किए</item>
+    </plurals>
+    <string name="social_eventdetail_desc_perfect_game">मास्टर किया</string>
+    <string name="social_eventdetail_desc_game_added">लाइब्रेरी में जोड़ा</string>
+    <string name="social_eventdetail_desc_game_favorited">पसंदीदा बनाया</string>
+    <string name="social_eventdetail_desc_game_rated">%1$s रेटिंग दी</string>
+    <string name="social_eventdetail_desc_friend_added">%1$s से दोस्ती की</string>
+    <string name="social_eventdetail_desc_friend_added_fallback_name">किसी से</string>
+    <string name="social_eventdetail_desc_collection_shared">\"%1$s\" कलेक्शन शेयर किया</string>
+    <string name="social_eventdetail_desc_collection_saved">\"%1$s\" कलेक्शन सेव किया</string>
+    <string name="social_eventdetail_desc_collection_created">\"%1$s\" कलेक्शन बनाया</string>
+    <plurals name="social_eventdetail_desc_collection_updated">
+        <item quantity="one">\"%2$s\" में %1$d गेम जोड़ा</item>
+        <item quantity="other">\"%2$s\" में %1$d गेम जोड़े</item>
+    </plurals>
+    <string name="social_eventdetail_desc_collection_fallback_name">एक कलेक्शन</string>
+    <string name="social_eventdetail_desc_doodle">एक डूडल शेयर किया</string>
+    <string name="social_eventdetail_desc_discussion_shared_post">एक पोस्ट शेयर की</string>
+    <string name="social_eventdetail_desc_discussion_truncated">%1$s...</string>
+</resources>

@@ -1,8 +1,10 @@
 package com.nendo.argosy.data.steam
 
 import android.util.Log
+import com.nendo.argosy.R
 import com.nendo.argosy.data.local.dao.SteamAccountDao
 import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.NotificationType
 import com.nendo.argosy.data.local.entity.SteamAccountEntity
 import `in`.dragonbra.javasteam.enums.EResult
@@ -184,12 +186,13 @@ class SteamAuthManager @Inject constructor(
                     pendingAuthResult = null
                     rateLimited = true
                     notificationManager.show(
-                        title = "Steam temporarily unavailable",
-                        subtitle = "Login rate limited. Try again in an hour",
+                        title = NotificationText.Res(R.string.sync_steam_rate_limited_title),
+                        subtitle = NotificationText.Res(R.string.sync_steam_rate_limited_subtitle),
                         type = NotificationType.INFO,
                         key = "steam_rate_limited"
                     )
-                    _qrAuthState.value = QrAuthState.Error("Rate limited. Try again later")
+                    _qrAuthState.value =
+                        QrAuthState.Error(context.getString(R.string.sync_steam_qr_rate_limited))
                 }
                 result in AUTH_FATAL_RESULTS -> {
                     // Auto-login with stored token failed -- token is dead.
@@ -197,19 +200,21 @@ class SteamAuthManager @Inject constructor(
                     sessionDead = true
                     steamAccountDao.deactivateAll()
                     notificationManager.show(
-                        title = "Steam session expired",
-                        subtitle = "Sign in again from Settings > Steam",
+                        title = NotificationText.Res(R.string.sync_steam_auth_expired_title),
+                        subtitle = NotificationText.Res(R.string.sync_steam_auth_expired_subtitle),
                         type = NotificationType.WARNING,
                         key = "steam_auth_expired"
                     )
-                    _qrAuthState.value = QrAuthState.Error("Login failed: ${result.name}")
+                    _qrAuthState.value = QrAuthState.Error(
+                        context.getString(R.string.sync_steam_qr_login_failed, result.name)
+                    )
                 }
                 result in RATE_LIMIT_RESULTS -> {
                     Log.w(TAG, "Steam rate limiting ($result), keeping account")
                     rateLimited = true
                     notificationManager.show(
-                        title = "Steam temporarily unavailable",
-                        subtitle = "Login rate limited. Try again in an hour",
+                        title = NotificationText.Res(R.string.sync_steam_rate_limited_title),
+                        subtitle = NotificationText.Res(R.string.sync_steam_rate_limited_subtitle),
                         type = NotificationType.INFO,
                         key = "steam_rate_limited"
                     )
@@ -226,7 +231,8 @@ class SteamAuthManager @Inject constructor(
         rateLimited = false
         connectingForAuth = false
         val client = steamClient ?: run {
-            _qrAuthState.value = QrAuthState.Error("Not connected to Steam")
+            _qrAuthState.value =
+                QrAuthState.Error(context.getString(R.string.sync_steam_qr_not_connected))
             return
         }
 
@@ -249,7 +255,9 @@ class SteamAuthManager @Inject constructor(
                 startAuthPolling(session)
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to start QR auth", e)
-                _qrAuthState.value = QrAuthState.Error(e.message ?: "Failed to start QR auth")
+                _qrAuthState.value = QrAuthState.Error(
+                    e.message ?: context.getString(R.string.sync_steam_qr_start_failed)
+                )
             }
         }
     }
@@ -279,7 +287,9 @@ class SteamAuthManager @Inject constructor(
                     delay(maxOf(session.pollingInterval.toLong(), 5) * 1000)
                 } catch (e: Exception) {
                     Log.e(TAG, "Auth poll error", e)
-                    _qrAuthState.value = QrAuthState.Error(e.message ?: "Polling failed")
+                    _qrAuthState.value = QrAuthState.Error(
+                        e.message ?: context.getString(R.string.sync_steam_qr_polling_failed)
+                    )
                     break
                 }
             }
@@ -290,7 +300,8 @@ class SteamAuthManager @Inject constructor(
         val user = steamUser
         val client = steamClient
         if (user == null || client == null) {
-            _qrAuthState.value = QrAuthState.Error("Steam not connected")
+            _qrAuthState.value =
+                QrAuthState.Error(context.getString(R.string.sync_steam_qr_disconnected))
             return
         }
 

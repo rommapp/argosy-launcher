@@ -20,12 +20,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
+import com.nendo.argosy.R
 import com.nendo.argosy.core.input.SoundType
+import com.nendo.argosy.ui.common.labelRes
+import com.nendo.argosy.ui.common.resolve
 import com.nendo.argosy.ui.screens.settings.SoundValueLabel
 import com.nendo.argosy.ui.components.SliderPreference
 import com.nendo.argosy.ui.screens.settings.delegates.VolumeLevels
@@ -62,7 +67,7 @@ internal sealed class ThemeSoundsItem(
     class Header(
         key: String,
         section: String,
-        val title: String,
+        val titleRes: Int,
         visibleWhen: (ThemeSoundsLayoutState) -> Boolean = { true }
     ) : ThemeSoundsItem(key, section, visibleWhen)
 
@@ -87,7 +92,7 @@ internal sealed class ThemeSoundsItem(
         private val CustomizeHeader = Header(
             key = "customizeHeader",
             section = "customize",
-            title = "Customize",
+            titleRes = R.string.settings_sounds_section_customize,
             visibleWhen = { it.uiSoundsEnabled }
         )
 
@@ -104,10 +109,10 @@ private val themeSoundsLayout = SettingsLayout<ThemeSoundsItem, ThemeSoundsLayou
     isFocusable = { it.isFocusable },
     visibleWhen = { item, state -> item.visibleWhen(state) },
     sectionOf = { it.section },
-    sectionTitle = {
+    sectionTitleRes = {
         when (it) {
-            "uiSounds" -> "UI Sounds"
-            "customize" -> "Customize"
+            "uiSounds" -> R.string.settings_sounds_section_ui_sounds
+            "customize" -> R.string.settings_sounds_section_customize
             else -> null
         }
     }
@@ -124,6 +129,7 @@ internal fun themeSoundsSections(state: ThemeSoundsLayoutState) = themeSoundsLay
 @Composable
 fun ThemeSoundsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val uiSoundsEnabled = uiState.sounds.enabled
+    val context = LocalContext.current
 
     val layoutState = remember(uiSoundsEnabled) {
         ThemeSoundsLayoutState(uiSoundsEnabled)
@@ -132,8 +138,8 @@ fun ThemeSoundsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val visibleItems = remember(layoutState) {
         themeSoundsLayout.visibleItems(layoutState)
     }
-    val sections = remember(layoutState) {
-        themeSoundsLayout.buildSections(layoutState)
+    val sections = remember(layoutState, context) {
+        themeSoundsLayout.buildSections(layoutState, context)
     }
 
     fun isFocused(item: ThemeSoundsItem): Boolean =
@@ -152,12 +158,12 @@ fun ThemeSoundsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) { item ->
         when (item) {
-            is ThemeSoundsItem.Header -> ThemeSoundsSectionHeader(item.title)
+            is ThemeSoundsItem.Header -> ThemeSoundsSectionHeader(stringResource(item.titleRes))
             is ThemeSoundsItem.SectionSpacer -> Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
             ThemeSoundsItem.UiSoundsToggle -> SwitchPreference(
-                title = "UI Sounds",
-                subtitle = "Play tones on navigation and selection",
+                title = stringResource(R.string.settings_sounds_toggle_title),
+                subtitle = stringResource(R.string.settings_sounds_toggle_subtitle),
                 isEnabled = uiState.sounds.enabled,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.setSoundEnabled(it) }
@@ -167,7 +173,7 @@ fun ThemeSoundsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 val volumeLevels = VolumeLevels.UI_SOUNDS
                 val currentIndex = volumeLevels.indexOfFirst { it >= uiState.sounds.volume }.takeIf { it >= 0 } ?: 0
                 SliderPreference(
-                    title = "Volume",
+                    title = stringResource(R.string.settings_sounds_volume_title),
                     value = volumeLevels[currentIndex],
                     suffix = "%",
                     minValue = volumeLevels.first(),
@@ -204,11 +210,7 @@ private fun SoundCustomizationItem(
     isFocused: Boolean,
     onClick: () -> Unit
 ) {
-    val displayName = soundType.name
-        .replace("_", " ")
-        .lowercase()
-        .split(" ")
-        .joinToString(" ") { it.replaceFirstChar { c -> c.uppercase() } }
+    val displayName = stringResource(soundType.labelRes)
 
     val focusAccent = LocalArgosyTheme.current.focusAccent
     val focusedContent = lerp(focusAccent, Color.White, 0.45f)
@@ -236,7 +238,7 @@ private fun SoundCustomizationItem(
             horizontalAlignment = Alignment.End
         ) {
             Text(
-                text = displayValue.primary,
+                text = displayValue.primary.resolve(),
                 style = MaterialTheme.typography.bodyMedium,
                 color = if (isFocused) focusedContent.copy(alpha = 0.7f)
                         else MaterialTheme.colorScheme.onSurfaceVariant,

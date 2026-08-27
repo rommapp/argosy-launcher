@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ================= Media companion facts (dual-screen showcase) ================= -->
+
+    <string name="media_companion_fact_year">वर्ष</string>
+    <string name="media_companion_fact_runtime">अवधि</string>
+    <string name="media_companion_fact_rated">सर्टिफिकेट</string>
+    <string name="media_companion_fact_rating">रेटिंग</string>
+
+    <!-- ================= Media item labels (season/episode tag, runtime) ================= -->
+
+    <string name="media_item_episode_label">S%1$d E%2$d</string>
+    <string name="media_item_runtime_hours_minutes">%1$dh %2$dm</string>
+    <string name="media_item_runtime_hours">%1$dh</string>
+    <string name="media_item_runtime_minutes">%1$dm</string>
+
+    <!-- ================= Jellyfin preference labels (settings tree + media player pickers) ================= -->
+
+    <string name="media_pref_download_quality_original">मूल फ़ाइल</string>
+    <string name="media_pref_download_quality_high">उच्च - 1080p</string>
+    <string name="media_pref_download_quality_medium">मध्यम - 720p</string>
+    <string name="media_pref_download_quality_low">निम्न - 480p</string>
+
+    <string name="media_pref_streaming_quality_auto">मूल - ऑटो</string>
+    <string name="media_pref_streaming_quality_high">उच्च - 1080p</string>
+    <string name="media_pref_streaming_quality_medium">मध्यम - 720p</string>
+    <string name="media_pref_streaming_quality_low">निम्न - 480p</string>
+
+    <string name="media_pref_subtitle_mode_off">बंद</string>
+    <string name="media_pref_subtitle_mode_forced_only">केवल अनिवार्य</string>
+    <string name="media_pref_subtitle_mode_preferred">पसंदीदा भाषा</string>
+
+    <string name="media_pref_audio_language_english">अंग्रेज़ी</string>
+    <string name="media_pref_audio_language_japanese">जापानी</string>
+    <string name="media_pref_audio_language_spanish">स्पैनिश</string>
+    <string name="media_pref_audio_language_french">फ़्रेंच</string>
+    <string name="media_pref_audio_language_german">जर्मन</string>
+    <string name="media_pref_audio_language_italian">इतालवी</string>
+    <string name="media_pref_audio_language_portuguese">पुर्तगाली</string>
+    <string name="media_pref_audio_language_russian">रूसी</string>
+    <string name="media_pref_audio_language_korean">कोरियाई</string>
+    <string name="media_pref_audio_language_chinese">चीनी</string>
+
+    <string name="media_pref_subtitle_language_english">अंग्रेज़ी</string>
+    <string name="media_pref_subtitle_language_japanese">जापानी</string>
+    <string name="media_pref_subtitle_language_spanish">स्पैनिश</string>
+    <string name="media_pref_subtitle_language_french">फ़्रेंच</string>
+    <string name="media_pref_subtitle_language_german">जर्मन</string>
+    <string name="media_pref_subtitle_language_italian">इतालवी</string>
+    <string name="media_pref_subtitle_language_portuguese">पुर्तगाली</string>
+    <string name="media_pref_subtitle_language_russian">रूसी</string>
+    <string name="media_pref_subtitle_language_korean">कोरियाई</string>
+    <string name="media_pref_subtitle_language_chinese">चीनी</string>
+
+    <!-- ================= Unified save-state entry (state channel binding + slot rows) ================= -->
+
+    <string name="unified_state_entry_display_name_auto">ऑटो</string>
+    <string name="unified_state_entry_display_name_channel">%1$s (स्लॉट %2$d)</string>
+    <string name="unified_state_entry_display_name_slot">स्लॉट %1$d</string>
+    <string name="unified_state_entry_slot_label_auto">ऑटो</string>
+    <string name="unified_state_entry_size_bytes">%1$d B</string>
+    <string name="unified_state_entry_size_kb">%1$d KB</string>
+    <string name="unified_state_entry_size_mb">%1$.1f MB</string>
+
+    <!-- ================= Variant category labels (file picker groups, download picker) ================= -->
+
+    <string name="variant_category_game">गेम</string>
+    <string name="variant_category_patch">संस्करण / पैच</string>
+    <string name="variant_category_translation">अनुवाद</string>
+    <string name="variant_category_mod">मॉड्स</string>
+    <string name="variant_category_hack">हैक्स</string>
+    <string name="variant_category_demo">डेमो</string>
+    <string name="variant_category_prototype">प्रोटोटाइप</string>
+    <string name="variant_category_update">अपडेट</string>
+    <string name="variant_category_dlc">DLC</string>
+    <string name="variant_category_manual">मैनुअल</string>
+    <string name="variant_category_cheat">चीट्स</string>
+    <string name="variant_category_soundtrack">साउंडट्रैक</string>
+    <string name="variant_category_screenshot">स्क्रीनशॉट</string>
+    <string name="variant_category_unknown">अन्य</string>
+
+    <!-- ================= Display preference labels (gradient preset, box art shape) ================= -->
+
+    <string name="gradient_preset_vibrant">जीवंत</string>
+    <string name="gradient_preset_balanced">संतुलित</string>
+    <string name="gradient_preset_subtle">हल्का</string>
+    <string name="gradient_preset_custom">कस्टम</string>
+    <string name="box_art_shape_native">नेटिव</string>
+
+    <!-- ================= Custom home-grid tile menu actions ================= -->
+
+    <string name="custom_tile_menu_action_arrange">स्थानांतरित या आकार बदलें</string>
+    <string name="custom_tile_menu_action_recurate">प्ले सामग्री बदलें</string>
+    <string name="custom_tile_menu_action_remove">ग्रिड से हटाएँ</string>
+    <string name="custom_tile_menu_action_start_game_queue">गेम क्यू बनाएँ</string>
+    <string name="custom_tile_menu_action_set_focus_game">सक्रिय गेम सेट करें</string>
+    <string name="custom_tile_menu_action_advance_focus_game">गेम पूरा करें/छोड़ें</string>
+    <string name="custom_tile_menu_action_page_backdrop">इस पेज के लिए बैकड्रॉप</string>
+    <string name="custom_tile_menu_action_page_music">इस पेज के लिए संगीत</string>
+    <string name="custom_tile_menu_action_delete_page">पेज हटाएँ</string>
+
+    <!-- ================= Home tile picker category tabs ================= -->
+
+    <string name="tile_picker_category_games">गेम</string>
+    <string name="tile_picker_category_collections">कलेक्शन</string>
+    <string name="tile_picker_category_apps">ऐप्स</string>
+    <string name="tile_picker_category_media">मीडिया</string>
+
+    <!-- ================= Home grid tile stats ================= -->
+
+    <string name="home_grid_tile_stat_played">खेला गया</string>
+    <string name="home_grid_tile_stat_achievements">उपलब्धियाँ</string>
+    <string name="home_grid_tile_stat_released">रिलीज़</string>
+
+    <!-- ================= Media tile setup notice (add-to-grid download prompt) ================= -->
+
+    <string name="ui_media_tile_notice_confirm_add_download">जोड़ें और डाउनलोड करें</string>
+    <string name="ui_media_tile_notice_decline_cancel">रद्द करें</string>
+    <string name="media_tile_notice_confirm_download_all">सभी डाउनलोड करें</string>
+    <string name="media_tile_notice_decline_use_downloaded">डाउनलोड किया गया उपयोग करें</string>
+    <string name="media_tile_notice_decline_cancel">रद्द करें</string>
+    <string name="media_tile_notice_derived_message_none">इस शो का कोई भी एपिसोड अभी इस डिवाइस पर नहीं है। यह टाइल डाउनलोड किए गए एपिसोड चलाती है, इसलिए जब तक कुछ नहीं आता यह खाली रहेगी।</string>
+    <plurals name="media_tile_notice_derived_message_some">
+        <item quantity="one">यह टाइल इस डिवाइस पर मौजूद %1$d एपिसोड चलाती है, और खत्म होने पर उसे फिर से शुरू करती है।</item>
+        <item quantity="other">यह टाइल इस डिवाइस पर मौजूद %1$d एपिसोड क्रम से चलाती है, और आखिरी तक पहुँचने पर पहले पर लौट आती है।</item>
+    </plurals>
+    <string name="media_tile_notice_warning_unknown_size">यह एक बड़ा बैच है, और इसका आकार हर डाउनलोड शुरू होने पर ही पता चलता है।</string>
+    <string name="media_tile_notice_warning_approximate_size">कुल मिलाकर लगभग %1$s, घटत-बढ़त संभव - हर डाउनलोड शुरू होने पर अपना आकार खुद तय करता है।</string>
+    <plurals name="media_tile_notice_missing_episodes">
+        <item quantity="one">%1$d एपिसोड अभी इस डिवाइस पर नहीं है। यह टाइल जोड़ने से उसका डाउनलोड शुरू हो जाता है।</item>
+        <item quantity="other">%1$d एपिसोड अभी इस डिवाइस पर नहीं हैं। यह टाइल जोड़ने से उनका डाउनलोड शुरू हो जाता है।</item>
+    </plurals>
+    <plurals name="media_tile_notice_missing_titles">
+        <item quantity="one">%1$d टाइटल अभी इस डिवाइस पर नहीं है। यह टाइल जोड़ने से उसका डाउनलोड शुरू हो जाता है।</item>
+        <item quantity="other">%1$d टाइटल अभी इस डिवाइस पर नहीं हैं। यह टाइल जोड़ने से उनका डाउनलोड शुरू हो जाता है।</item>
+    </plurals>
+
+    <!-- ================= Episode picker season headers ================= -->
+
+    <string name="episode_picker_season_label">सीज़न %1$d</string>
+    <string name="episode_picker_specials_label">स्पेशल</string>
+    <string name="episode_picker_season_supporting_none">इस डिवाइस पर कोई नहीं</string>
+    <string name="episode_picker_season_supporting_all">सभी %1$d इस डिवाइस पर</string>
+    <string name="episode_picker_season_supporting_partial">%2$d में से %1$d इस डिवाइस पर</string>
+
+    <!-- ================= Storage computed-at label ================= -->
+
+    <string name="storage_computed_label_computing">गणना हो रही है...</string>
+    <string name="storage_computed_label_computed">%1$s पर गणना की गई</string>
+    <string name="storage_computed_label_never">अभी तक गणना नहीं हुई</string>
+
+    <!-- ================= Download foreground notification text (Steam) ================= -->
+
+    <string name="download_indicator_notification_preparing">तैयार हो रहा है: %1$s</string>
+    <string name="download_indicator_notification_connecting">Steam से जुड़ रहे हैं...</string>
+    <string name="download_indicator_notification_fetching_manifest">मेनिफ़ेस्ट प्राप्त हो रहा है: %1$s</string>
+    <string name="download_indicator_notification_unpacking">अनपैक हो रहा है: %1$s</string>
+    <string name="download_indicator_notification_moving">स्थानांतरित हो रहा है: %1$s</string>
+    <string name="download_indicator_notification_cleaning">सफ़ाई हो रही है: %1$s</string>
+    <string name="download_indicator_notification_paused">रोका गया: %1$s</string>
+
+    <!-- ================= Title ID recheck notice ================= -->
+
+    <string name="title_id_recheck_notice_updated">टाइटल ID को %1$s में अपडेट किया गया</string>
+    <string name="title_id_recheck_notice_confirmed">टाइटल ID की पुष्टि %1$s के रूप में हुई</string>
+    <string name="title_id_recheck_notice_not_found">%1$s में कोई टाइटल ID नहीं मिली</string>
+    <string name="title_id_recheck_notice_no_file">गेम फ़ाइल पढ़ने के लिए उपलब्ध नहीं है</string>
+
+    <!-- ================= Steam launcher picker "no override" option ================= -->
+
+    <string name="gamedetail_steam_launcher_auto">ऑटो</string>
+
+    <!-- ================= Memcard picker "use the inherited default" entry ================= -->
+
+    <string name="ui_memcard_picker_default">डिफ़ॉल्ट</string>
+    <string name="ui_memcard_picker_default_named">डिफ़ॉल्ट (%1$s)</string>
+
+    <!-- ================= Home media rail episode subtitle (show tile, e.g. "S1 E4 - Episode Name") ================= -->
+
+    <string name="home_media_episode_subtitle_marker_season_episode">S%1$d E%2$d</string>
+    <string name="home_media_episode_subtitle_marker_episode_only">E%1$d</string>
+    <string name="home_media_episode_subtitle_with_name">%1$s - %2$s</string>
+
+</resources>

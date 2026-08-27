@@ -1,0 +1,369 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="dual_channel_secondary_display_name">副屏幕</string>
+    <string name="dual_channel_secondary_display_description">在副屏幕上显示游戏库</string>
+    <string name="dual_channel_screen_capture_name">环境灯屏幕采集</string>
+    <string name="dual_channel_screen_capture_description">采集屏幕颜色用于环境灯光</string>
+
+    <string name="dual_notification_guard_text">双屏显示已开启</string>
+    <string name="dual_notification_screen_capture_text">正在采集屏幕以驱动环境灯</string>
+
+    <string name="dual_companion_quick_action_save_state">保存即时存档</string>
+    <string name="dual_companion_quick_action_screenshot">截图</string>
+    <string name="dual_companion_quick_action_load_state">读取即时存档</string>
+    <string name="dual_companion_quick_action_load_confirm">点击确认</string>
+
+    <string name="dual_companion_session_label">本次时长</string>
+    <string name="dual_companion_achievements_label">成就</string>
+    <string name="dual_companion_stat_play_time">总游戏时长</string>
+    <string name="dual_companion_stat_play_count">游玩次数</string>
+
+    <string name="dual_companion_play_time_hours_minutes">%1$dh %2$dm</string>
+    <string name="dual_companion_play_time_hours">%1$dh</string>
+    <string name="dual_companion_play_time_minutes">%1$dm</string>
+    <string name="dual_companion_play_time_zero">0m</string>
+
+    <string name="dual_companion_saves_dirty">有新存档数据</string>
+    <string name="dual_companion_saves_synced">存档已同步</string>
+    <string name="dual_companion_saves_synced_icon_description">已保存</string>
+
+    <string name="dual_companion_app_bar_add_description">添加应用</string>
+    <string name="dual_companion_app_bar_media_to_library_description">返回游戏库</string>
+    <string name="dual_companion_app_bar_media_to_player_description">正在观看</string>
+
+    <string name="dual_companion_drawer_title">全部应用</string>
+    <string name="dual_companion_drawer_pinned_description">已固定</string>
+
+    <string name="dual_showcase_detail_footer_tab">标签页</string>
+    <string name="dual_showcase_detail_footer_select">选择</string>
+    <string name="dual_showcase_detail_footer_back">返回</string>
+
+    <string name="dual_showcase_collections_footer_navigate">导航</string>
+    <string name="dual_showcase_collections_footer_open">打开</string>
+    <string name="dual_showcase_collections_footer_back">返回</string>
+
+    <string name="dual_home_hint_action_play">开始</string>
+    <string name="dual_home_hint_action_download">下载</string>
+
+    <string name="dual_home_hint_collection_navigate">导航</string>
+    <string name="dual_home_hint_collection_details">详情</string>
+    <string name="dual_home_hint_collection_back">返回</string>
+
+    <string name="dual_home_hint_library_platform">平台</string>
+    <string name="dual_home_hint_library_letter">字母</string>
+    <string name="dual_home_hint_library_details">详情</string>
+    <string name="dual_home_hint_library_options">选项</string>
+    <string name="dual_home_hint_library_filters">筛选</string>
+    <string name="dual_home_hint_library_back">返回</string>
+
+    <string name="dual_home_hint_media_grid_library">媒体库</string>
+    <string name="dual_home_hint_media_grid_resume">继续观看</string>
+    <string name="dual_home_hint_media_grid_options">选项</string>
+    <string name="dual_home_hint_media_grid_play">播放</string>
+    <string name="dual_home_hint_media_grid_back">返回</string>
+
+    <string name="dual_home_hint_media_info_title">上一部/下一部</string>
+    <string name="dual_home_hint_media_info_season">季</string>
+    <string name="dual_home_hint_media_info_watch">观看</string>
+    <string name="dual_home_hint_media_info_back">返回</string>
+
+    <string name="dual_home_hint_drawer_open">打开</string>
+    <string name="dual_home_hint_drawer_pin">固定/取消固定</string>
+    <string name="dual_home_hint_drawer_open_top">在顶屏打开</string>
+    <string name="dual_home_hint_drawer_close">关闭</string>
+
+    <string name="dual_home_hint_app_bar_select">选择</string>
+    <string name="dual_home_hint_app_bar_open_top">在顶屏打开</string>
+    <string name="dual_home_hint_app_bar_all_apps">全部应用</string>
+
+    <string name="dual_home_hint_carousel_platform">平台</string>
+    <string name="dual_home_hint_carousel_details">详情</string>
+    <string name="dual_home_hint_carousel_favorite">收藏</string>
+    <string name="dual_home_hint_carousel_unfavorite">取消收藏</string>
+    <string name="dual_home_hint_carousel_collections">合集</string>
+    <string name="dual_home_hint_carousel_library">游戏库</string>
+
+    <string name="dual_detail_hint_game_section">分区</string>
+    <string name="dual_detail_hint_game_open">打开</string>
+    <string name="dual_detail_hint_game_back">返回</string>
+
+    <string name="dual_detail_hint_media_grid_library">媒体库</string>
+    <string name="dual_detail_hint_media_grid_resume">继续观看</string>
+    <string name="dual_detail_hint_media_grid_options">选项</string>
+    <string name="dual_detail_hint_media_grid_play">播放</string>
+    <string name="dual_detail_hint_media_grid_back">返回</string>
+
+    <string name="dual_detail_hint_media_info_title">上一部/下一部</string>
+    <string name="dual_detail_hint_media_info_season">季</string>
+    <string name="dual_detail_hint_media_info_watch">观看</string>
+    <string name="dual_detail_hint_media_info_back">返回</string>
+
+    <string name="dual_detail_hint_default_section">分区</string>
+    <string name="dual_detail_hint_default_favorite">收藏</string>
+    <string name="dual_detail_hint_default_options">选项</string>
+    <string name="dual_detail_hint_default_play">开始</string>
+    <string name="dual_detail_hint_default_back">返回</string>
+
+    <string name="dual_media_footer_season">季</string>
+    <string name="dual_media_footer_watch">观看</string>
+    <string name="dual_media_footer_back_library">媒体库</string>
+    <string name="dual_media_footer_back_home">返回</string>
+
+    <string name="dual_media_signed_out_title">未登录媒体账号</string>
+    <string name="dual_media_signed_out_message">请在设置中登录媒体服务器以在此观看。</string>
+    <string name="dual_media_loading_title">加载中</string>
+    <string name="dual_media_empty_title">暂无可观看内容</string>
+    <string name="dual_media_empty_message">你开始观看的内容会在播放后显示在这里。</string>
+
+    <string name="dual_media_episodes_loading_title">加载中</string>
+    <string name="dual_media_episodes_error_title">无法加载剧集</string>
+    <string name="dual_media_episodes_empty_title">这里还没有剧集</string>
+
+    <string name="dual_media_cast_header">演员表</string>
+    <string name="dual_media_browse_back_description">返回</string>
+    <plurals name="dual_media_browse_episode_count">
+        <item quantity="other">%d集</item>
+    </plurals>
+
+    <string name="dual_media_transport_playing_description">正在播放</string>
+    <string name="dual_media_transport_paused_description">已暂停</string>
+
+    <string name="dual_media_grid_empty">此媒体库暂无内容</string>
+
+    <string name="dual_showcase_stat_play_time_label">游戏时长</string>
+    <string name="dual_showcase_stat_last_played_label">最近游玩</string>
+    <string name="dual_showcase_stat_last_played_never">从未</string>
+    <string name="dual_showcase_stat_status_label">状态</string>
+    <string name="dual_showcase_stat_status_none">无</string>
+
+    <string name="dual_showcase_last_played_today">今天</string>
+    <string name="dual_showcase_last_played_yesterday">昨天</string>
+    <plurals name="dual_showcase_last_played_days">
+        <item quantity="other">%d天前</item>
+    </plurals>
+    <plurals name="dual_showcase_last_played_weeks">
+        <item quantity="other">%d周前</item>
+    </plurals>
+    <plurals name="dual_showcase_last_played_months">
+        <item quantity="other">%d个月前</item>
+    </plurals>
+
+    <string name="dual_home_showcase_no_selection">请选择一个游戏</string>
+
+    <string name="dual_collection_showcase_all_title">合集</string>
+    <plurals name="dual_collection_showcase_game_count">
+        <item quantity="other">%d个游戏</item>
+    </plurals>
+    <string name="dual_collection_showcase_stat_installed">已安装</string>
+    <string name="dual_collection_showcase_stat_achievements">成就</string>
+    <string name="dual_collection_showcase_stat_playtime">游戏时长</string>
+    <string name="dual_collection_showcase_empty">此合集暂无内容</string>
+
+    <string name="dual_collection_play_time_minutes">共%1$dm</string>
+    <string name="dual_collection_play_time_hours_minutes">共%1$dh %2$dm</string>
+    <string name="dual_collection_play_time_hours">共%1$dh</string>
+
+    <string name="dual_home_section_recent_title">继续游玩</string>
+    <string name="dual_home_section_recent_short">继续</string>
+    <string name="dual_home_section_recommendations_title">推荐</string>
+    <string name="dual_home_section_recommendations_short">为你推荐</string>
+    <string name="dual_home_section_favorites_title">收藏</string>
+
+    <string name="dual_library_menu_play">开始</string>
+    <string name="dual_library_menu_install">安装</string>
+    <string name="dual_library_menu_download">下载</string>
+    <string name="dual_library_menu_favorite">收藏</string>
+    <string name="dual_library_menu_unfavorite">取消收藏</string>
+    <string name="dual_library_menu_details">详情</string>
+    <string name="dual_library_menu_add_to_collection">添加到合集</string>
+    <string name="dual_library_menu_add_to_grid">添加到网格</string>
+    <string name="dual_library_menu_refresh">刷新数据</string>
+    <string name="dual_library_menu_resync_platform">重新同步平台</string>
+    <string name="dual_library_menu_delete">删除下载</string>
+    <string name="dual_library_menu_uninstall">卸载</string>
+    <string name="dual_library_menu_hide">隐藏</string>
+    <string name="dual_library_menu_show">显示</string>
+
+    <string name="dual_media_menu_open_info">打开媒体详情</string>
+    <string name="dual_media_menu_start_over">重新开始</string>
+    <string name="dual_media_menu_favorite">收藏</string>
+    <string name="dual_media_menu_unfavorite">取消收藏</string>
+    <string name="dual_media_menu_download">下载</string>
+    <string name="dual_media_menu_remove_downloads">移除下载</string>
+    <string name="dual_media_menu_refresh">刷新媒体库</string>
+
+    <string name="dual_filter_category_sort">排序</string>
+    <string name="dual_filter_category_search">搜索</string>
+    <string name="dual_filter_category_source">来源</string>
+    <string name="dual_filter_category_genre">类型</string>
+    <string name="dual_filter_category_players">玩家人数</string>
+    <string name="dual_filter_category_franchise">系列</string>
+
+    <string name="dual_filter_search_placeholder">搜索游戏...</string>
+    <string name="dual_filter_search_active">筛选条件：“%1$s”</string>
+
+    <string name="dual_collections_header_user">我的合集</string>
+    <string name="dual_collections_header_genres">类型</string>
+    <string name="dual_collections_header_game_modes">游戏模式</string>
+
+    <string name="dual_library_platform_filter_all">全部</string>
+    <string name="dual_library_grid_platform_fallback">全部</string>
+    <string name="dual_library_grid_header">%1$s（%2$d）</string>
+    <string name="dual_home_carousel_header">%1$s（%2$d）</string>
+
+    <string name="dual_tile_missing_game">缺失的游戏</string>
+    <string name="dual_tile_missing_collection">缺失的合集</string>
+    <string name="dual_tile_collection_subtitle">合集</string>
+    <string name="dual_tile_collection_games_stat">游戏</string>
+    <string name="dual_tile_missing_app">缺失的应用</string>
+    <string name="dual_tile_app_subtitle">应用</string>
+    <string name="dual_tile_unavailable">不可用</string>
+
+    <plurals name="dual_tile_picker_collection_game_count">
+        <item quantity="other">%d个游戏</item>
+    </plurals>
+    <string name="dual_tile_picker_app_emulator">模拟器</string>
+    <string name="dual_tile_picker_app_other">应用</string>
+
+    <string name="dual_home_tile_add_title">添加到主页网格？</string>
+    <string name="dual_home_tile_add_message">%1$s下载完成。</string>
+    <string name="dual_home_tile_add_confirm">添加</string>
+    <string name="dual_home_tile_add_cancel">暂不</string>
+
+    <string name="dual_home_collection_picker_title">添加到合集</string>
+    <string name="dual_home_collection_picker_member">%1$s - 已添加</string>
+    <string name="dual_home_media_menu_header">媒体</string>
+
+    <string name="dual_detail_tab_saves">存档</string>
+    <string name="dual_detail_tab_states">即时存档</string>
+    <string name="dual_detail_tab_media">媒体</string>
+    <string name="dual_detail_tab_options">选项</string>
+
+    <string name="dual_state_menu_copy_to">复制到槽位</string>
+    <string name="dual_state_menu_delete">删除即时存档</string>
+    <string name="dual_detail_state_menu_header">即时存档</string>
+
+    <string name="dual_detail_state_prompt_auto_slot">自动即时存档</string>
+    <string name="dual_detail_state_prompt_numbered_slot">槽位%1$d</string>
+    <string name="dual_detail_state_prompt_delete_title">删除即时存档</string>
+    <string name="dual_detail_state_prompt_overwrite_title">覆盖即时存档</string>
+    <string name="dual_detail_state_prompt_delete_message">%1$s将从此设备和服务器中移除。</string>
+    <string name="dual_detail_state_prompt_overwrite_message">%1$s已存在一个即时存档，它将被新副本替换。</string>
+    <string name="dual_detail_state_prompt_delete_confirm">删除</string>
+    <string name="dual_detail_state_prompt_overwrite_confirm">覆盖</string>
+
+    <string name="dual_detail_saves_loading">正在加载存档...</string>
+    <string name="dual_detail_saves_applying">正在应用存档...</string>
+    <string name="dual_detail_saves_slots_heading">存档槽位</string>
+    <string name="dual_detail_saves_new_slot">新建槽位</string>
+    <string name="dual_detail_saves_history_heading">历史记录</string>
+    <string name="dual_detail_saves_history_heading_named">历史记录（%1$s）</string>
+    <string name="dual_detail_saves_history_empty">暂无存档</string>
+    <string name="dual_detail_saves_active_restore_point_description">当前恢复点</string>
+    <string name="dual_detail_saves_latest">最新</string>
+    <string name="dual_detail_saves_sync_synced">已同步</string>
+    <string name="dual_detail_saves_sync_local">本地</string>
+
+    <string name="dual_detail_states_empty">没有即时存档槽位</string>
+    <string name="dual_detail_states_copy_prompt">选择要复制到的槽位</string>
+    <string name="dual_detail_states_slot_empty">空</string>
+    <string name="dual_detail_states_slot_no_shot">无截图</string>
+    <string name="dual_detail_states_slot_number">槽位%1$d</string>
+
+    <string name="dual_detail_media_empty">没有截图</string>
+    <string name="dual_detail_media_screenshot_description">截图</string>
+
+    <string name="dual_detail_option_emulator_default">平台默认</string>
+    <string name="dual_detail_option_core_default">默认</string>
+    <string name="dual_detail_option_save_path_custom">自定义</string>
+    <string name="dual_detail_option_save_path_default">默认</string>
+    <string name="dual_detail_option_memory_card_auto">自动</string>
+    <string name="dual_detail_option_variant_default">默认</string>
+
+    <string name="dual_detail_option_play_extracting">解压中...</string>
+    <string name="dual_detail_option_play_downloading">下载中 %1$d%%</string>
+    <string name="dual_detail_option_play_queued">排队中...</string>
+    <string name="dual_detail_option_play_paused">已暂停 %1$d%%</string>
+    <string name="dual_detail_option_play_no_space">空间不足</string>
+    <string name="dual_detail_option_play">开始</string>
+    <string name="dual_detail_option_download">下载</string>
+    <string name="dual_detail_option_auto_save_slot">自动存档</string>
+
+    <string name="dual_detail_option_rating">评分</string>
+    <string name="dual_detail_option_difficulty">难度</string>
+    <string name="dual_detail_option_status">状态</string>
+    <string name="dual_detail_option_status_not_set">未设置</string>
+    <string name="dual_detail_option_unfavorite">移出收藏</string>
+    <string name="dual_detail_option_favorite">添加到收藏</string>
+    <string name="dual_detail_option_change_emulator">更改模拟器</string>
+    <string name="dual_detail_option_change_core">更改核心</string>
+    <string name="dual_detail_option_save_path">存档路径</string>
+    <string name="dual_detail_option_display_target">显示目标</string>
+    <string name="dual_detail_option_memory_card">存储卡</string>
+    <string name="dual_detail_option_select_variant">选择变体</string>
+    <string name="dual_detail_option_select_disc">选择光盘</string>
+    <string name="dual_detail_option_title_id">标题ID</string>
+    <string name="dual_detail_option_title_id_missing">未检测到</string>
+    <string name="dual_detail_option_files">文件</string>
+    <string name="dual_detail_option_add_to_collection">添加到合集</string>
+    <string name="dual_detail_option_refresh_metadata">刷新元数据</string>
+    <string name="dual_detail_option_delete">从游戏库中删除</string>
+    <string name="dual_detail_option_unhide">取消隐藏游戏</string>
+    <string name="dual_detail_option_hide">隐藏游戏</string>
+
+    <string name="dual_detail_file_picker_no_changes">无更改</string>
+    <string name="dual_detail_file_picker_summary_adds">+%1$d · %2$s</string>
+    <string name="dual_detail_file_picker_summary_removes">-%1$d · %2$s</string>
+    <string name="dual_detail_file_picker_summary_selected">已选择%1$d/%2$d · %3$s</string>
+    <string name="dual_detail_file_picker_manage_title">文件</string>
+    <string name="dual_detail_file_picker_choose_title">选择文件</string>
+
+    <string name="dual_detail_steam_install_heading">安装位置</string>
+    <string name="dual_detail_steam_install_argosy">通过Argosy下载</string>
+    <string name="dual_detail_steam_install_external">标记为已安装</string>
+    <string name="dual_detail_steam_install_managed_by">由%1$s管理</string>
+
+    <string name="dual_detail_screenshot_viewer_description">截图</string>
+    <string name="dual_detail_achievements_label">成就</string>
+
+    <string name="dual_detail_emulator_picker_heading">选择模拟器</string>
+    <string name="dual_detail_emulator_picker_default">使用平台默认值</string>
+
+    <string name="dual_detail_core_picker_heading">选择核心</string>
+    <string name="dual_detail_core_picker_default">使用平台默认值</string>
+
+    <string name="dual_detail_save_path_heading">存档路径</string>
+    <string name="dual_detail_save_path_reset">重置为继承的默认值</string>
+    <string name="dual_detail_save_path_inherited">继承的默认值</string>
+    <string name="dual_detail_save_path_inherited_hint">可在主屏幕的“单个游戏设置”中设置自定义路径</string>
+    <string name="dual_detail_save_path_current_override">当前自定义路径</string>
+
+    <string name="dual_detail_display_target_heading">显示目标</string>
+    <string name="dual_detail_display_target_default">使用平台默认值</string>
+
+    <string name="dual_detail_memory_card_heading">存储卡</string>
+    <string name="dual_detail_memory_card_auto">自动检测</string>
+
+    <string name="dual_detail_variant_heading">选择变体</string>
+    <string name="dual_detail_variant_default">默认（原版）</string>
+
+    <string name="dual_detail_disc_heading">选择光盘</string>
+    <string name="dual_detail_disc_label">光盘%1$d</string>
+
+    <string name="dual_detail_collection_heading">添加到合集</string>
+    <string name="dual_detail_collection_create">创建新合集</string>
+
+    <string name="dual_detail_state_preview_description">即时存档预览</string>
+    <string name="dual_detail_state_preview_cover_fallback">封面替代图</string>
+    <string name="dual_detail_state_sync_synced">已同步</string>
+    <string name="dual_detail_state_sync_pending">待同步</string>
+    <string name="dual_detail_state_sync_server">服务器</string>
+    <string name="dual_detail_state_sync_local">本地</string>
+
+    <string name="dual_detail_save_name_heading">创建存档槽位</string>
+    <string name="dual_detail_save_name_field_label">槽位名称</string>
+    <string name="dual_detail_save_name_cancel">取消</string>
+    <string name="dual_detail_save_name_create">创建</string>
+
+    <string name="dual_detail_save_slot_auto">自动存档</string>
+</resources>

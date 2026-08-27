@@ -1,0 +1,1241 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Connection quality tiers for a netplay session, shown beside the round-trip time in
+         the in-game menu and in two toasts. Adjectives describing the connection. -->
+    <string name="ingame_netplay_quality_excellent">Excellent</string>
+    <string name="ingame_netplay_quality_good">Good</string>
+    <string name="ingame_netplay_quality_fair">Fair</string>
+    <string name="ingame_netplay_quality_poor">Poor</string>
+    <!-- Worst tier, and also what an unknown ping falls back to. -->
+    <string name="ingame_netplay_quality_bad">Bad</string>
+
+    <!--
+      Owner: libretro
+      Key prefix: ingame_
+      Keys are named for the usage site, never for the English text, and identical English
+      is never shared between two usage sites.
+
+      Vocabulary note for this whole file: "state" always means a save state, a snapshot of
+      the running game, never a status or a condition. "Save" and "Load" are verbs on the
+      state actions but "Save" is a noun in the slot list. "Core" is the emulation engine
+      running the game.
+    -->
+
+    <!-- Row in the menu that opens over a running game, for a multi-disc release. Verb phrase:
+         swaps which disc is in the drive. -->
+    <string name="ingame_menu_swap_disc">Swap Disc</string>
+    <!-- Row in that menu. Verb: closes the menu and lets the game run on. -->
+    <string name="ingame_menu_resume">Resume</string>
+    <!-- Row in that menu. Verb phrase: writes a save state to the rolling quick slot. -->
+    <string name="ingame_menu_quick_save">Quick Save</string>
+    <!-- Row in that menu. Verb phrase: reads back the newest quick save state. -->
+    <string name="ingame_menu_quick_load">Quick Load</string>
+    <!-- Row in that menu. Verb phrase: opens the grid of numbered save state slots. -->
+    <string name="ingame_menu_manage_states">Manage States</string>
+    <!-- Row in that menu. Noun, plural: opens the list of cheat codes for this game. -->
+    <string name="ingame_menu_cheats">Cheats</string>
+    <!-- Row in that menu, for the host of a shared session. Verb phrase: opens the list of
+         friends so one can be asked to join. The trailing dots mean another step follows. -->
+    <string name="ingame_menu_invite_friend">Invite Friend...</string>
+    <!-- Row in that menu, for a host whose session is held for one named friend. Verb phrase:
+         drops that reservation so any friend may join. -->
+    <string name="ingame_menu_open_to_all_friends">Open to All Friends</string>
+    <!-- Row in that menu, for a host. Verb phrase: shuts the shared session down. -->
+    <string name="ingame_menu_close_netplay_server">Close Netplay Server</string>
+    <!-- Row in that menu, for a guest. Verb phrase: disconnects from the host's session. -->
+    <string name="ingame_menu_leave_netplay_session">Leave Netplay Session</string>
+    <!-- Row in that menu, when no shared session is running. Verb phrase: starts one that
+         friends can join. -->
+    <string name="ingame_menu_open_netplay_server">Open Netplay Server</string>
+    <!-- Row in that menu. Noun, plural: opens the in-game settings panel. -->
+    <string name="ingame_menu_settings">Settings</string>
+    <!-- Row in that menu while a run is being timed. Verb phrase: stops the timer. -->
+    <string name="ingame_menu_stop_speedrun_timer">Stop Speedrun Timer</string>
+    <!-- Row in that menu while no run is being timed. Noun phrase: the split timer panel. -->
+    <string name="ingame_menu_speedrun_timer">Speedrun Timer</string>
+    <!-- Row in that menu. Noun phrase: opens the editor for the on-screen button overlay. -->
+    <string name="ingame_menu_touch_controls">Touch Controls</string>
+    <!-- Row in that menu. Verb: restarts the game from its boot screen. -->
+    <string name="ingame_menu_reset">Reset</string>
+    <!-- Row in that menu. Verb phrase: ends the session and returns to the launcher. -->
+    <string name="ingame_menu_quit">Quit Game</string>
+    <!-- Badge at the top of that menu. Names the RetroAchievements mode that forbids save
+         states, cheats and rewind. Rendered in caps in English. -->
+    <string name="ingame_menu_hardcore_badge">HARDCORE</string>
+    <!-- Spoken description of the small button beside the quick load row. Noun phrase: the
+         list of recent quick save states. -->
+    <string name="ingame_menu_quick_save_history_action">Quick save history</string>
+
+    <!-- Heading of the list of discs a multi-disc release holds. Verb phrase: swaps which
+         disc is in the drive. -->
+    <string name="ingame_disc_title">Swap Disc</string>
+    <!-- Row in that list for the disc already in the drive. %1$s is the disc's name. -->
+    <string name="ingame_disc_current">"%1$s  (current)"</string>
+
+    <!-- Heading of the save state slot manager. Verb phrase addressed to the user. -->
+    <string name="ingame_states_title">Manage States</string>
+    <!-- Shown beside that heading when the game's states are kept under a named channel, so
+         separate playthroughs do not overwrite each other. %1$s is the channel's name. -->
+    <string name="ingame_states_channel">[%1$s]</string>
+    <!-- Heading of the prompt before erasing one save state. -->
+    <string name="ingame_states_delete_title">Delete save state?</string>
+    <!-- Accepting button on that prompt. Verb: goes ahead with the deletion. -->
+    <string name="ingame_states_delete_confirm">Confirm</string>
+    <!-- Declining button on that prompt. Verb: leaves the state alone. -->
+    <string name="ingame_states_delete_cancel">Cancel</string>
+    <!-- Body of that prompt. -->
+    <string name="ingame_states_delete_body">This action cannot be undone.</string>
+    <!-- Heading of the prompt before reading a save state back into the running game. -->
+    <string name="ingame_states_load_title">Load this state?</string>
+    <!-- Accepting button on that prompt. Verb: reads the state back in. -->
+    <string name="ingame_states_load_confirm">Load</string>
+    <!-- Declining button on that prompt. Verb: leaves the game where it is. -->
+    <string name="ingame_states_load_cancel">Cancel</string>
+    <!-- Spoken description of the screenshot on that prompt. Noun phrase: a picture of the
+         moment the save state holds. -->
+    <string name="ingame_states_load_preview_description">State preview</string>
+    <!-- Body of that prompt, warning that unsaved play since the state was written is lost. -->
+    <string name="ingame_states_load_body">Current progress will be replaced.</string>
+    <!-- Name of the slot the launcher writes to on its own when a session ends. Adjective,
+         short for "automatic". -->
+    <string name="ingame_states_slot_auto">Auto</string>
+    <!-- Name of a numbered save state slot. %1$d is the slot number. -->
+    <string name="ingame_states_slot_numbered">Slot %1$d</string>
+    <!-- Drawn in the preview panel for a slot that holds a state but no picture of it. -->
+    <string name="ingame_states_preview_no_screenshot">No Screenshot</string>
+    <!-- Drawn in the preview panel for a slot that holds nothing. Adjective phrase describing
+         the slot. -->
+    <string name="ingame_states_preview_empty_slot">Empty Slot</string>
+    <!-- Drawn over the full-screen slot view for a slot that holds a state but no picture. -->
+    <string name="ingame_states_carousel_no_screenshot">No Screenshot</string>
+    <!-- Drawn over the full-screen slot view for a slot that holds nothing. Adjective phrase
+         describing the slot. -->
+    <string name="ingame_states_carousel_no_state">No State Saved</string>
+    <!-- Second line under the full-screen slot view for a slot that holds nothing. Adjective
+         describing the slot. -->
+    <string name="ingame_states_carousel_empty">Empty</string>
+    <!-- Footer hint in the slot manager, on a slot that holds a state. Verb: reads it back
+         into the running game. -->
+    <string name="ingame_states_footer_load">Load</string>
+    <!-- Footer hint in the slot manager, on a slot that holds a state. Verb phrase: writes a
+         new state on top of it. -->
+    <string name="ingame_states_footer_save_over">Save Over</string>
+    <!-- Footer hint in the slot manager, on a slot that holds a state. Verb: erases it. -->
+    <string name="ingame_states_footer_delete">Delete</string>
+    <!-- Footer hint in the slot manager, on a slot that holds nothing. Verb: writes a state
+         into it. -->
+    <string name="ingame_states_footer_save">Save</string>
+    <!-- Footer hint in the slot manager while the grid is showing. Noun: switches to the
+         one-slot-at-a-time view. -->
+    <string name="ingame_states_footer_mode_carousel">Carousel</string>
+    <!-- Footer hint in the slot manager while the one-slot-at-a-time view is showing. Noun:
+         switches back to the grid of slots. -->
+    <string name="ingame_states_footer_mode_grid">Grid</string>
+    <!-- Footer hint in the slot manager. Verb: closes it and returns to the in-game menu. -->
+    <string name="ingame_states_footer_back">Back</string>
+
+    <!-- Heading shown in place of the quick save history when none have been written. -->
+    <string name="ingame_quickload_empty_title">No quick saves</string>
+    <!-- Body under that heading. "Quick Save" names the row in the in-game menu. -->
+    <string name="ingame_quickload_empty_message">Use Quick Save to build a history</string>
+    <!-- Heading of the list of recent quick save states. Verb phrase: reads one back into the
+         running game. -->
+    <string name="ingame_quickload_title">Quick Load</string>
+    <!-- Footer hint in that list. Verb: reads the highlighted state back in. -->
+    <string name="ingame_quickload_footer_load">Load</string>
+    <!-- Footer hint in that list. Verb: closes it and returns to the in-game menu. -->
+    <string name="ingame_quickload_footer_back">Back</string>
+    <!-- Spoken description of the large screenshot in that list. Noun phrase: a picture of
+         the moment the quick save state holds. -->
+    <string name="ingame_quickload_preview_description">Quick save preview</string>
+    <!-- Drawn in that list's preview panel when the state has no picture. -->
+    <string name="ingame_quickload_preview_no_screenshot">No Screenshot</string>
+    <!-- Name of the newest entry in that list. Adjective, superlative: the most recent one. -->
+    <string name="ingame_quickload_row_latest">Latest</string>
+    <!-- Name of any older entry in that list. Noun phrase: one quick save state. -->
+    <string name="ingame_quickload_row_entry">Quick save</string>
+
+    <!-- Heading of the prompt offered at launch when a save state from the last session is
+         waiting. -->
+    <string name="ingame_autorestore_title">Resume from save state?</string>
+    <!-- Accepting button on that prompt. -->
+    <string name="ingame_autorestore_confirm">Yes</string>
+    <!-- Declining button on that prompt. -->
+    <string name="ingame_autorestore_decline">No</string>
+
+    <!-- Heading of the pop-up for an achievement earned under the strict RetroAchievements
+         mode. Rendered in caps in English. -->
+    <string name="ingame_achievement_hardcore_heading">HARDCORE UNLOCKED</string>
+    <!-- Heading of the pop-up for an achievement earned normally. Rendered in caps in
+         English. -->
+    <string name="ingame_achievement_heading">ACHIEVEMENT UNLOCKED</string>
+    <!-- Third line of that pop-up, saying what the achievement was worth. -->
+    <plurals name="ingame_achievement_points">
+        <item quantity="one">+%d point</item>
+        <item quantity="other">+%d points</item>
+    </plurals>
+
+    <!-- Heading of the banner shown when the game signs in to the achievement service.
+         "RetroAchievements" is the service's name; leave it untranslated. -->
+    <string name="ingame_raconnect_title">RetroAchievements Connected</string>
+    <!-- Second line of that banner. Names the strict RetroAchievements mode, which forbids
+         save states, cheats and rewind. -->
+    <string name="ingame_raconnect_hardcore">Hardcore Mode</string>
+    <!-- Second line of that banner. Names the relaxed RetroAchievements mode. -->
+    <string name="ingame_raconnect_casual">Casual Mode</string>
+    <!-- Tail of that banner's second line. %1$d is how many achievements this game has
+         already given up, %2$d how many it holds in total. -->
+    <string name="ingame_raconnect_earned">%1$d/%2$d earned</string>
+
+    <!-- Drawn under the clock on the run timer panel while the run is held. Adjective
+         describing the run. Rendered in caps in English. -->
+    <string name="ingame_speedrun_paused">PAUSED</string>
+    <!-- Label of a figure at the foot of the run timer panel. Noun phrase: the fastest this
+         category has ever been finished on this device. -->
+    <string name="ingame_speedrun_personal_best">Personal Best</string>
+    <!-- Label of a figure at the foot of the run timer panel. Noun phrase: the fastest finish
+         since the app was opened. -->
+    <string name="ingame_speedrun_session_best">Session Best</string>
+    <!-- Label of a figure at the foot of the run timer panel. Noun phrase: what the run would
+         take if every segment matched its own record. -->
+    <string name="ingame_speedrun_sum_of_best">Sum of Best</string>
+    <!-- Last line of the run timer panel. %1$d is how many runs of this category have been
+         started. -->
+    <string name="ingame_speedrun_attempt">Attempt %1$d</string>
+
+    <!-- Step shown while joining a friend's shared session. Verb phrase: the request is on
+         its way. -->
+    <string name="ingame_netplay_progress_requesting_join">Requesting join...</string>
+    <!-- Step shown while joining. Verb phrase: the request has arrived and the host has not
+         answered yet. -->
+    <string name="ingame_netplay_progress_waiting_for_host">Waiting for host to accept...</string>
+    <!-- Step shown while joining. Verb phrase: the two devices are opening a link. -->
+    <string name="ingame_netplay_progress_connecting">Connecting...</string>
+    <!-- Step shown while joining. Verb phrase: the link's speed is being tested. -->
+    <string name="ingame_netplay_progress_measuring">Measuring connection...</string>
+    <!-- Step shown while joining. Verb phrase: the host's game is being copied over so both
+         sides start from the same point. -->
+    <string name="ingame_netplay_progress_loading_state">Loading game state...</string>
+    <!-- Last step shown while joining. Adjective: the session is playable. -->
+    <string name="ingame_netplay_progress_ready">Ready!</string>
+    <!-- Shown when joining failed and no reason came back. -->
+    <string name="ingame_netplay_progress_failed">Couldn\'t connect</string>
+    <!-- Heading over those steps. Names the feature that lets two devices play one game
+         together. -->
+    <string name="ingame_netplay_progress_title">Netplay</string>
+    <!-- Button that clears the failure message and returns to the game. -->
+    <string name="ingame_netplay_progress_dismiss">OK</string>
+
+    <!-- Shown over the game when a shared session drops and is being rebuilt. Verb phrase. -->
+    <string name="ingame_netplay_reconnecting">Reconnecting...</string>
+    <!-- The same, when the last measured round trip is known. %1$d is that figure in
+         milliseconds; "ms" is the unit symbol. -->
+    <string name="ingame_netplay_reconnecting_with_ping">Reconnecting... (last: %1$dms)</string>
+
+    <!-- Heading of the prompt a host sees when the other player drops out. -->
+    <string name="ingame_netplay_disconnect_title">Friend Disconnected</string>
+    <!-- Body of that prompt. %1$s is the other player's display name. -->
+    <string name="ingame_netplay_disconnect_message">%1$s lost connection. Keep the session open for them to rejoin, or close and exit?</string>
+    <!-- Accepting button on that prompt. Verb phrase: leaves the session running. -->
+    <string name="ingame_netplay_disconnect_keep_open">Keep Open</string>
+    <!-- Declining button on that prompt. Verb phrase: shuts the session down and leaves the
+         game. -->
+    <string name="ingame_netplay_disconnect_close">Close and End Game</string>
+
+    <!-- Heading of the prompt shown when a measured link looks too slow to play over. -->
+    <string name="ingame_netplay_quality_warning_title">Connection Warning</string>
+    <!-- Body of that prompt. %1$s names the quality tier, %2$d is the round trip and %3$d the
+         variation in it, both in milliseconds; "ms" is the unit symbol. -->
+    <string name="ingame_netplay_quality_warning_message">Connection quality is %1$s (%2$dms ping, %3$dms jitter). Gameplay may be choppy.</string>
+    <!-- Accepting button on that prompt. Verb phrase: joins in spite of the warning. -->
+    <string name="ingame_netplay_quality_warning_accept">Continue Anyway</string>
+    <!-- Declining button on that prompt. Verb: abandons the attempt. -->
+    <string name="ingame_netplay_quality_warning_decline">Cancel</string>
+
+    <!-- Heading of the list of friends who can be asked into a shared session. Verb phrase
+         addressed to the user. -->
+    <string name="ingame_netplay_friend_picker_title">Invite Friend</string>
+    <!-- Shown in place of that list when nobody is reachable. -->
+    <string name="ingame_netplay_friend_picker_empty">No online friends available</string>
+    <!-- Button under that message. Verb: shuts the list. -->
+    <string name="ingame_netplay_friend_picker_close">Close</string>
+    <!-- Second line under a friend in that list who is reachable. Adjective. -->
+    <string name="ingame_netplay_friend_online">Online</string>
+    <!-- Second line under a friend in that list who is not reachable. Adjective. -->
+    <string name="ingame_netplay_friend_offline">Offline</string>
+
+    <!-- Heading of the prompt asking who may join a session about to be started. Verb phrase
+         addressed to the user. -->
+    <string name="ingame_netplay_mode_picker_title">Open Netplay Server</string>
+    <!-- Row in that prompt. Adjective phrase describing the session. -->
+    <string name="ingame_netplay_mode_open_label">Open to Friends</string>
+    <!-- Second line under that row. -->
+    <string name="ingame_netplay_mode_open_description">Anyone can join</string>
+    <!-- Row in that prompt. Adjective describing the session. -->
+    <string name="ingame_netplay_mode_private_label">Private</string>
+    <!-- Second line under that row. "Your approval" is the host answering a join request. -->
+    <string name="ingame_netplay_mode_private_description">Requires your approval</string>
+    <!-- Row in that prompt. Verb phrase: picks one friend to hold the session for. The
+         trailing dots mean another step follows. -->
+    <string name="ingame_netplay_mode_invite_label">Invite Friend...</string>
+    <!-- Second line under that row. -->
+    <string name="ingame_netplay_mode_invite_description">Pick a specific friend</string>
+
+    <!-- Heading of the prompt a host sees when somebody asks to join. -->
+    <string name="ingame_netplay_join_request_title">Join Request</string>
+    <!-- Body of that prompt. %1$s is the asking player's name. -->
+    <string name="ingame_netplay_join_request_message">%1$s wants to join your session</string>
+    <!-- Accepting button on that prompt. Verb: lets them in. -->
+    <string name="ingame_netplay_join_request_accept">Accept</string>
+    <!-- Declining button on that prompt. Verb: turns them away. -->
+    <string name="ingame_netplay_join_request_decline">Decline</string>
+
+    <!-- Line on the small readout drawn beside a shared session, naming a session anyone may
+         join. Adjective describing the session. -->
+    <string name="ingame_netplay_hud_mode_open">Open</string>
+    <!-- The same line, for a session the host lets people into one at a time. Adjective. -->
+    <string name="ingame_netplay_hud_mode_private">Private</string>
+    <!-- The same line, for a session held for one named friend. Adjective phrase. -->
+    <string name="ingame_netplay_hud_mode_invite_only">Invite Only</string>
+    <!-- Line on that readout counting who is in the session. -->
+    <plurals name="ingame_netplay_hud_players">
+        <item quantity="one">%d player</item>
+        <item quantity="other">%d players</item>
+    </plurals>
+    <!-- Tag beside the first name on that readout. Noun: this person runs the session.
+         Rendered in caps and brackets in English. -->
+    <string name="ingame_netplay_hud_host_tag">[HOST]</string>
+    <!-- Heading of the last group on that readout. Noun, plural: people watching without
+         playing. -->
+    <string name="ingame_netplay_hud_observers">Observers</string>
+
+    <!-- Tab of the in-game settings panel holding picture settings. Noun. -->
+    <string name="ingame_settings_tab_video">Video</string>
+    <!-- Tab of the in-game settings panel holding controller and touch settings. Noun,
+         plural. -->
+    <string name="ingame_settings_tab_controls">Controls</string>
+    <!-- Tab of the in-game settings panel holding the emulation engine's own settings. Noun
+         phrase, plural. -->
+    <string name="ingame_settings_tab_core_options">Core Options</string>
+
+    <!-- Footer hint in the in-game settings panel. Noun: the shoulder buttons move between
+         the panel's tabs. -->
+    <string name="ingame_settings_footer_tab">Tab</string>
+    <!-- Footer hint on the picture tab. Verb: left and right change the highlighted
+         setting's value. -->
+    <string name="ingame_settings_footer_video_adjust">Adjust</string>
+    <!-- Footer hint on the picture tab. Verb: acts on the highlighted setting. -->
+    <string name="ingame_settings_footer_video_select">Select</string>
+    <!-- Footer hint on the controls tab. Verb: left and right change the highlighted
+         setting's value. -->
+    <string name="ingame_settings_footer_controls_adjust">Adjust</string>
+    <!-- Footer hint on the controls tab. Verb: acts on the highlighted setting. -->
+    <string name="ingame_settings_footer_controls_select">Select</string>
+    <!-- Footer hint on the core options tab. Verb: left and right change the highlighted
+         option's value. -->
+    <string name="ingame_settings_footer_core_options_adjust">Adjust</string>
+    <!-- Footer hint on the core options tab. Verb: acts on the highlighted option. -->
+    <string name="ingame_settings_footer_core_options_select">Select</string>
+    <!-- Footer hint in the in-game settings panel. Verb: closes it and returns to the in-game
+         menu. -->
+    <string name="ingame_settings_footer_back">Back</string>
+
+    <!-- Heading of the first group on the controls tab. Noun, plural: the gamepads. -->
+    <string name="ingame_settings_header_controllers">Controllers</string>
+    <!-- Heading of the group holding the thumbstick settings. Noun phrase, plural. -->
+    <string name="ingame_settings_header_sticks">Analog Sticks</string>
+    <!-- Heading of the group holding the button shortcut settings. Noun, plural. -->
+    <string name="ingame_settings_header_hotkeys">Hotkeys</string>
+    <!-- Heading of the group holding the on-screen button overlay settings. Noun phrase,
+         plural. -->
+    <string name="ingame_settings_header_touch">Touch Controls</string>
+
+    <!-- Row on the controls tab. Adjective phrase: whether the remaps below belong to this
+         one game. -->
+    <string name="ingame_settings_game_specific_controls_title">Game-specific controls</string>
+    <!-- Second line under that row while it is on. -->
+    <string name="ingame_settings_game_specific_controls_subtitle_on">Remaps apply to this game only</string>
+    <!-- Second line under that row while it is off. -->
+    <string name="ingame_settings_game_specific_controls_subtitle_off">Using your global controller mapping</string>
+    <!-- Row on the controls tab. Noun: the controller's vibration motor. -->
+    <string name="ingame_settings_rumble_title">Rumble</string>
+    <!-- Second line under that row. -->
+    <string name="ingame_settings_rumble_subtitle">Enable controller vibration feedback</string>
+    <!-- Row on the controls tab. Noun phrase: which physical controller is which player. -->
+    <string name="ingame_settings_controller_order_title">Controller Order</string>
+    <!-- Second line under that row when ports have been given out, counting them. -->
+    <plurals name="ingame_settings_controller_order_assigned">
+        <item quantity="one">%d controller assigned</item>
+        <item quantity="other">%d controllers assigned</item>
+    </plurals>
+    <!-- Second line under that row when no ports have been given out. Verb phrase addressed
+         to the user. -->
+    <string name="ingame_settings_controller_order_subtitle_empty">Assign controller ports</string>
+    <!-- Row on the controls tab picking what kind of device one port pretends to be. %1$d is
+         the player number, counting from one. -->
+    <string name="ingame_settings_controller_type_title">Player %1$d Controller</string>
+    <!-- Second line under that row when the choice only takes effect on the next launch. -->
+    <string name="ingame_settings_controller_type_pending">Applies next time you launch</string>
+    <!-- Second line under that row when nothing has been picked, so the emulation engine
+         decides. -->
+    <string name="ingame_settings_controller_type_core_default">Chosen by the core</string>
+    <!-- Row on the controls tab. Noun phrase: the moulded handle some handhelds clip on,
+         which hides the bottom of the screen. -->
+    <string name="ingame_settings_controller_grip_title">Controller Grip</string>
+    <!-- Second line under that row. -->
+    <string name="ingame_settings_controller_grip_subtitle">Shift the UI up out of the area a grip covers</string>
+    <!-- Row on the controls tab. Noun phrase: which physical button does what. -->
+    <string name="ingame_settings_input_mapping_title">Input Mapping</string>
+    <!-- Second line under that row. -->
+    <string name="ingame_settings_input_mapping_subtitle">Remap buttons for each controller</string>
+    <!-- Row on the controls tab. Noun phrase: the left thumbstick standing in for the
+         direction pad. -->
+    <string name="ingame_settings_analog_as_dpad_title">Left Stick as D-Pad</string>
+    <!-- Second line under that row. "D-pad" is the cross-shaped direction control. -->
+    <string name="ingame_settings_analog_as_dpad_subtitle">Map left analog stick to D-pad inputs</string>
+    <!-- Row on the controls tab. Noun phrase: the direction pad standing in for the left
+         thumbstick. -->
+    <string name="ingame_settings_dpad_as_analog_title">D-Pad as Left Stick</string>
+    <!-- Second line under that row. -->
+    <string name="ingame_settings_dpad_as_analog_subtitle">Map D-pad to left analog stick inputs</string>
+    <!-- Row on the controls tab. Noun, plural: button shortcuts that act on the emulator
+         rather than the game. -->
+    <string name="ingame_settings_hotkeys_title">Hotkeys</string>
+    <!-- Second line under that row. -->
+    <string name="ingame_settings_hotkeys_subtitle">Configure shortcuts for menu, fast forward, rewind</string>
+    <!-- Row on the controls tab. Verb phrase: keeps those shortcuts on the first player's
+         controller. -->
+    <string name="ingame_settings_limit_hotkeys_title">Limit Hotkeys to Player 1</string>
+    <!-- Second line under that row. -->
+    <string name="ingame_settings_limit_hotkeys_subtitle">Only player 1 controller can trigger hotkeys</string>
+    <!-- Row on the controls tab. Verb phrase: makes the fast forward shortcut a switch rather
+         than something held down. -->
+    <string name="ingame_settings_toggle_fast_forward_title">Toggle Fast Forward</string>
+    <!-- Second line under that row. -->
+    <string name="ingame_settings_toggle_fast_forward_subtitle">Press once to start, again to stop (off = hold to fast forward)</string>
+    <!-- Row on the controls tab. Verb phrase: keeps sped-up audio from sounding higher. -->
+    <string name="ingame_settings_preserve_pitch_title">Preserve Audio Pitch</string>
+    <!-- Second line under that row. -->
+    <string name="ingame_settings_preserve_pitch_subtitle">Keep pitch steady while fast forwarding. Uses extra CPU; off by default</string>
+    <!-- Row on the controls tab. Verb phrase describing when the on-screen buttons appear. -->
+    <string name="ingame_settings_touch_enabled_title">Show touch controls when no gamepad</string>
+    <!-- Second line under that row. -->
+    <string name="ingame_settings_touch_enabled_subtitle">Display an on-screen overlay when no controller is connected</string>
+    <!-- Row on the controls tab. Noun phrase: a short buzz when an on-screen button is
+         pressed. -->
+    <string name="ingame_settings_touch_haptic_title">Haptic feedback</string>
+    <!-- Second line under that row. -->
+    <string name="ingame_settings_touch_haptic_subtitle">Vibrate briefly on touch</string>
+    <!-- Row on the controls tab. Verb phrase: stops the screen turning while playing. -->
+    <string name="ingame_settings_touch_lock_orientation_title">Lock orientation in-game</string>
+    <!-- Second line under that row. -->
+    <string name="ingame_settings_touch_lock_orientation_subtitle">Don\'t auto-rotate during play</string>
+    <!-- Row on the controls tab. Noun phrase: the six-button pad layout for one console.
+         "Genesis" is that console's name; leave it untranslated. -->
+    <string name="ingame_settings_touch_genesis6_title">Genesis 6-button mode</string>
+    <!-- Second line under that row. "Genesis" and "Mega Drive" are the two regional names of
+         one console; leave both untranslated. -->
+    <string name="ingame_settings_touch_genesis6_subtitle">Show six face buttons for Genesis / Mega Drive</string>
+
+    <!-- Heading of the group at the foot of the picture tab. Noun phrase: the small readout
+         Argosy draws over the running game. -->
+    <string name="ingame_settings_hud_header">Status Bar</string>
+    <!-- Row in that group. Verb phrase: draws the readout at all. -->
+    <string name="ingame_settings_hud_enabled_title">Show status bar</string>
+    <!-- Second line under that row. -->
+    <string name="ingame_settings_hud_enabled_subtitle">A small readout pinned to a corner while playing</string>
+    <!-- Row in that group picking which corner of the screen the readout sits in. Noun,
+         singular. -->
+    <string name="ingame_settings_hud_corner_title">Corner</string>
+    <!-- Row in that group. Noun: the device's battery level. -->
+    <string name="ingame_settings_hud_battery_title">Battery</string>
+    <!-- Row in that group. Noun: the time of day. -->
+    <string name="ingame_settings_hud_clock_title">Clock</string>
+    <!-- Row in that group. Noun phrase: how long this sitting has run. -->
+    <string name="ingame_settings_hud_playtime_title">Session time</string>
+    <!-- Row in that group. Noun: frames drawn per second. Leave the abbreviation as is if it
+         is the usual one in your language. -->
+    <string name="ingame_settings_hud_fps_title">FPS</string>
+    <!-- Second line under that row. -->
+    <string name="ingame_settings_hud_fps_subtitle">Hidden while fast-forwarding</string>
+    <!-- Row in that group. Noun phrase: when the newest save state was written. -->
+    <string name="ingame_settings_hud_last_save_title">Last save state</string>
+
+    <!-- Row at the top of the core options tab. Adjective phrase: whether the options below
+         belong to this one game. -->
+    <string name="ingame_coreoptions_per_game_title">Game-specific settings</string>
+    <!-- Second line under that row while it is on. -->
+    <string name="ingame_coreoptions_per_game_subtitle_on">Changes apply to this game only</string>
+    <!-- Second line under that row while it is off. -->
+    <string name="ingame_coreoptions_per_game_subtitle_off">Using global defaults for this core</string>
+
+    <!-- Spoken description of the left arrow in the border art picker. Adjective: the border
+         before this one. -->
+    <string name="ingame_frame_previous_description">Previous</string>
+    <!-- Spoken description of the right arrow in the border art picker. Adjective: the border
+         after this one. -->
+    <string name="ingame_frame_next_description">Next</string>
+    <!-- Drawn in the border art picker when no border is chosen. Noun phrase describing the
+         choice. -->
+    <string name="ingame_frame_none">No Frame</string>
+    <!-- Badge beside a border that is not on the device yet. Verb: it has to be fetched
+         first. -->
+    <string name="ingame_frame_download_badge">Download</string>
+    <!-- Footer hint in the border art picker. Verb: left and right move through the
+         borders. -->
+    <string name="ingame_frame_footer_change">Change</string>
+    <!-- Footer hint in the border art picker. Verb: keeps the border under the cursor. -->
+    <string name="ingame_frame_footer_select">Select</string>
+    <!-- Footer hint in the border art picker. Verb: fetches the border under the cursor. -->
+    <string name="ingame_frame_footer_download">Download</string>
+    <!-- Footer hint in the border art picker. Verb: leaves the border as it was. -->
+    <string name="ingame_frame_footer_cancel">Cancel</string>
+
+    <!-- Footer hint while the list of available shaders is open. Verb: up and down move
+         through the list. -->
+    <string name="ingame_shader_footer_picker_browse">Browse</string>
+    <!-- Footer hint while that list is open. Verb: adds the shader under the cursor. -->
+    <string name="ingame_shader_footer_picker_select">Select</string>
+    <!-- Footer hint while that list is open. Verb: shuts it without adding anything. -->
+    <string name="ingame_shader_footer_picker_cancel">Cancel</string>
+    <!-- Footer hint on the shader stack. Noun: the shoulder buttons move between the shaders
+         in the stack. -->
+    <string name="ingame_shader_footer_shader">Shader</string>
+    <!-- Footer hint on the shader stack. Verb: the triggers move the highlighted shader up or
+         down the stack. -->
+    <string name="ingame_shader_footer_reorder">Reorder</string>
+    <!-- Footer hint on the shader stack. Verb: left and right change the highlighted
+         parameter's value. -->
+    <string name="ingame_shader_footer_adjust">Adjust</string>
+    <!-- Footer hint on the shader stack. Verb: opens the list of available shaders. -->
+    <string name="ingame_shader_footer_add">Add</string>
+    <!-- Footer hint on the shader stack. Verb: takes the highlighted shader back out. -->
+    <string name="ingame_shader_footer_remove">Remove</string>
+    <!-- Footer hint on the shader stack. Verb: puts the highlighted parameter back to its
+         shipped value. -->
+    <string name="ingame_shader_footer_reset">Reset</string>
+    <!-- Footer hint on the shader stack. Verb: closes it and returns to the in-game menu. -->
+    <string name="ingame_shader_footer_back">Back</string>
+
+    <!-- Tab of the cheats panel listing the codes already known for this game. Noun,
+         plural. -->
+    <string name="ingame_cheats_tab_cheats">Cheats</string>
+    <!-- Tab of the cheats panel for finding new codes by watching the game's memory. Verb. -->
+    <string name="ingame_cheats_tab_discover">Discover</string>
+
+    <!-- Shown on the discover tab when the emulation engine will not hand over the game's
+         memory, so nothing can be searched. -->
+    <string name="ingame_cheats_error_ram_unavailable">RAM not available for this core</string>
+    <!-- Shown on the discover tab when a search for changed values found none. -->
+    <string name="ingame_cheats_error_no_changes">No changes detected - play more first</string>
+    <!-- Shown on the discover tab when a search for changed values needs more play before it
+         can run. Verb phrase addressed to the user. -->
+    <string name="ingame_cheats_error_changed_not_ready">Play more to narrow results</string>
+    <!-- Shown on the discover tab when a search for unchanged values found none. "Changed"
+         names the button beside it. -->
+    <string name="ingame_cheats_error_no_unchanged">No unchanged values - try \'Changed\' instead</string>
+    <!-- Shown on the discover tab when a search for unchanged values needs more play before
+         it can run. Verb phrase addressed to the user. -->
+    <string name="ingame_cheats_error_same_not_ready">Play more to narrow results</string>
+    <!-- Shown on the discover tab when the chosen result is already a saved cheat. -->
+    <string name="ingame_cheats_error_address_saved">Address already saved as cheat</string>
+
+    <!-- Footer hint while the cheats panel is asking which release of the game this is. Verb:
+         picks the one under the cursor. -->
+    <string name="ingame_cheats_footer_variant_select">Select</string>
+    <!-- Footer hint on the cheat list, cursor on the search box. Verb: opens the text field
+         for filtering the list. -->
+    <string name="ingame_cheats_footer_search">Search</string>
+    <!-- Footer hint on the cheat list, cursor on the search box with a filter set. Verb:
+         empties the filter. -->
+    <string name="ingame_cheats_footer_clear_search">Clear</string>
+    <!-- Footer hint on the cheat list, cursor on a cheat. Verb: turns it on or off. -->
+    <string name="ingame_cheats_footer_toggle">Toggle</string>
+    <!-- Footer hint on the cheat list, cursor on a cheat. Verb: opens it for changing. -->
+    <string name="ingame_cheats_footer_edit">Edit</string>
+    <!-- Footer hint on the cheat list when the game has several releases. Noun: opens the
+         list of them. -->
+    <string name="ingame_cheats_footer_version">Version</string>
+    <!-- Footer hint on the discover tab before anything is captured. Noun: takes a copy of
+         the game's memory to compare against. -->
+    <string name="ingame_cheats_footer_snapshot">Snapshot</string>
+    <!-- Footer hint on the discover tab, cursor on one of the compare actions. Verb: runs
+         it. -->
+    <string name="ingame_cheats_footer_discover_select">Select</string>
+    <!-- Footer hint on the discover tab, cursor on a found address. Verb phrase: turns it
+         into a cheat. -->
+    <string name="ingame_cheats_footer_save_cheat">Save Cheat</string>
+    <!-- Footer hint on the discover tab's result list, cursor on the value box. Verb: keeps
+         only the addresses holding that value. -->
+    <string name="ingame_cheats_footer_filter">Filter</string>
+    <!-- Footer hint on the discover tab's result list. Verb: left and right change the value
+         being filtered on. -->
+    <string name="ingame_cheats_footer_adjust">Adjust</string>
+    <!-- Footer hint on the discover tab. Verb: throws the captured memory away and starts
+         over. -->
+    <string name="ingame_cheats_footer_reset">Reset</string>
+    <!-- Footer hint in the cheats panel. Noun: the shoulder buttons move between the panel's
+         tabs. -->
+    <string name="ingame_cheats_footer_tab">Tab</string>
+    <!-- Footer hint in the cheats panel. Verb: closes it and returns to the in-game menu. -->
+    <string name="ingame_cheats_footer_back">Back</string>
+
+    <!-- Shown over the cheats panel while the game's memory is being read. Verb phrase. -->
+    <string name="ingame_cheats_loading">Scanning memory...</string>
+    <!-- Heading shown when the cheat file holds codes for several releases of the game and
+         one has to be picked. -->
+    <string name="ingame_cheats_variant_picker_title">Multiple versions available</string>
+    <!-- Body under that heading. "ROM" is the game file; leave it untranslated. -->
+    <string name="ingame_cheats_variant_picker_message">Select the version that matches your ROM</string>
+    <!-- Heading of the same list when it is reopened later to change the choice. Verb phrase
+         addressed to the user. -->
+    <string name="ingame_cheats_variant_modal_title">Select Version</string>
+    <!-- Name of a release in that list whose region the cheat file does not say. Adjective
+         phrase describing the release. -->
+    <string name="ingame_cheats_variant_unknown_region">Unknown Region</string>
+    <!-- Figure beside a release in that list, saying how many codes it carries. -->
+    <plurals name="ingame_cheats_variant_count">
+        <item quantity="one">%d cheat</item>
+        <item quantity="other">%d cheats</item>
+    </plurals>
+
+    <!-- Figure above the cheat list, counting the codes the filter left showing. -->
+    <plurals name="ingame_cheats_available_count">
+        <item quantity="one">%d cheat</item>
+        <item quantity="other">%d cheats</item>
+    </plurals>
+    <!-- Figure above the cheat list. %1$d is how many codes are switched on, %2$d how many
+         the game has. -->
+    <string name="ingame_cheats_available_enabled">%1$d/%2$d enabled</string>
+    <!-- Shown in place of the cheat list when the filter matched nothing. -->
+    <string name="ingame_cheats_available_empty_search">No matching cheats</string>
+    <!-- Shown in place of the cheat list when the game has no codes at all. -->
+    <string name="ingame_cheats_available_empty">No cheats available</string>
+    <!-- Placeholder in the cheat list's search box while no filter is set. -->
+    <string name="ingame_cheats_available_search_placeholder">Search cheats...</string>
+    <!-- Word at the end of the cheat list's search box while a filter is set. Verb: empties
+         the filter. -->
+    <string name="ingame_cheats_available_search_clear">Clear</string>
+
+    <!-- Second line under the failure message on the discover tab, saying why nothing can be
+         searched. "RAM" is the game's working memory; leave it untranslated. -->
+    <string name="ingame_cheats_discover_ram_hint">This core does not expose system RAM</string>
+    <!-- First action on the discover tab. Noun: takes a copy of the game's memory to compare
+         against later. -->
+    <string name="ingame_cheats_discover_snapshot_title">Snapshot</string>
+    <!-- Second line under that action. -->
+    <string name="ingame_cheats_discover_snapshot_subtitle">Capture current RAM state</string>
+    <!-- Shown under that action before anything is captured. Verb phrase addressed to the
+         user. -->
+    <string name="ingame_cheats_discover_snapshot_hint">Take a snapshot to begin</string>
+    <!-- Action on the discover tab. Adjective describing the values to keep: the ones that
+         differ from the copy. -->
+    <string name="ingame_cheats_discover_changed_title">Changed</string>
+    <!-- Second line under that action. -->
+    <string name="ingame_cheats_discover_changed_subtitle">Find values that changed since snapshot</string>
+    <!-- Action on the discover tab. Adjective describing the values to keep: the ones that
+         match the copy. -->
+    <string name="ingame_cheats_discover_same_title">Same</string>
+    <!-- Second line under that action. -->
+    <string name="ingame_cheats_discover_same_subtitle">Find values that stayed the same</string>
+    <!-- Action on the discover tab. Verb phrase: shows the addresses the last search left. -->
+    <string name="ingame_cheats_discover_view_results_title">View Results</string>
+    <!-- Second line under that action, counting what the last search left. -->
+    <plurals name="ingame_cheats_discover_view_results_subtitle">
+        <item quantity="one">%d entry from last search</item>
+        <item quantity="other">%d entries from last search</item>
+    </plurals>
+    <!-- Figure under the compare actions, counting the addresses still in the running. -->
+    <plurals name="ingame_cheats_discover_actions_candidates">
+        <item quantity="one">%d candidate</item>
+        <item quantity="other">%d candidates</item>
+    </plurals>
+    <!-- Shown under the compare actions once a search has run. Verb phrase addressed to the
+         user, naming the two ways forward. -->
+    <string name="ingame_cheats_discover_hint_narrow">Narrow results or view current</string>
+    <!-- Shown under the compare actions before any search has run. Verb phrase addressed to
+         the user. -->
+    <string name="ingame_cheats_discover_hint_pick">Pick an action to compare</string>
+    <!-- Shown on the discover tab while the memory copy is too fresh to compare against.
+         Verb phrase addressed to the user. -->
+    <string name="ingame_cheats_discover_waiting_message">Play some more and narrow your results to continue</string>
+    <!-- Figure under that message, counting the addresses still in the running. -->
+    <plurals name="ingame_cheats_discover_waiting_candidates">
+        <item quantity="one">%d candidate</item>
+        <item quantity="other">%d candidates</item>
+    </plurals>
+    <!-- Row above the discover tab's result list. Verb phrase: keeps only the addresses
+         holding the number set here. -->
+    <string name="ingame_cheats_discover_filter_title">Filter by Value</string>
+    <!-- Figure above the discover tab's result list, counting the addresses still in the
+         running. -->
+    <plurals name="ingame_cheats_discover_results_candidates">
+        <item quantity="one">%d candidate</item>
+        <item quantity="other">%d candidates</item>
+    </plurals>
+    <!-- Shown above the discover tab's result list. Verb phrase addressed to the user: more
+         play is needed before another comparison will say anything. -->
+    <string name="ingame_cheats_discover_results_hint">Play game to compare again</string>
+    <!-- Shown in place of the discover tab's result list when the search left nothing. -->
+    <string name="ingame_cheats_discover_results_empty">No matches found</string>
+    <!-- Second line under a found address that is already a cheat. %1$s is that cheat's
+         name. -->
+    <string name="ingame_cheats_discover_result_saved">Saved as %1$s</string>
+    <!-- Second line under a found address, giving what it holds now. %1$s is that number in
+         hexadecimal. -->
+    <string name="ingame_cheats_discover_result_value">Value %1$s</string>
+    <!-- The same, when the number it held at the last comparison is also known. %1$s is what
+         it holds now, %2$s what it held before, both in hexadecimal. -->
+    <string name="ingame_cheats_discover_result_value_previous">Value %1$s (was %2$s)</string>
+
+    <!-- Heading of the box for filtering the cheat list. Verb phrase addressed to the user. -->
+    <string name="ingame_cheats_dialog_search_title">Search Cheats</string>
+    <!-- Placeholder in that box's text field. -->
+    <string name="ingame_cheats_dialog_search_placeholder">Enter cheat name...</string>
+    <!-- Button in that box. Verb: empties the filter. -->
+    <string name="ingame_cheats_dialog_search_clear">Clear</string>
+    <!-- Button in that box. Verb: shuts it and leaves the filter as it was. -->
+    <string name="ingame_cheats_dialog_search_cancel">Cancel</string>
+    <!-- Button in that box. Verb: applies what was typed. -->
+    <string name="ingame_cheats_dialog_search_confirm">Search</string>
+    <!-- Heading of the form for turning a found address into a cheat. Verb phrase addressed
+         to the user. -->
+    <string name="ingame_cheats_dialog_create_title">Create Cheat</string>
+    <!-- Accepting button on that form. Verb: writes the new cheat. -->
+    <string name="ingame_cheats_dialog_create_confirm">Create</string>
+    <!-- Heading of the form for changing a cheat that already exists. Verb phrase addressed
+         to the user. -->
+    <string name="ingame_cheats_dialog_edit_title">Edit Cheat</string>
+    <!-- Accepting button on that form. Verb: keeps the changes. -->
+    <string name="ingame_cheats_dialog_edit_confirm">Save</string>
+    <!-- First line of either form, naming the place in memory the cheat writes to. %1$s is
+         that place in hexadecimal; the "0x" marks it as such and is not translated. -->
+    <string name="ingame_cheats_dialog_address">Address: 0x%1$s</string>
+    <!-- Label of the text field holding what the cheat is called. -->
+    <string name="ingame_cheats_dialog_name_label">Cheat name</string>
+    <!-- Label of the number field on either form. %1$d and %2$d are the lowest and highest
+         numbers allowed. -->
+    <string name="ingame_cheats_dialog_value_label">Value (%1$d-%2$d)</string>
+    <!-- Shown under that number field when what was typed is out of range. %1$d and %2$d are
+         the lowest and highest numbers allowed. -->
+    <string name="ingame_cheats_dialog_value_error">Enter a value between %1$d and %2$d</string>
+    <!-- Row at the foot of the edit form. Verb phrase: opens the prompt below. -->
+    <string name="ingame_cheats_dialog_delete_row">Delete Cheat</string>
+    <!-- Heading of the prompt before erasing a cheat. Verb phrase addressed to the user. -->
+    <string name="ingame_cheats_dialog_delete_title">Delete Cheat</string>
+    <!-- Body of that prompt. %1$s is the cheat's name. -->
+    <string name="ingame_cheats_dialog_delete_message">Are you sure you want to delete &quot;%1$s&quot;?</string>
+    <!-- Accepting button on that prompt. Verb: erases the cheat. -->
+    <string name="ingame_cheats_dialog_delete_confirm">Delete</string>
+    <!-- Declining button on either form. Verb: shuts it without keeping anything. -->
+    <string name="ingame_cheats_dialog_cancel">Cancel</string>
+
+    <!-- Section header above cheats used within the last week (libretro/ui/cheats/AvailableTab.kt).
+         Adjective, not a verb. -->
+    <string name="ingame_cheats_available_header_recent">RECENT</string>
+    <!-- Section header above cheats the player authored themselves. -->
+    <string name="ingame_cheats_available_header_custom">CUSTOM</string>
+    <!-- Section header above the remaining cheats that are neither recent nor custom. Not the
+         "Available" tab's own name; this is a sub-heading inside that tab. -->
+    <string name="ingame_cheats_available_header_available">AVAILABLE</string>
+
+    <!-- LibretroActivity.kt: shown in the in-game toast overlay when the ROM file cannot be
+         found or read at launch. -->
+    <string name="ingame_libretro_rom_not_found">Game file not found</string>
+    <string name="ingame_libretro_rom_not_readable">Cannot access game file</string>
+
+    <!-- Fallback toast text for a GLRetroView error the core reported, keyed by error code. -->
+    <string name="ingame_libretro_core_error_load_library">Emulator core failed to load</string>
+    <string name="ingame_libretro_core_error_load_game">Game file could not be loaded</string>
+    <string name="ingame_libretro_core_error_gl_incompatible">Device graphics not supported</string>
+    <!-- "Save" is a noun here: the save file the core tried to read, not a verb. -->
+    <string name="ingame_libretro_core_error_serialization">Save file is corrupted</string>
+    <string name="ingame_libretro_core_error_cheat">Cheat system error</string>
+    <string name="ingame_libretro_core_error_unknown">An unexpected error occurred</string>
+
+    <!-- Shown once, right after the first frame renders, when the battery save (SRAM) on disk
+         did not match what the core expected and a fresh save was used instead. "save" is a
+         noun (the save data), not a verb. -->
+    <string name="ingame_libretro_sram_load_failed_fresh_save">Failed to load save, using new save instead</string>
+    <!-- Shown when a hardcore-mode session had to resume from a casual save. "save" is a noun. -->
+    <string name="ingame_libretro_casual_save_in_hardcore">Continuing casual save in hardcore</string>
+
+    <!-- Disc-swap toast. %1$s is the disc's own label, or the fallback name below if it has
+         none. -->
+    <string name="ingame_libretro_disc_swap_inserted">Inserted %1$s</string>
+    <!-- Fallback disc name when the disc has no usable file name. %1$d is a 1-based disc
+         number. -->
+    <string name="ingame_libretro_disc_swap_fallback_name">Disc %1$d</string>
+
+    <!-- Default name given to the first speedrun category created for a game with none yet
+         (LibretroActivity.armSpeedrunCategory). Noun, the category's own name; the player can
+         rename it later. -->
+    <string name="ingame_libretro_speedrun_default_category_name">Practice</string>
+    <!-- Default name of each segment in that category. %1$d is a 1-based segment number. -->
+    <string name="ingame_libretro_speedrun_default_segment_name">Segment %1$d</string>
+    <!-- Title of the picker shown when a game has more than one speedrun category and the
+         player arms the timer. Noun phrase, not a verb. -->
+    <string name="ingame_libretro_speedrun_picker_title">Speedrun Category</string>
+
+    <!-- Toast from the quick-load history (timeline) list when a slot failed to load because
+         the core cannot serialize this content. -->
+    <string name="ingame_libretro_quicktimeline_load_unsupported_core">Save states unavailable for this core</string>
+    <!-- "State" here is a save state (a save-state file), not a completion status. -->
+    <string name="ingame_libretro_quicktimeline_load_success">State loaded</string>
+    <string name="ingame_libretro_quicktimeline_load_failure">Failed to load state</string>
+
+    <!-- Full-screen message shown while a session close is validating its save contents before
+         finishing the activity. -->
+    <string name="ingame_libretro_closing_overlay_validating">Validating save contents</string>
+
+    <!-- Fallback label for a controller port option with no description from the core. %1$d is
+         the port's device id. -->
+    <string name="ingame_libretro_controller_port_device_fallback">Device %1$d</string>
+
+    <!-- In-game menu's Quick Save action. -->
+    <string name="ingame_libretro_menu_quicksave_unsupported_core">Save states unavailable for this core</string>
+    <string name="ingame_libretro_menu_quicksave_success">State saved</string>
+    <string name="ingame_libretro_menu_quicksave_failure">Failed to save state</string>
+    <!-- In-game menu's Quick Load action. -->
+    <string name="ingame_libretro_menu_quickload_unsupported_core">Save states unavailable for this core</string>
+    <string name="ingame_libretro_menu_quickload_success">State loaded</string>
+    <string name="ingame_libretro_menu_quickload_failure">Failed to load state</string>
+
+    <!-- Manage States screen: saving to a numbered slot. -->
+    <string name="ingame_libretro_state_save_unsupported_core">Save states unavailable for this core</string>
+    <!-- "State" is a save state; "Auto" names the reserved automatic slot. -->
+    <string name="ingame_libretro_state_saved_to_auto">State saved to Auto</string>
+    <!-- %1$d is the slot number the state was saved to. -->
+    <string name="ingame_libretro_state_saved_to_slot">State saved to Slot %1$d</string>
+    <string name="ingame_libretro_state_save_failure">Failed to save state</string>
+    <string name="ingame_libretro_state_save_serialize_failed">Failed to serialize state</string>
+
+    <!-- Manage States screen: loading a numbered slot. -->
+    <string name="ingame_libretro_state_load_unsupported_core">Save states unavailable for this core</string>
+    <string name="ingame_libretro_state_loaded_from_auto">State loaded from Auto</string>
+    <!-- %1$d is the slot number the state was loaded from. -->
+    <string name="ingame_libretro_state_loaded_from_slot">State loaded from Slot %1$d</string>
+    <string name="ingame_libretro_state_load_failure">Failed to load state</string>
+
+    <!-- Toast for a one-shot resume state consumed right after launch. -->
+    <string name="ingame_libretro_resume_success">Resumed</string>
+    <string name="ingame_libretro_resume_restore_failure">Failed to restore state</string>
+    <!-- Toast for the automatic-slot restore attempted at launch when auto-restore is on. -->
+    <string name="ingame_libretro_auto_restore_success">State restored</string>
+    <string name="ingame_libretro_auto_restore_failure">Failed to restore state</string>
+    <!-- Toast for the player's own answer to the "restore your last state?" prompt. -->
+    <string name="ingame_libretro_auto_restore_response_unsupported_core">Save states unavailable for this core</string>
+    <string name="ingame_libretro_auto_restore_response_success">State restored</string>
+    <string name="ingame_libretro_auto_restore_response_failure">Failed to restore state</string>
+
+    <!-- In-game HUD readout (LibretroActivity.formatFps). %1$s is the frame count, already
+         padded to a fixed width; "fps" is the unit, frames per second. -->
+    <string name="ingame_libretro_hud_fps_format">%1$s fps</string>
+    <!-- In-game HUD elapsed-session readout when an hour or more has passed. %1$d is hours,
+         %2$d is minutes. -->
+    <string name="ingame_libretro_hud_duration_hm">%1$d:%2$02d</string>
+    <!-- The same readout under an hour. %1$d is minutes; "m" is the unit. -->
+    <string name="ingame_libretro_hud_duration_minutes">%1$dm</string>
+    <!-- In-game HUD "last save" readout (LibretroActivity.formatAgo). "saved" refers to the
+         save-state write time, not save-data sync. -->
+    <string name="ingame_libretro_hud_last_save_just_now">saved just now</string>
+    <string name="ingame_libretro_hud_last_save_minutes_ago">saved %1$dm ago</string>
+    <string name="ingame_libretro_hud_last_save_hours_ago">saved %1$dh ago</string>
+
+    <!-- Social-overlay toast for the cross-app quick-save hotkey/button. -->
+    <string name="ingame_libretro_quickaction_save_hardcore_blocked">Save states are disabled in hardcore</string>
+    <string name="ingame_libretro_quickaction_save_unsupported_core">Save states unavailable for this core</string>
+    <string name="ingame_libretro_quickaction_save_success">State saved</string>
+    <!-- "Save" is a noun here (the quick-save action), not a verb. -->
+    <string name="ingame_libretro_quickaction_save_failure">Save failed</string>
+    <!-- Social-overlay toast for the cross-app quick-load hotkey/button. -->
+    <string name="ingame_libretro_quickaction_load_hardcore_blocked">Save states are disabled in hardcore</string>
+    <string name="ingame_libretro_quickaction_load_unsupported_core">Save states unavailable for this core</string>
+    <string name="ingame_libretro_quickaction_load_success">State loaded</string>
+    <string name="ingame_libretro_quickaction_load_failure">Failed to load state</string>
+    <!-- Social-overlay toast for the cross-app screenshot hotkey/button. -->
+    <string name="ingame_libretro_quickaction_screenshot_capture_failed">Capture failed</string>
+    <string name="ingame_libretro_quickaction_screenshot_success">Screenshot saved</string>
+    <string name="ingame_libretro_quickaction_screenshot_failure">Screenshot failed</string>
+
+    <!-- Netplay quality row in the in-game menu (libretro/ui/InGameMenu.kt). Names the OTHER
+         player's role, opposite the local player's; %1$s is their display name. -->
+    <string name="ingame_netplay_quality_row_peer_guest">Guest: %1$s</string>
+    <string name="ingame_netplay_quality_row_peer_host">Host: %1$s</string>
+    <!-- Same row's ping/quality line when a round-trip time is known. %1$d is the ping in
+         milliseconds ("ms" is the unit); %2$s is the quality tier word (Excellent/Good/...). -->
+    <string name="ingame_netplay_quality_row_ping_known">%1$dms  %2$s</string>
+    <!-- Same row when no ping has been measured yet. %1$s is the quality tier word. -->
+    <string name="ingame_netplay_quality_row_ping_unknown">--  %1$s</string>
+
+    <!-- Controller-type picker fallback shown when the current selection has no description
+         from the core (libretro/ui/InGameSettingsScreen.kt). -->
+    <string name="ingame_settings_controller_type_default_fallback">Default</string>
+
+    <!-- Compact per-player section headers in the netplay border HUD (libretro/ui/NetplayOverlays.kt),
+         sitting beside the already-localized Host/Observers tags. -->
+    <string name="ingame_netplay_hud_player1_header">P1</string>
+    <string name="ingame_netplay_hud_player2_header">P2</string>
+
+    <!-- Touch layout editor (libretro/touch/TouchLayoutEditor.kt): drag-handle caption on the
+         D-pad placement widget. -->
+    <string name="ingame_touch_editor_dpad_widget_label">D-PAD</string>
+    <!-- Drag-handle caption on the left analog stick placement widget. -->
+    <string name="ingame_touch_editor_left_stick_widget_label">L</string>
+    <!-- Drag-handle caption on the right analog stick placement widget. -->
+    <string name="ingame_touch_editor_right_stick_widget_label">R</string>
+    <!-- Touch layout editor toolbar buttons. -->
+    <string name="ingame_touch_editor_toolbar_save">Save</string>
+    <string name="ingame_touch_editor_toolbar_reset">Reset</string>
+    <string name="ingame_touch_editor_toolbar_cancel">Cancel</string>
+    <string name="ingame_touch_editor_toolbar_rotate">Rotate</string>
+
+    <!-- Secondary-display recovery overlay (hardware/RecoveryDisplayPresentation.kt), shown
+         while a game session is active on the primary display. -->
+    <string name="ingame_recovery_display_playing_placeholder">Playing...</string>
+    <!-- Status label opposite the game name/platform on that overlay. -->
+    <string name="ingame_recovery_display_status_in_game">In Game</string>
+    <!-- Fallback game name shown if none was supplied when the overlay updates. -->
+    <string name="ingame_recovery_display_playing_fallback">Playing...</string>
+
+    <!--
+      Touch overlay button captions (libretro/touch/TouchLayoutRegistry.kt). Each console
+      preset owns its own keys even where the caption text repeats across presets (a single
+      letter like "A" on SNES is not the same key as "A" on Game Boy). Single letters, digits
+      and physical glyphs are marked translatable="false": they are prints copied from real
+      hardware, never words. Words that could be misread out of context ("Select", "Start",
+      "Mode", "Coin", "Fire" and a few console-specific button names) carry a translator note.
+    -->
+
+    <!-- NES / Famicom Disk System face buttons and system row. -->
+    <string name="ingame_touch_nes_face_b" translatable="false">B</string>
+    <string name="ingame_touch_nes_face_a" translatable="false">A</string>
+    <!-- Console button, not a text-selection action. -->
+    <string name="ingame_touch_nes_sys_select">Select</string>
+    <!-- Console button that begins or resumes play, not a generic "start". -->
+    <string name="ingame_touch_nes_sys_start">Start</string>
+
+    <!-- Game Boy / Game Boy Color face buttons and system row. -->
+    <string name="ingame_touch_gb_face_b" translatable="false">B</string>
+    <string name="ingame_touch_gb_face_a" translatable="false">A</string>
+    <string name="ingame_touch_gb_sys_select">Select</string>
+    <string name="ingame_touch_gb_sys_start">Start</string>
+
+    <!-- Game Boy Advance face buttons, shoulders and system row. -->
+    <string name="ingame_touch_gba_face_b" translatable="false">B</string>
+    <string name="ingame_touch_gba_face_a" translatable="false">A</string>
+    <string name="ingame_touch_gba_shoulder_l" translatable="false">L</string>
+    <string name="ingame_touch_gba_shoulder_r" translatable="false">R</string>
+    <string name="ingame_touch_gba_sys_select">Select</string>
+    <string name="ingame_touch_gba_sys_start">Start</string>
+
+    <!-- Sega Master System / Game Gear face buttons (numbered, not lettered) and Start. -->
+    <string name="ingame_touch_sms_face_b" translatable="false">1</string>
+    <string name="ingame_touch_sms_face_a" translatable="false">2</string>
+    <string name="ingame_touch_sms_sys_start">Start</string>
+
+    <!-- Game & Watch / Pokemon mini face buttons and system row. -->
+    <string name="ingame_touch_gameandwatch_face_b" translatable="false">A</string>
+    <string name="ingame_touch_gameandwatch_face_a" translatable="false">B</string>
+    <string name="ingame_touch_gameandwatch_sys_select">Select</string>
+    <string name="ingame_touch_gameandwatch_sys_start">Start</string>
+
+    <!-- Neo Geo Pocket / Color face buttons. The handheld has a single system button, printed
+         "Option", not a settings menu entry. -->
+    <string name="ingame_touch_ngp_face_b" translatable="false">B</string>
+    <string name="ingame_touch_ngp_face_a" translatable="false">A</string>
+    <string name="ingame_touch_ngp_sys_start">Option</string>
+
+    <!-- WonderSwan / Color face buttons and Start. -->
+    <string name="ingame_touch_wonderswan_face_b" translatable="false">B</string>
+    <string name="ingame_touch_wonderswan_face_a" translatable="false">A</string>
+    <string name="ingame_touch_wonderswan_sys_start">Start</string>
+
+    <!-- ColecoVision / Channel F / Odyssey2 face buttons (numbered) and system row. -->
+    <string name="ingame_touch_coleco_face_b" translatable="false">1</string>
+    <string name="ingame_touch_coleco_face_a" translatable="false">2</string>
+    <string name="ingame_touch_coleco_sys_select">Select</string>
+    <string name="ingame_touch_coleco_sys_start">Start</string>
+
+    <!-- PICO-8 face buttons (its own X/O convention) and system row. -->
+    <string name="ingame_touch_pico8_face_b" translatable="false">X</string>
+    <string name="ingame_touch_pico8_face_a" translatable="false">O</string>
+    <string name="ingame_touch_pico8_sys_select">Select</string>
+    <string name="ingame_touch_pico8_sys_start">Start</string>
+
+    <!-- C64 / Amiga family (single-fire-button joystick emulation) face buttons and system row. -->
+    <string name="ingame_touch_c64_face_b" translatable="false">1</string>
+    <string name="ingame_touch_c64_face_a" translatable="false">2</string>
+    <string name="ingame_touch_c64_sys_select">Select</string>
+    <string name="ingame_touch_c64_sys_start">Start</string>
+
+    <!-- Atari Lynx face buttons, shoulder buttons and Pause. -->
+    <string name="ingame_touch_lynx_face_b" translatable="false">B</string>
+    <string name="ingame_touch_lynx_face_a" translatable="false">A</string>
+    <!-- Short for "Option 1", one of the Lynx's two shoulder buttons. -->
+    <string name="ingame_touch_lynx_shoulder_l">Opt 1</string>
+    <!-- Short for "Option 2". -->
+    <string name="ingame_touch_lynx_shoulder_r">Opt 2</string>
+    <!-- Console button that suspends play, not a settings pause. -->
+    <string name="ingame_touch_lynx_sys_start">Pause</string>
+
+    <!-- SNES face buttons, shoulders and system row. -->
+    <string name="ingame_touch_snes_face_y" translatable="false">Y</string>
+    <string name="ingame_touch_snes_face_x" translatable="false">X</string>
+    <string name="ingame_touch_snes_face_b" translatable="false">B</string>
+    <string name="ingame_touch_snes_face_a" translatable="false">A</string>
+    <string name="ingame_touch_snes_shoulder_l" translatable="false">L</string>
+    <string name="ingame_touch_snes_shoulder_r" translatable="false">R</string>
+    <string name="ingame_touch_snes_sys_select">Select</string>
+    <string name="ingame_touch_snes_sys_start">Start</string>
+
+    <!-- PC Engine / TurboGrafx-16 face buttons (roman numerals) and system row. "Run" is this
+         console's Start-equivalent button. -->
+    <string name="ingame_touch_pcengine_face_b" translatable="false">II</string>
+    <string name="ingame_touch_pcengine_face_a" translatable="false">I</string>
+    <string name="ingame_touch_pcengine_sys_select">Select</string>
+    <string name="ingame_touch_pcengine_sys_start">Run</string>
+
+    <!-- PC-FX face buttons (roman numerals), mode-shift shoulder buttons and system row. "Mode
+         1"/"Mode 2" are printed buttons, not app settings modes. "Run" is this console's
+         Start-equivalent button. -->
+    <string name="ingame_touch_pcfx_face_y" translatable="false">IV</string>
+    <string name="ingame_touch_pcfx_face_l" translatable="false">V</string>
+    <string name="ingame_touch_pcfx_face_r" translatable="false">VI</string>
+    <string name="ingame_touch_pcfx_face_x" translatable="false">III</string>
+    <string name="ingame_touch_pcfx_face_b" translatable="false">II</string>
+    <string name="ingame_touch_pcfx_face_a" translatable="false">I</string>
+    <string name="ingame_touch_pcfx_shoulder_l2">Mode 1</string>
+    <string name="ingame_touch_pcfx_shoulder_r2">Mode 2</string>
+    <string name="ingame_touch_pcfx_sys_select">Select</string>
+    <string name="ingame_touch_pcfx_sys_start">Run</string>
+
+    <!-- Sega Saturn face buttons, shoulders and system row. "Mode" is the pad's printed button,
+         not a UI mode. -->
+    <string name="ingame_touch_saturn_face_y" translatable="false">X</string>
+    <string name="ingame_touch_saturn_face_x" translatable="false">Y</string>
+    <string name="ingame_touch_saturn_face_l" translatable="false">Z</string>
+    <string name="ingame_touch_saturn_face_b" translatable="false">A</string>
+    <string name="ingame_touch_saturn_face_a" translatable="false">B</string>
+    <string name="ingame_touch_saturn_face_r" translatable="false">C</string>
+    <string name="ingame_touch_saturn_shoulder_l2" translatable="false">L</string>
+    <string name="ingame_touch_saturn_shoulder_r2" translatable="false">R</string>
+    <string name="ingame_touch_saturn_sys_select">Mode</string>
+    <string name="ingame_touch_saturn_sys_start">Start</string>
+
+    <!-- Virtual Boy face buttons, shoulders and system row (own preset; shares SNES's shape by
+         coincidence, not identity). -->
+    <string name="ingame_touch_vb_face_y" translatable="false">Y</string>
+    <string name="ingame_touch_vb_face_x" translatable="false">X</string>
+    <string name="ingame_touch_vb_face_b" translatable="false">B</string>
+    <string name="ingame_touch_vb_face_a" translatable="false">A</string>
+    <string name="ingame_touch_vb_shoulder_l" translatable="false">L</string>
+    <string name="ingame_touch_vb_shoulder_r" translatable="false">R</string>
+    <string name="ingame_touch_vb_sys_select">Select</string>
+    <string name="ingame_touch_vb_sys_start">Start</string>
+
+    <!-- PlayStation face buttons (printed as glyphs, never translated), shoulders and system
+         row. -->
+    <string name="ingame_touch_psx_face_y" translatable="false">&#x25A1;</string>
+    <string name="ingame_touch_psx_face_x" translatable="false">&#x25B3;</string>
+    <string name="ingame_touch_psx_face_b" translatable="false">&#x2715;</string>
+    <string name="ingame_touch_psx_face_a" translatable="false">&#x25CB;</string>
+    <string name="ingame_touch_psx_shoulder_l" translatable="false">L1</string>
+    <string name="ingame_touch_psx_shoulder_l2" translatable="false">L2</string>
+    <string name="ingame_touch_psx_shoulder_r" translatable="false">R1</string>
+    <string name="ingame_touch_psx_shoulder_r2" translatable="false">R2</string>
+    <string name="ingame_touch_psx_sys_select">Select</string>
+    <string name="ingame_touch_psx_sys_start">Start</string>
+
+    <!-- PlayStation 2 face buttons, shoulders and system row (own preset; same shape as PS1). -->
+    <string name="ingame_touch_ps2_face_y" translatable="false">&#x25A1;</string>
+    <string name="ingame_touch_ps2_face_x" translatable="false">&#x25B3;</string>
+    <string name="ingame_touch_ps2_face_b" translatable="false">&#x2715;</string>
+    <string name="ingame_touch_ps2_face_a" translatable="false">&#x25CB;</string>
+    <string name="ingame_touch_ps2_shoulder_l" translatable="false">L1</string>
+    <string name="ingame_touch_ps2_shoulder_l2" translatable="false">L2</string>
+    <string name="ingame_touch_ps2_shoulder_r" translatable="false">R1</string>
+    <string name="ingame_touch_ps2_shoulder_r2" translatable="false">R2</string>
+    <string name="ingame_touch_ps2_sys_select">Select</string>
+    <string name="ingame_touch_ps2_sys_start">Start</string>
+
+    <!-- PSP face buttons, shoulders (single pair, no L2/R2 on the hardware) and system row. -->
+    <string name="ingame_touch_psp_face_y" translatable="false">&#x25A1;</string>
+    <string name="ingame_touch_psp_face_x" translatable="false">&#x25B3;</string>
+    <string name="ingame_touch_psp_face_b" translatable="false">&#x2715;</string>
+    <string name="ingame_touch_psp_face_a" translatable="false">&#x25CB;</string>
+    <string name="ingame_touch_psp_shoulder_l" translatable="false">L</string>
+    <string name="ingame_touch_psp_shoulder_r" translatable="false">R</string>
+    <string name="ingame_touch_psp_sys_select">Select</string>
+    <string name="ingame_touch_psp_sys_start">Start</string>
+
+    <!-- PS Vita face buttons, shoulders and system row. -->
+    <string name="ingame_touch_vita_face_y" translatable="false">&#x25A1;</string>
+    <string name="ingame_touch_vita_face_x" translatable="false">&#x25B3;</string>
+    <string name="ingame_touch_vita_face_b" translatable="false">&#x2715;</string>
+    <string name="ingame_touch_vita_face_a" translatable="false">&#x25CB;</string>
+    <string name="ingame_touch_vita_shoulder_l" translatable="false">L</string>
+    <string name="ingame_touch_vita_shoulder_r" translatable="false">R</string>
+    <string name="ingame_touch_vita_sys_select">Select</string>
+    <string name="ingame_touch_vita_sys_start">Start</string>
+
+    <!-- Dreamcast face buttons, shoulders and Start. -->
+    <string name="ingame_touch_dreamcast_face_y" translatable="false">X</string>
+    <string name="ingame_touch_dreamcast_face_x" translatable="false">Y</string>
+    <string name="ingame_touch_dreamcast_face_b" translatable="false">A</string>
+    <string name="ingame_touch_dreamcast_face_a" translatable="false">B</string>
+    <string name="ingame_touch_dreamcast_shoulder_l" translatable="false">L</string>
+    <string name="ingame_touch_dreamcast_shoulder_r" translatable="false">R</string>
+    <string name="ingame_touch_dreamcast_sys_start">Start</string>
+
+    <!-- N64 face buttons, shoulders (including Z) and Start. -->
+    <string name="ingame_touch_n64_face_b" translatable="false">A</string>
+    <string name="ingame_touch_n64_face_y" translatable="false">B</string>
+    <string name="ingame_touch_n64_shoulder_l" translatable="false">L</string>
+    <string name="ingame_touch_n64_shoulder_r" translatable="false">R</string>
+    <string name="ingame_touch_n64_shoulder_l2" translatable="false">Z</string>
+    <string name="ingame_touch_n64_sys_start">Start</string>
+
+    <!-- GameCube face buttons, shoulders (including Z) and Start. -->
+    <string name="ingame_touch_gamecube_face_y" translatable="false">Y</string>
+    <string name="ingame_touch_gamecube_face_x" translatable="false">X</string>
+    <string name="ingame_touch_gamecube_face_b" translatable="false">B</string>
+    <string name="ingame_touch_gamecube_face_a" translatable="false">A</string>
+    <string name="ingame_touch_gamecube_shoulder_l2" translatable="false">L</string>
+    <string name="ingame_touch_gamecube_shoulder_r2" translatable="false">R</string>
+    <string name="ingame_touch_gamecube_shoulder_r" translatable="false">Z</string>
+    <string name="ingame_touch_gamecube_sys_start">Start</string>
+
+    <!-- Wii Remote face buttons, +/- shoulders and the 1/2 system buttons (all printed symbols
+         or digits, never translated). -->
+    <string name="ingame_touch_wii_face_y" translatable="false">Z</string>
+    <string name="ingame_touch_wii_face_x" translatable="false">C</string>
+    <string name="ingame_touch_wii_face_b" translatable="false">B</string>
+    <string name="ingame_touch_wii_face_a" translatable="false">A</string>
+    <string name="ingame_touch_wii_shoulder_l" translatable="false">-</string>
+    <string name="ingame_touch_wii_shoulder_r" translatable="false">+</string>
+    <string name="ingame_touch_wii_sys_select" translatable="false">2</string>
+    <string name="ingame_touch_wii_sys_start" translatable="false">1</string>
+
+    <!-- Nintendo DS / DSi face buttons, shoulders and system row (own preset; shares SNES's
+         shape by coincidence, not identity). -->
+    <string name="ingame_touch_nds_face_y" translatable="false">Y</string>
+    <string name="ingame_touch_nds_face_x" translatable="false">X</string>
+    <string name="ingame_touch_nds_face_b" translatable="false">B</string>
+    <string name="ingame_touch_nds_face_a" translatable="false">A</string>
+    <string name="ingame_touch_nds_shoulder_l" translatable="false">L</string>
+    <string name="ingame_touch_nds_shoulder_r" translatable="false">R</string>
+    <string name="ingame_touch_nds_sys_select">Select</string>
+    <string name="ingame_touch_nds_sys_start">Start</string>
+
+    <!-- Arcade six-button row (numbered, not lettered) and Coin/Start. "Coin" inserts arcade
+         credits; it is not a currency label anywhere else in the app. -->
+    <string name="ingame_touch_arcade_face_y" translatable="false">1</string>
+    <string name="ingame_touch_arcade_face_x" translatable="false">2</string>
+    <string name="ingame_touch_arcade_face_l" translatable="false">3</string>
+    <string name="ingame_touch_arcade_face_b" translatable="false">4</string>
+    <string name="ingame_touch_arcade_face_a" translatable="false">5</string>
+    <string name="ingame_touch_arcade_face_r" translatable="false">6</string>
+    <string name="ingame_touch_arcade_sys_select">Coin</string>
+    <string name="ingame_touch_arcade_sys_start">Start</string>
+
+    <!-- Neo Geo (arcade home system) face buttons and system row. -->
+    <string name="ingame_touch_neogeo_face_y" translatable="false">C</string>
+    <string name="ingame_touch_neogeo_face_x" translatable="false">D</string>
+    <string name="ingame_touch_neogeo_face_b" translatable="false">A</string>
+    <string name="ingame_touch_neogeo_face_a" translatable="false">B</string>
+    <string name="ingame_touch_neogeo_sys_select">Select</string>
+    <string name="ingame_touch_neogeo_sys_start">Start</string>
+
+    <!-- Sega Genesis / Mega Drive face buttons. The bottom row (A/B/C) is shared between the
+         3-button and 6-button layouts; X/Y/Z only appear when the 6-button toggle is on.
+         "Mode" is the pad's printed button, not a UI mode. -->
+    <string name="ingame_touch_genesis_face_l" translatable="false">X</string>
+    <string name="ingame_touch_genesis_face_x" translatable="false">Y</string>
+    <string name="ingame_touch_genesis_face_r" translatable="false">Z</string>
+    <string name="ingame_touch_genesis_face_y" translatable="false">A</string>
+    <string name="ingame_touch_genesis_face_b" translatable="false">B</string>
+    <string name="ingame_touch_genesis_face_a" translatable="false">C</string>
+    <string name="ingame_touch_genesis_sys_select">Mode</string>
+    <string name="ingame_touch_genesis_sys_start">Start</string>
+
+    <!-- Vectrex face buttons (numbered, not lettered). -->
+    <string name="ingame_touch_vectrex_face_y" translatable="false">1</string>
+    <string name="ingame_touch_vectrex_face_b" translatable="false">2</string>
+    <string name="ingame_touch_vectrex_face_a" translatable="false">3</string>
+    <string name="ingame_touch_vectrex_face_x" translatable="false">4</string>
+
+    <!-- Mattel Intellivision disc-controller buttons, side action buttons and system row.
+         "Top"/"Left"/"Right" name positions on the disc controller's action buttons, not
+         generic UI directions. "Last KP" is short for "last keypad [entry]". "MK" is a printed
+         abbreviation on the side action buttons with no known English expansion, kept literal.
+         "Clear" and "Enter" act on the numeric keypad. "Swap" switches which player's disc
+         controller is active, not a general swap action. -->
+    <string name="ingame_touch_intellivision_face_y">Top</string>
+    <string name="ingame_touch_intellivision_face_b">Left</string>
+    <string name="ingame_touch_intellivision_face_a">Right</string>
+    <string name="ingame_touch_intellivision_face_x">Last KP</string>
+    <string name="ingame_touch_intellivision_shoulder_l" translatable="false">MK</string>
+    <string name="ingame_touch_intellivision_shoulder_l2">Clear</string>
+    <string name="ingame_touch_intellivision_shoulder_r" translatable="false">MK</string>
+    <string name="ingame_touch_intellivision_shoulder_r2">Enter</string>
+    <string name="ingame_touch_intellivision_sys_select">Swap</string>
+    <string name="ingame_touch_intellivision_sys_start">Pause</string>
+
+    <!-- Atari 2600 single fire button and system row. "Fire" is the joystick's action button. -->
+    <string name="ingame_touch_atari2600_face_b">Fire</string>
+    <string name="ingame_touch_atari2600_sys_select">Select</string>
+    <!-- Console reset button, not an app reset. -->
+    <string name="ingame_touch_atari2600_sys_start">Reset</string>
+
+    <!-- Atari 5200 face buttons, shoulders and system row. -->
+    <string name="ingame_touch_atari5200_face_b" translatable="false">A</string>
+    <string name="ingame_touch_atari5200_face_a" translatable="false">B</string>
+    <string name="ingame_touch_atari5200_shoulder_l">Pause</string>
+    <string name="ingame_touch_atari5200_shoulder_r">Reset</string>
+    <string name="ingame_touch_atari5200_sys_select">Select</string>
+    <string name="ingame_touch_atari5200_sys_start">Start</string>
+
+    <!-- Atari 7800 face buttons and system row. -->
+    <string name="ingame_touch_atari7800_face_b" translatable="false">A</string>
+    <string name="ingame_touch_atari7800_face_a" translatable="false">B</string>
+    <string name="ingame_touch_atari7800_sys_select">Select</string>
+    <string name="ingame_touch_atari7800_sys_start">Reset</string>
+
+    <!-- Atari Jaguar face buttons, four shoulder buttons (numbered) and system row. -->
+    <string name="ingame_touch_jaguar_face_a" translatable="false">A</string>
+    <string name="ingame_touch_jaguar_face_b" translatable="false">B</string>
+    <string name="ingame_touch_jaguar_face_y" translatable="false">C</string>
+    <string name="ingame_touch_jaguar_shoulder_l" translatable="false">1</string>
+    <string name="ingame_touch_jaguar_shoulder_l2" translatable="false">3</string>
+    <string name="ingame_touch_jaguar_shoulder_r" translatable="false">2</string>
+    <string name="ingame_touch_jaguar_shoulder_r2" translatable="false">4</string>
+    <string name="ingame_touch_jaguar_sys_select">Pause</string>
+    <string name="ingame_touch_jaguar_sys_start">Option</string>
+
+    <!-- 3DO face buttons, shoulders and transport-control system row. "Stop" and "Play/Pause"
+         are the controller's disc-transport buttons, not media-player chrome. -->
+    <string name="ingame_touch_threedo_face_y" translatable="false">A</string>
+    <string name="ingame_touch_threedo_face_b" translatable="false">B</string>
+    <string name="ingame_touch_threedo_face_a" translatable="false">C</string>
+    <string name="ingame_touch_threedo_shoulder_l" translatable="false">L</string>
+    <string name="ingame_touch_threedo_shoulder_r" translatable="false">R</string>
+    <string name="ingame_touch_threedo_sys_select">Stop</string>
+    <string name="ingame_touch_threedo_sys_start">Play/Pause</string>
+
+    <!-- Philips CD-i face buttons (numbered, not lettered). -->
+    <string name="ingame_touch_cdi_face_a" translatable="false">1</string>
+    <string name="ingame_touch_cdi_face_b" translatable="false">2</string>
+    <string name="ingame_touch_cdi_face_x" translatable="false">3</string>
+
+    <!-- Generic fallback layout, used both for keyboard-only platforms (DOS, PC-98) and for any
+         platform this registry does not otherwise recognise. -->
+    <string name="ingame_touch_generic_face_y" translatable="false">Y</string>
+    <string name="ingame_touch_generic_face_x" translatable="false">X</string>
+    <string name="ingame_touch_generic_face_b" translatable="false">B</string>
+    <string name="ingame_touch_generic_face_a" translatable="false">A</string>
+    <string name="ingame_touch_generic_shoulder_l" translatable="false">L</string>
+    <string name="ingame_touch_generic_shoulder_r" translatable="false">R</string>
+    <string name="ingame_touch_generic_sys_select">Select</string>
+    <string name="ingame_touch_generic_sys_start">Start</string>
+</resources>

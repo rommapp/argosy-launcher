@@ -22,6 +22,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.theme.Dimens
 
 @Composable
@@ -69,7 +71,11 @@ fun ExpandablePreference(
         }
         Icon(
             imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-            contentDescription = if (isExpanded) "Collapse" else "Expand",
+            contentDescription = if (isExpanded) {
+                stringResource(R.string.ui_expandable_preference_collapse)
+            } else {
+                stringResource(R.string.ui_expandable_preference_expand)
+            },
             tint = secondaryColor,
             modifier = Modifier.size(Dimens.iconMd)
         )

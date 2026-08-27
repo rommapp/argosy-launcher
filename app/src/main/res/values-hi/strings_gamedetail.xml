@@ -1,0 +1,454 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ============================ Left menu (GameDetailMenu) ============================ -->
+
+    <string name="gamedetail_menu_per_game_settings">इस गेम की सेटिंग्स</string>
+    <string name="gamedetail_menu_details">जानकारी</string>
+    <string name="gamedetail_menu_description">विवरण</string>
+    <string name="gamedetail_menu_screenshots">स्क्रीनशॉट</string>
+    <string name="gamedetail_menu_achievements">अचीवमेंट्स</string>
+    <string name="gamedetail_menu_related_games">संबंधित गेम</string>
+
+    <string name="gamedetail_menu_play_button_extracting">एक्सट्रैक्ट हो रहा है...</string>
+    <string name="gamedetail_menu_play_button_queued">कतार में</string>
+    <string name="gamedetail_menu_play_button_no_space">जगह नहीं</string>
+    <string name="gamedetail_menu_play_button_resume">रिज़्यूम</string>
+    <string name="gamedetail_menu_play_button_retry">पुनः प्रयास</string>
+    <string name="gamedetail_menu_play_button_play">खेलें</string>
+    <string name="gamedetail_menu_play_button_install">इंस्टॉल</string>
+    <string name="gamedetail_menu_play_button_download">डाउनलोड</string>
+    <string name="gamedetail_menu_play_button_progress_percent">%1$d%%</string>
+
+    <string name="gamedetail_menu_saves_syncing">सिंक हो रहा है...</string>
+    <string name="gamedetail_menu_saves_default_channel">ऑटो-सेव</string>
+
+    <string name="gamedetail_menu_favorite_label">पसंदीदा</string>
+    <string name="gamedetail_menu_favorite_compact_remove_description">पसंदीदा से हटाएं</string>
+    <string name="gamedetail_menu_favorite_compact_add_description">पसंदीदा में जोड़ें</string>
+    <string name="gamedetail_menu_favorite_row_remove_description">पसंदीदा से हटाएं</string>
+    <string name="gamedetail_menu_favorite_row_add_description">पसंदीदा में जोड़ें</string>
+
+    <string name="gamedetail_menu_privacy_private">निजी</string>
+    <string name="gamedetail_menu_privacy_public">सार्वजनिक</string>
+
+    <string name="gamedetail_menu_options_label">विकल्प</string>
+    <string name="gamedetail_menu_options_compact_description">विकल्प</string>
+    <string name="gamedetail_menu_options_row_description">विकल्प</string>
+
+    <!-- ================================= Footer hints ================================== -->
+
+    <string name="gamedetail_footer_prev_next_game">पिछला/अगला गेम</string>
+    <string name="gamedetail_footer_section_scroll">स्क्रॉल</string>
+
+    <string name="gamedetail_footer_play_syncing">सिंक हो रहा है...</string>
+    <string name="gamedetail_footer_play_downloaded">खेलें</string>
+    <string name="gamedetail_footer_play_install">इंस्टॉल</string>
+    <string name="gamedetail_footer_play_download">डाउनलोड</string>
+    <string name="gamedetail_footer_play_queued">कतार में</string>
+    <string name="gamedetail_footer_play_retry_no_space">पुनः प्रयास</string>
+    <string name="gamedetail_footer_play_downloading">डाउनलोड हो रहा है</string>
+    <string name="gamedetail_footer_play_extracting">एक्सट्रैक्ट हो रहा है</string>
+    <string name="gamedetail_footer_play_resume">रिज़्यूम</string>
+    <string name="gamedetail_footer_play_retry_failed">पुनः प्रयास</string>
+    <string name="gamedetail_footer_play_fallback">खेलें</string>
+
+    <string name="gamedetail_footer_saves_syncing">सिंक हो रहा है...</string>
+    <string name="gamedetail_footer_saves_sync">सिंक</string>
+
+    <string name="gamedetail_footer_menu_unfavorite">पसंदीदा हटाएं</string>
+    <string name="gamedetail_footer_menu_favorite">पसंदीदा</string>
+
+    <string name="gamedetail_footer_menu_make_public">सार्वजनिक करें</string>
+    <string name="gamedetail_footer_menu_make_private">निजी करें</string>
+
+    <string name="gamedetail_footer_configure">कॉन्फ़िगर करें</string>
+    <string name="gamedetail_footer_options">विकल्प</string>
+    <string name="gamedetail_footer_view_screenshot">देखें</string>
+    <string name="gamedetail_footer_view_all_achievements">सभी देखें</string>
+    <string name="gamedetail_footer_open_related">खोलें</string>
+    <string name="gamedetail_footer_back">वापस</string>
+    <string name="gamedetail_footer_new_game">नया गेम</string>
+    <string name="gamedetail_footer_shortcut_make_public">सार्वजनिक करें</string>
+    <string name="gamedetail_footer_shortcut_make_private">निजी करें</string>
+    <string name="gamedetail_footer_shortcut_unfavorite">पसंदीदा हटाएं</string>
+    <string name="gamedetail_footer_shortcut_favorite">पसंदीदा</string>
+
+    <!-- ============================== Page body sections =============================== -->
+
+    <string name="gamedetail_section_description_heading">विवरण</string>
+    <string name="gamedetail_section_screenshots_heading">स्क्रीनशॉट</string>
+    <string name="gamedetail_section_related_heading">संबंधित गेम</string>
+    <string name="gamedetail_section_achievements_heading">अचीवमेंट्स</string>
+    <string name="gamedetail_section_achievements_count">(%1$d/%2$d)</string>
+
+    <!-- =============================== Header chips ================================== -->
+
+    <string name="gamedetail_chip_players_label">प्लेयर</string>
+    <string name="gamedetail_chip_main_story_label">मुख्य कहानी</string>
+    <string name="gamedetail_chip_main_extras_label">मुख्य + अतिरिक्त</string>
+    <string name="gamedetail_chip_completionist_label">कंप्लीशनिस्ट</string>
+    <string name="gamedetail_chip_my_rating_label">मेरी रेटिंग</string>
+    <string name="gamedetail_chip_difficulty_label">कठिनाई</string>
+    <string name="gamedetail_chip_community_rating_label">रेटिंग</string>
+    <string name="gamedetail_chip_play_time_label">खेलने का समय</string>
+
+    <string name="gamedetail_chip_rating_value">%1$d/10</string>
+    <string name="gamedetail_chip_rating_unset">--</string>
+    <string name="gamedetail_chip_community_rating_value">%1$d%%</string>
+
+    <string name="gamedetail_chip_play_time_minutes">%1$dm</string>
+    <string name="gamedetail_chip_play_time_hours_minutes">%1$dh %2$dm</string>
+    <string name="gamedetail_chip_play_time_hours">%1$dh</string>
+    <string name="gamedetail_chip_play_time_hours_grouped">%1$sh</string>
+
+    <!-- ============================= Collapsed header bar ============================== -->
+
+    <string name="gamedetail_collapsed_header_rating_percent">%1$d%%</string>
+    <plurals name="gamedetail_collapsed_header_play_count">
+        <item quantity="one">%1$d बार</item>
+        <item quantity="other">%1$d बार</item>
+    </plurals>
+
+    <!-- =============================== Achievement strip =============================== -->
+
+    <plurals name="gamedetail_achievement_strip_points">
+        <item quantity="one">%1$d अंक</item>
+        <item quantity="other">%1$d अंक</item>
+    </plurals>
+
+    <!-- ============================ Full achievement list ============================== -->
+
+    <string name="gamedetail_achievement_list_subtitle">अचीवमेंट्स</string>
+    <string name="gamedetail_achievement_list_progress">%1$d/%2$d (%3$d%%)</string>
+    <string name="gamedetail_achievement_list_unlocked_heading">अनलॉक्ड (%1$d)</string>
+    <string name="gamedetail_achievement_list_locked_heading">लॉक्ड (%1$d)</string>
+    <string name="gamedetail_achievement_list_tier_hardcore">हार्डकोर</string>
+    <string name="gamedetail_achievement_list_tier_casual">कैज़ुअल</string>
+    <plurals name="gamedetail_achievement_list_points">
+        <item quantity="one">%1$d अंक</item>
+        <item quantity="other">%1$d अंक</item>
+    </plurals>
+    <string name="gamedetail_achievement_list_footer_navigate">नेविगेट</string>
+    <string name="gamedetail_achievement_list_footer_back">वापस</string>
+
+    <!-- ============================= Screenshot viewer ================================= -->
+
+    <string name="gamedetail_screenshot_viewer_position">%1$d / %2$d</string>
+    <string name="gamedetail_screenshot_viewer_footer_navigate">नेविगेट</string>
+    <string name="gamedetail_screenshot_viewer_footer_close">बंद करें</string>
+    <string name="gamedetail_screenshot_viewer_footer_set_background">बैकग्राउंड सेट करें</string>
+
+    <!-- ================================ Option rows =================================== -->
+
+    <string name="gamedetail_option_item_current_description">मौजूदा</string>
+    <string name="gamedetail_option_item_value">[%1$s]</string>
+
+    <!-- ================================ Save status =================================== -->
+
+    <string name="gamedetail_save_status_latest_label">नवीनतम</string>
+    <string name="gamedetail_save_status_time">· %1$s</string>
+    <string name="gamedetail_save_status_synced">सिंक हुआ</string>
+    <string name="gamedetail_save_status_local_newer">लोकल नया है</string>
+    <string name="gamedetail_save_status_server_newer">सर्वर नया है</string>
+    <string name="gamedetail_save_status_local_only">लोकल</string>
+    <string name="gamedetail_save_status_pending_upload">अपलोड लंबित</string>
+    <string name="gamedetail_save_status_needs_resolution">समाधान जरूरी</string>
+    <string name="gamedetail_save_status_no_save">कोई सेव नहीं</string>
+    <string name="gamedetail_save_status_not_configured">कॉन्फ़िगर नहीं</string>
+
+    <!-- ============================ Rename channel modal ================================ -->
+
+    <string name="gamedetail_rename_channel_title">चैनल बनाएं</string>
+    <string name="gamedetail_rename_channel_footer_confirm">पुष्टि करें</string>
+    <string name="gamedetail_rename_channel_footer_cancel">रद्द करें</string>
+    <string name="gamedetail_rename_channel_description">इस सेव चैनल के लिए एक नाम दर्ज करें</string>
+    <string name="gamedetail_rename_channel_placeholder">चैनल का नाम</string>
+
+    <!-- ============================== More options menu ================================ -->
+
+    <string name="gamedetail_more_options_manage_saves">कैश्ड सेव प्रबंधित करें</string>
+    <string name="gamedetail_more_options_ratings_status">रेटिंग और स्थिति</string>
+    <string name="gamedetail_more_options_change_launcher">लॉन्चर बदलें</string>
+    <string name="gamedetail_more_options_speedrun_splits">स्पीडरन स्प्लिट्स</string>
+    <string name="gamedetail_more_options_title_id">टाइटल ID</string>
+    <string name="gamedetail_more_options_title_id_missing">पता नहीं चला</string>
+    <string name="gamedetail_more_options_select_disc">डिस्क चुनें</string>
+    <string name="gamedetail_more_options_select_variant">वैरिएंट चुनें</string>
+    <string name="gamedetail_more_options_files">फ़ाइलें</string>
+    <string name="gamedetail_more_options_refresh_data">गेम डेटा रीफ्रेश करें</string>
+    <string name="gamedetail_more_options_add_to_collection">कलेक्शन में जोड़ें</string>
+    <string name="gamedetail_more_options_change_cover">कवर आर्ट बदलें</string>
+    <string name="gamedetail_more_options_reset_cover">कवर आर्ट रीसेट करें</string>
+    <string name="gamedetail_more_options_uninstall">अनइंस्टॉल करें</string>
+    <string name="gamedetail_more_options_unlink_from_launcher">%1$s से अनलिंक करें</string>
+    <string name="gamedetail_more_options_unlink_launcher_fallback">लॉन्चर</string>
+    <string name="gamedetail_more_options_delete_download">डाउनलोड हटाएं</string>
+    <string name="gamedetail_more_options_remove_from_library">लाइब्रेरी से हटाएं</string>
+    <string name="gamedetail_more_options_show">दिखाएं</string>
+    <string name="gamedetail_more_options_hide">छिपाएं</string>
+
+    <!-- ============================ Ratings and status menu ============================ -->
+
+    <string name="gamedetail_ratings_status_title">रेटिंग और स्थिति</string>
+    <string name="gamedetail_ratings_status_footer_navigate">नेविगेट</string>
+    <string name="gamedetail_ratings_status_footer_select">चुनें</string>
+    <string name="gamedetail_ratings_status_footer_back">वापस</string>
+    <string name="gamedetail_ratings_status_rate_game">गेम को रेट करें</string>
+    <string name="gamedetail_ratings_status_rate_game_unset">रेट नहीं किया</string>
+    <string name="gamedetail_ratings_status_score_value">%1$d/10</string>
+    <string name="gamedetail_ratings_status_set_difficulty">कठिनाई सेट करें</string>
+    <string name="gamedetail_ratings_status_difficulty_unset">सेट नहीं</string>
+    <string name="gamedetail_ratings_status_set_status">स्थिति सेट करें</string>
+    <string name="gamedetail_ratings_status_status_unset">सेट नहीं</string>
+
+    <!-- ================================ Status picker ================================= -->
+
+    <string name="gamedetail_status_picker_title">स्थिति सेट करें</string>
+    <string name="gamedetail_status_picker_footer_navigate">नेविगेट</string>
+    <string name="gamedetail_status_picker_footer_confirm">पुष्टि करें</string>
+    <string name="gamedetail_status_picker_footer_cancel">रद्द करें</string>
+
+    <!-- ================================ Rating picker ================================= -->
+
+    <string name="gamedetail_rating_picker_title_rating">गेम को रेट करें</string>
+    <string name="gamedetail_rating_picker_title_difficulty">कठिनाई सेट करें</string>
+    <string name="gamedetail_rating_picker_footer_adjust">बदलें</string>
+    <string name="gamedetail_rating_picker_footer_confirm">पुष्टि करें</string>
+    <string name="gamedetail_rating_picker_footer_cancel">रद्द करें</string>
+    <string name="gamedetail_rating_picker_unset">सेट नहीं</string>
+    <string name="gamedetail_rating_picker_value">%1$d/10</string>
+
+    <!-- ============================= Play options modal ================================ -->
+
+    <string name="gamedetail_play_options_title">गेम शुरू करें</string>
+    <string name="gamedetail_play_options_section_continue">जारी रखें</string>
+    <string name="gamedetail_play_options_section_new_game">नया गेम</string>
+    <string name="gamedetail_play_options_resume_latest">नवीनतम</string>
+    <string name="gamedetail_play_options_resume_no_sync">बिना सिंक किए खेलें</string>
+    <string name="gamedetail_play_options_resume_no_sync_subtext">लॉन्च से पहले सेव सिंक जांच छोड़ें</string>
+    <string name="gamedetail_play_options_resume_hardcore">हार्डकोर</string>
+    <string name="gamedetail_play_options_resume_hardcore_subtext">इस सेव को हार्डकोर में जारी रखें</string>
+    <string name="gamedetail_play_options_new_casual">कैज़ुअल</string>
+    <string name="gamedetail_play_options_new_casual_subtext_states">सेव स्टेट और चीट उपलब्ध</string>
+    <string name="gamedetail_play_options_new_casual_subtext_cheats">चीट उपलब्ध</string>
+    <string name="gamedetail_play_options_new_hardcore">हार्डकोर</string>
+    <string name="gamedetail_play_options_new_hardcore_subtext_online">केवल ऑनलाइन, कोई सेव स्टेट या चीट नहीं</string>
+    <string name="gamedetail_play_options_new_hardcore_subtext_offline">इंटरनेट कनेक्शन जरूरी</string>
+
+    <!-- ============================== Permission modal ================================= -->
+
+    <string name="gamedetail_permission_storage_title">अनुमति आवश्यक</string>
+    <string name="gamedetail_permission_storage_message">सेव सिंक सक्षम है लेकिन फ़ाइल एक्सेस अनुमति नहीं दी गई है। सेव सिंक करने के लिए अनुमति दें, या जारी रखने के लिए सेव सिंक अक्षम करें।</string>
+    <string name="gamedetail_permission_storage_confirm">अनुमति दें</string>
+    <string name="gamedetail_permission_folder_title">फ़ोल्डर एक्सेस आवश्यक</string>
+    <string name="gamedetail_permission_folder_message">अन्य एमुलेटर से सेव सिंक करने के लिए Android/data फ़ोल्डर तक पहुंच चाहिए। पूछे जाने पर Android फ़ोल्डर चुनें, या जारी रखने के लिए सेव सिंक अक्षम करें।</string>
+    <string name="gamedetail_permission_folder_confirm">फ़ोल्डर चुनें</string>
+    <string name="gamedetail_permission_disable_sync">सेव सिंक अक्षम करें</string>
+    <string name="gamedetail_permission_cancel">रद्द करें</string>
+
+    <!-- ============================== Missing disc modal =============================== -->
+
+    <string name="gamedetail_missing_disc_title">गायब डिस्क</string>
+    <string name="gamedetail_missing_disc_footer_download">डाउनलोड</string>
+    <string name="gamedetail_missing_disc_footer_cancel">रद्द करें</string>
+    <plurals name="gamedetail_missing_disc_message">
+        <item quantity="one">डिस्क %1$s डाउनलोड नहीं हुई है।\nक्या आप इसे डाउनलोड करना चाहेंगे?</item>
+        <item quantity="other">डिस्क %1$s डाउनलोड नहीं हुई हैं।\nक्या आप इन्हें डाउनलोड करना चाहेंगे?</item>
+    </plurals>
+
+    <!-- ============================ Extraction failed modal ============================ -->
+
+    <string name="gamedetail_extraction_failed_title">एक्सट्रैक्शन विफल</string>
+    <string name="gamedetail_extraction_failed_footer_select">चुनें</string>
+    <string name="gamedetail_extraction_failed_footer_cancel">रद्द करें</string>
+    <string name="gamedetail_extraction_failed_message">%1$s एक्सट्रैक्ट करने में विफल</string>
+    <string name="gamedetail_extraction_failed_retry">फिर एक्सट्रैक्ट करें</string>
+    <string name="gamedetail_extraction_failed_redownload">फिर डाउनलोड करें</string>
+
+    <!-- ================================= Pickers ====================================== -->
+
+    <string name="gamedetail_launcher_picker_title">लॉन्चर चुनें</string>
+
+    <string name="gamedetail_core_picker_title">कोर चुनें</string>
+    <string name="gamedetail_core_picker_subtitle">कोर पहले RetroArch में इंस्टॉल्ड होने चाहिए</string>
+    <string name="gamedetail_core_picker_platform_default">प्लेटफ़ॉर्म डिफ़ॉल्ट इस्तेमाल करें</string>
+
+    <string name="gamedetail_emulator_picker_title">एमुलेटर चुनें</string>
+    <string name="gamedetail_emulator_picker_platform_default">प्लेटफ़ॉर्म डिफ़ॉल्ट इस्तेमाल करें</string>
+
+    <string name="gamedetail_variant_picker_title">वैरिएंट चुनें</string>
+    <string name="gamedetail_variant_picker_subtitle">कौन सा वर्शन लॉन्च करना है चुनें</string>
+    <string name="gamedetail_variant_picker_original">डिफ़ॉल्ट (मूल)</string>
+
+    <!-- ================================ Cover picker ================================== -->
+
+    <string name="gamedetail_cover_picker_title">कवर आर्ट</string>
+    <string name="gamedetail_cover_picker_footer_navigate">नेविगेट</string>
+    <string name="gamedetail_cover_picker_footer_select">चुनें</string>
+    <string name="gamedetail_cover_picker_footer_search">खोजें</string>
+    <string name="gamedetail_cover_picker_footer_from_file">फ़ाइल से</string>
+    <string name="gamedetail_cover_picker_footer_cancel">रद्द करें</string>
+    <string name="gamedetail_cover_picker_search_placeholder">आर्टवर्क खोजें...</string>
+    <string name="gamedetail_cover_picker_empty">इस टाइटल के लिए कोई कवर आर्ट नहीं मिला।</string>
+    <string name="gamedetail_cover_picker_error">कवर आर्ट खोजा नहीं जा सका। %1$s</string>
+
+    <!-- ================================= File picker ================================== -->
+
+    <string name="gamedetail_file_picker_title_manage">फ़ाइलें</string>
+    <string name="gamedetail_file_picker_title_choose">फ़ाइलें चुनें</string>
+    <string name="gamedetail_file_picker_summary_no_changes">कोई बदलाव नहीं</string>
+    <string name="gamedetail_file_picker_summary_added">+%1$d · %2$s</string>
+    <string name="gamedetail_file_picker_summary_removed">-%1$d · %2$s</string>
+    <string name="gamedetail_file_picker_summary_selection">%1$d में से %2$d · %3$s चुने</string>
+    <string name="gamedetail_file_picker_confirm_download">डाउनलोड करें</string>
+    <string name="gamedetail_file_picker_confirm_download_count">%1$d डाउनलोड करें</string>
+    <string name="gamedetail_file_picker_confirm_remove_count">%1$d हटाएं</string>
+    <string name="gamedetail_file_picker_confirm_apply">बदलाव लागू करें</string>
+    <string name="gamedetail_file_picker_confirm_no_changes">कोई बदलाव नहीं</string>
+    <string name="gamedetail_file_picker_deselect_all">सभी अनचुनें</string>
+    <string name="gamedetail_file_picker_select_all">सभी चुनें</string>
+    <string name="gamedetail_file_picker_cancel">रद्द करें</string>
+    <string name="gamedetail_file_picker_expand_description">विस्तार करें</string>
+    <string name="gamedetail_file_picker_collapse_description">समेटें</string>
+    <string name="gamedetail_file_picker_default_tag">डिफ़ॉल्ट</string>
+    <string name="gamedetail_file_picker_pending_remove">हटा दी जाएगी</string>
+    <string name="gamedetail_file_picker_pending_add">डाउनलोड होगी</string>
+    <string name="gamedetail_file_picker_on_device">डिवाइस पर मौजूद</string>
+
+    <!-- ============================= Per-game settings ================================= -->
+
+    <string name="gamedetail_per_game_title">इस गेम की सेटिंग्स</string>
+    <string name="gamedetail_per_game_footer_adjust">बदलें</string>
+    <string name="gamedetail_per_game_footer_change_reset">बदलें/रीसेट</string>
+    <string name="gamedetail_per_game_footer_select">चुनें</string>
+    <string name="gamedetail_per_game_footer_change_save_path">बदलें</string>
+    <string name="gamedetail_per_game_footer_open_save_location">खोलें</string>
+    <string name="gamedetail_per_game_footer_change_memcard">बदलें</string>
+    <string name="gamedetail_per_game_footer_cycle">साइकल</string>
+    <string name="gamedetail_per_game_footer_open">खोलें</string>
+    <string name="gamedetail_per_game_footer_back">वापस</string>
+
+    <string name="gamedetail_per_game_emulator_label">एमुलेटर</string>
+    <string name="gamedetail_per_game_emulator_none">कोई नहीं मिला</string>
+    <string name="gamedetail_per_game_core_label">कोर</string>
+    <string name="gamedetail_per_game_core_default">डिफ़ॉल्ट</string>
+    <string name="gamedetail_per_game_save_path_label">सेव पाथ</string>
+    <string name="gamedetail_per_game_save_location_label">सेव लोकेशन</string>
+    <string name="gamedetail_per_game_save_location_unset">कॉन्फ़िगर नहीं</string>
+    <string name="gamedetail_per_game_memcard_label">मेमोरी कार्ड</string>
+    <string name="gamedetail_per_game_memcard_default">डिफ़ॉल्ट (%1$s)</string>
+    <string name="gamedetail_per_game_memcard_default_auto">ऑटो</string>
+    <string name="gamedetail_per_game_display_target_label">डिस्प्ले टार्गेट</string>
+    <string name="gamedetail_per_game_display_target_inherit">इनहेरिट (%1$s)</string>
+    <string name="gamedetail_per_game_extension_label">फ़ाइल एक्सटेंशन</string>
+    <string name="gamedetail_per_game_extension_inherit">इनहेरिट (%1$s)</string>
+    <string name="gamedetail_per_game_extension_inherit_auto">ऑटो</string>
+    <string name="gamedetail_per_game_platform_settings">प्लेटफ़ॉर्म सेटिंग्स</string>
+    <string name="gamedetail_per_game_inherited_tag">इनहेरिटेड</string>
+    <string name="gamedetail_per_game_save_path_browser_title">सेव पाथ</string>
+    <string name="gamedetail_per_game_save_path_content_dir">(ROM डायरेक्टरी)</string>
+
+    <string name="gamedetail_cover_file_browser_title">कवर आर्ट चुनें</string>
+
+    <!-- =============================== Speedrun splits ================================= -->
+
+    <string name="gamedetail_speedrun_segments_title">%1$s - सेगमेंट</string>
+    <string name="gamedetail_speedrun_title">स्पीडरन स्प्लिट्स</string>
+    <string name="gamedetail_speedrun_footer_add_segment">सेगमेंट जोड़ें</string>
+    <string name="gamedetail_speedrun_footer_delete">हटाएं</string>
+    <string name="gamedetail_speedrun_footer_move">मूव करें</string>
+    <string name="gamedetail_speedrun_footer_back">वापस</string>
+    <string name="gamedetail_speedrun_footer_open">खोलें</string>
+    <string name="gamedetail_speedrun_footer_new_category">नई श्रेणी</string>
+    <string name="gamedetail_speedrun_footer_close">बंद करें</string>
+    <string name="gamedetail_speedrun_segment_row">%1$d.  %2$s</string>
+    <string name="gamedetail_speedrun_default_segment_name">सेगमेंट 1</string>
+    <string name="gamedetail_speedrun_rename_category">श्रेणी का नाम बदलें</string>
+    <string name="gamedetail_speedrun_delete_category">श्रेणी हटाएं</string>
+    <string name="gamedetail_speedrun_empty_prefix">अभी तक कोई श्रेणी नहीं। दबाएं</string>
+    <string name="gamedetail_speedrun_empty_suffix">एक बनाने के लिए, या कम्युनिटी से इंपोर्ट करें।</string>
+    <string name="gamedetail_speedrun_category_summary">%1$d सेगमेंट · %2$d प्रयास</string>
+    <string name="gamedetail_speedrun_import_row">स्प्लिट्स इंपोर्ट करें...</string>
+    <string name="gamedetail_speedrun_import_loading_title">खोजा जा रहा है...</string>
+    <string name="gamedetail_speedrun_import_loading_message">therun.gg और speedrun.com पर श्रेणियां खोजी जा रही हैं</string>
+    <string name="gamedetail_speedrun_import_importing_title">इंपोर्ट हो रहा है...</string>
+    <string name="gamedetail_speedrun_import_importing_message">एक टॉप रन से स्प्लिट्स लाए जा रहे हैं</string>
+    <string name="gamedetail_speedrun_import_failed_title">इंपोर्ट</string>
+    <string name="gamedetail_speedrun_import_failed_footer_back">वापस</string>
+    <string name="gamedetail_speedrun_preview_footer_other_runner">दूसरा रनर</string>
+    <string name="gamedetail_speedrun_preview_footer_import">इंपोर्ट करें</string>
+    <string name="gamedetail_speedrun_preview_footer_back">वापस</string>
+    <string name="gamedetail_speedrun_preview_attribution">स्प्लिट्स %1$s द्वारा (#%2$d)</string>
+    <string name="gamedetail_speedrun_preview_segment_row">%1$d.  %2$s</string>
+    <string name="gamedetail_speedrun_import_options_title">स्प्लिट्स इंपोर्ट करें</string>
+    <string name="gamedetail_speedrun_import_options_footer_import">इंपोर्ट करें</string>
+    <string name="gamedetail_speedrun_import_options_footer_cancel">रद्द करें</string>
+    <string name="gamedetail_speedrun_source_therun">therun.gg · पूरे स्प्लिट्स</string>
+    <string name="gamedetail_speedrun_source_speedruncom">speedrun.com · केवल नाम</string>
+    <string name="gamedetail_speedrun_prompt_confirm">पुष्टि करें</string>
+    <string name="gamedetail_speedrun_prompt_cancel">रद्द करें</string>
+    <string name="gamedetail_speedrun_prompt_placeholder">नाम</string>
+    <string name="gamedetail_speedrun_confirm_delete_title">\"%1$s\" हटाएं?</string>
+    <string name="gamedetail_speedrun_confirm_delete_footer_delete">हटाएं</string>
+    <string name="gamedetail_speedrun_confirm_delete_footer_cancel">रद्द करें</string>
+    <string name="gamedetail_speedrun_confirm_delete_category_message">इससे श्रेणी, उसके सेगमेंट और सभी दर्ज प्रयास हट जाएंगे।</string>
+    <string name="gamedetail_speedrun_confirm_delete_segment_message">इससे सेगमेंट श्रेणी से हट जाएगा।</string>
+    <string name="gamedetail_speedrun_prompt_new_category">नई श्रेणी</string>
+    <string name="gamedetail_speedrun_prompt_rename_category">श्रेणी का नाम बदलें</string>
+    <string name="gamedetail_speedrun_prompt_new_segment">नया सेगमेंट</string>
+    <string name="gamedetail_speedrun_prompt_rename_segment">सेगमेंट का नाम बदलें</string>
+    <string name="gamedetail_speedrun_import_none_found">\"%1$s\" के लिए ऑनलाइन कोई श्रेणी नहीं मिली</string>
+    <string name="gamedetail_speedrun_import_fetch_failed">%1$s के लिए स्प्लिट्स नहीं मिल सके</string>
+
+    <!-- ============================ Brief on-screen messages =========================== -->
+
+    <string name="gamedetail_notice_launch_failed">लॉन्च करने में विफल: %1$s</string>
+    <string name="gamedetail_notice_background_updated">बैकग्राउंड अपडेट हुआ</string>
+    <string name="gamedetail_notice_background_failed">बैकग्राउंड सेट करने में विफल</string>
+    <string name="gamedetail_notice_rating_saved">रेटिंग सेव हुई</string>
+    <string name="gamedetail_notice_difficulty_saved">कठिनाई सेव हुई</string>
+    <string name="gamedetail_notice_status_saved">स्थिति सेव हुई</string>
+    <string name="gamedetail_notice_no_emulator_for_saves">सेव के लिए एमुलेटर तय नहीं हो सका</string>
+    <string name="gamedetail_notice_no_emulator_for_selection">एमुलेटर तय नहीं हो सका</string>
+    <string name="gamedetail_notice_no_emulator_for_restore">सेव रीस्टोर के लिए एमुलेटर तय नहीं हो सका</string>
+    <string name="gamedetail_notice_no_emulator_for_sync">एमुलेटर तय नहीं हो सका</string>
+    <string name="gamedetail_notice_saves_up_to_date">सेव पहले से अपडेट हैं</string>
+    <string name="gamedetail_notice_save_uploaded">लोकल सेव अपलोड हुआ</string>
+    <string name="gamedetail_notice_save_downloaded">सर्वर सेव डाउनलोड हुआ</string>
+    <string name="gamedetail_notice_sync_skipped">सिंक छोड़ा गया</string>
+    <string name="gamedetail_notice_variant_local_only">लोकल-ओनली वैरिएंट डाउनलोड नहीं हो सकता</string>
+    <string name="gamedetail_notice_downloading_variant">%1$s डाउनलोड हो रहा है</string>
+    <plurals name="gamedetail_notice_files_queued">
+        <item quantity="one">%1$d कतार में जोड़ा गया</item>
+        <item quantity="other">%1$d कतार में जोड़े गए</item>
+    </plurals>
+    <plurals name="gamedetail_notice_files_removed">
+        <item quantity="one">%1$d हटाया गया</item>
+        <item quantity="other">%1$d हटाए गए</item>
+    </plurals>
+    <plurals name="gamedetail_notice_downloads_queued">
+        <item quantity="one">%1$d डाउनलोड कतार में जोड़ा गया</item>
+        <item quantity="other">%1$d डाउनलोड कतार में जोड़े गए</item>
+    </plurals>
+    <string name="gamedetail_notice_already_downloaded">गेम पहले से डाउनलोड हो चुका है</string>
+    <plurals name="gamedetail_notice_discs_queued">
+        <item quantity="one">%1$d डिस्क डाउनलोड हो रही है</item>
+        <item quantity="other">%1$d डिस्क डाउनलोड हो रही हैं</item>
+    </plurals>
+    <plurals name="gamedetail_notice_missing_discs_queued">
+        <item quantity="one">%1$d गायब डिस्क डाउनलोड हो रही है</item>
+        <item quantity="other">%1$d गायब डिस्क डाउनलोड हो रही हैं</item>
+    </plurals>
+    <string name="gamedetail_notice_extraction_succeeded">एक्सट्रैक्शन सफल हुआ</string>
+    <string name="gamedetail_notice_redownload_started">फिर से डाउनलोड शुरू हुआ</string>
+    <string name="gamedetail_notice_apk_install_failed">APK इंस्टॉल नहीं हो सका</string>
+    <string name="gamedetail_notice_download_deleted">डाउनलोड हटाया गया</string>
+    <string name="gamedetail_notice_removed_from_library">लाइब्रेरी से हटाया गया</string>
+    <string name="gamedetail_notice_remove_failed">यह गेम हटाया नहीं जा सका</string>
+    <string name="gamedetail_notice_game_data_refreshed">गेम डेटा रीफ्रेश हुआ</string>
+    <string name="gamedetail_notice_android_data_refreshed">गेम डेटा रीफ्रेश हुआ</string>
+    <string name="gamedetail_notice_app_data_failed">ऐप डेटा प्राप्त नहीं हो सका</string>
+    <string name="gamedetail_notice_refresh_failed">रीफ्रेश करने में विफल: %1$s</string>
+
+    <string name="gamedetail_header_platform_unknown">अज्ञात</string>
+</resources>

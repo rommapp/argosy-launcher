@@ -1,0 +1,2137 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ===== Top level of the settings screen ===== -->
+
+    <string name="settings_main_section_launcher">启动器</string>
+    <string name="settings_main_section_gameplay">游戏玩法</string>
+    <string name="settings_main_section_library">库</string>
+    <string name="settings_main_section_connections">连接</string>
+    <string name="settings_main_section_system">系统</string>
+
+    <string name="settings_main_theme_title">主题</string>
+    <string name="settings_main_theme_subtitle">颜色、背景图案、字体</string>
+    <string name="settings_main_interface_title">界面</string>
+    <string name="settings_main_interface_subtitle">网格密度、缩放、主屏幕</string>
+    <string name="settings_main_navigation_title">导航</string>
+    <string name="settings_main_navigation_subtitle">按钮布局、震动反馈</string>
+    <string name="settings_main_audio_title">音频</string>
+    <string name="settings_main_audio_subtitle">音效与音乐</string>
+    <string name="settings_main_displays_title">显示屏</string>
+    <string name="settings_main_displays_subtitle">变暗、双屏、LED</string>
+
+    <string name="settings_main_builtin_emulator_title">内置模拟器</string>
+    <string name="settings_main_builtin_emulator_subtitle_on">已启用</string>
+    <string name="settings_main_builtin_emulator_subtitle_off">已禁用</string>
+    <string name="settings_main_saves_title">存档</string>
+    <string name="settings_main_saves_subtitle_on">同步已开启</string>
+    <string name="settings_main_saves_subtitle_off">同步已关闭</string>
+    <string name="settings_main_retroachievements_subtitle_logged_in">已登录：%1$s</string>
+    <string name="settings_main_retroachievements_subtitle_logged_out">未登录</string>
+    <string name="settings_main_bios_title">BIOS文件</string>
+    <string name="settings_main_drivers_title">GPU驱动</string>
+
+    <string name="settings_main_platforms_title">平台</string>
+    <plurals name="settings_main_platforms_subtitle">
+        <item quantity="other">%d个平台</item>
+    </plurals>
+    <string name="settings_main_storage_title">存储</string>
+    <plurals name="settings_main_storage_subtitle_downloaded">
+        <item quantity="other">已下载%d个</item>
+    </plurals>
+    <string name="settings_main_storage_subtitle_empty">尚无下载内容</string>
+
+    <string name="settings_main_romm_subtitle_unconfigured">服务器未配置</string>
+    <string name="settings_main_romm_subtitle_checking">正在检查连接...</string>
+    <string name="settings_main_romm_subtitle_offline">服务器离线</string>
+    <string name="settings_main_romm_subtitle_last_sync">上次同步：%1$s</string>
+    <string name="settings_main_romm_subtitle_never_synced">从未同步</string>
+    <string name="settings_main_steam_subtitle_signed_out">未登录</string>
+    <string name="settings_main_jellyfin_subtitle_unconfigured">服务器未配置</string>
+    <string name="settings_main_jellyfin_subtitle_signed_in_as">已登录：%1$s</string>
+    <string name="settings_main_jellyfin_subtitle_signed_in">已登录</string>
+    <string name="settings_main_jellyfin_subtitle_signed_out">未登录</string>
+    <string name="settings_main_social_title">社交</string>
+    <string name="settings_main_social_subtitle_linked">已关联：%1$s</string>
+    <string name="settings_main_social_subtitle_connecting">正在连接...</string>
+    <string name="settings_main_social_subtitle_unlinked">未关联</string>
+
+    <string name="settings_main_permissions_title">权限</string>
+    <string name="settings_main_permissions_subtitle_all">已全部授予</string>
+    <string name="settings_main_permissions_subtitle_partial">已授予%1$d/%2$d项</string>
+    <string name="settings_main_device_title">Android设置</string>
+    <string name="settings_main_device_subtitle">系统设置</string>
+    <string name="settings_main_about_title">关于</string>
+    <string name="settings_main_about_subtitle">版本%1$s</string>
+
+    <!-- ===== Audio section ===== -->
+
+    <string name="settings_audio_sounds_title">音效</string>
+    <string name="settings_audio_sounds_subtitle_on">开启，%1$d%%</string>
+    <string name="settings_audio_sounds_subtitle_off">关闭</string>
+    <string name="settings_audio_music_title">音乐</string>
+    <string name="settings_audio_music_subtitle_on">开启，%1$d%%</string>
+    <string name="settings_audio_music_subtitle_off">关闭</string>
+
+    <!-- ===== Theme section ===== -->
+
+    <string name="settings_theme_section_appearance">外观</string>
+    <string name="settings_theme_section_identity">个性化</string>
+
+    <string name="settings_theme_mode_title">模式</string>
+    <string name="settings_theme_mode_light">浅色</string>
+    <string name="settings_theme_mode_dark">深色</string>
+    <string name="settings_theme_mode_system">跟随系统</string>
+
+    <string name="settings_theme_accent_color_title">强调色</string>
+    <string name="settings_theme_secondary_color_title">次要颜色</string>
+    <string name="settings_theme_accent_footer_title">底栏使用强调色</string>
+    <string name="settings_theme_accent_footer_subtitle">底栏背景使用强调色</string>
+    <string name="settings_theme_tint_bleed_title">表面色调</string>
+
+    <string name="settings_theme_backdrop_title">背景图案</string>
+    <string name="settings_theme_backdrop_subtitle_off">关闭</string>
+    <string name="settings_theme_fonts_title">字体</string>
+    <string name="settings_theme_fonts_subtitle_default">默认</string>
+
+    <!-- ===== Interface section ===== -->
+
+    <string name="settings_interface_ui_scale_title">界面缩放</string>
+    <string name="settings_interface_compact_footer_title">紧凑底栏</string>
+    <string name="settings_interface_compact_footer_subtitle">使用更薄的操作提示栏</string>
+    <string name="settings_interface_controller_grip_title">手柄夹持</string>
+    <string name="settings_interface_controller_grip_subtitle">将界面上移，避开夹持配件遮挡的区域</string>
+    <string name="settings_interface_home_screen_title">主屏幕</string>
+    <string name="settings_interface_home_screen_subtitle">布局、内容与背景</string>
+    <string name="settings_interface_library_view_title">库</string>
+    <string name="settings_interface_library_view_subtitle">网格密度与默认筛选条件</string>
+    <string name="settings_interface_box_art_title">封面</string>
+    <string name="settings_interface_box_art_subtitle">封面形状、边框与效果</string>
+
+    <!-- ===== Navigation section ===== -->
+
+    <string name="settings_navigation_section_controller">手柄</string>
+    <string name="settings_navigation_section_feedback">反馈</string>
+    <string name="settings_navigation_section_menus">菜单</string>
+
+    <string name="settings_navigation_controller_layout_title">手柄布局</string>
+    <string name="settings_navigation_controller_layout_auto">自动</string>
+    <string name="settings_navigation_controller_layout_detected_device">已检测到：%1$s (%2$s)</string>
+    <string name="settings_navigation_controller_layout_detected">已检测到：%1$s</string>
+    <string name="settings_navigation_controller_layout_undetected">未检测到手柄</string>
+
+    <string name="settings_navigation_swap_ab_title">交换A/B</string>
+    <string name="settings_navigation_swap_ab_subtitle">交换确认与返回按钮</string>
+    <string name="settings_navigation_swap_xy_title">交换X/Y</string>
+    <string name="settings_navigation_swap_xy_subtitle">交换上下文菜单与次要操作</string>
+    <string name="settings_navigation_swap_start_select_title">交换Start/Select</string>
+    <string name="settings_navigation_swap_start_select_subtitle">互换Start与Select按钮的功能</string>
+
+    <string name="settings_navigation_haptic_title">震动反馈</string>
+    <string name="settings_navigation_vibration_title">震动强度</string>
+
+    <string name="settings_navigation_menu_wrap_title">菜单循环</string>
+    <string name="settings_navigation_menu_wrap_subtitle">移动到最后一项后回到第一项</string>
+    <string name="settings_navigation_menu_wrap_off">关闭</string>
+    <string name="settings_navigation_menu_wrap_hard_stop">到底停止</string>
+    <string name="settings_navigation_menu_wrap_auto">自动</string>
+
+    <string name="settings_navigation_select_l_combo_title">Select + L</string>
+    <string name="settings_navigation_select_l_combo_subtitle">按住Select并按下L1</string>
+    <string name="settings_navigation_select_r_combo_title">Select + R</string>
+    <string name="settings_navigation_select_r_combo_subtitle">按住Select并按下R1</string>
+    <string name="settings_navigation_combo_quick_menu">快捷菜单</string>
+    <string name="settings_navigation_combo_quick_settings">快捷设置</string>
+    <string name="settings_navigation_combo_none">无</string>
+
+    <!-- ===== Displays section ===== -->
+
+    <string name="settings_displays_section_screen_safety">屏幕保护</string>
+    <string name="settings_displays_section_displays">显示屏</string>
+
+    <string name="settings_displays_screen_dimmer_title">屏幕变暗</string>
+    <string name="settings_displays_screen_dimmer_subtitle">闲置一段时间后使屏幕变暗，以防止烧屏</string>
+    <string name="settings_displays_dim_after_title">变暗延迟</string>
+    <plurals name="settings_displays_dim_after_value">
+        <item quantity="other">%d分钟</item>
+    </plurals>
+    <string name="settings_displays_dim_level_title">变暗程度</string>
+
+    <string name="settings_displays_dual_screen_title">启用双屏模式</string>
+    <string name="settings_displays_dual_screen_subtitle">将副屏用作伴侣屏幕</string>
+    <string name="settings_displays_dual_screen_subtitle_unsupported">此系统不允许在副屏上运行伴侣应用；请关闭后重新打开以重试</string>
+
+    <string name="settings_displays_display_roles_title">屏幕角色</string>
+    <string name="settings_displays_display_roles_subtitle">指定哪块物理屏幕作为主屏幕与伴侣屏幕；"已互换"会上下颠倒</string>
+    <string name="settings_displays_display_roles_auto">自动</string>
+    <string name="settings_displays_display_roles_standard">标准</string>
+    <string name="settings_displays_display_roles_swapped">已互换</string>
+
+    <string name="settings_displays_ambient_led_title">LED控制</string>
+    <string name="settings_displays_ambient_led_subtitle">摇杆LED颜色与效果</string>
+
+    <!-- ===== Controller grip section ===== -->
+
+    <string name="settings_grip_mode_title">模式</string>
+    <string name="settings_grip_mode_off">关闭</string>
+    <string name="settings_grip_mode_on">开启</string>
+    <string name="settings_grip_mode_auto">自动</string>
+    <string name="settings_grip_mode_subtitle_off">从不上移界面</string>
+    <string name="settings_grip_mode_subtitle_on">竖屏时始终上移界面</string>
+    <string name="settings_grip_mode_subtitle_auto">连接指定手柄时自动上移界面</string>
+
+    <string name="settings_grip_controllers_title">手柄</string>
+    <string name="settings_grip_controllers_subtitle_empty">未选择手柄</string>
+    <plurals name="settings_grip_controllers_subtitle_count">
+        <item quantity="other">%d个手柄</item>
+    </plurals>
+    <string name="settings_grip_reserved_height_title">预留高度</string>
+
+    <!-- ===== Home screen section ===== -->
+
+    <string name="settings_home_screen_section_layout">布局</string>
+    <string name="settings_home_screen_section_background">背景</string>
+    <string name="settings_home_screen_section_video">视频壁纸</string>
+    <string name="settings_home_screen_section_content">内容</string>
+
+    <string name="settings_home_screen_background_title">背景</string>
+    <string name="settings_home_screen_background_subtitle">游戏美术图或背景图案</string>
+    <string name="settings_home_screen_background_mode_game_art">游戏美术图</string>
+    <string name="settings_home_screen_background_mode_pattern">图案</string>
+
+    <string name="settings_home_screen_game_artwork_title">游戏美术图</string>
+    <string name="settings_home_screen_game_artwork_subtitle">使用游戏封面作为背景</string>
+    <string name="settings_home_screen_custom_image_title">自定义图片</string>
+    <string name="settings_home_screen_custom_image_subtitle_set">已选择自定义图片</string>
+    <string name="settings_home_screen_custom_image_subtitle_empty">未选择图片</string>
+
+    <string name="settings_home_screen_blur_title">模糊</string>
+    <string name="settings_home_screen_saturation_title">饱和度</string>
+    <string name="settings_home_screen_opacity_title">不透明度</string>
+
+    <string name="settings_home_screen_video_wallpaper_title">显示视频壁纸</string>
+    <string name="settings_home_screen_video_wallpaper_subtitle">在主屏幕播放视频背景</string>
+    <string name="settings_home_screen_video_delay_title">播放前延迟</string>
+    <string name="settings_home_screen_video_delay_instant">立即</string>
+    <plurals name="settings_home_screen_video_delay_seconds">
+        <item quantity="other">%d秒</item>
+    </plurals>
+    <string name="settings_home_screen_video_muted_title">静音播放</string>
+    <string name="settings_home_screen_video_muted_subtitle">静音视频声音</string>
+
+    <string name="settings_home_screen_installed_only_title">仅显示已安装游戏</string>
+    <string name="settings_home_screen_installed_only_subtitle">主屏幕仅显示已下载的游戏</string>
+
+    <!-- ===== Saves section ===== -->
+
+    <string name="settings_saves_section_sync">同步</string>
+    <string name="settings_saves_section_manage">管理</string>
+
+    <string name="settings_saves_save_sync_title">存档同步</string>
+    <string name="settings_saves_save_sync_subtitle">与服务器同步游戏存档</string>
+    <string name="settings_saves_save_sync_locked_value">不可用</string>
+    <string name="settings_saves_save_sync_locked_subtitle">需要RomM服务器</string>
+
+    <string name="settings_saves_secure_saves_title">安全存档</string>
+    <string name="settings_saves_secure_saves_subtitle_on">Argosy管理并强制执行存档文件</string>
+    <string name="settings_saves_secure_saves_subtitle_off">Argosy会尝试同步启动器之外管理的存档</string>
+    <string name="settings_saves_secure_saves_locked_value">不可用</string>
+    <string name="settings_saves_secure_saves_locked_subtitle">需要RomM服务器</string>
+
+    <string name="settings_saves_cache_limit_title">本地存档缓存</string>
+    <plurals name="settings_saves_cache_limit_value">
+        <item quantity="other">每个游戏保留%d个存档</item>
+    </plurals>
+
+    <string name="settings_saves_manage_sync_title">管理存档同步</string>
+    <string name="settings_saves_manage_sync_subtitle">查看冲突并立即同步</string>
+    <plurals name="settings_saves_manage_sync_pending">
+        <item quantity="other">%d个待处理</item>
+    </plurals>
+    <string name="settings_saves_caches_title">存档缓存</string>
+    <string name="settings_saves_caches_subtitle">清除已缓存的存档与检测到的路径</string>
+
+    <!-- ===== Sync settings section ===== -->
+
+    <string name="settings_sync_section_media">媒体</string>
+    <string name="settings_sync_section_download_defaults">下载默认设置</string>
+
+    <string name="settings_sync_platform_filters_title">平台筛选</string>
+    <string name="settings_sync_platform_filters_subtitle_count">%1$d/%2$d个平台</string>
+    <string name="settings_sync_platform_filters_subtitle_empty">选择要同步的平台</string>
+
+    <string name="settings_sync_metadata_filters_title">元数据筛选</string>
+    <string name="settings_sync_metadata_filters_subtitle_none">未应用筛选条件</string>
+    <plurals name="settings_sync_metadata_filters_regions">
+        <item quantity="other">%1$d个地区 (%2$s)</item>
+    </plurals>
+    <string name="settings_sync_metadata_filters_region_mode_exclude">排除</string>
+    <string name="settings_sync_metadata_filters_region_mode_include">包含</string>
+    <string name="settings_sync_metadata_filters_excluded">无%1$s</string>
+    <string name="settings_sync_metadata_filters_beta">测试版</string>
+    <string name="settings_sync_metadata_filters_prototype">原型</string>
+    <string name="settings_sync_metadata_filters_demo">试玩</string>
+    <string name="settings_sync_metadata_filters_hack">改版</string>
+
+    <string name="settings_sync_cache_screenshots_title">缓存截图</string>
+    <string name="settings_sync_cache_screenshots_subtitle">封面和背景图始终会被缓存</string>
+    <string name="settings_sync_cache_box_art_title">缓存3D立体封面</string>
+    <string name="settings_sync_cache_box_art_subtitle">下载封底与书脊扫描图，用于3D立体封面显示</string>
+    <string name="settings_sync_upload_screenshots_title">上传截图</string>
+    <string name="settings_sync_upload_screenshots_subtitle">将游戏过程中截取的截图发送到RomM</string>
+    <string name="settings_sync_upload_screenshots_subtitle_unsupported">需要RomM 5.0或更高版本</string>
+    <string name="settings_sync_upload_screenshots_subtitle_needs_usage">授予使用情况访问权限以精确匹配游戏</string>
+
+    <string name="settings_sync_image_cache_title">图片缓存位置</string>
+    <string name="settings_sync_image_cache_path_internal">内部存储 (默认)</string>
+    <string name="settings_sync_image_cache_progress_title">正在缓存图片</string>
+    <string name="settings_sync_image_cache_progress_percent">%1$d%%</string>
+
+    <string name="settings_sync_download_category_other">其他文件夹</string>
+    <string name="settings_sync_download_category_subtitle">默认下载时包含%1$s</string>
+
+    <!-- ===== RetroAchievements section ===== -->
+
+    <string name="settings_ra_logged_in_label">已登录为</string>
+    <string name="settings_ra_username_unknown">未知</string>
+    <string name="settings_ra_connected_icon_description">已连接</string>
+
+    <string name="settings_ra_section_pending_sync">待同步</string>
+    <plurals name="settings_ra_pending_sync_count">
+        <item quantity="other">有%d个成就等待同步</item>
+    </plurals>
+
+    <string name="settings_ra_section_account">账户</string>
+    <string name="settings_ra_logout_title">登出</string>
+    <string name="settings_ra_logout_title_busy">正在登出...</string>
+    <string name="settings_ra_logout_subtitle">退出RetroAchievements登录</string>
+
+    <string name="settings_ra_play_mode_title">游戏模式偏好</string>
+    <string name="settings_ra_play_mode_subtitle_locked">需要开启安全存档</string>
+    <string name="settings_ra_play_mode_ask">每次询问</string>
+    <string name="settings_ra_play_mode_casual">默认使用休闲模式</string>
+    <string name="settings_ra_play_mode_hardcore">默认使用硬核模式</string>
+    <string name="settings_ra_play_mode_subtitle_ask">启动时提示选择休闲模式或硬核模式</string>
+    <string name="settings_ra_play_mode_subtitle_casual">允许使用即时存档、金手指与回退。获得的是软核成就。</string>
+    <string name="settings_ra_play_mode_subtitle_hardcore">禁用即时存档、金手指与回退。获得的是硬核成就。</string>
+    <string name="settings_ra_play_mode_subtitle_default">启动游戏时使用的首选模式</string>
+
+    <string name="settings_ra_section_retroarch">RETROARCH</string>
+    <string name="settings_ra_push_retroarch_title">推送到RetroArch</string>
+    <string name="settings_ra_push_retroarch_subtitle">将此登录信息写入RetroArch的配置文件</string>
+
+    <string name="settings_ra_intro_subtitle">在畅玩经典游戏的同时赢取成就</string>
+    <string name="settings_ra_login_row_title">登录</string>
+    <string name="settings_ra_login_row_subtitle">使用你的RetroAchievements账户登录</string>
+
+    <string name="settings_ra_section_offline_proxy">离线代理</string>
+    <string name="settings_ra_proxy_title">RetroAchievements代理</string>
+    <string name="settings_ra_proxy_subtitle">通过本地RAOfflineProxy转发成就数据</string>
+    <string name="settings_ra_proxy_address_label">代理地址</string>
+
+    <string name="settings_ra_login_form_title">RetroAchievements登录</string>
+    <string name="settings_ra_login_username_label">用户名</string>
+    <string name="settings_ra_login_password_label">密码</string>
+    <string name="settings_ra_login_submit_title">登录</string>
+    <string name="settings_ra_login_submit_title_busy">正在登录...</string>
+    <string name="settings_ra_login_submit_subtitle">登录RetroAchievements</string>
+    <string name="settings_ra_login_cancel_title">取消</string>
+    <string name="settings_ra_login_cancel_subtitle">返回RetroAchievements设置</string>
+
+    <!-- ===== BIOS section ===== -->
+
+    <string name="settings_bios_path_title">BIOS目录</string>
+    <string name="settings_bios_path_internal">内部存储 (默认)</string>
+
+    <string name="settings_bios_section_platforms">平台</string>
+    <string name="settings_bios_empty_notice">尚未同步任何BIOS文件。同步你的库以发现可用的固件。</string>
+    <string name="settings_bios_footer_note">BIOS文件从你的RomM服务器下载并保存在本地。使用"分发"将它们复制到各模拟器目录。</string>
+
+    <string name="settings_bios_firmware_downloaded">已下载</string>
+    <string name="settings_bios_firmware_downloading">正在下载...</string>
+
+    <string name="settings_bios_summary_title">BIOS状态</string>
+    <string name="settings_bios_summary_empty">未找到BIOS文件</string>
+    <string name="settings_bios_summary_complete">全部%1$d个文件已就绪</string>
+    <string name="settings_bios_summary_partial">已下载%1$d/%2$d个</string>
+    <string name="settings_bios_summary_downloading">正在下载：%1$s</string>
+    <string name="settings_bios_summary_distributing">正在分发到各模拟器...</string>
+    <string name="settings_bios_summary_download_missing">下载%1$d个</string>
+    <string name="settings_bios_summary_redownload">重新下载</string>
+    <string name="settings_bios_summary_distribute">分发</string>
+
+    <string name="settings_bios_platform_redownload">重新下载</string>
+    <string name="settings_bios_platform_download">下载</string>
+
+    <string name="settings_bios_distribute_result_title">分发完成</string>
+    <string name="settings_bios_distribute_result_message">已将%1$d个BIOS文件复制到%2$d个模拟器</string>
+    <plurals name="settings_bios_distribute_result_files">
+        <item quantity="other">%d个文件</item>
+    </plurals>
+    <string name="settings_bios_distribute_result_dismiss">确定</string>
+
+    <string name="settings_bios_gpu_prompt_title">有可用的GPU驱动</string>
+    <string name="settings_bios_gpu_prompt_detected">已检测到：%1$s</string>
+    <string name="settings_bios_gpu_prompt_message">自定义GPU驱动可以提升Snapdragon 8设备上Switch模拟的性能。</string>
+    <string name="settings_bios_gpu_prompt_installing">正在安装驱动...</string>
+    <string name="settings_bios_gpu_prompt_install_versioned">安装推荐版本 (%1$s)</string>
+    <string name="settings_bios_gpu_prompt_install">安装推荐版本</string>
+    <string name="settings_bios_gpu_prompt_install_from_file">从文件安装</string>
+    <string name="settings_bios_gpu_prompt_skip">跳过</string>
+
+    <!-- ===== GPU drivers section ===== -->
+
+    <string name="settings_drivers_gpu_label">GPU</string>
+    <string name="settings_drivers_gpu_unknown">未知</string>
+    <string name="settings_drivers_recommended_label">推荐</string>
+    <string name="settings_drivers_section_downloaded">已下载</string>
+    <string name="settings_drivers_source_no_releases">没有可用版本</string>
+    <plurals name="settings_drivers_source_releases">
+        <item quantity="other">%1$d个版本 - 最新%2$s</item>
+    </plurals>
+
+    <!-- ===== Permissions section ===== -->
+
+    <string name="settings_permissions_intro">Argosy需要一些权限才能提供完整功能。点按每项权限即可授予访问权限。</string>
+    <string name="settings_permissions_storage_title">存储访问权限</string>
+    <string name="settings_permissions_storage_description">下载游戏、同步存档文件以及访问设备上的ROM文件都需要此权限。</string>
+    <string name="settings_permissions_usage_stats_title">使用情况访问权限</string>
+    <string name="settings_permissions_usage_stats_description">可实现精确的游戏时长统计，并在应用间切换时无缝恢复游戏会话。</string>
+    <string name="settings_permissions_notifications_title">通知</string>
+    <string name="settings_permissions_notifications_description">在后台下载游戏时显示下载进度。</string>
+    <string name="settings_permissions_write_settings_title">系统设置访问权限</string>
+    <string name="settings_permissions_write_settings_description">允许在快捷设置面板中控制设备性能模式与风扇设置。</string>
+    <string name="settings_permissions_screen_capture_title">屏幕捕获</string>
+    <string name="settings_permissions_screen_capture_description">使氛围LED灯光能够在游戏过程中采集屏幕颜色。</string>
+    <string name="settings_permissions_display_overlay_title">悬浮在其他应用上层</string>
+    <string name="settings_permissions_display_overlay_description">在外部模拟器中游戏时显示存档检测通知。</string>
+    <string name="settings_permissions_status_footer">状态：已授予%1$d/%2$d项权限</string>
+
+    <!-- ===== About section ===== -->
+
+    <string name="settings_about_section_version">版本</string>
+    <string name="settings_about_section_backup">备份</string>
+    <string name="settings_about_section_system_app">系统应用</string>
+    <string name="settings_about_section_debug">调试</string>
+
+    <string name="settings_about_update_title_check">检查更新</string>
+    <string name="settings_about_update_title_downloading">正在下载...</string>
+    <string name="settings_about_update_title_available">有可用更新</string>
+    <string name="settings_about_update_subtitle_debug">调试版本中已禁用</string>
+    <string name="settings_about_update_subtitle_progress">%1$d%%</string>
+    <string name="settings_about_update_subtitle_checking">正在检查...</string>
+    <string name="settings_about_update_subtitle_error">错误：%1$s</string>
+    <string name="settings_about_update_subtitle_available">%1$s已可下载</string>
+    <string name="settings_about_update_subtitle_current_prerelease">已是最新 (预发布版)</string>
+    <string name="settings_about_update_subtitle_current">已是最新</string>
+    <string name="settings_about_update_subtitle_on_prerelease">正在运行预发布版本</string>
+    <string name="settings_about_update_subtitle_idle">检查新版本</string>
+    <string name="settings_about_update_action_download">下载</string>
+    <string name="settings_about_update_action_check">检查</string>
+    <string name="settings_about_update_action_changelog">更新日志</string>
+    <string name="settings_about_changelog_preview_title">新功能 - %1$s</string>
+
+    <string name="settings_about_beta_updates_title">测试版更新</string>
+    <string name="settings_about_beta_updates_subtitle_on">正在接收预发布版本</string>
+    <string name="settings_about_beta_updates_subtitle_off">仅接收正式版本</string>
+
+    <string name="settings_about_export_title">导出设置</string>
+    <string name="settings_about_export_subtitle">将你的外观与导航设置写入%1$s。不包含账户、服务器或同步状态。</string>
+    <string name="settings_about_import_title">导入设置</string>
+    <string name="settings_about_import_subtitle">从备份文件应用设置</string>
+
+    <string name="settings_about_systemize_title">防止高负载模拟器崩溃</string>
+    <string name="settings_about_systemize_subtitle">当高负载模拟器占用大部分内存时，Argosy可能会被强制关闭。在已root的设备上，此功能会写入一个脚本，使Argosy成为系统应用，从而不再被系统杀死。</string>
+    <string name="settings_about_restart_title">重启Argosy</string>
+    <string name="settings_about_restart_subtitle">关闭并重新打开启动器</string>
+
+    <string name="settings_about_file_logging_title">文件日志</string>
+    <string name="settings_about_file_logging_enable_title">启用文件日志</string>
+    <string name="settings_about_file_logging_enable_subtitle">将日志写入文件以便调试</string>
+    <string name="settings_about_log_path_internal">内部存储</string>
+    <string name="settings_about_log_path_sd_card">SD卡/%1$s</string>
+    <string name="settings_about_log_level_title">日志级别</string>
+
+    <string name="settings_about_save_debug_title">存档调试日志</string>
+    <string name="settings_about_save_debug_subtitle_on">记录详细的存档操作</string>
+    <string name="settings_about_save_debug_subtitle_off">记录存档同步、缓存与频道事件</string>
+
+    <string name="settings_about_version_romm_value">v%1$s</string>
+    <string name="settings_about_licenses_label">许可证</string>
+
+    <!-- ===== Surface backdrop section ===== -->
+
+    <string name="settings_backdrop_section_pattern">图案</string>
+    <string name="settings_backdrop_section_layers">图层</string>
+
+    <string name="settings_backdrop_enabled_title">背景图案</string>
+    <string name="settings_backdrop_enabled_subtitle">菜单与伴侣屏幕背后的平铺图案</string>
+
+    <string name="settings_backdrop_preset_title">图案</string>
+    <string name="settings_backdrop_preset_dots">圆点</string>
+    <string name="settings_backdrop_preset_scanlines">扫描线</string>
+    <string name="settings_backdrop_preset_hex">六边形</string>
+    <string name="settings_backdrop_preset_icon_grid">图标网格</string>
+    <string name="settings_backdrop_preset_platforms">平台</string>
+
+    <string name="settings_backdrop_density_title">密度</string>
+    <string name="settings_backdrop_scatter_title">散布</string>
+    <string name="settings_backdrop_scale_jitter_title">大小抖动</string>
+    <string name="settings_backdrop_strength_title">强度</string>
+    <string name="settings_backdrop_edge_title">连线</string>
+    <string name="settings_backdrop_edge_none">无</string>
+    <string name="settings_backdrop_edge_solid">实线</string>
+    <string name="settings_backdrop_edge_dashed">虚线</string>
+    <string name="settings_backdrop_edge_faded">渐隐</string>
+    <string name="settings_backdrop_edge_connections">连接线</string>
+
+    <string name="settings_backdrop_corner_title">角标图标</string>
+    <string name="settings_backdrop_corner_none">无</string>
+    <string name="settings_backdrop_corner_dots">圆点</string>
+    <string name="settings_backdrop_corner_plus">加号</string>
+    <string name="settings_backdrop_corner_diamond">菱形</string>
+
+    <string name="settings_backdrop_motion_title">动效</string>
+    <string name="settings_backdrop_motion_off">关闭</string>
+    <string name="settings_backdrop_motion_drift">漂移</string>
+    <string name="settings_backdrop_motion_sway">摇摆</string>
+    <string name="settings_backdrop_speed_title">速度</string>
+    <string name="settings_backdrop_direction_title">方向</string>
+    <string name="settings_backdrop_direction_value">%1$d°</string>
+    <string name="settings_backdrop_reshuffle_title">重新随机</string>
+    <string name="settings_backdrop_reshuffle_subtitle">重新生成图案的随机抖动</string>
+
+    <!-- ===== Fonts section ===== -->
+
+    <string name="settings_fonts_section_display">标题字体</string>
+    <string name="settings_fonts_section_body">正文字体</string>
+    <string name="settings_fonts_section_preview">预览</string>
+
+    <string name="settings_fonts_display_slot_title">标题字体</string>
+    <string name="settings_fonts_display_slot_subtitle">标题、页眉与小标签</string>
+    <string name="settings_fonts_slot_default">默认</string>
+    <string name="settings_fonts_display_scale_title">标题字体大小</string>
+    <string name="settings_fonts_display_revert_title">恢复默认</string>
+    <string name="settings_fonts_display_revert_subtitle">移除已导入的标题字体</string>
+
+    <string name="settings_fonts_body_slot_title">正文字体</string>
+    <string name="settings_fonts_body_slot_subtitle">其余所有界面文字</string>
+    <string name="settings_fonts_body_scale_title">正文字体大小</string>
+    <string name="settings_fonts_body_revert_title">恢复默认</string>
+    <string name="settings_fonts_body_revert_subtitle">移除已导入的正文字体</string>
+
+    <string name="settings_fonts_guideline_formats">仅支持TTF和OTF文件；导入时会校验字体。</string>
+    <string name="settings_fonts_guideline_legibility">优先选择在电视观看距离下仍清晰可读的字体。</string>
+    <string name="settings_fonts_guideline_weights">请覆盖400、500和600字重，否则标题可能显示为伪粗体。</string>
+    <string name="settings_fonts_guideline_fallback">字体缺失的字符（例如中日韩文字）会按字符回退到系统字体。</string>
+
+    <string name="settings_fonts_preview_heading">继续游戏</string>
+    <string name="settings_fonts_preview_body">从上次离开的地方继续。存档、即时存档与游戏时长会在你的整个库中保持同步。</string>
+    <string name="settings_fonts_preview_row">聚焦的菜单行</string>
+    <string name="settings_fonts_preview_specimen">永安 0123</string>
+
+    <!-- ===== Background music section ===== -->
+
+    <string name="settings_music_section_music">背景音乐</string>
+    <string name="settings_music_section_storage">存储</string>
+
+    <string name="settings_music_toggle_title">背景音乐</string>
+    <string name="settings_music_toggle_subtitle">使用启动器时播放音乐</string>
+    <string name="settings_music_volume_title">音量</string>
+
+    <string name="settings_music_playlist_title">音乐播放列表</string>
+    <string name="settings_music_playlist_empty">没有曲目</string>
+    <plurals name="settings_music_playlist_count">
+        <item quantity="other">%d首曲目</item>
+    </plurals>
+
+    <string name="settings_music_browse_server_title">浏览服务器音乐</string>
+    <string name="settings_music_browse_server_subtitle">从RomM预览并下载曲目</string>
+    <string name="settings_music_browse_local_title">浏览本地音乐</string>
+    <string name="settings_music_browse_local_subtitle">将文件或文件夹添加到播放列表</string>
+    <string name="settings_music_location_title">音乐位置</string>
+
+    <string name="settings_music_shuffle_title">随机播放</string>
+    <string name="settings_music_shuffle_subtitle">随机打乱播放顺序</string>
+    <string name="settings_music_game_themes_title">游戏主题曲</string>
+    <string name="settings_music_game_themes_subtitle">在游戏详情页播放该游戏的主题曲</string>
+
+    <!-- ===== Interface sounds section ===== -->
+
+    <string name="settings_sounds_section_ui_sounds">界面音效</string>
+    <string name="settings_sounds_section_customize">自定义</string>
+
+    <string name="settings_sounds_toggle_title">界面音效</string>
+    <string name="settings_sounds_toggle_subtitle">导航与选择时播放提示音</string>
+    <string name="settings_sounds_volume_title">音量</string>
+
+    <string name="settings_sounds_type_silent">静音</string>
+    <string name="settings_sounds_type_navigate">导航</string>
+    <string name="settings_sounds_type_boundary">边界</string>
+    <string name="settings_sounds_type_section_change">切换分区</string>
+    <string name="settings_sounds_type_select">选择</string>
+    <string name="settings_sounds_type_back">返回</string>
+    <string name="settings_sounds_type_open_modal">打开弹窗</string>
+    <string name="settings_sounds_type_close_modal">关闭弹窗</string>
+    <string name="settings_sounds_type_favorite">收藏</string>
+    <string name="settings_sounds_type_unfavorite">取消收藏</string>
+    <string name="settings_sounds_type_download_start">开始下载</string>
+    <string name="settings_sounds_type_download_complete">下载完成</string>
+    <string name="settings_sounds_type_download_cancel">取消下载</string>
+    <string name="settings_sounds_type_error">错误</string>
+    <string name="settings_sounds_type_volume_preview">音量预览</string>
+    <string name="settings_sounds_type_toggle">切换</string>
+    <string name="settings_sounds_type_launch_game">启动游戏</string>
+
+    <!-- ===== Ambient LED section ===== -->
+
+    <string name="settings_led_section_general">通用</string>
+    <string name="settings_led_section_cover_art">封面</string>
+    <string name="settings_led_section_reactive_audio">音频律动</string>
+    <string name="settings_led_section_reactive_screen">画面律动</string>
+
+    <string name="settings_led_enable_title">启用LED</string>
+    <string name="settings_led_enable_subtitle">摇杆灯光的总开关</string>
+    <string name="settings_led_brightness_title">亮度</string>
+
+    <string name="settings_led_custom_color_title">自定义默认颜色</string>
+    <string name="settings_led_custom_color_subtitle_on">正在使用自定义色相</string>
+    <string name="settings_led_custom_color_subtitle_off">正在使用强调色</string>
+    <string name="settings_led_custom_color_hue_title">默认颜色色相</string>
+
+    <string name="settings_led_achievement_flash_title">成就闪光</string>
+    <string name="settings_led_achievement_flash_subtitle">解锁成就时闪烁摇杆灯光</string>
+
+    <string name="settings_led_cover_art_title">封面配色</string>
+    <string name="settings_led_cover_art_subtitle">LED与游戏封面渐变色相匹配</string>
+    <string name="settings_led_transition_title">过渡速度</string>
+    <string name="settings_led_transition_instant">立即</string>
+    <string name="settings_led_transition_100ms">100ms</string>
+    <string name="settings_led_transition_250ms">250ms</string>
+    <string name="settings_led_transition_500ms">500ms</string>
+    <string name="settings_led_transition_1s">1s</string>
+    <string name="settings_led_transition_milliseconds">%1$dms</string>
+
+    <string name="settings_led_audio_brightness_title">音频亮度</string>
+    <string name="settings_led_audio_brightness_subtitle">LED随音乐脉动</string>
+    <string name="settings_led_audio_colors_title">音频配色</string>
+    <string name="settings_led_audio_colors_subtitle">强度在色带之间切换</string>
+
+    <string name="settings_led_screen_colors_title">画面配色</string>
+    <string name="settings_led_screen_colors_subtitle">LED与游戏画面内容相匹配</string>
+    <string name="settings_led_screen_colors_subtitle_locked">需要屏幕捕获权限</string>
+    <string name="settings_led_color_mode_title">取色方式</string>
+    <string name="settings_led_color_mode_dominant">主色调</string>
+    <string name="settings_led_color_mode_vibrant_muted">鲜艳与柔和</string>
+    <string name="settings_led_color_mode_hue_families">色相族</string>
+
+    <!-- ===== Storage section ===== -->
+
+    <string name="settings_storage_section_overview">概览</string>
+    <string name="settings_storage_section_locations">文件位置</string>
+    <string name="settings_storage_section_downloads">下载</string>
+    <string name="settings_storage_section_danger">危险区域</string>
+
+    <string name="settings_storage_recompute_title">重新计算</string>
+
+    <string name="settings_storage_meter_games">游戏</string>
+    <string name="settings_storage_meter_media">媒体</string>
+    <string name="settings_storage_meter_steam">Steam与PC</string>
+    <string name="settings_storage_meter_apps">应用</string>
+    <string name="settings_storage_meter_caches">缓存与系统</string>
+    <string name="settings_storage_meter_music">音乐</string>
+
+    <string name="settings_storage_games_tile_title">游戏</string>
+    <plurals name="settings_storage_games_tile_count">
+        <item quantity="other">%d个游戏</item>
+    </plurals>
+    <string name="settings_storage_media_tile_title">媒体</string>
+    <plurals name="settings_storage_media_tile_count">
+        <item quantity="other">已下载%d部作品</item>
+    </plurals>
+    <string name="settings_storage_music_tile_title">音乐</string>
+    <string name="settings_storage_music_tile_action">管理播放列表</string>
+    <string name="settings_storage_caches_tile_title">缓存与系统</string>
+    <plurals name="settings_storage_caches_tile_count">
+        <item quantity="other">%d个文件</item>
+    </plurals>
+    <string name="settings_storage_steam_tile_title">Steam与PC</string>
+    <string name="settings_storage_steam_tile_subtitle">商店、安装内容与暂存文件</string>
+
+    <string name="settings_storage_rom_path_title">全局ROM路径</string>
+    <string name="settings_storage_rom_path_free">剩余%1$s</string>
+
+    <string name="settings_storage_image_cache_title">图片缓存</string>
+    <string name="settings_storage_image_cache_migrating">正在移动图片...</string>
+    <string name="settings_storage_image_cache_internal">内部存储 (默认)</string>
+    <string name="settings_storage_music_location_title">音乐位置</string>
+    <string name="settings_storage_music_location_default">默认</string>
+    <string name="settings_storage_bios_folder_title">BIOS文件夹</string>
+    <string name="settings_storage_bios_folder_migrating">正在移动文件...</string>
+    <string name="settings_storage_bios_folder_internal">内部存储 (默认)</string>
+    <string name="settings_storage_builtin_save_path_title">内置存档路径</string>
+    <string name="settings_storage_builtin_save_path_internal">内部存储 (默认)</string>
+    <string name="settings_storage_builtin_state_path_title">内置即时存档路径</string>
+    <string name="settings_storage_builtin_state_path_internal">内部存储 (默认)</string>
+
+    <string name="settings_storage_max_downloads_title">最大同时下载数</string>
+    <string name="settings_storage_threshold_title">即时下载阈值</string>
+    <string name="settings_storage_threshold_value">%1$d MB</string>
+    <string name="settings_storage_threshold_subtitle">小于此大小的文件会立即下载</string>
+    <string name="settings_storage_internal_staging_title">在内部存储解压</string>
+    <string name="settings_storage_internal_staging_subtitle">在内部存储下载并解压压缩的游戏，完成后再移动到你的ROM文件夹。内部空间不足时会回退到ROM文件夹。</string>
+
+    <string name="settings_storage_reset_library_title">重置库</string>
+    <string name="settings_storage_reset_library_subtitle">清除数据库和图片缓存。已下载的文件会保留在磁盘上。</string>
+    <string name="settings_storage_reset_library_busy">正在重置...</string>
+    <string name="settings_storage_hard_reset_title">彻底重置</string>
+    <string name="settings_storage_hard_reset_subtitle">删除已下载的游戏、库数据库以及所有缓存。设置与登录状态会保留。</string>
+    <string name="settings_storage_hard_reset_busy">正在重置...</string>
+
+    <!-- ===== Storage: games ===== -->
+
+    <string name="settings_storage_games_section_overview">概览</string>
+    <string name="settings_storage_games_section_platforms">平台</string>
+
+    <string name="settings_storage_games_integrity_title">每周ROM完整性检查</string>
+    <string name="settings_storage_games_integrity_subtitle">每周启动时校验已下载的游戏文件</string>
+
+    <plurals name="settings_storage_games_totals_count">
+        <item quantity="other">已下载%d个</item>
+    </plurals>
+    <string name="settings_storage_games_totals_used">已使用%1$s</string>
+
+    <string name="settings_storage_games_sort_toggle_description">切换排序方式</string>
+    <string name="settings_storage_games_sort_platform">按平台排序</string>
+    <string name="settings_storage_games_sort_size">按大小降序</string>
+
+    <string name="settings_storage_games_empty_computing_title">正在计算存储占用...</string>
+    <string name="settings_storage_games_empty_computing_message">扫描完成后，各平台的游戏大小会显示在这里。</string>
+    <string name="settings_storage_games_empty_title">没有已下载的游戏</string>
+    <string name="settings_storage_games_empty_message">从你的库中下载游戏后，各平台的占用情况会显示在这里。</string>
+
+    <plurals name="settings_storage_games_platform_count">
+        <item quantity="other">已下载%d个</item>
+    </plurals>
+
+    <!-- ===== Storage: media ===== -->
+
+    <string name="settings_storage_media_artwork_title">美术资源缓存</string>
+    <string name="settings_storage_media_artwork_subtitle">浏览时获取的海报与背景图，与其他在线美术资源共用缓存</string>
+    <plurals name="settings_storage_media_artwork_files">
+        <item quantity="other">%d个文件</item>
+    </plurals>
+
+    <string name="settings_storage_media_section_libraries">媒体库</string>
+    <string name="settings_storage_media_section_locations">位置</string>
+
+    <plurals name="settings_storage_media_totals_count">
+        <item quantity="other">已下载%d部作品</item>
+    </plurals>
+    <string name="settings_storage_media_totals_used">已使用%1$s</string>
+    <string name="settings_storage_media_totals_offline">有%1$s位于未连接的存储上</string>
+
+    <string name="settings_storage_media_empty_computing_title">正在计算存储占用...</string>
+    <string name="settings_storage_media_empty_computing_message">扫描完成后，各媒体库的大小会显示在这里。</string>
+    <string name="settings_storage_media_empty_title">尚无媒体库</string>
+    <string name="settings_storage_media_empty_message">登录媒体服务器后，已下载的影片和剧集会按媒体库显示在这里。</string>
+
+    <plurals name="settings_storage_media_library_count">
+        <item quantity="other">已下载%d个</item>
+    </plurals>
+    <plurals name="settings_storage_media_library_offline">
+        <item quantity="other">有%1$d部位于未连接的存储上，上次测量时为%2$s</item>
+    </plurals>
+    <plurals name="settings_storage_media_library_missing">
+        <item quantity="other">%d个已不在磁盘上</item>
+    </plurals>
+
+    <string name="settings_storage_media_location_offline">未连接，上次测量时为%1$s</string>
+    <plurals name="settings_storage_media_location_current">
+        <item quantity="other">新下载会存放于此，共%d个文件</item>
+    </plurals>
+    <plurals name="settings_storage_media_location_stale">
+        <item quantity="other">由此前的下载文件夹留下，共%d个文件</item>
+    </plurals>
+    <string name="settings_storage_media_location_unavailable">不可用</string>
+
+    <!-- ===== Storage: one console's games ===== -->
+
+    <string name="settings_storage_platform_games_loading">正在加载...</string>
+    <string name="settings_storage_platform_games_empty_title">没有已下载的游戏</string>
+    <string name="settings_storage_platform_games_empty_message">%1$s的已下载游戏会按类别显示在这里。</string>
+
+    <string name="settings_storage_bucket_base">基础游戏</string>
+    <string name="settings_storage_bucket_updates">更新</string>
+    <string name="settings_storage_bucket_dlc">DLC</string>
+    <string name="settings_storage_bucket_hacks">改版</string>
+    <string name="settings_storage_bucket_soundtrack">原声带</string>
+    <string name="settings_storage_bucket_other">其他</string>
+    <plurals name="settings_storage_bucket_stats">
+        <item quantity="other">%1$d - %2$s</item>
+    </plurals>
+
+    <string name="settings_storage_category_delete_title">移除%1$s？</string>
+    <plurals name="settings_storage_category_delete_message">
+        <item quantity="other">将移除%1$d个文件 (%2$s)，可从你的库重新下载。</item>
+    </plurals>
+    <string name="settings_storage_category_delete_confirm">删除</string>
+
+    <!-- ===== Storage: caches ===== -->
+
+    <string name="settings_caches_section_sync">同步缓存</string>
+    <string name="settings_caches_section_media">媒体缓存</string>
+    <string name="settings_caches_section_system">系统</string>
+
+    <plurals name="settings_caches_pending_uploads_title">
+        <item quantity="other">有%d个存档等待上传</item>
+    </plurals>
+    <string name="settings_caches_pending_uploads_subtitle_online">清除同步缓存前请先立即同步</string>
+    <string name="settings_caches_pending_uploads_subtitle_offline">重新连接服务器以同步</string>
+
+    <string name="settings_caches_save_cache_title">重置存档缓存</string>
+    <string name="settings_caches_save_cache_busy">正在重置...</string>
+    <plurals name="settings_caches_save_cache_pending">
+        <item quantity="other">有%d个存档等待上传</item>
+    </plurals>
+    <plurals name="settings_caches_save_cache_count">
+        <item quantity="other">已缓存%d个存档与即时存档</item>
+    </plurals>
+    <string name="settings_caches_save_cache_empty">没有缓存项</string>
+
+    <string name="settings_caches_state_cache_title">清除即时存档缓存</string>
+    <string name="settings_caches_state_cache_busy">正在清除...</string>
+    <plurals name="settings_caches_state_cache_pending">
+        <item quantity="other">有%d个存档等待上传</item>
+    </plurals>
+    <plurals name="settings_caches_state_cache_count">
+        <item quantity="other">已缓存%d个即时存档</item>
+    </plurals>
+    <string name="settings_caches_state_cache_empty">没有缓存的即时存档</string>
+
+    <string name="settings_caches_path_cache_title">清除存档路径缓存</string>
+    <string name="settings_caches_path_cache_busy">正在清除...</string>
+    <plurals name="settings_caches_path_cache_pending">
+        <item quantity="other">有%d个存档等待上传</item>
+    </plurals>
+    <plurals name="settings_caches_path_cache_count">
+        <item quantity="other">已缓存%d个路径</item>
+    </plurals>
+    <string name="settings_caches_path_cache_empty">没有缓存的路径</string>
+
+    <string name="settings_caches_state_toggle_title">缓存即时存档</string>
+    <string name="settings_caches_state_toggle_subtitle">在会话结束时保留即时存档快照以供云同步</string>
+    <string name="settings_caches_save_limit_title">本地存档缓存</string>
+    <plurals name="settings_caches_save_limit_value">
+        <item quantity="other">每个游戏保留%d个存档</item>
+    </plurals>
+
+    <string name="settings_caches_image_cache_title">图片缓存</string>
+    <string name="settings_caches_image_cache_busy">正在清除...</string>
+    <plurals name="settings_caches_image_cache_subtitle">
+        <item quantity="other">%d个文件 - 浏览时会重新下载封面</item>
+    </plurals>
+    <string name="settings_caches_validate_title">校验图片缓存</string>
+    <string name="settings_caches_validate_busy">正在校验...</string>
+    <string name="settings_caches_validate_subtitle">修复缺失或损坏的缓存图片</string>
+
+    <string name="settings_caches_screenshots_title">缓存截图</string>
+    <string name="settings_caches_screenshots_subtitle">封面和背景图始终会被缓存</string>
+    <string name="settings_caches_box_art_title">缓存3D立体封面</string>
+    <string name="settings_caches_box_art_subtitle">下载封底与书脊扫描图，用于3D立体封面显示</string>
+
+    <string name="settings_caches_rom_extraction_title">已解压的ROM</string>
+    <string name="settings_caches_rom_extraction_busy">正在清除...</string>
+    <string name="settings_caches_rom_extraction_subtitle">压缩游戏的工作副本 - 启动时会重新解压</string>
+    <string name="settings_caches_rom_staging_title">废弃的下载暂存</string>
+    <string name="settings_caches_rom_staging_busy">正在清除...</string>
+    <string name="settings_caches_rom_staging_subtitle">在内部解压但从未完成的下载遗留文件</string>
+    <string name="settings_caches_sfx_title">音效缓存</string>
+    <string name="settings_caches_sfx_busy">正在清除...</string>
+    <string name="settings_caches_sfx_subtitle">转码后的自定义音效 - 会自动重新生成</string>
+    <string name="settings_caches_emulator_apks_title">模拟器安装包</string>
+    <string name="settings_caches_emulator_apks_busy">正在清除...</string>
+    <string name="settings_caches_emulator_apks_subtitle">已下载的APK - 安装完成后可安全删除</string>
+    <string name="settings_caches_misc_downloads_title">其他下载内容</string>
+    <string name="settings_caches_misc_downloads_busy">正在清除...</string>
+    <string name="settings_caches_misc_downloads_subtitle">好友状态封面与GPU驱动下载内容</string>
+
+    <string name="settings_caches_shaders_title">着色器目录</string>
+    <string name="settings_caches_shaders_busy">正在清除...</string>
+    <string name="settings_caches_shaders_subtitle">已下载的着色器 - 按需重新下载</string>
+    <string name="settings_caches_frames_title">边框素材</string>
+    <string name="settings_caches_frames_busy">正在清除...</string>
+    <string name="settings_caches_frames_subtitle">已下载的边框 - 按需重新下载</string>
+
+    <string name="settings_caches_steam_clear_title">清除下载数据</string>
+    <string name="settings_caches_steam_clear_busy">正在清除...</string>
+    <string name="settings_caches_steam_clear_blocked">请先取消Steam下载</string>
+    <string name="settings_caches_steam_clear_subtitle">移除暂存的下载内容与队列 - 已安装的游戏保留</string>
+
+    <string name="settings_caches_info_artwork_title">美术资源缓存</string>
+    <string name="settings_caches_info_artwork_subtitle">海报、背景图及其他在线美术资源 - 按需重新下载</string>
+    <string name="settings_caches_info_bios_title">BIOS文件</string>
+    <string name="settings_caches_info_bios_subtitle">模拟器运行所需 - 并非缓存</string>
+    <string name="settings_caches_info_cores_title">核心与系统</string>
+    <string name="settings_caches_info_cores_subtitle">内置模拟器核心与支持文件</string>
+    <string name="settings_caches_info_shaders_title">自定义着色器</string>
+    <string name="settings_caches_info_shaders_subtitle">用户内容 - 永不清除</string>
+    <string name="settings_caches_info_fonts_title">字体</string>
+    <string name="settings_caches_info_fonts_subtitle">用户内容 - 永不清除</string>
+
+    <string name="settings_caches_info_database_title">数据库</string>
+    <plurals name="settings_caches_info_database_subtitle">
+        <item quantity="other">%d个库数据库文件</item>
+    </plurals>
+    <string name="settings_caches_info_steam_total_title">Steam与PC总计</string>
+    <string name="settings_caches_info_steam_total_subtitle">包含已安装的商店游戏</string>
+    <string name="settings_caches_info_steam_staging_title">下载暂存</string>
+    <string name="settings_caches_info_steam_staging_subtitle">等待部署的未完成下载</string>
+    <string name="settings_caches_info_steam_staging_computing">正在计算...</string>
+
+    <!-- ===== Steam section ===== -->
+
+    <string name="settings_steam_section_account">账户</string>
+    <string name="settings_steam_section_library">库</string>
+    <string name="settings_steam_section_danger">危险区域</string>
+
+    <string name="settings_steam_gn_status_configured">已配置外部存储</string>
+    <string name="settings_steam_gn_status_unconfigured">未配置外部存储</string>
+    <string name="settings_steam_gn_status_missing">未安装</string>
+    <string name="settings_steam_gn_install_title">安装GameNative</string>
+    <string name="settings_steam_gn_install_subtitle">启动Steam游戏需要此应用</string>
+    <string name="settings_steam_gn_storage_warning_title">外部存储</string>
+    <string name="settings_steam_gn_storage_warning_value">打开GameNative，在设置中启用"Write to external storage"</string>
+
+    <string name="settings_steam_install_path_title">安装路径</string>
+    <string name="settings_steam_install_path_title_custom">安装路径 (自定义)</string>
+    <string name="settings_steam_install_path_change">更改</string>
+    <string name="settings_steam_install_triage_title">已安装的游戏</string>
+    <string name="settings_steam_account_title">Steam账户</string>
+    <string name="settings_steam_account_connected">已连接</string>
+
+    <string name="settings_steam_sync_title">同步库</string>
+    <string name="settings_steam_sync_idle">从Steam同步已拥有的游戏</string>
+    <string name="settings_steam_sync_licenses">正在同步授权信息...</string>
+    <string name="settings_steam_sync_packages">正在获取包 (%1$d/%2$d)...</string>
+    <string name="settings_steam_sync_apps">正在获取游戏 (%1$d/%2$d)...</string>
+    <string name="settings_steam_sync_complete">新增%1$d个，更新%2$d个</string>
+    <string name="settings_steam_sync_error">错误：%1$s</string>
+
+    <string name="settings_steam_add_manual_title">通过App ID添加</string>
+    <string name="settings_steam_add_manual_subtitle">通过App ID添加一个Steam游戏</string>
+
+    <string name="settings_steam_gamenative_library_title">GameNative库</string>
+    <string name="settings_steam_gamenative_library_folders">文件夹</string>
+    <string name="settings_steam_gamenative_library_scan">扫描</string>
+    <string name="settings_steam_gamenative_library_scanning">正在扫描...</string>
+    <string name="settings_steam_gamenative_library_unconfigured">设置GameNative的Frontend Sync文件夹以导入GOG、Epic与Amazon的安装内容，并将Steam游戏标记为已安装</string>
+    <string name="settings_steam_gamenative_library_missing">文件夹缺失：%1$s</string>
+    <string name="settings_steam_gamenative_library_configured">已配置%1$s</string>
+
+    <string name="settings_steam_refresh_metadata_title">刷新元数据</string>
+    <string name="settings_steam_refresh_metadata_busy">正在刷新...</string>
+    <string name="settings_steam_refresh_metadata_subtitle">更新截图与背景图</string>
+
+    <string name="settings_steam_launcher_downloading">正在下载... %1$d%%</string>
+    <string name="settings_steam_launcher_waiting">等待安装...</string>
+    <string name="settings_steam_launcher_download">下载APK</string>
+    <string name="settings_steam_launcher_store">打开Play商店</string>
+
+    <string name="settings_steam_storage_note_title">授予存储权限</string>
+    <string name="settings_steam_storage_note_subtitle">Steam集成需要此权限</string>
+    <string name="settings_steam_disconnect_title">断开连接</string>
+    <string name="settings_steam_disconnect_subtitle">退出Steam登录</string>
+    <string name="settings_steam_reset_library_title">重置Steam库</string>
+    <string name="settings_steam_reset_library_subtitle">移除所有已同步的Steam游戏</string>
+
+    <string name="settings_steam_gn_required_title">需要GameNative</string>
+    <string name="settings_steam_gn_required_message">Steam游戏由Argosy下载，并通过GameNative启动。请先安装GameNative并在其设置中启用外部存储，然后再继续。</string>
+    <string name="settings_steam_gn_required_action">安装GameNative</string>
+
+    <string name="settings_steam_login_title">登录Steam</string>
+    <string name="settings_steam_login_message">连接你的Steam账户以同步库并下载游戏。</string>
+    <string name="settings_steam_login_action">连接</string>
+    <string name="settings_steam_connecting">正在连接...</string>
+
+    <string name="settings_steam_qr_title">使用Steam手机应用扫码</string>
+    <string name="settings_steam_qr_message">在手机上打开Steam，点按令牌图标，然后选择"Confirm sign-in"。</string>
+    <string name="settings_steam_qr_cancel">取消</string>
+    <string name="settings_steam_qr_image_description">二维码</string>
+
+    <string name="settings_steam_error_title">连接错误</string>
+    <string name="settings_steam_error_retry">重试</string>
+
+    <string name="settings_steam_add_game_title">添加Steam游戏</string>
+    <string name="settings_steam_add_game_message">输入Steam App ID以添加游戏。你可以在该游戏的Steam商店网址中找到它。</string>
+    <string name="settings_steam_add_game_message_launcher">输入Steam App ID以为%1$s添加游戏。你可以在该游戏的Steam商店网址中找到它。</string>
+    <string name="settings_steam_add_game_field_label">Steam App ID</string>
+    <string name="settings_steam_add_game_field_hint">例如730</string>
+    <string name="settings_steam_add_game_cancel">取消</string>
+    <string name="settings_steam_add_game_confirm">添加</string>
+
+    <!-- ===== Social section ===== -->
+
+    <string name="settings_social_section_account">账户</string>
+    <string name="settings_social_section_privacy">隐私</string>
+    <string name="settings_social_section_notifications">通知</string>
+
+    <string name="settings_social_account_handle">\@%1$s</string>
+    <string name="settings_social_edit_avatar_title">编辑头像涂鸦</string>
+    <string name="settings_social_edit_avatar_subtitle">绘制自定义头像</string>
+    <string name="settings_social_use_doodle_title">使用涂鸦头像</string>
+    <string name="settings_social_use_doodle_subtitle_on">正在显示你的涂鸦</string>
+    <string name="settings_social_use_doodle_subtitle_off">正在显示你的姓名缩写</string>
+
+    <string name="settings_social_online_status_title">在线状态</string>
+    <string name="settings_social_online_status_subtitle_on">对好友显示为在线</string>
+    <string name="settings_social_online_status_subtitle_off">对好友显示为离线</string>
+    <string name="settings_social_now_playing_title">显示正在玩</string>
+    <string name="settings_social_now_playing_subtitle_locked">请先启用在线状态</string>
+    <string name="settings_social_now_playing_subtitle_on">与好友分享你正在玩的游戏</string>
+    <string name="settings_social_now_playing_subtitle_off">对好友隐藏游戏动态</string>
+
+    <string name="settings_social_notify_online_title">好友上线</string>
+    <string name="settings_social_notify_online_subtitle_locked">请先启用在线状态</string>
+    <string name="settings_social_notify_online_subtitle_on">好友上线时显示通知</string>
+    <string name="settings_social_notify_online_subtitle_off">通知已禁用</string>
+    <string name="settings_social_notify_playing_title">好友开始游戏</string>
+    <string name="settings_social_notify_playing_subtitle_locked">请先启用在线状态</string>
+    <string name="settings_social_notify_playing_subtitle_on">好友开始游戏时显示通知</string>
+    <string name="settings_social_notify_playing_subtitle_off">通知已禁用</string>
+    <string name="settings_social_suppress_title">游戏时静音通知</string>
+    <string name="settings_social_suppress_subtitle_locked">请先启用在线状态</string>
+    <string name="settings_social_suppress_subtitle_on">游戏过程中隐藏好友通知</string>
+    <string name="settings_social_suppress_subtitle_off">始终显示好友通知</string>
+
+    <string name="settings_social_quaypass_subtitle_on">在Check-In与附近的旅行者擦肩而过</string>
+    <string name="settings_social_quaypass_subtitle_off">关闭</string>
+
+    <string name="settings_social_unlink_title">取消关联账户</string>
+    <string name="settings_social_unlink_subtitle">断开社交功能连接</string>
+
+    <string name="settings_social_not_linked_title">登录以启用社交功能</string>
+    <string name="settings_social_not_linked_message">与好友互动、分享合集，并查看其他人正在玩什么。</string>
+    <string name="settings_social_not_linked_action">关联账户</string>
+    <string name="settings_social_connecting">正在连接...</string>
+
+    <string name="settings_social_qr_title">扫码关联你的账户</string>
+    <string name="settings_social_qr_visit_prefix">或访问 </string>
+    <string name="settings_social_qr_visit_suffix"> 并输入：</string>
+    <string name="settings_social_qr_cancel">取消</string>
+    <string name="settings_social_qr_image_description">二维码</string>
+
+    <string name="settings_social_error_title">连接错误</string>
+    <string name="settings_social_error_generic">发生了错误</string>
+    <string name="settings_social_error_retry">重试</string>
+
+    <!-- ===== Jellyfin section ===== -->
+
+    <string name="settings_jellyfin_section_server">服务器</string>
+    <string name="settings_jellyfin_section_library">库</string>
+    <string name="settings_jellyfin_section_playback">播放</string>
+    <string name="settings_jellyfin_section_downloads">下载</string>
+    <string name="settings_jellyfin_section_privacy">隐私</string>
+
+    <string name="settings_jellyfin_server_title">媒体服务器</string>
+    <string name="settings_jellyfin_server_unconfigured">未配置</string>
+
+    <string name="settings_jellyfin_account_sign_out">退出登录</string>
+    <string name="settings_jellyfin_account_cancel">取消登录</string>
+    <string name="settings_jellyfin_account_sign_in">登录</string>
+    <string name="settings_jellyfin_account_signed_in_as">已登录：%1$s</string>
+    <string name="settings_jellyfin_account_signed_in">已登录</string>
+    <string name="settings_jellyfin_account_awaiting_approval">正在等待你的Jellyfin应用中批准</string>
+    <string name="settings_jellyfin_account_requesting_code">正在向服务器请求代码</string>
+    <string name="settings_jellyfin_account_quick_connect">在你的Jellyfin应用中批准Quick Connect代码</string>
+    <string name="settings_jellyfin_account_password">使用你的Jellyfin用户名和密码登录</string>
+
+    <string name="settings_jellyfin_quick_connect_label">Quick Connect代码</string>
+    <string name="settings_jellyfin_quick_connect_message">在已登录的设备上打开Jellyfin，进入Quick Connect并输入此代码。此代码几分钟后过期。</string>
+    <string name="settings_jellyfin_password_sign_in_title">使用密码登录</string>
+    <string name="settings_jellyfin_password_sign_in_subtitle">使用你的Jellyfin用户名和密码，而不是代码</string>
+
+    <string name="settings_jellyfin_sync_title">同步库</string>
+    <string name="settings_jellyfin_sync_progress">%1$s (%2$d/%3$d)</string>
+    <string name="settings_jellyfin_sync_reading">正在读取你的媒体库</string>
+    <string name="settings_jellyfin_sync_signed_out">登录以同步你的电影与剧集</string>
+    <string name="settings_jellyfin_sync_last">上次：%1$s</string>
+    <string name="settings_jellyfin_sync_subtitle">使你的电影、剧集与单集与服务器保持一致</string>
+
+    <string name="settings_jellyfin_streaming_title">流媒体画质</string>
+    <string name="settings_jellyfin_streaming_subtitle_auto">按原始画质播放所有内容，服务器无需额外处理</string>
+    <string name="settings_jellyfin_streaming_subtitle_capped">大于此画质的内容会在播放时由服务器转码。已经小于此画质的内容会按原样播放</string>
+
+    <string name="settings_jellyfin_audio_language_title">音频语言</string>
+    <string name="settings_jellyfin_audio_language_subtitle">当作品包含多条音轨时优先选择</string>
+
+    <string name="settings_jellyfin_subtitles_title">字幕</string>
+    <string name="settings_jellyfin_subtitles_subtitle_off">未选择字幕轨道</string>
+    <string name="settings_jellyfin_subtitles_subtitle_forced">仅标记为强制的字幕轨道</string>
+    <string name="settings_jellyfin_subtitles_subtitle_preferred">选择你偏好语言的字幕轨道</string>
+    <string name="settings_jellyfin_subtitle_language_title">字幕语言</string>
+
+    <string name="settings_jellyfin_burn_in_title">烧录图像字幕</string>
+    <string name="settings_jellyfin_burn_in_subtitle_on">新播放默认使用由服务器渲染的图像字幕，这会强制转码。可在字幕选择器中为单个作品单独更改</string>
+    <string name="settings_jellyfin_burn_in_subtitle_off">新播放默认关闭图像字幕。可在字幕选择器中为单个作品单独开启</string>
+
+    <string name="settings_jellyfin_confirm_exit_title">退出播放器前提示</string>
+    <string name="settings_jellyfin_confirm_exit_subtitle_on">关闭播放器前会先要求确认</string>
+    <string name="settings_jellyfin_confirm_exit_subtitle_off">关闭播放器会立即退出</string>
+
+    <string name="settings_jellyfin_download_quality_title">下载画质</string>
+    <string name="settings_jellyfin_download_subtitle_original">按服务器上的原始文件下载</string>
+    <string name="settings_jellyfin_download_subtitle_capped">大于此画质的内容会在下载开始前转码。已经小于此画质的内容会按原样下载</string>
+
+    <string name="settings_jellyfin_media_location_title">媒体位置</string>
+    <string name="settings_jellyfin_media_location_internal">内部存储</string>
+
+    <string name="settings_jellyfin_share_presence_title">显示你正在看的内容</string>
+    <string name="settings_jellyfin_share_presence_subtitle_on">与好友分享你正在观看的作品</string>
+    <string name="settings_jellyfin_share_presence_subtitle_off">对好友隐藏媒体动态</string>
+
+    <!-- ===== RomM server section ===== -->
+
+    <string name="settings_romm_section_server">服务器</string>
+    <string name="settings_romm_section_library">库</string>
+
+    <string name="settings_romm_server_title">Rom Manager</string>
+    <string name="settings_romm_server_checking">正在检查连接...</string>
+    <string name="settings_romm_server_connected">已连接</string>
+    <string name="settings_romm_server_offline">%1$s (离线)</string>
+    <string name="settings_romm_server_unconfigured">未配置</string>
+
+    <string name="settings_romm_sign_out_title">退出登录</string>
+    <string name="settings_romm_sign_out_title_busy">正在退出登录...</string>
+    <string name="settings_romm_sign_out_signed_in_as">已登录：%1$s</string>
+    <string name="settings_romm_sign_out_subtitle">忘记此RomM账户</string>
+
+    <string name="settings_romm_accounts_title">账户</string>
+    <string name="settings_romm_accounts_empty">未配对任何账户</string>
+    <string name="settings_romm_accounts_single">1个账户</string>
+    <string name="settings_romm_accounts_multiple">%1$s (共%2$d个)</string>
+    <string name="settings_romm_accounts_none_active">没有活跃账户</string>
+
+    <string name="settings_romm_sync_settings_title">同步设置</string>
+    <string name="settings_romm_sync_settings_subtitle">筛选条件与媒体选项</string>
+
+    <string name="settings_romm_sync_library_title">同步库</string>
+    <string name="settings_romm_sync_platforms">%1$d/%2$d个平台</string>
+    <string name="settings_romm_sync_platforms_and_last">%1$s - %2$s</string>
+    <string name="settings_romm_sync_last">上次：%1$s</string>
+    <string name="settings_romm_sync_never">从未同步</string>
+
+    <!-- ===== Accounts section ===== -->
+
+    <string name="settings_accounts_section_paired">已配对账户</string>
+    <string name="settings_accounts_active_badge">使用中</string>
+    <string name="settings_accounts_action_switch">切换</string>
+    <string name="settings_accounts_action_remove">移除</string>
+    <string name="settings_accounts_remove_blocked_only">这是此设备上唯一的账户。请从RomM退出登录以离开此账户。</string>
+    <string name="settings_accounts_remove_blocked_active">请先切换到其他账户，然后再移除此账户。</string>
+
+    <string name="settings_accounts_add_title">添加账户</string>
+    <string name="settings_accounts_add_subtitle">在%1$s上配对另一个用户</string>
+    <string name="settings_accounts_add_subtitle_locked">请先在RomM下登录</string>
+
+    <string name="settings_accounts_needs_sync_saves">等待同步的存档</string>
+    <string name="settings_accounts_needs_sync_states">等待同步的即时存档</string>
+    <string name="settings_accounts_needs_sync_message">由于本设备上的副本已知比服务器上的旧，因此保持为空。同步以填充它们。</string>
+
+    <string name="settings_accounts_empty_title">尚未配对任何RomM账户</string>
+    <string name="settings_accounts_empty_message">在RomM下登录。配对一个账户后，你可以在此处添加更多账户。</string>
+    <string name="settings_accounts_loading">正在加载账户...</string>
+
+    <string name="settings_accounts_switch_title">正在切换账户</string>
+    <string name="settings_accounts_switch_resuming">正在完成被中断的切换</string>
+    <string name="settings_accounts_switch_working">处理中</string>
+    <string name="settings_accounts_switch_message">存档会在移除任何内容之前完成归档与校验。请保持此屏幕打开。</string>
+
+    <string name="settings_accounts_pairing_title">扫码以添加账户</string>
+    <string name="settings_accounts_pairing_message">在手机上以要添加的用户身份登录RomM，扫描此代码，然后批准此设备。批准后Argosy会以该用户身份登录。</string>
+    <string name="settings_accounts_pairing_retry">重试</string>
+    <string name="settings_accounts_pairing_cancel">取消</string>
+
+    <!-- ===== Built-in emulator section ===== -->
+
+    <string name="settings_builtin_enable_title">启用内置模拟器</string>
+    <string name="settings_builtin_enable_subtitle">为支持的平台使用LibRetro核心</string>
+    <string name="settings_builtin_architecture_title">架构</string>
+
+    <string name="settings_builtin_video_title">音视频与性能</string>
+    <string name="settings_builtin_video_subtitle">着色器、显示、性能、存档</string>
+    <string name="settings_builtin_controls_title">控制</string>
+    <string name="settings_builtin_controls_subtitle">震动、按键映射、快捷键</string>
+
+    <string name="settings_builtin_cores_title">管理核心</string>
+    <string name="settings_builtin_cores_subtitle">已安装%1$d/%2$d个核心</string>
+    <plurals name="settings_builtin_cores_updates_badge">
+        <item quantity="other">%d个更新</item>
+    </plurals>
+    <string name="settings_builtin_core_options_title">核心选项</string>
+    <string name="settings_builtin_core_options_subtitle">各核心的设置与覆盖项</string>
+
+    <string name="settings_builtin_two_column_title">双栏菜单</string>
+    <string name="settings_builtin_two_column_subtitle_on">在宽屏上，游戏内菜单使用双栏布局</string>
+    <string name="settings_builtin_two_column_subtitle_off">游戏内菜单使用单栏布局</string>
+
+    <string name="settings_builtin_section_hud">状态栏</string>
+    <string name="settings_builtin_hud_enabled_title">游戏内状态栏</string>
+    <string name="settings_builtin_hud_enabled_subtitle_on">在游戏画面上显示一个小状态栏</string>
+    <string name="settings_builtin_hud_enabled_subtitle_off">游戏时不显示状态栏</string>
+    <string name="settings_builtin_hud_corner_title">状态栏位置</string>
+    <string name="settings_builtin_hud_battery_title">显示电量</string>
+    <string name="settings_builtin_hud_clock_title">显示时钟</string>
+    <string name="settings_builtin_hud_playtime_title">显示本次游戏时长</string>
+    <string name="settings_builtin_hud_playtime_subtitle">本次会话开始以来经过的时间</string>
+    <string name="settings_builtin_hud_fps_title">显示FPS</string>
+    <string name="settings_builtin_hud_fps_subtitle">显示每秒渲染帧数；快进时隐藏</string>
+    <string name="settings_builtin_hud_last_save_title">显示最近的即时存档</string>
+    <string name="settings_builtin_hud_last_save_subtitle">距上次写入即时存档已过去多久</string>
+
+    <!-- ===== Built-in emulator: controls ===== -->
+
+    <string name="settings_builtin_controls_section_controllers">手柄</string>
+    <string name="settings_builtin_controls_section_sticks">摇杆</string>
+    <string name="settings_builtin_controls_section_hotkeys">快捷键</string>
+    <string name="settings_builtin_controls_section_speedrun">速通计时器</string>
+    <string name="settings_builtin_controls_section_touch">触控操作</string>
+
+    <string name="settings_builtin_controls_platform_override">平台覆盖</string>
+    <string name="settings_builtin_controls_platform_default">平台默认</string>
+    <string name="settings_builtin_controls_percent_value">%1$d%%</string>
+
+    <string name="settings_builtin_controls_rumble_title">震动</string>
+    <string name="settings_builtin_controls_rumble_subtitle">启用手柄震动反馈</string>
+    <string name="settings_builtin_controls_order_title">手柄顺序</string>
+    <string name="settings_builtin_controls_order_subtitle">在每个手柄上按一个按钮以设置玩家顺序</string>
+    <plurals name="settings_builtin_controls_order_assigned">
+        <item quantity="other">已分配%d个手柄</item>
+    </plurals>
+    <string name="settings_builtin_controls_mapping_title">按键映射</string>
+    <string name="settings_builtin_controls_mapping_subtitle">为每个手柄重新映射按键</string>
+
+    <string name="settings_builtin_controls_analog_as_dpad_title">左摇杆模拟方向键</string>
+    <string name="settings_builtin_controls_analog_as_dpad_subtitle">将左摇杆映射为方向键输入</string>
+    <string name="settings_builtin_controls_dpad_as_analog_title">方向键模拟左摇杆</string>
+    <string name="settings_builtin_controls_dpad_as_analog_subtitle">将方向键映射为左摇杆输入</string>
+
+    <string name="settings_builtin_controls_hotkeys_title">快捷键</string>
+    <string name="settings_builtin_controls_hotkeys_subtitle">配置菜单、快进、回退的快捷键</string>
+    <string name="settings_builtin_controls_limit_hotkeys_title">快捷键仅限1号玩家</string>
+    <string name="settings_builtin_controls_limit_hotkeys_subtitle">只有1号玩家的手柄可以触发快捷键</string>
+    <string name="settings_builtin_controls_toggle_ff_title">切换式快进</string>
+    <string name="settings_builtin_controls_toggle_ff_subtitle">按一次开始，再按一次停止（关闭则需按住才能快进）</string>
+    <string name="settings_builtin_controls_ff_pitch_title">保持音调</string>
+    <string name="settings_builtin_controls_ff_pitch_subtitle">快进时保持音调稳定。会占用额外的CPU；默认关闭</string>
+    <string name="settings_builtin_controls_reset_all">全部重置为全局设置</string>
+
+    <string name="settings_speedrun_start_on_reset_title">重置时开始计时</string>
+    <string name="settings_speedrun_start_on_reset_subtitle">重置游戏会开始新的计时挑战（关闭则需通过Split快捷键手动开始）</string>
+    <string name="settings_speedrun_panel_side_title">分段面板显示在左侧</string>
+    <string name="settings_speedrun_panel_side_subtitle">在左边缘显示分段面板（关闭则显示在右侧）</string>
+    <string name="settings_speedrun_panel_width_title">分段面板宽度</string>
+    <string name="settings_speedrun_panel_width_subtitle">面板文字会自动缩放以适应</string>
+
+    <string name="settings_touch_enabled_title">无手柄时显示触控操作</string>
+    <string name="settings_touch_enabled_subtitle">未连接手柄时显示屏幕操作层</string>
+    <string name="settings_touch_current_percent">当前%1$d%%</string>
+    <string name="settings_touch_opacity_landscape_title">横屏不透明度</string>
+    <string name="settings_touch_opacity_portrait_title">竖屏不透明度</string>
+    <string name="settings_touch_size_title">按钮大小</string>
+    <string name="settings_touch_haptic_title">震动反馈</string>
+    <string name="settings_touch_haptic_subtitle">触摸时短暂震动</string>
+    <string name="settings_touch_fade_title">闲置后淡出</string>
+    <string name="settings_touch_fade_subtitle">5秒无操作后使控件变暗</string>
+    <string name="settings_touch_swap_handed_title">交换左右操作</string>
+    <string name="settings_touch_swap_handed_subtitle">水平镜像布局</string>
+    <string name="settings_touch_lock_orientation_title">游戏内锁定方向</string>
+    <string name="settings_touch_lock_orientation_subtitle">游戏过程中不自动旋转</string>
+    <string name="settings_touch_mirror_title">180°翻转时镜像控件</string>
+    <string name="settings_touch_mirror_subtitle">手机翻转时使控件保持在相同物理侧</string>
+    <string name="settings_touch_coloured_faces_title">彩色PSX按键</string>
+    <string name="settings_touch_coloured_faces_subtitle">使用标准配色为△ □ ○ ✕上色</string>
+    <string name="settings_touch_genesis6_title">Genesis六键模式</string>
+    <string name="settings_touch_genesis6_subtitle">为Genesis / Mega Drive显示全部六个按钮</string>
+    <string name="settings_touch_customize_title">自定义布局...</string>
+    <string name="settings_touch_customize_subtitle">按平台拖动并调整触控操作大小</string>
+
+    <!-- ===== Box art section ===== -->
+
+    <string name="settings_box_art_section_styling">样式</string>
+    <string name="settings_box_art_section_icon">系统图标</string>
+    <string name="settings_box_art_section_outer">外部效果</string>
+    <string name="settings_box_art_section_inner">内部效果</string>
+    <string name="settings_box_art_section_gradient">渐变色</string>
+
+    <string name="settings_box_art_shape_title">形状</string>
+    <string name="settings_box_art_corner_radius_title">圆角半径</string>
+    <string name="settings_box_art_corner_radius_none">无</string>
+    <string name="settings_box_art_corner_radius_small">小</string>
+    <string name="settings_box_art_corner_radius_medium">中</string>
+    <string name="settings_box_art_corner_radius_large">大</string>
+    <string name="settings_box_art_corner_radius_xl">XL</string>
+
+    <string name="settings_box_art_border_thickness_title">边框粗细</string>
+    <string name="settings_box_art_border_thickness_none">无</string>
+    <string name="settings_box_art_border_thickness_thin">细</string>
+    <string name="settings_box_art_border_thickness_medium">中</string>
+    <string name="settings_box_art_border_thickness_thick">粗</string>
+
+    <string name="settings_box_art_border_style_title">边框样式</string>
+    <string name="settings_box_art_border_style_solid">实色</string>
+    <string name="settings_box_art_border_style_glass">玻璃</string>
+    <string name="settings_box_art_border_style_gradient">渐变</string>
+
+    <string name="settings_box_art_glass_tint_title">玻璃色调</string>
+    <string name="settings_box_art_glass_tint_off">关闭</string>
+    <string name="settings_box_art_glass_tint_5">5%</string>
+
+    <string name="settings_box_art_glass_tint_10">10%</string>
+    <string name="settings_box_art_glass_tint_15">15%</string>
+    <string name="settings_box_art_glass_tint_20">20%</string>
+    <string name="settings_box_art_glass_tint_25">25%</string>
+
+    <string name="settings_box_art_gradient_preset_title">配色预设</string>
+    <string name="settings_box_art_gradient_advanced_title">高级</string>
+
+    <string name="settings_box_art_indicator_style_title">样式</string>
+    <string name="settings_box_art_indicator_style_off">关闭</string>
+    <string name="settings_box_art_indicator_style_tab">标签</string>
+    <string name="settings_box_art_indicator_style_spine">书脊</string>
+    <string name="settings_box_art_indicator_content_title">显示内容</string>
+    <string name="settings_box_art_indicator_content_name">名称</string>
+    <string name="settings_box_art_indicator_content_icon">图标</string>
+    <string name="settings_box_art_indicator_content_both">名称+图标</string>
+
+    <string name="settings_box_art_icon_position_title">角落</string>
+    <string name="settings_box_art_icon_position_title_spine">书脊角落</string>
+    <string name="settings_box_art_icon_position_title_tab">标签角落</string>
+    <string name="settings_box_art_icon_position_off">关闭</string>
+    <string name="settings_box_art_icon_position_top_left">左上</string>
+    <string name="settings_box_art_icon_position_top_right">右上</string>
+    <string name="settings_box_art_icon_position_bottom_left">左下</string>
+    <string name="settings_box_art_icon_position_bottom_right">右下</string>
+    <string name="settings_box_art_icon_padding_title">内边距</string>
+    <string name="settings_box_art_icon_padding_small">小</string>
+    <string name="settings_box_art_icon_padding_medium">中</string>
+    <string name="settings_box_art_icon_padding_large">大</string>
+
+    <string name="settings_box_art_outer_effect_title">效果</string>
+    <string name="settings_box_art_outer_effect_off">关闭</string>
+    <string name="settings_box_art_outer_effect_glow">发光</string>
+    <string name="settings_box_art_outer_effect_shadow">阴影</string>
+    <string name="settings_box_art_outer_effect_shine">光泽</string>
+    <string name="settings_box_art_outer_thickness_title">粗细</string>
+    <string name="settings_box_art_outer_thickness_thin">细</string>
+    <string name="settings_box_art_outer_thickness_medium">中</string>
+    <string name="settings_box_art_outer_thickness_thick">粗</string>
+
+    <string name="settings_box_art_glow_strength_title">强度</string>
+    <string name="settings_box_art_glow_strength_off">关闭</string>
+    <string name="settings_box_art_glow_strength_low">低</string>
+    <string name="settings_box_art_glow_strength_medium">中</string>
+    <string name="settings_box_art_glow_strength_high">高</string>
+    <string name="settings_box_art_glow_strength_shadow_small">小阴影</string>
+    <string name="settings_box_art_glow_strength_shadow_large">大阴影</string>
+
+    <string name="settings_box_art_glow_color_title">颜色</string>
+    <string name="settings_box_art_glow_color_auto">自动</string>
+    <string name="settings_box_art_glow_color_accent">强调色</string>
+    <string name="settings_box_art_glow_color_theme_gradient">主题渐变</string>
+    <string name="settings_box_art_glow_color_cover">封面</string>
+
+    <string name="settings_box_art_inner_effect_title">效果</string>
+    <string name="settings_box_art_inner_effect_off">关闭</string>
+    <string name="settings_box_art_inner_effect_glow">发光</string>
+    <string name="settings_box_art_inner_effect_shadow">阴影</string>
+    <string name="settings_box_art_inner_effect_glass">玻璃</string>
+    <string name="settings_box_art_inner_effect_shine">光泽</string>
+    <string name="settings_box_art_inner_thickness_title">粗细</string>
+    <string name="settings_box_art_inner_thickness_thin">细</string>
+    <string name="settings_box_art_inner_thickness_medium">中</string>
+    <string name="settings_box_art_inner_thickness_thick">粗</string>
+
+    <string name="settings_box_art_sample_grid_title">采样网格</string>
+    <string name="settings_box_art_sample_radius_title">采样半径</string>
+    <string name="settings_box_art_min_saturation_title">最低饱和度</string>
+    <string name="settings_box_art_min_brightness_title">最低亮度</string>
+    <string name="settings_box_art_hue_distance_title">色相间距</string>
+    <string name="settings_box_art_saturation_boost_title">饱和度增强</string>
+    <string name="settings_box_art_brightness_clamp_title">亮度上限</string>
+    <string name="settings_box_art_gradient_diagnostics">%1$dms | %2$d个样本 | %3$d个色族</string>
+
+    <!-- ===== Platforms list ===== -->
+
+    <string name="settings_emulators_section_active">已启用的平台</string>
+    <string name="settings_emulators_section_disabled">已禁用的平台</string>
+    <string name="settings_emulators_rail_platforms">平台</string>
+
+    <string name="settings_emulators_check_updates_title">检查更新</string>
+    <string name="settings_emulators_check_updates_subtitle">检查模拟器更新</string>
+    <plurals name="settings_emulators_check_updates_available">
+        <item quantity="other">有%d个可用更新</item>
+    </plurals>
+
+    <string name="settings_emulators_platform_disabled">已禁用</string>
+    <plurals name="settings_emulators_platform_games">
+        <item quantity="other">%d个游戏</item>
+    </plurals>
+    <string name="settings_emulators_platform_no_games">没有游戏</string>
+    <string name="settings_emulators_platform_unconfigured">未配置</string>
+    <string name="settings_emulators_platform_update_badge">更新</string>
+
+    <!-- ===== One platform's settings ===== -->
+
+    <string name="settings_platform_section_emulator">模拟器</string>
+    <string name="settings_platform_section_platform">平台</string>
+    <string name="settings_platform_section_bios">BIOS</string>
+    <string name="settings_platform_section_sync">存储与同步</string>
+    <string name="settings_platform_section_downloads">下载默认设置</string>
+
+    <string name="settings_platform_none_selected">未选择平台</string>
+
+    <string name="settings_platform_emulator_change">更改模拟器</string>
+    <string name="settings_platform_emulator_select_app">选择应用</string>
+    <string name="settings_platform_emulator_not_installed">未安装</string>
+    <string name="settings_platform_emulator_update_available">有可用更新</string>
+
+    <string name="settings_platform_core_title">核心</string>
+    <string name="settings_platform_core_default">默认</string>
+    <string name="settings_platform_core_netplay_tag">联机对战</string>
+    <string name="settings_platform_extension_title">文件扩展名</string>
+    <string name="settings_platform_extension_default">默认</string>
+    <string name="settings_platform_display_target_title">目标显示屏</string>
+    <string name="settings_platform_legacy_mode_title">旧版模式</string>
+    <string name="settings_platform_legacy_mode_subtitle">为Drastic使用file://格式的URI</string>
+    <string name="settings_platform_launch_args_title">启动参数</string>
+    <string name="settings_platform_launch_args_subtitle">自定义Argosy启动此模拟器的方式</string>
+    <string name="settings_platform_builtin_video_title">内置音视频与性能</string>
+    <string name="settings_platform_builtin_video_subtitle">显示、性能与存档的覆盖设置</string>
+    <string name="settings_platform_builtin_controls_title">内置控制</string>
+    <string name="settings_platform_builtin_controls_subtitle">震动、摇杆映射的覆盖设置</string>
+    <string name="settings_platform_core_options_title">核心选项</string>
+    <string name="settings_platform_core_options_subtitle">此平台的各核心设置</string>
+
+    <string name="settings_platform_stat_total_games">库中的游戏</string>
+    <string name="settings_platform_stat_downloaded">已下载</string>
+    <string name="settings_platform_stat_favorites">收藏</string>
+    <string name="settings_platform_stat_play_time">游戏时长</string>
+    <string name="settings_platform_stat_sync">同步</string>
+    <string name="settings_platform_stat_sync_progress">正在同步%1$d/%2$d</string>
+    <string name="settings_platform_stat_sync_busy">正在同步...</string>
+
+    <string name="settings_platform_package_path_title">应用包路径</string>
+    <string name="settings_platform_package_path_accessible">可访问</string>
+    <string name="settings_platform_package_path_blocked">被阻止</string>
+    <string name="settings_platform_package_path_checking">正在检查...</string>
+
+    <string name="settings_platform_bios_status_title">状态</string>
+    <string name="settings_platform_bios_status_all">已全部下载</string>
+    <string name="settings_platform_bios_status_partial">已下载%1$d/%2$d个</string>
+    <string name="settings_platform_bios_status_none">未下载</string>
+
+    <string name="settings_platform_clear_art_title">清除缓存的美术资源</string>
+    <string name="settings_platform_clear_art_subtitle">删除此平台已下载的封面与截图，以便重新获取。你自己选择的封面会被保留</string>
+    <string name="settings_platform_move_earlier_title">前移</string>
+    <string name="settings_platform_move_earlier_subtitle">在所有列出平台的地方更靠前显示此平台</string>
+    <string name="settings_platform_move_later_title">后移</string>
+    <string name="settings_platform_move_later_subtitle">在所有列出平台的地方更靠后显示此平台</string>
+    <string name="settings_platform_scan_busy">正在扫描...</string>
+    <string name="settings_platform_scan_files_title">扫描文件</string>
+    <string name="settings_platform_scan_files_subtitle">检查新增或缺失的ROM文件</string>
+    <string name="settings_platform_scan_apps_title">扫描游戏</string>
+    <string name="settings_platform_scan_apps_subtitle">添加已安装的、标识为游戏的应用</string>
+
+    <string name="settings_platform_path_unconfigured">未配置</string>
+    <string name="settings_platform_path_custom_tag">(自定义)</string>
+    <string name="settings_platform_rom_path_title">ROM路径</string>
+    <string name="settings_platform_save_path_title">存档路径</string>
+    <string name="settings_platform_save_path_blocked">访问被阻止 - 请设置自定义存档路径</string>
+    <string name="settings_platform_state_path_title">即时存档路径</string>
+    <string name="settings_platform_retroarch_config_loaded">来自%1$s</string>
+    <string name="settings_platform_retroarch_config_unreadable">无法读取%1$s - 请设置RetroArch使用的文件夹</string>
+    <string name="settings_platform_retroarch_config_missing">未找到RetroArch配置 - 请设置RetroArch使用的文件夹</string>
+
+    <string name="settings_platform_memcard_title">记忆卡</string>
+    <string name="settings_platform_memcard_override_value">使用自定义存档路径</string>
+    <string name="settings_platform_memcard_override_subtitle">记忆卡由自定义存档路径固定</string>
+    <string name="settings_platform_memcard_none_value">未找到</string>
+    <string name="settings_platform_memcard_none_subtitle">未找到文件夹式记忆卡 - 请在%1$s中转换一个以启用存档同步</string>
+    <string name="settings_platform_memcard_this_emulator">此模拟器</string>
+    <string name="settings_platform_memcard_auto_value">自动</string>
+    <string name="settings_platform_memcard_unselected_value">未选择</string>
+    <string name="settings_platform_memcard_unselected_subtitle">检测到多张记忆卡 - 请选择一张以启用存档同步</string>
+
+    <string name="settings_platform_sync_toggle_title">已启用同步</string>
+    <string name="settings_platform_sync_toggle_subtitle">在库同步中包含此平台</string>
+    <string name="settings_platform_combine_content_title">合并内容</string>
+    <string name="settings_platform_combine_content_subtitle">所有游戏放在同一文件夹，所有更新与DLC放在extcontent中</string>
+    <string name="settings_platform_sync_now_title">立即同步</string>
+    <string name="settings_platform_sync_now_busy">正在同步...</string>
+    <string name="settings_platform_sync_now_subtitle">与RomM同步此平台</string>
+
+    <string name="settings_platform_download_defaults_title">下载默认设置</string>
+    <string name="settings_platform_download_defaults_subtitle">预选的文件类型</string>
+    <plurals name="settings_platform_download_defaults_overrides">
+        <item quantity="other">%d项平台覆盖</item>
+    </plurals>
+    <string name="settings_platform_download_defaults_modal_title">下载默认设置</string>
+    <string name="settings_platform_download_defaults_modal_subtitle">下载时预选的文件类型</string>
+    <string name="settings_platform_download_default_inherited">继承自全局</string>
+    <string name="settings_platform_download_default_override">平台覆盖</string>
+    <string name="settings_platform_download_defaults_reset_title">重置为全局设置</string>
+    <string name="settings_platform_download_defaults_reset_subtitle">清除所有平台覆盖</string>
+
+    <string name="settings_platform_remove_files_title">移除本地文件</string>
+    <plurals name="settings_platform_remove_files_subtitle">
+        <item quantity="other">%d个已下载文件</item>
+    </plurals>
+    <string name="settings_platform_remove_confirm_title">移除本地文件</string>
+    <plurals name="settings_platform_remove_confirm_message">
+        <item quantity="other">删除%2$s的%1$d个ROM文件？游戏仍会保留在你的库中，但需要重新下载才能游玩。</item>
+    </plurals>
+    <string name="settings_platform_remove_confirm_action">删除</string>
+
+    <string name="settings_platform_combine_restore_title">恢复游戏文件夹</string>
+    <plurals name="settings_platform_combine_restore_message">
+        <item quantity="other">"合并内容"已关闭。是否将%d个带有更新或DLC的游戏移回各自的文件夹？其余内容保持不变。</item>
+    </plurals>
+
+    <string name="settings_platform_combine_restore_action">移动</string>
+
+    <string name="settings_platform_bios_download_title">全部下载</string>
+    <string name="settings_platform_bios_downloading_file">正在下载%1$s...</string>
+    <string name="settings_platform_bios_downloading">正在下载...</string>
+    <plurals name="settings_platform_bios_download_missing">
+        <item quantity="other">%d个文件</item>
+    </plurals>
+    <string name="settings_platform_bios_install_title">安装到模拟器</string>
+    <string name="settings_platform_bios_install_subtitle">将BIOS复制到%1$s</string>
+    <string name="settings_platform_bios_install_fallback">模拟器</string>
+    <string name="settings_platform_bios_copy_title">复制到...</string>
+    <string name="settings_platform_bios_copy_subtitle">将BIOS文件复制到其他文件夹</string>
+
+    <!-- ===== GameNative folders panel ===== -->
+
+    <string name="settings_gamenative_folders_title">GameNative文件夹</string>
+    <string name="settings_gamenative_folders_subtitle">将每个商店指向GameNative导出安装内容的文件夹。Steam标记仅将已拥有的游戏标记为已安装；其他商店会添加或移除游戏以保持一致。</string>
+    <string name="settings_gamenative_folders_hint_set">设置/清除</string>
+    <string name="settings_gamenative_folders_hint_select">选择</string>
+    <string name="settings_gamenative_folders_hint_back">返回</string>
+    <string name="settings_gamenative_folders_action_set">设置</string>
+    <string name="settings_gamenative_folders_action_change">更改</string>
+    <string name="settings_gamenative_folders_action_clear">清除</string>
+
+    <!-- ===== Controller grip panel ===== -->
+
+    <string name="settings_grip_modal_title">手柄夹持</string>
+    <string name="settings_grip_modal_subtitle">将界面上移，避开夹持配件遮挡的区域</string>
+    <string name="settings_grip_modal_hint_adjust">调整</string>
+    <string name="settings_grip_modal_hint_back">返回</string>
+    <string name="settings_grip_modal_mode_title">模式</string>
+    <string name="settings_grip_modal_mode_subtitle_off">从不上移界面</string>
+    <string name="settings_grip_modal_mode_subtitle_on">竖屏时始终上移界面</string>
+    <string name="settings_grip_modal_mode_subtitle_auto">连接指定手柄时上移界面</string>
+    <string name="settings_grip_modal_controllers_title">手柄</string>
+    <string name="settings_grip_modal_reserved_height_title">预留高度</string>
+
+    <!-- ===== Library view section ===== -->
+
+    <string name="settings_library_section_layout">布局</string>
+    <string name="settings_library_section_defaults">默认设置</string>
+
+    <string name="settings_library_grid_density_title">网格密度</string>
+    <string name="settings_library_grid_density_compact">紧凑</string>
+    <string name="settings_library_grid_density_normal">正常</string>
+    <string name="settings_library_grid_density_spacious">宽松</string>
+
+    <string name="settings_library_default_sort_title">默认排序</string>
+    <string name="settings_library_default_sort_value_ascending">%1$s ^</string>
+    <string name="settings_library_default_sort_value_descending">%1$s v</string>
+
+    <string name="settings_library_installed_first_title">已安装优先</string>
+    <string name="settings_library_installed_first_subtitle">将已下载的游戏排列在其余游戏之前</string>
+    <string name="settings_library_favorites_first_title">收藏优先</string>
+    <string name="settings_library_favorites_first_subtitle">将你的收藏排列在其余游戏之前</string>
+
+    <string name="settings_library_default_platform_title">默认平台</string>
+    <string name="settings_library_default_source_title">默认筛选</string>
+
+    <!-- ===== Hotkeys modal ===== -->
+
+    <string name="settings_hotkeys_title">快捷键</string>
+    <string name="settings_hotkeys_subtitle_default">配置按键快捷方式</string>
+    <string name="settings_hotkeys_subtitle_platform_only">仅编辑%1$s</string>
+    <string name="settings_hotkeys_subtitle_all">编辑所有平台</string>
+    <string name="settings_hotkeys_hint_record">录制</string>
+    <string name="settings_hotkeys_hint_back">返回</string>
+    <string name="settings_hotkeys_hint_hold_delay">按住延迟</string>
+    <string name="settings_hotkeys_hint_clear">清除</string>
+    <string name="settings_hotkeys_section_system">系统快捷键</string>
+    <string name="settings_hotkeys_section_core">核心快捷键</string>
+    <string name="settings_hotkeys_section_core_named">核心快捷键 - %1$s</string>
+    <string name="settings_hotkeys_core_empty">-- 没有可用设置 --</string>
+    <string name="settings_hotkeys_scope_only_for">仅限%1$s</string>
+    <string name="settings_hotkeys_scope_overrides">覆盖共享的快捷键</string>
+    <string name="settings_hotkeys_scope_using_shared">使用共享的快捷键</string>
+    <string name="settings_hotkeys_icon_console_desc">此平台的主机本身也使用此按键</string>
+    <string name="settings_hotkeys_icon_hold_delay_desc">按住延迟</string>
+    <string name="settings_hotkeys_hold_delay_seconds">%1$ds</string>
+    <string name="settings_hotkeys_combo_inherited">继承</string>
+    <string name="settings_hotkeys_combo_inherited_suffix">%1$s · 继承</string>
+    <string name="settings_hotkeys_recording_title">正在录制快捷键</string>
+    <string name="settings_hotkeys_hint_cancel">取消</string>
+    <string name="settings_hotkeys_recording_saved">已保存！</string>
+    <string name="settings_hotkeys_recording_prompt">按住1-3个按钮...</string>
+    <string name="settings_hotkeys_recording_holding">请继续按住...</string>
+    <string name="settings_hotkeys_action_in_game_menu">游戏内菜单</string>
+    <string name="settings_hotkeys_action_reset_game">重置游戏</string>
+    <string name="settings_hotkeys_action_quick_save">快速存档</string>
+    <string name="settings_hotkeys_action_quick_load">快速读档</string>
+    <string name="settings_hotkeys_action_fast_forward">快进</string>
+    <string name="settings_hotkeys_action_rewind">回退</string>
+    <string name="settings_hotkeys_action_quick_suspend">快速挂起</string>
+    <string name="settings_hotkeys_action_cycle_core_option">切换核心选项</string>
+    <string name="settings_hotkeys_action_core_input">核心输入</string>
+    <string name="settings_hotkeys_action_split">分段</string>
+    <string name="settings_hotkeys_action_undo_split">撤销分段</string>
+    <string name="settings_hotkeys_action_skip_split">跳过分段</string>
+    <string name="settings_hotkeys_action_toggle_timer">开始/暂停计时</string>
+    <string name="settings_hotkeys_action_reset_timer">重置计时器</string>
+
+    <!-- ===== Input mapping modal ===== -->
+
+    <string name="settings_input_mapping_title">按键映射</string>
+    <string name="settings_input_mapping_subtitle">选择要配置的手柄</string>
+    <string name="settings_input_mapping_controller_select_hint">选择</string>
+    <string name="settings_input_mapping_controller_back_hint">返回</string>
+    <string name="settings_input_mapping_empty">未连接手柄</string>
+    <string name="settings_input_mapping_unknown_layout">未知布局</string>
+    <string name="settings_input_mapping_platform_remap_hint">重新映射</string>
+    <string name="settings_input_mapping_platform_add_hint">添加</string>
+    <string name="settings_input_mapping_platform_clear_hint">清除</string>
+    <string name="settings_input_mapping_platform_back_hint">返回</string>
+    <string name="settings_input_mapping_prev_platform_desc">上一个平台</string>
+    <string name="settings_input_mapping_next_platform_desc">下一个平台</string>
+    <string name="settings_input_mapping_platform_label">平台：%1$s</string>
+    <string name="settings_input_mapping_not_bound">未绑定</string>
+    <string name="settings_input_mapping_recording_back_hint">按住以取消</string>
+    <string name="settings_input_mapping_recording_title">按下一个按钮</string>
+    <string name="settings_input_mapping_recording_subtitle">正在为%1$s录制输入</string>
+    <string name="settings_input_mapping_recording_cancelling">正在取消...</string>
+    <string name="settings_input_mapping_recording_waiting">等待输入...</string>
+
+    <!-- ===== Launch args modal ===== -->
+
+    <string name="settings_launch_args_title">启动参数 - %1$s / %2$s</string>
+    <string name="settings_launch_args_hint_change">更改</string>
+    <string name="settings_launch_args_hint_reset_field">重置此项</string>
+    <string name="settings_launch_args_hint_reset_all">全部重置</string>
+    <string name="settings_launch_args_hint_back">返回</string>
+    <string name="settings_launch_args_intro">覆盖Argosy在此平台上启动该模拟器的方式。无论如何覆盖，恢复模式的标志始终固定不变。</string>
+    <string name="settings_launch_args_data_uri_label">Data URI</string>
+    <string name="settings_launch_args_data_uri_subtitle">设置Intent.data（在shell中为`-d`）。供从intent的data URI读取ROM的ACTION_VIEW模拟器使用。</string>
+    <string name="settings_launch_args_extras_label">Extras</string>
+    <string name="settings_launch_args_extras_subtitle">将每个路径类型的extra（例如bootPath、ROM、AutoStartFile）改写为此格式。选择`None`会移除它们。</string>
+    <string name="settings_launch_args_clip_data_uri_label">ClipData URI</string>
+    <string name="settings_launch_args_clip_data_uri_subtitle">将ROM URI附加到Intent.clipData。FLAG_GRANT_READ_URI_PERMISSION要真正将访问权限委托给接收方，需要此设置。</string>
+    <string name="settings_launch_args_locked_binding_subtitle">此模拟器的固定值 - 并非文件路径。</string>
+    <string name="settings_launch_args_flag_on">开</string>
+    <string name="settings_launch_args_flag_off">关</string>
+    <string name="settings_launch_args_mime_type_label">MIME类型</string>
+    <string name="settings_launch_args_mime_type_default">默认 (%1$s)</string>
+    <string name="settings_launch_args_mime_type_subtitle">随ROM URI发送的MIME类型。大多数模拟器会忽略此设置，改用扩展名筛选。</string>
+    <string name="settings_launch_args_custom_extras_label">自定义extras</string>
+    <string name="settings_launch_args_custom_extras_none">无</string>
+    <string name="settings_launch_args_custom_extras_subtitle">启动时附加的额外intent值。字符串格式为`-e KEY VALUE`，布尔值为`--ez KEY true`。以空格分隔。</string>
+    <string name="settings_launch_args_custom_extras_title">自定义Extras</string>
+    <string name="settings_launch_args_custom_extras_save_hint">保存</string>
+    <string name="settings_launch_args_custom_extras_cancel_hint">取消</string>
+    <string name="settings_launch_args_custom_extras_help">额外的intent值，以空格分隔。字符串使用`-e KEY VALUE`，布尔值使用`--ez KEY true`。</string>
+    <string name="settings_launch_args_custom_extras_placeholder">-e KEY value</string>
+    <string name="settings_launch_args_custom_badge">(自定义)</string>
+    <string name="settings_launch_args_binding_default">默认 (%1$s)</string>
+    <string name="settings_launch_args_binding_none">无</string>
+    <string name="settings_launch_args_binding_absolute_path">绝对路径</string>
+    <string name="settings_launch_args_binding_file_provider">FileProvider URI</string>
+    <string name="settings_launch_args_binding_document_uri">Document URI (SAF)</string>
+    <string name="settings_launch_args_flag_new_task_subtitle">在独立的Android任务中启动。几乎所有模拟器都需要此设置。</string>
+    <string name="settings_launch_args_flag_clear_task_subtitle">启动前清除该模拟器的任何现有实例。</string>
+    <string name="settings_launch_args_flag_no_history_subtitle">在最近使用的应用列表中隐藏该模拟器。</string>
+    <string name="settings_launch_args_flag_single_top_subtitle">如果模拟器实例位于其任务顶层，则复用该实例。</string>
+    <string name="settings_launch_args_flag_grant_uri_subtitle">委托对ROM URI的读取权限。传递content://格式的URI时需要此设置。</string>
+    <string name="settings_launch_args_flag_clear_top_subtitle">复用任务时清除目标之上的activity。</string>
+
+    <!-- ===== Sync filters modal ===== -->
+
+    <string name="settings_sync_filters_title">同步筛选</string>
+    <string name="settings_sync_filters_subtitle">配置库同步时包含哪些游戏</string>
+    <string name="settings_sync_filters_regions_none">未选择</string>
+    <string name="settings_sync_filters_regions_title">地区</string>
+    <string name="settings_sync_filters_region_mode_title">地区模式</string>
+    <string name="settings_sync_filters_exclude_beta_title">排除测试版</string>
+    <string name="settings_sync_filters_exclude_prototype_title">排除原型</string>
+    <string name="settings_sync_filters_exclude_demo_title">排除试玩版</string>
+    <string name="settings_sync_filters_exclude_hack_title">排除ROM改版</string>
+    <string name="settings_sync_filters_remove_orphans_title">移除孤立条目</string>
+    <string name="settings_sync_filters_remove_orphans_subtitle">删除服务器上已不存在的游戏</string>
+    <string name="settings_sync_filters_hint_navigate">导航</string>
+    <string name="settings_sync_filters_hint_toggle">切换</string>
+    <string name="settings_sync_filters_hint_close">关闭</string>
+    <string name="settings_sync_filters_region_mode_include">仅包含所选</string>
+    <string name="settings_sync_filters_region_mode_exclude">排除所选</string>
+
+    <!-- ===== Platform filters modal ===== -->
+
+    <string name="settings_platform_filters_title">平台筛选</string>
+    <string name="settings_platform_filters_subtitle">选择库同步时包含哪些平台</string>
+    <string name="settings_platform_filters_loading">正在获取平台...</string>
+    <string name="settings_platform_filters_empty">没有可用平台</string>
+    <string name="settings_platform_filters_no_games">没有游戏</string>
+    <plurals name="settings_platform_filters_rom_count">
+        <item quantity="other">%1$d个游戏</item>
+    </plurals>
+
+    <string name="settings_romm_config_server_url_label">服务器网址</string>
+    <string name="settings_romm_config_server_url_placeholder">https://romm.example.com</string>
+    <string name="settings_romm_config_auth_method_title">认证方式</string>
+    <string name="settings_romm_config_auth_method_device">设备配对</string>
+    <string name="settings_romm_config_auth_method_pairing_code">配对代码</string>
+    <string name="settings_romm_config_device_instructions">用手机扫描二维码来配对此设备，然后在RomM中批准。需要RomM 5.0或更高版本。</string>
+    <string name="settings_romm_config_pairing_code_instructions">在RomM网页界面创建API令牌，然后点击"配对设备"获取代码。</string>
+    <string name="settings_romm_config_connect_generating_title">正在生成代码...</string>
+    <string name="settings_romm_config_connect_connecting_title">正在连接...</string>
+    <string name="settings_romm_config_connect_pair_title">配对设备</string>
+    <string name="settings_romm_config_connect_title">连接</string>
+    <string name="settings_romm_config_connect_device_subtitle">生成配对二维码</string>
+    <string name="settings_romm_config_connect_subtitle">连接到RomM服务器</string>
+    <string name="settings_romm_config_scan_title">扫描二维码</string>
+    <string name="settings_romm_config_scan_subtitle">扫描RomM网页界面上的配对二维码</string>
+    <string name="settings_romm_config_cancel_title">取消</string>
+    <string name="settings_romm_config_cancel_subtitle">返回服务器设置</string>
+    <string name="settings_romm_device_pairing_title">扫码配对</string>
+    <string name="settings_romm_device_pairing_subtitle">用手机扫描此代码，然后在RomM中批准此设备。</string>
+    <string name="settings_romm_device_pairing_cancel_title">取消</string>
+    <string name="settings_romm_device_pairing_cancel_subtitle">停止配对</string>
+
+    <!-- ===== Jellyfin config form ===== -->
+
+    <string name="settings_jellyfin_config_server_address_label">服务器地址</string>
+    <string name="settings_jellyfin_config_server_address_placeholder">https://jellyfin.example.com</string>
+    <string name="settings_jellyfin_config_save_title">保存</string>
+    <string name="settings_jellyfin_config_save_subtitle">将此地址用于你的媒体库</string>
+    <string name="settings_jellyfin_config_cancel_title">取消</string>
+    <string name="settings_jellyfin_config_cancel_subtitle">返回Jellyfin设置</string>
+
+    <!-- ===== Jellyfin sign-in form ===== -->
+
+    <string name="settings_jellyfin_signin_username_label">用户名</string>
+    <string name="settings_jellyfin_signin_password_label">密码</string>
+    <string name="settings_jellyfin_signin_submitting_title">正在登录...</string>
+    <string name="settings_jellyfin_signin_submit_title">登录</string>
+    <string name="settings_jellyfin_signin_submit_subtitle">将此账户用于你的媒体库</string>
+    <string name="settings_jellyfin_signin_cancel_title">取消</string>
+    <string name="settings_jellyfin_signin_cancel_subtitle">返回Jellyfin设置</string>
+
+    <!-- ===== Emulator picker popup ===== -->
+
+    <string name="settings_emulator_picker_title">选择模拟器</string>
+    <string name="settings_emulator_picker_auto_name">自动</string>
+    <string name="settings_emulator_picker_auto_subtitle">使用推荐的模拟器</string>
+    <string name="settings_emulator_picker_installed_downloading_progress">正在下载%1$d%%</string>
+    <string name="settings_emulator_picker_installed_installing">正在安装...</string>
+    <string name="settings_emulator_picker_installed_download_error">下载出错</string>
+    <string name="settings_emulator_picker_version_unknown">?</string>
+    <string name="settings_emulator_picker_version_update_arrow">%1$s -&gt; %2$s</string>
+    <string name="settings_emulator_picker_installed_label">已安装</string>
+    <string name="settings_emulator_picker_download_header">可供下载</string>
+    <string name="settings_emulator_picker_downloadable_downloading_progress">正在下载%1$d%%</string>
+    <string name="settings_emulator_picker_downloadable_installing">正在安装...</string>
+    <string name="settings_emulator_picker_downloadable_download_error">下载出错</string>
+    <string name="settings_emulator_picker_other_app_name">其他应用...</string>
+    <string name="settings_emulator_picker_other_app_subtitle">使用任意已安装的应用启动</string>
+    <string name="settings_emulator_picker_hint_navigate">导航</string>
+    <string name="settings_emulator_picker_hint_select">选择</string>
+    <string name="settings_emulator_picker_hint_close">关闭</string>
+    <string name="settings_emulator_picker_update_available_desc">有可用更新</string>
+
+    <!-- ===== Variant picker modal ===== -->
+
+    <string name="settings_variant_picker_title">选择版本</string>
+    <string name="settings_variant_picker_hint_navigate">导航</string>
+    <string name="settings_variant_picker_hint_select">选择</string>
+    <string name="settings_variant_picker_hint_cancel">取消</string>
+
+    <!-- ===== Emulator update modal ===== -->
+
+    <string name="settings_emulator_update_title">更新%1$s</string>
+    <string name="settings_emulator_update_checking">正在检查更新...</string>
+    <string name="settings_emulator_update_select_version">选择版本</string>
+    <string name="settings_emulator_update_downloading">正在下载... %1$d%%</string>
+    <string name="settings_emulator_update_installing">正在安装...</string>
+    <string name="settings_emulator_update_installed">更新安装成功</string>
+    <string name="settings_emulator_update_failed">更新失败：%1$s</string>
+
+    <!-- ===== Region picker popup ===== -->
+
+    <string name="settings_region_picker_title">选择地区</string>
+    <string name="settings_region_picker_subtitle_ordering">切换要同步的地区。按住并拖动以设置优先级；当游戏有多个版本时，排在最前的匹配项优先</string>
+    <string name="settings_region_picker_subtitle_toggle">切换同步时要包含/排除的地区</string>
+    <string name="settings_region_picker_hint_move">移动</string>
+    <string name="settings_region_picker_hint_accept">确认</string>
+    <string name="settings_region_picker_hint_cancel">取消</string>
+    <string name="settings_region_picker_hint_navigate">导航</string>
+    <string name="settings_region_picker_hint_toggle">切换</string>
+    <string name="settings_region_picker_hint_prioritize">设置优先级</string>
+    <string name="settings_region_picker_hint_close">关闭</string>
+
+    <!-- ===== Driver version picker modal ===== -->
+
+    <string name="settings_driver_picker_title">选择版本</string>
+    <string name="settings_driver_picker_empty">没有可用版本</string>
+    <string name="settings_driver_picker_hint_hide">隐藏</string>
+    <string name="settings_driver_picker_hint_close">关闭</string>
+    <string name="settings_driver_picker_hint_navigate">导航</string>
+    <string name="settings_driver_picker_hint_download">下载</string>
+    <string name="settings_driver_picker_hint_cancel">取消</string>
+    <string name="settings_driver_picker_downloaded_desc">已下载</string>
+    <string name="settings_driver_picker_latest_badge">最新</string>
+    <string name="settings_driver_picker_prerelease_badge">预览</string>
+    <string name="settings_driver_picker_no_asset">没有可下载的文件</string>
+    <plurals name="settings_driver_picker_assets_count">
+        <item quantity="other">%1$s · %2$d个文件</item>
+    </plurals>
+    <string name="settings_driver_picker_saved_to_header">已保存到</string>
+    <string name="settings_driver_picker_download_progress">%1$s / %2$s</string>
+
+    <!-- ===== Shader picker modal ===== -->
+
+    <string name="settings_shader_picker_title">添加着色器</string>
+    <string name="settings_shader_picker_hint_section">分区</string>
+    <string name="settings_shader_picker_hint_add">添加</string>
+    <string name="settings_shader_picker_hint_cancel">取消</string>
+    <string name="settings_shader_picker_custom_badge">自定义</string>
+    <string name="settings_shader_picker_download_badge">下载</string>
+
+    <!-- ===== Sound picker popup ===== -->
+
+    <string name="settings_sound_picker_hint_select">选择</string>
+    <string name="settings_sound_picker_hint_close">关闭</string>
+
+    <!-- ===== App picker modal ===== -->
+
+    <string name="settings_app_picker_title">选择应用 - %1$s</string>
+    <string name="settings_app_picker_intro">Argosy未检测到此平台已安装的已知模拟器。请选择任意应用用于启动游戏；之后你可以通过"启动参数"调整Argosy调用它的方式。</string>
+    <string name="settings_app_picker_empty">未找到可启动的应用。</string>
+
+    <!-- ===== Controller order modal ===== -->
+
+    <string name="settings_controller_order_title">手柄顺序</string>
+    <string name="settings_controller_order_subtitle">按任意按钮以分配手柄</string>
+    <string name="settings_controller_order_hint_confirm">确认</string>
+    <string name="settings_controller_order_hint_unregister_back">取消注册/返回</string>
+    <string name="settings_controller_order_default_name">手柄</string>
+    <string name="settings_controller_order_slot_label">P%1$d</string>
+    <string name="settings_controller_order_slot_pressing">请按下...</string>
+    <string name="settings_controller_order_slot_empty">空</string>
+
+    <!-- ===== Grip controller modal ===== -->
+
+    <string name="settings_grip_controller_default_name">手柄</string>
+    <string name="settings_grip_controller_title">手柄夹持</string>
+    <string name="settings_grip_controller_subtitle_capturing">按下夹持手柄上的任意按钮</string>
+    <string name="settings_grip_controller_subtitle_list">当连接以下任一手柄时，界面会自动上移</string>
+    <string name="settings_grip_controller_hint_cancel">取消</string>
+    <string name="settings_grip_controller_hint_add">添加</string>
+    <string name="settings_grip_controller_hint_back">返回</string>
+    <string name="settings_grip_controller_hint_remove">移除</string>
+    <string name="settings_grip_controller_listening_title">正在监听...</string>
+    <string name="settings_grip_controller_listening_subtitle">在你想要的手柄上按下一个按钮</string>
+    <string name="settings_grip_controller_add_new_label">添加新手柄</string>
+
+    <!-- ===== Hard reset modal ===== -->
+
+    <string name="settings_hard_reset_title">彻底重置</string>
+    <string name="settings_hard_reset_subtitle">此操作无法撤销</string>
+    <plurals name="settings_hard_reset_games_summary">
+        <item quantity="other">已下载%1$d个游戏 - 占用磁盘%2$s</item>
+    </plurals>
+    <string name="settings_hard_reset_deletes_header">将删除</string>
+    <string name="settings_hard_reset_deletes_files">磁盘上所有已下载的游戏文件</string>
+    <string name="settings_hard_reset_deletes_database">整个库数据库 - 游戏时长、合集、下载记录、各游戏的单独设置</string>
+    <string name="settings_hard_reset_deletes_caches">所有缓存 - 图片、存档与即时存档、已解压的ROM、音效、模拟器安装包、Steam暂存文件、好友状态封面</string>
+    <string name="settings_hard_reset_keeps_header">将保留</string>
+    <string name="settings_hard_reset_keeps_sign_ins">设置与登录状态 - RomM与Steam保持连接</string>
+    <string name="settings_hard_reset_keeps_synced_saves">已同步到服务器的存档</string>
+    <string name="settings_hard_reset_keeps_emulator_apps">模拟器应用及其自身的存档数据</string>
+    <string name="settings_hard_reset_keeps_music">你的音乐文件夹</string>
+    <plurals name="settings_hard_reset_pending_uploads">
+        <item quantity="other">有%1$d个存档等待上传</item>
+    </plurals>
+    <string name="settings_hard_reset_sync_first_connected">请先同步它们 - 现在重置会永久丢弃它们。</string>
+    <string name="settings_hard_reset_sync_first_disconnected">请先重新连接服务器并同步它们 - 现在重置会永久丢弃它们。</string>
+    <string name="settings_hard_reset_in_progress">正在重置...</string>
+    <string name="settings_hard_reset_cancel_button">取消</string>
+    <string name="settings_hard_reset_sync_now_button">立即同步</string>
+    <string name="settings_hard_reset_hold_button">按住以重置</string>
+
+    <!-- ===== Platform settings modal ===== -->
+
+    <string name="settings_platform_modal_sync_label">与服务器同步</string>
+    <string name="settings_platform_modal_rom_path_label">ROM路径</string>
+    <string name="settings_platform_modal_save_path_label">存档路径</string>
+    <string name="settings_platform_modal_state_path_label">即时存档路径</string>
+    <string name="settings_platform_modal_resync_label">重新同步平台</string>
+    <string name="settings_platform_modal_purge_label">清空所有数据</string>
+
+    <!-- ===== Path config item ===== -->
+
+    <string name="settings_path_config_coming_soon">(即将推出)</string>
+    <string name="settings_path_config_reset_button">重置</string>
+    <string name="settings_path_config_change_button">更改</string>
+    <string name="settings_path_config_auto_label">(自动)</string>
+
+    <!-- ===== Release changelog modal ===== -->
+
+    <string name="settings_changelog_loading">正在加载版本...</string>
+    <string name="settings_changelog_empty">未找到任何版本</string>
+    <string name="settings_changelog_beta_badge">测试版</string>
+    <string name="settings_changelog_load_more_loading">正在加载...</string>
+    <string name="settings_changelog_load_more_label">加载更多</string>
+
+    <!-- ===== Save path modal ===== -->
+
+    <string name="settings_save_path_modal_title">%1$s - %2$s</string>
+    <string name="settings_save_path_modal_intro">当Argosy找不到要同步的存档时，自定义路径有助于修复存档检测问题。这不会改变你的模拟器存储存档的位置。</string>
+    <string name="settings_save_path_modal_save_path_label">存档路径</string>
+    <string name="settings_save_path_modal_note_missing">此文件夹当前不在设备上。在它出现之前，无法找到存档。</string>
+    <string name="settings_save_path_modal_note_moved">已移动到%1$s存档实际所在的位置，位于你所选文件夹之下。</string>
+    <string name="settings_save_path_modal_note_shape">每个游戏的存档都位于此文件夹下的%1$s中。</string>
+    <string name="settings_save_path_modal_beside_rom_title">存档放在ROM旁</string>
+    <string name="settings_save_path_modal_beside_rom_subtitle_builtin">将存档保存在每个游戏各自的文件夹中。</string>
+    <string name="settings_save_path_modal_beside_rom_subtitle_external">在每个游戏各自的文件夹中查找存档。请同时将你的模拟器设置为将存档保存在ROM旁边。</string>
+    <string name="settings_save_path_modal_state_path_label">即时存档路径</string>
+
+    <!-- ===== Save path option item ===== -->
+
+    <string name="settings_save_path_option_custom_badge">(自定义)</string>
+    <string name="settings_save_path_option_coming_soon">(即将推出)</string>
+    <string name="settings_save_path_option_reset_button">重置</string>
+    <string name="settings_save_path_option_change_button">更改</string>
+    <string name="settings_save_path_option_not_configured">未配置</string>
+
+    <!-- ===== Steam launcher preference row ===== -->
+
+    <string name="settings_steam_launcher_pref_add_button">添加</string>
+
+    <!-- ===== Accounts settings delegate ===== -->
+
+    <string name="settings_accounts_delegate_fallback_username">RomM用户%1$d</string>
+    <string name="settings_accounts_delegate_notice_no_server">请先在"RomM"下登录RomM服务器。</string>
+    <string name="settings_accounts_delegate_progress_preparing">正在准备</string>
+    <string name="settings_accounts_delegate_progress_resuming">正在恢复</string>
+    <string name="settings_accounts_delegate_progress_archiving">正在归档存档%1$d/%2$d</string>
+    <string name="settings_accounts_delegate_progress_swapping">正在切换账户</string>
+    <string name="settings_accounts_delegate_progress_restoring">正在恢复存档%1$d/%2$d</string>
+    <string name="settings_accounts_delegate_progress_finishing">正在完成</string>
+    <string name="settings_accounts_delegate_pairing_error_no_server">此设备尚未配置服务器。</string>
+    <string name="settings_accounts_delegate_notice_added">已添加%1$s。仍以原账户登录；切换后即可使用新账户。</string>
+    <string name="settings_accounts_delegate_fallback_account_label">该账户</string>
+    <string name="settings_accounts_delegate_notice_signed_in">已登录为%1$s。</string>
+    <string name="settings_accounts_delegate_notice_account_added">账户已添加。</string>
+    <string name="settings_accounts_delegate_pairing_denied">服务器拒绝了此次配对</string>
+    <string name="settings_accounts_delegate_pairing_expired">配对代码已过期，请重新开始</string>
+    <string name="settings_accounts_delegate_removal_unknown_account">该账户已不在此设备上。</string>
+    <string name="settings_accounts_delegate_removal_switch_in_progress">账户切换仍在进行中。请等待其完成后再试。</string>
+    <string name="settings_accounts_delegate_removal_refused_prefix">由于存在排队中的任务，账户未被移除。%1$s</string>
+    <string name="settings_accounts_delegate_removal_refused_fallback">没有待处理的任务。</string>
+    <string name="settings_accounts_delegate_removal_removed">账户已移除。</string>
+    <string name="settings_accounts_delegate_removal_archived">在清除之前已归档%1$d个存档。</string>
+    <string name="settings_accounts_delegate_removal_aborted">有%1$d个存档在归档过程中发生变化，已保留在磁盘上。</string>
+    <string name="settings_accounts_delegate_removal_registered_note">设备仍在RomM服务器上保持注册状态；请在服务器上撤销。</string>
+    <string name="settings_accounts_delegate_completion_switched">已切换账户。</string>
+    <string name="settings_accounts_delegate_completion_aborted">有%1$d个文件在归档过程中发生变化，已保持原样。</string>
+    <string name="settings_accounts_delegate_completion_needs_sync">有%1$d个槽位因本地副本已知落后于服务器而保持为空。</string>
+    <string name="settings_accounts_delegate_blocker_already_switching">已有一次切换正在进行。请等待其完成。</string>
+    <string name="settings_accounts_delegate_blocker_active_session">游戏会话仍处于打开状态。请关闭游戏后再试。</string>
+    <string name="settings_accounts_delegate_blocker_external_game">%1$s在%2$d秒前仍在前台运行。请完全退出后再试。</string>
+    <string name="settings_accounts_delegate_blocker_active_downloads">游戏下载仍在进行。请等待完成或取消下载。</string>
+    <string name="settings_accounts_delegate_blocker_emulator_download">模拟器下载仍在进行。请等待完成或取消下载。</string>
+    <string name="settings_accounts_delegate_blocker_steam_download">Steam下载仍在进行。请等待完成或取消下载。</string>
+    <string name="settings_accounts_delegate_blocker_media_download">有影片或剧集仍在下载。请等待完成或取消下载。</string>
+    <string name="settings_accounts_delegate_blocker_library_sync">库同步正在进行。请等待其完成后再试。</string>
+    <string name="settings_accounts_delegate_blocker_netplay_session">联机对战会话处于打开状态。请退出后再试。</string>
+    <string name="settings_accounts_delegate_blocker_exit_confirmation">请确认所有在Argosy之外启动的游戏均已完全关闭。</string>
+    <string name="settings_accounts_delegate_blocker_unknown_account">该账户已不在此设备上。</string>
+
+    <!-- ===== Steam settings delegate ===== -->
+
+    <string name="settings_steam_delegate_invalid_app_id">请输入有效的Steam App ID</string>
+    <string name="settings_steam_delegate_volume_other_label">其他</string>
+
+    <!-- ===== Jellyfin settings delegate ===== -->
+
+    <string name="settings_jellyfin_delegate_config_error_empty">请输入服务器地址</string>
+    <string name="settings_jellyfin_delegate_config_error_scheme">地址必须以http://或https://开头</string>
+    <string name="settings_jellyfin_delegate_signin_error_empty">请输入你的用户名和密码</string>
+
+    <!-- ===== Server settings delegate ===== -->
+
+    <string name="settings_server_delegate_signout_switch_in_progress">账户切换仍在完成中。请稍后再试。</string>
+    <string name="settings_server_delegate_signout_refused">仍保持登录：%1$s未能发送到你的服务器。请重新连接并同步后再退出登录。</string>
+    <string name="settings_server_delegate_pairing_denied">服务器拒绝了此次配对</string>
+    <string name="settings_server_delegate_pairing_expired">配对代码已过期，请重新开始</string>
+    <string name="settings_server_delegate_pairing_unexpected_result">意外的配对结果</string>
+    <string name="settings_server_delegate_pairing_code_incomplete">请输入完整的8位配对代码</string>
+
+    <!-- ===== Drivers settings delegate ===== -->
+
+    <string name="settings_drivers_delegate_download_failed">下载失败</string>
+
+    <!-- ===== RetroAchievements settings delegate ===== -->
+
+    <string name="settings_ra_delegate_login_error_required">需要填写用户名和密码</string>
+
+    <!-- ===== Licenses dialog ===== -->
+
+    <string name="settings_licenses_dialog_title">开源许可证</string>
+    <string name="settings_licenses_dialog_cores_heading">模拟器核心</string>
+    <string name="settings_licenses_dialog_cores_body">核心从libretro buildbot下载。核心许可证请参见docs.libretro.com/development/licenses。</string>
+    <string name="settings_licenses_dialog_close_button">关闭</string>
+
+    <!-- ===== Systemize result dialog ===== -->
+
+    <string name="settings_systemize_dialog_close_button">关闭</string>
+    <string name="settings_systemize_dialog_success_title">脚本已保存</string>
+    <string name="settings_systemize_dialog_detected_device">检测到的设备：%1$s</string>
+    <string name="settings_systemize_dialog_next_steps_heading">后续步骤</string>
+    <string name="settings_systemize_dialog_step_format">%1$d. %2$s</string>
+    <string name="settings_systemize_dialog_success_footnote">需要已root的设备。此更改可撤销：移除名为"Argosy Systemize"的Magisk模块并重启即可。如果你的菜单措辞不同，脚本文件依然正确 - 只需将以root权限运行的选项指向它即可。</string>
+    <string name="settings_systemize_dialog_error_title">无法保存脚本</string>
+    <string name="settings_systemize_dialog_error_hint">可能缺少存储访问权限。请在设置中授予所有文件访问权限后重试。</string>
+
+    <!-- ===== LibretroSettingItem / LibretroSettingsAccessor ===== -->
+
+    <string name="settings_libretro_shell_configure_shader_chain_title">配置着色器链</string>
+    <string name="settings_libretro_shell_frame_value_auto">自动</string>
+    <string name="settings_libretro_shell_frame_value_none">无</string>
+
+    <!-- ===== SettingsModels: SoundState.getSoundValueForType ===== -->
+
+    <string name="settings_sound_value_default">默认</string>
+    <string name="settings_sound_value_custom_fallback">自定义</string>
+
+    <!-- ===== SettingsModels: BiosState.summaryText ===== -->
+
+    <string name="settings_main_bios_summary_none">未找到BIOS文件</string>
+    <plurals name="settings_main_bios_summary_complete">
+        <item quantity="other">全部%1$d个文件已下载</item>
+    </plurals>
+    <string name="settings_main_bios_summary_partial">已下载%1$d/%2$d个</string>
+
+    <!-- ===== SettingsModels: DriversState.summary ===== -->
+
+    <string name="settings_drivers_summary_checking">正在检查驱动...</string>
+    <string name="settings_drivers_summary_gpu_not_detected">未检测到GPU</string>
+    <string name="settings_drivers_summary_available">适用于%1$s的Adreno驱动</string>
+
+    <!-- ===== LaunchArgsModal: Intent flag labels ===== -->
+
+    <string name="settings_launch_args_flag_new_task_label">新任务</string>
+    <string name="settings_launch_args_flag_clear_task_label">清除任务</string>
+    <string name="settings_launch_args_flag_no_history_label">不保留历史</string>
+    <string name="settings_launch_args_flag_single_top_label">单一顶层</string>
+    <string name="settings_launch_args_flag_grant_uri_label">授予读取URI权限</string>
+    <string name="settings_launch_args_flag_clear_top_label">清除顶层</string>
+
+    <!-- ===== HudCorner display labels ===== -->
+
+    <string name="settings_hudcorner_top_left">左上</string>
+    <string name="settings_hudcorner_top_right">右上</string>
+    <string name="settings_hudcorner_bottom_left">左下</string>
+    <string name="settings_hudcorner_bottom_right">右下</string>
+
+    <!-- ===== ShaderPickerModal: category headers ===== -->
+
+    <string name="shader_category_crt">CRT</string>
+    <string name="shader_category_handheld">掌机</string>
+    <string name="shader_category_scaling">缩放</string>
+    <string name="shader_category_scanlines">扫描线</string>
+    <string name="shader_category_sharpening">锐化</string>
+    <string name="shader_category_anti_aliasing">抗锯齿</string>
+    <string name="shader_category_other">其他</string>
+
+    <!-- ===== LibretroSettingDef (core/emulator): title, subtitle, Cycle.labels ===== -->
+
+    <string name="settings_libretro_def_section_shaders">着色器</string>
+    <string name="settings_libretro_def_section_display">显示</string>
+    <string name="settings_libretro_def_section_performance">性能</string>
+    <string name="settings_libretro_def_section_saving">存档</string>
+
+    <string name="settings_libretro_def_shader_title">着色器</string>
+    <string name="settings_libretro_def_filter_title">滤镜</string>
+    <string name="settings_libretro_def_aspect_ratio_title">宽高比</string>
+    <string name="settings_libretro_def_portrait_position_title">竖屏画面位置</string>
+    <string name="settings_libretro_def_portrait_position_subtitle">屏幕竖直时游戏画面所在的位置</string>
+    <string name="settings_libretro_def_rotation_title">屏幕旋转</string>
+    <string name="settings_libretro_def_overscan_crop_title">裁剪过扫描</string>
+    <string name="settings_libretro_def_frame_title">边框</string>
+    <string name="settings_libretro_def_frame_subtitle">游戏画面周围的装饰性边框</string>
+    <string name="settings_libretro_def_black_frame_insertion_title">黑帧插入</string>
+    <string name="settings_libretro_def_black_frame_insertion_subtitle">减少运动模糊（需要120Hz以上的显示屏）</string>
+    <string name="settings_libretro_def_fast_forward_enabled_title">启用快进</string>
+    <string name="settings_libretro_def_fast_forward_speed_title">快进速度</string>
+    <string name="settings_libretro_def_rewind_enabled_title">启用回退</string>
+    <string name="settings_libretro_def_rewind_enabled_subtitle">在负载较高的平台上可能导致卡顿</string>
+    <string name="settings_libretro_def_rewind_speed_title">回退速度</string>
+    <string name="settings_libretro_def_rewind_buffer_duration_title">回退缓冲区</string>
+    <string name="settings_libretro_def_rewind_buffer_duration_subtitle">保留在内存中的游戏时长（秒）</string>
+    <string name="settings_libretro_def_skip_duplicate_frames_title">跳过重复帧</string>
+    <string name="settings_libretro_def_skip_duplicate_frames_subtitle">通过跳过未变化的帧降低CPU占用</string>
+    <string name="settings_libretro_def_low_latency_audio_title">低延迟音频</string>
+    <string name="settings_libretro_def_low_latency_audio_subtitle">减少音频延迟以提升响应速度</string>
+    <string name="settings_libretro_def_audio_volume_title">音量</string>
+    <string name="settings_libretro_def_audio_volume_subtitle" formatted="false">模拟器输出电平 (100%是未经调整的水平)</string>
+    <string name="settings_libretro_def_vsync_title">垂直同步</string>
+    <string name="settings_libretro_def_vsync_subtitle">与显示屏刷新率同步</string>
+    <string name="settings_libretro_def_auto_save_state_title">退出时保存即时存档</string>
+    <string name="settings_libretro_def_auto_save_state_subtitle">仅适用于休闲模式游戏</string>
+    <string name="settings_libretro_def_auto_restore_state_title">启动时恢复即时存档</string>
+    <string name="settings_libretro_def_auto_restore_state_subtitle">仅适用于休闲模式游戏</string>
+    <string name="settings_libretro_def_hw_core_save_states_title">Dolphin与Flycast即时存档</string>
+    <string name="settings_libretro_def_hw_core_save_states_subtitle">实验性功能；这些核心可能出现黑屏或无法恢复。将在下次启动时生效，仅适用于休闲模式游戏</string>
+
+    <string name="settings_libretro_def_shader_option_none">无</string>
+    <string name="settings_libretro_def_shader_option_custom">自定义</string>
+
+    <string name="settings_libretro_def_filter_option_auto">自动</string>
+    <string name="settings_libretro_def_filter_option_nearest">最近邻</string>
+    <string name="settings_libretro_def_filter_option_bilinear">双线性</string>
+
+    <string name="settings_libretro_def_aspect_ratio_option_core_provided">核心提供</string>
+    <string name="settings_libretro_def_aspect_ratio_option_integer">整数缩放</string>
+    <string name="settings_libretro_def_aspect_ratio_option_stretch">拉伸</string>
+
+    <string name="settings_libretro_def_portrait_position_option_auto">自动</string>
+    <string name="settings_libretro_def_portrait_position_option_top">顶部</string>
+    <string name="settings_libretro_def_portrait_position_option_center">居中</string>
+    <string name="settings_libretro_def_portrait_position_option_bottom">底部</string>
+
+    <string name="settings_libretro_def_rotation_option_auto">自动</string>
+    <string name="settings_libretro_def_rotation_option_0">0°</string>
+    <string name="settings_libretro_def_rotation_option_90">90°</string>
+    <string name="settings_libretro_def_rotation_option_180">180°</string>
+    <string name="settings_libretro_def_rotation_option_270">270°</string>
+
+    <string name="settings_libretro_def_overscan_crop_option_off">关闭</string>
+
+    <string name="settings_libretro_def_frame_option_none">无</string>
+
+    <!-- ===== Top level of the settings screen: Language row ===== -->
+
+    <string name="settings_main_language_title">语言</string>
+    <string name="settings_main_language_subtitle">更改启动器中的全部文字</string>
+    <string name="settings_main_language_system_default">跟随系统</string>
+
+</resources>

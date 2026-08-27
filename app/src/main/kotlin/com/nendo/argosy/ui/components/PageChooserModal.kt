@@ -21,9 +21,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
@@ -54,21 +56,22 @@ fun PageChooserModal(
     }
 
     Modal(
-        title = state.title.uppercase(),
-        subtitle = state.subtitle,
+        title = (state.titleRes?.let { stringResource(it) } ?: state.gameTitle.orEmpty())
+            .uppercase(),
+        subtitle = stringResource(state.subtitleRes),
         baseWidth = MODAL_WIDTH,
         onDismiss = onDismiss,
         footerHints = listOf(
-            InputButton.DPAD to "Navigate",
-            InputButton.A to "Choose",
-            InputButton.B to "Back"
+            InputButton.DPAD to stringResource(R.string.ui_page_chooser_footer_navigate),
+            InputButton.A to stringResource(R.string.ui_page_chooser_footer_choose),
+            InputButton.B to stringResource(R.string.ui_page_chooser_footer_back)
         )
     ) {
         if (state.gameTitle != null && state.gameId == null) {
             ModalSearchField(
                 query = state.query,
                 onQueryChange = onQueryChange,
-                placeholder = "Search games...",
+                placeholder = stringResource(R.string.ui_page_chooser_search_placeholder),
                 autoFocus = false,
                 modifier = Modifier.padding(bottom = Dimens.spacingSm)
             )
@@ -76,14 +79,14 @@ fun PageChooserModal(
 
         when {
             state.isLoading -> Text(
-                text = "Loading...",
+                text = stringResource(R.string.ui_page_chooser_loading),
                 style = MaterialTheme.typography.bodyMedium,
                 color = theme.textDim,
                 modifier = Modifier.padding(Dimens.spacingMd)
             )
 
             state.entries.isEmpty() -> Text(
-                text = "Nothing here to choose from.",
+                text = stringResource(R.string.ui_page_chooser_empty),
                 style = MaterialTheme.typography.bodyMedium,
                 color = theme.textDim,
                 modifier = Modifier.padding(Dimens.spacingMd)

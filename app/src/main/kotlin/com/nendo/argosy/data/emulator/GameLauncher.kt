@@ -1236,8 +1236,10 @@ class GameLauncher @Inject constructor(
         if (rejected != null && default != null) {
             val registry = com.nendo.argosy.libretro.LibretroCoreRegistry
             notificationManager.show(
-                title = "Failed to load ${registry.displayNameFor(rejected)}, " +
-                    "using ${registry.displayNameFor(default)} instead",
+                title = com.nendo.argosy.core.notification.NotificationText.Res(
+                    com.nendo.argosy.R.string.sync_launch_core_fallback,
+                    listOf(registry.displayNameFor(rejected), registry.displayNameFor(default))
+                ),
                 type = com.nendo.argosy.core.notification.NotificationType.WARNING
             )
         }

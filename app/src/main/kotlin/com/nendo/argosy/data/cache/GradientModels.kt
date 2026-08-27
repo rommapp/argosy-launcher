@@ -21,13 +21,6 @@ enum class GradientPreset {
         CUSTOM -> GradientExtractionConfig()
     }
 
-    fun displayName(): String = when (this) {
-        VIBRANT -> "Vibrant"
-        BALANCED -> "Balanced"
-        SUBTLE -> "Subtle"
-        CUSTOM -> "Custom"
-    }
-
     companion object {
         fun fromString(value: String?): GradientPreset =
             entries.find { it.name == value } ?: BALANCED

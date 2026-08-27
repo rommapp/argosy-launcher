@@ -36,7 +36,9 @@ import com.nendo.argosy.ui.screens.gamedetail.modals.COVER_PICKER_COLUMNS
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.navigation.GameNavigationContext
+import com.nendo.argosy.R
 import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.core.notification.showSuccess
 import com.nendo.argosy.ui.common.isAndroidApp
@@ -476,7 +478,7 @@ class GameDetailViewModel @Inject constructor(
             val isSteamGame = game.isSteamGame
             val isAndroidApp = game.isAndroidApp
             val steamLauncherName = if (isSteamGame) {
-                game.steamLauncher?.let { SteamLaunchers.getByPackage(it)?.displayName } ?: "Auto"
+                game.steamLauncher?.let { SteamLaunchers.getByPackage(it)?.displayName }
             } else null
             val fileExists = gameRepository.validateAndDiscoverGame(gameId)
 
@@ -583,7 +585,8 @@ class GameDetailViewModel @Inject constructor(
             _uiState.update { state ->
                 state.copy(
                     game = game.toGameDetailUi(
-                        platformName = platform?.name ?: "Unknown",
+                        platformName = platform?.name
+                            ?: context.getString(R.string.gamedetail_header_platform_unknown),
                         emulatorName = emulatorName,
                         canPlay = canPlay,
                         isRetroArch = emulatorDef?.launchConfig is LaunchConfig.RetroArch,
@@ -1266,7 +1269,9 @@ class GameDetailViewModel @Inject constructor(
     fun showSaveCacheDialog() {
         moreOptionsDelegate.reset()
         saveManagement.showSaveCacheDialog(viewModelScope, currentGameId, _uiState.value.saveChannel.activeChannel) {
-            notificationManager.showError("Cannot determine emulator for saves")
+            notificationManager.showError(
+                NotificationText.Res(R.string.gamedetail_notice_no_emulator_for_saves)
+            )
         }
     }
 
@@ -1580,7 +1585,10 @@ class GameDetailViewModel @Inject constructor(
                     }
                 )
                 is RomMResult.Error -> pickerModalDelegate.setCoverPickerError(
-                    "Could not search cover art. ${result.message}"
+                    context.getString(
+                        R.string.gamedetail_cover_picker_error,
+                        result.message
+                    )
                 )
             }
         }
@@ -1652,7 +1660,9 @@ class GameDetailViewModel @Inject constructor(
             val file = gameFileDao.getById(fileId) ?: return@launch
             val rommFileId = file.rommFileId
             if (rommFileId == null) {
-                notificationManager.showError("Cannot download local-only variant")
+                notificationManager.showError(
+                    NotificationText.Res(R.string.gamedetail_notice_variant_local_only)
+                )
                 return@launch
             }
             pickerModalDelegate.dismissVariantPicker()
@@ -1668,7 +1678,9 @@ class GameDetailViewModel @Inject constructor(
                 expectedSizeBytes = file.fileSize,
                 gameFolderName = game.rommFileName
             )
-            notificationManager.showSuccess("Downloading ${file.fileName}")
+            notificationManager.showSuccess(
+                NotificationText.Res(R.string.gamedetail_notice_downloading_variant, listOf(file.fileName))
+            )
         }
     }
     fun dismissDiscPicker() = pickerModalDelegate.dismissDiscPicker()
@@ -1751,11 +1763,11 @@ class GameDetailViewModel @Inject constructor(
         viewModelScope.launch {
             val result = titleIdDownloadObserver.recheckTitleId(gameId)
             if (result is TitleIdRecheck.Found) loadGame(gameId)
-            notificationManager.reportTitleIdRecheck(result)
+            notificationManager.reportTitleIdRecheck(context, result)
         }
     }
 
-    fun showLaunchError(message: String) = notificationManager.showError(message)
+    fun showLaunchError(message: NotificationText) = notificationManager.showError(message)
 
     // --- Navigation ---
 

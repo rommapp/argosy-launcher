@@ -27,6 +27,7 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -44,6 +45,10 @@ import com.nendo.argosy.ui.theme.backdrop.surfaceBackdrop
 import com.nendo.argosy.util.formatPlayTime
 import java.time.Instant
 import java.time.temporal.ChronoUnit
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
+import com.nendo.argosy.ui.common.labelRes
 
 /** Shared ambience for DS upper showcase surfaces: backdrop, blurred art, dim wash. */
 @Composable
@@ -210,29 +215,35 @@ fun ShowcaseStatsRow(
         it == AspectRatioClass.WIDE || it == AspectRatioClass.ULTRA_WIDE
     }
 
+    val context = LocalContext.current
     val playTime: @Composable (Modifier) -> Unit = { slot ->
         ShowcaseStatCell(
-            label = "Play Time",
-            value = formatPlayTime(playTimeMinutes),
+            label = stringResource(R.string.dual_showcase_stat_play_time_label),
+            value = formatPlayTime(context, playTimeMinutes),
             valueColor = theme.textPrimary,
             modifier = slot
         )
     }
     val lastPlayed: @Composable (Modifier) -> Unit = { slot ->
         ShowcaseStatCell(
-            label = "Last Played",
-            value = if (lastPlayedAt > 0) formatLastPlayedLabel(lastPlayedAt) else "Never",
+            label = stringResource(R.string.dual_showcase_stat_last_played_label),
+            value = if (lastPlayedAt > 0) {
+                formatLastPlayedLabel(lastPlayedAt)
+            } else {
+                stringResource(R.string.dual_showcase_stat_last_played_never)
+            },
             valueColor = theme.textPrimary,
             modifier = slot
         )
     }
     val completion: @Composable (Modifier) -> Unit = { slot ->
         ShowcaseStatCell(
-            label = "Status",
+            label = stringResource(R.string.dual_showcase_stat_status_label),
             value = status?.let { raw ->
-                CompletionStatus.fromApiValue(raw)?.label
+                CompletionStatus.fromApiValue(raw)
+                    ?.let { stringResource(it.labelRes) }
                     ?: raw.replace('_', ' ').replaceFirstChar { it.uppercase() }
-            } ?: "None",
+            } ?: stringResource(R.string.dual_showcase_stat_status_none),
             valueColor = if (status != null) theme.focusAccent else theme.textMute,
             modifier = slot
         )
@@ -291,6 +302,7 @@ private fun ShowcaseStatCell(
     }
 }
 
+@Composable
 fun formatLastPlayedLabel(timestamp: Long): String {
     if (timestamp <= 0) return ""
 
@@ -299,10 +311,20 @@ fun formatLastPlayedLabel(timestamp: Long): String {
     val daysBetween = ChronoUnit.DAYS.between(lastPlayed, now)
 
     return when {
-        daysBetween == 0L -> "Today"
-        daysBetween == 1L -> "Yesterday"
-        daysBetween < 7 -> "$daysBetween days ago"
-        daysBetween < 30 -> "${daysBetween / 7} weeks ago"
-        else -> "${daysBetween / 30} months ago"
+        daysBetween == 0L -> stringResource(R.string.dual_showcase_last_played_today)
+        daysBetween == 1L -> stringResource(R.string.dual_showcase_last_played_yesterday)
+        daysBetween < 7 -> pluralStringResource(
+            R.plurals.dual_showcase_last_played_days,
+            daysBetween.toInt(),
+            daysBetween.toInt()
+        )
+        daysBetween < 30 -> {
+            val weeks = (daysBetween / 7).toInt()
+            pluralStringResource(R.plurals.dual_showcase_last_played_weeks, weeks, weeks)
+        }
+        else -> {
+            val months = (daysBetween / 30).toInt()
+            pluralStringResource(R.plurals.dual_showcase_last_played_months, months, months)
+        }
     }
 }

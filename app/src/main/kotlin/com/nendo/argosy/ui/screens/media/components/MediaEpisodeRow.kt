@@ -23,11 +23,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import coil.compose.AsyncImage
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
 import com.nendo.argosy.ui.screens.media.MediaItemUi
+import com.nendo.argosy.ui.screens.media.episodeLabel
+import com.nendo.argosy.ui.screens.media.runtimeLabel
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.util.clickableNoFocus
@@ -46,6 +51,7 @@ fun MediaEpisodeRow(
     isNowPlaying: Boolean = false
 ) {
     val theme = LocalArgosyTheme.current
+    val context = LocalContext.current
     val shape = RoundedCornerShape(Dimens.radiusMd)
     Row(
         modifier = modifier
@@ -89,12 +95,12 @@ fun MediaEpisodeRow(
                 if (isNowPlaying) {
                     Icon(
                         imageVector = Icons.Default.PlayArrow,
-                        contentDescription = "Now playing",
+                        contentDescription = stringResource(R.string.media_episode_row_now_playing),
                         tint = theme.focusAccent,
                         modifier = Modifier.size(Dimens.iconXs)
                     )
                 }
-                episode.episodeLabel?.let {
+                episode.episodeLabel(context)?.let {
                     Text(
                         text = it,
                         style = MaterialTheme.typography.labelMedium,
@@ -111,14 +117,14 @@ fun MediaEpisodeRow(
                 if (episode.played) {
                     Icon(
                         imageVector = Icons.Default.CheckCircle,
-                        contentDescription = "Watched",
+                        contentDescription = stringResource(R.string.media_episode_row_watched),
                         tint = theme.focusAccent,
                         modifier = Modifier.size(Dimens.iconXs)
                     )
                 }
                 MediaDownloadBadge(availability = episode.availability, size = Dimens.iconXs)
             }
-            val supporting = listOfNotNull(episode.runtimeLabel, episode.overview).joinToString(" - ")
+            val supporting = listOfNotNull(episode.runtimeLabel(context), episode.overview).joinToString(" - ")
             if (supporting.isNotBlank()) {
                 Text(
                     text = supporting,

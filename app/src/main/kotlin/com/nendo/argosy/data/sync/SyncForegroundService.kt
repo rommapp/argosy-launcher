@@ -23,6 +23,11 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class SyncForegroundService : Service() {
 
+    override fun attachBaseContext(newBase: Context) {
+        val tag = com.nendo.argosy.data.preferences.SessionStateStore(newBase).getAppLanguage()
+        super.attachBaseContext(com.nendo.argosy.core.locale.LocaleHelper.wrap(newBase, tag))
+    }
+
     @Inject
     lateinit var saveSyncRepository: SaveSyncRepository
 
@@ -35,7 +40,7 @@ class SyncForegroundService : Service() {
     override fun onCreate() {
         super.onCreate()
         acquireWakeLock()
-        startForegroundWithNotification("Preparing sync...", 0, 0)
+        startForegroundWithNotification(getString(R.string.sync_service_preparing), 0, 0)
         observeSyncState()
     }
 
@@ -91,22 +96,27 @@ class SyncForegroundService : Service() {
 
                 if (libraryProgress.isSyncing) {
                     val title = if (libraryProgress.currentPlatform.isNotEmpty()) {
-                        "Syncing: ${libraryProgress.currentPlatform}"
+                        getString(R.string.sync_service_platform, libraryProgress.currentPlatform)
                     } else {
-                        "Syncing library..."
+                        getString(R.string.sync_service_library)
                     }
                     updateNotification(title, libraryProgress.platformsDone, libraryProgress.platformsTotal)
                 } else if (hasSaveWork) {
                     val current = saveState.currentOperation
                     if (current != null) {
-                        val directionText = when (current.direction) {
-                            SyncDirection.UPLOAD -> "Uploading"
-                            SyncDirection.DOWNLOAD -> "Downloading"
+                        val title = when (current.direction) {
+                            SyncDirection.UPLOAD ->
+                                getString(R.string.sync_service_uploading, current.gameName)
+                            SyncDirection.DOWNLOAD ->
+                                getString(R.string.sync_service_downloading, current.gameName)
                         }
-                        val title = "$directionText: ${current.gameName}"
                         updateNotification(title, saveState.completedCount, saveState.operations.size)
                     } else {
-                        updateNotification("Syncing saves...", saveState.completedCount, saveState.operations.size)
+                        updateNotification(
+                            getString(R.string.sync_service_saves),
+                            saveState.completedCount,
+                            saveState.operations.size
+                        )
                     }
                 }
             }

@@ -21,7 +21,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.primitives.ActionButton
 import com.nendo.argosy.ui.screens.gamedetail.PermissionModalType
 import com.nendo.argosy.ui.theme.Dimens
@@ -43,16 +45,14 @@ fun PermissionRequiredModal(
 
     val (title, description, buttonText) = when (permissionType) {
         PermissionModalType.STORAGE -> Triple(
-            "Permission Required",
-            "Save sync is enabled but file access permission is not granted. " +
-                "Grant permission to sync saves, or disable save sync to continue.",
-            "Grant Permission"
+            stringResource(R.string.gamedetail_permission_storage_title),
+            stringResource(R.string.gamedetail_permission_storage_message),
+            stringResource(R.string.gamedetail_permission_storage_confirm)
         )
         PermissionModalType.SAF -> Triple(
-            "Folder Access Required",
-            "Save sync needs access to the Android/data folder to sync saves from other emulators. " +
-                "Select the Android folder when prompted, or disable save sync to continue.",
-            "Select Folder"
+            stringResource(R.string.gamedetail_permission_folder_title),
+            stringResource(R.string.gamedetail_permission_folder_message),
+            stringResource(R.string.gamedetail_permission_folder_confirm)
         )
     }
 
@@ -112,13 +112,13 @@ fun PermissionRequiredModal(
                     )
 
                     ActionButton(
-                        label = "Disable Save Sync",
+                        label = stringResource(R.string.gamedetail_permission_disable_sync),
                         onClick = onDisableSync,
                         modifier = Modifier.fillMaxWidth()
                     )
 
                     ActionButton(
-                        label = "Cancel",
+                        label = stringResource(R.string.gamedetail_permission_cancel),
                         onClick = onDismiss,
                         modifier = Modifier.fillMaxWidth()
                     )

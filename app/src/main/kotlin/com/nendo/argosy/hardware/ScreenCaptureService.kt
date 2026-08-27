@@ -32,6 +32,11 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class ScreenCaptureService : Service() {
 
+    override fun attachBaseContext(newBase: Context) {
+        val tag = com.nendo.argosy.data.preferences.SessionStateStore(newBase).getAppLanguage()
+        super.attachBaseContext(com.nendo.argosy.core.locale.LocaleHelper.wrap(newBase, tag))
+    }
+
     @Inject
     lateinit var ambientLedManager: AmbientLedManager
 
@@ -85,7 +90,7 @@ class ScreenCaptureService : Service() {
         val notification = NotificationCompat.Builder(this, ScreenCaptureNotificationChannel.CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_helm)
             .setContentTitle(getString(R.string.app_name))
-            .setContentText("Sampling screen for ambient LEDs")
+            .setContentText(getString(R.string.dual_notification_screen_capture_text))
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
             .setOnlyAlertOnce(true)

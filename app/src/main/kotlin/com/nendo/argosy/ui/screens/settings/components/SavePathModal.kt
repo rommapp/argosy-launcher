@@ -16,6 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.Modal
 import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.primitives.ActionButton
@@ -35,20 +37,19 @@ fun SavePathModal(
     onToggleBesideRom: () -> Unit = {}
 ) {
     Modal(
-        title = "${info.platformName} - ${info.emulatorName}",
+        title = stringResource(R.string.settings_save_path_modal_title, info.platformName, info.emulatorName),
         baseWidth = Dimens.modalWidthXl,
         onDismiss = onDismiss
     ) {
         Text(
-            text = "Custom paths help fix save detection when Argosy can't find saves to sync. " +
-                "This doesn't change where your emulator stores saves.",
+            text = stringResource(R.string.settings_save_path_modal_intro),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = Dimens.radiusLg)
         )
 
         SavePathOptionItem(
-            label = "Save Path",
+            label = stringResource(R.string.settings_save_path_modal_save_path_label),
             path = info.savePath?.let { formatStoragePath(it) },
             isCustom = info.isUserOverride,
             isFocused = focusIndex == 0,
@@ -57,12 +58,12 @@ fun SavePathModal(
             onReset = if (info.isUserOverride) onResetSavePath else null,
             note = when {
                 info.savePath != null && !info.pathPresent ->
-                    "This folder isn't on the device right now. Saves won't be found until it is."
+                    stringResource(R.string.settings_save_path_modal_note_missing)
                 info.shapeWarning != null -> info.shapeWarning
                 info.chosenPath != null ->
-                    "Moved to where ${info.platformName} saves actually live, below the folder you picked."
+                    stringResource(R.string.settings_save_path_modal_note_moved, info.platformName)
                 info.unresolvedShape != null ->
-                    "Each game's save sits under ${info.unresolvedShape} below this folder."
+                    stringResource(R.string.settings_save_path_modal_note_shape, info.unresolvedShape)
                 else -> null
             },
             noteIsWarning = (info.savePath != null && !info.pathPresent) || info.shapeWarning != null
@@ -70,12 +71,12 @@ fun SavePathModal(
 
         if (info.besideRomSupported) {
             val besideRomSubtitle = if (info.emulatorId == "builtin") {
-                "Store saves in each game's folder."
+                stringResource(R.string.settings_save_path_modal_beside_rom_subtitle_builtin)
             } else {
-                "Look for saves in each game's folder. Set your emulator to save next to the ROM as well."
+                stringResource(R.string.settings_save_path_modal_beside_rom_subtitle_external)
             }
             SwitchPreference(
-                title = "Save beside ROM",
+                title = stringResource(R.string.settings_save_path_modal_beside_rom_title),
                 subtitle = besideRomSubtitle,
                 isEnabled = info.savesBesideRom,
                 isFocused = focusIndex == 1,
@@ -84,7 +85,7 @@ fun SavePathModal(
         }
 
         SavePathOptionItem(
-            label = "State Path",
+            label = stringResource(R.string.settings_save_path_modal_state_path_label),
             path = null,
             isCustom = false,
             isFocused = false,
@@ -156,14 +157,14 @@ private fun SavePathOptionItem(
                 )
                 if (isCustom) {
                     Text(
-                        text = "(custom)",
+                        text = stringResource(R.string.settings_save_path_option_custom_badge),
                         style = MaterialTheme.typography.labelSmall,
                         color = if (isFocused) focusContent else MaterialTheme.colorScheme.primary
                     )
                 }
                 if (!enabled) {
                     Text(
-                        text = "(coming soon)",
+                        text = stringResource(R.string.settings_save_path_option_coming_soon),
                         style = MaterialTheme.typography.labelSmall,
                         color = secondaryColor
                     )
@@ -176,13 +177,13 @@ private fun SavePathOptionItem(
                 ) {
                     if (onReset != null) {
                         ActionButton(
-                            label = "Reset",
+                            label = stringResource(R.string.settings_save_path_option_reset_button),
                             onClick = onReset,
                             focused = resetFocused
                         )
                     }
                     ActionButton(
-                        label = "Change",
+                        label = stringResource(R.string.settings_save_path_option_change_button),
                         onClick = onClick,
                         focused = changeFocused,
                         primary = true
@@ -199,7 +200,7 @@ private fun SavePathOptionItem(
             )
         } else if (enabled) {
             Text(
-                text = "Not configured",
+                text = stringResource(R.string.settings_save_path_option_not_configured),
                 style = MaterialTheme.typography.bodySmall,
                 color = secondaryColor.copy(alpha = 0.6f),
                 modifier = Modifier.padding(top = Dimens.spacingXs)

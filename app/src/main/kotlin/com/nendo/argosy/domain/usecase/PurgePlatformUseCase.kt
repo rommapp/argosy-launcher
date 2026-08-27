@@ -9,16 +9,12 @@ import com.nendo.argosy.data.local.dao.StateCacheDao
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.storage.StorageAttributionRepository
 import com.nendo.argosy.data.storage.StorageCategory
-import com.nendo.argosy.core.notification.NotificationManager
-import com.nendo.argosy.core.notification.NotificationProgress
-import com.nendo.argosy.core.notification.NotificationType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
 
 private const val TAG = "PurgePlatformUseCase"
-private const val NOTIFICATION_KEY = "platform-purge"
 
 data class PurgeResult(
     val gamesDeleted: Int,
@@ -26,11 +22,15 @@ data class PurgeResult(
     val bytesFree: Long
 )
 
+/**
+ * Deletes a platform's downloaded files and library rows. Progress is reported through
+ * onProgress so the caller can render it; this use case does not localize or display text.
+ * [current] is 0 for the initial call before any file has been processed.
+ */
 class PurgePlatformUseCase @Inject constructor(
     private val gameDao: GameDao,
     private val platformDao: PlatformDao,
     private val gameRepository: GameRepository,
-    private val notificationManager: NotificationManager,
     private val saveCacheDao: SaveCacheDao,
     private val stateCacheDao: StateCacheDao,
     private val stateOwnershipDao: com.nendo.argosy.data.local.dao.StateOwnershipDao,
@@ -42,19 +42,12 @@ class PurgePlatformUseCase @Inject constructor(
     suspend operator fun invoke(
         platformId: Long,
         deleteLocalFiles: Boolean = true,
-        onProgress: ((current: Int, total: Int, title: String) -> Unit)? = null
+        onProgress: ((current: Int, total: Int, gameTitle: String) -> Unit)? = null
     ): PurgeResult = withContext(Dispatchers.IO) {
-        val platform = platformDao.getById(platformId)
-        val platformName = platform?.name ?: "Platform $platformId"
         val gamesWithPaths = gameRepository.getGamesWithLocalPathsForPlatform(platformId)
         val totalFiles = gamesWithPaths.size
 
-        notificationManager.showPersistent(
-            key = NOTIFICATION_KEY,
-            title = "Purging $platformName",
-            subtitle = "Preparing...",
-            progress = NotificationProgress(0, totalFiles.coerceAtLeast(1))
-        )
+        onProgress?.invoke(0, totalFiles, "")
 
         var filesDeleted = 0
         var bytesFreed = 0L
@@ -63,11 +56,6 @@ class PurgePlatformUseCase @Inject constructor(
             Log.d(TAG, "Purge: deleting $totalFiles local files for $platformId")
 
             gamesWithPaths.forEachIndexed { index, game ->
-                notificationManager.updatePersistent(
-                    key = NOTIFICATION_KEY,
-                    subtitle = "${index + 1}/$totalFiles: ${game.title}",
-                    progress = NotificationProgress(index, totalFiles)
-                )
                 onProgress?.invoke(index + 1, totalFiles, game.title)
 
                 try {
@@ -98,21 +86,6 @@ class PurgePlatformUseCase @Inject constructor(
         platformDao.updateGameCount(platformId, 0)
         platformDao.updateSyncEnabled(platformId, false)
         Log.d(TAG, "Purge: disabled sync for $platformId")
-
-        val message = buildString {
-            append("Deleted $gamesCount games")
-            if (filesDeleted > 0) {
-                val mb = bytesFreed / (1024 * 1024)
-                append(", freed ${mb}MB")
-            }
-        }
-
-        notificationManager.completePersistent(
-            key = NOTIFICATION_KEY,
-            title = "$platformName purged",
-            subtitle = message,
-            type = NotificationType.SUCCESS
-        )
 
         attributionRepository.markDirty(StorageCategory.GAMES)
         PurgeResult(gamesCount, filesDeleted, bytesFreed)

@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="firstrun_welcome_intro">Добро пожаловать! Давайте всё настроим.</string>
+    <string name="firstrun_welcome_button_start">Начать</string>
+
+    <string name="firstrun_romm_url_title">Вход в Rom Manager</string>
+    <string name="firstrun_romm_url_field_label">URL сервера</string>
+    <string name="firstrun_romm_url_hint">Введите адрес вашего сервера RomM, и мы определим способ входа.</string>
+    <string name="firstrun_romm_url_button_continue">Продолжить</string>
+    <string name="firstrun_romm_url_button_checking">Проверка...</string>
+    <string name="firstrun_romm_url_button_back">Назад</string>
+    <string name="firstrun_romm_url_error_blank">Введите URL сервера</string>
+
+    <string name="firstrun_pairing_code_title">Введите код сопряжения</string>
+    <string name="firstrun_pairing_code_hint">Создайте API-токен в веб-интерфейсе RomM, затем введите 8-значный код.</string>
+    <string name="firstrun_pairing_code_clear_description">Очистить код</string>
+    <string name="firstrun_pairing_code_button_connect">Подключиться</string>
+    <string name="firstrun_pairing_code_button_connecting">Подключение...</string>
+    <string name="firstrun_pairing_code_button_edit_url">Изменить URL</string>
+    <string name="firstrun_pairing_code_button_scan">Сканировать QR-код</string>
+    <string name="firstrun_pairing_code_button_device_pairing">Использовать сопряжение по QR-коду</string>
+    <string name="firstrun_pairing_code_error_incomplete">Введите полный 8-значный код сопряжения</string>
+
+    <string name="firstrun_device_pairing_title">Сканируйте для сопряжения</string>
+    <string name="firstrun_device_pairing_hint">Отсканируйте этот код телефоном или войдите здесь, на этом устройстве, а затем подтвердите его в RomM.</string>
+    <string name="firstrun_device_pairing_no_browser">На этом устройстве нет браузера. Отсканируйте код или используйте код сопряжения.</string>
+    <string name="firstrun_device_pairing_button_sign_in">Войти на этом устройстве</string>
+    <string name="firstrun_device_pairing_button_manual_code">Использовать код сопряжения</string>
+    <string name="firstrun_device_pairing_button_back">Назад</string>
+    <string name="firstrun_device_pairing_error_denied">Сопряжение было отклонено на сервере</string>
+    <string name="firstrun_device_pairing_error_expired">Код сопряжения истёк, начните заново</string>
+    <string name="firstrun_device_pairing_error_unexpected">Непредвиденный результат сопряжения</string>
+
+    <string name="firstrun_romm_success_title">Подключение выполнено успешно!</string>
+    <string name="firstrun_romm_success_server">Сервер: %1$s</string>
+    <string name="firstrun_romm_success_library">%1$s на %2$s</string>
+    <plurals name="firstrun_romm_success_game_count">
+        <item quantity="one">%d игра</item>
+        <item quantity="few">%d игры</item>
+        <item quantity="many">%d игр</item>
+        <item quantity="other">%d игры</item>
+    </plurals>
+    <plurals name="firstrun_romm_success_platform_count">
+        <item quantity="one">%d платформа</item>
+        <item quantity="few">%d платформы</item>
+        <item quantity="many">%d платформ</item>
+        <item quantity="other">%d платформы</item>
+    </plurals>
+    <string name="firstrun_romm_success_button_continue">Продолжить</string>
+    <string name="firstrun_romm_success_error_library_fetch">Не удалось загрузить библиотеку: %1$s</string>
+
+    <string name="firstrun_permissions_title">Разрешения</string>
+    <string name="firstrun_permissions_intro">Argosy нужны эти разрешения для управления библиотекой и эмуляторами.</string>
+    <string name="firstrun_permissions_storage_title">Управление хранилищем (обязательно)</string>
+    <string name="firstrun_permissions_storage_description">Необходимо для просмотра папок, загрузки игр и синхронизации сохранений.</string>
+    <string name="firstrun_permissions_notifications_title">Уведомления</string>
+    <string name="firstrun_permissions_notifications_description">Показывает прогресс загрузок и синхронизации.</string>
+    <string name="firstrun_permissions_overlay_title">Отображение поверх других приложений</string>
+    <string name="firstrun_permissions_overlay_description">Включает всплывающие панели обнаружения сохранений во время игры.</string>
+    <string name="firstrun_permissions_usage_title">Доступ к статистике использования</string>
+    <string name="firstrun_permissions_usage_description">Включает точный учёт времени в игре и возобновление.</string>
+    <string name="firstrun_permissions_button_continue">Продолжить</string>
+    <string name="firstrun_permissions_note_optional">Остальные разрешения можно предоставить позже в настройках.</string>
+    <string name="firstrun_permissions_note_storage_required">Предоставьте доступ к хранилищу, чтобы продолжить. Остальные разрешения необязательны и могут быть предоставлены позже в настройках.</string>
+
+    <string name="firstrun_rom_path_title">Путь к играм</string>
+    <string name="firstrun_rom_path_description">Выберите, где будут храниться файлы игр. Мы автоматически создадим подпапки для каждой консоли.</string>
+    <string name="firstrun_rom_path_button_continue">Продолжить</string>
+    <string name="firstrun_rom_path_button_change_folder">Выбрать другую папку</string>
+    <string name="firstrun_rom_path_button_choose_folder">Выбрать папку</string>
+
+    <string name="firstrun_image_cache_optional_badge">НЕОБЯЗАТЕЛЬНО</string>
+    <string name="firstrun_image_cache_title">Расположение кэша изображений</string>
+    <string name="firstrun_image_cache_description">По умолчанию обложки игр хранятся во внутреннем кэше приложения. Если на устройстве мало места, можно выбрать внешнее расположение.</string>
+    <string name="firstrun_image_cache_button_continue">Продолжить</string>
+    <string name="firstrun_image_cache_button_change_folder">Выбрать другую папку</string>
+    <string name="firstrun_image_cache_button_choose_folder">Выбрать внешнюю папку</string>
+    <string name="firstrun_image_cache_button_use_default">Использовать по умолчанию (внутренний кэш)</string>
+    <string name="firstrun_image_cache_folder_note">Изображения будут сохранены в подпапке \'%1$s\'.</string>
+
+    <string name="firstrun_platform_select_eyebrow">ВЫБОР ПЛАТФОРМ</string>
+    <string name="firstrun_platform_select_title">Выберите платформы для синхронизации</string>
+    <plurals name="firstrun_platform_select_selected_count">
+        <item quantity="one">Выбрана %1$d платформа из %2$d</item>
+        <item quantity="few">Выбраны %1$d платформы из %2$d</item>
+        <item quantity="many">Выбрано %1$d платформ из %2$d</item>
+        <item quantity="other">Выбрано %1$d платформы из %2$d</item>
+    </plurals>
+    <plurals name="firstrun_platform_select_game_count">
+        <item quantity="one">%d игра</item>
+        <item quantity="few">%d игры</item>
+        <item quantity="many">%d игр</item>
+        <item quantity="other">%d игры</item>
+    </plurals>
+    <string name="firstrun_platform_select_button_select_all">Выбрать все</string>
+    <string name="firstrun_platform_select_button_deselect_all">Снять выбор со всех</string>
+    <string name="firstrun_platform_select_button_continue">Продолжить</string>
+
+    <string name="firstrun_core_prompt_title">Скачать ядра эмулятора?</string>
+    <plurals name="firstrun_core_prompt_available_count">
+        <item quantity="one">Для выбранных платформ доступно %d ядро libretro.</item>
+        <item quantity="few">Для выбранных платформ доступно %d ядра libretro.</item>
+        <item quantity="many">Для выбранных платформ доступно %d ядер libretro.</item>
+        <item quantity="other">Для выбранных платформ доступно %d ядра libretro.</item>
+    </plurals>
+    <string name="firstrun_core_prompt_explainer">Они включают встроенную эмуляцию без необходимости в отдельных приложениях-эмуляторах.</string>
+    <string name="firstrun_core_prompt_all_installed">Все ядра для выбранных платформ уже установлены.</string>
+    <string name="firstrun_core_prompt_button_download">Скачать ядра</string>
+    <string name="firstrun_core_prompt_button_skip">Пропустить (отключить встроенный эмулятор)</string>
+    <string name="firstrun_core_prompt_button_continue">Продолжить</string>
+    <string name="firstrun_core_prompt_note_skip">Пропуск отключит встроенный эмулятор. Вы сможете включить его и скачать ядра позже в настройках.</string>
+
+    <string name="firstrun_core_download_title">Загрузка ядер эмулятора</string>
+    <string name="firstrun_core_download_none_needed">Для выбранных платформ ядра не нужны</string>
+    <string name="firstrun_core_download_button_continue_no_cores">Продолжить</string>
+    <plurals name="firstrun_core_download_progress_count">
+        <item quantity="one">Загрузка %1$d из %2$d ядра...</item>
+        <item quantity="few">Загрузка %1$d из %2$d ядер...</item>
+        <item quantity="many">Загрузка %1$d из %2$d ядер...</item>
+        <item quantity="other">Загрузка %1$d из %2$d ядра...</item>
+    </plurals>
+    <plurals name="firstrun_core_download_partial_count">
+        <item quantity="one">Загружено %1$d из %2$d ядра</item>
+        <item quantity="few">Загружено %1$d из %2$d ядер</item>
+        <item quantity="many">Загружено %1$d из %2$d ядер</item>
+        <item quantity="other">Загружено %1$d из %2$d ядра</item>
+    </plurals>
+    <string name="firstrun_core_download_all_done">Все ядра загружены</string>
+    <string name="firstrun_core_download_note_skip">Пропустите, если предпочитаете отдельные эмуляторы</string>
+    <string name="firstrun_core_download_button_skip">Пропустить</string>
+    <string name="firstrun_core_download_button_continue">Продолжить</string>
+    <string name="firstrun_core_download_status_complete_description">Завершено</string>
+    <string name="firstrun_core_download_status_failed_description">Ошибка</string>
+    <string name="firstrun_core_download_retry_description">Повторить</string>
+    <string name="firstrun_core_download_button_retry">Повторить</string>
+
+    <string name="firstrun_complete_title">Всё готово!</string>
+    <string name="firstrun_complete_library">%1$s на %2$s готовы к синхронизации</string>
+    <plurals name="firstrun_complete_game_count">
+        <item quantity="one">%d игра</item>
+        <item quantity="few">%d игры</item>
+        <item quantity="many">%d игр</item>
+        <item quantity="other">%d игры</item>
+    </plurals>
+    <plurals name="firstrun_complete_platform_count">
+        <item quantity="one">%d платформа</item>
+        <item quantity="few">%d платформы</item>
+        <item quantity="many">%d платформ</item>
+        <item quantity="other">%d платформы</item>
+    </plurals>
+    <string name="firstrun_complete_hint">Синхронизируйте библиотеку в настройках коллекций, чтобы начать.</string>
+    <string name="firstrun_complete_button_start">Начать игру</string>
+</resources>

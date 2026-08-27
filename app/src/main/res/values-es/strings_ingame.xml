@@ -1,0 +1,548 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ingame_netplay_quality_excellent">Excelente</string>
+    <string name="ingame_netplay_quality_good">Buena</string>
+    <string name="ingame_netplay_quality_fair">Aceptable</string>
+    <string name="ingame_netplay_quality_poor">Débil</string>
+    <string name="ingame_netplay_quality_bad">Mala</string>
+
+    <string name="ingame_menu_swap_disc">Cambiar disco</string>
+    <string name="ingame_menu_resume">Reanudar</string>
+    <string name="ingame_menu_quick_save">Guardado rápido</string>
+    <string name="ingame_menu_quick_load">Carga rápida</string>
+    <string name="ingame_menu_manage_states">Administrar estados</string>
+    <string name="ingame_menu_cheats">Trucos</string>
+    <string name="ingame_menu_invite_friend">Invitar amigo...</string>
+    <string name="ingame_menu_open_to_all_friends">Abrir a todos los amigos</string>
+    <string name="ingame_menu_close_netplay_server">Cerrar servidor de netplay</string>
+    <string name="ingame_menu_leave_netplay_session">Salir de la sesión de netplay</string>
+    <string name="ingame_menu_open_netplay_server">Abrir servidor de netplay</string>
+    <string name="ingame_menu_settings">Ajustes</string>
+    <string name="ingame_menu_stop_speedrun_timer">Detener cronómetro de speedrun</string>
+    <string name="ingame_menu_speedrun_timer">Cronómetro de speedrun</string>
+    <string name="ingame_menu_touch_controls">Controles táctiles</string>
+    <string name="ingame_menu_reset">Reiniciar</string>
+    <string name="ingame_menu_quit">Salir del juego</string>
+    <string name="ingame_menu_hardcore_badge">HARDCORE</string>
+    <string name="ingame_menu_quick_save_history_action">Historial de guardado rápido</string>
+
+    <string name="ingame_disc_title">Cambiar disco</string>
+    <string name="ingame_disc_current">"%1$s  (actual)"</string>
+
+    <string name="ingame_states_title">Administrar estados</string>
+    <string name="ingame_states_channel">[%1$s]</string>
+    <string name="ingame_states_delete_title">¿Eliminar estado guardado?</string>
+    <string name="ingame_states_delete_confirm">Confirmar</string>
+    <string name="ingame_states_delete_cancel">Cancelar</string>
+    <string name="ingame_states_delete_body">Esta acción no se puede deshacer.</string>
+    <string name="ingame_states_load_title">¿Cargar este estado?</string>
+    <string name="ingame_states_load_confirm">Cargar</string>
+    <string name="ingame_states_load_cancel">Cancelar</string>
+    <string name="ingame_states_load_preview_description">Vista previa del estado</string>
+    <string name="ingame_states_load_body">El progreso actual se reemplazará.</string>
+    <string name="ingame_states_slot_auto">Auto</string>
+    <string name="ingame_states_slot_numbered">Ranura %1$d</string>
+    <string name="ingame_states_preview_no_screenshot">Sin captura de pantalla</string>
+    <string name="ingame_states_preview_empty_slot">Ranura vacía</string>
+    <string name="ingame_states_carousel_no_screenshot">Sin captura de pantalla</string>
+    <string name="ingame_states_carousel_no_state">Sin estado guardado</string>
+    <string name="ingame_states_carousel_empty">Vacía</string>
+    <string name="ingame_states_footer_load">Cargar</string>
+    <string name="ingame_states_footer_save_over">Sobrescribir</string>
+    <string name="ingame_states_footer_delete">Eliminar</string>
+    <string name="ingame_states_footer_save">Guardar</string>
+    <string name="ingame_states_footer_mode_carousel">Carrusel</string>
+    <string name="ingame_states_footer_mode_grid">Cuadrícula</string>
+    <string name="ingame_states_footer_back">Atrás</string>
+
+    <string name="ingame_quickload_empty_title">Sin guardados rápidos</string>
+    <string name="ingame_quickload_empty_message">Usa el guardado rápido para crear un historial</string>
+    <string name="ingame_quickload_title">Carga rápida</string>
+    <string name="ingame_quickload_footer_load">Cargar</string>
+    <string name="ingame_quickload_footer_back">Atrás</string>
+    <string name="ingame_quickload_preview_description">Vista previa del guardado rápido</string>
+    <string name="ingame_quickload_preview_no_screenshot">Sin captura de pantalla</string>
+    <string name="ingame_quickload_row_latest">Más reciente</string>
+    <string name="ingame_quickload_row_entry">Guardado rápido</string>
+
+    <string name="ingame_autorestore_title">¿Reanudar desde el estado guardado?</string>
+    <string name="ingame_autorestore_confirm">Sí</string>
+    <string name="ingame_autorestore_decline">No</string>
+
+    <string name="ingame_achievement_hardcore_heading">LOGRO HARDCORE DESBLOQUEADO</string>
+    <string name="ingame_achievement_heading">LOGRO DESBLOQUEADO</string>
+    <plurals name="ingame_achievement_points">
+        <item quantity="one">+%d punto</item>
+        <item quantity="many">+%d puntos</item>
+        <item quantity="other">+%d puntos</item>
+    </plurals>
+
+    <string name="ingame_raconnect_title">RetroAchievements conectado</string>
+    <string name="ingame_raconnect_hardcore">Modo Hardcore</string>
+    <string name="ingame_raconnect_casual">Modo Casual</string>
+    <string name="ingame_raconnect_earned">%1$d/%2$d obtenidos</string>
+
+    <string name="ingame_speedrun_paused">EN PAUSA</string>
+    <string name="ingame_speedrun_personal_best">Mejor marca personal</string>
+    <string name="ingame_speedrun_session_best">Mejor de la sesión</string>
+    <string name="ingame_speedrun_sum_of_best">Suma de las mejores</string>
+    <string name="ingame_speedrun_attempt">Intento %1$d</string>
+
+    <string name="ingame_netplay_progress_requesting_join">Solicitando unirse...</string>
+    <string name="ingame_netplay_progress_waiting_for_host">Esperando que el anfitrión acepte...</string>
+    <string name="ingame_netplay_progress_connecting">Conectando...</string>
+    <string name="ingame_netplay_progress_measuring">Midiendo la conexión...</string>
+    <string name="ingame_netplay_progress_loading_state">Cargando el estado del juego...</string>
+    <string name="ingame_netplay_progress_ready">¡Listo!</string>
+    <string name="ingame_netplay_progress_failed">No se pudo conectar</string>
+    <string name="ingame_netplay_progress_title">Netplay</string>
+    <string name="ingame_netplay_progress_dismiss">Aceptar</string>
+
+    <string name="ingame_netplay_reconnecting">Reconectando...</string>
+    <string name="ingame_netplay_reconnecting_with_ping">Reconectando... (última: %1$dms)</string>
+
+    <string name="ingame_netplay_disconnect_title">Amigo desconectado</string>
+    <string name="ingame_netplay_disconnect_message">%1$s perdió la conexión. ¿Mantener la sesión abierta para que vuelva a unirse, o cerrarla y salir?</string>
+    <string name="ingame_netplay_disconnect_keep_open">Mantener abierta</string>
+    <string name="ingame_netplay_disconnect_close">Cerrar y salir del juego</string>
+
+    <string name="ingame_netplay_quality_warning_title">Advertencia de conexión</string>
+    <string name="ingame_netplay_quality_warning_message">La calidad de la conexión es %1$s (ping de %2$dms, fluctuación de %3$dms). El juego puede ir a saltos.</string>
+    <string name="ingame_netplay_quality_warning_accept">Continuar de todos modos</string>
+    <string name="ingame_netplay_quality_warning_decline">Cancelar</string>
+
+    <string name="ingame_netplay_friend_picker_title">Invitar amigo</string>
+    <string name="ingame_netplay_friend_picker_empty">No hay amigos en línea disponibles</string>
+    <string name="ingame_netplay_friend_picker_close">Cerrar</string>
+    <string name="ingame_netplay_friend_online">En línea</string>
+    <string name="ingame_netplay_friend_offline">Sin conexión</string>
+
+    <string name="ingame_netplay_mode_picker_title">Abrir servidor de netplay</string>
+    <string name="ingame_netplay_mode_open_label">Abierto a amigos</string>
+    <string name="ingame_netplay_mode_open_description">Cualquiera puede unirse</string>
+    <string name="ingame_netplay_mode_private_label">Privado</string>
+    <string name="ingame_netplay_mode_private_description">Requiere tu aprobación</string>
+    <string name="ingame_netplay_mode_invite_label">Invitar amigo...</string>
+    <string name="ingame_netplay_mode_invite_description">Elegir un amigo específico</string>
+
+    <string name="ingame_netplay_join_request_title">Solicitud para unirse</string>
+    <string name="ingame_netplay_join_request_message">%1$s quiere unirse a tu sesión</string>
+    <string name="ingame_netplay_join_request_accept">Aceptar</string>
+    <string name="ingame_netplay_join_request_decline">Rechazar</string>
+
+    <string name="ingame_netplay_hud_mode_open">Abierta</string>
+    <string name="ingame_netplay_hud_mode_private">Privada</string>
+    <string name="ingame_netplay_hud_mode_invite_only">Solo por invitación</string>
+    <plurals name="ingame_netplay_hud_players">
+        <item quantity="one">%d jugador</item>
+        <item quantity="many">%d jugadores</item>
+        <item quantity="other">%d jugadores</item>
+    </plurals>
+    <string name="ingame_netplay_hud_host_tag">[ANFITRIÓN]</string>
+    <string name="ingame_netplay_hud_observers">Observadores</string>
+
+    <string name="ingame_settings_tab_video">Video</string>
+    <string name="ingame_settings_tab_controls">Controles</string>
+    <string name="ingame_settings_tab_core_options">Opciones del núcleo</string>
+
+    <string name="ingame_settings_footer_tab">Pestaña</string>
+    <string name="ingame_settings_footer_video_adjust">Ajustar</string>
+    <string name="ingame_settings_footer_video_select">Seleccionar</string>
+    <string name="ingame_settings_footer_controls_adjust">Ajustar</string>
+    <string name="ingame_settings_footer_controls_select">Seleccionar</string>
+    <string name="ingame_settings_footer_core_options_adjust">Ajustar</string>
+    <string name="ingame_settings_footer_core_options_select">Seleccionar</string>
+    <string name="ingame_settings_footer_back">Atrás</string>
+
+    <string name="ingame_settings_header_controllers">Mandos</string>
+    <string name="ingame_settings_header_sticks">Sticks analógicos</string>
+    <string name="ingame_settings_header_hotkeys">Atajos</string>
+    <string name="ingame_settings_header_touch">Controles táctiles</string>
+
+    <string name="ingame_settings_game_specific_controls_title">Controles específicos del juego</string>
+    <string name="ingame_settings_game_specific_controls_subtitle_on">Los reasignados se aplican solo a este juego</string>
+    <string name="ingame_settings_game_specific_controls_subtitle_off">Usa tu asignación de mando global</string>
+    <string name="ingame_settings_rumble_title">Vibración</string>
+    <string name="ingame_settings_rumble_subtitle">Activar la vibración del mando</string>
+    <string name="ingame_settings_controller_order_title">Orden de mandos</string>
+    <plurals name="ingame_settings_controller_order_assigned">
+        <item quantity="one">%d mando asignado</item>
+        <item quantity="many">%d mandos asignados</item>
+        <item quantity="other">%d mandos asignados</item>
+    </plurals>
+    <string name="ingame_settings_controller_order_subtitle_empty">Asignar puertos de mando</string>
+    <string name="ingame_settings_controller_type_title">Mando del jugador %1$d</string>
+    <string name="ingame_settings_controller_type_pending">Se aplicará la próxima vez que inicies</string>
+    <string name="ingame_settings_controller_type_core_default">Elegido por el núcleo</string>
+    <string name="ingame_settings_controller_grip_title">Agarre del mando</string>
+    <string name="ingame_settings_controller_grip_subtitle">Desplazar la interfaz fuera del área que cubre el agarre</string>
+    <string name="ingame_settings_input_mapping_title">Asignación de botones</string>
+    <string name="ingame_settings_input_mapping_subtitle">Reasignar botones para cada mando</string>
+    <string name="ingame_settings_analog_as_dpad_title">Stick izquierdo como cruceta</string>
+    <string name="ingame_settings_analog_as_dpad_subtitle">Asignar el stick analógico izquierdo a las entradas de la cruceta</string>
+    <string name="ingame_settings_dpad_as_analog_title">Cruceta como stick izquierdo</string>
+    <string name="ingame_settings_dpad_as_analog_subtitle">Asignar la cruceta a las entradas del stick analógico izquierdo</string>
+    <string name="ingame_settings_hotkeys_title">Atajos</string>
+    <string name="ingame_settings_hotkeys_subtitle">Configurar atajos para el menú, avance rápido y rebobinado</string>
+    <string name="ingame_settings_limit_hotkeys_title">Limitar atajos al jugador 1</string>
+    <string name="ingame_settings_limit_hotkeys_subtitle">Solo el mando del jugador 1 puede activar los atajos</string>
+    <string name="ingame_settings_toggle_fast_forward_title">Alternar avance rápido</string>
+    <string name="ingame_settings_toggle_fast_forward_subtitle">Presiona una vez para iniciar, otra vez para detener (desactivado = mantener presionado para avanzar rápido)</string>
+    <string name="ingame_settings_preserve_pitch_title">Conservar tono del audio</string>
+    <string name="ingame_settings_preserve_pitch_subtitle">Mantener el tono estable durante el avance rápido. Usa más CPU; desactivado por defecto</string>
+    <string name="ingame_settings_touch_enabled_title">Mostrar controles táctiles sin mando</string>
+    <string name="ingame_settings_touch_enabled_subtitle">Mostrar una superposición en pantalla cuando no hay mando conectado</string>
+    <string name="ingame_settings_touch_haptic_title">Retroalimentación háptica</string>
+    <string name="ingame_settings_touch_haptic_subtitle">Vibrar brevemente al tocar</string>
+    <string name="ingame_settings_touch_lock_orientation_title">Bloquear orientación en el juego</string>
+    <string name="ingame_settings_touch_lock_orientation_subtitle">No rotar automáticamente durante el juego</string>
+    <string name="ingame_settings_touch_genesis6_title">Modo de 6 botones Genesis</string>
+    <string name="ingame_settings_touch_genesis6_subtitle">Mostrar los seis botones frontales para Genesis / Mega Drive</string>
+
+    <string name="ingame_settings_hud_header">Barra de estado</string>
+    <string name="ingame_settings_hud_enabled_title">Mostrar barra de estado</string>
+    <string name="ingame_settings_hud_enabled_subtitle">Un pequeño indicador fijado en una esquina mientras juegas</string>
+    <string name="ingame_settings_hud_corner_title">Esquina</string>
+    <string name="ingame_settings_hud_battery_title">Batería</string>
+    <string name="ingame_settings_hud_clock_title">Reloj</string>
+    <string name="ingame_settings_hud_playtime_title">Tiempo de sesión</string>
+    <string name="ingame_settings_hud_fps_title">FPS</string>
+    <string name="ingame_settings_hud_fps_subtitle">Oculto durante el avance rápido</string>
+    <string name="ingame_settings_hud_last_save_title">Último estado guardado</string>
+
+    <string name="ingame_coreoptions_per_game_title">Ajustes específicos del juego</string>
+    <string name="ingame_coreoptions_per_game_subtitle_on">Los cambios se aplican solo a este juego</string>
+    <string name="ingame_coreoptions_per_game_subtitle_off">Usa los valores globales predeterminados de este núcleo</string>
+
+    <string name="ingame_frame_previous_description">Anterior</string>
+    <string name="ingame_frame_next_description">Siguiente</string>
+    <string name="ingame_frame_none">Sin marco</string>
+    <string name="ingame_frame_download_badge">Descargar</string>
+    <string name="ingame_frame_footer_change">Cambiar</string>
+    <string name="ingame_frame_footer_select">Seleccionar</string>
+    <string name="ingame_frame_footer_download">Descargar</string>
+    <string name="ingame_frame_footer_cancel">Cancelar</string>
+
+    <string name="ingame_shader_footer_picker_browse">Explorar</string>
+    <string name="ingame_shader_footer_picker_select">Seleccionar</string>
+    <string name="ingame_shader_footer_picker_cancel">Cancelar</string>
+    <string name="ingame_shader_footer_shader">Shader</string>
+    <string name="ingame_shader_footer_reorder">Reordenar</string>
+    <string name="ingame_shader_footer_adjust">Ajustar</string>
+    <string name="ingame_shader_footer_add">Agregar</string>
+    <string name="ingame_shader_footer_remove">Quitar</string>
+    <string name="ingame_shader_footer_reset">Restablecer</string>
+    <string name="ingame_shader_footer_back">Atrás</string>
+
+    <string name="ingame_cheats_tab_cheats">Trucos</string>
+    <string name="ingame_cheats_tab_discover">Descubrir</string>
+
+    <string name="ingame_cheats_error_ram_unavailable">RAM no disponible para este núcleo</string>
+    <string name="ingame_cheats_error_no_changes">No se detectaron cambios; juega más primero</string>
+    <string name="ingame_cheats_error_changed_not_ready">Juega más para acotar los resultados</string>
+    <string name="ingame_cheats_error_no_unchanged">No hay valores sin cambios; prueba \'Cambiados\' en su lugar</string>
+    <string name="ingame_cheats_error_same_not_ready">Juega más para acotar los resultados</string>
+    <string name="ingame_cheats_error_address_saved">La dirección ya está guardada como truco</string>
+
+    <string name="ingame_cheats_footer_variant_select">Seleccionar</string>
+    <string name="ingame_cheats_footer_search">Buscar</string>
+    <string name="ingame_cheats_footer_clear_search">Borrar</string>
+    <string name="ingame_cheats_footer_toggle">Alternar</string>
+    <string name="ingame_cheats_footer_edit">Editar</string>
+    <string name="ingame_cheats_footer_version">Versión</string>
+    <string name="ingame_cheats_footer_snapshot">Instantánea</string>
+    <string name="ingame_cheats_footer_discover_select">Seleccionar</string>
+    <string name="ingame_cheats_footer_save_cheat">Guardar truco</string>
+    <string name="ingame_cheats_footer_filter">Filtrar</string>
+    <string name="ingame_cheats_footer_adjust">Ajustar</string>
+    <string name="ingame_cheats_footer_reset">Restablecer</string>
+    <string name="ingame_cheats_footer_tab">Pestaña</string>
+    <string name="ingame_cheats_footer_back">Atrás</string>
+
+    <string name="ingame_cheats_loading">Analizando memoria...</string>
+    <string name="ingame_cheats_variant_picker_title">Varias versiones disponibles</string>
+    <string name="ingame_cheats_variant_picker_message">Selecciona la versión que coincide con tu ROM</string>
+    <string name="ingame_cheats_variant_modal_title">Seleccionar versión</string>
+    <string name="ingame_cheats_variant_unknown_region">Región desconocida</string>
+    <plurals name="ingame_cheats_variant_count">
+        <item quantity="one">%d truco</item>
+        <item quantity="many">%d trucos</item>
+        <item quantity="other">%d trucos</item>
+    </plurals>
+
+    <plurals name="ingame_cheats_available_count">
+        <item quantity="one">%d truco</item>
+        <item quantity="many">%d trucos</item>
+        <item quantity="other">%d trucos</item>
+    </plurals>
+    <string name="ingame_cheats_available_enabled">%1$d/%2$d activados</string>
+    <string name="ingame_cheats_available_empty_search">Ningún truco coincide</string>
+    <string name="ingame_cheats_available_empty">No hay trucos disponibles</string>
+    <string name="ingame_cheats_available_search_placeholder">Buscar trucos...</string>
+    <string name="ingame_cheats_available_search_clear">Borrar</string>
+
+    <string name="ingame_cheats_discover_ram_hint">Este núcleo no expone la RAM del sistema</string>
+    <string name="ingame_cheats_discover_snapshot_title">Instantánea</string>
+    <string name="ingame_cheats_discover_snapshot_subtitle">Capturar el estado actual de la RAM</string>
+    <string name="ingame_cheats_discover_snapshot_hint">Toma una instantánea para empezar</string>
+    <string name="ingame_cheats_discover_changed_title">Cambiados</string>
+    <string name="ingame_cheats_discover_changed_subtitle">Encontrar valores que cambiaron desde la instantánea</string>
+    <string name="ingame_cheats_discover_same_title">Iguales</string>
+    <string name="ingame_cheats_discover_same_subtitle">Encontrar valores que permanecieron iguales</string>
+    <string name="ingame_cheats_discover_view_results_title">Ver resultados</string>
+    <plurals name="ingame_cheats_discover_view_results_subtitle">
+        <item quantity="one">%d entrada de la última búsqueda</item>
+        <item quantity="many">%d entradas de la última búsqueda</item>
+        <item quantity="other">%d entradas de la última búsqueda</item>
+    </plurals>
+    <plurals name="ingame_cheats_discover_actions_candidates">
+        <item quantity="one">%d candidato</item>
+        <item quantity="many">%d candidatos</item>
+        <item quantity="other">%d candidatos</item>
+    </plurals>
+    <string name="ingame_cheats_discover_hint_narrow">Acota los resultados o consulta el estado actual</string>
+    <string name="ingame_cheats_discover_hint_pick">Elige una acción para comparar</string>
+    <string name="ingame_cheats_discover_waiting_message">Juega un poco más y acota tus resultados para continuar</string>
+    <plurals name="ingame_cheats_discover_waiting_candidates">
+        <item quantity="one">%d candidato</item>
+        <item quantity="many">%d candidatos</item>
+        <item quantity="other">%d candidatos</item>
+    </plurals>
+    <string name="ingame_cheats_discover_filter_title">Filtrar por valor</string>
+    <plurals name="ingame_cheats_discover_results_candidates">
+        <item quantity="one">%d candidato</item>
+        <item quantity="many">%d candidatos</item>
+        <item quantity="other">%d candidatos</item>
+    </plurals>
+    <string name="ingame_cheats_discover_results_hint">Juega para comparar de nuevo</string>
+    <string name="ingame_cheats_discover_results_empty">No se encontraron coincidencias</string>
+    <string name="ingame_cheats_discover_result_saved">Guardado como %1$s</string>
+    <string name="ingame_cheats_discover_result_value">Valor %1$s</string>
+    <string name="ingame_cheats_discover_result_value_previous">Valor %1$s (antes %2$s)</string>
+
+    <string name="ingame_cheats_dialog_search_title">Buscar trucos</string>
+    <string name="ingame_cheats_dialog_search_placeholder">Escribe el nombre del truco...</string>
+    <string name="ingame_cheats_dialog_search_clear">Borrar</string>
+    <string name="ingame_cheats_dialog_search_cancel">Cancelar</string>
+    <string name="ingame_cheats_dialog_search_confirm">Buscar</string>
+    <string name="ingame_cheats_dialog_create_title">Crear truco</string>
+    <string name="ingame_cheats_dialog_create_confirm">Crear</string>
+    <string name="ingame_cheats_dialog_edit_title">Editar truco</string>
+    <string name="ingame_cheats_dialog_edit_confirm">Guardar</string>
+    <string name="ingame_cheats_dialog_address">Dirección: 0x%1$s</string>
+    <string name="ingame_cheats_dialog_name_label">Nombre del truco</string>
+    <string name="ingame_cheats_dialog_value_label">Valor (%1$d-%2$d)</string>
+    <string name="ingame_cheats_dialog_value_error">Escribe un valor entre %1$d y %2$d</string>
+    <string name="ingame_cheats_dialog_delete_row">Eliminar truco</string>
+    <string name="ingame_cheats_dialog_delete_title">Eliminar truco</string>
+    <string name="ingame_cheats_dialog_delete_message">¿Seguro que quieres eliminar \"%1$s\"?</string>
+    <string name="ingame_cheats_dialog_delete_confirm">Eliminar</string>
+    <string name="ingame_cheats_dialog_cancel">Cancelar</string>
+
+    <string name="ingame_cheats_available_header_recent">RECIENTES</string>
+    <string name="ingame_cheats_available_header_custom">PERSONALIZADOS</string>
+    <string name="ingame_cheats_available_header_available">DISPONIBLES</string>
+
+    <string name="ingame_libretro_rom_not_found">Archivo del juego no encontrado</string>
+    <string name="ingame_libretro_rom_not_readable">No se puede acceder al archivo del juego</string>
+
+    <string name="ingame_libretro_core_error_load_library">No se pudo cargar el núcleo del emulador</string>
+    <string name="ingame_libretro_core_error_load_game">No se pudo cargar el archivo del juego</string>
+    <string name="ingame_libretro_core_error_gl_incompatible">Los gráficos del dispositivo no son compatibles</string>
+    <string name="ingame_libretro_core_error_serialization">El archivo de guardado está dañado</string>
+    <string name="ingame_libretro_core_error_cheat">Error del sistema de trucos</string>
+    <string name="ingame_libretro_core_error_unknown">Ocurrió un error inesperado</string>
+
+    <string name="ingame_libretro_sram_load_failed_fresh_save">No se pudo cargar la partida guardada; se usó una nueva</string>
+    <string name="ingame_libretro_casual_save_in_hardcore">Continuando una partida casual en hardcore</string>
+
+    <string name="ingame_libretro_disc_swap_inserted">%1$s insertado</string>
+    <string name="ingame_libretro_disc_swap_fallback_name">Disco %1$d</string>
+
+    <string name="ingame_libretro_speedrun_default_category_name">Práctica</string>
+    <string name="ingame_libretro_speedrun_default_segment_name">Segmento %1$d</string>
+    <string name="ingame_libretro_speedrun_picker_title">Categoría de speedrun</string>
+
+    <string name="ingame_libretro_quicktimeline_load_unsupported_core">Estados guardados no disponibles para este núcleo</string>
+    <string name="ingame_libretro_quicktimeline_load_success">Estado cargado</string>
+    <string name="ingame_libretro_quicktimeline_load_failure">Error al cargar el estado</string>
+
+    <string name="ingame_libretro_closing_overlay_validating">Verificando el contenido de la partida guardada</string>
+
+    <string name="ingame_libretro_controller_port_device_fallback">Dispositivo %1$d</string>
+
+    <string name="ingame_libretro_menu_quicksave_unsupported_core">Estados guardados no disponibles para este núcleo</string>
+    <string name="ingame_libretro_menu_quicksave_success">Estado guardado</string>
+    <string name="ingame_libretro_menu_quicksave_failure">Error al guardar el estado</string>
+    <string name="ingame_libretro_menu_quickload_unsupported_core">Estados guardados no disponibles para este núcleo</string>
+    <string name="ingame_libretro_menu_quickload_success">Estado cargado</string>
+    <string name="ingame_libretro_menu_quickload_failure">Error al cargar el estado</string>
+
+    <string name="ingame_libretro_state_save_unsupported_core">Estados guardados no disponibles para este núcleo</string>
+    <string name="ingame_libretro_state_saved_to_auto">Estado guardado en Auto</string>
+    <string name="ingame_libretro_state_saved_to_slot">Estado guardado en la ranura %1$d</string>
+    <string name="ingame_libretro_state_save_failure">Error al guardar el estado</string>
+    <string name="ingame_libretro_state_save_serialize_failed">Error al serializar el estado</string>
+
+    <string name="ingame_libretro_state_load_unsupported_core">Estados guardados no disponibles para este núcleo</string>
+    <string name="ingame_libretro_state_loaded_from_auto">Estado cargado desde Auto</string>
+    <string name="ingame_libretro_state_loaded_from_slot">Estado cargado desde la ranura %1$d</string>
+    <string name="ingame_libretro_state_load_failure">Error al cargar el estado</string>
+
+    <string name="ingame_libretro_resume_success">Reanudado</string>
+    <string name="ingame_libretro_resume_restore_failure">Error al restaurar el estado</string>
+    <string name="ingame_libretro_auto_restore_success">Estado restaurado</string>
+    <string name="ingame_libretro_auto_restore_failure">Error al restaurar el estado</string>
+    <string name="ingame_libretro_auto_restore_response_unsupported_core">Estados guardados no disponibles para este núcleo</string>
+    <string name="ingame_libretro_auto_restore_response_success">Estado restaurado</string>
+    <string name="ingame_libretro_auto_restore_response_failure">Error al restaurar el estado</string>
+
+    <string name="ingame_libretro_hud_fps_format">%1$s fps</string>
+    <string name="ingame_libretro_hud_duration_hm">%1$d:%2$02d</string>
+    <string name="ingame_libretro_hud_duration_minutes">%1$dm</string>
+    <string name="ingame_libretro_hud_last_save_just_now">guardado justo ahora</string>
+    <string name="ingame_libretro_hud_last_save_minutes_ago">guardado hace %1$dm</string>
+    <string name="ingame_libretro_hud_last_save_hours_ago">guardado hace %1$dh</string>
+
+    <string name="ingame_libretro_quickaction_save_hardcore_blocked">Los estados guardados están desactivados en hardcore</string>
+    <string name="ingame_libretro_quickaction_save_unsupported_core">Estados guardados no disponibles para este núcleo</string>
+    <string name="ingame_libretro_quickaction_save_success">Estado guardado</string>
+    <string name="ingame_libretro_quickaction_save_failure">Error al guardar</string>
+    <string name="ingame_libretro_quickaction_load_hardcore_blocked">Los estados guardados están desactivados en hardcore</string>
+    <string name="ingame_libretro_quickaction_load_unsupported_core">Estados guardados no disponibles para este núcleo</string>
+    <string name="ingame_libretro_quickaction_load_success">Estado cargado</string>
+    <string name="ingame_libretro_quickaction_load_failure">Error al cargar el estado</string>
+    <string name="ingame_libretro_quickaction_screenshot_capture_failed">Error al capturar</string>
+    <string name="ingame_libretro_quickaction_screenshot_success">Captura de pantalla guardada</string>
+    <string name="ingame_libretro_quickaction_screenshot_failure">Error en la captura de pantalla</string>
+
+    <string name="ingame_netplay_quality_row_peer_guest">Invitado: %1$s</string>
+    <string name="ingame_netplay_quality_row_peer_host">Anfitrión: %1$s</string>
+    <string name="ingame_netplay_quality_row_ping_known">%1$dms  %2$s</string>
+    <string name="ingame_netplay_quality_row_ping_unknown">--  %1$s</string>
+
+    <string name="ingame_settings_controller_type_default_fallback">Predeterminado</string>
+
+    <string name="ingame_netplay_hud_player1_header">J1</string>
+    <string name="ingame_netplay_hud_player2_header">J2</string>
+
+    <string name="ingame_touch_editor_dpad_widget_label">CRUZ</string>
+    <string name="ingame_touch_editor_left_stick_widget_label">I</string>
+    <string name="ingame_touch_editor_right_stick_widget_label">D</string>
+    <string name="ingame_touch_editor_toolbar_save">Guardar</string>
+    <string name="ingame_touch_editor_toolbar_reset">Restablecer</string>
+    <string name="ingame_touch_editor_toolbar_cancel">Cancelar</string>
+    <string name="ingame_touch_editor_toolbar_rotate">Girar</string>
+
+    <string name="ingame_recovery_display_playing_placeholder">Jugando...</string>
+    <string name="ingame_recovery_display_status_in_game">En el juego</string>
+    <string name="ingame_recovery_display_playing_fallback">Jugando...</string>
+
+    <string name="ingame_touch_nes_sys_select">Select</string>
+    <string name="ingame_touch_nes_sys_start">Start</string>
+
+    <string name="ingame_touch_gb_sys_select">Select</string>
+    <string name="ingame_touch_gb_sys_start">Start</string>
+
+    <string name="ingame_touch_gba_sys_select">Select</string>
+    <string name="ingame_touch_gba_sys_start">Start</string>
+
+    <string name="ingame_touch_sms_sys_start">Start</string>
+
+    <string name="ingame_touch_gameandwatch_sys_select">Select</string>
+    <string name="ingame_touch_gameandwatch_sys_start">Start</string>
+
+    <string name="ingame_touch_ngp_sys_start">Option</string>
+
+    <string name="ingame_touch_wonderswan_sys_start">Start</string>
+
+    <string name="ingame_touch_coleco_sys_select">Select</string>
+    <string name="ingame_touch_coleco_sys_start">Start</string>
+
+    <string name="ingame_touch_pico8_sys_select">Select</string>
+    <string name="ingame_touch_pico8_sys_start">Start</string>
+
+    <string name="ingame_touch_c64_sys_select">Select</string>
+    <string name="ingame_touch_c64_sys_start">Start</string>
+
+    <string name="ingame_touch_lynx_shoulder_l">Opt 1</string>
+    <string name="ingame_touch_lynx_shoulder_r">Opt 2</string>
+    <string name="ingame_touch_lynx_sys_start">Pause</string>
+
+    <string name="ingame_touch_snes_sys_select">Select</string>
+    <string name="ingame_touch_snes_sys_start">Start</string>
+
+    <string name="ingame_touch_pcengine_sys_select">Select</string>
+    <string name="ingame_touch_pcengine_sys_start">Run</string>
+
+    <string name="ingame_touch_pcfx_shoulder_l2">Mode 1</string>
+    <string name="ingame_touch_pcfx_shoulder_r2">Mode 2</string>
+    <string name="ingame_touch_pcfx_sys_select">Select</string>
+    <string name="ingame_touch_pcfx_sys_start">Run</string>
+
+    <string name="ingame_touch_saturn_sys_select">Mode</string>
+    <string name="ingame_touch_saturn_sys_start">Start</string>
+
+    <string name="ingame_touch_vb_sys_select">Select</string>
+    <string name="ingame_touch_vb_sys_start">Start</string>
+
+    <string name="ingame_touch_psx_sys_select">Select</string>
+    <string name="ingame_touch_psx_sys_start">Start</string>
+
+    <string name="ingame_touch_ps2_sys_select">Select</string>
+    <string name="ingame_touch_ps2_sys_start">Start</string>
+
+    <string name="ingame_touch_psp_sys_select">Select</string>
+    <string name="ingame_touch_psp_sys_start">Start</string>
+
+    <string name="ingame_touch_vita_sys_select">Select</string>
+    <string name="ingame_touch_vita_sys_start">Start</string>
+
+    <string name="ingame_touch_dreamcast_sys_start">Start</string>
+
+    <string name="ingame_touch_n64_sys_start">Start</string>
+
+    <string name="ingame_touch_gamecube_sys_start">Start</string>
+
+    <string name="ingame_touch_nds_sys_select">Select</string>
+    <string name="ingame_touch_nds_sys_start">Start</string>
+
+    <string name="ingame_touch_arcade_sys_select">Coin</string>
+    <string name="ingame_touch_arcade_sys_start">Start</string>
+
+    <string name="ingame_touch_neogeo_sys_select">Select</string>
+    <string name="ingame_touch_neogeo_sys_start">Start</string>
+
+    <string name="ingame_touch_genesis_sys_select">Mode</string>
+    <string name="ingame_touch_genesis_sys_start">Start</string>
+
+    <string name="ingame_touch_intellivision_face_y">Arriba</string>
+    <string name="ingame_touch_intellivision_face_b">Izquierda</string>
+    <string name="ingame_touch_intellivision_face_a">Derecha</string>
+    <string name="ingame_touch_intellivision_face_x">Últ. tecla</string>
+    <string name="ingame_touch_intellivision_shoulder_l2">Borrar</string>
+    <string name="ingame_touch_intellivision_shoulder_r2">Intro</string>
+    <string name="ingame_touch_intellivision_sys_select">Cambiar</string>
+    <string name="ingame_touch_intellivision_sys_start">Pause</string>
+
+    <string name="ingame_touch_atari2600_face_b">Disparo</string>
+    <string name="ingame_touch_atari2600_sys_select">Select</string>
+    <string name="ingame_touch_atari2600_sys_start">Reset</string>
+
+    <string name="ingame_touch_atari5200_shoulder_l">Pause</string>
+    <string name="ingame_touch_atari5200_shoulder_r">Reset</string>
+    <string name="ingame_touch_atari5200_sys_select">Select</string>
+    <string name="ingame_touch_atari5200_sys_start">Start</string>
+
+    <string name="ingame_touch_atari7800_sys_select">Select</string>
+    <string name="ingame_touch_atari7800_sys_start">Reset</string>
+
+    <string name="ingame_touch_jaguar_sys_select">Pause</string>
+    <string name="ingame_touch_jaguar_sys_start">Option</string>
+
+    <string name="ingame_touch_threedo_sys_select">Stop</string>
+    <string name="ingame_touch_threedo_sys_start">Play/Pause</string>
+
+    <string name="ingame_touch_generic_sys_select">Select</string>
+    <string name="ingame_touch_generic_sys_start">Start</string>
+</resources>

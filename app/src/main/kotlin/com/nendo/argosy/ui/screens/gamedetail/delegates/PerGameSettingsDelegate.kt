@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.screens.gamedetail.delegates
 
+import android.content.Context
+import com.nendo.argosy.R
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.data.emulator.BuiltinCoreResolver
 import com.nendo.argosy.data.emulator.EmulatorDetector
@@ -24,6 +26,7 @@ import com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase
 import com.nendo.argosy.ui.input.InputDispatcher.Companion.computeWrappedIndex
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.util.DisplayAffinityHelper
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -82,15 +85,17 @@ data class PerGameSettingsState(
     val memcardPickerCards: List<MemcardInfo>
         get() = listOf(
             MemcardInfo(
-                name = "Default" + (inheritedMemcardName?.let { " ($it)" } ?: ""),
+                name = inheritedMemcardName ?: "",
                 path = "",
                 gameFolderCount = 0,
-                lastModified = 0L
+                lastModified = 0L,
+                isDefault = true
             )
         ) + memcardCards
 }
 
 class PerGameSettingsDelegate @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val emulatorConfigDao: EmulatorConfigDao,
     private val emulatorDetector: EmulatorDetector,
     private val emulatorResolver: EmulatorResolver,
@@ -286,7 +291,8 @@ class PerGameSettingsDelegate @Inject constructor(
                     romPath = game.localPath
                 )
                 when (val display = retroArchPathResolver.displaySavePath(request)) {
-                    is RetroArchPathResolver.DisplayPath.ContentDirectory -> "(ROM directory)"
+                    is RetroArchPathResolver.DisplayPath.ContentDirectory ->
+                        context.getString(R.string.gamedetail_per_game_save_path_content_dir)
                     is RetroArchPathResolver.DisplayPath.Resolved -> display.path
                     RetroArchPathResolver.DisplayPath.Unknown -> null
                 }

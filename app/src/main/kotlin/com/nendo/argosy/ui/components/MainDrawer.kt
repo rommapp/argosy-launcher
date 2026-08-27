@@ -48,6 +48,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -150,12 +151,15 @@ fun MainDrawer(
     if (isOpen) {
         val focusedFriend = drawerState.friends.getOrNull(drawerState.friendsFocusIndex)
         val focusedIsJoinable = focusedFriend?.currentGame?.netplaySession?.joinable == true
+        val favoriteHint = stringResource(R.string.ui_drawer_footer_favorite)
+        val optionsHint = stringResource(R.string.ui_drawer_footer_options)
+        val joinHint = stringResource(R.string.ui_drawer_footer_join)
         FooterHints(
             hints = if (drawerState.currentTab == DrawerTab.FRIENDS) {
                 buildList {
-                    add(InputButton.Y to "Favorite")
-                    add(InputButton.X to "Options")
-                    if (focusedIsJoinable) add(InputButton.A to "Join")
+                    add(InputButton.Y to favoriteHint)
+                    add(InputButton.X to optionsHint)
+                    if (focusedIsJoinable) add(InputButton.A to joinHint)
                 }
             } else {
                 emptyList()
@@ -240,12 +244,12 @@ private fun TabHeader(currentTab: DrawerTab, onSelectTab: (DrawerTab) -> Unit) {
             tint = LocalArgosyTheme.current.textMute
         )
         TabIndicator(
-            label = "Nav",
+            label = stringResource(R.string.ui_drawer_tab_navigation),
             isSelected = currentTab == DrawerTab.NAVIGATION,
             onClick = { onSelectTab(DrawerTab.NAVIGATION) }
         )
         TabIndicator(
-            label = "Friends",
+            label = stringResource(R.string.ui_drawer_tab_friends),
             isSelected = currentTab == DrawerTab.FRIENDS,
             onClick = { onSelectTab(DrawerTab.FRIENDS) }
         )
@@ -382,7 +386,7 @@ private fun FriendsContent(
                 )
                 Spacer(modifier = Modifier.height(Dimens.radiusLg))
                 Text(
-                    text = "No friends yet",
+                    text = stringResource(R.string.ui_drawer_friends_empty),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -405,7 +409,9 @@ private fun FriendsContent(
         ) {
             if (onlineFriends.isNotEmpty()) {
                 item {
-                    SectionLabel("ONLINE (${onlineFriends.size})")
+                    SectionLabel(
+                        stringResource(R.string.ui_drawer_friends_online, onlineFriends.size)
+                    )
                 }
                 itemsIndexed(onlineFriends, key = { _, f -> f.id }) { index, friend ->
                     FriendItem(
@@ -418,7 +424,9 @@ private fun FriendsContent(
 
             if (offlineFriends.isNotEmpty()) {
                 item {
-                    SectionLabel("OFFLINE (${offlineFriends.size})")
+                    SectionLabel(
+                        stringResource(R.string.ui_drawer_friends_offline, offlineFriends.size)
+                    )
                 }
                 itemsIndexed(offlineFriends, key = { _, f -> f.id }) { index, friend ->
                     val globalIndex = onlineFriends.size + index
@@ -541,12 +549,18 @@ private fun FriendItem(
                     Text(
                         text = if (friend.currentGame != null) {
                             if (friend.currentGame.netplaySession != null) {
-                                "Hosting ${friend.currentGame.title}"
+                                stringResource(
+                                    R.string.ui_drawer_friend_hosting,
+                                    friend.currentGame.title
+                                )
                             } else {
-                                "Playing ${friend.currentGame.title}"
+                                stringResource(
+                                    R.string.ui_drawer_friend_playing,
+                                    friend.currentGame.title
+                                )
                             }
                         } else {
-                            "In Game"
+                            stringResource(R.string.ui_drawer_friend_in_game)
                         },
                         style = MaterialTheme.typography.labelSmall,
                         color = Color(0xFF22C55E),
@@ -560,7 +574,7 @@ private fun FriendItem(
         if (friend.isFavorite) {
             Icon(
                 imageVector = Icons.Filled.Star,
-                contentDescription = "Favorite",
+                contentDescription = stringResource(R.string.ui_drawer_friend_favorite),
                 modifier = Modifier.size(14.dp),
                 tint = Color(0xFFFBBF24)
             )
@@ -611,14 +625,14 @@ private fun DrawerStatusBar(
         }
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = rommUsername ?: "No account",
+                text = rommUsername ?: stringResource(R.string.ui_drawer_account_none),
                 style = MaterialTheme.typography.labelLarge,
                 color = if (isFocused) theme.focusAccent else MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = "Account",
+                text = stringResource(R.string.ui_drawer_account_caption),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
                 maxLines = 1
@@ -677,7 +691,11 @@ private fun DrawerDeviceStatus(isRommConnected: Boolean) {
                 if (isRommConnected) R.drawable.ic_romm_connected
                 else R.drawable.ic_romm_disconnected
             ),
-            contentDescription = if (isRommConnected) "RomM Connected" else "RomM Offline",
+            contentDescription = if (isRommConnected) {
+                stringResource(R.string.ui_drawer_server_connected)
+            } else {
+                stringResource(R.string.ui_drawer_server_offline)
+            },
             tint = if (isRommConnected) Color.Unspecified else mutedColor,
             modifier = Modifier.size(Dimens.iconMd)
         )
@@ -731,14 +749,15 @@ private fun DrawerMenuItem(
                 .background(MaterialTheme.colorScheme.primary)
         )
         Spacer(modifier = Modifier.width(if (isFocused) (Dimens.spacingLg - Dimens.spacingXs) else Dimens.spacingLg))
+        val label = stringResource(item.labelRes)
         Icon(
             imageVector = icon,
-            contentDescription = item.label,
+            contentDescription = label,
             tint = contentColor
         )
         Spacer(modifier = Modifier.width(Dimens.spacingMd))
         Text(
-            text = item.label,
+            text = label,
             style = MaterialTheme.typography.titleMedium,
             color = contentColor,
             modifier = Modifier.weight(1f)

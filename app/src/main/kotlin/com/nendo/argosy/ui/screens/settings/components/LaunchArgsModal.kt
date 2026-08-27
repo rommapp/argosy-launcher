@@ -28,11 +28,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.nendo.argosy.R
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.data.emulator.LaunchMethod
 import com.nendo.argosy.data.emulator.RomBindingFormat
@@ -66,21 +68,20 @@ fun LaunchArgsModal(
 
     val hasOverride = state.override?.hasAnyOverride() == true
     Modal(
-        title = "Launch Args  -  ${state.platformName} / ${state.emulatorName}",
+        title = stringResource(R.string.settings_launch_args_title, state.platformName, state.emulatorName),
         baseWidth = Dimens.modalWidthXl,
         onDismiss = onDismiss,
         footerHints = buildList {
-            add(com.nendo.argosy.ui.components.InputButton.A to "Change")
-            add(com.nendo.argosy.ui.components.InputButton.Y to "Reset Field")
+            add(com.nendo.argosy.ui.components.InputButton.A to stringResource(R.string.settings_launch_args_hint_change))
+            add(com.nendo.argosy.ui.components.InputButton.Y to stringResource(R.string.settings_launch_args_hint_reset_field))
             if (hasOverride) {
-                add(com.nendo.argosy.ui.components.InputButton.X to "Reset All")
+                add(com.nendo.argosy.ui.components.InputButton.X to stringResource(R.string.settings_launch_args_hint_reset_all))
             }
-            add(com.nendo.argosy.ui.components.InputButton.B to "Back")
+            add(com.nendo.argosy.ui.components.InputButton.B to stringResource(R.string.settings_launch_args_hint_back))
         }
     ) {
         Text(
-            text = "Override how Argosy launches this emulator on this platform. Resume-mode " +
-                "flags are fixed regardless of overrides.",
+            text = stringResource(R.string.settings_launch_args_intro),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = Dimens.spacingMd)
@@ -98,36 +99,33 @@ fun LaunchArgsModal(
                     val focused = index == state.focusIndex
                     when (row) {
                         is LaunchArgsRow.DataBinding -> LaunchArgsOptionRow(
-                            label = "Data URI",
+                            label = stringResource(R.string.settings_launch_args_data_uri_label),
                             value = bindingLabel(state.override?.dataBinding, state.defaultDataBinding),
-                            subtitle = "Sets Intent.data (`-d` in shell). Used by ACTION_VIEW emulators " +
-                                "that read the ROM from the intent's data URI.",
+                            subtitle = stringResource(R.string.settings_launch_args_data_uri_subtitle),
                             isOverridden = state.override?.dataBinding != null,
                             isFocused = focused,
                             onClick = onCycleDataBinding
                         )
                         is LaunchArgsRow.ExtraBinding -> LaunchArgsOptionRow(
-                            label = "Extras",
+                            label = stringResource(R.string.settings_launch_args_extras_label),
                             value = bindingLabel(state.override?.extraBinding, state.defaultExtraBinding),
-                            subtitle = "Rewrites every path-typed extra (e.g. bootPath, ROM, AutoStartFile) " +
-                                "to this format. `None` removes them.",
+                            subtitle = stringResource(R.string.settings_launch_args_extras_subtitle),
                             isOverridden = state.override?.extraBinding != null,
                             isFocused = focused,
                             onClick = onCycleExtraBinding
                         )
                         is LaunchArgsRow.ClipDataBinding -> LaunchArgsOptionRow(
-                            label = "ClipData URI",
+                            label = stringResource(R.string.settings_launch_args_clip_data_uri_label),
                             value = bindingLabel(state.override?.clipDataBinding, state.defaultClipDataBinding),
-                            subtitle = "Attaches the ROM URI to Intent.clipData. Required for " +
-                                "FLAG_GRANT_READ_URI_PERMISSION to actually delegate access to the receiver.",
+                            subtitle = stringResource(R.string.settings_launch_args_clip_data_uri_subtitle),
                             isOverridden = state.override?.clipDataBinding != null,
                             isFocused = focused,
                             onClick = onCycleClipDataBinding
                         )
                         is LaunchArgsRow.LockedBinding -> LaunchArgsOptionRow(
-                            label = row.label,
+                            label = stringResource(row.labelRes),
                             value = row.value,
-                            subtitle = "Fixed for this emulator -- not a file path.",
+                            subtitle = stringResource(R.string.settings_launch_args_locked_binding_subtitle),
                             isOverridden = false,
                             isFocused = focused,
                             onClick = { }
@@ -137,8 +135,12 @@ fun LaunchArgsModal(
                             val isOn = (mask and row.bit) != 0
                             val isOverridden = state.override?.intentFlagsMask != null
                             LaunchArgsOptionRow(
-                                label = row.label,
-                                value = if (isOn) "On" else "Off",
+                                label = stringResource(row.labelRes),
+                                value = if (isOn) {
+                                    stringResource(R.string.settings_launch_args_flag_on)
+                                } else {
+                                    stringResource(R.string.settings_launch_args_flag_off)
+                                },
                                 subtitle = flagSubtext(row.bit),
                                 isOverridden = isOverridden,
                                 isFocused = focused,
@@ -146,19 +148,21 @@ fun LaunchArgsModal(
                             )
                         }
                         is LaunchArgsRow.MimeType -> LaunchArgsOptionRow(
-                            label = "MIME type",
-                            value = state.override?.mimeType ?: "Default (${state.defaultMimeType ?: "*/*"})",
-                            subtitle = "MIME type sent with the ROM URI. Most emulators ignore this and " +
-                                "filter by extension.",
+                            label = stringResource(R.string.settings_launch_args_mime_type_label),
+                            value = state.override?.mimeType ?: stringResource(
+                                R.string.settings_launch_args_mime_type_default,
+                                state.defaultMimeType ?: "*/*"
+                            ),
+                            subtitle = stringResource(R.string.settings_launch_args_mime_type_subtitle),
                             isOverridden = state.override?.mimeType != null,
                             isFocused = focused,
                             onClick = onCycleMimeType
                         )
                         is LaunchArgsRow.CustomExtras -> LaunchArgsOptionRow(
-                            label = "Custom extras",
-                            value = state.override?.customExtras?.takeIf { it.isNotBlank() } ?: "None",
-                            subtitle = "Extra intent values appended on launch. Format: " +
-                                "`-e KEY VALUE` for strings, `--ez KEY true` for booleans. Space-separated.",
+                            label = stringResource(R.string.settings_launch_args_custom_extras_label),
+                            value = state.override?.customExtras?.takeIf { it.isNotBlank() }
+                                ?: stringResource(R.string.settings_launch_args_custom_extras_none),
+                            subtitle = stringResource(R.string.settings_launch_args_custom_extras_subtitle),
                             isOverridden = !state.override?.customExtras.isNullOrBlank(),
                             isFocused = focused,
                             onClick = onOpenCustomExtras
@@ -216,17 +220,16 @@ private fun CustomExtrasModal(
     }
 
     NestedModal(
-        title = "Custom Extras",
+        title = stringResource(R.string.settings_launch_args_custom_extras_title),
         onDismiss = onDismiss,
         footerHints = listOf(
-            InputButton.A to "Save",
-            InputButton.B to "Cancel"
+            InputButton.A to stringResource(R.string.settings_launch_args_custom_extras_save_hint),
+            InputButton.B to stringResource(R.string.settings_launch_args_custom_extras_cancel_hint)
         ),
         content = {
             Column {
                 Text(
-                    text = "Extra intent values, space-separated. Use `-e KEY VALUE` for a string " +
-                        "or `--ez KEY true` for a boolean.",
+                    text = stringResource(R.string.settings_launch_args_custom_extras_help),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -237,7 +240,7 @@ private fun CustomExtrasModal(
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = {
                         Text(
-                            text = "-e KEY value",
+                            text = stringResource(R.string.settings_launch_args_custom_extras_placeholder),
                             style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
                         )
@@ -304,7 +307,7 @@ private fun LaunchArgsOptionRow(
                 )
                 if (isOverridden) {
                     Text(
-                        text = "(custom)",
+                        text = stringResource(R.string.settings_launch_args_custom_badge),
                         style = MaterialTheme.typography.labelSmall,
                         color = if (isFocused) focusedContent else MaterialTheme.colorScheme.primary
                     )
@@ -332,22 +335,24 @@ private fun methodLabel(override: String?, defaultName: String): String = when (
     else -> "Default"
 }
 
+@Composable
 private fun bindingLabel(override: String?, defaultLabel: String): String = when (override) {
-    null -> "Default ($defaultLabel)"
-    RomBindingFormat.NONE.name -> "None"
-    RomBindingFormat.ABSOLUTE_PATH.name -> "Absolute path"
-    RomBindingFormat.FILE_PROVIDER.name -> "FileProvider URI"
-    RomBindingFormat.DOCUMENT_URI.name -> "Document URI (SAF)"
-    else -> "Default ($defaultLabel)"
+    null -> stringResource(R.string.settings_launch_args_binding_default, defaultLabel)
+    RomBindingFormat.NONE.name -> stringResource(R.string.settings_launch_args_binding_none)
+    RomBindingFormat.ABSOLUTE_PATH.name -> stringResource(R.string.settings_launch_args_binding_absolute_path)
+    RomBindingFormat.FILE_PROVIDER.name -> stringResource(R.string.settings_launch_args_binding_file_provider)
+    RomBindingFormat.DOCUMENT_URI.name -> stringResource(R.string.settings_launch_args_binding_document_uri)
+    else -> stringResource(R.string.settings_launch_args_binding_default, defaultLabel)
 }
 
+@Composable
 private fun flagSubtext(bit: Int): String = when (bit) {
-    Intent.FLAG_ACTIVITY_NEW_TASK -> "Launches in a separate Android task. Required by almost every emulator."
-    Intent.FLAG_ACTIVITY_CLEAR_TASK -> "Clears any existing instance of the emulator before launching."
-    Intent.FLAG_ACTIVITY_NO_HISTORY -> "Hides the emulator from the recent apps list."
-    Intent.FLAG_ACTIVITY_SINGLE_TOP -> "Reuses an existing emulator instance if it is at the top of its task."
-    Intent.FLAG_GRANT_READ_URI_PERMISSION -> "Delegates read access to the ROM URI. Required when passing content:// URIs."
-    Intent.FLAG_ACTIVITY_CLEAR_TOP -> "Clears activities above the target when reusing a task."
+    Intent.FLAG_ACTIVITY_NEW_TASK -> stringResource(R.string.settings_launch_args_flag_new_task_subtitle)
+    Intent.FLAG_ACTIVITY_CLEAR_TASK -> stringResource(R.string.settings_launch_args_flag_clear_task_subtitle)
+    Intent.FLAG_ACTIVITY_NO_HISTORY -> stringResource(R.string.settings_launch_args_flag_no_history_subtitle)
+    Intent.FLAG_ACTIVITY_SINGLE_TOP -> stringResource(R.string.settings_launch_args_flag_single_top_subtitle)
+    Intent.FLAG_GRANT_READ_URI_PERMISSION -> stringResource(R.string.settings_launch_args_flag_grant_uri_subtitle)
+    Intent.FLAG_ACTIVITY_CLEAR_TOP -> stringResource(R.string.settings_launch_args_flag_clear_top_subtitle)
     else -> ""
 }
 

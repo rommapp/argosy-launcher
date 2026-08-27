@@ -27,9 +27,11 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.QrCodeWithOverlay
@@ -41,9 +43,10 @@ import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 
+@Composable
 private fun authMethodLabel(method: RomMAuthMethod): String = when (method) {
-    RomMAuthMethod.DEVICE -> "Device Pairing"
-    RomMAuthMethod.PAIRING_CODE -> "Pairing Code"
+    RomMAuthMethod.DEVICE -> stringResource(R.string.settings_romm_config_auth_method_device)
+    RomMAuthMethod.PAIRING_CODE -> stringResource(R.string.settings_romm_config_auth_method_pairing_code)
 }
 
 private fun cycleAuthMethod(current: RomMAuthMethod, direction: Int): RomMAuthMethod {
@@ -100,8 +103,8 @@ fun RomMConfigForm(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         OutlinedTextField(
             value = uiState.server.rommConfigUrl,
             onValueChange = { viewModel.setRommConfigUrl(it) },
-            label = { Text("Server URL") },
-            placeholder = { Text("https://romm.example.com") },
+            label = { Text(stringResource(R.string.settings_romm_config_server_url_label)) },
+            placeholder = { Text(stringResource(R.string.settings_romm_config_server_url_placeholder)) },
             singleLine = true,
             shape = inputShape,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
@@ -130,19 +133,19 @@ fun RomMConfigForm(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         )
 
         CyclePreference(
-            title = "Auth Method",
+            title = stringResource(R.string.settings_romm_config_auth_method_title),
             value = authMethodLabel(authMethod),
             isFocused = uiState.focusedIndex == 1,
             onClick = { viewModel.setRommAuthMethod(cycleAuthMethod(authMethod, 1)) },
             onPrev = { viewModel.setRommAuthMethod(cycleAuthMethod(authMethod, -1)) },
-            options = remember { RomMAuthMethod.entries.map { authMethodLabel(it) } },
+            options = RomMAuthMethod.entries.map { authMethodLabel(it) },
             onSelect = { viewModel.setRommAuthMethod(RomMAuthMethod.entries[it]) },
             pickerRequestToken = if (uiState.enumPickerKey == ROMM_AUTH_METHOD_PICKER_KEY) uiState.enumPickerToken else 0
         )
 
         when {
             isDevice -> Text(
-                text = "Pair this device by scanning a QR code with your phone, then approve it in RomM. Requires RomM 5.0 or newer.",
+                text = stringResource(R.string.settings_romm_config_device_instructions),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = Dimens.spacingSm)
@@ -152,7 +155,7 @@ fun RomMConfigForm(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Create an API token in the RomM web UI, then click Pair Device to get a code.",
+                    text = stringResource(R.string.settings_romm_config_pairing_code_instructions),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = Dimens.spacingSm)
@@ -185,12 +188,16 @@ fun RomMConfigForm(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
         ActionPreference(
             title = when {
-                uiState.server.rommConnecting && isDevice -> "Generating code..."
-                uiState.server.rommConnecting -> "Connecting..."
-                isDevice -> "Pair Device"
-                else -> "Connect"
+                uiState.server.rommConnecting && isDevice -> stringResource(R.string.settings_romm_config_connect_generating_title)
+                uiState.server.rommConnecting -> stringResource(R.string.settings_romm_config_connect_connecting_title)
+                isDevice -> stringResource(R.string.settings_romm_config_connect_pair_title)
+                else -> stringResource(R.string.settings_romm_config_connect_title)
             },
-            subtitle = if (isDevice) "Generate a pairing QR code" else "Connect to RomM server",
+            subtitle = if (isDevice) {
+                stringResource(R.string.settings_romm_config_connect_device_subtitle)
+            } else {
+                stringResource(R.string.settings_romm_config_connect_subtitle)
+            },
             isFocused = uiState.focusedIndex == buttonIndex,
             onClick = { viewModel.connectToRomm() }
         )
@@ -198,8 +205,8 @@ fun RomMConfigForm(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
         if (hasCamera && isPairingCode) {
             ActionPreference(
-                title = "Scan QR Code",
-                subtitle = "Scan pairing QR from the RomM web UI",
+                title = stringResource(R.string.settings_romm_config_scan_title),
+                subtitle = stringResource(R.string.settings_romm_config_scan_subtitle),
                 isFocused = uiState.focusedIndex == buttonIndex,
                 onClick = { viewModel.showRommScanner() }
             )
@@ -207,8 +214,8 @@ fun RomMConfigForm(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         }
 
         ActionPreference(
-            title = "Cancel",
-            subtitle = "Return to Server settings",
+            title = stringResource(R.string.settings_romm_config_cancel_title),
+            subtitle = stringResource(R.string.settings_romm_config_cancel_subtitle),
             isFocused = uiState.focusedIndex == buttonIndex,
             onClick = { viewModel.cancelRommConfig() }
         )
@@ -226,11 +233,11 @@ private fun DevicePairingScreen(uiState: SettingsUiState, viewModel: SettingsVie
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) {
         Text(
-            text = "Scan to pair",
+            text = stringResource(R.string.settings_romm_device_pairing_title),
             style = MaterialTheme.typography.titleMedium
         )
         Text(
-            text = "Scan this code with your phone, then approve this device in RomM.",
+            text = stringResource(R.string.settings_romm_device_pairing_subtitle),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -265,8 +272,8 @@ private fun DevicePairingScreen(uiState: SettingsUiState, viewModel: SettingsVie
         Spacer(modifier = Modifier.height(Dimens.spacingSm))
 
         ActionPreference(
-            title = "Cancel",
-            subtitle = "Stop pairing",
+            title = stringResource(R.string.settings_romm_device_pairing_cancel_title),
+            subtitle = stringResource(R.string.settings_romm_device_pairing_cancel_subtitle),
             isFocused = true,
             onClick = { viewModel.cancelRommConfig() }
         )

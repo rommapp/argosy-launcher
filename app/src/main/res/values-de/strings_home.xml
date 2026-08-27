@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_breadcrumb_continue">Zuletzt</string>
+    <string name="home_breadcrumb_recommendations">Tipps</string>
+    <string name="home_breadcrumb_favorites">Favs</string>
+    <string name="home_breadcrumb_continue_watching">Ansehen</string>
+    <string name="home_breadcrumb_next_up">Weiter</string>
+
+    <string name="home_footer_grid_engaged_play">Wiedergabe</string>
+    <string name="home_footer_grid_engaged_pause">Pause</string>
+    <string name="home_footer_grid_engaged_seek">Spulen</string>
+    <string name="home_footer_grid_engaged_fullscreen">Vollbild</string>
+    <string name="home_footer_grid_engaged_back">Zurück zum Raster</string>
+
+    <string name="home_footer_media_notice_choose">Wählen</string>
+
+    <string name="home_footer_media_setup_episode_tick">Ankreuzen</string>
+    <string name="home_footer_media_setup_episode_back">Zurück</string>
+    <string name="home_footer_media_setup_back">Zurück</string>
+
+    <string name="home_footer_tile_picker_tab">Tab</string>
+    <string name="home_footer_tile_picker_jump">Springen</string>
+    <string name="home_footer_tile_picker_search">Suchen</string>
+
+    <string name="home_footer_grid_edit_resize">Größe ändern</string>
+    <string name="home_footer_grid_edit_move">Verschieben</string>
+    <string name="home_footer_grid_edit_place">Platzieren</string>
+    <string name="home_footer_grid_edit_cancel">Abbrechen</string>
+
+    <string name="home_footer_grid_page">Seite</string>
+    <string name="home_footer_grid_finished">Durchgespielt</string>
+    <string name="home_footer_grid_options">Optionen</string>
+
+    <string name="home_footer_media_item">Element</string>
+    <string name="home_footer_media_section">Abschnitt</string>
+    <string name="home_footer_media_row">Zeile</string>
+    <string name="home_footer_media_refresh">Aktualisieren</string>
+    <string name="home_footer_media_resume">Fortsetzen</string>
+    <string name="home_footer_media_play">Wiedergabe</string>
+    <string name="home_footer_media_unfavorite">Favorit entfernen</string>
+    <string name="home_footer_media_details">Details</string>
+
+    <string name="home_footer_game_item">Spiel</string>
+    <string name="home_footer_game_section">Abschnitt</string>
+    <string name="home_footer_game_platform">Plattform</string>
+    <string name="home_footer_game_install">Installieren</string>
+    <string name="home_footer_game_play">Spielen</string>
+    <string name="home_footer_game_download">Herunterladen</string>
+    <string name="home_footer_game_favorite">Favorit</string>
+    <string name="home_footer_game_unfavorite">Favorit entfernen</string>
+    <string name="home_footer_game_details">Details</string>
+
+    <string name="home_footer_viewall_item">Spiel</string>
+    <string name="home_footer_viewall_section">Abschnitt</string>
+    <string name="home_footer_viewall_platform">Plattform</string>
+    <string name="home_footer_viewall_library">Bibliothek</string>
+
+    <string name="home_tile_add_title">Zum Startraster hinzufügen?</string>
+    <string name="home_tile_add_message">%1$s wurde fertig heruntergeladen.</string>
+    <string name="home_tile_add_confirm">Hinzufügen</string>
+    <string name="home_tile_add_cancel">Nicht jetzt</string>
+
+    <string name="home_media_tile_notice_local_title">Wird von diesem Gerät abgespielt</string>
+    <string name="home_media_tile_notice_download_title">Zum Abspielen herunterladen</string>
+
+    <string name="home_tile_file_browser_backdrop_title">Hintergrund wählen</string>
+    <string name="home_tile_file_browser_video_title">Video wählen</string>
+
+    <string name="home_empty_pinned_row">Keine Spiele in %1$s</string>
+    <string name="home_empty_title">Noch keine Spiele</string>
+    <string name="home_empty_message_configured">Synchronisieren Sie Ihre Bibliothek, um zu beginnen</string>
+    <string name="home_empty_message_unconfigured">Verbinden Sie sich in den Einstellungen mit einem Rom-Manager-Server, um zu beginnen</string>
+    <string name="home_empty_sync_hint">Bibliothek synchronisieren</string>
+
+    <string name="home_quick_actions_heading">SCHNELLAKTIONEN</string>
+    <string name="home_quick_actions_install">Installieren</string>
+    <string name="home_quick_actions_play">Spielen</string>
+    <string name="home_quick_actions_download">Herunterladen</string>
+    <string name="home_quick_actions_favorite">Favorit</string>
+    <string name="home_quick_actions_unfavorite">Favorit entfernen</string>
+    <string name="home_quick_actions_details">Details</string>
+    <string name="home_quick_actions_add_to_collection">Zur Sammlung hinzufügen</string>
+    <string name="home_quick_actions_refresh_data">Daten aktualisieren</string>
+    <string name="home_quick_actions_resync_platform">Plattform neu synchronisieren</string>
+    <string name="home_quick_actions_delete_download">Download löschen</string>
+    <string name="home_quick_actions_remove_from_home">Von Startseite entfernen</string>
+    <string name="home_quick_actions_hide">Ausblenden</string>
+
+    <string name="home_media_empty_next_up_title">Nichts Neues</string>
+    <string name="home_media_empty_next_up_message">Beenden Sie eine Episode, und die nächste erscheint hier.</string>
+    <string name="home_media_empty_continue_watching_title">Nichts fortzusetzen</string>
+    <string name="home_media_empty_continue_watching_message">Alles, was Sie unterbrechen, erscheint hier.</string>
+    <string name="home_media_empty_library_title">Nichts in dieser Bibliothek</string>
+    <string name="home_media_empty_library_message">Aktualisieren, um diese Bibliothek von Ihrem Medienserver abzurufen.</string>
+
+    <string name="home_grid_tile_missing_game">Fehlendes Spiel</string>
+    <string name="home_grid_tile_missing_collection">Fehlende Sammlung</string>
+    <string name="home_grid_tile_collection_subtitle">Sammlung</string>
+    <string name="home_grid_tile_collection_games_stat">Spiele</string>
+    <string name="home_grid_tile_missing_app">Fehlende App</string>
+    <string name="home_grid_tile_app_subtitle">App</string>
+    <string name="home_grid_tile_missing_media">Fehlender Titel</string>
+    <string name="home_grid_tile_local_media_subtitle">Auf diesem Gerät</string>
+    <string name="home_grid_tile_unresolvable">Nicht verfügbar</string>
+
+    <string name="home_notice_game_data_refreshed">Spieldaten aktualisiert</string>
+    <string name="home_notice_android_data_refreshed">Spieldaten aktualisiert</string>
+
+    <string name="home_notice_already_downloaded">Spiel bereits heruntergeladen</string>
+    <plurals name="home_notice_discs_queued">
+        <item quantity="one">%d Disc wird heruntergeladen</item>
+        <item quantity="other">%d Discs werden heruntergeladen</item>
+    </plurals>
+    <string name="home_notice_extraction_failed">Extraktion fehlgeschlagen. Öffnen Sie die Spieldetails, um es erneut zu versuchen.</string>
+    <string name="home_notice_apk_install_failed">APK konnte nicht installiert werden</string>
+    <string name="home_notice_download_deleted">Download gelöscht</string>
+
+    <string name="home_notice_recommendations_updated">Empfehlungen aktualisiert</string>
+    <string name="home_notice_recommendations_insufficient">Nicht genügend Spiele für Empfehlungen</string>
+
+    <string name="home_notice_playing_next">Wird als Nächstes gespielt</string>
+
+    <plurals name="home_tile_picker_collection_game_count">
+        <item quantity="one">%d Spiel</item>
+        <item quantity="other">%d Spiele</item>
+    </plurals>
+    <string name="home_tile_picker_app_emulator">Emulator</string>
+    <string name="home_tile_picker_app_other">App</string>
+
+    <string name="home_tile_picker_media_series">Serie</string>
+    <string name="home_tile_picker_media_movie">Film</string>
+
+    <string name="home_media_picker_series">Serie</string>
+    <string name="home_media_picker_movie">Film</string>
+
+    <string name="home_media_season_specials">Specials</string>
+    <string name="home_media_season_number">Staffel %1$d</string>
+    <string name="home_media_season_none_synced">Noch nichts synchronisiert</string>
+    <string name="home_media_season_local_all">Alle %1$d auf diesem Gerät</string>
+    <string name="home_media_season_local_partial">%1$d von %2$d auf diesem Gerät</string>
+    <string name="home_media_download_size_gigabytes">%1$.1f GB</string>
+</resources>

@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.screens.home.delegates
 
+import android.content.Context
+import com.nendo.argosy.R
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.getDisplayName
 import com.nendo.argosy.data.model.ActiveSort
@@ -23,6 +25,7 @@ import com.nendo.argosy.domain.usecase.collection.GetGamesForPinnedCollectionUse
 import com.nendo.argosy.domain.usecase.collection.GetPinnedCollectionsUseCase
 import com.nendo.argosy.domain.usecase.recommendation.GenerateRecommendationsUseCase
 import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.core.notification.showSuccess
 import com.nendo.argosy.ui.common.toHomeGameUi
@@ -33,6 +36,7 @@ import com.nendo.argosy.ui.screens.home.HomePlatformUi
 import com.nendo.argosy.ui.screens.home.HomeRow
 import com.nendo.argosy.ui.screens.home.HomeRowItem
 import com.nendo.argosy.ui.screens.home.toHomePlatformUi
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -89,6 +93,7 @@ private data class RecentGamesCache(
 
 @Singleton
 class HomeLibraryDelegate @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val preferencesRepository: UserPreferencesRepository,
     private val gameRepository: GameRepository,
     private val platformRepository: PlatformRepository,
@@ -342,10 +347,14 @@ class HomeLibraryDelegate @Inject constructor(
 
                 val gameUis = displayedGames.map { it.toUi() }
                 _state.update { it.copy(recommendedGames = gameUis) }
-                notificationManager.showSuccess("Recommendations updated")
+                notificationManager.showSuccess(
+                    NotificationText.Res(R.string.home_notice_recommendations_updated)
+                )
             } else {
                 _state.update { it.copy(recommendedGames = emptyList()) }
-                notificationManager.showError("Not enough games to generate recommendations")
+                notificationManager.showError(
+                    NotificationText.Res(R.string.home_notice_recommendations_insufficient)
+                )
             }
         }
     }
@@ -705,38 +714,6 @@ class HomeLibraryDelegate @Inject constructor(
         return true
     }
 
-    /**
-     * Games that have artwork worth showing behind a page, so the chooser never offers a title that
-     * would resolve to nothing.
-     */
-    suspend fun gamesWithArtwork(query: String): List<ArtworkGame> {
-        val matches = gameRepository.searchForQuickMenu(query.trim(), TILE_PICKER_LIMIT).first()
-        return matches.filter { artworkPathsOf(it).isNotEmpty() }.map { game ->
-            ArtworkGame(
-                id = game.id,
-                title = game.title,
-                subtitle = cachedPlatformDisplayNames[game.platformId].orEmpty(),
-                coverPath = game.coverPath
-            )
-        }
-    }
-
-    suspend fun artworkFor(gameId: Long): List<ArtworkChoice> {
-        val game = gameRepository.getById(gameId) ?: return emptyList()
-        return artworkPathsOf(game)
-    }
-
-    private fun artworkPathsOf(game: GameEntity): List<ArtworkChoice> = buildList {
-        game.backgroundPath?.takeIf { it.startsWith("/") }?.let {
-            add(ArtworkChoice("Background art", it))
-        }
-        game.coverPath?.takeIf { it.startsWith("/") }?.let { add(ArtworkChoice("Cover", it)) }
-        game.cachedScreenshotPaths
-            ?.split(",")
-            ?.filter { it.isNotBlank() && it.startsWith("/") }
-            ?.forEachIndexed { index, path -> add(ArtworkChoice("Screenshot ${index + 1}", path)) }
-    }.distinctBy { it.path }
-
     private suspend fun filterPlayable(candidates: List<GameEntity>): List<GameEntity> {
         return candidates.filter { downloadFileStatusRepository.isContentAvailable(it) }
     }
@@ -794,7 +771,11 @@ class HomeLibraryDelegate @Inject constructor(
                 com.nendo.argosy.ui.components.TilePickerEntry(
                     target = com.nendo.argosy.domain.model.HomeTileTargetRef.Collection(collection.id),
                     title = collection.name,
-                    subtitle = if (count == 1) "1 game" else "$count games",
+                    subtitle = context.resources.getQuantityString(
+                        R.plurals.home_tile_picker_collection_game_count,
+                        count,
+                        count
+                    ),
                     coverPath = collectionRepository.getCollectionCoverPaths(collection.id)
                         .firstOrNull()
                 )
@@ -853,7 +834,11 @@ class HomeLibraryDelegate @Inject constructor(
                 com.nendo.argosy.ui.components.TilePickerEntry(
                     target = com.nendo.argosy.domain.model.HomeTileTargetRef.App(app.packageName),
                     title = app.label,
-                    subtitle = if (app.packageName in emulatorPackages) "Emulator" else "App",
+                    subtitle = if (app.packageName in emulatorPackages) {
+                        context.getString(R.string.home_tile_picker_app_emulator)
+                    } else {
+                        context.getString(R.string.home_tile_picker_app_other)
+                    },
                     packageName = app.packageName
                 )
             }
@@ -890,15 +875,6 @@ class HomeLibraryDelegate @Inject constructor(
     private suspend fun filterSteamInstalled(games: List<GameEntity>): List<GameEntity> =
         games.filter { steamPathResolver.isGameInstalled(it) }
 }
-
-data class ArtworkGame(
-    val id: Long,
-    val title: String,
-    val subtitle: String,
-    val coverPath: String?
-)
-
-data class ArtworkChoice(val label: String, val path: String)
 
 data class RefreshResult(
     val gameIds: List<Long>,

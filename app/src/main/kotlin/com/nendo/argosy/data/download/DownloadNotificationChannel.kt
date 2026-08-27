@@ -3,19 +3,18 @@ package com.nendo.argosy.data.download
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import com.nendo.argosy.R
 
 object DownloadNotificationChannel {
     const val CHANNEL_ID = "download_service_channel"
-    private const val CHANNEL_NAME = "Download Progress"
-    private const val CHANNEL_DESCRIPTION = "Shows download progress in background"
 
     fun create(context: Context) {
         val channel = NotificationChannel(
             CHANNEL_ID,
-            CHANNEL_NAME,
+            context.getString(R.string.sync_download_channel_name),
             NotificationManager.IMPORTANCE_LOW
         ).apply {
-            description = CHANNEL_DESCRIPTION
+            description = context.getString(R.string.sync_download_channel_description)
             setShowBadge(false)
             enableLights(false)
             enableVibration(false)

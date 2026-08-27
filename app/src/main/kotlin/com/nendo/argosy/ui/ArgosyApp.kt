@@ -1,5 +1,8 @@
 package com.nendo.argosy.ui
 
+import androidx.annotation.StringRes
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -1063,7 +1066,7 @@ fun ArgosyApp(
             )
     ) {
         if (uiState.isLoading) {
-            AppSplashScreen(status = uiState.startupStatus)
+            AppSplashScreen(statusRes = uiState.startupStatusRes)
             return@CompositionLocalProvider
         }
 
@@ -1295,9 +1298,14 @@ fun ArgosyApp(
                             footerHints = {
                                 FooterHints(
                                     hints = listOf(
-                                        com.nendo.argosy.ui.components.InputButton.LB_RB to "Tab",
-                                        com.nendo.argosy.ui.components.InputButton.A to "Select",
-                                        com.nendo.argosy.ui.components.InputButton.B to "Back"
+                                        com.nendo.argosy.ui.components.InputButton.LB_RB to
+                                            stringResource(R.string.ui_dual_file_picker_hint_tab),
+                                        com.nendo.argosy.ui.components.InputButton.A to
+                                            stringResource(
+                                                R.string.ui_dual_file_picker_hint_select
+                                            ),
+                                        com.nendo.argosy.ui.components.InputButton.B to
+                                            stringResource(R.string.ui_dual_file_picker_hint_back)
                                     )
                                 )
                                 androidx.compose.foundation.layout.Spacer(
@@ -1323,9 +1331,14 @@ fun ArgosyApp(
                             footerHints = {
                                 FooterHints(
                                     hints = listOf(
-                                        com.nendo.argosy.ui.components.InputButton.DPAD to "Navigate",
-                                        com.nendo.argosy.ui.components.InputButton.A to "Open",
-                                        com.nendo.argosy.ui.components.InputButton.B to "Back"
+                                        com.nendo.argosy.ui.components.InputButton.DPAD to
+                                            stringResource(
+                                                R.string.ui_dual_collections_hint_navigate
+                                            ),
+                                        com.nendo.argosy.ui.components.InputButton.A to
+                                            stringResource(R.string.ui_dual_collections_hint_open),
+                                        com.nendo.argosy.ui.components.InputButton.B to
+                                            stringResource(R.string.ui_dual_collections_hint_back)
                                     )
                                 )
                                 androidx.compose.foundation.layout.Spacer(
@@ -1991,7 +2004,9 @@ fun ArgosyApp(
                 },
                 onQuayPassToggle = { viewModel.toggleQuayPassFromQuickSettings() },
                 onDismiss = closeQuickSettings,
-                footerHints = quickSettingsFooterHints
+                footerHints = quickSettingsFooterHints.map { (button, labelRes) ->
+                    button to stringResource(labelRes)
+                }
             )
 
             // Save Conflict Modal (single-screen only; dual-screen renders on companion)
@@ -2067,7 +2082,7 @@ fun ArgosyApp(
 }
 
 @Composable
-private fun AppSplashScreen(status: String = "") {
+private fun AppSplashScreen(@StringRes statusRes: Int?) {
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -2079,7 +2094,7 @@ private fun AppSplashScreen(status: String = "") {
             verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(Dimens.spacingLg)
         ) {
             androidx.compose.material3.Text(
-                text = "ARGOSY",
+                text = androidx.compose.ui.res.stringResource(R.string.argosyapp_splash_title),
                 style = androidx.compose.material3.MaterialTheme.typography.headlineLarge,
                 color = androidx.compose.material3.MaterialTheme.colorScheme.onBackground,
                 letterSpacing = 8.sp
@@ -2090,9 +2105,9 @@ private fun AppSplashScreen(status: String = "") {
                 trackColor = androidx.compose.material3.MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f),
                 strokeWidth = Dimens.borderMedium
             )
-            if (status.isNotEmpty()) {
+            if (statusRes != null) {
                 androidx.compose.material3.Text(
-                    text = status,
+                    text = stringResource(statusRes),
                     style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
                     color = androidx.compose.material3.MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
                 )

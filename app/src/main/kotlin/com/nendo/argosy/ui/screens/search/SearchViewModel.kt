@@ -1,7 +1,9 @@
 package com.nendo.argosy.ui.screens.search
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.nendo.argosy.R
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.MediaItemEntity
@@ -42,7 +44,7 @@ sealed class SearchResultUi {
         override val key: String,
         override val title: String,
         val gameId: Long,
-        val platformName: String,
+        val platformName: String?,
         val coverPath: String?,
         val developer: String?,
         val releaseYear: Int?
@@ -54,7 +56,7 @@ sealed class SearchResultUi {
         val itemId: String,
         val libraryName: String?,
         val posterUrl: String,
-        val kindLabel: String,
+        @StringRes val kindLabelRes: Int,
         val releaseYear: Int?
     ) : SearchResultUi()
 }
@@ -188,7 +190,7 @@ class SearchViewModel @Inject constructor(
         val names = platformNames.value
         return gameRepository.search(query).first()
             .take(RESULTS_PER_KIND)
-            .map { it.toSearchResult(names[it.platformId] ?: UNKNOWN_PLATFORM) }
+            .map { it.toSearchResult(names[it.platformId]) }
     }
 
     private suspend fun searchMedia(query: String): List<SearchResultUi.Media> {
@@ -266,7 +268,7 @@ class SearchViewModel @Inject constructor(
         }
     }
 
-    private fun GameEntity.toSearchResult(platformName: String) = SearchResultUi.Game(
+    private fun GameEntity.toSearchResult(platformName: String?) = SearchResultUi.Game(
         key = "game:$id",
         title = title,
         gameId = id,
@@ -282,10 +284,10 @@ class SearchViewModel @Inject constructor(
         itemId = itemId,
         libraryName = libraryName,
         posterUrl = mediaRepository.posterUrl(itemId, primaryImageTag),
-        kindLabel = if (MediaItemType.fromWire(itemType) == MediaItemType.SERIES) {
-            SERIES_LABEL
+        kindLabelRes = if (MediaItemType.fromWire(itemType) == MediaItemType.SERIES) {
+            R.string.library_search_result_kind_series
         } else {
-            MOVIE_LABEL
+            R.string.library_search_result_kind_movie
         },
         releaseYear = productionYear
     )
@@ -389,9 +391,5 @@ class SearchViewModel @Inject constructor(
          * library of thousands of games cannot spend the whole answer before media is reached.
          */
         private const val RESULTS_PER_KIND = 40
-
-        private const val UNKNOWN_PLATFORM = "Unknown"
-        private const val SERIES_LABEL = "Series"
-        private const val MOVIE_LABEL = "Movie"
     }
 }

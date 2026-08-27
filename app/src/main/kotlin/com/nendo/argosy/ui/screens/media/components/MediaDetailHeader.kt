@@ -28,9 +28,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.style.TextOverflow
 import coil.compose.AsyncImage
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.screens.media.MediaItemUi
+import com.nendo.argosy.ui.screens.media.episodeLabel
+import com.nendo.argosy.ui.screens.media.runtimeLabel
 import com.nendo.argosy.ui.theme.AspectRatioClass
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
@@ -65,7 +70,8 @@ fun MediaExpandedHeader(item: MediaItemUi, modifier: Modifier = Modifier) {
                 modifier = Modifier.fillMaxSize()
             )
         }
-        val seriesName = item.seriesName?.takeIf { item.episodeLabel != null }
+        val context = LocalContext.current
+        val seriesName = item.seriesName?.takeIf { item.episodeLabel(context) != null }
         val overview = item.overview
         Column(verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)) {
             if (seriesName != null) {
@@ -156,12 +162,15 @@ fun MediaStickyCollapsedHeader(
 @Composable
 fun MediaMetadataChips(item: MediaItemUi, modifier: Modifier = Modifier) {
     val theme = LocalArgosyTheme.current
+    val context = LocalContext.current
+    val seasonCount = item.childCount?.takeIf { item.isSeries && it > 0 }
+    val seasonChip = seasonCount?.let {
+        pluralStringResource(R.plurals.media_detail_chip_season_count, it, it)
+    }
     val facts = buildList {
         item.year?.let { add(it.toString()) }
-        item.runtimeLabel?.let { add(it) }
-        item.childCount?.takeIf { item.isSeries && it > 0 }?.let {
-            add(if (it == 1) "1 season" else "$it seasons")
-        }
+        item.runtimeLabel(context)?.let { add(it) }
+        seasonChip?.let { add(it) }
     }
     val genres = item.genres?.takeIf { it.isNotBlank() }
     if (facts.isEmpty() && genres == null && item.officialRating == null &&

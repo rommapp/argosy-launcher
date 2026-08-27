@@ -35,14 +35,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.theme.generated.DimensionTokens
 import com.nendo.argosy.ui.theme.gripReserveBottomInset
 import com.nendo.argosy.ui.util.clickableNoFocus
+import androidx.annotation.StringRes
 
 sealed class InGameMenuAction {
     data object SwapDisc : InGameMenuAction()
@@ -65,7 +68,18 @@ sealed class InGameMenuAction {
 
 enum class NetplayMenuRole { Host, Guest }
 
-enum class NetplayQualityLabel { Excellent, Good, Fair, Poor, Bad }
+/**
+ * Connection quality tier. The constants were title-cased so `.name` could be printed
+ * straight to the screen, which made the identifier and the copy the same string. [label]
+ * is the half that shows.
+ */
+enum class NetplayQualityLabel(@StringRes val labelRes: Int) {
+    Excellent(R.string.ingame_netplay_quality_excellent),
+    Good(R.string.ingame_netplay_quality_good),
+    Fair(R.string.ingame_netplay_quality_fair),
+    Poor(R.string.ingame_netplay_quality_poor),
+    Bad(R.string.ingame_netplay_quality_bad)
+}
 
 data class NetplayQualityInfo(
     val peerDisplayName: String,
@@ -111,7 +125,7 @@ fun InGameMenu(
     onQuickHistoryFocusChange: (Boolean) -> Unit = {},
     twoColumnMenu: Boolean = false
 ): InputHandler {
-    val menuItems = remember(
+    val menuItems: List<Pair<Int, InGameMenuAction>> = remember(
         cheatsAvailable,
         statesSupported,
         isHardcoreMode,
@@ -127,44 +141,49 @@ fun InGameMenu(
     ) {
         buildList {
             if (availableDiscs > 1 && !isInNetplaySession) {
-                add("Swap Disc" to InGameMenuAction.SwapDisc)
+                add(R.string.ingame_menu_swap_disc to InGameMenuAction.SwapDisc)
             }
-            add("Resume" to InGameMenuAction.Resume)
+            add(R.string.ingame_menu_resume to InGameMenuAction.Resume)
             val showStates = !isHardcoreMode && statesSupported && !isInNetplaySession
             if (showStates) {
-                add("Quick Save" to InGameMenuAction.QuickSave)
-                add("Quick Load" to InGameMenuAction.QuickLoad)
-                add("Manage States" to InGameMenuAction.ManageStates)
+                add(R.string.ingame_menu_quick_save to InGameMenuAction.QuickSave)
+                add(R.string.ingame_menu_quick_load to InGameMenuAction.QuickLoad)
+                add(R.string.ingame_menu_manage_states to InGameMenuAction.ManageStates)
             }
             if (!isInNetplaySession && cheatsAvailable) {
-                add("Cheats" to InGameMenuAction.Cheats)
+                add(R.string.ingame_menu_cheats to InGameMenuAction.Cheats)
             }
             if (netplaySupported) {
                 if (isInNetplaySession) {
                     if (netplayRole == NetplayMenuRole.Host) {
-                        add("Invite Friend..." to InGameMenuAction.InviteFriend)
+                        add(R.string.ingame_menu_invite_friend to InGameMenuAction.InviteFriend)
                         if (netplaySessionIsReserved) {
-                            add("Open to All Friends" to InGameMenuAction.ClearReservation)
+                            add(R.string.ingame_menu_open_to_all_friends to InGameMenuAction.ClearReservation)
                         }
-                        add("Close Netplay Server" to InGameMenuAction.CloseNetplaySession)
+                        add(R.string.ingame_menu_close_netplay_server to InGameMenuAction.CloseNetplaySession)
                     } else {
-                        add("Leave Netplay Session" to InGameMenuAction.CloseNetplaySession)
+                        add(R.string.ingame_menu_leave_netplay_session to InGameMenuAction.CloseNetplaySession)
                     }
                 } else {
-                    add("Open Netplay Server" to InGameMenuAction.OpenToFriends)
+                    add(R.string.ingame_menu_open_netplay_server to InGameMenuAction.OpenToFriends)
                 }
             }
-            add("Settings" to InGameMenuAction.Settings)
+            add(R.string.ingame_menu_settings to InGameMenuAction.Settings)
             if (speedrunAvailable && !isInNetplaySession) {
-                add((if (speedrunArmed) "Stop Speedrun Timer" else "Speedrun Timer") to InGameMenuAction.ToggleSpeedrun)
+                val speedrunLabel = if (speedrunArmed) {
+                    R.string.ingame_menu_stop_speedrun_timer
+                } else {
+                    R.string.ingame_menu_speedrun_timer
+                }
+                add(speedrunLabel to InGameMenuAction.ToggleSpeedrun)
             }
             if (touchControlsVisible) {
-                add("Touch Controls" to InGameMenuAction.CustomizeTouchControls)
+                add(R.string.ingame_menu_touch_controls to InGameMenuAction.CustomizeTouchControls)
             }
             if (!isInNetplaySession) {
-                add("Reset" to InGameMenuAction.Reset)
+                add(R.string.ingame_menu_reset to InGameMenuAction.Reset)
             }
-            add("Quit Game" to InGameMenuAction.Quit)
+            add(R.string.ingame_menu_quit to InGameMenuAction.Quit)
         }
     }
 
@@ -311,7 +330,7 @@ fun InGameMenu(
             ) {
                 if (isHardcoreMode) {
                     Text(
-                        text = "HARDCORE",
+                        text = stringResource(R.string.ingame_menu_hardcore_badge),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFFFFD700),
@@ -355,9 +374,10 @@ fun InGameMenu(
                 ) {
                     itemsIndexed(
                         items = menuItems,
-                        key = { _: Int, item: Pair<String, InGameMenuAction> -> item.second.toString() }
+                        key = { _: Int, item: Pair<Int, InGameMenuAction> -> item.second.toString() }
                     ) { index, item ->
-                        val (label, action) = item
+                        val (labelRes, action) = item
+                        val label = stringResource(labelRes)
                         when {
                             action == InGameMenuAction.QuickLoad && hasQuickSave -> {
                                 QuickLoadRow(
@@ -401,7 +421,7 @@ fun DiscMenu(
     onFocusChange: (Int) -> Unit,
     onSelect: (Int) -> Unit,
     onDismiss: () -> Unit,
-    title: String = "Swap Disc"
+    title: String = stringResource(R.string.ingame_disc_title)
 ): InputHandler {
     val isDarkTheme = isSystemInDarkTheme()
     val overlayColor = if (isDarkTheme) Color.Black.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.5f)
@@ -485,7 +505,11 @@ fun DiscMenu(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     listItemsIndexed(labels, key = { index, _ -> index }) { index, label ->
-                        val text = if (index == currentIndex) "$label  (current)" else label
+                        val text = if (index == currentIndex) {
+                            stringResource(R.string.ingame_disc_current, label)
+                        } else {
+                            label
+                        }
                         MenuButton(
                             text = text,
                             isFocused = index == focusedIndex,
@@ -509,8 +533,15 @@ private fun NetplayQualityRow(info: NetplayQualityInfo) {
         NetplayQualityLabel.Poor -> Color(0xFFF97316)
         NetplayQualityLabel.Bad -> Color(0xFFEF4444)
     }
-    val pingText = info.pingMs?.let { "${it}ms" } ?: "--"
-    val roleLabel = if (info.role == NetplayMenuRole.Host) "Guest" else "Host"
+    val qualityLabel = stringResource(info.label.labelRes)
+    val peerRoleText = if (info.role == NetplayMenuRole.Host) {
+        stringResource(R.string.ingame_netplay_quality_row_peer_guest, info.peerDisplayName)
+    } else {
+        stringResource(R.string.ingame_netplay_quality_row_peer_host, info.peerDisplayName)
+    }
+    val pingText = info.pingMs?.let {
+        stringResource(R.string.ingame_netplay_quality_row_ping_known, it, qualityLabel)
+    } ?: stringResource(R.string.ingame_netplay_quality_row_ping_unknown, qualityLabel)
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -524,13 +555,13 @@ private fun NetplayQualityRow(info: NetplayQualityInfo) {
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
             Text(
-                text = "$roleLabel: ${info.peerDisplayName}",
+                text = peerRoleText,
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Medium
             )
             Text(
-                text = "$pingText  ${info.label.name}",
+                text = pingText,
                 style = MaterialTheme.typography.labelSmall,
                 color = qualityColor,
                 fontWeight = FontWeight.Bold
@@ -579,7 +610,7 @@ private fun QuickLoadRow(
         ) {
             Icon(
                 imageVector = Icons.Filled.History,
-                contentDescription = "Quick save history",
+                contentDescription = stringResource(R.string.ingame_menu_quick_save_history_action),
                 tint = iconTint
             )
         }

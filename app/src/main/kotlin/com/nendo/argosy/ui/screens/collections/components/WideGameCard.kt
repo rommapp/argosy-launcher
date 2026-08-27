@@ -37,6 +37,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Path
@@ -49,6 +51,7 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.common.rememberCoverAspectRatio
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.GameTitle
@@ -209,6 +212,7 @@ private fun WideGameCardFooter(
     achievementCount: Int,
     playTimeMinutes: Int
 ) {
+    val context = LocalContext.current
     val primaryColor = MaterialTheme.colorScheme.primary
     val platformShape = RoundedCornerShape(
         bottomStart = cornerRadius,
@@ -246,11 +250,11 @@ private fun WideGameCardFooter(
                 Spacer(modifier = Modifier.weight(1f))
 
                 if (userRating > 0) {
-                    FooterStat(icon = Icons.Default.Star, value = "$userRating/10")
+                    FooterStat(icon = Icons.Default.Star, value = stringResource(R.string.collections_widecard_rating_value, userRating))
                 }
 
                 if (userDifficulty > 0) {
-                    FooterStat(icon = Icons.Default.Whatshot, value = "$userDifficulty/10")
+                    FooterStat(icon = Icons.Default.Whatshot, value = stringResource(R.string.collections_widecard_difficulty_value, userDifficulty))
                 }
 
                 if (achievementCount > 0) {
@@ -258,7 +262,7 @@ private fun WideGameCardFooter(
                 }
 
                 if (playTimeMinutes > 0) {
-                    FooterStat(icon = Icons.Default.Schedule, value = formatPlayTime(playTimeMinutes))
+                    FooterStat(icon = Icons.Default.Schedule, value = formatPlayTime(context, playTimeMinutes))
                 }
             }
 

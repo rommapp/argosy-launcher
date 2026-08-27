@@ -35,6 +35,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.PermissionCard
 import com.nendo.argosy.ui.screens.settings.PermissionsState
@@ -105,7 +107,7 @@ fun PermissionsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         items(visibleItems, key = { it.key }) { item ->
             when (item) {
                 PermissionsItem.InfoText -> Text(
-                    text = "Argosy requires certain permissions to provide full functionality. Tap each permission to grant access.",
+                    text = stringResource(R.string.settings_permissions_intro),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = Dimens.spacingMd)
@@ -113,8 +115,8 @@ fun PermissionsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
                 PermissionsItem.StorageAccess -> PermissionCard(
                     icon = Icons.Default.Folder,
-                    title = "Storage Access",
-                    description = "Required for downloading games, syncing save files, and accessing ROM files on your device.",
+                    title = stringResource(R.string.settings_permissions_storage_title),
+                    description = stringResource(R.string.settings_permissions_storage_description),
                     isGranted = permissions.hasStorageAccess,
                     isFocused = isFocused(item),
                     onClick = { viewModel.openStorageSettings() }
@@ -122,8 +124,8 @@ fun PermissionsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
                 PermissionsItem.UsageStats -> PermissionCard(
                     icon = Icons.Default.Timer,
-                    title = "Usage Stats Access",
-                    description = "Enables accurate play time tracking and seamless game session resume when switching between apps.",
+                    title = stringResource(R.string.settings_permissions_usage_stats_title),
+                    description = stringResource(R.string.settings_permissions_usage_stats_description),
                     isGranted = permissions.hasUsageStats,
                     isFocused = isFocused(item),
                     onClick = { viewModel.openUsageStatsSettings() }
@@ -131,8 +133,8 @@ fun PermissionsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
                 PermissionsItem.Notifications -> PermissionCard(
                     icon = Icons.Default.Notifications,
-                    title = "Notifications",
-                    description = "Shows download progress when downloading games in the background.",
+                    title = stringResource(R.string.settings_permissions_notifications_title),
+                    description = stringResource(R.string.settings_permissions_notifications_description),
                     isGranted = permissions.hasNotificationPermission,
                     isFocused = isFocused(item),
                     onClick = { viewModel.openNotificationSettings() }
@@ -140,8 +142,8 @@ fun PermissionsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
                 PermissionsItem.WriteSettings -> PermissionCard(
                     icon = Icons.Default.Tune,
-                    title = "System Settings Access",
-                    description = "Allows control of device performance mode and fan settings from the Quick Settings panel.",
+                    title = stringResource(R.string.settings_permissions_write_settings_title),
+                    description = stringResource(R.string.settings_permissions_write_settings_description),
                     isGranted = permissions.hasWriteSettings,
                     isFocused = isFocused(item),
                     onClick = { viewModel.openWriteSettings() }
@@ -149,8 +151,8 @@ fun PermissionsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
                 PermissionsItem.ScreenCapture -> PermissionCard(
                     icon = Icons.Default.ScreenshotMonitor,
-                    title = "Screen Capture",
-                    description = "Enables ambient LED lighting to sample screen colors while playing games.",
+                    title = stringResource(R.string.settings_permissions_screen_capture_title),
+                    description = stringResource(R.string.settings_permissions_screen_capture_description),
                     isGranted = permissions.hasScreenCapture,
                     isFocused = isFocused(item),
                     onClick = { viewModel.requestScreenCapturePermission() }
@@ -158,8 +160,8 @@ fun PermissionsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
                 PermissionsItem.DisplayOverlay -> PermissionCard(
                     icon = Icons.Default.Layers,
-                    title = "Display Over Other Apps",
-                    description = "Shows save detection notifications while playing games in external emulators.",
+                    title = stringResource(R.string.settings_permissions_display_overlay_title),
+                    description = stringResource(R.string.settings_permissions_display_overlay_description),
                     isGranted = permissions.hasDisplayOverlay,
                     isFocused = isFocused(item),
                     onClick = { viewModel.openDisplayOverlaySettings() }
@@ -168,7 +170,11 @@ fun PermissionsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 PermissionsItem.StatusFooter -> Column {
                     Spacer(modifier = Modifier.height(Dimens.spacingMd))
                     Text(
-                        text = "Status: ${permissions.grantedCount}/${permissions.totalCount} permissions granted",
+                        text = stringResource(
+                            R.string.settings_permissions_status_footer,
+                            permissions.grantedCount,
+                            permissions.totalCount
+                        ),
                         style = MaterialTheme.typography.bodySmall,
                         color = if (permissions.allGranted) {
                             MaterialTheme.colorScheme.primary

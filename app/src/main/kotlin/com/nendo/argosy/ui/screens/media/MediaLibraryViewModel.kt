@@ -1,8 +1,10 @@
 package com.nendo.argosy.ui.screens.media
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.DualScreenManagerHolder
+import com.nendo.argosy.R
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.data.media.MediaAvailabilityVerifier
 import com.nendo.argosy.data.remote.jellyfin.JellyfinResult
@@ -11,6 +13,7 @@ import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.screens.common.GradientExtractionDelegate
 import com.nendo.argosy.ui.input.InputResult
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,6 +30,7 @@ import javax.inject.Inject
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class MediaLibraryViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val mediaRepository: MediaRepository,
     private val availabilityVerifier: MediaAvailabilityVerifier,
     private val gradientExtractionDelegate: GradientExtractionDelegate
@@ -203,7 +207,7 @@ class MediaLibraryViewModel @Inject constructor(
     }
 
     private fun publishCompanionDetail(item: MediaItemUi?) {
-        DualScreenManagerHolder.instance?.setCompanionDetail(item?.toCompanionDetail())
+        DualScreenManagerHolder.instance?.setCompanionDetail(item?.toCompanionDetail(context))
     }
 
     /**
@@ -238,7 +242,13 @@ class MediaLibraryViewModel @Inject constructor(
         if (_uiState.value.isRefreshing) return
         availabilityVerifier.verifyOnOpen()
         viewModelScope.launch {
-            _uiState.update { it.copy(isRefreshing = true, refreshLabel = "Refreshing", errorMessage = null) }
+            _uiState.update {
+                it.copy(
+                    isRefreshing = true,
+                    refreshLabel = R.string.media_library_viewmodel_refresh_label,
+                    errorMessage = null
+                )
+            }
             when (val result = mediaRepository.refreshLibraries()) {
                 is JellyfinResult.Success -> _uiState.update {
                     it.copy(isRefreshing = false, refreshLabel = null, isLoading = false)
@@ -268,7 +278,7 @@ class MediaLibraryViewModel @Inject constructor(
                 resumePrompt = MediaResumePrompt(
                     itemId = item.itemId,
                     title = item.title,
-                    subtitle = item.episodeLabel ?: item.year?.toString(),
+                    subtitle = item.episodeLabel(context) ?: item.year?.toString(),
                     resumeTicks = item.resumeTicks
                 )
             )

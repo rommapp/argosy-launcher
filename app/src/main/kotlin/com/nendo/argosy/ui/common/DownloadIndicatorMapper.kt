@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.common
 
+import android.content.Context
+import com.nendo.argosy.R
 import com.nendo.argosy.data.download.DownloadState
 import com.nendo.argosy.data.steam.SteamDownloadState
 import com.nendo.argosy.ui.screens.gamedetail.GameDownloadStatus
@@ -48,15 +50,27 @@ fun SteamDownloadState.toDownloadStatus(progress: Float): Pair<GameDownloadStatu
     is SteamDownloadState.Idle -> null
 }
 
-fun SteamDownloadState.toNotificationText(gameName: String): String? = when (this) {
-    is SteamDownloadState.Preparing -> "Preparing: $gameName"
-    is SteamDownloadState.Connecting -> "Connecting to Steam..."
-    is SteamDownloadState.FetchingManifest -> "Fetching manifest: $gameName"
-    is SteamDownloadState.Validating -> "Unpacking: $gameName"
-    is SteamDownloadState.Downloading -> null // caller formats with progress
-    is SteamDownloadState.Moving -> "Moving: $gameName"
-    is SteamDownloadState.Cleaning -> "Cleaning up: $gameName"
-    is SteamDownloadState.Paused -> "Paused: $gameName"
+/**
+ * The foreground notification line for a Steam download's current phase. Null for
+ * [SteamDownloadState.Downloading]: the caller formats that one with a live progress percentage,
+ * and for the states with nothing left to report.
+ */
+fun SteamDownloadState.toNotificationText(context: Context, gameName: String): String? = when (this) {
+    is SteamDownloadState.Preparing ->
+        context.getString(R.string.download_indicator_notification_preparing, gameName)
+    is SteamDownloadState.Connecting ->
+        context.getString(R.string.download_indicator_notification_connecting)
+    is SteamDownloadState.FetchingManifest ->
+        context.getString(R.string.download_indicator_notification_fetching_manifest, gameName)
+    is SteamDownloadState.Validating ->
+        context.getString(R.string.download_indicator_notification_unpacking, gameName)
+    is SteamDownloadState.Downloading -> null
+    is SteamDownloadState.Moving ->
+        context.getString(R.string.download_indicator_notification_moving, gameName)
+    is SteamDownloadState.Cleaning ->
+        context.getString(R.string.download_indicator_notification_cleaning, gameName)
+    is SteamDownloadState.Paused ->
+        context.getString(R.string.download_indicator_notification_paused, gameName)
     is SteamDownloadState.Completed,
     is SteamDownloadState.Failed,
     is SteamDownloadState.Idle -> null

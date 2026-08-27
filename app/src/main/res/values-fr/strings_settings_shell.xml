@@ -1,0 +1,502 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Owner: settings screen shell (SettingsScreen, routers, footer, missed sections,
+      ManagePinsScreen, BgmPlaylistManagerScreen, libretro settings accessor/item).
+      Key prefix: settings_shell_
+      Keys are named for the usage site, never for the English text; identical English at two
+      different usage sites always gets two keys.
+    -->
+
+    <!-- ===== BuiltinVideoSection / LibretroSettingItem ===== -->
+
+    <string name="settings_shell_libretro_configure_shader_effects_subtitle">Configurer les effets de shader</string>
+    <string name="settings_shell_libretro_global_hint_template">Global : %1$s</string>
+    <string name="settings_shell_libretro_on_label">Activé</string>
+    <string name="settings_shell_libretro_off_label">Désactivé</string>
+
+    <!-- ===== FrameSection ===== -->
+
+    <string name="settings_shell_frame_select_title">Sélectionner un cadre</string>
+    <string name="settings_shell_frame_auto_with_name">Auto (%1$s)</string>
+    <string name="settings_shell_frame_auto_none">Auto (Aucun)</string>
+    <string name="settings_shell_frame_none_option">Aucun</string>
+    <string name="settings_shell_frame_selected_desc">Sélectionné</string>
+    <string name="settings_shell_frame_download_desc">Télécharger</string>
+    <string name="settings_shell_frame_preview_desc">Aperçu du cadre</string>
+    <string name="settings_shell_frame_no_selection">Aucun cadre sélectionné</string>
+    <string name="settings_shell_frame_unavailable">Cadre non disponible</string>
+
+    <!-- ===== ShaderStackSection ===== -->
+
+    <string name="settings_shell_shaderstack_tab_label">%1$d. %2$s</string>
+    <string name="settings_shell_shaderstack_preview_desc">Aperçu du shader</string>
+    <string name="settings_shell_shaderstack_no_preview">Aucun aperçu</string>
+    <string name="settings_shell_shaderstack_empty">Aucun shader dans la chaîne</string>
+    <string name="settings_shell_shaderstack_no_params">Aucun paramètre réglable</string>
+
+    <!-- ===== CoreOptionsSection ===== -->
+
+    <string name="settings_shell_coreoptions_no_platforms">Aucune plateforme avec émulateur intégré</string>
+    <string name="settings_shell_coreoptions_status_installed_selector">Installé</string>
+    <string name="settings_shell_coreoptions_status_not_downloaded_selector">Non téléchargé</string>
+    <string name="settings_shell_coreoptions_status_installed_option">Installé</string>
+    <string name="settings_shell_coreoptions_status_not_downloaded_option">Non téléchargé</string>
+    <string name="settings_shell_coreoptions_selector_value_template">%1$s (%2$s)</string>
+    <string name="settings_shell_coreoptions_option_value_template">%1$s (%2$s)</string>
+    <string name="settings_shell_coreoptions_none_available">Aucun core disponible</string>
+    <string name="settings_shell_coreoptions_core_title">Core</string>
+    <string name="settings_shell_coreoptions_redownload">Retélécharger le core</string>
+    <string name="settings_shell_coreoptions_download">Télécharger le core</string>
+    <string name="settings_shell_coreoptions_downloading">Téléchargement…</string>
+    <string name="settings_shell_coreoptions_reinstall_subtitle">Réinstaller si le core est corrompu ou obsolète</string>
+    <string name="settings_shell_coreoptions_download_subtitle">Téléchargez le core pour pouvoir modifier ses réglages</string>
+    <string name="settings_shell_coreoptions_delete_core">Supprimer le core</string>
+    <string name="settings_shell_coreoptions_delete_core_subtitle">Libère de l\'espace tout en conservant vos réglages</string>
+    <string name="settings_shell_coreoptions_reset_all">Réinitialiser tout par défaut</string>
+
+    <!-- ===== CoreManagementSection ===== -->
+
+    <string name="settings_shell_coremanagement_no_platforms">Aucune plateforme prise en charge activée pour la synchro</string>
+    <string name="settings_shell_coremanagement_header">Sélectionnez un core pour chaque plateforme</string>
+    <string name="settings_shell_coremanagement_active_desc">Actif</string>
+    <string name="settings_shell_coremanagement_download_required_desc">Téléchargement requis</string>
+    <string name="settings_shell_coremanagement_netplay_tag">Netplay</string>
+    <string name="settings_shell_coremanagement_update_tag">Mise à jour</string>
+
+    <!-- ===== BuiltinVideoSection: per-platform save/state path rows ===== -->
+
+    <string name="settings_shell_builtinvideo_reset_all_to_global">Tout réinitialiser au global</string>
+    <string name="settings_shell_builtinvideo_save_path_title">Chemin du fichier de sauvegarde</string>
+    <string name="settings_shell_builtinvideo_state_path_title">Chemin des états</string>
+    <string name="settings_shell_builtinvideo_save_trailing_custom">(personnalisé)</string>
+    <string name="settings_shell_builtinvideo_save_trailing_custom_platform">(personnalisé pour cette plateforme)</string>
+    <string name="settings_shell_builtinvideo_save_trailing_from_global">(depuis le global)</string>
+    <string name="settings_shell_builtinvideo_state_trailing_custom">(personnalisé)</string>
+    <string name="settings_shell_builtinvideo_state_trailing_custom_platform">(personnalisé pour cette plateforme)</string>
+    <string name="settings_shell_builtinvideo_state_trailing_from_global">(depuis le global)</string>
+
+    <!-- ===== SettingsFooter.kt (standalone, unused default footer) ===== -->
+
+    <string name="settings_shell_footer_standalone_navigate">Parcourir</string>
+    <string name="settings_shell_footer_standalone_select">Sélectionner</string>
+    <string name="settings_shell_footer_standalone_back">Retour</string>
+
+    <!-- ===== SettingsScreen: section header titles ===== -->
+
+    <string name="settings_shell_header_main">PARAMÈTRES</string>
+    <string name="settings_shell_header_accounts">COMPTES</string>
+    <string name="settings_shell_header_saves">SAUVEGARDES</string>
+    <string name="settings_shell_header_sync_settings">PARAMÈTRES DE SYNCHRO</string>
+    <string name="settings_shell_header_steam">STEAM (EXPÉRIMENTAL)</string>
+    <string name="settings_shell_header_storage">STOCKAGE</string>
+    <string name="settings_shell_header_storage_games">STOCKAGE DES JEUX</string>
+    <string name="settings_shell_header_storage_media">STOCKAGE MULTIMÉDIA</string>
+    <string name="settings_shell_header_storage_platform_games_fallback">JEUX DE LA PLATEFORME</string>
+    <string name="settings_shell_header_storage_caches">CACHES ET SYSTÈME</string>
+    <string name="settings_shell_header_theme">THÈME</string>
+    <string name="settings_shell_header_audio">AUDIO</string>
+    <string name="settings_shell_header_theme_sounds">SONS</string>
+    <string name="settings_shell_header_theme_music">MUSIQUE</string>
+    <string name="settings_shell_header_theme_fonts">POLICES</string>
+    <string name="settings_shell_header_theme_backdrop">ARRIÈRE-PLAN</string>
+    <string name="settings_shell_header_interface">INTERFACE</string>
+    <string name="settings_shell_header_box_art">BOÎTIER</string>
+    <string name="settings_shell_header_controller_grip">PRISE EN MAIN DE LA MANETTE</string>
+    <string name="settings_shell_header_home_screen">ÉCRAN D\'ACCUEIL</string>
+    <string name="settings_shell_header_library_view">BIBLIOTHÈQUE</string>
+    <string name="settings_shell_header_displays">ÉCRANS</string>
+    <string name="settings_shell_header_ambient_led">CONTRÔLE LED</string>
+    <string name="settings_shell_header_navigation">NAVIGATION</string>
+    <string name="settings_shell_header_platforms">PLATEFORMES</string>
+    <string name="settings_shell_header_builtin_emulator">ÉMULATEUR INTÉGRÉ</string>
+    <string name="settings_shell_header_platform_detail_fallback">PLATEFORME</string>
+    <string name="settings_shell_header_builtin_video">A/V ET PERFORMANCE INTÉGRÉES</string>
+    <string name="settings_shell_header_builtin_controls">COMMANDES INTÉGRÉES</string>
+    <string name="settings_shell_header_core_management">GÉRER LES CORES</string>
+    <string name="settings_shell_header_core_options">OPTIONS DU CORE</string>
+    <string name="settings_shell_header_bios">FICHIERS BIOS</string>
+    <string name="settings_shell_header_shader_stack">CHAÎNE DE SHADERS</string>
+    <string name="settings_shell_header_frame_picker">SÉLECTIONNER UN CADRE</string>
+    <string name="settings_shell_header_permissions">AUTORISATIONS</string>
+    <string name="settings_shell_header_drivers">PILOTES GPU</string>
+    <string name="settings_shell_header_about">À PROPOS</string>
+    <string name="settings_shell_header_social">SOCIAL</string>
+    <string name="settings_shell_header_context_global">Global</string>
+
+    <string name="settings_shell_context_previous_desc">Contexte précédent</string>
+    <string name="settings_shell_context_next_desc">Contexte suivant</string>
+
+    <!-- ===== SettingsScreen: file browser titles ===== -->
+
+    <string name="settings_shell_platform_fallback">Plateforme</string>
+    <string name="settings_shell_filebrowser_platform_rom_path_title">Chemin des ROM de %1$s</string>
+    <string name="settings_shell_filebrowser_gamenative_sync_folder_title">Dossier de synchro de %1$s</string>
+    <string name="settings_shell_filebrowser_save_path_title">Chemin de sauvegarde</string>
+    <string name="settings_shell_filebrowser_platform_save_path_title">Chemin de sauvegarde de %1$s</string>
+    <string name="settings_shell_filebrowser_platform_state_path_title">Chemin des états de %1$s</string>
+    <string name="settings_shell_filebrowser_builtin_save_path_title">Chemin de sauvegarde intégré</string>
+    <string name="settings_shell_filebrowser_builtin_state_path_title">Chemin des états intégré</string>
+    <string name="settings_shell_filebrowser_platform_builtin_save_path_title">Chemin de sauvegarde intégré de %1$s</string>
+    <string name="settings_shell_filebrowser_platform_builtin_state_path_title">Chemin des états intégré de %1$s</string>
+    <string name="settings_shell_filebrowser_settings_backup_title">Sélectionner une sauvegarde de réglages</string>
+    <string name="settings_shell_filebrowser_add_music_title">Ajouter de la musique</string>
+    <string name="settings_shell_filebrowser_music_location_title">Emplacement de la musique</string>
+    <string name="settings_shell_filebrowser_media_location_title">Emplacement des médias</string>
+    <string name="settings_shell_filebrowser_custom_sound_title">Son personnalisé</string>
+
+    <!-- ===== SettingsScreen: confirm modals ===== -->
+
+    <string name="settings_shell_modal_builtin_migration_save_title">Migrer les fichiers de sauvegarde ?</string>
+    <string name="settings_shell_modal_builtin_migration_state_title">Migrer les fichiers d\'état ?</string>
+    <string name="settings_shell_modal_builtin_migration_save_message">La destination contient déjà %1$d fichiers de sauvegarde. Déplacer les fichiers existants depuis l\'ancien emplacement ? Cela écrasera les conflits éventuels.</string>
+    <string name="settings_shell_modal_builtin_migration_state_message">La destination contient déjà %1$d fichiers d\'état. Déplacer les fichiers existants depuis l\'ancien emplacement ? Cela écrasera les conflits éventuels.</string>
+    <string name="settings_shell_modal_builtin_migration_confirm">Migrer</string>
+    <string name="settings_shell_modal_builtin_migration_skip">Ignorer</string>
+
+    <string name="settings_shell_modal_music_relocation_title">Déplacer les fichiers musicaux ?</string>
+    <string name="settings_shell_modal_music_relocation_message">Le dossier de musique actuel contient %1$d fichiers. Les déplacer vers le nouvel emplacement ? Cela écrasera les conflits éventuels.</string>
+    <string name="settings_shell_modal_music_relocation_confirm">Déplacer</string>
+    <string name="settings_shell_modal_music_relocation_skip">Ignorer</string>
+
+    <string name="settings_shell_modal_media_relocation_title">Déplacer les médias téléchargés ?</string>
+    <string name="settings_shell_modal_media_relocation_message">Le dossier de médias actuel contient %1$d fichiers. Les déplacer vers le nouvel emplacement ? Cela écrasera les conflits éventuels.</string>
+    <string name="settings_shell_modal_media_relocation_confirm">Déplacer</string>
+    <string name="settings_shell_modal_media_relocation_leave">Laisser</string>
+
+    <string name="settings_shell_modal_jellyfin_signout_title">Se déconnecter de Jellyfin ?</string>
+    <string name="settings_shell_modal_jellyfin_signout_message">Cet appareil oublie votre connexion Jellyfin. Les médias téléchargés restent sur le disque et votre historique de visionnage reste sur le serveur.</string>
+    <string name="settings_shell_modal_jellyfin_signout_confirm">Se déconnecter</string>
+
+    <string name="settings_shell_modal_import_settings_title">Importer les réglages ?</string>
+    <string name="settings_shell_modal_import_settings_message">Choisissez un fichier de sauvegarde et les réglages qu\'il contient remplaceront les vôtres. Tout ce que le fichier omet reste inchangé, et les comptes, serveurs, états de synchro et emplacements de fichiers ne sont jamais repris.</string>
+    <string name="settings_shell_modal_import_settings_confirm">Choisir un fichier</string>
+
+    <string name="settings_shell_modal_migrate_downloads_title">Migrer les téléchargements ?</string>
+    <string name="settings_shell_modal_migrate_downloads_message">Déplacer %1$d jeux (%2$s) vers le nouvel emplacement ?</string>
+    <string name="settings_shell_modal_migrate_downloads_confirm">Migrer</string>
+    <string name="settings_shell_modal_migrate_downloads_skip">Ignorer</string>
+
+    <string name="settings_shell_modal_migrate_platform_title">Migrer les ROM %1$s ?</string>
+    <string name="settings_shell_modal_migrate_platform_fallback">Plateforme</string>
+    <string name="settings_shell_modal_migrate_platform_message">Déplacer les jeux téléchargés vers le nouvel emplacement ? Les fichiers seront copiés puis supprimés de l\'ancien emplacement.</string>
+    <string name="settings_shell_modal_migrate_platform_confirm">Migrer</string>
+    <string name="settings_shell_modal_migrate_platform_skip">Ignorer</string>
+
+    <string name="settings_shell_modal_purge_platform_title">Purger %1$s ?</string>
+    <string name="settings_shell_modal_purge_platform_fallback">Plateforme</string>
+    <string name="settings_shell_modal_purge_platform_message">Cela supprimera les %1$d jeux et leurs fichiers ROM locaux. Cette action est irréversible.</string>
+    <string name="settings_shell_modal_purge_platform_confirm">Purger</string>
+
+    <string name="settings_shell_modal_sync_first_title">Synchroniser les sauvegardes d\'abord</string>
+    <string name="settings_shell_modal_sync_first_message">Synchronisez les sauvegardes d\'abord : %1$d en attente. Réinitialiser la bibliothèque maintenant supprimerait définitivement les sauvegardes non envoyées.</string>
+    <string name="settings_shell_modal_sync_first_confirm">Synchroniser</string>
+
+    <string name="settings_shell_modal_reset_library_title">Réinitialiser la bibliothèque ?</string>
+    <string name="settings_shell_modal_reset_library_message">Efface la base de données et le cache d\'images. Les fichiers téléchargés restent sur le disque. Perdus définitivement : le temps de jeu, les collections locales, l\'historique des téléchargements, l\'état de synchro des sauvegardes et les réglages par jeu. Vous devrez resynchroniser votre bibliothèque.</string>
+    <string name="settings_shell_modal_reset_library_confirm">Réinitialiser</string>
+
+    <plurals name="settings_shell_unsynced_saves_warning">
+        <item quantity="one">%d sauvegarde non synchronisée sera perdue.</item>
+        <item quantity="many">%d sauvegardes non synchronisées seront perdues.</item>
+        <item quantity="other">%d sauvegardes non synchronisées seront perdues.</item>
+    </plurals>
+
+    <string name="settings_shell_modal_delete_game_soundtrack_title">Supprimer %1$s ?</string>
+    <string name="settings_shell_modal_delete_game_soundtrack_message">Supprime tous les fichiers téléchargés pour ce jeu.%1$s Choisissez si vous voulez aussi supprimer sa bande originale.</string>
+    <string name="settings_shell_modal_delete_game_cancel">Annuler</string>
+    <string name="settings_shell_modal_delete_game_only">Supprimer le jeu</string>
+    <string name="settings_shell_modal_delete_game_with_soundtrack">Supprimer + bande originale</string>
+
+    <string name="settings_shell_modal_delete_game_plain_title">Supprimer %1$s ?</string>
+    <string name="settings_shell_modal_delete_game_plain_message">Supprime tous les fichiers téléchargés pour ce jeu.%1$s Cette action est irréversible.</string>
+    <string name="settings_shell_modal_delete_game_plain_confirm">Supprimer le jeu</string>
+
+    <string name="settings_shell_modal_romm_signout_title">Se déconnecter de RomM ?</string>
+    <plurals name="settings_shell_romm_signout_pending_message">
+        <item quantity="one">%1$d sauvegarde sera envoyée d\'abord. Une fois tout sur votre serveur, les sauvegardes, états et réglages en cache de ce compte sont supprimés de cet appareil. Vos jeux téléchargés restent.</item>
+        <item quantity="many">%1$d sauvegardes seront envoyées d\'abord. Une fois tout sur votre serveur, les sauvegardes, états et réglages en cache de ce compte sont supprimés de cet appareil. Vos jeux téléchargés restent.</item>
+        <item quantity="other">%1$d sauvegardes seront envoyées d\'abord. Une fois tout sur votre serveur, les sauvegardes, états et réglages en cache de ce compte sont supprimés de cet appareil. Vos jeux téléchargés restent.</item>
+    </plurals>
+    <string name="settings_shell_romm_signout_message">Les sauvegardes, états et réglages en cache de ce compte sont supprimés de cet appareil, et tout ce qui a déjà été envoyé reste sur votre serveur. Vos jeux téléchargés restent.</string>
+    <string name="settings_shell_modal_romm_signout_confirm">Se déconnecter</string>
+
+    <string name="settings_shell_modal_reset_save_cache_title">Réinitialiser le cache de sauvegardes ?</string>
+    <string name="settings_shell_modal_reset_save_cache_message">Cela supprimera tous les instantanés de sauvegarde mis en cache localement et les opérations de synchro en attente. Vos fichiers de sauvegarde réels et les sauvegardes du serveur ne sont pas affectés.</string>
+    <string name="settings_shell_modal_reset_save_cache_confirm">Réinitialiser</string>
+
+    <string name="settings_shell_modal_clear_save_path_cache_title">Vider le cache des chemins de sauvegarde ?</string>
+    <string name="settings_shell_modal_clear_save_path_cache_message">Cela effacera tous les chemins de fichiers de sauvegarde détectés. Les chemins seront redétectés à la prochaine synchro. À utiliser si les sauvegardes se synchronisent au mauvais endroit.</string>
+    <string name="settings_shell_modal_clear_save_path_cache_confirm">Vider</string>
+
+    <string name="settings_shell_modal_secure_saves_off_title">Désactiver les sauvegardes sécurisées ?</string>
+    <string name="settings_shell_modal_secure_saves_off_message">Désactiver cette option désactive le mode hardcore de RetroAchievements. Les jeux se lanceront en mode casual jusqu\'à ce que les sauvegardes sécurisées soient réactivées.</string>
+    <string name="settings_shell_modal_secure_saves_off_confirm">Désactiver</string>
+
+    <string name="settings_shell_modal_clear_state_cache_title">Vider le cache des états ?</string>
+    <string name="settings_shell_modal_clear_state_cache_message">Cela supprimera tous les instantanés d\'état mis en cache localement et leurs opérations de synchro en attente. Les fichiers de sauvegarde et les copies serveur ne sont pas affectés.</string>
+    <string name="settings_shell_modal_clear_state_cache_confirm">Vider</string>
+
+    <string name="settings_shell_modal_caches_clear_confirm">Vider</string>
+
+    <string name="settings_shell_modal_delete_core_title">Supprimer le core ?</string>
+    <string name="settings_shell_modal_delete_core_message">Le core est supprimé de cet appareil. Les jeux configurés pour l\'utiliser devront le retélécharger avant de pouvoir se lancer.</string>
+    <string name="settings_shell_modal_delete_core_confirm">Supprimer</string>
+
+    <string name="settings_shell_modal_sync_saves_title">Synchroniser les sauvegardes ?</string>
+    <string name="settings_shell_modal_sync_saves_message">Cela analysera tous les jeux téléchargés à la recherche de sauvegardes modifiées et les synchronisera avec le serveur. Les sauvegardes locales plus récentes que la dernière synchro seront envoyées, et les sauvegardes serveur plus récentes seront téléchargées.</string>
+    <string name="settings_shell_modal_sync_saves_confirm">Synchroniser</string>
+
+    <!-- ===== SettingsScreen: AccountModals ===== -->
+
+    <string name="settings_shell_accounts_add_title">Ajouter un compte ?</string>
+    <string name="settings_shell_accounts_switch_title">Passer à %1$s ?</string>
+    <string name="settings_shell_accounts_fallback_name">compte</string>
+    <string name="settings_shell_accounts_exit_message">Fermez complètement tout jeu lancé en dehors d\'Argosy avant de continuer. Argosy ne peut pas voir ces sessions, et un jeu encore en cours peut écraser les sauvegardes que ce déplacement affecte. Les sauvegardes sont archivées et vérifiées avant toute suppression.</string>
+    <string name="settings_shell_accounts_add_confirm">Jeux fermés, continuer</string>
+    <string name="settings_shell_accounts_switch_confirm">Jeux fermés, changer</string>
+
+    <string name="settings_shell_accounts_remove_title">Supprimer %1$s ?</string>
+    <string name="settings_shell_accounts_remove_fallback_name">compte</string>
+    <string name="settings_shell_accounts_removal_message_base">Supprime de cet appareil les sauvegardes, états, tâches en attente, succès et la surcouche de bibliothèque de ce compte. Les jeux téléchargés sont conservés.</string>
+    <string name="settings_shell_accounts_removal_pending_suffix"> Encore non envoyé : %1$s.</string>
+    <string name="settings_shell_accounts_removal_last_account_suffix"> C\'est le dernier compte, l\'appareil sera donc déconnecté de RomM.</string>
+    <string name="settings_shell_accounts_removal_revoke_suffix"> L\'appareil reste enregistré sur le serveur RomM ; révoquez-le là-bas.</string>
+    <string name="settings_shell_accounts_cancel">Annuler</string>
+    <string name="settings_shell_accounts_keep_queued_work">Conserver les tâches en attente</string>
+    <string name="settings_shell_accounts_discard_and_remove">Abandonner et supprimer</string>
+    <string name="settings_shell_accounts_remove_confirm">Supprimer</string>
+
+    <string name="settings_shell_accounts_switch_failed_title">Le changement ne s\'est pas terminé</string>
+    <string name="settings_shell_accounts_switch_failed_message">%1$s Le lancement des jeux reste bloqué tant que le changement n\'est pas terminé, afin qu\'aucune sauvegarde ne reste à moitié déplacée. Réessayez pour le terminer.</string>
+    <string name="settings_shell_accounts_retry">Réessayer</string>
+    <string name="settings_shell_accounts_not_now">Pas maintenant</string>
+
+    <string name="settings_shell_accounts_cannot_switch_title">Changement impossible pour l\'instant</string>
+    <string name="settings_shell_accounts_ok">OK</string>
+    <string name="settings_shell_accounts_close">Fermer</string>
+
+    <string name="settings_shell_accounts_notice_title">Comptes</string>
+    <string name="settings_shell_accounts_ok2">OK</string>
+    <string name="settings_shell_accounts_close2">Fermer</string>
+
+    <!-- ===== SettingsScreen: footer hints ===== -->
+
+    <string name="settings_shell_footer_navigate">Parcourir</string>
+    <string name="settings_shell_footer_navigate_vertical">Parcourir</string>
+    <string name="settings_shell_footer_preview_shape">Aperçu de la forme</string>
+    <string name="settings_shell_footer_preview_game">Aperçu du jeu</string>
+    <string name="settings_shell_footer_shader">Shader</string>
+    <string name="settings_shell_footer_reorder">Réorganiser</string>
+    <string name="settings_shell_footer_adjust_shaderstack">Ajuster</string>
+    <string name="settings_shell_footer_reset_shaderstack">Réinitialiser</string>
+    <string name="settings_shell_footer_remove_shaderstack">Retirer</string>
+    <string name="settings_shell_footer_add_shaderstack">Ajouter</string>
+    <string name="settings_shell_footer_platform_builtin">Plateforme</string>
+    <string name="settings_shell_footer_reset_to_default_builtinvideo">Réinitialiser par défaut</string>
+    <string name="settings_shell_footer_sample">Exemple</string>
+    <string name="settings_shell_footer_reset_to_default_themesounds">Réinitialiser par défaut</string>
+    <string name="settings_shell_footer_platform_coreoptions">Plateforme</string>
+    <string name="settings_shell_footer_reset_to_default_coreoptions">Réinitialiser par défaut</string>
+    <string name="settings_shell_footer_force_sync">Forcer la synchro</string>
+    <string name="settings_shell_footer_folders_scan">Dossiers / Analyse</string>
+    <string name="settings_shell_footer_switch_remove">Changer / Supprimer</string>
+    <string name="settings_shell_footer_refresh">Actualiser</string>
+    <string name="settings_shell_footer_sort">Trier</string>
+    <string name="settings_shell_footer_category">Catégorie</string>
+    <string name="settings_shell_footer_delete">Supprimer</string>
+    <string name="settings_shell_footer_adjust_platformdetail">Ajuster</string>
+    <string name="settings_shell_footer_update_emulator">Mettre à jour l\'émulateur</string>
+    <string name="settings_shell_footer_reset_platformdetail">Réinitialiser</string>
+    <string name="settings_shell_footer_toggle_label">Activer/désactiver</string>
+    <string name="settings_shell_footer_open_label">Ouvrir</string>
+    <string name="settings_shell_footer_select_label">Sélectionner</string>
+    <string name="settings_shell_footer_select_default">Sélectionner</string>
+    <string name="settings_shell_footer_display">Affichage</string>
+    <string name="settings_shell_footer_enable">Activer</string>
+    <string name="settings_shell_footer_update">Mettre à jour</string>
+    <string name="settings_shell_footer_reset_builtinvideo_override">Réinitialiser</string>
+    <string name="settings_shell_footer_reset_builtincontrols_override">Réinitialiser</string>
+    <string name="settings_shell_footer_back">Retour</string>
+
+    <!-- ===== SettingsScreen: cache clear confirm modals ===== -->
+
+    <string name="settings_shell_caches_image_title">Vider le cache d\'images ?</string>
+    <string name="settings_shell_caches_image_message">Cela supprimera toutes les jaquettes, arrière-plans et captures d\'écran mis en cache. Les images seront retéléchargées depuis le serveur au fil de la navigation.</string>
+    <string name="settings_shell_caches_rom_extraction_title">Vider les ROM extraites ?</string>
+    <string name="settings_shell_caches_rom_extraction_message">Cela supprimera les copies de travail extraites des jeux compressés. Elles seront réextraites au prochain lancement de chaque jeu.</string>
+    <string name="settings_shell_caches_rom_staging_title">Vider les fichiers temporaires abandonnés ?</string>
+    <string name="settings_shell_caches_rom_staging_message">Cela supprimera les fichiers de travail internes laissés par des téléchargements jamais terminés. Les téléchargements encore en file d\'attente conservent les leurs et reprennent où ils s\'étaient arrêtés.</string>
+    <string name="settings_shell_caches_sfx_title">Vider le cache des effets sonores ?</string>
+    <string name="settings_shell_caches_sfx_message">Cela supprimera les fichiers sonores personnalisés transcodés. Ils seront reconstruits automatiquement au prochain chargement des sons.</string>
+    <string name="settings_shell_caches_emulator_apks_title">Vider les installeurs d\'émulateurs ?</string>
+    <string name="settings_shell_caches_emulator_apks_message">Cela supprimera les APK d\'installation d\'émulateurs téléchargés. Les émulateurs installés ne sont pas affectés.</string>
+    <string name="settings_shell_caches_misc_downloads_title">Vider les téléchargements divers ?</string>
+    <string name="settings_shell_caches_misc_downloads_message">Cela supprimera les images de présence des amis et les pilotes GPU téléchargés. Les pilotes installés ne sont pas affectés.</string>
+    <string name="settings_shell_caches_shaders_catalog_title">Vider le catalogue de shaders ?</string>
+    <string name="settings_shell_caches_shaders_catalog_message">Cela supprimera les shaders du catalogue téléchargés. Les shaders personnalisés sont conservés, et les shaders du catalogue seront retéléchargés à la demande.</string>
+    <string name="settings_shell_caches_frames_title">Vider les cadres téléchargés ?</string>
+    <string name="settings_shell_caches_frames_message">Cela supprimera les cadres téléchargés. Ils seront retéléchargés à la demande lors de leur sélection.</string>
+    <string name="settings_shell_caches_steam_downloads_title">Vider les données de téléchargement Steam ?</string>
+    <string name="settings_shell_caches_steam_downloads_message">Cela supprimera les téléchargements Steam en préparation et videra la file d\'attente. Les jeux installés ne sont pas affectés, mais les téléchargements partiels repartiront de zéro.</string>
+
+    <!-- ===== ManagePinsScreen ===== -->
+
+    <string name="settings_shell_managepins_loading">Chargement…</string>
+    <string name="settings_shell_managepins_reorder_move">Déplacer</string>
+    <string name="settings_shell_managepins_reorder_done">Terminé</string>
+    <string name="settings_shell_managepins_reorder_cancel">Annuler</string>
+    <string name="settings_shell_managepins_navigate">Parcourir</string>
+    <string name="settings_shell_managepins_reorder_hint">Réorganiser</string>
+    <string name="settings_shell_managepins_unpin">Désépingler</string>
+    <string name="settings_shell_managepins_back_hint">Retour</string>
+    <string name="settings_shell_managepins_back_desc">Retour</string>
+    <string name="settings_shell_managepins_title">Gérer les collections épinglées</string>
+    <string name="settings_shell_managepins_type_collection">Collection</string>
+    <string name="settings_shell_managepins_type_genre">Genre</string>
+    <string name="settings_shell_managepins_type_game_mode">Mode de jeu</string>
+    <string name="settings_shell_managepins_type_series">Série</string>
+    <string name="settings_shell_managepins_moving_desc">Déplacement</string>
+    <plurals name="settings_shell_managepins_row_subtitle">
+        <item quantity="one">%1$s - %2$d jeu</item>
+        <item quantity="many">%1$s - %2$d jeux</item>
+        <item quantity="other">%1$s - %2$d jeux</item>
+    </plurals>
+    <string name="settings_shell_managepins_empty_title">Aucune collection épinglée</string>
+    <string name="settings_shell_managepins_empty_subtitle">Épinglez des collections depuis l\'écran Collections</string>
+
+    <!-- ===== BgmPlaylistManagerScreen ===== -->
+
+    <string name="settings_shell_bgm_synced_folders">Dossiers synchronisés</string>
+    <string name="settings_shell_bgm_tracks">Pistes</string>
+    <string name="settings_shell_bgm_reorder_move">Déplacer</string>
+    <string name="settings_shell_bgm_reorder_done">Terminé</string>
+    <string name="settings_shell_bgm_reorder_cancel">Annuler</string>
+    <string name="settings_shell_bgm_add_music_empty">Ajouter de la musique</string>
+    <string name="settings_shell_bgm_move_hint">Déplacer</string>
+    <string name="settings_shell_bgm_add_music_hint">Ajouter de la musique</string>
+    <string name="settings_shell_bgm_remove_verb">Retirer</string>
+    <string name="settings_shell_bgm_remove_verb_uncovered">Retirer</string>
+    <string name="settings_shell_bgm_disable_verb">Désactiver</string>
+    <string name="settings_shell_bgm_enable_verb">Activer</string>
+    <string name="settings_shell_bgm_back_desc">Retour</string>
+    <string name="settings_shell_bgm_title">Playlist musicale</string>
+    <string name="settings_shell_bgm_add_label">Ajouter</string>
+    <string name="settings_shell_bgm_folder_missing">Dossier manquant</string>
+    <plurals name="settings_shell_bgm_track_count">
+        <item quantity="one">%1$d piste</item>
+        <item quantity="many">%1$d pistes</item>
+        <item quantity="other">%1$d pistes</item>
+    </plurals>
+    <plurals name="settings_shell_bgm_disabled_suffix_template">
+        <item quantity="one"> (%1$d désactivée)</item>
+        <item quantity="many"> (%1$d désactivées)</item>
+        <item quantity="other"> (%1$d désactivées)</item>
+    </plurals>
+    <string name="settings_shell_bgm_remove_folder_desc">Retirer le dossier</string>
+    <string name="settings_shell_bgm_moving_desc">Déplacement</string>
+    <string name="settings_shell_bgm_file_missing">Fichier manquant - ignoré pendant la lecture</string>
+    <string name="settings_shell_bgm_disabled_desc">Désactivée - exclue de la lecture</string>
+    <string name="settings_shell_bgm_move_up_desc">Monter</string>
+    <string name="settings_shell_bgm_move_down_desc">Descendre</string>
+    <string name="settings_shell_bgm_remove_desc">Retirer</string>
+    <string name="settings_shell_bgm_empty_state">Aucune musique - ajoutez-en depuis le navigateur de musique ou des fichiers locaux</string>
+
+    <!-- ===== Routers: SettingsBuiltinRouter ===== -->
+
+    <string name="settings_shell_router_cores_load_failed">Impossible de charger les cores. Veuillez réessayer.</string>
+    <string name="settings_shell_router_cannot_download_offline">Téléchargement impossible hors ligne</string>
+    <string name="settings_shell_router_cannot_update_offline">Mise à jour impossible hors ligne</string>
+    <string name="settings_shell_router_core_downloading_title">Téléchargement de %1$s</string>
+    <string name="settings_shell_router_core_downloading_subtitle">Veuillez patienter…</string>
+    <string name="settings_shell_router_core_downloaded_title">%1$s téléchargé</string>
+    <string name="settings_shell_router_core_downloaded_subtitle">Le core est maintenant disponible</string>
+    <string name="settings_shell_router_core_download_failed_title">Échec du téléchargement</string>
+    <string name="settings_shell_router_core_download_failed_fallback">Erreur inconnue</string>
+
+    <!-- ===== Routers: SettingsAboutRouter ===== -->
+
+    <string name="settings_shell_router_settings_exported_title">Réglages exportés</string>
+    <string name="settings_shell_router_settings_exported_subtitle">%1$d réglages écrits dans %2$s</string>
+    <string name="settings_shell_router_settings_imported_title">Réglages importés</string>
+    <string name="settings_shell_router_import_subtitle_with_skipped">%1$d appliqués, %2$d ignorés. Redémarrez pour tout appliquer.</string>
+    <string name="settings_shell_router_import_subtitle">%1$d appliqués. Redémarrez pour tout appliquer.</string>
+
+    <!-- ===== Routers: SettingsFontRouter ===== -->
+
+    <string name="settings_shell_router_font_import_failed_title">Échec de l\'import de la police</string>
+    <string name="settings_shell_router_font_error_no_filename">Impossible de lire le fichier sélectionné</string>
+    <string name="settings_shell_router_font_error_no_stream">Impossible de lire le fichier sélectionné</string>
+    <string name="settings_shell_router_font_error_unsupported_ext">Seules les polices .ttf et .otf sont prises en charge</string>
+    <string name="settings_shell_router_font_error_invalid">%1$s n\'est pas un fichier de police valide</string>
+
+    <!-- ===== Routers: SettingsGeneralRouter ===== -->
+
+    <string name="settings_shell_router_emulator_name_fallback">Inconnu</string>
+    <string name="settings_shell_router_content_dir_save">(dossier de la ROM)</string>
+    <string name="settings_shell_router_content_dir_state">(dossier de la ROM)</string>
+
+    <!-- ===== Routers: SettingsInitRouter ===== -->
+
+    <string name="settings_shell_router_content_dir_save2">(dossier de la ROM)</string>
+    <string name="settings_shell_router_content_dir_state2">(dossier de la ROM)</string>
+
+    <!-- ===== SettingsViewModel ===== -->
+
+    <string name="settings_shell_vm_artwork_cache_title">Cache des illustrations</string>
+    <string name="settings_shell_vm_artwork_cleared_template">%1$s libérés</string>
+    <string name="settings_shell_vm_artwork_nothing_cached">Rien à effacer dans le cache</string>
+    <string name="settings_shell_vm_platform_fallback">Plateforme</string>
+    <plurals name="settings_shell_vm_scan_found_template">
+        <item quantity="one">%1$d trouvé</item>
+        <item quantity="many">%1$d trouvés</item>
+        <item quantity="other">%1$d trouvés</item>
+    </plurals>
+    <plurals name="settings_shell_vm_scan_removed_template">
+        <item quantity="one">%1$d supprimé</item>
+        <item quantity="many">%1$d supprimés</item>
+        <item quantity="other">%1$d supprimés</item>
+    </plurals>
+    <string name="settings_shell_vm_scan_no_changes">Aucun changement</string>
+    <string name="settings_shell_vm_scan_complete_title">Analyse terminée</string>
+    <string name="settings_shell_vm_scan_complete_subtitle_template">%1$s : %2$s</string>
+    <string name="settings_shell_vm_scan_complete_title2">Analyse terminée</string>
+    <plurals name="settings_shell_vm_android_added_template">
+        <item quantity="one">%1$d ajouté</item>
+        <item quantity="many">%1$d ajoutés</item>
+        <item quantity="other">%1$d ajoutés</item>
+    </plurals>
+    <string name="settings_shell_vm_android_updated_template">%1$d mis à jour</string>
+    <string name="settings_shell_vm_android_scan_result_template">Android : %1$s</string>
+    <string name="settings_shell_vm_android_scan_nothing_new">Android : rien de nouveau. Ajoutez les autres depuis Applis.</string>
+    <string name="settings_shell_vm_folders_restored_title">Dossiers restaurés</string>
+    <string name="settings_shell_vm_nothing_moved_title">Rien de déplacé</string>
+    <plurals name="settings_shell_vm_games_moved_back">
+        <item quantity="one">%1$d jeu remis dans son propre dossier</item>
+        <item quantity="many">%1$d jeux remis dans leurs propres dossiers</item>
+        <item quantity="other">%1$d jeux remis dans leurs propres dossiers</item>
+    </plurals>
+    <string name="settings_shell_vm_no_games_moved_back">Aucun jeu n\'a pu être remis en place</string>
+    <string name="settings_shell_vm_pushed_to_retroarch_title">Envoyé vers RetroArch</string>
+    <plurals name="settings_shell_vm_retroarch_configs_updated">
+        <item quantity="one">%1$d configuration RetroArch mise à jour</item>
+        <item quantity="many">%1$d configurations RetroArch mises à jour</item>
+        <item quantity="other">%1$d configurations RetroArch mises à jour</item>
+    </plurals>
+    <string name="settings_shell_vm_retroarch_not_found_title">RetroArch introuvable</string>
+    <string name="settings_shell_vm_retroarch_not_found_subtitle">Aucun retroarch.cfg trouvé à mettre à jour</string>
+    <string name="settings_shell_vm_not_signed_in_title">Non connecté</string>
+    <string name="settings_shell_vm_not_signed_in_subtitle">Connectez-vous d\'abord à RetroAchievements</string>
+    <string name="settings_shell_vm_files_removed_title">Fichiers supprimés</string>
+    <plurals name="settings_shell_vm_files_removed_subtitle">
+        <item quantity="one">%1$d fichier supprimé de %2$s</item>
+        <item quantity="many">%1$d fichiers supprimés de %2$s</item>
+        <item quantity="other">%1$d fichiers supprimés de %2$s</item>
+    </plurals>
+    <string name="settings_shell_vm_bios_copied_title">BIOS copié</string>
+    <plurals name="settings_shell_vm_bios_copied_subtitle">
+        <item quantity="one">%1$d fichier copié</item>
+        <item quantity="many">%1$d fichiers copiés</item>
+        <item quantity="other">%1$d fichiers copiés</item>
+    </plurals>
+</resources>

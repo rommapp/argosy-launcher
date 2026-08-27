@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.home.grid
 
+import android.content.Context
+import com.nendo.argosy.R
 import com.nendo.argosy.data.repository.HomeTileRepository
 import com.nendo.argosy.domain.model.CustomGridMove
 import com.nendo.argosy.domain.model.GridCell
@@ -34,6 +36,7 @@ import kotlinx.coroutines.launch
  * simply behaves differently.
  */
 class CustomGridCoordinator(
+    private val context: Context,
     private val scope: CoroutineScope,
     private val repository: HomeTileRepository?,
     private val pageRepository: com.nendo.argosy.data.repository.HomeGridPageRepository? = null,
@@ -53,6 +56,7 @@ class CustomGridCoordinator(
     val state: CustomGridState get() = read()
 
     private val mediaSetupController = MediaTileSetupController(
+        context = context,
         scope = scope,
         catalog = mediaCatalog,
         read = read,
@@ -673,8 +677,8 @@ class CustomGridCoordinator(
         return listOf(
             TilePickerEntry(
                 target = HomeTileTargetRef.Unresolvable,
-                title = "Choose a video on this device",
-                subtitle = "Plays straight from your storage",
+                title = context.getString(R.string.home_grid_local_video_row_title),
+                subtitle = context.getString(R.string.home_grid_local_video_row_subtitle),
                 action = TilePickerAction.BROWSE_LOCAL_FILE,
                 isLocal = true
             )

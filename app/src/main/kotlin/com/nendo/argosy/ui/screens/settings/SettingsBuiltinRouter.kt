@@ -13,9 +13,11 @@ import com.nendo.argosy.libretro.shader.ShaderChainConfig
 import com.nendo.argosy.libretro.shader.ShaderChainManager
 import com.nendo.argosy.libretro.shader.ShaderPreviewRenderer
 import com.nendo.argosy.ui.input.HapticPattern
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.NotificationType
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.core.emulator.LibretroSettingDef
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.screens.settings.sections.BuiltinEmulatorItem
 import com.nendo.argosy.ui.screens.settings.sections.HUD_CORNERS
 import com.nendo.argosy.util.AppPaths
@@ -109,10 +111,10 @@ internal fun routeSetHudEnabled(vm: SettingsViewModel, enabled: Boolean) {
 }
 
 internal fun routeCycleHudCorner(vm: SettingsViewModel, forward: Boolean) {
-    val corners = HUD_CORNERS
-    val current = vm._uiState.value.emulators.hudCorner
-    val index = corners.indexOf(current).coerceAtLeast(0)
-    val next = corners[(if (forward) index + 1 else index - 1).mod(corners.size)]
+    val corners = com.nendo.argosy.ui.components.HudCorner.entries
+    val index = com.nendo.argosy.ui.common
+        .hudCornerFromStored(vm._uiState.value.emulators.hudCorner).ordinal
+    val next = corners[(if (forward) index + 1 else index - 1).mod(corners.size)].name
     vm._uiState.update { it.copy(emulators = it.emulators.copy(hudCorner = next)) }
     vm.viewModelScope.launch { vm.libretroSettingsRepo.setHudCorner(next) }
 }
@@ -861,7 +863,7 @@ internal fun routeLoadCoreManagementState(vm: SettingsViewModel, preserveFocus: 
         } catch (e: Exception) {
             android.util.Log.e("CoreManagement", "Failed to load core management state", e)
             vm._uiState.update { it.copy(coreManagement = CoreManagementState()) }
-            vm.notificationManager.showError("Couldn't load cores. Please try again.")
+            vm.notificationManager.showError(NotificationText.Res(R.string.settings_shell_router_cores_load_failed))
         }
     }
 }
@@ -994,7 +996,7 @@ internal fun routeSelectCoreForPlatform(vm: SettingsViewModel) {
         if (state.isOnline) {
             routeDownloadCoreWithNotification(vm, core.coreId)
         } else {
-            vm.notificationManager.showError("Cannot download while offline")
+            vm.notificationManager.showError(NotificationText.Res(R.string.settings_shell_router_cannot_download_offline))
         }
         return
     }
@@ -1003,7 +1005,7 @@ internal fun routeSelectCoreForPlatform(vm: SettingsViewModel) {
         if (state.isOnline) {
             routeDownloadCoreWithNotification(vm, core.coreId)
         } else {
-            vm.notificationManager.showError("Cannot update while offline")
+            vm.notificationManager.showError(NotificationText.Res(R.string.settings_shell_router_cannot_update_offline))
         }
         return
     }
@@ -1031,8 +1033,10 @@ internal fun routeDownloadCoreWithNotification(vm: SettingsViewModel, coreId: St
 
         val notificationKey = "core_download_$coreId"
         vm.notificationManager.showPersistent(
-            title = "Downloading ${coreInfo.displayName}",
-            subtitle = "Please wait...",
+            title = NotificationText.Res(
+                R.string.settings_shell_router_core_downloading_title, listOf(coreInfo.displayName)
+            ),
+            subtitle = NotificationText.Res(R.string.settings_shell_router_core_downloading_subtitle),
             key = notificationKey
         )
 
@@ -1042,8 +1046,10 @@ internal fun routeDownloadCoreWithNotification(vm: SettingsViewModel, coreId: St
             onSuccess = {
                 vm.notificationManager.completePersistent(
                     key = notificationKey,
-                    title = "Downloaded ${coreInfo.displayName}",
-                    subtitle = "Core is now available",
+                    title = NotificationText.Res(
+                        R.string.settings_shell_router_core_downloaded_title, listOf(coreInfo.displayName)
+                    ),
+                    subtitle = NotificationText.Res(R.string.settings_shell_router_core_downloaded_subtitle),
                     type = NotificationType.SUCCESS
                 )
                 vm.emulatorDelegate.updateCoreCounts()
@@ -1053,8 +1059,9 @@ internal fun routeDownloadCoreWithNotification(vm: SettingsViewModel, coreId: St
             onFailure = { error ->
                 vm.notificationManager.completePersistent(
                     key = notificationKey,
-                    title = "Download failed",
-                    subtitle = error.message ?: "Unknown error",
+                    title = NotificationText.Res(R.string.settings_shell_router_core_download_failed_title),
+                    subtitle = error.message?.let { NotificationText.Raw(it) }
+                        ?: NotificationText.Res(R.string.settings_shell_router_core_download_failed_fallback),
                     type = NotificationType.ERROR
                 )
             }

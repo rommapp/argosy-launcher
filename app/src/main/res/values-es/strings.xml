@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Names the second-screen home in the system's secondary-home picker, where it would
+         otherwise be indistinguishable from the main launcher entry. "Argosy" is the product
+         name and stays as is; translate only the word describing the companion screen. -->
+    <string name="secondary_home_label">Argosy Compañero</string>
+    <!-- Spoken by the screen reader for the accessibility service that pins gamepad focus. -->
+    <string name="focus_accessibility_description">Mantiene el enfoque del mando en la pantalla de juego durante el juego en dos pantallas</string>
+</resources>

@@ -4,8 +4,6 @@ import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.GameRepository
-import com.nendo.argosy.core.notification.NotificationManager
-import com.nendo.argosy.core.notification.NotificationType
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
@@ -24,7 +22,6 @@ class MigrateStorageUseCaseTest {
 
     private lateinit var gameRepository: GameRepository
     private lateinit var preferencesRepository: UserPreferencesRepository
-    private lateinit var notificationManager: NotificationManager
     private lateinit var useCase: MigrateStorageUseCase
 
     private lateinit var oldDir: File
@@ -34,11 +31,9 @@ class MigrateStorageUseCaseTest {
     fun setup() {
         gameRepository = mockk(relaxed = true)
         preferencesRepository = mockk(relaxed = true)
-        notificationManager = mockk(relaxed = true)
         useCase = MigrateStorageUseCase(
             gameRepository,
             preferencesRepository,
-            notificationManager,
             mockk(relaxed = true)
         )
 
@@ -91,65 +86,6 @@ class MigrateStorageUseCaseTest {
     }
 
     @Test
-    fun `invoke shows persistent notification during migration`() = runTest {
-        coEvery { gameRepository.getGamesWithLocalPaths() } returns emptyList()
-
-        useCase(oldDir.absolutePath, newDir.absolutePath)
-
-        coVerify {
-            notificationManager.showPersistent(
-                key = "migration",
-                title = "Moving games",
-                subtitle = any(),
-                progress = any()
-            )
-        }
-    }
-
-    @Test
-    fun `invoke completes notification with success when no failures`() = runTest {
-        coEvery { gameRepository.getGamesWithLocalPaths() } returns emptyList()
-
-        useCase(oldDir.absolutePath, newDir.absolutePath)
-
-        coVerify {
-            notificationManager.completePersistent(
-                key = "migration",
-                title = "Migration complete",
-                subtitle = any(),
-                type = NotificationType.SUCCESS
-            )
-        }
-    }
-
-    @Test
-    fun `invoke completes notification with warning when there are failures`() = runTest {
-        val oldFile = File(oldDir, "nes/game.nes").apply {
-            parentFile?.mkdirs()
-            writeText("rom data")
-        }
-        oldFile.setReadable(false)
-
-        val game = createGameEntity(localPath = oldFile.absolutePath)
-        coEvery { gameRepository.getGamesWithLocalPaths() } returns listOf(game)
-
-        val result = useCase(oldDir.absolutePath, newDir.absolutePath)
-
-        oldFile.setReadable(true)
-
-        if (result.failed > 0) {
-            coVerify {
-                notificationManager.completePersistent(
-                    key = "migration",
-                    title = "Migration complete",
-                    subtitle = any(),
-                    type = NotificationType.WARNING
-                )
-            }
-        }
-    }
-
-    @Test
     fun `invoke reports progress correctly`() = runTest {
         val file1 = File(oldDir, "nes/game1.nes").apply {
             parentFile?.mkdirs()
@@ -170,9 +106,10 @@ class MigrateStorageUseCaseTest {
             progressUpdates.add(Triple(current, total, title))
         }
 
-        assertEquals(2, progressUpdates.size)
-        assertEquals(Triple(1, 2, "Game 1"), progressUpdates[0])
-        assertEquals(Triple(2, 2, "Game 2"), progressUpdates[1])
+        assertEquals(3, progressUpdates.size)
+        assertEquals(Triple(0, 2, ""), progressUpdates[0])
+        assertEquals(Triple(1, 2, "Game 1"), progressUpdates[1])
+        assertEquals(Triple(2, 2, "Game 2"), progressUpdates[2])
     }
 
     @Test

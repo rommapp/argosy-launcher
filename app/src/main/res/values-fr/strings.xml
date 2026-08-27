@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="secondary_home_label">Argosy Compagnon</string>
+    <string name="focus_accessibility_description">Maintient le focus de la manette sur l\'affichage du jeu pendant le jeu en double écran</string>
+</resources>

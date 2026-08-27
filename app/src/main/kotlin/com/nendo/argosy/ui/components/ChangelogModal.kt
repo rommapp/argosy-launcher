@@ -20,8 +20,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.domain.model.ChangelogEntry
+import com.nendo.argosy.ui.common.labelRes
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.domain.model.RequiredAction
 
@@ -33,18 +36,20 @@ fun ChangelogModal(
 ) {
     val hasRequiredAction = entry.requiredActions.isNotEmpty()
     val firstAction = entry.requiredActions.firstOrNull()
+    val continueHint = stringResource(R.string.ui_changelog_footer_continue)
+    val actionHints = entry.requiredActions.associateWith { stringResource(it.labelRes) }
 
     val footerHints = buildList {
         if (!hasRequiredAction) {
-            add(InputButton.A to "Continue")
+            add(InputButton.A to continueHint)
         }
         if (firstAction != null) {
-            add(InputButton.X to firstAction.label)
+            add(InputButton.X to actionHints.getValue(firstAction))
         }
     }
 
     CenteredModal(
-        title = "What's New in ${entry.version}",
+        title = stringResource(R.string.ui_changelog_title, entry.version),
         baseWidth = Dimens.modalWidthLg,
         onDismiss = if (hasRequiredAction) null else onDismiss,
         footerHints = footerHints
@@ -96,7 +101,10 @@ fun ChangelogModal(
                 )
                 Spacer(modifier = Modifier.width(Dimens.spacingSm))
                 Text(
-                    text = "Action required: ${entry.requiredActions.joinToString(", ") { it.label }}",
+                    text = stringResource(
+                        R.string.ui_changelog_action_required,
+                        entry.requiredActions.joinToString(", ") { actionHints.getValue(it) }
+                    ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onErrorContainer
                 )

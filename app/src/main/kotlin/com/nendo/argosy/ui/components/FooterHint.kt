@@ -257,9 +257,14 @@ private fun InputButton.hidePriority(): Int = when (this) {
     else -> 0
 }
 
-internal fun isObviousHint(button: InputButton, label: String): Boolean =
-    button == InputButton.A || button == InputButton.B || button.isDpadButton() ||
-        label == "Back" || label == "Select" || label == "Close"
+/**
+ * Whether the focused control already communicates this hint, so the bar can collapse.
+ *
+ * Keyed on the button alone, never on the label: every caller pairs "Back", "Select" and
+ * "Close" with A, B or the d-pad anyway, and a translated label would match nothing.
+ */
+internal fun isObviousHint(button: InputButton): Boolean =
+    button == InputButton.A || button == InputButton.B || button.isDpadButton()
 
 @Composable
 private fun footerCollapseProgress(quiet: Boolean): Float {
@@ -290,7 +295,7 @@ fun FooterBar(
         MaterialTheme.colorScheme.surfaceVariant
     }
 
-    val quiet = hints.all { isObviousHint(it.first, it.second) }
+    val quiet = hints.all { isObviousHint(it.first) }
     var displayHints by remember { mutableStateOf(hints) }
     if (!quiet) displayHints = hints
     val collapseProgress = footerCollapseProgress(quiet)
@@ -358,7 +363,7 @@ fun FooterBarWithState(
         MaterialTheme.colorScheme.surfaceVariant
     }
 
-    val quiet = !forceVisible && hints.all { isObviousHint(it.button, it.action) }
+    val quiet = !forceVisible && hints.all { isObviousHint(it.button) }
     var displayHints by remember { mutableStateOf(hints) }
     if (!quiet) displayHints = hints
     val collapseProgress = footerCollapseProgress(quiet)
@@ -440,7 +445,7 @@ fun SubtleFooterBar(
 ) {
     val footerStyle = LocalFooterStyle.current
 
-    val quiet = hints.all { isObviousHint(it.first, it.second) }
+    val quiet = hints.all { isObviousHint(it.first) }
     var displayHints by remember { mutableStateOf(hints) }
     if (!quiet) displayHints = hints
     val collapseProgress = footerCollapseProgress(quiet)

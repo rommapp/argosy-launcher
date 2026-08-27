@@ -13,6 +13,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.libretro.coreoptions.CoreOptionManifestRegistry
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.CyclePreference
@@ -123,7 +125,7 @@ fun CoreOptionsSection(
 
     if (coreState.availablePlatforms.isEmpty()) {
         Text(
-            text = "No platforms with built-in emulator support",
+            text = stringResource(R.string.settings_shell_coreoptions_no_platforms),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(Dimens.spacingMd)
@@ -131,16 +133,29 @@ fun CoreOptionsSection(
         return
     }
 
+    val installedSelectorStatus = stringResource(R.string.settings_shell_coreoptions_status_installed_selector)
+    val notDownloadedSelectorStatus = stringResource(R.string.settings_shell_coreoptions_status_not_downloaded_selector)
+    val installedOptionStatus = stringResource(R.string.settings_shell_coreoptions_status_installed_option)
+    val notDownloadedOptionStatus = stringResource(R.string.settings_shell_coreoptions_status_not_downloaded_option)
+    val selectorValueTemplate = stringResource(R.string.settings_shell_coreoptions_selector_value_template)
+    val optionValueTemplate = stringResource(R.string.settings_shell_coreoptions_option_value_template)
+    val noCoresAvailable = stringResource(R.string.settings_shell_coreoptions_none_available)
+
     val coreSelectorValue = if (selectedCore != null) {
-        val status = if (selectedCore.isInstalled) "Installed" else "Not Downloaded"
-        "${selectedCore.displayName} ($status)"
+        val status = if (selectedCore.isInstalled) installedSelectorStatus else notDownloadedSelectorStatus
+        selectorValueTemplate.format(selectedCore.displayName, status)
     } else {
-        "No cores available"
+        noCoresAvailable
     }
-    val coreSelectorOptions = remember(coreState.coresForCurrentPlatform) {
+    val coreSelectorOptions = remember(
+        coreState.coresForCurrentPlatform,
+        installedOptionStatus,
+        notDownloadedOptionStatus,
+        optionValueTemplate
+    ) {
         coreState.coresForCurrentPlatform.map { core ->
-            val status = if (core.isInstalled) "Installed" else "Not Downloaded"
-            "${core.displayName} ($status)"
+            val status = if (core.isInstalled) installedOptionStatus else notDownloadedOptionStatus
+            optionValueTemplate.format(core.displayName, status)
         }
     }
 
@@ -162,7 +177,7 @@ fun CoreOptionsSection(
             when (item) {
                 is CoreOptionItem.CoreSelector -> {
                     CyclePreference(
-                        title = "Core",
+                        title = stringResource(R.string.settings_shell_coreoptions_core_title),
                         value = coreSelectorValue,
                         isFocused = isFocused,
                         onClick = { viewModel.cycleCoreSelector(1) },
@@ -176,11 +191,14 @@ fun CoreOptionsSection(
                 is CoreOptionItem.DownloadCore -> {
                     val isDownloadingThis = coreState.isDownloading &&
                         coreState.downloadingCoreId == selectedCore?.coreId
-                    val title = if (isInstalled) "Redownload Core" else "Download Core"
+                    val title = stringResource(
+                        if (isInstalled) R.string.settings_shell_coreoptions_redownload
+                        else R.string.settings_shell_coreoptions_download
+                    )
                     val subtitle = when {
-                        isDownloadingThis -> "Downloading..."
-                        isInstalled -> "Reinstall if core is corrupt or outdated"
-                        else -> "Download the core to enable changing settings"
+                        isDownloadingThis -> stringResource(R.string.settings_shell_coreoptions_downloading)
+                        isInstalled -> stringResource(R.string.settings_shell_coreoptions_reinstall_subtitle)
+                        else -> stringResource(R.string.settings_shell_coreoptions_download_subtitle)
                     }
                     ActionPreference(
                         title = title,
@@ -196,8 +214,8 @@ fun CoreOptionsSection(
 
                 is CoreOptionItem.DeleteCore -> {
                     ActionPreference(
-                        title = "Delete Core",
-                        subtitle = "Free up space, keeping your settings for it",
+                        title = stringResource(R.string.settings_shell_coreoptions_delete_core),
+                        subtitle = stringResource(R.string.settings_shell_coreoptions_delete_core_subtitle),
                         isFocused = isFocused,
                         isDangerous = true,
                         onClick = {
@@ -233,7 +251,7 @@ fun CoreOptionsSection(
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     Spacer(modifier = Modifier.height(Dimens.spacingSm))
                     OptionItem(
-                        label = "Reset All to Defaults",
+                        label = stringResource(R.string.settings_shell_coreoptions_reset_all),
                         isFocused = isFocused,
                         isDangerous = true,
                         onClick = { viewModel.resetAllCoreOptions() }

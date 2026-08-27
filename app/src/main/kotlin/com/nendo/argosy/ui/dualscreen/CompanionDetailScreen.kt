@@ -18,8 +18,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import coil.compose.AsyncImage
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.GameTitle
 import com.nendo.argosy.ui.theme.AspectRatioClass
 import com.nendo.argosy.ui.theme.Dimens
@@ -168,34 +170,52 @@ private const val TEXT_WEIGHT = 1f
  * The showcase takes no input of its own, so these name the other screen's actions; a viewer
  * looking at the description still needs to be told what pressing A over there will do.
  */
+@Composable
 fun companionDetailHints(
     detail: CompanionDetail,
     viewMode: String = ""
 ): List<Pair<com.nendo.argosy.ui.components.InputButton, String>> = when {
     detail.isGameTitle -> listOf(
-        com.nendo.argosy.ui.components.InputButton.LB_RB to "Section",
-        com.nendo.argosy.ui.components.InputButton.A to "Open",
-        com.nendo.argosy.ui.components.InputButton.B to "Back"
+        com.nendo.argosy.ui.components.InputButton.LB_RB to
+            stringResource(R.string.dual_detail_hint_game_section),
+        com.nendo.argosy.ui.components.InputButton.A to
+            stringResource(R.string.dual_detail_hint_game_open),
+        com.nendo.argosy.ui.components.InputButton.B to
+            stringResource(R.string.dual_detail_hint_game_back)
     )
     viewMode == "MEDIA_GRID" -> listOf(
-        com.nendo.argosy.ui.components.InputButton.LB_RB to "Library",
-        com.nendo.argosy.ui.components.InputButton.Y to "Resume",
-        com.nendo.argosy.ui.components.InputButton.X to "Options",
-        com.nendo.argosy.ui.components.InputButton.A to "Play",
-        com.nendo.argosy.ui.components.InputButton.B to "Back"
+        com.nendo.argosy.ui.components.InputButton.LB_RB to
+            stringResource(R.string.dual_detail_hint_media_grid_library),
+        com.nendo.argosy.ui.components.InputButton.Y to
+            stringResource(R.string.dual_detail_hint_media_grid_resume),
+        com.nendo.argosy.ui.components.InputButton.X to
+            stringResource(R.string.dual_detail_hint_media_grid_options),
+        com.nendo.argosy.ui.components.InputButton.A to
+            stringResource(R.string.dual_detail_hint_media_grid_play),
+        com.nendo.argosy.ui.components.InputButton.B to
+            stringResource(R.string.dual_detail_hint_media_grid_back)
     )
     viewMode == "MEDIA_INFO" -> listOf(
-        com.nendo.argosy.ui.components.InputButton.LB_RB to "Prev/Next Title",
-        com.nendo.argosy.ui.components.InputButton.DPAD_HORIZONTAL to "Season",
-        com.nendo.argosy.ui.components.InputButton.A to "Watch",
-        com.nendo.argosy.ui.components.InputButton.B to "Back"
+        com.nendo.argosy.ui.components.InputButton.LB_RB to
+            stringResource(R.string.dual_detail_hint_media_info_title),
+        com.nendo.argosy.ui.components.InputButton.DPAD_HORIZONTAL to
+            stringResource(R.string.dual_detail_hint_media_info_season),
+        com.nendo.argosy.ui.components.InputButton.A to
+            stringResource(R.string.dual_detail_hint_media_info_watch),
+        com.nendo.argosy.ui.components.InputButton.B to
+            stringResource(R.string.dual_detail_hint_media_info_back)
     )
     else -> listOf(
-        com.nendo.argosy.ui.components.InputButton.LB_RB to "Section",
-        com.nendo.argosy.ui.components.InputButton.Y to "Favorite",
-        com.nendo.argosy.ui.components.InputButton.X to "Options",
-        com.nendo.argosy.ui.components.InputButton.A to "Play",
-        com.nendo.argosy.ui.components.InputButton.B to "Back"
+        com.nendo.argosy.ui.components.InputButton.LB_RB to
+            stringResource(R.string.dual_detail_hint_default_section),
+        com.nendo.argosy.ui.components.InputButton.Y to
+            stringResource(R.string.dual_detail_hint_default_favorite),
+        com.nendo.argosy.ui.components.InputButton.X to
+            stringResource(R.string.dual_detail_hint_default_options),
+        com.nendo.argosy.ui.components.InputButton.A to
+            stringResource(R.string.dual_detail_hint_default_play),
+        com.nendo.argosy.ui.components.InputButton.B to
+            stringResource(R.string.dual_detail_hint_default_back)
     )
 }
 

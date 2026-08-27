@@ -17,8 +17,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.primitives.ArgosyProgressBar
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
@@ -58,14 +60,24 @@ fun CoreCrashModal(
 ) {
     val readyToLaunch = downloading?.done == true && !downloading.failed
     Modal(
-        title = "Core Crashed",
+        title = stringResource(R.string.ui_core_crash_title),
         baseWidth = 420.dp,
         onDismiss = onDismiss,
         footerHints = when {
-            downloading == null -> listOf(InputButton.A to "Select", InputButton.B to "Dismiss")
-            readyToLaunch -> listOf(InputButton.A to "Launch game", InputButton.B to "Dismiss")
-            downloading.done -> listOf(InputButton.B to "Dismiss")
-            else -> listOf(InputButton.B to "Cancel")
+            downloading == null -> listOf(
+                InputButton.A to stringResource(R.string.ui_core_crash_footer_select),
+                InputButton.B to stringResource(R.string.ui_core_crash_footer_dismiss_options)
+            )
+            readyToLaunch -> listOf(
+                InputButton.A to stringResource(R.string.ui_core_crash_footer_launch),
+                InputButton.B to stringResource(R.string.ui_core_crash_footer_dismiss_ready)
+            )
+            downloading.done -> listOf(
+                InputButton.B to stringResource(R.string.ui_core_crash_footer_dismiss_done)
+            )
+            else -> listOf(
+                InputButton.B to stringResource(R.string.ui_core_crash_footer_cancel_download)
+            )
         }
     ) {
         if (downloading != null) {
@@ -85,8 +97,7 @@ fun CoreCrashModal(
         }
 
         Text(
-            text = "'${prompt.displayName}' crashed during your last session. " +
-                "Choose how to recover.",
+            text = stringResource(R.string.ui_core_crash_message, prompt.displayName),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )

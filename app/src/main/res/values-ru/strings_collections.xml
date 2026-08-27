@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="collections_browse_genres">Жанры</string>
+    <string name="collections_browse_game_modes">Режимы игры</string>
+    <string name="collections_browse_series">Серии</string>
+
+    <string name="collections_section_mine">МОИ КОЛЛЕКЦИИ</string>
+    <string name="collections_section_browse_by">ПРОСМОТР ПО</string>
+
+    <string name="collections_pinned_description">Закреплена</string>
+
+    <string name="collections_new">Новая коллекция</string>
+
+    <plurals name="collections_game_count">
+        <item quantity="one">%d игра</item>
+        <item quantity="few">%d игры</item>
+        <item quantity="many">%d игр</item>
+        <item quantity="other">%d игры</item>
+    </plurals>
+    <plurals name="collections_category_count">
+        <item quantity="one">%d категория</item>
+        <item quantity="few">%d категории</item>
+        <item quantity="many">%d категорий</item>
+        <item quantity="other">%d категории</item>
+    </plurals>
+
+    <string name="collections_options_download_all">Скачать всё (%1$d)</string>
+    <string name="collections_options_rename">Переименовать коллекцию</string>
+    <string name="collections_options_delete">Удалить коллекцию</string>
+    <string name="collections_options_remove_game">Убрать \"%1$s\"</string>
+    <string name="collections_options_remove_game_fallback">Игра</string>
+
+    <string name="collections_delete_dialog_title">Удалить коллекцию</string>
+    <string name="collections_delete_dialog_message">Удалить \"%1$s\"? Коллекция будет удалена, но игры в ней останутся.</string>
+    <string name="collections_delete_dialog_confirm">Удалить</string>
+
+    <string name="collections_create_dialog_title">Создать коллекцию</string>
+    <string name="collections_create_dialog_name_label">Название коллекции</string>
+    <string name="collections_create_dialog_confirm">Создать</string>
+
+    <string name="collections_edit_dialog_title">Изменить коллекцию</string>
+    <string name="collections_edit_dialog_name_label">Название коллекции</string>
+    <string name="collections_edit_dialog_confirm">Сохранить</string>
+
+    <string name="collections_removegame_dialog_title">Убрать игру</string>
+    <string name="collections_removegame_dialog_message">Убрать \"%1$s\" из \"%2$s\"?</string>
+    <string name="collections_removegame_dialog_confirm">Убрать</string>
+
+    <string name="collections_namedialog_cancel">Отмена</string>
+
+    <string name="collections_screen_hint_navigate">Навигация</string>
+    <string name="collections_screen_hint_select">Выбрать</string>
+    <string name="collections_screen_hint_back">Назад</string>
+    <string name="collections_screen_hint_refreshing">Обновление…</string>
+    <string name="collections_screen_hint_refresh">Обновить</string>
+    <string name="collections_screen_hint_unpin">Открепить</string>
+    <string name="collections_screen_hint_pin">Закрепить</string>
+    <string name="collections_screen_hint_options">Параметры</string>
+
+    <string name="collections_detail_loading">Загрузка…</string>
+    <string name="collections_detail_hint_search_open">Открыть</string>
+    <string name="collections_detail_hint_search_close">Закрыть поиск</string>
+    <string name="collections_detail_hint_navigate">Навигация</string>
+    <string name="collections_detail_hint_open">Открыть</string>
+    <string name="collections_detail_hint_back">Назад</string>
+    <string name="collections_detail_hint_search">Поиск</string>
+    <string name="collections_detail_hint_unpin">Открепить</string>
+    <string name="collections_detail_hint_pin">Закрепить</string>
+    <string name="collections_detail_hint_jump">Переход</string>
+    <string name="collections_detail_hint_options">Параметры</string>
+    <string name="collections_detail_hint_refreshing">Обновление…</string>
+    <string name="collections_detail_hint_refresh">Обновить</string>
+    <string name="collections_detail_back_description">Назад</string>
+    <string name="collections_detail_search_placeholder">Поиск в %1$s</string>
+    <string name="collections_detail_close_search_description">Закрыть поиск</string>
+    <string name="collections_detail_search_description">Поиск</string>
+    <string name="collections_detail_empty_title">В этой коллекции нет игр</string>
+    <string name="collections_detail_empty_subtitle">Добавьте игры из библиотеки или со страницы игры</string>
+    <plurals name="collections_detail_header_game_count">
+        <item quantity="one">%d игра</item>
+        <item quantity="few">%d игры</item>
+        <item quantity="many">%d игр</item>
+        <item quantity="other">%d игры</item>
+    </plurals>
+
+    <string name="collections_browser_loading">Загрузка…</string>
+    <string name="collections_browser_hint_search_select">Выбрать</string>
+    <string name="collections_browser_hint_search_close">Закрыть поиск</string>
+    <string name="collections_browser_hint_navigate">Навигация</string>
+    <string name="collections_browser_hint_select">Выбрать</string>
+    <string name="collections_browser_hint_back">Назад</string>
+    <string name="collections_browser_hint_search">Поиск</string>
+    <string name="collections_browser_hint_unpin">Открепить</string>
+    <string name="collections_browser_hint_pin">Закрепить</string>
+    <string name="collections_browser_hint_jump">Переход</string>
+    <string name="collections_browser_hint_refreshing">Обновление…</string>
+    <string name="collections_browser_hint_refresh">Обновить</string>
+    <string name="collections_browser_back_description">Назад</string>
+    <string name="collections_browser_search_placeholder">Поиск в %1$s</string>
+    <string name="collections_browser_close_search_description">Закрыть поиск</string>
+    <string name="collections_browser_search_description">Поиск</string>
+    <string name="collections_browser_category_pinned_description">Закреплена</string>
+    <string name="collections_browser_title_fallback">Просмотр</string>
+    <string name="collections_browser_empty">%1$s не найдено</string>
+    <plurals name="collections_browser_header_category_count">
+        <item quantity="one">%d категория</item>
+        <item quantity="few">%d категории</item>
+        <item quantity="many">%d категорий</item>
+        <item quantity="other">%d категории</item>
+    </plurals>
+    <plurals name="collections_browser_row_game_count">
+        <item quantity="one">%d игра</item>
+        <item quantity="few">%d игры</item>
+        <item quantity="many">%d игр</item>
+        <item quantity="other">%d игры</item>
+    </plurals>
+
+    <string name="collections_category_loading">Загрузка…</string>
+    <string name="collections_category_hint_search_open">Открыть</string>
+    <string name="collections_category_hint_search_close">Закрыть поиск</string>
+    <string name="collections_category_hint_navigate">Навигация</string>
+    <string name="collections_category_hint_open">Открыть</string>
+    <string name="collections_category_hint_back">Назад</string>
+    <string name="collections_category_hint_search">Поиск</string>
+    <string name="collections_category_hint_unpin">Открепить</string>
+    <string name="collections_category_hint_pin">Закрепить</string>
+    <string name="collections_category_hint_jump">Переход</string>
+    <string name="collections_category_hint_refreshing">Обновление…</string>
+    <string name="collections_category_hint_refresh">Обновить</string>
+    <string name="collections_category_hint_download_all">Скачать всё (%1$d)</string>
+    <string name="collections_category_downloadall_title">Добавление в очередь</string>
+    <plurals name="collections_category_downloadall_progress">
+        <item quantity="one">%1$d из %2$d игры</item>
+        <item quantity="few">%1$d из %2$d игр</item>
+        <item quantity="many">%1$d из %2$d игр</item>
+        <item quantity="other">%1$d из %2$d игры</item>
+    </plurals>
+    <string name="collections_category_back_description">Назад</string>
+    <string name="collections_category_search_placeholder">Поиск в %1$s</string>
+    <string name="collections_category_close_search_description">Закрыть поиск</string>
+    <string name="collections_category_search_description">Поиск</string>
+    <string name="collections_category_empty_title">В этой категории нет игр</string>
+    <plurals name="collections_category_header_game_count">
+        <item quantity="one">%d игра</item>
+        <item quantity="few">%d игры</item>
+        <item quantity="many">%d игр</item>
+        <item quantity="other">%d игры</item>
+    </plurals>
+    <string name="collections_detail_platform_unknown">Неизвестно</string>
+    <string name="collections_category_platform_unknown">Неизвестно</string>
+
+    <string name="collections_widecard_rating_value">%1$d/10</string>
+    <string name="collections_widecard_difficulty_value">%1$d/10</string>
+
+    <string name="downloads_empty_title">Нет загрузок</string>
+    <string name="downloads_empty_subtitle">Загрузки появятся здесь</string>
+    <string name="downloads_section_header_moving">Перемещение в хранилище ROM</string>
+    <string name="downloads_section_header_extracting">Распаковка</string>
+    <string name="downloads_section_header_downloading">Загрузка</string>
+    <string name="downloads_section_header_active">Активные</string>
+    <string name="downloads_section_header_queued">В очереди</string>
+    <string name="downloads_section_header_finished">Завершённые</string>
+    <string name="downloads_hint_navigate">Навигация</string>
+    <string name="downloads_hint_remove">Удалить</string>
+    <string name="downloads_hint_cancel">Отмена</string>
+    <string name="downloads_hint_clear_finished">Очистить завершённые</string>
+    <string name="downloads_hint_back">Назад</string>
+    <string name="downloads_failed_dialog_title">Ошибка загрузки</string>
+    <string name="downloads_failed_dialog_message">Не удалось загрузить \"%1$s\". Что вы хотите сделать?</string>
+    <string name="downloads_failed_dialog_confirm">Повторить</string>
+    <string name="downloads_failed_dialog_clear">Очистить</string>
+    <string name="downloads_file_state_done">Готово</string>
+    <string name="downloads_file_state_extracting">Распаковка</string>
+    <string name="downloads_file_state_moving">Перемещение</string>
+    <string name="downloads_file_state_failed">Ошибка</string>
+    <string name="downloads_file_state_queued">В очереди</string>
+    <string name="downloads_file_state_percent">%1$d%%</string>
+    <string name="downloads_item_status_moving">Перемещение в хранилище ROM…</string>
+    <string name="downloads_item_status_extracting_fallback">Распаковка…</string>
+    <string name="downloads_item_status_insufficient_storage">Нужно: %1$s, доступно: %2$s</string>
+    <string name="downloads_item_status_failed_fallback">Не удалось загрузить</string>
+    <string name="downloads_item_status_queued_fallback">В очереди</string>
+    <string name="downloads_completed_status_failed_fallback">Не удалось загрузить</string>
+    <string name="downloads_completed_status_installed">Установлено</string>
+    <string name="downloads_speed_suffix">%1$s/с</string>
+
+    <string name="downloads_action_pause">Пауза</string>
+    <string name="downloads_action_resume">Продолжить</string>
+    <string name="downloads_action_toggle">Переключить</string>
+    <string name="downloads_action_options">Параметры</string>
+    <string name="downloads_action_view">Просмотр</string>
+
+    <string name="downloads_steam_status_preparing">Подготовка…</string>
+    <string name="downloads_steam_status_connecting">Подключение к Steam…</string>
+    <string name="downloads_steam_status_fetching_manifest">Получение манифеста депо…</string>
+    <string name="downloads_steam_status_validating_fallback">Проверка…</string>
+    <string name="downloads_steam_status_moving">Перемещение файлов…</string>
+    <string name="downloads_steam_status_cleaning">Очистка…</string>
+    <string name="downloads_steam_status_depot_progress">" (%1$d/%2$d депо)"</string>
+
+    <plurals name="downloads_group_progress">
+        <item quantity="one">%1$d из %2$d файла</item>
+        <item quantity="few">%1$d из %2$d файлов</item>
+        <item quantity="many">%1$d из %2$d файлов</item>
+        <item quantity="other">%1$d из %2$d файла</item>
+    </plurals>
+
+    <string name="touchlayout_editor_title">Настройка сенсорного управления</string>
+    <string name="touchlayout_editor_orientation_portrait">Портретная</string>
+    <string name="touchlayout_editor_orientation_landscape">Альбомная</string>
+    <string name="touchlayout_editor_close">Закрыть</string>
+</resources>

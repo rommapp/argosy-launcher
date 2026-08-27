@@ -18,7 +18,9 @@ import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.data.repository.StateCacheManager
 import com.nendo.argosy.data.storage.StorageAttributionRepository
 import com.nendo.argosy.data.storage.StorageCategory
+import com.nendo.argosy.R
 import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.ui.screens.settings.PlatformFilterItem
 import com.nendo.argosy.ui.screens.settings.SyncSettingsState
@@ -525,25 +527,37 @@ class SyncSettingsDelegate @Inject constructor(
 
         scope.launch {
             try {
-                notificationManager.show("Syncing saves...")
+                notificationManager.show(NotificationText.Res(R.string.notif_sync_settings_manual_syncing))
                 saveSyncRepository.checkForAllServerUpdates()
                 val result = syncCoordinator.processQueue()
                 val pendingCounts = saveCacheRepository.getPendingSyncCounts()
                 _state.update { it.copy(pendingUploadsCount = pendingCounts.pendingUploads) }
 
-                val message = when (result) {
+                val message: NotificationText = when (result) {
                     is com.nendo.argosy.data.sync.SyncCoordinator.ProcessResult.NotConnected ->
-                        "Not connected"
+                        NotificationText.Res(R.string.notif_sync_settings_manual_not_connected)
                     is com.nendo.argosy.data.sync.SyncCoordinator.ProcessResult.Completed ->
-                        if (result.processed == 0) "Saves are up to date"
-                        else "Synced ${result.processed} item(s)" +
-                            (if (result.failed > 0) " (${result.failed} failed)" else "")
+                        if (result.processed == 0) {
+                            NotificationText.Res(R.string.notif_sync_settings_manual_up_to_date)
+                        } else if (result.failed > 0) {
+                            NotificationText.Res(
+                                R.string.notif_sync_settings_manual_synced_with_failures,
+                                listOf(result.processed, result.failed)
+                            )
+                        } else {
+                            NotificationText.Res(
+                                R.string.notif_sync_settings_manual_synced,
+                                listOf(result.processed)
+                            )
+                        }
                 }
                 notificationManager.show(message)
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {
-                notificationManager.showError("Save sync failed: ${e.message}")
+                notificationManager.showError(
+                    NotificationText.Res(R.string.notif_sync_settings_manual_failed, listOf(e.message ?: "null"))
+                )
             } finally {
                 isSyncing = false
                 _state.update { it.copy(isSyncing = false) }
@@ -578,13 +592,13 @@ class SyncSettingsDelegate @Inject constructor(
             val hasExistingFiles = imageCacheManager.getCacheFileCountForBasePath(currentPath) > 0
             if (hasExistingFiles) {
                 _state.update { it.copy(isImageCacheMigrating = true) }
-                notificationManager.show("Moving cached images...")
+                notificationManager.show(NotificationText.Res(R.string.notif_sync_settings_imagecache_moving_custom))
                 try {
                     val success = imageCacheManager.migrateCache(currentPath, newPath)
                     if (success) {
-                        notificationManager.show("Images moved successfully")
+                        notificationManager.show(NotificationText.Res(R.string.notif_sync_settings_imagecache_moved_custom))
                     } else {
-                        notificationManager.showError("Failed to move some images")
+                        notificationManager.showError(NotificationText.Res(R.string.notif_sync_settings_imagecache_move_failed_custom))
                     }
                     attributionRepository.markDirty(StorageCategory.IMAGE_CACHE)
                 } finally {
@@ -608,13 +622,13 @@ class SyncSettingsDelegate @Inject constructor(
             val hasExistingFiles = imageCacheManager.getCacheFileCountForBasePath(currentPath) > 0
             if (hasExistingFiles) {
                 _state.update { it.copy(isImageCacheMigrating = true) }
-                notificationManager.show("Moving cached images...")
+                notificationManager.show(NotificationText.Res(R.string.notif_sync_settings_imagecache_moving_reset))
                 try {
                     val success = imageCacheManager.migrateCache(currentPath, defaultPath)
                     if (success) {
-                        notificationManager.show("Images moved successfully")
+                        notificationManager.show(NotificationText.Res(R.string.notif_sync_settings_imagecache_moved_reset))
                     } else {
-                        notificationManager.showError("Failed to move some images")
+                        notificationManager.showError(NotificationText.Res(R.string.notif_sync_settings_imagecache_move_failed_reset))
                     }
                     attributionRepository.markDirty(StorageCategory.IMAGE_CACHE)
                 } finally {
@@ -639,7 +653,12 @@ class SyncSettingsDelegate @Inject constructor(
 
             val result = rommRepository.syncPlatformsOnly()
             if (result.isFailure) {
-                notificationManager.showError("Failed to fetch platforms: ${result.exceptionOrNull()?.message}")
+                notificationManager.showError(
+                    NotificationText.Res(
+                        R.string.notif_sync_settings_platforms_fetch_failed,
+                        listOf(result.exceptionOrNull()?.message ?: "null")
+                    )
+                )
             }
 
             val allPlatforms = platformRepository.getAllPlatformsOrdered().map { entity ->
@@ -865,7 +884,7 @@ class SyncSettingsDelegate @Inject constructor(
                 _state.update { it.copy(isResettingSaveCache = false, saveCacheCount = 0, stateCacheCount = 0) }
                 attributionRepository.refreshOnOpen()
             } else {
-                notificationManager.showError("Cannot reset save cache while a game is running")
+                notificationManager.showError(NotificationText.Res(R.string.notif_sync_settings_reset_save_cache_blocked))
                 _state.update { it.copy(isResettingSaveCache = false) }
             }
         }
@@ -903,7 +922,7 @@ class SyncSettingsDelegate @Inject constructor(
                 _state.update { it.copy(isClearingStateCache = false, stateCacheCount = 0) }
                 attributionRepository.refreshOnOpen()
             } else {
-                notificationManager.showError("Cannot clear state cache while a game is running")
+                notificationManager.showError(NotificationText.Res(R.string.notif_sync_settings_clear_state_cache_blocked))
                 _state.update { it.copy(isClearingStateCache = false) }
             }
         }
@@ -960,32 +979,46 @@ class SyncSettingsDelegate @Inject constructor(
 
         scope.launch {
             try {
-                notificationManager.show("Scanning local saves...")
+                notificationManager.show(NotificationText.Res(R.string.notif_sync_settings_scan_scanning))
                 val secureSaves = preferencesRepository.userPreferences.first().secureSaves
                 val queued = saveSyncRepository.scanAndQueueLocalChanges(secureSaves)
                 if (queued > 0) {
-                    notificationManager.show("Found $queued local saves to sync")
+                    notificationManager.show(
+                        NotificationText.Res(R.string.notif_sync_settings_scan_found, listOf(queued))
+                    )
                 }
 
-                notificationManager.show("Syncing saves...")
+                notificationManager.show(NotificationText.Res(R.string.notif_sync_settings_scan_syncing))
                 saveSyncRepository.checkForAllServerUpdates()
                 val result = syncCoordinator.processQueue()
                 val pendingCounts = saveCacheRepository.getPendingSyncCounts()
                 _state.update { it.copy(pendingUploadsCount = pendingCounts.pendingUploads) }
 
-                val message = when (result) {
+                val message: NotificationText = when (result) {
                     is com.nendo.argosy.data.sync.SyncCoordinator.ProcessResult.NotConnected ->
-                        "Not connected"
+                        NotificationText.Res(R.string.notif_sync_settings_scan_not_connected)
                     is com.nendo.argosy.data.sync.SyncCoordinator.ProcessResult.Completed ->
-                        if (result.processed == 0) "Saves are up to date"
-                        else "Synced ${result.processed} item(s)" +
-                            (if (result.failed > 0) " (${result.failed} failed)" else "")
+                        if (result.processed == 0) {
+                            NotificationText.Res(R.string.notif_sync_settings_scan_up_to_date)
+                        } else if (result.failed > 0) {
+                            NotificationText.Res(
+                                R.string.notif_sync_settings_scan_synced_with_failures,
+                                listOf(result.processed, result.failed)
+                            )
+                        } else {
+                            NotificationText.Res(
+                                R.string.notif_sync_settings_scan_synced,
+                                listOf(result.processed)
+                            )
+                        }
                 }
                 notificationManager.show(message)
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {
-                notificationManager.showError("Save sync failed: ${e.message}")
+                notificationManager.showError(
+                    NotificationText.Res(R.string.notif_sync_settings_scan_failed, listOf(e.message ?: "null"))
+                )
             } finally {
                 isSyncing = false
                 _state.update { it.copy(isSyncing = false) }

@@ -1,0 +1,324 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Owner: ui/screens/collections
+      Key prefix: collections_
+      Keys are named for the usage site, never for the English text, and identical English
+      is never shared between two usage sites.
+    -->
+
+    <!-- Row on the Browse By list. Opens the genre list. Noun, plural. -->
+    <string name="collections_browse_genres">Genres</string>
+    <!-- Row on the Browse By list. Opens the list of game modes, meaning single player,
+         co-op, multiplayer and so on. Noun, plural. Not "game modifications". -->
+    <string name="collections_browse_game_modes">Game Modes</string>
+    <!-- Row on the Browse By list. Opens the list of game series, meaning franchises such
+         as Mario or Final Fantasy. Noun, plural. -->
+    <string name="collections_browse_series">Series</string>
+
+    <!-- Heading above the user's own collections. Rendered in caps in English; use whatever
+         casing is normal for a heading in your language. -->
+    <string name="collections_section_mine">MY COLLECTIONS</string>
+    <!-- Heading above the automatic browse-by rows. Caps as above. "Browse by genre, by
+         game mode..." so the phrase is deliberately unfinished. -->
+    <string name="collections_section_browse_by">BROWSE BY</string>
+
+    <!-- Spoken by the screen reader for the pin icon on a collection the user pinned.
+         Adjective describing the collection, not the verb "to pin". -->
+    <string name="collections_pinned_description">Pinned</string>
+
+    <!-- Button that creates a new collection. Verb phrase or noun phrase, whichever reads
+         as an action in your language. -->
+    <string name="collections_new">New Collection</string>
+
+    <!-- How many games a collection holds. -->
+    <plurals name="collections_game_count">
+        <item quantity="one">%d game</item>
+        <item quantity="other">%d games</item>
+    </plurals>
+    <!-- How many categories a browse-by row holds, for example how many distinct genres
+         exist across the library. -->
+    <plurals name="collections_category_count">
+        <item quantity="one">%d category</item>
+        <item quantity="other">%d categories</item>
+    </plurals>
+
+    <!-- === CollectionOptionsModal.kt === -->
+    <!-- Option row. Downloads every game in the collection that is not already local; %1$d is
+         how many games qualify. -->
+    <string name="collections_options_download_all">Download All (%1$d)</string>
+    <!-- Option row. Verb phrase: open the rename dialog for this collection. -->
+    <string name="collections_options_rename">Rename Collection</string>
+    <!-- Option row. Verb phrase: delete this collection (not its games). -->
+    <string name="collections_options_delete">Delete Collection</string>
+    <!-- Option row. Verb phrase: remove one game from the collection; %1$s is the game's title. -->
+    <string name="collections_options_remove_game">Remove \"%1$s\"</string>
+    <!-- Fallback noun used in place of the game's title above if it is somehow unknown. -->
+    <string name="collections_options_remove_game_fallback">Game</string>
+
+    <!-- === DeleteCollectionDialog.kt === -->
+    <string name="collections_delete_dialog_title">Delete Collection</string>
+    <!-- %1$s is the collection's name. -->
+    <string name="collections_delete_dialog_message">Are you sure you want to delete \"%1$s\"? This will remove the collection but not the games in it.</string>
+    <!-- Button. Verb: confirms the collection deletion. -->
+    <string name="collections_delete_dialog_confirm">Delete</string>
+
+    <!-- === CreateCollectionDialog.kt === -->
+    <string name="collections_create_dialog_title">Create Collection</string>
+    <!-- Text field label for the new collection's name. "Collection" here is the user's custom
+         game grouping feature, not any other in-app sense of the word. -->
+    <string name="collections_create_dialog_name_label">Collection name</string>
+    <!-- Button. Verb: creates the new collection. -->
+    <string name="collections_create_dialog_confirm">Create</string>
+
+    <!-- === EditCollectionDialog.kt === -->
+    <string name="collections_edit_dialog_title">Edit Collection</string>
+    <!-- Text field label for the collection's name, being renamed. Same disambiguation as
+         collections_create_dialog_name_label; kept as a separate key per usage site. -->
+    <string name="collections_edit_dialog_name_label">Collection name</string>
+    <!-- Button. Verb: commits the renamed collection. Not the noun "save" used for game saves
+         elsewhere in this app. -->
+    <string name="collections_edit_dialog_confirm">Save</string>
+
+    <!-- === RemoveGameDialog.kt === -->
+    <string name="collections_removegame_dialog_title">Remove Game</string>
+    <!-- %1$s is the game's title, %2$s is the collection's name. -->
+    <string name="collections_removegame_dialog_message">Remove \"%1$s\" from \"%2$s\"?</string>
+    <!-- Button. Verb: confirms removing the game from the collection. -->
+    <string name="collections_removegame_dialog_confirm">Remove</string>
+
+    <!-- === CollectionNameDialog.kt === -->
+    <!-- Button. Verb: dismiss the create/edit-collection dialog without saving. -->
+    <string name="collections_namedialog_cancel">Cancel</string>
+
+    <!-- === CollectionsScreen.kt: footer hints === -->
+    <string name="collections_screen_hint_navigate">Navigate</string>
+    <string name="collections_screen_hint_select">Select</string>
+    <string name="collections_screen_hint_back">Back</string>
+    <!-- Verb, in progress: a manual refresh is running. -->
+    <string name="collections_screen_hint_refreshing">Refreshing&#8230;</string>
+    <!-- Verb: trigger a manual refresh. -->
+    <string name="collections_screen_hint_refresh">Refresh</string>
+    <string name="collections_screen_hint_unpin">Unpin</string>
+    <string name="collections_screen_hint_pin">Pin</string>
+    <string name="collections_screen_hint_options">Options</string>
+
+    <!-- === CollectionDetailScreen.kt === -->
+    <string name="collections_detail_loading">Loading&#8230;</string>
+    <!-- Footer hint, search active. Verb: open the focused game. -->
+    <string name="collections_detail_hint_search_open">Open</string>
+    <string name="collections_detail_hint_search_close">Close Search</string>
+    <string name="collections_detail_hint_navigate">Navigate</string>
+    <!-- Footer hint, search inactive. Verb: open the focused game. Distinct key from
+         collections_detail_hint_search_open (different code branch), never reused. -->
+    <string name="collections_detail_hint_open">Open</string>
+    <string name="collections_detail_hint_back">Back</string>
+    <!-- Footer hint. Verb: open search. -->
+    <string name="collections_detail_hint_search">Search</string>
+    <string name="collections_detail_hint_unpin">Unpin</string>
+    <string name="collections_detail_hint_pin">Pin</string>
+    <!-- Footer hint. Verb: jump between alphabet sections. -->
+    <string name="collections_detail_hint_jump">Jump</string>
+    <string name="collections_detail_hint_options">Options</string>
+    <string name="collections_detail_hint_refreshing">Refreshing&#8230;</string>
+    <string name="collections_detail_hint_refresh">Refresh</string>
+    <!-- Icon button. Verb: go back. -->
+    <string name="collections_detail_back_description">Back</string>
+    <!-- Search field placeholder; %1$s is the collection's name. -->
+    <string name="collections_detail_search_placeholder">Search %1$s</string>
+    <!-- Icon button. Verb: close the search field. -->
+    <string name="collections_detail_close_search_description">Close search</string>
+    <!-- Icon button. Verb: open the search field. -->
+    <string name="collections_detail_search_description">Search</string>
+    <string name="collections_detail_empty_title">No games in this collection</string>
+    <string name="collections_detail_empty_subtitle">Add games from the library or game details</string>
+    <!-- How many games are in the collection, shown under its name in the header. -->
+    <plurals name="collections_detail_header_game_count">
+        <item quantity="one">%d game</item>
+        <item quantity="other">%d games</item>
+    </plurals>
+
+    <!-- === VirtualBrowserScreen.kt === -->
+    <string name="collections_browser_loading">Loading&#8230;</string>
+    <!-- Footer hint, search active. Verb: open the focused category. -->
+    <string name="collections_browser_hint_search_select">Select</string>
+    <string name="collections_browser_hint_search_close">Close Search</string>
+    <string name="collections_browser_hint_navigate">Navigate</string>
+    <!-- Footer hint, search inactive. Verb: open the focused category. -->
+    <string name="collections_browser_hint_select">Select</string>
+    <string name="collections_browser_hint_back">Back</string>
+    <string name="collections_browser_hint_search">Search</string>
+    <string name="collections_browser_hint_unpin">Unpin</string>
+    <string name="collections_browser_hint_pin">Pin</string>
+    <string name="collections_browser_hint_jump">Jump</string>
+    <string name="collections_browser_hint_refreshing">Refreshing&#8230;</string>
+    <string name="collections_browser_hint_refresh">Refresh</string>
+    <string name="collections_browser_back_description">Back</string>
+    <!-- Search field placeholder; %1$s is the browse-by screen's title (for example "Genres"). -->
+    <string name="collections_browser_search_placeholder">Search %1$s</string>
+    <string name="collections_browser_close_search_description">Close search</string>
+    <string name="collections_browser_search_description">Search</string>
+    <!-- Icon description for the pin badge on a pinned category row. Adjective, not the verb
+         "to pin". Distinct key from collections_pinned_description (different usage site). -->
+    <string name="collections_browser_category_pinned_description">Pinned</string>
+    <!-- Fallback screen title if a browse-by type is ever unrecognized; should not occur in
+         normal use. -->
+    <string name="collections_browser_title_fallback">Browse</string>
+    <!-- "No <type> found", where %1$s is the already-localized browse-by title, for example
+         "No Genres found". -->
+    <string name="collections_browser_empty">No %1$s found</string>
+    <!-- How many categories exist under this browse-by type, shown in the header subtitle. -->
+    <plurals name="collections_browser_header_category_count">
+        <item quantity="one">%d category</item>
+        <item quantity="other">%d categories</item>
+    </plurals>
+    <!-- How many games are in one category row. -->
+    <plurals name="collections_browser_row_game_count">
+        <item quantity="one">%d game</item>
+        <item quantity="other">%d games</item>
+    </plurals>
+
+    <!-- === VirtualCategoryScreen.kt === -->
+    <string name="collections_category_loading">Loading&#8230;</string>
+    <string name="collections_category_hint_search_open">Open</string>
+    <string name="collections_category_hint_search_close">Close Search</string>
+    <string name="collections_category_hint_navigate">Navigate</string>
+    <string name="collections_category_hint_open">Open</string>
+    <string name="collections_category_hint_back">Back</string>
+    <string name="collections_category_hint_search">Search</string>
+    <string name="collections_category_hint_unpin">Unpin</string>
+    <string name="collections_category_hint_pin">Pin</string>
+    <string name="collections_category_hint_jump">Jump</string>
+    <string name="collections_category_hint_refreshing">Refreshing&#8230;</string>
+    <string name="collections_category_hint_refresh">Refresh</string>
+    <!-- Footer hint. Downloads every downloadable game in this category; %1$d is how many
+         qualify. Distinct key from collections_options_download_all (different usage site). -->
+    <string name="collections_category_hint_download_all">Download All (%1$d)</string>
+    <string name="collections_category_downloadall_title">Queuing Downloads</string>
+    <!-- Download-all progress. %1$d is the number of games queued so far, %2$d is the total. -->
+    <plurals name="collections_category_downloadall_progress">
+        <item quantity="one">%1$d of %2$d game</item>
+        <item quantity="other">%1$d of %2$d games</item>
+    </plurals>
+    <string name="collections_category_back_description">Back</string>
+    <!-- Search field placeholder; %1$s is the category's own name (for example "Platformer"). -->
+    <string name="collections_category_search_placeholder">Search %1$s</string>
+    <string name="collections_category_close_search_description">Close search</string>
+    <string name="collections_category_search_description">Search</string>
+    <string name="collections_category_empty_title">No games in this category</string>
+    <!-- How many games are in this category, shown under its name in the header. -->
+    <plurals name="collections_category_header_game_count">
+        <item quantity="one">%d game</item>
+        <item quantity="other">%d games</item>
+    </plurals>
+    <!-- Fallback platform name shown on a game card when the game's platform cannot be
+         resolved. Distinct key from collections_category_platform_unknown (different
+         usage site). -->
+    <string name="collections_detail_platform_unknown">Unknown</string>
+    <!-- Fallback platform name shown on a game card when the game's platform cannot be
+         resolved. Distinct key from collections_detail_platform_unknown. -->
+    <string name="collections_category_platform_unknown">Unknown</string>
+
+    <!-- === components/WideGameCard.kt === -->
+    <!-- User's own rating out of ten, shown next to a star icon. %1$d is the rating. -->
+    <string name="collections_widecard_rating_value">%1$d/10</string>
+    <!-- User's own difficulty rating out of ten, shown next to a flame icon. %1$d is the rating. -->
+    <string name="collections_widecard_difficulty_value">%1$d/10</string>
+
+    <!-- === downloads/DownloadsScreen.kt === -->
+    <string name="downloads_empty_title">No Downloads</string>
+    <string name="downloads_empty_subtitle">Downloads will appear here</string>
+    <!-- Section header while a finished download is being relocated onto ROM storage. -->
+    <string name="downloads_section_header_moving">Moving to ROM Storage</string>
+    <!-- Section header while a finished download is being unpacked. Distinct key from
+         downloads_file_state_extracting and downloads_item_status_extracting_fallback (different
+         usage sites). -->
+    <string name="downloads_section_header_extracting">Extracting</string>
+    <string name="downloads_section_header_downloading">Downloading</string>
+    <!-- Section header for active downloads with no measurable speed yet. -->
+    <string name="downloads_section_header_active">Active</string>
+    <!-- Section header for downloads waiting their turn. Distinct key from
+         downloads_file_state_queued and downloads_item_status_queued_fallback. -->
+    <string name="downloads_section_header_queued">Queued</string>
+    <string name="downloads_section_header_finished">Finished</string>
+    <string name="downloads_hint_navigate">Navigate</string>
+    <!-- Footer hint. Verb: permanently remove a finished download entry from the list. -->
+    <string name="downloads_hint_remove">Remove</string>
+    <!-- Footer hint. Verb: cancel an in-progress or queued download. -->
+    <string name="downloads_hint_cancel">Cancel</string>
+    <!-- Footer hint. Verb: clear every finished download from the list. -->
+    <string name="downloads_hint_clear_finished">Clear Finished</string>
+    <string name="downloads_hint_back">Back</string>
+    <string name="downloads_failed_dialog_title">Download Failed</string>
+    <!-- %1$s is the download's display title. -->
+    <string name="downloads_failed_dialog_message">\"%1$s\" failed to download. What would you like to do?</string>
+    <!-- Button. Verb: retry the failed download. -->
+    <string name="downloads_failed_dialog_confirm">Retry</string>
+    <!-- Button. Verb: dismiss and clear the failed download entry. -->
+    <string name="downloads_failed_dialog_clear">Clear</string>
+    <!-- Per-file state, inside a multi-file group. Adjective: this file finished. -->
+    <string name="downloads_file_state_done">Done</string>
+    <string name="downloads_file_state_extracting">Extracting</string>
+    <string name="downloads_file_state_moving">Moving</string>
+    <string name="downloads_file_state_failed">Failed</string>
+    <string name="downloads_file_state_queued">Queued</string>
+    <!-- Per-file download percentage. %1$d is 0-100. -->
+    <string name="downloads_file_state_percent">%1$d%%</string>
+    <string name="downloads_item_status_moving">Moving to ROM storage&#8230;</string>
+    <!-- Fallback shown while extracting if no core-reported status message is available. -->
+    <string name="downloads_item_status_extracting_fallback">Extracting&#8230;</string>
+    <!-- %1$s and %2$s are already-formatted byte amounts, for example "1.2 GB". -->
+    <string name="downloads_item_status_insufficient_storage">Need %1$s, Available %2$s</string>
+    <!-- Fallback shown for a failed active download with no specific error reason. -->
+    <string name="downloads_item_status_failed_fallback">Download failed</string>
+    <!-- Fallback shown for a queued download with no core-reported status message. -->
+    <string name="downloads_item_status_queued_fallback">Queued</string>
+    <!-- Fallback shown for a failed completed-list download with no specific error reason.
+         Distinct key from downloads_item_status_failed_fallback (different usage site). -->
+    <string name="downloads_completed_status_failed_fallback">Download failed</string>
+    <!-- Adjective: the download finished and installed successfully. -->
+    <string name="downloads_completed_status_installed">Installed</string>
+    <!-- Transfer speed suffix; %1$s is an already-formatted byte rate, for example "2.4 MB". -->
+    <string name="downloads_speed_suffix">%1$s/s</string>
+
+    <!-- === downloads/DownloadsViewModel.kt: confirm/toggle action labels === -->
+    <!-- Button. Verb: pause an active download. -->
+    <string name="downloads_action_pause">Pause</string>
+    <!-- Button. Verb: resume a paused or failed download. -->
+    <string name="downloads_action_resume">Resume</string>
+    <!-- Generic fallback action label; should not normally be visible. -->
+    <string name="downloads_action_toggle">Toggle</string>
+    <!-- Button. Noun: open the failed-download options dialog. -->
+    <string name="downloads_action_options">Options</string>
+    <!-- Button. Verb: open the completed download's game. -->
+    <string name="downloads_action_view">View</string>
+
+    <!-- === downloads/DownloadsViewModel.kt: Steam status messages === -->
+    <string name="downloads_steam_status_preparing">Preparing&#8230;</string>
+    <string name="downloads_steam_status_connecting">Connecting to Steam&#8230;</string>
+    <string name="downloads_steam_status_fetching_manifest">Fetching depot manifest&#8230;</string>
+    <!-- Fallback shown while Steam validates local files, if no more specific detail is
+         available. -->
+    <string name="downloads_steam_status_validating_fallback">Validating&#8230;</string>
+    <string name="downloads_steam_status_moving">Moving files&#8230;</string>
+    <string name="downloads_steam_status_cleaning">Cleaning up&#8230;</string>
+    <!-- Depot progress for a multi-depot Steam download, appended after the byte progress
+         text; %1$d is the current depot, %2$d is the total. Leading space is intentional,
+         matching how it is concatenated at the call site. -->
+    <string name="downloads_steam_status_depot_progress">" (%1$d/%2$d depots)"</string>
+
+    <!-- === downloads/DownloadsViewModel.kt: DownloadGroup.aggregate() === -->
+    <!-- Status message for a multi-file download group; %1$d is files completed so far,
+         %2$d is the total file count. -->
+    <plurals name="downloads_group_progress">
+        <item quantity="one">%1$d of %2$d file</item>
+        <item quantity="other">%1$d of %2$d files</item>
+    </plurals>
+
+    <!-- === touchlayout/TouchLayoutEditorModal.kt === -->
+    <string name="touchlayout_editor_title">Customize touch controls</string>
+    <string name="touchlayout_editor_orientation_portrait">Portrait</string>
+    <string name="touchlayout_editor_orientation_landscape">Landscape</string>
+    <!-- Button. Verb: close the touch layout editor. -->
+    <string name="touchlayout_editor_close">Close</string>
+</resources>

@@ -1,0 +1,412 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- ===== Notification channels and foreground services ===== -->
+
+    <string name="dual_channel_secondary_display_name">सेकेंडरी डिस्प्ले</string>
+    <string name="dual_channel_secondary_display_description">सेकेंडरी डिस्प्ले पर गेम लाइब्रेरी दिखाता है</string>
+    <string name="dual_channel_screen_capture_name">एम्बिएंट LED स्क्रीन कैप्चर</string>
+    <string name="dual_channel_screen_capture_description">एम्बिएंट लाइटिंग के लिए स्क्रीन के रंग सैंपल करता है</string>
+
+    <string name="dual_notification_guard_text">डुअल डिस्प्ले सक्रिय</string>
+    <string name="dual_notification_screen_capture_text">एम्बिएंट LED के लिए स्क्रीन सैंपल हो रही है</string>
+
+    <!-- ===== Companion dashboard, shown on the second screen while a game runs ===== -->
+
+    <string name="dual_companion_quick_action_save_state">स्टेट सेव करें</string>
+    <string name="dual_companion_quick_action_screenshot">स्क्रीनशॉट</string>
+    <string name="dual_companion_quick_action_load_state">स्टेट लोड करें</string>
+    <string name="dual_companion_quick_action_load_confirm">पुष्टि के लिए टैप करें</string>
+
+    <string name="dual_companion_session_label">सेशन</string>
+    <string name="dual_companion_achievements_label">अचीवमेंट्स</string>
+    <string name="dual_companion_stat_play_time">कुल खेलने का समय</string>
+    <string name="dual_companion_stat_play_count">कितनी बार खेला गया</string>
+
+    <string name="dual_companion_play_time_hours_minutes">%1$dh %2$dm</string>
+    <string name="dual_companion_play_time_hours">%1$dh</string>
+    <string name="dual_companion_play_time_minutes">%1$dm</string>
+    <string name="dual_companion_play_time_zero">0m</string>
+
+    <string name="dual_companion_saves_dirty">नया सेव डेटा</string>
+    <string name="dual_companion_saves_synced">सेव सिंक हुए</string>
+    <string name="dual_companion_saves_synced_icon_description">सेव हो गया</string>
+
+    <string name="dual_companion_app_bar_add_description">ऐप जोड़ें</string>
+    <string name="dual_companion_app_bar_media_to_library_description">लाइब्रेरी पर वापस जाएं</string>
+    <string name="dual_companion_app_bar_media_to_player_description">अभी देख रहे हैं</string>
+
+    <string name="dual_companion_drawer_title">सभी ऐप्स</string>
+    <string name="dual_companion_drawer_pinned_description">पिन किया गया</string>
+
+    <!-- ===== Footer hints on the showcase screen ===== -->
+
+    <string name="dual_showcase_detail_footer_tab">टैब</string>
+    <string name="dual_showcase_detail_footer_select">चुनें</string>
+    <string name="dual_showcase_detail_footer_back">वापस</string>
+
+    <string name="dual_showcase_collections_footer_navigate">नेविगेट</string>
+    <string name="dual_showcase_collections_footer_open">खोलें</string>
+    <string name="dual_showcase_collections_footer_back">वापस</string>
+
+    <!-- ===== Footer hints naming what the driven home screen does ===== -->
+
+    <string name="dual_home_hint_action_play">खेलें</string>
+    <string name="dual_home_hint_action_download">डाउनलोड</string>
+
+    <string name="dual_home_hint_collection_navigate">नेविगेट</string>
+    <string name="dual_home_hint_collection_details">विवरण</string>
+    <string name="dual_home_hint_collection_back">वापस</string>
+
+    <string name="dual_home_hint_library_platform">प्लेटफ़ॉर्म</string>
+    <string name="dual_home_hint_library_letter">अक्षर</string>
+    <string name="dual_home_hint_library_details">विवरण</string>
+    <string name="dual_home_hint_library_options">विकल्प</string>
+    <string name="dual_home_hint_library_filters">फ़िल्टर</string>
+    <string name="dual_home_hint_library_back">वापस</string>
+
+    <string name="dual_home_hint_media_grid_library">लाइब्रेरी</string>
+    <string name="dual_home_hint_media_grid_resume">रिज़्यूम</string>
+    <string name="dual_home_hint_media_grid_options">विकल्प</string>
+    <string name="dual_home_hint_media_grid_play">प्ले</string>
+    <string name="dual_home_hint_media_grid_back">वापस</string>
+
+    <string name="dual_home_hint_media_info_title">पिछला/अगला टाइटल</string>
+    <string name="dual_home_hint_media_info_season">सीज़न</string>
+    <string name="dual_home_hint_media_info_watch">देखें</string>
+    <string name="dual_home_hint_media_info_back">वापस</string>
+
+    <string name="dual_home_hint_drawer_open">खोलें</string>
+    <string name="dual_home_hint_drawer_pin">पिन/अनपिन</string>
+    <string name="dual_home_hint_drawer_open_top">टॉप खोलें</string>
+    <string name="dual_home_hint_drawer_close">बंद करें</string>
+
+    <string name="dual_home_hint_app_bar_select">चुनें</string>
+    <string name="dual_home_hint_app_bar_open_top">टॉप खोलें</string>
+    <string name="dual_home_hint_app_bar_all_apps">सभी ऐप्स</string>
+
+    <string name="dual_home_hint_carousel_platform">प्लेटफ़ॉर्म</string>
+    <string name="dual_home_hint_carousel_details">विवरण</string>
+    <string name="dual_home_hint_carousel_favorite">पसंदीदा</string>
+    <string name="dual_home_hint_carousel_unfavorite">पसंदीदा हटाएं</string>
+    <string name="dual_home_hint_carousel_collections">कलेक्शन</string>
+    <string name="dual_home_hint_carousel_library">लाइब्रेरी</string>
+
+    <!-- ===== Footer hints on the screen that only describes what the other one has focused ===== -->
+
+    <string name="dual_detail_hint_game_section">सेक्शन</string>
+    <string name="dual_detail_hint_game_open">खोलें</string>
+    <string name="dual_detail_hint_game_back">वापस</string>
+
+    <string name="dual_detail_hint_media_grid_library">लाइब्रेरी</string>
+    <string name="dual_detail_hint_media_grid_resume">रिज़्यूम</string>
+    <string name="dual_detail_hint_media_grid_options">विकल्प</string>
+    <string name="dual_detail_hint_media_grid_play">प्ले</string>
+    <string name="dual_detail_hint_media_grid_back">वापस</string>
+
+    <string name="dual_detail_hint_media_info_title">पिछला/अगला टाइटल</string>
+    <string name="dual_detail_hint_media_info_season">सीज़न</string>
+    <string name="dual_detail_hint_media_info_watch">देखें</string>
+    <string name="dual_detail_hint_media_info_back">वापस</string>
+
+    <string name="dual_detail_hint_default_section">सेक्शन</string>
+    <string name="dual_detail_hint_default_favorite">पसंदीदा</string>
+    <string name="dual_detail_hint_default_options">विकल्प</string>
+    <string name="dual_detail_hint_default_play">प्ले</string>
+    <string name="dual_detail_hint_default_back">वापस</string>
+
+    <!-- ===== Media panel on the companion screen ===== -->
+
+    <string name="dual_media_footer_season">सीज़न</string>
+    <string name="dual_media_footer_watch">देखें</string>
+    <string name="dual_media_footer_back_library">लाइब्रेरी</string>
+    <string name="dual_media_footer_back_home">वापस</string>
+
+    <string name="dual_media_signed_out_title">कोई मीडिया खाता नहीं</string>
+    <string name="dual_media_signed_out_message">यहां देखने के लिए सेटिंग्स से किसी मीडिया सर्वर में साइन इन करें।</string>
+    <string name="dual_media_loading_title">लोड हो रहा है</string>
+    <string name="dual_media_empty_title">अभी देखने के लिए कुछ नहीं</string>
+    <string name="dual_media_empty_message">जो टाइटल आप शुरू करेंगे वे यहां तब दिखेंगे जब वे प्रगति में होंगे।</string>
+
+    <string name="dual_media_episodes_loading_title">लोड हो रहा है</string>
+    <string name="dual_media_episodes_error_title">एपिसोड लोड नहीं हो सके</string>
+    <string name="dual_media_episodes_empty_title">अभी यहां कोई एपिसोड नहीं</string>
+
+    <string name="dual_media_cast_header">कलाकार</string>
+    <string name="dual_media_browse_back_description">वापस</string>
+    <plurals name="dual_media_browse_episode_count">
+        <item quantity="one">%d एपिसोड</item>
+        <item quantity="other">%d एपिसोड</item>
+    </plurals>
+
+    <string name="dual_media_transport_playing_description">चल रहा है</string>
+    <string name="dual_media_transport_paused_description">रुका हुआ</string>
+
+    <string name="dual_media_grid_empty">अभी इस लाइब्रेरी में कुछ नहीं</string>
+
+    <!-- ===== Showcase panel describing the focused game ===== -->
+
+    <string name="dual_showcase_stat_play_time_label">खेलने का समय</string>
+    <string name="dual_showcase_stat_last_played_label">आखिरी बार खेला गया</string>
+    <string name="dual_showcase_stat_last_played_never">कभी नहीं</string>
+    <string name="dual_showcase_stat_status_label">स्थिति</string>
+    <string name="dual_showcase_stat_status_none">कोई नहीं</string>
+
+    <string name="dual_showcase_last_played_today">आज</string>
+    <string name="dual_showcase_last_played_yesterday">कल</string>
+    <plurals name="dual_showcase_last_played_days">
+        <item quantity="one">%d दिन पहले</item>
+        <item quantity="other">%d दिन पहले</item>
+    </plurals>
+    <plurals name="dual_showcase_last_played_weeks">
+        <item quantity="one">%d हफ़्ता पहले</item>
+        <item quantity="other">%d हफ़्ते पहले</item>
+    </plurals>
+    <plurals name="dual_showcase_last_played_months">
+        <item quantity="one">%d महीना पहले</item>
+        <item quantity="other">%d महीने पहले</item>
+    </plurals>
+
+    <string name="dual_home_showcase_no_selection">एक गेम चुनें</string>
+
+    <!-- ===== Showcase panel describing the focused collection ===== -->
+
+    <string name="dual_collection_showcase_all_title">कलेक्शन</string>
+    <plurals name="dual_collection_showcase_game_count">
+        <item quantity="one">%d गेम</item>
+        <item quantity="other">%d गेम</item>
+    </plurals>
+    <string name="dual_collection_showcase_stat_installed">इंस्टॉल्ड</string>
+    <string name="dual_collection_showcase_stat_achievements">अचीवमेंट्स</string>
+    <string name="dual_collection_showcase_stat_playtime">प्लेटाइम</string>
+    <string name="dual_collection_showcase_empty">अभी इस कलेक्शन में कुछ नहीं</string>
+
+    <string name="dual_collection_play_time_minutes">%1$dm कुल</string>
+    <string name="dual_collection_play_time_hours_minutes">%1$dh %2$dm कुल</string>
+    <string name="dual_collection_play_time_hours">%1$dh कुल</string>
+
+    <!-- ===== Home rows on the companion screen ===== -->
+
+    <string name="dual_home_section_recent_title">खेलना जारी रखें</string>
+    <string name="dual_home_section_recent_short">जारी रखें</string>
+    <string name="dual_home_section_recommendations_title">अनुशंसित</string>
+    <string name="dual_home_section_recommendations_short">आपके लिए</string>
+    <string name="dual_home_section_favorites_title">पसंदीदा</string>
+
+    <!-- ===== Menu over a game on the companion library grid ===== -->
+
+    <string name="dual_library_menu_play">खेलें</string>
+    <string name="dual_library_menu_install">इंस्टॉल करें</string>
+    <string name="dual_library_menu_download">डाउनलोड करें</string>
+    <string name="dual_library_menu_favorite">पसंदीदा</string>
+    <string name="dual_library_menu_unfavorite">पसंदीदा हटाएं</string>
+    <string name="dual_library_menu_details">विवरण</string>
+    <string name="dual_library_menu_add_to_collection">कलेक्शन में जोड़ें</string>
+    <string name="dual_library_menu_add_to_grid">ग्रिड में जोड़ें</string>
+    <string name="dual_library_menu_refresh">डेटा रीफ्रेश करें</string>
+    <string name="dual_library_menu_resync_platform">प्लेटफ़ॉर्म रीसिंक करें</string>
+    <string name="dual_library_menu_delete">डाउनलोड हटाएं</string>
+    <string name="dual_library_menu_uninstall">अनइंस्टॉल करें</string>
+    <string name="dual_library_menu_hide">छिपाएं</string>
+    <string name="dual_library_menu_show">दिखाएं</string>
+
+    <!-- ===== Menu over a film or series on the companion screen ===== -->
+
+    <string name="dual_media_menu_open_info">मीडिया जानकारी खोलें</string>
+    <string name="dual_media_menu_start_over">फिर से शुरू करें</string>
+    <string name="dual_media_menu_favorite">पसंदीदा</string>
+    <string name="dual_media_menu_unfavorite">पसंदीदा हटाएं</string>
+    <string name="dual_media_menu_download">डाउनलोड करें</string>
+    <string name="dual_media_menu_remove_downloads">डाउनलोड हटाएं</string>
+    <string name="dual_media_menu_refresh">लाइब्रेरी रीफ्रेश करें</string>
+
+    <!-- ===== Filter panel on the companion library grid ===== -->
+
+    <string name="dual_filter_category_sort">सॉर्ट</string>
+    <string name="dual_filter_category_search">खोज</string>
+    <string name="dual_filter_category_source">सोर्स</string>
+    <string name="dual_filter_category_genre">जॉनर</string>
+    <string name="dual_filter_category_players">प्लेयर</string>
+    <string name="dual_filter_category_franchise">फ्रेंचाइज़</string>
+
+    <string name="dual_filter_search_placeholder">गेम खोजें...</string>
+    <string name="dual_filter_search_active">फ़िल्टर किया जा रहा है: \"%1$s\"</string>
+
+    <!-- ===== Collection list on the companion screen ===== -->
+
+    <string name="dual_collections_header_user">मेरे कलेक्शन</string>
+    <string name="dual_collections_header_genres">जॉनर</string>
+    <string name="dual_collections_header_game_modes">गेम मोड</string>
+
+    <!-- ===== Companion library grid ===== -->
+
+    <string name="dual_library_platform_filter_all">सभी</string>
+    <string name="dual_library_grid_platform_fallback">सभी</string>
+    <string name="dual_library_grid_header">%1$s (%2$d)</string>
+    <string name="dual_home_carousel_header">%1$s (%2$d)</string>
+
+    <!-- ===== Curated grid tiles on the companion screen ===== -->
+
+    <string name="dual_tile_missing_game">गेम गायब</string>
+    <string name="dual_tile_missing_collection">कलेक्शन गायब</string>
+    <string name="dual_tile_collection_subtitle">कलेक्शन</string>
+    <string name="dual_tile_collection_games_stat">गेम</string>
+    <string name="dual_tile_missing_app">ऐप गायब</string>
+    <string name="dual_tile_app_subtitle">ऐप</string>
+    <string name="dual_tile_unavailable">अनुपलब्ध</string>
+
+    <plurals name="dual_tile_picker_collection_game_count">
+        <item quantity="one">%d गेम</item>
+        <item quantity="other">%d गेम</item>
+    </plurals>
+    <string name="dual_tile_picker_app_emulator">एमुलेटर</string>
+    <string name="dual_tile_picker_app_other">ऐप</string>
+
+    <!-- ===== Prompt offered when a download finishes on the companion screen ===== -->
+
+    <string name="dual_home_tile_add_title">होम ग्रिड में जोड़ें?</string>
+    <string name="dual_home_tile_add_message">%1$s डाउनलोड हो चुका है।</string>
+    <string name="dual_home_tile_add_confirm">जोड़ें</string>
+    <string name="dual_home_tile_add_cancel">अभी नहीं</string>
+
+    <string name="dual_home_collection_picker_title">कलेक्शन में जोड़ें</string>
+    <string name="dual_home_collection_picker_member">%1$s  -  जोड़ा गया</string>
+    <string name="dual_home_media_menu_header">मीडिया</string>
+
+    <!-- ===== Game detail on the companion screen ===== -->
+
+    <string name="dual_detail_tab_saves">सेव</string>
+    <string name="dual_detail_tab_states">स्टेट</string>
+    <string name="dual_detail_tab_media">मीडिया</string>
+    <string name="dual_detail_tab_options">विकल्प</string>
+
+    <string name="dual_state_menu_copy_to">स्लॉट में कॉपी करें</string>
+    <string name="dual_state_menu_delete">स्टेट हटाएं</string>
+    <string name="dual_detail_state_menu_header">स्टेट</string>
+
+    <string name="dual_detail_state_prompt_auto_slot">ऑटो स्टेट</string>
+    <string name="dual_detail_state_prompt_numbered_slot">स्लॉट %1$d</string>
+    <string name="dual_detail_state_prompt_delete_title">स्टेट हटाएं</string>
+    <string name="dual_detail_state_prompt_overwrite_title">स्टेट ओवरराइट करें</string>
+    <string name="dual_detail_state_prompt_delete_message">%1$s इस डिवाइस और सर्वर से हटा दिया जाएगा।</string>
+    <string name="dual_detail_state_prompt_overwrite_message">%1$s में पहले से एक स्टेट है। इसे कॉपी से बदल दिया जाएगा।</string>
+    <string name="dual_detail_state_prompt_delete_confirm">हटाएं</string>
+    <string name="dual_detail_state_prompt_overwrite_confirm">ओवरराइट करें</string>
+
+    <string name="dual_detail_saves_loading">सेव लोड हो रहे हैं...</string>
+    <string name="dual_detail_saves_applying">सेव लागू हो रहा है...</string>
+    <string name="dual_detail_saves_slots_heading">सेव स्लॉट</string>
+    <string name="dual_detail_saves_new_slot">नया स्लॉट</string>
+    <string name="dual_detail_saves_history_heading">इतिहास</string>
+    <string name="dual_detail_saves_history_heading_named">इतिहास (%1$s)</string>
+    <string name="dual_detail_saves_history_empty">अभी तक कोई सेव नहीं</string>
+    <string name="dual_detail_saves_active_restore_point_description">सक्रिय रीस्टोर पॉइंट</string>
+    <string name="dual_detail_saves_latest">नवीनतम</string>
+    <string name="dual_detail_saves_sync_synced">सिंक हुआ</string>
+    <string name="dual_detail_saves_sync_local">लोकल</string>
+
+    <string name="dual_detail_states_empty">कोई स्टेट स्लॉट नहीं</string>
+    <string name="dual_detail_states_copy_prompt">कॉपी करने के लिए एक स्लॉट चुनें</string>
+    <string name="dual_detail_states_slot_empty">खाली</string>
+    <string name="dual_detail_states_slot_no_shot">कोई फोटो नहीं</string>
+    <string name="dual_detail_states_slot_number">स्लॉट %1$d</string>
+
+    <string name="dual_detail_media_empty">कोई स्क्रीनशॉट नहीं</string>
+    <string name="dual_detail_media_screenshot_description">स्क्रीनशॉट</string>
+
+    <string name="dual_detail_option_emulator_default">प्लेटफ़ॉर्म डिफ़ॉल्ट</string>
+    <string name="dual_detail_option_core_default">डिफ़ॉल्ट</string>
+    <string name="dual_detail_option_save_path_custom">कस्टम</string>
+    <string name="dual_detail_option_save_path_default">डिफ़ॉल्ट</string>
+    <string name="dual_detail_option_memory_card_auto">ऑटो</string>
+    <string name="dual_detail_option_variant_default">डिफ़ॉल्ट</string>
+
+    <string name="dual_detail_option_play_extracting">एक्सट्रैक्ट हो रहा है...</string>
+    <string name="dual_detail_option_play_downloading">डाउनलोड हो रहा है %1$d%%</string>
+    <string name="dual_detail_option_play_queued">कतार में...</string>
+    <string name="dual_detail_option_play_paused">रुका हुआ %1$d%%</string>
+    <string name="dual_detail_option_play_no_space">जगह नहीं</string>
+    <string name="dual_detail_option_play">खेलें</string>
+    <string name="dual_detail_option_download">डाउनलोड करें</string>
+    <string name="dual_detail_option_auto_save_slot">ऑटो-सेव</string>
+
+    <string name="dual_detail_option_rating">रेटिंग</string>
+    <string name="dual_detail_option_difficulty">कठिनाई</string>
+    <string name="dual_detail_option_status">स्थिति</string>
+    <string name="dual_detail_option_status_not_set">सेट नहीं</string>
+    <string name="dual_detail_option_unfavorite">पसंदीदा से हटाएं</string>
+    <string name="dual_detail_option_favorite">पसंदीदा में जोड़ें</string>
+    <string name="dual_detail_option_change_emulator">एमुलेटर बदलें</string>
+    <string name="dual_detail_option_change_core">कोर बदलें</string>
+    <string name="dual_detail_option_save_path">सेव पाथ</string>
+    <string name="dual_detail_option_display_target">डिस्प्ले टार्गेट</string>
+    <string name="dual_detail_option_memory_card">मेमोरी कार्ड</string>
+    <string name="dual_detail_option_select_variant">वैरिएंट चुनें</string>
+    <string name="dual_detail_option_select_disc">डिस्क चुनें</string>
+    <string name="dual_detail_option_title_id">टाइटल ID</string>
+    <string name="dual_detail_option_title_id_missing">पता नहीं चला</string>
+    <string name="dual_detail_option_files">फ़ाइलें</string>
+    <string name="dual_detail_option_add_to_collection">कलेक्शन में जोड़ें</string>
+    <string name="dual_detail_option_refresh_metadata">मेटाडेटा रीफ्रेश करें</string>
+    <string name="dual_detail_option_delete">लाइब्रेरी से हटाएं</string>
+    <string name="dual_detail_option_unhide">गेम दिखाएं</string>
+    <string name="dual_detail_option_hide">गेम छिपाएं</string>
+
+    <!-- ===== Modals raised over the companion game detail ===== -->
+
+    <string name="dual_detail_file_picker_no_changes">कोई बदलाव नहीं</string>
+    <string name="dual_detail_file_picker_summary_adds">+%1$d · %2$s</string>
+    <string name="dual_detail_file_picker_summary_removes">-%1$d · %2$s</string>
+    <string name="dual_detail_file_picker_summary_selected">%1$d में से %2$d चुने · %3$s</string>
+    <string name="dual_detail_file_picker_manage_title">फ़ाइलें</string>
+    <string name="dual_detail_file_picker_choose_title">फ़ाइलें चुनें</string>
+
+    <string name="dual_detail_steam_install_heading">इंस्टॉल लोकेशन</string>
+    <string name="dual_detail_steam_install_argosy">Argosy के ज़रिए डाउनलोड करें</string>
+    <string name="dual_detail_steam_install_external">इंस्टॉल्ड के रूप में चिह्नित करें</string>
+    <string name="dual_detail_steam_install_managed_by">%1$s द्वारा प्रबंधित</string>
+
+    <string name="dual_detail_screenshot_viewer_description">स्क्रीनशॉट</string>
+    <string name="dual_detail_achievements_label">अचीवमेंट्स</string>
+
+    <string name="dual_detail_emulator_picker_heading">एमुलेटर चुनें</string>
+    <string name="dual_detail_emulator_picker_default">प्लेटफ़ॉर्म डिफ़ॉल्ट इस्तेमाल करें</string>
+
+    <string name="dual_detail_core_picker_heading">कोर चुनें</string>
+    <string name="dual_detail_core_picker_default">प्लेटफ़ॉर्म डिफ़ॉल्ट इस्तेमाल करें</string>
+
+    <string name="dual_detail_save_path_heading">सेव पाथ</string>
+    <string name="dual_detail_save_path_reset">इनहेरिटेड डिफ़ॉल्ट पर रीसेट करें</string>
+    <string name="dual_detail_save_path_inherited">इनहेरिटेड डिफ़ॉल्ट</string>
+    <string name="dual_detail_save_path_inherited_hint">मुख्य स्क्रीन पर पर-गेम सेटिंग्स से कस्टम पाथ सेट करें</string>
+    <string name="dual_detail_save_path_current_override">मौजूदा ओवरराइड</string>
+
+    <string name="dual_detail_display_target_heading">डिस्प्ले टार्गेट</string>
+    <string name="dual_detail_display_target_default">प्लेटफ़ॉर्म डिफ़ॉल्ट इस्तेमाल करें</string>
+
+    <string name="dual_detail_memory_card_heading">मेमोरी कार्ड</string>
+    <string name="dual_detail_memory_card_auto">ऑटो डिटेक्ट</string>
+
+    <string name="dual_detail_variant_heading">वैरिएंट चुनें</string>
+    <string name="dual_detail_variant_default">डिफ़ॉल्ट (मूल)</string>
+
+    <string name="dual_detail_disc_heading">डिस्क चुनें</string>
+    <string name="dual_detail_disc_label">डिस्क %1$d</string>
+
+    <string name="dual_detail_collection_heading">कलेक्शन में जोड़ें</string>
+    <string name="dual_detail_collection_create">नया कलेक्शन बनाएं</string>
+
+    <string name="dual_detail_state_preview_description">स्टेट प्रीव्यू</string>
+    <string name="dual_detail_state_preview_cover_fallback">कवर आर्ट फ़ॉलबैक</string>
+    <string name="dual_detail_state_sync_synced">सिंक हुआ</string>
+    <string name="dual_detail_state_sync_pending">लंबित</string>
+    <string name="dual_detail_state_sync_server">सर्वर</string>
+    <string name="dual_detail_state_sync_local">लोकल</string>
+
+    <string name="dual_detail_save_name_heading">सेव स्लॉट बनाएं</string>
+    <string name="dual_detail_save_name_field_label">स्लॉट का नाम</string>
+    <string name="dual_detail_save_name_cancel">रद्द करें</string>
+    <string name="dual_detail_save_name_create">बनाएं</string>
+
+    <string name="dual_detail_save_slot_auto">ऑटो सेव</string>
+</resources>

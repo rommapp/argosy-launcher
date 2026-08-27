@@ -1,5 +1,8 @@
 package com.nendo.argosy.ui.dualscreen
 
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.InputButton
 
 /**
@@ -7,6 +10,7 @@ import com.nendo.argosy.ui.components.InputButton
  * One list serves both showcase hosts; [drawerOpen] and [appBarFocused] exist only on the primary
  * display's host and default to absent for the companion's.
  */
+@Composable
 fun companionHomeHints(
     viewMode: String,
     isDownloaded: Boolean,
@@ -14,54 +18,64 @@ fun companionHomeHints(
     drawerOpen: Boolean = false,
     appBarFocused: Boolean = false
 ): List<Pair<InputButton, String>> {
-    val actionLabel = if (isDownloaded) "Play" else "Download"
+    val actionLabel = if (isDownloaded) {
+        stringResource(R.string.dual_home_hint_action_play)
+    } else {
+        stringResource(R.string.dual_home_hint_action_download)
+    }
     return when (viewMode) {
         "COLLECTION_GAMES" -> listOf(
-            InputButton.DPAD to "Navigate",
+            InputButton.DPAD to stringResource(R.string.dual_home_hint_collection_navigate),
             InputButton.A to actionLabel,
-            InputButton.X to "Details",
-            InputButton.B to "Back"
+            InputButton.X to stringResource(R.string.dual_home_hint_collection_details),
+            InputButton.B to stringResource(R.string.dual_home_hint_collection_back)
         )
         "LIBRARY_GRID" -> listOf(
-            InputButton.LB_RB to "Platform",
-            InputButton.LT_RT to "Letter",
-            InputButton.A to "Details",
-            InputButton.X to "Options",
-            InputButton.Y to "Filters",
-            InputButton.B to "Back"
+            InputButton.LB_RB to stringResource(R.string.dual_home_hint_library_platform),
+            InputButton.LT_RT to stringResource(R.string.dual_home_hint_library_letter),
+            InputButton.A to stringResource(R.string.dual_home_hint_library_details),
+            InputButton.X to stringResource(R.string.dual_home_hint_library_options),
+            InputButton.Y to stringResource(R.string.dual_home_hint_library_filters),
+            InputButton.B to stringResource(R.string.dual_home_hint_library_back)
         )
         "MEDIA_GRID" -> listOf(
-            InputButton.LB_RB to "Library",
-            InputButton.Y to "Resume",
-            InputButton.X to "Options",
-            InputButton.A to "Play",
-            InputButton.B to "Back"
+            InputButton.LB_RB to stringResource(R.string.dual_home_hint_media_grid_library),
+            InputButton.Y to stringResource(R.string.dual_home_hint_media_grid_resume),
+            InputButton.X to stringResource(R.string.dual_home_hint_media_grid_options),
+            InputButton.A to stringResource(R.string.dual_home_hint_media_grid_play),
+            InputButton.B to stringResource(R.string.dual_home_hint_media_grid_back)
         )
         "MEDIA_INFO" -> listOf(
-            InputButton.LB_RB to "Prev/Next Title",
-            InputButton.DPAD_HORIZONTAL to "Season",
-            InputButton.A to "Watch",
-            InputButton.B to "Back"
+            InputButton.LB_RB to stringResource(R.string.dual_home_hint_media_info_title),
+            InputButton.DPAD_HORIZONTAL to
+                stringResource(R.string.dual_home_hint_media_info_season),
+            InputButton.A to stringResource(R.string.dual_home_hint_media_info_watch),
+            InputButton.B to stringResource(R.string.dual_home_hint_media_info_back)
         )
         else -> when {
             drawerOpen -> listOf(
-                InputButton.A to "Open",
-                InputButton.X to "Pin/Unpin",
-                InputButton.Y to "Open Top",
-                InputButton.B to "Close"
+                InputButton.A to stringResource(R.string.dual_home_hint_drawer_open),
+                InputButton.X to stringResource(R.string.dual_home_hint_drawer_pin),
+                InputButton.Y to stringResource(R.string.dual_home_hint_drawer_open_top),
+                InputButton.B to stringResource(R.string.dual_home_hint_drawer_close)
             )
             appBarFocused -> listOf(
-                InputButton.A to "Select",
-                InputButton.Y to "Open Top",
-                InputButton.SELECT to "All Apps"
+                InputButton.A to stringResource(R.string.dual_home_hint_app_bar_select),
+                InputButton.Y to stringResource(R.string.dual_home_hint_app_bar_open_top),
+                InputButton.SELECT to stringResource(R.string.dual_home_hint_app_bar_all_apps)
             )
             else -> listOf(
-                InputButton.LB_RB to "Platform",
+                InputButton.LB_RB to stringResource(R.string.dual_home_hint_carousel_platform),
                 InputButton.A to actionLabel,
-                InputButton.X to "Details",
-                InputButton.Y to if (isFavorite) "Unfavorite" else "Favorite",
-                InputButton.DPAD_UP to "Collections",
-                InputButton.SELECT to "Library"
+                InputButton.X to stringResource(R.string.dual_home_hint_carousel_details),
+                InputButton.Y to if (isFavorite) {
+                    stringResource(R.string.dual_home_hint_carousel_unfavorite)
+                } else {
+                    stringResource(R.string.dual_home_hint_carousel_favorite)
+                },
+                InputButton.DPAD_UP to
+                    stringResource(R.string.dual_home_hint_carousel_collections),
+                InputButton.SELECT to stringResource(R.string.dual_home_hint_carousel_library)
             )
         }
     }

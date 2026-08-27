@@ -30,10 +30,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.coil.AppIconData
 import com.nendo.argosy.ui.common.LongPressAnimationConfig
 import com.nendo.argosy.ui.common.longPressGesture
@@ -89,7 +91,7 @@ fun AllAppsDrawerOverlay(
         }
 
         Text(
-            text = "All Apps",
+            text = stringResource(R.string.secondaryhome_drawer_all_apps_title),
             style = MaterialTheme.typography.titleSmall,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
@@ -169,7 +171,7 @@ private fun DrawerAppItem(
                 ) {
                     Icon(
                         imageVector = Icons.Default.PushPin,
-                        contentDescription = "Pinned",
+                        contentDescription = stringResource(R.string.secondaryhome_drawer_pinned_description),
                         tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(11.dp)
                     )

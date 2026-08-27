@@ -23,6 +23,11 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class DownloadForegroundService : Service() {
 
+    override fun attachBaseContext(newBase: Context) {
+        val tag = com.nendo.argosy.data.preferences.SessionStateStore(newBase).getAppLanguage()
+        super.attachBaseContext(com.nendo.argosy.core.locale.LocaleHelper.wrap(newBase, tag))
+    }
+
     @Inject
     lateinit var downloadManager: DownloadManager
 
@@ -38,7 +43,7 @@ class DownloadForegroundService : Service() {
     override fun onCreate() {
         super.onCreate()
         acquireWakeLock()
-        startForegroundWithNotification("Preparing download...", 0, 0)
+        startForegroundWithNotification(getString(R.string.sync_download_service_preparing), 0, 0)
         observeDownloadState()
     }
 
@@ -118,12 +123,16 @@ class DownloadForegroundService : Service() {
                     }
 
                     if (steamBusy && steamDl != null) {
-                        val text = steamState.toNotificationText(steamDl.gameName)
+                        val text = steamState.toNotificationText(this@DownloadForegroundService, steamDl.gameName)
                         if (text != null) {
                             updateNotification(text, 0, 0)
                         } else if (steamState is com.nendo.argosy.data.steam.SteamDownloadState.Downloading) {
                             val pct = (steamDl.progress * 100).toInt()
-                            updateNotification("Downloading: ${steamDl.gameName}", pct, 100)
+                            updateNotification(
+                                getString(R.string.sync_download_service_steam_downloading, steamDl.gameName),
+                                pct,
+                                100
+                            )
                         }
                         return@collect
                     }
@@ -131,9 +140,15 @@ class DownloadForegroundService : Service() {
                     val currentDownload = rommActive.firstOrNull()
                     if (currentDownload != null) {
                         val title = when (currentDownload.state) {
-                            DownloadState.EXTRACTING -> "Extracting: ${currentDownload.displayTitle}"
-                            DownloadState.MOVING -> "Moving to ROM storage: ${currentDownload.displayTitle}"
-                            else -> "Downloading: ${currentDownload.displayTitle}"
+                            DownloadState.EXTRACTING -> getString(
+                                R.string.sync_download_service_extracting, currentDownload.displayTitle
+                            )
+                            DownloadState.MOVING -> getString(
+                                R.string.sync_download_service_moving, currentDownload.displayTitle
+                            )
+                            else -> getString(
+                                R.string.sync_download_service_downloading, currentDownload.displayTitle
+                            )
                         }
                         if (currentDownload.state == DownloadState.EXTRACTING) {
                             updateNotification(title, 0, 0)
@@ -145,8 +160,9 @@ class DownloadForegroundService : Service() {
                         }
                     } else {
                         val nextQueued = rommQueued.firstOrNull()
-                        val message = nextQueued?.let { "Queued: ${it.displayTitle}" }
-                            ?: "Download pending..."
+                        val message = nextQueued
+                            ?.let { getString(R.string.sync_download_service_queued, it.displayTitle) }
+                            ?: getString(R.string.sync_download_service_pending)
                         updateNotification(message, 0, 0)
                     }
                 }
@@ -156,14 +172,23 @@ class DownloadForegroundService : Service() {
     private fun updateMediaNotification(state: MediaDownloadState, progress: MediaDownloadProgress?) {
         when (state) {
             is MediaDownloadState.Preparing -> updateNotification(
-                "${state.detail}: ${progress?.displayTitle ?: state.itemName}", 0, 0
+                getString(
+                    R.string.sync_download_service_media_preparing,
+                    state.detail,
+                    progress?.displayTitle ?: state.itemName
+                ),
+                0,
+                0
             )
             is MediaDownloadState.Downloading -> {
-                val title = progress?.displayTitle ?: state.itemName
+                val title = getString(
+                    R.string.sync_download_service_media_downloading,
+                    progress?.displayTitle ?: state.itemName
+                )
                 if (progress != null && progress.totalBytes > 0 && !progress.sizeIsEstimated) {
-                    updateNotification("Downloading: $title", (state.progress * 100).toInt(), 100)
+                    updateNotification(title, (state.progress * 100).toInt(), 100)
                 } else {
-                    updateNotification("Downloading: $title", 0, 0)
+                    updateNotification(title, 0, 0)
                 }
             }
             else -> Unit

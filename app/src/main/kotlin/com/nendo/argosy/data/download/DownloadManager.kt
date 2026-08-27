@@ -71,7 +71,7 @@ data class DownloadProgress(
     val bytesDownloaded: Long,
     val totalBytes: Long,
     val state: DownloadState,
-    val errorReason: String? = null,
+    val errorReason: DownloadFailureReason? = null,
     val extractionBytesWritten: Long = 0,
     val extractionTotalBytes: Long = 0,
     val isMultiFileRom: Boolean = false,
@@ -115,8 +115,8 @@ enum class DownloadState {
 
 private sealed class DownloadResult {
     data class Success(val bytesWritten: Long) : DownloadResult()
-    data class Failure(val reason: String) : DownloadResult()
-    data class WaitingForStorage(val reason: String) : DownloadResult()
+    data class Failure(val reason: DownloadFailureReason) : DownloadResult()
+    data class WaitingForStorage(val reason: DownloadFailureReason) : DownloadResult()
     data object Cancelled : DownloadResult()
 }
 
@@ -463,13 +463,17 @@ class DownloadManager @Inject constructor(
                 progress.copy(state = DownloadState.COMPLETED, bytesDownloaded = result.bytesWritten)
             }
             is DownloadResult.Failure -> {
-                downloadQueueDao.updateState(progress.id, DownloadState.FAILED.name, result.reason)
+                downloadQueueDao.updateState(
+                    progress.id, DownloadState.FAILED.name, DownloadFailureReasonCodec.encode(result.reason)
+                )
                 soundManager.play(SoundType.ERROR)
                 progress.copy(state = DownloadState.FAILED, errorReason = result.reason)
             }
             is DownloadResult.WaitingForStorage -> {
                 downloadQueueDao.updateState(
-                    progress.id, DownloadState.WAITING_FOR_STORAGE.name, result.reason
+                    progress.id,
+                    DownloadState.WAITING_FOR_STORAGE.name,
+                    DownloadFailureReasonCodec.encode(result.reason)
                 )
                 progress.copy(state = DownloadState.WAITING_FOR_STORAGE, errorReason = result.reason)
             }
@@ -1099,7 +1103,9 @@ class DownloadManager @Inject constructor(
                         val contentLength = body.contentLength()
 
                         if (INVALID_CONTENT_TYPES.any { contentType.startsWith(it) }) {
-                            return@withContext DownloadResult.Failure("Invalid file type: $contentType")
+                            return@withContext DownloadResult.Failure(
+                                DownloadFailureReason.InvalidContentType(contentType)
+                            )
                         }
 
                         if (!response.isPartialContent && existingBytes > 0) {
@@ -1114,7 +1120,7 @@ class DownloadManager @Inject constructor(
                         }
 
                         if (totalSize > 0 && totalSize < MIN_ROM_SIZE_BYTES) {
-                            return@withContext DownloadResult.Failure("File too small to be a ROM")
+                            return@withContext DownloadResult.Failure(DownloadFailureReason.FileTooSmall)
                         }
 
                         updateProgress(progress.copy(
@@ -1220,7 +1226,7 @@ class DownloadManager @Inject constructor(
                             "Download failed | game=${progress.gameTitle} id=${progress.rommId} " +
                                 "file=${progress.fileName} code=${result.code} msg=${result.message}"
                         )
-                        DownloadResult.Failure(result.message)
+                        DownloadResult.Failure(DownloadFailureReason.ServerError(result.message))
                     }
                 }
             } catch (_: CancellationException) {
@@ -1231,7 +1237,7 @@ class DownloadManager @Inject constructor(
                     "Download error | game=${progress.gameTitle} id=${progress.rommId} file=${progress.fileName}",
                     e
                 )
-                DownloadResult.Failure(e.message ?: "Unknown error")
+                DownloadResult.Failure(DownloadFailureReason.Unexpected(e.message))
             }
         }
 
@@ -1296,7 +1302,7 @@ class DownloadManager @Inject constructor(
                 "Download finalize failed | game=${progress.gameTitle} file=${progress.fileName} " +
                     "missing at $finalPath"
             )
-            return DownloadResult.Failure("Downloaded file not found")
+            return DownloadResult.Failure(DownloadFailureReason.DownloadedFileMissing)
         }
         Logger.info(
             TAG,
@@ -1393,14 +1399,22 @@ class DownloadManager @Inject constructor(
         val free = romStagingManager.availableBytes(unpackDir) ?: return@withContext null
         if (free >= required) return@withContext null
 
-        val where = if (staged) "internal storage" else "ROM storage"
+        val location = if (staged) {
+            DownloadFailureReason.StorageLocation.INTERNAL
+        } else {
+            DownloadFailureReason.StorageLocation.ROM
+        }
         Logger.warn(
             TAG,
-            "Unpack deferred, $where full | game=${progress.gameTitle} " +
+            "Unpack deferred, $location full | game=${progress.gameTitle} " +
                 "expanded=$expandedBytes need=$required free=$free"
         )
         DownloadResult.WaitingForStorage(
-            "Unpacking needs ${formatMegabytes(required)} in $where, ${formatMegabytes(free)} free"
+            DownloadFailureReason.InsufficientUnpackSpace(
+                requiredBytes = required,
+                availableBytes = free,
+                location = location
+            )
         )
     }
 
@@ -1449,7 +1463,7 @@ class DownloadManager @Inject constructor(
                 "Staged unpack escaped its folder | game=${progress.gameTitle} path=$unpackedPath"
             )
             return StagedDeployResult.Failure(
-                DownloadResult.Failure("Unpacked game did not land in the staging folder")
+                DownloadResult.Failure(DownloadFailureReason.UnpackEscapedStagingFolder)
             )
         }
         return deployStagedArea(romStagingManager.advance(area, StagingPhase.MOVING, relative), progress)
@@ -1469,7 +1483,7 @@ class DownloadManager @Inject constructor(
         progress: DownloadProgress
     ): StagedDeployResult {
         val relative = area.manifest.launchRelPath
-            ?: return StagedDeployResult.Failure(DownloadResult.Failure("Staged game has no recorded path"))
+            ?: return StagedDeployResult.Failure(DownloadResult.Failure(DownloadFailureReason.StagedPathMissing))
         val destinationDir = area.destinationDir
         val outputBytes = romStagingManager.outputBytes(area)
         val destinationFree = romStagingManager.availableBytes(destinationDir)
@@ -1483,7 +1497,10 @@ class DownloadManager @Inject constructor(
             )
             return StagedDeployResult.Failure(
                 DownloadResult.WaitingForStorage(
-                    "Needs ${formatMegabytes(required)} in ROM storage, ${formatMegabytes(destinationFree)} free"
+                    DownloadFailureReason.InsufficientDeploySpace(
+                        requiredBytes = required,
+                        availableBytes = destinationFree
+                    )
                 )
             )
         }
@@ -1510,7 +1527,7 @@ class DownloadManager @Inject constructor(
         }
         if (!moved) {
             return StagedDeployResult.Failure(
-                DownloadResult.Failure("Could not move the game into ROM storage")
+                DownloadResult.Failure(DownloadFailureReason.MoveToStorageFailed)
             )
         }
 
@@ -1518,7 +1535,7 @@ class DownloadManager @Inject constructor(
         if (!finalFile.exists()) {
             Logger.warn(TAG, "Deploy verify failed | expected ${finalFile.absolutePath}")
             return StagedDeployResult.Failure(
-                DownloadResult.Failure("Moved game was not found in ROM storage")
+                DownloadResult.Failure(DownloadFailureReason.MovedFileNotFound)
             )
         }
 
@@ -1541,8 +1558,6 @@ class DownloadManager @Inject constructor(
             is StagedDeployResult.Failure -> deployed.result
         }
     }
-
-    private fun formatMegabytes(bytes: Long): String = "${bytes / 1024 / 1024} MB"
 
     /**
      * A download parked mid-move only needs room for what is left to carry across, not for the
@@ -1950,18 +1965,18 @@ class DownloadManager @Inject constructor(
 
     sealed class ExtractionResult {
         data class Success(val localPath: String) : ExtractionResult()
-        data class Failure(val reason: String) : ExtractionResult()
+        data class Failure(val reason: DownloadFailureReason) : ExtractionResult()
     }
 
     suspend fun retryExtraction(gameId: Long): ExtractionResult {
         val queueEntry = downloadQueueDao.getByGameId(gameId)
-            ?: return ExtractionResult.Failure("No download entry found")
+            ?: return ExtractionResult.Failure(DownloadFailureReason.NoDownloadEntryFound)
 
         val platformDir = getDownloadDir(queueEntry.platformSlug)
         val targetFile = File(platformDir, queueEntry.fileName)
 
         if (!targetFile.exists()) {
-            return ExtractionResult.Failure("Downloaded file no longer exists")
+            return ExtractionResult.Failure(DownloadFailureReason.DownloadedFileNoLongerExists)
         }
 
         return try {
@@ -2016,12 +2031,13 @@ class DownloadManager @Inject constructor(
             soundManager.play(SoundType.DOWNLOAD_COMPLETE)
             ExtractionResult.Success(finalPath)
         } catch (e: Exception) {
+            val reason = DownloadFailureReason.ExtractionFailed(e.message)
             downloadQueueDao.updateState(
                 queueEntry.id,
                 DownloadState.FAILED.name,
-                e.message ?: "Extraction failed"
+                DownloadFailureReasonCodec.encode(reason)
             )
-            ExtractionResult.Failure(e.message ?: "Extraction failed")
+            ExtractionResult.Failure(reason)
         }
     }
 
@@ -2123,7 +2139,7 @@ class DownloadManager @Inject constructor(
             } catch (e: Exception) {
                 DownloadState.QUEUED
             },
-            errorReason = errorReason,
+            errorReason = DownloadFailureReasonCodec.decode(errorReason),
             isMultiFileRom = isMultiFileRom,
             selectedFileIds = selectedFileIds
                 ?.split(",")?.mapNotNull { it.trim().toLongOrNull() }

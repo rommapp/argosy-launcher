@@ -19,8 +19,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.runtime.remember
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
@@ -54,8 +56,8 @@ fun JellyfinConfigForm(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         OutlinedTextField(
             value = jellyfin.configUrl,
             onValueChange = { viewModel.setJellyfinConfigUrl(it) },
-            label = { Text("Server Address") },
-            placeholder = { Text("https://jellyfin.example.com") },
+            label = { Text(stringResource(R.string.settings_jellyfin_config_server_address_label)) },
+            placeholder = { Text(stringResource(R.string.settings_jellyfin_config_server_address_placeholder)) },
             singleLine = true,
             shape = inputShape,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
@@ -92,15 +94,15 @@ fun JellyfinConfigForm(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         Spacer(modifier = Modifier.height(Dimens.spacingSm))
 
         ActionPreference(
-            title = "Save",
-            subtitle = "Use this address for your media library",
+            title = stringResource(R.string.settings_jellyfin_config_save_title),
+            subtitle = stringResource(R.string.settings_jellyfin_config_save_subtitle),
             isFocused = uiState.focusedIndex == JELLYFIN_CONFIG_SAVE_INDEX,
             onClick = { viewModel.commitJellyfinConfig() }
         )
 
         ActionPreference(
-            title = "Cancel",
-            subtitle = "Return to Jellyfin settings",
+            title = stringResource(R.string.settings_jellyfin_config_cancel_title),
+            subtitle = stringResource(R.string.settings_jellyfin_config_cancel_subtitle),
             isFocused = uiState.focusedIndex == JELLYFIN_CONFIG_CANCEL_INDEX,
             onClick = { viewModel.cancelJellyfinConfig() }
         )

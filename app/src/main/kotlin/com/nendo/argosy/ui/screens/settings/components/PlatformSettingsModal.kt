@@ -24,7 +24,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.Modal
 import com.nendo.argosy.ui.screens.gamedetail.components.OptionItem
 import com.nendo.argosy.ui.screens.settings.PlatformStorageConfig
@@ -55,14 +57,14 @@ fun PlatformSettingsModal(
         onDismiss = onDismiss
     ) {
         ToggleOptionItem(
-            label = "Sync with Server",
+            label = stringResource(R.string.settings_platform_modal_sync_label),
             checked = config.syncEnabled,
             isFocused = focusIndex == 0,
             onToggle = onToggleSync
         )
 
         PathConfigItem(
-            label = "ROM Path",
+            label = stringResource(R.string.settings_platform_modal_rom_path_label),
             path = config.customRomPath?.let { formatStoragePath(it) },
             isCustom = config.customRomPath != null,
             isFocused = focusIndex == 1,
@@ -72,7 +74,7 @@ fun PlatformSettingsModal(
         )
 
         PathConfigItem(
-            label = "Save Path",
+            label = stringResource(R.string.settings_platform_modal_save_path_label),
             path = config.effectiveSavePath?.let { formatStoragePath(it) },
             isCustom = config.isUserSavePathOverride,
             isFocused = focusIndex == 2,
@@ -88,7 +90,7 @@ fun PlatformSettingsModal(
 
         if (config.supportsStatePath) {
             PathConfigItem(
-                label = "State Path",
+                label = stringResource(R.string.settings_platform_modal_state_path_label),
                 path = config.effectiveStatePath?.let { formatStoragePath(it) },
                 isCustom = config.isUserStatePathOverride,
                 isFocused = focusIndex == statePathIndex,
@@ -104,13 +106,13 @@ fun PlatformSettingsModal(
         )
 
         OptionItem(
-            label = "Resync Platform",
+            label = stringResource(R.string.settings_platform_modal_resync_label),
             isFocused = focusIndex == resyncIndex,
             onClick = onResync
         )
 
         OptionItem(
-            label = "Purge All Data",
+            label = stringResource(R.string.settings_platform_modal_purge_label),
             isFocused = focusIndex == purgeIndex,
             isDangerous = true,
             onClick = onPurge
@@ -217,7 +219,7 @@ fun PathConfigItem(
                 )
                 if (!enabled) {
                     Text(
-                        text = "(coming soon)",
+                        text = stringResource(R.string.settings_path_config_coming_soon),
                         style = MaterialTheme.typography.labelSmall,
                         color = secondaryColor
                     )
@@ -246,7 +248,7 @@ fun PathConfigItem(
                                 }
                             )
                         ) {
-                            Text(text = "Reset", style = MaterialTheme.typography.labelMedium)
+                            Text(text = stringResource(R.string.settings_path_config_reset_button), style = MaterialTheme.typography.labelMedium)
                         }
                     }
                     Button(
@@ -266,7 +268,7 @@ fun PathConfigItem(
                             }
                         )
                     ) {
-                        Text(text = "Change", style = MaterialTheme.typography.labelMedium)
+                        Text(text = stringResource(R.string.settings_path_config_change_button), style = MaterialTheme.typography.labelMedium)
                     }
                 }
             }
@@ -285,7 +287,7 @@ fun PathConfigItem(
             )
         } else if (enabled) {
             Text(
-                text = "(auto)",
+                text = stringResource(R.string.settings_path_config_auto_label),
                 style = MaterialTheme.typography.bodySmall,
                 color = secondaryColor,
                 modifier = Modifier.padding(top = Dimens.spacingXs)

@@ -21,6 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -43,7 +44,9 @@ import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
+import com.nendo.argosy.R
 import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationText
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -190,7 +193,9 @@ class UserProfileViewModel @Inject constructor(
                         if (localId != null) {
                             onNavigateToGameDetail(localId.toInt())
                         } else {
-                            notificationManager.show(title = "Game not in library")
+                            notificationManager.show(
+                                title = NotificationText.Res(R.string.notif_userprofile_game_not_in_library_input)
+                            )
                         }
                     }
                 }
@@ -310,7 +315,7 @@ fun UserProfileScreen(
                     if (mostPlayed.isNotEmpty()) {
                         item {
                             Text(
-                                text = "MOST PLAYED",
+                                text = stringResource(R.string.social_userprofile_most_played_header),
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.SemiBold,
@@ -331,7 +336,9 @@ fun UserProfileScreen(
                                             if (localId != null) {
                                                 onNavigateToGameDetail(localId.toInt())
                                             } else {
-                                                viewModel.notificationManager.show(title = "Game not in library")
+                                                viewModel.notificationManager.show(
+                                                    title = NotificationText.Res(R.string.notif_userprofile_game_not_in_library_touch)
+                                                )
                                             }
                                         }
                                     }
@@ -345,17 +352,20 @@ fun UserProfileScreen(
 
         FooterHintsWithState(
             hints = buildList {
-                add(FooterHintItem(InputButton.A, "View Game", enabled = uiState.focusedGameInLibrary))
+                add(FooterHintItem(InputButton.A, stringResource(R.string.social_userprofile_hint_view_game), enabled = uiState.focusedGameInLibrary))
                 if (profile != null) {
                     when (profile.relationship) {
                         "friend" -> add(FooterHintItem(
                             InputButton.Y,
-                            if (profile.isFavorite) "Unfavorite" else "Favorite"
+                            stringResource(
+                                if (profile.isFavorite) R.string.social_userprofile_hint_unfavorite
+                                else R.string.social_userprofile_hint_favorite
+                            )
                         ))
-                        "none" -> add(FooterHintItem(InputButton.Y, "Add Friend"))
+                        "none" -> add(FooterHintItem(InputButton.Y, stringResource(R.string.social_userprofile_hint_add_friend)))
                     }
                 }
-                add(FooterHintItem(InputButton.B, "Back"))
+                add(FooterHintItem(InputButton.B, stringResource(R.string.social_userprofile_hint_back)))
             }
         )
         FooterSpacer()

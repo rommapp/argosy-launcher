@@ -60,14 +60,13 @@ enum class MediaDownloadQuality(
  * an encoder in front of a picture that used to arrive untouched.
  */
 enum class MediaStreamingQuality(
-    val displayName: String,
     override val maxHeight: Int?,
     override val maxBitrateKbps: Int?
 ) : MediaQualityTier {
-    AUTO("Original - Auto", null, null),
-    HIGH("High - 1080p", 1080, 8000),
-    MEDIUM("Medium - 720p", 720, 4000),
-    LOW("Low - 480p", 480, 2000);
+    AUTO(null, null),
+    HIGH(1080, 8000),
+    MEDIUM(720, 4000),
+    LOW(480, 2000);
 
     companion object {
         private val LEGACY_TIERS = mapOf(
@@ -84,10 +83,10 @@ enum class MediaStreamingQuality(
     }
 }
 
-enum class MediaSubtitleMode(val displayName: String) {
-    OFF("Off"),
-    FORCED_ONLY("Forced Only"),
-    PREFERRED("Preferred Language");
+enum class MediaSubtitleMode {
+    OFF,
+    FORCED_ONLY,
+    PREFERRED;
 
     companion object {
         fun fromString(value: String?): MediaSubtitleMode =
@@ -105,17 +104,17 @@ enum class MediaSubtitleMode(val displayName: String) {
  * carries an ISO 639 code whose form depends on whoever muxed the file, so each entry lists every
  * code it can arrive as and [matches] accepts any of them.
  */
-enum class MediaAudioLanguage(val displayName: String, val codes: List<String>) {
-    ENGLISH("English", listOf("eng", "en")),
-    JAPANESE("Japanese", listOf("jpn", "ja")),
-    SPANISH("Spanish", listOf("spa", "es")),
-    FRENCH("French", listOf("fra", "fre", "fr")),
-    GERMAN("German", listOf("deu", "ger", "de")),
-    ITALIAN("Italian", listOf("ita", "it")),
-    PORTUGUESE("Portuguese", listOf("por", "pt")),
-    RUSSIAN("Russian", listOf("rus", "ru")),
-    KOREAN("Korean", listOf("kor", "ko")),
-    CHINESE("Chinese", listOf("zho", "chi", "zh"));
+enum class MediaAudioLanguage(val codes: List<String>) {
+    ENGLISH(listOf("eng", "en")),
+    JAPANESE(listOf("jpn", "ja")),
+    SPANISH(listOf("spa", "es")),
+    FRENCH(listOf("fra", "fre", "fr")),
+    GERMAN(listOf("deu", "ger", "de")),
+    ITALIAN(listOf("ita", "it")),
+    PORTUGUESE(listOf("por", "pt")),
+    RUSSIAN(listOf("rus", "ru")),
+    KOREAN(listOf("kor", "ko")),
+    CHINESE(listOf("zho", "chi", "zh"));
 
     fun matches(language: String?): Boolean {
         val normalized = language?.trim()?.lowercase() ?: return false
@@ -128,17 +127,17 @@ enum class MediaAudioLanguage(val displayName: String, val codes: List<String>) 
     }
 }
 
-enum class MediaSubtitleLanguage(val displayName: String, val codes: List<String>) {
-    ENGLISH("English", listOf("eng", "en")),
-    JAPANESE("Japanese", listOf("jpn", "ja")),
-    SPANISH("Spanish", listOf("spa", "es")),
-    FRENCH("French", listOf("fra", "fre", "fr")),
-    GERMAN("German", listOf("deu", "ger", "de")),
-    ITALIAN("Italian", listOf("ita", "it")),
-    PORTUGUESE("Portuguese", listOf("por", "pt")),
-    RUSSIAN("Russian", listOf("rus", "ru")),
-    KOREAN("Korean", listOf("kor", "ko")),
-    CHINESE("Chinese", listOf("zho", "chi", "zh"));
+enum class MediaSubtitleLanguage(val codes: List<String>) {
+    ENGLISH(listOf("eng", "en")),
+    JAPANESE(listOf("jpn", "ja")),
+    SPANISH(listOf("spa", "es")),
+    FRENCH(listOf("fra", "fre", "fr")),
+    GERMAN(listOf("deu", "ger", "de")),
+    ITALIAN(listOf("ita", "it")),
+    PORTUGUESE(listOf("por", "pt")),
+    RUSSIAN(listOf("rus", "ru")),
+    KOREAN(listOf("kor", "ko")),
+    CHINESE(listOf("zho", "chi", "zh"));
 
     fun matches(language: String?): Boolean {
         val normalized = language?.trim()?.lowercase() ?: return false

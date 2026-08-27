@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.home.grid
 
+import android.content.Context
+import com.nendo.argosy.R
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.music.BgmPlaylistRepository
 import com.nendo.argosy.data.repository.CollectionRepository
@@ -10,6 +12,7 @@ import com.nendo.argosy.ui.components.PageChooserAction
 import com.nendo.argosy.ui.components.PageChooserEntry
 import com.nendo.argosy.ui.components.PageChooserKind
 import com.nendo.argosy.ui.components.PageChooserState
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -25,6 +28,7 @@ private const val ART_SEARCH_LIMIT = 60
  */
 @Singleton
 class PageChooserEntrySource @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val gameRepository: GameRepository,
     private val platformRepository: PlatformRepository,
     private val collectionRepository: CollectionRepository,
@@ -54,7 +58,11 @@ class PageChooserEntrySource @Inject constructor(
         return collectionRepository.getGamesInCollection(collection.collectionId).map { game ->
             PageChooserEntry(
                 label = game.title,
-                subtitle = if (game.id == collection.focusGameId) "Playing now" else null,
+                subtitle = if (game.id == collection.focusGameId) {
+                    context.getString(R.string.ui_page_chooser_focus_game_current)
+                } else {
+                    null
+                },
                 previewPath = game.coverPath,
                 action = PageChooserAction.UseFocusGame(game.id)
             )
@@ -64,24 +72,24 @@ class PageChooserEntrySource @Inject constructor(
     private fun backdropRootEntries(canBrowseFiles: Boolean): List<PageChooserEntry> = buildList {
         add(
             PageChooserEntry(
-                label = "Artwork from a game",
-                subtitle = "Covers and screenshots already in your library",
+                label = context.getString(R.string.ui_page_chooser_source_game_art),
+                subtitle = context.getString(R.string.ui_page_chooser_source_game_art_subtitle),
                 action = PageChooserAction.BrowseGameArt
             )
         )
         if (canBrowseFiles) {
             add(
                 PageChooserEntry(
-                    label = "A file on this device",
-                    subtitle = "A picture, an animation, or a short video",
+                    label = context.getString(R.string.ui_page_chooser_source_file),
+                    subtitle = context.getString(R.string.ui_page_chooser_source_file_subtitle),
                     action = PageChooserAction.OpenFileBrowser
                 )
             )
         }
         add(
             PageChooserEntry(
-                label = "No backdrop",
-                subtitle = "Show the launcher's own background",
+                label = context.getString(R.string.ui_page_chooser_source_none),
+                subtitle = context.getString(R.string.ui_page_chooser_source_none_subtitle),
                 action = PageChooserAction.ClearBackdrop
             )
         )
@@ -113,21 +121,42 @@ class PageChooserEntrySource @Inject constructor(
 
     private fun artworkOf(game: GameEntity): List<PageArtwork> = buildList {
         game.backgroundPath?.takeIf { it.startsWith("/") }?.let {
-            add(PageArtwork("Background art", it))
+            add(PageArtwork(context.getString(R.string.ui_page_chooser_art_background), it))
         }
-        game.coverPath?.takeIf { it.startsWith("/") }?.let { add(PageArtwork("Cover", it)) }
+        game.coverPath?.takeIf { it.startsWith("/") }?.let {
+            add(PageArtwork(context.getString(R.string.ui_page_chooser_art_cover), it))
+        }
         game.cachedScreenshotPaths
             ?.split(",")
             ?.filter { it.isNotBlank() && it.startsWith("/") }
-            ?.forEachIndexed { index, path -> add(PageArtwork("Screenshot ${index + 1}", path)) }
+            ?.forEachIndexed { index, path ->
+                val number: Int = index + 1
+                val label = context.getString(R.string.ui_page_chooser_art_screenshot, number)
+                add(PageArtwork(label, path))
+            }
     }.distinctBy { it.path }
 
     private suspend fun musicEntries(): List<PageChooserEntry> = buildList {
-        add(PageChooserEntry(label = "Launcher music", action = PageChooserAction.UseLauncherMusic))
-        add(PageChooserEntry(label = "This page's video", action = PageChooserAction.UseTileAudio))
+        add(
+            PageChooserEntry(
+                label = context.getString(R.string.ui_page_chooser_music_launcher),
+                action = PageChooserAction.UseLauncherMusic
+            )
+        )
+        add(
+            PageChooserEntry(
+                label = context.getString(R.string.ui_page_chooser_music_tile_audio),
+                action = PageChooserAction.UseTileAudio
+            )
+        )
         val tracks = bgmPlaylistRepository.playableTracks()
         if (tracks.isEmpty()) return@buildList
-        add(PageChooserEntry(label = "Your soundtracks", isHeader = true))
+        add(
+            PageChooserEntry(
+                label = context.getString(R.string.ui_page_chooser_music_soundtracks_header),
+                isHeader = true
+            )
+        )
         tracks.forEach { track ->
             add(
                 PageChooserEntry(

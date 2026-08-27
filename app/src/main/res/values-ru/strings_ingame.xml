@@ -1,0 +1,557 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ingame_netplay_quality_excellent">Отличное</string>
+    <string name="ingame_netplay_quality_good">Хорошее</string>
+    <string name="ingame_netplay_quality_fair">Среднее</string>
+    <string name="ingame_netplay_quality_poor">Слабое</string>
+    <string name="ingame_netplay_quality_bad">Плохое</string>
+
+    <string name="ingame_menu_swap_disc">Сменить диск</string>
+    <string name="ingame_menu_resume">Продолжить</string>
+    <string name="ingame_menu_quick_save">Быстрое сохранение</string>
+    <string name="ingame_menu_quick_load">Быстрая загрузка</string>
+    <string name="ingame_menu_manage_states">Управление состояниями</string>
+    <string name="ingame_menu_cheats">Читы</string>
+    <string name="ingame_menu_invite_friend">Пригласить друга...</string>
+    <string name="ingame_menu_open_to_all_friends">Открыть для всех друзей</string>
+    <string name="ingame_menu_close_netplay_server">Закрыть сервер сетевой игры</string>
+    <string name="ingame_menu_leave_netplay_session">Покинуть сетевую сессию</string>
+    <string name="ingame_menu_open_netplay_server">Открыть сервер сетевой игры</string>
+    <string name="ingame_menu_settings">Настройки</string>
+    <string name="ingame_menu_stop_speedrun_timer">Остановить таймер спидрана</string>
+    <string name="ingame_menu_speedrun_timer">Таймер спидрана</string>
+    <string name="ingame_menu_touch_controls">Сенсорное управление</string>
+    <string name="ingame_menu_reset">Перезапустить</string>
+    <string name="ingame_menu_quit">Выйти из игры</string>
+    <string name="ingame_menu_hardcore_badge">ХАРДКОР</string>
+    <string name="ingame_menu_quick_save_history_action">История быстрых сохранений</string>
+
+    <string name="ingame_disc_title">Сменить диск</string>
+    <string name="ingame_disc_current">"%1$s  (текущий)"</string>
+
+    <string name="ingame_states_title">Управление состояниями</string>
+    <string name="ingame_states_channel">[%1$s]</string>
+    <string name="ingame_states_delete_title">Удалить состояние сохранения?</string>
+    <string name="ingame_states_delete_confirm">Подтвердить</string>
+    <string name="ingame_states_delete_cancel">Отмена</string>
+    <string name="ingame_states_delete_body">Это действие нельзя отменить.</string>
+    <string name="ingame_states_load_title">Загрузить это состояние?</string>
+    <string name="ingame_states_load_confirm">Загрузить</string>
+    <string name="ingame_states_load_cancel">Отмена</string>
+    <string name="ingame_states_load_preview_description">Превью состояния</string>
+    <string name="ingame_states_load_body">Текущий прогресс будет заменён.</string>
+    <string name="ingame_states_slot_auto">Авто</string>
+    <string name="ingame_states_slot_numbered">Слот %1$d</string>
+    <string name="ingame_states_preview_no_screenshot">Нет скриншота</string>
+    <string name="ingame_states_preview_empty_slot">Пустой слот</string>
+    <string name="ingame_states_carousel_no_screenshot">Нет скриншота</string>
+    <string name="ingame_states_carousel_no_state">Состояние не сохранено</string>
+    <string name="ingame_states_carousel_empty">Пусто</string>
+    <string name="ingame_states_footer_load">Загрузить</string>
+    <string name="ingame_states_footer_save_over">Перезаписать</string>
+    <string name="ingame_states_footer_delete">Удалить</string>
+    <string name="ingame_states_footer_save">Сохранить</string>
+    <string name="ingame_states_footer_mode_carousel">Карусель</string>
+    <string name="ingame_states_footer_mode_grid">Сетка</string>
+    <string name="ingame_states_footer_back">Назад</string>
+
+    <string name="ingame_quickload_empty_title">Нет быстрых сохранений</string>
+    <string name="ingame_quickload_empty_message">Используйте быстрое сохранение, чтобы накопить историю</string>
+    <string name="ingame_quickload_title">Быстрая загрузка</string>
+    <string name="ingame_quickload_footer_load">Загрузить</string>
+    <string name="ingame_quickload_footer_back">Назад</string>
+    <string name="ingame_quickload_preview_description">Превью быстрого сохранения</string>
+    <string name="ingame_quickload_preview_no_screenshot">Нет скриншота</string>
+    <string name="ingame_quickload_row_latest">Последнее</string>
+    <string name="ingame_quickload_row_entry">Быстрое сохранение</string>
+
+    <string name="ingame_autorestore_title">Продолжить с сохранённого состояния?</string>
+    <string name="ingame_autorestore_confirm">Да</string>
+    <string name="ingame_autorestore_decline">Нет</string>
+
+    <string name="ingame_achievement_hardcore_heading">РАЗБЛОКИРОВАНО В ХАРДКОРЕ</string>
+    <string name="ingame_achievement_heading">ДОСТИЖЕНИЕ РАЗБЛОКИРОВАНО</string>
+    <plurals name="ingame_achievement_points">
+        <item quantity="one">+%d очко</item>
+        <item quantity="few">+%d очка</item>
+        <item quantity="many">+%d очков</item>
+        <item quantity="other">+%d очка</item>
+    </plurals>
+
+    <string name="ingame_raconnect_title">RetroAchievements подключены</string>
+    <string name="ingame_raconnect_hardcore">Режим Хардкор</string>
+    <string name="ingame_raconnect_casual">Казуальный режим</string>
+    <string name="ingame_raconnect_earned">%1$d/%2$d получено</string>
+
+    <string name="ingame_speedrun_paused">ПАУЗА</string>
+    <string name="ingame_speedrun_personal_best">Личный рекорд</string>
+    <string name="ingame_speedrun_session_best">Лучшее за сессию</string>
+    <string name="ingame_speedrun_sum_of_best">Сумма лучших сегментов</string>
+    <string name="ingame_speedrun_attempt">Попытка %1$d</string>
+
+    <string name="ingame_netplay_progress_requesting_join">Запрос на подключение...</string>
+    <string name="ingame_netplay_progress_waiting_for_host">Ожидание подтверждения хоста...</string>
+    <string name="ingame_netplay_progress_connecting">Подключение...</string>
+    <string name="ingame_netplay_progress_measuring">Измерение соединения...</string>
+    <string name="ingame_netplay_progress_loading_state">Загрузка состояния игры...</string>
+    <string name="ingame_netplay_progress_ready">Готово!</string>
+    <string name="ingame_netplay_progress_failed">Не удалось подключиться</string>
+    <string name="ingame_netplay_progress_title">Сетевая игра</string>
+    <string name="ingame_netplay_progress_dismiss">ОК</string>
+
+    <string name="ingame_netplay_reconnecting">Переподключение...</string>
+    <string name="ingame_netplay_reconnecting_with_ping">Переподключение... (последний: %1$dms)</string>
+
+    <string name="ingame_netplay_disconnect_title">Друг отключился</string>
+    <string name="ingame_netplay_disconnect_message">%1$s потерял соединение. Оставить сессию открытой для повторного подключения или закрыть и выйти?</string>
+    <string name="ingame_netplay_disconnect_keep_open">Оставить открытой</string>
+    <string name="ingame_netplay_disconnect_close">Закрыть и выйти из игры</string>
+
+    <string name="ingame_netplay_quality_warning_title">Предупреждение о соединении</string>
+    <string name="ingame_netplay_quality_warning_message">Качество соединения: %1$s (пинг %2$dms, джиттер %3$dms). Игра может подтормаживать.</string>
+    <string name="ingame_netplay_quality_warning_accept">Продолжить всё равно</string>
+    <string name="ingame_netplay_quality_warning_decline">Отмена</string>
+
+    <string name="ingame_netplay_friend_picker_title">Пригласить друга</string>
+    <string name="ingame_netplay_friend_picker_empty">Нет друзей в сети</string>
+    <string name="ingame_netplay_friend_picker_close">Закрыть</string>
+    <string name="ingame_netplay_friend_online">В сети</string>
+    <string name="ingame_netplay_friend_offline">Не в сети</string>
+
+    <string name="ingame_netplay_mode_picker_title">Открыть сервер сетевой игры</string>
+    <string name="ingame_netplay_mode_open_label">Открыто для друзей</string>
+    <string name="ingame_netplay_mode_open_description">Может присоединиться любой</string>
+    <string name="ingame_netplay_mode_private_label">Приватно</string>
+    <string name="ingame_netplay_mode_private_description">Требуется ваше подтверждение</string>
+    <string name="ingame_netplay_mode_invite_label">Пригласить друга...</string>
+    <string name="ingame_netplay_mode_invite_description">Выбрать конкретного друга</string>
+
+    <string name="ingame_netplay_join_request_title">Запрос на подключение</string>
+    <string name="ingame_netplay_join_request_message">%1$s хочет присоединиться к вашей сессии</string>
+    <string name="ingame_netplay_join_request_accept">Принять</string>
+    <string name="ingame_netplay_join_request_decline">Отклонить</string>
+
+    <string name="ingame_netplay_hud_mode_open">Открыто</string>
+    <string name="ingame_netplay_hud_mode_private">Приватно</string>
+    <string name="ingame_netplay_hud_mode_invite_only">Только по приглашению</string>
+    <plurals name="ingame_netplay_hud_players">
+        <item quantity="one">%d игрок</item>
+        <item quantity="few">%d игрока</item>
+        <item quantity="many">%d игроков</item>
+        <item quantity="other">%d игрока</item>
+    </plurals>
+    <string name="ingame_netplay_hud_host_tag">[ХОСТ]</string>
+    <string name="ingame_netplay_hud_observers">Наблюдатели</string>
+
+    <string name="ingame_settings_tab_video">Видео</string>
+    <string name="ingame_settings_tab_controls">Управление</string>
+    <string name="ingame_settings_tab_core_options">Опции ядра</string>
+
+    <string name="ingame_settings_footer_tab">Вкладка</string>
+    <string name="ingame_settings_footer_video_adjust">Изменить</string>
+    <string name="ingame_settings_footer_video_select">Выбрать</string>
+    <string name="ingame_settings_footer_controls_adjust">Изменить</string>
+    <string name="ingame_settings_footer_controls_select">Выбрать</string>
+    <string name="ingame_settings_footer_core_options_adjust">Изменить</string>
+    <string name="ingame_settings_footer_core_options_select">Выбрать</string>
+    <string name="ingame_settings_footer_back">Назад</string>
+
+    <string name="ingame_settings_header_controllers">Контроллеры</string>
+    <string name="ingame_settings_header_sticks">Стики</string>
+    <string name="ingame_settings_header_hotkeys">Горячие клавиши</string>
+    <string name="ingame_settings_header_touch">Сенсорное управление</string>
+
+    <string name="ingame_settings_game_specific_controls_title">Настройки управления для игры</string>
+    <string name="ingame_settings_game_specific_controls_subtitle_on">Переназначения применяются только к этой игре</string>
+    <string name="ingame_settings_game_specific_controls_subtitle_off">Используется глобальная раскладка контроллера</string>
+    <string name="ingame_settings_rumble_title">Вибрация</string>
+    <string name="ingame_settings_rumble_subtitle">Включить вибрационную отдачу контроллера</string>
+    <string name="ingame_settings_controller_order_title">Порядок контроллеров</string>
+    <plurals name="ingame_settings_controller_order_assigned">
+        <item quantity="one">%d контроллер назначен</item>
+        <item quantity="few">%d контроллера назначено</item>
+        <item quantity="many">%d контроллеров назначено</item>
+        <item quantity="other">%d контроллера назначено</item>
+    </plurals>
+    <string name="ingame_settings_controller_order_subtitle_empty">Назначьте порты контроллеров</string>
+    <string name="ingame_settings_controller_type_title">Контроллер игрока %1$d</string>
+    <string name="ingame_settings_controller_type_pending">Применится при следующем запуске</string>
+    <string name="ingame_settings_controller_type_core_default">Выбирается ядром</string>
+    <string name="ingame_settings_controller_grip_title">Рукоятка контроллера</string>
+    <string name="ingame_settings_controller_grip_subtitle">Сдвинуть интерфейс из зоны, которую закрывает рукоятка</string>
+    <string name="ingame_settings_input_mapping_title">Раскладка кнопок</string>
+    <string name="ingame_settings_input_mapping_subtitle">Переназначить кнопки для каждого контроллера</string>
+    <string name="ingame_settings_analog_as_dpad_title">Левый стик как крестовина</string>
+    <string name="ingame_settings_analog_as_dpad_subtitle">Сопоставить левый стик с крестовиной</string>
+    <string name="ingame_settings_dpad_as_analog_title">Крестовина как левый стик</string>
+    <string name="ingame_settings_dpad_as_analog_subtitle">Сопоставить крестовину с левым стиком</string>
+    <string name="ingame_settings_hotkeys_title">Горячие клавиши</string>
+    <string name="ingame_settings_hotkeys_subtitle">Настройка сочетаний для меню, перемотки вперёд и назад</string>
+    <string name="ingame_settings_limit_hotkeys_title">Горячие клавиши только для игрока 1</string>
+    <string name="ingame_settings_limit_hotkeys_subtitle">Горячие клавиши доступны только с контроллера игрока 1</string>
+    <string name="ingame_settings_toggle_fast_forward_title">Переключение перемотки вперёд</string>
+    <string name="ingame_settings_toggle_fast_forward_subtitle">Нажмите один раз, чтобы включить, ещё раз - чтобы выключить (выкл. = удерживать для перемотки)</string>
+    <string name="ingame_settings_preserve_pitch_title">Сохранять высоту звука</string>
+    <string name="ingame_settings_preserve_pitch_subtitle">Сохранять высоту звука при перемотке вперёд. Требует больше ресурсов ЦП; по умолчанию выключено</string>
+    <string name="ingame_settings_touch_enabled_title">Показывать сенсорное управление без геймпада</string>
+    <string name="ingame_settings_touch_enabled_subtitle">Показывать экранные кнопки, когда контроллер не подключён</string>
+    <string name="ingame_settings_touch_haptic_title">Тактильная отдача</string>
+    <string name="ingame_settings_touch_haptic_subtitle">Короткая вибрация при касании</string>
+    <string name="ingame_settings_touch_lock_orientation_title">Блокировать ориентацию в игре</string>
+    <string name="ingame_settings_touch_lock_orientation_subtitle">Не поворачивать экран автоматически во время игры</string>
+    <string name="ingame_settings_touch_genesis6_title">Режим 6 кнопок Genesis</string>
+    <string name="ingame_settings_touch_genesis6_subtitle">Показывать шесть кнопок для Genesis / Mega Drive</string>
+
+    <string name="ingame_settings_hud_header">Строка состояния</string>
+    <string name="ingame_settings_hud_enabled_title">Показывать строку состояния</string>
+    <string name="ingame_settings_hud_enabled_subtitle">Небольшой индикатор в углу экрана во время игры</string>
+    <string name="ingame_settings_hud_corner_title">Угол</string>
+    <string name="ingame_settings_hud_battery_title">Батарея</string>
+    <string name="ingame_settings_hud_clock_title">Часы</string>
+    <string name="ingame_settings_hud_playtime_title">Время сессии</string>
+    <string name="ingame_settings_hud_fps_title">FPS</string>
+    <string name="ingame_settings_hud_fps_subtitle">Скрыто во время перемотки вперёд</string>
+    <string name="ingame_settings_hud_last_save_title">Последнее состояние</string>
+
+    <string name="ingame_coreoptions_per_game_title">Настройки для этой игры</string>
+    <string name="ingame_coreoptions_per_game_subtitle_on">Изменения применяются только к этой игре</string>
+    <string name="ingame_coreoptions_per_game_subtitle_off">Используются глобальные настройки этого ядра по умолчанию</string>
+
+    <string name="ingame_frame_previous_description">Предыдущая</string>
+    <string name="ingame_frame_next_description">Следующая</string>
+    <string name="ingame_frame_none">Без рамки</string>
+    <string name="ingame_frame_download_badge">Скачать</string>
+    <string name="ingame_frame_footer_change">Сменить</string>
+    <string name="ingame_frame_footer_select">Выбрать</string>
+    <string name="ingame_frame_footer_download">Скачать</string>
+    <string name="ingame_frame_footer_cancel">Отмена</string>
+
+    <string name="ingame_shader_footer_picker_browse">Просмотр</string>
+    <string name="ingame_shader_footer_picker_select">Выбрать</string>
+    <string name="ingame_shader_footer_picker_cancel">Отмена</string>
+    <string name="ingame_shader_footer_shader">Шейдер</string>
+    <string name="ingame_shader_footer_reorder">Порядок</string>
+    <string name="ingame_shader_footer_adjust">Изменить</string>
+    <string name="ingame_shader_footer_add">Добавить</string>
+    <string name="ingame_shader_footer_remove">Убрать</string>
+    <string name="ingame_shader_footer_reset">Сбросить</string>
+    <string name="ingame_shader_footer_back">Назад</string>
+
+    <string name="ingame_cheats_tab_cheats">Читы</string>
+    <string name="ingame_cheats_tab_discover">Поиск</string>
+
+    <string name="ingame_cheats_error_ram_unavailable">RAM недоступна для этого ядра</string>
+    <string name="ingame_cheats_error_no_changes">Изменений не обнаружено - сначала поиграйте ещё</string>
+    <string name="ingame_cheats_error_changed_not_ready">Поиграйте ещё, чтобы сузить результаты</string>
+    <string name="ingame_cheats_error_no_unchanged">Нет неизменных значений - попробуйте \'Изменённые\'</string>
+    <string name="ingame_cheats_error_same_not_ready">Поиграйте ещё, чтобы сузить результаты</string>
+    <string name="ingame_cheats_error_address_saved">Адрес уже сохранён как чит</string>
+
+    <string name="ingame_cheats_footer_variant_select">Выбрать</string>
+    <string name="ingame_cheats_footer_search">Поиск</string>
+    <string name="ingame_cheats_footer_clear_search">Очистить</string>
+    <string name="ingame_cheats_footer_toggle">Переключить</string>
+    <string name="ingame_cheats_footer_edit">Изменить</string>
+    <string name="ingame_cheats_footer_version">Версия</string>
+    <string name="ingame_cheats_footer_snapshot">Снимок</string>
+    <string name="ingame_cheats_footer_discover_select">Выбрать</string>
+    <string name="ingame_cheats_footer_save_cheat">Сохранить чит</string>
+    <string name="ingame_cheats_footer_filter">Фильтр</string>
+    <string name="ingame_cheats_footer_adjust">Изменить</string>
+    <string name="ingame_cheats_footer_reset">Сбросить</string>
+    <string name="ingame_cheats_footer_tab">Вкладка</string>
+    <string name="ingame_cheats_footer_back">Назад</string>
+
+    <string name="ingame_cheats_loading">Сканирование памяти...</string>
+    <string name="ingame_cheats_variant_picker_title">Доступно несколько версий</string>
+    <string name="ingame_cheats_variant_picker_message">Выберите версию, соответствующую вашему ROM</string>
+    <string name="ingame_cheats_variant_modal_title">Выбор версии</string>
+    <string name="ingame_cheats_variant_unknown_region">Неизвестный регион</string>
+    <plurals name="ingame_cheats_variant_count">
+        <item quantity="one">%d чит</item>
+        <item quantity="few">%d чита</item>
+        <item quantity="many">%d читов</item>
+        <item quantity="other">%d чита</item>
+    </plurals>
+
+    <plurals name="ingame_cheats_available_count">
+        <item quantity="one">%d чит</item>
+        <item quantity="few">%d чита</item>
+        <item quantity="many">%d читов</item>
+        <item quantity="other">%d чита</item>
+    </plurals>
+    <string name="ingame_cheats_available_enabled">%1$d/%2$d включено</string>
+    <string name="ingame_cheats_available_empty_search">Совпадений не найдено</string>
+    <string name="ingame_cheats_available_empty">Нет доступных читов</string>
+    <string name="ingame_cheats_available_search_placeholder">Поиск читов...</string>
+    <string name="ingame_cheats_available_search_clear">Очистить</string>
+
+    <string name="ingame_cheats_discover_ram_hint">Это ядро не предоставляет доступ к системной RAM</string>
+    <string name="ingame_cheats_discover_snapshot_title">Снимок</string>
+    <string name="ingame_cheats_discover_snapshot_subtitle">Сделать снимок текущего состояния RAM</string>
+    <string name="ingame_cheats_discover_snapshot_hint">Сделайте снимок, чтобы начать</string>
+    <string name="ingame_cheats_discover_changed_title">Изменённые</string>
+    <string name="ingame_cheats_discover_changed_subtitle">Найти значения, изменившиеся с момента снимка</string>
+    <string name="ingame_cheats_discover_same_title">Неизменные</string>
+    <string name="ingame_cheats_discover_same_subtitle">Найти значения, оставшиеся без изменений</string>
+    <string name="ingame_cheats_discover_view_results_title">Показать результаты</string>
+    <plurals name="ingame_cheats_discover_view_results_subtitle">
+        <item quantity="one">%d запись из последнего поиска</item>
+        <item quantity="few">%d записи из последнего поиска</item>
+        <item quantity="many">%d записей из последнего поиска</item>
+        <item quantity="other">%d записи из последнего поиска</item>
+    </plurals>
+    <plurals name="ingame_cheats_discover_actions_candidates">
+        <item quantity="one">%d кандидат</item>
+        <item quantity="few">%d кандидата</item>
+        <item quantity="many">%d кандидатов</item>
+        <item quantity="other">%d кандидата</item>
+    </plurals>
+    <string name="ingame_cheats_discover_hint_narrow">Сузьте результаты или посмотрите текущие</string>
+    <string name="ingame_cheats_discover_hint_pick">Выберите действие для сравнения</string>
+    <string name="ingame_cheats_discover_waiting_message">Поиграйте ещё немного и сузьте результаты, чтобы продолжить</string>
+    <plurals name="ingame_cheats_discover_waiting_candidates">
+        <item quantity="one">%d кандидат</item>
+        <item quantity="few">%d кандидата</item>
+        <item quantity="many">%d кандидатов</item>
+        <item quantity="other">%d кандидата</item>
+    </plurals>
+    <string name="ingame_cheats_discover_filter_title">Фильтр по значению</string>
+    <plurals name="ingame_cheats_discover_results_candidates">
+        <item quantity="one">%d кандидат</item>
+        <item quantity="few">%d кандидата</item>
+        <item quantity="many">%d кандидатов</item>
+        <item quantity="other">%d кандидата</item>
+    </plurals>
+    <string name="ingame_cheats_discover_results_hint">Поиграйте, чтобы сравнить снова</string>
+    <string name="ingame_cheats_discover_results_empty">Совпадений не найдено</string>
+    <string name="ingame_cheats_discover_result_saved">Сохранено как %1$s</string>
+    <string name="ingame_cheats_discover_result_value">Значение %1$s</string>
+    <string name="ingame_cheats_discover_result_value_previous">Значение %1$s (было %2$s)</string>
+
+    <string name="ingame_cheats_dialog_search_title">Поиск читов</string>
+    <string name="ingame_cheats_dialog_search_placeholder">Введите название чита...</string>
+    <string name="ingame_cheats_dialog_search_clear">Очистить</string>
+    <string name="ingame_cheats_dialog_search_cancel">Отмена</string>
+    <string name="ingame_cheats_dialog_search_confirm">Найти</string>
+    <string name="ingame_cheats_dialog_create_title">Создать чит</string>
+    <string name="ingame_cheats_dialog_create_confirm">Создать</string>
+    <string name="ingame_cheats_dialog_edit_title">Изменить чит</string>
+    <string name="ingame_cheats_dialog_edit_confirm">Сохранить</string>
+    <string name="ingame_cheats_dialog_address">Адрес: 0x%1$s</string>
+    <string name="ingame_cheats_dialog_name_label">Название чита</string>
+    <string name="ingame_cheats_dialog_value_label">Значение (%1$d-%2$d)</string>
+    <string name="ingame_cheats_dialog_value_error">Введите значение от %1$d до %2$d</string>
+    <string name="ingame_cheats_dialog_delete_row">Удалить чит</string>
+    <string name="ingame_cheats_dialog_delete_title">Удалить чит</string>
+    <string name="ingame_cheats_dialog_delete_message">Удалить \"%1$s\"?</string>
+    <string name="ingame_cheats_dialog_delete_confirm">Удалить</string>
+    <string name="ingame_cheats_dialog_cancel">Отмена</string>
+
+    <string name="ingame_cheats_available_header_recent">НЕДАВНИЕ</string>
+    <string name="ingame_cheats_available_header_custom">СВОИ</string>
+    <string name="ingame_cheats_available_header_available">ДОСТУПНЫЕ</string>
+
+    <string name="ingame_libretro_rom_not_found">Файл игры не найден</string>
+    <string name="ingame_libretro_rom_not_readable">Не удалось получить доступ к файлу игры</string>
+
+    <string name="ingame_libretro_core_error_load_library">Не удалось загрузить ядро эмулятора</string>
+    <string name="ingame_libretro_core_error_load_game">Не удалось загрузить файл игры</string>
+    <string name="ingame_libretro_core_error_gl_incompatible">Графика устройства не поддерживается</string>
+    <string name="ingame_libretro_core_error_serialization">Файл сохранения повреждён</string>
+    <string name="ingame_libretro_core_error_cheat">Ошибка системы читов</string>
+    <string name="ingame_libretro_core_error_unknown">Произошла непредвиденная ошибка</string>
+
+    <string name="ingame_libretro_sram_load_failed_fresh_save">Не удалось загрузить сохранение, используется новое</string>
+    <string name="ingame_libretro_casual_save_in_hardcore">Продолжение казуального сохранения в хардкоре</string>
+
+    <string name="ingame_libretro_disc_swap_inserted">Вставлен %1$s</string>
+    <string name="ingame_libretro_disc_swap_fallback_name">Диск %1$d</string>
+
+    <string name="ingame_libretro_speedrun_default_category_name">Тренировка</string>
+    <string name="ingame_libretro_speedrun_default_segment_name">Сегмент %1$d</string>
+    <string name="ingame_libretro_speedrun_picker_title">Категория спидрана</string>
+
+    <string name="ingame_libretro_quicktimeline_load_unsupported_core">Состояния недоступны для этого ядра</string>
+    <string name="ingame_libretro_quicktimeline_load_success">Состояние загружено</string>
+    <string name="ingame_libretro_quicktimeline_load_failure">Не удалось загрузить состояние</string>
+
+    <string name="ingame_libretro_closing_overlay_validating">Проверка содержимого сохранения</string>
+
+    <string name="ingame_libretro_controller_port_device_fallback">Устройство %1$d</string>
+
+    <string name="ingame_libretro_menu_quicksave_unsupported_core">Состояния недоступны для этого ядра</string>
+    <string name="ingame_libretro_menu_quicksave_success">Состояние сохранено</string>
+    <string name="ingame_libretro_menu_quicksave_failure">Не удалось сохранить состояние</string>
+    <string name="ingame_libretro_menu_quickload_unsupported_core">Состояния недоступны для этого ядра</string>
+    <string name="ingame_libretro_menu_quickload_success">Состояние загружено</string>
+    <string name="ingame_libretro_menu_quickload_failure">Не удалось загрузить состояние</string>
+
+    <string name="ingame_libretro_state_save_unsupported_core">Состояния недоступны для этого ядра</string>
+    <string name="ingame_libretro_state_saved_to_auto">Состояние сохранено в Авто</string>
+    <string name="ingame_libretro_state_saved_to_slot">Состояние сохранено в слот %1$d</string>
+    <string name="ingame_libretro_state_save_failure">Не удалось сохранить состояние</string>
+    <string name="ingame_libretro_state_save_serialize_failed">Не удалось сериализовать состояние</string>
+
+    <string name="ingame_libretro_state_load_unsupported_core">Состояния недоступны для этого ядра</string>
+    <string name="ingame_libretro_state_loaded_from_auto">Состояние загружено из Авто</string>
+    <string name="ingame_libretro_state_loaded_from_slot">Состояние загружено из слота %1$d</string>
+    <string name="ingame_libretro_state_load_failure">Не удалось загрузить состояние</string>
+
+    <string name="ingame_libretro_resume_success">Продолжено</string>
+    <string name="ingame_libretro_resume_restore_failure">Не удалось восстановить состояние</string>
+    <string name="ingame_libretro_auto_restore_success">Состояние восстановлено</string>
+    <string name="ingame_libretro_auto_restore_failure">Не удалось восстановить состояние</string>
+    <string name="ingame_libretro_auto_restore_response_unsupported_core">Состояния недоступны для этого ядра</string>
+    <string name="ingame_libretro_auto_restore_response_success">Состояние восстановлено</string>
+    <string name="ingame_libretro_auto_restore_response_failure">Не удалось восстановить состояние</string>
+
+    <string name="ingame_libretro_hud_fps_format">%1$s fps</string>
+    <string name="ingame_libretro_hud_duration_hm">%1$d:%2$02d</string>
+    <string name="ingame_libretro_hud_duration_minutes">%1$dm</string>
+    <string name="ingame_libretro_hud_last_save_just_now">сохранено только что</string>
+    <string name="ingame_libretro_hud_last_save_minutes_ago">сохранено %1$dm назад</string>
+    <string name="ingame_libretro_hud_last_save_hours_ago">сохранено %1$dh назад</string>
+
+    <string name="ingame_libretro_quickaction_save_hardcore_blocked">Состояния отключены в хардкоре</string>
+    <string name="ingame_libretro_quickaction_save_unsupported_core">Состояния недоступны для этого ядра</string>
+    <string name="ingame_libretro_quickaction_save_success">Состояние сохранено</string>
+    <string name="ingame_libretro_quickaction_save_failure">Не удалось сохранить</string>
+    <string name="ingame_libretro_quickaction_load_hardcore_blocked">Состояния отключены в хардкоре</string>
+    <string name="ingame_libretro_quickaction_load_unsupported_core">Состояния недоступны для этого ядра</string>
+    <string name="ingame_libretro_quickaction_load_success">Состояние загружено</string>
+    <string name="ingame_libretro_quickaction_load_failure">Не удалось загрузить состояние</string>
+    <string name="ingame_libretro_quickaction_screenshot_capture_failed">Не удалось сделать снимок</string>
+    <string name="ingame_libretro_quickaction_screenshot_success">Скриншот сохранён</string>
+    <string name="ingame_libretro_quickaction_screenshot_failure">Не удалось сделать скриншот</string>
+
+    <string name="ingame_netplay_quality_row_peer_guest">Гость: %1$s</string>
+    <string name="ingame_netplay_quality_row_peer_host">Хост: %1$s</string>
+    <string name="ingame_netplay_quality_row_ping_known">%1$dms  %2$s</string>
+    <string name="ingame_netplay_quality_row_ping_unknown">--  %1$s</string>
+
+    <string name="ingame_settings_controller_type_default_fallback">По умолчанию</string>
+
+    <string name="ingame_netplay_hud_player1_header">И1</string>
+    <string name="ingame_netplay_hud_player2_header">И2</string>
+
+    <string name="ingame_touch_editor_dpad_widget_label">КРЕСТ</string>
+    <string name="ingame_touch_editor_left_stick_widget_label">Л</string>
+    <string name="ingame_touch_editor_right_stick_widget_label">П</string>
+    <string name="ingame_touch_editor_toolbar_save">Сохранить</string>
+    <string name="ingame_touch_editor_toolbar_reset">Сбросить</string>
+    <string name="ingame_touch_editor_toolbar_cancel">Отмена</string>
+    <string name="ingame_touch_editor_toolbar_rotate">Повернуть</string>
+
+    <string name="ingame_recovery_display_playing_placeholder">Идёт игра...</string>
+    <string name="ingame_recovery_display_status_in_game">В игре</string>
+    <string name="ingame_recovery_display_playing_fallback">Идёт игра...</string>
+
+    <string name="ingame_touch_nes_sys_select">Select</string>
+    <string name="ingame_touch_nes_sys_start">Start</string>
+
+    <string name="ingame_touch_gb_sys_select">Select</string>
+    <string name="ingame_touch_gb_sys_start">Start</string>
+
+    <string name="ingame_touch_gba_sys_select">Select</string>
+    <string name="ingame_touch_gba_sys_start">Start</string>
+
+    <string name="ingame_touch_sms_sys_start">Start</string>
+
+    <string name="ingame_touch_gameandwatch_sys_select">Select</string>
+    <string name="ingame_touch_gameandwatch_sys_start">Start</string>
+
+    <string name="ingame_touch_ngp_sys_start">Option</string>
+
+    <string name="ingame_touch_wonderswan_sys_start">Start</string>
+
+    <string name="ingame_touch_coleco_sys_select">Select</string>
+    <string name="ingame_touch_coleco_sys_start">Start</string>
+
+    <string name="ingame_touch_pico8_sys_select">Select</string>
+    <string name="ingame_touch_pico8_sys_start">Start</string>
+
+    <string name="ingame_touch_c64_sys_select">Select</string>
+    <string name="ingame_touch_c64_sys_start">Start</string>
+
+    <string name="ingame_touch_lynx_shoulder_l">Opt 1</string>
+    <string name="ingame_touch_lynx_shoulder_r">Opt 2</string>
+    <string name="ingame_touch_lynx_sys_start">Pause</string>
+
+    <string name="ingame_touch_snes_sys_select">Select</string>
+    <string name="ingame_touch_snes_sys_start">Start</string>
+
+    <string name="ingame_touch_pcengine_sys_select">Select</string>
+    <string name="ingame_touch_pcengine_sys_start">Run</string>
+
+    <string name="ingame_touch_pcfx_shoulder_l2">Mode 1</string>
+    <string name="ingame_touch_pcfx_shoulder_r2">Mode 2</string>
+    <string name="ingame_touch_pcfx_sys_select">Select</string>
+    <string name="ingame_touch_pcfx_sys_start">Run</string>
+
+    <string name="ingame_touch_saturn_sys_select">Mode</string>
+    <string name="ingame_touch_saturn_sys_start">Start</string>
+
+    <string name="ingame_touch_vb_sys_select">Select</string>
+    <string name="ingame_touch_vb_sys_start">Start</string>
+
+    <string name="ingame_touch_psx_sys_select">Select</string>
+    <string name="ingame_touch_psx_sys_start">Start</string>
+
+    <string name="ingame_touch_ps2_sys_select">Select</string>
+    <string name="ingame_touch_ps2_sys_start">Start</string>
+
+    <string name="ingame_touch_psp_sys_select">Select</string>
+    <string name="ingame_touch_psp_sys_start">Start</string>
+
+    <string name="ingame_touch_vita_sys_select">Select</string>
+    <string name="ingame_touch_vita_sys_start">Start</string>
+
+    <string name="ingame_touch_dreamcast_sys_start">Start</string>
+
+    <string name="ingame_touch_n64_sys_start">Start</string>
+
+    <string name="ingame_touch_gamecube_sys_start">Start</string>
+
+    <string name="ingame_touch_nds_sys_select">Select</string>
+    <string name="ingame_touch_nds_sys_start">Start</string>
+
+    <string name="ingame_touch_arcade_sys_select">Coin</string>
+    <string name="ingame_touch_arcade_sys_start">Start</string>
+
+    <string name="ingame_touch_neogeo_sys_select">Select</string>
+    <string name="ingame_touch_neogeo_sys_start">Start</string>
+
+    <string name="ingame_touch_genesis_sys_select">Mode</string>
+    <string name="ingame_touch_genesis_sys_start">Start</string>
+
+    <string name="ingame_touch_intellivision_face_y">Верх</string>
+    <string name="ingame_touch_intellivision_face_b">Лево</string>
+    <string name="ingame_touch_intellivision_face_a">Право</string>
+    <string name="ingame_touch_intellivision_face_x">Посл. кл.</string>
+    <string name="ingame_touch_intellivision_shoulder_l2">Очистить</string>
+    <string name="ingame_touch_intellivision_shoulder_r2">Ввод</string>
+    <string name="ingame_touch_intellivision_sys_select">Смена</string>
+    <string name="ingame_touch_intellivision_sys_start">Pause</string>
+
+    <string name="ingame_touch_atari2600_face_b">Огонь</string>
+    <string name="ingame_touch_atari2600_sys_select">Select</string>
+    <string name="ingame_touch_atari2600_sys_start">Reset</string>
+
+    <string name="ingame_touch_atari5200_shoulder_l">Pause</string>
+    <string name="ingame_touch_atari5200_shoulder_r">Reset</string>
+    <string name="ingame_touch_atari5200_sys_select">Select</string>
+    <string name="ingame_touch_atari5200_sys_start">Start</string>
+
+    <string name="ingame_touch_atari7800_sys_select">Select</string>
+    <string name="ingame_touch_atari7800_sys_start">Reset</string>
+
+    <string name="ingame_touch_jaguar_sys_select">Pause</string>
+    <string name="ingame_touch_jaguar_sys_start">Option</string>
+
+    <string name="ingame_touch_threedo_sys_select">Стоп</string>
+    <string name="ingame_touch_threedo_sys_start">Воспр./Пауза</string>
+
+    <string name="ingame_touch_generic_sys_select">Select</string>
+    <string name="ingame_touch_generic_sys_start">Start</string>
+</resources>

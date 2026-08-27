@@ -28,7 +28,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.icons.InputIcons
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.util.clickableNoFocus
@@ -67,7 +69,7 @@ fun SectionBreadcrumb(
             ) {
                 Icon(
                     painter = InputIcons.BumperLeft,
-                    contentDescription = "Previous section",
+                    contentDescription = stringResource(R.string.ui_section_breadcrumb_previous),
                     tint = navIconTint,
                     modifier = Modifier.size(Dimens.iconSm)
                 )
@@ -194,7 +196,7 @@ fun SectionBreadcrumb(
             ) {
                 Icon(
                     painter = InputIcons.BumperRight,
-                    contentDescription = "Next section",
+                    contentDescription = stringResource(R.string.ui_section_breadcrumb_next),
                     tint = navIconTint,
                     modifier = Modifier.size(Dimens.iconSm)
                 )

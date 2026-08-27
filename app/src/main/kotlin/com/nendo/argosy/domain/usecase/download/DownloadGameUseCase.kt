@@ -19,12 +19,31 @@ sealed class DownloadResult {
     data object Queued : DownloadResult()
     data object AlreadyDownloaded : DownloadResult()
     data class MultiDiscQueued(val discCount: Int) : DownloadResult()
-    data class Error(val message: String) : DownloadResult()
+    data class Error(val reason: DownloadGameFailureReason) : DownloadResult()
     data class ExtractionFailed(
         val gameId: Long,
         val fileName: String,
-        val errorReason: String
+        val errorReason: com.nendo.argosy.data.download.DownloadFailureReason
     ) : DownloadResult()
+}
+
+/**
+ * Why [DownloadGameUseCase] could not start or continue a download. `Extraction` wraps the
+ * data-layer [com.nendo.argosy.data.download.DownloadFailureReason] rather than duplicating its
+ * vocabulary: a sealed class's direct subclasses must share its package, so a retry failure from
+ * [com.nendo.argosy.data.download.DownloadManager] cannot itself become a case here.
+ */
+sealed class DownloadGameFailureReason {
+    data object GameNotFound : DownloadGameFailureReason()
+    data object GameNotSynced : DownloadGameFailureReason()
+    data class InvalidFileType(val extension: String) : DownloadGameFailureReason()
+    data class RomInfoFetchFailed(val serverMessage: String) : DownloadGameFailureReason()
+    data object NoDiscsFound : DownloadGameFailureReason()
+    data object AllDiscsAlreadyDownloaded : DownloadGameFailureReason()
+    data object NoDiscsQueued : DownloadGameFailureReason()
+    data object GameNotFoundForRepair : DownloadGameFailureReason()
+    data object NotMultiDisc : DownloadGameFailureReason()
+    data class Extraction(val reason: com.nendo.argosy.data.download.DownloadFailureReason) : DownloadGameFailureReason()
 }
 
 class DownloadGameUseCase @Inject constructor(
@@ -43,10 +62,10 @@ class DownloadGameUseCase @Inject constructor(
         versionRommId: Long? = null
     ): DownloadResult {
         val game = gameDao.getById(gameId)
-            ?: return DownloadResult.Error("Game not found")
+            ?: return DownloadResult.Error(DownloadGameFailureReason.GameNotFound)
 
         val rommId = versionRommId ?: game.rommId
-            ?: return DownloadResult.Error("Game not synced from RomM")
+            ?: return DownloadResult.Error(DownloadGameFailureReason.GameNotSynced)
 
         // Check if game is already downloaded (validates path and tries discovery)
         if (gameRepository.validateAndDiscoverGame(gameId)) {
@@ -55,16 +74,17 @@ class DownloadGameUseCase @Inject constructor(
         }
 
         val failedEntry = downloadQueueDao.getByGameId(gameId)
+        val decodedFailure = com.nendo.argosy.data.download.DownloadFailureReasonCodec.decode(failedEntry?.errorReason)
         if (failedEntry != null &&
             failedEntry.state == DownloadState.FAILED.name &&
-            failedEntry.errorReason?.contains("Extraction failed") == true
+            decodedFailure is com.nendo.argosy.data.download.DownloadFailureReason.ExtractionFailed
         ) {
             val targetFile = downloadManager.getDownloadPath(failedEntry.platformSlug, failedEntry.fileName)
             if (targetFile.exists()) {
                 return DownloadResult.ExtractionFailed(
                     gameId = gameId,
                     fileName = failedEntry.fileName,
-                    errorReason = failedEntry.errorReason
+                    errorReason = decodedFailure
                 )
             }
         }
@@ -108,7 +128,7 @@ class DownloadGameUseCase @Inject constructor(
 
                 val ext = fileName.substringAfterLast('.', "").lowercase()
                 if (ext in INVALID_ROM_EXTENSIONS && !isPico8Cart(fileName, game.platformSlug)) {
-                    return DownloadResult.Error("Invalid ROM file type: .$ext")
+                    return DownloadResult.Error(DownloadGameFailureReason.InvalidFileType(ext))
                 }
 
                 fileName = applyExtensionPreference(fileName, game.platformId, game.platformSlug)
@@ -127,7 +147,7 @@ class DownloadGameUseCase @Inject constructor(
                 DownloadResult.Queued
             }
             is RomMResult.Error -> {
-                DownloadResult.Error("Failed to get ROM info: ${result.message}")
+                DownloadResult.Error(DownloadGameFailureReason.RomInfoFetchFailed(result.message))
             }
         }
     }
@@ -173,12 +193,12 @@ class DownloadGameUseCase @Inject constructor(
         Log.d(TAG, "downloadMultiDiscGame: gameId=$gameId, title=$gameTitle, discs.size=${discs.size}")
         if (discs.isEmpty()) {
             Log.w(TAG, "downloadMultiDiscGame: no discs found!")
-            return DownloadResult.Error("No discs found for multi-disc game")
+            return DownloadResult.Error(DownloadGameFailureReason.NoDiscsFound)
         }
 
         val discsToDownload = discs.filter { it.localPath == null }
         if (discsToDownload.isEmpty()) {
-            return DownloadResult.Error("All discs already downloaded")
+            return DownloadResult.Error(DownloadGameFailureReason.AllDiscsAlreadyDownloaded)
         }
 
         var queuedCount = 0
@@ -210,16 +230,16 @@ class DownloadGameUseCase @Inject constructor(
         return if (queuedCount > 0) {
             DownloadResult.MultiDiscQueued(queuedCount)
         } else {
-            DownloadResult.Error("Failed to queue any disc downloads")
+            DownloadResult.Error(DownloadGameFailureReason.NoDiscsQueued)
         }
     }
 
     suspend fun repairMissingDiscs(gameId: Long): DownloadResult {
         val game = gameDao.getById(gameId)
-            ?: return DownloadResult.Error("Game not found")
+            ?: return DownloadResult.Error(DownloadGameFailureReason.GameNotFoundForRepair)
 
         if (!game.isMultiDisc) {
-            return DownloadResult.Error("Not a multi-disc game")
+            return DownloadResult.Error(DownloadGameFailureReason.NotMultiDisc)
         }
 
         return downloadMultiDiscGame(gameId, game.title, game.rommFileName, game.coverPath, game.platformSlug)
@@ -228,7 +248,8 @@ class DownloadGameUseCase @Inject constructor(
     suspend fun retryExtraction(gameId: Long): DownloadResult {
         return when (val result = downloadManager.retryExtraction(gameId)) {
             is DownloadManager.ExtractionResult.Success -> DownloadResult.Queued
-            is DownloadManager.ExtractionResult.Failure -> DownloadResult.Error(result.reason)
+            is DownloadManager.ExtractionResult.Failure ->
+                DownloadResult.Error(DownloadGameFailureReason.Extraction(result.reason))
         }
     }
 

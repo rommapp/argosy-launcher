@@ -2,13 +2,16 @@ package com.nendo.argosy.ui.screens.settings
 
 import android.util.Log
 import androidx.lifecycle.viewModelScope
+import com.nendo.argosy.data.preferences.AppLanguage
 import com.nendo.argosy.core.notification.NotificationDuration
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.NotificationType
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.data.preferences.SettingsExportResult
 import com.nendo.argosy.data.preferences.SettingsImportResult
 import com.nendo.argosy.data.remote.github.UpdateState
 import com.nendo.argosy.util.LogLevel
+import com.nendo.argosy.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -33,6 +36,38 @@ internal fun routeSetAppAffinityEnabled(vm: SettingsViewModel, enabled: Boolean)
     }
 }
 
+/**
+ * Persists the launcher's display language, mirrors it into SessionStateStore so every Activity
+ * and foreground service can read it synchronously from attachBaseContext, applies the framework
+ * per-app language on API 33+ as a visible-in-system-settings bonus, and notifies the dual-screen
+ * companion so both screens recreate with the new locale. The DataStore write and the
+ * SessionStateStore mirror happen before the notify, since a recreate that raced ahead of either
+ * would read the language it is replacing.
+ */
+internal fun routeSetAppLanguage(vm: SettingsViewModel, tag: String) {
+    vm.viewModelScope.launch {
+        vm.preferencesRepository.setAppLanguage(tag)
+        com.nendo.argosy.data.preferences.SessionStateStore(vm.context).setAppLanguage(tag)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            val localeManager = vm.context.getSystemService(android.app.LocaleManager::class.java)
+            localeManager?.applicationLocales = if (tag == AppLanguage.SYSTEM.tag) {
+                android.os.LocaleList.getEmptyLocaleList()
+            } else {
+                android.os.LocaleList.forLanguageTags(tag)
+            }
+        }
+        vm._uiState.update { it.copy(appLanguage = AppLanguage.fromString(tag)) }
+        com.nendo.argosy.DualScreenManagerHolder.instance?.notifyLocaleChanged()
+    }
+}
+
+internal fun routeCycleAppLanguage(vm: SettingsViewModel, direction: Int) {
+    val entries = AppLanguage.entries
+    val current = vm._uiState.value.appLanguage
+    val next = entries[(current.ordinal + direction).mod(entries.size)]
+    routeSetAppLanguage(vm, next.tag)
+}
+
 internal fun routeOpenLogFolderPicker(vm: SettingsViewModel) {
     vm.viewModelScope.launch {
         vm._openLogFolderPickerEvent.emit(Unit)
@@ -43,12 +78,15 @@ internal fun routeExportSettings(vm: SettingsViewModel) {
     vm.viewModelScope.launch {
         when (val result = vm.settingsBackupRepository.exportToFile()) {
             is SettingsExportResult.Success -> vm.notificationManager.show(
-                title = "Settings exported",
-                subtitle = "${result.count} settings written to ${result.path}",
+                title = NotificationText.Res(R.string.settings_shell_router_settings_exported_title),
+                subtitle = NotificationText.Res(
+                    R.string.settings_shell_router_settings_exported_subtitle,
+                    listOf(result.count, result.path)
+                ),
                 type = NotificationType.SUCCESS,
                 duration = NotificationDuration.MEDIUM
             )
-            is SettingsExportResult.Error -> vm.notificationManager.showError(result.message)
+            is SettingsExportResult.Error -> vm.notificationManager.showError(NotificationText.Raw(result.message))
         }
     }
 }
@@ -72,21 +110,22 @@ internal fun routeImportSettingsFrom(vm: SettingsViewModel, path: String) {
             is SettingsImportResult.Success -> {
                 vm.loadSettings()
                 vm.notificationManager.show(
-                    title = "Settings imported",
+                    title = NotificationText.Res(R.string.settings_shell_router_settings_imported_title),
                     subtitle = importSubtitle(result),
                     type = NotificationType.SUCCESS,
                     duration = NotificationDuration.MEDIUM
                 )
             }
-            is SettingsImportResult.Error -> vm.notificationManager.showError(result.message)
+            is SettingsImportResult.Error -> vm.notificationManager.showError(NotificationText.Raw(result.message))
         }
     }
 }
 
-private fun importSubtitle(result: SettingsImportResult.Success): String = when {
-    result.skipped > 0 ->
-        "${result.applied} applied, ${result.skipped} skipped. Restart to apply everything."
-    else -> "${result.applied} applied. Restart to apply everything."
+private fun importSubtitle(result: SettingsImportResult.Success): NotificationText = when {
+    result.skipped > 0 -> NotificationText.Res(
+        R.string.settings_shell_router_import_subtitle_with_skipped, listOf(result.applied, result.skipped)
+    )
+    else -> NotificationText.Res(R.string.settings_shell_router_import_subtitle, listOf(result.applied))
 }
 
 internal fun routeSetFileLoggingPath(vm: SettingsViewModel, path: String) {

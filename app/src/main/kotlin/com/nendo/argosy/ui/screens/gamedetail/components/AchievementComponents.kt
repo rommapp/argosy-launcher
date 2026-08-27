@@ -28,9 +28,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.nendo.argosy.R
 import com.nendo.argosy.core.game.AchievementUi
 import com.nendo.argosy.ui.theme.ALauncherColors
 import com.nendo.argosy.ui.theme.Dimens
@@ -112,7 +114,11 @@ fun AchievementRow(achievement: AchievementUi) {
                 }
             }
             Text(
-                text = "${achievement.points} pts",
+                text = pluralStringResource(
+                    R.plurals.gamedetail_achievement_strip_points,
+                    achievement.points,
+                    achievement.points
+                ),
                 style = MaterialTheme.typography.labelSmall,
                 color = accentColor.copy(alpha = 0.8f),
                 modifier = Modifier.padding(top = Dimens.borderMedium)

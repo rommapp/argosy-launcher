@@ -24,12 +24,15 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.data.preferences.MediaAudioLanguage
 import com.nendo.argosy.data.preferences.MediaDownloadQuality
 import com.nendo.argosy.data.preferences.MediaStreamingQuality
 import com.nendo.argosy.data.preferences.MediaSubtitleLanguage
 import com.nendo.argosy.data.preferences.MediaSubtitleMode
 import com.nendo.argosy.data.remote.jellyfin.JellyfinSyncProgress
+import com.nendo.argosy.ui.common.labelRes
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.NavigationPreference
@@ -80,7 +83,7 @@ internal sealed class JellyfinItem(
     class Header(
         key: String,
         section: String,
-        val title: String,
+        val titleRes: Int,
         visibleWhen: (JellyfinLayoutState) -> Boolean = { true }
     ) : JellyfinItem(key, section, visibleWhen)
 
@@ -125,16 +128,16 @@ internal sealed class JellyfinItem(
     companion object {
         val ALL: List<JellyfinItem>
             get() = listOf(
-                Header("jellyfinServerHeader", "server", "SERVER"),
+                Header("jellyfinServerHeader", "server", R.string.settings_jellyfin_section_server),
                 MediaServer, Account, QuickConnectCode, SignInError, PasswordSignIn,
-                Header("jellyfinLibraryHeader", "library", "LIBRARY", { it.hasServer }),
+                Header("jellyfinLibraryHeader", "library", R.string.settings_jellyfin_section_library, { it.hasServer }),
                 SyncLibrary,
-                Header("jellyfinPlaybackHeader", "playback", "PLAYBACK", { it.hasServer }),
+                Header("jellyfinPlaybackHeader", "playback", R.string.settings_jellyfin_section_playback, { it.hasServer }),
                 StreamingQuality, AudioLanguage, Subtitles, SubtitleLanguage, BurnInSubtitles,
                 ConfirmPlayerExit,
-                Header("jellyfinDownloadsHeader", "downloads", "DOWNLOADS", { it.hasServer }),
+                Header("jellyfinDownloadsHeader", "downloads", R.string.settings_jellyfin_section_downloads, { it.hasServer }),
                 DownloadQuality, MediaLocation,
-                Header("jellyfinPrivacyHeader", "privacy", "PRIVACY", { it.hasServer }),
+                Header("jellyfinPrivacyHeader", "privacy", R.string.settings_jellyfin_section_privacy, { it.hasServer }),
                 SharePresence
             )
     }
@@ -145,13 +148,13 @@ private val jellyfinLayout = SettingsLayout<JellyfinItem, JellyfinLayoutState>(
     isFocusable = { it.isFocusable },
     visibleWhen = { item, state -> item.visibleWhen(state) },
     sectionOf = { it.section },
-    sectionTitle = {
+    sectionTitleRes = {
         when (it) {
-            "server" -> "SERVER"
-            "library" -> "LIBRARY"
-            "playback" -> "PLAYBACK"
-            "downloads" -> "DOWNLOADS"
-            "privacy" -> "PRIVACY"
+            "server" -> R.string.settings_jellyfin_section_server
+            "library" -> R.string.settings_jellyfin_section_library
+            "playback" -> R.string.settings_jellyfin_section_playback
+            "downloads" -> R.string.settings_jellyfin_section_downloads
+            "privacy" -> R.string.settings_jellyfin_section_privacy
             else -> null
         }
     }
@@ -168,19 +171,23 @@ internal fun jellyfinSections(state: JellyfinLayoutState) = jellyfinLayout.build
 internal fun jellyfinFocusIndexOf(item: JellyfinItem, state: JellyfinLayoutState): Int =
     jellyfinLayout.focusIndexOf(item, state)
 
-private fun accountTitle(jellyfin: JellyfinState): String = when {
-    jellyfin.isSignedIn -> "Sign Out"
-    jellyfin.quickConnectRequested -> "Cancel Sign In"
-    else -> "Sign In"
+private fun accountTitleRes(jellyfin: JellyfinState): Int = when {
+    jellyfin.isSignedIn -> R.string.settings_jellyfin_account_sign_out
+    jellyfin.quickConnectRequested -> R.string.settings_jellyfin_account_cancel
+    else -> R.string.settings_jellyfin_account_sign_in
 }
 
-private fun accountSubtitle(jellyfin: JellyfinState): String = when {
+private fun accountSubtitle(context: Context, jellyfin: JellyfinState): String = when {
     jellyfin.isSignedIn -> jellyfin.userName.takeIf { it.isNotBlank() }
-        ?.let { "Signed in as $it" } ?: "Signed in"
-    jellyfin.hasQuickConnectCode -> "Waiting for approval in your Jellyfin app"
-    jellyfin.quickConnectRequested -> "Asking the server for a code"
-    jellyfin.quickConnectAvailable -> "Approve a Quick Connect code from your Jellyfin app"
-    else -> "Sign in with your Jellyfin username and password"
+        ?.let { context.getString(R.string.settings_jellyfin_account_signed_in_as, it) }
+        ?: context.getString(R.string.settings_jellyfin_account_signed_in)
+    jellyfin.hasQuickConnectCode ->
+        context.getString(R.string.settings_jellyfin_account_awaiting_approval)
+    jellyfin.quickConnectRequested ->
+        context.getString(R.string.settings_jellyfin_account_requesting_code)
+    jellyfin.quickConnectAvailable ->
+        context.getString(R.string.settings_jellyfin_account_quick_connect)
+    else -> context.getString(R.string.settings_jellyfin_account_password)
 }
 
 /**
@@ -193,35 +200,40 @@ private fun syncLibrarySubtitle(
     context: Context
 ): String = when {
     jellyfin.isSyncingLibrary && progress.currentLibrary.isNotBlank() && progress.librariesTotal > 0 ->
-        "${progress.currentLibrary} (${progress.librariesDone + 1} of ${progress.librariesTotal})"
-    jellyfin.isSyncingLibrary -> "Reading your libraries"
-    !jellyfin.isSignedIn -> "Sign in to bring your movies and shows across"
+        context.getString(
+            R.string.settings_jellyfin_sync_progress,
+            progress.currentLibrary,
+            progress.librariesDone + 1,
+            progress.librariesTotal
+        )
+    jellyfin.isSyncingLibrary -> context.getString(R.string.settings_jellyfin_sync_reading)
+    !jellyfin.isSignedIn -> context.getString(R.string.settings_jellyfin_sync_signed_out)
     jellyfin.librarySyncError != null -> jellyfin.librarySyncError
-    jellyfin.lastLibrarySync != null ->
-        "Last: ${formatClockDateTime(context, jellyfin.lastLibrarySync.toEpochMilli())}"
-    else -> "Bring your movies, shows and episodes in line with the server"
+    jellyfin.lastLibrarySync != null -> context.getString(
+        R.string.settings_jellyfin_sync_last,
+        formatClockDateTime(context, jellyfin.lastLibrarySync.toEpochMilli())
+    )
+    else -> context.getString(R.string.settings_jellyfin_sync_subtitle)
 }
 
-private fun subtitleModeSubtitle(mode: MediaSubtitleMode): String = when (mode) {
-    MediaSubtitleMode.OFF -> "No subtitle track is selected"
-    MediaSubtitleMode.FORCED_ONLY -> "Only tracks marked forced"
-    MediaSubtitleMode.PREFERRED -> "Pick a track in your preferred language"
+private fun subtitleModeSubtitleRes(mode: MediaSubtitleMode): Int = when (mode) {
+    MediaSubtitleMode.OFF -> R.string.settings_jellyfin_subtitles_subtitle_off
+    MediaSubtitleMode.FORCED_ONLY -> R.string.settings_jellyfin_subtitles_subtitle_forced
+    MediaSubtitleMode.PREFERRED -> R.string.settings_jellyfin_subtitles_subtitle_preferred
 }
 
-private fun streamingQualitySubtitle(quality: MediaStreamingQuality): String =
+private fun streamingQualitySubtitleRes(quality: MediaStreamingQuality): Int =
     if (quality == MediaStreamingQuality.AUTO) {
-        "Plays every title as it is, which costs the server nothing"
+        R.string.settings_jellyfin_streaming_subtitle_auto
     } else {
-        "Titles larger than this are transcoded by the server as they play. " +
-            "Anything already smaller plays as it is"
+        R.string.settings_jellyfin_streaming_subtitle_capped
     }
 
-private fun downloadQualitySubtitle(quality: MediaDownloadQuality): String =
+private fun downloadQualitySubtitleRes(quality: MediaDownloadQuality): Int =
     if (quality == MediaDownloadQuality.ORIGINAL) {
-        "Downloads the file as it sits on the server"
+        R.string.settings_jellyfin_download_subtitle_original
     } else {
-        "Titles larger than this are transcoded before the download starts. " +
-            "Anything already smaller downloads as it is"
+        R.string.settings_jellyfin_download_subtitle_capped
     }
 
 @Composable
@@ -250,7 +262,7 @@ private fun QuickConnectCodePanel(code: String) {
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
     ) {
         Text(
-            text = "Quick Connect Code",
+            text = stringResource(R.string.settings_jellyfin_quick_connect_label),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -260,8 +272,7 @@ private fun QuickConnectCodePanel(code: String) {
             color = MaterialTheme.colorScheme.onSurface
         )
         Text(
-            text = "Open Jellyfin on a device you are already signed in on, go to Quick Connect " +
-                "and enter this code. It expires after a few minutes.",
+            text = stringResource(R.string.settings_jellyfin_quick_connect_message),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -281,9 +292,10 @@ private fun SignInErrorPanel(message: String) {
 @Composable
 private fun JellyfinContent(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val jellyfin = uiState.jellyfin
+    val context = LocalContext.current
     val layoutState = remember(jellyfin) { JellyfinLayoutState.from(jellyfin) }
     val visibleItems = remember(layoutState) { jellyfinLayout.visibleItems(layoutState) }
-    val sections = remember(layoutState) { jellyfinLayout.buildSections(layoutState) }
+    val sections = remember(layoutState, context) { jellyfinLayout.buildSections(layoutState, context) }
 
     fun isFocused(item: JellyfinItem): Boolean =
         uiState.focusedIndex == jellyfinLayout.focusIndexOf(item, layoutState)
@@ -305,21 +317,23 @@ private fun JellyfinContent(uiState: SettingsUiState, viewModel: SettingsViewMod
                 if (item.key != "jellyfinServerHeader") {
                     Spacer(modifier = Modifier.height(Dimens.spacingSm))
                 }
-                SectionHeader(item.title)
+                SectionHeader(stringResource(item.titleRes))
             }
 
             JellyfinItem.MediaServer -> NavigationPreference(
                 icon = Icons.Default.Dns,
-                title = "Media Server",
-                subtitle = jellyfin.serverUrl.ifBlank { "Not configured" },
+                title = stringResource(R.string.settings_jellyfin_server_title),
+                subtitle = jellyfin.serverUrl.ifBlank {
+                    stringResource(R.string.settings_jellyfin_server_unconfigured)
+                },
                 isFocused = isFocused(item),
                 onClick = { viewModel.startJellyfinConfig() }
             )
 
             JellyfinItem.Account -> ActionPreference(
                 icon = if (jellyfin.isSignedIn) Icons.AutoMirrored.Filled.Logout else Icons.Default.Login,
-                title = accountTitle(jellyfin),
-                subtitle = accountSubtitle(jellyfin),
+                title = stringResource(accountTitleRes(jellyfin)),
+                subtitle = accountSubtitle(context, jellyfin),
                 isFocused = isFocused(item),
                 isDangerous = jellyfin.isSignedIn,
                 onClick = {
@@ -337,18 +351,17 @@ private fun JellyfinContent(uiState: SettingsUiState, viewModel: SettingsViewMod
 
             JellyfinItem.PasswordSignIn -> ActionPreference(
                 icon = Icons.Default.Password,
-                title = "Sign In With Password",
-                subtitle = "Use your Jellyfin username and password instead of a code",
+                title = stringResource(R.string.settings_jellyfin_password_sign_in_title),
+                subtitle = stringResource(R.string.settings_jellyfin_password_sign_in_subtitle),
                 isFocused = isFocused(item),
                 onClick = { viewModel.showJellyfinLoginForm() }
             )
 
             JellyfinItem.SyncLibrary -> {
                 val progress = viewModel.mediaSyncProgress.collectAsState().value
-                val context = LocalContext.current
                 ActionPreference(
                     icon = Icons.Default.Sync,
-                    title = "Sync Library",
+                    title = stringResource(R.string.settings_jellyfin_sync_title),
                     subtitle = syncLibrarySubtitle(jellyfin, progress, context),
                     isFocused = isFocused(item),
                     isEnabled = jellyfin.isSignedIn && !jellyfin.isSyncingLibrary,
@@ -363,60 +376,58 @@ private fun JellyfinContent(uiState: SettingsUiState, viewModel: SettingsViewMod
             }
 
             JellyfinItem.StreamingQuality -> CyclePreference(
-                title = "Streaming Quality",
-                value = jellyfin.streamingQuality.displayName,
-                subtitle = streamingQualitySubtitle(jellyfin.streamingQuality),
+                title = stringResource(R.string.settings_jellyfin_streaming_title),
+                value = stringResource(jellyfin.streamingQuality.labelRes),
+                subtitle = stringResource(streamingQualitySubtitleRes(jellyfin.streamingQuality)),
                 isFocused = isFocused(item),
                 onClick = { viewModel.cycleJellyfinStreamingQuality(1) },
                 onPrev = { viewModel.cycleJellyfinStreamingQuality(-1) },
-                options = remember { MediaStreamingQuality.entries.map { it.displayName } },
+                options = MediaStreamingQuality.entries.map { stringResource(it.labelRes) },
                 onSelect = { viewModel.setJellyfinStreamingQuality(MediaStreamingQuality.entries[it]) },
                 pickerRequestToken = if (uiState.enumPickerKey == item.key) uiState.enumPickerToken else 0
             )
 
             JellyfinItem.AudioLanguage -> CyclePreference(
-                title = "Audio Language",
-                value = jellyfin.audioLanguage.displayName,
-                subtitle = "Chosen first when a title carries more than one audio track",
+                title = stringResource(R.string.settings_jellyfin_audio_language_title),
+                value = stringResource(jellyfin.audioLanguage.labelRes),
+                subtitle = stringResource(R.string.settings_jellyfin_audio_language_subtitle),
                 isFocused = isFocused(item),
                 onClick = { viewModel.cycleJellyfinAudioLanguage(1) },
                 onPrev = { viewModel.cycleJellyfinAudioLanguage(-1) },
-                options = remember { MediaAudioLanguage.entries.map { it.displayName } },
+                options = MediaAudioLanguage.entries.map { stringResource(it.labelRes) },
                 onSelect = { viewModel.setJellyfinAudioLanguage(MediaAudioLanguage.entries[it]) },
                 pickerRequestToken = if (uiState.enumPickerKey == item.key) uiState.enumPickerToken else 0
             )
 
             JellyfinItem.Subtitles -> CyclePreference(
-                title = "Subtitles",
-                value = jellyfin.subtitleMode.displayName,
-                subtitle = subtitleModeSubtitle(jellyfin.subtitleMode),
+                title = stringResource(R.string.settings_jellyfin_subtitles_title),
+                value = stringResource(jellyfin.subtitleMode.labelRes),
+                subtitle = stringResource(subtitleModeSubtitleRes(jellyfin.subtitleMode)),
                 isFocused = isFocused(item),
                 onClick = { viewModel.cycleJellyfinSubtitleMode(1) },
                 onPrev = { viewModel.cycleJellyfinSubtitleMode(-1) },
-                options = remember { MediaSubtitleMode.entries.map { it.displayName } },
+                options = MediaSubtitleMode.entries.map { stringResource(it.labelRes) },
                 onSelect = { viewModel.setJellyfinSubtitleMode(MediaSubtitleMode.entries[it]) },
                 pickerRequestToken = if (uiState.enumPickerKey == item.key) uiState.enumPickerToken else 0
             )
 
             JellyfinItem.SubtitleLanguage -> CyclePreference(
-                title = "Subtitle Language",
-                value = jellyfin.subtitleLanguage.displayName,
+                title = stringResource(R.string.settings_jellyfin_subtitle_language_title),
+                value = stringResource(jellyfin.subtitleLanguage.labelRes),
                 isFocused = isFocused(item),
                 onClick = { viewModel.cycleJellyfinSubtitleLanguage(1) },
                 onPrev = { viewModel.cycleJellyfinSubtitleLanguage(-1) },
-                options = remember { MediaSubtitleLanguage.entries.map { it.displayName } },
+                options = MediaSubtitleLanguage.entries.map { stringResource(it.labelRes) },
                 onSelect = { viewModel.setJellyfinSubtitleLanguage(MediaSubtitleLanguage.entries[it]) },
                 pickerRequestToken = if (uiState.enumPickerKey == item.key) uiState.enumPickerToken else 0
             )
 
             JellyfinItem.BurnInSubtitles -> SwitchPreference(
-                title = "Burn In Image Subtitles",
+                title = stringResource(R.string.settings_jellyfin_burn_in_title),
                 subtitle = if (jellyfin.burnInImageSubtitles) {
-                    "New playbacks start with image tracks rendered by the server, which forces " +
-                        "a transcode. Change it for a single title in the subtitle picker"
+                    stringResource(R.string.settings_jellyfin_burn_in_subtitle_on)
                 } else {
-                    "New playbacks start with image tracks off. Turn one on for a single title " +
-                        "in the subtitle picker"
+                    stringResource(R.string.settings_jellyfin_burn_in_subtitle_off)
                 },
                 isEnabled = jellyfin.burnInImageSubtitles,
                 isFocused = isFocused(item),
@@ -424,11 +435,11 @@ private fun JellyfinContent(uiState: SettingsUiState, viewModel: SettingsViewMod
             )
 
             JellyfinItem.ConfirmPlayerExit -> SwitchPreference(
-                title = "Prompt Before Leaving Player",
+                title = stringResource(R.string.settings_jellyfin_confirm_exit_title),
                 subtitle = if (jellyfin.confirmPlayerExit) {
-                    "Closing the player asks for confirmation first"
+                    stringResource(R.string.settings_jellyfin_confirm_exit_subtitle_on)
                 } else {
-                    "Closing the player exits right away"
+                    stringResource(R.string.settings_jellyfin_confirm_exit_subtitle_off)
                 },
                 isEnabled = jellyfin.confirmPlayerExit,
                 isFocused = isFocused(item),
@@ -436,31 +447,32 @@ private fun JellyfinContent(uiState: SettingsUiState, viewModel: SettingsViewMod
             )
 
             JellyfinItem.DownloadQuality -> CyclePreference(
-                title = "Download Quality",
-                value = jellyfin.downloadQuality.displayName,
-                subtitle = downloadQualitySubtitle(jellyfin.downloadQuality),
+                title = stringResource(R.string.settings_jellyfin_download_quality_title),
+                value = stringResource(jellyfin.downloadQuality.labelRes),
+                subtitle = stringResource(downloadQualitySubtitleRes(jellyfin.downloadQuality)),
                 isFocused = isFocused(item),
                 onClick = { viewModel.cycleJellyfinDownloadQuality(1) },
                 onPrev = { viewModel.cycleJellyfinDownloadQuality(-1) },
-                options = remember { MediaDownloadQuality.entries.map { it.displayName } },
+                options = MediaDownloadQuality.entries.map { stringResource(it.labelRes) },
                 onSelect = { viewModel.setJellyfinDownloadQuality(MediaDownloadQuality.entries[it]) },
                 pickerRequestToken = if (uiState.enumPickerKey == item.key) uiState.enumPickerToken else 0
             )
 
             JellyfinItem.MediaLocation -> ActionPreference(
                 icon = Icons.Default.Folder,
-                title = "Media Location",
-                subtitle = jellyfin.mediaDirPath ?: "Internal storage",
+                title = stringResource(R.string.settings_jellyfin_media_location_title),
+                subtitle = jellyfin.mediaDirPath
+                    ?: stringResource(R.string.settings_jellyfin_media_location_internal),
                 isFocused = isFocused(item),
                 onClick = { viewModel.openMediaLocationPicker() }
             )
 
             JellyfinItem.SharePresence -> SwitchPreference(
-                title = "Show What You're Watching",
+                title = stringResource(R.string.settings_jellyfin_share_presence_title),
                 subtitle = if (jellyfin.sharePresence) {
-                    "Share the title you are watching with friends"
+                    stringResource(R.string.settings_jellyfin_share_presence_subtitle_on)
                 } else {
-                    "Hide media activity from friends"
+                    stringResource(R.string.settings_jellyfin_share_presence_subtitle_off)
                 },
                 isEnabled = jellyfin.sharePresence,
                 isFocused = isFocused(item),

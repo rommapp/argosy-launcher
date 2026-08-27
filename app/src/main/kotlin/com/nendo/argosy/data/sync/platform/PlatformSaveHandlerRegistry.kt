@@ -49,7 +49,9 @@ class PlatformSaveHandlerRegistry @Inject constructor(
         FolderSaveHandler(context, fal, saveArchiver, platformSlug = "wii"),
         FolderSaveHandler(context, fal, saveArchiver, platformSlug = "wiiu"),
         N3dsFolderHandler(context, fal, saveArchiver),
-        Ps2FolderHandler(context, fal, saveArchiver)
+        Ps2FolderHandler(context, fal, saveArchiver),
+        Ps3FolderHandler(context, fal, saveArchiver),
+        Xbox360FolderHandler(context, fal, saveArchiver)
     ).associateBy { it.platformSlug }
 
     private fun canonicalSlug(platformSlug: String): String =
@@ -114,6 +116,18 @@ class PlatformSaveHandlerRegistry @Inject constructor(
         return resolved
     }
 
+    /**
+     * Whether a path stored on a sync row still has its platform's shape, so a caller can tell a
+     * stale row from a live one before trusting it. Layouts that nest a save under a per-install
+     * identifier answer this themselves; every other platform answers true, because for them
+     * existence on disk is the whole question.
+     */
+    fun isValidCachedSavePath(platformSlug: String, path: String): Boolean {
+        val canonical = canonicalSlug(platformSlug)
+        if (canonical == "switch") return switchSaveHandler.isValidCachedSavePath(path)
+        return folderHandlers[canonical]?.isValidCachedSavePath(path) ?: true
+    }
+
     fun pathIsPresent(path: String): Boolean = fal.exists(path) && fal.isDirectory(path)
 
     fun listPs2FolderMemcards(basePath: String): List<MemcardInfo> {
@@ -142,13 +156,6 @@ class PlatformSaveHandlerRegistry @Inject constructor(
 }
 
 /**
- * A save id is the on-disk save location, so it may carry path separators where a platform
- * nests it (3DS reports `00040000/00033500`). Naming a temp archive after one would resolve
- * into a directory that does not exist, so the separators collapse for filename use only.
- */
-private fun String.asArchiveName(): String = replace('/', '_')
-
-/**
  * Whether [needle] appears verbatim in the bytes. PARAM.SFO keeps its key names in a plain
  * ASCII key table, so presence of a key is a substring test rather than a parse.
  */
@@ -170,8 +177,8 @@ private fun ByteArray.containsAscii(needle: String): Boolean {
  * game commonly produces several siblings (`ULUS10064DATA00`, `ULUS10064SETTINGS`, ...), so the
  * "save unit" spans every prefix-matched folder under the parent.
  *
- * Mirrors the GameCube GCI handler's pattern - bundle all matches on upload, delete all matches
- * on download before extracting back into the parent.
+ * Bundling, discovery and restore are [PrefixBundleFolderHandler]'s; the one thing PSP adds is
+ * what to leave out.
  *
  * Game-data installs land in the same place under the same prefix (PPSSPP's
  * `PSPGamedataInstallDialog` writes to `PSP/SAVEDATA/<gameName><dataName>/`), but they are
@@ -184,9 +191,7 @@ private class PspFolderHandler(
     context: Context,
     private val fal: FileAccessLayer,
     saveArchiver: SaveArchiver
-) : FolderSaveHandler(context, fal, saveArchiver, platformSlug = "psp") {
-
-    private val appContext = context
+) : PrefixBundleFolderHandler(context, fal, saveArchiver, platformSlug = "psp", tag = TAG) {
 
     companion object {
         private const val TAG = "PspFolderHandler"
@@ -194,9 +199,6 @@ private class PspFolderHandler(
         private const val MAX_SFO_BYTES = 64 * 1024L
         private val SAVEDATA_KEYS = listOf("SAVEDATA_PARAMS", "SAVEDATA_FILE_LIST")
     }
-
-    override fun folderMatches(folderName: String, saveId: String): Boolean =
-        folderName.startsWith(saveId, ignoreCase = true)
 
     override fun findAllSaveFoldersBySaveId(basePath: String, saveId: String): List<String> =
         super.findAllSaveFoldersBySaveId(basePath, saveId).filterNot { path ->
@@ -219,86 +221,181 @@ private class PspFolderHandler(
         val bytes = runCatching { sfo.readBytes() }.getOrElse { return false }
         return SAVEDATA_KEYS.none { bytes.containsAscii(it) }
     }
+}
+
+/**
+ * PS3 saves are directories under `dev_hdd0/home/<user>/savedata/` named `<titleId><suffix>`,
+ * where the 9-character title id from PARAM.SFO is shared across a game's artifacts
+ * (`BCUS99086GAMEDATA`, `BCUS99086-AUTOSAVE`). Same shape as PSP, so the prefix bundle carries
+ * all of it; nothing here needs to tell one artifact from another.
+ *
+ * aPS3e hardcodes the user to `00000001`, which is why the config names it rather than
+ * discovering it. Desktop RPCS3 holds several users and would have to.
+ */
+private class Ps3FolderHandler(
+    context: Context,
+    private val fal: FileAccessLayer,
+    saveArchiver: SaveArchiver
+) : PrefixBundleFolderHandler(context, fal, saveArchiver, platformSlug = "ps3", tag = TAG) {
+
+    companion object {
+        private const val TAG = "Ps3FolderHandler"
+        private const val SAVEDATA_DIR = "savedata"
+        private const val APS3E_USER = "00000001"
+    }
+
+    /**
+     * The user directory and the `savedata` directory under it are both places a user pointing at
+     * "the PS3 saves folder" lands, so a chosen path is walked down to the one saves are actually
+     * filed in. A path already at or below `savedata` is trimmed back to it.
+     */
+    override fun normalizeBasePath(path: String): String {
+        val trimmed = path.trimEnd('/')
+        val segments = trimmed.split('/')
+        val savedataIndex = segments.indexOfLast { it.equals(SAVEDATA_DIR, ignoreCase = true) }
+        if (savedataIndex >= 0) {
+            return segments.take(savedataIndex + 1).joinToString("/")
+        }
+
+        val candidates = listOf(
+            "$trimmed/$SAVEDATA_DIR",
+            "$trimmed/$APS3E_USER/$SAVEDATA_DIR"
+        )
+        val resolved = candidates.firstOrNull { fal.exists(it) && fal.isDirectory(it) }
+        if (resolved != null) {
+            Logger.debug(TAG, "normalizeBasePath: resolved savedata below the chosen path | chosen=$path, base=$resolved")
+            return resolved
+        }
+        return trimmed
+    }
+}
+
+/**
+ * Xbox 360 layout: `{baseDir}/{XUID}/{saveId}/00000001/{package}/`. Content is keyed by profile
+ * before title, so the save id is the SECOND segment and the 16-hex XUID above it belongs to
+ * whoever is signed in. That level is enumerated, never constructed - it names a profile the
+ * emulator created, and inventing one produces a directory XenDroid never reads.
+ *
+ * `00000001` is the saved-game content type. `00000002` is DLC and `000B0000` is title updates,
+ * all three sitting under the same title id, so a handler that matched on the title id alone
+ * would sync add-on content as though it were progress. The save unit therefore stops at the
+ * content-type directory rather than at the title.
+ *
+ * Non-profile content lives under the machine XUID `0000000000000000` and holds no saved games,
+ * so a tree containing only that XUID is a miss rather than a hit. The layout is Xenia's
+ * `ResolvePackageRoot()`, which is why desktop Xenia matches below its own content root.
+ */
+private class Xbox360FolderHandler(
+    context: Context,
+    private val fal: FileAccessLayer,
+    saveArchiver: SaveArchiver
+) : FolderSaveHandler(context, fal, saveArchiver, platformSlug = "xbox360", tag = TAG) {
+
+    companion object {
+        private const val TAG = "Xbox360FolderHandler"
+        private const val SAVED_GAME_CONTENT_TYPE = "00000001"
+        private const val MACHINE_XUID = "0000000000000000"
+        private const val CONTENT_DIR = "content"
+        private const val XUID_LENGTH = 16
+        private const val SAVE_ID_LENGTH = 8
+    }
+
+    /**
+     * Saves hang off `content`, one level inside the emulator's own directory, so a chosen path at
+     * either level resolves to the same root. A path already inside the tree is trimmed back to
+     * `content` rather than treated as a base holding profiles.
+     */
+    override fun normalizeBasePath(path: String): String {
+        val trimmed = path.trimEnd('/')
+        val segments = trimmed.split('/')
+        val contentIndex = segments.indexOfLast { it.equals(CONTENT_DIR, ignoreCase = true) }
+        if (contentIndex >= 0) {
+            return segments.take(contentIndex + 1).joinToString("/")
+        }
+
+        val below = "$trimmed/$CONTENT_DIR"
+        if (fal.exists(below) && fal.isDirectory(below)) {
+            Logger.debug(TAG, "normalizeBasePath: resolved content below the chosen path | chosen=$path, base=$below")
+            return below
+        }
+        return trimmed
+    }
+
+    /**
+     * The save unit is the content-type directory, whose name is the same for every title on the
+     * console. It confirms nothing about which save an archive holds, so the resolved destination
+     * is what places it.
+     */
+    override val unidentifiedArchiveRoots: Set<String> = setOf(SAVED_GAME_CONTENT_TYPE)
 
     override fun findSaveFolderBySaveId(basePath: String, saveId: String): String? {
-        if (!fal.exists(basePath) || !fal.isDirectory(basePath)) return null
-        val matches = findAllSaveFoldersBySaveId(basePath, saveId)
-        if (matches.isEmpty()) return null
-        return basePath
+        if (!fal.exists(basePath) || !fal.isDirectory(basePath)) {
+            Logger.debug(TAG, "Base path does not exist | path=$basePath")
+            return null
+        }
+
+        var bestMatchPath: String? = null
+        var bestModTime = -1L
+
+        profileXuidDirs(basePath).forEach { xuidDir ->
+            val titleDir = fal.listFiles(xuidDir.path)?.firstOrNull {
+                it.isDirectory && it.name.equals(saveId, ignoreCase = true)
+            } ?: return@forEach
+
+            val savedGames = "${titleDir.path}/$SAVED_GAME_CONTENT_TYPE"
+            if (!fal.exists(savedGames) || !fal.isDirectory(savedGames)) {
+                Logger.debug(TAG, "Title present without saved games | path=${titleDir.path}")
+                return@forEach
+            }
+
+            val modTime = newestFileTime(savedGames)
+            if (modTime > bestModTime) {
+                bestModTime = modTime
+                bestMatchPath = savedGames
+            }
+        }
+
+        if (bestMatchPath == null) {
+            Logger.debug(TAG, "No save found | basePath=$basePath, saveId=$saveId")
+        }
+        return bestMatchPath
     }
 
-    override fun constructSavePath(baseDir: String, saveId: String): String? = baseDir
-
-    override suspend fun prepareForUpload(
-        localPath: String,
-        context: SaveContext
-    ): PreparedSave? = withContext(Dispatchers.IO) {
-        val saveId = context.saveId
-        val parent = fal.getTransformedFile(localPath)
-        if (!parent.exists() || !parent.isDirectory) {
-            Logger.debug(TAG, "prepareForUpload: parent folder missing | path=$localPath")
-            return@withContext null
+    override fun constructSavePath(baseDir: String, saveId: String): String? {
+        val xuidDir = profileXuidDirs(baseDir).maxByOrNull { newestFileTime(it.path) }
+        if (xuidDir == null) {
+            Logger.debug(TAG, "No signed-in profile to restore into | baseDir=$baseDir, saveId=$saveId")
+            return null
         }
-
-        val matchedPaths = if (saveId != null) {
-            findAllSaveFoldersBySaveId(localPath, saveId)
-        } else {
-            emptyList()
-        }
-        if (matchedPaths.isEmpty()) {
-            Logger.debug(TAG, "prepareForUpload: no matches | parent=$localPath, saveId=$saveId")
-            return@withContext null
-        }
-        val matchedFolders = matchedPaths.map { fal.getTransformedFile(it) }
-
-        Logger.debug(TAG, "prepareForUpload: bundling ${matchedFolders.size} folder(s) | saveId=$saveId, names=${matchedFolders.map { it.name }}")
-
-        val outputFile = File(appContext.cacheDir, "${saveId?.asArchiveName() ?: parent.name}.zip")
-        if (!saveArchiver.zipFolders(matchedFolders, outputFile)) {
-            Logger.error(TAG, "prepareForUpload: failed to zip folders | saveId=$saveId")
-            return@withContext null
-        }
-
-        PreparedSave(outputFile, isTemporary = true, matchedPaths)
+        return "${xuidDir.path}/${saveId.uppercase()}/$SAVED_GAME_CONTENT_TYPE"
     }
 
-    override suspend fun sourcePathsFor(
-        localPath: String,
-        context: SaveContext
-    ): List<String> = withContext(Dispatchers.IO) {
-        val saveId = context.saveId ?: return@withContext emptyList()
-        findAllSaveFoldersBySaveId(localPath, saveId)
+    override fun isValidCachedSavePath(path: String): Boolean {
+        val parts = path.trimEnd('/').split("/")
+        if (parts.size < 3) return false
+
+        val contentType = parts[parts.size - 1]
+        val cachedSaveId = parts[parts.size - 2]
+        val xuid = parts[parts.size - 3]
+
+        val isValid = contentType == SAVED_GAME_CONTENT_TYPE &&
+            isHex(cachedSaveId, SAVE_ID_LENGTH) &&
+            isProfileXuid(xuid)
+
+        if (!isValid) {
+            Logger.debug(TAG, "isValidCachedSavePath: invalid | path=$path, xuid=$xuid, saveId=$cachedSaveId, type=$contentType")
+        }
+        return isValid
     }
 
-    override suspend fun extractDownload(
-        tempFile: File,
-        context: SaveContext
-    ): ExtractResult = withContext(Dispatchers.IO) {
-        val saveId = context.saveId
-            ?: return@withContext ExtractResult(false, null, "No title ID for PSP save")
+    private fun profileXuidDirs(basePath: String): List<FileInfo> =
+        fal.listFiles(basePath).orEmpty().filter { it.isDirectory && isProfileXuid(it.name) }
 
-        val parentPath = context.localSavePath
-            ?: resolveBasePath(context.config, null)
-            ?: return@withContext ExtractResult(false, null, "No base path for PSP saves")
+    private fun isProfileXuid(name: String): Boolean =
+        isHex(name, XUID_LENGTH) && name != MACHINE_XUID
 
-        val parentFolder = File(parentPath)
-        parentFolder.mkdirs()
-
-        val existing = findAllSaveFoldersBySaveId(parentPath, saveId)
-        if (existing.isNotEmpty()) {
-            Logger.debug(TAG, "extractDownload: clearing ${existing.size} existing folder(s) | saveId=$saveId")
-            existing.forEach { fal.deleteRecursively(it) }
-        }
-
-        if (!saveArchiver.unzipToFolder(tempFile, parentFolder)) {
-            Logger.error(TAG, "extractDownload: unzip failed | parent=$parentPath")
-            return@withContext ExtractResult(false, null, "Failed to extract PSP save")
-        }
-
-        val restored = findAllSaveFoldersBySaveId(parentPath, saveId)
-        Logger.debug(TAG, "extractDownload: complete | parent=$parentPath, restored=${restored.size}")
-        ExtractResult(true, parentPath)
-    }
+    private fun isHex(value: String, length: Int): Boolean =
+        value.length == length && value.all { it.isDigit() || it in 'a'..'f' || it in 'A'..'F' }
 }
 
 /**
@@ -429,19 +526,6 @@ private class N3dsFolderHandler(
         val savePath = "${id1Folder.path}/title/$category/$shortTitleId/data"
         Logger.debug(TAG, "Constructed save path | path=$savePath")
         return savePath
-    }
-
-    private fun newestFileTime(folderPath: String): Long {
-        var newest = 0L
-        fal.listFiles(folderPath)?.forEach { child ->
-            if (child.isFile) {
-                if (child.lastModified > newest) newest = child.lastModified
-            } else if (child.isDirectory) {
-                val childNewest = newestFileTime(child.path)
-                if (childNewest > newest) newest = childNewest
-            }
-        }
-        return newest
     }
 }
 

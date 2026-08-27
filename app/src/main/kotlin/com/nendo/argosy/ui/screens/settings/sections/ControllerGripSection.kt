@@ -8,6 +8,10 @@ import androidx.compose.material.icons.outlined.Gamepad
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.data.preferences.GripReserveMode
 import com.nendo.argosy.domain.model.GripAutoController
 import com.nendo.argosy.ui.components.CyclePreference
@@ -50,7 +54,7 @@ private val controllerGripLayout = SettingsLayout<ControllerGripItem, DisplaySta
     isFocusable = { true },
     visibleWhen = { item, display -> item.visibleWhen(display) },
     sectionOf = { "grip" },
-    sectionTitle = { null }
+    sectionTitleRes = { null }
 )
 
 internal fun controllerGripMaxFocusIndex(display: DisplayState): Int =
@@ -65,16 +69,28 @@ internal fun controllerGripSections(display: DisplayState) =
 internal fun controllerGripFocusIndexOf(item: ControllerGripItem, display: DisplayState): Int =
     controllerGripLayout.focusIndexOf(item, display)
 
+@Composable
 internal fun gripAutoControllerSubtitle(controllers: List<GripAutoController>): String =
     when (controllers.size) {
-        0 -> "No controllers chosen"
+        0 -> stringResource(R.string.settings_grip_controllers_subtitle_empty)
         1 -> controllers.first().name
-        else -> "${controllers.size} controllers"
+        else -> pluralStringResource(
+            R.plurals.settings_grip_controllers_subtitle_count,
+            controllers.size,
+            controllers.size
+        )
     }
+
+private fun gripModeLabelRes(mode: GripReserveMode): Int = when (mode) {
+    GripReserveMode.OFF -> R.string.settings_grip_mode_off
+    GripReserveMode.ON -> R.string.settings_grip_mode_on
+    GripReserveMode.AUTO -> R.string.settings_grip_mode_auto
+}
 
 @Composable
 fun ControllerGripSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val display = uiState.display
+    val context = LocalContext.current
 
     val visibleItems = remember(display) { controllerGripLayout.visibleItems(display) }
     val sections = remember(display) { controllerGripLayout.buildSections(display) }
@@ -99,31 +115,33 @@ fun ControllerGripSection(uiState: SettingsUiState, viewModel: SettingsViewModel
     ) { item ->
         when (item) {
             ControllerGripItem.Mode -> CyclePreference(
-                title = "Mode",
-                value = display.gripReserveMode.displayName,
+                title = stringResource(R.string.settings_grip_mode_title),
+                value = stringResource(gripModeLabelRes(display.gripReserveMode)),
                 subtitle = when (display.gripReserveMode) {
-                    GripReserveMode.OFF -> "Never shift the UI up"
-                    GripReserveMode.ON -> "Always shift the UI up in portrait"
-                    GripReserveMode.AUTO -> "Automatically shift the UI up when a chosen controller is connected"
+                    GripReserveMode.OFF -> stringResource(R.string.settings_grip_mode_subtitle_off)
+                    GripReserveMode.ON -> stringResource(R.string.settings_grip_mode_subtitle_on)
+                    GripReserveMode.AUTO -> stringResource(R.string.settings_grip_mode_subtitle_auto)
                 },
                 isFocused = isFocused(item),
                 onClick = { viewModel.cycleGripReserveMode(1) },
                 onPrev = { viewModel.cycleGripReserveMode(-1) },
-                options = GripReserveMode.entries.map { it.displayName },
+                options = remember(context) {
+                    GripReserveMode.entries.map { context.getString(gripModeLabelRes(it)) }
+                },
                 onSelect = { index -> viewModel.setGripReserveMode(GripReserveMode.entries[index]) },
                 pickerRequestToken = pickerToken(item)
             )
 
             ControllerGripItem.Controllers -> NavigationPreference(
                 icon = Icons.Outlined.Gamepad,
-                title = "Controllers",
+                title = stringResource(R.string.settings_grip_controllers_title),
                 subtitle = gripAutoControllerSubtitle(display.gripAutoControllers.controllers),
                 isFocused = isFocused(item),
                 onClick = { viewModel.showGripControllerModal() }
             )
 
             ControllerGripItem.ReservedHeight -> SliderPreference(
-                title = "Reserved Height",
+                title = stringResource(R.string.settings_grip_reserved_height_title),
                 value = display.gripReservePercent,
                 minValue = GRIP_RESERVE_MIN_PERCENT,
                 maxValue = GRIP_RESERVE_MAX_PERCENT,

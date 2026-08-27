@@ -100,6 +100,7 @@ android {
         debug {
             applicationIdSuffix = ".debug"
             isDebuggable = true
+            isPseudoLocalesEnabled = true
             buildConfigField("String", "SOCIAL_API_URL", "\"https://api.argosy.dev/\"")
         }
     }
@@ -111,6 +112,14 @@ android {
 
     lint {
         baseline = file("lint-baseline.xml")
+        error += listOf(
+            "MissingTranslation",
+            "ExtraTranslation",
+            "StringFormatMatches",
+            "StringFormatInvalid",
+            "ImpliedQuantity",
+            "Untranslatable"
+        )
     }
 
     kotlinOptions {

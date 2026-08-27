@@ -11,6 +11,10 @@ import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.InfoPreference
 import com.nendo.argosy.ui.components.NavigationPreference
@@ -24,8 +28,6 @@ import com.nendo.argosy.ui.screens.settings.delegates.SyncSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.menu.DisabledBehavior
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
-
-private const val SERVER_REQUIRED_SUBTITLE = "Requires a RomM server"
 
 internal data class SavesLayoutState(
     val isConnected: Boolean,
@@ -53,7 +55,7 @@ internal sealed class SavesItem(
      */
     val isServerGated: Boolean get() = this is SaveSync || this is SecureSaves
 
-    class Header(key: String, section: String, val title: String) : SavesItem(key, section)
+    class Header(key: String, section: String, val titleRes: Int) : SavesItem(key, section)
 
     data object SaveSync : SavesItem("saveSync", "policy")
     data object SecureSaves : SavesItem("secureSaves", "policy", visibleWhen = { it.saveSyncEnabled })
@@ -64,9 +66,9 @@ internal sealed class SavesItem(
     companion object {
         val ALL: List<SavesItem>
             get() = listOf(
-                Header("policyHeader", "policy", "SYNC"),
+                Header("policyHeader", "policy", R.string.settings_saves_section_sync),
                 SaveSync, SecureSaves, SaveCacheLimit,
-                Header("manageHeader", "manage", "MANAGE"),
+                Header("manageHeader", "manage", R.string.settings_saves_section_manage),
                 ManageSaveSync, SaveCaches
             )
     }
@@ -82,10 +84,10 @@ internal fun createSavesLayout(state: SavesLayoutState) =
             else DisabledBehavior.HIDDEN
         },
         sectionOf = { it.section },
-        sectionTitle = {
+        sectionTitleRes = {
             when (it) {
-                "policy" -> "SYNC"
-                "manage" -> "MANAGE"
+                "policy" -> R.string.settings_saves_section_sync
+                "manage" -> R.string.settings_saves_section_manage
                 else -> null
             }
         }
@@ -111,9 +113,10 @@ fun SavesSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         SavesLayoutState.from(uiState)
     }
 
+    val context = LocalContext.current
     val layout = remember(layoutState) { createSavesLayout(layoutState) }
     val visibleItems = remember(layout) { layout.visibleItems(layoutState) }
-    val sections = remember(layout) { layout.buildSections(layoutState) }
+    val sections = remember(layout, context) { layout.buildSections(layoutState, context) }
 
     fun isFocused(item: SavesItem): Boolean =
         uiState.focusedIndex == layout.focusIndexOf(item, layoutState)
@@ -142,20 +145,20 @@ fun SavesSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 if (item.key != "policyHeader") {
                     Spacer(modifier = Modifier.height(Dimens.spacingSm))
                 }
-                SectionHeader(item.title)
+                SectionHeader(stringResource(item.titleRes))
             }
 
             SavesItem.SaveSync -> if (isLocked) {
                 InfoPreference(
-                    title = "Save Sync",
-                    value = "Unavailable",
-                    subtitle = SERVER_REQUIRED_SUBTITLE,
+                    title = stringResource(R.string.settings_saves_save_sync_title),
+                    value = stringResource(R.string.settings_saves_save_sync_locked_value),
+                    subtitle = stringResource(R.string.settings_saves_save_sync_locked_subtitle),
                     isFocused = false
                 )
             } else {
                 SwitchPreference(
-                    title = "Save Sync",
-                    subtitle = "Sync game saves with server",
+                    title = stringResource(R.string.settings_saves_save_sync_title),
+                    subtitle = stringResource(R.string.settings_saves_save_sync_subtitle),
                     isEnabled = syncSettings.saveSyncEnabled,
                     isFocused = isFocused(item),
                     onToggle = { viewModel.toggleSaveSync() }
@@ -164,18 +167,18 @@ fun SavesSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
             SavesItem.SecureSaves -> if (isLocked) {
                 InfoPreference(
-                    title = "Secure Saves",
-                    value = "Unavailable",
-                    subtitle = SERVER_REQUIRED_SUBTITLE,
+                    title = stringResource(R.string.settings_saves_secure_saves_title),
+                    value = stringResource(R.string.settings_saves_secure_saves_locked_value),
+                    subtitle = stringResource(R.string.settings_saves_secure_saves_locked_subtitle),
                     isFocused = false
                 )
             } else {
                 SwitchPreference(
-                    title = "Secure Saves",
+                    title = stringResource(R.string.settings_saves_secure_saves_title),
                     subtitle = if (syncSettings.secureSaves) {
-                        "Argosy manages and enforces save files"
+                        stringResource(R.string.settings_saves_secure_saves_subtitle_on)
                     } else {
-                        "Argosy attempts to sync saves managed outside the launcher"
+                        stringResource(R.string.settings_saves_secure_saves_subtitle_off)
                     },
                     isEnabled = syncSettings.secureSaves,
                     isFocused = isFocused(item),
@@ -186,12 +189,24 @@ fun SavesSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             SavesItem.SaveCacheLimit -> {
                 val limits = SyncSettingsDelegate.SAVE_CACHE_LIMIT_VALUES
                 CyclePreference(
-                    title = "Local Save Cache",
-                    value = "${syncSettings.saveCacheLimit} saves per game",
+                    title = stringResource(R.string.settings_saves_cache_limit_title),
+                    value = pluralStringResource(
+                        R.plurals.settings_saves_cache_limit_value,
+                        syncSettings.saveCacheLimit,
+                        syncSettings.saveCacheLimit
+                    ),
                     isFocused = isFocused(item),
                     onClick = { viewModel.cycleSaveCacheLimit(1) },
                     onPrev = { viewModel.cycleSaveCacheLimit(-1) },
-                    options = remember { limits.map { "$it saves per game" } },
+                    options = remember(context) {
+                        limits.map {
+                            context.resources.getQuantityString(
+                                R.plurals.settings_saves_cache_limit_value,
+                                it,
+                                it
+                            )
+                        }
+                    },
                     onSelect = { viewModel.setSaveCacheLimit(limits[it]) },
                     pickerRequestToken = if (uiState.enumPickerKey == item.key) uiState.enumPickerToken else 0
                 )
@@ -201,8 +216,12 @@ fun SavesSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 val pending = syncSettings.pendingUploadsCount
                 NavigationPreference(
                     icon = Icons.Default.CloudSync,
-                    title = "Manage Save Sync",
-                    subtitle = if (pending > 0) "$pending pending" else "Review conflicts and sync now",
+                    title = stringResource(R.string.settings_saves_manage_sync_title),
+                    subtitle = if (pending > 0) {
+                        pluralStringResource(R.plurals.settings_saves_manage_sync_pending, pending, pending)
+                    } else {
+                        stringResource(R.string.settings_saves_manage_sync_subtitle)
+                    },
                     isFocused = isFocused(item),
                     onClick = { viewModel.navigateToSaveSyncScreen() }
                 )
@@ -210,8 +229,8 @@ fun SavesSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 
             SavesItem.SaveCaches -> NavigationPreference(
                 icon = Icons.Default.Cached,
-                title = "Save Caches",
-                subtitle = "Clear cached saves and detected paths",
+                title = stringResource(R.string.settings_saves_caches_title),
+                subtitle = stringResource(R.string.settings_saves_caches_subtitle),
                 isFocused = isFocused(item),
                 onClick = { openFrom(item) { viewModel.navigateToStorageCaches() } }
             )

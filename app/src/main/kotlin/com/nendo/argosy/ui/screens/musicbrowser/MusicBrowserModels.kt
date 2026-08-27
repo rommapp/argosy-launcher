@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.screens.musicbrowser
 
+import androidx.annotation.StringRes
+import com.nendo.argosy.R
 import com.nendo.argosy.data.remote.romm.RomMMusicFacet
 import com.nendo.argosy.domain.usecase.music.LocalMusicTrackState
 
@@ -31,11 +33,32 @@ data class GameGroup(
 
 enum class FacetPickerStage { CHOOSER, VALUES }
 
+/**
+ * A row on the filter chooser, identified by which filter it opens rather than by its text.
+ *
+ * The duration row in particular used to be recognised by comparing against the literal
+ * "Max Duration" in five places: the chooser list, the confirm route, the left/right adjust
+ * gate, the row renderer and a lazy-list key. Translating that label would have quietly
+ * disabled the duration slider while leaving the row on screen.
+ */
+enum class FacetChooserOption(@StringRes val labelRes: Int) {
+    ARTIST(R.string.media_music_facet_chooser_artist),
+    ALBUM(R.string.media_music_facet_chooser_album),
+    GENRE(R.string.media_music_facet_chooser_genre),
+    MAX_DURATION(R.string.media_music_facet_chooser_max_duration),
+    CLEAR_FILTERS(R.string.media_music_facet_chooser_clear)
+}
+
 data class FacetPickerUi(
     val stage: FacetPickerStage,
     val facet: RomMMusicFacet? = null,
     val title: String = "",
     val options: List<String> = emptyList(),
+    /**
+     * Populated only in the chooser stage, parallel to [options]. In the values stage
+     * [options] holds facet values from the server, which are data rather than labels.
+     */
+    val chooserOptions: List<FacetChooserOption> = emptyList(),
     val isLoading: Boolean = false,
     val focusIndex: Int = 0
 )
@@ -43,7 +66,6 @@ data class FacetPickerUi(
 const val SFX_DURATION_MIN_SECONDS = 1
 const val SFX_DURATION_MAX_SECONDS = 5
 const val SFX_DURATION_DEFAULT_SECONDS = 3
-const val DURATION_FILTER_OPTION = "Max Duration"
 
 data class MusicBrowserState(
     val mode: MusicBrowserMode = MusicBrowserMode.BGM,

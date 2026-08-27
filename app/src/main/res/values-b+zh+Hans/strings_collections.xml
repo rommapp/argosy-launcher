@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="collections_browse_genres">类型</string>
+    <string name="collections_browse_game_modes">游戏模式</string>
+    <string name="collections_browse_series">系列</string>
+
+    <string name="collections_section_mine">我的合集</string>
+    <string name="collections_section_browse_by">浏览方式</string>
+
+    <string name="collections_pinned_description">已置顶</string>
+
+    <string name="collections_new">新建合集</string>
+
+    <plurals name="collections_game_count">
+        <item quantity="other">%d个游戏</item>
+    </plurals>
+    <plurals name="collections_category_count">
+        <item quantity="other">%d个分类</item>
+    </plurals>
+
+    <string name="collections_options_download_all">全部下载（%1$d）</string>
+    <string name="collections_options_rename">重命名合集</string>
+    <string name="collections_options_delete">删除合集</string>
+    <string name="collections_options_remove_game">移除“%1$s”</string>
+    <string name="collections_options_remove_game_fallback">游戏</string>
+
+    <string name="collections_delete_dialog_title">删除合集</string>
+    <string name="collections_delete_dialog_message">确定要删除“%1$s”吗？此操作将删除该合集，但不会删除其中的游戏。</string>
+    <string name="collections_delete_dialog_confirm">删除</string>
+
+    <string name="collections_create_dialog_title">创建合集</string>
+    <string name="collections_create_dialog_name_label">合集名称</string>
+    <string name="collections_create_dialog_confirm">创建</string>
+
+    <string name="collections_edit_dialog_title">编辑合集</string>
+    <string name="collections_edit_dialog_name_label">合集名称</string>
+    <string name="collections_edit_dialog_confirm">保存</string>
+
+    <string name="collections_removegame_dialog_title">移除游戏</string>
+    <string name="collections_removegame_dialog_message">从“%2$s”中移除“%1$s”？</string>
+    <string name="collections_removegame_dialog_confirm">移除</string>
+
+    <string name="collections_namedialog_cancel">取消</string>
+
+    <string name="collections_screen_hint_navigate">导航</string>
+    <string name="collections_screen_hint_select">选择</string>
+    <string name="collections_screen_hint_back">返回</string>
+    <string name="collections_screen_hint_refreshing">正在刷新&#8230;</string>
+    <string name="collections_screen_hint_refresh">刷新</string>
+    <string name="collections_screen_hint_unpin">取消置顶</string>
+    <string name="collections_screen_hint_pin">置顶</string>
+    <string name="collections_screen_hint_options">选项</string>
+
+    <string name="collections_detail_loading">加载中&#8230;</string>
+    <string name="collections_detail_hint_search_open">打开</string>
+    <string name="collections_detail_hint_search_close">关闭搜索</string>
+    <string name="collections_detail_hint_navigate">导航</string>
+    <string name="collections_detail_hint_open">打开</string>
+    <string name="collections_detail_hint_back">返回</string>
+    <string name="collections_detail_hint_search">搜索</string>
+    <string name="collections_detail_hint_unpin">取消置顶</string>
+    <string name="collections_detail_hint_pin">置顶</string>
+    <string name="collections_detail_hint_jump">跳转</string>
+    <string name="collections_detail_hint_options">选项</string>
+    <string name="collections_detail_hint_refreshing">正在刷新&#8230;</string>
+    <string name="collections_detail_hint_refresh">刷新</string>
+    <string name="collections_detail_back_description">返回</string>
+    <string name="collections_detail_search_placeholder">搜索%1$s</string>
+    <string name="collections_detail_close_search_description">关闭搜索</string>
+    <string name="collections_detail_search_description">搜索</string>
+    <string name="collections_detail_empty_title">此合集中没有游戏</string>
+    <string name="collections_detail_empty_subtitle">从游戏库或游戏详情中添加游戏</string>
+    <plurals name="collections_detail_header_game_count">
+        <item quantity="other">%d个游戏</item>
+    </plurals>
+
+    <string name="collections_browser_loading">加载中&#8230;</string>
+    <string name="collections_browser_hint_search_select">选择</string>
+    <string name="collections_browser_hint_search_close">关闭搜索</string>
+    <string name="collections_browser_hint_navigate">导航</string>
+    <string name="collections_browser_hint_select">选择</string>
+    <string name="collections_browser_hint_back">返回</string>
+    <string name="collections_browser_hint_search">搜索</string>
+    <string name="collections_browser_hint_unpin">取消置顶</string>
+    <string name="collections_browser_hint_pin">置顶</string>
+    <string name="collections_browser_hint_jump">跳转</string>
+    <string name="collections_browser_hint_refreshing">正在刷新&#8230;</string>
+    <string name="collections_browser_hint_refresh">刷新</string>
+    <string name="collections_browser_back_description">返回</string>
+    <string name="collections_browser_search_placeholder">搜索%1$s</string>
+    <string name="collections_browser_close_search_description">关闭搜索</string>
+    <string name="collections_browser_search_description">搜索</string>
+    <string name="collections_browser_category_pinned_description">已置顶</string>
+    <string name="collections_browser_title_fallback">浏览</string>
+    <string name="collections_browser_empty">未找到%1$s</string>
+    <plurals name="collections_browser_header_category_count">
+        <item quantity="other">%d个分类</item>
+    </plurals>
+    <plurals name="collections_browser_row_game_count">
+        <item quantity="other">%d个游戏</item>
+    </plurals>
+
+    <string name="collections_category_loading">加载中&#8230;</string>
+    <string name="collections_category_hint_search_open">打开</string>
+    <string name="collections_category_hint_search_close">关闭搜索</string>
+    <string name="collections_category_hint_navigate">导航</string>
+    <string name="collections_category_hint_open">打开</string>
+    <string name="collections_category_hint_back">返回</string>
+    <string name="collections_category_hint_search">搜索</string>
+    <string name="collections_category_hint_unpin">取消置顶</string>
+    <string name="collections_category_hint_pin">置顶</string>
+    <string name="collections_category_hint_jump">跳转</string>
+    <string name="collections_category_hint_refreshing">正在刷新&#8230;</string>
+    <string name="collections_category_hint_refresh">刷新</string>
+    <string name="collections_category_hint_download_all">全部下载（%1$d）</string>
+    <string name="collections_category_downloadall_title">正在排队下载</string>
+    <plurals name="collections_category_downloadall_progress">
+        <item quantity="other">%1$d/%2$d个游戏</item>
+    </plurals>
+    <string name="collections_category_back_description">返回</string>
+    <string name="collections_category_search_placeholder">搜索%1$s</string>
+    <string name="collections_category_close_search_description">关闭搜索</string>
+    <string name="collections_category_search_description">搜索</string>
+    <string name="collections_category_empty_title">此分类中没有游戏</string>
+    <plurals name="collections_category_header_game_count">
+        <item quantity="other">%d个游戏</item>
+    </plurals>
+    <string name="collections_detail_platform_unknown">未知</string>
+    <string name="collections_category_platform_unknown">未知</string>
+
+    <string name="collections_widecard_rating_value">%1$d/10</string>
+    <string name="collections_widecard_difficulty_value">%1$d/10</string>
+
+    <string name="downloads_empty_title">暂无下载</string>
+    <string name="downloads_empty_subtitle">下载内容将显示在这里</string>
+    <string name="downloads_section_header_moving">正在移动到ROM存储</string>
+    <string name="downloads_section_header_extracting">正在解压</string>
+    <string name="downloads_section_header_downloading">正在下载</string>
+    <string name="downloads_section_header_active">进行中</string>
+    <string name="downloads_section_header_queued">排队中</string>
+    <string name="downloads_section_header_finished">已完成</string>
+    <string name="downloads_hint_navigate">导航</string>
+    <string name="downloads_hint_remove">移除</string>
+    <string name="downloads_hint_cancel">取消</string>
+    <string name="downloads_hint_clear_finished">清除已完成</string>
+    <string name="downloads_hint_back">返回</string>
+    <string name="downloads_failed_dialog_title">下载失败</string>
+    <string name="downloads_failed_dialog_message">“%1$s”下载失败。您想如何处理？</string>
+    <string name="downloads_failed_dialog_confirm">重试</string>
+    <string name="downloads_failed_dialog_clear">清除</string>
+    <string name="downloads_file_state_done">已完成</string>
+    <string name="downloads_file_state_extracting">正在解压</string>
+    <string name="downloads_file_state_moving">正在移动</string>
+    <string name="downloads_file_state_failed">失败</string>
+    <string name="downloads_file_state_queued">排队中</string>
+    <string name="downloads_file_state_percent">%1$d%%</string>
+    <string name="downloads_item_status_moving">正在移动到ROM存储&#8230;</string>
+    <string name="downloads_item_status_extracting_fallback">正在解压&#8230;</string>
+    <string name="downloads_item_status_insufficient_storage">需要%1$s，可用%2$s</string>
+    <string name="downloads_item_status_failed_fallback">下载失败</string>
+    <string name="downloads_item_status_queued_fallback">排队中</string>
+    <string name="downloads_completed_status_failed_fallback">下载失败</string>
+    <string name="downloads_completed_status_installed">已安装</string>
+    <string name="downloads_speed_suffix">%1$s/秒</string>
+
+    <string name="downloads_action_pause">暂停</string>
+    <string name="downloads_action_resume">继续</string>
+    <string name="downloads_action_toggle">切换</string>
+    <string name="downloads_action_options">选项</string>
+    <string name="downloads_action_view">查看</string>
+
+    <string name="downloads_steam_status_preparing">正在准备&#8230;</string>
+    <string name="downloads_steam_status_connecting">正在连接Steam&#8230;</string>
+    <string name="downloads_steam_status_fetching_manifest">正在获取depot清单&#8230;</string>
+    <string name="downloads_steam_status_validating_fallback">正在验证&#8230;</string>
+    <string name="downloads_steam_status_moving">正在移动文件&#8230;</string>
+    <string name="downloads_steam_status_cleaning">正在清理&#8230;</string>
+    <string name="downloads_steam_status_depot_progress">"（%1$d/%2$d个depot）"</string>
+
+    <plurals name="downloads_group_progress">
+        <item quantity="other">%1$d/%2$d个文件</item>
+    </plurals>
+
+    <string name="touchlayout_editor_title">自定义触屏控件</string>
+    <string name="touchlayout_editor_orientation_portrait">竖屏</string>
+    <string name="touchlayout_editor_orientation_landscape">横屏</string>
+    <string name="touchlayout_editor_close">关闭</string>
+</resources>

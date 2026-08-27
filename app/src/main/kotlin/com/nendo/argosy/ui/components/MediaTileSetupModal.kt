@@ -26,7 +26,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
 import com.nendo.argosy.ui.theme.Dimens
@@ -56,15 +58,15 @@ fun MediaTileSetupModal(
 
     Modal(
         title = setup.title.uppercase(),
-        subtitle = setup.subtitle,
+        subtitle = stringResource(setup.subtitleRes),
         baseWidth = Dimens.modalWidthLg,
         onDismiss = onDismiss
     ) {
-        val message = setup.error ?: setup.emptyMessage
+        val messageRes = setup.errorRes ?: setup.emptyMessageRes
         when {
             setup.isLoading -> SetupLoading()
-            message != null -> Text(
-                text = message,
+            messageRes != null -> Text(
+                text = stringResource(messageRes),
                 style = MaterialTheme.typography.bodyMedium,
                 color = theme.textDim,
                 modifier = Modifier.padding(Dimens.spacingMd)
@@ -79,7 +81,7 @@ fun MediaTileSetupModal(
             )
             setup.step == MediaTileStep.EPISODES -> EpisodePickerContent(
                 state = setup.picker,
-                confirmLabel = MEDIA_TILE_EPISODES_CONFIRM_LABEL,
+                confirmLabel = stringResource(R.string.ui_media_tile_episodes_confirm),
                 onPressAt = onSelect,
                 onCancel = onDismiss,
                 onCommit = onCommit,
@@ -120,8 +122,8 @@ private fun ColumnScope.ModeList(
             key = { _, option -> option.name }
         ) { index, option ->
             SetupRow(
-                label = option.label,
-                supporting = option.supporting,
+                label = stringResource(option.labelRes),
+                supporting = stringResource(option.supportingRes),
                 isFocused = index == setup.focusIndex,
                 isSelected = option.mode == setup.mode,
                 onClick = { onSelect(index) }

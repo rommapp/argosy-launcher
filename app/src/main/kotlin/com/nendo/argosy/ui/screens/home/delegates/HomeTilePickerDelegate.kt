@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.screens.home.delegates
 
+import android.content.Context
+import com.nendo.argosy.R
 import com.nendo.argosy.data.download.MediaDownloadManager
 import com.nendo.argosy.data.local.entity.MediaItemEntity
 import com.nendo.argosy.data.local.entity.MediaItemType
@@ -15,6 +17,7 @@ import com.nendo.argosy.ui.components.MediaTileOption
 import com.nendo.argosy.ui.home.grid.MEDIA_TILE_SIZE_WARNING_THRESHOLD
 import com.nendo.argosy.ui.home.grid.MediaTileCatalog
 import com.nendo.argosy.ui.home.grid.MediaTileDownloadPlan
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -35,6 +38,7 @@ private const val SPECIALS_SEASON = 0
  */
 @Singleton
 class HomeTilePickerDelegate @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val mediaRepository: MediaRepository,
     private val mediaDownloadManager: MediaDownloadManager,
     private val availabilityVerifier: MediaAvailabilityVerifier,
@@ -65,7 +69,11 @@ class HomeTilePickerDelegate @Inject constructor(
         return com.nendo.argosy.ui.components.TilePickerEntry(
             target = com.nendo.argosy.domain.model.HomeTileTargetRef.Media(itemId),
             title = item.name,
-            subtitle = if (isSeries) "Series" else "Movie",
+            subtitle = if (isSeries) {
+                context.getString(R.string.home_tile_picker_media_series)
+            } else {
+                context.getString(R.string.home_tile_picker_media_movie)
+            },
             posterUrl = item.primaryImageTag
                 ?.let { mediaRepository.imageUrl(itemId, MediaImageType.PRIMARY, it) }
                 .orEmpty(),
@@ -150,20 +158,25 @@ class HomeTilePickerDelegate @Inject constructor(
         mediaDownloadManager.enqueueAll(itemIds, mediaDownloadManager.defaultQuality())
     }
 
-    private fun seasonLabel(season: MediaItemEntity): String = when (season.indexNumber) {
-        null -> season.name
-        SPECIALS_SEASON -> "Specials"
-        else -> "Season ${season.indexNumber}"
-    }
+    private fun seasonLabel(season: MediaItemEntity): String =
+        when (val number = season.indexNumber) {
+            null -> season.name
+            SPECIALS_SEASON -> context.getString(R.string.home_media_season_specials)
+            else -> context.getString(R.string.home_media_season_number, number)
+        }
 
     private fun seasonSupporting(local: Int, total: Int): String? = when {
-        total == 0 -> "Nothing synced yet"
-        local == total -> "All $total on this device"
-        else -> "$local of $total on this device"
+        total == 0 -> context.getString(R.string.home_media_season_none_synced)
+        local == total -> context.getString(R.string.home_media_season_local_all, total)
+        else -> context.getString(R.string.home_media_season_local_partial, local, total)
     }
 
     private fun episodeLabel(episode: MediaItemEntity): String =
         episode.indexNumber?.let { "$it. ${episode.name}" } ?: episode.name
 
-    private fun formatGigabytes(bytes: Long): String = "%.1f GB".format(bytes / BYTES_PER_GIGABYTE)
+    private fun formatGigabytes(bytes: Long): String =
+        context.getString(
+            R.string.home_media_download_size_gigabytes,
+            bytes / BYTES_PER_GIGABYTE
+        )
 }

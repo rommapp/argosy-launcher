@@ -1,0 +1,331 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="social_feed_loading_connecting">Connexion...</string>
+    <string name="social_feed_loading_community">Chargement du flux communautaire...</string>
+    <string name="social_feed_loading_friends">Chargement du flux...</string>
+    <string name="social_feed_community_badge">Flux communautaire</string>
+
+    <string name="social_feed_hint_view">Voir</string>
+    <string name="social_feed_hint_unlike">Ne plus aimer</string>
+    <string name="social_feed_hint_like">Aimer</string>
+    <string name="social_feed_hint_switch_to_friends">Amis</string>
+    <string name="social_feed_hint_switch_to_community">Communauté</string>
+    <string name="social_feed_hint_options">Options</string>
+
+    <string name="social_friends_hint_accept">Accepter</string>
+    <string name="social_friends_hint_decline">Refuser</string>
+    <string name="social_friends_hint_cancel_request">Annuler</string>
+    <string name="social_friends_hint_join">Rejoindre</string>
+    <string name="social_friends_hint_view_profile">Profil</string>
+    <string name="social_friends_hint_favorite">Favori</string>
+
+    <string name="social_notifications_hint_open">Ouvrir</string>
+    <string name="social_notifications_hint_read_all">Tout marquer lu</string>
+    <string name="social_notifications_loading">Chargement des notifications...</string>
+
+    <string name="social_profile_hint_avatar">Avatar</string>
+    <string name="social_profile_hint_view_game">Voir le jeu</string>
+    <string name="social_profile_hint_settings">Paramètres</string>
+
+    <string name="social_tabbar_feed">Flux</string>
+    <string name="social_tabbar_friends">Amis</string>
+    <string name="social_tabbar_alerts">Alertes</string>
+    <string name="social_tabbar_profile">Profil</string>
+    <string name="social_tabbar_unread_overflow">99+</string>
+
+    <string name="social_notconnected_title">Non connecté</string>
+    <string name="social_notconnected_body">Associez votre compte dans les paramètres pour voir l\'activité de vos amis</string>
+
+    <string name="social_error_prefix">Erreur : %1$s</string>
+
+    <string name="social_emptyfeed_title">Aucune activité pour l\'instant</string>
+    <string name="social_emptyfeed_body_community">Suivez des communautés de jeux pour voir des publications ici</string>
+    <string name="social_emptyfeed_body_friends">L\'activité de jeu de vos amis apparaîtra ici</string>
+
+    <string name="social_feedcontent_header_title">Activité</string>
+    <plurals name="social_feedcontent_event_count">
+        <item quantity="one">%1$d événement</item>
+        <item quantity="many">%1$d événements</item>
+        <item quantity="other">%1$d événements</item>
+    </plurals>
+
+    <string name="social_doodlecard_shared_label">a partagé un dessin</string>
+
+    <string name="social_startedplayingfooter_likes_desc">J\'aime</string>
+    <string name="social_startedplayingfooter_comments_desc">Commentaires</string>
+    <string name="social_feedeventcardfooter_likes_desc">J\'aime</string>
+    <string name="social_feedeventcardfooter_comments_desc">Commentaires</string>
+
+    <string name="social_feed_desc_started_playing">Première partie</string>
+    <plurals name="social_feed_desc_play_milestone">
+        <item quantity="one">a atteint %1$d heure de jeu</item>
+        <item quantity="many">a atteint %1$d heures de jeu</item>
+        <item quantity="other">a atteint %1$d heures de jeu</item>
+    </plurals>
+    <string name="social_feed_desc_marathon_session">a fait une session marathon de %1$dh</string>
+    <string name="social_feed_desc_completed">terminé</string>
+    <string name="social_feed_desc_achievement_unlocked">a débloqué \"%1$s\"</string>
+    <string name="social_feed_desc_achievement_unlocked_fallback_name">un succès</string>
+    <plurals name="social_feed_desc_achievement_milestone">
+        <item quantity="one">a obtenu %1$d succès</item>
+        <item quantity="many">a obtenu %1$d succès</item>
+        <item quantity="other">a obtenu %1$d succès</item>
+    </plurals>
+    <string name="social_feed_desc_perfect_game">maîtrisé</string>
+    <string name="social_feed_desc_game_added">ajouté à sa bibliothèque</string>
+    <string name="social_feed_desc_game_favorited">ajouté aux favoris</string>
+    <string name="social_feed_desc_game_rated">noté %1$s</string>
+    <string name="social_feed_desc_friend_added">est devenu ami avec %1$s</string>
+    <string name="social_feed_desc_friend_added_fallback_name">quelqu\'un</string>
+    <string name="social_feed_desc_collection_shared">a partagé la collection \"%1$s\"</string>
+    <string name="social_feed_desc_collection_saved">a enregistré la collection \"%1$s\"</string>
+    <string name="social_feed_desc_collection_created">a créé la collection \"%1$s\"</string>
+    <plurals name="social_feed_desc_collection_updated">
+        <item quantity="one">a ajouté %1$d jeu à \"%2$s\"</item>
+        <item quantity="many">a ajouté %1$d jeux à \"%2$s\"</item>
+        <item quantity="other">a ajouté %1$d jeux à \"%2$s\"</item>
+    </plurals>
+    <string name="social_feed_desc_collection_fallback_name">une collection</string>
+    <string name="social_feed_desc_doodle">a partagé un dessin</string>
+    <string name="social_feed_desc_discussion_shared_post">a partagé une publication</string>
+    <string name="social_feed_desc_discussion_truncated">%1$s...</string>
+
+    <string name="social_communitysearch_modal_title">Trouver des communautés</string>
+    <string name="social_communitysearch_hint_browse">Parcourir</string>
+    <string name="social_communitysearch_hint_navigate">Naviguer</string>
+    <string name="social_communitysearch_hint_toggle_follow">Suivre/Ne plus suivre</string>
+    <string name="social_communitysearch_hint_close">Fermer</string>
+    <string name="social_communitysearch_placeholder">Rechercher un jeu...</string>
+    <string name="social_communitysearch_following">Abonné</string>
+    <string name="social_communitysearch_follow">Suivre</string>
+    <string name="social_communitysearch_no_results">Aucun jeu trouvé</string>
+
+    <string name="social_feedoptions_modal_title">Options</string>
+    <string name="social_feedoptions_option_find_communities">Trouver des communautés</string>
+    <string name="social_feedoptions_option_create_post">Créer une publication</string>
+    <string name="social_feedoptions_option_view_profile">Voir le profil de %1$s</string>
+    <string name="social_feedoptions_option_share_screenshot">Partager la capture d\'écran</string>
+    <string name="social_feedoptions_option_report_post">Signaler la publication</string>
+    <string name="social_feedoptions_option_hide_post">Masquer la publication</string>
+
+    <string name="social_avataroptions_modal_title">Avatar</string>
+
+    <string name="social_reportreason_modal_title">Motif du signalement</string>
+    <string name="social_reportreason_spam">Spam ou contenu répétitif</string>
+    <string name="social_reportreason_harassment">Harcèlement ou intimidation</string>
+    <string name="social_reportreason_inappropriate">Inapproprié ou offensant</string>
+    <string name="social_reportreason_misinformation">Information fausse ou trompeuse</string>
+
+    <string name="social_avatar_option_edit_doodle">Modifier le dessin</string>
+    <string name="social_avatar_option_use_doodle">Utiliser le dessin</string>
+    <string name="social_avatar_option_use_initials">Utiliser les initiales</string>
+
+    <string name="social_viewmodel_legacy_joining_title">Connexion à %1$s</string>
+    <string name="social_viewmodel_legacy_checking_compatibility">Vérification de la compatibilité...</string>
+
+    <string name="social_posteditor_screen_title">Créer une publication</string>
+    <string name="social_posteditor_body_counter">%1$d/%2$d</string>
+    <string name="social_posteditor_body_placeholder">À quoi pensez-vous ?</string>
+    <string name="social_posteditor_doodle_remove_desc">Retirer le dessin</string>
+    <string name="social_posteditor_doodle_remove_label">Retirer</string>
+    <string name="social_posteditor_doodle_add_desc">Ajouter un dessin</string>
+    <string name="social_posteditor_doodle_add_label">Ajouter un dessin</string>
+    <string name="social_posteditor_game_link_placeholder">Lier un jeu (facultatif)</string>
+    <string name="social_posteditor_visibility_public">Public</string>
+    <string name="social_posteditor_visibility_friends_only">Amis seulement</string>
+    <string name="social_posteditor_visibility_public_desc">Visible dans la communauté du jeu</string>
+    <string name="social_posteditor_visibility_friends_desc">Visible uniquement par vos amis</string>
+
+    <string name="social_posteditor_footer_edit">Modifier</string>
+    <string name="social_posteditor_footer_select">Sélectionner</string>
+    <string name="social_posteditor_footer_clear">Effacer</string>
+    <string name="social_posteditor_footer_toggle">Basculer</string>
+    <string name="social_posteditor_footer_remove_doodle">Retirer</string>
+    <string name="social_posteditor_footer_add_doodle">Ajouter un dessin</string>
+    <string name="social_posteditor_footer_post">Publier</string>
+    <string name="social_posteditor_footer_discard">Abandonner</string>
+    <string name="social_posteditor_footer_back">Retour</string>
+
+    <string name="social_postconfirm_modal_title">Créer une publication</string>
+    <string name="social_postconfirm_posting">Publication en cours...</string>
+    <string name="social_postconfirm_visibility_public">Cette publication sera partagée publiquement dans la communauté du jeu.</string>
+    <string name="social_postconfirm_visibility_friends">Cette publication sera partagée avec vos amis.</string>
+    <string name="social_postconfirm_option_post">Publier</string>
+    <string name="social_postconfirm_option_cancel">Annuler</string>
+
+    <string name="social_discardpost_modal_title">Abandonner la publication ?</string>
+    <string name="social_discardpost_body">Vous avez des modifications non enregistrées. Voulez-vous vraiment abandonner cette publication ?</string>
+    <string name="social_discardpost_option_discard">Abandonner</string>
+    <string name="social_discardpost_option_keep_editing">Continuer à modifier</string>
+
+    <string name="social_postgamepicker_modal_title">Sélectionner un jeu</string>
+    <string name="social_postgamepicker_hint_browse">Parcourir</string>
+    <string name="social_postgamepicker_hint_navigate">Naviguer</string>
+    <string name="social_postgamepicker_hint_select">Sélectionner</string>
+    <string name="social_postgamepicker_hint_cancel">Annuler</string>
+    <string name="social_postgamepicker_search_placeholder">Rechercher des jeux...</string>
+    <string name="social_postgamepicker_no_game">Aucun jeu</string>
+
+    <string name="social_friends_empty_title">Aucun ami pour l\'instant</string>
+    <string name="social_friends_empty_body">Ajoutez des amis avec votre code ami dans les paramètres</string>
+    <string name="social_friends_header_incoming">Demandes reçues</string>
+    <string name="social_friends_header_sent">Demandes envoyées</string>
+    <string name="social_friends_header_accepted">Amis</string>
+    <string name="social_friends_request_accept">Accepter</string>
+    <string name="social_friends_request_decline">Refuser</string>
+    <string name="social_friends_request_cancel">Annuler</string>
+
+    <string name="social_friendcard_hosting">Héberge %1$s</string>
+    <string name="social_friendcard_playing">Joue à %1$s</string>
+    <string name="social_friendcard_watching">Regarde %1$s</string>
+    <string name="social_friendcard_favorite_remove_desc">Retirer des favoris</string>
+    <string name="social_friendcard_favorite_add_desc">Ajouter aux favoris</string>
+
+    <string name="social_netplaybadge_desc">Session de jeu en réseau</string>
+    <string name="social_netplaybadge_label">Jeu en réseau</string>
+
+    <string name="social_netplayjoin_checking">Vérification...</string>
+    <string name="social_netplayjoin_join">Rejoindre</string>
+    <string name="social_netplayjoin_rom_not_found">Vous ne possédez pas cette ROM</string>
+    <string name="social_netplayjoin_rom_version_mismatch">Version de ROM différente</string>
+    <string name="social_netplayjoin_core_version_mismatch">Mettez Argosy à jour pour correspondre</string>
+    <string name="social_netplayjoin_core_not_supported">Cœur non pris en charge</string>
+    <string name="social_netplayjoin_session_busy">Session occupée</string>
+
+    <string name="social_presence_online">En ligne</string>
+    <string name="social_presence_away">Absent</string>
+    <string name="social_presence_in_game">En jeu</string>
+    <string name="social_presence_watching">En train de regarder</string>
+    <string name="social_presence_offline">Hors ligne</string>
+
+    <string name="social_profiletab_not_connected">Non connecté</string>
+    <string name="social_profiletab_most_played_header">LES PLUS JOUÉS</string>
+
+    <string name="social_accountcard_presence_playing">joue à %1$s</string>
+    <string name="social_accountcard_presence_in_game">en jeu</string>
+    <string name="social_accountcard_presence_watching_game">regarde %1$s</string>
+    <string name="social_accountcard_presence_watching">regarde</string>
+    <string name="social_accountcard_presence_online">en ligne</string>
+    <string name="social_accountcard_presence_away">absent</string>
+    <string name="social_accountcard_member_since_wide">Membre depuis %1$s</string>
+    <string name="social_accountcard_member_since_compact">Membre depuis %1$s</string>
+    <plurals name="social_accountcard_friend_count_wide">
+        <item quantity="one">%1$d ami</item>
+        <item quantity="many">%1$d amis</item>
+        <item quantity="other">%1$d amis</item>
+    </plurals>
+    <plurals name="social_accountcard_friend_count_compact">
+        <item quantity="one">%1$d ami</item>
+        <item quantity="many">%1$d amis</item>
+        <item quantity="other">%1$d amis</item>
+    </plurals>
+
+    <string name="social_relationship_friends_desc">Amis</string>
+    <string name="social_relationship_favorite_desc">Favori</string>
+    <string name="social_relationship_not_favorite_desc">Non favori</string>
+    <string name="social_relationship_not_friends_desc">Pas amis</string>
+    <string name="social_relationship_pending_desc">En attente</string>
+
+    <string name="social_statsgrid_total_play_time">Temps de jeu total</string>
+    <string name="social_statsgrid_games_played">Jeux joués</string>
+    <string name="social_statsgrid_friends">Amis</string>
+    <string name="social_statsgrid_top_genre">Genre préféré</string>
+    <string name="social_statsgrid_top_platform">Plateforme préférée</string>
+    <string name="social_statsgrid_fav_decade">Décennie préf.</string>
+    <string name="social_statsgrid_placeholder_dash">--</string>
+
+    <string name="social_playtimechart_header">30 DERNIERS JOURS</string>
+    <string name="social_playtimechart_peak">pic : %1$s</string>
+
+    <plurals name="social_mostplayed_sessions">
+        <item quantity="one">%1$d session</item>
+        <item quantity="many">%1$d sessions</item>
+        <item quantity="other">%1$d sessions</item>
+    </plurals>
+
+    <string name="social_playhours_minutes">%1$d min</string>
+    <string name="social_playhours_hours_decimal">%1$s h</string>
+    <plurals name="social_playhours_hours_whole">
+        <item quantity="one">%1$d h</item>
+        <item quantity="many">%1$d h</item>
+        <item quantity="other">%1$d h</item>
+    </plurals>
+    <string name="social_playhours_hours_thousands">%1$sk h</string>
+
+    <string name="social_userprofile_hint_view_game">Voir le jeu</string>
+    <string name="social_userprofile_hint_unfavorite">Retirer des favoris</string>
+    <string name="social_userprofile_hint_favorite">Ajouter aux favoris</string>
+    <string name="social_userprofile_hint_add_friend">Ajouter en ami</string>
+    <string name="social_userprofile_hint_back">Retour</string>
+    <string name="social_userprofile_most_played_header">LES PLUS JOUÉS</string>
+
+    <string name="social_notifications_empty_title">Aucune notification</string>
+    <string name="social_notifications_empty_body">L\'activité de vos publications et de vos amis apparaîtra ici</string>
+    <string name="social_notifications_unknown_avatar">?</string>
+    <string name="social_notifications_avatar_overflow">+%1$d</string>
+    <string name="social_notifications_default_actor">Quelqu\'un</string>
+    <string name="social_notifications_event_type_fallback">publication</string>
+
+    <string name="social_notifications_comment_zero">Quelqu\'un a commenté votre %1$s</string>
+    <string name="social_notifications_comment_one">%1$s a commenté votre %2$s</string>
+    <string name="social_notifications_comment_two">%1$s et %2$s ont commenté votre %3$s</string>
+    <string name="social_notifications_comment_many">%1$s, %2$s et %3$d autres ont commenté votre %4$s</string>
+
+    <string name="social_notifications_like_milestone_default_preview">Votre publication</string>
+    <string name="social_notifications_like_milestone_with_count">%1$s a atteint %2$d mentions J\'aime</string>
+    <string name="social_notifications_like_milestone_generic">%1$s a atteint un palier de mentions J\'aime</string>
+
+    <string name="social_notifications_friend_request">%1$s vous a envoyé une demande d\'ami</string>
+    <string name="social_notifications_friend_accepted">%1$s a accepté votre demande d\'ami</string>
+    <string name="social_notifications_friend_added">%1$s vous a ajouté comme ami</string>
+    <string name="social_notifications_generic_fallback">Nouvelle notification</string>
+
+    <string name="social_eventdetail_hint_back">Retour</string>
+    <string name="social_eventdetail_hint_unlike">Ne plus aimer</string>
+    <string name="social_eventdetail_hint_like">Aimer</string>
+    <string name="social_eventdetail_hint_comment">Commenter</string>
+    <string name="social_eventdetail_hint_view_game">Voir le jeu</string>
+    <string name="social_eventdetail_hint_profile">Profil</string>
+
+    <string name="social_eventdetail_comments_header_portrait">Commentaires (%1$d)</string>
+    <string name="social_eventdetail_comments_header_landscape">Commentaires</string>
+    <string name="social_eventdetail_no_comments_portrait">Aucun commentaire pour l\'instant. Soyez le premier !</string>
+    <string name="social_eventdetail_no_comments_landscape">Aucun commentaire pour l\'instant</string>
+    <string name="social_eventdetail_comment_input_placeholder">Ajouter un commentaire...</string>
+    <string name="social_eventdetail_comment_send_desc">Envoyer</string>
+    <string name="social_eventdetail_likes_desc">J\'aime</string>
+
+    <string name="social_eventdetail_desc_started_playing">Première partie</string>
+    <plurals name="social_eventdetail_desc_play_milestone">
+        <item quantity="one">a atteint %1$d heure</item>
+        <item quantity="many">a atteint %1$d heures</item>
+        <item quantity="other">a atteint %1$d heures</item>
+    </plurals>
+    <string name="social_eventdetail_desc_marathon_session">a fait une session marathon de %1$dh</string>
+    <string name="social_eventdetail_desc_completed">terminé</string>
+    <string name="social_eventdetail_desc_achievement_unlocked">a débloqué \"%1$s\"</string>
+    <string name="social_eventdetail_desc_achievement_unlocked_fallback_name">un succès</string>
+    <plurals name="social_eventdetail_desc_achievement_milestone">
+        <item quantity="one">a obtenu %1$d succès</item>
+        <item quantity="many">a obtenu %1$d succès</item>
+        <item quantity="other">a obtenu %1$d succès</item>
+    </plurals>
+    <string name="social_eventdetail_desc_perfect_game">maîtrisé</string>
+    <string name="social_eventdetail_desc_game_added">ajouté à la bibliothèque</string>
+    <string name="social_eventdetail_desc_game_favorited">ajouté aux favoris</string>
+    <string name="social_eventdetail_desc_game_rated">noté %1$s</string>
+    <string name="social_eventdetail_desc_friend_added">est devenu ami avec %1$s</string>
+    <string name="social_eventdetail_desc_friend_added_fallback_name">quelqu\'un</string>
+    <string name="social_eventdetail_desc_collection_shared">a partagé la collection \"%1$s\"</string>
+    <string name="social_eventdetail_desc_collection_saved">a enregistré la collection \"%1$s\"</string>
+    <string name="social_eventdetail_desc_collection_created">a créé la collection \"%1$s\"</string>
+    <plurals name="social_eventdetail_desc_collection_updated">
+        <item quantity="one">a ajouté %1$d jeu à \"%2$s\"</item>
+        <item quantity="many">a ajouté %1$d jeux à \"%2$s\"</item>
+        <item quantity="other">a ajouté %1$d jeux à \"%2$s\"</item>
+    </plurals>
+    <string name="social_eventdetail_desc_collection_fallback_name">une collection</string>
+    <string name="social_eventdetail_desc_doodle">a partagé un dessin</string>
+    <string name="social_eventdetail_desc_discussion_shared_post">a partagé une publication</string>
+    <string name="social_eventdetail_desc_discussion_truncated">%1$s...</string>
+</resources>

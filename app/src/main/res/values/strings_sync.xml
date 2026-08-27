@@ -1,0 +1,368 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Owner: data, domain, core notifications and sync progress
+      Key prefix: sync_
+      Keys are named for the usage site, never for the English text, and identical English
+      is never shared between two usage sites.
+    -->
+
+    <!-- Save sync overlay, before a game launches.
+         Each step shows one of three lines: the step in progress, the step's good
+         outcome, the step's bad outcome. All are statements about the step, never
+         commands to the user. -->
+
+    <!-- Step in progress: Argosy is looking for a save file on the server. Present
+         participle, "we are checking". -->
+    <string name="sync_prelaunch_checking_save">Checking save file...</string>
+    <!-- Outcome of that step: a save exists on the server. Past participle describing
+         the save, not a command to find one. -->
+    <string name="sync_prelaunch_save_found">Save found</string>
+    <!-- Outcome of that step: the server holds no save for this game. Noun phrase. -->
+    <string name="sync_prelaunch_save_absent">No save file</string>
+    <!-- Step in progress: opening the connection to the game server. -->
+    <string name="sync_prelaunch_connecting">Connecting...</string>
+    <!-- Outcome: the connection is open. Past participle describing the connection. -->
+    <string name="sync_prelaunch_connected">Connected</string>
+    <!-- Outcome: the connection could not be opened. Noun phrase, not a command. -->
+    <string name="sync_prelaunch_connect_failed">Connection failed</string>
+    <!-- Step in progress: fetching the save from the server. Present participle. -->
+    <string name="sync_prelaunch_downloading">Downloading...</string>
+    <!-- Outcome: the save arrived. Adjective phrase describing the download. -->
+    <string name="sync_prelaunch_download_complete">Download complete</string>
+    <!-- Outcome: the save did not arrive. Noun phrase. -->
+    <string name="sync_prelaunch_download_failed">Download failed</string>
+    <!-- Step in progress: putting the fetched save into the emulator's save folder.
+         Present participle, "we are writing". -->
+    <string name="sync_prelaunch_writing">Writing save...</string>
+    <!-- Outcome: the save is in place. Past participle describing the save. -->
+    <string name="sync_prelaunch_write_complete">Save written</string>
+    <!-- Outcome: the save could not be put in place. Noun phrase. -->
+    <string name="sync_prelaunch_write_failed">Write failed</string>
+    <!-- Last step: handing off to the emulator. Present participle. -->
+    <string name="sync_prelaunch_launching">Launching game...</string>
+
+    <!-- Save sync overlay, after a play session ends. Same shape as the pre-launch
+         steps above and deliberately not sharing their keys: the two halves of the
+         sync can be worded differently. -->
+
+    <!-- Step in progress: looking for the save the session just wrote. -->
+    <string name="sync_postsession_checking_save">Checking save file...</string>
+    <!-- Outcome: a save from the session exists on this device. -->
+    <string name="sync_postsession_save_found">Save found</string>
+    <!-- Outcome: the session left no save to upload. Adjective phrase describing the
+         save, not a command to find one. -->
+    <string name="sync_postsession_save_absent">Save not found</string>
+    <!-- Step in progress: opening the connection to the game server. -->
+    <string name="sync_postsession_connecting">Connecting...</string>
+    <!-- Outcome: the connection is open. -->
+    <string name="sync_postsession_connected">Connected</string>
+    <!-- Outcome: the connection could not be opened. -->
+    <string name="sync_postsession_connect_failed">Connection failed</string>
+    <!-- Step in progress: sending the save to the server. Present participle. -->
+    <string name="sync_postsession_uploading">Uploading...</string>
+    <!-- Outcome: the save reached the server. Adjective phrase describing the upload. -->
+    <string name="sync_postsession_upload_complete">Upload complete</string>
+    <!-- Outcome: the save could not be sent now and is held for the next attempt.
+         Adjective describing the upload, not a command. -->
+    <string name="sync_postsession_upload_queued">Upload queued</string>
+    <!-- The whole post-session sync finished. Adjective phrase describing the sync. -->
+    <string name="sync_postsession_complete">Sync complete</string>
+
+    <!-- The user chose not to sync this time. Adjective describing the sync. -->
+    <string name="sync_progress_skipped">Sync skipped</string>
+    <!-- Heading when the server's save would break RetroAchievements hardcore rules for
+         this game. "Hardcore" is the RetroAchievements mode name; keep the term the
+         RetroAchievements community uses in your language. Noun phrase. -->
+    <string name="sync_progress_hardcore_conflict">Hardcore save conflict</string>
+    <!-- Heading when the save on this device changed since it was last synced. Past
+         participle describing the local save. -->
+    <string name="sync_progress_local_modified">Local save modified</string>
+    <!-- Heading when the device and the server each hold a different save. Noun
+         phrase. -->
+    <string name="sync_progress_save_conflict">Save conflict</string>
+
+    <!-- Save sync overlay, blocked. Each blocked reason has a short heading and a
+         longer explanation underneath it. -->
+
+    <!-- Heading: Argosy has not been granted the Android permission it needs to read
+         the emulator's save folder. Noun phrase describing what is missing. -->
+    <string name="sync_blocked_permission_title">File access permission required</string>
+    <!-- Explanation under that heading. %1$s is the emulator's name. "All files access"
+         is the exact wording of the Android system setting; use whatever wording that
+         setting has in your language so the user can find it. -->
+    <string name="sync_blocked_permission_detail">Grant \"All files access\" permission to sync saves for %1$s.</string>
+    <!-- Stands in for the emulator's name in the explanation above when Argosy does not
+         know which emulator it is. -->
+    <string name="sync_blocked_permission_emulator_fallback">this emulator</string>
+
+    <!-- Heading: the folder the emulator keeps its saves in is not where Argosy looked.
+         Adjective phrase describing the folder. -->
+    <string name="sync_blocked_path_not_found_title">Save folder not found</string>
+    <!-- Explanation under that heading. %1$s is the emulator's name. -->
+    <string name="sync_blocked_path_not_found_detail">The save folder for %1$s was not found. The emulator may use a non-standard save location.</string>
+    <!-- Stands in for the emulator's name in the explanation above when Argosy does not
+         know which emulator it is. -->
+    <string name="sync_blocked_path_not_found_emulator_fallback">this emulator</string>
+
+    <!-- Heading: the device itself refuses to let Argosy read the save folder, even
+         with permission granted. Past participle describing the access. -->
+    <string name="sync_blocked_access_denied_title">Save folder access blocked</string>
+    <!-- Explanation under that heading, for every platform except Switch. %1$s is the
+         emulator's name. The manufacturer names are companies; leave them as they
+         are. -->
+    <string name="sync_blocked_access_denied_detail">Your device is blocking access to %1$s save data. This may be due to manufacturer restrictions (Samsung, Xiaomi, etc.) or security policies.</string>
+    <!-- Explanation under that heading, for Switch emulators, which can be pointed at a
+         save folder Argosy is allowed to read. %1$s and %2$s are both the emulator's
+         name. "Android/data" is a literal folder path; leave it untranslated.
+         "Argosy" is this app's name. -->
+    <string name="sync_blocked_access_denied_switch_detail">Your device is blocking access to %1$s save data. Configure an external save path in %2$s (outside Android/data), then set the same path in Argosy.</string>
+    <!-- Stands in for the emulator's name in the two explanations above, where the
+         sentence is about whose save data is blocked. -->
+    <string name="sync_blocked_access_denied_emulator_fallback">emulator</string>
+    <!-- Stands in for the emulator's name in the Switch explanation above, where the
+         sentence names the app the user has to go and configure. -->
+    <string name="sync_blocked_access_denied_configure_fallback">the emulator</string>
+
+    <!-- Android system notification shown while a library or save sync runs in the
+         background. -->
+
+    <!-- Name of the Android notification channel, shown in the system's notification
+         settings for Argosy. Noun phrase naming a kind of notification. -->
+    <string name="sync_service_channel_name">Save Sync</string>
+    <!-- Description of that channel, shown under its name in system settings. -->
+    <string name="sync_service_channel_description">Shows save sync progress in background</string>
+    <!-- First line of the notification, before there is anything to report. Present
+         participle, "we are getting ready". -->
+    <string name="sync_service_preparing">Preparing sync...</string>
+    <!-- Notification line while one platform's games are being fetched. %1$s is the
+         platform's name, for example "Game Boy Advance". -->
+    <string name="sync_service_platform">Syncing: %1$s</string>
+    <!-- Notification line while the library sync runs without naming a platform yet. -->
+    <string name="sync_service_library">Syncing library...</string>
+    <!-- Notification line while one game's save is being sent to the server. %1$s is
+         the game's title. Present participle. -->
+    <string name="sync_service_uploading">Uploading: %1$s</string>
+    <!-- Notification line while one game's save is being fetched from the server. %1$s
+         is the game's title. Present participle. -->
+    <string name="sync_service_downloading">Downloading: %1$s</string>
+    <!-- Notification line while saves are syncing without naming a game yet. -->
+    <string name="sync_service_saves">Syncing saves...</string>
+
+    <!-- Android system notification shown while downloads run in the background. -->
+
+    <!-- Name of the Android notification channel, shown in the system's notification
+         settings for Argosy. Noun phrase naming a kind of notification. -->
+    <string name="sync_download_channel_name">Download Progress</string>
+    <!-- Description of that channel, shown under its name in system settings. -->
+    <string name="sync_download_channel_description">Shows download progress in background</string>
+    <!-- First line of the notification, before there is anything to report. -->
+    <string name="sync_download_service_preparing">Preparing download...</string>
+    <!-- Notification line while a Steam title is being fetched. %1$s is the game's
+         title. "Steam" is Valve's storefront; leave the name as it is. -->
+    <string name="sync_download_service_steam_downloading">Downloading: %1$s</string>
+    <!-- Notification line while a finished download is being unpacked. %1$s is the
+         game's title. Present participle. -->
+    <string name="sync_download_service_extracting">Extracting: %1$s</string>
+    <!-- Notification line while an unpacked game is being moved to where ROMs are kept.
+         %1$s is the game's title. "ROM storage" is the folder Argosy keeps game files
+         in. -->
+    <string name="sync_download_service_moving">Moving to ROM storage: %1$s</string>
+    <!-- Notification line while a game is being fetched from the game server. %1$s is
+         the game's title. -->
+    <string name="sync_download_service_downloading">Downloading: %1$s</string>
+    <!-- Notification line naming the next game waiting its turn. %1$s is the game's
+         title. Past participle describing the game, not a command. -->
+    <string name="sync_download_service_queued">Queued: %1$s</string>
+    <!-- Notification line when something is waiting but nothing can be named yet.
+         Adjective phrase describing the download. -->
+    <string name="sync_download_service_pending">Download pending...</string>
+    <!-- Notification line while a film or episode is being set up before its bytes
+         start arriving. %1$s says which step is running, %2$s is the title. -->
+    <string name="sync_download_service_media_preparing">%1$s: %2$s</string>
+    <!-- Notification line while a film or episode is being fetched. %1$s is the
+         title. -->
+    <string name="sync_download_service_media_downloading">Downloading: %1$s</string>
+
+    <!-- Android system notification shown while a game is being played. -->
+
+    <!-- Name of the Android notification channel, shown in the system's notification
+         settings for Argosy. Noun phrase: one stretch of play. -->
+    <string name="sync_session_channel_name">Game Session</string>
+    <!-- Description of that channel, shown under its name in system settings. -->
+    <string name="sync_session_channel_description">Monitors save files during gameplay</string>
+    <!-- Title of the notification while a game is running, with the game's title
+         underneath it. Present participle, "you are playing". -->
+    <string name="sync_session_notification_playing">Playing</string>
+    <!-- Title of the notification once the game has written a save, with the game's
+         title underneath it. Past participle describing the save. -->
+    <string name="sync_session_notification_save_detected">Save detected</string>
+    <!-- Stands in for the game's title in that notification when Argosy was not told
+         which game it is. Noun, singular. -->
+    <string name="sync_session_game_fallback">Game</string>
+
+    <!-- In-app notices after a play session ends. -->
+
+    <!-- Notice after a save left over from an earlier session finally reached the
+         server. The game's title is shown underneath. Past participle describing the
+         save. -->
+    <string name="sync_session_save_uploaded_orphan">Save Uploaded</string>
+    <!-- Notice after the save from the session that just ended reached the server. The
+         game's title is shown underneath. Past participle describing the save. -->
+    <string name="sync_session_save_uploaded">Save Uploaded</string>
+    <!-- Notice after a session that wrote nothing new, so there was nothing to send.
+         Noun phrase. -->
+    <string name="sync_session_save_unchanged">No save changes</string>
+    <!-- Notice after the save could not be sent. The reason is shown underneath. Past
+         participle describing the upload. -->
+    <string name="sync_session_save_upload_failed">Upload Failed</string>
+    <!-- Second line of that notice. %1$s is the game's title, %2$s is the reason the
+         server or the device gave. -->
+    <string name="sync_session_save_upload_failed_subtitle">%1$s: %2$s</string>
+    <!-- Stands in for the game's title on that second line when Argosy cannot name the
+         game. Noun, singular: the save file itself. -->
+    <string name="sync_session_save_upload_failed_name_fallback">Save</string>
+
+    <!-- In-app notice about saves waiting for the user to choose between two versions. -->
+
+    <!-- Title of the notice, counting the saves that are waiting. -->
+    <plurals name="sync_conflict_pending_title">
+        <item quantity="one">%1$d save needs your attention</item>
+        <item quantity="other">%1$d saves need your attention</item>
+    </plurals>
+    <!-- Second line of that notice. "Save Sync" names Argosy's own screen for resolving
+         these; use the same wording you gave that screen. -->
+    <string name="sync_conflict_pending_subtitle">Open Save Sync to resolve. Local saves are unchanged.</string>
+
+    <!-- In-app notices about downloading films and episodes. -->
+
+    <!-- Notice when a download is asked for with no media server connected. Verb phrase
+         addressed to the user. -->
+    <string name="sync_media_signin_title">Sign in to download</string>
+    <!-- Second line of that notice. "Settings" names Argosy's own settings screen. -->
+    <string name="sync_media_signin_subtitle">Connect a media server from Settings</string>
+
+    <!-- Counts titles inside the notices below. Used where a sentence needs the number
+         and the word for it together. -->
+    <plurals name="sync_media_title_count">
+        <item quantity="one">%1$d title</item>
+        <item quantity="other">%1$d titles</item>
+    </plurals>
+
+    <!-- Notice when everything asked for is already on the device. Past participle
+         describing the titles. -->
+    <string name="sync_media_refusal_downloaded_title">Already downloaded</string>
+    <!-- Second line of that notice. %1$s is a count of titles, %2$s is the size they
+         were fetched at, for example "1080p". -->
+    <string name="sync_media_refusal_downloaded_subtitle">%1$s on this device at %2$s</string>
+    <!-- Notice when everything asked for is already waiting to download. -->
+    <string name="sync_media_refusal_queued_title">Already in the queue</string>
+    <!-- Second line of that notice. %1$s is a count of titles. -->
+    <string name="sync_media_refusal_queued_subtitle">%1$s waiting to download</string>
+    <!-- Notice when some of what was asked for is on the device and the rest is already
+         waiting. -->
+    <string name="sync_media_refusal_mixed_title">Nothing new to download</string>
+    <!-- Second line of that notice. %1$s is a count of titles already on the device,
+         %2$s a count of titles already waiting. -->
+    <string name="sync_media_refusal_mixed_subtitle">%1$s downloaded, %2$s queued</string>
+    <!-- Notice when the server offers no file for what was asked for. -->
+    <string name="sync_media_refusal_unavailable_title">Nothing to download</string>
+    <!-- Second line of that notice. -->
+    <string name="sync_media_refusal_unavailable_subtitle">This title has no file the server will hand over</string>
+
+    <!-- Notice when downloaded titles could not be deleted because the card or drive
+         holding them is not attached. Adjective phrase describing the storage. -->
+    <string name="sync_media_unreachable_title">Storage unavailable</string>
+    <!-- Second line of that notice. %1$s is a count of titles. -->
+    <string name="sync_media_unreachable_subtitle">%1$s stay downloaded until their storage is back</string>
+
+    <!-- Notice when a download was held because the device is too full. %1$s is the
+         title. -->
+    <string name="sync_media_storage_title">Not enough storage for %1$s</string>
+
+    <!-- Step name shown while a download is being set up, before the server has been
+         asked for anything. Present participle, "we are getting ready". -->
+    <string name="sync_media_step_preparing">Preparing</string>
+    <!-- Step name shown while the server starts converting the title to the smaller
+         size that was asked for. Verb phrase describing what Argosy is doing. -->
+    <string name="sync_media_step_awaiting_transcode">Waiting for the server to start the transcode</string>
+
+    <!-- Notice when the smaller size could not be produced, so the full-size file is
+         being fetched instead. Present participle. -->
+    <string name="sync_media_transcode_unavailable_title">Downloading the original file</string>
+    <!-- Second line of that notice. %1$s is the title. -->
+    <string name="sync_media_transcode_unavailable_subtitle">%1$s could not be transcoded for download</string>
+
+    <!-- Notice after a download finished with fewer subtitle tracks than the title has.
+         %1$s is the title, %2$d how many tracks are missing. -->
+    <plurals name="sync_media_subtitle_shortfall_title">
+        <item quantity="one">%1$s downloaded without %2$d subtitle track</item>
+        <item quantity="other">%1$s downloaded without %2$d subtitle tracks</item>
+    </plurals>
+    <!-- Second line of that notice, when one picture subtitle was drawn into the video
+         and the others could not travel. %1$s names the track that was drawn in. -->
+    <string name="sync_media_subtitle_shortfall_burned_in">%1$s is in the picture; the rest could not travel</string>
+    <!-- Second line of that notice, when the server refused to give up some tracks. -->
+    <string name="sync_media_subtitle_shortfall_refused">The server would not hand over every subtitle track</string>
+    <!-- Second line of that notice, when the title was converted to a smaller size and
+         picture subtitles cannot survive that. -->
+    <string name="sync_media_subtitle_shortfall_transcoded">Picture subtitles cannot travel with a smaller size</string>
+    <!-- Second line of that notice, when the picture subtitles are separate files on
+         the server that the download cannot carry. -->
+    <string name="sync_media_subtitle_shortfall_external">Picture subtitles are kept apart from the file and cannot travel with it</string>
+    <!-- Stands in for a subtitle track's name when the server gave it none. Noun,
+         plural. -->
+    <string name="sync_media_subtitle_label_fallback">Subtitles</string>
+
+    <!-- Steam notices. "Steam" is Valve's storefront; leave the name as it is. -->
+
+    <!-- Notice when Steam stops accepting sign-in attempts for a while. Adverb phrase
+         describing Steam's state, not a permanent failure. -->
+    <string name="sync_steam_rate_limited_title">Steam temporarily unavailable</string>
+    <!-- Second line of that notice. -->
+    <string name="sync_steam_rate_limited_subtitle">Login rate limited. Try again in an hour</string>
+    <!-- Notice when the stored Steam sign-in is no longer accepted, raised while
+         signing in. Past participle describing the session. -->
+    <string name="sync_steam_auth_expired_title">Steam session expired</string>
+    <!-- Second line of that notice. "Settings &gt; Steam" is the path through Argosy's
+         own settings screens. -->
+    <string name="sync_steam_auth_expired_subtitle">Sign in again from Settings &gt; Steam</string>
+    <!-- Notice when the stored Steam sign-in is no longer accepted, raised while trying
+         to download. Past participle describing the session. -->
+    <string name="sync_steam_download_signed_out_title">Steam session expired</string>
+    <!-- Second line of that notice. "Settings &gt; Steam" is the path through Argosy's
+         own settings screens. -->
+    <string name="sync_steam_download_signed_out_subtitle">Sign in from Settings &gt; Steam to download</string>
+    <!-- Notice when a Steam download cannot start because the folder it would go in is
+         not writable. %1$s is the game's title. -->
+    <string name="sync_steam_path_blocked_title">Cannot download %1$s</string>
+    <!-- Notice when a Steam download cannot start because there is not enough room.
+         %1$s is the game's title. -->
+    <string name="sync_steam_storage_blocked_title">Cannot download %1$s</string>
+
+    <!-- Message on the Steam QR sign-in screen when Steam stops accepting attempts for
+         a while. -->
+    <string name="sync_steam_qr_rate_limited">Rate limited. Try again later</string>
+    <!-- Message on the Steam QR sign-in screen when Steam rejected the sign-in. %1$s is
+         the code Steam gave; leave it as it is. -->
+    <string name="sync_steam_qr_login_failed">Login failed: %1$s</string>
+    <!-- Message on the Steam QR sign-in screen when a sign-in was asked for with no
+         connection to Steam open. -->
+    <string name="sync_steam_qr_not_connected">Not connected to Steam</string>
+    <!-- Message on the Steam QR sign-in screen when the sign-in could not be started
+         and nothing said why. -->
+    <string name="sync_steam_qr_start_failed">Failed to start QR auth</string>
+    <!-- Message on the Steam QR sign-in screen when waiting for the code to be scanned
+         stopped working and nothing said why. -->
+    <string name="sync_steam_qr_polling_failed">Polling failed</string>
+    <!-- Message on the Steam QR sign-in screen when the connection to Steam dropped
+         while waiting. -->
+    <string name="sync_steam_qr_disconnected">Steam not connected</string>
+
+    <!-- Emulator core selection. -->
+
+    <!-- Notice when the core the user picked would not start and Argosy fell back to
+         the default one. %1$s is the core that failed, %2$s the one used instead. Both
+         are core names from the libretro project; leave them as they are. -->
+    <string name="sync_launch_core_fallback">Failed to load %1$s, using %2$s instead</string>
+</resources>

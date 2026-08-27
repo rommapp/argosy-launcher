@@ -1,10 +1,14 @@
 package com.nendo.argosy.ui.screens.gamedetail.delegates
 
+import android.content.Context
+import com.nendo.argosy.R
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.core.notification.NotificationManager
+import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.core.notification.showSuccess
 import com.nendo.argosy.ui.screens.gamedetail.ScreenshotPair
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,6 +24,7 @@ data class ScreenshotState(
 )
 
 class ScreenshotDelegate @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val imageCacheManager: ImageCacheManager,
     private val notificationManager: NotificationManager
 ) {
@@ -82,10 +87,14 @@ class ScreenshotDelegate @Inject constructor(
         scope.launch {
             val success = imageCacheManager.setScreenshotAsBackground(gameId, screenshotPath)
             if (success) {
-                notificationManager.showSuccess("Background updated")
+                notificationManager.showSuccess(
+                    NotificationText.Res(R.string.gamedetail_notice_background_updated)
+                )
                 onSuccess()
             } else {
-                notificationManager.showError("Failed to set background")
+                notificationManager.showError(
+                    NotificationText.Res(R.string.gamedetail_notice_background_failed)
+                )
             }
         }
     }

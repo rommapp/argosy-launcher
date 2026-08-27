@@ -1,0 +1,388 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="dual_channel_secondary_display_name">Дополнительный экран</string>
+    <string name="dual_channel_secondary_display_description">Показывает библиотеку игр на дополнительном экране</string>
+    <string name="dual_channel_screen_capture_name">Захват экрана для LED-подсветки</string>
+    <string name="dual_channel_screen_capture_description">Считывает цвета экрана для фоновой подсветки</string>
+
+    <string name="dual_notification_guard_text">Активен режим двух экранов</string>
+    <string name="dual_notification_screen_capture_text">Считывание цветов экрана для LED-подсветки</string>
+
+    <string name="dual_companion_quick_action_save_state">Сохранить состояние</string>
+    <string name="dual_companion_quick_action_screenshot">Скриншот</string>
+    <string name="dual_companion_quick_action_load_state">Загрузить состояние</string>
+    <string name="dual_companion_quick_action_load_confirm">Нажмите для подтверждения</string>
+
+    <string name="dual_companion_session_label">Сессия</string>
+    <string name="dual_companion_achievements_label">Достижения</string>
+    <string name="dual_companion_stat_play_time">Общее время в игре</string>
+    <string name="dual_companion_stat_play_count">Количество запусков</string>
+
+    <string name="dual_companion_play_time_hours_minutes">%1$dh %2$dm</string>
+    <string name="dual_companion_play_time_hours">%1$dh</string>
+    <string name="dual_companion_play_time_minutes">%1$dm</string>
+    <string name="dual_companion_play_time_zero">0m</string>
+
+    <string name="dual_companion_saves_dirty">Новые данные сохранения</string>
+    <string name="dual_companion_saves_synced">Сохранения синхронизированы</string>
+    <string name="dual_companion_saves_synced_icon_description">Сохранено</string>
+
+    <string name="dual_companion_app_bar_add_description">Добавить приложение</string>
+    <string name="dual_companion_app_bar_media_to_library_description">Назад к библиотеке</string>
+    <string name="dual_companion_app_bar_media_to_player_description">Сейчас смотрите</string>
+
+    <string name="dual_companion_drawer_title">Все приложения</string>
+    <string name="dual_companion_drawer_pinned_description">Закреплено</string>
+
+    <string name="dual_showcase_detail_footer_tab">Вкладка</string>
+    <string name="dual_showcase_detail_footer_select">Выбрать</string>
+    <string name="dual_showcase_detail_footer_back">Назад</string>
+
+    <string name="dual_showcase_collections_footer_navigate">Навигация</string>
+    <string name="dual_showcase_collections_footer_open">Открыть</string>
+    <string name="dual_showcase_collections_footer_back">Назад</string>
+
+    <string name="dual_home_hint_action_play">Играть</string>
+    <string name="dual_home_hint_action_download">Скачать</string>
+
+    <string name="dual_home_hint_collection_navigate">Навигация</string>
+    <string name="dual_home_hint_collection_details">Детали</string>
+    <string name="dual_home_hint_collection_back">Назад</string>
+
+    <string name="dual_home_hint_library_platform">Платформа</string>
+    <string name="dual_home_hint_library_letter">Буква</string>
+    <string name="dual_home_hint_library_details">Детали</string>
+    <string name="dual_home_hint_library_options">Параметры</string>
+    <string name="dual_home_hint_library_filters">Фильтры</string>
+    <string name="dual_home_hint_library_back">Назад</string>
+
+    <string name="dual_home_hint_media_grid_library">Библиотека</string>
+    <string name="dual_home_hint_media_grid_resume">Продолжить</string>
+    <string name="dual_home_hint_media_grid_options">Параметры</string>
+    <string name="dual_home_hint_media_grid_play">Воспроизвести</string>
+    <string name="dual_home_hint_media_grid_back">Назад</string>
+
+    <string name="dual_home_hint_media_info_title">Пред./След.</string>
+    <string name="dual_home_hint_media_info_season">Сезон</string>
+    <string name="dual_home_hint_media_info_watch">Смотреть</string>
+    <string name="dual_home_hint_media_info_back">Назад</string>
+
+    <string name="dual_home_hint_drawer_open">Открыть</string>
+    <string name="dual_home_hint_drawer_pin">Закрепить/Открепить</string>
+    <string name="dual_home_hint_drawer_open_top">Открыть сверху</string>
+    <string name="dual_home_hint_drawer_close">Закрыть</string>
+
+    <string name="dual_home_hint_app_bar_select">Выбрать</string>
+    <string name="dual_home_hint_app_bar_open_top">Открыть сверху</string>
+    <string name="dual_home_hint_app_bar_all_apps">Все приложения</string>
+
+    <string name="dual_home_hint_carousel_platform">Платформа</string>
+    <string name="dual_home_hint_carousel_details">Детали</string>
+    <string name="dual_home_hint_carousel_favorite">В избранное</string>
+    <string name="dual_home_hint_carousel_unfavorite">Убрать из избранного</string>
+    <string name="dual_home_hint_carousel_collections">Коллекции</string>
+    <string name="dual_home_hint_carousel_library">Библиотека</string>
+
+    <string name="dual_detail_hint_game_section">Раздел</string>
+    <string name="dual_detail_hint_game_open">Открыть</string>
+    <string name="dual_detail_hint_game_back">Назад</string>
+
+    <string name="dual_detail_hint_media_grid_library">Библиотека</string>
+    <string name="dual_detail_hint_media_grid_resume">Продолжить</string>
+    <string name="dual_detail_hint_media_grid_options">Параметры</string>
+    <string name="dual_detail_hint_media_grid_play">Воспроизвести</string>
+    <string name="dual_detail_hint_media_grid_back">Назад</string>
+
+    <string name="dual_detail_hint_media_info_title">Пред./След.</string>
+    <string name="dual_detail_hint_media_info_season">Сезон</string>
+    <string name="dual_detail_hint_media_info_watch">Смотреть</string>
+    <string name="dual_detail_hint_media_info_back">Назад</string>
+
+    <string name="dual_detail_hint_default_section">Раздел</string>
+    <string name="dual_detail_hint_default_favorite">В избранное</string>
+    <string name="dual_detail_hint_default_options">Параметры</string>
+    <string name="dual_detail_hint_default_play">Играть</string>
+    <string name="dual_detail_hint_default_back">Назад</string>
+
+    <string name="dual_media_footer_season">Сезон</string>
+    <string name="dual_media_footer_watch">Смотреть</string>
+    <string name="dual_media_footer_back_library">Библиотека</string>
+    <string name="dual_media_footer_back_home">Назад</string>
+
+    <string name="dual_media_signed_out_title">Нет аккаунта медиа</string>
+    <string name="dual_media_signed_out_message">Войдите на медиасервер в настройках, чтобы смотреть здесь.</string>
+    <string name="dual_media_loading_title">Загрузка</string>
+    <string name="dual_media_empty_title">Пока нечего смотреть</string>
+    <string name="dual_media_empty_message">Начатые вами фильмы и сериалы появятся здесь.</string>
+
+    <string name="dual_media_episodes_loading_title">Загрузка</string>
+    <string name="dual_media_episodes_error_title">Не удалось загрузить эпизоды</string>
+    <string name="dual_media_episodes_empty_title">Здесь пока нет эпизодов</string>
+
+    <string name="dual_media_cast_header">В ролях</string>
+    <string name="dual_media_browse_back_description">Назад</string>
+    <plurals name="dual_media_browse_episode_count">
+        <item quantity="one">%d эпизод</item>
+        <item quantity="few">%d эпизода</item>
+        <item quantity="many">%d эпизодов</item>
+        <item quantity="other">%d эпизода</item>
+    </plurals>
+
+    <string name="dual_media_transport_playing_description">Воспроизводится</string>
+    <string name="dual_media_transport_paused_description">На паузе</string>
+
+    <string name="dual_media_grid_empty">В этой библиотеке пока ничего нет</string>
+
+    <string name="dual_showcase_stat_play_time_label">Время в игре</string>
+    <string name="dual_showcase_stat_last_played_label">Последняя игра</string>
+    <string name="dual_showcase_stat_last_played_never">Никогда</string>
+    <string name="dual_showcase_stat_status_label">Статус</string>
+    <string name="dual_showcase_stat_status_none">Нет</string>
+
+    <string name="dual_showcase_last_played_today">Сегодня</string>
+    <string name="dual_showcase_last_played_yesterday">Вчера</string>
+    <plurals name="dual_showcase_last_played_days">
+        <item quantity="one">%d день назад</item>
+        <item quantity="few">%d дня назад</item>
+        <item quantity="many">%d дней назад</item>
+        <item quantity="other">%d дня назад</item>
+    </plurals>
+    <plurals name="dual_showcase_last_played_weeks">
+        <item quantity="one">%d неделю назад</item>
+        <item quantity="few">%d недели назад</item>
+        <item quantity="many">%d недель назад</item>
+        <item quantity="other">%d недели назад</item>
+    </plurals>
+    <plurals name="dual_showcase_last_played_months">
+        <item quantity="one">%d месяц назад</item>
+        <item quantity="few">%d месяца назад</item>
+        <item quantity="many">%d месяцев назад</item>
+        <item quantity="other">%d месяца назад</item>
+    </plurals>
+
+    <string name="dual_home_showcase_no_selection">Выберите игру</string>
+
+    <string name="dual_collection_showcase_all_title">Коллекции</string>
+    <plurals name="dual_collection_showcase_game_count">
+        <item quantity="one">%d игра</item>
+        <item quantity="few">%d игры</item>
+        <item quantity="many">%d игр</item>
+        <item quantity="other">%d игры</item>
+    </plurals>
+    <string name="dual_collection_showcase_stat_installed">Установлено</string>
+    <string name="dual_collection_showcase_stat_achievements">Достижения</string>
+    <string name="dual_collection_showcase_stat_playtime">Время в игре</string>
+    <string name="dual_collection_showcase_empty">В этой коллекции пока ничего нет</string>
+
+    <string name="dual_collection_play_time_minutes">%1$dm всего</string>
+    <string name="dual_collection_play_time_hours_minutes">%1$dh %2$dm всего</string>
+    <string name="dual_collection_play_time_hours">%1$dh всего</string>
+
+    <string name="dual_home_section_recent_title">Продолжить игру</string>
+    <string name="dual_home_section_recent_short">Продолжить</string>
+    <string name="dual_home_section_recommendations_title">Рекомендуемые</string>
+    <string name="dual_home_section_recommendations_short">Для вас</string>
+    <string name="dual_home_section_favorites_title">Избранное</string>
+
+    <string name="dual_library_menu_play">Играть</string>
+    <string name="dual_library_menu_install">Установить</string>
+    <string name="dual_library_menu_download">Скачать</string>
+    <string name="dual_library_menu_favorite">В избранное</string>
+    <string name="dual_library_menu_unfavorite">Убрать из избранного</string>
+    <string name="dual_library_menu_details">Детали</string>
+    <string name="dual_library_menu_add_to_collection">Добавить в коллекцию</string>
+    <string name="dual_library_menu_add_to_grid">Добавить на сетку</string>
+    <string name="dual_library_menu_refresh">Обновить данные</string>
+    <string name="dual_library_menu_resync_platform">Пересинхронизировать платформу</string>
+    <string name="dual_library_menu_delete">Удалить загрузку</string>
+    <string name="dual_library_menu_uninstall">Удалить приложение</string>
+    <string name="dual_library_menu_hide">Скрыть</string>
+    <string name="dual_library_menu_show">Показать</string>
+
+    <string name="dual_media_menu_open_info">Открыть информацию</string>
+    <string name="dual_media_menu_start_over">Начать заново</string>
+    <string name="dual_media_menu_favorite">В избранное</string>
+    <string name="dual_media_menu_unfavorite">Убрать из избранного</string>
+    <string name="dual_media_menu_download">Скачать</string>
+    <string name="dual_media_menu_remove_downloads">Удалить загрузку</string>
+    <string name="dual_media_menu_refresh">Обновить библиотеку</string>
+
+    <string name="dual_filter_category_sort">Сортировка</string>
+    <string name="dual_filter_category_search">Поиск</string>
+    <string name="dual_filter_category_source">Источник</string>
+    <string name="dual_filter_category_genre">Жанр</string>
+    <string name="dual_filter_category_players">Игроки</string>
+    <string name="dual_filter_category_franchise">Франшиза</string>
+
+    <string name="dual_filter_search_placeholder">Поиск игр...</string>
+    <string name="dual_filter_search_active">Фильтр по: \"%1$s\"</string>
+
+    <string name="dual_collections_header_user">МОИ КОЛЛЕКЦИИ</string>
+    <string name="dual_collections_header_genres">ЖАНРЫ</string>
+    <string name="dual_collections_header_game_modes">РЕЖИМЫ ИГРЫ</string>
+
+    <string name="dual_library_platform_filter_all">Все</string>
+    <string name="dual_library_grid_platform_fallback">Все</string>
+    <string name="dual_library_grid_header">%1$s (%2$d)</string>
+    <string name="dual_home_carousel_header">%1$s (%2$d)</string>
+
+    <string name="dual_tile_missing_game">Игра отсутствует</string>
+    <string name="dual_tile_missing_collection">Коллекция отсутствует</string>
+    <string name="dual_tile_collection_subtitle">Коллекция</string>
+    <string name="dual_tile_collection_games_stat">Игры</string>
+    <string name="dual_tile_missing_app">Приложение отсутствует</string>
+    <string name="dual_tile_app_subtitle">Приложение</string>
+    <string name="dual_tile_unavailable">Недоступно</string>
+
+    <plurals name="dual_tile_picker_collection_game_count">
+        <item quantity="one">%d игра</item>
+        <item quantity="few">%d игры</item>
+        <item quantity="many">%d игр</item>
+        <item quantity="other">%d игры</item>
+    </plurals>
+    <string name="dual_tile_picker_app_emulator">Эмулятор</string>
+    <string name="dual_tile_picker_app_other">Приложение</string>
+
+    <string name="dual_home_tile_add_title">Добавить на главный экран?</string>
+    <string name="dual_home_tile_add_message">%1$s: загрузка завершена.</string>
+    <string name="dual_home_tile_add_confirm">Добавить</string>
+    <string name="dual_home_tile_add_cancel">Не сейчас</string>
+
+    <string name="dual_home_collection_picker_title">Добавить в коллекцию</string>
+    <string name="dual_home_collection_picker_member">%1$s  -  добавлено</string>
+    <string name="dual_home_media_menu_header">МЕДИА</string>
+
+    <string name="dual_detail_tab_saves">СОХРАНЕНИЯ</string>
+    <string name="dual_detail_tab_states">СОСТОЯНИЯ</string>
+    <string name="dual_detail_tab_media">МЕДИА</string>
+    <string name="dual_detail_tab_options">ПАРАМЕТРЫ</string>
+
+    <string name="dual_state_menu_copy_to">Скопировать в слот</string>
+    <string name="dual_state_menu_delete">Удалить состояние</string>
+    <string name="dual_detail_state_menu_header">СОСТОЯНИЕ</string>
+
+    <string name="dual_detail_state_prompt_auto_slot">Авто-состояние</string>
+    <string name="dual_detail_state_prompt_numbered_slot">Слот %1$d</string>
+    <string name="dual_detail_state_prompt_delete_title">Удалить состояние</string>
+    <string name="dual_detail_state_prompt_overwrite_title">Перезаписать состояние</string>
+    <string name="dual_detail_state_prompt_delete_message">%1$s будет удалено с этого устройства и с сервера.</string>
+    <string name="dual_detail_state_prompt_overwrite_message">%1$s уже содержит состояние. Оно будет заменено копией.</string>
+    <string name="dual_detail_state_prompt_delete_confirm">Удалить</string>
+    <string name="dual_detail_state_prompt_overwrite_confirm">Перезаписать</string>
+
+    <string name="dual_detail_saves_loading">Загрузка сохранений...</string>
+    <string name="dual_detail_saves_applying">Применение сохранения...</string>
+    <string name="dual_detail_saves_slots_heading">Слоты сохранений</string>
+    <string name="dual_detail_saves_new_slot">Новый слот</string>
+    <string name="dual_detail_saves_history_heading">История</string>
+    <string name="dual_detail_saves_history_heading_named">История (%1$s)</string>
+    <string name="dual_detail_saves_history_empty">Сохранений пока нет</string>
+    <string name="dual_detail_saves_active_restore_point_description">Активная точка восстановления</string>
+    <string name="dual_detail_saves_latest">Последнее</string>
+    <string name="dual_detail_saves_sync_synced">Синхронизировано</string>
+    <string name="dual_detail_saves_sync_local">Локально</string>
+
+    <string name="dual_detail_states_empty">Нет слотов состояний</string>
+    <string name="dual_detail_states_copy_prompt">Выберите слот для копирования</string>
+    <string name="dual_detail_states_slot_empty">Пусто</string>
+    <string name="dual_detail_states_slot_no_shot">Нет скриншота</string>
+    <string name="dual_detail_states_slot_number">Слот %1$d</string>
+
+    <string name="dual_detail_media_empty">Нет скриншотов</string>
+    <string name="dual_detail_media_screenshot_description">Скриншот</string>
+
+    <string name="dual_detail_option_emulator_default">По умолчанию для платформы</string>
+    <string name="dual_detail_option_core_default">По умолчанию</string>
+    <string name="dual_detail_option_save_path_custom">Своё</string>
+    <string name="dual_detail_option_save_path_default">По умолчанию</string>
+    <string name="dual_detail_option_memory_card_auto">Авто</string>
+    <string name="dual_detail_option_variant_default">По умолчанию</string>
+
+    <string name="dual_detail_option_play_extracting">Распаковка...</string>
+    <string name="dual_detail_option_play_downloading">Загрузка %1$d%%</string>
+    <string name="dual_detail_option_play_queued">В очереди...</string>
+    <string name="dual_detail_option_play_paused">На паузе %1$d%%</string>
+    <string name="dual_detail_option_play_no_space">Нет места</string>
+    <string name="dual_detail_option_play">Играть</string>
+    <string name="dual_detail_option_download">Скачать</string>
+    <string name="dual_detail_option_auto_save_slot">Автосохранение</string>
+
+    <string name="dual_detail_option_rating">Рейтинг</string>
+    <string name="dual_detail_option_difficulty">Сложность</string>
+    <string name="dual_detail_option_status">Статус</string>
+    <string name="dual_detail_option_status_not_set">Не задано</string>
+    <string name="dual_detail_option_unfavorite">Убрать из избранного</string>
+    <string name="dual_detail_option_favorite">Добавить в избранное</string>
+    <string name="dual_detail_option_change_emulator">Сменить эмулятор</string>
+    <string name="dual_detail_option_change_core">Сменить ядро</string>
+    <string name="dual_detail_option_save_path">Путь сохранения</string>
+    <string name="dual_detail_option_display_target">Целевой экран</string>
+    <string name="dual_detail_option_memory_card">Карта памяти</string>
+    <string name="dual_detail_option_select_variant">Выбрать вариант</string>
+    <string name="dual_detail_option_select_disc">Выбрать диск</string>
+    <string name="dual_detail_option_title_id">ID игры</string>
+    <string name="dual_detail_option_title_id_missing">Не обнаружен</string>
+    <string name="dual_detail_option_files">Файлы</string>
+    <string name="dual_detail_option_add_to_collection">Добавить в коллекцию</string>
+    <string name="dual_detail_option_refresh_metadata">Обновить метаданные</string>
+    <string name="dual_detail_option_delete">Удалить из библиотеки</string>
+    <string name="dual_detail_option_unhide">Показать игру</string>
+    <string name="dual_detail_option_hide">Скрыть игру</string>
+
+    <string name="dual_detail_file_picker_no_changes">Нет изменений</string>
+    <string name="dual_detail_file_picker_summary_adds">+%1$d · %2$s</string>
+    <string name="dual_detail_file_picker_summary_removes">-%1$d · %2$s</string>
+    <string name="dual_detail_file_picker_summary_selected">%1$d из %2$d · %3$s выбрано</string>
+    <string name="dual_detail_file_picker_manage_title">Файлы</string>
+    <string name="dual_detail_file_picker_choose_title">Выберите файлы</string>
+
+    <string name="dual_detail_steam_install_heading">МЕСТО УСТАНОВКИ</string>
+    <string name="dual_detail_steam_install_argosy">Скачать через Argosy</string>
+    <string name="dual_detail_steam_install_external">Отметить как установленную</string>
+    <string name="dual_detail_steam_install_managed_by">Управляется через %1$s</string>
+
+    <string name="dual_detail_screenshot_viewer_description">Скриншот</string>
+    <string name="dual_detail_achievements_label">Достижения</string>
+
+    <string name="dual_detail_emulator_picker_heading">ВЫБОР ЭМУЛЯТОРА</string>
+    <string name="dual_detail_emulator_picker_default">Использовать значение платформы по умолчанию</string>
+
+    <string name="dual_detail_core_picker_heading">ВЫБОР ЯДРА</string>
+    <string name="dual_detail_core_picker_default">Использовать значение платформы по умолчанию</string>
+
+    <string name="dual_detail_save_path_heading">ПУТЬ СОХРАНЕНИЯ</string>
+    <string name="dual_detail_save_path_reset">Сбросить к унаследованному</string>
+    <string name="dual_detail_save_path_inherited">Унаследованный путь</string>
+    <string name="dual_detail_save_path_inherited_hint">Задайте свой путь в настройках игры на главном экране</string>
+    <string name="dual_detail_save_path_current_override">Текущее переопределение</string>
+
+    <string name="dual_detail_display_target_heading">ЦЕЛЕВОЙ ЭКРАН</string>
+    <string name="dual_detail_display_target_default">Использовать значение платформы по умолчанию</string>
+
+    <string name="dual_detail_memory_card_heading">КАРТА ПАМЯТИ</string>
+    <string name="dual_detail_memory_card_auto">Автоопределение</string>
+
+    <string name="dual_detail_variant_heading">ВЫБОР ВАРИАНТА</string>
+    <string name="dual_detail_variant_default">По умолчанию (Оригинал)</string>
+
+    <string name="dual_detail_disc_heading">ВЫБОР ДИСКА</string>
+    <string name="dual_detail_disc_label">Диск %1$d</string>
+
+    <string name="dual_detail_collection_heading">ДОБАВИТЬ В КОЛЛЕКЦИЮ</string>
+    <string name="dual_detail_collection_create">Создать новую коллекцию</string>
+
+    <string name="dual_detail_state_preview_description">Превью состояния</string>
+    <string name="dual_detail_state_preview_cover_fallback">Обложка вместо превью</string>
+    <string name="dual_detail_state_sync_synced">Синхронизировано</string>
+    <string name="dual_detail_state_sync_pending">Ожидает</string>
+    <string name="dual_detail_state_sync_server">Сервер</string>
+    <string name="dual_detail_state_sync_local">Локально</string>
+
+    <string name="dual_detail_save_name_heading">СОЗДАТЬ СЛОТ СОХРАНЕНИЯ</string>
+    <string name="dual_detail_save_name_field_label">Имя слота</string>
+    <string name="dual_detail_save_name_cancel">Отмена</string>
+    <string name="dual_detail_save_name_create">Создать</string>
+
+    <string name="dual_detail_save_slot_auto">Автосохранение</string>
+</resources>

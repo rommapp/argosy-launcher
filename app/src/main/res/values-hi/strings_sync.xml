@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Save sync overlay, before a game launches. -->
+
+    <string name="sync_prelaunch_checking_save">सेव फ़ाइल जांची जा रही है...</string>
+    <string name="sync_prelaunch_save_found">सेव मिली</string>
+    <string name="sync_prelaunch_save_absent">कोई सेव फ़ाइल नहीं</string>
+    <string name="sync_prelaunch_connecting">कनेक्ट हो रहा है...</string>
+    <string name="sync_prelaunch_connected">कनेक्टेड</string>
+    <string name="sync_prelaunch_connect_failed">कनेक्शन विफल</string>
+    <string name="sync_prelaunch_downloading">डाउनलोड हो रहा है...</string>
+    <string name="sync_prelaunch_download_complete">डाउनलोड पूर्ण</string>
+    <string name="sync_prelaunch_download_failed">डाउनलोड विफल</string>
+    <string name="sync_prelaunch_writing">सेव लिखी जा रही है...</string>
+    <string name="sync_prelaunch_write_complete">सेव लिखी गई</string>
+    <string name="sync_prelaunch_write_failed">लिखने में विफल</string>
+    <string name="sync_prelaunch_launching">गेम लॉन्च हो रहा है...</string>
+
+    <!-- Save sync overlay, after a play session ends. -->
+
+    <string name="sync_postsession_checking_save">सेव फ़ाइल जांची जा रही है...</string>
+    <string name="sync_postsession_save_found">सेव मिली</string>
+    <string name="sync_postsession_save_absent">सेव नहीं मिली</string>
+    <string name="sync_postsession_connecting">कनेक्ट हो रहा है...</string>
+    <string name="sync_postsession_connected">कनेक्टेड</string>
+    <string name="sync_postsession_connect_failed">कनेक्शन विफल</string>
+    <string name="sync_postsession_uploading">अपलोड हो रहा है...</string>
+    <string name="sync_postsession_upload_complete">अपलोड पूर्ण</string>
+    <string name="sync_postsession_upload_queued">अपलोड कतार में</string>
+    <string name="sync_postsession_complete">सिंक पूर्ण</string>
+
+    <string name="sync_progress_skipped">सिंक छोड़ा गया</string>
+    <string name="sync_progress_hardcore_conflict">हार्डकोर सेव कॉन्फ्लिक्ट</string>
+    <string name="sync_progress_local_modified">लोकल सेव में बदलाव</string>
+    <string name="sync_progress_save_conflict">सेव कॉन्फ्लिक्ट</string>
+
+    <!-- Save sync overlay, blocked. -->
+
+    <string name="sync_blocked_permission_title">फ़ाइल एक्सेस अनुमति आवश्यक</string>
+    <string name="sync_blocked_permission_detail">%1$s के लिए सेव सिंक करने के लिए \"All files access\" अनुमति दें।</string>
+    <string name="sync_blocked_permission_emulator_fallback">इस एमुलेटर</string>
+
+    <string name="sync_blocked_path_not_found_title">सेव फ़ोल्डर नहीं मिला</string>
+    <string name="sync_blocked_path_not_found_detail">%1$s के लिए सेव फ़ोल्डर नहीं मिला। हो सकता है एमुलेटर एक अलग सेव लोकेशन इस्तेमाल कर रहा हो।</string>
+    <string name="sync_blocked_path_not_found_emulator_fallback">इस एमुलेटर</string>
+
+    <string name="sync_blocked_access_denied_title">सेव फ़ोल्डर एक्सेस अवरुद्ध</string>
+    <string name="sync_blocked_access_denied_detail">आपका डिवाइस %1$s के सेव डेटा तक पहुंच रोक रहा है। यह निर्माता की पाबंदियों (Samsung, Xiaomi, आदि) या सुरक्षा नीतियों की वजह से हो सकता है।</string>
+    <string name="sync_blocked_access_denied_switch_detail">आपका डिवाइस %1$s के सेव डेटा तक पहुंच रोक रहा है। %2$s में एक बाहरी सेव पाथ सेट करें (Android/data के बाहर), फिर वही पाथ Argosy में सेट करें।</string>
+    <string name="sync_blocked_access_denied_emulator_fallback">एमुलेटर</string>
+    <string name="sync_blocked_access_denied_configure_fallback">एमुलेटर</string>
+
+    <!-- Android system notification shown while a library or save sync runs in the
+         background. -->
+
+    <string name="sync_service_channel_name">सेव सिंक</string>
+    <string name="sync_service_channel_description">बैकग्राउंड में सेव सिंक की प्रगति दिखाता है</string>
+    <string name="sync_service_preparing">सिंक की तैयारी हो रही है...</string>
+    <string name="sync_service_platform">सिंक हो रहा है: %1$s</string>
+    <string name="sync_service_library">लाइब्रेरी सिंक हो रही है...</string>
+    <string name="sync_service_uploading">अपलोड हो रहा है: %1$s</string>
+    <string name="sync_service_downloading">डाउनलोड हो रहा है: %1$s</string>
+    <string name="sync_service_saves">सेव सिंक हो रहे हैं...</string>
+
+    <!-- Android system notification shown while downloads run in the background. -->
+
+    <string name="sync_download_channel_name">डाउनलोड प्रगति</string>
+    <string name="sync_download_channel_description">बैकग्राउंड में डाउनलोड प्रगति दिखाता है</string>
+    <string name="sync_download_service_preparing">डाउनलोड की तैयारी हो रही है...</string>
+    <string name="sync_download_service_steam_downloading">डाउनलोड हो रहा है: %1$s</string>
+    <string name="sync_download_service_extracting">एक्सट्रैक्ट हो रहा है: %1$s</string>
+    <string name="sync_download_service_moving">ROM स्टोरेज में ले जाया जा रहा है: %1$s</string>
+    <string name="sync_download_service_downloading">डाउनलोड हो रहा है: %1$s</string>
+    <string name="sync_download_service_queued">कतार में: %1$s</string>
+    <string name="sync_download_service_pending">डाउनलोड लंबित...</string>
+    <string name="sync_download_service_media_preparing">%1$s: %2$s</string>
+    <string name="sync_download_service_media_downloading">डाउनलोड हो रहा है: %1$s</string>
+
+    <!-- Android system notification shown while a game is being played. -->
+
+    <string name="sync_session_channel_name">गेम सेशन</string>
+    <string name="sync_session_channel_description">गेमप्ले के दौरान सेव फ़ाइलों की निगरानी करता है</string>
+    <string name="sync_session_notification_playing">खेला जा रहा है</string>
+    <string name="sync_session_notification_save_detected">सेव मिली</string>
+    <string name="sync_session_game_fallback">गेम</string>
+
+    <!-- In-app notices after a play session ends. -->
+
+    <string name="sync_session_save_uploaded_orphan">सेव अपलोड हुई</string>
+    <string name="sync_session_save_uploaded">सेव अपलोड हुई</string>
+    <string name="sync_session_save_unchanged">सेव में कोई बदलाव नहीं</string>
+    <string name="sync_session_save_upload_failed">अपलोड विफल</string>
+    <string name="sync_session_save_upload_failed_subtitle">%1$s: %2$s</string>
+    <string name="sync_session_save_upload_failed_name_fallback">सेव</string>
+
+    <!-- In-app notice about saves waiting for the user to choose between two versions. -->
+
+    <plurals name="sync_conflict_pending_title">
+        <item quantity="one">%1$d सेव पर आपका ध्यान चाहिए</item>
+        <item quantity="other">%1$d सेव पर आपका ध्यान चाहिए</item>
+    </plurals>
+    <string name="sync_conflict_pending_subtitle">हल करने के लिए सेव सिंक खोलें। लोकल सेव अपरिवर्तित हैं।</string>
+
+    <!-- In-app notices about downloading films and episodes. -->
+
+    <string name="sync_media_signin_title">डाउनलोड करने के लिए साइन इन करें</string>
+    <string name="sync_media_signin_subtitle">सेटिंग्स से एक मीडिया सर्वर कनेक्ट करें</string>
+
+    <plurals name="sync_media_title_count">
+        <item quantity="one">%1$d टाइटल</item>
+        <item quantity="other">%1$d टाइटल</item>
+    </plurals>
+
+    <string name="sync_media_refusal_downloaded_title">पहले से डाउनलोड हो चुका है</string>
+    <string name="sync_media_refusal_downloaded_subtitle">%1$s इस डिवाइस पर %2$s पर मौजूद</string>
+    <string name="sync_media_refusal_queued_title">पहले से कतार में है</string>
+    <string name="sync_media_refusal_queued_subtitle">%1$s डाउनलोड होने का इंतज़ार कर रहे हैं</string>
+    <string name="sync_media_refusal_mixed_title">डाउनलोड करने के लिए कुछ नया नहीं</string>
+    <string name="sync_media_refusal_mixed_subtitle">%1$s डाउनलोड हुए, %2$s कतार में</string>
+    <string name="sync_media_refusal_unavailable_title">डाउनलोड करने के लिए कुछ नहीं</string>
+    <string name="sync_media_refusal_unavailable_subtitle">इस टाइटल की कोई फ़ाइल सर्वर नहीं देगा</string>
+
+    <string name="sync_media_unreachable_title">स्टोरेज उपलब्ध नहीं</string>
+    <string name="sync_media_unreachable_subtitle">%1$s उनकी स्टोरेज वापस आने तक डाउनलोड ही बने रहेंगे</string>
+
+    <string name="sync_media_storage_title">%1$s के लिए पर्याप्त स्टोरेज नहीं</string>
+
+    <string name="sync_media_step_preparing">तैयारी हो रही है</string>
+    <string name="sync_media_step_awaiting_transcode">सर्वर के ट्रांसकोड शुरू करने का इंतज़ार</string>
+
+    <string name="sync_media_transcode_unavailable_title">मूल फ़ाइल डाउनलोड हो रही है</string>
+    <string name="sync_media_transcode_unavailable_subtitle">%1$s को डाउनलोड के लिए ट्रांसकोड नहीं किया जा सका</string>
+
+    <plurals name="sync_media_subtitle_shortfall_title">
+        <item quantity="one">%1$s बिना %2$d सबटाइटल ट्रैक के डाउनलोड हुआ</item>
+        <item quantity="other">%1$s बिना %2$d सबटाइटल ट्रैक के डाउनलोड हुआ</item>
+    </plurals>
+    <string name="sync_media_subtitle_shortfall_burned_in">%1$s तस्वीर में है; बाकी नहीं भेजे जा सके</string>
+    <string name="sync_media_subtitle_shortfall_refused">सर्वर ने हर सबटाइटल ट्रैक नहीं दिया</string>
+    <string name="sync_media_subtitle_shortfall_transcoded">छोटे आकार के साथ पिक्चर सबटाइटल नहीं भेजे जा सकते</string>
+    <string name="sync_media_subtitle_shortfall_external">पिक्चर सबटाइटल फ़ाइल से अलग रखे जाते हैं और इसके साथ नहीं भेजे जा सकते</string>
+    <string name="sync_media_subtitle_label_fallback">सबटाइटल</string>
+
+    <!-- Steam notices. -->
+
+    <string name="sync_steam_rate_limited_title">Steam अस्थायी रूप से अनुपलब्ध</string>
+    <string name="sync_steam_rate_limited_subtitle">लॉगिन दर सीमित है। एक घंटे में फिर कोशिश करें</string>
+    <string name="sync_steam_auth_expired_title">Steam सेशन समाप्त हो गया</string>
+    <string name="sync_steam_auth_expired_subtitle">सेटिंग्स &gt; Steam से फिर साइन इन करें</string>
+    <string name="sync_steam_download_signed_out_title">Steam सेशन समाप्त हो गया</string>
+    <string name="sync_steam_download_signed_out_subtitle">डाउनलोड करने के लिए सेटिंग्स &gt; Steam से साइन इन करें</string>
+    <string name="sync_steam_path_blocked_title">%1$s डाउनलोड नहीं हो सकता</string>
+    <string name="sync_steam_storage_blocked_title">%1$s डाउनलोड नहीं हो सकता</string>
+
+    <string name="sync_steam_qr_rate_limited">दर सीमित है। बाद में फिर कोशिश करें</string>
+    <string name="sync_steam_qr_login_failed">लॉगिन विफल: %1$s</string>
+    <string name="sync_steam_qr_not_connected">Steam से कनेक्ट नहीं है</string>
+    <string name="sync_steam_qr_start_failed">QR ऑथ शुरू करने में विफल</string>
+    <string name="sync_steam_qr_polling_failed">पोलिंग विफल</string>
+    <string name="sync_steam_qr_disconnected">Steam कनेक्ट नहीं है</string>
+
+    <!-- Emulator core selection. -->
+
+    <string name="sync_launch_core_fallback">%1$s लोड करने में विफल, इसके बजाय %2$s इस्तेमाल हो रहा है</string>
+</resources>

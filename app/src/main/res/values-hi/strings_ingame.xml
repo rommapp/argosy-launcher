@@ -1,0 +1,539 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="ingame_netplay_quality_excellent">उत्कृष्ट</string>
+    <string name="ingame_netplay_quality_good">अच्छा</string>
+    <string name="ingame_netplay_quality_fair">ठीक-ठाक</string>
+    <string name="ingame_netplay_quality_poor">खराब</string>
+    <string name="ingame_netplay_quality_bad">बहुत खराब</string>
+
+    <string name="ingame_menu_swap_disc">डिस्क बदलें</string>
+    <string name="ingame_menu_resume">जारी रखें</string>
+    <string name="ingame_menu_quick_save">क्विक सेव</string>
+    <string name="ingame_menu_quick_load">क्विक लोड</string>
+    <string name="ingame_menu_manage_states">स्टेट प्रबंधित करें</string>
+    <string name="ingame_menu_cheats">चीट</string>
+    <string name="ingame_menu_invite_friend">फ्रेंड को आमंत्रित करें...</string>
+    <string name="ingame_menu_open_to_all_friends">सभी फ्रेंड्स के लिए खोलें</string>
+    <string name="ingame_menu_close_netplay_server">नेटप्ले सर्वर बंद करें</string>
+    <string name="ingame_menu_leave_netplay_session">नेटप्ले सेशन छोड़ें</string>
+    <string name="ingame_menu_open_netplay_server">नेटप्ले सर्वर खोलें</string>
+    <string name="ingame_menu_settings">सेटिंग्स</string>
+    <string name="ingame_menu_stop_speedrun_timer">स्पीडरन टाइमर रोकें</string>
+    <string name="ingame_menu_speedrun_timer">स्पीडरन टाइमर</string>
+    <string name="ingame_menu_touch_controls">टच कंट्रोल्स</string>
+    <string name="ingame_menu_reset">रीसेट</string>
+    <string name="ingame_menu_quit">गेम छोड़ें</string>
+    <string name="ingame_menu_hardcore_badge">हार्डकोर</string>
+    <string name="ingame_menu_quick_save_history_action">क्विक सेव इतिहास</string>
+
+    <string name="ingame_disc_title">डिस्क बदलें</string>
+    <string name="ingame_disc_current">"%1$s  (मौजूदा)"</string>
+
+    <string name="ingame_states_title">स्टेट प्रबंधित करें</string>
+    <string name="ingame_states_channel">[%1$s]</string>
+    <string name="ingame_states_delete_title">सेव स्टेट हटाएं?</string>
+    <string name="ingame_states_delete_confirm">पुष्टि करें</string>
+    <string name="ingame_states_delete_cancel">रद्द करें</string>
+    <string name="ingame_states_delete_body">यह कार्रवाई पूर्ववत नहीं की जा सकती।</string>
+    <string name="ingame_states_load_title">यह स्टेट लोड करें?</string>
+    <string name="ingame_states_load_confirm">लोड करें</string>
+    <string name="ingame_states_load_cancel">रद्द करें</string>
+    <string name="ingame_states_load_preview_description">स्टेट प्रीव्यू</string>
+    <string name="ingame_states_load_body">मौजूदा प्रगति बदल दी जाएगी।</string>
+    <string name="ingame_states_slot_auto">ऑटो</string>
+    <string name="ingame_states_slot_numbered">स्लॉट %1$d</string>
+    <string name="ingame_states_preview_no_screenshot">कोई स्क्रीनशॉट नहीं</string>
+    <string name="ingame_states_preview_empty_slot">खाली स्लॉट</string>
+    <string name="ingame_states_carousel_no_screenshot">कोई स्क्रीनशॉट नहीं</string>
+    <string name="ingame_states_carousel_no_state">कोई स्टेट सेव नहीं</string>
+    <string name="ingame_states_carousel_empty">खाली</string>
+    <string name="ingame_states_footer_load">लोड करें</string>
+    <string name="ingame_states_footer_save_over">ओवर सेव करें</string>
+    <string name="ingame_states_footer_delete">हटाएं</string>
+    <string name="ingame_states_footer_save">सेव करें</string>
+    <string name="ingame_states_footer_mode_carousel">कैरोसेल</string>
+    <string name="ingame_states_footer_mode_grid">ग्रिड</string>
+    <string name="ingame_states_footer_back">वापस</string>
+
+    <string name="ingame_quickload_empty_title">कोई क्विक सेव नहीं</string>
+    <string name="ingame_quickload_empty_message">इतिहास बनाने के लिए क्विक सेव इस्तेमाल करें</string>
+    <string name="ingame_quickload_title">क्विक लोड</string>
+    <string name="ingame_quickload_footer_load">लोड करें</string>
+    <string name="ingame_quickload_footer_back">वापस</string>
+    <string name="ingame_quickload_preview_description">क्विक सेव प्रीव्यू</string>
+    <string name="ingame_quickload_preview_no_screenshot">कोई स्क्रीनशॉट नहीं</string>
+    <string name="ingame_quickload_row_latest">नवीनतम</string>
+    <string name="ingame_quickload_row_entry">क्विक सेव</string>
+
+    <string name="ingame_autorestore_title">सेव स्टेट से जारी रखें?</string>
+    <string name="ingame_autorestore_confirm">हां</string>
+    <string name="ingame_autorestore_decline">नहीं</string>
+
+    <string name="ingame_achievement_hardcore_heading">हार्डकोर अनलॉक्ड</string>
+    <string name="ingame_achievement_heading">अचीवमेंट अनलॉक्ड</string>
+    <plurals name="ingame_achievement_points">
+        <item quantity="one">+%d अंक</item>
+        <item quantity="other">+%d अंक</item>
+    </plurals>
+
+    <string name="ingame_raconnect_title">RetroAchievements कनेक्टेड</string>
+    <string name="ingame_raconnect_hardcore">हार्डकोर मोड</string>
+    <string name="ingame_raconnect_casual">कैज़ुअल मोड</string>
+    <string name="ingame_raconnect_earned">%1$d/%2$d अर्जित</string>
+
+    <string name="ingame_speedrun_paused">रुका हुआ</string>
+    <string name="ingame_speedrun_personal_best">पर्सनल बेस्ट</string>
+    <string name="ingame_speedrun_session_best">सेशन बेस्ट</string>
+    <string name="ingame_speedrun_sum_of_best">सम ऑफ बेस्ट</string>
+    <string name="ingame_speedrun_attempt">प्रयास %1$d</string>
+
+    <string name="ingame_netplay_progress_requesting_join">जॉइन का अनुरोध भेजा जा रहा है...</string>
+    <string name="ingame_netplay_progress_waiting_for_host">होस्ट की स्वीकृति का इंतज़ार...</string>
+    <string name="ingame_netplay_progress_connecting">कनेक्ट हो रहा है...</string>
+    <string name="ingame_netplay_progress_measuring">कनेक्शन मापा जा रहा है...</string>
+    <string name="ingame_netplay_progress_loading_state">गेम स्टेट लोड हो रहा है...</string>
+    <string name="ingame_netplay_progress_ready">तैयार!</string>
+    <string name="ingame_netplay_progress_failed">कनेक्ट नहीं हो सका</string>
+    <string name="ingame_netplay_progress_title">नेटप्ले</string>
+    <string name="ingame_netplay_progress_dismiss">ठीक है</string>
+
+    <string name="ingame_netplay_reconnecting">फिर से कनेक्ट हो रहा है...</string>
+    <string name="ingame_netplay_reconnecting_with_ping">फिर से कनेक्ट हो रहा है... (आखिरी: %1$dms)</string>
+
+    <string name="ingame_netplay_disconnect_title">फ्रेंड डिस्कनेक्ट हुआ</string>
+    <string name="ingame_netplay_disconnect_message">%1$s का कनेक्शन टूट गया। क्या उन्हें फिर से जुड़ने के लिए सेशन खुला रखें, या बंद करके बाहर निकलें?</string>
+    <string name="ingame_netplay_disconnect_keep_open">खुला रखें</string>
+    <string name="ingame_netplay_disconnect_close">बंद करें और गेम खत्म करें</string>
+
+    <string name="ingame_netplay_quality_warning_title">कनेक्शन चेतावनी</string>
+    <string name="ingame_netplay_quality_warning_message">कनेक्शन की गुणवत्ता %1$s है (%2$dms पिंग, %3$dms जिटर)। गेमप्ले में रुकावट हो सकती है।</string>
+    <string name="ingame_netplay_quality_warning_accept">फिर भी जारी रखें</string>
+    <string name="ingame_netplay_quality_warning_decline">रद्द करें</string>
+
+    <string name="ingame_netplay_friend_picker_title">फ्रेंड को आमंत्रित करें</string>
+    <string name="ingame_netplay_friend_picker_empty">कोई ऑनलाइन फ्रेंड उपलब्ध नहीं</string>
+    <string name="ingame_netplay_friend_picker_close">बंद करें</string>
+    <string name="ingame_netplay_friend_online">ऑनलाइन</string>
+    <string name="ingame_netplay_friend_offline">ऑफ़लाइन</string>
+
+    <string name="ingame_netplay_mode_picker_title">नेटप्ले सर्वर खोलें</string>
+    <string name="ingame_netplay_mode_open_label">फ्रेंड्स के लिए खोलें</string>
+    <string name="ingame_netplay_mode_open_description">कोई भी जॉइन कर सकता है</string>
+    <string name="ingame_netplay_mode_private_label">निजी</string>
+    <string name="ingame_netplay_mode_private_description">आपकी स्वीकृति जरूरी</string>
+    <string name="ingame_netplay_mode_invite_label">फ्रेंड को आमंत्रित करें...</string>
+    <string name="ingame_netplay_mode_invite_description">किसी खास फ्रेंड को चुनें</string>
+
+    <string name="ingame_netplay_join_request_title">जॉइन अनुरोध</string>
+    <string name="ingame_netplay_join_request_message">%1$s आपके सेशन में जॉइन होना चाहते हैं</string>
+    <string name="ingame_netplay_join_request_accept">स्वीकार करें</string>
+    <string name="ingame_netplay_join_request_decline">अस्वीकार करें</string>
+
+    <string name="ingame_netplay_hud_mode_open">खुला</string>
+    <string name="ingame_netplay_hud_mode_private">निजी</string>
+    <string name="ingame_netplay_hud_mode_invite_only">केवल आमंत्रण</string>
+    <plurals name="ingame_netplay_hud_players">
+        <item quantity="one">%d प्लेयर</item>
+        <item quantity="other">%d प्लेयर</item>
+    </plurals>
+    <string name="ingame_netplay_hud_host_tag">[होस्ट]</string>
+    <string name="ingame_netplay_hud_observers">दर्शक</string>
+
+    <string name="ingame_settings_tab_video">वीडियो</string>
+    <string name="ingame_settings_tab_controls">कंट्रोल्स</string>
+    <string name="ingame_settings_tab_core_options">कोर विकल्प</string>
+
+    <string name="ingame_settings_footer_tab">टैब</string>
+    <string name="ingame_settings_footer_video_adjust">बदलें</string>
+    <string name="ingame_settings_footer_video_select">चुनें</string>
+    <string name="ingame_settings_footer_controls_adjust">बदलें</string>
+    <string name="ingame_settings_footer_controls_select">चुनें</string>
+    <string name="ingame_settings_footer_core_options_adjust">बदलें</string>
+    <string name="ingame_settings_footer_core_options_select">चुनें</string>
+    <string name="ingame_settings_footer_back">वापस</string>
+
+    <string name="ingame_settings_header_controllers">कंट्रोलर</string>
+    <string name="ingame_settings_header_sticks">एनालॉग स्टिक</string>
+    <string name="ingame_settings_header_hotkeys">हॉटकी</string>
+    <string name="ingame_settings_header_touch">टच कंट्रोल्स</string>
+
+    <string name="ingame_settings_game_specific_controls_title">गेम-विशिष्ट कंट्रोल्स</string>
+    <string name="ingame_settings_game_specific_controls_subtitle_on">रीमैप केवल इस गेम पर लागू होते हैं</string>
+    <string name="ingame_settings_game_specific_controls_subtitle_off">आपकी ग्लोबल कंट्रोलर मैपिंग इस्तेमाल हो रही है</string>
+    <string name="ingame_settings_rumble_title">रम्बल</string>
+    <string name="ingame_settings_rumble_subtitle">कंट्रोलर वाइब्रेशन फीडबैक सक्षम करें</string>
+    <string name="ingame_settings_controller_order_title">कंट्रोलर ऑर्डर</string>
+    <plurals name="ingame_settings_controller_order_assigned">
+        <item quantity="one">%d कंट्रोलर असाइन किया गया</item>
+        <item quantity="other">%d कंट्रोलर असाइन किए गए</item>
+    </plurals>
+    <string name="ingame_settings_controller_order_subtitle_empty">कंट्रोलर पोर्ट असाइन करें</string>
+    <string name="ingame_settings_controller_type_title">प्लेयर %1$d कंट्रोलर</string>
+    <string name="ingame_settings_controller_type_pending">अगली बार लॉन्च करने पर लागू होगा</string>
+    <string name="ingame_settings_controller_type_core_default">कोर द्वारा चुना गया</string>
+    <string name="ingame_settings_controller_grip_title">कंट्रोलर ग्रिप</string>
+    <string name="ingame_settings_controller_grip_subtitle">ग्रिप जिस हिस्से को ढकती है, UI को वहां से ऊपर खिसकाएं</string>
+    <string name="ingame_settings_input_mapping_title">इनपुट मैपिंग</string>
+    <string name="ingame_settings_input_mapping_subtitle">हर कंट्रोलर के लिए बटन रीमैप करें</string>
+    <string name="ingame_settings_analog_as_dpad_title">लेफ्ट स्टिक को D-Pad की तरह</string>
+    <string name="ingame_settings_analog_as_dpad_subtitle">लेफ्ट एनालॉग स्टिक को D-pad इनपुट पर मैप करें</string>
+    <string name="ingame_settings_dpad_as_analog_title">D-Pad को लेफ्ट स्टिक की तरह</string>
+    <string name="ingame_settings_dpad_as_analog_subtitle">D-pad को लेफ्ट एनालॉग स्टिक इनपुट पर मैप करें</string>
+    <string name="ingame_settings_hotkeys_title">हॉटकी</string>
+    <string name="ingame_settings_hotkeys_subtitle">मेन्यू, फास्ट फॉरवर्ड, रिवाइंड के लिए शॉर्टकट सेट करें</string>
+    <string name="ingame_settings_limit_hotkeys_title">हॉटकी केवल प्लेयर 1 तक सीमित करें</string>
+    <string name="ingame_settings_limit_hotkeys_subtitle">केवल प्लेयर 1 का कंट्रोलर हॉटकी चला सकता है</string>
+    <string name="ingame_settings_toggle_fast_forward_title">फास्ट फॉरवर्ड टॉगल करें</string>
+    <string name="ingame_settings_toggle_fast_forward_subtitle">शुरू करने के लिए एक बार दबाएं, रोकने के लिए फिर से (बंद = दबाए रखकर फास्ट फॉरवर्ड)</string>
+    <string name="ingame_settings_preserve_pitch_title">ऑडियो पिच बनाए रखें</string>
+    <string name="ingame_settings_preserve_pitch_subtitle">फास्ट फॉरवर्ड के दौरान पिच स्थिर रखें। अतिरिक्त CPU इस्तेमाल होता है; डिफ़ॉल्ट रूप से बंद</string>
+    <string name="ingame_settings_touch_enabled_title">गेमपैड न होने पर टच कंट्रोल्स दिखाएं</string>
+    <string name="ingame_settings_touch_enabled_subtitle">जब कोई कंट्रोलर कनेक्ट न हो तो ऑन-स्क्रीन ओवरले दिखाएं</string>
+    <string name="ingame_settings_touch_haptic_title">हैप्टिक फीडबैक</string>
+    <string name="ingame_settings_touch_haptic_subtitle">टच करने पर हल्का वाइब्रेट करें</string>
+    <string name="ingame_settings_touch_lock_orientation_title">गेम में ओरिएंटेशन लॉक करें</string>
+    <string name="ingame_settings_touch_lock_orientation_subtitle">खेलते समय ऑटो-रोटेट न करें</string>
+    <string name="ingame_settings_touch_genesis6_title">Genesis 6-बटन मोड</string>
+    <string name="ingame_settings_touch_genesis6_subtitle">Genesis / Mega Drive के लिए छह फेस बटन दिखाएं</string>
+
+    <string name="ingame_settings_hud_header">स्टेटस बार</string>
+    <string name="ingame_settings_hud_enabled_title">स्टेटस बार दिखाएं</string>
+    <string name="ingame_settings_hud_enabled_subtitle">खेलते समय कोने में लगा एक छोटा रीडआउट</string>
+    <string name="ingame_settings_hud_corner_title">कोना</string>
+    <string name="ingame_settings_hud_battery_title">बैटरी</string>
+    <string name="ingame_settings_hud_clock_title">घड़ी</string>
+    <string name="ingame_settings_hud_playtime_title">सेशन समय</string>
+    <string name="ingame_settings_hud_fps_title">FPS</string>
+    <string name="ingame_settings_hud_fps_subtitle">फास्ट-फॉरवर्ड के दौरान छिपा रहता है</string>
+    <string name="ingame_settings_hud_last_save_title">आखिरी सेव स्टेट</string>
+
+    <string name="ingame_coreoptions_per_game_title">गेम-विशिष्ट सेटिंग्स</string>
+    <string name="ingame_coreoptions_per_game_subtitle_on">बदलाव केवल इस गेम पर लागू होते हैं</string>
+    <string name="ingame_coreoptions_per_game_subtitle_off">इस कोर के लिए ग्लोबल डिफ़ॉल्ट इस्तेमाल हो रहे हैं</string>
+
+    <string name="ingame_frame_previous_description">पिछला</string>
+    <string name="ingame_frame_next_description">अगला</string>
+    <string name="ingame_frame_none">कोई फ्रेम नहीं</string>
+    <string name="ingame_frame_download_badge">डाउनलोड</string>
+    <string name="ingame_frame_footer_change">बदलें</string>
+    <string name="ingame_frame_footer_select">चुनें</string>
+    <string name="ingame_frame_footer_download">डाउनलोड</string>
+    <string name="ingame_frame_footer_cancel">रद्द करें</string>
+
+    <string name="ingame_shader_footer_picker_browse">ब्राउज़ करें</string>
+    <string name="ingame_shader_footer_picker_select">चुनें</string>
+    <string name="ingame_shader_footer_picker_cancel">रद्द करें</string>
+    <string name="ingame_shader_footer_shader">शेडर</string>
+    <string name="ingame_shader_footer_reorder">क्रम बदलें</string>
+    <string name="ingame_shader_footer_adjust">बदलें</string>
+    <string name="ingame_shader_footer_add">जोड़ें</string>
+    <string name="ingame_shader_footer_remove">हटाएं</string>
+    <string name="ingame_shader_footer_reset">रीसेट</string>
+    <string name="ingame_shader_footer_back">वापस</string>
+
+    <string name="ingame_cheats_tab_cheats">चीट</string>
+    <string name="ingame_cheats_tab_discover">डिस्कवर</string>
+
+    <string name="ingame_cheats_error_ram_unavailable">इस कोर के लिए RAM उपलब्ध नहीं है</string>
+    <string name="ingame_cheats_error_no_changes">कोई बदलाव नहीं मिला - पहले थोड़ा और खेलें</string>
+    <string name="ingame_cheats_error_changed_not_ready">नतीजे सीमित करने के लिए और खेलें</string>
+    <string name="ingame_cheats_error_no_unchanged">कोई अपरिवर्तित वैल्यू नहीं - इसके बजाय \'बदला हुआ\' आज़माएं</string>
+    <string name="ingame_cheats_error_same_not_ready">नतीजे सीमित करने के लिए और खेलें</string>
+    <string name="ingame_cheats_error_address_saved">एड्रेस पहले से चीट के रूप में सेव है</string>
+
+    <string name="ingame_cheats_footer_variant_select">चुनें</string>
+    <string name="ingame_cheats_footer_search">खोजें</string>
+    <string name="ingame_cheats_footer_clear_search">साफ़ करें</string>
+    <string name="ingame_cheats_footer_toggle">टॉगल</string>
+    <string name="ingame_cheats_footer_edit">संपादित करें</string>
+    <string name="ingame_cheats_footer_version">वर्शन</string>
+    <string name="ingame_cheats_footer_snapshot">स्नैपशॉट</string>
+    <string name="ingame_cheats_footer_discover_select">चुनें</string>
+    <string name="ingame_cheats_footer_save_cheat">चीट सेव करें</string>
+    <string name="ingame_cheats_footer_filter">फ़िल्टर</string>
+    <string name="ingame_cheats_footer_adjust">बदलें</string>
+    <string name="ingame_cheats_footer_reset">रीसेट</string>
+    <string name="ingame_cheats_footer_tab">टैब</string>
+    <string name="ingame_cheats_footer_back">वापस</string>
+
+    <string name="ingame_cheats_loading">मेमोरी स्कैन हो रही है...</string>
+    <string name="ingame_cheats_variant_picker_title">कई वर्शन उपलब्ध हैं</string>
+    <string name="ingame_cheats_variant_picker_message">अपने ROM से मेल खाने वाला वर्शन चुनें</string>
+    <string name="ingame_cheats_variant_modal_title">वर्शन चुनें</string>
+    <string name="ingame_cheats_variant_unknown_region">अज्ञात क्षेत्र</string>
+    <plurals name="ingame_cheats_variant_count">
+        <item quantity="one">%d चीट</item>
+        <item quantity="other">%d चीट</item>
+    </plurals>
+
+    <plurals name="ingame_cheats_available_count">
+        <item quantity="one">%d चीट</item>
+        <item quantity="other">%d चीट</item>
+    </plurals>
+    <string name="ingame_cheats_available_enabled">%1$d/%2$d सक्षम</string>
+    <string name="ingame_cheats_available_empty_search">कोई मेल खाती चीट नहीं</string>
+    <string name="ingame_cheats_available_empty">कोई चीट उपलब्ध नहीं</string>
+    <string name="ingame_cheats_available_search_placeholder">चीट खोजें...</string>
+    <string name="ingame_cheats_available_search_clear">साफ़ करें</string>
+
+    <string name="ingame_cheats_discover_ram_hint">यह कोर सिस्टम RAM उपलब्ध नहीं कराता</string>
+    <string name="ingame_cheats_discover_snapshot_title">स्नैपशॉट</string>
+    <string name="ingame_cheats_discover_snapshot_subtitle">मौजूदा RAM स्टेट कैप्चर करें</string>
+    <string name="ingame_cheats_discover_snapshot_hint">शुरू करने के लिए स्नैपशॉट लें</string>
+    <string name="ingame_cheats_discover_changed_title">बदला हुआ</string>
+    <string name="ingame_cheats_discover_changed_subtitle">स्नैपशॉट के बाद बदली वैल्यू खोजें</string>
+    <string name="ingame_cheats_discover_same_title">समान</string>
+    <string name="ingame_cheats_discover_same_subtitle">जो वैल्यू वैसी ही रहीं उन्हें खोजें</string>
+    <string name="ingame_cheats_discover_view_results_title">परिणाम देखें</string>
+    <plurals name="ingame_cheats_discover_view_results_subtitle">
+        <item quantity="one">पिछली खोज से %d एंट्री</item>
+        <item quantity="other">पिछली खोज से %d एंट्रियां</item>
+    </plurals>
+    <plurals name="ingame_cheats_discover_actions_candidates">
+        <item quantity="one">%d उम्मीदवार</item>
+        <item quantity="other">%d उम्मीदवार</item>
+    </plurals>
+    <string name="ingame_cheats_discover_hint_narrow">नतीजे सीमित करें या मौजूदा देखें</string>
+    <string name="ingame_cheats_discover_hint_pick">तुलना के लिए एक कार्रवाई चुनें</string>
+    <string name="ingame_cheats_discover_waiting_message">जारी रखने के लिए थोड़ा और खेलें और अपने नतीजे सीमित करें</string>
+    <plurals name="ingame_cheats_discover_waiting_candidates">
+        <item quantity="one">%d उम्मीदवार</item>
+        <item quantity="other">%d उम्मीदवार</item>
+    </plurals>
+    <string name="ingame_cheats_discover_filter_title">वैल्यू के अनुसार फ़िल्टर करें</string>
+    <plurals name="ingame_cheats_discover_results_candidates">
+        <item quantity="one">%d उम्मीदवार</item>
+        <item quantity="other">%d उम्मीदवार</item>
+    </plurals>
+    <string name="ingame_cheats_discover_results_hint">फिर से तुलना करने के लिए गेम खेलें</string>
+    <string name="ingame_cheats_discover_results_empty">कोई मेल नहीं मिला</string>
+    <string name="ingame_cheats_discover_result_saved">%1$s के रूप में सेव किया गया</string>
+    <string name="ingame_cheats_discover_result_value">वैल्यू %1$s</string>
+    <string name="ingame_cheats_discover_result_value_previous">वैल्यू %1$s (पहले %2$s थी)</string>
+
+    <string name="ingame_cheats_dialog_search_title">चीट खोजें</string>
+    <string name="ingame_cheats_dialog_search_placeholder">चीट का नाम दर्ज करें...</string>
+    <string name="ingame_cheats_dialog_search_clear">साफ़ करें</string>
+    <string name="ingame_cheats_dialog_search_cancel">रद्द करें</string>
+    <string name="ingame_cheats_dialog_search_confirm">खोजें</string>
+    <string name="ingame_cheats_dialog_create_title">चीट बनाएं</string>
+    <string name="ingame_cheats_dialog_create_confirm">बनाएं</string>
+    <string name="ingame_cheats_dialog_edit_title">चीट संपादित करें</string>
+    <string name="ingame_cheats_dialog_edit_confirm">सहेजें</string>
+    <string name="ingame_cheats_dialog_address">एड्रेस: 0x%1$s</string>
+    <string name="ingame_cheats_dialog_name_label">चीट का नाम</string>
+    <string name="ingame_cheats_dialog_value_label">वैल्यू (%1$d-%2$d)</string>
+    <string name="ingame_cheats_dialog_value_error">%1$d और %2$d के बीच एक वैल्यू दर्ज करें</string>
+    <string name="ingame_cheats_dialog_delete_row">चीट हटाएं</string>
+    <string name="ingame_cheats_dialog_delete_title">चीट हटाएं</string>
+    <string name="ingame_cheats_dialog_delete_message">क्या आप वाकई &quot;%1$s&quot; हटाना चाहते हैं?</string>
+    <string name="ingame_cheats_dialog_delete_confirm">हटाएं</string>
+    <string name="ingame_cheats_dialog_cancel">रद्द करें</string>
+
+    <string name="ingame_cheats_available_header_recent">हाल के</string>
+    <string name="ingame_cheats_available_header_custom">कस्टम</string>
+    <string name="ingame_cheats_available_header_available">उपलब्ध</string>
+
+    <string name="ingame_libretro_rom_not_found">गेम फ़ाइल नहीं मिली</string>
+    <string name="ingame_libretro_rom_not_readable">गेम फ़ाइल एक्सेस नहीं हो सकी</string>
+
+    <string name="ingame_libretro_core_error_load_library">एमुलेटर कोर लोड नहीं हो सका</string>
+    <string name="ingame_libretro_core_error_load_game">गेम फ़ाइल लोड नहीं हो सकी</string>
+    <string name="ingame_libretro_core_error_gl_incompatible">डिवाइस ग्राफिक्स समर्थित नहीं है</string>
+    <string name="ingame_libretro_core_error_serialization">सेव फ़ाइल करप्ट है</string>
+    <string name="ingame_libretro_core_error_cheat">चीट सिस्टम त्रुटि</string>
+    <string name="ingame_libretro_core_error_unknown">एक अनपेक्षित त्रुटि हुई</string>
+
+    <string name="ingame_libretro_sram_load_failed_fresh_save">सेव लोड करने में विफल, इसके बजाय नई सेव इस्तेमाल हो रही है</string>
+    <string name="ingame_libretro_casual_save_in_hardcore">हार्डकोर में कैज़ुअल सेव जारी है</string>
+
+    <string name="ingame_libretro_disc_swap_inserted">%1$s डाला गया</string>
+    <string name="ingame_libretro_disc_swap_fallback_name">डिस्क %1$d</string>
+
+    <string name="ingame_libretro_speedrun_default_category_name">प्रैक्टिस</string>
+    <string name="ingame_libretro_speedrun_default_segment_name">सेगमेंट %1$d</string>
+    <string name="ingame_libretro_speedrun_picker_title">स्पीडरन श्रेणी</string>
+
+    <string name="ingame_libretro_quicktimeline_load_unsupported_core">इस कोर के लिए सेव स्टेट उपलब्ध नहीं हैं</string>
+    <string name="ingame_libretro_quicktimeline_load_success">स्टेट लोड हुआ</string>
+    <string name="ingame_libretro_quicktimeline_load_failure">स्टेट लोड करने में विफल</string>
+
+    <string name="ingame_libretro_closing_overlay_validating">सेव कंटेंट जांचा जा रहा है</string>
+
+    <string name="ingame_libretro_controller_port_device_fallback">डिवाइस %1$d</string>
+
+    <string name="ingame_libretro_menu_quicksave_unsupported_core">इस कोर के लिए सेव स्टेट उपलब्ध नहीं हैं</string>
+    <string name="ingame_libretro_menu_quicksave_success">स्टेट सेव हुआ</string>
+    <string name="ingame_libretro_menu_quicksave_failure">स्टेट सेव करने में विफल</string>
+    <string name="ingame_libretro_menu_quickload_unsupported_core">इस कोर के लिए सेव स्टेट उपलब्ध नहीं हैं</string>
+    <string name="ingame_libretro_menu_quickload_success">स्टेट लोड हुआ</string>
+    <string name="ingame_libretro_menu_quickload_failure">स्टेट लोड करने में विफल</string>
+
+    <string name="ingame_libretro_state_save_unsupported_core">इस कोर के लिए सेव स्टेट उपलब्ध नहीं हैं</string>
+    <string name="ingame_libretro_state_saved_to_auto">स्टेट ऑटो में सेव हुआ</string>
+    <string name="ingame_libretro_state_saved_to_slot">स्टेट स्लॉट %1$d में सेव हुआ</string>
+    <string name="ingame_libretro_state_save_failure">स्टेट सेव करने में विफल</string>
+    <string name="ingame_libretro_state_save_serialize_failed">स्टेट सीरियलाइज़ करने में विफल</string>
+
+    <string name="ingame_libretro_state_load_unsupported_core">इस कोर के लिए सेव स्टेट उपलब्ध नहीं हैं</string>
+    <string name="ingame_libretro_state_loaded_from_auto">स्टेट ऑटो से लोड हुआ</string>
+    <string name="ingame_libretro_state_loaded_from_slot">स्टेट स्लॉट %1$d से लोड हुआ</string>
+    <string name="ingame_libretro_state_load_failure">स्टेट लोड करने में विफल</string>
+
+    <string name="ingame_libretro_resume_success">रिज़्यूम हुआ</string>
+    <string name="ingame_libretro_resume_restore_failure">स्टेट रीस्टोर करने में विफल</string>
+    <string name="ingame_libretro_auto_restore_success">स्टेट रीस्टोर हुआ</string>
+    <string name="ingame_libretro_auto_restore_failure">स्टेट रीस्टोर करने में विफल</string>
+    <string name="ingame_libretro_auto_restore_response_unsupported_core">इस कोर के लिए सेव स्टेट उपलब्ध नहीं हैं</string>
+    <string name="ingame_libretro_auto_restore_response_success">स्टेट रीस्टोर हुआ</string>
+    <string name="ingame_libretro_auto_restore_response_failure">स्टेट रीस्टोर करने में विफल</string>
+
+    <string name="ingame_libretro_hud_fps_format">%1$s fps</string>
+    <string name="ingame_libretro_hud_duration_hm">%1$d:%2$02d</string>
+    <string name="ingame_libretro_hud_duration_minutes">%1$dm</string>
+    <string name="ingame_libretro_hud_last_save_just_now">अभी-अभी सेव हुआ</string>
+    <string name="ingame_libretro_hud_last_save_minutes_ago">%1$dमि पहले सेव हुआ</string>
+    <string name="ingame_libretro_hud_last_save_hours_ago">%1$dघं पहले सेव हुआ</string>
+
+    <string name="ingame_libretro_quickaction_save_hardcore_blocked">हार्डकोर में सेव स्टेट अक्षम हैं</string>
+    <string name="ingame_libretro_quickaction_save_unsupported_core">इस कोर के लिए सेव स्टेट उपलब्ध नहीं हैं</string>
+    <string name="ingame_libretro_quickaction_save_success">स्टेट सेव हुआ</string>
+    <string name="ingame_libretro_quickaction_save_failure">सेव विफल</string>
+    <string name="ingame_libretro_quickaction_load_hardcore_blocked">हार्डकोर में सेव स्टेट अक्षम हैं</string>
+    <string name="ingame_libretro_quickaction_load_unsupported_core">इस कोर के लिए सेव स्टेट उपलब्ध नहीं हैं</string>
+    <string name="ingame_libretro_quickaction_load_success">स्टेट लोड हुआ</string>
+    <string name="ingame_libretro_quickaction_load_failure">स्टेट लोड करने में विफल</string>
+    <string name="ingame_libretro_quickaction_screenshot_capture_failed">कैप्चर विफल</string>
+    <string name="ingame_libretro_quickaction_screenshot_success">स्क्रीनशॉट सेव हुआ</string>
+    <string name="ingame_libretro_quickaction_screenshot_failure">स्क्रीनशॉट विफल</string>
+
+    <string name="ingame_netplay_quality_row_peer_guest">गेस्ट: %1$s</string>
+    <string name="ingame_netplay_quality_row_peer_host">होस्ट: %1$s</string>
+    <string name="ingame_netplay_quality_row_ping_known">%1$dms  %2$s</string>
+    <string name="ingame_netplay_quality_row_ping_unknown">--  %1$s</string>
+
+    <string name="ingame_settings_controller_type_default_fallback">डिफ़ॉल्ट</string>
+
+    <string name="ingame_netplay_hud_player1_header">P1</string>
+    <string name="ingame_netplay_hud_player2_header">P2</string>
+
+    <string name="ingame_touch_editor_dpad_widget_label">D-PAD</string>
+    <string name="ingame_touch_editor_left_stick_widget_label">L</string>
+    <string name="ingame_touch_editor_right_stick_widget_label">R</string>
+    <string name="ingame_touch_editor_toolbar_save">सेव</string>
+    <string name="ingame_touch_editor_toolbar_reset">रीसेट</string>
+    <string name="ingame_touch_editor_toolbar_cancel">रद्द करें</string>
+    <string name="ingame_touch_editor_toolbar_rotate">घुमाएं</string>
+
+    <string name="ingame_recovery_display_playing_placeholder">खेला जा रहा है...</string>
+    <string name="ingame_recovery_display_status_in_game">गेम में</string>
+    <string name="ingame_recovery_display_playing_fallback">खेला जा रहा है...</string>
+
+    <string name="ingame_touch_nes_sys_select">सेलेक्ट</string>
+    <string name="ingame_touch_nes_sys_start">स्टार्ट</string>
+
+    <string name="ingame_touch_gb_sys_select">सेलेक्ट</string>
+    <string name="ingame_touch_gb_sys_start">स्टार्ट</string>
+
+    <string name="ingame_touch_gba_sys_select">सेलेक्ट</string>
+    <string name="ingame_touch_gba_sys_start">स्टार्ट</string>
+
+    <string name="ingame_touch_sms_sys_start">स्टार्ट</string>
+
+    <string name="ingame_touch_gameandwatch_sys_select">सेलेक्ट</string>
+    <string name="ingame_touch_gameandwatch_sys_start">स्टार्ट</string>
+
+    <string name="ingame_touch_ngp_sys_start">ऑप्शन</string>
+
+    <string name="ingame_touch_wonderswan_sys_start">स्टार्ट</string>
+
+    <string name="ingame_touch_coleco_sys_select">सेलेक्ट</string>
+    <string name="ingame_touch_coleco_sys_start">स्टार्ट</string>
+
+    <string name="ingame_touch_pico8_sys_select">सेलेक्ट</string>
+    <string name="ingame_touch_pico8_sys_start">स्टार्ट</string>
+
+    <string name="ingame_touch_c64_sys_select">सेलेक्ट</string>
+    <string name="ingame_touch_c64_sys_start">स्टार्ट</string>
+
+    <string name="ingame_touch_lynx_shoulder_l">ऑप्ट 1</string>
+    <string name="ingame_touch_lynx_shoulder_r">ऑप्ट 2</string>
+    <string name="ingame_touch_lynx_sys_start">पॉज़</string>
+
+    <string name="ingame_touch_snes_sys_select">सेलेक्ट</string>
+    <string name="ingame_touch_snes_sys_start">स्टार्ट</string>
+
+    <string name="ingame_touch_pcengine_sys_select">सेलेक्ट</string>
+    <string name="ingame_touch_pcengine_sys_start">रन</string>
+
+    <string name="ingame_touch_pcfx_shoulder_l2">मोड 1</string>
+    <string name="ingame_touch_pcfx_shoulder_r2">मोड 2</string>
+    <string name="ingame_touch_pcfx_sys_select">सेलेक्ट</string>
+    <string name="ingame_touch_pcfx_sys_start">रन</string>
+
+    <string name="ingame_touch_saturn_sys_select">मोड</string>
+    <string name="ingame_touch_saturn_sys_start">स्टार्ट</string>
+
+    <string name="ingame_touch_vb_sys_select">सेलेक्ट</string>
+    <string name="ingame_touch_vb_sys_start">स्टार्ट</string>
+
+    <string name="ingame_touch_psx_sys_select">सेलेक्ट</string>
+    <string name="ingame_touch_psx_sys_start">स्टार्ट</string>
+
+    <string name="ingame_touch_ps2_sys_select">सेलेक्ट</string>
+    <string name="ingame_touch_ps2_sys_start">स्टार्ट</string>
+
+    <string name="ingame_touch_psp_sys_select">सेलेक्ट</string>
+    <string name="ingame_touch_psp_sys_start">स्टार्ट</string>
+
+    <string name="ingame_touch_vita_sys_select">सेलेक्ट</string>
+    <string name="ingame_touch_vita_sys_start">स्टार्ट</string>
+
+    <string name="ingame_touch_dreamcast_sys_start">स्टार्ट</string>
+
+    <string name="ingame_touch_n64_sys_start">स्टार्ट</string>
+
+    <string name="ingame_touch_gamecube_sys_start">स्टार्ट</string>
+
+    <string name="ingame_touch_nds_sys_select">सेलेक्ट</string>
+    <string name="ingame_touch_nds_sys_start">स्टार्ट</string>
+
+    <string name="ingame_touch_arcade_sys_select">कॉइन</string>
+    <string name="ingame_touch_arcade_sys_start">स्टार्ट</string>
+
+    <string name="ingame_touch_neogeo_sys_select">सेलेक्ट</string>
+    <string name="ingame_touch_neogeo_sys_start">स्टार्ट</string>
+
+    <string name="ingame_touch_genesis_sys_select">मोड</string>
+    <string name="ingame_touch_genesis_sys_start">स्टार्ट</string>
+
+    <string name="ingame_touch_intellivision_face_y">ऊपर</string>
+    <string name="ingame_touch_intellivision_face_b">बाएं</string>
+    <string name="ingame_touch_intellivision_face_a">दाएं</string>
+    <string name="ingame_touch_intellivision_face_x">आखिरी KP</string>
+    <string name="ingame_touch_intellivision_shoulder_l2">क्लियर</string>
+    <string name="ingame_touch_intellivision_shoulder_r2">एंटर</string>
+    <string name="ingame_touch_intellivision_sys_select">स्वैप</string>
+    <string name="ingame_touch_intellivision_sys_start">पॉज़</string>
+
+    <string name="ingame_touch_atari2600_face_b">फायर</string>
+    <string name="ingame_touch_atari2600_sys_select">सेलेक्ट</string>
+    <string name="ingame_touch_atari2600_sys_start">रीसेट</string>
+
+    <string name="ingame_touch_atari5200_shoulder_l">पॉज़</string>
+    <string name="ingame_touch_atari5200_shoulder_r">रीसेट</string>
+    <string name="ingame_touch_atari5200_sys_select">सेलेक्ट</string>
+    <string name="ingame_touch_atari5200_sys_start">स्टार्ट</string>
+
+    <string name="ingame_touch_atari7800_sys_select">सेलेक्ट</string>
+    <string name="ingame_touch_atari7800_sys_start">रीसेट</string>
+
+    <string name="ingame_touch_jaguar_sys_select">पॉज़</string>
+    <string name="ingame_touch_jaguar_sys_start">ऑप्शन</string>
+
+    <string name="ingame_touch_threedo_sys_select">स्टॉप</string>
+    <string name="ingame_touch_threedo_sys_start">प्ले/पॉज़</string>
+
+    <string name="ingame_touch_generic_sys_select">सेलेक्ट</string>
+    <string name="ingame_touch_generic_sys_start">स्टार्ट</string>
+</resources>

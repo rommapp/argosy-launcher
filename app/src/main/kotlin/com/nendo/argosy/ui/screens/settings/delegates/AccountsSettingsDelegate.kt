@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.screens.settings.delegates
 
+import android.content.Context
+import com.nendo.argosy.R
 import com.nendo.argosy.data.remote.romm.DeviceAuthOutcome
 import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.data.remote.romm.RomMRepository
@@ -28,6 +30,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
 /**
@@ -43,7 +46,8 @@ class AccountsSettingsDelegate @Inject constructor(
     private val switchCoordinator: AccountSwitchCoordinator,
     private val removalService: AccountRemovalService,
     private val romMRepository: RomMRepository,
-    private val gameRepository: GameRepository
+    private val gameRepository: GameRepository,
+    @ApplicationContext private val context: Context
 ) {
     private val _state = MutableStateFlow(AccountsState())
     val state: StateFlow<AccountsState> = _state.asStateFlow()
@@ -58,7 +62,9 @@ class AccountsSettingsDelegate @Inject constructor(
                     .map { row ->
                         AccountUi(
                             id = row.id,
-                            username = row.username.ifBlank { "RomM user ${row.rommUserId}" },
+                            username = row.username.ifBlank {
+                                context.getString(R.string.settings_accounts_delegate_fallback_username, row.rommUserId)
+                            },
                             serverLabel = serverLabel(row.baseUrl),
                             isActive = row.isActive
                         )
@@ -126,7 +132,9 @@ class AccountsSettingsDelegate @Inject constructor(
     fun requestAddAccount() {
         val active = _state.value.activeAccount
         if (active == null) {
-            _state.update { it.copy(notice = "Sign in to a RomM server first, under RomM.") }
+            _state.update {
+                it.copy(notice = context.getString(R.string.settings_accounts_delegate_notice_no_server))
+            }
             return
         }
         _state.update {
@@ -174,7 +182,7 @@ class AccountsSettingsDelegate @Inject constructor(
             _state.update {
                 it.copy(
                     switchInProgress = true,
-                    switchProgressLabel = "Preparing",
+                    switchProgressLabel = context.getString(R.string.settings_accounts_delegate_progress_preparing),
                     switchBlocker = null,
                     switchFailure = null,
                     notice = null
@@ -198,7 +206,7 @@ class AccountsSettingsDelegate @Inject constructor(
                     isResumingSwitch = true,
                     switchInProgress = true,
                     switchFailure = null,
-                    switchProgressLabel = "Resuming"
+                    switchProgressLabel = context.getString(R.string.settings_accounts_delegate_progress_resuming)
                 )
             }
             val result = switchCoordinator.resumeIfInterrupted()
@@ -222,21 +230,36 @@ class AccountsSettingsDelegate @Inject constructor(
             when (progress) {
                 AccountSwitchProgress.Idle -> current
                 AccountSwitchProgress.Preparing ->
-                    current.copy(switchInProgress = true, switchProgressLabel = "Preparing")
+                    current.copy(
+                        switchInProgress = true,
+                        switchProgressLabel = context.getString(R.string.settings_accounts_delegate_progress_preparing)
+                    )
                 is AccountSwitchProgress.TearingDown -> current.copy(
                     switchInProgress = true,
-                    switchProgressLabel =
-                        "Archiving saves ${progress.done + 1} of ${progress.total.coerceAtLeast(1)}"
+                    switchProgressLabel = context.getString(
+                        R.string.settings_accounts_delegate_progress_archiving,
+                        progress.done + 1,
+                        progress.total.coerceAtLeast(1)
+                    )
                 )
                 AccountSwitchProgress.SwappingIdentity ->
-                    current.copy(switchInProgress = true, switchProgressLabel = "Swapping accounts")
+                    current.copy(
+                        switchInProgress = true,
+                        switchProgressLabel = context.getString(R.string.settings_accounts_delegate_progress_swapping)
+                    )
                 is AccountSwitchProgress.Placing -> current.copy(
                     switchInProgress = true,
-                    switchProgressLabel =
-                        "Restoring saves ${progress.done + 1} of ${progress.total.coerceAtLeast(1)}"
+                    switchProgressLabel = context.getString(
+                        R.string.settings_accounts_delegate_progress_restoring,
+                        progress.done + 1,
+                        progress.total.coerceAtLeast(1)
+                    )
                 )
                 AccountSwitchProgress.Finishing ->
-                    current.copy(switchInProgress = true, switchProgressLabel = "Finishing")
+                    current.copy(
+                        switchInProgress = true,
+                        switchProgressLabel = context.getString(R.string.settings_accounts_delegate_progress_finishing)
+                    )
                 is AccountSwitchProgress.Completed -> current.copy(
                     switchInProgress = false,
                     switchProgressLabel = null,
@@ -314,7 +337,7 @@ class AccountsSettingsDelegate @Inject constructor(
                     it.copy(
                         pairing = AccountPairingState(
                             active = true,
-                            error = "No server is configured on this device yet."
+                            error = context.getString(R.string.settings_accounts_delegate_pairing_error_no_server)
                         )
                     )
                 }
@@ -370,8 +393,11 @@ class AccountsSettingsDelegate @Inject constructor(
                     it.copy(
                         pairing = AccountPairingState(),
                         rowActionIndex = 0,
-                        notice = "Added ${added?.username?.ifBlank { null } ?: "the account"}. " +
-                            "Still signed in as before; switch to start using it."
+                        notice = context.getString(
+                            R.string.settings_accounts_delegate_notice_added,
+                            added?.username?.ifBlank { null }
+                                ?: context.getString(R.string.settings_accounts_delegate_fallback_account_label)
+                        )
                     )
                 }
             }
@@ -382,13 +408,21 @@ class AccountsSettingsDelegate @Inject constructor(
                         pairing = AccountPairingState(),
                         rowActionIndex = 0,
                         notice = added?.let { row ->
-                            "Signed in as ${row.username.ifBlank { "RomM user ${row.rommUserId}" }}."
-                        } ?: "Account added."
+                            context.getString(
+                                R.string.settings_accounts_delegate_notice_signed_in,
+                                row.username.ifBlank {
+                                    context.getString(
+                                        R.string.settings_accounts_delegate_fallback_username,
+                                        row.rommUserId
+                                    )
+                                }
+                            )
+                        } ?: context.getString(R.string.settings_accounts_delegate_notice_account_added)
                     )
                 }
             }
-            DeviceAuthOutcome.Denied -> failPairing("Pairing was denied on the server")
-            DeviceAuthOutcome.Expired -> failPairing("Pairing code expired, start again")
+            DeviceAuthOutcome.Denied -> failPairing(context.getString(R.string.settings_accounts_delegate_pairing_denied))
+            DeviceAuthOutcome.Expired -> failPairing(context.getString(R.string.settings_accounts_delegate_pairing_expired))
             is DeviceAuthOutcome.Failed -> failPairing(outcome.message)
         }
     }
@@ -414,65 +448,87 @@ class AccountsSettingsDelegate @Inject constructor(
     private fun pendingSummary(work: AccountPendingWork): String? = work.describe()
 
     private fun removalNotice(result: AccountRemovalResult): String = when (result) {
-        AccountRemovalResult.UnknownAccount -> "That account is no longer on this device."
+        AccountRemovalResult.UnknownAccount ->
+            context.getString(R.string.settings_accounts_delegate_removal_unknown_account)
         AccountRemovalResult.SwitchInProgress ->
-            "An account switch is still running. Let it finish, then try again."
-        is AccountRemovalResult.Refused ->
-            "Kept the queued work, so the account was not removed. " +
-                (pendingSummary(result.pending) ?: "Nothing is outstanding.")
+            context.getString(R.string.settings_accounts_delegate_removal_switch_in_progress)
+        is AccountRemovalResult.Refused -> context.getString(
+            R.string.settings_accounts_delegate_removal_refused_prefix,
+            pendingSummary(result.pending)
+                ?: context.getString(R.string.settings_accounts_delegate_removal_refused_fallback)
+        )
         is AccountRemovalResult.Removed -> buildString {
-            append("Account removed.")
+            append(context.getString(R.string.settings_accounts_delegate_removal_removed))
             if (result.reclaimedArtifacts > 0) {
-                append(" Archived ${result.reclaimedArtifacts} saves before clearing them.")
-            }
-            if (result.abortedArtifacts > 0) {
+                append(" ")
                 append(
-                    " ${result.abortedArtifacts} saves changed while archiving and were left on disk."
+                    context.getString(
+                        R.string.settings_accounts_delegate_removal_archived,
+                        result.reclaimedArtifacts
+                    )
                 )
             }
-            append(" The device is still registered on the RomM server; revoke it there.")
+            if (result.abortedArtifacts > 0) {
+                append(" ")
+                append(
+                    context.getString(
+                        R.string.settings_accounts_delegate_removal_aborted,
+                        result.abortedArtifacts
+                    )
+                )
+            }
+            append(" ")
+            append(context.getString(R.string.settings_accounts_delegate_removal_registered_note))
         }
     }
 
     private fun completionNotice(outcome: AccountSwitchOutcome): String = buildString {
-        append("Switched account.")
+        append(context.getString(R.string.settings_accounts_delegate_completion_switched))
         if (outcome.abortedArtifacts > 0 || outcome.abortedStates > 0) {
+            append(" ")
             append(
-                " ${outcome.abortedArtifacts + outcome.abortedStates} files changed mid-archive " +
-                    "and were left as they were."
+                context.getString(
+                    R.string.settings_accounts_delegate_completion_aborted,
+                    outcome.abortedArtifacts + outcome.abortedStates
+                )
             )
         }
         if (outcome.needsSyncArtifacts > 0 || outcome.needsSyncStates > 0) {
+            append(" ")
             append(
-                " ${outcome.needsSyncArtifacts + outcome.needsSyncStates} slots were left empty " +
-                    "because the local copy was known to be behind the server."
+                context.getString(
+                    R.string.settings_accounts_delegate_completion_needs_sync,
+                    outcome.needsSyncArtifacts + outcome.needsSyncStates
+                )
             )
         }
     }
 
     private fun blockerMessage(blocker: AccountSwitchBlocker): String = when (blocker) {
         AccountSwitchBlocker.AlreadySwitching ->
-            "A switch is already running. Wait for it to finish."
+            context.getString(R.string.settings_accounts_delegate_blocker_already_switching)
         AccountSwitchBlocker.ActiveSession ->
-            "A game session is still open. Close the game, then try again."
-        is AccountSwitchBlocker.ExternalGameRecentlyForeground ->
-            "${blocker.packageName} was on screen ${blocker.secondsAgo}s ago. " +
-                "Fully exit it, then try again."
+            context.getString(R.string.settings_accounts_delegate_blocker_active_session)
+        is AccountSwitchBlocker.ExternalGameRecentlyForeground -> context.getString(
+            R.string.settings_accounts_delegate_blocker_external_game,
+            blocker.packageName,
+            blocker.secondsAgo
+        )
         AccountSwitchBlocker.ActiveDownloads ->
-            "Game downloads are still running. Let them finish or cancel them."
+            context.getString(R.string.settings_accounts_delegate_blocker_active_downloads)
         AccountSwitchBlocker.EmulatorDownload ->
-            "An emulator download is still running. Let it finish or cancel it."
+            context.getString(R.string.settings_accounts_delegate_blocker_emulator_download)
         AccountSwitchBlocker.SteamDownload ->
-            "A Steam download is still running. Let it finish or cancel it."
+            context.getString(R.string.settings_accounts_delegate_blocker_steam_download)
         AccountSwitchBlocker.MediaDownload ->
-            "A movie or episode is still downloading. Let it finish or cancel it."
+            context.getString(R.string.settings_accounts_delegate_blocker_media_download)
         AccountSwitchBlocker.LibrarySyncRunning ->
-            "A library sync is running. Let it finish, then try again."
+            context.getString(R.string.settings_accounts_delegate_blocker_library_sync)
         AccountSwitchBlocker.NetplaySession ->
-            "A netplay session is open. Leave it, then try again."
+            context.getString(R.string.settings_accounts_delegate_blocker_netplay_session)
         AccountSwitchBlocker.ExitConfirmationRequired ->
-            "Confirm that any game launched outside Argosy is fully closed."
+            context.getString(R.string.settings_accounts_delegate_blocker_exit_confirmation)
         AccountSwitchBlocker.UnknownAccount ->
-            "That account is no longer on this device."
+            context.getString(R.string.settings_accounts_delegate_blocker_unknown_account)
     }
 }

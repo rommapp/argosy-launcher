@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
+import com.nendo.argosy.util.formatBytes
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -56,7 +57,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.screens.gamedetail.GameDownloadStatus
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
@@ -192,7 +196,7 @@ fun GameDetailMenu(
 
                 MenuItem.PerGameSettings -> {
                     IconTextMenuItem(
-                        label = "Per-Game Settings",
+                        label = stringResource(R.string.gamedetail_menu_per_game_settings),
                         icon = Icons.Default.Settings,
                         isFocused = isFocused,
                         isCompact = isCompact,
@@ -216,7 +220,7 @@ fun GameDetailMenu(
 
                 MenuItem.Details -> {
                     IconTextMenuItem(
-                        label = "Details",
+                        label = stringResource(R.string.gamedetail_menu_details),
                         icon = Icons.Default.Info,
                         isFocused = isFocused,
                         isCompact = isCompact,
@@ -226,7 +230,7 @@ fun GameDetailMenu(
 
                 MenuItem.Description -> {
                     IconTextMenuItem(
-                        label = "Description",
+                        label = stringResource(R.string.gamedetail_menu_description),
                         icon = Icons.Default.Description,
                         isFocused = isFocused,
                         isCompact = isCompact,
@@ -236,7 +240,7 @@ fun GameDetailMenu(
 
                 MenuItem.Screenshots -> {
                     IconTextMenuItem(
-                        label = "Screenshots",
+                        label = stringResource(R.string.gamedetail_menu_screenshots),
                         icon = Icons.Default.Image,
                         isFocused = isFocused,
                         isCompact = isCompact,
@@ -246,7 +250,7 @@ fun GameDetailMenu(
 
                 MenuItem.Achievements -> {
                     IconTextMenuItem(
-                        label = "Achievements",
+                        label = stringResource(R.string.gamedetail_menu_achievements),
                         icon = Icons.Default.EmojiEvents,
                         isFocused = isFocused,
                         isCompact = isCompact,
@@ -256,7 +260,7 @@ fun GameDetailMenu(
 
                 MenuItem.RelatedGames -> {
                     IconTextMenuItem(
-                        label = "Related Games",
+                        label = stringResource(R.string.gamedetail_menu_related_games),
                         icon = Icons.Default.Gamepad,
                         isFocused = isFocused,
                         isCompact = isCompact,
@@ -278,15 +282,26 @@ private fun PlayMenuItem(
     onClick: () -> Unit
 ) {
     val label = when (downloadStatus) {
-        GameDownloadStatus.EXTRACTING -> "Extracting..."
-        GameDownloadStatus.DOWNLOADING -> "${(downloadProgress * 100).toInt()}%"
-        GameDownloadStatus.QUEUED -> "Queued"
-        GameDownloadStatus.WAITING_FOR_STORAGE -> "No Space"
-        GameDownloadStatus.PAUSED -> "Resume"
-        GameDownloadStatus.FAILED -> "Retry"
-        GameDownloadStatus.DOWNLOADED -> "Play"
-        GameDownloadStatus.NEEDS_INSTALL -> "Install"
-        GameDownloadStatus.NOT_DOWNLOADED -> "Download"
+        GameDownloadStatus.EXTRACTING ->
+            stringResource(R.string.gamedetail_menu_play_button_extracting)
+        GameDownloadStatus.DOWNLOADING -> stringResource(
+            R.string.gamedetail_menu_play_button_progress_percent,
+            (downloadProgress * 100).toInt()
+        )
+        GameDownloadStatus.QUEUED ->
+            stringResource(R.string.gamedetail_menu_play_button_queued)
+        GameDownloadStatus.WAITING_FOR_STORAGE ->
+            stringResource(R.string.gamedetail_menu_play_button_no_space)
+        GameDownloadStatus.PAUSED ->
+            stringResource(R.string.gamedetail_menu_play_button_resume)
+        GameDownloadStatus.FAILED ->
+            stringResource(R.string.gamedetail_menu_play_button_retry)
+        GameDownloadStatus.DOWNLOADED ->
+            stringResource(R.string.gamedetail_menu_play_button_play)
+        GameDownloadStatus.NEEDS_INSTALL ->
+            stringResource(R.string.gamedetail_menu_play_button_install)
+        GameDownloadStatus.NOT_DOWNLOADED ->
+            stringResource(R.string.gamedetail_menu_play_button_download)
     }
 
     val isFailed = downloadStatus == GameDownloadStatus.FAILED
@@ -406,7 +421,7 @@ private fun PlayMenuItem(
                                 style = MaterialTheme.typography.labelLarge
                             )
                             Text(
-                                text = formatFileSize(downloadSizeBytes!!),
+                                text = formatBytes(downloadSizeBytes!!),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = contentColor.copy(alpha = 0.6f)
                             )
@@ -453,8 +468,12 @@ private fun SavesMenuItem(
     } else {
         MaterialTheme.typography.bodyMedium
     }
-    val slotName = if (isSyncing) "Syncing..." else (status?.channelName ?: "Auto-save")
-    val saveDate = if (!isSyncing) status?.displayTime else null
+    val slotName = if (isSyncing) {
+        stringResource(R.string.gamedetail_menu_saves_syncing)
+    } else {
+        status?.channelName ?: stringResource(R.string.gamedetail_menu_saves_default_channel)
+    }
+    val saveDate = if (!isSyncing) status?.displayTime(LocalContext.current) else null
 
     MenuItemWithLeftBorder(
         isFocused = isFocused,
@@ -528,7 +547,11 @@ private fun FavoriteMenuItem(
         if (isCompact) {
             Icon(
                 imageVector = icon,
-                contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
+                contentDescription = if (isFavorite) {
+                    stringResource(R.string.gamedetail_menu_favorite_compact_remove_description)
+                } else {
+                    stringResource(R.string.gamedetail_menu_favorite_compact_add_description)
+                },
                 tint = iconTint,
                 modifier = Modifier.size(Dimens.iconSm)
             )
@@ -538,14 +561,18 @@ private fun FavoriteMenuItem(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "Favorite",
+                    text = stringResource(R.string.gamedetail_menu_favorite_label),
                     style = textStyle,
                     color = textColor,
                     modifier = Modifier.weight(1f)
                 )
                 Icon(
                     imageVector = icon,
-                    contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
+                    contentDescription = if (isFavorite) {
+                        stringResource(R.string.gamedetail_menu_favorite_row_remove_description)
+                    } else {
+                        stringResource(R.string.gamedetail_menu_favorite_row_add_description)
+                    },
                     tint = iconTint,
                     modifier = Modifier.size(Dimens.iconSm)
                 )
@@ -567,7 +594,11 @@ private fun PrivacyMenuItem(
     }
 
     val icon = if (isPrivate) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility
-    val label = if (isPrivate) "Private" else "Public"
+    val label = if (isPrivate) {
+        stringResource(R.string.gamedetail_menu_privacy_private)
+    } else {
+        stringResource(R.string.gamedetail_menu_privacy_public)
+    }
 
     val textColor = if (isFocused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
     val textStyle = if (isFocused) {
@@ -637,7 +668,8 @@ private fun OptionsMenuItem(
         if (isCompact) {
             Icon(
                 imageVector = Icons.Default.Tune,
-                contentDescription = "Options",
+                contentDescription =
+                    stringResource(R.string.gamedetail_menu_options_compact_description),
                 tint = iconTint,
                 modifier = Modifier.size(Dimens.iconSm)
             )
@@ -647,14 +679,15 @@ private fun OptionsMenuItem(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "Options",
+                    text = stringResource(R.string.gamedetail_menu_options_label),
                     style = textStyle,
                     color = textColor,
                     modifier = Modifier.weight(1f)
                 )
                 Icon(
                     imageVector = Icons.Default.Tune,
-                    contentDescription = "Options",
+                    contentDescription =
+                        stringResource(R.string.gamedetail_menu_options_row_description),
                     tint = iconTint,
                     modifier = Modifier.size(Dimens.iconSm)
                 )
@@ -841,11 +874,3 @@ private fun buildEndWeightedLines(words: List<String>): List<String> {
     return listOf(firstPart, lastPart)
 }
 
-private fun formatFileSize(bytes: Long): String {
-    return when {
-        bytes < 1024 -> "$bytes B"
-        bytes < 1024 * 1024 -> "${bytes / 1024} KB"
-        bytes < 1024 * 1024 * 1024 -> String.format("%.1f MB", bytes / (1024.0 * 1024.0))
-        else -> String.format("%.2f GB", bytes / (1024.0 * 1024.0 * 1024.0))
-    }
-}

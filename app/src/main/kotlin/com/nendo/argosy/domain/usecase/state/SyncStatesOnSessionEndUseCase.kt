@@ -21,7 +21,15 @@ sealed class StateSyncResult {
     data class Cached(val count: Int, val queued: Int = 0) : StateSyncResult()
     data object NoStatesFound : StateSyncResult()
     data object NotConfigured : StateSyncResult()
-    data class Error(val message: String) : StateSyncResult()
+    data class Error(val reason: StateSyncFailureReason) : StateSyncResult()
+}
+
+/**
+ * Why [SyncStatesOnSessionEndUseCase] could not cache a game's states after a session.
+ */
+sealed class StateSyncFailureReason {
+    data object GameNotFound : StateSyncFailureReason()
+    data object NoLocalPath : StateSyncFailureReason()
 }
 
 class SyncStatesOnSessionEndUseCase @Inject constructor(
@@ -47,13 +55,13 @@ class SyncStatesOnSessionEndUseCase @Inject constructor(
         val game = gameDao.getById(gameId)
         if (game == null) {
             Log.w(TAG, "Game not found: $gameId")
-            return StateSyncResult.Error("Game not found")
+            return StateSyncResult.Error(StateSyncFailureReason.GameNotFound)
         }
 
         val romPath = game.localPath
         if (romPath == null) {
             Log.w(TAG, "Game has no local path: $gameId")
-            return StateSyncResult.Error("Game has no local path")
+            return StateSyncResult.Error(StateSyncFailureReason.NoLocalPath)
         }
 
         val emulatorDef = emulatorDetector.getByPackage(emulatorPackage)

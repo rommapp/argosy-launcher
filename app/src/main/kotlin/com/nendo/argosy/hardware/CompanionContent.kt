@@ -62,11 +62,13 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.coil.AppIconData
 import com.nendo.argosy.ui.theme.ALauncherColors
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
@@ -272,18 +274,22 @@ private fun QuickActionsRow(
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)) {
             QuickActionButton(
-                label = "Save State",
+                label = stringResource(R.string.dual_companion_quick_action_save_state),
                 modifier = Modifier.weight(1f),
                 onTap = onQuickSave
             )
             QuickActionButton(
-                label = "Screenshot",
+                label = stringResource(R.string.dual_companion_quick_action_screenshot),
                 modifier = Modifier.weight(1f),
                 onTap = onScreenshot
             )
             val loadArmed = android.os.SystemClock.elapsedRealtime() < loadArmedUntil
             QuickActionButton(
-                label = if (loadArmed) "Tap to confirm" else "Load State",
+                label = if (loadArmed) {
+                    stringResource(R.string.dual_companion_quick_action_load_confirm)
+                } else {
+                    stringResource(R.string.dual_companion_quick_action_load_state)
+                },
                 accent = loadArmed,
                 enabled = hasQuickSave,
                 modifier = Modifier.weight(1f),
@@ -454,7 +460,7 @@ private fun SessionTimerCard(activeMillis: Long) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "Session",
+            text = stringResource(R.string.dual_companion_session_label),
             style = MaterialTheme.typography.bodyMedium,
             color = Color.White.copy(alpha = 0.6f)
         )
@@ -487,7 +493,7 @@ private fun AchievementProgress(state: CompanionInGameState) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Achievements",
+                text = stringResource(R.string.dual_companion_achievements_label),
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.White.copy(alpha = 0.6f)
             )
@@ -525,15 +531,23 @@ private fun PlayStatsCard(state: CompanionInGameState, sessionMillis: Long) {
         val hours = totalMinutes / 60
         val mins = totalMinutes % 60
         val timeText = when {
-            hours > 0 && mins > 0 -> "${hours}h ${mins}m"
-            hours > 0 -> "${hours}h"
-            mins > 0 -> "${mins}m"
-            else -> "0m"
+            hours > 0 && mins > 0 -> stringResource(
+                R.string.dual_companion_play_time_hours_minutes, hours, mins
+            )
+            hours > 0 -> stringResource(R.string.dual_companion_play_time_hours, hours)
+            mins > 0 -> stringResource(R.string.dual_companion_play_time_minutes, mins)
+            else -> stringResource(R.string.dual_companion_play_time_zero)
         }
 
-        StatRow(label = "Total Play Time", value = timeText)
+        StatRow(
+            label = stringResource(R.string.dual_companion_stat_play_time),
+            value = timeText
+        )
         Spacer(modifier = Modifier.height(Dimens.spacingSm))
-        StatRow(label = "Times Played", value = state.playCount.toString())
+        StatRow(
+            label = stringResource(R.string.dual_companion_stat_play_count),
+            value = state.playCount.toString()
+        )
     }
 }
 
@@ -568,7 +582,11 @@ private fun SaveStateIndicator(
         horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
     ) {
         Text(
-            text = if (isDirty) "New save data" else "Saves synced",
+            text = if (isDirty) {
+                stringResource(R.string.dual_companion_saves_dirty)
+            } else {
+                stringResource(R.string.dual_companion_saves_synced)
+            },
             style = MaterialTheme.typography.labelSmall,
             color = Color.White.copy(alpha = 0.7f)
         )
@@ -597,7 +615,9 @@ private fun SaveStateDot(isDirty: Boolean) {
         } else {
             Icon(
                 imageVector = Icons.Default.Check,
-                contentDescription = "Saved",
+                contentDescription = stringResource(
+                    R.string.dual_companion_saves_synced_icon_description
+                ),
                 tint = Color.White,
                 modifier = Modifier.size(Dimens.iconSm)
             )
@@ -670,7 +690,9 @@ internal fun CompanionAppBar(
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
-                    contentDescription = "Add app",
+                    contentDescription = stringResource(
+                        R.string.dual_companion_app_bar_add_description
+                    ),
                     tint = Color.White.copy(alpha = 0.7f),
                     modifier = Modifier.size(Dimens.iconMd)
                 )
@@ -731,7 +753,11 @@ private fun CompanionMediaButton(
         ) {
             Icon(
                 imageVector = if (toggle.showingMedia) Icons.Default.Home else Icons.Default.Movie,
-                contentDescription = if (toggle.showingMedia) "Back to library" else "Now watching",
+                contentDescription = if (toggle.showingMedia) {
+                    stringResource(R.string.dual_companion_app_bar_media_to_library_description)
+                } else {
+                    stringResource(R.string.dual_companion_app_bar_media_to_player_description)
+                },
                 tint = if (toggle.isPlaying) theme.focusAccent else Color.White.copy(alpha = 0.7f),
                 modifier = Modifier.size(Dimens.iconMd)
             )
@@ -804,7 +830,7 @@ private fun CompanionDrawer(
         }
 
         Text(
-            text = "All Apps",
+            text = stringResource(R.string.dual_companion_drawer_title),
             style = MaterialTheme.typography.titleSmall,
             color = Color.White,
             modifier = Modifier.padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingXs)
@@ -875,7 +901,9 @@ private fun CompanionDrawerAppItem(
                 ) {
                     Icon(
                         imageVector = Icons.Default.PushPin,
-                        contentDescription = "Pinned",
+                        contentDescription = stringResource(
+                            R.string.dual_companion_drawer_pinned_description
+                        ),
                         tint = Color.White,
                         modifier = Modifier.size(11.dp)
                     )

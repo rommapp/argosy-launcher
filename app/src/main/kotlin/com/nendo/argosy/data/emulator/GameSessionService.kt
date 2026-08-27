@@ -51,6 +51,11 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class GameSessionService : Service() {
 
+    override fun attachBaseContext(newBase: Context) {
+        val tag = com.nendo.argosy.data.preferences.SessionStateStore(newBase).getAppLanguage()
+        super.attachBaseContext(com.nendo.argosy.core.locale.LocaleHelper.wrap(newBase, tag))
+    }
+
     @Inject lateinit var saveCacheManager: SaveCacheManager
     @Inject lateinit var gameDao: GameDao
     @Inject lateinit var activeSaveRepository: com.nendo.argosy.data.repository.ActiveSaveRepository
@@ -98,10 +103,10 @@ class GameSessionService : Service() {
     private fun ensureNotificationChannel() {
         val channel = android.app.NotificationChannel(
             CHANNEL_ID,
-            "Game Session",
+            getString(R.string.sync_session_channel_name),
             android.app.NotificationManager.IMPORTANCE_DEFAULT
         ).apply {
-            description = "Monitors save files during gameplay"
+            description = getString(R.string.sync_session_channel_description)
             setShowBadge(false)
             setSound(null, null)
             enableVibration(false)
@@ -118,7 +123,8 @@ class GameSessionService : Service() {
             }
             else -> {
                 val watchPath = intent?.getStringExtra(EXTRA_WATCH_PATH)
-                val gameTitle = intent?.getStringExtra(EXTRA_GAME_TITLE) ?: "Game"
+                val gameTitle = intent?.getStringExtra(EXTRA_GAME_TITLE)
+                    ?: getString(R.string.sync_session_game_fallback)
                 val gameId = intent?.getLongExtra(EXTRA_GAME_ID, -1) ?: -1
                 val emulatorId = intent?.getStringExtra(EXTRA_EMULATOR_ID)
                 val savePath = intent?.getStringExtra(EXTRA_SAVE_PATH)
@@ -427,7 +433,7 @@ class GameSessionService : Service() {
     private fun buildNotification(gameTitle: String, state: NotificationState) = when (state) {
         NotificationState.PLAYING -> NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_helm)
-            .setContentTitle("Playing")
+            .setContentTitle(getString(R.string.sync_session_notification_playing))
             .setContentText(gameTitle)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
@@ -439,7 +445,7 @@ class GameSessionService : Service() {
 
         NotificationState.SAVE_DETECTED -> NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_helm)
-            .setContentTitle("Save detected")
+            .setContentTitle(getString(R.string.sync_session_notification_save_detected))
             .setContentText(gameTitle)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)

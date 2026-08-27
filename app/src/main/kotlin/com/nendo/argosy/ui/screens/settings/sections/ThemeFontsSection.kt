@@ -24,6 +24,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.data.preferences.FontSlot
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.SliderPreference
@@ -56,7 +59,7 @@ internal sealed class ThemeFontsItem(
         else -> true
     }
 
-    class Header(key: String, section: String, val title: String) : ThemeFontsItem(key, section)
+    class Header(key: String, section: String, val titleRes: Int) : ThemeFontsItem(key, section)
 
     class SectionSpacer(key: String, section: String) : ThemeFontsItem(key, section)
 
@@ -70,11 +73,13 @@ internal sealed class ThemeFontsItem(
     data object Preview : ThemeFontsItem("fontPreview", "preview")
 
     companion object {
-        private val DisplayHeader = Header("displayHeader", "display", "Display Font")
+        private val DisplayHeader =
+            Header("displayHeader", "display", R.string.settings_fonts_section_display)
         private val BodySpacer = SectionSpacer("bodySpacer", "body")
-        private val BodyHeader = Header("bodyHeader", "body", "Body Font")
+        private val BodyHeader = Header("bodyHeader", "body", R.string.settings_fonts_section_body)
         private val PreviewSpacer = SectionSpacer("previewSpacer", "preview")
-        private val PreviewHeader = Header("previewHeader", "preview", "Preview")
+        private val PreviewHeader =
+            Header("previewHeader", "preview", R.string.settings_fonts_section_preview)
 
         val ALL: List<ThemeFontsItem>
             get() = listOf(
@@ -90,11 +95,11 @@ private val themeFontsLayout = SettingsLayout<ThemeFontsItem, ThemeFontsLayoutSt
     isFocusable = { it.isFocusable },
     visibleWhen = { item, state -> item.visibleWhen(state) },
     sectionOf = { it.section },
-    sectionTitle = {
+    sectionTitleRes = {
         when (it) {
-            "display" -> "Display Font"
-            "body" -> "Body Font"
-            "preview" -> "Preview"
+            "display" -> R.string.settings_fonts_section_display
+            "body" -> R.string.settings_fonts_section_body
+            "preview" -> R.string.settings_fonts_section_preview
             else -> null
         }
     }
@@ -111,6 +116,7 @@ internal fun themeFontsSections(state: ThemeFontsLayoutState) = themeFontsLayout
 @Composable
 fun ThemeFontsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val display = uiState.display
+    val context = LocalContext.current
 
     val layoutState = remember(display.displayFontName, display.bodyFontName) {
         ThemeFontsLayoutState(
@@ -120,7 +126,7 @@ fun ThemeFontsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     }
 
     val visibleItems = remember(layoutState) { themeFontsLayout.visibleItems(layoutState) }
-    val sections = remember(layoutState) { themeFontsLayout.buildSections(layoutState) }
+    val sections = remember(layoutState, context) { themeFontsLayout.buildSections(layoutState, context) }
 
     fun isFocused(item: ThemeFontsItem): Boolean =
         uiState.focusedIndex == themeFontsLayout.focusIndexOf(item, layoutState)
@@ -138,20 +144,21 @@ fun ThemeFontsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) { item ->
         when (item) {
-            is ThemeFontsItem.Header -> ThemeFontsSectionHeader(item.title)
+            is ThemeFontsItem.Header -> ThemeFontsSectionHeader(stringResource(item.titleRes))
             is ThemeFontsItem.SectionSpacer -> Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
             ThemeFontsItem.DisplaySlot -> ActionPreference(
-                title = "Display Font",
-                subtitle = "Titles, headers, and eyebrows",
+                title = stringResource(R.string.settings_fonts_display_slot_title),
+                subtitle = stringResource(R.string.settings_fonts_display_slot_subtitle),
                 icon = Icons.Outlined.TextFields,
-                trailingText = display.displayFontName ?: "Default",
+                trailingText = display.displayFontName
+                    ?: stringResource(R.string.settings_fonts_slot_default),
                 isFocused = isFocused(item),
                 onClick = { viewModel.openFontPicker(FontSlot.DISPLAY) }
             )
 
             ThemeFontsItem.DisplayScale -> SliderPreference(
-                title = "Display Scale",
+                title = stringResource(R.string.settings_fonts_display_scale_title),
                 value = display.displayFontScale,
                 minValue = 50,
                 maxValue = 150,
@@ -162,24 +169,25 @@ fun ThemeFontsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             )
 
             ThemeFontsItem.DisplayRevert -> ActionPreference(
-                title = "Revert to Default",
-                subtitle = "Remove the imported display font",
+                title = stringResource(R.string.settings_fonts_display_revert_title),
+                subtitle = stringResource(R.string.settings_fonts_display_revert_subtitle),
                 icon = Icons.Outlined.RestartAlt,
                 isFocused = isFocused(item),
                 onClick = { viewModel.revertFont(FontSlot.DISPLAY) }
             )
 
             ThemeFontsItem.BodySlot -> ActionPreference(
-                title = "Body Font",
-                subtitle = "All other UI text",
+                title = stringResource(R.string.settings_fonts_body_slot_title),
+                subtitle = stringResource(R.string.settings_fonts_body_slot_subtitle),
                 icon = Icons.Outlined.TextFields,
-                trailingText = display.bodyFontName ?: "Default",
+                trailingText = display.bodyFontName
+                    ?: stringResource(R.string.settings_fonts_slot_default),
                 isFocused = isFocused(item),
                 onClick = { viewModel.openFontPicker(FontSlot.BODY) }
             )
 
             ThemeFontsItem.BodyScale -> SliderPreference(
-                title = "Body Scale",
+                title = stringResource(R.string.settings_fonts_body_scale_title),
                 value = display.bodyFontScale,
                 minValue = 50,
                 maxValue = 150,
@@ -190,8 +198,8 @@ fun ThemeFontsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             )
 
             ThemeFontsItem.BodyRevert -> ActionPreference(
-                title = "Revert to Default",
-                subtitle = "Remove the imported body font",
+                title = stringResource(R.string.settings_fonts_body_revert_title),
+                subtitle = stringResource(R.string.settings_fonts_body_revert_subtitle),
                 icon = Icons.Outlined.RestartAlt,
                 isFocused = isFocused(item),
                 onClick = { viewModel.revertFont(FontSlot.BODY) }
@@ -218,10 +226,10 @@ private fun ThemeFontsSectionHeader(title: String) {
 private fun FontGuidelines() {
     Column(verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)) {
         listOf(
-            "TTF and OTF files only; fonts are validated on import.",
-            "Favor faces that stay readable at 10-foot TV distance.",
-            "Cover weights 400, 500, and 600 or headings may render faux-bold.",
-            "Glyphs the font lacks (e.g. CJK) fall back to the system font per glyph."
+            stringResource(R.string.settings_fonts_guideline_formats),
+            stringResource(R.string.settings_fonts_guideline_legibility),
+            stringResource(R.string.settings_fonts_guideline_weights),
+            stringResource(R.string.settings_fonts_guideline_fallback)
         ).forEach { line ->
             Text(
                 text = line,
@@ -244,12 +252,12 @@ private fun FontPreviewPanel() {
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) {
         Text(
-            text = "Continue Playing",
+            text = stringResource(R.string.settings_fonts_preview_heading),
             style = MaterialTheme.typography.titleMedium,
             color = MaterialTheme.colorScheme.onSurface
         )
         Text(
-            text = "Pick up where you left off. Saves, states, and play time stay in sync across your library.",
+            text = stringResource(R.string.settings_fonts_preview_body),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -275,12 +283,12 @@ private fun FontPreviewFocusedRow() {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "Focused Menu Row",
+            text = stringResource(R.string.settings_fonts_preview_row),
             style = MaterialTheme.typography.titleMedium,
             color = contentColor
         )
         Text(
-            text = "Aa Bb 0123",
+            text = stringResource(R.string.settings_fonts_preview_specimen),
             style = MaterialTheme.typography.bodyMedium,
             color = contentColor.copy(alpha = 0.65f)
         )

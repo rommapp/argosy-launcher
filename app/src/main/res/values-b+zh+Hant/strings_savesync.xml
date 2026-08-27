@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="savesync_section_attention">需要您處理</string>
+    <string name="savesync_section_in_progress">進行中</string>
+    <string name="savesync_section_games">有存檔的遊戲</string>
+
+    <string name="savesync_footer_navigate">移動</string>
+    <string name="savesync_footer_choose">選擇</string>
+    <string name="savesync_footer_confirm_keep_local">保留本機</string>
+    <string name="savesync_footer_confirm_keep_server">保留伺服器</string>
+    <string name="savesync_footer_confirm_skip">略過</string>
+    <string name="savesync_footer_open_game">開啟遊戲</string>
+    <string name="savesync_footer_scan_server">掃描RomM</string>
+    <string name="savesync_footer_back">返回</string>
+
+    <string name="savesync_device_this_label">此裝置</string>
+    <string name="savesync_device_not_connected">尚未連線至RomM</string>
+    <string name="savesync_device_id_pill">&#8230;%1$s</string>
+    <string name="savesync_device_client_versioned">%1$s v%2$s</string>
+    <string name="savesync_device_server_versioned">RomM v%1$s</string>
+    <string name="savesync_device_server_connected">已連線</string>
+    <string name="savesync_device_server_offline">離線</string>
+    <plurals name="savesync_device_save_count_unit">
+        <item quantity="other">個存檔</item>
+    </plurals>
+
+    <string name="savesync_other_devices_heading">其他裝置</string>
+    <plurals name="savesync_other_devices_more">
+        <item quantity="other">+%d個</item>
+    </plurals>
+
+    <plurals name="savesync_access_notice_title">
+        <item quantity="other">%d個存檔位置無法存取</item>
+    </plurals>
+
+    <string name="savesync_empty_title_connected">尚未同步任何遊戲存檔</string>
+    <string name="savesync_empty_message_connected">遊玩時存檔會顯示在這裡</string>
+    <string name="savesync_empty_title_disconnected">請連線至RomM以同步存檔</string>
+    <string name="savesync_empty_message_disconnected">請開啟設定以新增您的RomM伺服器</string>
+
+    <string name="savesync_conflict_side_local">本機</string>
+    <string name="savesync_conflict_side_server">伺服器</string>
+    <string name="savesync_conflict_device_this">此裝置</string>
+    <string name="savesync_conflict_device_other">其他裝置</string>
+    <string name="savesync_conflict_side_summary">%1$s - %2$s（%3$s）</string>
+    <string name="savesync_conflict_time_unknown">未知</string>
+    <string name="savesync_conflict_newer_badge">較新</string>
+    <string name="savesync_attention_button_keep_local">保留本機</string>
+    <string name="savesync_attention_button_keep_server">保留伺服器</string>
+    <string name="savesync_attention_button_skip">略過</string>
+
+    <string name="savesync_progress_status_uploading">上傳中</string>
+    <string name="savesync_progress_status_downloading">下載中</string>
+    <string name="savesync_progress_status_queued">排隊中</string>
+
+    <string name="savesync_game_pill_just_synced">剛完成同步</string>
+    <string name="savesync_game_pill_conflict">衝突</string>
+    <string name="savesync_game_last_write_this_device">最後寫入－此裝置</string>
+    <string name="savesync_game_last_write_device">最後寫入－%1$s</string>
+    <string name="savesync_game_last_write_unknown">最後寫入－未知裝置</string>
+    <string name="savesync_game_last_write_time">%1$s &#183; %2$s</string>
+
+    <string name="savesync_force_check_title">掃描RomM尋找遺失的存檔</string>
+    <string name="savesync_force_check_idle">逐一檢查本機遊戲，並從RomM取得每個存檔槽的最新存檔。</string>
+    <string name="savesync_force_check_running">掃描中...</string>
+    <plurals name="savesync_force_check_up_to_date">
+        <item quantity="other">已是最新－已檢查%d款遊戲，沒有新項目。</item>
+    </plurals>
+    <plurals name="savesync_force_check_queued">
+        <item quantity="other">已從%2$d款遊戲中排入%1$d個存檔；已下載%3$d個。</item>
+    </plurals>
+    <string name="savesync_force_check_failed">失敗：%1$s</string>
+    <string name="savesync_force_check_failed_fallback">存檔檢查失敗</string>
+
+    <string name="savesync_device_unnamed">未命名裝置</string>
+    <string name="savesync_device_web">網頁</string>
+
+    <string name="savesync_channel_archived">已封存</string>
+    <string name="savesync_channel_autosave">自動存檔</string>
+</resources>

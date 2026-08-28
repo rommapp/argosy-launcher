@@ -168,10 +168,6 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
                 MainSettingsItem.Storage -> vm.navigateToSection(SettingsSection.STORAGE)
                 MainSettingsItem.Theme -> vm.navigateToSection(SettingsSection.THEME)
                 MainSettingsItem.Interface -> vm.navigateToSection(SettingsSection.INTERFACE)
-                MainSettingsItem.Language -> {
-                    vm.requestEnumPicker(MainSettingsItem.Language.key)
-                    return InputResult.handled(SoundType.OPEN_MODAL)
-                }
                 MainSettingsItem.Navigation -> vm.navigateToSection(SettingsSection.NAVIGATION)
                 MainSettingsItem.Audio -> vm.navigateToSection(SettingsSection.AUDIO)
                 MainSettingsItem.Displays -> vm.navigateToSection(SettingsSection.DISPLAYS)
@@ -619,6 +615,10 @@ private fun routeStorageCachesConfirm(vm: SettingsViewModel, state: SettingsUiSt
 private fun routeInterfaceConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
     val layoutState = InterfaceLayoutState.from(state)
     when (interfaceItemAtFocusIndex(state.focusedIndex, layoutState)) {
+        InterfaceItem.Language -> {
+            vm.requestEnumPicker(InterfaceItem.Language.key)
+            return InputResult.handled(SoundType.OPEN_MODAL)
+        }
         InterfaceItem.CompactFooter -> vm.setCompactFooter(!state.display.compactFooter)
         InterfaceItem.ControllerGrip -> vm.navigateToControllerGrip()
         InterfaceItem.HomeScreen -> vm.navigateToHomeScreen()

@@ -14,8 +14,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.nendo.argosy.R
+import com.nendo.argosy.data.preferences.AppLanguage
+import com.nendo.argosy.ui.components.CyclePreference
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
@@ -54,6 +57,7 @@ internal sealed class InterfaceItem(
         visibleWhen: (InterfaceLayoutState) -> Boolean = { true }
     ) : InterfaceItem(key, section, visibleWhen)
 
+    data object Language : InterfaceItem("language", "layout")
     data object UiScale : InterfaceItem("uiScale", "layout")
     data object CompactFooter : InterfaceItem("compactFooter", "layout")
     data object ControllerGrip : InterfaceItem("controllerGrip", "layout")
@@ -70,10 +74,22 @@ internal sealed class InterfaceItem(
          */
         val ALL: List<InterfaceItem>
             get() = listOf(
-                UiScale, CompactFooter, ControllerGrip,
+                Language, UiScale, CompactFooter, ControllerGrip,
                 HomeScreen, LibraryView, BoxArt
             )
     }
+}
+
+internal fun languageLabelRes(language: AppLanguage): Int = when (language) {
+    AppLanguage.SYSTEM -> R.string.settings_main_language_system_default
+    AppLanguage.ENGLISH -> R.string.settings_main_language_name_en
+    AppLanguage.FRENCH -> R.string.settings_main_language_name_fr
+    AppLanguage.SPANISH -> R.string.settings_main_language_name_es
+    AppLanguage.GERMAN -> R.string.settings_main_language_name_de
+    AppLanguage.CHINESE_SIMPLIFIED -> R.string.settings_main_language_name_zh_hans
+    AppLanguage.CHINESE_TRADITIONAL -> R.string.settings_main_language_name_zh_hant
+    AppLanguage.RUSSIAN -> R.string.settings_main_language_name_ru
+    AppLanguage.HINDI -> R.string.settings_main_language_name_hi
 }
 
 private val interfaceLayout = SettingsLayout<InterfaceItem, InterfaceLayoutState>(
@@ -97,6 +113,7 @@ internal fun interfaceFocusIndexOf(item: InterfaceItem, state: InterfaceLayoutSt
 @Composable
 fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val display = uiState.display
+    val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
     LaunchedEffect(lifecycleOwner) {
@@ -139,6 +156,20 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     ) { item ->
             when (item) {
                 is InterfaceItem.Header -> InterfaceSectionHeader(item.title)
+
+                InterfaceItem.Language -> CyclePreference(
+                    title = stringResource(R.string.settings_main_language_title),
+                    value = stringResource(languageLabelRes(uiState.appLanguage)),
+                    subtitle = stringResource(R.string.settings_main_language_subtitle),
+                    isFocused = isFocused(item),
+                    onClick = { viewModel.cycleAppLanguage() },
+                    onPrev = { viewModel.cycleAppLanguage(-1) },
+                    options = remember(context) {
+                        AppLanguage.entries.map { context.getString(languageLabelRes(it)) }
+                    },
+                    onSelect = { index -> viewModel.setAppLanguage(AppLanguage.entries[index].tag) },
+                    pickerRequestToken = pickerToken(item)
+                )
 
                 InterfaceItem.UiScale -> SliderPreference(
                     title = stringResource(R.string.settings_interface_ui_scale_title),

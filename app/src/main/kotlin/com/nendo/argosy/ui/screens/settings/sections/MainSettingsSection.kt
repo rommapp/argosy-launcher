@@ -21,7 +21,6 @@ import androidx.compose.material.icons.filled.Gamepad
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.Palette
@@ -37,9 +36,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.nendo.argosy.R
-import com.nendo.argosy.data.preferences.AppLanguage
 import com.nendo.argosy.ui.common.resolve
-import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.NavigationPreference
 import com.nendo.argosy.ui.screens.settings.ConnectionStatus
@@ -71,12 +68,6 @@ internal sealed class MainSettingsItem(
         "interface",
         Icons.Default.Dashboard,
         R.string.settings_main_interface_title,
-        "launcher"
-    )
-    data object Language : MainSettingsItem(
-        "language",
-        Icons.Default.Language,
-        R.string.settings_main_language_title,
         "launcher"
     )
     data object Navigation : MainSettingsItem(
@@ -162,7 +153,7 @@ internal sealed class MainSettingsItem(
         val ALL: List<MainSettingsItem>
             get() = listOf(
                 Header("launcherHeader", "launcher", R.string.settings_main_section_launcher),
-                Theme, Interface, Language, Navigation, Audio, Displays,
+                Theme, Interface, Navigation, Audio, Displays,
                 Header("gameplayHeader", "gameplay", R.string.settings_main_section_gameplay),
                 BuiltinEmulator, Saves, RetroAchievements, Bios, Drivers,
                 Header("libraryHeader", "library", R.string.settings_main_section_library),
@@ -188,17 +179,6 @@ internal fun mainSettingsMaxFocusIndex(): Int =
 internal fun mainSettingsItemAtFocusIndex(index: Int): MainSettingsItem? =
     mainSettingsLayout.itemAtFocusIndex(index, Unit)
 
-internal fun languageLabelRes(language: AppLanguage): Int = when (language) {
-    AppLanguage.SYSTEM -> R.string.settings_main_language_system_default
-    AppLanguage.ENGLISH -> R.string.settings_main_language_name_en
-    AppLanguage.FRENCH -> R.string.settings_main_language_name_fr
-    AppLanguage.SPANISH -> R.string.settings_main_language_name_es
-    AppLanguage.GERMAN -> R.string.settings_main_language_name_de
-    AppLanguage.CHINESE_SIMPLIFIED -> R.string.settings_main_language_name_zh_hans
-    AppLanguage.CHINESE_TRADITIONAL -> R.string.settings_main_language_name_zh_hant
-    AppLanguage.RUSSIAN -> R.string.settings_main_language_name_ru
-    AppLanguage.HINDI -> R.string.settings_main_language_name_hi
-}
 
 @Composable
 fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
@@ -251,7 +231,6 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
         }
         MainSettingsItem.Theme -> context.getString(R.string.settings_main_theme_subtitle)
         MainSettingsItem.Interface -> context.getString(R.string.settings_main_interface_subtitle)
-        MainSettingsItem.Language -> ""
         MainSettingsItem.Navigation -> context.getString(R.string.settings_main_navigation_subtitle)
         MainSettingsItem.Audio -> context.getString(R.string.settings_main_audio_subtitle)
         MainSettingsItem.Displays -> context.getString(R.string.settings_main_displays_subtitle)
@@ -313,7 +292,6 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
             MainSettingsItem.Storage -> viewModel.navigateToSection(SettingsSection.STORAGE)
             MainSettingsItem.Theme -> viewModel.navigateToSection(SettingsSection.THEME)
             MainSettingsItem.Interface -> viewModel.navigateToSection(SettingsSection.INTERFACE)
-            MainSettingsItem.Language -> viewModel.requestEnumPicker(MainSettingsItem.Language.key)
             MainSettingsItem.Navigation -> viewModel.navigateToSection(SettingsSection.NAVIGATION)
             MainSettingsItem.Audio -> viewModel.navigateToSection(SettingsSection.AUDIO)
             MainSettingsItem.Displays -> viewModel.navigateToSection(SettingsSection.DISPLAYS)
@@ -352,19 +330,6 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
                     }
                     SectionHeader(stringResource(item.titleRes))
                 }
-                MainSettingsItem.Language -> CyclePreference(
-                    title = stringResource(item.titleRes),
-                    value = stringResource(languageLabelRes(uiState.appLanguage)),
-                    subtitle = stringResource(R.string.settings_main_language_subtitle),
-                    isFocused = isFocused(item),
-                    onClick = { viewModel.cycleAppLanguage() },
-                    onPrev = { viewModel.cycleAppLanguage(-1) },
-                    options = remember(context) {
-                        AppLanguage.entries.map { context.getString(languageLabelRes(it)) }
-                    },
-                    onSelect = { index -> viewModel.setAppLanguage(AppLanguage.entries[index].tag) },
-                    pickerRequestToken = pickerToken(item)
-                )
                 else -> NavigationPreference(
                     icon = item.icon,
                     title = stringResource(item.titleRes),

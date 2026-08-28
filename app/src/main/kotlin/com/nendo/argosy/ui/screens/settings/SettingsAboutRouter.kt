@@ -37,17 +37,21 @@ internal fun routeSetAppAffinityEnabled(vm: SettingsViewModel, enabled: Boolean)
 }
 
 /**
- * Persists the launcher's display language, mirrors it into SessionStateStore so every Activity
- * and foreground service can read it synchronously from attachBaseContext, applies the framework
- * per-app language on API 33+ as a visible-in-system-settings bonus, and notifies the dual-screen
- * companion so both screens recreate with the new locale. The DataStore write and the
- * SessionStateStore mirror happen before the notify, since a recreate that raced ahead of either
- * would read the language it is replacing.
+ * Persists the launcher's display language and mirrors it into SessionStateStore, so every
+ * Activity and foreground service can read it synchronously from attachBaseContext. The writes
+ * happen first: a restart that raced ahead of either would read the language it is replacing.
+ *
+ * Exactly one restart mechanism runs, never both. On API 33+ the framework per-app language API
+ * restarts the activities itself, so asking the dual-screen manager to recreate as well would put
+ * two teardowns on the same activity and leave the surviving composition holding an InputDispatcher
+ * nothing is subscribed to: gamepad input dies while touch, which never goes through the
+ * dispatcher, keeps working. Below 33 there is no framework API, so the notify is the only restart.
  */
 internal fun routeSetAppLanguage(vm: SettingsViewModel, tag: String) {
     vm.viewModelScope.launch {
         vm.preferencesRepository.setAppLanguage(tag)
         com.nendo.argosy.data.preferences.SessionStateStore(vm.context).setAppLanguage(tag)
+        vm._uiState.update { it.copy(appLanguage = AppLanguage.fromString(tag)) }
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
             val localeManager = vm.context.getSystemService(android.app.LocaleManager::class.java)
             localeManager?.applicationLocales = if (tag == AppLanguage.SYSTEM.tag) {
@@ -55,9 +59,9 @@ internal fun routeSetAppLanguage(vm: SettingsViewModel, tag: String) {
             } else {
                 android.os.LocaleList.forLanguageTags(tag)
             }
+        } else {
+            com.nendo.argosy.DualScreenManagerHolder.instance?.notifyLocaleChanged()
         }
-        vm._uiState.update { it.copy(appLanguage = AppLanguage.fromString(tag)) }
-        com.nendo.argosy.DualScreenManagerHolder.instance?.notifyLocaleChanged()
     }
 }
 

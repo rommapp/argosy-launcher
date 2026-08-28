@@ -56,6 +56,7 @@ internal class InterfaceSectionInput(
         val state = viewModel.uiState.value
         val layoutState = layoutState()
         when (interfaceItemAtFocusIndex(state.focusedIndex, layoutState)) {
+            InterfaceItem.Language -> { viewModel.cycleAppLanguage(direction); return InputResult.HANDLED }
             InterfaceItem.UiScale -> { viewModel.adjustUiScale(direction * 5); return InputResult.HANDLED }
             InterfaceItem.CompactFooter -> return toggleLeftRight(direction, state.display.compactFooter) {
                 viewModel.setCompactFooter(it)

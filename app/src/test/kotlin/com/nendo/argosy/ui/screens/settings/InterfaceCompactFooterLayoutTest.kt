@@ -25,7 +25,7 @@ class InterfaceCompactFooterLayoutTest {
     fun `compact footer row is focusable and reachable at its focus index`() {
         assertTrue(InterfaceItem.CompactFooter.isFocusable)
         val index = interfaceFocusIndexOf(InterfaceItem.CompactFooter, layoutState)
-        assertEquals(1, index)
+        assertEquals(interfaceFocusIndexOf(InterfaceItem.UiScale, layoutState) + 1, index)
         assertEquals(InterfaceItem.CompactFooter, interfaceItemAtFocusIndex(index, layoutState))
     }
 

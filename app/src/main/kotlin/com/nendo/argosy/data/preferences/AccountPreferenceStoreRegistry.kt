@@ -37,7 +37,10 @@ class AccountPreferenceStoreRegistry(
         if (cached != null) {
             cached
         } else {
-            val store = PreferenceDataStoreFactory.create(scope = scope) {
+            val store = PreferenceDataStoreFactory.create(
+                corruptionHandler = preferencesCorruptionHandler(),
+                scope = scope
+            ) {
                 context.preferencesDataStoreFile(fileNameFor(rommUserId))
             }
             adoptLegacyValues(rommUserId, store)

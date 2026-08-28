@@ -277,6 +277,12 @@ class RomMConnectionManager @Inject constructor(
         return RomMResult.Error(lastError ?: "Connection failed")
     }
 
+    /**
+     * The scheme is settled by an unauthenticated heartbeat before the token is attached.
+     * [buildUrlsToTry] guesses http first for an address given as a bare IP, so authenticating
+     * against each candidate in turn would put the token on a cleartext hop the server never
+     * needed. Only the URL that has already answered gets an authenticated client.
+     */
     private suspend fun attemptConnection(
         url: String,
         token: String?,
@@ -288,10 +294,10 @@ class RomMConnectionManager @Inject constructor(
         for (candidateUrl in urlsToTry) {
             val normalizedUrl = candidateUrl.trimEnd('/') + "/"
             try {
-                val newApi = createApi(normalizedUrl, token)
-                val response = newApi.heartbeat()
+                val response = createApi(normalizedUrl, null).heartbeat()
 
                 if (response.isSuccessful) {
+                    val newApi = createApi(normalizedUrl, token)
                     baseUrl = normalizedUrl
                     accessToken = token
                     api = newApi
@@ -351,6 +357,11 @@ class RomMConnectionManager @Inject constructor(
             val normalizedUrl = candidateUrl.trimEnd('/') + "/"
             try {
                 val tempApi = createApi(normalizedUrl, null)
+                val hb = tempApi.heartbeat()
+                if (!hb.isSuccessful) {
+                    lastError = "Server returned ${hb.code()}"
+                    continue
+                }
                 val response = tempApi.exchangePairingCode(RomMPairingExchangeRequest(code))
                 if (response.isSuccessful) {
                     val token = response.body()?.rawToken

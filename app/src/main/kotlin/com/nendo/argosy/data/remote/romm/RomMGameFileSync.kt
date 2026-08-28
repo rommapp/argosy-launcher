@@ -42,7 +42,7 @@ class RomMGameFileSync @Inject constructor(
      */
     suspend fun sync(gameId: Long, rom: RomMRom, platformSlug: String, fileListIsAuthoritative: Boolean) {
         val files = rom.files?.filter { file ->
-            !file.fileName.startsWith(".")
+            file.isGameContent
         } ?: return
         val rootPathLength = files.minOfOrNull { it.filePath.length }
 

@@ -195,9 +195,31 @@ data class RomMRomFile(
     val isDiscVariant: Boolean
         get() = discNumber != null
 
+    /**
+     * Whether this row is part of the game rather than something the storage put beside it.
+     *
+     * A leading dot covers the unix convention, but a NAS names its sidecar directories in the
+     * clear: Synology writes `@eaDir` thumbnail and index data inside the folder it indexes, and
+     * the contents one level down look like ordinary files. So the whole path is checked, not
+     * just the name, and every caller that lists or sizes a game's files goes through here. A
+     * picker that hides these while the size calculation still counts them would be worse than
+     * doing neither.
+     */
+    val isGameContent: Boolean
+        get() = filePath.split('/', '\\').plus(fileName).none { segment ->
+            segment.startsWith(".") ||
+                EXCLUDED_PATH_SEGMENTS.any { segment.equals(it, ignoreCase = true) }
+        }
+
     companion object {
         private val DISC_TAG_REGEX = Regex("\\(Disc \\d+\\)", RegexOption.IGNORE_CASE)
         private val DISC_NUMBER_REGEX = Regex("\\d+")
+
+        /**
+         * Directories the storage writes inside a game's own folder. Never game content, and
+         * named in the clear rather than hidden, so a dot check alone does not catch them.
+         */
+        private val EXCLUDED_PATH_SEGMENTS = listOf("@eaDir")
     }
 }
 

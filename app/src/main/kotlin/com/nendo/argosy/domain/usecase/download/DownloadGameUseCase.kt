@@ -101,7 +101,7 @@ class DownloadGameUseCase @Inject constructor(
         return when (val result = romMRepository.getRom(rommId)) {
             is RomMResult.Success -> {
                 val rom = result.data
-                val allFiles = rom.files?.filter { !it.fileName.startsWith(".") } ?: emptyList()
+                val allFiles = rom.files?.filter { it.isGameContent } ?: emptyList()
                 val selection = resolveSelection(allFiles, selectedFileIds, game.platformSlug)
 
                 var fileName: String

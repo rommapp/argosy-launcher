@@ -119,7 +119,7 @@ class FilePickerFlowUseCase @Inject constructor(
 
         val romFiles = when (val result = romMRepository.getRom(rommId)) {
             is RomMResult.Success -> result.data.files
-                ?.filter { !it.fileName.startsWith(".") } ?: emptyList()
+                ?.filter { it.isGameContent } ?: emptyList()
             is RomMResult.Error -> emptyList()
         }
         if (romFiles.size > 1) {

@@ -1208,7 +1208,7 @@ class RomMLibrarySyncService @Inject constructor(
         platformSlug: String
     ): List<Long> {
         val files = member.files
-            ?.filter { !it.fileName.startsWith(".") }
+            ?.filter { it.isGameContent }
             ?.takeIf { it.isNotEmpty() }
             ?: return emptyList()
         val rootPathLength = files.minOf { it.filePath.length }

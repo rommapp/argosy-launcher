@@ -209,9 +209,23 @@ object BiosPathRegistry {
             BiosRequirement("switch", "firmware.zip", null, "Switch Firmware", isRequired = true)
         ),
         "xbox" to listOf(
-            BiosRequirement("xbox", "mcpx.bin", null, "Xbox MCPX Boot ROM", isRequired = true),
-            BiosRequirement("xbox", "flash.bin", null, "Xbox Flash ROM / BIOS", isRequired = true),
-            BiosRequirement("xbox", "hdd.img", null, "Xbox Hard Disk Image", isRequired = true)
+            BiosRequirement(
+                "xbox",
+                "Complex_4627.bin",
+                null,
+                "Flash ROM. A retail Xbox BIOS does not boot under xemu-derived emulators, " +
+                    "which leave its DRM unimplemented; Complex 4627 is the build hakuX asks " +
+                    "for. Also ships as Complex_4627v1.03.bin.",
+                isRequired = true
+            ),
+            BiosRequirement("xbox", "mcpx_1.0.bin", null, "MCPX boot ROM", isRequired = true),
+            BiosRequirement(
+                "xbox",
+                "xbox_hdd.qcow2",
+                null,
+                "Hard disk image. Any compatible 8GB prebuilt image also works.",
+                isRequired = true
+            )
         ),
         "amiga" to listOf(
             BiosRequirement("amiga", "kick34005.A500", "82a21c1890cae844b3df741f2762d48d", "Kickstart v1.3 rev 34.005 (A500)", isRequired = false),

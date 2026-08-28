@@ -53,7 +53,7 @@ class BiosSettingsDelegate @Inject constructor(
     suspend fun loadBiosState() {
         val prefs = preferencesRepository.preferences.first()
         biosRepository.reconcileDownloadedFirmware()
-        val allFirmware = firmwareDao.getSyncEnabledAll()
+        val allFirmware = firmwareDao.getAllFirmware()
         val platforms = platformRepository.getAllPlatforms()
 
         val platformGroups = allFirmware

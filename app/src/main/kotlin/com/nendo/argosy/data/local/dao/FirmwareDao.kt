@@ -92,4 +92,18 @@ interface FirmwareDao {
         ORDER BY f.platformSlug, f.fileName
     """)
     suspend fun getDownloadedForDisabledPlatforms(): List<FirmwareEntity>
+
+    /**
+     * Every firmware file the server offers, whatever the platform's rom sync setting.
+     *
+     * The BIOS screen lists these. Sync governs roms, and a library big enough to turn it off is
+     * exactly the one whose bios a user still wants: with the two tied together, turning off rom
+     * sync for Xbox also hid its bios, with nothing on screen to say why. Bulk download stays on
+     * [getSyncEnabledMissing], so an untracked platform is offered rather than fetched.
+     */
+    @Query("""
+        SELECT f.* FROM firmware f
+        ORDER BY f.platformSlug, f.fileName
+    """)
+    suspend fun getAllFirmware(): List<FirmwareEntity>
 }

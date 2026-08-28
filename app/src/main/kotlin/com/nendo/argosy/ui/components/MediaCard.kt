@@ -123,11 +123,15 @@ fun MediaCard(
                 modifier = Modifier.fillMaxSize()
             )
         } else {
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
+            val context = LocalContext.current
+            val posterRequest = remember(context, media.posterUrl) {
+                ImageRequest.Builder(context)
                     .data(media.posterUrl)
                     .transitionFactory(AlwaysCrossfadeFactory(ComponentDefaults.MediaCover.crossfadeMs))
-                    .build(),
+                    .build()
+            }
+            AsyncImage(
+                model = posterRequest,
                 contentDescription = media.title,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),

@@ -563,6 +563,12 @@ class RomMConnectionManager @Inject constructor(
      * cached and never sent can only be sent as that account, so an upload deferred past sign-out
      * is an upload that never happens; refusing here is what keeps the local copy that is still
      * the only copy. [discardUnflushed] gives up on whatever the drain could not deliver.
+     *
+     * Refusing only makes sense while the work could still be sent. With the server unreachable
+     * the drain can never succeed, so refusing would strand the account signed in forever, which
+     * is what happens to anyone whose token was revoked server-side. Unreachable therefore
+     * discards: the queue is already unsendable, and being unable to sign out costs more than the
+     * rows do.
      */
     suspend fun signOut(discardUnflushed: Boolean = false): AccountRemovalResult {
         val active = rommAccountRepository.get().activeAccount()
@@ -573,10 +579,14 @@ class RomMConnectionManager @Inject constructor(
             }
         val drained = syncCoordinator.get().processQueue()
         Logger.info(TAG, "signOut: drained queued work before removal, result=$drained")
-        val policy = if (discardUnflushed) {
+        val reachable = isConnected()
+        val policy = if (discardUnflushed || !reachable) {
             UnflushedQueuePolicy.DISCARD
         } else {
             UnflushedQueuePolicy.REFUSE
+        }
+        if (!reachable && !discardUnflushed) {
+            Logger.info(TAG, "signOut: server unreachable, discarding what the drain could not send")
         }
         val result = accountRemovalService.get().remove(active.id, policy)
         if (result is AccountRemovalResult.Refused || result is AccountRemovalResult.SwitchInProgress) {

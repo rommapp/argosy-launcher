@@ -1220,12 +1220,21 @@ class SocialRepository @Inject constructor(
         )
     }
 
+    /**
+     * Feed events are only sendable as a social account. Without one there is nothing to send them
+     * as and nothing that will ever drain them, so they are dropped rather than queued: a backlog
+     * that cannot empty is what used to hold an account signed in, since removal counts unsent work.
+     */
     private suspend fun queueFeedEvent(
         eventType: String,
         igdbId: Long?,
         gameTitle: String,
         data: Map<String, Any?>
     ) {
+        if (preferencesRepository.userPreferences.first().socialUsername == null) {
+            Log.d(TAG, "Skipped feed event with no social account: $eventType for $gameTitle")
+            return
+        }
         val payloadJson = JSONObject(buildMap<String, Any?> {
             put("event_type", eventType)
             put("igdb_id", igdbId)

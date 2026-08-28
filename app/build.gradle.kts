@@ -323,6 +323,19 @@ val verifyQuayPassReleaseConfig = tasks.register("verifyQuayPassReleaseConfig") 
     }
 }
 
+val verifyReleaseSigningConfig = tasks.register("verifyReleaseSigningConfig") {
+    doLast {
+        if (!keystorePropertiesFile.exists()) {
+            throw GradleException(
+                "keystore.properties is missing. A release build would fall back to the debug " +
+                    "signing key, and an APK signed with that key cannot install over an " +
+                    "existing release. Restore the file before building a release."
+            )
+        }
+    }
+}
+
 tasks.matching { it.name == "assembleRelease" || it.name == "bundleRelease" }.configureEach {
     dependsOn(verifyQuayPassReleaseConfig)
+    dependsOn(verifyReleaseSigningConfig)
 }

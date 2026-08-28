@@ -204,6 +204,16 @@ object BiosPathRegistry {
         "ps2" to listOf(
             BiosRequirement("ps2", "ps2-bios.bin", null, "PlayStation 2 BIOS", isRequired = true)
         ),
+        "ps3" to listOf(
+            BiosRequirement(
+                "ps3",
+                "PS3UPDAT.PUP",
+                null,
+                "System software update. Commercial games need it installed, and the emulator " +
+                    "unpacks it itself rather than reading the file in place.",
+                isRequired = true
+            )
+        ),
         "switch" to listOf(
             BiosRequirement("switch", "prod.keys", null, "Switch Production Keys", isRequired = true),
             BiosRequirement("switch", "firmware.zip", null, "Switch Firmware", isRequired = true)

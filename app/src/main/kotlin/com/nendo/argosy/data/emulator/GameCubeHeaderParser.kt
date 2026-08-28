@@ -1,5 +1,6 @@
 package com.nendo.argosy.data.emulator
 
+import com.nendo.argosy.util.FileNames
 import com.nendo.argosy.util.Logger
 import java.io.File
 import java.io.RandomAccessFile
@@ -143,8 +144,14 @@ object GameCubeHeaderParser {
         }
     }
 
+    /**
+     * The internal filename is 32 raw bytes off the GCI header, so it is whatever the file
+     * carries rather than a name a volume will accept. Folding it keeps a separator in those
+     * bytes from steering the built path out of the card directory, and it is also the only
+     * form the storage layer would have accepted anyway.
+     */
     fun buildGciFilename(makerCode: String, gameId: String, internalFilename: String): String {
-        return "$makerCode-$gameId-$internalFilename.gci"
+        return "$makerCode-$gameId-${FileNames.sanitize(internalFilename)}.gci"
     }
 
     fun buildGciPath(baseDir: String, region: String, gciFilename: String): String {

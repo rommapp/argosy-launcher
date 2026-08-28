@@ -223,7 +223,8 @@ class GciSaveHandler @Inject constructor(
                 Logger.debug(TAG, "Found ${entries.size} GCI entries in bundle")
 
                 for (entry in entries) {
-                    val tempGciFile = File(context.cacheDir, "temp_${entry.name}")
+                    val entryName = File(entry.name).name
+                    val tempGciFile = File(context.cacheDir, "temp_$entryName")
                     try {
                         zip.getInputStream(entry).use { input ->
                             tempGciFile.outputStream().use { output ->
@@ -231,15 +232,15 @@ class GciSaveHandler @Inject constructor(
                             }
                         }
 
-                        val targetPath = GameCubeHeaderParser.buildGciPath(baseDir, romInfo.region, entry.name)
+                        val targetPath = GameCubeHeaderParser.buildGciPath(baseDir, romInfo.region, entryName)
                         val parentDir = File(targetPath).parent
                         if (parentDir != null) fal.mkdirs(parentDir)
 
                         if (fal.copyFile(tempGciFile.absolutePath, targetPath)) {
                             extractedPaths.add(targetPath)
-                            Logger.debug(TAG, "Extracted | entry=${entry.name} -> $targetPath")
+                            Logger.debug(TAG, "Extracted | entry=$entryName -> $targetPath")
                         } else {
-                            Logger.error(TAG, "Failed to copy | entry=${entry.name} -> $targetPath")
+                            Logger.error(TAG, "Failed to copy | entry=$entryName -> $targetPath")
                         }
                     } finally {
                         tempGciFile.delete()

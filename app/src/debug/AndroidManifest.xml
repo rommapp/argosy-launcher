@@ -19,5 +19,17 @@
                 <action android:name="com.nendo.argosy.debug.QUAYPASS_VERIFY" />
             </intent-filter>
         </receiver>
+        <receiver
+            android:name=".hardware.AudioTestReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.nendo.argosy.TEST_AUDIO" />
+                <action android:name="com.nendo.argosy.TOGGLE_AUDIO_LED" />
+            </intent-filter>
+        </receiver>
+        <activity
+            android:name=".hardware.AudioLevelDebugActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Argosy" />
     </application>
 </manifest>

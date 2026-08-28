@@ -207,22 +207,8 @@
 
 
         <receiver
-            android:name=".hardware.AudioTestReceiver"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="com.nendo.argosy.TEST_AUDIO" />
-                <action android:name="com.nendo.argosy.TOGGLE_AUDIO_LED" />
-            </intent-filter>
-        </receiver>
-
-        <receiver
             android:name=".data.quaypass.ble.QuayPassScanReceiver"
             android:exported="false" />
-
-        <activity
-            android:name=".hardware.AudioLevelDebugActivity"
-            android:exported="true"
-            android:theme="@style/Theme.Argosy" />
 
         <activity
             android:name=".libretro.LibretroActivity"

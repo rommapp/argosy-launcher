@@ -1,9 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
+    <!--
+      The base config stays permissive for the server the user points the app at: a self-hosted
+      RomM or Jellyfin is commonly plain HTTP on a LAN, or fronted by a certificate signed by a CA
+      the user installed themselves. That address is unknown at build time, so it can only be
+      covered by the default.
+
+      The domains below are fixed in the app and never self-hosted. They deliver executable code
+      (libretro cores are dlopen'd) or carry the app's own credentials, so they take system trust
+      anchors and no cleartext regardless of what the base config allows. Removing an entry
+      re-opens that host to a user-installed CA.
+    -->
     <base-config cleartextTrafficPermitted="true">
         <trust-anchors>
             <certificates src="system" />
             <certificates src="user" />
         </trust-anchors>
     </base-config>
+
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">buildbot.libretro.com</domain>
+        <domain includeSubdomains="true">github.com</domain>
+        <domain includeSubdomains="true">githubusercontent.com</domain>
+        <domain includeSubdomains="true">argosy.dev</domain>
+        <domain includeSubdomains="true">retroachievements.org</domain>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
 </network-security-config>

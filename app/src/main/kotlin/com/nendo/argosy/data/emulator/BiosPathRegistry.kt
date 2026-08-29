@@ -16,12 +16,12 @@ data class BiosRequirement(
 /**
  * Where an emulator reads BIOS files from, and which platforms it will accept them for.
  *
- * [acceptsAnyPlatform] belongs to the built-in emulator alone: it owns its system directory, so
- * every platform a downloaded firmware file names is one it can be handed. Listing platforms
- * there instead would restate what the firmware rows already say, and a platform missing from
- * the list gets no BIOS with nothing on screen to say why. Its [defaultPaths] are empty for the
- * same reason the others are not: the directory is internal and resolved at runtime by
- * BiosRepository.getLibretroSystemDir.
+ * [acceptsAnyPlatform] belongs to emulators that own a flat system directory and take whatever
+ * is put in it: the built-in core host and RetroArch. Every platform a downloaded firmware file
+ * names is one they can be handed, so listing platforms would restate what the firmware rows
+ * already say, and a platform missing from the list gets no BIOS with nothing on screen to say
+ * why. The built-in emulator's [defaultPaths] are empty for a separate reason: its directory is
+ * internal and resolved at runtime by BiosRepository.getLibretroSystemDir.
  */
 data class BiosPathConfig(
     val emulatorId: String,
@@ -264,12 +264,8 @@ object BiosPathRegistry {
                 "$primaryRoot/RetroArch/system",
                 "$primaryRoot/Android/data/com.retroarch/files/system"
             ),
-            supportedPlatforms = setOf(
-                "psx", "saturn", "scd", "dreamcast", "dc", "neogeo",
-                "3do", "nds", "gba", "tgcd", "pcfx", "lynx", "arcade",
-                "fbneo", "mame", "cdi",
-                "amiga", "amigacd32", "cdtv"
-            )
+            supportedPlatforms = emptySet(),
+            acceptsAnyPlatform = true
         ),
         "retroarch_64" to BiosPathConfig(
             emulatorId = "retroarch_64",
@@ -277,12 +273,8 @@ object BiosPathRegistry {
                 "$primaryRoot/RetroArch/system",
                 "$primaryRoot/Android/data/com.retroarch.aarch64/files/system"
             ),
-            supportedPlatforms = setOf(
-                "psx", "saturn", "scd", "dreamcast", "dc", "neogeo",
-                "3do", "nds", "gba", "tgcd", "pcfx", "lynx", "arcade",
-                "fbneo", "mame", "cdi",
-                "amiga", "amigacd32", "cdtv"
-            )
+            supportedPlatforms = emptySet(),
+            acceptsAnyPlatform = true
         ),
         "retroarch_32" to BiosPathConfig(
             emulatorId = "retroarch_32",
@@ -290,12 +282,8 @@ object BiosPathRegistry {
                 "$primaryRoot/RetroArch/system",
                 "$primaryRoot/Android/data/com.retroarch.ra32/files/system"
             ),
-            supportedPlatforms = setOf(
-                "psx", "saturn", "scd", "dreamcast", "dc", "neogeo",
-                "3do", "nds", "gba", "tgcd", "pcfx", "lynx", "arcade",
-                "fbneo", "mame", "cdi",
-                "amiga", "amigacd32", "cdtv"
-            )
+            supportedPlatforms = emptySet(),
+            acceptsAnyPlatform = true
         ),
         "duckstation" to BiosPathConfig(
             emulatorId = "duckstation",

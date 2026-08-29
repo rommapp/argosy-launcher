@@ -532,6 +532,7 @@ class BiosRepository @Inject constructor(
             for (firmware in downloaded) {
                 val sourceFile = File(firmware.localPath!!)
                 if (!sourceFile.exists()) continue
+                if (firmware.fileName.startsWith(".")) continue
 
                 val targetFileName = if (requiresExactFilenames) {
                     BiosPathRegistry.getNestedBiosPath(firmware.fileName)

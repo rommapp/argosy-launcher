@@ -2,10 +2,11 @@ package com.nendo.argosy.data.remote.romm
 
 import com.nendo.argosy.data.local.dao.CollectionDao
 import com.nendo.argosy.data.local.dao.GameDao
-import com.nendo.argosy.data.model.VersionGroups
+import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.local.entity.CollectionEntity
 import com.nendo.argosy.data.local.entity.CollectionGameEntity
 import com.nendo.argosy.data.local.entity.CollectionType
+import com.nendo.argosy.data.model.VersionGroups
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.sync.SyncCoordinator
 import com.nendo.argosy.util.Logger
@@ -29,7 +30,7 @@ class RomMCollectionSyncService @Inject constructor(
     private val connectionManager: RomMConnectionManager,
     private val userPreferencesRepository: UserPreferencesRepository,
     private val gameDao: GameDao,
-    private val gameFileDao: com.nendo.argosy.data.local.dao.GameFileDao,
+    private val gameFileDao: GameFileDao,
     private val collectionDao: CollectionDao,
     private val collectionMembershipDao: com.nendo.argosy.data.local.dao.CollectionMembershipDao,
     private val overlayWriter: com.nendo.argosy.data.repository.GameUserOverlayWriter,

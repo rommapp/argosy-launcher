@@ -208,4 +208,88 @@ class SiblingWinnerTest {
         assertFalse(rom(3, "Europe", tags = listOf("SGB Enhanced")).isRerelease)
         assertFalse(rom(4, "Europe").isRerelease)
     }
+
+    /**
+     * Two groups form when sibling lists disagree about the set, and merging must re-run the
+     * pick. Keeping the group that formed first hands the release to page order: the German
+     * dump wins when its id sorts lower and loses when it does not.
+     */
+    @Test
+    fun `merging two groups re-runs the pick instead of keeping the first winner`() {
+        val usaFirst = SiblingGroup()
+        usaFirst.winner = rom(3644, "USA", "Europe")
+        val german = rom(3645, "Germany")
+
+        val merged = chooseWinner(usaFirst, german, priorityFilters)
+
+        assertEquals(3645L, merged?.id)
+    }
+
+    @Test
+    fun `merging is symmetric whichever group formed first`() {
+        val germanFirst = SiblingGroup()
+        germanFirst.winner = rom(3645, "Germany")
+
+        val merged = chooseWinner(germanFirst, rom(3644, "USA", "Europe"), priorityFilters)
+
+        assertEquals(3645L, merged?.id)
+    }
+
+    private fun groupOf(winner: RomMRom, vararg expected: Long) = SiblingGroup().apply {
+        this.winner = winner
+        members.add(SiblingMember(winner.id, winner.regions, winner.files))
+        expectedIds.addAll(expected.toList())
+    }
+
+    /**
+     * The German dump of Pokemon Red sorts after the USA one, so its group formed second and the
+     * merge discarded it. The English dump of Blue sorts after the German one, which is the only
+     * reason Blue survived the same code path.
+     */
+    @Test
+    fun `merging keeps the better ranked region whichever group formed first`() {
+        val usaFirst = mergeSiblingGroups(
+            listOf(
+                groupOf(rom(3644, "USA", "Europe"), 3644L, 3645L),
+                groupOf(rom(3645, "Germany"), 3644L, 3645L)
+            ),
+            priorityFilters
+        )
+        val germanFirst = mergeSiblingGroups(
+            listOf(
+                groupOf(rom(3636, "Germany"), 3636L, 3638L),
+                groupOf(rom(3638, "USA", "Europe"), 3636L, 3638L)
+            ),
+            priorityFilters
+        )
+
+        assertEquals(3645L, usaFirst.winner?.id)
+        assertEquals(3636L, germanFirst.winner?.id)
+    }
+
+    @Test
+    fun `merging carries every member and expected id across`() {
+        val merged = mergeSiblingGroups(
+            listOf(
+                groupOf(rom(3644, "USA", "Europe"), 3644L, 3645L),
+                groupOf(rom(3645, "Germany"), 3645L, 3651L)
+            ),
+            priorityFilters
+        )
+
+        assertEquals(setOf(3644L, 3645L, 3651L), merged.expectedIds)
+        assertEquals(setOf(3644L, 3645L), merged.members.map { it.id }.toSet())
+    }
+
+    @Test
+    fun `merging a single group leaves its winner alone`() {
+        val only = groupOf(rom(3645, "Germany"), 3645L)
+
+        assertEquals(3645L, mergeSiblingGroups(listOf(only), priorityFilters).winner?.id)
+    }
+
+    @Test
+    fun `merging nothing yields an empty group`() {
+        assertEquals(null, mergeSiblingGroups(emptyList(), priorityFilters).winner)
+    }
 }

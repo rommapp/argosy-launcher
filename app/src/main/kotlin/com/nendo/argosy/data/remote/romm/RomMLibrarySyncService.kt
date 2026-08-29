@@ -957,17 +957,18 @@ class RomMLibrarySyncService @Inject constructor(
         var totalFetched = 0
         var platformTotal: Int? = null
 
+        /**
+         * Sibling lists are not symmetric: a rom can name fewer siblings than one of its own
+         * siblings names, so a group can start as two and only meet once a rom bridging them
+         * arrives. Merging has to put both running winners back through [chooseWinner], since
+         * keeping whichever group formed first decides the release by page order rather than by
+         * the region priority.
+         */
         fun groupFor(rom: RomMRom): SiblingGroup {
             val ids = listOf(rom.id) +
                 rom.effectiveSiblings.filter { !it.isDiscVariant }.map { it.id }
             val existingGroups = ids.mapNotNull { siblingGroups[it] }.distinct()
-            val group = existingGroups.firstOrNull() ?: SiblingGroup()
-            existingGroups.drop(1).forEach { other ->
-                group.members.addAll(other.members)
-                group.expectedIds.addAll(other.expectedIds)
-                if (group.mainSiblingId == null) group.mainSiblingId = other.mainSiblingId
-                if (group.winner == null) group.winner = other.winner
-            }
+            val group = mergeSiblingGroups(existingGroups, filters)
             group.expectedIds.addAll(ids)
             ids.forEach { siblingGroups[it] = group }
             return group
@@ -1683,6 +1684,27 @@ internal class SiblingGroup {
      */
     val isComplete: Boolean get() = expectedIds.isNotEmpty() &&
         members.mapTo(mutableSetOf()) { it.id }.containsAll(expectedIds)
+}
+
+/**
+ * Folds groups that turned out to be one into the first of them. Both running winners go back
+ * through [chooseWinner]: keeping the winner of whichever group formed first decides the
+ * release by the order the server paged its roms in rather than by the region priority.
+ */
+internal fun mergeSiblingGroups(
+    existingGroups: List<SiblingGroup>,
+    filters: SyncFilterPreferences
+): SiblingGroup {
+    val group = existingGroups.firstOrNull() ?: SiblingGroup()
+    existingGroups.drop(1).forEach { other ->
+        group.members.addAll(other.members)
+        group.expectedIds.addAll(other.expectedIds)
+        if (group.mainSiblingId == null) group.mainSiblingId = other.mainSiblingId
+        other.winner?.let { candidate ->
+            group.winner = chooseWinner(group, candidate, filters)
+        }
+    }
+    return group
 }
 
 /**

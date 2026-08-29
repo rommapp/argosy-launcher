@@ -545,6 +545,7 @@
     <string name="settings_sync_metadata_filters_demo">demo</string>
     <!-- Short word, plural, for fan-modified versions of a game. Lower case. -->
     <string name="settings_sync_metadata_filters_hack">hacks</string>
+    <string name="settings_sync_metadata_filters_unofficial">unlicensed</string>
 
     <!-- Row title. Verb phrase: keep copies of the in-game pictures on this device. -->
     <string name="settings_sync_cache_screenshots_title">Cache Screenshots</string>
@@ -3258,6 +3259,8 @@
     <string name="settings_sync_filters_exclude_demo_title">Exclude Demo</string>
     <!-- Row title. Verb phrase: skip ROM hack games during sync. -->
     <string name="settings_sync_filters_exclude_hack_title">Exclude ROM Hacks</string>
+    <string name="settings_sync_filters_exclude_unofficial_title">Exclude Unlicensed</string>
+    <string name="settings_sync_filters_exclude_unofficial_subtitle">Pirate, unlicensed and aftermarket releases</string>
     <!-- Row title. Verb phrase: delete local games the server no longer has. -->
     <string name="settings_sync_filters_remove_orphans_title">Remove Orphaned Entries</string>
     <!-- Second line of that row. -->

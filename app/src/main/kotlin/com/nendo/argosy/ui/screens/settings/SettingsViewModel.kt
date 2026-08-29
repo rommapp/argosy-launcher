@@ -1355,6 +1355,8 @@ class SettingsViewModel @Inject constructor(
     fun setExcludePrototype(exclude: Boolean) = syncDelegate.setExcludePrototype(viewModelScope, exclude)
     fun setExcludeDemo(exclude: Boolean) = syncDelegate.setExcludeDemo(viewModelScope, exclude)
     fun setExcludeHack(exclude: Boolean) = syncDelegate.setExcludeHack(viewModelScope, exclude)
+    fun setExcludeUnofficial(exclude: Boolean) =
+        syncDelegate.setExcludeUnofficial(viewModelScope, exclude)
     fun setDeleteOrphans(delete: Boolean) = syncDelegate.setDeleteOrphans(viewModelScope, delete)
 
     fun toggleSyncScreenshots() = routeToggleSyncScreenshots(this)

@@ -44,7 +44,8 @@ object AccountScopedPreferenceKeys {
         "sync_filter_exclude_beta",
         "sync_filter_exclude_proto",
         "sync_filter_exclude_demo",
-        "sync_filter_exclude_hack"
+        "sync_filter_exclude_hack",
+        "sync_filter_exclude_unofficial"
     )
 
     private val DOWNLOAD_CATEGORIES = setOf(

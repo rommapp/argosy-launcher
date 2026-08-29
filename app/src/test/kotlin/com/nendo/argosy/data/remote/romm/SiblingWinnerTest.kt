@@ -1,5 +1,6 @@
 package com.nendo.argosy.data.remote.romm
 
+import com.nendo.argosy.data.preferences.RegionFilterMode
 import com.nendo.argosy.data.preferences.SyncFilterPreferences
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -105,5 +106,60 @@ class SiblingWinnerTest {
         val winner = feed(group, listOf(rom(4, "Brazil"), rom(5, "Korea")))
 
         assertEquals(4L, winner?.id)
+    }
+
+    private val priorityFilters = SyncFilterPreferences(
+        enabledRegions = listOf("Germany", "Europe", "World", "USA"),
+        regionMode = RegionFilterMode.INCLUDE
+    )
+
+    private fun feedWith(
+        group: SiblingGroup,
+        roms: List<RomMRom>,
+        with: SyncFilterPreferences
+    ): RomMRom? {
+        roms.forEach { candidate ->
+            group.members.add(SiblingMember(candidate.id, candidate.regions, candidate.files))
+            group.winner = chooseWinner(group, candidate, with)
+        }
+        return group.winner
+    }
+
+    @Test
+    fun `an ordered region priority beats a declared main sibling`() {
+        val group = SiblingGroup()
+        group.mainSiblingId = 1L
+        val winner = feedWith(group, listOf(rom(1, "USA"), rom(2, "Europe")), priorityFilters)
+
+        assertEquals(2L, winner?.id)
+    }
+
+    @Test
+    fun `region priority wins whichever order the members arrive in`() {
+        val forward = SiblingGroup().also { it.mainSiblingId = 1L }
+        val reverse = SiblingGroup().also { it.mainSiblingId = 1L }
+        val first = feedWith(forward, listOf(rom(1, "USA"), rom(2, "Germany")), priorityFilters)
+        val second = feedWith(reverse, listOf(rom(2, "Germany"), rom(1, "USA")), priorityFilters)
+
+        assertEquals(2L, first?.id)
+        assertEquals(2L, second?.id)
+    }
+
+    @Test
+    fun `the main sibling still breaks a tie between equally ranked regions`() {
+        val group = SiblingGroup()
+        group.mainSiblingId = 2L
+        val winner = feedWith(group, listOf(rom(1, "Europe"), rom(2, "Europe")), priorityFilters)
+
+        assertEquals(2L, winner?.id)
+    }
+
+    @Test
+    fun `an exclude list carries no priority so the main sibling still wins`() {
+        val group = SiblingGroup()
+        group.mainSiblingId = 1L
+        val winner = feedWith(group, listOf(rom(1, "USA"), rom(2, "Europe")), filters)
+
+        assertEquals(1L, winner?.id)
     }
 }

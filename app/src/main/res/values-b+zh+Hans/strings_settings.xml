@@ -272,6 +272,7 @@
     <string name="settings_sync_metadata_filters_prototype">原型</string>
     <string name="settings_sync_metadata_filters_demo">试玩</string>
     <string name="settings_sync_metadata_filters_hack">改版</string>
+    <string name="settings_sync_metadata_filters_unofficial">非授权</string>
 
     <string name="settings_sync_cache_screenshots_title">缓存截图</string>
     <string name="settings_sync_cache_screenshots_subtitle">封面和背景图始终会被缓存</string>
@@ -1674,6 +1675,8 @@
     <string name="settings_sync_filters_exclude_prototype_title">排除原型</string>
     <string name="settings_sync_filters_exclude_demo_title">排除试玩版</string>
     <string name="settings_sync_filters_exclude_hack_title">排除ROM改版</string>
+    <string name="settings_sync_filters_exclude_unofficial_title">排除非授权版本</string>
+    <string name="settings_sync_filters_exclude_unofficial_subtitle">盗版、非授权和后市场版本</string>
     <string name="settings_sync_filters_remove_orphans_title">移除孤立条目</string>
     <string name="settings_sync_filters_remove_orphans_subtitle">删除服务器上已不存在的游戏</string>
     <string name="settings_sync_filters_hint_navigate">导航</string>

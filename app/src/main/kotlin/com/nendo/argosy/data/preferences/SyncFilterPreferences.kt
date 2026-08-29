@@ -7,8 +7,16 @@ data class SyncFilterPreferences(
     val excludePrototype: Boolean = true,
     val excludeDemo: Boolean = true,
     val excludeHack: Boolean = false,
+    val excludeUnofficial: Boolean = false,
     val deleteOrphans: Boolean = true
 ) {
+    /**
+     * Whether [enabledRegions] is an ordered preference rather than a blacklist. Only an include
+     * list carries priority, so consumers that rank by region must not read an exclude list.
+     */
+    val hasRegionPriority: Boolean
+        get() = regionMode == RegionFilterMode.INCLUDE && enabledRegions.isNotEmpty()
+
     /** Enabled regions in priority order followed by disabled; canonical order when priority is off. */
     val pickerDisplayOrder: List<String>
         get() = if (regionMode != RegionFilterMode.INCLUDE) ALL_KNOWN_REGIONS

@@ -149,7 +149,7 @@ class SyncSettingsDelegate @Inject constructor(
 
     fun moveSyncFiltersModalFocus(delta: Int) {
         _state.update { state ->
-            val maxIndex = 6
+            val maxIndex = 7
             val newIndex = (state.syncFiltersModalFocusIndex + delta).coerceIn(0, maxIndex)
             state.copy(syncFiltersModalFocusIndex = newIndex)
         }
@@ -164,7 +164,8 @@ class SyncSettingsDelegate @Inject constructor(
             3 -> setExcludePrototype(scope, !state.syncFilters.excludePrototype)
             4 -> setExcludeDemo(scope, !state.syncFilters.excludeDemo)
             5 -> setExcludeHack(scope, !state.syncFilters.excludeHack)
-            6 -> setDeleteOrphans(scope, !state.syncFilters.deleteOrphans)
+            6 -> setExcludeUnofficial(scope, !state.syncFilters.excludeUnofficial)
+            7 -> setDeleteOrphans(scope, !state.syncFilters.deleteOrphans)
         }
     }
 
@@ -342,6 +343,15 @@ class SyncSettingsDelegate @Inject constructor(
             preferencesRepository.setSyncFilterExcludeHack(exclude)
             _state.update {
                 it.copy(syncFilters = it.syncFilters.copy(excludeHack = exclude))
+            }
+        }
+    }
+
+    fun setExcludeUnofficial(scope: CoroutineScope, exclude: Boolean) {
+        scope.launch {
+            preferencesRepository.setSyncFilterExcludeUnofficial(exclude)
+            _state.update {
+                it.copy(syncFilters = it.syncFilters.copy(excludeUnofficial = exclude))
             }
         }
     }

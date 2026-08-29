@@ -280,6 +280,7 @@
     <string name="settings_sync_metadata_filters_prototype">प्रोटो</string>
     <string name="settings_sync_metadata_filters_demo">डेमो</string>
     <string name="settings_sync_metadata_filters_hack">हैक्स</string>
+    <string name="settings_sync_metadata_filters_unofficial">अनलाइसेंस्ड</string>
 
     <string name="settings_sync_cache_screenshots_title">स्क्रीनशॉट कैश करें</string>
     <string name="settings_sync_cache_screenshots_subtitle">बॉक्सआर्ट और बैकग्राउंड हमेशा कैश किए जाते हैं</string>
@@ -1714,6 +1715,8 @@
     <string name="settings_sync_filters_exclude_prototype_title">प्रोटोटाइप छोड़ें</string>
     <string name="settings_sync_filters_exclude_demo_title">डेमो छोड़ें</string>
     <string name="settings_sync_filters_exclude_hack_title">ROM हैक छोड़ें</string>
+    <string name="settings_sync_filters_exclude_unofficial_title">अनलाइसेंस्ड बाहर रखें</string>
+    <string name="settings_sync_filters_exclude_unofficial_subtitle">पायरेट, अनलाइसेंस्ड और आफ्टरमार्केट रिलीज़</string>
     <string name="settings_sync_filters_remove_orphans_title">अनाथ एंट्री हटाएँ</string>
     <string name="settings_sync_filters_remove_orphans_subtitle">सर्वर पर अब न मौजूद गेम हटाएँ</string>
     <string name="settings_sync_filters_hint_navigate">नेविगेट करें</string>

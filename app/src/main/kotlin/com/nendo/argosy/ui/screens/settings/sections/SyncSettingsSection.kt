@@ -314,6 +314,7 @@ fun SyncSettingsSection(
                 onToggleExcludePrototype = { viewModel.setExcludePrototype(it) },
                 onToggleExcludeDemo = { viewModel.setExcludeDemo(it) },
                 onToggleExcludeHack = { viewModel.setExcludeHack(it) },
+                onToggleExcludeUnofficial = { viewModel.setExcludeUnofficial(it) },
                 onToggleDeleteOrphans = { viewModel.setDeleteOrphans(it) },
                 onShowRegionPicker = { viewModel.showRegionPicker() },
                 onDismissRegionPicker = { viewModel.dismissRegionPicker() },
@@ -350,7 +351,12 @@ private fun buildFiltersSubtitle(
         if (filters.excludeBeta) context.getString(R.string.settings_sync_metadata_filters_beta) else null,
         if (filters.excludePrototype) context.getString(R.string.settings_sync_metadata_filters_prototype) else null,
         if (filters.excludeDemo) context.getString(R.string.settings_sync_metadata_filters_demo) else null,
-        if (filters.excludeHack) context.getString(R.string.settings_sync_metadata_filters_hack) else null
+        if (filters.excludeHack) context.getString(R.string.settings_sync_metadata_filters_hack) else null,
+        if (filters.excludeUnofficial) {
+            context.getString(R.string.settings_sync_metadata_filters_unofficial)
+        } else {
+            null
+        }
     )
     if (excludes.isNotEmpty()) {
         parts.add(

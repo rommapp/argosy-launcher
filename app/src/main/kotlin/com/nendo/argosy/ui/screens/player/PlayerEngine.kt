@@ -55,7 +55,8 @@ class PlayerEngine @Inject constructor(
     @ApplicationContext private val context: Context,
     private val connectionManager: JellyfinConnectionManager,
     private val jellyfinPreferencesRepository: JellyfinPreferencesRepository,
-    private val displayAffinityHelper: DisplayAffinityHelper
+    private val displayAffinityHelper: DisplayAffinityHelper,
+    private val userCertStore: com.nendo.argosy.data.remote.ssl.UserCertStore
 ) {
 
     suspend fun authorizationHeader(): String = withContext(Dispatchers.IO) {
@@ -238,7 +239,7 @@ class PlayerEngine @Inject constructor(
         val client = OkHttpClient.Builder()
             .connectTimeout(STREAM_CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             .readTimeout(STREAM_READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-            .withUserCertTrust(true)
+            .withUserCertTrust(userCertStore)
             .build()
         val upstream = OkHttpDataSource.Factory(client).apply {
             if (authorizationHeader != null) {

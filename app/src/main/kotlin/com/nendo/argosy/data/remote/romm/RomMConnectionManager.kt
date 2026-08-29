@@ -26,7 +26,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import com.nendo.argosy.data.remote.ssl.UserCertTrustManager.withUserCertTrust
+import com.nendo.argosy.data.remote.ssl.isCertificateTrustFailure
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -262,6 +262,7 @@ class RomMConnectionManager @Inject constructor(
     /** Probes a server URL with a throwaway client, leaving the live session untouched. */
     suspend fun probeServerVersion(url: String): RomMResult<String> {
         var lastError: String? = null
+        var lastKind: RomMErrorKind? = null
         for (candidateUrl in buildUrlsToTry(url)) {
             val normalizedUrl = candidateUrl.trimEnd('/') + "/"
             try {
@@ -270,11 +271,17 @@ class RomMConnectionManager @Inject constructor(
                     return RomMResult.Success(response.body()?.version ?: "unknown")
                 }
                 lastError = "Server returned ${response.code()}"
+                lastKind = null
             } catch (e: Exception) {
                 lastError = e.message ?: "Connection failed"
+                lastKind = if (e.isCertificateTrustFailure()) {
+                    RomMErrorKind.UNTRUSTED_CERTIFICATE
+                } else {
+                    null
+                }
             }
         }
-        return RomMResult.Error(lastError ?: "Connection failed")
+        return RomMResult.Error(lastError ?: "Connection failed", kind = lastKind)
     }
 
     /**
@@ -290,6 +297,7 @@ class RomMConnectionManager @Inject constructor(
     ): RomMResult<String> = connectMutex.withLock {
         val urlsToTry = buildUrlsToTry(url)
         var lastError: String? = null
+        var lastKind: RomMErrorKind? = null
 
         for (candidateUrl in urlsToTry) {
             val normalizedUrl = candidateUrl.trimEnd('/') + "/"
@@ -316,15 +324,21 @@ class RomMConnectionManager @Inject constructor(
                     return RomMResult.Success(normalizedUrl)
                 } else {
                     lastError = "Server returned ${response.code()}"
+                    lastKind = null
                     Logger.info(TAG, "connect: heartbeat failed at $normalizedUrl with ${response.code()}")
                 }
             } catch (e: Exception) {
                 lastError = e.message ?: "Connection failed"
+                lastKind = if (e.isCertificateTrustFailure()) {
+                    RomMErrorKind.UNTRUSTED_CERTIFICATE
+                } else {
+                    null
+                }
                 Logger.info(TAG, "connect: exception at $normalizedUrl: ${e.message}")
             }
         }
 
-        return RomMResult.Error(lastError ?: "Connection failed")
+        return RomMResult.Error(lastError ?: "Connection failed", kind = lastKind)
     }
 
     suspend fun connectWithToken(url: String, token: String): RomMResult<String> {

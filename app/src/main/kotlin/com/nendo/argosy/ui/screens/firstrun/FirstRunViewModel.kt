@@ -16,8 +16,10 @@ import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.DeviceAuthOutcome
 import com.nendo.argosy.data.remote.romm.RomMCapabilities
+import com.nendo.argosy.data.remote.romm.RomMErrorKind
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
+import com.nendo.argosy.data.remote.ssl.UserCertStore
 import com.nendo.argosy.data.remote.romm.pollDeviceAuthUntilResolved
 import com.nendo.argosy.ui.screens.settings.RomMAuthMethod
 import kotlinx.coroutines.Job
@@ -78,6 +80,19 @@ data class FirstRunError(
     val serverMessage: String? = null
 )
 
+/**
+ * A connection failure the user can act on reads as app-authored text, not as the server's.
+ *
+ * An untrusted chain surfaces from OkHttp as a validator message that names neither the cause
+ * nor the remedy, so passing it through leaves the reader with no way to connect the failure to
+ * the certificate they need to import.
+ */
+private fun RomMResult.Error.toFirstRunError(): FirstRunError = when (kind) {
+    RomMErrorKind.UNTRUSTED_CERTIFICATE ->
+        FirstRunError(textRes = R.string.firstrun_romm_error_untrusted_certificate)
+    null -> FirstRunError(serverMessage = message)
+}
+
 data class FirstRunUiState(
     val currentStep: FirstRunStep = FirstRunStep.WELCOME,
     val focusedIndex: Int = 0,
@@ -94,6 +109,7 @@ data class FirstRunUiState(
     val rommHasCamera: Boolean = false,
     val isConnecting: Boolean = false,
     val connectionError: FirstRunError? = null,
+    val importedCertCount: Int = 0,
     val rommGameCount: Int = 0,
     val rommPlatformCount: Int = 0,
     val romStoragePath: String? = null,
@@ -133,7 +149,8 @@ class FirstRunViewModel @Inject constructor(
     private val permissionHelper: PermissionHelper,
     private val coreManager: LibretroCoreManager,
     private val gamepadInputHandler: GamepadInputHandler,
-    private val hapticManager: HapticFeedbackManager
+    private val hapticManager: HapticFeedbackManager,
+    private val userCertStore: UserCertStore
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(
@@ -144,6 +161,14 @@ class FirstRunViewModel @Inject constructor(
     val uiState: StateFlow<FirstRunUiState> = _uiState.asStateFlow()
 
     private var devicePollJob: Job? = null
+
+    init {
+        viewModelScope.launch {
+            userCertStore.certs.collect { certs ->
+                _uiState.update { it.copy(importedCertCount = certs.size) }
+            }
+        }
+    }
 
     fun nextStep() {
         _uiState.update { state ->
@@ -435,7 +460,7 @@ class FirstRunViewModel @Inject constructor(
             FirstRunStep.WELCOME -> 0
             FirstRunStep.ROMM_LOGIN -> when {
                 state.rommDevicePairing -> 2
-                !state.rommUrlCommitted -> 2
+                !state.rommUrlCommitted -> 3
                 else -> 2 +
                     (if (state.rommHasCamera) 1 else 0) +
                     (if (state.rommSupportsDeviceAuth) 1 else 0)
@@ -591,11 +616,27 @@ class FirstRunViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             isConnecting = false,
-                            connectionError = FirstRunError(serverMessage = result.message)
+                            connectionError = result.toFirstRunError()
                         )
                     }
                 }
             }
+        }
+    }
+
+    fun importCertificate(path: String) {
+        viewModelScope.launch {
+            val result = userCertStore.importFrom(path)
+            if (result.isFailure) {
+                _uiState.update {
+                    it.copy(
+                        connectionError =
+                            FirstRunError(textRes = R.string.firstrun_romm_certificate_import_failed)
+                    )
+                }
+                return@launch
+            }
+            _uiState.update { it.copy(connectionError = null) }
         }
     }
 
@@ -926,7 +967,8 @@ class FirstRunViewModel @Inject constructor(
         onRequestUsageStats: () -> Unit,
         onChooseFolder: () -> Unit,
         onChooseImageCacheFolder: () -> Unit,
-        onOpenVerificationUrl: () -> Unit
+        onOpenVerificationUrl: () -> Unit,
+        onChooseCertificate: () -> Unit
     ) {
         val state = _uiState.value
         when (state.currentStep) {
@@ -942,6 +984,7 @@ class FirstRunViewModel @Inject constructor(
                         0 -> setRommFocusField(0)
                         1 -> if (!state.isConnecting && state.rommUrl.isNotBlank()) commitUrl()
                         2 -> previousStep()
+                        3 -> onChooseCertificate()
                     }
                     else -> {
                         val scanIndex = if (state.rommHasCamera) 3 else -1
@@ -1044,7 +1087,8 @@ class FirstRunViewModel @Inject constructor(
         onRequestUsageStats: () -> Unit,
         onChooseFolder: () -> Unit,
         onChooseImageCacheFolder: () -> Unit,
-        onOpenVerificationUrl: () -> Unit
+        onOpenVerificationUrl: () -> Unit,
+        onChooseCertificate: () -> Unit
     ) = FirstRunInputHandler(
         this,
         onComplete,
@@ -1054,6 +1098,7 @@ class FirstRunViewModel @Inject constructor(
         onRequestUsageStats,
         onChooseFolder,
         onChooseImageCacheFolder,
-        onOpenVerificationUrl
+        onOpenVerificationUrl,
+        onChooseCertificate
     )
 }

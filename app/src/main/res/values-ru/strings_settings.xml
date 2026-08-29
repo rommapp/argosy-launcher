@@ -1853,6 +1853,16 @@
     <string name="settings_romm_config_connect_subtitle">Подключиться к серверу RomM</string>
     <string name="settings_romm_config_scan_title">Сканировать QR-код</string>
     <string name="settings_romm_config_scan_subtitle">Отсканируйте QR-код привязки из веб-интерфейса RomM</string>
+    <string name="settings_romm_config_certificate_title">Добавить сертификат</string>
+    <string name="settings_romm_config_certificate_subtitle">Доверять серверу с частным центром сертификации</string>
+    <plurals name="settings_romm_config_certificate_subtitle_count">
+        <item quantity="one">%d сертификат, которому доверяет Argosy</item>
+        <item quantity="few">%d сертификата, которым доверяет Argosy</item>
+        <item quantity="many">%d сертификатов, которым доверяет Argosy</item>
+        <item quantity="other">%d сертификата, которым доверяет Argosy</item>
+    </plurals>
+    <string name="settings_romm_config_certificate_import_failed">Этот файл не является читаемым сертификатом.</string>
+    <string name="settings_romm_config_error_untrusted_certificate">Это устройство не доверяет сертификату сервера. Добавьте сертификат, чтобы подключиться.</string>
     <string name="settings_romm_config_cancel_title">Отмена</string>
     <string name="settings_romm_config_cancel_subtitle">Вернуться к настройкам сервера</string>
     <string name="settings_romm_device_pairing_title">Отсканируйте для привязки</string>

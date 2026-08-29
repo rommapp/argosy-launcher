@@ -14,6 +14,10 @@
     <string name="firstrun_romm_url_button_checking">जांच हो रही है...</string>
     <string name="firstrun_romm_url_button_back">वापस</string>
     <string name="firstrun_romm_url_error_blank">एक सर्वर URL दर्ज करें</string>
+    <string name="firstrun_romm_certificate_button">प्रमाणपत्र जोड़ें</string>
+    <string name="firstrun_romm_certificate_button_count">प्रमाणपत्र (%1$d)</string>
+    <string name="firstrun_romm_certificate_import_failed">यह फ़ाइल पढ़ने योग्य प्रमाणपत्र नहीं है।</string>
+    <string name="firstrun_romm_error_untrusted_certificate">यह डिवाइस सर्वर के प्रमाणपत्र पर भरोसा नहीं करता। कनेक्ट करने के लिए प्रमाणपत्र जोड़ें।</string>
 
     <!-- ===== Step 2b: signing in with a pairing code typed by hand ===== -->
 

@@ -10,6 +10,10 @@
     <string name="firstrun_romm_url_button_checking">正在检查...</string>
     <string name="firstrun_romm_url_button_back">返回</string>
     <string name="firstrun_romm_url_error_blank">请输入服务器地址</string>
+    <string name="firstrun_romm_certificate_button">添加证书</string>
+    <string name="firstrun_romm_certificate_button_count">证书 (%1$d)</string>
+    <string name="firstrun_romm_certificate_import_failed">该文件不是可读取的证书。</string>
+    <string name="firstrun_romm_error_untrusted_certificate">此设备不信任服务器的证书。添加证书后即可连接。</string>
 
     <string name="firstrun_pairing_code_title">输入配对码</string>
     <string name="firstrun_pairing_code_hint">在RomM网页界面中创建一个API令牌，然后输入8位代码。</string>

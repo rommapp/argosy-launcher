@@ -12,7 +12,8 @@ class FirstRunInputHandler(
     private val onRequestUsageStats: () -> Unit,
     private val onChooseFolder: () -> Unit,
     private val onChooseImageCacheFolder: () -> Unit,
-    private val onOpenVerificationUrl: () -> Unit
+    private val onOpenVerificationUrl: () -> Unit,
+    private val onChooseCertificate: () -> Unit
 ) : InputHandler {
 
     override fun onUp(): InputResult {
@@ -46,7 +47,8 @@ class FirstRunInputHandler(
             onRequestUsageStats = onRequestUsageStats,
             onChooseFolder = onChooseFolder,
             onChooseImageCacheFolder = onChooseImageCacheFolder,
-            onOpenVerificationUrl = onOpenVerificationUrl
+            onOpenVerificationUrl = onOpenVerificationUrl,
+            onChooseCertificate = onChooseCertificate
         )
         return InputResult.HANDLED
     }

@@ -1770,6 +1770,14 @@
     <string name="settings_romm_config_connect_subtitle">Mit RomM-Server verbinden</string>
     <string name="settings_romm_config_scan_title">QR-Code scannen</string>
     <string name="settings_romm_config_scan_subtitle">Pairing-QR-Code aus der RomM-Weboberfläche scannen</string>
+    <string name="settings_romm_config_certificate_title">Zertifikat hinzufügen</string>
+    <string name="settings_romm_config_certificate_subtitle">Einem Server mit privater Zertifizierungsstelle vertrauen</string>
+    <plurals name="settings_romm_config_certificate_subtitle_count">
+        <item quantity="one">%d Zertifikat von Argosy als vertrauenswürdig eingestuft</item>
+        <item quantity="other">%d Zertifikate von Argosy als vertrauenswürdig eingestuft</item>
+    </plurals>
+    <string name="settings_romm_config_certificate_import_failed">Diese Datei ist kein lesbares Zertifikat.</string>
+    <string name="settings_romm_config_error_untrusted_certificate">Dieses Gerät vertraut dem Zertifikat des Servers nicht. Fügen Sie das Zertifikat hinzu, um sich zu verbinden.</string>
     <string name="settings_romm_config_cancel_title">Abbrechen</string>
     <string name="settings_romm_config_cancel_subtitle">Zurück zu den Servereinstellungen</string>
     <string name="settings_romm_device_pairing_title">Zum Koppeln scannen</string>

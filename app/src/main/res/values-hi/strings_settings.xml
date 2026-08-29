@@ -1760,6 +1760,14 @@
     <string name="settings_romm_config_connect_subtitle">RomM सर्वर से कनेक्ट करें</string>
     <string name="settings_romm_config_scan_title">QR कोड स्कैन करें</string>
     <string name="settings_romm_config_scan_subtitle">RomM वेब UI से पेयरिंग QR स्कैन करें</string>
+    <string name="settings_romm_config_certificate_title">प्रमाणपत्र जोड़ें</string>
+    <string name="settings_romm_config_certificate_subtitle">निजी प्रमाणपत्र प्राधिकरण वाले सर्वर पर भरोसा करें</string>
+    <plurals name="settings_romm_config_certificate_subtitle_count">
+        <item quantity="one">Argosy द्वारा %d प्रमाणपत्र पर भरोसा किया गया</item>
+        <item quantity="other">Argosy द्वारा %d प्रमाणपत्रों पर भरोसा किया गया</item>
+    </plurals>
+    <string name="settings_romm_config_certificate_import_failed">यह फ़ाइल पढ़ने योग्य प्रमाणपत्र नहीं है।</string>
+    <string name="settings_romm_config_error_untrusted_certificate">यह डिवाइस सर्वर के प्रमाणपत्र पर भरोसा नहीं करता। कनेक्ट करने के लिए प्रमाणपत्र जोड़ें।</string>
     <string name="settings_romm_config_cancel_title">रद्द करें</string>
     <string name="settings_romm_config_cancel_subtitle">सर्वर सेटिंग्स पर वापस जाएँ</string>
     <string name="settings_romm_device_pairing_title">पेयर करने के लिए स्कैन करें</string>

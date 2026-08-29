@@ -48,6 +48,9 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
     lateinit var workerFactory: HiltWorkerFactory
 
     @Inject
+    lateinit var userCertStore: com.nendo.argosy.data.remote.ssl.UserCertStore
+
+    @Inject
     lateinit var saveSyncDownloadObserver: SaveSyncDownloadObserver
 
     @Inject
@@ -136,6 +139,7 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
 
     override fun onCreate() {
         super.onCreate()
+        appScope.launch { userCertStore.initialize() }
         UpdateCheckWorker.schedule(this)
         SaveSyncWorker.schedule(this)
         SocialSyncWorker.schedule(this)
@@ -203,7 +207,7 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
 
     override fun newImageLoader(): ImageLoader {
         val okHttpClient = OkHttpClient.Builder()
-            .withUserCertTrust(true)
+            .withUserCertTrust(userCertStore)
             .build()
 
         return ImageLoader.Builder(this)

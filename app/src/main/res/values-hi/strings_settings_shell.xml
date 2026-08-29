@@ -133,6 +133,7 @@
     <string name="settings_shell_filebrowser_platform_builtin_save_path_title">%1$s बिल्ट-इन सेव पाथ</string>
     <string name="settings_shell_filebrowser_platform_builtin_state_path_title">%1$s बिल्ट-इन स्टेट पाथ</string>
     <string name="settings_shell_filebrowser_settings_backup_title">सेटिंग्स बैकअप चुनें</string>
+    <string name="settings_shell_filebrowser_certificate_title">प्रमाणपत्र चुनें</string>
     <string name="settings_shell_filebrowser_add_music_title">संगीत जोड़ें</string>
     <string name="settings_shell_filebrowser_music_location_title">संगीत लोकेशन</string>
     <string name="settings_shell_filebrowser_media_location_title">मीडिया लोकेशन</string>

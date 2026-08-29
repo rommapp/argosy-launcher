@@ -140,6 +140,7 @@
     <string name="settings_shell_filebrowser_platform_builtin_save_path_title">Ruta de guardado integrada de %1$s</string>
     <string name="settings_shell_filebrowser_platform_builtin_state_path_title">Ruta de estado integrada de %1$s</string>
     <string name="settings_shell_filebrowser_settings_backup_title">Seleccionar copia de seguridad de ajustes</string>
+    <string name="settings_shell_filebrowser_certificate_title">Seleccionar certificado</string>
     <string name="settings_shell_filebrowser_add_music_title">Añadir música</string>
     <string name="settings_shell_filebrowser_music_location_title">Ubicación de la música</string>
     <string name="settings_shell_filebrowser_media_location_title">Ubicación multimedia</string>

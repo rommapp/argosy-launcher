@@ -21,7 +21,9 @@ private const val DOWNLOAD_STALL_TIMEOUT_SECONDS = 300
  * lets queued work upload under the identity that created it rather than whoever is signed in.
  */
 @Singleton
-class RomMApiFactory @Inject constructor() {
+class RomMApiFactory @Inject constructor(
+    private val userCertStore: com.nendo.argosy.data.remote.ssl.UserCertStore
+) {
 
     fun create(baseUrl: String, token: String?): RomMApi {
         val moshi = Moshi.Builder().build()
@@ -61,7 +63,7 @@ class RomMApiFactory @Inject constructor() {
             .readTimeout(60, TimeUnit.SECONDS)
             .writeTimeout(60, TimeUnit.SECONDS)
             .dns(okhttp3.Dns.SYSTEM)
-            .withUserCertTrust(true)
+            .withUserCertTrust(userCertStore)
             .build()
 
         return Retrofit.Builder()

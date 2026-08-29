@@ -189,6 +189,7 @@
     <string name="settings_shell_filebrowser_platform_builtin_save_path_title">%1$s Built-in Save Path</string>
     <string name="settings_shell_filebrowser_platform_builtin_state_path_title">%1$s Built-in State Path</string>
     <string name="settings_shell_filebrowser_settings_backup_title">Select Settings Backup</string>
+    <string name="settings_shell_filebrowser_certificate_title">Select Certificate</string>
     <string name="settings_shell_filebrowser_add_music_title">Add Music</string>
     <string name="settings_shell_filebrowser_music_location_title">Music Location</string>
     <string name="settings_shell_filebrowser_media_location_title">Media Location</string>

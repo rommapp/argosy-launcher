@@ -43,6 +43,16 @@
     <!-- Error shown under the address field when the user submits it empty. Imperative
          sentence telling them what to do. -->
     <string name="firstrun_romm_url_error_blank">Enter a server URL</string>
+    <!-- Button that opens a file browser to pick a certificate file for a server whose issuer
+         this device does not recognise. Verb, imperative. -->
+    <string name="firstrun_romm_certificate_button">Add Certificate</string>
+    <!-- The same button once certificates have been added. %1$d is how many. -->
+    <string name="firstrun_romm_certificate_button_count">Certificates (%1$d)</string>
+    <!-- Error shown when the chosen file could not be read as a certificate. -->
+    <string name="firstrun_romm_certificate_import_failed">That file is not a readable certificate.</string>
+    <!-- Error shown when the server answered but this device does not recognise the authority
+         that issued its certificate. Names the remedy, which is the Add Certificate button. -->
+    <string name="firstrun_romm_error_untrusted_certificate">This device does not trust the server\'s certificate. Add the certificate to connect.</string>
 
     <!-- ===== Step 2b: signing in with a pairing code typed by hand ===== -->
 

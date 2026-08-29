@@ -132,21 +132,26 @@ import com.nendo.argosy.ui.screens.settings.sections.LibraryLayoutState
 private fun rommConfigMaxIndex(server: ServerState): Int {
     if (server.rommDevicePairing) return 0
     return when (server.rommAuthMethod) {
-        RomMAuthMethod.DEVICE -> 3
-        RomMAuthMethod.PAIRING_CODE -> if (server.rommHasCamera) 5 else 4
+        RomMAuthMethod.DEVICE -> 4
+        RomMAuthMethod.PAIRING_CODE -> if (server.rommHasCamera) 6 else 5
     }
 }
 
 private data class RommConfigIndices(
     val connectIndex: Int,
     val scanIndex: Int?,
+    val certificateIndex: Int,
     val cancelIndex: Int
 )
 
 private fun rommConfigIndices(server: ServerState): RommConfigIndices = when (server.rommAuthMethod) {
-    RomMAuthMethod.DEVICE -> RommConfigIndices(2, null, 3)
+    RomMAuthMethod.DEVICE -> RommConfigIndices(2, null, 3, 4)
     RomMAuthMethod.PAIRING_CODE ->
-        if (server.rommHasCamera) RommConfigIndices(3, 4, 5) else RommConfigIndices(3, null, 4)
+        if (server.rommHasCamera) {
+            RommConfigIndices(3, 4, 5, 6)
+        } else {
+            RommConfigIndices(3, null, 4, 5)
+        }
 }
 
 private fun nextRommAuthMethod(current: RomMAuthMethod): RomMAuthMethod = when (current) {
@@ -343,6 +348,7 @@ private fun routeRomMConfirm(vm: SettingsViewModel, state: SettingsUiState): Inp
             }
             indices.connectIndex -> vm.connectToRomm()
             indices.scanIndex -> vm.showRommScanner()
+            indices.certificateIndex -> vm.requestCertificatePicker()
             indices.cancelIndex -> vm.cancelRommConfig()
             else -> vm._uiState.update { it.copy(server = it.server.copy(rommFocusField = state.focusedIndex)) }
         }

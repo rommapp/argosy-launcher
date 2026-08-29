@@ -229,6 +229,10 @@ class SettingsViewModel @Inject constructor(
     val openSettingsBackupPickerEvent: SharedFlow<Unit> =
         _openSettingsBackupPickerEvent.asSharedFlow()
 
+    internal val _openCertificatePickerEvent = MutableSharedFlow<Unit>()
+    val openCertificatePickerEvent: SharedFlow<Unit> =
+        _openCertificatePickerEvent.asSharedFlow()
+
     internal val _openDeviceSettingsEvent = MutableSharedFlow<Unit>()
     val openDeviceSettingsEvent: SharedFlow<Unit> = _openDeviceSettingsEvent.asSharedFlow()
 
@@ -1703,6 +1707,12 @@ class SettingsViewModel @Inject constructor(
     fun commitRommUrl() = serverDelegate.commitRommUrl(viewModelScope)
     fun setRommConfigPairingCode(code: String) = serverDelegate.setRommConfigPairingCode(code)
     fun setRommAuthMethod(method: RomMAuthMethod) = serverDelegate.setRommAuthMethod(method)
+    fun requestCertificatePicker() {
+        viewModelScope.launch { _openCertificatePickerEvent.emit(Unit) }
+    }
+
+    fun importCertificate(path: String) = serverDelegate.importCertificate(viewModelScope, path)
+
     fun showRommScanner() = serverDelegate.showScanner()
     fun dismissRommScanner() = serverDelegate.dismissScanner()
     fun handleRommScanResult(origin: String, code: String) = serverDelegate.handleScanResult(origin, code, viewModelScope) { loadSettings() }

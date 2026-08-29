@@ -203,6 +203,7 @@ fun SettingsScreen(
     var fileBrowserTitle by remember { mutableStateOf<String?>(null) }
     var fileBrowserCallback by remember { mutableStateOf<((String) -> Unit)?>(null) }
     var showSettingsBackupBrowser by remember { mutableStateOf(false) }
+    var showCertBrowser by remember { mutableStateOf(false) }
 
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -268,6 +269,12 @@ fun SettingsScreen(
     LaunchedEffect(Unit) {
         viewModel.openSettingsBackupPickerEvent.collect {
             showSettingsBackupBrowser = true
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.openCertificatePickerEvent.collect {
+            showCertBrowser = true
         }
     }
 
@@ -1147,6 +1154,19 @@ fun SettingsScreen(
                 fileBrowserTitle = null
                 fileBrowserCallback = null
             }
+        )
+    }
+
+    if (showCertBrowser) {
+        FileBrowserScreen(
+            mode = FileBrowserMode.FILE_SELECTION,
+            title = stringResource(R.string.settings_shell_filebrowser_certificate_title),
+            fileFilter = com.nendo.argosy.ui.filebrowser.FileFilter.CERTIFICATE,
+            onPathSelected = { path ->
+                showCertBrowser = false
+                viewModel.importCertificate(path)
+            },
+            onDismiss = { showCertBrowser = false }
         )
     }
 

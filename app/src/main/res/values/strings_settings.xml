@@ -3338,6 +3338,21 @@
     <string name="settings_romm_config_scan_title">Scan QR Code</string>
     <!-- Second line of that button. -->
     <string name="settings_romm_config_scan_subtitle">Scan pairing QR from the RomM web UI</string>
+    <!-- Button title. Verb: pick a certificate file for a server whose issuer this device does
+         not recognise. -->
+    <string name="settings_romm_config_certificate_title">Add Certificate</string>
+    <!-- Second line of that button when none have been added. -->
+    <string name="settings_romm_config_certificate_subtitle">Trust a server with a private certificate authority</string>
+    <!-- Second line of that button once certificates exist. %d is how many. -->
+    <plurals name="settings_romm_config_certificate_subtitle_count">
+        <item quantity="one">%d certificate trusted by Argosy</item>
+        <item quantity="other">%d certificates trusted by Argosy</item>
+    </plurals>
+    <!-- Error shown when the chosen file could not be read as a certificate. -->
+    <string name="settings_romm_config_certificate_import_failed">That file is not a readable certificate.</string>
+    <!-- Error shown when the server answered but this device does not recognise the authority
+         that issued its certificate. Names the remedy, which is the Add Certificate button. -->
+    <string name="settings_romm_config_error_untrusted_certificate">This device does not trust the server\'s certificate. Add the certificate to connect.</string>
     <!-- Button title. Verb: abandon this configuration screen. -->
     <string name="settings_romm_config_cancel_title">Cancel</string>
     <!-- Second line of that button. -->

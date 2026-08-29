@@ -479,9 +479,24 @@ data class RomMPairingExchangeResponse(
     @Json(name = "user_id") val userId: Long? = null
 )
 
+/**
+ * Why a request failed, where the reason changes what the user can do about it.
+ *
+ * [UNTRUSTED_CERTIFICATE] is separated because its remedy is an action the app can offer rather
+ * than a message to read: the server presented a chain this device does not validate, and the
+ * underlying exception text names neither the cause nor the fix.
+ */
+enum class RomMErrorKind {
+    UNTRUSTED_CERTIFICATE
+}
+
 sealed class RomMResult<out T> {
     data class Success<T>(val data: T) : RomMResult<T>()
-    data class Error(val message: String, val code: Int? = null) : RomMResult<Nothing>()
+    data class Error(
+        val message: String,
+        val code: Int? = null,
+        val kind: RomMErrorKind? = null
+    ) : RomMResult<Nothing>()
 }
 
 fun <T> RomMResult<T>.toResult(): Result<T> = when (this) {

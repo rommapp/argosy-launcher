@@ -140,6 +140,7 @@
     <string name="settings_shell_filebrowser_platform_builtin_save_path_title">%1$s-Spielstand-Pfad (integriert)</string>
     <string name="settings_shell_filebrowser_platform_builtin_state_path_title">%1$s-Savestate-Pfad (integriert)</string>
     <string name="settings_shell_filebrowser_settings_backup_title">Einstellungssicherung auswählen</string>
+    <string name="settings_shell_filebrowser_certificate_title">Zertifikat auswählen</string>
     <string name="settings_shell_filebrowser_add_music_title">Musik hinzufügen</string>
     <string name="settings_shell_filebrowser_music_location_title">Musikspeicherort</string>
     <string name="settings_shell_filebrowser_media_location_title">Medienspeicherort</string>

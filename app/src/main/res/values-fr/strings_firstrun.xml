@@ -10,6 +10,10 @@
     <string name="firstrun_romm_url_button_checking">Vérification...</string>
     <string name="firstrun_romm_url_button_back">Retour</string>
     <string name="firstrun_romm_url_error_blank">Entrez une URL de serveur</string>
+    <string name="firstrun_romm_certificate_button">Ajouter un certificat</string>
+    <string name="firstrun_romm_certificate_button_count">Certificats (%1$d)</string>
+    <string name="firstrun_romm_certificate_import_failed">Ce fichier n\'est pas un certificat lisible.</string>
+    <string name="firstrun_romm_error_untrusted_certificate">Cet appareil ne fait pas confiance au certificat du serveur. Ajoutez le certificat pour vous connecter.</string>
 
     <string name="firstrun_pairing_code_title">Entrer le code de jumelage</string>
     <string name="firstrun_pairing_code_hint">Créez un jeton API dans l\'interface web de RomM, puis entrez le code à 8 caractères.</string>

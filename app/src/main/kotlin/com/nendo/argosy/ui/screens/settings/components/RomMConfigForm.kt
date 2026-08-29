@@ -27,6 +27,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.ImeAction
@@ -212,6 +213,22 @@ fun RomMConfigForm(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             )
             buttonIndex++
         }
+
+        ActionPreference(
+            title = stringResource(R.string.settings_romm_config_certificate_title),
+            subtitle = if (uiState.server.importedCertCount > 0) {
+                pluralStringResource(
+                    R.plurals.settings_romm_config_certificate_subtitle_count,
+                    uiState.server.importedCertCount,
+                    uiState.server.importedCertCount
+                )
+            } else {
+                stringResource(R.string.settings_romm_config_certificate_subtitle)
+            },
+            isFocused = uiState.focusedIndex == buttonIndex,
+            onClick = { viewModel.requestCertificatePicker() }
+        )
+        buttonIndex++
 
         ActionPreference(
             title = stringResource(R.string.settings_romm_config_cancel_title),

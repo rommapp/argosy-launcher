@@ -10,6 +10,10 @@
     <string name="firstrun_romm_url_button_checking">Проверка...</string>
     <string name="firstrun_romm_url_button_back">Назад</string>
     <string name="firstrun_romm_url_error_blank">Введите URL сервера</string>
+    <string name="firstrun_romm_certificate_button">Добавить сертификат</string>
+    <string name="firstrun_romm_certificate_button_count">Сертификаты (%1$d)</string>
+    <string name="firstrun_romm_certificate_import_failed">Этот файл не является читаемым сертификатом.</string>
+    <string name="firstrun_romm_error_untrusted_certificate">Это устройство не доверяет сертификату сервера. Добавьте сертификат, чтобы подключиться.</string>
 
     <string name="firstrun_pairing_code_title">Введите код сопряжения</string>
     <string name="firstrun_pairing_code_hint">Создайте API-токен в веб-интерфейсе RomM, затем введите 8-значный код.</string>

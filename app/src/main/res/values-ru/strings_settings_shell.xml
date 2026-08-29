@@ -140,6 +140,7 @@
     <string name="settings_shell_filebrowser_platform_builtin_save_path_title">Встроенный путь сохранения %1$s</string>
     <string name="settings_shell_filebrowser_platform_builtin_state_path_title">Встроенный путь состояний %1$s</string>
     <string name="settings_shell_filebrowser_settings_backup_title">Выбор резервной копии настроек</string>
+    <string name="settings_shell_filebrowser_certificate_title">Выбор сертификата</string>
     <string name="settings_shell_filebrowser_add_music_title">Добавить музыку</string>
     <string name="settings_shell_filebrowser_music_location_title">Расположение музыки</string>
     <string name="settings_shell_filebrowser_media_location_title">Расположение медиа</string>

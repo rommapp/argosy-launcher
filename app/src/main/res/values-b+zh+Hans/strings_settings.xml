@@ -1716,6 +1716,13 @@
     <string name="settings_romm_config_connect_subtitle">连接到RomM服务器</string>
     <string name="settings_romm_config_scan_title">扫描二维码</string>
     <string name="settings_romm_config_scan_subtitle">扫描RomM网页界面上的配对二维码</string>
+    <string name="settings_romm_config_certificate_title">添加证书</string>
+    <string name="settings_romm_config_certificate_subtitle">信任使用私有证书颁发机构的服务器</string>
+    <plurals name="settings_romm_config_certificate_subtitle_count">
+        <item quantity="other">Argosy 已信任 %d 个证书</item>
+    </plurals>
+    <string name="settings_romm_config_certificate_import_failed">该文件不是可读取的证书。</string>
+    <string name="settings_romm_config_error_untrusted_certificate">此设备不信任服务器的证书。添加证书后即可连接。</string>
     <string name="settings_romm_config_cancel_title">取消</string>
     <string name="settings_romm_config_cancel_subtitle">返回服务器设置</string>
     <string name="settings_romm_device_pairing_title">扫码配对</string>

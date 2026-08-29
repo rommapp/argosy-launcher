@@ -1818,6 +1818,14 @@
     <string name="settings_romm_config_connect_subtitle">Conectar al servidor RomM</string>
     <string name="settings_romm_config_scan_title">Escanear código QR</string>
     <string name="settings_romm_config_scan_subtitle">Escanea el QR de vinculación desde la interfaz web de RomM</string>
+    <string name="settings_romm_config_certificate_title">Añadir certificado</string>
+    <string name="settings_romm_config_certificate_subtitle">Confiar en un servidor con una autoridad certificadora privada</string>
+    <plurals name="settings_romm_config_certificate_subtitle_count">
+        <item quantity="one">%d certificado en el que Argosy confía</item>
+        <item quantity="other">%d certificados en los que Argosy confía</item>
+    </plurals>
+    <string name="settings_romm_config_certificate_import_failed">Ese archivo no es un certificado legible.</string>
+    <string name="settings_romm_config_error_untrusted_certificate">Este dispositivo no confía en el certificado del servidor. Añade el certificado para conectarte.</string>
     <string name="settings_romm_config_cancel_title">Cancelar</string>
     <string name="settings_romm_config_cancel_subtitle">Volver a los ajustes del servidor</string>
     <string name="settings_romm_device_pairing_title">Escanea para vincular</string>

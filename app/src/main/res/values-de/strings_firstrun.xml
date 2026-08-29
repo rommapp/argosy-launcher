@@ -10,6 +10,10 @@
     <string name="firstrun_romm_url_button_checking">Wird geprüft...</string>
     <string name="firstrun_romm_url_button_back">Zurück</string>
     <string name="firstrun_romm_url_error_blank">Geben Sie eine Server-URL ein</string>
+    <string name="firstrun_romm_certificate_button">Zertifikat hinzufügen</string>
+    <string name="firstrun_romm_certificate_button_count">Zertifikate (%1$d)</string>
+    <string name="firstrun_romm_certificate_import_failed">Diese Datei ist kein lesbares Zertifikat.</string>
+    <string name="firstrun_romm_error_untrusted_certificate">Dieses Gerät vertraut dem Zertifikat des Servers nicht. Fügen Sie das Zertifikat hinzu, um sich zu verbinden.</string>
 
     <string name="firstrun_pairing_code_title">Kopplungscode eingeben</string>
     <string name="firstrun_pairing_code_hint">Erstellen Sie einen API-Token in der RomM-Weboberfläche und geben Sie dann den 8-stelligen Code ein.</string>

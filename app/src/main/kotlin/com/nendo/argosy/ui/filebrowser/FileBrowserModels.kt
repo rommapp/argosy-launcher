@@ -38,6 +38,10 @@ data class FileFilter(
         val AUDIO = FileFilter(
             extensions = AudioFileTypes.EXTENSIONS
         )
+
+        val CERTIFICATE = FileFilter(
+            extensions = setOf("crt", "cer", "pem", "der")
+        )
     }
 }
 

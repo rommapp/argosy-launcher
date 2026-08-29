@@ -10,6 +10,10 @@
     <string name="firstrun_romm_url_button_checking">檢查中...</string>
     <string name="firstrun_romm_url_button_back">返回</string>
     <string name="firstrun_romm_url_error_blank">請輸入伺服器網址</string>
+    <string name="firstrun_romm_certificate_button">新增憑證</string>
+    <string name="firstrun_romm_certificate_button_count">憑證 (%1$d)</string>
+    <string name="firstrun_romm_certificate_import_failed">該檔案不是可讀取的憑證。</string>
+    <string name="firstrun_romm_error_untrusted_certificate">此裝置不信任伺服器的憑證。新增憑證後即可連線。</string>
 
     <string name="firstrun_pairing_code_title">輸入配對代碼</string>
     <string name="firstrun_pairing_code_hint">請在RomM網頁介面建立API權杖，然後輸入8碼代碼。</string>

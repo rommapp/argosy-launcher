@@ -861,6 +861,7 @@ data class ServerState(
     val rommVersion: String? = null,
     val lastRommSync: java.time.Instant? = null,
     val rommConfiguring: Boolean = false,
+    val importedCertCount: Int = 0,
     val rommAuthMethod: RomMAuthMethod = RomMAuthMethod.PAIRING_CODE,
     val rommConfigUrl: String = "",
     val rommConfigPairingCode: String = "",

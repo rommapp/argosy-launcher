@@ -25,7 +25,8 @@ private const val CLIENT_NAME = "Argosy"
  */
 @Singleton
 class JellyfinApiFactory @Inject constructor(
-    private val moshi: Moshi
+    private val moshi: Moshi,
+    private val userCertStore: com.nendo.argosy.data.remote.ssl.UserCertStore
 ) {
 
     fun create(baseUrl: String, deviceId: String, deviceName: String, token: String?): JellyfinApi {
@@ -63,7 +64,7 @@ class JellyfinApiFactory @Inject constructor(
             .readTimeout(60, TimeUnit.SECONDS)
             .writeTimeout(60, TimeUnit.SECONDS)
             .dns(okhttp3.Dns.SYSTEM)
-            .withUserCertTrust(true)
+            .withUserCertTrust(userCertStore)
             .build()
 
         return Retrofit.Builder()

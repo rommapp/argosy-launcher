@@ -1624,6 +1624,13 @@
     <string name="settings_romm_config_connect_subtitle">連線至RomM伺服器</string>
     <string name="settings_romm_config_scan_title">掃描QR Code</string>
     <string name="settings_romm_config_scan_subtitle">掃描RomM網頁介面上的配對QR Code</string>
+    <string name="settings_romm_config_certificate_title">新增憑證</string>
+    <string name="settings_romm_config_certificate_subtitle">信任使用私有憑證授權單位的伺服器</string>
+    <plurals name="settings_romm_config_certificate_subtitle_count">
+        <item quantity="other">Argosy 已信任 %d 個憑證</item>
+    </plurals>
+    <string name="settings_romm_config_certificate_import_failed">該檔案不是可讀取的憑證。</string>
+    <string name="settings_romm_config_error_untrusted_certificate">此裝置不信任伺服器的憑證。新增憑證後即可連線。</string>
     <string name="settings_romm_config_cancel_title">取消</string>
     <string name="settings_romm_config_cancel_subtitle">返回伺服器設定</string>
     <string name="settings_romm_device_pairing_title">掃描以配對</string>

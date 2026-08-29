@@ -90,6 +90,7 @@ import com.nendo.argosy.ui.components.PlatformFilterHeader
 import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.filebrowser.FileBrowserMode
 import com.nendo.argosy.ui.filebrowser.FileBrowserScreen
+import com.nendo.argosy.ui.filebrowser.FileFilter
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import androidx.compose.ui.graphics.Color
 import com.nendo.argosy.ui.primitives.ActionButton
@@ -156,6 +157,7 @@ fun FirstRunScreen(
     }
 
     var showFileBrowser by remember { mutableStateOf(false) }
+    var showCertBrowser by remember { mutableStateOf(false) }
     var showImageCacheBrowser by remember { mutableStateOf(false) }
 
     val inputDispatcher = LocalInputDispatcher.current
@@ -168,7 +170,8 @@ fun FirstRunScreen(
             onRequestUsageStats = requestUsageStats,
             onChooseFolder = chooseFolder,
             onChooseImageCacheFolder = chooseImageCacheFolder,
-            onOpenVerificationUrl = openVerificationUrl
+            onOpenVerificationUrl = openVerificationUrl,
+            onChooseCertificate = { showCertBrowser = true }
         )
     }
 
@@ -244,6 +247,8 @@ fun FirstRunScreen(
                     error = firstRunErrorText(uiState.connectionError),
                     focusedIndex = uiState.focusedIndex,
                     rommFocusField = uiState.rommFocusField,
+                    importedCertCount = uiState.importedCertCount,
+                    onAddCertificate = { showCertBrowser = true },
                     onUrlChange = viewModel::setRommUrl,
                     onPairingCodeChange = viewModel::setRommPairingCode,
                     onClearPairingCode = { viewModel.clearRommPairingCode() },
@@ -369,6 +374,20 @@ fun FirstRunScreen(
             }
         )
     }
+
+    if (showCertBrowser) {
+        FileBrowserScreen(
+            mode = FileBrowserMode.FILE_SELECTION,
+            fileFilter = FileFilter.CERTIFICATE,
+            onPathSelected = { path ->
+                showCertBrowser = false
+                viewModel.importCertificate(path)
+            },
+            onDismiss = {
+                showCertBrowser = false
+            }
+        )
+    }
 }
 
 @Composable
@@ -427,6 +446,8 @@ private fun RommLoginStep(
     error: String?,
     focusedIndex: Int,
     rommFocusField: Int?,
+    importedCertCount: Int,
+    onAddCertificate: () -> Unit,
     onUrlChange: (String) -> Unit,
     onPairingCodeChange: (String) -> Unit,
     onClearPairingCode: () -> Unit,
@@ -563,6 +584,22 @@ private fun RommLoginStep(
                     onClick = onBack
                 )
             }
+
+            Spacer(modifier = Modifier.height(Dimens.spacingMd))
+
+            FocusableOutlinedButton(
+                text = if (importedCertCount > 0) {
+                    stringResource(
+                        R.string.firstrun_romm_certificate_button_count,
+                        importedCertCount
+                    )
+                } else {
+                    stringResource(R.string.firstrun_romm_certificate_button)
+                },
+                isFocused = focusedIndex == 3,
+                enabled = !isConnecting,
+                onClick = onAddCertificate
+            )
         }
         return
     }

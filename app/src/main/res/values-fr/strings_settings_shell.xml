@@ -140,6 +140,7 @@
     <string name="settings_shell_filebrowser_platform_builtin_save_path_title">Chemin de sauvegarde intégré de %1$s</string>
     <string name="settings_shell_filebrowser_platform_builtin_state_path_title">Chemin des états intégré de %1$s</string>
     <string name="settings_shell_filebrowser_settings_backup_title">Sélectionner une sauvegarde de réglages</string>
+    <string name="settings_shell_filebrowser_certificate_title">Sélectionner un certificat</string>
     <string name="settings_shell_filebrowser_add_music_title">Ajouter de la musique</string>
     <string name="settings_shell_filebrowser_music_location_title">Emplacement de la musique</string>
     <string name="settings_shell_filebrowser_media_location_title">Emplacement des médias</string>

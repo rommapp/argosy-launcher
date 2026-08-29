@@ -133,6 +133,7 @@
     <string name="settings_shell_filebrowser_platform_builtin_save_path_title">%1$s内置存档路径</string>
     <string name="settings_shell_filebrowser_platform_builtin_state_path_title">%1$s内置即时存档路径</string>
     <string name="settings_shell_filebrowser_settings_backup_title">选择设置备份</string>
+    <string name="settings_shell_filebrowser_certificate_title">选择证书</string>
     <string name="settings_shell_filebrowser_add_music_title">添加音乐</string>
     <string name="settings_shell_filebrowser_music_location_title">音乐位置</string>
     <string name="settings_shell_filebrowser_media_location_title">媒体位置</string>

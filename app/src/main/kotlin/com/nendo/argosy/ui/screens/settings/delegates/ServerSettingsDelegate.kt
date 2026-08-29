@@ -28,12 +28,46 @@ private const val TAG = "ServerSettingsDelegate"
 
 class ServerSettingsDelegate @Inject constructor(
     private val romMRepository: RomMRepository,
+    private val userCertStore: com.nendo.argosy.data.remote.ssl.UserCertStore,
     @ApplicationContext private val context: Context
 ) {
     private val _state = MutableStateFlow(ServerState())
     val state: StateFlow<ServerState> = _state.asStateFlow()
 
     private var devicePollJob: Job? = null
+
+    /**
+     * A failure the user can act on reads as app-authored text, not as the server's.
+     *
+     * An untrusted chain arrives as a validator message naming neither the cause nor the remedy,
+     * so passing it through leaves the reader with nothing connecting the failure to the
+     * certificate they need to import.
+     */
+    private fun RomMResult.Error.describe(): String = when (kind) {
+        com.nendo.argosy.data.remote.romm.RomMErrorKind.UNTRUSTED_CERTIFICATE ->
+            context.getString(R.string.settings_romm_config_error_untrusted_certificate)
+        null -> message
+    }
+
+    fun importCertificate(scope: CoroutineScope, path: String) {
+        scope.launch {
+            val result = userCertStore.importFrom(path)
+            _state.update {
+                it.copy(
+                    rommConfigError = if (result.isSuccess) {
+                        null
+                    } else {
+                        context.getString(R.string.settings_romm_config_certificate_import_failed)
+                    },
+                    importedCertCount = userCertStore.certs.value.size
+                )
+            }
+        }
+    }
+
+    fun refreshCertificateCount() {
+        _state.update { it.copy(importedCertCount = userCertStore.certs.value.size) }
+    }
 
     fun updateState(newState: ServerState) {
         _state.value = newState
@@ -74,7 +108,8 @@ class ServerSettingsDelegate @Inject constructor(
                 rommConfigError = null,
                 rommDevicePairing = false,
                 rommDeviceUserCode = null,
-                rommDeviceVerificationUrl = null
+                rommDeviceVerificationUrl = null,
+                importedCertCount = userCertStore.certs.value.size
             )
         }
         onFocusReset()
@@ -234,7 +269,7 @@ class ServerSettingsDelegate @Inject constructor(
                     }
                 }
                 is RomMResult.Error -> {
-                    _state.update { it.copy(rommConnecting = false, rommConfigError = result.message) }
+                    _state.update { it.copy(rommConnecting = false, rommConfigError = result.describe()) }
                 }
             }
         }
@@ -274,7 +309,7 @@ class ServerSettingsDelegate @Inject constructor(
                     pollForToken(data.deviceCode, data.interval, data.expiresIn, onSuccess)
                 }
                 is RomMResult.Error -> {
-                    _state.update { it.copy(rommConnecting = false, rommConfigError = init.message) }
+                    _state.update { it.copy(rommConnecting = false, rommConfigError = init.describe()) }
                 }
             }
         }
@@ -356,7 +391,7 @@ class ServerSettingsDelegate @Inject constructor(
             }
             is RomMResult.Error -> {
                 _state.update {
-                    it.copy(rommConnecting = false, rommConfigError = result.message)
+                    it.copy(rommConnecting = false, rommConfigError = result.describe())
                 }
             }
         }

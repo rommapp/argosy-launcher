@@ -1,5 +1,7 @@
 package com.nendo.argosy.data.download.nsz
 
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import javax.crypto.Cipher
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
@@ -7,12 +9,13 @@ import javax.crypto.spec.SecretKeySpec
 /**
  * Streaming AES-128-CTR cipher for NCZ section re-encryption.
  *
- * NCZ sections with cryptoType 3 or 4 store their data as plaintext
+ * NCZ sections with a CTR crypto type store their data as plaintext
  * after zstd decompression. The original NCA had these sections encrypted
  * with AES-128-CTR. We must re-encrypt them to produce a valid NCA.
  *
- * The IV is constructed from the section's 16-byte counter with the
- * initial offset folded into the upper 8 bytes as a big-endian int64.
+ * nsz keeps the section nonce in the counter's first 8 bytes and leaves the
+ * low 8 for the block index. [initialOffset] is absolute inside the
+ * decompressed NCA and need not be 16-byte aligned.
  */
 class AesCtrCipher(
     key: ByteArray,
@@ -26,8 +29,7 @@ class AesCtrCipher(
         require(counter.size == 16) { "CTR counter must be 16 bytes" }
 
         val iv = counter.copyOf()
-        val blockNumber = initialOffset / 16
-        addCounterBigEndian(iv, blockNumber)
+        writeBlockIndexBigEndian(iv, initialOffset / 16)
 
         cipher = Cipher.getInstance("AES/CTR/NoPadding").apply {
             init(
@@ -35,6 +37,11 @@ class AesCtrCipher(
                 SecretKeySpec(key, "AES"),
                 IvParameterSpec(iv)
             )
+        }
+
+        val misalignment = (initialOffset % 16).toInt()
+        if (misalignment > 0) {
+            cipher.update(ByteArray(misalignment))
         }
     }
 
@@ -44,16 +51,15 @@ class AesCtrCipher(
         cipher.update(data, offset, length)
 
     companion object {
-        internal fun addCounterBigEndian(
+        private const val NONCE_SIZE = 8
+
+        internal fun writeBlockIndexBigEndian(
             counter: ByteArray,
-            value: Long
+            blockIndex: Long
         ) {
-            var carry = value
-            for (i in 7 downTo 0) {
-                carry += (counter[i].toLong() and 0xFF)
-                counter[i] = (carry and 0xFF).toByte()
-                carry = carry ushr 8
-            }
+            ByteBuffer.wrap(counter, NONCE_SIZE, NONCE_SIZE)
+                .order(ByteOrder.BIG_ENDIAN)
+                .putLong(blockIndex)
         }
     }
 }

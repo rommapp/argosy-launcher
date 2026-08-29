@@ -330,6 +330,8 @@
     <string name="settings_bios_summary_complete">全部%1$d個檔案已就緒</string>
     <string name="settings_bios_summary_partial">已下載%2$d個中的%1$d個</string>
     <string name="settings_bios_summary_downloading">下載中：%1$s</string>
+    <string name="settings_bios_summary_downloading_size">%1$s / %2$s</string>
+    <string name="settings_bios_summary_downloading_count">第%1$d個，共%2$d個</string>
     <string name="settings_bios_summary_distributing">正在分發至各模擬器&#8230;</string>
     <string name="settings_bios_summary_download_missing">下載%1$d個</string>
     <string name="settings_bios_summary_redownload">重新下載</string>
@@ -344,6 +346,12 @@
         <item quantity="other">%d個檔案</item>
     </plurals>
     <string name="settings_bios_distribute_result_dismiss">確定</string>
+
+    <string name="settings_bios_download_failed_title">部分檔案未下載</string>
+    <plurals name="settings_bios_download_failed_message">
+        <item quantity="other">有%d個檔案無法下載。請重試。</item>
+    </plurals>
+    <string name="settings_bios_download_failed_dismiss">確定</string>
 
     <string name="settings_bios_gpu_prompt_title">有可用的GPU驅動程式</string>
     <string name="settings_bios_gpu_prompt_detected">已偵測：%1$s</string>

@@ -711,6 +711,10 @@
     <string name="settings_bios_summary_partial">%1$d of %2$d downloaded</string>
     <!-- Line shown while a file is coming down. %1$s is the file name. -->
     <string name="settings_bios_summary_downloading">Downloading: %1$s</string>
+    <!-- Size line under the progress bar. %1$s is how much has arrived, %2$s the file's full size. -->
+    <string name="settings_bios_summary_downloading_size">%1$s of %2$s</string>
+    <!-- Which file of how many, shown while several are queued. %1$d is the current file, %2$d the total. -->
+    <string name="settings_bios_summary_downloading_count">File %1$d of %2$d</string>
     <!-- Line shown while the files are being copied into each emulator's folders. -->
     <string name="settings_bios_summary_distributing">Distributing to emulators...</string>
     <!-- Button that fetches the files still missing. Verb. %1$d is how many are missing. -->
@@ -737,6 +741,15 @@
     </plurals>
     <!-- Button that closes that panel. The usual short word for agreeing. -->
     <string name="settings_bios_distribute_result_dismiss">OK</string>
+
+    <!-- Heading shown when a BIOS download run finished with some files missing. -->
+    <string name="settings_bios_download_failed_title">Some Files Did Not Download</string>
+    <!-- Line under that heading. %d is how many files failed. -->
+    <plurals name="settings_bios_download_failed_message">
+        <item quantity="one">%d file could not be downloaded. Try again to retry it.</item>
+        <item quantity="other">%d files could not be downloaded. Try again to retry them.</item>
+    </plurals>
+    <string name="settings_bios_download_failed_dismiss">OK</string>
 
     <!-- Heading of the panel offering a graphics driver. "GPU" is the graphics chip. -->
     <string name="settings_bios_gpu_prompt_title">GPU Driver Available</string>

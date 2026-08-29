@@ -1111,6 +1111,7 @@ private fun routeDismissTopOverlay(vm: SettingsViewModel): Boolean {
         state.syncSettings.showForceSyncConfirm -> { vm.cancelSyncSaves(); true }
         state.emulators.showEmulatorPicker -> { vm.dismissEmulatorPicker(); true }
         state.bios.showDistributeResultModal -> { vm.dismissDistributeResultModal(); true }
+        state.bios.showDownloadFailureModal -> { vm.dismissDownloadFailureModal(); true }
         state.builtinControls.showControllerOrderModal -> { vm.hideControllerOrderModal(); true }
         state.builtinControls.showInputMappingModal -> { vm.hideInputMappingModal(); true }
         state.builtinControls.showHotkeysModal -> { vm.hideHotkeysModal(); true }

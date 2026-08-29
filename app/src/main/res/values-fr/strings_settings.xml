@@ -373,6 +373,8 @@
     <string name="settings_bios_summary_complete">Les %1$d fichiers sont prêts</string>
     <string name="settings_bios_summary_partial">%1$d sur %2$d téléchargés</string>
     <string name="settings_bios_summary_downloading">Téléchargement : %1$s</string>
+    <string name="settings_bios_summary_downloading_size">%1$s sur %2$s</string>
+    <string name="settings_bios_summary_downloading_count">Fichier %1$d sur %2$d</string>
     <string name="settings_bios_summary_distributing">Distribution vers les émulateurs...</string>
     <string name="settings_bios_summary_download_missing">Télécharger %1$d</string>
     <string name="settings_bios_summary_redownload">Retélécharger</string>
@@ -389,6 +391,14 @@
         <item quantity="other">%d fichiers</item>
     </plurals>
     <string name="settings_bios_distribute_result_dismiss">OK</string>
+
+    <string name="settings_bios_download_failed_title">Certains fichiers n\'ont pas été téléchargés</string>
+    <plurals name="settings_bios_download_failed_message">
+        <item quantity="one">%d fichier n\'a pas pu être téléchargé. Relancez pour réessayer.</item>
+        <item quantity="many">%d fichiers n\'ont pas pu être téléchargés. Relancez pour réessayer.</item>
+        <item quantity="other">%d fichiers n\'ont pas pu être téléchargés. Relancez pour réessayer.</item>
+    </plurals>
+    <string name="settings_bios_download_failed_dismiss">OK</string>
 
     <string name="settings_bios_gpu_prompt_title">Pilote GPU disponible</string>
     <string name="settings_bios_gpu_prompt_detected">Détecté : %1$s</string>

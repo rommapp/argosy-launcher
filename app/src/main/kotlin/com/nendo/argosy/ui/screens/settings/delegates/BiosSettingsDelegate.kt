@@ -5,7 +5,10 @@ import com.nendo.argosy.data.emulator.GpuDriverManager
 import com.nendo.argosy.data.local.dao.FirmwareDao
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.PlatformRepository
+import com.nendo.argosy.data.repository.BiosDownloadResult
 import com.nendo.argosy.data.repository.BiosRepository
+import com.nendo.argosy.data.repository.FirmwareBulkProgress
+import com.nendo.argosy.ui.screens.settings.BiosDownloadFailureItem
 import com.nendo.argosy.ui.screens.settings.BiosFirmwareItem
 import com.nendo.argosy.ui.screens.settings.BiosPlatformGroup
 import com.nendo.argosy.ui.screens.settings.BiosState
@@ -109,31 +112,59 @@ class BiosSettingsDelegate @Inject constructor(
             _state.update { it.copy(isDownloading = true, downloadProgress = 0f) }
 
             val isComplete = _state.value.isComplete
-            val progressCallback: (Int, Int, String) -> Unit = { current, total, fileName ->
+            val progressCallback: FirmwareBulkProgress = {
+                current, total, fileName, fileProgress, bytes, totalBytes ->
                 _state.update {
                     it.copy(
                         downloadingFileName = fileName,
-                        downloadProgress = if (total > 0) current.toFloat() / total else 0f
+                        downloadProgress = if (total > 0) {
+                            ((current - 1) + fileProgress) / total
+                        } else {
+                            0f
+                        },
+                        downloadingFileIndex = current,
+                        downloadingFileCount = total,
+                        downloadedBytes = bytes,
+                        downloadTotalBytes = totalBytes
                     )
                 }
             }
 
-            if (isComplete) {
+            val summary = if (isComplete) {
                 biosRepository.redownloadAll(progressCallback)
             } else {
                 biosRepository.downloadAllMissing(progressCallback)
+            }
+
+            val platforms = platformRepository.getAllPlatforms()
+            val failures = summary.failures.map { failure ->
+                BiosDownloadFailureItem(
+                    fileName = failure.fileName,
+                    platformName = platforms.find { it.slug == failure.platformSlug }?.name
+                        ?: failure.platformSlug
+                )
             }
 
             _state.update {
                 it.copy(
                     isDownloading = false,
                     downloadingFileName = null,
-                    downloadProgress = 0f
+                    downloadProgress = 0f,
+                    downloadingFileIndex = 0,
+                    downloadingFileCount = 0,
+                    downloadedBytes = 0,
+                    downloadTotalBytes = 0,
+                    downloadFailures = failures,
+                    showDownloadFailureModal = failures.isNotEmpty()
                 )
             }
 
             loadBiosState()
         }
+    }
+
+    fun dismissDownloadFailureModal() {
+        _state.update { it.copy(showDownloadFailureModal = false, downloadFailures = emptyList()) }
     }
 
     fun downloadBiosForPlatform(platformSlug: String, scope: CoroutineScope, onComplete: () -> Unit = {}) {
@@ -145,6 +176,7 @@ class BiosSettingsDelegate @Inject constructor(
             val missing = firmwareDao.getMissingByPlatformSlug(platformSlug)
             val targets = missing.ifEmpty { firmwareDao.getByPlatformSlug(platformSlug) }
             var completed = 0
+            val failedFiles = mutableListOf<String>()
 
             for (firmware in targets) {
                 _state.update {
@@ -154,20 +186,33 @@ class BiosSettingsDelegate @Inject constructor(
                     )
                 }
 
-                biosRepository.downloadFirmware(firmware.rommId) { progress ->
+                val result = biosRepository.downloadFirmware(firmware.rommId) { progress ->
                     _state.update {
                         val overallProgress = (completed + progress.progress) / targets.size
-                        it.copy(downloadProgress = overallProgress)
+                        it.copy(
+                            downloadProgress = overallProgress,
+                            downloadingFileIndex = completed + 1,
+                            downloadingFileCount = targets.size,
+                            downloadedBytes = progress.bytesDownloaded,
+                            downloadTotalBytes = progress.totalBytes
+                        )
                     }
                 }
+                if (result is BiosDownloadResult.Error) failedFiles += firmware.fileName
                 completed++
             }
+
+            val platformName = platformRepository.getAllPlatforms()
+                .find { it.slug == platformSlug }?.name ?: platformSlug
+            val failures = failedFiles.map { BiosDownloadFailureItem(it, platformName) }
 
             _state.update {
                 it.copy(
                     isDownloading = false,
                     downloadingFileName = null,
-                    downloadProgress = 0f
+                    downloadProgress = 0f,
+                    downloadFailures = failures,
+                    showDownloadFailureModal = failures.isNotEmpty()
                 )
             }
 

@@ -364,6 +364,8 @@
     <string name="settings_bios_summary_complete">सभी %1$d फ़ाइलें तैयार</string>
     <string name="settings_bios_summary_partial">%2$d में से %1$d डाउनलोड हुईं</string>
     <string name="settings_bios_summary_downloading">डाउनलोड हो रहा है: %1$s</string>
+    <string name="settings_bios_summary_downloading_size">%2$s में से %1$s</string>
+    <string name="settings_bios_summary_downloading_count">%2$d में से %1$d फ़ाइल</string>
     <string name="settings_bios_summary_distributing">एमुलेटर में वितरित हो रहा है...</string>
     <string name="settings_bios_summary_download_missing">%1$d डाउनलोड करें</string>
     <string name="settings_bios_summary_redownload">फिर से डाउनलोड करें</string>
@@ -379,6 +381,13 @@
         <item quantity="other">%d फ़ाइलें</item>
     </plurals>
     <string name="settings_bios_distribute_result_dismiss">ठीक है</string>
+
+    <string name="settings_bios_download_failed_title">कुछ फ़ाइलें डाउनलोड नहीं हुईं</string>
+    <plurals name="settings_bios_download_failed_message">
+        <item quantity="one">%d फ़ाइल डाउनलोड नहीं हो सकी। फिर से कोशिश करें।</item>
+        <item quantity="other">%d फ़ाइलें डाउनलोड नहीं हो सकीं। फिर से कोशिश करें।</item>
+    </plurals>
+    <string name="settings_bios_download_failed_dismiss">ठीक है</string>
 
     <string name="settings_bios_gpu_prompt_title">GPU ड्राइवर उपलब्ध है</string>
     <string name="settings_bios_gpu_prompt_detected">पहचाना गया: %1$s</string>

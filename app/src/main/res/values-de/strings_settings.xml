@@ -374,6 +374,8 @@
     <string name="settings_bios_summary_complete">Alle %1$d Dateien bereit</string>
     <string name="settings_bios_summary_partial">%1$d von %2$d heruntergeladen</string>
     <string name="settings_bios_summary_downloading">Wird heruntergeladen: %1$s</string>
+    <string name="settings_bios_summary_downloading_size">%1$s von %2$s</string>
+    <string name="settings_bios_summary_downloading_count">Datei %1$d von %2$d</string>
     <string name="settings_bios_summary_distributing">Wird an Emulatoren verteilt…</string>
     <string name="settings_bios_summary_download_missing">%1$d herunterladen</string>
     <string name="settings_bios_summary_redownload">Erneut herunterladen</string>
@@ -389,6 +391,13 @@
         <item quantity="other">%d Dateien</item>
     </plurals>
     <string name="settings_bios_distribute_result_dismiss">OK</string>
+
+    <string name="settings_bios_download_failed_title">Einige Dateien wurden nicht heruntergeladen</string>
+    <plurals name="settings_bios_download_failed_message">
+        <item quantity="one">%d Datei konnte nicht heruntergeladen werden. Erneut versuchen.</item>
+        <item quantity="other">%d Dateien konnten nicht heruntergeladen werden. Erneut versuchen.</item>
+    </plurals>
+    <string name="settings_bios_download_failed_dismiss">OK</string>
 
     <string name="settings_bios_gpu_prompt_title">GPU-Treiber verfügbar</string>
     <string name="settings_bios_gpu_prompt_detected">Erkannt: %1$s</string>

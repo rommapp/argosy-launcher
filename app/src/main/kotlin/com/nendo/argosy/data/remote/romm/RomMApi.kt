@@ -321,7 +321,8 @@ interface RomMApi {
     @GET("api/firmware/{id}/content/{fileName}")
     suspend fun downloadFirmware(
         @Path("id") firmwareId: Long,
-        @Path("fileName", encoded = true) fileName: String
+        @Path("fileName", encoded = true) fileName: String,
+        @Header("Range") range: String? = null
     ): Response<ResponseBody>
 
     @POST("api/play-sessions")

@@ -52,6 +52,7 @@ import com.nendo.argosy.ui.components.ExpandedChildItem
 import com.nendo.argosy.ui.components.ImageCachePreference
 import com.nendo.argosy.ui.screens.settings.BiosFirmwareItem
 import com.nendo.argosy.ui.screens.settings.BiosPlatformGroup
+import com.nendo.argosy.ui.screens.settings.BiosDownloadFailureItem
 import com.nendo.argosy.ui.screens.settings.DistributeResultItem
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
@@ -188,6 +189,10 @@ fun BiosSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     isDownloading = bios.isDownloading,
                     downloadingFileName = bios.downloadingFileName,
                     downloadProgress = bios.downloadProgress,
+                    downloadingFileIndex = bios.downloadingFileIndex,
+                    downloadingFileCount = bios.downloadingFileCount,
+                    downloadedBytes = bios.downloadedBytes,
+                    downloadTotalBytes = bios.downloadTotalBytes,
                     isDistributing = bios.isDistributing,
                     isFocused = isFocused(item),
                     actionIndex = bios.actionIndex,
@@ -453,6 +458,133 @@ internal fun DistributeResultModal(
 }
 
 @Composable
+internal fun BiosDownloadFailureModal(
+    failures: List<BiosDownloadFailureItem>,
+    onDismiss: () -> Unit
+) {
+    val theme = LocalArgosyTheme.current
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    val scrollStepPx = with(LocalDensity.current) { (Dimens.menuRowHeight * 3).toPx() }
+    val currentOnDismiss by rememberUpdatedState(onDismiss)
+
+    val inputHandler = remember {
+        object : InputHandler {
+            private fun scroll(direction: Int) {
+                scope.launch { listState.animateScrollBy(direction * scrollStepPx) }
+            }
+
+            override fun onUp(): InputResult {
+                scroll(-1)
+                return InputResult.HANDLED
+            }
+
+            override fun onDown(): InputResult {
+                scroll(1)
+                return InputResult.HANDLED
+            }
+
+            override fun onConfirm(): InputResult {
+                currentOnDismiss()
+                return InputResult.HANDLED
+            }
+
+            override fun onBack(): InputResult {
+                currentOnDismiss()
+                return InputResult.handled(SoundType.CLOSE_MODAL)
+            }
+
+            override fun onLeft(): InputResult = InputResult.HANDLED
+            override fun onRight(): InputResult = InputResult.HANDLED
+            override fun onMenu(): InputResult = InputResult.HANDLED
+            override fun onSecondaryAction(): InputResult = InputResult.HANDLED
+            override fun onContextMenu(): InputResult = InputResult.HANDLED
+            override fun onPrevSection(): InputResult = InputResult.HANDLED
+            override fun onNextSection(): InputResult = InputResult.HANDLED
+            override fun onPrevTrigger(): InputResult = InputResult.HANDLED
+            override fun onNextTrigger(): InputResult = InputResult.HANDLED
+            override fun onSelect(): InputResult = InputResult.HANDLED
+            override fun onLeftStickClick(): InputResult = InputResult.HANDLED
+            override fun onRightStickClick(): InputResult = InputResult.HANDLED
+            override fun onLongConfirm(): InputResult = InputResult.HANDLED
+        }
+    }
+
+    ModalInputEffect(active = true, handler = inputHandler)
+
+    ModalScaffold(
+        visible = true,
+        onDismiss = onDismiss,
+        maxWidth = Dimens.modalWidth
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(Dimens.spacingMd)
+        ) {
+            Text(
+                text = stringResource(R.string.settings_bios_download_failed_title),
+                style = MaterialTheme.typography.titleLarge,
+                color = theme.textPrimary
+            )
+
+            Spacer(modifier = Modifier.height(Dimens.spacingSm))
+
+            Text(
+                text = pluralStringResource(
+                    R.plurals.settings_bios_download_failed_message,
+                    failures.size,
+                    failures.size
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = theme.textDim
+            )
+
+            Spacer(modifier = Modifier.height(Dimens.spacingMd))
+
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.heightIn(max = Dimens.headerHeightLg + Dimens.headerHeightLg + Dimens.iconSm),
+                verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+            ) {
+                items(failures.size, key = { failures[it].fileName }) { index ->
+                    val failure = failures[index]
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(Dimens.radiusMd))
+                            .background(theme.surfaceElevated)
+                            .padding(Dimens.spacingSm),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = failure.fileName,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = theme.textPrimary
+                        )
+                        Text(
+                            text = failure.platformName,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = theme.textMute
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(Dimens.spacingMd))
+
+            ActionButton(
+                label = stringResource(R.string.settings_bios_download_failed_dismiss),
+                onClick = onDismiss,
+                primary = true,
+                focused = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+@Composable
 private fun GpuDriverPromptModal(
     gpuName: String?,
     driverName: String?,
@@ -558,6 +690,10 @@ private fun BiosSummaryCard(
     isDownloading: Boolean,
     downloadingFileName: String?,
     downloadProgress: Float,
+    downloadingFileIndex: Int,
+    downloadingFileCount: Int,
+    downloadedBytes: Long,
+    downloadTotalBytes: Long,
     isDistributing: Boolean,
     isFocused: Boolean,
     actionIndex: Int,
@@ -641,6 +777,38 @@ private fun BiosSummaryCard(
             )
             Spacer(modifier = Modifier.height(Dimens.spacingXs))
             ArgosyProgressBar(progress = downloadProgress)
+            if (downloadTotalBytes > 0 || downloadingFileCount > 1) {
+                Spacer(modifier = Modifier.height(Dimens.spacingXs))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = if (downloadTotalBytes > 0) {
+                            stringResource(
+                                R.string.settings_bios_summary_downloading_size,
+                                formatBytes(downloadedBytes),
+                                formatBytes(downloadTotalBytes)
+                            )
+                        } else {
+                            ""
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = contentColor.copy(alpha = 0.5f)
+                    )
+                    if (downloadingFileCount > 1) {
+                        Text(
+                            text = stringResource(
+                                R.string.settings_bios_summary_downloading_count,
+                                downloadingFileIndex,
+                                downloadingFileCount
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = contentColor.copy(alpha = 0.5f)
+                        )
+                    }
+                }
+            }
         }
 
         if (isDistributing) {

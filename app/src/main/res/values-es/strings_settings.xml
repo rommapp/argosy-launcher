@@ -383,6 +383,8 @@
     <string name="settings_bios_summary_complete">Los %1$d archivos están listos</string>
     <string name="settings_bios_summary_partial">%1$d de %2$d descargados</string>
     <string name="settings_bios_summary_downloading">Descargando: %1$s</string>
+    <string name="settings_bios_summary_downloading_size">%1$s de %2$s</string>
+    <string name="settings_bios_summary_downloading_count">Archivo %1$d de %2$d</string>
     <string name="settings_bios_summary_distributing">Distribuyendo a los emuladores...</string>
     <string name="settings_bios_summary_download_missing">Descargar %1$d</string>
     <string name="settings_bios_summary_redownload">Volver a descargar</string>
@@ -399,6 +401,14 @@
         <item quantity="other">%d archivos</item>
     </plurals>
     <string name="settings_bios_distribute_result_dismiss">Aceptar</string>
+
+    <string name="settings_bios_download_failed_title">Algunos archivos no se descargaron</string>
+    <plurals name="settings_bios_download_failed_message">
+        <item quantity="one">No se pudo descargar %d archivo. Vuelve a intentarlo.</item>
+        <item quantity="many">No se pudieron descargar %d archivos. Vuelve a intentarlo.</item>
+        <item quantity="other">No se pudieron descargar %d archivos. Vuelve a intentarlo.</item>
+    </plurals>
+    <string name="settings_bios_download_failed_dismiss">Aceptar</string>
 
     <string name="settings_bios_gpu_prompt_title">Controlador GPU disponible</string>
     <string name="settings_bios_gpu_prompt_detected">Detectado: %1$s</string>

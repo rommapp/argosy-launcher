@@ -73,6 +73,7 @@ import com.nendo.argosy.ui.screens.settings.delegates.BuiltinNavigationTarget
 import com.nendo.argosy.ui.screens.settings.sections.AboutSection
 import com.nendo.argosy.ui.screens.settings.sections.AccountsSection
 import com.nendo.argosy.ui.screens.settings.sections.BiosSection
+import com.nendo.argosy.ui.screens.settings.sections.BiosDownloadFailureModal
 import com.nendo.argosy.ui.screens.settings.sections.DistributeResultModal
 import com.nendo.argosy.ui.screens.settings.sections.RomMItem
 import com.nendo.argosy.ui.screens.settings.sections.buildRomMItemsFromState
@@ -785,6 +786,12 @@ fun SettingsScreen(
             DistributeResultModal(
                 results = uiState.bios.distributeResults,
                 onDismiss = { viewModel.dismissDistributeResultModal() }
+            )
+        }
+        if (uiState.bios.showDownloadFailureModal) {
+            BiosDownloadFailureModal(
+                failures = uiState.bios.downloadFailures,
+                onDismiss = { viewModel.dismissDownloadFailureModal() }
             )
         }
     }

@@ -1844,6 +1844,8 @@ class SettingsViewModel @Inject constructor(
 
     fun resetBiosPlatformSubFocus() = biosDelegate.resetPlatformSubFocus()
     fun dismissDistributeResultModal() = biosDelegate.dismissDistributeResultModal()
+
+    fun dismissDownloadFailureModal() = biosDelegate.dismissDownloadFailureModal()
     fun installGpuDriver() = biosDelegate.installGpuDriver(viewModelScope)
     fun openGpuDriverFilePicker() = biosDelegate.openGpuDriverFilePicker(viewModelScope)
     fun installGpuDriverFromFile(filePath: String) = biosDelegate.installGpuDriverFromFile(filePath, viewModelScope)

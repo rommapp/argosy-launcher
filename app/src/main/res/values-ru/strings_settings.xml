@@ -381,6 +381,8 @@
     <string name="settings_bios_summary_complete">Все %1$d файлов готовы</string>
     <string name="settings_bios_summary_partial">%1$d из %2$d скачано</string>
     <string name="settings_bios_summary_downloading">Загрузка: %1$s</string>
+    <string name="settings_bios_summary_downloading_size">%1$s из %2$s</string>
+    <string name="settings_bios_summary_downloading_count">Файл %1$d из %2$d</string>
     <string name="settings_bios_summary_distributing">Распределение по эмуляторам...</string>
     <string name="settings_bios_summary_download_missing">Скачать %1$d</string>
     <string name="settings_bios_summary_redownload">Скачать заново</string>
@@ -398,6 +400,15 @@
         <item quantity="other">%d файла</item>
     </plurals>
     <string name="settings_bios_distribute_result_dismiss">ОК</string>
+
+    <string name="settings_bios_download_failed_title">Некоторые файлы не загрузились</string>
+    <plurals name="settings_bios_download_failed_message">
+        <item quantity="one">Не удалось загрузить %d файл. Повторите попытку.</item>
+        <item quantity="few">Не удалось загрузить %d файла. Повторите попытку.</item>
+        <item quantity="many">Не удалось загрузить %d файлов. Повторите попытку.</item>
+        <item quantity="other">Не удалось загрузить %d файла. Повторите попытку.</item>
+    </plurals>
+    <string name="settings_bios_download_failed_dismiss">ОК</string>
 
     <string name="settings_bios_gpu_prompt_title">Доступен драйвер GPU</string>
     <string name="settings_bios_gpu_prompt_detected">Обнаружено: %1$s</string>

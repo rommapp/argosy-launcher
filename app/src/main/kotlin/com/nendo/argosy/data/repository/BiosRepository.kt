@@ -39,7 +39,10 @@ import javax.inject.Singleton
 
 private const val TAG = "BiosRepository"
 private const val BIOS_INTERNAL_DIR = "bios"
-private const val FIRMWARE_DOWNLOAD_TIMEOUT_MS = 90_000L
+private const val FIRMWARE_STALL_TIMEOUT_MS = 90_000L
+private const val FIRMWARE_PART_SUFFIX = ".part"
+private const val FIRMWARE_DOWNLOAD_ATTEMPTS = 6
+private const val HTTP_PARTIAL_CONTENT = 206
 
 data class BiosPlatformStatus(
     val platformSlug: String,
@@ -62,6 +65,39 @@ sealed class BiosDownloadResult {
     data class Success(val localPath: String) : BiosDownloadResult()
     data class Error(val message: String) : BiosDownloadResult()
 }
+
+/**
+ * Bulk-download progress: which file of how many, and how far into that file.
+ *
+ * The byte arguments are what let a single large file show movement. Reporting only the file index
+ * left a multi-gigabyte download sitting on one unchanging notch for minutes, which reads as a hang.
+ */
+typealias FirmwareBulkProgress = (
+    current: Int,
+    total: Int,
+    fileName: String,
+    fileProgress: Float,
+    bytesDownloaded: Long,
+    totalBytes: Long
+) -> Unit
+
+data class FirmwareDownloadFailure(
+    val fileName: String,
+    val platformSlug: String,
+    val reason: String
+)
+
+/**
+ * What a bulk firmware download actually achieved.
+ *
+ * A count alone cannot distinguish a finished run from a partial one, so the caller reported every
+ * run as complete and a file that never arrived looked downloaded until the user went looking for
+ * it on disk. [failures] is what makes an incomplete run sayable.
+ */
+data class FirmwareDownloadSummary(
+    val downloaded: Int = 0,
+    val failures: List<FirmwareDownloadFailure> = emptyList()
+)
 
 @Singleton
 class BiosRepository @Inject constructor(
@@ -93,14 +129,25 @@ class BiosRepository @Inject constructor(
         }
     }
 
-    private fun getInternalBiosPlatformDir(platformSlug: String): File {
-        val dir = File(getInternalBiosDir(), platformSlug)
+    /**
+     * The directory BIOS is actually kept in: the configured location when one is set, the app's
+     * own storage otherwise.
+     *
+     * Downloads resolve through here rather than writing to internal storage unconditionally. With
+     * the write pinned to internal, a newly downloaded file did not appear at the configured
+     * location until the setting was changed again and [migrateToCustomPath] happened to move it,
+     * so the folder a user had pointed an emulator at stayed empty with nothing to explain why.
+     */
+    private suspend fun getActiveBiosPlatformDir(platformSlug: String): File {
+        val customPath = userPreferencesRepository.preferences.first().customBiosPath
+        val base = if (customPath != null) resolveBiosDir(customPath) else getInternalBiosDir()
+        val dir = File(base, platformSlug)
         if (!dir.exists()) dir.mkdirs()
         return dir
     }
 
     suspend fun copyBiosForPlatformTo(platformSlug: String, targetPath: String): Int = withContext(Dispatchers.IO) {
-        val sourceDir = getInternalBiosPlatformDir(platformSlug)
+        val sourceDir = getActiveBiosPlatformDir(platformSlug)
         val targetDir = File(targetPath)
         if (!targetDir.exists()) targetDir.mkdirs()
         val sourceFiles = sourceDir.listFiles()?.filter { it.isFile } ?: return@withContext 0
@@ -172,53 +219,120 @@ class BiosRepository @Inject constructor(
             return@withContext BiosDownloadResult.Error("Firmware not found")
         }
 
-        val platformDir = getInternalBiosPlatformDir(firmware.platformSlug)
+        val platformDir = getActiveBiosPlatformDir(firmware.platformSlug)
         val targetFile = File(platformDir, firmware.fileName)
+        val partFile = File(platformDir, "${firmware.fileName}$FIRMWARE_PART_SUFFIX")
+
+        val expectedBytes = firmware.fileSizeBytes
 
         try {
             Logger.info(TAG, "Downloading firmware: ${firmware.fileName} (id=${firmware.rommId})")
 
-            val response = currentApi.downloadFirmware(firmware.rommId, firmware.fileName)
-            if (!response.isSuccessful) {
-                Logger.error(TAG, "Download failed for ${firmware.fileName}: HTTP ${response.code()}")
-                return@withContext BiosDownloadResult.Error("Download failed: HTTP ${response.code()}")
+            if (expectedBytes > 0 && partFile.length() > expectedBytes) {
+                partFile.delete()
             }
 
-            val body = response.body()
-                ?: return@withContext BiosDownloadResult.Error("Empty response")
+            var attempt = 0
+            var lastError: String? = null
 
-            body.byteStream().use { input ->
-                FileOutputStream(targetFile).use { output ->
-                    val buffer = ByteArray(8192)
-                    var bytesRead: Int
-                    var totalBytesRead = 0L
-                    val totalBytes = body.contentLength()
-                    val deadline = System.currentTimeMillis() + FIRMWARE_DOWNLOAD_TIMEOUT_MS
+            while (attempt < FIRMWARE_DOWNLOAD_ATTEMPTS) {
+                attempt++
+                val resumeFrom = partFile.length()
+                if (expectedBytes > 0 && resumeFrom == expectedBytes) break
 
-                    while (input.read(buffer).also { bytesRead = it } != -1) {
-                        if (System.currentTimeMillis() > deadline) {
-                            throw java.io.IOException("Firmware download timed out after ${FIRMWARE_DOWNLOAD_TIMEOUT_MS}ms")
-                        }
-                        output.write(buffer, 0, bytesRead)
-                        totalBytesRead += bytesRead
-                        onProgress?.invoke(
-                            BiosDownloadProgress(
-                                firmwareId = firmware.rommId,
-                                fileName = firmware.fileName,
-                                bytesDownloaded = totalBytesRead,
-                                totalBytes = totalBytes
-                            )
-                        )
-                    }
+                val range = if (resumeFrom > 0) "bytes=$resumeFrom-" else null
+                if (range != null) {
+                    Logger.info(
+                        TAG,
+                        "Resuming ${firmware.fileName} from $resumeFrom bytes (attempt $attempt)"
+                    )
                 }
+
+                val response = currentApi.downloadFirmware(firmware.rommId, firmware.fileName, range)
+                if (!response.isSuccessful) {
+                    Logger.error(TAG, "Download failed for ${firmware.fileName}: HTTP ${response.code()}")
+                    return@withContext BiosDownloadResult.Error("Download failed: HTTP ${response.code()}")
+                }
+
+                val body = response.body()
+                    ?: return@withContext BiosDownloadResult.Error("Empty response")
+
+                val serverResumed = response.code() == HTTP_PARTIAL_CONTENT
+                if (resumeFrom > 0 && !serverResumed) {
+                    Logger.info(TAG, "Server ignored the range request, restarting ${firmware.fileName}")
+                    partFile.delete()
+                }
+
+                val startedAt = if (serverResumed) resumeFrom else 0L
+                val totalBytes = if (expectedBytes > 0) expectedBytes else body.contentLength()
+
+                try {
+                    body.byteStream().use { input ->
+                        FileOutputStream(partFile, startedAt > 0).use { output ->
+                            val buffer = ByteArray(8192)
+                            var bytesRead: Int
+                            var totalBytesRead = startedAt
+                            var lastReadAt = System.currentTimeMillis()
+
+                            while (input.read(buffer).also { bytesRead = it } != -1) {
+                                if (System.currentTimeMillis() - lastReadAt > FIRMWARE_STALL_TIMEOUT_MS) {
+                                    throw java.io.IOException("Firmware download stalled")
+                                }
+                                output.write(buffer, 0, bytesRead)
+                                lastReadAt = System.currentTimeMillis()
+                                totalBytesRead += bytesRead
+                                onProgress?.invoke(
+                                    BiosDownloadProgress(
+                                        firmwareId = firmware.rommId,
+                                        fileName = firmware.fileName,
+                                        bytesDownloaded = totalBytesRead,
+                                        totalBytes = totalBytes
+                                    )
+                                )
+                            }
+                        }
+                    }
+                    lastError = null
+                } catch (e: java.io.IOException) {
+                    lastError = e.message ?: "Connection interrupted"
+                    Logger.warn(
+                        TAG,
+                        "${firmware.fileName} interrupted at ${partFile.length()} bytes " +
+                            "(attempt $attempt of $FIRMWARE_DOWNLOAD_ATTEMPTS): $lastError"
+                    )
+                    if (partFile.length() <= resumeFrom) break
+                    continue
+                }
+
+                if (expectedBytes <= 0 || partFile.length() >= expectedBytes) break
+            }
+
+            if (lastError != null && (expectedBytes <= 0 || partFile.length() != expectedBytes)) {
+                Logger.error(TAG, "Gave up on ${firmware.fileName}: $lastError")
+                return@withContext BiosDownloadResult.Error(lastError)
+            }
+
+            if (expectedBytes > 0 && partFile.length() != expectedBytes) {
+                Logger.error(
+                    TAG,
+                    "Short read for ${firmware.fileName}: got ${partFile.length()} of $expectedBytes bytes"
+                )
+                return@withContext BiosDownloadResult.Error("Download incomplete, try again")
             }
 
             if (firmware.md5Hash != null) {
-                val actualMd5 = calculateMd5(targetFile)
+                val actualMd5 = calculateMd5(partFile)
                 if (!actualMd5.equals(firmware.md5Hash, ignoreCase = true)) {
-                    targetFile.delete()
+                    partFile.delete()
                     return@withContext BiosDownloadResult.Error("MD5 mismatch: expected ${firmware.md5Hash}, got $actualMd5")
                 }
+            }
+
+            targetFile.delete()
+            if (!partFile.renameTo(targetFile)) {
+                partFile.delete()
+                Logger.error(TAG, "Could not move ${firmware.fileName} into place")
+                return@withContext BiosDownloadResult.Error("Could not save the downloaded file")
             }
 
             firmwareDao.updateLocalPath(firmware.id, targetFile.absolutePath, Instant.now())
@@ -228,7 +342,6 @@ class BiosRepository @Inject constructor(
             BiosDownloadResult.Success(targetFile.absolutePath)
         } catch (e: Exception) {
             Logger.error(TAG, "Failed to download firmware: ${e.message}", e)
-            targetFile.delete()
             BiosDownloadResult.Error(e.message ?: "Download failed")
         }
     }
@@ -261,49 +374,69 @@ class BiosRepository @Inject constructor(
     }
 
     suspend fun downloadAllMissing(
-        onProgress: ((current: Int, total: Int, fileName: String) -> Unit)? = null
-    ): Int = withContext(Dispatchers.IO) {
+        onProgress: FirmwareBulkProgress? = null
+    ): FirmwareDownloadSummary = withContext(Dispatchers.IO) {
         reconcileDownloadedFirmware()
         val missing = firmwareDao.getSyncEnabledMissing()
-        if (missing.isEmpty()) return@withContext 0
+        if (missing.isEmpty()) return@withContext FirmwareDownloadSummary()
 
         Logger.info(TAG, "Downloading ${missing.size} missing firmware files")
         var downloaded = 0
+        val failed = mutableListOf<FirmwareDownloadFailure>()
 
         missing.forEachIndexed { index, firmware ->
-            onProgress?.invoke(index + 1, missing.size, firmware.fileName)
-            val result = downloadFirmware(firmware.rommId)
-            if (result is BiosDownloadResult.Success) {
-                downloaded++
+            onProgress?.invoke(index + 1, missing.size, firmware.fileName, 0f, 0L, firmware.fileSizeBytes)
+            val step: (BiosDownloadProgress) -> Unit = { p ->
+                onProgress?.invoke(
+                    index + 1, missing.size, firmware.fileName, p.progress, p.bytesDownloaded, p.totalBytes
+                )
+            }
+            when (val result = downloadFirmware(firmware.rommId, step)) {
+                is BiosDownloadResult.Success -> downloaded++
+                is BiosDownloadResult.Error -> failed += FirmwareDownloadFailure(
+                    fileName = firmware.fileName,
+                    platformSlug = firmware.platformSlug,
+                    reason = result.message
+                )
             }
         }
 
         Logger.info(TAG, "Downloaded $downloaded of ${missing.size} firmware files")
-        downloaded
+        FirmwareDownloadSummary(downloaded, failed)
     }
 
     suspend fun redownloadAll(
-        onProgress: ((current: Int, total: Int, fileName: String) -> Unit)? = null
-    ): Int = withContext(Dispatchers.IO) {
+        onProgress: FirmwareBulkProgress? = null
+    ): FirmwareDownloadSummary = withContext(Dispatchers.IO) {
         cleanupDisabledPlatformBios()
         reconcileDownloadedFirmware()
 
         val all = firmwareDao.getSyncEnabledAll()
-        if (all.isEmpty()) return@withContext 0
+        if (all.isEmpty()) return@withContext FirmwareDownloadSummary()
 
         Logger.info(TAG, "Redownloading all ${all.size} firmware files")
         var downloaded = 0
+        val failed = mutableListOf<FirmwareDownloadFailure>()
 
         all.forEachIndexed { index, firmware ->
-            onProgress?.invoke(index + 1, all.size, firmware.fileName)
-            val result = downloadFirmware(firmware.rommId)
-            if (result is BiosDownloadResult.Success) {
-                downloaded++
+            onProgress?.invoke(index + 1, all.size, firmware.fileName, 0f, 0L, firmware.fileSizeBytes)
+            val step: (BiosDownloadProgress) -> Unit = { p ->
+                onProgress?.invoke(
+                    index + 1, all.size, firmware.fileName, p.progress, p.bytesDownloaded, p.totalBytes
+                )
+            }
+            when (val result = downloadFirmware(firmware.rommId, step)) {
+                is BiosDownloadResult.Success -> downloaded++
+                is BiosDownloadResult.Error -> failed += FirmwareDownloadFailure(
+                    fileName = firmware.fileName,
+                    platformSlug = firmware.platformSlug,
+                    reason = result.message
+                )
             }
         }
 
         Logger.info(TAG, "Redownloaded $downloaded of ${all.size} firmware files")
-        downloaded
+        FirmwareDownloadSummary(downloaded, failed)
     }
 
     private suspend fun cleanupDisabledPlatformBios() {

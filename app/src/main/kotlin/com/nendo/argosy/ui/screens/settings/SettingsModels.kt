@@ -1248,6 +1248,11 @@ data class PlatformDistributeResult(
     val filesCopied: Int
 )
 
+data class BiosDownloadFailureItem(
+    val fileName: String,
+    val platformName: String
+)
+
 data class GpuDriverInfo(
     val name: String,
     val version: String,
@@ -1262,9 +1267,15 @@ data class BiosState(
     val isDownloading: Boolean = false,
     val downloadingFileName: String? = null,
     val downloadProgress: Float = 0f,
+    val downloadingFileIndex: Int = 0,
+    val downloadingFileCount: Int = 0,
+    val downloadedBytes: Long = 0,
+    val downloadTotalBytes: Long = 0,
     val isDistributing: Boolean = false,
     val showDistributeResultModal: Boolean = false,
     val distributeResults: List<DistributeResultItem> = emptyList(),
+    val showDownloadFailureModal: Boolean = false,
+    val downloadFailures: List<BiosDownloadFailureItem> = emptyList(),
     val customBiosPath: String? = null,
     val isBiosMigrating: Boolean = false,
     val expandedPlatformIndex: Int = -1,

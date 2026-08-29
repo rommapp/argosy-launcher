@@ -1707,9 +1707,27 @@ internal fun chooseWinner(
     }
     if (candidate.id == group.mainSiblingId) return candidate
     if (current.id == group.mainSiblingId) return current
-    return if (filters.regionRank(candidate.regions) < filters.regionRank(current.regions)) {
-        candidate
-    } else {
-        current
+    val candidateRank = filters.regionRank(candidate.regions)
+    val currentRank = filters.regionRank(current.regions)
+    if (candidateRank != currentRank) {
+        return if (candidateRank < currentRank) candidate else current
     }
+    if (candidate.isRerelease != current.isRerelease) {
+        return if (current.isRerelease) candidate else current
+    }
+    return current
 }
+
+private val RERELEASE_TAG_MARKERS =
+    listOf("virtual console", "switch online", "classic mini", "gamecube")
+
+/**
+ * A re-release of the same game on later hardware. Region rank cannot separate it from the
+ * original dump, both being tagged the same region, so without this the winner is whichever
+ * the server happened to page in first.
+ */
+internal val RomMRom.isRerelease: Boolean
+    get() = tags?.any { tag ->
+        val lower = tag.lowercase()
+        RERELEASE_TAG_MARKERS.any { lower.contains(it) }
+    } ?: false

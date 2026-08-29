@@ -3,6 +3,8 @@ package com.nendo.argosy.data.remote.romm
 import com.nendo.argosy.data.preferences.RegionFilterMode
 import com.nendo.argosy.data.preferences.SyncFilterPreferences
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -16,7 +18,7 @@ class SiblingWinnerTest {
         enabledRegions = listOf("USA", "Europe", "Japan")
     )
 
-    private fun rom(id: Long, vararg regions: String) = RomMRom(
+    private fun rom(id: Long, vararg regions: String, tags: List<String>? = null) = RomMRom(
         id = id,
         name = "rom$id",
         fileName = "rom$id.nes",
@@ -31,7 +33,8 @@ class SiblingWinnerTest {
         coverLarge = null,
         regions = regions.toList(),
         languages = null,
-        revision = null
+        revision = null,
+        tags = tags
     )
 
     private fun feed(group: SiblingGroup, roms: List<RomMRom>): RomMRom? {
@@ -161,5 +164,48 @@ class SiblingWinnerTest {
         val winner = feedWith(group, listOf(rom(1, "USA"), rom(2, "Europe")), filters)
 
         assertEquals(1L, winner?.id)
+    }
+
+    @Test
+    fun `an original release beats a re-release of the same region`() {
+        val forward = feedWith(
+            SiblingGroup(),
+            listOf(
+                rom(535, "Europe", tags = listOf("Wii Virtual Console")),
+                rom(536, "Europe")
+            ),
+            priorityFilters
+        )
+        val reverse = feedWith(
+            SiblingGroup(),
+            listOf(
+                rom(536, "Europe"),
+                rom(535, "Europe", tags = listOf("Wii Virtual Console"))
+            ),
+            priorityFilters
+        )
+
+        assertEquals(536L, forward?.id)
+        assertEquals(536L, reverse?.id)
+    }
+
+    @Test
+    fun `a better region still beats an original release`() {
+        val group = SiblingGroup()
+        val winner = feedWith(
+            group,
+            listOf(rom(1, "USA"), rom(2, "Germany", tags = listOf("Switch Online"))),
+            priorityFilters
+        )
+
+        assertEquals(2L, winner?.id)
+    }
+
+    @Test
+    fun `re-release markers are read from the tag list`() {
+        assertTrue(rom(1, "Europe", tags = listOf("Wii U Virtual Console")).isRerelease)
+        assertTrue(rom(2, "Europe", tags = listOf("Classic Mini")).isRerelease)
+        assertFalse(rom(3, "Europe", tags = listOf("SGB Enhanced")).isRerelease)
+        assertFalse(rom(4, "Europe").isRerelease)
     }
 }

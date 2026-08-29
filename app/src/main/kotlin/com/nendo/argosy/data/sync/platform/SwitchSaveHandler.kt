@@ -145,6 +145,24 @@ class SwitchSaveHandler @Inject constructor(
         return name.length == 16 && name.all { it.isDigit() || it in 'A'..'F' || it in 'a'..'f' }
     }
 
+    /**
+     * Whether [path] is already a profile folder, whose children are title ids, rather than the
+     * save root, whose children are user folders.
+     *
+     * A resolved base arrives at either depth: [findActiveProfileFolder] descends to the profile
+     * and [constructSavePath] appends the title id to it, while an unresolved override stops at
+     * the save root. One level cannot tell them apart, because a title id and a user folder id
+     * are both 16 hex; the pair of trailing segments can, since only a profile sits under a user
+     * folder. Reading the wrong depth discards the exact title match as a device save and then
+     * searches its siblings for a nesting that is not there.
+     */
+    private fun isProfileLevel(path: String): Boolean {
+        val segments = path.trimEnd('/').split("/")
+        if (segments.size < 2) return false
+        return isValidProfileFolderId(segments.last()) &&
+            isValidUserFolderId(segments[segments.size - 2])
+    }
+
     fun isValidProfileFolderId(name: String): Boolean {
         return (name.length == 16 || name.length == 32) &&
             name.all { it.isDigit() || it in 'A'..'F' || it in 'a'..'f' }
@@ -220,7 +238,9 @@ class SwitchSaveHandler @Inject constructor(
         }
 
         if (emulatorPackage != null) {
-            val dataPath = basePath.substringBefore("/nand/user/save")
+            val dataPath = basePath
+                .substringBefore("/nand/user/save")
+                .substringBefore("/user/save")
             switchProfileParser.parseActiveProfile(emulatorPackage, dataPath)?.let { profileUuid ->
                 val profilePath = "$basePath/0000000000000000/$profileUuid"
                 if (fal.exists(profilePath) && fal.isDirectory(profilePath)) {
@@ -283,6 +303,16 @@ class SwitchSaveHandler @Inject constructor(
 
         val normalizedSaveId = saveId.uppercase()
         Logger.debug(TAG, "findSaveFolderBySaveId: scanning | path=$basePath, saveId=$normalizedSaveId")
+
+        if (isProfileLevel(basePath)) {
+            val match = fal.listFiles(basePath)
+                ?.firstOrNull { it.isDirectory && it.name.equals(normalizedSaveId, ignoreCase = true) }
+            Logger.debug(
+                TAG,
+                "findSaveFolderBySaveId: base is a profile folder | match=${match?.path}"
+            )
+            return match?.path
+        }
 
         var bestMatchPath: String? = null
         var bestModTime = 0L

@@ -14,7 +14,10 @@ data class NczSection(
     val cryptoCounter: ByteArray
 ) {
     val needsEncryption: Boolean
-        get() = cryptoType == 3L || cryptoType == 4L
+        get() = cryptoType in 3L..6L
+
+    val isPlaintext: Boolean
+        get() = cryptoType == 0L || cryptoType == 1L
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -60,7 +63,12 @@ data class NczBlockHeader(
 data class NczHeaderData(
     val sections: List<NczSection>,
     val blockHeader: NczBlockHeader?,
-    val compressedDataOffset: Long
+    /**
+     * Offset of the first zstd payload byte, measured from the start of the
+     * NCZ entry: callers add the entry's own position in the container
+     * before seeking.
+     */
+    val payloadOffsetInEntry: Long
 )
 
 object NczHeaderParser {
@@ -113,13 +121,13 @@ object NczHeaderParser {
             null
         }
 
-        val compressedDataOffset = NCA_HEADER_SIZE + bytesRead -
+        val payloadOffsetInEntry = NCA_HEADER_SIZE + bytesRead -
             if (blockHeader == null) 8 else 0
 
         return NczHeaderData(
             sections = sections,
             blockHeader = blockHeader,
-            compressedDataOffset = compressedDataOffset
+            payloadOffsetInEntry = payloadOffsetInEntry
         )
     }
 

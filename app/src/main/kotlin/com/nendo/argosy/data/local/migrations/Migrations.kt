@@ -3509,3 +3509,19 @@ object Migration_179_180 : Migration(179, 180) {
         db.execSQL("ALTER TABLE `media_items` ADD COLUMN `gradientColors` TEXT")
     }
 }
+
+/**
+ * Indexes `game_files.versionGroup` on its own.
+ *
+ * Collection sync resolves an absorbed sibling by version group, and the existing composite
+ * index leads with `gameId`, so that lookup could not use it and scanned the table once per
+ * collection member.
+ */
+object Migration_180_181 : Migration(180, 181) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_game_files_versionGroup` " +
+                "ON `game_files` (`versionGroup`)"
+        )
+    }
+}

@@ -20,7 +20,8 @@ import java.time.Instant
     indices = [
         Index("gameId"),
         Index(value = ["rommFileId"]),
-        Index(value = ["gameId", "versionGroup"])
+        Index(value = ["gameId", "versionGroup"]),
+        Index(value = ["versionGroup"])
     ]
 )
 data class GameFileEntity(

@@ -121,18 +121,37 @@ object RomMSyncFilter {
     }
 
     private fun passesRevisionFilter(rom: RomMRom, filters: SyncFilterPreferences): Boolean {
-        val revision = rom.revision?.lowercase() ?: ""
-        val name = rom.name.lowercase()
-        val tags = rom.tags?.map { it.lowercase() } ?: emptyList()
+        val variant = VariantTags(rom)
 
-        if (filters.excludeBeta && (revision.contains("beta") || name.contains("(beta)"))) return false
-        if (filters.excludePrototype && (revision.contains("proto") || name.contains("(proto)"))) return false
-        if (filters.excludeDemo && (revision.contains("demo") || name.contains("(demo)") || name.contains("(sample)"))) {
+        if (filters.excludeBeta && variant.has("beta")) return false
+        if (filters.excludePrototype && variant.has("proto", "debug")) return false
+        if (filters.excludeDemo && variant.has("demo", "sample")) return false
+        if (filters.excludeHack && isHack(rom.name.lowercase(), variant.revision, variant.tags)) {
             return false
         }
-        if (filters.excludeHack && isHack(name, revision, tags)) return false
+        if (filters.excludeUnofficial && variant.has("pirate", "unl", "aftermarket")) return false
 
         return true
+    }
+
+    /**
+     * The release tags of a rom, read from every field RomM puts them in. A rom matched against
+     * metadata carries the clean IGDB title in `name`, so the parenthesised tags survive only in
+     * `tags` and the file name; reading `name` alone silently matches nothing for most of a
+     * library. Debug builds count as prototypes, both being unreleased internal builds, unlike a
+     * demo, which is a released promotional cut.
+     */
+    private class VariantTags(rom: RomMRom) {
+        val revision = rom.revision?.lowercase() ?: ""
+        val tags = rom.tags?.map { it.lowercase() } ?: emptyList()
+        private val bracketed =
+            "${rom.name.lowercase()} ${rom.fileName?.lowercase() ?: ""}"
+
+        fun has(vararg keywords: String): Boolean = keywords.any { keyword ->
+            revision.contains(keyword) ||
+                tags.any { it.startsWith(keyword) } ||
+                bracketed.contains("($keyword")
+        }
     }
 
     private fun isHack(name: String, revision: String, tags: List<String>): Boolean {

@@ -264,6 +264,7 @@ object SettingsBackupKeys {
         SettingsBackupKey("sync_filter_exclude_proto", SettingsBackupType.BOOLEAN),
         SettingsBackupKey("sync_filter_exclude_demo", SettingsBackupType.BOOLEAN),
         SettingsBackupKey("sync_filter_exclude_hack", SettingsBackupType.BOOLEAN),
+        SettingsBackupKey("sync_filter_exclude_unofficial", SettingsBackupType.BOOLEAN),
         SettingsBackupKey("sync_screenshots_enabled", SettingsBackupType.BOOLEAN),
         SettingsBackupKey("upload_screenshots_enabled", SettingsBackupType.BOOLEAN)
     )

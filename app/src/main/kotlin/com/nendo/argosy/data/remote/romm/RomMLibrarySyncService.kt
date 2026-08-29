@@ -957,17 +957,18 @@ class RomMLibrarySyncService @Inject constructor(
         var totalFetched = 0
         var platformTotal: Int? = null
 
+        /**
+         * Sibling lists are not symmetric: a rom can name fewer siblings than one of its own
+         * siblings names, so a group can start as two and only meet once a rom bridging them
+         * arrives. Merging has to put both running winners back through [chooseWinner], since
+         * keeping whichever group formed first decides the release by page order rather than by
+         * the region priority.
+         */
         fun groupFor(rom: RomMRom): SiblingGroup {
             val ids = listOf(rom.id) +
                 rom.effectiveSiblings.filter { !it.isDiscVariant }.map { it.id }
             val existingGroups = ids.mapNotNull { siblingGroups[it] }.distinct()
-            val group = existingGroups.firstOrNull() ?: SiblingGroup()
-            existingGroups.drop(1).forEach { other ->
-                group.members.addAll(other.members)
-                group.expectedIds.addAll(other.expectedIds)
-                if (group.mainSiblingId == null) group.mainSiblingId = other.mainSiblingId
-                if (group.winner == null) group.winner = other.winner
-            }
+            val group = mergeSiblingGroups(existingGroups, filters)
             group.expectedIds.addAll(ids)
             ids.forEach { siblingGroups[it] = group }
             return group
@@ -1057,7 +1058,7 @@ class RomMLibrarySyncService @Inject constructor(
 
                     if (group.isComplete) {
                         val outcome = consolidateSiblingGroup(
-                            api, group, platform, absorptionPairs, scope, ::trackSiblingMultiDisc
+                            api, group, platform, absorptionPairs, scope, filters, ::trackSiblingMultiDisc
                         )
                         added += outcome.added
                         updated += outcome.updated
@@ -1086,7 +1087,7 @@ class RomMLibrarySyncService @Inject constructor(
 
         for (group in siblingGroups.values.distinct()) {
             val outcome = consolidateSiblingGroup(
-                api, group, platform, absorptionPairs, scope, ::trackSiblingMultiDisc
+                api, group, platform, absorptionPairs, scope, filters, ::trackSiblingMultiDisc
             )
             added += outcome.added
             updated += outcome.updated
@@ -1113,12 +1114,13 @@ class RomMLibrarySyncService @Inject constructor(
         platform: RomMPlatform,
         absorptionPairs: MutableList<Pair<Long, Long>>,
         scope: SyncScope,
+        filters: SyncFilterPreferences,
         trackMultiDisc: (RomMRom) -> Unit
     ): ConsolidationOutcome {
         if (group.consolidated) return ConsolidationOutcome(0, 0)
         val members = group.members
         if (members.isEmpty()) return ConsolidationOutcome(0, 0)
-        val winner = resolveGroupWinner(api, group) ?: return ConsolidationOutcome(0, 0)
+        val winner = resolveGroupWinner(api, group, filters) ?: return ConsolidationOutcome(0, 0)
 
         group.consolidated = true
         var added = 0
@@ -1187,11 +1189,19 @@ class RomMLibrarySyncService @Inject constructor(
      * was already seen and reduced to a projection. Re-fetch it in that case rather than
      * consolidating under the wrong ROM.
      */
-    private suspend fun resolveGroupWinner(api: RomMApi, group: SiblingGroup): RomMRom? {
+    private suspend fun resolveGroupWinner(
+        api: RomMApi,
+        group: SiblingGroup,
+        filters: SyncFilterPreferences
+    ): RomMRom? {
         val running = group.winner ?: return null
         val mainId = group.mainSiblingId
         if (mainId == null || running.id == mainId) return running
         if (group.members.none { it.id == mainId }) return running
+        if (filters.hasRegionPriority) {
+            val mainRegions = group.members.firstOrNull { it.id == mainId }?.regions
+            if (filters.regionRank(running.regions) <= filters.regionRank(mainRegions)) return running
+        }
 
         return try {
             val response = api.getRom(mainId)
@@ -1677,9 +1687,32 @@ internal class SiblingGroup {
 }
 
 /**
+ * Folds groups that turned out to be one into the first of them. Both running winners go back
+ * through [chooseWinner]: keeping the winner of whichever group formed first decides the
+ * release by the order the server paged its roms in rather than by the region priority.
+ */
+internal fun mergeSiblingGroups(
+    existingGroups: List<SiblingGroup>,
+    filters: SyncFilterPreferences
+): SiblingGroup {
+    val group = existingGroups.firstOrNull() ?: SiblingGroup()
+    existingGroups.drop(1).forEach { other ->
+        group.members.addAll(other.members)
+        group.expectedIds.addAll(other.expectedIds)
+        if (group.mainSiblingId == null) group.mainSiblingId = other.mainSiblingId
+        other.winner?.let { candidate ->
+            group.winner = chooseWinner(group, candidate, filters)
+        }
+    }
+    return group
+}
+
+/**
  * Running pick of the sibling a group consolidates under, so only one full [RomMRom] per
- * group stays resident. Mirrors the deferred rule it replaced: a declared main sibling
- * wins outright, otherwise the best region rank wins, ties going to the member seen first.
+ * group stays resident. An explicit region priority outranks the server's declared main
+ * sibling, which otherwise decides the whole group and drops the regional release the user
+ * asked for. Without a priority the declared main sibling wins, ties going to the member
+ * seen first.
  */
 internal fun chooseWinner(
     group: SiblingGroup,
@@ -1687,11 +1720,36 @@ internal fun chooseWinner(
     filters: SyncFilterPreferences
 ): RomMRom {
     val current = group.winner ?: return candidate
+    if (filters.hasRegionPriority) {
+        val candidateRank = filters.regionRank(candidate.regions)
+        val currentRank = filters.regionRank(current.regions)
+        if (candidateRank != currentRank) {
+            return if (candidateRank < currentRank) candidate else current
+        }
+    }
     if (candidate.id == group.mainSiblingId) return candidate
     if (current.id == group.mainSiblingId) return current
-    return if (filters.regionRank(candidate.regions) < filters.regionRank(current.regions)) {
-        candidate
-    } else {
-        current
+    val candidateRank = filters.regionRank(candidate.regions)
+    val currentRank = filters.regionRank(current.regions)
+    if (candidateRank != currentRank) {
+        return if (candidateRank < currentRank) candidate else current
     }
+    if (candidate.isRerelease != current.isRerelease) {
+        return if (current.isRerelease) candidate else current
+    }
+    return current
 }
+
+private val RERELEASE_TAG_MARKERS =
+    listOf("virtual console", "switch online", "classic mini", "gamecube")
+
+/**
+ * A re-release of the same game on later hardware. Region rank cannot separate it from the
+ * original dump, both being tagged the same region, so without this the winner is whichever
+ * the server happened to page in first.
+ */
+internal val RomMRom.isRerelease: Boolean
+    get() = tags?.any { tag ->
+        val lower = tag.lowercase()
+        RERELEASE_TAG_MARKERS.any { lower.contains(it) }
+    } ?: false

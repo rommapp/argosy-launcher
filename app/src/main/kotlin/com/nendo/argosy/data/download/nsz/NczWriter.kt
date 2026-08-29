@@ -24,13 +24,19 @@ object NczWriter {
         totalDecompressedSize: Long,
         onProgress: ((bytesWritten: Long, totalBytes: Long) -> Unit)?
     ) {
-        if (header.blockHeader != null) {
+        val written = if (header.blockHeader != null) {
             decompressBlock(
                 input, output, header, totalDecompressedSize, onProgress
             )
         } else {
             decompressSolid(
                 input, output, header, totalDecompressedSize, onProgress
+            )
+        }
+        if (written != totalDecompressedSize) {
+            throw IOException(
+                "NCZ body truncated: expected $totalDecompressedSize bytes, " +
+                    "decompressed $written"
             )
         }
     }
@@ -41,7 +47,7 @@ object NczWriter {
         header: NczHeaderData,
         totalDecompressedSize: Long,
         onProgress: ((bytesWritten: Long, totalBytes: Long) -> Unit)?
-    ) {
+    ): Long {
         val zstdStream = ZstdInputStream(input)
         val buf = ByteArray(BUFFER_SIZE)
         var cursor = NczHeaderParser.NCA_HEADER_SIZE
@@ -63,6 +69,8 @@ object NczWriter {
             bytesWritten += read
             onProgress?.invoke(bytesWritten, totalDecompressedSize)
         }
+
+        return bytesWritten
     }
 
     private fun decompressBlock(
@@ -71,7 +79,7 @@ object NczWriter {
         header: NczHeaderData,
         totalDecompressedSize: Long,
         onProgress: ((bytesWritten: Long, totalBytes: Long) -> Unit)?
-    ) {
+    ): Long {
         val blockHeader = header.blockHeader!!
         val blockSize = blockHeader.blockSize
         var cursor = NczHeaderParser.NCA_HEADER_SIZE
@@ -100,10 +108,12 @@ object NczWriter {
                     )
                 }
                 if (decompSize.toInt() != expectedSize) {
-                    decompBuf.copyOf(decompSize.toInt())
-                } else {
-                    decompBuf.copyOf(expectedSize)
+                    throw IOException(
+                        "Zstd block $i expanded to $decompSize bytes, " +
+                            "expected $expectedSize"
+                    )
                 }
+                decompBuf.copyOf(expectedSize)
             }
 
             processAndWrite(
@@ -118,6 +128,8 @@ object NczWriter {
             bytesWritten += decompressed.size
             onProgress?.invoke(bytesWritten, totalDecompressedSize)
         }
+
+        return bytesWritten
     }
 
     private fun processAndWrite(
@@ -148,11 +160,17 @@ object NczWriter {
                 }
             }
 
-            if (section != null && section.needsEncryption) {
+            if (section != null && !section.isPlaintext) {
+                if (!section.needsEncryption) {
+                    throw IOException(
+                        "Unsupported NCZ section crypto type: " +
+                            section.cryptoType
+                    )
+                }
                 val cipher = AesCtrCipher(
                     section.cryptoKey,
                     section.cryptoCounter,
-                    pos - section.offset
+                    pos
                 )
                 val encrypted = cipher.process(
                     data, offset, chunkSize

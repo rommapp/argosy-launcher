@@ -55,6 +55,7 @@ fun SyncFiltersModal(
     onToggleExcludePrototype: (Boolean) -> Unit,
     onToggleExcludeDemo: (Boolean) -> Unit,
     onToggleExcludeHack: (Boolean) -> Unit,
+    onToggleExcludeUnofficial: (Boolean) -> Unit,
     onToggleDeleteOrphans: (Boolean) -> Unit,
     onShowRegionPicker: () -> Unit,
     onDismissRegionPicker: () -> Unit,
@@ -171,10 +172,19 @@ fun SyncFiltersModal(
                 }
                 item {
                     SwitchPreference(
+                        title = stringResource(R.string.settings_sync_filters_exclude_unofficial_title),
+                        subtitle = stringResource(R.string.settings_sync_filters_exclude_unofficial_subtitle),
+                        isEnabled = syncFilters.excludeUnofficial,
+                        isFocused = focusIndex == 6,
+                        onToggle = onToggleExcludeUnofficial
+                    )
+                }
+                item {
+                    SwitchPreference(
                         title = stringResource(R.string.settings_sync_filters_remove_orphans_title),
                         subtitle = stringResource(R.string.settings_sync_filters_remove_orphans_subtitle),
                         isEnabled = syncFilters.deleteOrphans,
-                        isFocused = focusIndex == 6,
+                        isFocused = focusIndex == 7,
                         onToggle = onToggleDeleteOrphans
                     )
                 }

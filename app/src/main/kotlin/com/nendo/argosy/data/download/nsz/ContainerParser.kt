@@ -21,6 +21,16 @@ data class ContainerEntry(
         }
 }
 
+/**
+ * Header geometry of a parsed PFS0: the total header size and the offset of
+ * the first file inside the data section.
+ */
+data class Pfs0Layout(
+    val entries: List<ContainerEntry>,
+    val headerSize: Int,
+    val firstFileDataOffset: Long
+)
+
 object ContainerParser {
 
     private const val PFS0_MAGIC = 0x30534650 // "PFS0" LE
@@ -32,7 +42,12 @@ object ContainerParser {
     fun parsePfs0(
         raf: RandomAccessFile,
         baseOffset: Long = 0
-    ): List<ContainerEntry> {
+    ): List<ContainerEntry> = parsePfs0Layout(raf, baseOffset).entries
+
+    fun parsePfs0Layout(
+        raf: RandomAccessFile,
+        baseOffset: Long = 0
+    ): Pfs0Layout {
         raf.seek(baseOffset)
         val headerBuf = ByteArray(PFS0_HEADER_BASE)
         raf.readFully(headerBuf)
@@ -63,11 +78,17 @@ object ContainerParser {
         val entryBuf = ByteBuffer.wrap(entryData)
             .order(ByteOrder.LITTLE_ENDIAN)
 
+        var firstFileDataOffset = 0L
+
         for (i in 0 until fileCount) {
             val entryDataOffset = entryBuf.long
             val entrySize = entryBuf.long
             val stringOffset = entryBuf.int
             entryBuf.int // reserved
+
+            if (i == 0) {
+                firstFileDataOffset = entryDataOffset
+            }
 
             val name = readNullTerminated(
                 stringTableData,
@@ -83,7 +104,11 @@ object ContainerParser {
             )
         }
 
-        return entries
+        return Pfs0Layout(
+            entries = entries,
+            headerSize = PFS0_HEADER_BASE + entriesSize + stringTableSize,
+            firstFileDataOffset = firstFileDataOffset
+        )
     }
 
     fun parseHfs0(
@@ -173,14 +198,24 @@ object ContainerParser {
         return Pair(secureEntry.dataOffset, secureEntries)
     }
 
+    /**
+     * [targetHeaderSize] and [firstFileDataOffset] come from the source
+     * container's [Pfs0Layout] and reproduce its padding; zero packs the
+     * header tightly.
+     */
     fun computePfs0Header(
         entries: List<ContainerEntry>,
-        sizes: List<Long>
+        sizes: List<Long>,
+        targetHeaderSize: Int = 0,
+        firstFileDataOffset: Long = 0
     ): ByteArray {
         val names = entries.map { it.outputName }
-        val stringTable = buildStringTable(names)
-        val headerSize = PFS0_HEADER_BASE +
-            (entries.size * PFS0_ENTRY_SIZE) + stringTable.size
+        val overhead = PFS0_HEADER_BASE + entries.size * PFS0_ENTRY_SIZE
+        val stringTable = padStringTable(
+            buildStringTable(names),
+            targetHeaderSize - overhead
+        )
+        val headerSize = overhead + stringTable.size
 
         val buf = ByteBuffer.allocate(headerSize)
             .order(ByteOrder.LITTLE_ENDIAN)
@@ -190,7 +225,7 @@ object ContainerParser {
         buf.putInt(stringTable.size)
         buf.putInt(0) // reserved
 
-        var dataOffset = 0L
+        var dataOffset = firstFileDataOffset
         val nameOffsets = computeStringOffsets(names)
 
         for (i in entries.indices) {
@@ -237,6 +272,19 @@ object ContainerParser {
 
         buf.put(stringTable)
         return buf.array()
+    }
+
+    private fun padStringTable(
+        stringTable: ByteArray,
+        minSize: Int
+    ): ByteArray {
+        val remainder = stringTable.size % 0x10
+        val aligned = if (remainder == 0) {
+            stringTable.size
+        } else {
+            stringTable.size + 0x10 - remainder
+        }
+        return stringTable.copyOf(maxOf(aligned, minSize))
     }
 
     private fun buildStringTable(names: List<String>): ByteArray {

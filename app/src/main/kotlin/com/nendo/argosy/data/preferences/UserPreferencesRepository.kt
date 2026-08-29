@@ -360,6 +360,8 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setSyncFilterExcludePrototype(exclude: Boolean) = syncPrefs.setSyncFilterExcludePrototype(exclude)
     suspend fun setSyncFilterExcludeDemo(exclude: Boolean) = syncPrefs.setSyncFilterExcludeDemo(exclude)
     suspend fun setSyncFilterExcludeHack(exclude: Boolean) = syncPrefs.setSyncFilterExcludeHack(exclude)
+    suspend fun setSyncFilterExcludeUnofficial(exclude: Boolean) =
+        syncPrefs.setSyncFilterExcludeUnofficial(exclude)
     suspend fun setSyncFilterDeleteOrphans(delete: Boolean) = syncPrefs.setSyncFilterDeleteOrphans(delete)
     suspend fun setSyncScreenshotsEnabled(enabled: Boolean) = syncPrefs.setSyncScreenshotsEnabled(enabled)
     suspend fun setUploadScreenshotsEnabled(enabled: Boolean) = syncPrefs.setUploadScreenshotsEnabled(enabled)

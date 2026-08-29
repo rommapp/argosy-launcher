@@ -49,9 +49,11 @@ object NszDecompressor {
     private class NszLayout(
         val entries: List<ContainerEntry>,
         val outputSizes: List<Long>,
-        val pfs0Header: ByteArray
+        val pfs0Header: ByteArray,
+        val firstFileDataOffset: Long
     ) {
-        val outputFileSize: Long get() = pfs0Header.size.toLong() + outputSizes.sum()
+        val outputFileSize: Long get() =
+            pfs0Header.size.toLong() + firstFileDataOffset + outputSizes.sum()
     }
 
     private class XczLayout(
@@ -67,12 +69,18 @@ object NszDecompressor {
     }
 
     private fun nszLayout(raf: RandomAccessFile): NszLayout {
-        val entries = ContainerParser.parsePfs0(raf)
-        val outputSizes = scanNczSizes(raf, entries)
+        val source = ContainerParser.parsePfs0Layout(raf)
+        val outputSizes = scanNczSizes(raf, source.entries)
         return NszLayout(
-            entries = entries,
+            entries = source.entries,
             outputSizes = outputSizes,
-            pfs0Header = ContainerParser.computePfs0Header(entries, outputSizes)
+            pfs0Header = ContainerParser.computePfs0Header(
+                source.entries,
+                outputSizes,
+                source.headerSize,
+                source.firstFileDataOffset
+            ),
+            firstFileDataOffset = source.firstFileDataOffset
         )
     }
 
@@ -148,8 +156,10 @@ object NszDecompressor {
                     COPY_BUFFER_SIZE
                 ).use { output ->
                     output.write(pfs0Header)
+                    writeZeros(output, layout.firstFileDataOffset)
 
-                    var bytesWritten = pfs0Header.size.toLong()
+                    var bytesWritten = pfs0Header.size.toLong() +
+                        layout.firstFileDataOffset
 
                     for (i in entries.indices) {
                         val entry = entries[i]
@@ -337,10 +347,10 @@ object NszDecompressor {
                 NczHeaderParser.NCA_HEADER_SIZE
         }
 
-        raf.seek(nczHeader.compressedDataOffset)
+        val payloadStart = entry.dataOffset + nczHeader.payloadOffsetInEntry
         val compressedStream = BufferedInputStream(
             RandomAccessFileInputStream(
-                raf, nczHeader.compressedDataOffset
+                raf, payloadStart, entry.dataOffset + entry.size
             ),
             COPY_BUFFER_SIZE
         )
@@ -365,6 +375,17 @@ object NszDecompressor {
         bytesWritten += bodySize
         onProgress?.invoke(bytesWritten, totalOutputSize)
         return bytesWritten
+    }
+
+    private fun writeZeros(output: java.io.OutputStream, count: Long) {
+        if (count <= 0) return
+        val zeros = ByteArray(minOf(count, COPY_BUFFER_SIZE.toLong()).toInt())
+        var remaining = count
+        while (remaining > 0) {
+            val chunk = minOf(zeros.size.toLong(), remaining).toInt()
+            output.write(zeros, 0, chunk)
+            remaining -= chunk
+        }
     }
 
     private fun copyEntry(
@@ -394,22 +415,35 @@ object NszDecompressor {
     }
 
     /**
-     * InputStream adapter over RandomAccessFile for sequential reads
-     * from a fixed starting position.
+     * InputStream adapter over RandomAccessFile for sequential reads from a
+     * fixed starting position, bounded by [endOffset].
      */
     private class RandomAccessFileInputStream(
         private val raf: RandomAccessFile,
-        startOffset: Long
+        startOffset: Long,
+        private val endOffset: Long = Long.MAX_VALUE
     ) : java.io.InputStream() {
+
+        private var position = startOffset
 
         init {
             raf.seek(startOffset)
         }
 
-        override fun read(): Int = raf.read()
+        override fun read(): Int {
+            if (position >= endOffset) return -1
+            val value = raf.read()
+            if (value >= 0) position++
+            return value
+        }
 
-        override fun read(b: ByteArray, off: Int, len: Int): Int =
-            raf.read(b, off, len)
+        override fun read(b: ByteArray, off: Int, len: Int): Int {
+            val allowed = minOf(len.toLong(), endOffset - position).toInt()
+            if (allowed <= 0) return -1
+            val read = raf.read(b, off, allowed)
+            if (read > 0) position += read
+            return read
+        }
 
         override fun available(): Int = 0
     }

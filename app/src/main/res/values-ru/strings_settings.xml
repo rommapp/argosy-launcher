@@ -295,6 +295,7 @@
     <string name="settings_sync_metadata_filters_prototype">прото</string>
     <string name="settings_sync_metadata_filters_demo">демо</string>
     <string name="settings_sync_metadata_filters_hack">хаки</string>
+    <string name="settings_sync_metadata_filters_unofficial">нелицензионные</string>
 
     <string name="settings_sync_cache_screenshots_title">Кэшировать скриншоты</string>
     <string name="settings_sync_cache_screenshots_subtitle">Обложки и фоны кэшируются всегда</string>
@@ -1814,6 +1815,8 @@
     <string name="settings_sync_filters_exclude_prototype_title">Исключить прототипы</string>
     <string name="settings_sync_filters_exclude_demo_title">Исключить демо</string>
     <string name="settings_sync_filters_exclude_hack_title">Исключить ROM-хаки</string>
+    <string name="settings_sync_filters_exclude_unofficial_title">Исключить нелицензионные</string>
+    <string name="settings_sync_filters_exclude_unofficial_subtitle">Пиратские, нелицензионные и aftermarket-издания</string>
     <string name="settings_sync_filters_remove_orphans_title">Удалять осиротевшие записи</string>
     <string name="settings_sync_filters_remove_orphans_subtitle">Удалять игры, которых больше нет на сервере</string>
     <string name="settings_sync_filters_hint_navigate">Навигация</string>

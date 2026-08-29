@@ -298,6 +298,7 @@
     <string name="settings_sync_metadata_filters_prototype">proto</string>
     <string name="settings_sync_metadata_filters_demo">demo</string>
     <string name="settings_sync_metadata_filters_hack">hacks</string>
+    <string name="settings_sync_metadata_filters_unofficial">no licenciados</string>
 
     <string name="settings_sync_cache_screenshots_title">Almacenar capturas en caché</string>
     <string name="settings_sync_cache_screenshots_subtitle">Las carátulas y los fondos siempre se almacenan en caché</string>
@@ -1780,6 +1781,8 @@
     <string name="settings_sync_filters_exclude_prototype_title">Excluir prototipos</string>
     <string name="settings_sync_filters_exclude_demo_title">Excluir demos</string>
     <string name="settings_sync_filters_exclude_hack_title">Excluir ROM hacks</string>
+    <string name="settings_sync_filters_exclude_unofficial_title">Excluir no licenciados</string>
+    <string name="settings_sync_filters_exclude_unofficial_subtitle">Versiones piratas, no licenciadas y aftermarket</string>
     <string name="settings_sync_filters_remove_orphans_title">Quitar entradas huérfanas</string>
     <string name="settings_sync_filters_remove_orphans_subtitle">Eliminar juegos que ya no están en el servidor</string>
     <string name="settings_sync_filters_hint_navigate">Navegar</string>

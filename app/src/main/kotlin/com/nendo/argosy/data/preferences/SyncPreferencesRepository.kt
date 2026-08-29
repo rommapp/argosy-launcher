@@ -89,6 +89,7 @@ class SyncPreferencesRepository @Inject constructor(
         val SYNC_FILTER_EXCLUDE_PROTO = booleanPreferencesKey("sync_filter_exclude_proto")
         val SYNC_FILTER_EXCLUDE_DEMO = booleanPreferencesKey("sync_filter_exclude_demo")
         val SYNC_FILTER_EXCLUDE_HACK = booleanPreferencesKey("sync_filter_exclude_hack")
+        val SYNC_FILTER_EXCLUDE_UNOFFICIAL = booleanPreferencesKey("sync_filter_exclude_unofficial")
         val SYNC_FILTER_DELETE_ORPHANS = booleanPreferencesKey("sync_filter_delete_orphans")
         val SYNC_SCREENSHOTS_ENABLED = booleanPreferencesKey("sync_screenshots_enabled")
         val UPLOAD_SCREENSHOTS_ENABLED = booleanPreferencesKey("upload_screenshots_enabled")
@@ -279,6 +280,7 @@ class SyncPreferencesRepository @Inject constructor(
                 excludePrototype = prefs[Keys.SYNC_FILTER_EXCLUDE_PROTO] ?: true,
                 excludeDemo = prefs[Keys.SYNC_FILTER_EXCLUDE_DEMO] ?: true,
                 excludeHack = prefs[Keys.SYNC_FILTER_EXCLUDE_HACK] ?: false,
+                excludeUnofficial = prefs[Keys.SYNC_FILTER_EXCLUDE_UNOFFICIAL] ?: false,
                 deleteOrphans = prefs[Keys.SYNC_FILTER_DELETE_ORPHANS] ?: true
             ),
             syncScreenshotsEnabled = prefs[Keys.SYNC_SCREENSHOTS_ENABLED] ?: false,
@@ -483,6 +485,10 @@ class SyncPreferencesRepository @Inject constructor(
 
     suspend fun setSyncFilterExcludeHack(exclude: Boolean) {
         dataStore.edit { it[Keys.SYNC_FILTER_EXCLUDE_HACK] = exclude }
+    }
+
+    suspend fun setSyncFilterExcludeUnofficial(exclude: Boolean) {
+        dataStore.edit { it[Keys.SYNC_FILTER_EXCLUDE_UNOFFICIAL] = exclude }
     }
 
     suspend fun setSyncFilterDeleteOrphans(delete: Boolean) {

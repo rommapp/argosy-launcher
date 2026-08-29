@@ -300,6 +300,8 @@ dependencies {
 
     // Testing
     testImplementation(libs.junit)
+    // The zstd aar ships Android natives only; unit tests need the JVM jar.
+    testImplementation(libs.zstd.jni)
     testImplementation(libs.mockk)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation("net.java.dev.jna:jna:5.14.0")

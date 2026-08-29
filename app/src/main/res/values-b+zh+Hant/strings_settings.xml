@@ -251,6 +251,7 @@
     <string name="settings_sync_metadata_filters_prototype">原型</string>
     <string name="settings_sync_metadata_filters_demo">試玩版</string>
     <string name="settings_sync_metadata_filters_hack">改版</string>
+    <string name="settings_sync_metadata_filters_unofficial">非授權</string>
 
     <string name="settings_sync_cache_screenshots_title">快取螢幕截圖</string>
     <string name="settings_sync_cache_screenshots_subtitle">封面與背景一律會快取</string>
@@ -1592,6 +1593,8 @@
     <string name="settings_sync_filters_exclude_prototype_title">排除原型</string>
     <string name="settings_sync_filters_exclude_demo_title">排除試玩版</string>
     <string name="settings_sync_filters_exclude_hack_title">排除ROM改版</string>
+    <string name="settings_sync_filters_exclude_unofficial_title">排除非授權版本</string>
+    <string name="settings_sync_filters_exclude_unofficial_subtitle">盜版、非授權和後市場版本</string>
     <string name="settings_sync_filters_remove_orphans_title">移除孤立項目</string>
     <string name="settings_sync_filters_remove_orphans_subtitle">刪除伺服器上已不存在的遊戲</string>
     <string name="settings_sync_filters_hint_navigate">瀏覽</string>

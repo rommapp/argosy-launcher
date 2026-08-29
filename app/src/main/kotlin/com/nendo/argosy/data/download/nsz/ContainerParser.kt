@@ -78,7 +78,7 @@ object ContainerParser {
         val entryBuf = ByteBuffer.wrap(entryData)
             .order(ByteOrder.LITTLE_ENDIAN)
 
-        var firstFileDataOffset = 0L
+        var firstFileDataOffset = Long.MAX_VALUE
 
         for (i in 0 until fileCount) {
             val entryDataOffset = entryBuf.long
@@ -86,7 +86,7 @@ object ContainerParser {
             val stringOffset = entryBuf.int
             entryBuf.int // reserved
 
-            if (i == 0) {
+            if (entryDataOffset < firstFileDataOffset) {
                 firstFileDataOffset = entryDataOffset
             }
 
@@ -107,7 +107,7 @@ object ContainerParser {
         return Pfs0Layout(
             entries = entries,
             headerSize = PFS0_HEADER_BASE + entriesSize + stringTableSize,
-            firstFileDataOffset = firstFileDataOffset
+            firstFileDataOffset = firstFileDataOffset.takeIf { it != Long.MAX_VALUE } ?: 0L
         )
     }
 

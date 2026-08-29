@@ -96,19 +96,18 @@ class NszRoundTripTest {
         )
     }
 
+    /**
+     * nsz only ever decrypts CTR sections, so a section of any other type is still ciphertext
+     * inside the NCZ and has to be written back untouched. Re-encrypting it would corrupt it,
+     * and rejecting the container would fail a file the reference implementation decompresses.
+     */
     @Test
-    fun `unsupported section crypto type is rejected`() {
+    fun `a non CTR section is written back verbatim`() {
         val fixture = buildFixture(blockSizeExponent = null, cryptoTypeOverride = 2)
 
-        val error = runCatching {
-            NszDecompressor.decompress(fixture.nszFile, null)
-        }.exceptionOrNull()
+        val result = NszDecompressor.decompress(fixture.nszFile, null)
 
-        assertTrue(error is IOException)
-        assertTrue(
-            "message should name the crypto type: ${error?.message}",
-            error?.message.orEmpty().contains("crypto type")
-        )
+        assertArrayEquals(fixture.expectedNsp, result.readBytes())
     }
 
     @Test

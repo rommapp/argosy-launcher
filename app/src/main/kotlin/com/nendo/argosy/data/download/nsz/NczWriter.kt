@@ -10,8 +10,12 @@ import java.io.OutputStream
  * Decompresses NCZ data (the body after the NCA header) into a valid
  * NCA body. Handles both solid and block compression modes.
  *
- * After zstd decompression, sections with cryptoType 3 or 4 must be
+ * After zstd decompression, sections with a CTR crypto type must be
  * re-encrypted with AES-128-CTR using each section's key and counter.
+ * Every other type is written back verbatim, which is what nsz does: the
+ * compressor only ever decrypted CTR sections, so anything else is still
+ * ciphertext and re-encrypting or rejecting it would corrupt a container
+ * the reference implementation handles.
  */
 object NczWriter {
 
@@ -160,13 +164,7 @@ object NczWriter {
                 }
             }
 
-            if (section != null && !section.isPlaintext) {
-                if (!section.needsEncryption) {
-                    throw IOException(
-                        "Unsupported NCZ section crypto type: " +
-                            section.cryptoType
-                    )
-                }
+            if (section != null && section.needsEncryption) {
                 val cipher = AesCtrCipher(
                     section.cryptoKey,
                     section.cryptoCounter,

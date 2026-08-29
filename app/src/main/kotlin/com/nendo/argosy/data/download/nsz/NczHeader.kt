@@ -16,9 +16,6 @@ data class NczSection(
     val needsEncryption: Boolean
         get() = cryptoType in 3L..6L
 
-    val isPlaintext: Boolean
-        get() = cryptoType == 0L || cryptoType == 1L
-
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is NczSection) return false

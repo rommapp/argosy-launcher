@@ -178,4 +178,7 @@ interface GameFileDao {
 
     @Query("SELECT * FROM game_files WHERE localPath = :localPath LIMIT 1")
     suspend fun getByLocalPath(localPath: String): GameFileEntity?
+
+    @Query("SELECT gameId FROM game_files WHERE versionGroup = :versionGroup LIMIT 1")
+    suspend fun getGameIdForVersionGroup(versionGroup: String): Long?
 }

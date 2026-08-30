@@ -293,7 +293,12 @@ class SiblingWinnerTest {
         assertEquals(null, mergeSiblingGroups(emptyList(), priorityFilters).winner)
     }
 
-    private fun namedRom(id: Long, name: String, vararg siblings: RomMSibling) = RomMRom(
+    private fun namedRom(
+        id: Long,
+        name: String,
+        vararg siblings: RomMSibling,
+        tags: List<String>? = null
+    ) = RomMRom(
         id = id,
         name = name,
         fileName = "rom$id.gb",
@@ -309,15 +314,15 @@ class SiblingWinnerTest {
         regions = listOf("Germany"),
         languages = null,
         revision = null,
-        tags = null,
+        tags = tags,
         siblingRoms = siblings.toList()
     )
 
-    private fun sibling(id: Long, name: String?) = RomMSibling(
+    private fun sibling(id: Long, name: String?, fileNameNoExt: String = "rom$id") = RomMSibling(
         id = id,
         name = name,
         fileNameNoTags = "rom$id",
-        fileNameNoExt = "rom$id"
+        fileNameNoExt = fileNameNoExt
     )
 
     /**
@@ -356,5 +361,26 @@ class SiblingWinnerTest {
         )
 
         assertEquals(listOf(3644L), rom.sameGameSiblings.map { it.id })
+    }
+
+    /**
+     * The disc paths delete redundant individual-disc games, so a cross-game sibling that
+     * happens to carry a disc tag must not pull another game into a multi-disc group.
+     */
+    @Test
+    fun `a disc tagged sibling of a different game does not make a multi-disc group`() {
+        val disc = namedRom(
+            10, "Some RPG",
+            sibling(11, "Another RPG", fileNameNoExt = "Another RPG (Disc 2)"),
+            tags = listOf("Disc 1")
+        )
+        val sameGame = namedRom(
+            10, "Some RPG",
+            sibling(11, "Some RPG", fileNameNoExt = "Some RPG (Disc 2)"),
+            tags = listOf("Disc 1")
+        )
+
+        assertFalse(disc.hasDiscSiblings)
+        assertTrue(sameGame.hasDiscSiblings)
     }
 }

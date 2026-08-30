@@ -95,6 +95,18 @@ data class RomMRom(
     @Json(name = "is_identified") val isIdentified: Boolean = true
 ) {
     val effectiveSiblings: List<RomMSibling> get() = siblingRoms ?: siblings ?: emptyList()
+
+    /**
+     * Siblings that are the same game as this rom. The server's sibling list is the union
+     * over every metadata source, and a source that files two games under one entry (Moby
+     * keeps one page for Pokemon Red and Blue) cross-links roms whose primary metadata
+     * disagrees. Grouping follows sibling links transitively, so one such link folds two
+     * games into a single library entry. The display name is the primary metadata identity,
+     * so a sibling carrying a different one is a different game; a sibling without a name is
+     * kept, having nothing to disagree with.
+     */
+    val sameGameSiblings: List<RomMSibling>
+        get() = effectiveSiblings.filter { it.name == null || it.name.equals(name, ignoreCase = true) }
     val genres: List<String>? get() = metadatum?.genres
     val companies: List<String>? get() = metadatum?.companies
     val firstReleaseDateMillis: Long? get() = metadatum?.firstReleaseDate
@@ -128,12 +140,12 @@ data class RomMRom(
         get() = hasMultipleFiles && files?.any { it.isDiscVariant } == true
 
     val hasDiscSiblings: Boolean
-        get() = isFolderMultiDisc || (isDiscVariant && effectiveSiblings.any { sibling ->
+        get() = isFolderMultiDisc || (isDiscVariant && sameGameSiblings.any { sibling ->
             sibling.fileNameNoExt.contains(DISC_TAG_REGEX)
         })
 
     val hasNonDiscSiblings: Boolean
-        get() = effectiveSiblings.any { !it.isDiscVariant }
+        get() = sameGameSiblings.any { !it.isDiscVariant }
 
     companion object {
         private val DISC_TAG_REGEX = Regex("Disc \\d+", RegexOption.IGNORE_CASE)

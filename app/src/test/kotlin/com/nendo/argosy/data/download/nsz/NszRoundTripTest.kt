@@ -7,6 +7,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
 import java.nio.ByteBuffer
@@ -187,6 +188,72 @@ class NszRoundTripTest {
                 "got $error",
             error is IOException
         )
+    }
+
+    /**
+     * A retail game's CTR section routinely spans more than 2 GiB. The chunk clamp used to
+     * route `sectionEnd - pos` through Int, which wraps negative for such a section and feeds
+     * Cipher.update a negative length, failing every dump with a section past Int.MAX_VALUE
+     * with "Bad arguments". The clamp has to stay in Long until after the min.
+     */
+    @Test
+    fun `a section larger than 2 GiB re-encrypts instead of overflowing`() {
+        val plaintext = ByteArray(0x10000) { (it * 31 + 7).toByte() }
+        val header = NczHeaderData(
+            sections = listOf(
+                NczSection(
+                    offset = NCA_HEADER,
+                    size = 0x1_8000_0000L,
+                    cryptoType = 3L,
+                    padding = 0L,
+                    cryptoKey = CRYPTO_KEY,
+                    cryptoCounter = CRYPTO_COUNTER
+                )
+            ),
+            blockHeader = null,
+            payloadOffsetInEntry = 0L
+        )
+        val output = ByteArrayOutputStream()
+
+        NczWriter.decompress(
+            input = zstd(plaintext).inputStream(),
+            output = output,
+            header = header,
+            totalDecompressedSize = plaintext.size.toLong(),
+            onProgress = null
+        )
+
+        assertArrayEquals(encryptCtr(NCA_HEADER, plaintext), output.toByteArray())
+    }
+
+    @Test
+    fun `a gap running past 2 GiB to the next section passes through verbatim`() {
+        val plaintext = ByteArray(0x10000) { (it * 3 + 1).toByte() }
+        val header = NczHeaderData(
+            sections = listOf(
+                NczSection(
+                    offset = NCA_HEADER + 0x1_8000_0000L,
+                    size = 0x1000L,
+                    cryptoType = 3L,
+                    padding = 0L,
+                    cryptoKey = CRYPTO_KEY,
+                    cryptoCounter = CRYPTO_COUNTER
+                )
+            ),
+            blockHeader = null,
+            payloadOffsetInEntry = 0L
+        )
+        val output = ByteArrayOutputStream()
+
+        NczWriter.decompress(
+            input = zstd(plaintext).inputStream(),
+            output = output,
+            header = header,
+            totalDecompressedSize = plaintext.size.toLong(),
+            onProgress = null
+        )
+
+        assertArrayEquals(plaintext, output.toByteArray())
     }
 
     private fun indexOfMagic(bytes: ByteArray, magic: String): Int {

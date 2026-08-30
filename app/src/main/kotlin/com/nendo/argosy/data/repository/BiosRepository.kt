@@ -466,6 +466,24 @@ class BiosRepository @Inject constructor(
         attributionRepository.markDirty(StorageCategory.BIOS)
     }
 
+    /**
+     * Removes a distributed copy only when the file on disk is the one Argosy put there.
+     *
+     * The destination is a directory the user manages and shares with the emulator, so a name
+     * collision with their own BIOS is ordinary rather than exceptional. Size is compared first
+     * because a mismatch is the common case and hashing every candidate would read hundreds of
+     * megabytes to learn nothing; the hash decides only once the size already agrees.
+     */
+    private fun deleteDistributedCopy(target: File, firmware: FirmwareEntity) {
+        if (!target.exists() || !target.isFile) return
+        if (firmware.fileSizeBytes > 0 && target.length() != firmware.fileSizeBytes) return
+
+        val expected = firmware.md5Hash
+        if (expected != null && !calculateMd5(target).equals(expected, ignoreCase = true)) return
+
+        target.delete()
+    }
+
     private suspend fun cleanupDistributedCopies(platformSlug: String) {
         val firmwareFiles = firmwareDao.getByPlatformSlug(platformSlug)
         val emulators = BiosPathRegistry.getEmulatorsForPlatform(
@@ -483,13 +501,13 @@ class BiosRepository @Inject constructor(
                 if (!dir.exists()) continue
                 for (firmware in firmwareFiles) {
                     try {
-                        File(dir, firmware.fileName).let { if (it.exists()) it.delete() }
+                        deleteDistributedCopy(File(dir, firmware.fileName), firmware)
                         BiosPathRegistry.getNestedBiosPath(firmware.fileName)?.let { nested ->
-                            File(dir, nested).let { if (it.exists()) it.delete() }
+                            deleteDistributedCopy(File(dir, nested), firmware)
                         }
                         firmware.md5Hash?.let { md5 ->
                             BiosPathRegistry.getRetroArchBiosName(md5)?.let { raName ->
-                                File(dir, raName).let { if (it.exists()) it.delete() }
+                                deleteDistributedCopy(File(dir, raName), firmware)
                             }
                         }
                     } catch (e: Exception) {

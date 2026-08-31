@@ -585,6 +585,49 @@ class ZipExtractorTest {
         assertTrue(ZipExtractor.shouldExtractArchive(zipFile, "psx"))
     }
 
+    /**
+     * A server-built zip is deflated and carries entries the server added, so its length has no
+     * relationship to the sum of the raw file sizes it was built from. Comparing the two rejected
+     * a complete download as incomplete, and whether it tripped depended on how compressible the
+     * folder's scene files happened to be.
+     */
+    @Test
+    fun `a complete archive smaller than its source files still validates`() {
+        val zipFile = File(tempDir, "game.zip")
+        createTestZip(
+            zipFile,
+            mapOf(
+                "Game.xci" to "x".repeat(4096),
+                "Game.nfo" to "n".repeat(4096),
+                "Game.sfv" to "s".repeat(4096)
+            )
+        )
+        val rawTotal = 3L * 4096
+
+        assertTrue("fixture must actually compress", zipFile.length() < rawTotal)
+        assertTrue(
+            ZipExtractor.validateArchive(zipFile, 0) is ZipExtractor.ArchiveValidationResult.Valid
+        )
+        assertTrue(
+            "the raw sum is what used to reject it",
+            ZipExtractor.validateArchive(zipFile, rawTotal)
+                is ZipExtractor.ArchiveValidationResult.Invalid
+        )
+    }
+
+    @Test
+    fun `a truncated archive is still rejected without a size to compare against`() {
+        val zipFile = File(tempDir, "truncated.zip")
+        createTestZip(zipFile, mapOf("Game.xci" to "x".repeat(4096)))
+        val bytes = zipFile.readBytes()
+        zipFile.writeBytes(bytes.copyOf(bytes.size / 2))
+
+        assertTrue(
+            ZipExtractor.validateArchive(zipFile, 0)
+                is ZipExtractor.ArchiveValidationResult.Invalid
+        )
+    }
+
     private fun createTestZip(zipFile: File, entries: Map<String, String>) {
         ZipOutputStream(zipFile.outputStream()).use { zos ->
             for ((name, content) in entries) {

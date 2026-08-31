@@ -219,11 +219,31 @@ object ZipExtractor {
         }
     }
 
+    /**
+     * Files a rom folder carries that are not part of the game: scene notes, checksums, cover
+     * art, and any m3u the archive supplied, which is regenerated from the discs that survive.
+     *
+     * Every entry other than m3u is absent from [PlatformDefinitions]' extension sets, so none
+     * can be the rom a platform launches. png is deliberately not here: a PICO-8 cart is a png.
+     */
+    private val COMPANION_EXTENSIONS = setOf(
+        "m3u", "nfo", "sfv", "md5", "sha1", "diz", "url", "jpg", "jpeg"
+    )
+
+    private fun isPrunableCompanionFile(file: File): Boolean =
+        file.extension.lowercase() in COMPANION_EXTENSIONS
+
     sealed class ArchiveValidationResult {
         data object Valid : ArchiveValidationResult()
         data class Invalid(val reason: String) : ArchiveValidationResult()
     }
 
+    /**
+     * [expectedSize] is only meaningful when the bytes on disk are the file the server measured.
+     * A server-built zip is neither: it is deflated and carries entries the server added, so
+     * comparing it to a sum of raw file sizes passes or fails on how compressible the folder
+     * happened to be. Pass 0 for those and let the central directory decide.
+     */
     fun validateArchive(file: File, expectedSize: Long = 0): ArchiveValidationResult {
         if (!file.exists()) {
             return ArchiveValidationResult.Invalid("File does not exist")
@@ -589,8 +609,8 @@ object ZipExtractor {
         Log.d(TAG, "Launchable disc files: ${launchableDiscFiles.size}")
 
         extractionResult.allFiles
-            .filter { it.extension.equals("m3u", ignoreCase = true) }
-            .forEach { if (it.delete()) Log.d(TAG, "Pruned archive-supplied m3u: ${it.name}") }
+            .filter { isPrunableCompanionFile(it) }
+            .forEach { if (it.delete()) Log.d(TAG, "Pruned companion file: ${it.name}") }
 
         val m3uFile = when {
             !M3uManager.supportsM3u(platformSlug) -> null
@@ -598,7 +618,7 @@ object ZipExtractor {
             else -> generateM3uFile(gameFolder, sanitizedTitle, launchableDiscFiles)
         }
 
-        val allFiles = extractionResult.allFiles.filterNot { it.extension.equals("m3u", ignoreCase = true) }
+        val allFiles = extractionResult.allFiles.filterNot { isPrunableCompanionFile(it) }
 
         if (m3uFile == null) {
             return ExtractedFolderRom(

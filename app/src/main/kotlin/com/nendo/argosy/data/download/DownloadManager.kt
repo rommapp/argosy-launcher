@@ -1660,7 +1660,8 @@ class DownloadManager @Inject constructor(
             shouldExtract -> {
                 Log.d(TAG, "processDownloadedFile: BRANCH=ZIP_EXTRACT")
 
-                val validationResult = ZipExtractor.validateArchive(targetFile, expectedSize)
+                val comparableSize = if (isMultiFileRom) 0L else expectedSize
+                val validationResult = ZipExtractor.validateArchive(targetFile, comparableSize)
                 if (validationResult is ZipExtractor.ArchiveValidationResult.Invalid) {
                     Log.e(TAG, "ZIP validation failed: ${validationResult.reason}")
                     targetFile.delete()

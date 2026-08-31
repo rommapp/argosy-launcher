@@ -1731,19 +1731,47 @@ class DownloadManager @Inject constructor(
             }
         }
 
-        val resultFile = File(resultPath)
-        if (ZipExtractor.isNswPlatform(platformSlug) &&
-            NszDecompressor.isCompressedNsw(resultFile)
-        ) {
-            Log.d(TAG, "processDownloadedFile: NSZ/XCZ detected, decompressing")
-            val decompressed = NszDecompressor.decompress(
-                inputFile = resultFile,
-                onProgress = onExtractionProgress
-            )
-            return decompressed.absolutePath
+        if (!ZipExtractor.isNswPlatform(platformSlug)) return resultPath
+
+        return decompressNswContainers(File(resultPath), onExtractionProgress)
+    }
+
+    /**
+     * Expands every compressed container the download produced, not only the launch target.
+     *
+     * A zip or a multi-file rom lands a whole game folder, and an emulator cannot open any of it
+     * compressed. Decompressing the launch path alone converted the base game and left the
+     * updates and DLC beside it as nsz. Scope is the game's own folder, which at download time
+     * still holds its addons; the shared extcontent folder is a later, platform-level step.
+     */
+    private fun decompressNswContainers(
+        launchFile: File,
+        onExtractionProgress: ((bytesWritten: Long, totalBytes: Long) -> Unit)?
+    ): String {
+        val gameFolder = launchFile.parentFile ?: return launchFile.absolutePath
+        val compressed = gameFolder.walkTopDown()
+            .filter { it.isFile && NszDecompressor.isCompressedNsw(it) }
+            .toList()
+        if (compressed.isEmpty()) return launchFile.absolutePath
+
+        Log.d(TAG, "processDownloadedFile: decompressing ${compressed.size} NSZ/XCZ container(s)")
+        var launchResult = launchFile
+
+        for (container in compressed) {
+            val isLaunchTarget = container.absolutePath == launchFile.absolutePath
+            try {
+                val decompressed = NszDecompressor.decompress(
+                    inputFile = container,
+                    onProgress = if (isLaunchTarget) onExtractionProgress else null
+                )
+                if (isLaunchTarget) launchResult = decompressed
+            } catch (e: Exception) {
+                if (isLaunchTarget) throw e
+                Log.w(TAG, "NSZ decompression failed for ${container.name}, leaving it compressed: ${e.message}")
+            }
         }
 
-        return resultPath
+        return launchResult.absolutePath
     }
 
     private fun organizeDiscFile(romFile: File, names: List<String>, platformDir: File): String {

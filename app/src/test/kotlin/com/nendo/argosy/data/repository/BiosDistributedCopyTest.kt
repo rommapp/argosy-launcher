@@ -13,11 +13,6 @@ import java.security.MessageDigest
 import java.time.Instant
 import kotlin.io.path.createTempDirectory
 
-/**
- * Distribution writes into directories the user manages and shares with an emulator, so cleanup
- * must remove only the copy Argosy put there. A name collision with the user's own BIOS is
- * ordinary, and deleting on the name alone takes a file Argosy never wrote.
- */
 class BiosDistributedCopyTest {
 
     private lateinit var tempDir: File

@@ -585,12 +585,6 @@ class ZipExtractorTest {
         assertTrue(ZipExtractor.shouldExtractArchive(zipFile, "psx"))
     }
 
-    /**
-     * A server-built zip is deflated and carries entries the server added, so its length has no
-     * relationship to the sum of the raw file sizes it was built from. Comparing the two rejected
-     * a complete download as incomplete, and whether it tripped depended on how compressible the
-     * folder's scene files happened to be.
-     */
     @Test
     fun `a complete archive smaller than its source files still validates`() {
         val zipFile = File(tempDir, "game.zip")
@@ -634,11 +628,6 @@ class ZipExtractorTest {
             .forEach { assertTrue(it, ZipExtractor.isCompanionFileName(it)) }
     }
 
-    /**
-     * A PICO-8 cart is a png and every platform's declared extensions are the authority on what
-     * a rom can be, so png must never join the companion list no matter how much it looks like
-     * cover art sitting next to a game.
-     */
     @Test
     fun `a pico8 cart is not a companion`() {
         assertFalse(ZipExtractor.isCompanionFileName("Celeste.p8.png"))

@@ -138,6 +138,19 @@ class BiosRepository @Inject constructor(
      * location until the setting was changed again and [migrateToCustomPath] happened to move it,
      * so the folder a user had pointed an emulator at stayed empty with nothing to explain why.
      */
+    private suspend fun biosRootsArgosyWritesTo(): List<String> {
+        val roots = mutableListOf(getInternalBiosDir().absolutePath)
+        val customPath = userPreferencesRepository.preferences.first().customBiosPath ?: return roots
+
+        val customDir = resolveBiosDir(customPath)
+        if (customDir.isDirectory && customDir.list() != null) {
+            roots += customDir.absolutePath
+        } else {
+            Logger.info(TAG, "reconcile: configured BIOS dir unreadable, leaving its rows alone: $customDir")
+        }
+        return roots
+    }
+
     private suspend fun getActiveBiosPlatformDir(platformSlug: String): File {
         val customPath = userPreferencesRepository.preferences.first().customBiosPath
         val base = if (customPath != null) resolveBiosDir(customPath) else getInternalBiosDir()
@@ -352,18 +365,19 @@ class BiosRepository @Inject constructor(
      * Clears the recorded path of any firmware whose file is no longer on disk, so a BIOS that was
      * moved or deleted counts as missing again and can be fetched a second time.
      *
-     * Only the app's own BIOS directory is examined. That is internal storage, so a file absent
-     * from it is genuinely gone rather than briefly unreachable, which is not something a copy
-     * distributed onto removable storage can promise. Distributed copies are left alone.
+     * Only directories Argosy downloads into are examined, and a configured one only while it
+     * reads back, so an unmounted card is unreachable rather than empty. Copies distributed into
+     * an emulator's own folder are left alone: absent there means the emulator or the user moved
+     * it, which redownloading does not address.
      *
      * Returns how many rows were cleared.
      */
     suspend fun reconcileDownloadedFirmware(): Int = withContext(Dispatchers.IO) {
-        val internalPath = getInternalBiosDir().absolutePath
+        val ownedRoots = biosRootsArgosyWritesTo()
         var cleared = 0
         for (firmware in firmwareDao.getAllDownloaded()) {
             val path = firmware.localPath ?: continue
-            if (!path.startsWith(internalPath)) continue
+            if (ownedRoots.none { path.startsWith(it) }) continue
             if (File(path).exists()) continue
             firmwareDao.updateLocalPath(firmware.id, null, null)
             cleared++

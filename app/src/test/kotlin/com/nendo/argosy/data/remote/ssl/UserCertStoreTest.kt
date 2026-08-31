@@ -14,17 +14,11 @@ import org.junit.Test
 import java.io.File
 import kotlin.io.path.createTempDirectory
 
-/**
- * The store decides what this app will trust, so a file that is not a certificate must be
- * refused rather than stored and silently ignored, and importing must never replace what the
- * device already trusts.
- */
 class UserCertStoreTest {
 
     private lateinit var tempDir: File
     private lateinit var store: UserCertStore
 
-    /** A real self-signed CA, valid to 2046. Only that it parses and composes matters here. */
     private val samplePem = """
         -----BEGIN CERTIFICATE-----
         MIIDTzCCAjegAwIBAgIUDRxJ4VqgDoMJH+WhZ5BStclzzcIwDQYJKoZIhvcNAQEL

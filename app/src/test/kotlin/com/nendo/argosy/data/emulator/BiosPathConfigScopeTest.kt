@@ -4,11 +4,6 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/**
- * Two questions, deliberately different answers. Asking whether an emulator may be handed BIOS
- * is open, so a user can install files for a platform nobody enumerated. Asking whether the app
- * may write or sweep on its own is not, because those directories belong to the user.
- */
 class BiosPathConfigScopeTest {
 
     private val retroArch = BiosPathConfig(
@@ -36,11 +31,6 @@ class BiosPathConfigScopeTest {
         assertTrue(retroArch.supports("coleco"))
     }
 
-    /**
-     * RetroArch's system directory is the user's, shared with their own BIOS. Fanning every
-     * platform into it unprompted, or sweeping it on a platform toggle, reaches files Argosy
-     * never wrote.
-     */
     @Test
     fun `an open emulator with a user directory is not written unprompted`() {
         assertFalse(retroArch.actsUnprompted("coleco"))

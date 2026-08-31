@@ -9,11 +9,6 @@ import java.security.cert.CertificateException
 import javax.net.ssl.SSLHandshakeException
 import javax.net.ssl.SSLPeerUnverifiedException
 
-/**
- * The predicate answers one question: would importing the server's certificate fix this? Anything
- * it returns true for offers the user that remedy, so a failure importing cannot cure must return
- * false or the user is sent round a loop with nothing new to try.
- */
 class TrustFailuresTest {
 
     @Test
@@ -31,11 +26,6 @@ class TrustFailuresTest {
         assertTrue(IOException("request failed", wrapped).isCertificateTrustFailure())
     }
 
-    /**
-     * OkHttp throws this for a hostname mismatch, and the trust manager replaces the socket
-     * factory only, leaving the hostname verifier alone. A certificate issued for one name and
-     * reached by another still fails after importing it, so offering the import is a loop.
-     */
     @Test
     fun `a hostname mismatch is not a trust failure`() {
         assertFalse(SSLPeerUnverifiedException("hostname mismatch").isCertificateTrustFailure())

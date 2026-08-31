@@ -221,6 +221,10 @@
     </plurals>
     <string name="settings_shell_romm_signout_message">Las partidas guardadas, estados y ajustes en caché de esta cuenta se eliminan de este dispositivo, y todo lo que ya se subió permanece en tu servidor. Tus juegos descargados permanecen.</string>
     <string name="settings_shell_modal_romm_signout_confirm">Cerrar sesión</string>
+    <string name="settings_shell_romm_signout_blocked_title">Datos sin enviar</string>
+    <string name="settings_shell_romm_signout_blocked_message">Esta cuenta todavía tiene %1$s que no se pudieron enviar. Cerrar sesión ahora los descarta.</string>
+    <string name="settings_shell_romm_signout_blocked_cancel">Seguir con la sesión iniciada</string>
+    <string name="settings_shell_romm_signout_blocked_confirm">Descartar y cerrar sesión</string>
 
     <string name="settings_shell_modal_reset_save_cache_title">¿Restablecer caché de guardados?</string>
     <string name="settings_shell_modal_reset_save_cache_message">Esto eliminará todas las instantáneas de guardado en caché local y las operaciones de sincronización pendientes. Tus archivos de guardado reales y los guardados del servidor no se ven afectados.</string>

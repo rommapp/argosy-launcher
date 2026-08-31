@@ -1068,6 +1068,20 @@ fun SettingsScreen(
     )
 
     ArgosyConfirmModalHost(
+        visible = uiState.server.rommSignOutBlockedBy != null,
+        title = stringResource(R.string.settings_shell_romm_signout_blocked_title),
+        message = stringResource(
+            R.string.settings_shell_romm_signout_blocked_message,
+            uiState.server.rommSignOutBlockedBy.orEmpty()
+        ),
+        cancelLabel = stringResource(R.string.settings_shell_romm_signout_blocked_cancel),
+        confirmLabel = stringResource(R.string.settings_shell_romm_signout_blocked_confirm),
+        destructive = true,
+        onConfirm = { viewModel.forceRommSignOut() },
+        onDismiss = { viewModel.dismissRommSignOutBlocked() }
+    )
+
+    ArgosyConfirmModalHost(
         visible = uiState.syncSettings.showResetSaveCacheConfirm,
         title = stringResource(R.string.settings_shell_modal_reset_save_cache_title),
         message = stringResource(R.string.settings_shell_modal_reset_save_cache_message),

@@ -205,17 +205,27 @@ class ServerSettingsDelegate @Inject constructor(
         _state.update { it.copy(showRommSignOutConfirm = false) }
     }
 
-    fun confirmRommSignOut(scope: CoroutineScope, onSignedOut: suspend () -> Unit) {
+    fun confirmRommSignOut(
+        scope: CoroutineScope,
+        discardUnflushed: Boolean = false,
+        onSignedOut: suspend () -> Unit
+    ) {
         if (_state.value.rommSigningOut) return
         scope.launch {
-            _state.update { it.copy(showRommSignOutConfirm = false, rommSigningOut = true) }
+            _state.update {
+                it.copy(
+                    showRommSignOutConfirm = false,
+                    rommSignOutBlockedBy = null,
+                    rommSigningOut = true
+                )
+            }
             try {
-                val result = romMRepository.signOut()
+                val result = romMRepository.signOut(discardUnflushed)
                 if (result is AccountRemovalResult.SwitchInProgress) {
                     _state.update {
                         it.copy(
                             rommSigningOut = false,
-                            rommConfigError = context.getString(
+                            rommSignOutBlockedBy = context.getString(
                                 R.string.settings_server_delegate_signout_switch_in_progress
                             )
                         )
@@ -226,10 +236,7 @@ class ServerSettingsDelegate @Inject constructor(
                     _state.update {
                         it.copy(
                             rommSigningOut = false,
-                            rommConfigError = context.getString(
-                                R.string.settings_server_delegate_signout_refused,
-                                result.pending.describe()
-                            )
+                            rommSignOutBlockedBy = result.pending.describe()
                         )
                     }
                     return@launch
@@ -246,9 +253,13 @@ class ServerSettingsDelegate @Inject constructor(
                 onSignedOut()
             } catch (e: Exception) {
                 Log.e(TAG, "confirmRommSignOut: failed", e)
-                _state.update { it.copy(rommSigningOut = false, rommConfigError = e.message) }
+                _state.update { it.copy(rommSigningOut = false, rommSignOutBlockedBy = e.message) }
             }
         }
+    }
+
+    fun dismissRommSignOutBlocked() {
+        _state.update { it.copy(rommSignOutBlockedBy = null) }
     }
 
     /** Probes the entered URL and auto-selects the version-appropriate auth method, mirroring the first-run wizard. */

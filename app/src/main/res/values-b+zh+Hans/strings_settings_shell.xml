@@ -210,6 +210,10 @@
     </plurals>
     <string name="settings_shell_romm_signout_message">此账户在本设备上缓存的存档、即时存档和设置会被移除，已上传的内容会保留在服务器上，已下载的游戏会保留。</string>
     <string name="settings_shell_modal_romm_signout_confirm">退出登录</string>
+    <string name="settings_shell_romm_signout_blocked_title">未发送的数据</string>
+    <string name="settings_shell_romm_signout_blocked_message">此账号仍有 %1$s 未能发送。现在退出登录会将其丢弃。</string>
+    <string name="settings_shell_romm_signout_blocked_cancel">保持登录</string>
+    <string name="settings_shell_romm_signout_blocked_confirm">丢弃并退出登录</string>
 
     <string name="settings_shell_modal_reset_save_cache_title">重置存档缓存？</string>
     <string name="settings_shell_modal_reset_save_cache_message">这将删除所有本地缓存的存档快照和待处理的同步操作。你的实际存档文件和服务器上的存档不受影响。</string>

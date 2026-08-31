@@ -36,6 +36,17 @@ data class AccountPendingWork(
             queuedQuayPassReports == 0 &&
             unfinishedDownloads == 0
 
+    /**
+     * Narrower than [isEmpty]: social rows are telemetry a device offline from the social
+     * backend keeps forever, so counting them would make signing out impossible. [isEmpty] stays
+     * whole, and the tally still reports and discards them.
+     */
+    val blocksRemoval: Boolean
+        get() = queuedSyncOperations > 0 ||
+            savesAwaitingUpload > 0 ||
+            queuedQuayPassReports > 0 ||
+            unfinishedDownloads > 0
+
     fun describe(): String? = buildList {
         if (queuedSyncOperations > 0) add("$queuedSyncOperations queued sync operations")
         if (savesAwaitingUpload > 0) add("$savesAwaitingUpload saves awaiting upload")
@@ -113,7 +124,7 @@ class AccountRemovalService @Inject constructor(
         val ownerUserId = account.rommUserId
 
         val pending = pendingWorkFor(ownerUserId)
-        if (unflushed == UnflushedQueuePolicy.REFUSE && !pending.isEmpty) {
+        if (unflushed == UnflushedQueuePolicy.REFUSE && pending.blocksRemoval) {
             Logger.info(TAG, "Removal of user $ownerUserId refused: $pending")
             return@withContext AccountRemovalResult.Refused(pending)
         }

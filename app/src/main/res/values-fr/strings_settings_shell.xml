@@ -221,6 +221,10 @@
     </plurals>
     <string name="settings_shell_romm_signout_message">Les sauvegardes, états et réglages en cache de ce compte sont supprimés de cet appareil, et tout ce qui a déjà été envoyé reste sur votre serveur. Vos jeux téléchargés restent.</string>
     <string name="settings_shell_modal_romm_signout_confirm">Se déconnecter</string>
+    <string name="settings_shell_romm_signout_blocked_title">Données non envoyées</string>
+    <string name="settings_shell_romm_signout_blocked_message">Ce compte a encore %1$s qui n\'ont pas pu être envoyés. Se déconnecter maintenant les supprime.</string>
+    <string name="settings_shell_romm_signout_blocked_cancel">Rester connecté</string>
+    <string name="settings_shell_romm_signout_blocked_confirm">Supprimer et se déconnecter</string>
 
     <string name="settings_shell_modal_reset_save_cache_title">Réinitialiser le cache de sauvegardes ?</string>
     <string name="settings_shell_modal_reset_save_cache_message">Cela supprimera tous les instantanés de sauvegarde mis en cache localement et les opérations de synchro en attente. Vos fichiers de sauvegarde réels et les sauvegardes du serveur ne sont pas affectés.</string>

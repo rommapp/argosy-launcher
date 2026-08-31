@@ -217,6 +217,10 @@
     </plurals>
     <string name="settings_shell_romm_signout_message">此帳號在此裝置上快取的存檔、即時存檔與設定會被移除，已上傳的內容會保留在伺服器上，已下載的遊戲則會保留。</string>
     <string name="settings_shell_modal_romm_signout_confirm">登出</string>
+    <string name="settings_shell_romm_signout_blocked_title">未傳送的資料</string>
+    <string name="settings_shell_romm_signout_blocked_message">此帳號仍有 %1$s 未能傳送。現在登出會將其捨棄。</string>
+    <string name="settings_shell_romm_signout_blocked_cancel">保持登入</string>
+    <string name="settings_shell_romm_signout_blocked_confirm">捨棄並登出</string>
 
     <string name="settings_shell_modal_reset_save_cache_title">要重設存檔快取嗎？</string>
     <string name="settings_shell_modal_reset_save_cache_message">這會刪除所有本機快取的存檔快照與待處理的同步作業，不會影響您實際的存檔檔案與伺服器上的存檔。</string>

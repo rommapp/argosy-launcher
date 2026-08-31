@@ -9,6 +9,7 @@ import com.nendo.argosy.data.social.ArgosSocialService
 import com.nendo.argosy.util.Logger
 import dagger.Lazy
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -30,6 +31,21 @@ class SocialSyncCoordinator @Inject constructor(
     }
 
     private val mutex = Mutex()
+
+    /**
+     * Drops queued rows for an account with no social login, which have no destination to drain
+     * into. Runs every start, so unlinking clears its rows too.
+     */
+    suspend fun discardQueueWithoutSocialAccount() {
+        if (syncPreferencesRepository.preferences.first().socialUsername != null) return
+
+        val ownerUserId = syncPreferencesRepository.getRommUserId() ?: return
+        val queued = pendingSocialSyncDao.countPendingForOwner(ownerUserId)
+        if (queued == 0) return
+
+        pendingSocialSyncDao.deleteByOwner(ownerUserId)
+        Logger.debug(TAG, "Discarded $queued queued rows for account $ownerUserId with no social login")
+    }
 
     sealed class ProcessResult {
         data object NotConnected : ProcessResult()

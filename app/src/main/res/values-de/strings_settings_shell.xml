@@ -219,6 +219,10 @@
     </plurals>
     <string name="settings_shell_romm_signout_message">Die zwischengespeicherten Spielstände, Savestates und Einstellungen dieses Kontos werden von diesem Gerät entfernt, und alles bereits Hochgeladene bleibt auf Ihrem Server. Ihre heruntergeladenen Spiele bleiben erhalten.</string>
     <string name="settings_shell_modal_romm_signout_confirm">Abmelden</string>
+    <string name="settings_shell_romm_signout_blocked_title">Nicht gesendete Daten</string>
+    <string name="settings_shell_romm_signout_blocked_message">Dieses Konto hat noch %1$s, die nicht gesendet werden konnten. Beim Abmelden gehen sie verloren.</string>
+    <string name="settings_shell_romm_signout_blocked_cancel">Angemeldet bleiben</string>
+    <string name="settings_shell_romm_signout_blocked_confirm">Verwerfen und abmelden</string>
 
     <string name="settings_shell_modal_reset_save_cache_title">Spielstand-Cache zurücksetzen?</string>
     <string name="settings_shell_modal_reset_save_cache_message">Dadurch werden alle lokal zwischengespeicherten Spielstand-Schnappschüsse und ausstehenden Sync-Vorgänge gelöscht. Ihre eigentlichen Spielstanddateien und Server-Spielstände sind davon nicht betroffen.</string>

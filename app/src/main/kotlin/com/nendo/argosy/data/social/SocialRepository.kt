@@ -784,6 +784,10 @@ class SocialRepository @Inject constructor(
      * RomM-side failure was permanent, its sessions already behind the mark. The RomM watermark
      * now moves only after the ingest returns success, and both are read once here and scoped to
      * the account that owns the sessions.
+     *
+     * Without a social account nothing is queued and the watermark still advances, so linking
+     * one later starts from that moment rather than replaying old sessions. The RomM ingest is
+     * a separate destination and wants the sessions either way.
      */
     suspend fun syncPlaySessions(): SyncResult {
         val prefs = preferencesRepository.userPreferences.first()
@@ -793,6 +797,12 @@ class SocialRepository @Inject constructor(
         uploadPlaySessionsToRomM(prefs.lastRomMPlaySessionSync, ownerUserId)
 
         if (sessions.isEmpty()) {
+            return SyncResult.Success(0)
+        }
+
+        if (prefs.socialUsername == null) {
+            preferencesRepository.setLastPlaySessionSyncTime(sessions.maxOf { it.endTime })
+            Log.d(TAG, "Skipped ${sessions.size} play sessions with no social account")
             return SyncResult.Success(0)
         }
 

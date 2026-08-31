@@ -281,6 +281,14 @@
     </plurals>
     <string name="settings_shell_romm_signout_message">This account\'s cached saves, states and settings are removed from this device, and everything already uploaded stays on your server. Your downloaded games stay.</string>
     <string name="settings_shell_modal_romm_signout_confirm">Sign Out</string>
+    <!-- Heading when signing out would throw away work that never reached the server. -->
+    <string name="settings_shell_romm_signout_blocked_title">Unsent Work</string>
+    <!-- Line under that heading. %1$s is a list like "2 queued sync operations, 1 unfinished downloads". -->
+    <string name="settings_shell_romm_signout_blocked_message">This account still has %1$s that could not be sent. Signing out now discards it.</string>
+    <!-- Button that abandons the sign-out and keeps the unsent work. -->
+    <string name="settings_shell_romm_signout_blocked_cancel">Stay Signed In</string>
+    <!-- Button that throws the unsent work away and signs out anyway. -->
+    <string name="settings_shell_romm_signout_blocked_confirm">Discard and Sign Out</string>
 
     <string name="settings_shell_modal_reset_save_cache_title">Reset Save Cache?</string>
     <string name="settings_shell_modal_reset_save_cache_message">This will delete all locally cached save snapshots and pending sync operations. Your actual save files and server saves are not affected.</string>

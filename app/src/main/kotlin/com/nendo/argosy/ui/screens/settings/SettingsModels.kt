@@ -876,6 +876,11 @@ data class ServerState(
     val rommSigningOut: Boolean = false,
     val showRommSignOutConfirm: Boolean = false,
     val rommSignOutPendingUploads: Int = 0,
+    /**
+     * The tally of work a sign-out would throw away, or null when nothing stopped it. Separate
+     * from `rommConfigError`, which renders only inside the connection form.
+     */
+    val rommSignOutBlockedBy: String? = null,
     val syncScreenshotsEnabled: Boolean = false,
     val uploadScreenshotsEnabled: Boolean = true,
     val boxArtCacheEnabled: Boolean = true,

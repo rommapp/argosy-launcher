@@ -223,6 +223,10 @@
     </plurals>
     <string name="settings_shell_romm_signout_message">Кэшированные сохранения, состояния и настройки этого аккаунта будут удалены с этого устройства, а всё, что уже выгружено, останется на вашем сервере. Скачанные игры останутся.</string>
     <string name="settings_shell_modal_romm_signout_confirm">Выйти</string>
+    <string name="settings_shell_romm_signout_blocked_title">Неотправленные данные</string>
+    <string name="settings_shell_romm_signout_blocked_message">У этой учётной записи ещё есть %1$s, которые не удалось отправить. Выход сейчас удалит их.</string>
+    <string name="settings_shell_romm_signout_blocked_cancel">Остаться в системе</string>
+    <string name="settings_shell_romm_signout_blocked_confirm">Удалить и выйти</string>
 
     <string name="settings_shell_modal_reset_save_cache_title">Сбросить кэш сохранений?</string>
     <string name="settings_shell_modal_reset_save_cache_message">Это удалит все локально кэшированные снимки сохранений и незавершённые операции синхронизации. Сами файлы сохранений и сохранения на сервере не затрагиваются.</string>

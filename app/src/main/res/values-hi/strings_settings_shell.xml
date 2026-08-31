@@ -212,6 +212,10 @@
     </plurals>
     <string name="settings_shell_romm_signout_message">इस अकाउंट के कैश किए गए सेव, स्टेट और सेटिंग्स इस डिवाइस से हटा दी जाएँगी, और जो कुछ पहले ही अपलोड हो चुका है वह आपके सर्वर पर बना रहेगा। आपके डाउनलोड किए गए गेम बने रहेंगे।</string>
     <string name="settings_shell_modal_romm_signout_confirm">साइन आउट करें</string>
+    <string name="settings_shell_romm_signout_blocked_title">बिना भेजा गया डेटा</string>
+    <string name="settings_shell_romm_signout_blocked_message">इस खाते में अब भी %1$s हैं जो भेजे नहीं जा सके। अभी साइन आउट करने पर वे हट जाएंगे।</string>
+    <string name="settings_shell_romm_signout_blocked_cancel">साइन इन रहें</string>
+    <string name="settings_shell_romm_signout_blocked_confirm">हटाएं और साइन आउट करें</string>
 
     <string name="settings_shell_modal_reset_save_cache_title">सेव कैश रीसेट करें?</string>
     <string name="settings_shell_modal_reset_save_cache_message">इससे सभी लोकल रूप से कैश किए गए सेव स्नैपशॉट और लंबित सिंक ऑपरेशन हट जाएँगे। आपकी असली सेव फ़ाइलें और सर्वर सेव प्रभावित नहीं होंगी।</string>

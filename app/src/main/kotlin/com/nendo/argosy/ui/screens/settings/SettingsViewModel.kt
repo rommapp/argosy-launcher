@@ -1724,6 +1724,9 @@ class SettingsViewModel @Inject constructor(
         serverDelegate.requestRommSignOut(viewModelScope) { syncDelegate.pendingUploadCount() }
     fun cancelRommSignOut() = serverDelegate.cancelRommSignOut()
     fun confirmRommSignOut() = serverDelegate.confirmRommSignOut(viewModelScope) { loadSettings() }
+    fun dismissRommSignOutBlocked() = serverDelegate.dismissRommSignOutBlocked()
+    fun forceRommSignOut() =
+        serverDelegate.confirmRommSignOut(viewModelScope, discardUnflushed = true) { loadSettings() }
 
     fun connectToRomm() = routeConnectToRomm(this)
     fun showRALoginForm() = routeShowRALoginForm(this)

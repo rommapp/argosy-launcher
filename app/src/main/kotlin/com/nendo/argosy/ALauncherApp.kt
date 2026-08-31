@@ -51,6 +51,9 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
     lateinit var userCertStore: com.nendo.argosy.data.remote.ssl.UserCertStore
 
     @Inject
+    lateinit var socialSyncCoordinator: com.nendo.argosy.data.sync.SocialSyncCoordinator
+
+    @Inject
     lateinit var saveSyncDownloadObserver: SaveSyncDownloadObserver
 
     @Inject
@@ -140,6 +143,7 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
     override fun onCreate() {
         super.onCreate()
         appScope.launch { userCertStore.initialize() }
+        appScope.launch { socialSyncCoordinator.discardQueueWithoutSocialAccount() }
         UpdateCheckWorker.schedule(this)
         SaveSyncWorker.schedule(this)
         SocialSyncWorker.schedule(this)

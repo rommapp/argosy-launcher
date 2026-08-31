@@ -11,30 +11,53 @@ import javax.inject.Singleton
 @Singleton
 class FrameRegistry @Inject constructor(@ApplicationContext private val context: Context) {
 
+    enum class Source { LIBRETRO, DUIMON, CUSTOM }
+
     data class FrameEntry(
         val id: String,
         val displayName: String,
         val platforms: Set<String>,
         val githubPath: String,
-        val preInstall: Boolean = false
+        val source: Source = Source.LIBRETRO
     )
 
     private var installedCache: Set<String>? = null
 
     fun getInstalledIds(): Set<String> {
         installedCache?.let { return it }
-        val dir = getFramesDir()
-        val ids = if (dir.exists()) {
-            dir.listFiles()
-                ?.filter { it.extension.lowercase() == "png" }
-                ?.map { it.nameWithoutExtension }
-                ?.toSet()
-                ?: emptySet()
-        } else {
-            emptySet()
-        }
+        adoptLegacyFlatLayout()
+        val ids = listOf(getFramesDir(), getCustomFramesDir())
+            .filter { it.exists() }
+            .flatMap { dir ->
+                dir.listFiles()
+                    ?.filter { it.extension.lowercase() == "png" }
+                    ?.map { it.nameWithoutExtension }
+                    ?: emptyList()
+            }
+            .toSet()
         installedCache = ids
         return ids
+    }
+
+    /**
+     * Moves frames written before the catalog/custom split into the catalog directory. Without
+     * it every already-downloaded frame reads as missing and downloads a second time.
+     */
+    private fun adoptLegacyFlatLayout() {
+        val legacyDir = File(context.getExternalFilesDir(null), "frames")
+        val stale = legacyDir.listFiles()
+            ?.filter { it.isFile && it.extension.lowercase() == "png" }
+            ?: return
+        if (stale.isEmpty()) return
+
+        val target = getFramesDir().apply { mkdirs() }
+        stale.forEach { file ->
+            val moved = File(target, file.name)
+            if (!moved.exists() && !file.renameTo(moved)) {
+                file.copyTo(moved, overwrite = true)
+                file.delete()
+            }
+        }
     }
 
     fun invalidateInstalledCache() {
@@ -139,22 +162,62 @@ class FrameRegistry @Inject constructor(@ApplicationContext private val context:
     fun getInstalledFramesForPlatform(platformSlug: String): List<FrameEntry> =
         getFramesForPlatform(platformSlug).filter { isInstalled(it) }
 
-    fun loadFrame(id: String): Bitmap? {
-        val file = File(getFramesDir(), "$id.png")
-        if (!file.exists()) return null
-        return BitmapFactory.decodeFile(file.absolutePath)
+    /**
+     * [maxWidth] and [maxHeight] are the surface the frame is drawn onto. Source art runs to
+     * 4K, which decodes to roughly 33MB of ARGB before it reaches GL; sampling halves both axes
+     * together, so the aspect ratio is preserved by construction.
+     */
+    fun loadFrame(id: String, maxWidth: Int = 0, maxHeight: Int = 0): Bitmap? {
+        val file = listOf(getFramesDir(), getCustomFramesDir())
+            .map { File(it, "$id.png") }
+            .firstOrNull { it.exists() }
+            ?: return null
+
+        if (maxWidth <= 0 || maxHeight <= 0) return BitmapFactory.decodeFile(file.absolutePath)
+
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(file.absolutePath, bounds)
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+
+        var sample = 1
+        while (bounds.outWidth / (sample * 2) >= maxWidth &&
+            bounds.outHeight / (sample * 2) >= maxHeight
+        ) {
+            sample *= 2
+        }
+
+        return BitmapFactory.decodeFile(
+            file.absolutePath,
+            BitmapFactory.Options().apply { inSampleSize = sample }
+        )
     }
 
     fun loadFrame(entry: FrameEntry): Bitmap? = loadFrame(entry.id)
 
     fun getFramesDir(): File =
-        File(context.getExternalFilesDir(null), "frames")
+        File(context.getExternalFilesDir(null), "frames/catalog")
+
+    /**
+     * User-imported frames, kept apart from the catalog so [clearDownloadedFrames] cannot take
+     * them: a catalog frame re-downloads on demand and an imported one is gone for good.
+     */
+    fun getCustomFramesDir(): File =
+        File(context.getExternalFilesDir(null), "frames/custom")
+
+    fun installedFileFor(entry: FrameEntry): File = when (entry.source) {
+        Source.CUSTOM -> File(getCustomFramesDir(), "${entry.id}.png")
+        else -> File(getFramesDir(), "${entry.id}.png")
+    }
 
     fun ensureDirectoryExists() {
         getFramesDir().mkdirs()
+        getCustomFramesDir().mkdirs()
     }
 
-    /** Deletes downloaded frame overlays; they re-download on demand from the catalog. */
+    /**
+     * Clears catalog frames only. The row offering this says they re-download on demand, which
+     * is true of a catalog frame and false of one the user imported.
+     */
     fun clearDownloadedFrames() {
         val dir = getFramesDir()
         if (dir.exists()) dir.deleteRecursively()
@@ -167,7 +230,18 @@ class FrameRegistry @Inject constructor(@ApplicationContext private val context:
         const val GITHUB_RAW_BASE =
             "https://raw.githubusercontent.com/libretro/overlay-borders/master/"
 
-        fun downloadUrl(entry: FrameEntry): String =
-            "$GITHUB_RAW_BASE${entry.githubPath}"
+        /**
+         * Pinned rather than tracking a branch: this is one person's repository, and a renamed
+         * folder would break bezels for users with no app change involved.
+         */
+        const val DUIMON_RAW_BASE =
+            "https://raw.githubusercontent.com/Duimon/Duimon-Mega-Bezel/" +
+                "d03dabf6e6b190dbf9b692efd492d8edd21abbb9/Graphics/"
+
+        fun downloadUrl(entry: FrameEntry): String = when (entry.source) {
+            Source.LIBRETRO -> "$GITHUB_RAW_BASE${entry.githubPath}"
+            Source.DUIMON -> "$DUIMON_RAW_BASE${entry.githubPath}"
+            Source.CUSTOM -> ""
+        }
     }
 }

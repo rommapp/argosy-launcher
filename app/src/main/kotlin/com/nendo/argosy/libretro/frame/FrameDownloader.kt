@@ -7,7 +7,7 @@ import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
 
-class FrameDownloader(private val framesDir: File) {
+class FrameDownloader(private val registry: FrameRegistry) {
 
     data class DownloadResult(
         val downloaded: Int,
@@ -18,8 +18,8 @@ class FrameDownloader(private val framesDir: File) {
     suspend fun downloadFrame(entry: FrameRegistry.FrameEntry): Result<File> =
         withContext(Dispatchers.IO) {
             runCatching {
-                framesDir.mkdirs()
-                val targetFile = File(framesDir, "${entry.id}.png")
+                val targetFile = registry.installedFileFor(entry)
+                targetFile.parentFile?.mkdirs()
                 val url = FrameRegistry.downloadUrl(entry)
 
                 val connection = URL(url).openConnection() as HttpURLConnection
@@ -71,9 +71,6 @@ class FrameDownloader(private val framesDir: File) {
         registry.invalidateInstalledCache()
         DownloadResult(downloaded, failed, installed)
     }
-
-    fun isInstalled(frameId: String): Boolean =
-        File(framesDir, "$frameId.png").exists()
 
     class FrameDownloadException(message: String) : Exception(message)
 

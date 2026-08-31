@@ -2501,7 +2501,7 @@ class LibretroActivity : ComponentActivity() {
         val registry = frameRegistry
         val manager = FrameManager(
             frameRegistry = registry,
-            frameDownloader = FrameDownloader(registry.getFramesDir()),
+            frameDownloader = FrameDownloader(registry),
             platformSlug = platformSlug,
             scope = lifecycleScope,
             initialFrameId = videoSettings.currentFrame,

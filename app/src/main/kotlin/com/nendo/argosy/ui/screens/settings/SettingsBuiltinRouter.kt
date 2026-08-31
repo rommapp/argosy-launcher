@@ -1090,23 +1090,12 @@ internal fun routeDownloadAndSelectFrame(vm: SettingsViewModel, frameId: String)
     val frame = vm.frameRegistry.findById(frameId) ?: return
     vm._uiState.update { it.copy(frameDownloadingId = frameId) }
     vm.viewModelScope.launch {
-        val success = withContext(Dispatchers.IO) {
-            try {
-                vm.frameRegistry.ensureDirectoryExists()
-                val downloadUrl = com.nendo.argosy.libretro.frame.FrameRegistry.downloadUrl(frame)
-                val url = java.net.URL(downloadUrl)
-                val connection = url.openConnection()
-                connection.connectTimeout = 15000
-                connection.readTimeout = 60000
-                val bytes = connection.getInputStream().use { it.readBytes() }
-                val file = java.io.File(vm.frameRegistry.getFramesDir(), "${frame.id}.png")
-                file.writeBytes(bytes)
-                true
-            } catch (e: Exception) {
-                android.util.Log.e("SettingsViewModel", "Failed to download frame: ${frame.id}", e)
-                false
+        val success = com.nendo.argosy.libretro.frame.FrameDownloader(vm.frameRegistry)
+            .downloadFrame(frame)
+            .onFailure {
+                android.util.Log.e("SettingsViewModel", "Failed to download frame: ${frame.id}", it)
             }
-        }
+            .isSuccess
         if (success) {
             vm.frameRegistry.invalidateInstalledCache()
             if (!vm._uiState.value.builtinVideo.framesEnabled) {

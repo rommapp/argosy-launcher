@@ -906,7 +906,7 @@ internal fun routeValidateDownloads(vm: SettingsViewModel) {
                 progress = NotificationProgress(0, 100)
             )
 
-            val invalidated = vm.gameRepository.validateLocalFiles()
+            val invalidated = vm.gameRepository.validateLocalFiles(force = true)
 
             vm.notificationManager.updatePersistent(
                 key = key,

@@ -370,10 +370,14 @@ class ArgosyViewModel @Inject constructor(
     }
 
     private suspend fun buildStartupSteps(): List<StartupStep> = buildList {
+        val integrityCheckDue = isWeeklyIntegrityCheckDue()
         add(
             StartupStep(R.string.ui_startup_status_scanning_roms) {
                 gameRepository.validateLocalFiles()
                 gameRepository.discoverLocalFiles()
+                if (integrityCheckDue) {
+                    preferencesRepository.setLastIntegrityCheckTime(System.currentTimeMillis())
+                }
             }
         )
         if (romMRepository.isConnected()) {
@@ -396,11 +400,6 @@ class ArgosyViewModel @Inject constructor(
                 gameRepository.repairUnnecessaryM3uPointers()
             }
         )
-        if (isWeeklyIntegrityCheckDue()) {
-            add(
-                StartupStep(R.string.ui_startup_status_scanning_roms) { runWeeklyIntegrityCheck() }
-            )
-        }
         add(
             StartupStep(R.string.ui_startup_status_preparing_home) {
                 homeLibraryDelegate.ensureInitialLoad(viewModelScope)
@@ -413,13 +412,6 @@ class ArgosyViewModel @Inject constructor(
         if (!prefs.weeklyIntegrityCheckEnabled) return false
         val lastCheck = prefs.lastIntegrityCheckTime ?: return true
         return System.currentTimeMillis() - lastCheck >= WEEKLY_INTEGRITY_INTERVAL_MS
-    }
-
-    private suspend fun runWeeklyIntegrityCheck() {
-        Log.i("ArgosyViewModel", "Running weekly ROM integrity check")
-        gameRepository.validateLocalFiles()
-        gameRepository.discoverLocalFiles()
-        preferencesRepository.setLastIntegrityCheckTime(System.currentTimeMillis())
     }
 
     private suspend fun runBuiltinEmulatorMigration() {

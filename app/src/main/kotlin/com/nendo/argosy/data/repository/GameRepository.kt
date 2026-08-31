@@ -36,9 +36,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.time.Instant
+import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -71,6 +74,9 @@ class GameRepository @Inject constructor(
     private val defaultDownloadDir: File by lazy {
         File(context.getExternalFilesDir(null), "downloads")
     }
+
+    private val validationMutex = Mutex()
+    private val validationPass = AtomicInteger()
 
     /**
      * Where this platform's roms are written.
@@ -319,7 +325,22 @@ class GameRepository @Inject constructor(
         discovered
     }
 
-    suspend fun validateLocalFiles(): Int = withContext(Dispatchers.IO) {
+    /**
+     * Cold start asks for this twice, from the launcher resuming and from the startup pass, and
+     * both walk every downloaded game. A request that was already pending when another pass began
+     * is answered by that pass instead of repeating the walk. [force] is for the caller that
+     * reports the count back to the user, which must see its own numbers.
+     */
+    suspend fun validateLocalFiles(force: Boolean = false): Int {
+        val requestedAt = validationPass.get()
+        return validationMutex.withLock {
+            if (!force && validationPass.get() != requestedAt) return@withLock 0
+            validationPass.incrementAndGet()
+            runValidation()
+        }
+    }
+
+    private suspend fun runValidation(): Int = withContext(Dispatchers.IO) {
         if (!isStorageReady()) {
             Log.w(TAG, "validateLocalFiles: storage not ready, skipping")
             return@withContext 0

@@ -230,8 +230,11 @@ object ZipExtractor {
         "m3u", "nfo", "sfv", "md5", "sha1", "diz", "url", "jpg", "jpeg"
     )
 
+    fun isCompanionFileName(fileName: String): Boolean =
+        fileName.substringAfterLast('.', "").lowercase() in COMPANION_EXTENSIONS
+
     private fun isPrunableCompanionFile(file: File): Boolean =
-        file.extension.lowercase() in COMPANION_EXTENSIONS
+        isCompanionFileName(file.name)
 
     sealed class ArchiveValidationResult {
         data object Valid : ArchiveValidationResult()

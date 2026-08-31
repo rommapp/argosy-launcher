@@ -628,6 +628,29 @@ class ZipExtractorTest {
         )
     }
 
+    @Test
+    fun `scene and art files beside a rom are companions`() {
+        listOf("Game.nfo", "Game.sfv", "Game.md5", "Game.diz", "Game.url", "Game.jpg")
+            .forEach { assertTrue(it, ZipExtractor.isCompanionFileName(it)) }
+    }
+
+    /**
+     * A PICO-8 cart is a png and every platform's declared extensions are the authority on what
+     * a rom can be, so png must never join the companion list no matter how much it looks like
+     * cover art sitting next to a game.
+     */
+    @Test
+    fun `a pico8 cart is not a companion`() {
+        assertFalse(ZipExtractor.isCompanionFileName("Celeste.p8.png"))
+        assertFalse(ZipExtractor.isCompanionFileName("Celeste.png"))
+    }
+
+    @Test
+    fun `rom formats are never companions`() {
+        listOf("Game.xci", "Game.nsp", "Game.bin", "Game.cue", "Game.chd", "Game.iso")
+            .forEach { assertFalse(it, ZipExtractor.isCompanionFileName(it)) }
+    }
+
     private fun createTestZip(zipFile: File, entries: Map<String, String>) {
         ZipOutputStream(zipFile.outputStream()).use { zos ->
             for ((name, content) in entries) {

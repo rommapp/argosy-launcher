@@ -150,7 +150,9 @@ class BiosRepository @Inject constructor(
         val sourceDir = getActiveBiosPlatformDir(platformSlug)
         val targetDir = File(targetPath)
         if (!targetDir.exists()) targetDir.mkdirs()
-        val sourceFiles = sourceDir.listFiles()?.filter { it.isFile } ?: return@withContext 0
+        val sourceFiles = sourceDir.listFiles()
+            ?.filter { it.isFile && !it.name.endsWith(FIRMWARE_PART_SUFFIX) }
+            ?: return@withContext 0
         var copied = 0
         for (file in sourceFiles) {
             try {

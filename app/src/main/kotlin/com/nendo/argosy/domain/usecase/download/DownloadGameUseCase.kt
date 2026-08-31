@@ -155,6 +155,11 @@ class DownloadGameUseCase @Inject constructor(
     /**
      * Explicit picker selection wins; otherwise category defaults trim the file
      * set. Null means download everything exactly as before.
+     *
+     * A root-level file the server left uncategorised is content unless it is a companion, which
+     * falls to the same Other default a nested one already uses. Selecting by depth alone made a
+     * scene note beside the rom count as content, which sent a single-file game down the
+     * server-built zip path.
      */
     private suspend fun resolveSelection(
         allFiles: List<com.nendo.argosy.data.remote.romm.RomMRomFile>,
@@ -172,7 +177,8 @@ class DownloadGameUseCase @Inject constructor(
             val cat = f.category
             when {
                 cat == com.nendo.argosy.data.model.VariantCategory.GAME.key -> true
-                cat == null && f.filePath.length == rootLen -> true
+                cat == null && f.filePath.length == rootLen &&
+                    !com.nendo.argosy.data.download.ZipExtractor.isCompanionFileName(f.fileName) -> true
                 cat == null ->
                     defaults[com.nendo.argosy.data.preferences.DownloadDefaults.OTHER_KEY] ?: false
                 else -> defaults[cat] ?: false

@@ -306,6 +306,12 @@ class RomMConnectionManager @Inject constructor(
 
                 if (response.isSuccessful) {
                     val newApi = createApi(normalizedUrl, token)
+                    if (token != null && !isTokenAccepted(newApi)) {
+                        lastError = "Sign in again"
+                        lastKind = null
+                        Logger.info(TAG, "connect: server live at $normalizedUrl but the token was rejected")
+                        continue
+                    }
                     baseUrl = normalizedUrl
                     accessToken = token
                     api = newApi
@@ -587,13 +593,11 @@ class RomMConnectionManager @Inject constructor(
      * The queue is drained first, while the token still authenticates. Everything the account
      * cached and never sent can only be sent as that account, so an upload deferred past sign-out
      * is an upload that never happens; refusing here is what keeps the local copy that is still
-     * the only copy. [discardUnflushed] gives up on whatever the drain could not deliver.
+     * the only copy.
      *
-     * Refusing only makes sense while the work could still be sent. With the server unreachable
-     * the drain can never succeed, so refusing would strand the account signed in forever, which
-     * is what happens to anyone whose token was revoked server-side. Unreachable therefore
-     * discards: the queue is already unsendable, and being unable to sign out costs more than the
-     * rows do.
+     * A refusal is a question, not a failure: the caller raises it and [discardUnflushed] carries
+     * the answer back. Discarding on the app's own initiative, which is what an unreachable
+     * server used to trigger, threw that work away without asking.
      */
     suspend fun signOut(discardUnflushed: Boolean = false): AccountRemovalResult {
         val active = rommAccountRepository.get().activeAccount()
@@ -604,14 +608,10 @@ class RomMConnectionManager @Inject constructor(
             }
         val drained = syncCoordinator.get().processQueue()
         Logger.info(TAG, "signOut: drained queued work before removal, result=$drained")
-        val reachable = isConnected()
-        val policy = if (discardUnflushed || !reachable) {
+        val policy = if (discardUnflushed) {
             UnflushedQueuePolicy.DISCARD
         } else {
             UnflushedQueuePolicy.REFUSE
-        }
-        if (!reachable && !discardUnflushed) {
-            Logger.info(TAG, "signOut: server unreachable, discarding what the drain could not send")
         }
         val result = accountRemovalService.get().remove(active.id, policy)
         if (result is AccountRemovalResult.Refused || result is AccountRemovalResult.SwitchInProgress) {
@@ -650,6 +650,26 @@ class RomMConnectionManager @Inject constructor(
         return result
     }
 
+    /**
+     * Whether the stored token is still accepted.
+     *
+     * `api/heartbeat` answers liveness and is unauthenticated, so it returns 200 for a token the
+     * server has revoked. Reading it as proof of a session left a revoked account permanently
+     * "connected": every request 401s while nothing ever leaves the connected state.
+     */
+    private suspend fun isTokenAccepted(candidate: RomMApi): Boolean = try {
+        candidate.getCurrentUser().isSuccessful
+    } catch (e: Exception) {
+        Logger.info(TAG, "isTokenAccepted: identity call failed: ${e.message}")
+        false
+    }
+
+    /**
+     * Re-checks the live session with the token rather than with liveness.
+     *
+     * A rejected token is reported as offline: there is nothing the app can do about it, and
+     * treating it as connected is what hid it.
+     */
     suspend fun checkConnection() {
         val currentApi = api
         if (currentApi == null) {
@@ -659,6 +679,19 @@ class RomMConnectionManager @Inject constructor(
         }
 
         try {
+            if (accessToken != null && !isTokenAccepted(currentApi)) {
+                Logger.info(TAG, "checkConnection: token rejected, scheduling reconnect")
+                scheduleReconnect()
+                return
+            }
+
+            val known = _connectionState.value as? ConnectionState.Connected
+            if (known != null) {
+                reconnectPending = false
+                Logger.info(TAG, "checkConnection: session still valid, version=${known.version}")
+                return
+            }
+
             val response = currentApi.heartbeat()
             if (response.isSuccessful) {
                 val body = response.body()

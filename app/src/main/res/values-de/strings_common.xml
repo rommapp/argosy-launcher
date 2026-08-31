@@ -650,7 +650,6 @@
     <!-- App shell and startup (ui/ArgosyApp.kt, ui/ArgosyViewModel.kt) -->
 
     <string name="ui_startup_status_initializing">Wird initialisiert...</string>
-    <string name="ui_startup_status_loading_library">Bibliothek wird geladen...</string>
     <string name="ui_startup_status_syncing_collections">Sammlungen werden synchronisiert...</string>
     <string name="ui_startup_status_checking_emulators">Emulatoren werden geprüft...</string>
     <string name="ui_startup_status_preparing_home">Startseite wird vorbereitet...</string>

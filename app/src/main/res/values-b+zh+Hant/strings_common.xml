@@ -638,7 +638,6 @@
     <!-- App shell and startup (ui/ArgosyApp.kt, ui/ArgosyViewModel.kt) -->
 
     <string name="ui_startup_status_initializing">初始化中...</string>
-    <string name="ui_startup_status_loading_library">正在載入遊戲庫...</string>
     <string name="ui_startup_status_syncing_collections">正在同步合輯...</string>
     <string name="ui_startup_status_checking_emulators">正在檢查模擬器...</string>
     <string name="ui_startup_status_preparing_home">正在準備首頁...</string>

@@ -85,6 +85,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+private const val WEEKLY_INTEGRITY_INTERVAL_MS = 7L * 24 * 60 * 60 * 1000
+
 data class ArgosyUiState(
     val isFirstRun: Boolean = true,
     val isLoading: Boolean = true,
@@ -337,53 +339,84 @@ class ArgosyViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Pairs each startup phase with the splash label that names it, so a label cannot describe
+     * work it does not cover. Steps that would no-op are left out of the list rather than
+     * flashing a label for work that never runs.
+     */
+    private data class StartupStep(@StringRes val label: Int, val run: suspend () -> Unit)
+
     private fun scheduleStartupTasks() {
         viewModelScope.launch {
             _startupStatus.value = R.string.ui_startup_status_initializing
             playSessionTracker.endSession()
-            val ready = gameRepository.awaitStorageReady(timeoutMs = 10_000L)
-            if (ready) {
-                _startupStatus.value = R.string.ui_startup_status_loading_library
-                gameRepository.validateLocalFiles()
-                gameRepository.discoverLocalFiles()
 
-                _startupStatus.value = R.string.ui_startup_status_syncing_collections
-                syncCollectionsOnStartup()
-
-                _startupStatus.value = R.string.ui_startup_status_checking_emulators
-                runBuiltinEmulatorMigration()
-                libretroMigrationUseCase.cleanupRemovedCores()
-                emulatorUpdateManager.checkIfNeeded()
-
-                gameRepository.repairFolderRomPointers()
-                gameRepository.repairVariantFilePointers()
-                gameRepository.repairUnnecessaryM3uPointers()
-
-                runWeeklyIntegrityCheckIfDue()
-
-                _startupStatus.value = R.string.ui_startup_status_preparing_home
-                homeLibraryDelegate.ensureInitialLoad(viewModelScope)
-            } else {
-                android.util.Log.w("ArgosyViewModel", "Storage not ready after timeout, scheduling retry")
+            if (!gameRepository.awaitStorageReady(timeoutMs = 10_000L)) {
+                Log.w("ArgosyViewModel", "Storage not ready after timeout, scheduling retry")
                 _startupStatus.value = R.string.ui_startup_status_waiting_for_storage
                 kotlinx.coroutines.delay(30_000L)
                 scheduleStartupTasks()
                 return@launch
             }
+
+            for (step in buildStartupSteps()) {
+                _startupStatus.value = step.label
+                step.run()
+            }
+
+            emulatorUpdateManager.checkIfNeeded()
             _startupComplete.value = true
         }
     }
 
-    private suspend fun runWeeklyIntegrityCheckIfDue() {
+    private suspend fun buildStartupSteps(): List<StartupStep> = buildList {
+        add(
+            StartupStep(R.string.ui_startup_status_scanning_roms) {
+                gameRepository.validateLocalFiles()
+                gameRepository.discoverLocalFiles()
+            }
+        )
+        if (romMRepository.isConnected()) {
+            add(
+                StartupStep(R.string.ui_startup_status_syncing_collections) {
+                    romMRepository.syncCollections()
+                }
+            )
+        }
+        add(
+            StartupStep(R.string.ui_startup_status_checking_emulators) {
+                runBuiltinEmulatorMigration()
+                libretroMigrationUseCase.cleanupRemovedCores()
+            }
+        )
+        add(
+            StartupStep(R.string.ui_startup_status_repairing_library) {
+                gameRepository.repairFolderRomPointers()
+                gameRepository.repairVariantFilePointers()
+                gameRepository.repairUnnecessaryM3uPointers()
+            }
+        )
+        if (isWeeklyIntegrityCheckDue()) {
+            add(
+                StartupStep(R.string.ui_startup_status_scanning_roms) { runWeeklyIntegrityCheck() }
+            )
+        }
+        add(
+            StartupStep(R.string.ui_startup_status_preparing_home) {
+                homeLibraryDelegate.ensureInitialLoad(viewModelScope)
+            }
+        )
+    }
+
+    private suspend fun isWeeklyIntegrityCheckDue(): Boolean {
         val prefs = preferencesRepository.userPreferences.first()
-        if (!prefs.weeklyIntegrityCheckEnabled) return
+        if (!prefs.weeklyIntegrityCheckEnabled) return false
+        val lastCheck = prefs.lastIntegrityCheckTime ?: return true
+        return System.currentTimeMillis() - lastCheck >= WEEKLY_INTEGRITY_INTERVAL_MS
+    }
 
-        val lastCheck = prefs.lastIntegrityCheckTime
-        val sevenDaysMs = 7 * 24 * 60 * 60 * 1000L
-        if (lastCheck != null && (System.currentTimeMillis() - lastCheck) < sevenDaysMs) return
-
-        _startupStatus.value = R.string.ui_startup_status_scanning_roms
-        android.util.Log.i("ArgosyViewModel", "Running weekly ROM integrity check")
+    private suspend fun runWeeklyIntegrityCheck() {
+        Log.i("ArgosyViewModel", "Running weekly ROM integrity check")
         gameRepository.validateLocalFiles()
         gameRepository.discoverLocalFiles()
         preferencesRepository.setLastIntegrityCheckTime(System.currentTimeMillis())
@@ -407,12 +440,6 @@ class ArgosyViewModel @Inject constructor(
                 }
             }
             else -> { /* No notification needed */ }
-        }
-    }
-
-    private suspend fun syncCollectionsOnStartup() {
-        if (romMRepository.isConnected()) {
-            romMRepository.syncCollections()
         }
     }
 

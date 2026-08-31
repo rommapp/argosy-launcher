@@ -654,7 +654,6 @@
     <string name="ui_file_browser_new_folder_error_failed">Не удалось создать папку</string>
 
     <string name="ui_startup_status_initializing">Инициализация...</string>
-    <string name="ui_startup_status_loading_library">Загрузка библиотеки...</string>
     <string name="ui_startup_status_syncing_collections">Синхронизация коллекций...</string>
     <string name="ui_startup_status_checking_emulators">Проверка эмуляторов...</string>
     <string name="ui_startup_status_preparing_home">Подготовка главного экрана...</string>

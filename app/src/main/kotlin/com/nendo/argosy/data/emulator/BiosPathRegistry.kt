@@ -31,6 +31,18 @@ data class BiosPathConfig(
 ) {
     fun supports(canonicalSlug: String): Boolean =
         acceptsAnyPlatform || canonicalSlug in supportedPlatforms
+
+    /**
+     * Whether the app may act on this emulator for the platform without being asked.
+     *
+     * [supports] answers "may this emulator be handed these files", deliberately open so a user
+     * can install BIOS for a platform nobody enumerated. That is the wrong question for anything
+     * the app decides alone. An emulator with no [defaultPaths] resolves to a directory Argosy
+     * owns outright, where writing and sweeping are safe; everything else writes into a folder
+     * the user shares with that emulator, so it stays inside what it declared.
+     */
+    fun actsUnprompted(canonicalSlug: String): Boolean =
+        (acceptsAnyPlatform && defaultPaths.isEmpty()) || canonicalSlug in supportedPlatforms
 }
 
 object BiosPathRegistry {
@@ -386,6 +398,15 @@ object BiosPathRegistry {
     fun getEmulatorsForPlatform(platformSlug: String): List<BiosPathConfig> {
         val canonical = PlatformDefinitions.getCanonicalSlug(platformSlug)
         return emulatorBiosPaths.values.filter { it.supports(canonical) }
+    }
+
+    /**
+     * Emulators the app may write to or sweep for this platform without being asked. Use
+     * [getEmulatorsForPlatform] only where the user named the emulator.
+     */
+    fun getUnpromptedEmulatorsForPlatform(platformSlug: String): List<BiosPathConfig> {
+        val canonical = PlatformDefinitions.getCanonicalSlug(platformSlug)
+        return emulatorBiosPaths.values.filter { it.actsUnprompted(canonical) }
     }
 
     fun getAllBiosConfigs(): Map<String, BiosPathConfig> = emulatorBiosPaths

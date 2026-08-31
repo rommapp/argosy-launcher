@@ -488,7 +488,7 @@ class BiosRepository @Inject constructor(
 
     private suspend fun cleanupDistributedCopies(platformSlug: String) {
         val firmwareFiles = firmwareDao.getByPlatformSlug(platformSlug)
-        val emulators = BiosPathRegistry.getEmulatorsForPlatform(
+        val emulators = BiosPathRegistry.getUnpromptedEmulatorsForPlatform(
             PlatformDefinitions.getCanonicalSlug(platformSlug)
         )
 
@@ -586,7 +586,7 @@ class BiosRepository @Inject constructor(
         val platformSlugs = firmwareDao.getPlatformSlugsWithDownloadedFirmware()
 
         for (slug in platformSlugs) {
-            val emulators = BiosPathRegistry.getEmulatorsForPlatform(slug)
+            val emulators = BiosPathRegistry.getUnpromptedEmulatorsForPlatform(slug)
             for (config in emulators) {
                 val count = distributeBiosToEmulator(slug, config.emulatorId)
                 if (count > 0) {
@@ -619,7 +619,7 @@ class BiosRepository @Inject constructor(
 
             val regularSlugs = platformSlugs.filter { it != "switch" }
             for (slug in regularSlugs) {
-                val emulators = BiosPathRegistry.getEmulatorsForPlatform(slug)
+                val emulators = BiosPathRegistry.getUnpromptedEmulatorsForPlatform(slug)
                 for (config in emulators) {
                     val count = distributeBiosToEmulator(slug, config.emulatorId)
                     if (count > 0) {

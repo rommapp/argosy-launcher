@@ -476,7 +476,7 @@ class BiosRepository @Inject constructor(
      * because a mismatch is the common case and hashing every candidate would read hundreds of
      * megabytes to learn nothing; the hash decides only once the size already agrees.
      */
-    private fun deleteDistributedCopy(target: File, firmware: FirmwareEntity) {
+    internal fun deleteDistributedCopy(target: File, firmware: FirmwareEntity) {
         if (!target.exists() || !target.isFile) return
         if (firmware.fileSizeBytes > 0 && target.length() != firmware.fileSizeBytes) return
 

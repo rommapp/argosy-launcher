@@ -11,7 +11,14 @@ import org.junit.runner.RunWith
 
 private const val TEST_DB = "alauncher-migration-test.db"
 private const val FIRST_VALIDATED_VERSION = 6
-private const val CURRENT_VERSION = 172
+
+/**
+ * Read from the database rather than restated, because a copy of it goes stale silently: this
+ * held 172 while the schema was at 181, so the contiguity check asserted the registry ended nine
+ * migrations before it did.
+ */
+private val CURRENT_VERSION: Int =
+    ALauncherDatabase::class.java.getAnnotation(androidx.room.Database::class.java)!!.version
 
 @RunWith(AndroidJUnit4::class)
 class MigrationRegistrySmokeTest {

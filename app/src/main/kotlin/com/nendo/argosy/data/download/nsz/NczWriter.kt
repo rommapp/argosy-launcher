@@ -152,13 +152,11 @@ object NczWriter {
 
             val chunkSize = if (section != null) {
                 val sectionEnd = section.offset + section.size
-                val bytesToSectionEnd = (sectionEnd - pos).toInt()
-                minOf(remaining, bytesToSectionEnd)
+                minOf(remaining.toLong(), sectionEnd - pos).toInt()
             } else {
                 val nextSection = findNextSection(sections, pos)
                 if (nextSection != null) {
-                    val bytesToNext = (nextSection.offset - pos).toInt()
-                    minOf(remaining, bytesToNext)
+                    minOf(remaining.toLong(), nextSection.offset - pos).toInt()
                 } else {
                     remaining
                 }

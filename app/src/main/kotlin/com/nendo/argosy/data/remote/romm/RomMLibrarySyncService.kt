@@ -959,7 +959,7 @@ class RomMLibrarySyncService @Inject constructor(
 
         fun groupFor(rom: RomMRom): SiblingGroup {
             val ids = listOf(rom.id) +
-                rom.effectiveSiblings.filter { !it.isDiscVariant }.map { it.id }
+                rom.sameGameSiblings.filter { !it.isDiscVariant }.map { it.id }
             val existingGroups = ids.mapNotNull { siblingGroups[it] }.distinct()
             val group = mergeSiblingGroups(existingGroups, filters)
             group.expectedIds.addAll(ids)
@@ -970,7 +970,7 @@ class RomMLibrarySyncService @Inject constructor(
         fun trackSiblingMultiDisc(rom: RomMRom) {
             val isSiblingBasedMultiDisc = rom.hasDiscSiblings && !rom.isFolderMultiDisc
             if (isSiblingBasedMultiDisc && rom.id !in processedDiscIds) {
-                val discSiblings = rom.effectiveSiblings.filter { it.isDiscVariant }
+                val discSiblings = rom.sameGameSiblings.filter { it.isDiscVariant }
                 val siblingIds = discSiblings.map { it.id }
 
                 processedDiscIds.add(rom.id)
@@ -1024,7 +1024,7 @@ class RomMLibrarySyncService @Inject constructor(
                 }
 
                 if (rom.isFolderMultiDisc) {
-                    val discSiblings = rom.effectiveSiblings.filter { it.isDiscVariant }
+                    val discSiblings = rom.sameGameSiblings.filter { it.isDiscVariant }
                     if (discSiblings.isNotEmpty()) {
                         val siblingIds = discSiblings.map { it.id }
                         skipIndividualDiscIds.addAll(siblingIds)
@@ -1044,7 +1044,7 @@ class RomMLibrarySyncService @Inject constructor(
                 if (rom.hasNonDiscSiblings) {
                     val group = groupFor(rom)
                     group.members.add(SiblingMember(rom.id, rom.regions, rom.files))
-                    rom.effectiveSiblings
+                    rom.sameGameSiblings
                         .firstOrNull { !it.isDiscVariant && it.isMainSibling == true }
                         ?.let { group.mainSiblingId = it.id }
                     group.winner = chooseWinner(group, rom, filters)

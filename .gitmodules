@@ -3,4 +3,4 @@
 	url = https://github.com/RetroAchievements/rcheevos.git
 [submodule "sigil"]
 	path = sigil
-	url = https://github.com/rommforge/argosy-sigil.git
+	url = https://github.com/rommapp/argosy-sigil.git

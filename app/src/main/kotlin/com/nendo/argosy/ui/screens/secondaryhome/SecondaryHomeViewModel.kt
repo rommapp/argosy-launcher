@@ -240,7 +240,7 @@ class SecondaryHomeViewModel @Inject constructor(
 
         val newThreshold = Instant.now().minus(NEW_GAME_THRESHOLD_HOURS, ChronoUnit.HOURS)
         val recentGames = gameRepository.getRecentlyPlayed(limit = 1)
-        val newGames = gameRepository.getNewlyAddedPlayable(newThreshold, 1)
+        val newGames = gameRepository.getNewlyAdded(newThreshold, installedOnly = true, limit = 1)
         if (recentGames.isNotEmpty() || newGames.isNotEmpty()) {
             sections.add(HomeSection.Recent)
         }
@@ -298,7 +298,11 @@ class SecondaryHomeViewModel @Inject constructor(
                 is HomeSection.Recent -> {
                     val newThreshold = Instant.now().minus(NEW_GAME_THRESHOLD_HOURS, ChronoUnit.HOURS)
                     val recentlyPlayed = gameRepository.getRecentlyPlayed(limit = RECENT_GAMES_LIMIT)
-                    val newlyAdded = gameRepository.getNewlyAddedPlayable(newThreshold, RECENT_GAMES_LIMIT)
+                    val newlyAdded = gameRepository.getNewlyAdded(
+                        newThreshold,
+                        installedOnly = true,
+                        limit = RECENT_GAMES_LIMIT
+                    )
                     val allCandidates = (recentlyPlayed + newlyAdded).distinctBy { it.id }
                     sortRecentGamesWithNewPriority(allCandidates)
                         .take(RECENT_GAMES_LIMIT)

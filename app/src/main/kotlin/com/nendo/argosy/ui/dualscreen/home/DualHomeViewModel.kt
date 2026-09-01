@@ -913,7 +913,7 @@ class DualHomeViewModel(
 
         val newThreshold = Instant.now().minus(NEW_GAME_THRESHOLD_HOURS, ChronoUnit.HOURS)
         val hasRecent = gameRepository.getRecentlyPlayed(limit = 1).isNotEmpty() ||
-            gameRepository.getNewlyAddedPlayable(newThreshold, 1).isNotEmpty()
+            gameRepository.getNewlyAdded(newThreshold, isInstalledOnlyEnabled(), 1).isNotEmpty()
         val hasRecommendations = gameRepository.getByIds(recommendedGameIds()).isNotEmpty()
         val hasFavorites = gameRepository.getFavorites().isNotEmpty()
         val hasAndroid = gameRepository.getByPlatformSorted(LocalPlatformIds.ANDROID, limit = 1).isNotEmpty()
@@ -1016,13 +1016,13 @@ class DualHomeViewModel(
                 val recentlyPlayed = gameRepository.getRecentlyPlayed(
                     limit = recentLimit
                 )
-                val newlyAdded = gameRepository.getNewlyAddedPlayable(
-                    newThreshold, recentLimit
+                val newlyAdded = gameRepository.getNewlyAdded(
+                    newThreshold, installedOnly, recentLimit
                 )
                 val allCandidates = (recentlyPlayed + newlyAdded)
                     .distinctBy { it.id }
 
-                val playable = filterPlayable(allCandidates)
+                val playable = if (installedOnly) filterPlayable(allCandidates) else allCandidates
 
                 sortRecentGamesWithNewPriority(playable)
                     .take(recentLimit)

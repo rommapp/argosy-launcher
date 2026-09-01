@@ -908,10 +908,11 @@ class GameRepository @Inject constructor(
         emitAll(gameDao.observeFavoritesList(hiddenOwnerId()))
     }
 
-    suspend fun getNewlyAddedPlayable(
+    suspend fun getNewlyAdded(
         threshold: Instant,
+        installedOnly: Boolean,
         limit: Int = 20
-    ): List<GameEntity> = gameDao.getNewlyAddedPlayable(threshold, hiddenOwnerId(), limit)
+    ): List<GameEntity> = gameDao.getNewlyAdded(threshold, hiddenOwnerId(), installedOnly, limit)
 
     suspend fun countByPlatform(platformId: Long): Int =
         gameDao.countByPlatform(platformId, hiddenOwnerId())

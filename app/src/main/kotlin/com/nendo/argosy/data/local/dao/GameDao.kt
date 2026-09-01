@@ -357,17 +357,28 @@ interface GameDao {
     """)
     suspend fun getRecentlyPlayed(ownerUserId: Long?, limit: Int = 20): List<GameEntity>
 
+    /**
+     * Newly added games, narrowed to what can be launched only when [installedOnly] asks for it.
+     * The predicate is a parameter rather than a second query so the two cannot drift; a caller
+     * that always wanted playable games passes true.
+     */
     @Query("""
         SELECT * FROM games
         WHERE NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
         AND lastPlayed IS NULL
         AND addedAt > :threshold
-        AND (localPath IS NOT NULL OR source = 'ANDROID_APP'
+        AND (:installedOnly = 0
+            OR localPath IS NOT NULL OR source = 'ANDROID_APP'
             OR (source = 'STEAM' AND steamLauncher IS NOT NULL AND steamLauncher != 'native'))
         ORDER BY addedAt DESC
         LIMIT :limit
     """)
-    suspend fun getNewlyAddedPlayable(threshold: Instant, ownerUserId: Long?, limit: Int = 20): List<GameEntity>
+    suspend fun getNewlyAdded(
+        threshold: Instant,
+        ownerUserId: Long?,
+        installedOnly: Boolean,
+        limit: Int = 20
+    ): List<GameEntity>
 
     @Query("SELECT * FROM games WHERE id = :id")
     suspend fun getById(id: Long): GameEntity?

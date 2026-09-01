@@ -164,14 +164,14 @@ class HomeLibraryDelegate @Inject constructor(
 
         val newThreshold = Instant.now().minus(NEW_GAME_THRESHOLD_HOURS, ChronoUnit.HOURS)
         var recentlyPlayed = gameRepository.getRecentlyPlayed(RECENT_GAMES_CANDIDATE_POOL)
-        var newlyAdded = gameRepository.getNewlyAddedPlayable(newThreshold, RECENT_GAMES_CANDIDATE_POOL)
+        var newlyAdded = gameRepository.getNewlyAdded(newThreshold, installedOnly, RECENT_GAMES_CANDIDATE_POOL)
         var allCandidates = (recentlyPlayed + newlyAdded).distinctBy { it.id }
 
         val allDisplayed = (favorites + allCandidates).distinctBy { it.id }
         if (discoverGamesIfNeeded(allDisplayed)) {
             favorites = gameRepository.getFavorites()
             recentlyPlayed = gameRepository.getRecentlyPlayed(RECENT_GAMES_CANDIDATE_POOL)
-            newlyAdded = gameRepository.getNewlyAddedPlayable(newThreshold, RECENT_GAMES_CANDIDATE_POOL)
+            newlyAdded = gameRepository.getNewlyAdded(newThreshold, installedOnly, RECENT_GAMES_CANDIDATE_POOL)
             allCandidates = (recentlyPlayed + newlyAdded).distinctBy { it.id }
         }
 
@@ -179,7 +179,7 @@ class HomeLibraryDelegate @Inject constructor(
             favorites = filterPlayable(favorites)
         }
 
-        val playableGames = filterPlayable(allCandidates)
+        val playableGames = if (installedOnly) filterPlayable(allCandidates) else allCandidates
         val sortedRecent = sortRecentGamesWithNewPriority(playableGames)
         val validatedRecent = sortedRecent.take(RECENT_GAMES_LIMIT).map { it.toUi() }
         recentGamesCache.set(RecentGamesCache(validatedRecent, recentGamesCache.get().version))
@@ -241,10 +241,11 @@ class HomeLibraryDelegate @Inject constructor(
             gameRepository.awaitStorageReady()
             val newThreshold = Instant.now().minus(NEW_GAME_THRESHOLD_HOURS, ChronoUnit.HOURS)
             gameRepository.observeRecentlyPlayed(RECENT_GAMES_CANDIDATE_POOL).collect { recentlyPlayed ->
-                val newlyAdded = gameRepository.getNewlyAddedPlayable(newThreshold, RECENT_GAMES_CANDIDATE_POOL)
+                val installedOnly = installedOnlyHome()
+                val newlyAdded = gameRepository.getNewlyAdded(newThreshold, installedOnly, RECENT_GAMES_CANDIDATE_POOL)
                 val allCandidates = (recentlyPlayed + newlyAdded).distinctBy { it.id }
 
-                val playableGames = filterPlayable(allCandidates)
+                val playableGames = if (installedOnly) filterPlayable(allCandidates) else allCandidates
                 val sorted = sortRecentGamesWithNewPriority(playableGames)
                 val validated = sorted.take(RECENT_GAMES_LIMIT).map { it.toUi() }
 
@@ -276,17 +277,18 @@ class HomeLibraryDelegate @Inject constructor(
             currentCache.games
         } else {
             val newThreshold = Instant.now().minus(NEW_GAME_THRESHOLD_HOURS, ChronoUnit.HOURS)
+            val installedOnly = installedOnlyHome()
             var recentlyPlayed = gameRepository.getRecentlyPlayed(RECENT_GAMES_CANDIDATE_POOL)
-            var newlyAdded = gameRepository.getNewlyAddedPlayable(newThreshold, RECENT_GAMES_CANDIDATE_POOL)
+            var newlyAdded = gameRepository.getNewlyAdded(newThreshold, installedOnly, RECENT_GAMES_CANDIDATE_POOL)
             var allCandidates = (recentlyPlayed + newlyAdded).distinctBy { it.id }
 
             if (discoverGamesIfNeeded(allCandidates)) {
                 recentlyPlayed = gameRepository.getRecentlyPlayed(RECENT_GAMES_CANDIDATE_POOL)
-                newlyAdded = gameRepository.getNewlyAddedPlayable(newThreshold, RECENT_GAMES_CANDIDATE_POOL)
+                newlyAdded = gameRepository.getNewlyAdded(newThreshold, installedOnly, RECENT_GAMES_CANDIDATE_POOL)
                 allCandidates = (recentlyPlayed + newlyAdded).distinctBy { it.id }
             }
 
-            val playableGames = filterPlayable(allCandidates)
+            val playableGames = if (installedOnly) filterPlayable(allCandidates) else allCandidates
             val sorted = sortRecentGamesWithNewPriority(playableGames)
             val validated = sorted.take(RECENT_GAMES_LIMIT).map { it.toUi() }
 
@@ -498,11 +500,12 @@ class HomeLibraryDelegate @Inject constructor(
             HomeRow.Continue -> {
                 invalidateRecentGamesCache()
                 val newThreshold = Instant.now().minus(NEW_GAME_THRESHOLD_HOURS, ChronoUnit.HOURS)
+                val installedOnly = installedOnlyHome()
                 val recentlyPlayed = gameRepository.getRecentlyPlayed(RECENT_GAMES_CANDIDATE_POOL)
-                val newlyAdded = gameRepository.getNewlyAddedPlayable(newThreshold, RECENT_GAMES_CANDIDATE_POOL)
+                val newlyAdded = gameRepository.getNewlyAdded(newThreshold, installedOnly, RECENT_GAMES_CANDIDATE_POOL)
                 val allCandidates = (recentlyPlayed + newlyAdded).distinctBy { it.id }
 
-                val playableGames = filterPlayable(allCandidates)
+                val playableGames = if (installedOnly) filterPlayable(allCandidates) else allCandidates
                 val sorted = sortRecentGamesWithNewPriority(playableGames)
                 val validated = sorted.take(RECENT_GAMES_LIMIT).map { it.toUi() }
 
@@ -713,6 +716,9 @@ class HomeLibraryDelegate @Inject constructor(
         }
         return true
     }
+
+    private suspend fun installedOnlyHome(): Boolean =
+        preferencesRepository.userPreferences.first().installedOnlyHome
 
     private suspend fun filterPlayable(candidates: List<GameEntity>): List<GameEntity> {
         return candidates.filter { downloadFileStatusRepository.isContentAvailable(it) }

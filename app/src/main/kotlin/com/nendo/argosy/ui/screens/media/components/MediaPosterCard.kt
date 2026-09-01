@@ -34,6 +34,7 @@ import coil.request.ImageRequest
 import com.nendo.argosy.R
 import com.nendo.argosy.ui.common.AlwaysCrossfadeFactory
 import com.nendo.argosy.ui.components.boxArtFrame
+import com.nendo.argosy.ui.components.boxart.UnbadgedBoxArtBorder
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.ui.screens.media.MediaItemUi
 import com.nendo.argosy.ui.theme.Dimens
@@ -103,6 +104,11 @@ fun MediaPosterCard(
                     modifier = Modifier.size(Dimens.iconLg).align(Alignment.Center)
                 )
             }
+            UnbadgedBoxArtBorder(
+                imageModel = item.posterUrl.takeIf { it.isNotBlank() },
+                gradientColors = item.gradientColors,
+                isFocused = isFocused
+            )
             MediaTileBadges(
                 item = item,
                 modifier = Modifier.align(Alignment.TopEnd).padding(Dimens.spacingXs)

@@ -65,10 +65,12 @@ import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import com.nendo.argosy.ui.components.boxart.BoxArtGeometry
+import com.nendo.argosy.ui.components.boxart.GlassBorderOverlay
 import com.nendo.argosy.ui.components.boxart.GlassCombinedShape
-import com.nendo.argosy.ui.components.boxart.GlassRingShape
+import com.nendo.argosy.ui.components.boxart.GradientBorderOverlay
 import com.nendo.argosy.ui.components.boxart.GradientMaskShape
 import com.nendo.argosy.ui.components.boxart.InnerEffectShape
+import com.nendo.argosy.ui.components.boxart.glassColorFilterFor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import com.nendo.argosy.R
@@ -329,10 +331,10 @@ fun GameCard(
 
         if (gradientBorderProgress > 0f && gradientColors != null) {
             GradientBorderOverlay(
+                imageModel = rememberFileImageModel(effectiveCoverPath),
                 gradientColors = gradientColors,
                 gradientBorderProgress = gradientBorderProgress,
                 geometry = geometry,
-                effectiveCoverPath = effectiveCoverPath,
                 sweepOffset = sweepOffset
             )
         }
@@ -416,189 +418,15 @@ private fun CoverContent(
 
     if (!useGlassBorder) return
 
-    val glassColorFilter = when {
-        hasGradientColors -> {
-            val tintColor = lerp(Color.White, gradientColors!!.first, (glassBorderTintAlpha * 2).coerceIn(0f, 1f))
-            ColorFilter.lighting(multiply = tintColor, add = Color.Black)
-        }
-        glassBorderTintAlpha > 0f -> {
-            val tintColor = lerp(Color.White, borderColor, glassBorderTintAlpha)
-            ColorFilter.lighting(multiply = tintColor, add = Color.Black)
-        }
-        else -> null
-    }
-
-    val combinedShape = GlassCombinedShape(
-        outerCornerRadius = geometry.outerCornerRadiusPx,
-        frameWidth = geometry.frameWidthPx,
-        badgePosition = geometry.effectiveBadgePosition,
-        badgeWidth = geometry.badgeWidthPx,
-        badgeHeight = geometry.badgeHeightPx,
-        badgeCornerRadius = geometry.scaledCornerRadiusPx,
-        oneDpPx = geometry.oneDpPx
-    )
-    AsyncImage(
-        model = imageData,
-        contentDescription = null,
-        contentScale = ContentScale.Crop,
-        colorFilter = glassColorFilter,
-        modifier = Modifier
-            .fillMaxSize()
-            .clip(combinedShape)
-            .blur(8.dp)
-    )
-
-    val innerEffectShape = InnerEffectShape(
-        outerCornerRadius = geometry.outerCornerRadiusPx,
-        frameWidth = geometry.frameWidthPx,
-        effectWidth = geometry.innerEffectWidth,
-        badgePosition = geometry.effectiveBadgePosition,
-        badgeWidth = geometry.badgeWidthPx,
-        badgeHeight = geometry.badgeHeightPx,
-        badgeCornerRadius = geometry.scaledCornerRadiusPx,
-        oneDpPx = geometry.oneDpPx
-    )
-
-    when (geometry.innerEffect) {
-        BoxArtInnerEffect.GLASS -> GlassInnerEffect(imageData, glassColorFilter, innerEffectShape, geometry)
-        BoxArtInnerEffect.SHADOW -> StrokeInnerEffect(innerEffectShape, geometry, Color.Black, 0.5f)
-        BoxArtInnerEffect.GLOW -> StrokeInnerEffect(innerEffectShape, geometry, Color.White, 0.4f)
-        BoxArtInnerEffect.SHINE -> ShineInnerEffect(sweepOffset)
-        BoxArtInnerEffect.OFF -> {}
-    }
-}
-
-@Composable
-private fun GlassInnerEffect(
-    imageData: Any?,
-    glassColorFilter: ColorFilter?,
-    innerEffectShape: InnerEffectShape,
-    geometry: BoxArtGeometry
-) {
-    val glassLayers = listOf(
-        Triple(24.dp, 0.00f to 0.24f, 1.0f),
-        Triple(12.dp, 0.21f to 0.44f, 1.0f),
-        Triple(6.dp, 0.41f to 0.60f, 1.0f),
-        Triple(3.dp, 0.57f to 0.68f, 1.0f),
-        Triple(1.5.dp, 0.65f to 0.76f, 0.85f),
-        Triple(0.8.dp, 0.73f to 0.84f, 0.65f),
-        Triple(0.4.dp, 0.81f to 0.92f, 0.45f),
-        Triple(0.1.dp, 0.89f to 1.00f, 0.3f)
-    )
-
-    glassLayers.forEach { (blurAmount, range, alpha) ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .graphicsLayer { this.alpha = alpha }
-                .clip(
-                    GlassRingShape(
-                        outerCornerRadius = geometry.outerCornerRadiusPx,
-                        frameWidth = geometry.frameWidthPx,
-                        innerEffectWidth = geometry.innerEffectWidth,
-                        startProgress = range.first,
-                        endProgress = range.second,
-                        badgePosition = geometry.effectiveBadgePosition,
-                        badgeWidth = geometry.badgeWidthPx,
-                        badgeHeight = geometry.badgeHeightPx,
-                        badgeCornerRadius = geometry.scaledCornerRadiusPx,
-                        oneDpPx = geometry.oneDpPx
-                    )
-                )
-        ) {
-            AsyncImage(
-                model = imageData,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                colorFilter = glassColorFilter,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .blur(blurAmount)
-            )
-        }
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .clip(innerEffectShape)
-            .drawBehind {
-                val depthWidth = geometry.frameWidthPx * 1.5f
-                val depthLayers = 6
-                val depthStrokeWidth = depthWidth / depthLayers
-                for (i in 0 until depthLayers) {
-                    val progress = i.toFloat() / depthLayers
-                    val alpha = (0.35f * (1f - progress)).coerceIn(0f, 1f)
-                    val layerInset = geometry.frameWidthPx + (depthWidth * progress) + depthStrokeWidth / 2
-                    val layerRadius = (geometry.outerCornerRadiusPx - layerInset).coerceAtLeast(0f)
-                    drawRoundRect(
-                        color = Color.Black.copy(alpha = alpha),
-                        topLeft = Offset(layerInset, layerInset),
-                        size = Size(size.width - layerInset * 2, size.height - layerInset * 2),
-                        cornerRadius = CornerRadius(layerRadius),
-                        style = androidx.compose.ui.graphics.drawscope.Stroke(width = depthStrokeWidth)
-                    )
-                }
-            }
-    )
-}
-
-@Composable
-private fun StrokeInnerEffect(
-    innerEffectShape: InnerEffectShape,
-    geometry: BoxArtGeometry,
-    color: Color,
-    baseAlpha: Float
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .clip(innerEffectShape)
-            .drawBehind {
-                val layers = 12
-                val strokeWidth = geometry.innerEffectWidth / layers
-                for (i in 0 until layers) {
-                    val progress = i.toFloat() / layers
-                    val alpha = (baseAlpha * (1f - progress)).coerceIn(0f, 1f)
-                    val layerInset = geometry.frameWidthPx + (geometry.innerEffectWidth * progress) + strokeWidth / 2
-                    val layerRadius = (geometry.outerCornerRadiusPx - layerInset).coerceAtLeast(0f)
-                    drawRoundRect(
-                        color = color.copy(alpha = alpha),
-                        topLeft = Offset(layerInset, layerInset),
-                        size = Size(size.width - layerInset * 2, size.height - layerInset * 2),
-                        cornerRadius = CornerRadius(layerRadius),
-                        style = androidx.compose.ui.graphics.drawscope.Stroke(width = strokeWidth)
-                    )
-                }
-            }
-    )
-}
-
-@Composable
-private fun ShineInnerEffect(sweepOffset: Float) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .drawBehind {
-                val diagonal = kotlin.math.sqrt(size.width * size.width + size.height * size.height)
-                val sweepWidth = diagonal * 0.4f
-                val progress = sweepOffset * (diagonal + sweepWidth) - sweepWidth
-                val startX = progress * 0.85f
-                val startY = progress * 0.5f - size.height * 0.2f
-                val endX = startX + sweepWidth * 0.85f
-                val endY = startY + sweepWidth * 0.5f
-                drawRect(
-                    brush = Brush.linearGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            Color.White.copy(alpha = 0.4f),
-                            Color.Transparent
-                        ),
-                        start = Offset(startX, startY),
-                        end = Offset(endX, endY)
-                    )
-                )
-            }
+    GlassBorderOverlay(
+        imageModel = imageData,
+        geometry = geometry,
+        glassColorFilter = glassColorFilterFor(
+            gradientColors = if (hasGradientColors) gradientColors else null,
+            borderColor = borderColor,
+            glassBorderTintAlpha = glassBorderTintAlpha
+        ),
+        sweepOffset = sweepOffset
     )
 }
 
@@ -631,60 +459,6 @@ private fun StubCover(gameTitle: String, useSolidStub: Boolean) {
             modifier = Modifier.padding(Dimens.spacingSm)
         )
     }
-}
-
-@Composable
-private fun GradientBorderOverlay(
-    gradientColors: Pair<Color, Color>,
-    gradientBorderProgress: Float,
-    geometry: BoxArtGeometry,
-    effectiveCoverPath: String,
-    sweepOffset: Float
-) {
-    val isDark = isSystemInDarkTheme()
-    val neutralColor = if (isDark) Color.Black.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.5f)
-    val animatedPrimary = lerp(neutralColor, gradientColors.first, gradientBorderProgress)
-    val animatedSecondary = lerp(neutralColor, gradientColors.second, gradientBorderProgress)
-    val animatedFrameWidth = geometry.frameWidthPx * gradientBorderProgress
-
-    val gradientMaskShape = GradientMaskShape(
-        outerCornerRadius = geometry.outerCornerRadiusPx,
-        frameWidth = animatedFrameWidth,
-        isStub = false,
-        badgePosition = geometry.effectiveBadgePosition,
-        badgeWidth = geometry.badgeWidthPx,
-        badgeHeight = geometry.badgeHeightPx,
-        badgeCornerRadius = geometry.scaledCornerRadiusPx,
-        oneDpPx = geometry.oneDpPx
-    )
-
-    val innerEffectShape = InnerEffectShape(
-        outerCornerRadius = geometry.outerCornerRadiusPx,
-        frameWidth = animatedFrameWidth,
-        effectWidth = geometry.innerEffectWidth
-    )
-    val coverImageData = rememberFileImageModel(effectiveCoverPath)
-
-    when (geometry.innerEffect) {
-        BoxArtInnerEffect.GLASS -> if (coverImageData != null) {
-            GlassInnerEffect(coverImageData, glassColorFilter = null, innerEffectShape, geometry)
-        }
-        BoxArtInnerEffect.SHADOW -> StrokeInnerEffect(innerEffectShape, geometry, Color.Black, 0.5f)
-        BoxArtInnerEffect.GLOW -> StrokeInnerEffect(innerEffectShape, geometry, Color.White, 0.4f)
-        BoxArtInnerEffect.SHINE -> ShineInnerEffect(sweepOffset)
-        BoxArtInnerEffect.OFF -> {}
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .clip(gradientMaskShape)
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(animatedPrimary, animatedSecondary)
-                )
-            )
-    )
 }
 
 @Composable

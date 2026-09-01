@@ -208,6 +208,11 @@ object ComponentDefaults {
         const val crossfadeMs = 160
     }
 
+    object BoxArtBorder {
+        const val glassBlurDp = 8
+        val glassRingBlursDp = listOf(24f, 12f, 6f, 3f, 1.5f, 0.8f, 0.4f, 0.1f)
+    }
+
     object DownloadCover {
         const val waveAmplitudeDp = 5
     }

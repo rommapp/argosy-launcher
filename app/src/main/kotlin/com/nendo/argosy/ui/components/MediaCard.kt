@@ -39,6 +39,7 @@ import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.nendo.argosy.ui.common.AlwaysCrossfadeFactory
+import com.nendo.argosy.ui.components.boxart.UnbadgedBoxArtBorder
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
 import com.nendo.argosy.ui.screens.home.GameDownloadIndicator
@@ -142,6 +143,11 @@ fun MediaCard(
                 onError = { artworkFailed = true }
             )
         }
+        UnbadgedBoxArtBorder(
+            imageModel = media.posterUrl.takeIf { it.isNotBlank() && !artworkFailed },
+            gradientColors = media.gradientColors,
+            isFocused = isFocused
+        )
         if (showLabel) {
             MediaTileLabel(
                 media = media,

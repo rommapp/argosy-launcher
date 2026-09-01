@@ -408,6 +408,11 @@ function emitComponentDefaults(components, enums) {
       }
       return `${enumNameMap[enumName]}.${value}`;
     }
+    if (Array.isArray(value)) {
+      // A list token is always Float-typed: the values are a visual ramp, and mixing Int and
+      // Double members would infer List<Comparable> at the consumer.
+      return `listOf(${value.map(v => `${Number(v)}f`).join(", ")})`;
+    }
     if (typeof value === "boolean") return value ? "true" : "false";
     if (typeof value === "number") {
       // Force `f` suffix for fields known to be Float-typed in Kotlin so whole-number

@@ -38,6 +38,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val TAG = "BiosRepository"
+private const val XBOX_EMULATOR_ID = "hakux"
 private const val BIOS_INTERNAL_DIR = "bios"
 private const val FIRMWARE_STALL_TIMEOUT_MS = 90_000L
 private const val FIRMWARE_PART_SUFFIX = ".part"
@@ -106,7 +107,8 @@ class BiosRepository @Inject constructor(
     private val platformDao: PlatformDao,
     private val userPreferencesRepository: UserPreferencesRepository,
     private val switchKeyManager: SwitchKeyManager,
-    private val attributionRepository: StorageAttributionRepository
+    private val attributionRepository: StorageAttributionRepository,
+    private val xboxDiskImageProvisioner: com.nendo.argosy.data.sync.xbox.XboxDiskImageProvisioner
 ) {
     private var api: RomMApi? = null
 
@@ -598,7 +600,19 @@ class BiosRepository @Inject constructor(
             if (copiedCount > 0) break
         }
 
+        provisionXboxDiskImage(emulatorId, targetPaths)
         copiedCount
+    }
+
+    /**
+     * hakuX cannot boot without a hard disk, and unlike the flash ROM and MCPX that disk holds
+     * nothing copyrighted, so a blank one is generated rather than demanded from the user. An
+     * image already in place is left alone; it is where their saves live.
+     */
+    private suspend fun provisionXboxDiskImage(emulatorId: String, targetPaths: List<String>) {
+        if (emulatorId != XBOX_EMULATOR_ID) return
+        targetPaths.firstOrNull { File(it).isDirectory }
+            ?.let { xboxDiskImageProvisioner.ensureImageExists(it) }
     }
 
     suspend fun distributeAllBiosToEmulators(): Map<String, Int> = withContext(Dispatchers.IO) {

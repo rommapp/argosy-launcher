@@ -34,7 +34,11 @@ class XboxHddImage private constructor(
      * when the game has no save directory, which is the ordinary state before a first save.
      */
     fun extractSave(titleIdHex: String, destination: File): Boolean {
-        val root = volume.resolve(listOf(UDATA, titleIdHex)) ?: return false
+        val root = volume.resolve(listOf(UDATA, titleIdHex))
+        if (root == null) {
+            destination.deleteRecursively()
+            return false
+        }
         destination.deleteRecursively()
         destination.mkdirs()
         extractDirectory(root, destination)

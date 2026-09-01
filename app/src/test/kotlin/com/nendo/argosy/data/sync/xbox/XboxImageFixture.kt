@@ -180,7 +180,8 @@ class FatxFixture(
         val name: String,
         val isDirectory: Boolean,
         val firstCluster: Int,
-        val size: Int = 0
+        val size: Int = 0,
+        val packedTimestamp: Int = 0x24CD08B9
     )
 
     fun writeDirectory(cluster: Int, entries: List<Dirent>) {
@@ -192,6 +193,9 @@ class FatxFixture(
             entry.name.forEachIndexed { i, c -> block[at + 2 + i] = c.code.toByte() }
             writeIntLe(block, at + 44, entry.firstCluster)
             writeIntLe(block, at + 48, entry.size)
+            writeIntLe(block, at + 52, entry.packedTimestamp)
+            writeIntLe(block, at + 56, entry.packedTimestamp)
+            writeIntLe(block, at + 60, entry.packedTimestamp)
         }
         if (entries.size * 64 < bytesPerCluster) {
             block[entries.size * 64] = 0x00

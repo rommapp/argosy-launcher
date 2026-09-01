@@ -27,8 +27,29 @@ data class BiosPathConfig(
     val emulatorId: String,
     val defaultPaths: List<String>,
     val supportedPlatforms: Set<String>,
-    val acceptsAnyPlatform: Boolean = false
+    val acceptsAnyPlatform: Boolean = false,
+    /**
+     * Source file name to the name this emulator insists on. Only for emulators that rename what
+     * the user supplies; the shared md5 and nested-path tables stay global because those names
+     * are not one emulator's private preference.
+     */
+    val fileNameOverrides: Map<String, String> = emptyMap(),
+    /**
+     * Names that must never be replaced or swept once present. A firmware blob is static and
+     * overwriting it is harmless, but a disk image is a volume the user's saves live inside, so
+     * redistributing over it destroys them.
+     */
+    val writeOnceFileNames: Set<String> = emptySet()
 ) {
+    fun targetNameFor(fileName: String): String =
+        fileNameOverrides.entries
+            .firstOrNull { it.key.equals(fileName, ignoreCase = true) }
+            ?.value
+            ?: fileName
+
+    fun isWriteOnce(fileName: String): Boolean =
+        writeOnceFileNames.any { it.equals(fileName, ignoreCase = true) }
+
     fun supports(canonicalSlug: String): Boolean =
         acceptsAnyPlatform || canonicalSlug in supportedPlatforms
 
@@ -299,6 +320,20 @@ object BiosPathRegistry {
                 "$primaryRoot/Android/data/com.github.stenzek.duckstation/files/bios"
             ),
             supportedPlatforms = setOf("psx")
+        ),
+        "hakux" to BiosPathConfig(
+            emulatorId = "hakux",
+            defaultPaths = listOf(
+                "$primaryRoot/Android/data/com.rfandango.haku_x/files/x1box"
+            ),
+            supportedPlatforms = setOf("xbox"),
+            fileNameOverrides = mapOf(
+                "Complex_4627.bin" to "flash.bin",
+                "Complex_4627v1.03.bin" to "flash.bin",
+                "mcpx_1.0.bin" to "mcpx.bin",
+                "xbox_hdd.qcow2" to "hdd.img"
+            ),
+            writeOnceFileNames = setOf("xbox_hdd.qcow2")
         ),
         "melonds" to BiosPathConfig(
             emulatorId = "melonds",

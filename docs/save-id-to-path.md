@@ -217,26 +217,45 @@ its own content root. AX360E is deliberately unregistered: its layout has not
 been read from the app, and a guessed path resolves to a directory the emulator
 never writes.
 
-### Xbox (no path exists)
+### Xbox (the path names an image, not a folder)
 
-The one platform where `save_id` identifies without locating. Saves are
-written to `E:\UDATA\<save_id>\` inside a FATX filesystem, inside the `.qcow2`
-or `.img` hard-disk image the emulator boots. There is no host directory to
-resolve, and hakuX takes that image from a user file picker rather than placing
-it anywhere fixed, so there is not even a stable image path to look in. X1 BOX
-and desktop xemu have the same property for the same reason.
+The one platform whose save is not a host file. Saves are written to
+`E:\UDATA\<save_id>\` inside a FATX filesystem inside the disk image the
+emulator boots, and `save_id` here is the raw hex title id the console names
+the directory after, not the `MS-100` serial printed on the disc.
 
-`hakux` is registered with `supported = false` and an EMPTY `defaultPaths`, and
-the emptiness is the point. `getConfig` and `SavePathAuthority.configFor` both
-drop an unsupported config, so nothing offers the user a save folder, and no
-plausible-looking path is left in the registry for a later reader to trust.
-Reading one would mean a FATX parser over a qcow2, and hakuX's own FATX code
-only imports a dashboard, it exports nothing.
+`hakux`'s `defaultPaths` names the directory holding that image, not the saves:
 
-sigil still returns a real `save_id` here, and `xbox` is in
-`PlatformDefinitions.TITLE_ID_PLATFORMS` so that it gets extracted and stored:
-it matches the game to its upstream record even when no file can be reached.
-Membership in that set is about extraction, not about a syncable layout.
+```
+{extStorage}/Android/data/com.rfandango.haku_x/files/x1box
+```
+
+hakuX ingests the flash ROM, MCPX and hard disk into that directory during
+setup, renaming them to `flash.bin`, `mcpx.bin` and `hdd.img`, and boots from
+its own copies. The file is qcow2 despite the `.img` name, so the reader checks
+the `QFI\xfb` magic rather than trusting the extension.
+
+Two layers sit between the path and the save. `Qcow2Image` maps guest offsets
+through the L1 and L2 tables, and `FatxVolume` reads the filesystem inside. The
+E: partition begins at sector `0x55F400` on every Xbox-shaped image and runs to
+the end of the disk, which is upstream-exact and must not be recomputed.
+
+`XboxSaveHandler` stages a save out of the image into the app cache and hands
+that directory to the ordinary folder pipeline, then writes the staged tree back
+in on restore. Nothing downstream of the handler knows a container is involved.
+Staging is rebuilt from the image on every read, because the emulator writes the
+image without telling us and a cached copy would upload a stale save.
+
+Writing is in place only. A file must already exist in the image at the same
+size, so a save can be restored over itself but one the emulator has never
+written cannot be introduced. Growing a file or creating one needs cluster
+allocation, which means updating the qcow2 refcount tables, and a mistake there
+damages an image the user cannot rebuild.
+
+The image is also registered `writeOnce` in `BiosPathRegistry`, so BIOS
+redistribution never copies a fresh one over it. Every other firmware entry is a
+static blob where overwriting is harmless; this one is a volume the user's saves
+live inside.
 
 ### RetroArch and the file-based default
 

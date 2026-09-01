@@ -41,6 +41,18 @@ class XboxHddImageTest {
     }
 
     @Test
+    fun `staged files carry the time the console wrote them`() {
+        val image = openFixture()
+        val destination = temporaryFolder.newFolder("timestamped")
+        assertTrue(image.extractSave(titleId, destination))
+
+        val written = java.time.LocalDateTime.of(2018, 6, 13, 1, 5, 50)
+            .toInstant(java.time.ZoneOffset.UTC)
+            .toEpochMilli()
+        assertEquals(written, File(destination, "savegame.dat").lastModified())
+    }
+
+    @Test
     fun `extracting a game with no save reports absence`() {
         val image = openFixture()
 

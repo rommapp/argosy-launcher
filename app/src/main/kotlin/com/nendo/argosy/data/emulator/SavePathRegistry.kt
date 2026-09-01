@@ -504,17 +504,18 @@ object SavePathRegistry {
         ),
 
         /**
-         * Xbox - identifiable but not syncable, and the empty path list is the point. Saves are
-         * written to `E:\UDATA\<save_id>\` inside a FATX filesystem inside the `.qcow2` or `.img`
-         * hard-disk image the emulator boots, and hakuX takes that image from a file picker rather
-         * than placing it anywhere fixed. There is no host directory to name, so naming a
-         * plausible one would offer the user a save folder that stays empty forever.
+         * Xbox - the path names the directory holding the emulator's disk image, not the saves.
+         * Saves live at `E:\UDATA\<save_id>\` inside a FATX filesystem inside `hdd.img`, which
+         * hakuX ingests into its own directory during setup and boots from there. `XboxSaveHandler`
+         * stages them out of the image and back into it, so everything downstream sees files.
          */
         "hakux" to SavePathConfig(
             emulatorId = "hakux",
-            defaultPaths = emptyList(),
-            saveExtensions = emptyList(),
-            supported = false
+            defaultPaths = listOf(
+                "{extStorage}/Android/data/com.rfandango.haku_x/files/x1box"
+            ),
+            saveExtensions = listOf("*"),
+            usesFolderBasedSaves = true
         ),
 
         // Wii U - folder-based saves by title ID

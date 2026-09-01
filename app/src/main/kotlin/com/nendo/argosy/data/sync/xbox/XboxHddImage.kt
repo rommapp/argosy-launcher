@@ -62,6 +62,7 @@ class XboxHddImage private constructor(
                 extractDirectory(child, target)
             } else {
                 target.writeBytes(volume.readFile(child))
+                if (child.lastWriteEpochMillis > 0) target.setLastModified(child.lastWriteEpochMillis)
             }
         }
     }

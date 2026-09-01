@@ -51,7 +51,8 @@ class PlatformSaveHandlerRegistry @Inject constructor(
         N3dsFolderHandler(context, fal, saveArchiver),
         Ps2FolderHandler(context, fal, saveArchiver),
         Ps3FolderHandler(context, fal, saveArchiver),
-        Xbox360FolderHandler(context, fal, saveArchiver)
+        Xbox360FolderHandler(context, fal, saveArchiver),
+        XboxSaveHandler(context, fal, saveArchiver)
     ).associateBy { it.platformSlug }
 
     private fun canonicalSlug(platformSlug: String): String =

@@ -21,7 +21,8 @@ class FatxVolume(
         val name: String,
         val isDirectory: Boolean,
         val firstCluster: Int,
-        val size: Int
+        val size: Int,
+        val lastWriteEpochMillis: Long
     )
 
     private val bytesPerCluster: Int
@@ -118,7 +119,8 @@ class FatxVolume(
             name = name,
             isDirectory = attributes and ATTRIBUTE_DIRECTORY != 0,
             firstCluster = readInt(buffer, at + 44),
-            size = readInt(buffer, at + 48)
+            size = readInt(buffer, at + 48),
+            lastWriteEpochMillis = decodeTimestamp(readInt(buffer, at + 56))
         )
     }
 
@@ -167,6 +169,30 @@ class FatxVolume(
         const val ATTRIBUTE_DIRECTORY = 0x10
 
         fun align(value: Long, to: Long): Long = (value + to - 1) / to * to
+
+        /**
+         * FATX packs a date in the high half and a time in the low half, with the year counted
+         * from 2000 and seconds stored halved. Sync compares save ages, so this is what keeps a
+         * staged copy carrying the time the console wrote it rather than the time we read it.
+         */
+        fun decodeTimestamp(raw: Int): Long {
+            val date = (raw ushr 16) and 0xFFFF
+            val time = raw and 0xFFFF
+            val year = 2000 + ((date ushr 9) and 0x7F)
+            val month = (date ushr 5) and 0x0F
+            val day = date and 0x1F
+            if (month !in 1..12 || day !in 1..31) return 0L
+            return runCatching {
+                java.time.LocalDateTime.of(
+                    year,
+                    month,
+                    day,
+                    (time ushr 11) and 0x1F,
+                    (time ushr 5) and 0x3F,
+                    ((time and 0x1F) * 2).coerceAtMost(59)
+                ).toInstant(java.time.ZoneOffset.UTC).toEpochMilli()
+            }.getOrDefault(0L)
+        }
 
         fun readInt(bytes: ByteArray, at: Int): Int =
             (bytes[at].toInt() and 0xFF) or

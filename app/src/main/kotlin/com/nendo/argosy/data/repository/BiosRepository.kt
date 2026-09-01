@@ -516,8 +516,10 @@ class BiosRepository @Inject constructor(
             for (dir in dirs) {
                 if (!dir.exists()) continue
                 for (firmware in firmwareFiles) {
+                    if (config.isWriteOnce(firmware.fileName)) continue
                     try {
                         deleteDistributedCopy(File(dir, firmware.fileName), firmware)
+                        deleteDistributedCopy(File(dir, config.targetNameFor(firmware.fileName)), firmware)
                         BiosPathRegistry.getNestedBiosPath(firmware.fileName)?.let { nested ->
                             deleteDistributedCopy(File(dir, nested), firmware)
                         }
@@ -575,10 +577,14 @@ class BiosRepository @Inject constructor(
                             BiosPathRegistry.getRetroArchBiosName(md5) ?: firmware.fileName
                         }
                 } else {
-                    firmware.fileName
+                    config.targetNameFor(firmware.fileName)
                 }
 
                 val targetFile = File(targetDir, targetFileName)
+                if (config.isWriteOnce(firmware.fileName) && targetFile.exists()) {
+                    Logger.debug(TAG, "Keeping existing ${targetFile.name}; it is written once")
+                    continue
+                }
                 try {
                     targetFile.parentFile?.mkdirs()
                     sourceFile.copyTo(targetFile, overwrite = true)

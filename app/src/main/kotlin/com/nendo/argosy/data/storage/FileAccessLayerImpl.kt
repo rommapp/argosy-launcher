@@ -245,6 +245,22 @@ class FileAccessLayerImpl @Inject constructor(
         }
     }
 
+    override fun openSeekable(path: String, writable: Boolean): SeekableFile? {
+        if (androidDataAccessor.isAltAccessSupported() && isRestrictedPath(path)) {
+            RandomAccessSeekableFile.open(androidDataAccessor.getFile(path), writable)
+                ?.let { return it }
+        }
+
+        if (isRestrictedPath(path)) {
+            extractVolumeAndPath(path)?.let { (volumeId, relativePath) ->
+                managedStorageAccessor.openDescriptorAtPath(volumeId, relativePath, writable)
+                    ?.let { return DescriptorSeekableFile(it) }
+            }
+        }
+
+        return RandomAccessSeekableFile.open(File(path), writable)
+    }
+
     override fun getInputStream(path: String): InputStream? {
         if (androidDataAccessor.isAltAccessSupported() && isRestrictedPath(path)) {
             val stream = androidDataAccessor.getInputStream(path)

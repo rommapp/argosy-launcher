@@ -6,6 +6,7 @@ import android.database.Cursor
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.os.ParcelFileDescriptor
 import android.provider.DocumentsContract
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
@@ -267,6 +268,53 @@ class ManagedStorageAccessor @Inject constructor(
     /**
      * Opens an input stream for reading a file at the given path.
      */
+    /**
+     * Opens a descriptor for positional access. Mode "rw" patches in place, unlike "rwt" which
+     * would truncate the file the caller is trying to edit.
+     */
+    fun openDescriptorAtPath(
+        volumeId: String,
+        relativePath: String,
+        writable: Boolean
+    ): ParcelFileDescriptor? {
+        val mode = if (writable) "rw" else "r"
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            val file = File(getVolumeRoot(volumeId), relativePath)
+            if (!file.exists()) return null
+            return runCatching { ParcelFileDescriptor.open(file, parcelModeFor(writable)) }.getOrNull()
+        }
+
+        initializeBlocking()
+
+        val treeUri = cachedTreeUri
+        if (treeUri != null) {
+            val targetDocId = "$volumeId:$relativePath"
+            val documentUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, targetDocId)
+            runCatching { contentResolver.openFileDescriptor(documentUri, mode) }
+                .getOrNull()
+                ?.let { return it }
+        }
+
+        val documentId = "$volumeId:$relativePath"
+        val baseUri = DocumentsContract.buildDocumentUri(EXTERNAL_STORAGE_AUTHORITY, documentId)
+        val documentUri = applyManagedParameter(baseUri, relativePath)
+
+        return try {
+            contentResolver.openFileDescriptor(documentUri, mode)
+        } catch (e: Exception) {
+            android.util.Log.e("ManagedStorageAccessor", "openDescriptorAtPath failed: ${e.message}")
+            null
+        }
+    }
+
+    private fun parcelModeFor(writable: Boolean): Int =
+        if (writable) {
+            ParcelFileDescriptor.MODE_READ_WRITE
+        } else {
+            ParcelFileDescriptor.MODE_READ_ONLY
+        }
+
     fun openInputStreamAtPath(volumeId: String, relativePath: String): InputStream? {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
             val file = File(getVolumeRoot(volumeId), relativePath)

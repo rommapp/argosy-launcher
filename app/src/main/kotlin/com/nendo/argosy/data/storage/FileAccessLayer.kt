@@ -1,8 +1,30 @@
 package com.nendo.argosy.data.storage
 
+import java.io.Closeable
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
+
+/**
+ * Positional access to one file. A container reader needs a few kilobytes from scattered
+ * offsets of a file that runs to gigabytes, which neither [FileAccessLayer.readBytes] nor
+ * [FileAccessLayer.getInputStream] can express without reading everything up to the offset.
+ */
+interface SeekableFile : Closeable {
+    val size: Long
+
+    /**
+     * Reads up to [length] bytes at [position] and returns how many landed, or -1 at the end
+     * of the file. A short read is normal and callers that need exact bytes must loop.
+     */
+    fun read(position: Long, buffer: ByteArray, offset: Int = 0, length: Int = buffer.size): Int
+
+    /**
+     * Overwrites [length] bytes at [position]. Callers patch inside a file that already holds
+     * the bytes they are replacing, so this never appends and never truncates.
+     */
+    fun write(position: Long, buffer: ByteArray, offset: Int = 0, length: Int = buffer.size)
+}
 
 data class FileInfo(
     val path: String,
@@ -48,6 +70,13 @@ interface FileAccessLayer {
     fun writeBytes(path: String, data: ByteArray): Boolean
     fun getInputStream(path: String): InputStream?
     fun getOutputStream(path: String): OutputStream?
+
+    /**
+     * Opens [path] for positional access, trying the same tiers as [readBytes]. Returns null
+     * when no tier can reach it, which for a restricted path is the device refusing rather
+     * than the file being absent.
+     */
+    fun openSeekable(path: String, writable: Boolean): SeekableFile?
 
     // Copy
     fun copyFile(source: String, dest: String): Boolean

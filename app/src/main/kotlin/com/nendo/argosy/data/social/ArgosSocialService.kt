@@ -126,6 +126,8 @@ class ArgosSocialService @Inject constructor(
         data class FeedEventUpdated(val eventId: String, val likeCount: Int, val commentCount: Int) : IncomingMessage()
         data class FeedCommentReceived(val eventId: String, val comment: FeedComment) : IncomingMessage()
         data class EventCommentsData(val eventId: String, val comments: List<FeedComment>) : IncomingMessage()
+        data class GameReviewsData(val page: GameReviewsPage) : IncomingMessage()
+        data class ReviewSummaryData(val summary: ReviewSummary) : IncomingMessage()
         data class Error(val code: String, val message: String) : IncomingMessage()
         data class Raw(val type: String, val payload: String) : IncomingMessage()
         data class SessionRevoked(val reason: String) : IncomingMessage()
@@ -398,6 +400,31 @@ class ArgosSocialService @Inject constructor(
                     val collections = parseCollectionsList(collectionsArray)
                     Log.d(TAG, "Received saved collections: ${collections.size}")
                     IncomingMessage.SavedCollections(collections)
+                }
+
+                MessageTypes.GAME_REVIEWS_DATA -> {
+                    if (payload != null) {
+                        val page = parseGameReviewsPage(payload)
+                        Log.d(
+                            TAG,
+                            "GAME_REVIEWS_DATA: igdb=${page.igdbId}, friends=${page.friends.size}, " +
+                                "public=${page.public.size}, hasMore=${page.hasMore}"
+                        )
+                        IncomingMessage.GameReviewsData(page)
+                    } else null
+                }
+
+                MessageTypes.REVIEW_SUMMARY_DATA -> {
+                    if (payload != null) {
+                        val summary = ReviewSummary(
+                            igdbId = payload.optInt("igdb_id"),
+                            sentiment = parseGameSentiment(payload.optJSONObject("sentiment")),
+                            myReview = payload.optJSONObject("my_review")?.let { parseGameReview(it) },
+                            users = parseUserRefs(payload.optJSONObject("users"))
+                        )
+                        Log.d(TAG, "REVIEW_SUMMARY_DATA: igdb=${summary.igdbId}")
+                        IncomingMessage.ReviewSummaryData(summary)
+                    } else null
                 }
 
                 MessageTypes.FEED_DATA -> {
@@ -1076,6 +1103,20 @@ class ArgosSocialService @Inject constructor(
         webSocket?.send(json.toString())
     }
 
+    fun getReviewSummary(igdbId: Int): Boolean =
+        send(MessageTypes.GET_REVIEW_SUMMARY, mapOf("igdb_id" to igdbId))
+
+    /**
+     * Omits `audience` deliberately, which asks for both lists: the friends block on the first
+     * page and the public list under the cursor.
+     */
+    fun getGameReviews(igdbId: Int, cursor: String? = null, limit: Int? = null): Boolean {
+        val payload = mutableMapOf<String, Any?>("igdb_id" to igdbId)
+        if (cursor != null) payload["cursor"] = cursor
+        if (limit != null) payload["limit"] = limit
+        return send(MessageTypes.GET_GAME_REVIEWS, payload)
+    }
+
     fun likeEvent(eventId: String) {
         Log.d(TAG, "likeEvent: eventId=$eventId")
         send(MessageTypes.LIKE_EVENT, mapOf("event_id" to eventId))
@@ -1467,6 +1508,74 @@ class ArgosSocialService @Inject constructor(
                 null
             }
         }
+    }
+
+    private fun parseGameReviewsPage(payload: JSONObject): GameReviewsPage = GameReviewsPage(
+        igdbId = payload.optInt("igdb_id"),
+        friends = parseGameReviews(payload.optJSONArray("friends")),
+        public = parseGameReviews(payload.optJSONArray("public")),
+        nextCursor = payload.optString("next_cursor").takeIf { it.isNotEmpty() },
+        hasMore = payload.optBoolean("has_more", false),
+        users = parseUserRefs(payload.optJSONObject("users")),
+        sentiment = parseGameSentiment(payload.optJSONObject("sentiment")),
+        myReview = payload.optJSONObject("my_review")?.let { parseGameReview(it) }
+    )
+
+    private fun parseGameReviews(array: org.json.JSONArray?): List<GameReview> {
+        if (array == null) return emptyList()
+        return (0 until array.length()).mapNotNull { i ->
+            try {
+                parseGameReview(array.getJSONObject(i))
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to parse review", e)
+                null
+            }
+        }
+    }
+
+    private fun parseGameReview(obj: JSONObject): GameReview = GameReview(
+        userId = obj.getString("user_id"),
+        igdbId = obj.optInt("igdb_id"),
+        recommended = obj.optBoolean("recommended", false),
+        body = obj.optString("body").takeIf { it.isNotEmpty() },
+        visibility = obj.optString("visibility", GameReview.VISIBILITY_PUBLIC),
+        playMinutes = obj.optInt("play_minutes"),
+        createdAt = obj.optString("created_at"),
+        updatedAt = obj.optString("updated_at"),
+        isFriend = obj.optBoolean("is_friend", false),
+        helpfulCount = obj.optInt("helpful_count"),
+        unhelpfulCount = obj.optInt("unhelpful_count"),
+        myStance = obj.optString("my_stance").takeIf { it.isNotEmpty() }
+    )
+
+    private fun parseGameSentiment(obj: JSONObject?): GameSentiment {
+        if (obj == null) return GameSentiment.EMPTY
+        return GameSentiment(
+            allTime = parseReviewSentiment(obj.optJSONObject("all_time")),
+            recent = parseReviewSentiment(obj.optJSONObject("recent"))
+        )
+    }
+
+    private fun parseReviewSentiment(obj: JSONObject?): ReviewSentiment {
+        if (obj == null) return ReviewSentiment.EMPTY
+        return ReviewSentiment(
+            total = obj.optInt("total"),
+            positive = obj.optInt("positive"),
+            percent = if (obj.has("percent") && !obj.isNull("percent")) obj.optInt("percent") else null
+        )
+    }
+
+    private fun parseUserRefs(obj: JSONObject?): Map<String, SocialUser> {
+        if (obj == null) return emptyMap()
+        return obj.keys().asSequence().mapNotNull { key ->
+            val entry = obj.optJSONObject(key) ?: return@mapNotNull null
+            key to SocialUser(
+                id = entry.optString("id", key),
+                username = entry.optString("username"),
+                displayName = entry.optString("display_name"),
+                avatarColor = entry.optString("avatar_color")
+            )
+        }.toMap()
     }
 
     private fun parseFeedEvents(array: org.json.JSONArray?): List<FeedEventDto> {

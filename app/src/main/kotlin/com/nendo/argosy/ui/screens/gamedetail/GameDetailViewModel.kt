@@ -381,6 +381,28 @@ class GameDetailViewModel @Inject constructor(
                 }
             }
         }
+
+        viewModelScope.launch {
+            combine(
+                socialRepository.reviewSummaries,
+                _uiState.map { it.game?.igdbId }.distinctUntilChanged()
+            ) { summaries, igdbId ->
+                igdbId?.let { summaries[it.toInt()] }
+            }.distinctUntilChanged().collect { summary ->
+                _uiState.update { it.copy(reviewSummary = summary) }
+            }
+        }
+
+        viewModelScope.launch {
+            combine(
+                socialRepository.gameReviews,
+                _uiState.map { it.game?.igdbId }.distinctUntilChanged()
+            ) { pages, igdbId ->
+                igdbId?.let { pages[it.toInt()] }
+            }.distinctUntilChanged().collect { page ->
+                _uiState.update { it.copy(reviewPage = page) }
+            }
+        }
     }
 
     private suspend fun handlePickerSelection(selection: PickerSelection) {
@@ -581,6 +603,10 @@ class GameDetailViewModel @Inject constructor(
                 game.igdbId.toInt() in socialRepository.hiddenGameIds.value
             val hasSocial = socialRepository.connectionState.value is
                 com.nendo.argosy.data.social.SocialConnectionState.Connected
+
+            if (hasSocial && game.igdbId != null) {
+                socialRepository.requestReviewSummary(game.igdbId.toInt())
+            }
 
             _uiState.update { state ->
                 state.copy(
@@ -1833,6 +1859,7 @@ class GameDetailViewModel @Inject constructor(
             MenuItem.Details -> {}
             MenuItem.Description -> {}
             MenuItem.Screenshots -> openScreenshotViewer()
+            MenuItem.Reviews -> showReviewList()
             MenuItem.Achievements -> showAchievementList()
             MenuItem.RelatedGames -> {}
             null -> {}
@@ -1881,6 +1908,32 @@ class GameDetailViewModel @Inject constructor(
         _uiState.value.let { it.relatedGames.getOrNull(it.relatedFocusIndex)?.id }
 
     // --- Achievements ---
+
+    fun showReviewList() {
+        val igdbId = _uiState.value.game?.igdbId?.toInt() ?: return
+        socialRepository.requestGameReviews(igdbId)
+        _uiState.update { it.copy(showReviewList = true, reviewListFocusIndex = 0) }
+    }
+
+    fun hideReviewList() {
+        _uiState.update { it.copy(showReviewList = false, reviewListFocusIndex = 0) }
+    }
+
+    /**
+     * Reaching the end of the list asks for the next public page. The friends block and the
+     * caller's own review sit above it and never grow, so only the tail can load more.
+     */
+    fun moveReviewListFocus(delta: Int) {
+        val page = _uiState.value.reviewPage ?: return
+        val count = (if (page.myReview != null) 1 else 0) + page.friends.size + page.public.size
+        if (count == 0) return
+        _uiState.update { state ->
+            state.copy(reviewListFocusIndex = (state.reviewListFocusIndex + delta).coerceIn(0, count - 1))
+        }
+        if (delta > 0 && _uiState.value.reviewListFocusIndex >= count - 1) {
+            socialRepository.loadMoreGameReviews(page.igdbId)
+        }
+    }
 
     fun showAchievementList() {
         _uiState.update { it.copy(showAchievementList = true, achievementListFocusIndex = 0) }
@@ -2035,6 +2088,7 @@ class GameDetailViewModel @Inject constructor(
                 state.showPlayOptions -> { movePlayOptionsFocus(-1); InputResult.HANDLED }
                 state.showMoreOptions -> { moveOptionsFocus(-1); InputResult.HANDLED }
                 state.showAchievementList -> { moveAchievementListFocus(-1); InputResult.HANDLED }
+                state.showReviewList -> { moveReviewListFocus(-1); InputResult.HANDLED }
                 else -> if (onSnapUp()) InputResult.HANDLED else InputResult.UNHANDLED
             }
         }
@@ -2066,6 +2120,7 @@ class GameDetailViewModel @Inject constructor(
                 state.showPlayOptions -> { movePlayOptionsFocus(1); InputResult.HANDLED }
                 state.showMoreOptions -> { moveOptionsFocus(1); InputResult.HANDLED }
                 state.showAchievementList -> { moveAchievementListFocus(1); InputResult.HANDLED }
+                state.showReviewList -> { moveReviewListFocus(1); InputResult.HANDLED }
                 else -> if (onSnapDown()) InputResult.HANDLED else InputResult.UNHANDLED
             }
         }
@@ -2229,6 +2284,7 @@ class GameDetailViewModel @Inject constructor(
                 saveState.isVisible -> dismissSaveCacheDialog()
                 state.showScreenshotViewer -> closeScreenshotViewer()
                 state.showAchievementList -> hideAchievementList()
+                state.showReviewList -> hideReviewList()
                 state.showRatingPicker -> dismissRatingPicker()
                 state.showStatusPicker -> dismissStatusPicker()
                 state.showMissingDiscPrompt -> dismissMissingDiscPrompt()

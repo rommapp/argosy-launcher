@@ -10,6 +10,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.ThumbDown
+import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -21,10 +23,13 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.R
+import com.nendo.argosy.data.social.GameReview
+import com.nendo.argosy.data.social.ReviewSentiment
 import com.nendo.argosy.domain.model.CompletionStatus
 import com.nendo.argosy.ui.common.color
 import com.nendo.argosy.ui.common.icon
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.common.labelRes
 
 @Composable
@@ -99,6 +104,95 @@ fun RatingChip(
                 MaterialTheme.colorScheme.onSurfaceVariant
             } else {
                 MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+            }
+        )
+    }
+}
+
+/**
+ * Aggregate review sentiment, standing where the catalog rating would. Only rendered when the
+ * server computed a percentage; below its threshold the catalog rating is the better number.
+ */
+@Composable
+fun ReviewSentimentChip(sentiment: ReviewSentiment) {
+    val percent = sentiment.percent ?: return
+    val labelRes = sentiment.labelRes ?: return
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .background(
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
+                RoundedCornerShape(Dimens.radiusSm)
+            )
+            .padding(horizontal = Dimens.radiusLg, vertical = Dimens.radiusSm)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
+        ) {
+            Icon(
+                imageVector = Icons.Default.ThumbUp,
+                contentDescription = null,
+                tint = LocalLauncherTheme.current.semanticColors.success,
+                modifier = Modifier.size(Dimens.iconXs)
+            )
+            Text(
+                text = stringResource(R.string.gamedetail_chip_community_rating_value, percent),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+        Text(
+            text = stringResource(labelRes),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+/**
+ * This user's own verdict. A missing review is a third state, drawn muted like an unset rating
+ * rather than as a thumbs down.
+ */
+@Composable
+fun MyReviewChip(review: GameReview?) {
+    val tint = when {
+        review == null -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+        review.recommended -> LocalLauncherTheme.current.semanticColors.success
+        else -> MaterialTheme.colorScheme.error
+    }
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .background(
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
+                RoundedCornerShape(Dimens.radiusSm)
+            )
+            .padding(horizontal = Dimens.radiusLg, vertical = Dimens.radiusSm)
+    ) {
+        Icon(
+            imageVector = if (review?.recommended == false) {
+                Icons.Default.ThumbDown
+            } else {
+                Icons.Default.ThumbUp
+            },
+            contentDescription = null,
+            tint = tint,
+            modifier = Modifier.size(Dimens.iconXs)
+        )
+        Text(
+            text = stringResource(
+                if (review == null) {
+                    R.string.reviews_my_review_none
+                } else {
+                    R.string.gamedetail_chip_my_review_label
+                }
+            ),
+            style = MaterialTheme.typography.labelSmall,
+            color = if (review == null) {
+                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
             }
         )
     }

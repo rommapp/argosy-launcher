@@ -100,6 +100,16 @@ class SocialRepository @Inject constructor(
     private val _feedEvents = MutableStateFlow<List<FeedEventDto>>(emptyList())
     val feedEvents: StateFlow<List<FeedEventDto>> = _feedEvents.asStateFlow()
 
+    /**
+     * Keyed by igdb id so both the primary and the companion read the same reviews for a game
+     * instead of each fetching its own copy.
+     */
+    private val _reviewSummaries = MutableStateFlow<Map<Int, ReviewSummary>>(emptyMap())
+    val reviewSummaries: StateFlow<Map<Int, ReviewSummary>> = _reviewSummaries.asStateFlow()
+
+    private val _gameReviews = MutableStateFlow<Map<Int, GameReviewsPage>>(emptyMap())
+    val gameReviews: StateFlow<Map<Int, GameReviewsPage>> = _gameReviews.asStateFlow()
+
     private val _discordLinked = MutableStateFlow(false)
     val discordLinked: StateFlow<Boolean> = _discordLinked.asStateFlow()
 
@@ -361,6 +371,15 @@ class SocialRepository @Inject constructor(
                     is ArgosSocialService.IncomingMessage.SavedCollections -> {
                         Log.d(TAG, "Received saved collections: ${message.collections.size}")
                         _savedCollections.value = message.collections
+                    }
+                    is ArgosSocialService.IncomingMessage.ReviewSummaryData -> {
+                        _reviewSummaries.update { it + (message.summary.igdbId to message.summary) }
+                    }
+                    is ArgosSocialService.IncomingMessage.GameReviewsData -> {
+                        _gameReviews.update { current ->
+                            val existing = current[message.page.igdbId]
+                            current + (message.page.igdbId to mergeReviewPage(existing, message.page))
+                        }
                     }
                     is ArgosSocialService.IncomingMessage.FeedData -> {
                         val prevCount = _feedEvents.value.size
@@ -944,6 +963,40 @@ class SocialRepository @Inject constructor(
         data object NotConnected : SyncResult()
         data class Success(val count: Int) : SyncResult()
         data class Error(val message: String) : SyncResult()
+    }
+
+    fun requestReviewSummary(igdbId: Int) {
+        if (igdbId <= 0) return
+        if (socialService.isConnected()) socialService.getReviewSummary(igdbId)
+    }
+
+    fun requestGameReviews(igdbId: Int) {
+        if (igdbId <= 0) return
+        if (socialService.isConnected()) socialService.getGameReviews(igdbId)
+    }
+
+    /**
+     * Asks for the next page of the public list. The friends block arrives with the first page
+     * only, so a later page carrying an empty one is not a sign the friends went away.
+     */
+    fun loadMoreGameReviews(igdbId: Int) {
+        val page = _gameReviews.value[igdbId] ?: return
+        val cursor = page.nextCursor
+        if (!page.hasMore || cursor == null) return
+        if (socialService.isConnected()) socialService.getGameReviews(igdbId, cursor = cursor)
+    }
+
+    private fun mergeReviewPage(existing: GameReviewsPage?, incoming: GameReviewsPage): GameReviewsPage {
+        if (existing == null) return incoming
+        val isContinuation = incoming.friends.isEmpty() && existing.public.isNotEmpty()
+        if (!isContinuation) return incoming
+
+        val seen = existing.public.mapTo(mutableSetOf()) { it.userId }
+        return incoming.copy(
+            friends = existing.friends,
+            public = existing.public + incoming.public.filterNot { it.userId in seen },
+            users = existing.users + incoming.users
+        )
     }
 
     fun requestFeed(limit: Int = FEED_PAGE_SIZE, beforeId: String? = null, userId: String? = null) {

@@ -1344,6 +1344,7 @@ class SecondaryHomeActivity :
             prefetchGameSaveDataUseCase = dsm.prefetchGameSaveDataUseCase,
             platformRepository = platformRepository,
             collectionRepository = collectionRepository,
+            socialRepository = dsm.socialRepository,
             emulatorConfigDao = dsm.emulatorConfigDao,
             downloadQueueRepository = dsm.downloadQueueRepository,
             steamRepository = dsm.steamRepository,

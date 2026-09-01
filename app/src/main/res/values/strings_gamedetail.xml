@@ -25,6 +25,8 @@
     <string name="gamedetail_menu_description">Description</string>
     <!-- Row in the left menu. Noun, plural: scrolls to the strip of in-game pictures. -->
     <string name="gamedetail_menu_screenshots">Screenshots</string>
+    <!-- Row in the left menu. Noun, plural: opens what other players wrote about the game. -->
+    <string name="gamedetail_menu_reviews">Reviews</string>
     <!-- Row in the left menu. Noun, plural: scrolls to the RetroAchievements list. -->
     <string name="gamedetail_menu_achievements">Achievements</string>
     <!-- Row in the left menu. Noun phrase: scrolls to other games from the same series or
@@ -167,6 +169,8 @@
     <!-- Footer hint while the achievements row is selected. Verb phrase: opens the full list of
          achievements. -->
     <string name="gamedetail_footer_view_all_achievements">View All</string>
+    <!-- Footer hint while the reviews row is selected. Verb phrase: opens the reviews to read. -->
+    <string name="gamedetail_footer_view_reviews">Read Reviews</string>
     <!-- Footer hint while the related-games row is selected. Verb: goes to that game's page. -->
     <string name="gamedetail_footer_open_related">Open</string>
     <!-- Footer hint on the game page. Verb: returns to the previous screen. -->
@@ -197,6 +201,8 @@
     <!-- Heading over the strip of other games from the same series or publisher. Noun phrase.
          Rendered in caps in English. -->
     <string name="gamedetail_section_related_heading">RELATED GAMES</string>
+    <!-- Heading over the review summary row. Noun, plural. Rendered in caps in English. -->
+    <string name="gamedetail_section_reviews_heading">REVIEWS</string>
     <!-- Heading over the achievements strip. Noun, plural. Rendered in caps in English. -->
     <string name="gamedetail_section_achievements_heading">ACHIEVEMENTS</string>
     <!-- Tally beside that heading. %1$d is how many achievements the user has earned, %2$d how many
@@ -222,6 +228,38 @@
     <string name="gamedetail_chip_difficulty_label">Difficulty</string>
     <!-- Caption under the chip holding the score other players gave the game. Noun. -->
     <string name="gamedetail_chip_community_rating_label">Rating</string>
+    <!-- Caption under the chip holding whether players recommend the game. Noun phrase. -->
+    <string name="gamedetail_chip_reviews_label">Reviews</string>
+    <!-- Caption under the chip holding whether this user recommended the game. Noun phrase. -->
+    <string name="gamedetail_chip_my_review_label">My Review</string>
+    <!-- Descriptors for how positive a game's reviews are, strongest approval first. Each names
+         a share of positive reviews, in the style of a store's review summary. -->
+    <string name="reviews_sentiment_overwhelmingly_positive">Overwhelmingly Positive</string>
+    <string name="reviews_sentiment_very_positive">Very Positive</string>
+    <string name="reviews_sentiment_mostly_positive">Mostly Positive</string>
+    <string name="reviews_sentiment_mixed">Mixed</string>
+    <string name="reviews_sentiment_mostly_negative">Mostly Negative</string>
+    <string name="reviews_sentiment_overwhelmingly_negative">Overwhelmingly Negative</string>
+    <!-- Shown where the review summary would be when nobody has reviewed the game. -->
+    <string name="reviews_summary_none">No reviews yet</string>
+    <!-- Shown in place of this user's verdict when they have not reviewed the game. -->
+    <string name="reviews_my_review_none">Write a review</string>
+    <!-- Count of reviews behind a sentiment descriptor. -->
+    <plurals name="reviews_count">
+        <item quantity="one">%d review</item>
+        <item quantity="other">%d reviews</item>
+    </plurals>
+    <!-- How many readers marked a review helpful. -->
+    <plurals name="reviews_helpful_count">
+        <item quantity="one">%d found this helpful</item>
+        <item quantity="other">%d found this helpful</item>
+    </plurals>
+    <!-- Heading over this user's own review in the reader. Possessive, referring to the reader. -->
+    <string name="reviews_heading_yours">Your Review</string>
+    <!-- Heading over reviews written by this user's friends. Noun, plural. -->
+    <string name="reviews_heading_friends">Friends</string>
+    <!-- Heading over reviews written by people this user does not know. Noun. -->
+    <string name="reviews_heading_everyone">Everyone Else</string>
     <!-- Caption under the chip holding how long this user has spent in the game. Noun phrase: an
          amount of time, not an instruction to play. -->
     <string name="gamedetail_chip_play_time_label">Play Time</string>

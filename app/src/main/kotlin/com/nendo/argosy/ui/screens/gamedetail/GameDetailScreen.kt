@@ -80,6 +80,8 @@ import com.nendo.argosy.ui.screens.gamedetail.components.MenuLayoutState
 import com.nendo.argosy.ui.screens.gamedetail.components.menuLayout
 import com.nendo.argosy.ui.screens.gamedetail.components.RelatedGamesSection
 import com.nendo.argosy.ui.screens.gamedetail.components.ScreenshotViewerOverlay
+import com.nendo.argosy.ui.screens.gamedetail.components.ReviewListOverlay
+import com.nendo.argosy.ui.screens.gamedetail.components.ReviewSummarySection
 import com.nendo.argosy.ui.screens.gamedetail.components.ScreenshotsSection
 import com.nendo.argosy.ui.components.DiscPickerModal
 import com.nendo.argosy.ui.components.MemcardPickerModal
@@ -191,6 +193,7 @@ fun GameDetailScreen(
 
     var descriptionTopY by remember { mutableIntStateOf(0) }
     var screenshotTopY by remember { mutableIntStateOf(0) }
+    var reviewsTopY by remember { mutableIntStateOf(0) }
     var achievementTopY by remember { mutableIntStateOf(0) }
     var relatedTopY by remember { mutableIntStateOf(0) }
 
@@ -461,6 +464,7 @@ fun GameDetailScreen(
                 relatedListState = relatedListState,
                 onDescriptionPositioned = { descriptionTopY = it },
                 onScreenshotPositioned = { screenshotTopY = it },
+                onReviewsPositioned = { reviewsTopY = it },
                 onAchievementPositioned = { achievementTopY = it },
                 onRelatedPositioned = { relatedTopY = it },
                 onBack = onBack,
@@ -484,6 +488,7 @@ private fun GameDetailContent(
     relatedListState: LazyListState,
     onDescriptionPositioned: (Int) -> Unit,
     onScreenshotPositioned: (Int) -> Unit,
+    onReviewsPositioned: (Int) -> Unit,
     onAchievementPositioned: (Int) -> Unit,
     onRelatedPositioned: (Int) -> Unit,
     onBack: () -> Unit,
@@ -499,7 +504,7 @@ private fun GameDetailContent(
         uiState.showRatingPicker || uiState.showMissingDiscPrompt || isAnySyncing ||
         uiState.showSaveCacheDialog || uiState.showRenameDialog || uiState.showScreenshotViewer ||
         uiState.showExtractionFailedPrompt || uiState.showAchievementList ||
-        uiState.perGameSettings.visible
+        uiState.showReviewList || uiState.perGameSettings.visible
     val modalBlur by animateDpAsState(
         targetValue = if (showAnyOverlay) Motion.blurRadiusModal else 0.dp,
         animationSpec = Motion.focusSpringDp,
@@ -510,6 +515,7 @@ private fun GameDetailContent(
 
     var descriptionTopY by remember { mutableIntStateOf(0) }
     var screenshotTopY by remember { mutableIntStateOf(0) }
+    var reviewsTopY by remember { mutableIntStateOf(0) }
     var achievementTopY by remember { mutableIntStateOf(0) }
     var relatedTopY by remember { mutableIntStateOf(0) }
 
@@ -681,6 +687,7 @@ private fun GameDetailContent(
                                         scrollState.animateScrollTo(descriptionTopY.coerceAtLeast(0))
                                     }
                                     MenuItem.Screenshots -> viewModel.openScreenshotViewer()
+                                    MenuItem.Reviews -> viewModel.showReviewList()
                                     MenuItem.Achievements -> coroutineScope.launch {
                                         scrollState.animateScrollTo(achievementTopY.coerceAtLeast(0))
                                     }
@@ -739,6 +746,19 @@ private fun GameDetailContent(
                                     cacheEnabled = uiState.syncScreenshotsEnabled,
                                     onSectionFocus = {
                                         viewModel.setMenuFocusIndex(menuLayout.focusIndexOf(MenuItem.Screenshots, menuLayoutState))
+                                    }
+                                )
+                                Spacer(modifier = Modifier.height(Dimens.spacingLg))
+                            }
+
+                            if (uiState.hasSocialAccount) {
+                                ReviewSummarySection(
+                                    summary = uiState.reviewSummary,
+                                    isActive = focusedItem == MenuItem.Reviews,
+                                    onOpen = { viewModel.showReviewList() },
+                                    onPositioned = { y -> onReviewsPositioned(y) },
+                                    onSectionFocus = {
+                                        viewModel.setMenuFocusIndex(menuLayout.focusIndexOf(MenuItem.Reviews, menuLayoutState))
                                     }
                                 )
                                 Spacer(modifier = Modifier.height(Dimens.spacingLg))
@@ -830,6 +850,7 @@ private fun GameDetailContent(
                 val viewScreenshotHint = stringResource(R.string.gamedetail_footer_view_screenshot)
                 val viewAllAchievementsHint =
                     stringResource(R.string.gamedetail_footer_view_all_achievements)
+                val viewReviewsHint = stringResource(R.string.gamedetail_footer_view_reviews)
                 val openRelatedHint = stringResource(R.string.gamedetail_footer_open_related)
                 val backHint = stringResource(R.string.gamedetail_footer_back)
                 val newGameHint = stringResource(R.string.gamedetail_footer_new_game)
@@ -867,6 +888,7 @@ private fun GameDetailContent(
                             MenuItem.PerGameSettings -> add(InputButton.A to configureHint)
                             MenuItem.Options -> add(InputButton.A to optionsHint)
                             MenuItem.Screenshots -> add(InputButton.A to viewScreenshotHint)
+                            MenuItem.Reviews -> add(InputButton.A to viewReviewsHint)
                             MenuItem.Achievements -> add(InputButton.A to viewAllAchievementsHint)
                             MenuItem.RelatedGames -> add(InputButton.A to openRelatedHint)
                             MenuItem.Details, MenuItem.Description, null -> {}
@@ -905,6 +927,13 @@ private fun GameDetailContent(
         }
 
         GameDetailModals(game = game, uiState = uiState, viewModel = viewModel, onBack = onBack, onNavigateToPlatformSettings = onNavigateToPlatformSettings, localModifiedFocusIndex = localModifiedFocusIndex)
+
+        ReviewListOverlay(
+            visible = uiState.showReviewList,
+            gameTitle = game.title,
+            page = uiState.reviewPage,
+            focusIndex = uiState.reviewListFocusIndex
+        )
 
         AchievementListOverlay(
             visible = uiState.showAchievementList,

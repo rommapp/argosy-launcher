@@ -130,6 +130,7 @@ class DualGameDetailInputHandler(
                 when (vm.uiState.value.currentTab) {
                     DualGameDetailTab.SAVES -> vm.focusSlotsColumn()
                     DualGameDetailTab.STATES -> vm.moveSelectionLeft()
+                    DualGameDetailTab.REVIEWS -> Unit
                     DualGameDetailTab.OPTIONS -> handleInlineAdjust(vm, -1)
                     DualGameDetailTab.MEDIA -> {
                         vm.moveSelectionLeft()
@@ -144,6 +145,7 @@ class DualGameDetailInputHandler(
                 when (vm.uiState.value.currentTab) {
                     DualGameDetailTab.SAVES -> vm.focusHistoryColumn()
                     DualGameDetailTab.STATES -> vm.moveSelectionRight()
+                    DualGameDetailTab.REVIEWS -> Unit
                     DualGameDetailTab.OPTIONS -> handleInlineAdjust(vm, 1)
                     DualGameDetailTab.MEDIA -> {
                         vm.moveSelectionRight()
@@ -165,6 +167,7 @@ class DualGameDetailInputHandler(
                             onBroadcastScreenshotSelected(idx)
                         }
                     }
+                    DualGameDetailTab.REVIEWS -> Unit
                     DualGameDetailTab.OPTIONS -> handleOptionAction(vm)
                 }
                 InputResult.HANDLED

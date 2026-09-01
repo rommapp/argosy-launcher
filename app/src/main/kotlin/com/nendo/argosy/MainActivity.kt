@@ -75,6 +75,7 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var configureEmulatorUseCase: com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase
     @Inject lateinit var platformRepository: PlatformRepository
     @Inject lateinit var collectionRepository: CollectionRepository
+    @Inject lateinit var socialRepositoryForDual: com.nendo.argosy.data.social.SocialRepository
     @Inject lateinit var downloadQueueDao: DownloadQueueDao
     @Inject lateinit var downloadQueueRepository: com.nendo.argosy.data.repository.DownloadQueueRepository
     @Inject lateinit var gamepadInputHandler: GamepadInputHandler
@@ -326,6 +327,7 @@ class MainActivity : ComponentActivity() {
                 activeSaveRepository = activeSaveRepository,
                 platformRepository = platformRepository,
                 collectionRepository = collectionRepository,
+                socialRepository = socialRepositoryForDual,
                 downloadQueueDao = downloadQueueDao,
                 downloadQueueRepository = downloadQueueRepository,
                 gameFileDao = gameFileDao,

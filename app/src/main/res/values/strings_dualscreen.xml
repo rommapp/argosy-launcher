@@ -557,6 +557,10 @@
     <string name="dual_detail_tab_states">STATES</string>
     <!-- Tab listing the game's screenshots and artwork. Noun, drawn in caps in English. -->
     <string name="dual_detail_tab_media">MEDIA</string>
+    <!-- Tab listing what players wrote about the game. Noun, plural, drawn in caps in English. -->
+    <string name="dual_detail_tab_reviews">REVIEWS</string>
+    <!-- Shown in the reviews tab before any reviews have loaded or when the game has none. -->
+    <string name="dual_detail_reviews_empty">No reviews yet</string>
     <!-- Tab listing what can be done with the game. Noun, plural, drawn in caps in English. -->
     <string name="dual_detail_tab_options">OPTIONS</string>
 

@@ -24,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Gamepad
@@ -89,12 +90,13 @@ sealed class MenuItem(
     data object Details : MenuItem("details")
     data object Description : MenuItem("description", visibleWhen = { it.hasDescription })
     data object Screenshots : MenuItem("screenshots", visibleWhen = { it.hasScreenshots })
+    data object Reviews : MenuItem("reviews", visibleWhen = { it.hasSocialAccount })
     data object Achievements : MenuItem("achievements", visibleWhen = { it.hasAchievements })
     data object RelatedGames : MenuItem("related", visibleWhen = { it.hasRelated })
 
     companion object {
         val ALL: List<MenuItem>
-            get() = listOf(Play, Saves, Favorite, Privacy, PerGameSettings, Options, Details, Description, Screenshots, Achievements, RelatedGames)
+            get() = listOf(Play, Saves, Favorite, Privacy, PerGameSettings, Options, Details, Description, Screenshots, Reviews, Achievements, RelatedGames)
     }
 }
 
@@ -242,6 +244,16 @@ fun GameDetailMenu(
                     IconTextMenuItem(
                         label = stringResource(R.string.gamedetail_menu_screenshots),
                         icon = Icons.Default.Image,
+                        isFocused = isFocused,
+                        isCompact = isCompact,
+                        onClick = { onFocusChange(focusIndex); onItemClick(item) }
+                    )
+                }
+
+                MenuItem.Reviews -> {
+                    IconTextMenuItem(
+                        label = stringResource(R.string.gamedetail_menu_reviews),
+                        icon = Icons.Default.ThumbUp,
                         isFocused = isFocused,
                         isCompact = isCompact,
                         onClick = { onFocusChange(focusIndex); onItemClick(item) }

@@ -73,6 +73,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.nendo.argosy.R
 import com.nendo.argosy.ui.common.rememberFileImageModel
+import com.nendo.argosy.ui.common.supersedesCommunityRating
 import com.nendo.argosy.ui.screens.gamedetail.GameDetailUi
 import com.nendo.argosy.ui.screens.gamedetail.GameDetailUiState
 import com.nendo.argosy.ui.screens.gamedetail.GameDetailViewModel
@@ -180,8 +181,13 @@ fun GameHeader(
                 game.players?.let { players ->
                     MetadataChip(label = stringResource(R.string.gamedetail_chip_players_label), value = players)
                 }
-                game.rating?.let { rating ->
-                    CommunityRatingChip(rating = rating)
+                val sentiment = uiState.reviewSummary?.sentiment?.allTime
+                if (sentiment.supersedesCommunityRating()) {
+                    ReviewSentimentChip(sentiment = sentiment!!)
+                } else {
+                    game.rating?.let { rating ->
+                        CommunityRatingChip(rating = rating)
+                    }
                 }
                 game.timeToBeatMain?.let { time ->
                     MetadataChip(label = stringResource(R.string.gamedetail_chip_main_story_label), value = time)
@@ -212,6 +218,9 @@ fun GameHeader(
                     icon = Icons.Default.Whatshot,
                     iconColor = ALauncherColors.DifficultyRed
                 )
+                if (uiState.hasSocialAccount) {
+                    MyReviewChip(review = uiState.reviewSummary?.myReview)
+                }
                 if (game.playTimeMinutes > 0) {
                     PlayTimeChip(minutes = game.playTimeMinutes)
                 }

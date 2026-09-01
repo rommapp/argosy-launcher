@@ -21,6 +21,7 @@ enum class DualGameDetailTab(@StringRes val labelRes: Int) {
     SAVES(R.string.dual_detail_tab_saves),
     STATES(R.string.dual_detail_tab_states),
     MEDIA(R.string.dual_detail_tab_media),
+    REVIEWS(R.string.dual_detail_tab_reviews),
     OPTIONS(R.string.dual_detail_tab_options)
 }
 
@@ -74,6 +75,9 @@ data class DualGameDetailUiState(
     val status: String? = null,
     val rating: Int? = null,
     val screenshots: List<String> = emptyList(),
+    val igdbId: Int? = null,
+    val reviewPage: com.nendo.argosy.data.social.GameReviewsPage? = null,
+    val reviewFocusIndex: Int = 0,
     val isPlayable: Boolean = false,
     val userDifficulty: Int = 0,
     val currentTab: DualGameDetailTab = DualGameDetailTab.OPTIONS,

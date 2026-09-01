@@ -296,6 +296,11 @@ object MessageTypes {
     const val COMMUNITY_FOLLOWS = "community_follows"
     const val COMMUNITY_FOLLOW_UPDATED = "community_follow_updated"
 
+    const val GET_GAME_REVIEWS = "get_game_reviews"
+    const val GAME_REVIEWS_DATA = "game_reviews_data"
+    const val GET_REVIEW_SUMMARY = "get_review_summary"
+    const val REVIEW_SUMMARY_DATA = "review_summary_data"
+
     // User settings
     const val GET_USER_SETTINGS = "get_user_settings"
     const val UPDATE_USER_SETTINGS = "update_user_settings"

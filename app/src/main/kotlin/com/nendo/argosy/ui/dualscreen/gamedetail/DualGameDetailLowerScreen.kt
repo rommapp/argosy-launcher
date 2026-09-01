@@ -175,6 +175,10 @@ fun DualGameDetailLowerScreen(
                         selectedIndex = selectedScreenshotIndex,
                         onScreenshotSelected = onScreenshotSelected
                     )
+                    DualGameDetailTab.REVIEWS -> ReviewsTabContent(
+                        page = state.reviewPage,
+                        focusIndex = state.reviewFocusIndex
+                    )
                     DualGameDetailTab.OPTIONS -> OptionsTabContent(
                         visibleOptions = visibleOptions,
                         isPlayable = state.isPlayable,

@@ -51,7 +51,9 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -65,6 +67,7 @@ class DualGameDetailViewModel(
         com.nendo.argosy.domain.usecase.sync.PrefetchGameSaveDataUseCase,
     private val platformRepository: PlatformRepository,
     private val collectionRepository: CollectionRepository,
+    private val socialRepository: com.nendo.argosy.data.social.SocialRepository,
     // TODO: replace with EmulatorConfigRepository once it exists (Agent B settings refactor).
     private val emulatorConfigDao: EmulatorConfigDao,
     private val downloadQueueRepository: DownloadQueueRepository,
@@ -201,6 +204,38 @@ class DualGameDetailViewModel(
             val slot = _saveSlots.value.getOrNull(_selectedSlotIndex.value)
             return if (slot?.isCreateAction == true) null else slot?.channelName
         }
+
+    private fun isSocialConnected(): Boolean =
+        socialRepository.connectionState.value is
+            com.nendo.argosy.data.social.SocialConnectionState.Connected
+
+    /**
+     * Reviews are fetched once the tab is reachable rather than on every game open, and read
+     * back off [com.nendo.argosy.data.social.SocialRepository] so the upper screen and this one
+     * share a single fetch.
+     */
+    fun loadReviews() {
+        val igdbId = _uiState.value.igdbId ?: return
+        socialRepository.requestGameReviews(igdbId)
+        viewModelScope.launch {
+            socialRepository.gameReviews
+                .map { it[igdbId] }
+                .distinctUntilChanged()
+                .collect { page -> _uiState.update { it.copy(reviewPage = page) } }
+        }
+    }
+
+    fun moveReviewFocus(delta: Int) {
+        val page = _uiState.value.reviewPage ?: return
+        val count = (if (page.myReview != null) 1 else 0) + page.friends.size + page.public.size
+        if (count == 0) return
+        _uiState.update {
+            it.copy(reviewFocusIndex = (it.reviewFocusIndex + delta).coerceIn(0, count - 1))
+        }
+        if (delta > 0 && _uiState.value.reviewFocusIndex >= count - 1) {
+            socialRepository.loadMoreGameReviews(page.igdbId)
+        }
+    }
 
     fun adjustRatingInline(delta: Int) {
         val current = _uiState.value.rating ?: 0
@@ -412,6 +447,7 @@ class DualGameDetailViewModel(
 
             val newState = DualGameDetailUiState(
                 gameId = game.id,
+                igdbId = game.igdbId?.toInt(),
                 title = game.title,
                 coverPath = game.coverPath,
                 backgroundPath = game.backgroundPath,
@@ -428,7 +464,8 @@ class DualGameDetailViewModel(
                 screenshots = screenshots,
                 currentTab = DualGameDetailTab.OPTIONS,
                 availableTabs = DualGameDetailTab.entries.filterNot {
-                    it == DualGameDetailTab.SAVES && !sessionStateStore.isSaveSyncEnabled()
+                    (it == DualGameDetailTab.SAVES && !sessionStateStore.isSaveSyncEnabled()) ||
+                        (it == DualGameDetailTab.REVIEWS && !isSocialConnected())
                 },
                 isFavorite = game.isFavorite,
                 isLoading = false,
@@ -1062,6 +1099,7 @@ class DualGameDetailViewModel(
                     (idx - MEDIA_GRID_COLUMNS).coerceAtLeast(0)
                 }
             }
+            DualGameDetailTab.REVIEWS -> moveReviewFocus(-1)
         }
     }
 
@@ -1090,6 +1128,7 @@ class DualGameDetailViewModel(
                         .coerceAtMost(screenshots.size - 1)
                 }
             }
+            DualGameDetailTab.REVIEWS -> moveReviewFocus(1)
         }
     }
 
@@ -1176,6 +1215,10 @@ class DualGameDetailViewModel(
             }
             DualGameDetailTab.OPTIONS -> {
                 _selectedOptionIndex.value = 0
+            }
+            DualGameDetailTab.REVIEWS -> {
+                _uiState.update { it.copy(reviewFocusIndex = 0) }
+                loadReviews()
             }
         }
     }

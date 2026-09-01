@@ -408,5 +408,9 @@
     <string name="dual_detail_save_name_cancel">रद्द करें</string>
     <string name="dual_detail_save_name_create">बनाएं</string>
 
+    <string name="dual_showcase_hltb_main_story_label">मुख्य कहानी</string>
+    <string name="dual_showcase_hltb_main_extras_label">मुख्य कहानी + अतिरिक्त</string>
+    <string name="dual_showcase_hltb_completionist_label">पूर्णतावादी</string>
+
     <string name="dual_detail_save_slot_auto">ऑटो सेव</string>
 </resources>

@@ -8,6 +8,7 @@ import io.mockk.mockk
 import java.time.Instant
 import java.util.Locale
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 
@@ -184,5 +185,25 @@ class FormattersTest {
             res(R.string.util_formatters_playtime_hours, 25),
             formatPlayTime(context, 1500)
         )
+    }
+
+    @Test
+    fun `missing time to beat estimates are hidden`() {
+        assertNull(formatTimeToBeat(null))
+        assertNull(formatTimeToBeat(0))
+        assertNull(formatTimeToBeat(-1))
+    }
+
+    @Test
+    fun `short time to beat estimates retain minute precision`() {
+        assertEquals("5m", formatTimeToBeat(300))
+        assertEquals("30m", formatTimeToBeat(900))
+    }
+
+    @Test
+    fun `time to beat estimates round to half hours`() {
+        assertEquals("9.5h", formatTimeToBeat(33_739))
+        assertEquals("13.5h", formatTimeToBeat(49_369))
+        assertEquals("27.5h", formatTimeToBeat(98_178))
     }
 }

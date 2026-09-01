@@ -43,6 +43,7 @@ import com.nendo.argosy.ui.theme.LocalUiScale
 import com.nendo.argosy.ui.theme.backdrop.BackdropRole
 import com.nendo.argosy.ui.theme.backdrop.surfaceBackdrop
 import com.nendo.argosy.util.formatPlayTime
+import com.nendo.argosy.util.formatTimeToBeat
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import androidx.compose.ui.res.pluralStringResource
@@ -273,6 +274,50 @@ fun ShowcaseStatsRow(
             lastPlayed(Modifier.weight(1f))
         }
         completion(Modifier.fillMaxWidth())
+    }
+}
+
+@Composable
+fun ShowcaseTimeToBeatSection(
+    mainSeconds: Int?,
+    extraSeconds: Int?,
+    completionistSeconds: Int?,
+    modifier: Modifier = Modifier
+) {
+    val main = formatTimeToBeat(mainSeconds)
+    val extra = formatTimeToBeat(extraSeconds)
+    val completionist = formatTimeToBeat(completionistSeconds)
+    if (main == null && extra == null && completionist == null) return
+
+    val theme = LocalArgosyTheme.current
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
+    ) {
+        main?.let {
+            ShowcaseStatCell(
+                label = stringResource(R.string.dual_showcase_hltb_main_story_label),
+                value = it,
+                valueColor = theme.textPrimary,
+                modifier = Modifier.weight(1f)
+            )
+        }
+        extra?.let {
+            ShowcaseStatCell(
+                label = stringResource(R.string.dual_showcase_hltb_main_extras_label),
+                value = it,
+                valueColor = theme.textPrimary,
+                modifier = Modifier.weight(1f)
+            )
+        }
+        completionist?.let {
+            ShowcaseStatCell(
+                label = stringResource(R.string.dual_showcase_hltb_completionist_label),
+                value = it,
+                valueColor = theme.textPrimary,
+                modifier = Modifier.weight(1f)
+            )
+        }
     }
 }
 

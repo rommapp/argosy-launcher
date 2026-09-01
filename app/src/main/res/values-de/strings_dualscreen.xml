@@ -408,5 +408,9 @@
     <string name="dual_detail_save_name_cancel">Abbrechen</string>
     <string name="dual_detail_save_name_create">Erstellen</string>
 
+    <string name="dual_showcase_hltb_main_story_label">Hauptgeschichte</string>
+    <string name="dual_showcase_hltb_main_extras_label">Hauptgeschichte + Extras</string>
+    <string name="dual_showcase_hltb_completionist_label">Komplett</string>
+
     <string name="dual_detail_save_slot_auto">Autospeicherung</string>
 </resources>

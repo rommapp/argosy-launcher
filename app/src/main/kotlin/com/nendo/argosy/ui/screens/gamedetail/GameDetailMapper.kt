@@ -9,6 +9,7 @@ import com.nendo.argosy.ui.common.displayTitleId
 import com.nendo.argosy.ui.common.isAndroidApp
 import com.nendo.argosy.ui.common.isRommGame
 import com.nendo.argosy.ui.common.isSteamGame
+import com.nendo.argosy.util.formatTimeToBeat
 
 /**
  * [isHidden] is supplied by the caller: hiding is per account and lives in `user_roms_hidden`,
@@ -92,16 +93,4 @@ fun GameEntity.toGameDetailUi(
         steamAppId = steamAppId,
         rommFileName = rommFileName
     )
-}
-
-private fun formatTimeToBeat(seconds: Int?): String? {
-    if (seconds == null || seconds <= 0) return null
-    val halfHours = Math.round(seconds / 1800f)
-    if (halfHours < 1) return "${(seconds / 60).coerceAtLeast(1)}m"
-    val hours = halfHours / 2
-    return if (halfHours % 2 == 1) {
-        if (hours == 0) "30m" else "${hours}.5h"
-    } else {
-        "${hours}h"
-    }
 }

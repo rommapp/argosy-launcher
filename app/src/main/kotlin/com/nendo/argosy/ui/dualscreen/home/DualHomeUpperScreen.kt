@@ -54,6 +54,7 @@ import com.nendo.argosy.ui.dualscreen.ShowcaseAmbience
 import com.nendo.argosy.ui.dualscreen.ShowcaseEyebrow
 import com.nendo.argosy.ui.dualscreen.ShowcaseRatingsCluster
 import com.nendo.argosy.ui.dualscreen.ShowcaseStatsRow
+import com.nendo.argosy.ui.dualscreen.ShowcaseTimeToBeatSection
 import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 import com.nendo.argosy.ui.theme.backdrop.BackdropRole
 import com.nendo.argosy.ui.theme.backdrop.surfaceBackdrop
@@ -86,6 +87,9 @@ data class DualHomeShowcaseState(
     val developer: String? = null,
     val releaseYear: Int? = null,
     val titleId: String? = null,
+    val timeToBeatMainSec: Int? = null,
+    val timeToBeatExtraSec: Int? = null,
+    val timeToBeatCompletionistSec: Int? = null,
     val isFavorite: Boolean = false,
     val isDownloaded: Boolean = true,
     val useGameBackground: Boolean = true,
@@ -229,6 +233,12 @@ private fun ShowcaseInfoColumn(
             userDifficulty = state.userDifficulty
         )
         Spacer(modifier = Modifier.height(Dimens.spacingXl))
+        ShowcaseTimeToBeatSection(
+            mainSeconds = state.timeToBeatMainSec,
+            extraSeconds = state.timeToBeatExtraSec,
+            completionistSeconds = state.timeToBeatCompletionistSec,
+            modifier = Modifier.padding(bottom = Dimens.spacingMd)
+        )
         ShowcaseStatsRow(
             playTimeMinutes = state.playTimeMinutes,
             lastPlayedAt = state.lastPlayedAt,

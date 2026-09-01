@@ -365,5 +365,9 @@
     <string name="dual_detail_save_name_cancel">取消</string>
     <string name="dual_detail_save_name_create">建立</string>
 
+    <string name="dual_showcase_hltb_main_story_label">主線劇情</string>
+    <string name="dual_showcase_hltb_main_extras_label">主線 + 額外內容</string>
+    <string name="dual_showcase_hltb_completionist_label">完美通關</string>
+
     <string name="dual_detail_save_slot_auto">自動存檔</string>
 </resources>

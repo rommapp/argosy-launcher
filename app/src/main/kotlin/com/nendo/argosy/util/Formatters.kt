@@ -37,6 +37,18 @@ fun formatPlayTime(context: Context, minutes: Int): String = when {
     else -> context.getString(R.string.util_formatters_playtime_hours, minutes / MINUTES_PER_HOUR)
 }
 
+fun formatTimeToBeat(seconds: Int?): String? {
+    if (seconds == null || seconds <= 0) return null
+    val halfHours = Math.round(seconds / 1800f)
+    if (halfHours < 1) return "${(seconds / 60).coerceAtLeast(1)}m"
+    val hours = halfHours / 2
+    return if (halfHours % 2 == 1) {
+        if (hours == 0) "30m" else "${hours}.5h"
+    } else {
+        "${hours}h"
+    }
+}
+
 fun formatRelativeTime(
     context: Context,
     instant: Instant?,

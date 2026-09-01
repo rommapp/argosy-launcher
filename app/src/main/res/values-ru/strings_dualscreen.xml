@@ -384,5 +384,9 @@
     <string name="dual_detail_save_name_cancel">Отмена</string>
     <string name="dual_detail_save_name_create">Создать</string>
 
+    <string name="dual_showcase_hltb_main_story_label">Основной сюжет</string>
+    <string name="dual_showcase_hltb_main_extras_label">Сюжет + дополнения</string>
+    <string name="dual_showcase_hltb_completionist_label">Полное прохождение</string>
+
     <string name="dual_detail_save_slot_auto">Автосохранение</string>
 </resources>

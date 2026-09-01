@@ -414,5 +414,9 @@
     <string name="dual_detail_save_name_cancel">Annuler</string>
     <string name="dual_detail_save_name_create">Créer</string>
 
+    <string name="dual_showcase_hltb_main_story_label">Histoire principale</string>
+    <string name="dual_showcase_hltb_main_extras_label">Histoire + extras</string>
+    <string name="dual_showcase_hltb_completionist_label">Complétionniste</string>
+
     <string name="dual_detail_save_slot_auto">Sauvegarde auto</string>
 </resources>

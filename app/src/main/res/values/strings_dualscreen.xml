@@ -321,6 +321,10 @@
     <!-- That figure's value when the user has set no status. Pronoun standing for the absent
          value, not the number zero. -->
     <string name="dual_showcase_stat_status_none">None</string>
+    <string name="dual_showcase_stat_main_story_label">Main Story</string>
+    <string name="dual_showcase_stat_main_extras_label">Main + Extras</string>
+    <string name="dual_showcase_stat_completionist_label">Completionist</string>
+    <string name="dual_detail_estimated_time_label">Estimated Time</string>
 
     <!-- Last-played value for a game started earlier the same day. Adverb. -->
     <string name="dual_showcase_last_played_today">Today</string>
@@ -761,12 +765,6 @@
     <string name="dual_detail_screenshot_viewer_description">Screenshot</string>
     <!-- Label beside the achievement count on the showcase display. Noun, plural. -->
     <string name="dual_detail_achievements_label">Achievements</string>
-    <!-- HowLongToBeat estimate for completing only the main story. -->
-    <string name="dual_showcase_hltb_main_story_label">Main Story</string>
-    <!-- HowLongToBeat estimate for the main story plus optional content. -->
-    <string name="dual_showcase_hltb_main_extras_label">Main + Extras</string>
-    <!-- HowLongToBeat estimate for completing all content. -->
-    <string name="dual_showcase_hltb_completionist_label">Completionist</string>
 
     <!-- Heading of the modal picking which emulator app runs the game. Verb phrase, drawn in caps
          in English. -->

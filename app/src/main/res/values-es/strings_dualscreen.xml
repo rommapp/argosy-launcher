@@ -152,6 +152,10 @@
     <string name="dual_showcase_stat_last_played_never">Nunca</string>
     <string name="dual_showcase_stat_status_label">Estado</string>
     <string name="dual_showcase_stat_status_none">Ninguno</string>
+    <string name="dual_showcase_stat_main_story_label">Historia principal</string>
+    <string name="dual_showcase_stat_main_extras_label">Historia + extras</string>
+    <string name="dual_showcase_stat_completionist_label">Completista</string>
+    <string name="dual_detail_estimated_time_label">Tiempo estimado</string>
 
     <string name="dual_showcase_last_played_today">Hoy</string>
     <string name="dual_showcase_last_played_yesterday">Ayer</string>
@@ -413,10 +417,6 @@
     <string name="dual_detail_save_name_field_label">Nombre de la ranura</string>
     <string name="dual_detail_save_name_cancel">Cancelar</string>
     <string name="dual_detail_save_name_create">Crear</string>
-
-    <string name="dual_showcase_hltb_main_story_label">Historia principal</string>
-    <string name="dual_showcase_hltb_main_extras_label">Historia + extras</string>
-    <string name="dual_showcase_hltb_completionist_label">Completista</string>
 
     <string name="dual_detail_save_slot_auto">Guardado automático</string>
 </resources>

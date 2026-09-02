@@ -152,6 +152,10 @@
     <string name="dual_showcase_stat_last_played_never">Jamais</string>
     <string name="dual_showcase_stat_status_label">Statut</string>
     <string name="dual_showcase_stat_status_none">Aucun</string>
+    <string name="dual_showcase_stat_main_story_label">Histoire principale</string>
+    <string name="dual_showcase_stat_main_extras_label">Histoire + extras</string>
+    <string name="dual_showcase_stat_completionist_label">Complétionniste</string>
+    <string name="dual_detail_estimated_time_label">Temps estimé</string>
 
     <string name="dual_showcase_last_played_today">Aujourd\'hui</string>
     <string name="dual_showcase_last_played_yesterday">Hier</string>
@@ -413,10 +417,6 @@
     <string name="dual_detail_save_name_field_label">Nom de l\'emplacement</string>
     <string name="dual_detail_save_name_cancel">Annuler</string>
     <string name="dual_detail_save_name_create">Créer</string>
-
-    <string name="dual_showcase_hltb_main_story_label">Histoire principale</string>
-    <string name="dual_showcase_hltb_main_extras_label">Histoire + extras</string>
-    <string name="dual_showcase_hltb_completionist_label">Complétionniste</string>
 
     <string name="dual_detail_save_slot_auto">Sauvegarde auto</string>
 </resources>

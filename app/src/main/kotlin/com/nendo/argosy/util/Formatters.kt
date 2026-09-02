@@ -10,7 +10,9 @@ import java.time.format.DateTimeFormatter
 import java.util.Date
 import java.util.Locale
 
+private const val SECONDS_PER_MINUTE = 60
 private const val MINUTES_PER_HOUR = 60
+private const val SECONDS_PER_HALF_HOUR = 30 * SECONDS_PER_MINUTE
 private const val MINUTES_PER_DAY = 24 * MINUTES_PER_HOUR
 private const val DAYS_PER_MONTH = 30L
 
@@ -37,15 +39,17 @@ fun formatPlayTime(context: Context, minutes: Int): String = when {
     else -> context.getString(R.string.util_formatters_playtime_hours, minutes / MINUTES_PER_HOUR)
 }
 
-fun formatTimeToBeat(seconds: Int?): String? {
+fun formatTimeToBeat(context: Context, seconds: Int?): String? {
     if (seconds == null || seconds <= 0) return null
-    val halfHours = Math.round(seconds / 1800f)
-    if (halfHours < 1) return "${(seconds / 60).coerceAtLeast(1)}m"
-    val hours = halfHours / 2
-    return if (halfHours % 2 == 1) {
-        if (hours == 0) "30m" else "${hours}.5h"
-    } else {
-        "${hours}h"
+    val halfHours = Math.round(seconds / SECONDS_PER_HALF_HOUR.toFloat())
+    return when {
+        halfHours < 1 -> context.getString(
+            R.string.util_formatters_time_to_beat_minutes,
+            (seconds / SECONDS_PER_MINUTE).coerceAtLeast(1)
+        )
+        halfHours == 1 -> context.getString(R.string.util_formatters_time_to_beat_minutes, MINUTES_PER_HOUR / 2)
+        halfHours % 2 == 1 -> context.getString(R.string.util_formatters_time_to_beat_half_hours, halfHours / 2)
+        else -> context.getString(R.string.util_formatters_time_to_beat_hours, halfHours / 2)
     }
 }
 

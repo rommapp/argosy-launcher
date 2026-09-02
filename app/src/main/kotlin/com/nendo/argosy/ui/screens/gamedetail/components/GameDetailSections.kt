@@ -40,6 +40,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import com.nendo.argosy.ui.components.GameTitle
 import com.nendo.argosy.util.formatBytes
+import com.nendo.argosy.util.formatTimeToBeat
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -183,13 +184,14 @@ fun GameHeader(
                 game.rating?.let { rating ->
                     CommunityRatingChip(rating = rating)
                 }
-                game.timeToBeatMain?.let { time ->
+                val context = LocalContext.current
+                formatTimeToBeat(context, game.timeToBeatMainSec)?.let { time ->
                     MetadataChip(label = stringResource(R.string.gamedetail_chip_main_story_label), value = time)
                 }
-                game.timeToBeatExtra?.let { time ->
+                formatTimeToBeat(context, game.timeToBeatExtraSec)?.let { time ->
                     MetadataChip(label = stringResource(R.string.gamedetail_chip_main_extras_label), value = time)
                 }
-                game.timeToBeatCompletionist?.let { time ->
+                formatTimeToBeat(context, game.timeToBeatCompletionistSec)?.let { time ->
                     MetadataChip(label = stringResource(R.string.gamedetail_chip_completionist_label), value = time)
                 }
             }

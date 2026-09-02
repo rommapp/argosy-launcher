@@ -9,7 +9,6 @@ import com.nendo.argosy.ui.common.displayTitleId
 import com.nendo.argosy.ui.common.isAndroidApp
 import com.nendo.argosy.ui.common.isRommGame
 import com.nendo.argosy.ui.common.isSteamGame
-import com.nendo.argosy.util.formatTimeToBeat
 
 /**
  * [isHidden] is supplied by the caller: hiding is per account and lives in `user_roms_hidden`,
@@ -56,9 +55,9 @@ fun GameEntity.toGameDetailUi(
         description = description,
         players = players,
         rating = rating,
-        timeToBeatMain = formatTimeToBeat(timeToBeatMainSec),
-        timeToBeatExtra = formatTimeToBeat(timeToBeatExtraSec),
-        timeToBeatCompletionist = formatTimeToBeat(timeToBeatCompletionistSec),
+        timeToBeatMainSec = timeToBeatMainSec,
+        timeToBeatExtraSec = timeToBeatExtraSec,
+        timeToBeatCompletionistSec = timeToBeatCompletionistSec,
         userRating = userRating,
         userDifficulty = userDifficulty,
         completion = completion,

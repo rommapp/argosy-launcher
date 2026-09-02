@@ -151,6 +151,10 @@
     <string name="dual_showcase_stat_last_played_never">कभी नहीं</string>
     <string name="dual_showcase_stat_status_label">स्थिति</string>
     <string name="dual_showcase_stat_status_none">कोई नहीं</string>
+    <string name="dual_showcase_stat_main_story_label">मुख्य कहानी</string>
+    <string name="dual_showcase_stat_main_extras_label">मुख्य + अतिरिक्त</string>
+    <string name="dual_showcase_stat_completionist_label">कंप्लीशनिस्ट</string>
+    <string name="dual_detail_estimated_time_label">अनुमानित समय</string>
 
     <string name="dual_showcase_last_played_today">आज</string>
     <string name="dual_showcase_last_played_yesterday">कल</string>
@@ -407,10 +411,6 @@
     <string name="dual_detail_save_name_field_label">स्लॉट का नाम</string>
     <string name="dual_detail_save_name_cancel">रद्द करें</string>
     <string name="dual_detail_save_name_create">बनाएं</string>
-
-    <string name="dual_showcase_hltb_main_story_label">मुख्य कहानी</string>
-    <string name="dual_showcase_hltb_main_extras_label">मुख्य कहानी + अतिरिक्त</string>
-    <string name="dual_showcase_hltb_completionist_label">पूर्णतावादी</string>
 
     <string name="dual_detail_save_slot_auto">ऑटो सेव</string>
 </resources>

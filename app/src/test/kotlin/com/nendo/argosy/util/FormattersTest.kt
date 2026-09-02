@@ -189,21 +189,23 @@ class FormattersTest {
 
     @Test
     fun `missing time to beat estimates are hidden`() {
-        assertNull(formatTimeToBeat(null))
-        assertNull(formatTimeToBeat(0))
-        assertNull(formatTimeToBeat(-1))
+        assertNull(formatTimeToBeat(context, null))
+        assertNull(formatTimeToBeat(context, 0))
+        assertNull(formatTimeToBeat(context, -1))
     }
 
     @Test
     fun `short time to beat estimates retain minute precision`() {
-        assertEquals("5m", formatTimeToBeat(300))
-        assertEquals("30m", formatTimeToBeat(900))
+        assertEquals(res(R.string.util_formatters_time_to_beat_minutes, 5), formatTimeToBeat(context, 300))
+        assertEquals(res(R.string.util_formatters_time_to_beat_minutes, 30), formatTimeToBeat(context, 900))
+        assertEquals(res(R.string.util_formatters_time_to_beat_minutes, 1), formatTimeToBeat(context, 30))
     }
 
     @Test
     fun `time to beat estimates round to half hours`() {
-        assertEquals("9.5h", formatTimeToBeat(33_739))
-        assertEquals("13.5h", formatTimeToBeat(49_369))
-        assertEquals("27.5h", formatTimeToBeat(98_178))
+        assertEquals(res(R.string.util_formatters_time_to_beat_half_hours, 9), formatTimeToBeat(context, 33_739))
+        assertEquals(res(R.string.util_formatters_time_to_beat_half_hours, 13), formatTimeToBeat(context, 49_369))
+        assertEquals(res(R.string.util_formatters_time_to_beat_hours, 27), formatTimeToBeat(context, 97_200))
+        assertEquals(res(R.string.util_formatters_time_to_beat_hours, 1), formatTimeToBeat(context, 3_600))
     }
 }

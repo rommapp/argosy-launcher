@@ -135,6 +135,10 @@
     <string name="dual_showcase_stat_last_played_never">從未遊玩</string>
     <string name="dual_showcase_stat_status_label">狀態</string>
     <string name="dual_showcase_stat_status_none">無</string>
+    <string name="dual_showcase_stat_main_story_label">主線</string>
+    <string name="dual_showcase_stat_main_extras_label">主線+額外內容</string>
+    <string name="dual_showcase_stat_completionist_label">完全攻略</string>
+    <string name="dual_detail_estimated_time_label">預計時長</string>
 
     <string name="dual_showcase_last_played_today">今天</string>
     <string name="dual_showcase_last_played_yesterday">昨天</string>
@@ -364,10 +368,6 @@
     <string name="dual_detail_save_name_field_label">存檔槽名稱</string>
     <string name="dual_detail_save_name_cancel">取消</string>
     <string name="dual_detail_save_name_create">建立</string>
-
-    <string name="dual_showcase_hltb_main_story_label">主線劇情</string>
-    <string name="dual_showcase_hltb_main_extras_label">主線 + 額外內容</string>
-    <string name="dual_showcase_hltb_completionist_label">完美通關</string>
 
     <string name="dual_detail_save_slot_auto">自動存檔</string>
 </resources>

@@ -333,6 +333,7 @@
     <string name="dual_detail_option_variant_default">डिफ़ॉल्ट</string>
 
     <string name="dual_detail_option_play_extracting">एक्सट्रैक्ट हो रहा है...</string>
+    <string name="dual_detail_option_play_waiting_for_server">सर्वर की प्रतीक्षा है...</string>
     <string name="dual_detail_option_play_downloading">डाउनलोड हो रहा है %1$d%%</string>
     <string name="dual_detail_option_play_queued">कतार में...</string>
     <string name="dual_detail_option_play_paused">रुका हुआ %1$d%%</string>

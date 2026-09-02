@@ -1,6 +1,7 @@
 package com.nendo.argosy.hardware
 
 import android.content.Context
+import com.nendo.argosy.data.download.DownloadManager
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.repository.CollectionRepository
 import com.nendo.argosy.data.repository.DownloadQueueRepository
@@ -30,6 +31,7 @@ class SecondaryHomeStateManager(
     private val socialRepository: com.nendo.argosy.data.social.SocialRepository,
     private val emulatorConfigDao: EmulatorConfigDao,
     private val downloadQueueRepository: DownloadQueueRepository,
+    private val downloadManager: DownloadManager,
     private val steamRepository: SteamRepository,
     private val configureEmulatorUseCase: com.nendo.argosy.domain.usecase.game.ConfigureEmulatorUseCase,
     private val builtinCoreResolver: com.nendo.argosy.data.emulator.BuiltinCoreResolver,
@@ -133,6 +135,7 @@ class SecondaryHomeStateManager(
                 socialRepository = socialRepository,
                 emulatorConfigDao = emulatorConfigDao,
                 downloadQueueRepository = downloadQueueRepository,
+                downloadManager = downloadManager,
                 steamRepository = steamRepository,
                 configureEmulatorUseCase = configureEmulatorUseCase,
                 builtinCoreResolver = builtinCoreResolver,
@@ -255,6 +258,7 @@ class SecondaryHomeStateManager(
             socialRepository = socialRepository,
             emulatorConfigDao = emulatorConfigDao,
             downloadQueueRepository = downloadQueueRepository,
+            downloadManager = downloadManager,
             steamRepository = steamRepository,
             configureEmulatorUseCase = configureEmulatorUseCase,
             builtinCoreResolver = builtinCoreResolver,

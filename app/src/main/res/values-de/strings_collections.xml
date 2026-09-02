@@ -161,8 +161,10 @@
     <string name="downloads_file_state_failed">Fehlgeschlagen</string>
     <string name="downloads_file_state_queued">Wartend</string>
     <string name="downloads_file_state_percent">%1$d%%</string>
+    <string name="downloads_file_state_waiting_for_server">Warten auf Server…</string>
     <string name="downloads_item_status_moving">Wird in ROM-Speicher verschoben…</string>
     <string name="downloads_item_status_extracting_fallback">Wird entpackt…</string>
+    <string name="downloads_item_status_waiting_for_server">Warten auf Server…</string>
     <string name="downloads_item_status_insufficient_storage">Benötigt %1$s, verfügbar %2$s</string>
     <string name="downloads_item_status_failed_fallback">Download fehlgeschlagen</string>
     <string name="downloads_item_status_queued_fallback">Wartend</string>

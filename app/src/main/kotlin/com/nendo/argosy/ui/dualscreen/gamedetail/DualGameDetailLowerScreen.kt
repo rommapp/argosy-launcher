@@ -190,6 +190,7 @@ fun DualGameDetailLowerScreen(
                         isPlayable = state.isPlayable,
                         downloadProgress = state.downloadProgress,
                         downloadState = state.downloadState,
+                        isAwaitingServer = state.isAwaitingServer,
                         isFavorite = state.isFavorite,
                         userRating = state.rating,
                         userDifficulty = state.userDifficulty,
@@ -938,6 +939,7 @@ private fun OptionsTabContent(
     isPlayable: Boolean,
     downloadProgress: Float?,
     downloadState: String?,
+    isAwaitingServer: Boolean,
     isFavorite: Boolean,
     userRating: Int?,
     userDifficulty: Int,
@@ -988,10 +990,11 @@ private fun OptionsTabContent(
             )
             val label = when (dlState) {
                 "EXTRACTING" -> context.getString(R.string.dual_detail_option_play_extracting)
-                "DOWNLOADING" -> context.getString(
-                    R.string.dual_detail_option_play_downloading,
-                    percentDone
-                )
+                "DOWNLOADING" -> if (isAwaitingServer) {
+                    context.getString(R.string.dual_detail_option_play_waiting_for_server)
+                } else {
+                    context.getString(R.string.dual_detail_option_play_downloading, percentDone)
+                }
                 "QUEUED" -> context.getString(R.string.dual_detail_option_play_queued)
                 "PAUSED" -> context.getString(
                     R.string.dual_detail_option_play_paused,

@@ -333,6 +333,7 @@
     <string name="dual_detail_option_variant_default">Standard</string>
 
     <string name="dual_detail_option_play_extracting">Wird entpackt...</string>
+    <string name="dual_detail_option_play_waiting_for_server">Warten auf Server...</string>
     <string name="dual_detail_option_play_downloading">Wird heruntergeladen %1$d%%</string>
     <string name="dual_detail_option_play_queued">Wartet...</string>
     <string name="dual_detail_option_play_paused">Pausiert %1$d%%</string>

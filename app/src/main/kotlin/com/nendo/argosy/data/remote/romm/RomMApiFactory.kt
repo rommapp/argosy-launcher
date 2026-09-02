@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
-private const val DOWNLOAD_STALL_TIMEOUT_SECONDS = 300
+private const val DOWNLOAD_STALL_TIMEOUT_SECONDS = 900
 
 /**
  * Builds a RomM client bound to one base URL and token.

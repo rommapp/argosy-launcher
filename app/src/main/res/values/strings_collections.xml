@@ -264,9 +264,12 @@
     <string name="downloads_file_state_queued">Queued</string>
     <!-- Per-file download percentage. %1$d is 0-100. -->
     <string name="downloads_file_state_percent">%1$d%%</string>
+    <string name="downloads_file_state_waiting_for_server">Waiting for server&#8230;</string>
     <string name="downloads_item_status_moving">Moving to ROM storage&#8230;</string>
     <!-- Fallback shown while extracting if no core-reported status message is available. -->
     <string name="downloads_item_status_extracting_fallback">Extracting&#8230;</string>
+    <!-- Shown on an active transfer until the server sends its first byte. -->
+    <string name="downloads_item_status_waiting_for_server">Waiting for server&#8230;</string>
     <!-- %1$s and %2$s are already-formatted byte amounts, for example "1.2 GB". -->
     <string name="downloads_item_status_insufficient_storage">Need %1$s, Available %2$s</string>
     <!-- Fallback shown for a failed active download with no specific error reason. -->

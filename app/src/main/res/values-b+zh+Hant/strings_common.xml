@@ -767,6 +767,7 @@
     <string name="gamedetail_action_buttons_queued">排隊中...</string>
     <string name="gamedetail_action_buttons_no_space">空間不足</string>
     <string name="gamedetail_action_buttons_downloading_percent">%1$d%%</string>
+    <string name="gamedetail_action_buttons_waiting_for_server">等待伺服器&#8230;</string>
     <string name="gamedetail_action_buttons_extracting">解壓縮中...</string>
     <string name="gamedetail_action_buttons_resume_percent">繼續%1$d%%</string>
     <string name="gamedetail_action_buttons_retry">重試</string>

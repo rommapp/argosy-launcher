@@ -543,6 +543,7 @@ private fun GameDetailContent(
         focusedIndex = uiState.menuFocusIndex,
         downloadStatus = uiState.downloadStatus,
         downloadProgress = uiState.downloadProgress,
+        isAwaitingServer = uiState.isAwaitingServer,
         isFavorite = game.isFavorite,
         saveStatus = uiState.saveStatusInfo,
         isSyncingSaves = uiState.isSyncingSaves,

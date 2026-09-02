@@ -12,6 +12,7 @@ import com.nendo.argosy.data.local.entity.CollectionEntity
 import com.nendo.argosy.data.preferences.EmulatorDisplayTarget
 import com.nendo.argosy.data.preferences.SessionStateStore
 import com.nendo.argosy.data.repository.CollectionRepository
+import com.nendo.argosy.data.download.DownloadManager
 import com.nendo.argosy.data.repository.DownloadQueueRepository
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.data.repository.PlatformRepository
@@ -51,6 +52,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -71,6 +73,7 @@ class DualGameDetailViewModel(
     // TODO: replace with EmulatorConfigRepository once it exists (Agent B settings refactor).
     private val emulatorConfigDao: EmulatorConfigDao,
     private val downloadQueueRepository: DownloadQueueRepository,
+    private val downloadManager: DownloadManager,
     private val steamRepository: SteamRepository,
     private val configureEmulatorUseCase: ConfigureEmulatorUseCase,
     private val builtinCoreResolver: BuiltinCoreResolver,
@@ -555,15 +558,21 @@ class DualGameDetailViewModel(
     private fun observeDownloads(gameId: Long) {
         downloadObserverJob?.cancel()
         downloadObserverJob = viewModelScope.launch {
-            downloadQueueRepository.observeActiveDownloads().collect { entities ->
+            combine(
+                downloadQueueRepository.observeActiveDownloads(),
+                downloadManager.state
+            ) { entities, managerState -> entities to managerState.activeDownloads }.collect { (entities, active) ->
                 val entity = entities.find { it.gameId == gameId }
                 val progress = if (entity != null && entity.totalBytes > 0) {
                     (entity.bytesDownloaded.toFloat() / entity.totalBytes).coerceIn(0f, 1f)
                 } else if (entity != null) 0f else null
                 val state = entity?.state
+                val isAwaitingServer = active.any { it.gameId == gameId && it.isAwaitingServer }
 
                 val wasActive = _uiState.value.downloadState != null
-                _uiState.update { it.copy(downloadProgress = progress, downloadState = state) }
+                _uiState.update {
+                    it.copy(downloadProgress = progress, downloadState = state, isAwaitingServer = isAwaitingServer)
+                }
 
                 if (wasActive && entity == null) {
                     val game = gameRepository.getById(gameId) ?: return@collect

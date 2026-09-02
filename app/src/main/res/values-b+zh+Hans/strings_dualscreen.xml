@@ -292,6 +292,7 @@
     <string name="dual_detail_option_variant_default">默认</string>
 
     <string name="dual_detail_option_play_extracting">解压中...</string>
+    <string name="dual_detail_option_play_waiting_for_server">等待服务器...</string>
     <string name="dual_detail_option_play_downloading">下载中 %1$d%%</string>
     <string name="dual_detail_option_play_queued">排队中...</string>
     <string name="dual_detail_option_play_paused">已暂停 %1$d%%</string>

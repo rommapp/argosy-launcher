@@ -161,8 +161,10 @@
     <string name="downloads_file_state_failed">विफल</string>
     <string name="downloads_file_state_queued">कतार में</string>
     <string name="downloads_file_state_percent">%1$d%%</string>
+    <string name="downloads_file_state_waiting_for_server">सर्वर की प्रतीक्षा है…</string>
     <string name="downloads_item_status_moving">ROM स्टोरेज में ले जाया जा रहा है…</string>
     <string name="downloads_item_status_extracting_fallback">एक्सट्रैक्ट हो रहा है…</string>
+    <string name="downloads_item_status_waiting_for_server">सर्वर की प्रतीक्षा है…</string>
     <string name="downloads_item_status_insufficient_storage">जरूरत: %1$s, उपलब्ध: %2$s</string>
     <string name="downloads_item_status_failed_fallback">डाउनलोड विफल हुआ</string>
     <string name="downloads_item_status_queued_fallback">कतार में</string>

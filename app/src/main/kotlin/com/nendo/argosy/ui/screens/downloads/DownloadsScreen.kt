@@ -284,8 +284,11 @@ private fun GroupFileRows(group: DownloadGroup) {
                         DownloadState.COMPLETED -> stringResource(R.string.downloads_file_state_done)
                         DownloadState.EXTRACTING -> stringResource(R.string.downloads_file_state_extracting)
                         DownloadState.MOVING -> stringResource(R.string.downloads_file_state_moving)
-                        DownloadState.DOWNLOADING ->
+                        DownloadState.DOWNLOADING -> if (file.isAwaitingServer) {
+                            stringResource(R.string.downloads_file_state_waiting_for_server)
+                        } else {
                             stringResource(R.string.downloads_file_state_percent, (file.progressPercent * 100).toInt())
+                        }
                         DownloadState.FAILED -> stringResource(R.string.downloads_file_state_failed)
                         else -> stringResource(R.string.downloads_file_state_queued)
                     },
@@ -430,8 +433,10 @@ private fun DownloadItem(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        val status = download.statusMessage
+                            ?: stringResource(R.string.downloads_item_status_waiting_for_server).takeIf { download.isAwaitingServer }
                         Text(
-                            text = if (download.statusMessage != null) "$byteText ${download.statusMessage}" else byteText,
+                            text = if (status != null) "$byteText $status" else byteText,
                             style = MaterialTheme.typography.bodySmall,
                             color = theme.focusAccent,
                             maxLines = 1,

@@ -386,10 +386,14 @@ fun ActionButtons(
                     GameDownloadStatus.QUEUED -> Text(stringResource(R.string.gamedetail_action_buttons_queued))
                     GameDownloadStatus.WAITING_FOR_STORAGE -> Text(stringResource(R.string.gamedetail_action_buttons_no_space))
                     GameDownloadStatus.DOWNLOADING -> Text(
-                        stringResource(
-                            R.string.gamedetail_action_buttons_downloading_percent,
-                            (uiState.downloadProgress * 100).toInt()
-                        )
+                        if (uiState.isAwaitingServer) {
+                            stringResource(R.string.gamedetail_action_buttons_waiting_for_server)
+                        } else {
+                            stringResource(
+                                R.string.gamedetail_action_buttons_downloading_percent,
+                                (uiState.downloadProgress * 100).toInt()
+                            )
+                        }
                     )
                     GameDownloadStatus.EXTRACTING -> Text(stringResource(R.string.gamedetail_action_buttons_extracting))
                     GameDownloadStatus.PAUSED -> Text(

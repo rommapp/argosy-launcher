@@ -111,6 +111,7 @@ data class GameDetailMenuState(
     val focusedIndex: Int = 0,
     val downloadStatus: GameDownloadStatus = GameDownloadStatus.NOT_DOWNLOADED,
     val downloadProgress: Float = 0f,
+    val isAwaitingServer: Boolean = false,
     val isFavorite: Boolean = false,
     val saveStatus: SaveStatusInfo? = null,
     val isSyncingSaves: Boolean = false,
@@ -161,6 +162,7 @@ fun GameDetailMenu(
                     PlayMenuItem(
                         downloadStatus = displayState.downloadStatus,
                         downloadProgress = displayState.downloadProgress,
+                        isAwaitingServer = displayState.isAwaitingServer,
                         isFocused = isFocused,
                         downloadSizeBytes = displayState.downloadSizeBytes,
                         isCompact = isCompact,
@@ -288,6 +290,7 @@ fun GameDetailMenu(
 private fun PlayMenuItem(
     downloadStatus: GameDownloadStatus,
     downloadProgress: Float,
+    isAwaitingServer: Boolean,
     isFocused: Boolean,
     downloadSizeBytes: Long?,
     isCompact: Boolean,
@@ -296,10 +299,14 @@ private fun PlayMenuItem(
     val label = when (downloadStatus) {
         GameDownloadStatus.EXTRACTING ->
             stringResource(R.string.gamedetail_menu_play_button_extracting)
-        GameDownloadStatus.DOWNLOADING -> stringResource(
-            R.string.gamedetail_menu_play_button_progress_percent,
-            (downloadProgress * 100).toInt()
-        )
+        GameDownloadStatus.DOWNLOADING -> if (isAwaitingServer) {
+            stringResource(R.string.gamedetail_menu_play_button_waiting_for_server)
+        } else {
+            stringResource(
+                R.string.gamedetail_menu_play_button_progress_percent,
+                (downloadProgress * 100).toInt()
+            )
+        }
         GameDownloadStatus.QUEUED ->
             stringResource(R.string.gamedetail_menu_play_button_queued)
         GameDownloadStatus.WAITING_FOR_STORAGE ->

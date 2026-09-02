@@ -1549,6 +1549,7 @@
     <!-- Download progress. %1$d is a whole-number percent; the literal %% renders one percent
          sign. -->
     <string name="gamedetail_action_buttons_downloading_percent">%1$d%%</string>
+    <string name="gamedetail_action_buttons_waiting_for_server">Waiting for server&#8230;</string>
     <string name="gamedetail_action_buttons_extracting">EXTRACTING...</string>
     <!-- Resumes a paused download. %1$d is a whole-number percent; the literal %% renders one
          percent sign. -->

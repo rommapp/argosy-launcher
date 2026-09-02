@@ -175,8 +175,10 @@
     <string name="downloads_file_state_failed">Ошибка</string>
     <string name="downloads_file_state_queued">В очереди</string>
     <string name="downloads_file_state_percent">%1$d%%</string>
+    <string name="downloads_file_state_waiting_for_server">Ожидание сервера…</string>
     <string name="downloads_item_status_moving">Перемещение в хранилище ROM…</string>
     <string name="downloads_item_status_extracting_fallback">Распаковка…</string>
+    <string name="downloads_item_status_waiting_for_server">Ожидание сервера…</string>
     <string name="downloads_item_status_insufficient_storage">Нужно: %1$s, доступно: %2$s</string>
     <string name="downloads_item_status_failed_fallback">Не удалось загрузить</string>
     <string name="downloads_item_status_queued_fallback">В очереди</string>

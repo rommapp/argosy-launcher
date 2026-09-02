@@ -43,6 +43,7 @@ import javax.inject.Inject
 data class DownloadUiState(
     val downloadStatus: GameDownloadStatus = GameDownloadStatus.NOT_DOWNLOADED,
     val downloadProgress: Float = 0f,
+    val isAwaitingServer: Boolean = false,
     val downloadSizeBytes: Long? = null,
     val isRefreshingGameData: Boolean = false,
     val showExtractionFailedPrompt: Boolean = false,
@@ -155,7 +156,13 @@ class DownloadDelegate @Inject constructor(
 
                 if (result != null) {
                     val (status, progress) = result
-                    _state.update { it.copy(downloadStatus = status, downloadProgress = progress) }
+                    _state.update {
+                        it.copy(
+                            downloadStatus = status,
+                            downloadProgress = progress,
+                            isAwaitingServer = activeDownload?.isAwaitingServer == true
+                        )
+                    }
                 }
             }
         }

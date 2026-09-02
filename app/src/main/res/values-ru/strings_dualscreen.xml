@@ -311,6 +311,7 @@
     <string name="dual_detail_option_variant_default">По умолчанию</string>
 
     <string name="dual_detail_option_play_extracting">Распаковка...</string>
+    <string name="dual_detail_option_play_waiting_for_server">Ожидание сервера...</string>
     <string name="dual_detail_option_play_downloading">Загрузка %1$d%%</string>
     <string name="dual_detail_option_play_queued">В очереди...</string>
     <string name="dual_detail_option_play_paused">На паузе %1$d%%</string>

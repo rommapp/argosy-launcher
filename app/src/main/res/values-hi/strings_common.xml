@@ -795,6 +795,7 @@
     <string name="gamedetail_action_buttons_queued">कतार में...</string>
     <string name="gamedetail_action_buttons_no_space">जगह नहीं</string>
     <string name="gamedetail_action_buttons_downloading_percent">%1$d%%</string>
+    <string name="gamedetail_action_buttons_waiting_for_server">सर्वर की प्रतीक्षा है…</string>
     <string name="gamedetail_action_buttons_extracting">एक्सट्रैक्ट हो रहा है...</string>
     <string name="gamedetail_action_buttons_resume_percent">रिज़्यूम %1$d%%</string>
     <string name="gamedetail_action_buttons_retry">पुनः प्रयास करें</string>

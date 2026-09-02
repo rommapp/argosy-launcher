@@ -339,6 +339,7 @@
     <string name="dual_detail_option_variant_default">Predeterminada</string>
 
     <string name="dual_detail_option_play_extracting">Extrayendo...</string>
+    <string name="dual_detail_option_play_waiting_for_server">Esperando al servidor...</string>
     <string name="dual_detail_option_play_downloading">Descargando %1$d%%</string>
     <string name="dual_detail_option_play_queued">En cola...</string>
     <string name="dual_detail_option_play_paused">Pausado %1$d%%</string>

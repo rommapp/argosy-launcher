@@ -1356,6 +1356,7 @@ class SecondaryHomeActivity :
             socialRepository = dsm.socialRepository,
             emulatorConfigDao = dsm.emulatorConfigDao,
             downloadQueueRepository = dsm.downloadQueueRepository,
+            downloadManager = dsm.downloadManager,
             steamRepository = dsm.steamRepository,
             configureEmulatorUseCase = dsm.configureEmulatorUseCase,
             builtinCoreResolver = dsm.builtinCoreResolver,

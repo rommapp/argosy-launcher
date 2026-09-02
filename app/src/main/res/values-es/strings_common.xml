@@ -823,6 +823,7 @@
     <string name="gamedetail_action_buttons_queued">EN COLA...</string>
     <string name="gamedetail_action_buttons_no_space">SIN ESPACIO</string>
     <string name="gamedetail_action_buttons_downloading_percent">%1$d%%</string>
+    <string name="gamedetail_action_buttons_waiting_for_server">Esperando al servidor&#8230;</string>
     <string name="gamedetail_action_buttons_extracting">EXTRAYENDO...</string>
     <string name="gamedetail_action_buttons_resume_percent">REANUDAR %1$d%%</string>
     <string name="gamedetail_action_buttons_retry">REINTENTAR</string>

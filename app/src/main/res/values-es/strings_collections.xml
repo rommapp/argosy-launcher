@@ -168,8 +168,10 @@
     <string name="downloads_file_state_failed">Fallida</string>
     <string name="downloads_file_state_queued">En cola</string>
     <string name="downloads_file_state_percent">%1$d%%</string>
+    <string name="downloads_file_state_waiting_for_server">Esperando al servidor&#8230;</string>
     <string name="downloads_item_status_moving">Moviendo al almacenamiento de ROM&#8230;</string>
     <string name="downloads_item_status_extracting_fallback">Extrayendo&#8230;</string>
+    <string name="downloads_item_status_waiting_for_server">Esperando al servidor&#8230;</string>
     <string name="downloads_item_status_insufficient_storage">Se necesita %1$s, disponible %2$s</string>
     <string name="downloads_item_status_failed_fallback">Error al descargar</string>
     <string name="downloads_item_status_queued_fallback">En cola</string>

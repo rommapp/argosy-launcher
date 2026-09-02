@@ -20,6 +20,7 @@
     <string name="gamedetail_menu_play_button_install">Installer</string>
     <string name="gamedetail_menu_play_button_download">Télécharger</string>
     <string name="gamedetail_menu_play_button_progress_percent">%1$d%%</string>
+    <string name="gamedetail_menu_play_button_waiting_for_server">En attente du serveur…</string>
 
     <string name="gamedetail_menu_saves_syncing">Synchronisation...</string>
     <string name="gamedetail_menu_saves_default_channel">Sauvegarde auto</string>

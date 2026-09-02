@@ -292,6 +292,7 @@
     <string name="dual_detail_option_variant_default">預設</string>
 
     <string name="dual_detail_option_play_extracting">解壓縮中...</string>
+    <string name="dual_detail_option_play_waiting_for_server">等待伺服器...</string>
     <string name="dual_detail_option_play_downloading">下載中%1$d%%</string>
     <string name="dual_detail_option_play_queued">排隊中...</string>
     <string name="dual_detail_option_play_paused">已暫停%1$d%%</string>

@@ -60,6 +60,7 @@
     <!-- Big button at the top of the left menu while a download runs. %1$d is how much of the
          download is finished, as a whole number out of a hundred. -->
     <string name="gamedetail_menu_play_button_progress_percent">%1$d%%</string>
+    <string name="gamedetail_menu_play_button_waiting_for_server">Waiting for server&#8230;</string>
 
     <!-- Row in the left menu while save data is being exchanged with the server. Verb in the
          continuous form. -->

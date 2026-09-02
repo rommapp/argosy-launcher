@@ -19,6 +19,7 @@
     <string name="gamedetail_menu_play_button_install">इंस्टॉल</string>
     <string name="gamedetail_menu_play_button_download">डाउनलोड</string>
     <string name="gamedetail_menu_play_button_progress_percent">%1$d%%</string>
+    <string name="gamedetail_menu_play_button_waiting_for_server">सर्वर की प्रतीक्षा है…</string>
 
     <string name="gamedetail_menu_saves_syncing">सिंक हो रहा है...</string>
     <string name="gamedetail_menu_saves_default_channel">ऑटो-सेव</string>

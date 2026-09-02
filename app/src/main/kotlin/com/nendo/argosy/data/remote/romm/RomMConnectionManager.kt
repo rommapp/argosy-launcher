@@ -38,7 +38,6 @@ import javax.inject.Singleton
 
 private const val TAG = "RomMConnectionManager"
 private const val MIN_DEVICE_API_VERSION = "4.7.0"
-private const val DOWNLOAD_STALL_TIMEOUT_SECONDS = 300
 
 private val RECONNECT_BACKOFF_MS = listOf(5_000L, 10_000L, 20_000L, 40_000L, 60_000L)
 

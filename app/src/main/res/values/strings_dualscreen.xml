@@ -680,6 +680,7 @@
     <!-- The action row while a finished download is being unpacked. Adjective phrase describing
          what is happening. -->
     <string name="dual_detail_option_play_extracting">Extracting...</string>
+    <string name="dual_detail_option_play_waiting_for_server">Waiting for server...</string>
     <!-- The action row while the game is being fetched. %1$d is the percentage done; the percent
          sign is part of the figure. -->
     <string name="dual_detail_option_play_downloading">Downloading %1$d%%</string>

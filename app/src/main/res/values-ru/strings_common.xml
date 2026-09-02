@@ -827,6 +827,7 @@
     <string name="gamedetail_action_buttons_queued">В ОЧЕРЕДИ...</string>
     <string name="gamedetail_action_buttons_no_space">НЕТ МЕСТА</string>
     <string name="gamedetail_action_buttons_downloading_percent">%1$d%%</string>
+    <string name="gamedetail_action_buttons_waiting_for_server">Ожидание сервера…</string>
     <string name="gamedetail_action_buttons_extracting">РАСПАКОВКА...</string>
     <string name="gamedetail_action_buttons_resume_percent">ПРОДОЛЖИТЬ %1$d%%</string>
     <string name="gamedetail_action_buttons_retry">ПОВТОРИТЬ</string>

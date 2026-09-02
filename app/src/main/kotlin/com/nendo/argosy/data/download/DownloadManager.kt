@@ -77,6 +77,7 @@ data class DownloadProgress(
     val isMultiFileRom: Boolean = false,
     val bytesPerSecond: Long = 0,
     val statusMessage: String? = null,
+    val isAwaitingServer: Boolean = false,
     val selectedFileIds: List<Long>? = null,
     /**
      * What the storage gate asked for when it held this download back, which is the transfer plus
@@ -434,7 +435,8 @@ class DownloadManager @Inject constructor(
         soundManager.play(SoundType.DOWNLOAD_START)
 
         _state.value = _state.value.copy(
-            activeDownloads = _state.value.activeDownloads + progress.copy(state = DownloadState.DOWNLOADING),
+            activeDownloads = _state.value.activeDownloads +
+                progress.copy(state = DownloadState.DOWNLOADING, isAwaitingServer = true),
             queue = _state.value.queue.filter { it.id != progress.id },
             availableStorageBytes = availableStorage
         )
@@ -991,7 +993,8 @@ class DownloadManager @Inject constructor(
             soundManager.play(SoundType.DOWNLOAD_START)
 
             _state.value = _state.value.copy(
-                activeDownloads = _state.value.activeDownloads + next.copy(state = DownloadState.DOWNLOADING),
+                activeDownloads = _state.value.activeDownloads +
+                    next.copy(state = DownloadState.DOWNLOADING, isAwaitingServer = true),
                 queue = _state.value.queue.filter { it.id != next.id },
                 availableStorageBytes = availableStorage
             )

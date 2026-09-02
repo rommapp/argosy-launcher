@@ -118,6 +118,7 @@ data class DualGameDetailUiState(
     val selectedVariantName: String? = null,
     val downloadProgress: Float? = null,
     val downloadState: String? = null,
+    val isAwaitingServer: Boolean = false,
     val isDeleting: Boolean = false,
     val isMultiDisc: Boolean = false,
     val isHidden: Boolean = false,

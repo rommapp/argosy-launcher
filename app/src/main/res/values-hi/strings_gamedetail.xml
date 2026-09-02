@@ -124,6 +124,9 @@
     <string name="gamedetail_achievement_list_locked_heading">लॉक्ड (%1$d)</string>
     <string name="gamedetail_achievement_list_tier_hardcore">हार्डकोर</string>
     <string name="gamedetail_achievement_list_tier_casual">कैज़ुअल</string>
+    <string name="gamedetail_achievement_type_missable">छूट सकता है</string>
+    <string name="gamedetail_achievement_type_progression">प्रगति</string>
+    <string name="gamedetail_achievement_type_win_condition">जीत की शर्त</string>
     <plurals name="gamedetail_achievement_list_points">
         <item quantity="one">%1$d अंक</item>
         <item quantity="other">%1$d अंक</item>

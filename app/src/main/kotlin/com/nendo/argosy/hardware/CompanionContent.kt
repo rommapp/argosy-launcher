@@ -69,7 +69,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.nendo.argosy.R
+import com.nendo.argosy.core.game.AchievementUi
 import com.nendo.argosy.ui.coil.AppIconData
+import com.nendo.argosy.ui.components.FooterBar
+import com.nendo.argosy.ui.components.InputButton
+import com.nendo.argosy.ui.screens.gamedetail.components.AchievementList
 import com.nendo.argosy.ui.theme.ALauncherColors
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.util.touchOnly
@@ -84,6 +88,10 @@ fun CompanionContent(
     homeApps: List<String>,
     onAppClick: (String) -> Unit,
     onTabChanged: (CompanionPanel) -> Unit,
+    currentPanel: CompanionPanel = CompanionPanel.DASHBOARD,
+    achievements: List<AchievementUi> = emptyList(),
+    achievementFocusIndex: Int = -1,
+    onAchievementTapped: (Int) -> Unit = {},
     isDrawerOpen: Boolean = false,
     drawerApps: List<DrawerAppUi> = emptyList(),
     onOpenDrawer: () -> Unit = {},
@@ -102,18 +110,28 @@ fun CompanionContent(
             .background(Color.Black)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
+            CompanionTabHeader(
+                currentPanel = currentPanel,
+                onTabChanged = onTabChanged
+            )
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
             ) {
-                when (state.currentPanel) {
+                when (currentPanel) {
                     CompanionPanel.DASHBOARD -> DashboardPanel(
                         state = state,
                         sessionTimer = sessionTimer,
+                        liveAchievements = achievements,
                         onQuickSave = onQuickSave,
                         onQuickLoad = onQuickLoad,
                         onScreenshot = onScreenshot
+                    )
+                    CompanionPanel.ACHIEVEMENTS -> AchievementsPanel(
+                        achievements = achievements,
+                        focusIndex = achievementFocusIndex,
+                        onRowTapped = onAchievementTapped
                     )
                 }
             }
@@ -121,6 +139,12 @@ fun CompanionContent(
             val showAppBar = com.nendo.argosy.DualScreenManagerHolder.instance
                 ?.isExternalDisplay != true
             if (showAppBar) {
+                FooterBar(
+                    hints = listOf(
+                        InputButton.LB_RB to
+                            stringResource(R.string.dual_companion_footer_switch_panel)
+                    )
+                )
                 CompanionAppBar(
                     apps = homeApps,
                     onAppClick = onAppClick,
@@ -200,7 +224,7 @@ private fun CompanionTabHeader(
                         .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm)
                 ) {
                     Text(
-                        text = panel.label,
+                        text = stringResource(panel.labelRes),
                         style = MaterialTheme.typography.labelMedium,
                         color = contentColor
                     )
@@ -215,14 +239,43 @@ private fun CompanionTabHeader(
 }
 
 @Composable
+private fun AchievementsPanel(
+    achievements: List<AchievementUi>,
+    focusIndex: Int,
+    onRowTapped: (Int) -> Unit
+) {
+    AchievementList(
+        achievements = achievements,
+        focusIndex = focusIndex,
+        unlockedHeadingRes = R.string.dual_companion_achievements_unlocked_heading,
+        lockedHeadingRes = R.string.dual_companion_achievements_locked_heading,
+        emptyTextRes = R.string.dual_companion_achievements_empty,
+        modifier = Modifier.fillMaxSize(),
+        onRowTapped = onRowTapped
+    )
+}
+
+/**
+ * [liveAchievements] is the list the manager refreshes on every unlock; while it holds rows it
+ * outranks the counts frozen into [state] at session start, so the progress bar moves during play.
+ */
+@Composable
 private fun DashboardPanel(
     state: CompanionInGameState,
     sessionTimer: CompanionSessionTimer?,
+    liveAchievements: List<AchievementUi>,
     onQuickSave: () -> Unit = {},
     onQuickLoad: () -> Unit = {},
     onScreenshot: () -> Unit = {}
 ) {
     if (!state.isLoaded) return
+
+    val achievementTotal = if (liveAchievements.isNotEmpty()) liveAchievements.size else state.achievementCount
+    val achievementEarned = if (liveAchievements.isNotEmpty()) {
+        liveAchievements.count { it.isUnlocked }
+    } else {
+        state.earnedAchievementCount
+    }
 
     var sessionMillis by remember { mutableLongStateOf(sessionTimer?.getActiveMillis() ?: 0L) }
 
@@ -250,8 +303,8 @@ private fun DashboardPanel(
                 )
             }
         }
-        if (state.achievementCount > 0) {
-            item { AchievementProgress(state) }
+        if (achievementTotal > 0) {
+            item { AchievementProgress(earned = achievementEarned, total = achievementTotal) }
         }
         item { PlayStatsCard(state, sessionMillis) }
     }
@@ -476,10 +529,8 @@ private fun SessionTimerCard(activeMillis: Long) {
 }
 
 @Composable
-private fun AchievementProgress(state: CompanionInGameState) {
-    val progress = if (state.achievementCount > 0) {
-        state.earnedAchievementCount.toFloat() / state.achievementCount
-    } else 0f
+private fun AchievementProgress(earned: Int, total: Int) {
+    val progress = if (total > 0) earned.toFloat() / total else 0f
 
     Column(
         modifier = Modifier
@@ -498,7 +549,7 @@ private fun AchievementProgress(state: CompanionInGameState) {
                 color = Color.White.copy(alpha = 0.6f)
             )
             Text(
-                text = "${state.earnedAchievementCount} / ${state.achievementCount}",
+                text = "$earned / $total",
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold,
                 color = ALauncherColors.TrophyAmber

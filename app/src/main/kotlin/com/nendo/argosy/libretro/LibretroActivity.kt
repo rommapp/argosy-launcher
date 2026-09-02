@@ -76,6 +76,9 @@ import com.nendo.argosy.data.social.ArgosSocialService
 import com.nendo.argosy.data.social.NetplaySessionMode
 import com.nendo.argosy.data.social.SocialRepository
 import com.nendo.argosy.core.event.AchievementUpdateBus
+import com.nendo.argosy.core.game.AchievementUi
+import com.nendo.argosy.core.game.toAchievementUi
+import com.nendo.argosy.libretro.ui.InGameAchievements
 import com.nendo.argosy.libretro.ui.cheats.CheatDisplayItem
 import com.nendo.argosy.libretro.ui.cheats.CheatVariantInfo
 import com.nendo.argosy.libretro.ui.cheats.CheatsScreen
@@ -222,6 +225,9 @@ class LibretroActivity : ComponentActivity() {
     private var menuVisible by mutableStateOf(false)
     private var isClosing by mutableStateOf(false)
     private var cheatsMenuVisible by mutableStateOf(false)
+    private var achievementsVisible by mutableStateOf(false)
+    private var achievementsFocusIndex by mutableStateOf(0)
+    private var inGameAchievements by mutableStateOf<List<AchievementUi>>(emptyList())
     private var settingsVisible by mutableStateOf(false)
     private var shaderChainEditorVisible by mutableStateOf(false)
     private var frameEditorVisible by mutableStateOf(false)
@@ -249,6 +255,7 @@ class LibretroActivity : ComponentActivity() {
     private var restoredSram: ByteArray? = null
     private var casualSaveInHardcore: Boolean = false
     private var hardcoreMode by mutableStateOf(false)
+    private var hardcoreConfirmed by mutableStateOf(false)
     private var secureSavesEnabled = true
 
     /**
@@ -331,7 +338,7 @@ class LibretroActivity : ComponentActivity() {
     private var orientationEventListener: android.view.OrientationEventListener? = null
 
     private val isAnyMenuOpen: Boolean
-        get() = menuVisible || cheatsMenuVisible || settingsVisible || shaderChainEditorVisible || frameEditorVisible || autoRestorePromptVisible || stateManagerVisible || quickTimelineVisible || discMenuVisible ||
+        get() = menuVisible || cheatsMenuVisible || achievementsVisible || settingsVisible || shaderChainEditorVisible || frameEditorVisible || autoRestorePromptVisible || stateManagerVisible || quickTimelineVisible || discMenuVisible ||
             speedrunPickerVisible || isClosing || netplay.isAnyDialogVisible
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -432,6 +439,9 @@ class LibretroActivity : ComponentActivity() {
         perGameControlsEnabled = game?.perGameControlsEnabled == true
 
         initializeSaveState(savesDir, statesDir, activeSaveChannel)
+        if (hardcoreMode) {
+            com.nendo.argosy.DualScreenManagerHolder.instance?.sessionQuickActions = null
+        }
         val globalSettings = kotlinx.coroutines.runBlocking {
             preferencesRepository.getBuiltinEmulatorSettings().first()
         }
@@ -529,9 +539,51 @@ class LibretroActivity : ComponentActivity() {
 
         if (gameId != -1L) {
             val isNewGame = launchMode == LaunchMode.NEW_CASUAL || launchMode == LaunchMode.NEW_HARDCORE
-            playSessionTracker.startSession(gameId, EmulatorRegistry.BUILTIN_PACKAGE, coreName, hardcoreMode, isNewGame, isNetplayGuest = isGuestJoinedSession, variantFileId = variantFileId.takeIf { it >= 0 })
+            playSessionTracker.startSession(gameId, EmulatorRegistry.BUILTIN_PACKAGE, coreName, hardcoreConfirmed, isNewGame, isNetplayGuest = isGuestJoinedSession, variantFileId = variantFileId.takeIf { it >= 0 })
             cheatManager.loadCheats(hardcoreMode)
             achievementBridge.start(gameId, romPath, hardcoreMode, retroView)
+            observeRaSessionMode()
+            observeInGameAchievements()
+        }
+    }
+
+    /**
+     * The hardcore claim follows the server's answer, not the launch flag. hardcoreMode keeps the
+     * launch-time restrictions in force either way; only what the session says about itself,
+     * on this screen and everywhere the play session is consumed, waits for confirmation.
+     */
+    private fun observeRaSessionMode() {
+        lifecycleScope.launch {
+            achievementBridge.sessionMode.collect { mode ->
+                val confirmed = mode == RASessionMode.HARDCORE
+                if (confirmed == hardcoreConfirmed) return@collect
+                hardcoreConfirmed = confirmed
+                Log.d(TAG, "[Startup] gameId=$gameId, hardcore confirmed=$confirmed (requested=$hardcoreMode)")
+                playSessionTracker.updateSessionHardcore(gameId, confirmed)
+                val sramLoaded = ::retroView.isInitialized && !retroView.sramLoadFailed
+                if (confirmed && casualSaveInHardcore && sramLoaded) {
+                    inGameMessage = getString(R.string.ingame_libretro_casual_save_in_hardcore)
+                }
+            }
+        }
+    }
+
+    private fun observeInGameAchievements() {
+        lifecycleScope.launch {
+            refreshInGameAchievements()
+            achievementUpdateBus.updates.collect { update ->
+                if (update.gameId == gameId) refreshInGameAchievements()
+            }
+        }
+    }
+
+    private suspend fun refreshInGameAchievements() {
+        val loaded = withContext(Dispatchers.IO) {
+            raRepository.getCachedAchievements(gameId).map { it.toAchievementUi() }
+        }
+        inGameAchievements = loaded
+        if (achievementsFocusIndex >= loaded.size) {
+            achievementsFocusIndex = (loaded.size - 1).coerceAtLeast(0)
         }
     }
 
@@ -819,8 +871,6 @@ class LibretroActivity : ComponentActivity() {
                             if (retroView.sramLoadFailed) {
                                 Log.w(TAG, "[Startup] SRAM failed to load (size mismatch); booting with a fresh save")
                                 inGameMessage = getString(R.string.ingame_libretro_sram_load_failed_fresh_save)
-                            } else if (casualSaveInHardcore) {
-                                inGameMessage = getString(R.string.ingame_libretro_casual_save_in_hardcore)
                             }
                             corePortDevices = readCorePortDevices()
                             applyControllerTypes()
@@ -1256,11 +1306,13 @@ class LibretroActivity : ComponentActivity() {
                                 ?: id
                         },
                         cheatsAvailable = !hardcoreMode && PlatformWeightRegistry.supportsCheats(platformSlug),
+                        achievementsAvailable = inGameAchievements.isNotEmpty(),
                         statesSupported = statesSupported && !hardcoreMode,
                         focusedIndex = menuFocusIndex,
                         onFocusChange = { menuFocusIndex = it },
                         onAction = ::handleMenuAction,
                         isHardcoreMode = hardcoreMode,
+                        hardcoreConfirmed = hardcoreConfirmed,
                         availableDiscs = menuDiscCount,
                         netplaySupported = netplay.isCoreSupported(),
                         isInNetplaySession = netplay.inSession,
@@ -1402,6 +1454,18 @@ class LibretroActivity : ComponentActivity() {
                             menuVisible = true
                             cheatManager.memoryScanner.markGameRan()
                             cheatManager.flushCheatReset()
+                        }
+                    )
+                }
+                if (achievementsVisible) {
+                    activeMenuHandler = InGameAchievements(
+                        gameName = gameName,
+                        achievements = inGameAchievements,
+                        focusedIndex = achievementsFocusIndex,
+                        onFocusChange = { achievementsFocusIndex = it },
+                        onDismiss = {
+                            achievementsVisible = false
+                            menuVisible = true
                         }
                     )
                 }
@@ -2179,6 +2243,11 @@ class LibretroActivity : ComponentActivity() {
             InGameMenuAction.Cheats -> {
                 menuVisible = false
                 cheatsMenuVisible = true
+            }
+            InGameMenuAction.Achievements -> {
+                menuVisible = false
+                achievementsFocusIndex = 0
+                achievementsVisible = true
             }
             InGameMenuAction.CustomizeTouchControls -> {
                 enterTouchEditMode()

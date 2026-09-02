@@ -12,6 +12,12 @@
     <string name="ingame_menu_quick_load">क्विक लोड</string>
     <string name="ingame_menu_manage_states">स्टेट प्रबंधित करें</string>
     <string name="ingame_menu_cheats">चीट</string>
+    <string name="ingame_menu_achievements">अचीवमेंट्स</string>
+    <string name="ingame_achievements_title">अचीवमेंट्स</string>
+    <string name="ingame_achievements_progress">%1$d/%2$d</string>
+    <string name="ingame_achievements_unlocked_heading">अनलॉक्ड (%1$d)</string>
+    <string name="ingame_achievements_locked_heading">लॉक्ड (%1$d)</string>
+    <string name="ingame_achievements_empty">इस गेम के लिए कोई अचीवमेंट नहीं</string>
     <string name="ingame_menu_invite_friend">फ्रेंड को आमंत्रित करें...</string>
     <string name="ingame_menu_open_to_all_friends">सभी फ्रेंड्स के लिए खोलें</string>
     <string name="ingame_menu_close_netplay_server">नेटप्ले सर्वर बंद करें</string>
@@ -79,6 +85,7 @@
     <string name="ingame_raconnect_title">RetroAchievements कनेक्टेड</string>
     <string name="ingame_raconnect_hardcore">हार्डकोर मोड</string>
     <string name="ingame_raconnect_casual">कैज़ुअल मोड</string>
+    <string name="ingame_raconnect_unavailable_title">RetroAchievements उपलब्ध नहीं</string>
     <string name="ingame_raconnect_earned">%1$d/%2$d अर्जित</string>
 
     <string name="ingame_speedrun_paused">रुका हुआ</string>

@@ -18,6 +18,7 @@ import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.AppsRepository
 import com.nendo.argosy.domain.usecase.download.DownloadGameUseCase
+import com.nendo.argosy.hardware.CompanionPanel
 import com.nendo.argosy.ui.common.GridDirection
 import com.nendo.argosy.ui.common.GridFocusNavigator
 import com.nendo.argosy.ui.common.isAndroidApp
@@ -81,7 +82,9 @@ data class SecondaryHomeUiState(
     val isDrawerOpen: Boolean = false,
     val allApps: List<DrawerAppUi> = emptyList(),
     val drawerFocusedIndex: Int = 0,
-    val companionAppBarIndex: Int = -1
+    val companionAppBarIndex: Int = -1,
+    val companionPanel: CompanionPanel = CompanionPanel.DASHBOARD,
+    val companionAchievementFocusIndex: Int = 0
 ) {
     val currentSection: HomeSection?
         get() = sections.getOrNull(currentSectionIndex)
@@ -623,6 +626,31 @@ class SecondaryHomeViewModel @Inject constructor(
         _uiState.update { it.copy(
             companionAppBarIndex = if (appCount > 0) it.companionAppBarIndex.coerceIn(0, appCount - 1) else -1
         )}
+    }
+
+    fun setCompanionPanel(panel: CompanionPanel) {
+        _uiState.update { it.copy(companionPanel = panel, companionAchievementFocusIndex = 0) }
+    }
+
+    fun cycleCompanionPanel(direction: Int) {
+        val panels = CompanionPanel.entries
+        _uiState.update {
+            it.copy(
+                companionPanel = panels[(it.companionPanel.ordinal + direction).mod(panels.size)],
+                companionAchievementFocusIndex = 0
+            )
+        }
+    }
+
+    fun moveCompanionAchievementFocus(delta: Int, count: Int) {
+        if (count <= 0) return
+        _uiState.update {
+            it.copy(companionAchievementFocusIndex = (it.companionAchievementFocusIndex + delta).mod(count))
+        }
+    }
+
+    fun setCompanionAchievementFocus(index: Int) {
+        _uiState.update { it.copy(companionAchievementFocusIndex = index.coerceAtLeast(0)) }
     }
 
     private fun GameEntity.toUi(hiddenIds: Set<Int> = emptySet()) = SecondaryGameUi(

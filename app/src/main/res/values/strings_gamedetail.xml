@@ -306,6 +306,15 @@
         <item quantity="one">%1$d pt</item>
         <item quantity="other">%1$d pts</item>
     </plurals>
+    <!-- Small tag beside an achievement's title, for one that can be permanently lost by playing
+         past it. Adjective describing the achievement. -->
+    <string name="gamedetail_achievement_type_missable">Missable</string>
+    <!-- Small tag beside an achievement's title, for one earned by advancing through the game's
+         main path. Noun naming that category. -->
+    <string name="gamedetail_achievement_type_progression">Progression</string>
+    <!-- Small tag beside an achievement's title, for the one earned by finishing the game. Noun
+         phrase naming that category. -->
+    <string name="gamedetail_achievement_type_win_condition">Win Condition</string>
 
     <!-- ============================ Full achievement list ============================== -->
 

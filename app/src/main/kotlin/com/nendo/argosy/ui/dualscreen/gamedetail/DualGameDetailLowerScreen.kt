@@ -38,6 +38,8 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderSpecial
 import androidx.compose.material.icons.filled.FolderZip
+import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PlayArrow
@@ -1156,6 +1158,14 @@ private fun OptionsTabContent(
             option, Icons.Filled.Refresh,
             context.getString(R.string.dual_detail_option_refresh_metadata)
         )
+        GameDetailOption.CHANGE_COVER -> OptionEntry(
+            option, Icons.Filled.Image,
+            context.getString(R.string.dual_detail_option_change_cover)
+        )
+        GameDetailOption.RESET_COVER -> OptionEntry(
+            option, Icons.Filled.Restore,
+            context.getString(R.string.dual_detail_option_reset_cover)
+        )
         GameDetailOption.DELETE -> OptionEntry(
             option, Icons.Filled.Delete,
             context.getString(R.string.dual_detail_option_delete),
@@ -1191,7 +1201,9 @@ private fun OptionsTabContent(
         GameDetailOption.TITLE_ID,
         GameDetailOption.FILES,
         GameDetailOption.ADD_TO_COLLECTION,
-        GameDetailOption.REFRESH_METADATA
+        GameDetailOption.REFRESH_METADATA,
+        GameDetailOption.CHANGE_COVER,
+        GameDetailOption.RESET_COVER
     )
     val dangerGroup = setOf(GameDetailOption.DELETE, GameDetailOption.HIDE)
 

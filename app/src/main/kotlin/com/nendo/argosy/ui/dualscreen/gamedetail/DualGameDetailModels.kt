@@ -13,6 +13,7 @@ import com.nendo.argosy.domain.model.UnifiedStateEntry
 import com.nendo.argosy.ui.common.savechannel.SaveFocusColumn
 import com.nendo.argosy.ui.common.savechannel.SaveHistoryItem
 import com.nendo.argosy.ui.common.savechannel.SaveSlotItem
+import com.nendo.argosy.ui.screens.gamedetail.CoverCandidate
 import com.nendo.argosy.ui.screens.gamedetail.UpdateFileUi
 import org.json.JSONArray
 import org.json.JSONObject
@@ -25,7 +26,7 @@ enum class DualGameDetailTab(@StringRes val labelRes: Int) {
     OPTIONS(R.string.dual_detail_tab_options)
 }
 
-enum class ActiveModal { NONE, RATING, DIFFICULTY, STATUS, EMULATOR, CORE, SAVE_PATH, DISPLAY_TARGET, MEMORY_CARD, COLLECTION, SAVE_NAME, DISC_PICKER, VARIANT_PICKER, STEAM_INSTALL, FILE_PICKER }
+enum class ActiveModal { NONE, RATING, DIFFICULTY, STATUS, EMULATOR, CORE, SAVE_PATH, DISPLAY_TARGET, MEMORY_CARD, COLLECTION, SAVE_NAME, DISC_PICKER, VARIANT_PICKER, STEAM_INSTALL, FILE_PICKER, COVER_PICKER }
 
 enum class DualStateMenuAction(@StringRes val labelRes: Int) {
     COPY_TO(R.string.dual_state_menu_copy_to),
@@ -51,6 +52,8 @@ enum class GameDetailOption {
     FILES,
     ADD_TO_COLLECTION,
     REFRESH_METADATA,
+    CHANGE_COVER,
+    RESET_COVER,
     DELETE,
     HIDE
 }
@@ -117,6 +120,8 @@ data class DualGameDetailUiState(
     val isMultiDisc: Boolean = false,
     val isHidden: Boolean = false,
     val titleId: String? = null,
+    val canSearchCovers: Boolean = false,
+    val coverSetManually: Boolean = false,
     val stateMenuVisible: Boolean = false,
     val stateMenuFocusIndex: Int = 0,
     val stateCopySourceSlot: Int? = null,
@@ -145,6 +150,8 @@ fun DualGameDetailUiState.visibleOptions(): List<GameDetailOption> {
         if (isDownloaded && !isDeleting) add(GameDetailOption.FILES)
         add(GameDetailOption.ADD_TO_COLLECTION)
         if (isRommGame || isAndroidApp) add(GameDetailOption.REFRESH_METADATA)
+        if (canSearchCovers) add(GameDetailOption.CHANGE_COVER)
+        if (coverSetManually) add(GameDetailOption.RESET_COVER)
         if ((isDownloaded || isAndroidApp) && !isDeleting) add(GameDetailOption.DELETE)
         add(GameDetailOption.HIDE)
     }
@@ -220,7 +227,12 @@ data class DualGameDetailUpperState(
     val filePickerSelectedVersions: Set<Long> = emptySet(),
     val filePickerFocusIndex: Int = 0,
     val filePickerCollapsed: Set<String> = emptySet(),
-    val filePickerManageMode: Boolean = false
+    val filePickerManageMode: Boolean = false,
+    val coverCandidates: List<CoverCandidate> = emptyList(),
+    val coverPickerFocusIndex: Int = 0,
+    val coverPickerLoading: Boolean = false,
+    val coverPickerError: String? = null,
+    val coverPickerQuery: String = ""
 ) {
     val visibleFilePickerRows: List<com.nendo.argosy.data.model.FilePickerRow>
         get() = filePickerRows.visibleWithCollapsed(filePickerCollapsed)

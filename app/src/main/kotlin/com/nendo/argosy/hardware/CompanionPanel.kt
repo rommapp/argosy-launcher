@@ -4,11 +4,14 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import androidx.annotation.StringRes
+import com.nendo.argosy.R
 import java.time.Duration
 import java.time.Instant
 
-enum class CompanionPanel(val label: String) {
-    DASHBOARD("Dashboard")
+enum class CompanionPanel(@StringRes val labelRes: Int) {
+    DASHBOARD(R.string.dual_companion_panel_dashboard),
+    ACHIEVEMENTS(R.string.dual_companion_panel_achievements)
 }
 
 data class CompanionInGameState(
@@ -26,7 +29,6 @@ data class CompanionInGameState(
     val channelName: String? = null,
     val isHardcore: Boolean = false,
     val isDirty: Boolean = false,
-    val currentPanel: CompanionPanel = CompanionPanel.DASHBOARD,
     val isLoaded: Boolean = false,
     val quickActionsAvailable: Boolean = false,
     val hasQuickSave: Boolean = false

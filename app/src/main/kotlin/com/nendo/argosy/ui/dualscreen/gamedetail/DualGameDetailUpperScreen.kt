@@ -75,6 +75,7 @@ import com.nendo.argosy.ui.primitives.GlassPanel
 import com.nendo.argosy.ui.primitives.RowButton
 import com.nendo.argosy.ui.screens.collections.dialogs.CreateCollectionDialog
 import com.nendo.argosy.ui.screens.gamedetail.RatingType
+import com.nendo.argosy.ui.screens.gamedetail.modals.CoverPickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.RatingPickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.StatusPickerModal
 import com.nendo.argosy.ui.theme.ALauncherColors
@@ -111,6 +112,9 @@ fun DualGameDetailUpperScreen(
     onFilePickerSelectAll: () -> Unit = {},
     onFilePickerConfirm: () -> Unit = {},
     onFilePickerToggleCollapse: (String) -> Unit = {},
+    onCoverSelect: (Int) -> Unit = {},
+    onCoverQueryChange: (String) -> Unit = {},
+    onCoverSearch: () -> Unit = {},
     footerHints: @Composable () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -306,6 +310,18 @@ fun DualGameDetailUpperScreen(
                     manageMode = state.filePickerManageMode
                 )
             }
+            ActiveModal.COVER_PICKER -> CoverPickerModal(
+                gameTitle = state.title,
+                covers = state.coverCandidates,
+                focusIndex = state.coverPickerFocusIndex,
+                isLoading = state.coverPickerLoading,
+                errorMessage = state.coverPickerError,
+                onSelect = { candidate -> onCoverSelect(state.coverCandidates.indexOf(candidate)) },
+                onDismiss = onModalDismiss,
+                query = state.coverPickerQuery,
+                onQueryChange = onCoverQueryChange,
+                onSearch = onCoverSearch
+            )
             ActiveModal.NONE -> {}
         }
     }

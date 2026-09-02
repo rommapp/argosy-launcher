@@ -12,6 +12,12 @@
     <string name="ingame_menu_quick_load">Carga rápida</string>
     <string name="ingame_menu_manage_states">Administrar estados</string>
     <string name="ingame_menu_cheats">Trucos</string>
+    <string name="ingame_menu_achievements">Logros</string>
+    <string name="ingame_achievements_title">Logros</string>
+    <string name="ingame_achievements_progress">%1$d/%2$d</string>
+    <string name="ingame_achievements_unlocked_heading">DESBLOQUEADOS (%1$d)</string>
+    <string name="ingame_achievements_locked_heading">BLOQUEADOS (%1$d)</string>
+    <string name="ingame_achievements_empty">No hay logros para este juego</string>
     <string name="ingame_menu_invite_friend">Invitar amigo...</string>
     <string name="ingame_menu_open_to_all_friends">Abrir a todos los amigos</string>
     <string name="ingame_menu_close_netplay_server">Cerrar servidor de netplay</string>
@@ -80,6 +86,7 @@
     <string name="ingame_raconnect_title">RetroAchievements conectado</string>
     <string name="ingame_raconnect_hardcore">Modo Hardcore</string>
     <string name="ingame_raconnect_casual">Modo Casual</string>
+    <string name="ingame_raconnect_unavailable_title">RetroAchievements no disponible</string>
     <string name="ingame_raconnect_earned">%1$d/%2$d obtenidos</string>
 
     <string name="ingame_speedrun_paused">EN PAUSA</string>

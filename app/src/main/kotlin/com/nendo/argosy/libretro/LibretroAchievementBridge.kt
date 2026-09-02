@@ -15,11 +15,18 @@ import androidx.compose.runtime.setValue
 import com.nendo.argosy.core.event.AchievementUpdateBus
 import com.swordfish.libretrodroid.GLRetroView
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 /**
  * Manages the RetroAchievements session lifecycle for a libretro session:
  * construction, hardcore-mode wiring, and the activity-side surface needed by
  * overlays (current unlock, connection notification) and netplay rules.
+ * [sessionMode] is the only place a hardcore claim comes from; it stays PENDING
+ * until the server has answered the start-session request.
  */
 class LibretroAchievementBridge(
     private val gameDao: GameDao,
@@ -34,6 +41,10 @@ class LibretroAchievementBridge(
     private val context: Context
 ) {
     private var session by mutableStateOf<RetroAchievementsSessionManager?>(null)
+    private var modeJob: Job? = null
+    private val _sessionMode = MutableStateFlow(RASessionMode.PENDING)
+
+    val sessionMode: StateFlow<RASessionMode> = _sessionMode.asStateFlow()
 
     val sessionManager: RetroAchievementsSessionManager?
         get() = session
@@ -53,7 +64,7 @@ class LibretroAchievementBridge(
         val created = RetroAchievementsSessionManager(
             gameId = gameId,
             romPath = romPath,
-            hardcoreMode = hardcoreMode,
+            requestedHardcore = hardcoreMode,
             gameDao = gameDao,
             overlayWriter = overlayWriter,
             achievementDao = achievementDao,
@@ -66,6 +77,10 @@ class LibretroAchievementBridge(
             context = context
         )
         session = created
+        modeJob?.cancel()
+        modeJob = scope.launch {
+            created.sessionMode.collect { _sessionMode.value = it }
+        }
         created.initialize(retroView)
     }
 
@@ -78,6 +93,8 @@ class LibretroAchievementBridge(
     }
 
     fun destroy() {
+        modeJob?.cancel()
+        modeJob = null
         session?.destroy()
         session = null
     }

@@ -25,6 +25,7 @@ import kotlinx.coroutines.withContext
 import androidx.lifecycle.lifecycleScope
 import com.nendo.argosy.DualScreenManager
 import com.nendo.argosy.DualScreenManagerHolder
+import com.nendo.argosy.core.game.AchievementUi
 import com.nendo.argosy.data.preferences.SessionStateStore
 import com.nendo.argosy.data.repository.AppsRepository
 import com.nendo.argosy.ui.dualscreen.ShowcaseViewModel
@@ -87,6 +88,7 @@ class SecondaryHomeActivity :
     var homeApps by mutableStateOf<List<String>>(emptyList())
         private set
     private var companionInGameState by mutableStateOf(CompanionInGameState())
+    private var companionAchievements by mutableStateOf<List<AchievementUi>>(emptyList())
     private var companionSessionTimer: CompanionSessionTimer? = null
     private var homeRestoreSettled = false
 
@@ -279,11 +281,7 @@ class SecondaryHomeActivity :
                                     com.nendo.argosy.ui.input.GamepadEvent.Confirm
                                 )
                             },
-                            onTabChanged = { panel ->
-                                companionInGameState = companionInGameState.copy(
-                                    currentPanel = panel
-                                )
-                            },
+                            companionAchievements = companionAchievements,
                             onQuickSave = { dsm.sessionQuickActions?.quickSave() },
                             onQuickLoad = { dsm.sessionQuickActions?.quickLoad() },
                             onScreenshot = { dsm.sessionQuickActions?.screenshot() },
@@ -666,6 +664,7 @@ class SecondaryHomeActivity :
         if (!dsm.isExternalDisplay) {
             viewModel.companionFocusAppBar(homeApps.size)
         }
+        viewModel.setCompanionPanel(CompanionPanel.DASHBOARD)
         this.isHardcore = isHardcore
         currentChannelName = channelName
         isSaveDirty = false
@@ -680,12 +679,21 @@ class SecondaryHomeActivity :
         isInitialized = true
     }
 
+    override fun onSessionHardcoreChanged(isHardcore: Boolean, channelName: String?) {
+        runOnUiThread {
+            this.isHardcore = isHardcore
+            currentChannelName = channelName
+            companionInGameState = companionInGameState.copy(isHardcore = isHardcore, channelName = channelName)
+        }
+    }
+
     override fun onSessionEnded() {
         isGameActive = false
         isHardcore = false
         currentChannelName = null
         isSaveDirty = false
         companionInGameState = CompanionInGameState()
+        viewModel.setCompanionPanel(CompanionPanel.DASHBOARD)
         companionSessionTimer?.stop(applicationContext)
         companionSessionTimer = null
         val savedGameId = preSessionDetailGameId
@@ -1065,7 +1073,7 @@ class SecondaryHomeActivity :
         val vm = dualGameDetailViewModel ?: return
         when (type) {
             "DELETE_START" -> { if (gameId > 0) vm.onDeleteStarted() }
-            "REFRESH_DONE", "DELETE_DONE" -> { if (gameId > 0) vm.loadGame(gameId) }
+            "REFRESH_DONE", "DELETE_DONE", "COVER_DONE" -> { if (gameId > 0) vm.loadGame(gameId) }
             "HIDE_DONE" -> returnToHome()
             "SAVE_SWITCH_DONE", "SAVE_RESTORE_DONE", "SAVE_CREATE_DONE", "SAVE_LOCK_DONE" -> { }
         }
@@ -1161,6 +1169,7 @@ class SecondaryHomeActivity :
         lifecycleScope.launch { dsm.dualViewMode.collect { _showcaseViewMode.value = it } }
         lifecycleScope.launch { dsm.dualCollectionShowcase.collect { _showcaseCollectionState.value = it } }
         lifecycleScope.launch { dsm.dualGameDetailState.collect { _showcaseGameDetailState.value = it } }
+        lifecycleScope.launch { dsm.companionAchievements.collect { companionAchievements = it } }
         lifecycleScope.launch {
             dsm.companionMediaVisible.collect { visible ->
                 isMediaPanelVisible = visible
@@ -1355,7 +1364,8 @@ class SecondaryHomeActivity :
             displayAffinityHelper = affinityHelper,
             downloadFileStatusRepository = dsm.downloadFileStatusRepository,
             preferencesRepository = dsm.preferencesRepository,
-            resolveGameEmulatorContext = dsm.resolveGameEmulatorContext
+            resolveGameEmulatorContext = dsm.resolveGameEmulatorContext,
+            romMRepository = dsm.romMRepository
         )
 
         inputHandler = SecondaryHomeInputHandler(

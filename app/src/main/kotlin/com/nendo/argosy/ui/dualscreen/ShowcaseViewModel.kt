@@ -5,6 +5,7 @@ import com.nendo.argosy.hardware.SecondaryHomeBroadcastHelper
 import com.nendo.argosy.ui.dualscreen.gamedetail.ActiveModal
 import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailUpperState
 import com.nendo.argosy.ui.input.GamepadEvent
+import com.nendo.argosy.ui.screens.gamedetail.modals.COVER_PICKER_COLUMNS
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 
@@ -177,6 +178,30 @@ class ShowcaseViewModel(
         if (isControlActive()) broadcasts.broadcastModalClose()
     }
 
+    fun onCoverSelect(index: Int) {
+        detailState.update { it?.copy(modalType = ActiveModal.NONE) }
+        if (isControlActive()) broadcasts.selectDualCover(index)
+    }
+
+    fun onCoverQueryChange(text: String) {
+        detailState.update { it?.copy(coverPickerQuery = text) }
+        if (isControlActive()) broadcasts.updateDualCoverPickerQuery(text)
+    }
+
+    fun onCoverSearch() {
+        if (isControlActive()) broadcasts.searchDualCovers()
+    }
+
+    fun moveCoverPickerFocus(delta: Int) {
+        detailState.update { state ->
+            if (state == null || state.coverCandidates.isEmpty()) return@update state
+            state.copy(
+                coverPickerFocusIndex = (state.coverPickerFocusIndex + delta)
+                    .coerceIn(0, state.coverCandidates.lastIndex)
+            )
+        }
+    }
+
     fun adjustModalRating(delta: Int) {
         detailState.update { state ->
             state?.copy(
@@ -291,10 +316,12 @@ class ShowcaseViewModel(
             is GamepadEvent.Left -> {
                 if (modal == ActiveModal.RATING || modal == ActiveModal.DIFFICULTY)
                     adjustModalRating(-1)
+                if (modal == ActiveModal.COVER_PICKER) moveCoverPickerFocus(-1)
             }
             is GamepadEvent.Right -> {
                 if (modal == ActiveModal.RATING || modal == ActiveModal.DIFFICULTY)
                     adjustModalRating(1)
+                if (modal == ActiveModal.COVER_PICKER) moveCoverPickerFocus(1)
             }
             is GamepadEvent.Up -> {
                 if (state.showCreateDialog) return true
@@ -309,6 +336,7 @@ class ShowcaseViewModel(
                     ActiveModal.COLLECTION -> moveCollectionFocus(-1)
                     ActiveModal.DISC_PICKER -> moveDiscPickerFocus(-1)
                     ActiveModal.STEAM_INSTALL -> moveSteamInstallFocus(-1)
+                    ActiveModal.COVER_PICKER -> moveCoverPickerFocus(-COVER_PICKER_COLUMNS)
                     else -> {}
                 }
             }
@@ -325,6 +353,7 @@ class ShowcaseViewModel(
                     ActiveModal.COLLECTION -> moveCollectionFocus(1)
                     ActiveModal.DISC_PICKER -> moveDiscPickerFocus(1)
                     ActiveModal.STEAM_INSTALL -> moveSteamInstallFocus(1)
+                    ActiveModal.COVER_PICKER -> moveCoverPickerFocus(COVER_PICKER_COLUMNS)
                     else -> {}
                 }
             }
@@ -360,8 +389,12 @@ class ShowcaseViewModel(
                     ActiveModal.STEAM_INSTALL ->
                         onModalSteamInstallSelect(state.steamInstallFocusIndex)
                     ActiveModal.SAVE_NAME -> onSaveNameConfirm()
+                    ActiveModal.COVER_PICKER -> onCoverSelect(state.coverPickerFocusIndex)
                     else -> {}
                 }
+            }
+            is GamepadEvent.ContextMenu -> {
+                if (modal == ActiveModal.COVER_PICKER) onCoverSearch()
             }
             is GamepadEvent.Back -> {
                 if (state.showCreateDialog) {

@@ -121,6 +121,12 @@ class GameSessionService : Service() {
                 stopSelf()
                 return START_NOT_STICKY
             }
+            ACTION_UPDATE_HARDCORE -> {
+                currentIsHardcore = intent?.getBooleanExtra(EXTRA_IS_HARDCORE, false) ?: false
+                currentChannelName = intent?.getStringExtra(EXTRA_CHANNEL_NAME)
+                Logger.debug(TAG, "Hardcore claim updated for gameId=$currentGameId | hardcore=$currentIsHardcore, channel=$currentChannelName")
+                return START_NOT_STICKY
+            }
             else -> {
                 val watchPath = intent?.getStringExtra(EXTRA_WATCH_PATH)
                 val gameTitle = intent?.getStringExtra(EXTRA_GAME_TITLE)
@@ -636,6 +642,7 @@ class GameSessionService : Service() {
         private const val CHANNEL_ID = "game_session_channel"
         private const val NOTIFICATION_ID = 0x5000
         private const val ACTION_STOP = "com.nendo.argosy.STOP_GAME_SESSION"
+        private const val ACTION_UPDATE_HARDCORE = "com.nendo.argosy.UPDATE_GAME_SESSION_HARDCORE"
         private const val EXTRA_WATCH_PATH = "watch_path"
         private const val EXTRA_GAME_TITLE = "game_title"
         private const val EXTRA_GAME_ID = "game_id"
@@ -694,6 +701,20 @@ class GameSessionService : Service() {
                 putExtra(EXTRA_EMULATOR_PACKAGE, emulatorPackage)
             }
             context.startForegroundService(intent)
+        }
+
+        /**
+         * Re-tags the running watcher so every live cache it writes from here on carries the
+         * confirmed hardcore flag. Plain startService: the service is already in the foreground,
+         * and a redelivered update must not stand in for the session start intent.
+         */
+        fun updateHardcore(context: Context, isHardcore: Boolean, channelName: String?) {
+            val intent = Intent(context, GameSessionService::class.java).apply {
+                action = ACTION_UPDATE_HARDCORE
+                putExtra(EXTRA_IS_HARDCORE, isHardcore)
+                putExtra(EXTRA_CHANNEL_NAME, channelName)
+            }
+            context.startService(intent)
         }
 
         fun stop(context: Context) {

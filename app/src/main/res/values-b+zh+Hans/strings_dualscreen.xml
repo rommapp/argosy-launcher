@@ -15,6 +15,12 @@
 
     <string name="dual_companion_session_label">本次时长</string>
     <string name="dual_companion_achievements_label">成就</string>
+    <string name="dual_companion_panel_dashboard">仪表盘</string>
+    <string name="dual_companion_panel_achievements">成就</string>
+    <string name="dual_companion_achievements_unlocked_heading">已解锁（%1$d）</string>
+    <string name="dual_companion_achievements_locked_heading">未解锁（%1$d）</string>
+    <string name="dual_companion_achievements_empty">此游戏没有成就</string>
+    <string name="dual_companion_footer_switch_panel">面板</string>
     <string name="dual_companion_stat_play_time">总游戏时长</string>
     <string name="dual_companion_stat_play_count">游玩次数</string>
 
@@ -311,6 +317,8 @@
     <string name="dual_detail_option_files">文件</string>
     <string name="dual_detail_option_add_to_collection">添加到合集</string>
     <string name="dual_detail_option_refresh_metadata">刷新元数据</string>
+    <string name="dual_detail_option_change_cover">更改封面</string>
+    <string name="dual_detail_option_reset_cover">重置封面</string>
     <string name="dual_detail_option_delete">从游戏库中删除</string>
     <string name="dual_detail_option_unhide">取消隐藏游戏</string>
     <string name="dual_detail_option_hide">隐藏游戏</string>

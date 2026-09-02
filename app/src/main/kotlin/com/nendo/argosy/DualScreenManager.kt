@@ -49,6 +49,8 @@ import com.nendo.argosy.ui.dualscreen.home.toShowcaseState
 import com.nendo.argosy.ui.input.InputDedupBuffer
 import com.nendo.argosy.ui.input.InputSignature
 import com.nendo.argosy.R
+import com.nendo.argosy.core.game.AchievementUi
+import com.nendo.argosy.core.game.toAchievementUi
 import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.core.notification.showSuccess
@@ -115,10 +117,13 @@ class DualScreenManager(
     private val emulatorResolver: EmulatorResolver,
     private val coreVersionExtractor: com.nendo.argosy.data.emulator.CoreVersionExtractor,
     private val fetchAchievementsUseCase: FetchAchievementsUseCase,
+    internal val raRepository: com.nendo.argosy.data.repository.RetroAchievementsRepository,
+    private val achievementUpdateBus: com.nendo.argosy.core.event.AchievementUpdateBus,
     internal val displayAffinityHelper: DisplayAffinityHelper,
     internal val sessionStateStore: SessionStateStore,
     internal val preferencesRepository: UserPreferencesRepository,
     internal val imageCacheManager: com.nendo.argosy.data.cache.ImageCacheManager,
+    internal val romMRepository: com.nendo.argosy.data.remote.romm.RomMRepository,
     internal val resolveGameEmulatorContext:
         com.nendo.argosy.domain.usecase.emulator.ResolveGameEmulatorContextUseCase,
     internal val hapticManager: com.nendo.argosy.ui.input.HapticFeedbackManager,
@@ -565,12 +570,14 @@ class DualScreenManager(
         companionLaunchJob?.cancel()
         observeActiveAccount()
         observeMedia()
+        observeAchievementUnlocks()
     }
     interface CompanionHost {
         fun onForegroundChanged(isForeground: Boolean)
         fun onWizardStateChanged(isActive: Boolean)
         fun onSaveDirtyChanged(isDirty: Boolean)
         fun onSessionStarted(gameId: Long, isHardcore: Boolean, channelName: String?)
+        fun onSessionHardcoreChanged(isHardcore: Boolean, channelName: String?)
         fun onSessionEnded()
         fun onHomeAppsChanged(apps: List<String>)
         fun onLibraryRefresh()
@@ -937,6 +944,45 @@ class DualScreenManager(
     private var accountObserverJob: Job? = null
     private var mediaObserverJob: Job? = null
 
+    /**
+     * Every achievement on record for the running game, refreshed from the database on each
+     * unlock the bus reports. Both companion roles draw the same list; empty outside a session.
+     * Declared ahead of [init] with the other observer jobs, because a property initialiser that
+     * runs after the init block would reset the job handle the block just stored.
+     */
+    private val _companionAchievements = MutableStateFlow<List<AchievementUi>>(emptyList())
+    val companionAchievements: StateFlow<List<AchievementUi>> = _companionAchievements
+    private var companionSessionGameId = -1L
+    private var achievementObserverJob: Job? = null
+
+    private fun observeAchievementUnlocks() {
+        achievementObserverJob?.cancel()
+        achievementObserverJob = scope.launch {
+            achievementUpdateBus.updates.collect { update ->
+                if (update.gameId != companionSessionGameId) return@collect
+                refreshCompanionAchievements(update.gameId)
+                _swappedCompanionState.update {
+                    it.copy(
+                        achievementCount = update.totalCount,
+                        earnedAchievementCount = update.earnedCount
+                    )
+                }
+            }
+        }
+    }
+
+    private suspend fun refreshCompanionAchievements(gameId: Long) {
+        val loaded = withContext(Dispatchers.IO) {
+            raRepository.getCachedAchievements(gameId).map { it.toAchievementUi() }
+        }
+        if (companionSessionGameId == gameId) _companionAchievements.value = loaded
+    }
+
+    private fun clearCompanionAchievements() {
+        companionSessionGameId = -1L
+        _companionAchievements.value = emptyList()
+    }
+
     init {
         scope.launch {
             preferencesRepository.userPreferences.collect { prefs ->
@@ -952,6 +998,7 @@ class DualScreenManager(
         observeActiveAccount()
         observeMedia()
         observeMediaDim()
+        observeAchievementUnlocks()
     }
 
     /**
@@ -1016,6 +1063,7 @@ class DualScreenManager(
 
     private fun onActiveAccountChanged() {
         Log.i(TAG, "Active RomM account changed, resetting companion-visible state")
+        clearCompanionAchievements()
         _dualGameDetailState.value = null
         _swappedGameDetailViewModel = null
         _swappedCurrentScreen.value = com.nendo.argosy.hardware.CompanionScreen.HOME
@@ -1732,6 +1780,8 @@ class DualScreenManager(
             "SELECT_DISC" -> handleSelectDisc(gameId)
             "PLAY_DISC" -> handleDualPlayDisc(gameId, channelName)
             "FILES" -> promptDualManageFilePicker(gameId)
+            "CHANGE_COVER" -> promptDualCoverPicker(gameId)
+            "RESET_COVER" -> handleDualResetCover(gameId)
         }
     }
 
@@ -1843,6 +1893,8 @@ class DualScreenManager(
             _swappedCurrentScreen.value = com.nendo.argosy.hardware.CompanionScreen.HOME
             swappedSessionTimer?.stop(appContext)
             swappedSessionTimer = com.nendo.argosy.hardware.CompanionSessionTimer().also { it.start(appContext) }
+            companionSessionGameId = gameId
+            scope.launch { refreshCompanionAchievements(gameId) }
             scope.launch(Dispatchers.IO) {
                 val game = gameDao.getById(gameId) ?: return@launch
                 val platform = platformRepository.getById(game.platformId)
@@ -1859,8 +1911,8 @@ class DualScreenManager(
                         achievementCount = game.achievementCount,
                         earnedAchievementCount = game.earnedAchievementCount,
                         sessionStartTimeMillis = sessionStateStore.getSessionStartTimeMillis(),
-                        channelName = channelName,
-                        isHardcore = isHardcore,
+                        channelName = sessionStateStore.getChannelName(),
+                        isHardcore = sessionStateStore.isHardcore(),
                         isLoaded = true
                     ).withLiveQuickActionState(
                         quickActionsAvailable = sessionQuickActions != null,
@@ -1874,6 +1926,7 @@ class DualScreenManager(
             emulatorDisplayId = null
             _swappedIsGameActive.value = false
             _swappedCompanionState.value = com.nendo.argosy.hardware.CompanionInGameState()
+            clearCompanionAchievements()
             sessionStateStore.clearSession()
             swappedSessionTimer?.stop(appContext)
             swappedSessionTimer = null
@@ -1892,6 +1945,17 @@ class DualScreenManager(
                 companionHost?.onRoleSwapped(_isRolesSwapped.value)
             }
         }
+    }
+
+    /**
+     * The hardcore claim of the running session changed after it started (RetroAchievements
+     * confirmed or declined it). Only the mode and channel move; the session itself, its timer
+     * and the companion screen stay where they are.
+     */
+    fun onSessionHardcoreChanged(isHardcore: Boolean, channelName: String?) {
+        if (!_swappedIsGameActive.value) return
+        _swappedCompanionState.update { it.copy(isHardcore = isHardcore, channelName = channelName) }
+        companionHost?.onSessionHardcoreChanged(isHardcore, channelName)
     }
 
     fun onDownloadCompleted(gameId: Long) {
@@ -2613,6 +2677,114 @@ class DualScreenManager(
         }
     }
 
+    /**
+     * Opens the artwork search on the showcase surface. The picker is upper-owned like the file
+     * picker: its text field needs the keyboard, so every focus and result lives here and the
+     * companion only dismisses.
+     */
+    fun promptDualCoverPicker(gameId: Long) {
+        val state = _dualGameDetailState.value?.takeIf { it.gameId == gameId } ?: return
+        _dualGameDetailState.update { s ->
+            s?.copy(
+                modalType = ActiveModal.COVER_PICKER,
+                coverCandidates = emptyList(),
+                coverPickerFocusIndex = 0,
+                coverPickerLoading = true,
+                coverPickerError = null,
+                coverPickerQuery = state.title
+            )
+        }
+        refocusMain()
+        searchDualCovers()
+    }
+
+    fun updateDualCoverPickerQuery(text: String) {
+        _dualGameDetailState.update { it?.copy(coverPickerQuery = text) }
+    }
+
+    fun searchDualCovers() {
+        val term = _dualGameDetailState.value?.coverPickerQuery?.trim().orEmpty()
+        if (term.isEmpty()) return
+        _dualGameDetailState.update {
+            it?.copy(coverPickerLoading = true, coverPickerError = null, coverCandidates = emptyList())
+        }
+        scope.launch(Dispatchers.IO) {
+            val result = romMRepository.searchCovers(term)
+            _dualGameDetailState.update { s ->
+                if (s?.modalType != ActiveModal.COVER_PICKER) return@update s
+                when (result) {
+                    is com.nendo.argosy.data.remote.romm.RomMResult.Success -> s.copy(
+                        coverCandidates = result.data.mapNotNull { resource ->
+                            val url = resource.fullResUrl ?: return@mapNotNull null
+                            com.nendo.argosy.ui.screens.gamedetail.CoverCandidate(
+                                url = url,
+                                thumbUrl = resource.thumb,
+                                width = resource.width,
+                                height = resource.height
+                            )
+                        },
+                        coverPickerFocusIndex = 0,
+                        coverPickerLoading = false,
+                        coverPickerError = null
+                    )
+                    is com.nendo.argosy.data.remote.romm.RomMResult.Error -> s.copy(
+                        coverPickerLoading = false,
+                        coverPickerError = appContext.getString(
+                            R.string.gamedetail_cover_picker_error,
+                            result.message
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    fun moveDualCoverPickerFocus(delta: Int) {
+        _dualGameDetailState.update { s ->
+            if (s == null || s.coverCandidates.isEmpty()) return@update s
+            s.copy(
+                coverPickerFocusIndex = (s.coverPickerFocusIndex + delta)
+                    .coerceIn(0, s.coverCandidates.lastIndex)
+            )
+        }
+    }
+
+    fun confirmDualCoverAtFocus() {
+        val state = _dualGameDetailState.value ?: return
+        selectDualCover(state.coverPickerFocusIndex)
+    }
+
+    fun selectDualCover(index: Int) {
+        val state = _dualGameDetailState.value ?: return
+        if (state.modalType != ActiveModal.COVER_PICKER) return
+        val candidate = state.coverCandidates.getOrNull(index) ?: return
+        val gameId = state.gameId
+        _dualGameDetailState.update {
+            it?.copy(modalType = ActiveModal.NONE, coverCandidates = emptyList())
+        }
+        if (!_isRolesSwapped.value) companionHost?.refocusSelf()
+        scope.launch(Dispatchers.IO) {
+            imageCacheManager.applyManualCover(gameId, candidate.url)
+            refreshDualCover(gameId)
+        }
+    }
+
+    private fun handleDualResetCover(gameId: Long) {
+        scope.launch(Dispatchers.IO) {
+            imageCacheManager.resetManualCover(gameId)
+            refreshDualCover(gameId)
+        }
+    }
+
+    private suspend fun refreshDualCover(gameId: Long) {
+        val game = gameDao.getById(gameId) ?: return
+        _dualGameDetailState.update { s ->
+            if (s?.gameId == gameId) s.copy(coverPath = game.coverPath) else s
+        }
+        companionHost?.onDirectActionResult("COVER_DONE", gameId)
+        _swappedGameDetailViewModel?.loadGame(gameId)
+    }
+
     fun moveDualFilePickerFocus(delta: Int) {
         _dualGameDetailState.update { state ->
             if (state == null) return@update null
@@ -3318,6 +3490,7 @@ class DualScreenManager(
             sessionStateStore = sessionStateStore,
             preferencesRepository = preferencesRepository,
             resolveGameEmulatorContext = resolveGameEmulatorContext,
+            romMRepository = romMRepository,
             context = appContext
         )
         vm.loadGame(gameId)

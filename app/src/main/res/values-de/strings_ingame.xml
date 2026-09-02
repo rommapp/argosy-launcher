@@ -12,6 +12,12 @@
     <string name="ingame_menu_quick_load">Schnellladen</string>
     <string name="ingame_menu_manage_states">Savestates verwalten</string>
     <string name="ingame_menu_cheats">Cheats</string>
+    <string name="ingame_menu_achievements">Erfolge</string>
+    <string name="ingame_achievements_title">Erfolge</string>
+    <string name="ingame_achievements_progress">%1$d/%2$d</string>
+    <string name="ingame_achievements_unlocked_heading">FREIGESCHALTET (%1$d)</string>
+    <string name="ingame_achievements_locked_heading">GESPERRT (%1$d)</string>
+    <string name="ingame_achievements_empty">Keine Erfolge für dieses Spiel</string>
     <string name="ingame_menu_invite_friend">Freund einladen...</string>
     <string name="ingame_menu_open_to_all_friends">Für alle Freunde öffnen</string>
     <string name="ingame_menu_close_netplay_server">Netplay-Server schließen</string>
@@ -79,6 +85,7 @@
     <string name="ingame_raconnect_title">RetroAchievements verbunden</string>
     <string name="ingame_raconnect_hardcore">Hardcore-Modus</string>
     <string name="ingame_raconnect_casual">Casual-Modus</string>
+    <string name="ingame_raconnect_unavailable_title">RetroAchievements nicht verfügbar</string>
     <string name="ingame_raconnect_earned">%1$d/%2$d erreicht</string>
 
     <string name="ingame_speedrun_paused">PAUSIERT</string>

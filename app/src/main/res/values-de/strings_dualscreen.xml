@@ -20,6 +20,12 @@
 
     <string name="dual_companion_session_label">Sitzung</string>
     <string name="dual_companion_achievements_label">Erfolge</string>
+    <string name="dual_companion_panel_dashboard">Übersicht</string>
+    <string name="dual_companion_panel_achievements">Erfolge</string>
+    <string name="dual_companion_achievements_unlocked_heading">FREIGESCHALTET (%1$d)</string>
+    <string name="dual_companion_achievements_locked_heading">GESPERRT (%1$d)</string>
+    <string name="dual_companion_achievements_empty">Keine Erfolge für dieses Spiel</string>
+    <string name="dual_companion_footer_switch_panel">Panel</string>
     <string name="dual_companion_stat_play_time">Gesamte Spielzeit</string>
     <string name="dual_companion_stat_play_count">Anzahl Starts</string>
 
@@ -352,6 +358,8 @@
     <string name="dual_detail_option_files">Dateien</string>
     <string name="dual_detail_option_add_to_collection">Zur Sammlung hinzufügen</string>
     <string name="dual_detail_option_refresh_metadata">Metadaten aktualisieren</string>
+    <string name="dual_detail_option_change_cover">Cover ändern</string>
+    <string name="dual_detail_option_reset_cover">Cover zurücksetzen</string>
     <string name="dual_detail_option_delete">Aus Bibliothek entfernen</string>
     <string name="dual_detail_option_unhide">Spiel einblenden</string>
     <string name="dual_detail_option_hide">Spiel ausblenden</string>

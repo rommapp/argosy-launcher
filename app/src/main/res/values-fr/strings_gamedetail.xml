@@ -127,6 +127,9 @@
     <string name="gamedetail_achievement_list_locked_heading">VERROUILLÉS (%1$d)</string>
     <string name="gamedetail_achievement_list_tier_hardcore">Hardcore</string>
     <string name="gamedetail_achievement_list_tier_casual">Casual</string>
+    <string name="gamedetail_achievement_type_missable">Manquable</string>
+    <string name="gamedetail_achievement_type_progression">Progression</string>
+    <string name="gamedetail_achievement_type_win_condition">Condition de victoire</string>
     <plurals name="gamedetail_achievement_list_points">
         <item quantity="one">%1$d pt</item>
         <item quantity="many">%1$d pts</item>

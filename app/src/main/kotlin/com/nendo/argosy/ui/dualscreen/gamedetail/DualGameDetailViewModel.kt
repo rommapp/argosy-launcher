@@ -82,6 +82,7 @@ class DualGameDetailViewModel(
     private val preferencesRepository: com.nendo.argosy.data.preferences.UserPreferencesRepository,
     private val resolveGameEmulatorContext:
         com.nendo.argosy.domain.usecase.emulator.ResolveGameEmulatorContextUseCase,
+    private val romMRepository: com.nendo.argosy.data.remote.romm.RomMRepository,
     private val context: Context
 ) : ViewModel() {
 
@@ -345,7 +346,7 @@ class DualGameDetailViewModel(
             ActiveModal.SAVE_NAME,
             ActiveModal.DISC_PICKER, ActiveModal.VARIANT_PICKER,
             ActiveModal.STEAM_INSTALL -> return
-            ActiveModal.FILE_PICKER -> {}
+            ActiveModal.FILE_PICKER, ActiveModal.COVER_PICKER -> {}
             ActiveModal.NONE -> return
         }
         _activeModal.value = ActiveModal.NONE
@@ -496,7 +497,9 @@ class DualGameDetailViewModel(
                 activeSaveTimestamp = activeSaveTimestamp,
                 isMultiDisc = game.isMultiDisc,
                 isHidden = gameRepository.isGameHidden(game.id),
-                titleId = game.displayTitleId
+                titleId = game.displayTitleId,
+                canSearchCovers = romMRepository.getCapabilities().supportsCoverSearch,
+                coverSetManually = game.coverSetManually
             )
             val sameGame = _uiState.value.gameId == game.id
             _uiState.value = newState

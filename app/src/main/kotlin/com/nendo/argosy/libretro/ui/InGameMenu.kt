@@ -56,6 +56,7 @@ sealed class InGameMenuAction {
     data object ManageStates : InGameMenuAction()
     data object Settings : InGameMenuAction()
     data object Cheats : InGameMenuAction()
+    data object Achievements : InGameMenuAction()
     data object Reset : InGameMenuAction()
     data object Quit : InGameMenuAction()
     data object OpenToFriends : InGameMenuAction()
@@ -106,11 +107,13 @@ fun InGameMenu(
     gameName: String,
     coreName: String? = null,
     cheatsAvailable: Boolean = false,
+    achievementsAvailable: Boolean = false,
     statesSupported: Boolean = false,
     focusedIndex: Int,
     onFocusChange: (Int) -> Unit,
     onAction: (InGameMenuAction) -> Unit,
     isHardcoreMode: Boolean = false,
+    hardcoreConfirmed: Boolean = false,
     availableDiscs: Int = 0,
     netplaySupported: Boolean = false,
     isInNetplaySession: Boolean = false,
@@ -127,6 +130,7 @@ fun InGameMenu(
 ): InputHandler {
     val menuItems: List<Pair<Int, InGameMenuAction>> = remember(
         cheatsAvailable,
+        achievementsAvailable,
         statesSupported,
         isHardcoreMode,
         availableDiscs,
@@ -152,6 +156,9 @@ fun InGameMenu(
             }
             if (!isInNetplaySession && cheatsAvailable) {
                 add(R.string.ingame_menu_cheats to InGameMenuAction.Cheats)
+            }
+            if (achievementsAvailable) {
+                add(R.string.ingame_menu_achievements to InGameMenuAction.Achievements)
             }
             if (netplaySupported) {
                 if (isInNetplaySession) {
@@ -328,7 +335,7 @@ fun InGameMenu(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                if (isHardcoreMode) {
+                if (hardcoreConfirmed) {
                     Text(
                         text = stringResource(R.string.ingame_menu_hardcore_badge),
                         style = MaterialTheme.typography.labelSmall,

@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -46,10 +47,15 @@ import androidx.compose.ui.unit.dp
 import com.nendo.argosy.R
 import kotlinx.coroutines.delay
 
+/**
+ * [connected] false means the server never accepted a session for this launch; the banner
+ * then reports the casual fallback instead of a connection.
+ */
 data class RAConnectionInfo(
     val isHardcore: Boolean,
     val earnedCount: Int,
-    val totalCount: Int
+    val totalCount: Int,
+    val connected: Boolean = true
 )
 
 private val goldPrimary = Color(0xFFFFD700)
@@ -172,7 +178,7 @@ private fun RAConnectionContent(info: RAConnectionInfo) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = Icons.Filled.CheckCircle,
+                imageVector = if (info.connected) Icons.Filled.CheckCircle else Icons.Filled.Warning,
                 contentDescription = null,
                 tint = primary,
                 modifier = Modifier.size(24.dp)
@@ -180,7 +186,11 @@ private fun RAConnectionContent(info: RAConnectionInfo) {
             Spacer(Modifier.width(12.dp))
             Column {
                 Text(
-                    text = stringResource(R.string.ingame_raconnect_title),
+                    text = if (info.connected) {
+                        stringResource(R.string.ingame_raconnect_title)
+                    } else {
+                        stringResource(R.string.ingame_raconnect_unavailable_title)
+                    },
                     style = MaterialTheme.typography.bodyMedium.copy(shadow = textShadow),
                     color = Color.White,
                     fontWeight = FontWeight.Bold

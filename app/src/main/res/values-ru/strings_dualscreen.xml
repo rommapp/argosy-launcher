@@ -16,6 +16,12 @@
 
     <string name="dual_companion_session_label">Сессия</string>
     <string name="dual_companion_achievements_label">Достижения</string>
+    <string name="dual_companion_panel_dashboard">Панель</string>
+    <string name="dual_companion_panel_achievements">Достижения</string>
+    <string name="dual_companion_achievements_unlocked_heading">РАЗБЛОКИРОВАНО (%1$d)</string>
+    <string name="dual_companion_achievements_locked_heading">ЗАБЛОКИРОВАНО (%1$d)</string>
+    <string name="dual_companion_achievements_empty">Для этой игры нет достижений</string>
+    <string name="dual_companion_footer_switch_panel">Вкладка</string>
     <string name="dual_companion_stat_play_time">Общее время в игре</string>
     <string name="dual_companion_stat_play_count">Количество запусков</string>
 
@@ -330,6 +336,8 @@
     <string name="dual_detail_option_files">Файлы</string>
     <string name="dual_detail_option_add_to_collection">Добавить в коллекцию</string>
     <string name="dual_detail_option_refresh_metadata">Обновить метаданные</string>
+    <string name="dual_detail_option_change_cover">Сменить обложку</string>
+    <string name="dual_detail_option_reset_cover">Сбросить обложку</string>
     <string name="dual_detail_option_delete">Удалить из библиотеки</string>
     <string name="dual_detail_option_unhide">Показать игру</string>
     <string name="dual_detail_option_hide">Скрыть игру</string>

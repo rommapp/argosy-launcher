@@ -267,10 +267,10 @@ later. Grep `fun open`, do not scroll. The lower screen dims while a modal is
 active (`isDimmed = activeModal != ActiveModal.NONE`, wired in
 SecondaryHomeComposables.kt).
 
-`ActiveModal` - 15 values (DualGameDetailModels.kt):
+`ActiveModal` - 16 values (DualGameDetailModels.kt):
 NONE, RATING, DIFFICULTY, STATUS, EMULATOR, CORE, SAVE_PATH, DISPLAY_TARGET,
 MEMORY_CARD, COLLECTION, SAVE_NAME, DISC_PICKER, VARIANT_PICKER, STEAM_INSTALL,
-FILE_PICKER.
+FILE_PICKER, COVER_PICKER.
 
 Input ownership per modal, normal (non-swapped) mode. "Companion-owned" =
 `handleModalInput` (SecondaryHomeInputHandler) drives the companion VM and
@@ -295,6 +295,7 @@ mirrors focus to the upper via `broadcastInlineUpdate(<field>)` ->
 | VARIANT_PICKER | Companion | `variant_focus` |
 | STEAM_INSTALL | Companion | `steam_install_focus`; also opens from Home as a chooser (`openSteamChooserForHome`) |
 | FILE_PICKER | UPPER | companion is Back-only dismiss; all focus/selection state is DSM `filePicker*` fields driven by the upper `dualModalInputHandler` and touch |
+| COVER_PICKER | UPPER | search text needs the keyboard; state is DSM `coverPicker*` / `coverCandidates`, driven by `handleDualCoverPickerInput` (both handlers), the upper `dualModalInputHandler` and touch; opened via direct action CHANGE_COVER, X re-runs the search |
 
 Rule: new picker modals are companion-owned with live focus forwarding -
 copy the EMULATOR branch, not FILE_PICKER.

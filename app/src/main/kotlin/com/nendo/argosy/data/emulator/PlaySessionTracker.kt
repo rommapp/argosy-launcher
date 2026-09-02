@@ -48,6 +48,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.time.Duration
 import java.time.Instant
 import java.util.concurrent.atomic.AtomicBoolean
@@ -115,6 +117,8 @@ class PlaySessionTracker @Inject constructor(
     private val sessionStateStore by lazy { SessionStateStore(application) }
     private val endingSession = AtomicBoolean(false)
     private val saveObserved = AtomicBoolean(false)
+    private val sessionServiceMutex = Mutex()
+    private val sessionServiceStarted = AtomicBoolean(false)
 
     private fun broadcastSessionChanged(gameId: Long?, channelName: String?, isHardcore: Boolean) {
         // Write to SharedPreferences for companion process to read on startup
@@ -366,6 +370,7 @@ class PlaySessionTracker @Inject constructor(
             "[SaveSync] SESSION gameId=${persisted.gameId} | Persisted session still on screen, resuming it | emulator=${persisted.emulatorPackage}"
         )
         saveObserved.set(false)
+        sessionServiceStarted.set(false)
         isScreenOn = true
         lastScreenOnTime = Instant.now()
         lastScreenOffTime = null
@@ -382,13 +387,15 @@ class PlaySessionTracker @Inject constructor(
             variantFileId = persisted.variantFileId
         )
         broadcastSessionChanged(persisted.gameId, persisted.channelName, persisted.isHardcore)
-        startGameSessionService(
-            gameId = persisted.gameId,
-            emulatorPackage = persisted.emulatorPackage,
-            coreName = persisted.coreName,
-            isHardcore = persisted.isHardcore,
-            sessionStartTime = persisted.startTime.toEpochMilli()
-        )
+        sessionServiceMutex.withLock {
+            startGameSessionService(
+                gameId = persisted.gameId,
+                emulatorPackage = persisted.emulatorPackage,
+                coreName = persisted.coreName,
+                isHardcore = persisted.isHardcore,
+                sessionStartTime = persisted.startTime.toEpochMilli()
+            )
+        }
     }
 
     private suspend fun recoverOrphanedStates(orphaned: PersistedSession) {
@@ -486,6 +493,7 @@ class PlaySessionTracker @Inject constructor(
 
     fun startSession(gameId: Long, emulatorPackage: String, coreName: String? = null, isHardcore: Boolean = false, isNewGame: Boolean = false, isNetplayGuest: Boolean = false, variantFileId: Long? = null) {
         saveObserved.set(false)
+        sessionServiceStarted.set(false)
         lastScreenOnTime = Instant.now()
         isScreenOn = true
         lastScreenOffTime = null
@@ -506,71 +514,120 @@ class PlaySessionTracker @Inject constructor(
         Logger.debug(TAG, "[SaveSync] SESSION gameId=$gameId | Session started | emulator=$emulatorPackage, core=$coreName, hardcore=$isHardcore, newGame=$isNewGame")
 
         scope.launch {
-            val game = gameDao.getById(gameId)
-            val activeSave = activeSaveRepository.getActiveRow(gameId)
-            val channelName = if (isHardcore || variantFileId != null) null else activeSave?.channelName
+            sessionServiceMutex.withLock {
+                val game = gameDao.getById(gameId)
+                val activeSave = activeSaveRepository.getActiveRow(gameId)
+                val channelName = if (isHardcore || variantFileId != null) null else activeSave?.channelName
 
-            _activeSession.value = _activeSession.value?.copy(channelName = channelName)
+                _activeSession.value = _activeSession.value?.copy(channelName = channelName)
 
-            preferencesRepository.persistActiveSession(
-                gameId = gameId,
-                emulatorPackage = emulatorPackage,
-                startTime = startTime,
-                coreName = coreName,
-                isHardcore = isHardcore,
-                channelName = channelName,
-                variantFileId = variantFileId
-            )
-
-            DualScreenManagerHolder.instance?.assignEmulatorDisplayForSessionStart()
-
-            broadcastSessionChanged(gameId, channelName, isHardcore)
-
-            if (isNewGame && game != null && game.playCount <= 1) {
-                socialRepository.get().emitStartedPlaying(
-                    igdbId = game.igdbId,
-                    gameTitle = game.title,
-                    platformSlug = game.platformSlug
+                preferencesRepository.persistActiveSession(
+                    gameId = gameId,
+                    emulatorPackage = emulatorPackage,
+                    startTime = startTime,
+                    coreName = coreName,
+                    isHardcore = isHardcore,
+                    channelName = channelName,
+                    variantFileId = variantFileId
                 )
-            }
 
-            val prefs = preferencesRepository.userPreferences.first()
-            if (prefs.saveSyncEnabled && channelName != null) {
-                val activeSaveTimestamp = activeSave?.cachedAt?.toEpochMilli()
-                val latestCache = saveCacheDao.getLatestCasualSaveInChannel(gameId, activeSaveRepository.activeOwnerId(), channelName)
-                val sessionEmuId = if (game != null) emulatorResolver.resolveEmulatorId(emulatorPackage) else null
-                val usesBundledSave = if (game != null && sessionEmuId != null) {
-                    val cfg = SavePathRegistry.getConfigForPlatform(sessionEmuId, game.platformSlug)
-                    cfg?.usesGciFormat == true || cfg?.usesFolderBasedSaves == true
-                } else false
-                val isOnOlderSave = when {
-                    usesBundledSave -> false
-                    activeSaveTimestamp == null || latestCache == null -> false
-                    activeSaveTimestamp >= latestCache.cachedAt.toEpochMilli() -> false
-                    else -> {
-                        val emuId = sessionEmuId
-                        val sessionGame = game
-                        val onDiskPath = if (emuId != null && sessionGame != null) {
-                            saveSyncRepository.get().discoverSavePath(
-                                emulatorId = emuId,
-                                gameTitle = sessionGame.title,
-                                platformSlug = sessionGame.platformSlug,
-                                romPath = sessionGame.localPath,
-                                cachedSaveId = sessionGame.saveId ?: sessionGame.titleId,
-                                coreName = coreName,
-                                emulatorPackage = emulatorPackage,
-                                gameId = gameId
-                            )
-                        } else null
-                        val onDiskHash = onDiskPath?.let { saveCacheManager.get().calculateLocalSaveHash(it) }
-                        onDiskHash == null || latestCache.contentHash == null || onDiskHash != latestCache.contentHash
-                    }
+                DualScreenManagerHolder.instance?.assignEmulatorDisplayForSessionStart()
+
+                broadcastSessionChanged(gameId, channelName, isHardcore)
+
+                if (isNewGame && game != null && game.playCount <= 1) {
+                    socialRepository.get().emitStartedPlaying(
+                        igdbId = game.igdbId,
+                        gameTitle = game.title,
+                        platformSlug = game.platformSlug
+                    )
                 }
-                saveSyncRepository.get().setSessionOnOlderSave(gameId, isOnOlderSave)
-                _activeSession.value = _activeSession.value?.copy(isOnOlderSave = isOnOlderSave)
-                Logger.debug(TAG, "[SaveSync] SESSION gameId=$gameId | isOnOlderSave=$isOnOlderSave | channel=$channelName | activeSaveTs=${activeSaveTimestamp} | latestCacheTs=${latestCache?.cachedAt?.toEpochMilli()} | latestCacheId=${latestCache?.id}")
+
+                val prefs = preferencesRepository.userPreferences.first()
+                if (prefs.saveSyncEnabled && channelName != null) {
+                    val activeSaveTimestamp = activeSave?.cachedAt?.toEpochMilli()
+                    val latestCache = saveCacheDao.getLatestCasualSaveInChannel(gameId, activeSaveRepository.activeOwnerId(), channelName)
+                    val sessionEmuId = if (game != null) emulatorResolver.resolveEmulatorId(emulatorPackage) else null
+                    val usesBundledSave = if (game != null && sessionEmuId != null) {
+                        val cfg = SavePathRegistry.getConfigForPlatform(sessionEmuId, game.platformSlug)
+                        cfg?.usesGciFormat == true || cfg?.usesFolderBasedSaves == true
+                    } else false
+                    val isOnOlderSave = when {
+                        usesBundledSave -> false
+                        activeSaveTimestamp == null || latestCache == null -> false
+                        activeSaveTimestamp >= latestCache.cachedAt.toEpochMilli() -> false
+                        else -> {
+                            val emuId = sessionEmuId
+                            val sessionGame = game
+                            val onDiskPath = if (emuId != null && sessionGame != null) {
+                                saveSyncRepository.get().discoverSavePath(
+                                    emulatorId = emuId,
+                                    gameTitle = sessionGame.title,
+                                    platformSlug = sessionGame.platformSlug,
+                                    romPath = sessionGame.localPath,
+                                    cachedSaveId = sessionGame.saveId ?: sessionGame.titleId,
+                                    coreName = coreName,
+                                    emulatorPackage = emulatorPackage,
+                                    gameId = gameId
+                                )
+                            } else null
+                            val onDiskHash = onDiskPath?.let { saveCacheManager.get().calculateLocalSaveHash(it) }
+                            onDiskHash == null || latestCache.contentHash == null || onDiskHash != latestCache.contentHash
+                        }
+                    }
+                    saveSyncRepository.get().setSessionOnOlderSave(gameId, isOnOlderSave)
+                    _activeSession.value = _activeSession.value?.copy(isOnOlderSave = isOnOlderSave)
+                    Logger.debug(TAG, "[SaveSync] SESSION gameId=$gameId | isOnOlderSave=$isOnOlderSave | channel=$channelName | activeSaveTs=${activeSaveTimestamp} | latestCacheTs=${latestCache?.cachedAt?.toEpochMilli()} | latestCacheId=${latestCache?.id}")
+                }
+                startGameSessionService(gameId, emulatorPackage, coreName, isHardcore, startTime.toEpochMilli())
             }
-            startGameSessionService(gameId, emulatorPackage, coreName, isHardcore, startTime.toEpochMilli())
+        }
+    }
+
+    /**
+     * Re-tags the running session once RetroAchievements has answered the hardcore request.
+     * Every consumer of the flag (session store, companion, watcher service, orphan record) is
+     * refreshed here so the save trailer and the upload flag follow the confirmed mode rather
+     * than the launch flag. Hardcore saves live outside named channels, so the channel is
+     * recomputed exactly as startSession does.
+     */
+    fun updateSessionHardcore(gameId: Long, isHardcore: Boolean) {
+        scope.launch {
+            sessionServiceMutex.withLock {
+                val session = _activeSession.value ?: return@withLock
+                if (session.gameId != gameId || session.isHardcore == isHardcore) return@withLock
+                val activeSave = activeSaveRepository.getActiveRow(gameId)
+                val channelName = if (isHardcore || session.variantFileId != null) null else activeSave?.channelName
+                val updated = session.copy(
+                    isHardcore = isHardcore,
+                    channelName = channelName,
+                    isOnOlderSave = if (isHardcore) false else session.isOnOlderSave
+                )
+                _activeSession.value = updated
+                if (isHardcore) saveSyncRepository.get().setSessionOnOlderSave(gameId, false)
+                Logger.debug(TAG, "[SaveSync] SESSION gameId=$gameId | Hardcore claim updated | hardcore=$isHardcore, channel=$channelName")
+
+                preferencesRepository.persistActiveSession(
+                    gameId = gameId,
+                    emulatorPackage = updated.emulatorPackage,
+                    startTime = updated.startTime,
+                    coreName = updated.coreName,
+                    isHardcore = isHardcore,
+                    channelName = channelName,
+                    variantFileId = updated.variantFileId
+                )
+                sessionStateStore.setActiveSession(
+                    gameId,
+                    channelName,
+                    isHardcore,
+                    updated.startTime.toEpochMilli(),
+                    updated.emulatorPackage
+                )
+                DualScreenManagerHolder.instance?.onSessionHardcoreChanged(isHardcore, channelName)
+                if (sessionServiceStarted.get()) {
+                    GameSessionService.updateHardcore(application, isHardcore, channelName)
+                }
+            }
         }
     }
 
@@ -611,9 +668,10 @@ class PlaySessionTracker @Inject constructor(
             }
         } else null
 
-        val channelName = if (isHardcore) null else activeSaveRepository.getActiveChannel(gameId)
+        val liveHardcore = _activeSession.value?.takeIf { it.gameId == gameId }?.isHardcore ?: isHardcore
+        val channelName = if (liveHardcore) null else activeSaveRepository.getActiveChannel(gameId)
 
-        Logger.debug(TAG, "[GameSession] Starting service for gameId=$gameId | watchPath=$watchPath | savePath=$savePath")
+        Logger.debug(TAG, "[GameSession] Starting service for gameId=$gameId | watchPath=$watchPath | savePath=$savePath | hardcore=$liveHardcore")
         GameSessionService.start(
             context = application,
             watchPath = watchPath,
@@ -622,10 +680,11 @@ class PlaySessionTracker @Inject constructor(
             emulatorId = emulatorId,
             gameTitle = game.title,
             channelName = channelName,
-            isHardcore = isHardcore,
+            isHardcore = liveHardcore,
             sessionStartTime = sessionStartTime,
             emulatorPackage = emulatorPackage
         )
+        sessionServiceStarted.set(true)
     }
 
     suspend fun endSession(stopService: Boolean = true, skipSaveSync: Boolean = false): SessionEndResult {

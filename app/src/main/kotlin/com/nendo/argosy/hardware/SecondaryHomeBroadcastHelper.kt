@@ -223,6 +223,18 @@ class SecondaryHomeBroadcastHelper(
         dsm.openSaveNameModal(actionType, cacheId)
     }
 
+    fun selectDualCover(index: Int) {
+        dsm.selectDualCover(index)
+    }
+
+    fun updateDualCoverPickerQuery(text: String) {
+        dsm.updateDualCoverPickerQuery(text)
+    }
+
+    fun searchDualCovers() {
+        dsm.searchDualCovers()
+    }
+
     fun broadcastOpenOverlay(eventName: String) {
         dualHomeViewModel.startDrawerForwarding()
         dsm.onOpenOverlayFromCompanion(eventName)

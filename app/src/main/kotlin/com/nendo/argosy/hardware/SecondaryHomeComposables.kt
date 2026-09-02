@@ -29,6 +29,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.R
+import com.nendo.argosy.core.game.AchievementUi
 import com.nendo.argosy.ui.dualscreen.ControlRoleContent
 import com.nendo.argosy.ui.util.clickableNoFocus
 import com.nendo.argosy.ui.dualscreen.ShowcaseViewModel
@@ -98,7 +99,7 @@ fun SecondaryHomeContent(
     onScreenshotViewed: (Int) -> Unit,
     onDimTapped: () -> Unit = {},
     onCustomGridActivate: () -> Unit = {},
-    onTabChanged: (CompanionPanel) -> Unit = {},
+    companionAchievements: List<AchievementUi> = emptyList(),
     onQuickSave: () -> Unit = {},
     onQuickLoad: () -> Unit = {},
     onScreenshot: () -> Unit = {},
@@ -125,6 +126,7 @@ fun SecondaryHomeContent(
     val showSplash = !isInitialized || isWizardActive
 
     val dualHomeState by dualHomeViewModel.uiState.collectAsState()
+    val drawerState by viewModel.uiState.collectAsState()
 
     /**
      * The whole companion display refuses Compose focus, not just the home content inside it.
@@ -232,7 +234,11 @@ fun SecondaryHomeContent(
                 sessionTimer = companionSessionTimer,
                 homeApps = homeApps,
                 onAppClick = onAppClick,
-                onTabChanged = onTabChanged,
+                onTabChanged = { viewModel.setCompanionPanel(it) },
+                currentPanel = drawerState.companionPanel,
+                achievements = companionAchievements,
+                achievementFocusIndex = drawerState.companionAchievementFocusIndex,
+                onAchievementTapped = { viewModel.setCompanionAchievementFocus(it) },
                 onOpenDrawer = { viewModel.openDrawer() },
                 onQuickSave = onQuickSave,
                 onQuickLoad = onQuickLoad,
@@ -242,7 +248,6 @@ fun SecondaryHomeContent(
             )
         }
 
-        val drawerState by viewModel.uiState.collectAsState()
         AnimatedVisibility(
             visible = drawerState.isDrawerOpen,
             enter = fadeIn(),
@@ -383,6 +388,9 @@ fun ShowcaseRoleContent(
                         onDiscSelect = showcaseViewModel::onDiscSelect,
                         onModalSteamInstallSelect = showcaseViewModel::onModalSteamInstallSelect,
                         onModalDismiss = showcaseViewModel::onModalDismiss,
+                        onCoverSelect = showcaseViewModel::onCoverSelect,
+                        onCoverQueryChange = showcaseViewModel::onCoverQueryChange,
+                        onCoverSearch = showcaseViewModel::onCoverSearch,
                         footerHints = {
                             FooterBar(
                                 hints = listOf(

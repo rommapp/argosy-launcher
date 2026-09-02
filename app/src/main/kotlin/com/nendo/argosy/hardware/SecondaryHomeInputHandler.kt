@@ -62,6 +62,8 @@ class SecondaryHomeInputHandler(
         if (!isGameActive) {
             com.nendo.argosy.ui.dualscreen.gamedetail.handleDualFilePickerInput(event)
                 ?.let { return it }
+            com.nendo.argosy.ui.dualscreen.gamedetail.handleDualCoverPickerInput(event)
+                ?.let { return it }
         }
 
         if (isMediaPanelSurface()) return handleMediaPanelInput(event)
@@ -512,8 +514,32 @@ class SecondaryHomeInputHandler(
         val state = viewModel.uiState.value
         val appBarIndex = state.companionAppBarIndex
         val apps = homeApps()
+        val onAchievements = state.companionPanel == CompanionPanel.ACHIEVEMENTS
 
         return when (event) {
+            GamepadEvent.PrevSection -> {
+                viewModel.cycleCompanionPanel(-1)
+                InputResult.HANDLED
+            }
+            GamepadEvent.NextSection -> {
+                viewModel.cycleCompanionPanel(1)
+                InputResult.HANDLED
+            }
+            GamepadEvent.Up -> {
+                if (!onAchievements) return InputResult.UNHANDLED
+                viewModel.moveCompanionAchievementFocus(-1, companionAchievementCount())
+                InputResult.HANDLED
+            }
+            GamepadEvent.Down -> {
+                if (!onAchievements) return InputResult.UNHANDLED
+                viewModel.moveCompanionAchievementFocus(1, companionAchievementCount())
+                InputResult.HANDLED
+            }
+            GamepadEvent.Back -> {
+                if (state.companionPanel == CompanionPanel.DASHBOARD) return InputResult.UNHANDLED
+                viewModel.setCompanionPanel(CompanionPanel.DASHBOARD)
+                InputResult.HANDLED
+            }
             GamepadEvent.Left -> {
                 viewModel.companionSelectPreviousApp()
                 InputResult.HANDLED
@@ -546,6 +572,9 @@ class SecondaryHomeInputHandler(
             else -> InputResult.UNHANDLED
         }
     }
+
+    private fun companionAchievementCount(): Int =
+        com.nendo.argosy.DualScreenManagerHolder.instance?.companionAchievements?.value?.size ?: 0
 
     fun handleOption(vm: DualGameDetailViewModel, option: GameDetailOption) {
         val gameId = vm.uiState.value.gameId
@@ -641,6 +670,12 @@ class SecondaryHomeInputHandler(
             }
             GameDetailOption.FILES -> {
                 broadcasts.broadcastDirectAction("FILES", gameId)
+            }
+            GameDetailOption.CHANGE_COVER -> {
+                broadcasts.broadcastDirectAction("CHANGE_COVER", gameId)
+            }
+            GameDetailOption.RESET_COVER -> {
+                broadcasts.broadcastDirectAction("RESET_COVER", gameId)
             }
             GameDetailOption.REFRESH_METADATA -> {
                 broadcasts.broadcastDirectAction("REFRESH_METADATA", gameId)
@@ -1147,6 +1182,10 @@ class SecondaryHomeInputHandler(
             ActiveModal.FILE_PICKER -> {
                 return com.nendo.argosy.ui.dualscreen.gamedetail
                     .handleDualFilePickerInput(event) ?: InputResult.HANDLED
+            }
+            ActiveModal.COVER_PICKER -> {
+                return com.nendo.argosy.ui.dualscreen.gamedetail
+                    .handleDualCoverPickerInput(event) ?: InputResult.HANDLED
             }
             ActiveModal.STEAM_INSTALL -> {
                 when (event) {

@@ -108,6 +108,9 @@
     <string name="gamedetail_achievement_list_locked_heading">未解锁（%1$d）</string>
     <string name="gamedetail_achievement_list_tier_hardcore">硬核</string>
     <string name="gamedetail_achievement_list_tier_casual">休闲</string>
+    <string name="gamedetail_achievement_type_missable">可错过</string>
+    <string name="gamedetail_achievement_type_progression">进度</string>
+    <string name="gamedetail_achievement_type_win_condition">通关条件</string>
     <plurals name="gamedetail_achievement_list_points">
         <item quantity="other">%1$d分</item>
     </plurals>

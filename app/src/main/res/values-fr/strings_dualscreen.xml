@@ -20,6 +20,12 @@
 
     <string name="dual_companion_session_label">Session</string>
     <string name="dual_companion_achievements_label">Succès</string>
+    <string name="dual_companion_panel_dashboard">Tableau de bord</string>
+    <string name="dual_companion_panel_achievements">Succès</string>
+    <string name="dual_companion_achievements_unlocked_heading">DÉBLOQUÉS (%1$d)</string>
+    <string name="dual_companion_achievements_locked_heading">VERROUILLÉS (%1$d)</string>
+    <string name="dual_companion_achievements_empty">Aucun succès pour ce jeu</string>
+    <string name="dual_companion_footer_switch_panel">Panneau</string>
     <string name="dual_companion_stat_play_time">Temps de jeu total</string>
     <string name="dual_companion_stat_play_count">Nombre de parties</string>
 
@@ -358,6 +364,8 @@
     <string name="dual_detail_option_files">Fichiers</string>
     <string name="dual_detail_option_add_to_collection">Ajouter à une collection</string>
     <string name="dual_detail_option_refresh_metadata">Actualiser les métadonnées</string>
+    <string name="dual_detail_option_change_cover">Changer la jaquette</string>
+    <string name="dual_detail_option_reset_cover">Réinitialiser la jaquette</string>
     <string name="dual_detail_option_delete">Supprimer de la bibliothèque</string>
     <string name="dual_detail_option_unhide">Réafficher le jeu</string>
     <string name="dual_detail_option_hide">Masquer le jeu</string>

@@ -115,6 +115,9 @@
     <string name="gamedetail_achievement_list_locked_heading">ЗАБЛОКИРОВАНО (%1$d)</string>
     <string name="gamedetail_achievement_list_tier_hardcore">Хардкор</string>
     <string name="gamedetail_achievement_list_tier_casual">Казуальный</string>
+    <string name="gamedetail_achievement_type_missable">Можно пропустить</string>
+    <string name="gamedetail_achievement_type_progression">Прогресс</string>
+    <string name="gamedetail_achievement_type_win_condition">Условие победы</string>
     <plurals name="gamedetail_achievement_list_points">
         <item quantity="one">%1$d очк.</item>
         <item quantity="few">%1$d очк.</item>

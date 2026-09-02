@@ -20,6 +20,12 @@
 
     <string name="dual_companion_session_label">सेशन</string>
     <string name="dual_companion_achievements_label">अचीवमेंट्स</string>
+    <string name="dual_companion_panel_dashboard">डैशबोर्ड</string>
+    <string name="dual_companion_panel_achievements">अचीवमेंट्स</string>
+    <string name="dual_companion_achievements_unlocked_heading">अनलॉक्ड (%1$d)</string>
+    <string name="dual_companion_achievements_locked_heading">लॉक्ड (%1$d)</string>
+    <string name="dual_companion_achievements_empty">इस गेम के लिए कोई अचीवमेंट नहीं</string>
+    <string name="dual_companion_footer_switch_panel">पैनल</string>
     <string name="dual_companion_stat_play_time">कुल खेलने का समय</string>
     <string name="dual_companion_stat_play_count">कितनी बार खेला गया</string>
 
@@ -352,6 +358,8 @@
     <string name="dual_detail_option_files">फ़ाइलें</string>
     <string name="dual_detail_option_add_to_collection">कलेक्शन में जोड़ें</string>
     <string name="dual_detail_option_refresh_metadata">मेटाडेटा रीफ्रेश करें</string>
+    <string name="dual_detail_option_change_cover">कवर आर्ट बदलें</string>
+    <string name="dual_detail_option_reset_cover">कवर आर्ट रीसेट करें</string>
     <string name="dual_detail_option_delete">लाइब्रेरी से हटाएं</string>
     <string name="dual_detail_option_unhide">गेम दिखाएं</string>
     <string name="dual_detail_option_hide">गेम छिपाएं</string>

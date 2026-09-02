@@ -20,13 +20,24 @@ import com.swordfish.libretrodroid.GLRetroView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+
+/**
+ * What the session may claim about itself. HARDCORE is reached only after RetroAchievements
+ * accepted a start-session request with h=1; PENDING covers the window between a hardcore
+ * launch and that answer, and CASUAL is every other outcome, including a refused or
+ * unreachable server. The launch-time restrictions are not derived from this value.
+ */
+enum class RASessionMode { PENDING, HARDCORE, CASUAL }
 
 class RetroAchievementsSessionManager(
     private val gameId: Long,
     private val romPath: String,
-    private val hardcoreMode: Boolean,
+    private val requestedHardcore: Boolean,
     private val gameDao: GameDao,
     private val overlayWriter: com.nendo.argosy.data.repository.GameUserOverlayWriter,
     private val achievementDao: AchievementDao,
@@ -56,6 +67,14 @@ class RetroAchievementsSessionManager(
     var raConnectionInfo by mutableStateOf<RAConnectionInfo?>(null)
         private set
 
+    private val _sessionMode = MutableStateFlow(
+        if (requestedHardcore) RASessionMode.PENDING else RASessionMode.CASUAL
+    )
+    val sessionMode: StateFlow<RASessionMode> = _sessionMode.asStateFlow()
+
+    private val isHardcore: Boolean
+        get() = _sessionMode.value == RASessionMode.HARDCORE
+
     private var heartbeatJob: Job? = null
     private var cachedAchievementDefs: Array<com.swordfish.libretrodroid.AchievementDef>? = null
     private var cachedConsoleId: Int? = null
@@ -76,10 +95,15 @@ class RetroAchievementsSessionManager(
             Log.d(TAG, "RA login check: isLoggedIn=$isLoggedIn")
             if (!isLoggedIn) {
                 Log.d(TAG, "Not logged in to RA, skipping session")
+                resolveWithoutHardcore()
                 return@launch
             }
 
-            val game = gameDao.getById(gameId) ?: return@launch
+            val game = gameDao.getById(gameId)
+            if (game == null) {
+                resolveWithoutHardcore()
+                return@launch
+            }
             gameIgdbId = game.igdbId
             gameTitle = game.title
 
@@ -89,15 +113,17 @@ class RetroAchievementsSessionManager(
 
             if (gameRaId == null) {
                 Log.d(TAG, "Game has no RA ID, skipping RA session")
+                resolveWithoutHardcore()
                 return@launch
             }
 
-            Log.d(TAG, "Starting RA session for raId=$gameRaId, hardcore=$hardcoreMode")
-            val sessionResult = raRepository.startSession(gameRaId!!, hardcoreMode)
+            Log.d(TAG, "Starting RA session for raId=$gameRaId, hardcore=$requestedHardcore")
+            val sessionResult = raRepository.startSession(gameRaId!!, requestedHardcore)
             if (sessionResult.success) {
                 raSessionActive = true
+                _sessionMode.value = if (requestedHardcore) RASessionMode.HARDCORE else RASessionMode.CASUAL
                 val preUnlocked = sessionResult.unlockedAchievements
-                Log.d(TAG, "RA session started for game $gameRaId (hardcore=$hardcoreMode), pre-unlocked=${preUnlocked.size}: $preUnlocked")
+                Log.d(TAG, "RA session started for game $gameRaId (hardcore=$isHardcore), pre-unlocked=${preUnlocked.size}: $preUnlocked")
 
                 val patchData = raRepository.getGamePatchData(gameRaId!!)
                 if (patchData != null) {
@@ -120,12 +146,11 @@ class RetroAchievementsSessionManager(
                     val validIds = validAchievements.map { a -> a.id }.toSet()
                     earnedAchievements = preUnlocked.count { it in validIds }
 
-                    // Persist pre-unlocked achievements to local DB
                     val now = System.currentTimeMillis()
                     val ownerUserId = raRepository.activeOwnerUserId()
                     for (achId in preUnlocked) {
                         if (achId in validIds) {
-                            if (hardcoreMode) {
+                            if (isHardcore) {
                                 achievementDao.markUnlockedHardcore(gameId, achId, ownerUserId, now)
                             } else {
                                 achievementDao.markUnlocked(gameId, achId, ownerUserId, now)
@@ -135,7 +160,7 @@ class RetroAchievementsSessionManager(
                     overlayWriter.updateAchievementCount(gameId, totalAchievements, earnedAchievements)
 
                     raConnectionInfo = RAConnectionInfo(
-                        isHardcore = hardcoreMode,
+                        isHardcore = isHardcore,
                         earnedCount = earnedAchievements,
                         totalCount = totalAchievements
                     )
@@ -165,8 +190,21 @@ class RetroAchievementsSessionManager(
                 startHeartbeatLoop()
             } else {
                 Log.w(TAG, "Failed to start RA session")
+                resolveWithoutHardcore()
             }
         }
+    }
+
+    private fun resolveWithoutHardcore() {
+        _sessionMode.value = RASessionMode.CASUAL
+        if (!requestedHardcore) return
+        Log.w(TAG, "Hardcore was requested but RetroAchievements did not confirm it; session is casual")
+        raConnectionInfo = RAConnectionInfo(
+            isHardcore = false,
+            earnedCount = 0,
+            totalCount = 0,
+            connected = false
+        )
     }
 
     private fun startHeartbeatLoop() {
@@ -187,7 +225,8 @@ class RetroAchievementsSessionManager(
         Log.i(TAG, "  ID: $achievementId")
         Log.i(TAG, "  Title: ${info?.title}")
         Log.i(TAG, "  Points: ${info?.points}")
-        Log.i(TAG, "  Hardcore: $hardcoreMode")
+        val hardcoreSession = isHardcore
+        Log.i(TAG, "  Hardcore: $hardcoreSession")
 
         earnedAchievements++
 
@@ -196,10 +235,10 @@ class RetroAchievementsSessionManager(
             val result = raRepository.awardAchievement(
                 gameId = gameId,
                 achievementRaId = achievementId,
-                forHardcoreMode = hardcoreMode
+                forHardcoreMode = hardcoreSession
             )
 
-            var earnedHardcore = hardcoreMode
+            var earnedHardcore = hardcoreSession
             val awardConfirmed = when (result) {
                 is RAAwardResult.Success -> {
                     Log.i(TAG, "Achievement $achievementId awarded to RA successfully")
@@ -216,7 +255,7 @@ class RetroAchievementsSessionManager(
                 }
                 is RAAwardResult.Error -> {
                     Log.e(TAG, "Failed to award achievement to RA: ${result.message}")
-                    if (hardcoreMode) {
+                    if (hardcoreSession) {
                         earnedHardcore = false
                         Log.d(TAG, "Hardcore award failed; hardcore cannot be queued (needs live heartbeat), falling back to casual for $achievementId")
                         when (val casual = raRepository.awardAchievement(gameId, achievementId, forHardcoreMode = false)) {
@@ -271,7 +310,7 @@ class RetroAchievementsSessionManager(
                     achievementDescription = info?.description,
                     points = info?.points ?: 0,
                     badgeName = info?.badgeName,
-                    isHardcore = hardcoreMode,
+                    isHardcore = hardcoreSession,
                     earnedCount = earnedCount,
                     totalCount = totalCount,
                     unlockedAt = now
@@ -288,7 +327,7 @@ class RetroAchievementsSessionManager(
                     socialRepository.emitPerfectGame(
                         igdbId = gameIgdbId,
                         gameTitle = gameTitle,
-                        isHardcore = hardcoreMode,
+                        isHardcore = hardcoreSession,
                         earnedCount = earnedCount,
                         totalCount = totalCount
                     )
@@ -306,11 +345,11 @@ class RetroAchievementsSessionManager(
             description = info?.description,
             points = info?.points ?: 0,
             badgeUrl = badgeUrl,
-            isHardcore = hardcoreMode
+            isHardcore = hardcoreSession
         )
 
         achievementUnlockQueue.add(unlock)
-        ambientLedManager.flashAchievement(hardcoreMode)
+        ambientLedManager.flashAchievement(hardcoreSession)
         if (currentAchievementUnlock == null) {
             showNextUnlock()
         }

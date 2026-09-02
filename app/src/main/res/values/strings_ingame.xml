@@ -34,6 +34,8 @@
     <string name="ingame_menu_manage_states">Manage States</string>
     <!-- Row in that menu. Noun, plural: opens the list of cheat codes for this game. -->
     <string name="ingame_menu_cheats">Cheats</string>
+    <!-- Row in that menu. Noun, plural: opens the list of RetroAchievements for this game. -->
+    <string name="ingame_menu_achievements">Achievements</string>
     <!-- Row in that menu, for the host of a shared session. Verb phrase: opens the list of
          friends so one can be asked to join. The trailing dots mean another step follows. -->
     <string name="ingame_menu_invite_friend">Invite Friend...</string>
@@ -71,6 +73,19 @@
     <string name="ingame_disc_title">Swap Disc</string>
     <!-- Row in that list for the disc already in the drive. %1$s is the disc's name. -->
     <string name="ingame_disc_current">"%1$s  (current)"</string>
+
+    <!-- Heading of the achievement list opened over a running game. Noun, plural. -->
+    <string name="ingame_achievements_title">Achievements</string>
+    <!-- Tally at the right of that heading. %1$d is how many are earned, %2$d how many exist. -->
+    <string name="ingame_achievements_progress">%1$d/%2$d</string>
+    <!-- Heading over the earned half of that list. Adjective describing the achievements below
+         it. %1$d is how many. Rendered in caps in English. -->
+    <string name="ingame_achievements_unlocked_heading">UNLOCKED (%1$d)</string>
+    <!-- Heading over the unearned half of that list. Adjective describing the achievements below
+         it. %1$d is how many. Rendered in caps in English. -->
+    <string name="ingame_achievements_locked_heading">LOCKED (%1$d)</string>
+    <!-- Body of that list when the game has no achievements on record. Statement, not an error. -->
+    <string name="ingame_achievements_empty">No achievements for this game</string>
 
     <!-- Heading of the save state slot manager. Verb phrase addressed to the user. -->
     <string name="ingame_states_title">Manage States</string>
@@ -183,6 +198,10 @@
     <string name="ingame_raconnect_hardcore">Hardcore Mode</string>
     <!-- Second line of that banner. Names the relaxed RetroAchievements mode. -->
     <string name="ingame_raconnect_casual">Casual Mode</string>
+    <!-- Heading of the same banner when a strict-mode launch could not be confirmed by the
+         achievement service (signed out, unknown game, or no answer). The second line then
+         says the session is running in the relaxed mode. -->
+    <string name="ingame_raconnect_unavailable_title">RetroAchievements Unavailable</string>
     <!-- Tail of that banner's second line. %1$d is how many achievements this game has
          already given up, %2$d how many it holds in total. -->
     <string name="ingame_raconnect_earned">%1$d/%2$d earned</string>

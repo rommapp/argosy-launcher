@@ -264,12 +264,19 @@ private fun AchievementRow(
         Spacer(modifier = Modifier.width(Dimens.spacingMd))
 
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = achievement.title,
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (isLocked) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                else MaterialTheme.colorScheme.onSurface
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+            ) {
+                Text(
+                    text = achievement.title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (isLocked) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    else MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+                AchievementTypeBadge(type = achievement.type)
+            }
             achievement.description?.let { desc ->
                 Text(
                     text = desc,

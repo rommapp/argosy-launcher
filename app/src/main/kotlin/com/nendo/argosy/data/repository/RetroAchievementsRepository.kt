@@ -113,6 +113,14 @@ class RetroAchievementsRepository @Inject constructor(
     suspend fun activeOwnerUserId(): Long =
         prefsRepository.userPreferences.first().rommUserId ?: AchievementEntity.NO_OWNER
 
+    /**
+     * The achievement rows already on disk for [gameId] under the active account, points-first.
+     * Reads nothing from the network; callers that need fresh definitions go through
+     * [syncAchievementsForGame].
+     */
+    suspend fun getCachedAchievements(gameId: Long): List<AchievementEntity> =
+        achievementDao.getByGameId(gameId, activeOwnerUserId())
+
     suspend fun isLoggedIn(): Boolean {
         val prefs = prefsRepository.userPreferences.first()
         return !prefs.raUsername.isNullOrBlank() && !prefs.raToken.isNullOrBlank()

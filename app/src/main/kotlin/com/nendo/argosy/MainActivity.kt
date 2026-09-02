@@ -129,6 +129,8 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var emulatorResolver: EmulatorResolver
     @Inject lateinit var coreVersionExtractor: com.nendo.argosy.data.emulator.CoreVersionExtractor
     @Inject lateinit var fetchAchievementsUseCase: FetchAchievementsUseCase
+    @Inject lateinit var raRepository: com.nendo.argosy.data.repository.RetroAchievementsRepository
+    @Inject lateinit var achievementUpdateBus: com.nendo.argosy.core.event.AchievementUpdateBus
     @Inject lateinit var gameFileDao: com.nendo.argosy.data.local.dao.GameFileDao
     @Inject lateinit var downloadManagerInstance: com.nendo.argosy.data.download.DownloadManager
     @Inject lateinit var notificationManager: com.nendo.argosy.core.notification.NotificationManager
@@ -239,6 +241,11 @@ class MainActivity : ComponentActivity() {
     fun activateDualFilePickerFocused() = dualScreenManager.activateDualFilePickerFocused()
     fun toggleDualFilePickerSelectAll() = dualScreenManager.toggleDualFilePickerSelectAll()
     fun confirmDualFilePicker() = dualScreenManager.confirmDualFilePicker()
+    fun moveDualCoverPickerFocus(delta: Int) = dualScreenManager.moveDualCoverPickerFocus(delta)
+    fun confirmDualCoverAtFocus() = dualScreenManager.confirmDualCoverAtFocus()
+    fun selectDualCover(index: Int) = dualScreenManager.selectDualCover(index)
+    fun updateDualCoverPickerQuery(text: String) = dualScreenManager.updateDualCoverPickerQuery(text)
+    fun searchDualCovers() = dualScreenManager.searchDualCovers()
     fun moveDualCollectionFocus(delta: Int) = dualScreenManager.moveDualCollectionFocus(delta)
     fun toggleDualCollectionAtFocus() = dualScreenManager.toggleDualCollectionAtFocus()
     fun showDualCollectionCreateDialog() = dualScreenManager.showDualCollectionCreateDialog()
@@ -349,6 +356,8 @@ class MainActivity : ComponentActivity() {
                 emulatorResolver = emulatorResolver,
                 coreVersionExtractor = coreVersionExtractor,
                 fetchAchievementsUseCase = fetchAchievementsUseCase,
+                raRepository = raRepository,
+                achievementUpdateBus = achievementUpdateBus,
                 displayAffinityHelper = displayAffinityHelper,
                 sessionStateStore = sessionStateStore,
                 preferencesRepository = preferencesRepository,
@@ -388,6 +397,7 @@ class MainActivity : ComponentActivity() {
                 mediaSeriesDelegate = mediaSeriesDelegate,
                 mediaSiblingsDelegate = mediaSiblingsDelegate,
                 imageCacheManager = imageCacheManager,
+                romMRepository = romMRepository,
                 resolveGameEmulatorContext = resolveGameEmulatorContext,
                 hapticManager = hapticFeedbackManager,
                 soundManager = soundFeedbackManager,

@@ -12,6 +12,12 @@
     <string name="ingame_menu_quick_load">快速讀取</string>
     <string name="ingame_menu_manage_states">管理即時存檔</string>
     <string name="ingame_menu_cheats">作弊碼</string>
+    <string name="ingame_menu_achievements">成就</string>
+    <string name="ingame_achievements_title">成就</string>
+    <string name="ingame_achievements_progress">%1$d/%2$d</string>
+    <string name="ingame_achievements_unlocked_heading">已解鎖（%1$d）</string>
+    <string name="ingame_achievements_locked_heading">未解鎖（%1$d）</string>
+    <string name="ingame_achievements_empty">此遊戲沒有成就</string>
     <string name="ingame_menu_invite_friend">邀請好友...</string>
     <string name="ingame_menu_open_to_all_friends">開放給所有好友</string>
     <string name="ingame_menu_close_netplay_server">關閉連線對戰伺服器</string>
@@ -78,6 +84,7 @@
     <string name="ingame_raconnect_title">RetroAchievements已連線</string>
     <string name="ingame_raconnect_hardcore">硬核模式</string>
     <string name="ingame_raconnect_casual">一般模式</string>
+    <string name="ingame_raconnect_unavailable_title">RetroAchievements無法使用</string>
     <string name="ingame_raconnect_earned">已達成%1$d/%2$d</string>
 
     <string name="ingame_speedrun_paused">已暫停</string>

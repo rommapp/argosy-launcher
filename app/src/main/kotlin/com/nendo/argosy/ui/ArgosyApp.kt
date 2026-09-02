@@ -81,6 +81,7 @@ import com.nendo.argosy.ui.quickmenu.QuickMenuOverlay
 import com.nendo.argosy.ui.quickmenu.QuickMenuViewModel
 import com.nendo.argosy.hardware.CompanionContent
 import com.nendo.argosy.hardware.CompanionMediaToggle
+import com.nendo.argosy.hardware.CompanionPanel
 import com.nendo.argosy.hardware.CompanionScreen
 import com.nendo.argosy.data.repository.AppsRepository
 import com.nendo.argosy.ui.screens.secondaryhome.DrawerAppUi
@@ -615,6 +616,8 @@ fun ArgosyApp(
                     if (activity?.moveDualFilePickerButtonFocus(-1) != true) {
                         activity?.setDualFilePickerGroupCollapsed(collapse = true)
                     }
+                } else if (state?.modalType == ActiveModal.COVER_PICKER) {
+                    activity?.moveDualCoverPickerFocus(-1)
                 }
                 return InputResult.HANDLED
             }
@@ -628,6 +631,8 @@ fun ArgosyApp(
                     if (activity?.moveDualFilePickerButtonFocus(1) != true) {
                         activity?.setDualFilePickerGroupCollapsed(collapse = false)
                     }
+                } else if (state?.modalType == ActiveModal.COVER_PICKER) {
+                    activity?.moveDualCoverPickerFocus(1)
                 }
                 return InputResult.HANDLED
             }
@@ -645,6 +650,9 @@ fun ArgosyApp(
                     ActiveModal.COLLECTION -> activity?.moveDualCollectionFocus(-1)
                     ActiveModal.STEAM_INSTALL -> activity?.moveDualSteamInstallFocus(-1)
                     ActiveModal.FILE_PICKER -> activity?.moveDualFilePickerFocus(-1)
+                    ActiveModal.COVER_PICKER -> activity?.moveDualCoverPickerFocus(
+                        -com.nendo.argosy.ui.screens.gamedetail.modals.COVER_PICKER_COLUMNS
+                    )
                     else -> {}
                 }
                 return InputResult.HANDLED
@@ -663,6 +671,9 @@ fun ArgosyApp(
                     ActiveModal.COLLECTION -> activity?.moveDualCollectionFocus(1)
                     ActiveModal.STEAM_INSTALL -> activity?.moveDualSteamInstallFocus(1)
                     ActiveModal.FILE_PICKER -> activity?.moveDualFilePickerFocus(1)
+                    ActiveModal.COVER_PICKER -> activity?.moveDualCoverPickerFocus(
+                        com.nendo.argosy.ui.screens.gamedetail.modals.COVER_PICKER_COLUMNS
+                    )
                     else -> {}
                 }
                 return InputResult.HANDLED
@@ -683,6 +694,7 @@ fun ArgosyApp(
                     ActiveModal.STEAM_INSTALL -> activity?.confirmDualSteamInstallSelection()
                     ActiveModal.SAVE_NAME -> activity?.confirmDualSaveName()
                     ActiveModal.FILE_PICKER -> activity?.activateDualFilePickerFocused()
+                    ActiveModal.COVER_PICKER -> activity?.confirmDualCoverAtFocus()
                     else -> {}
                 }
                 return InputResult.HANDLED
@@ -691,6 +703,10 @@ fun ArgosyApp(
                 val state = activity?.dualGameDetailState?.value
                 if (state?.modalType == ActiveModal.FILE_PICKER) {
                     activity?.confirmDualFilePicker()
+                    return InputResult.HANDLED
+                }
+                if (state?.modalType == ActiveModal.COVER_PICKER) {
+                    activity?.searchDualCovers()
                     return InputResult.HANDLED
                 }
                 return InputResult.HANDLED
@@ -1295,6 +1311,15 @@ fun ArgosyApp(
                             onFilePickerToggleCollapse = { groupKey ->
                                 activity?.toggleDualFilePickerGroupCollapse(groupKey)
                             },
+                            onCoverSelect = { index ->
+                                activity?.selectDualCover(index)
+                            },
+                            onCoverQueryChange = { text ->
+                                activity?.updateDualCoverPickerQuery(text)
+                            },
+                            onCoverSearch = {
+                                activity?.searchDualCovers()
+                            },
                             footerHints = {
                                 FooterHints(
                                     hints = listOf(
@@ -1647,6 +1672,11 @@ fun ArgosyApp(
                             var companionDrawerApps by remember {
                                 mutableStateOf(emptyList<DrawerAppUi>())
                             }
+                            var swappedCompanionPanel by remember {
+                                mutableStateOf(CompanionPanel.DASHBOARD)
+                            }
+                            val swappedAchievements by dualScreenManager.companionAchievements
+                                .collectAsState()
 
                             LaunchedEffect(swappedGameActive) {
                                 if (swappedGameActive) {
@@ -1699,7 +1729,9 @@ fun ArgosyApp(
                                         context.startActivity(launchIntent)
                                     }
                                 },
-                                onTabChanged = { },
+                                onTabChanged = { swappedCompanionPanel = it },
+                                currentPanel = swappedCompanionPanel,
+                                achievements = swappedAchievements,
                                 mediaToggle = mediaToggle,
                                 onMediaToggle = { dualScreenManager.toggleCompanionMediaView() }
                             )
@@ -1892,6 +1924,8 @@ fun ArgosyApp(
                                         dualScreenManager.handleDirectAction("SELECT_DISC", gameId)
                                     }
                                     GameDetailOption.REFRESH_METADATA,
+                                    GameDetailOption.CHANGE_COVER,
+                                    GameDetailOption.RESET_COVER,
                                     GameDetailOption.DELETE -> {
                                         dualScreenManager.handleDirectAction(option.name, gameId)
                                     }

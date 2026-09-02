@@ -1377,6 +1377,7 @@ class DualScreenManager(
             prepareCollectionQueueUseCase = prepareCollectionQueueUseCase,
             sessionStateStore = sessionStateStore,
             homeTileRepository = homeTileRepository,
+            retroAchievementsRepository = raRepository,
             homeGridPageRepository = homeGridPageRepository,
             homeTilePromptQueue = homeTilePromptQueue,
             appsRepository = appsRepository,

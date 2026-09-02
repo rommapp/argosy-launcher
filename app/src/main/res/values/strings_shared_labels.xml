@@ -102,6 +102,7 @@
     <string name="custom_tile_menu_action_fit_cover">Fit cover in cell</string>
     <!-- Tile menu: crop the cover so it fills the cell edge to edge. -->
     <string name="custom_tile_menu_action_crop_cover">Fill cell with cover</string>
+    <string name="custom_tile_menu_action_edit_filters">Edit filters</string>
     <string name="custom_tile_menu_action_remove">Remove from grid</string>
     <string name="custom_tile_menu_action_start_game_queue">Make game queue</string>
     <string name="custom_tile_menu_action_set_focus_game">Set the active game</string>

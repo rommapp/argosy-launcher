@@ -1,6 +1,7 @@
 package com.nendo.argosy.ui.home.grid
 
 import com.nendo.argosy.core.input.SoundType
+import com.nendo.argosy.domain.model.FeatureTileKind
 import com.nendo.argosy.domain.model.GridDirection2D
 import com.nendo.argosy.domain.model.HomeLayoutKind
 import com.nendo.argosy.domain.model.HomeTileTargetRef
@@ -149,6 +150,11 @@ class DualCustomGridInputRouter(
                     viewModel.advanceFocusGame()
                     return InputResult.HANDLED
                 }
+                val feature = viewModel.focusedTile()?.target as? HomeTileTargetRef.Feature
+                if (feature?.kind == FeatureTileKind.RANDOM_GAME) {
+                    viewModel.rerollRandomTile()
+                    return InputResult.handled(SoundType.TOGGLE)
+                }
                 grid.focusedGameId?.let { viewModel.toggleFavoriteById(it) }
                 InputResult.HANDLED
             }
@@ -233,6 +239,18 @@ class DualCustomGridInputRouter(
                     viewModel.enterCollectionGames(target.collectionId, fromTile = true) {
                         onEnterCollectionGames()
                     }
+                }
+            }
+            is HomeTileTargetRef.Feature -> when (target.kind) {
+                FeatureTileKind.RANDOM_GAME -> {
+                    val game = target.pickedGameId?.let { state.tileGames[it] }
+                    if (game == null) viewModel.rerollRandomTile() else onLaunchGame(game)
+                }
+                FeatureTileKind.CONTINUE -> {
+                    state.continueGameId?.let { state.tileGames[it] }?.let(onLaunchGame)
+                }
+                FeatureTileKind.RA_SUMMARY -> {
+                    state.raTileSummary?.latestGameId?.let(onOpenDetails)
                 }
             }
             else -> viewModel.openTilePicker()

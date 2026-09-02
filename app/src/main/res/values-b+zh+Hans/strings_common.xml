@@ -316,6 +316,17 @@
     <string name="ui_tile_picker_empty_apps">未找到应用</string>
     <string name="ui_tile_picker_empty_media">没有可添加的内容</string>
     <string name="ui_tile_picker_empty_features">没有可用的小组件</string>
+    <string name="ui_feature_setup_title">随机游戏</string>
+    <string name="ui_feature_setup_step_filters">可从哪些游戏中选择</string>
+    <string name="ui_feature_setup_step_platforms">平台</string>
+    <string name="ui_feature_setup_step_genres">类型</string>
+    <string name="ui_feature_setup_downloaded_only">仅已下载的游戏</string>
+    <string name="ui_feature_setup_never_played">从未玩过</string>
+    <string name="ui_feature_setup_platforms">平台</string>
+    <string name="ui_feature_setup_genres">类型</string>
+    <string name="ui_feature_setup_done">完成</string>
+    <string name="ui_feature_setup_any">不限</string>
+    <string name="ui_feature_setup_selected_count">已选 %1$d 项</string>
     <string name="ui_tile_picker_empty_search">没有匹配的搜索结果</string>
     <string name="ui_tile_picker_delete_page">删除页面</string>
 

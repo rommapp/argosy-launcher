@@ -331,6 +331,17 @@
     <string name="ui_tile_picker_empty_apps">कोई ऐप नहीं मिला</string>
     <string name="ui_tile_picker_empty_media">जोड़ने के लिए कोई टाइटल नहीं</string>
     <string name="ui_tile_picker_empty_features">कोई विजेट उपलब्ध नहीं</string>
+    <string name="ui_feature_setup_title">यादृच्छिक गेम</string>
+    <string name="ui_feature_setup_step_filters">यह किनमें से चुन सकता है</string>
+    <string name="ui_feature_setup_step_platforms">प्लेटफ़ॉर्म</string>
+    <string name="ui_feature_setup_step_genres">शैलियाँ</string>
+    <string name="ui_feature_setup_downloaded_only">केवल डाउनलोड किए गए गेम</string>
+    <string name="ui_feature_setup_never_played">कभी नहीं खेले गए</string>
+    <string name="ui_feature_setup_platforms">प्लेटफ़ॉर्म</string>
+    <string name="ui_feature_setup_genres">शैलियाँ</string>
+    <string name="ui_feature_setup_done">हो गया</string>
+    <string name="ui_feature_setup_any">कोई भी</string>
+    <string name="ui_feature_setup_selected_count">%1$d चयनित</string>
     <string name="ui_tile_picker_empty_search">उस खोज से कुछ मेल नहीं खाता</string>
     <string name="ui_tile_picker_delete_page">पेज हटाएं</string>
 

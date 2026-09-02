@@ -353,6 +353,17 @@
     <string name="ui_tile_picker_empty_apps">Aucune application trouvée</string>
     <string name="ui_tile_picker_empty_media">Aucun titre à ajouter</string>
     <string name="ui_tile_picker_empty_features">Aucun widget disponible</string>
+    <string name="ui_feature_setup_title">Jeu aléatoire</string>
+    <string name="ui_feature_setup_step_filters">Parmi quoi choisir</string>
+    <string name="ui_feature_setup_step_platforms">Plateformes</string>
+    <string name="ui_feature_setup_step_genres">Genres</string>
+    <string name="ui_feature_setup_downloaded_only">Seulement les jeux téléchargés</string>
+    <string name="ui_feature_setup_never_played">Jamais joués</string>
+    <string name="ui_feature_setup_platforms">Plateformes</string>
+    <string name="ui_feature_setup_genres">Genres</string>
+    <string name="ui_feature_setup_done">Terminé</string>
+    <string name="ui_feature_setup_any">Toutes</string>
+    <string name="ui_feature_setup_selected_count">%1$d sélectionnés</string>
     <string name="ui_tile_picker_empty_search">Rien ne correspond à cette recherche</string>
     <string name="ui_tile_picker_delete_page">Supprimer la page</string>
 

@@ -247,6 +247,13 @@
     <string name="dual_tile_feature_random">Случайная игра</string>
     <string name="dual_tile_feature_continue">Продолжить</string>
     <string name="dual_tile_feature_ra">RetroAchievements</string>
+    <string name="dual_tile_feature_random_empty">Ни одна игра не подходит под фильтры</string>
+    <string name="dual_tile_feature_continue_empty">Пока ничего не сыграно</string>
+    <string name="dual_tile_feature_ra_signed_out">Войдите, чтобы увидеть достижения</string>
+    <string name="dual_tile_feature_ra_no_unlocks">Пока нет достижений</string>
+    <string name="dual_tile_feature_ra_latest">Последнее: %1$s</string>
+    <string name="dual_tile_stat_points">очков</string>
+    <string name="dual_tile_stat_unlocks">достижений</string>
 
     <plurals name="dual_tile_picker_collection_game_count">
         <item quantity="one">%d игра</item>

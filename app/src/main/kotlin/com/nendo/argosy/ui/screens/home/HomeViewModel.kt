@@ -139,6 +139,12 @@ class HomeViewModel @Inject constructor(
             }
         },
         mediaCatalog = tilePickerDelegate,
+        featureFilterOptions = {
+            com.nendo.argosy.ui.components.FeatureFilterOptions(
+                platforms = libraryDelegate.platformOptionsForTiles(),
+                genres = gameRepository.getDistinctGenres()
+            )
+        },
         read = { _uiState.value.customGrid },
         write = { transform -> _uiState.update { it.copy(customGrid = transform(it.customGrid)) } }
     )
@@ -1037,6 +1043,16 @@ class HomeViewModel @Inject constructor(
 
     override fun backFromMediaTileSetup() {
         customGrid.backFromMediaSetup()
+    }
+
+    override fun moveFeatureTileSetupFocus(delta: Int) = customGrid.moveFeatureSetupFocus(delta)
+
+    override fun confirmFeatureTileSetup() = customGrid.confirmFeatureSetup()
+
+    fun confirmFeatureTileSetupAt(index: Int) = customGrid.confirmFeatureSetup(index)
+
+    override fun backFromFeatureTileSetup() {
+        customGrid.backFromFeatureSetup()
     }
 
     override fun confirmMediaTileNotice() = customGrid.confirmMediaTileNotice()

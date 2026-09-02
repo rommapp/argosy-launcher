@@ -666,6 +666,20 @@
          and series. -->
     <string name="ui_tile_picker_empty_media">No titles to add</string>
     <string name="ui_tile_picker_empty_features">No widgets available</string>
+    <!-- Filter setup for the random game tile. -->
+    <string name="ui_feature_setup_title">Random game</string>
+    <string name="ui_feature_setup_step_filters">What it can pick from</string>
+    <string name="ui_feature_setup_step_platforms">Platforms</string>
+    <string name="ui_feature_setup_step_genres">Genres</string>
+    <string name="ui_feature_setup_downloaded_only">Only downloaded games</string>
+    <string name="ui_feature_setup_never_played">Never played</string>
+    <string name="ui_feature_setup_platforms">Platforms</string>
+    <string name="ui_feature_setup_genres">Genres</string>
+    <string name="ui_feature_setup_done">Done</string>
+    <!-- Shown under Platforms or Genres when nothing is ticked, meaning no restriction. -->
+    <string name="ui_feature_setup_any">Any</string>
+    <!-- %1$d is how many platforms or genres are ticked. -->
+    <string name="ui_feature_setup_selected_count">%1$d selected</string>
     <!-- Shown on any tab when the typed filter matches nothing. -->
     <string name="ui_tile_picker_empty_search">Nothing matches that search</string>
     <!-- Destructive row pinned under that list. Verb phrase: removes the whole page of the

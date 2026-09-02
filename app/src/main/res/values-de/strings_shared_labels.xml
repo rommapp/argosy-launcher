@@ -94,6 +94,7 @@
     <string name="custom_tile_menu_action_recurate">Ändern, was gespielt wird</string>
     <string name="custom_tile_menu_action_fit_cover">Cover in Zelle einpassen</string>
     <string name="custom_tile_menu_action_crop_cover">Zelle mit Cover füllen</string>
+    <string name="custom_tile_menu_action_edit_filters">Filter bearbeiten</string>
     <string name="custom_tile_menu_action_remove">Aus dem Raster entfernen</string>
     <string name="custom_tile_menu_action_start_game_queue">Spielewarteschlange erstellen</string>
     <string name="custom_tile_menu_action_set_focus_game">Aktives Spiel festlegen</string>

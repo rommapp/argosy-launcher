@@ -872,6 +872,12 @@ class HomeLibraryDelegate @Inject constructor(
         return gameRepository.getByIds(gameIds).associate { it.id to it.toUi() }
     }
 
+    suspend fun platformOptionsForTiles(): List<com.nendo.argosy.ui.components.FeatureSetupOption> =
+        platformRepository.getPlatformsWithGames()
+            .filter { it.id != LocalPlatformIds.STEAM && it.id != LocalPlatformIds.ANDROID }
+            .map { com.nendo.argosy.ui.components.FeatureSetupOption(it.id, it.getDisplayName()) }
+            .sortedBy { it.label }
+
     private suspend fun GameEntity.toUi(): HomeGameUi = toHomeGameUi(
         downloadStatus = downloadFileStatusRepository,
         platformDisplayName = cachedPlatformDisplayNames[platformId],

@@ -74,6 +74,9 @@ interface HomeInputActions {
     fun moveMediaTileSetupSideways(towardsEnd: Boolean)
     fun confirmMediaTileSetup()
     fun backFromMediaTileSetup()
+    fun moveFeatureTileSetupFocus(delta: Int)
+    fun confirmFeatureTileSetup()
+    fun backFromFeatureTileSetup()
     fun confirmMediaTileNotice()
     fun dismissMediaTileNotice()
     fun moveMediaTileNoticeFocus(delta: Int)
@@ -113,6 +116,10 @@ class HomeInputHandler(
             actions.moveMediaTileSetupFocus(-1)
             return InputResult.HANDLED
         }
+        if (state.customGrid.isFeatureSetupOpen) {
+            actions.moveFeatureTileSetupFocus(-1)
+            return InputResult.HANDLED
+        }
         if (state.customGrid.pageChooser != null) {
             actions.movePageChooserFocus(-1)
             return InputResult.HANDLED
@@ -149,6 +156,10 @@ class HomeInputHandler(
         if (state.customGrid.mediaTileNotice != null) return InputResult.HANDLED
         if (state.customGrid.isMediaSetupOpen) {
             actions.moveMediaTileSetupFocus(1)
+            return InputResult.HANDLED
+        }
+        if (state.customGrid.isFeatureSetupOpen) {
+            actions.moveFeatureTileSetupFocus(1)
             return InputResult.HANDLED
         }
         if (state.customGrid.pageChooser != null) {
@@ -199,6 +210,7 @@ class HomeInputHandler(
             actions.moveMediaTileSetupSideways(false)
             return InputResult.HANDLED
         }
+        if (state.customGrid.isFeatureSetupOpen) return InputResult.HANDLED
         if (state.showAddToCollectionModal || state.showGameMenu) return InputResult.HANDLED
         if (isCustomGrid(state)) return customMove(GridDirection2D.LEFT)
         if (isGrid(state)) return gridMove(GridDirection.LEFT)
@@ -224,6 +236,7 @@ class HomeInputHandler(
             actions.moveMediaTileSetupSideways(true)
             return InputResult.HANDLED
         }
+        if (state.customGrid.isFeatureSetupOpen) return InputResult.HANDLED
         if (state.showAddToCollectionModal || state.showGameMenu) return InputResult.HANDLED
         if (isCustomGrid(state)) return customMove(GridDirection2D.RIGHT)
         if (isGrid(state)) return gridMove(GridDirection.RIGHT)
@@ -342,6 +355,7 @@ class HomeInputHandler(
         when {
             state.customGrid.pageChooser != null -> actions.confirmPageChooser()
             state.customGrid.isMediaSetupOpen -> actions.confirmMediaTileSetup()
+            state.customGrid.isFeatureSetupOpen -> actions.confirmFeatureTileSetup()
             state.showTilePicker -> actions.confirmTilePickerSelection()
             state.customGrid.showMenu -> actions.confirmTileMenu()
             state.customGrid.isEditing -> {
@@ -388,6 +402,10 @@ class HomeInputHandler(
         }
         if (state.customGrid.mediaTileNotice != null) {
             actions.dismissMediaTileNotice()
+            return InputResult.handled(SoundType.CLOSE_MODAL)
+        }
+        if (state.customGrid.isFeatureSetupOpen) {
+            actions.backFromFeatureTileSetup()
             return InputResult.handled(SoundType.CLOSE_MODAL)
         }
         if (state.customGrid.isMediaSetupOpen) {
@@ -437,7 +455,7 @@ class HomeInputHandler(
 
     override fun onMenu(): InputResult {
         val state = actions.uiState.value
-        if (state.customGrid.mediaSetup != null) return InputResult.HANDLED
+        if (state.customGrid.mediaSetup != null || state.customGrid.featureSetup != null) return InputResult.HANDLED
         if (state.showAddToCollectionModal) {
             actions.dismissAddToCollectionModal()
             return InputResult.UNHANDLED
@@ -460,7 +478,7 @@ class HomeInputHandler(
     override fun onSelect(): InputResult {
         val state = actions.uiState.value
         if (state.showAddToCollectionModal) return InputResult.HANDLED
-        if (state.customGrid.mediaSetup != null) return InputResult.HANDLED
+        if (state.customGrid.mediaSetup != null || state.customGrid.featureSetup != null) return InputResult.HANDLED
         if (state.customGrid.engagedTileId != null) return InputResult.HANDLED
         val dualScreen = com.nendo.argosy.DualScreenManagerHolder.instance
             ?.takeIf { it.isDualScreenDevice.value }
@@ -496,7 +514,7 @@ class HomeInputHandler(
     override fun onLongConfirm(): InputResult {
         val state = actions.uiState.value
         if (isCustomGrid(state)) {
-            if (state.customGrid.mediaSetup != null) return InputResult.HANDLED
+            if (state.customGrid.mediaSetup != null || state.customGrid.featureSetup != null) return InputResult.HANDLED
             if (state.showTilePicker || state.customGrid.showMenu) return InputResult.UNHANDLED
             if (state.customGrid.isEditing) {
                 actions.commitTileEdit()
@@ -525,7 +543,7 @@ class HomeInputHandler(
      */
     override fun onSecondaryAction(): InputResult {
         val state = actions.uiState.value
-        if (state.customGrid.mediaSetup != null) return InputResult.HANDLED
+        if (state.customGrid.mediaSetup != null || state.customGrid.featureSetup != null) return InputResult.HANDLED
         if (state.showTilePicker) {
             actions.toggleTilePickerSearch()
             return InputResult.HANDLED
@@ -558,13 +576,17 @@ class HomeInputHandler(
     }
 
     override fun onPrevTrigger(): InputResult {
-        if (!actions.uiState.value.showTilePicker) return InputResult.UNHANDLED
+        val state = actions.uiState.value
+        if (state.customGrid.mediaSetup != null || state.customGrid.featureSetup != null) return InputResult.HANDLED
+        if (!state.showTilePicker) return InputResult.UNHANDLED
         actions.jumpTilePickerLetter(false)
         return InputResult.handled(SoundType.SECTION_CHANGE)
     }
 
     override fun onNextTrigger(): InputResult {
-        if (!actions.uiState.value.showTilePicker) return InputResult.UNHANDLED
+        val state = actions.uiState.value
+        if (state.customGrid.mediaSetup != null || state.customGrid.featureSetup != null) return InputResult.HANDLED
+        if (!state.showTilePicker) return InputResult.UNHANDLED
         actions.jumpTilePickerLetter(true)
         return InputResult.handled(SoundType.SECTION_CHANGE)
     }
@@ -572,7 +594,7 @@ class HomeInputHandler(
     override fun onPrevSection(): InputResult {
         val state = actions.uiState.value
         if (state.showAddToCollectionModal || state.showGameMenu) return InputResult.HANDLED
-        if (state.customGrid.mediaSetup != null) return InputResult.HANDLED
+        if (state.customGrid.mediaSetup != null || state.customGrid.featureSetup != null) return InputResult.HANDLED
         if (state.showTilePicker) {
             actions.cycleTilePickerCategory(-1)
             return InputResult.handled(SoundType.SECTION_CHANGE)
@@ -588,7 +610,7 @@ class HomeInputHandler(
     override fun onNextSection(): InputResult {
         val state = actions.uiState.value
         if (state.showAddToCollectionModal || state.showGameMenu) return InputResult.HANDLED
-        if (state.customGrid.mediaSetup != null) return InputResult.HANDLED
+        if (state.customGrid.mediaSetup != null || state.customGrid.featureSetup != null) return InputResult.HANDLED
         if (state.showTilePicker) {
             actions.cycleTilePickerCategory(1)
             return InputResult.handled(SoundType.SECTION_CHANGE)
@@ -607,7 +629,7 @@ class HomeInputHandler(
             actions.openEngagedFullscreen()
             return InputResult.HANDLED
         }
-        if (state.customGrid.mediaSetup != null) return InputResult.HANDLED
+        if (state.customGrid.mediaSetup != null || state.customGrid.featureSetup != null) return InputResult.HANDLED
         if (isCustomGrid(state) && state.customGrid.isEditing) {
             actions.toggleTileEditMode()
             return InputResult.handled(SoundType.TOGGLE)

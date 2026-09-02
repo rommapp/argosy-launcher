@@ -272,6 +272,13 @@
     <string name="dual_tile_feature_random">Juego aleatorio</string>
     <string name="dual_tile_feature_continue">Continuar</string>
     <string name="dual_tile_feature_ra">RetroAchievements</string>
+    <string name="dual_tile_feature_random_empty">Ningún juego coincide con los filtros</string>
+    <string name="dual_tile_feature_continue_empty">Aún no has jugado nada</string>
+    <string name="dual_tile_feature_ra_signed_out">Inicia sesión para ver tus logros</string>
+    <string name="dual_tile_feature_ra_no_unlocks">Aún sin logros</string>
+    <string name="dual_tile_feature_ra_latest">Último: %1$s</string>
+    <string name="dual_tile_stat_points">puntos</string>
+    <string name="dual_tile_stat_unlocks">logros</string>
 
     <plurals name="dual_tile_picker_collection_game_count">
         <item quantity="one">%d juego</item>

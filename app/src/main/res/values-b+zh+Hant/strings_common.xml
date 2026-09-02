@@ -320,6 +320,17 @@
     <string name="ui_tile_picker_empty_apps">找不到應用程式</string>
     <string name="ui_tile_picker_empty_media">沒有可加入的作品</string>
     <string name="ui_tile_picker_empty_features">沒有可用的小工具</string>
+    <string name="ui_feature_setup_title">隨機遊戲</string>
+    <string name="ui_feature_setup_step_filters">可從哪些遊戲中選擇</string>
+    <string name="ui_feature_setup_step_platforms">平台</string>
+    <string name="ui_feature_setup_step_genres">類型</string>
+    <string name="ui_feature_setup_downloaded_only">僅已下載的遊戲</string>
+    <string name="ui_feature_setup_never_played">從未玩過</string>
+    <string name="ui_feature_setup_platforms">平台</string>
+    <string name="ui_feature_setup_genres">類型</string>
+    <string name="ui_feature_setup_done">完成</string>
+    <string name="ui_feature_setup_any">不限</string>
+    <string name="ui_feature_setup_selected_count">已選 %1$d 項</string>
     <string name="ui_tile_picker_empty_search">沒有符合搜尋的項目</string>
     <string name="ui_tile_picker_delete_page">刪除頁面</string>
 

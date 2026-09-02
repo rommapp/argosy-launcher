@@ -267,6 +267,13 @@
     <string name="dual_tile_feature_random">Zufälliges Spiel</string>
     <string name="dual_tile_feature_continue">Weiterspielen</string>
     <string name="dual_tile_feature_ra">RetroAchievements</string>
+    <string name="dual_tile_feature_random_empty">Kein Spiel passt zu den Filtern</string>
+    <string name="dual_tile_feature_continue_empty">Noch nichts gespielt</string>
+    <string name="dual_tile_feature_ra_signed_out">Anmelden, um deine Freischaltungen zu sehen</string>
+    <string name="dual_tile_feature_ra_no_unlocks">Noch keine Freischaltungen</string>
+    <string name="dual_tile_feature_ra_latest">Zuletzt: %1$s</string>
+    <string name="dual_tile_stat_points">Punkte</string>
+    <string name="dual_tile_stat_unlocks">Freischaltungen</string>
 
     <plurals name="dual_tile_picker_collection_game_count">
         <item quantity="one">%d Spiel</item>

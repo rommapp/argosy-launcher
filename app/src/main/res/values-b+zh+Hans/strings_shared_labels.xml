@@ -94,6 +94,7 @@
     <string name="custom_tile_menu_action_recurate">更改播放内容</string>
     <string name="custom_tile_menu_action_fit_cover">封面完整显示于格内</string>
     <string name="custom_tile_menu_action_crop_cover">用封面填满格子</string>
+    <string name="custom_tile_menu_action_edit_filters">编辑筛选</string>
     <string name="custom_tile_menu_action_remove">从网格中移除</string>
     <string name="custom_tile_menu_action_start_game_queue">创建游戏队列</string>
     <string name="custom_tile_menu_action_set_focus_game">设为当前游戏</string>

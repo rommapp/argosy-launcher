@@ -231,6 +231,13 @@
     <string name="dual_tile_feature_random">随机游戏</string>
     <string name="dual_tile_feature_continue">继续</string>
     <string name="dual_tile_feature_ra">RetroAchievements</string>
+    <string name="dual_tile_feature_random_empty">没有符合筛选的游戏</string>
+    <string name="dual_tile_feature_continue_empty">还没有玩过任何游戏</string>
+    <string name="dual_tile_feature_ra_signed_out">登录以查看你的解锁</string>
+    <string name="dual_tile_feature_ra_no_unlocks">还没有解锁</string>
+    <string name="dual_tile_feature_ra_latest">最新：%1$s</string>
+    <string name="dual_tile_stat_points">分</string>
+    <string name="dual_tile_stat_unlocks">项解锁</string>
 
     <plurals name="dual_tile_picker_collection_game_count">
         <item quantity="other">%d个游戏</item>

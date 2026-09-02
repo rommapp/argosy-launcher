@@ -1292,6 +1292,15 @@ fun HomeScreen(
             )
         }
 
+        val featureTileSetup = uiState.featureTileSetup
+        if (featureTileSetup != null) {
+            com.nendo.argosy.ui.components.FeatureTileSetupModal(
+                setup = featureTileSetup,
+                onSelect = viewModel::confirmFeatureTileSetupAt,
+                onDismiss = viewModel::backFromFeatureTileSetup
+            )
+        }
+
         val mediaTileNotice = uiState.mediaTileNotice
         if (mediaTileNotice != null) {
             com.nendo.argosy.ui.primitives.ArgosyConfirmModal(

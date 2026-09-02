@@ -267,6 +267,13 @@
     <string name="dual_tile_feature_random">यादृच्छिक गेम</string>
     <string name="dual_tile_feature_continue">जारी रखें</string>
     <string name="dual_tile_feature_ra">RetroAchievements</string>
+    <string name="dual_tile_feature_random_empty">फ़िल्टर से कोई गेम मेल नहीं खाता</string>
+    <string name="dual_tile_feature_continue_empty">अभी तक कुछ नहीं खेला</string>
+    <string name="dual_tile_feature_ra_signed_out">अपने अनलॉक देखने के लिए साइन इन करें</string>
+    <string name="dual_tile_feature_ra_no_unlocks">अभी तक कोई अनलॉक नहीं</string>
+    <string name="dual_tile_feature_ra_latest">नवीनतम: %1$s</string>
+    <string name="dual_tile_stat_points">अंक</string>
+    <string name="dual_tile_stat_unlocks">अनलॉक</string>
 
     <plurals name="dual_tile_picker_collection_game_count">
         <item quantity="one">%d गेम</item>

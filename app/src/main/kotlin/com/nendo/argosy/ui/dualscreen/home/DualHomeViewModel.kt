@@ -299,6 +299,8 @@ data class DualHomeUiState(
     val tileGames: Map<Long, HomeGameUi> = emptyMap(),
     val tileCollections: Map<Long, com.nendo.argosy.ui.components.TileCollectionUi> = emptyMap(),
     val tileApps: Map<String, String> = emptyMap(),
+    val continueGameId: Long? = null,
+    val raTileSummary: com.nendo.argosy.domain.model.RaAccountSummary? = null,
     val currentSectionLabel: String = "",
     val libraryColumns: Int = LIBRARY_GRID_COLUMNS,
     val showFilterOverlay: Boolean = false,
@@ -477,19 +479,7 @@ data class DualHomeUiState(
                 )
             }
             is com.nendo.argosy.domain.model.HomeTileTargetRef.Feature ->
-                com.nendo.argosy.ui.components.CustomGridTileContent(
-                    game = null,
-                    label = context.getString(
-                        when (target.kind) {
-                            com.nendo.argosy.domain.model.FeatureTileKind.RANDOM_GAME ->
-                                R.string.dual_tile_feature_random
-                            com.nendo.argosy.domain.model.FeatureTileKind.CONTINUE ->
-                                R.string.dual_tile_feature_continue
-                            com.nendo.argosy.domain.model.FeatureTileKind.RA_SUMMARY ->
-                                R.string.dual_tile_feature_ra
-                        }
-                    )
-                )
+                featureTileContent(target, context)
             is com.nendo.argosy.domain.model.HomeTileTargetRef.Media,
             is com.nendo.argosy.domain.model.HomeTileTargetRef.LocalMedia,
             com.nendo.argosy.domain.model.HomeTileTargetRef.Unresolvable ->
@@ -499,6 +489,55 @@ data class DualHomeUiState(
                     isMissing = true
                 )
         }
+
+    private fun featureTileContent(
+        target: com.nendo.argosy.domain.model.HomeTileTargetRef.Feature,
+        context: Context
+    ): com.nendo.argosy.ui.components.CustomGridTileContent = when (target.kind) {
+        com.nendo.argosy.domain.model.FeatureTileKind.RANDOM_GAME -> {
+            val game = target.pickedGameId?.let { tileGames[it] }
+            com.nendo.argosy.ui.components.CustomGridTileContent(
+                game = game,
+                label = game?.title ?: context.getString(R.string.dual_tile_feature_random_empty),
+                subtitle = context.getString(R.string.dual_tile_feature_random),
+                stats = game?.let { com.nendo.argosy.ui.components.tileStatsFor(it, context) }.orEmpty()
+            )
+        }
+        com.nendo.argosy.domain.model.FeatureTileKind.CONTINUE -> {
+            val game = continueGameId?.let { tileGames[it] }
+            com.nendo.argosy.ui.components.CustomGridTileContent(
+                game = game,
+                label = game?.title ?: context.getString(R.string.dual_tile_feature_continue_empty),
+                subtitle = context.getString(R.string.dual_tile_feature_continue),
+                stats = game?.let { com.nendo.argosy.ui.components.tileStatsFor(it, context) }.orEmpty()
+            )
+        }
+        com.nendo.argosy.domain.model.FeatureTileKind.RA_SUMMARY -> {
+            val summary = raTileSummary
+            com.nendo.argosy.ui.components.CustomGridTileContent(
+                game = null,
+                label = summary?.username ?: context.getString(R.string.dual_tile_feature_ra),
+                subtitle = when {
+                    summary == null -> context.getString(R.string.dual_tile_feature_ra_signed_out)
+                    summary.latestTitle == null ->
+                        context.getString(R.string.dual_tile_feature_ra_no_unlocks)
+                    else -> context.getString(R.string.dual_tile_feature_ra_latest, summary.latestTitle)
+                },
+                stats = summary?.let {
+                    listOf(
+                        com.nendo.argosy.ui.components.TileStat(
+                            context.getString(R.string.dual_tile_stat_points),
+                            it.points.toString()
+                        ),
+                        com.nendo.argosy.ui.components.TileStat(
+                            context.getString(R.string.dual_tile_stat_unlocks),
+                            it.unlocks.toString()
+                        )
+                    )
+                }.orEmpty()
+            )
+        }
+    }
 }
 
 class DualHomeViewModel(
@@ -521,6 +560,8 @@ class DualHomeViewModel(
     private val getGamesForPinnedCollectionUseCase: GetGamesForPinnedCollectionUseCase? = null,
     private val sessionStateStore: SessionStateStore? = null,
     private val homeTileRepository: com.nendo.argosy.data.repository.HomeTileRepository? = null,
+    private val retroAchievementsRepository:
+        com.nendo.argosy.data.repository.RetroAchievementsRepository? = null,
     private val homeGridPageRepository:
         com.nendo.argosy.data.repository.HomeGridPageRepository? = null,
     private val homeTilePromptQueue: com.nendo.argosy.data.repository.HomeTilePromptQueue? = null,
@@ -647,7 +688,29 @@ class DualHomeViewModel(
                     )
                 }
         com.nendo.argosy.ui.components.TilePickerCategory.MEDIA -> emptyList()
-        com.nendo.argosy.ui.components.TilePickerCategory.FEATURES -> emptyList()
+        com.nendo.argosy.ui.components.TilePickerCategory.FEATURES -> listOf(
+            com.nendo.argosy.ui.components.TilePickerEntry(
+                target = com.nendo.argosy.domain.model.HomeTileTargetRef.Feature(
+                    com.nendo.argosy.domain.model.FeatureTileKind.RANDOM_GAME
+                ),
+                title = context.getString(R.string.tile_picker_feature_random_title),
+                subtitle = context.getString(R.string.tile_picker_feature_random_subtitle)
+            ),
+            com.nendo.argosy.ui.components.TilePickerEntry(
+                target = com.nendo.argosy.domain.model.HomeTileTargetRef.Feature(
+                    com.nendo.argosy.domain.model.FeatureTileKind.CONTINUE
+                ),
+                title = context.getString(R.string.tile_picker_feature_continue_title),
+                subtitle = context.getString(R.string.tile_picker_feature_continue_subtitle)
+            ),
+            com.nendo.argosy.ui.components.TilePickerEntry(
+                target = com.nendo.argosy.domain.model.HomeTileTargetRef.Feature(
+                    com.nendo.argosy.domain.model.FeatureTileKind.RA_SUMMARY
+                ),
+                title = context.getString(R.string.tile_picker_feature_ra_title),
+                subtitle = context.getString(R.string.tile_picker_feature_ra_subtitle)
+            )
+        )
     }
 
     private var latestDownloads: Map<Long, com.nendo.argosy.data.local.entity.DownloadQueueEntity> = emptyMap()
@@ -2095,14 +2158,35 @@ class DualHomeViewModel(
                     }
                 }
                 .collect { rows ->
-                    val gameIds = rows.mapNotNull {
-                        when (val target = it.target) {
-                            is com.nendo.argosy.domain.model.HomeTileTargetRef.Game -> target.gameId
-                            is com.nendo.argosy.domain.model.HomeTileTargetRef.Collection ->
-                                target.focusGameId
-                            else -> null
-                        }
-                    }.distinct()
+                    val features = rows.mapNotNull {
+                        it.target as? com.nendo.argosy.domain.model.HomeTileTargetRef.Feature
+                    }
+                    val continueGameId = if (
+                        features.any { it.kind == com.nendo.argosy.domain.model.FeatureTileKind.CONTINUE }
+                    ) {
+                        gameRepository.getRecentlyPlayed(1).firstOrNull()?.id
+                    } else {
+                        null
+                    }
+                    val raSummary = if (
+                        features.any { it.kind == com.nendo.argosy.domain.model.FeatureTileKind.RA_SUMMARY }
+                    ) {
+                        retroAchievementsRepository?.getAccountSummary()
+                    } else {
+                        null
+                    }
+                    val gameIds = (
+                        rows.mapNotNull {
+                            when (val target = it.target) {
+                                is com.nendo.argosy.domain.model.HomeTileTargetRef.Game -> target.gameId
+                                is com.nendo.argosy.domain.model.HomeTileTargetRef.Collection ->
+                                    target.focusGameId
+                                is com.nendo.argosy.domain.model.HomeTileTargetRef.Feature ->
+                                    target.pickedGameId
+                                else -> null
+                            }
+                        } + listOfNotNull(continueGameId)
+                    ).distinct()
                     val games = if (gameIds.isEmpty()) {
                         emptyMap()
                     } else {
@@ -2146,10 +2230,40 @@ class DualHomeViewModel(
                         it.copy(
                             tileGames = games,
                             tileCollections = collections,
-                            tileApps = apps
+                            tileApps = apps,
+                            continueGameId = continueGameId,
+                            raTileSummary = raSummary
                         )
                     }
+                    ensureRandomPicks(rows, games, tiles)
                 }
+        }
+    }
+
+    private suspend fun ensureRandomPicks(
+        rows: List<com.nendo.argosy.domain.model.HomeTile>,
+        resolved: Map<Long, HomeGameUi>,
+        tiles: com.nendo.argosy.data.repository.HomeTileRepository
+    ) {
+        rows.forEach { tile ->
+            val target = tile.target as? com.nendo.argosy.domain.model.HomeTileTargetRef.Feature
+                ?: return@forEach
+            if (target.kind != com.nendo.argosy.domain.model.FeatureTileKind.RANDOM_GAME) return@forEach
+            if (target.pickedGameId != null && resolved.containsKey(target.pickedGameId)) return@forEach
+            val pick = gameRepository.pickRandomGame(target.filters) ?: return@forEach
+            tiles.updateFeaturePick(tile.id, pick.id)
+        }
+    }
+
+    fun rerollRandomTile() {
+        val tile = customGrid.focusedTile() ?: return
+        val target = tile.target as? com.nendo.argosy.domain.model.HomeTileTargetRef.Feature ?: return
+        if (target.kind != com.nendo.argosy.domain.model.FeatureTileKind.RANDOM_GAME) return
+        val tiles = homeTileRepository ?: return
+        viewModelScope.launch {
+            val pick = gameRepository.pickRandomGame(target.filters, excludeGameId = target.pickedGameId)
+                ?: return@launch
+            tiles.updateFeaturePick(tile.id, pick.id)
         }
     }
 

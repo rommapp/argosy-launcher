@@ -28,6 +28,7 @@ enum class CustomTileMenuAction {
     RECURATE,
     FIT_COVER,
     CROP_COVER,
+    EDIT_FILTERS,
     REMOVE,
     START_GAME_QUEUE,
     SET_FOCUS_GAME,
@@ -43,6 +44,7 @@ enum class CustomTileMenuAction {
             RECURATE -> R.string.custom_tile_menu_action_recurate
             FIT_COVER -> R.string.custom_tile_menu_action_fit_cover
             CROP_COVER -> R.string.custom_tile_menu_action_crop_cover
+            EDIT_FILTERS -> R.string.custom_tile_menu_action_edit_filters
             REMOVE -> R.string.custom_tile_menu_action_remove
             START_GAME_QUEUE -> R.string.custom_tile_menu_action_start_game_queue
             SET_FOCUS_GAME -> R.string.custom_tile_menu_action_set_focus_game
@@ -214,6 +216,7 @@ data class CustomGridState(
     val pendingBackgroundPage: Int? = null,
     val pageChooser: PageChooserState? = null,
     val mediaSetup: MediaTileSetup? = null,
+    val featureSetup: FeatureTileSetup? = null,
     val showFileBrowser: Boolean = false,
     val pendingAdd: TilePickerEntry? = null,
     val pendingAddFocusIndex: Int = 0
@@ -420,6 +423,10 @@ data class CustomGridState(
                         }
                     )
                 }
+                val feature = focused.target as? HomeTileTargetRef.Feature
+                if (feature?.kind == FeatureTileKind.RANDOM_GAME) {
+                    add(CustomTileMenuAction.EDIT_FILTERS)
+                }
                 focusedCollection?.let { collection ->
                     if (collection.focusGameId == null) {
                         add(CustomTileMenuAction.START_GAME_QUEUE)
@@ -457,6 +464,9 @@ data class CustomGridState(
      */
     val isMediaSetupOpen: Boolean
         get() = mediaSetup != null && mediaSetup.notice == null
+
+    val isFeatureSetupOpen: Boolean
+        get() = featureSetup != null
 
     val mediaTileNotice: MediaTileNotice?
         get() = mediaSetup?.notice

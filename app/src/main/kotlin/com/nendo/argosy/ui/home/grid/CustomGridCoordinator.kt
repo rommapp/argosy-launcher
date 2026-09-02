@@ -6,8 +6,10 @@ import com.nendo.argosy.data.repository.HomeTileRepository
 import com.nendo.argosy.domain.model.CustomGridMove
 import com.nendo.argosy.domain.model.GridCell
 import com.nendo.argosy.domain.model.GridDirection2D
+import com.nendo.argosy.domain.model.FeatureTileKind
 import com.nendo.argosy.domain.model.HomeTile
 import com.nendo.argosy.domain.model.TileCoverScale
+import com.nendo.argosy.ui.components.FeatureFilterOptions
 import com.nendo.argosy.domain.model.HomeTileTargetRef
 import com.nendo.argosy.domain.model.TileRect
 import com.nendo.argosy.domain.model.customGridStep
@@ -50,11 +52,26 @@ class CustomGridCoordinator(
     private val onPageAdded: ((Int) -> Unit)? = null,
     private val onPageRemoved: ((Int) -> Unit)? = null,
     private val mediaCatalog: MediaTileCatalog? = null,
+    private val featureFilterOptions: (suspend () -> FeatureFilterOptions)? = null,
     private val read: () -> CustomGridState,
     private val write: ((CustomGridState) -> CustomGridState) -> Unit
 ) {
 
     val state: CustomGridState get() = read()
+
+    private val featureSetupController = FeatureTileSetupController(
+        scope = scope,
+        filterOptions = {
+            featureFilterOptions?.invoke() ?: FeatureFilterOptions(emptyList(), emptyList())
+        },
+        read = read,
+        write = write,
+        onPlace = { target ->
+            placeOnFocusedCell(target)
+            closePicker()
+        },
+        onEdit = { tileId, target -> retargetTile(tileId, target, emptyList()) }
+    )
 
     private val mediaSetupController = MediaTileSetupController(
         context = context,
@@ -249,6 +266,7 @@ class CustomGridCoordinator(
             CustomTileMenuAction.RECURATE -> recurateFocusedTile()
             CustomTileMenuAction.FIT_COVER -> setFocusedCoverScale(TileCoverScale.FIT)
             CustomTileMenuAction.CROP_COVER -> setFocusedCoverScale(TileCoverScale.CROP)
+            CustomTileMenuAction.EDIT_FILTERS -> editFocusedFilters()
             CustomTileMenuAction.REMOVE -> removeFocusedTile()
             CustomTileMenuAction.START_GAME_QUEUE -> startGameQueue()
             CustomTileMenuAction.SET_FOCUS_GAME -> openPageChooser(PageChooserKind.FOCUS_GAME)
@@ -722,6 +740,11 @@ class CustomGridCoordinator(
             }
             return
         }
+        val feature = entry.target as? HomeTileTargetRef.Feature
+        if (feature?.kind == FeatureTileKind.RANDOM_GAME && featureFilterOptions != null) {
+            featureSetupController.begin()
+            return
+        }
         placeOnFocusedCell(entry.target)
         closePicker()
     }
@@ -1071,6 +1094,22 @@ class CustomGridCoordinator(
         if (mediaSetupController.back()) return true
         mediaSetupController.close()
         return true
+    }
+
+    fun moveFeatureSetupFocus(delta: Int) = featureSetupController.moveFocus(delta)
+
+    fun confirmFeatureSetup(index: Int? = null) = featureSetupController.confirm(index)
+
+    fun backFromFeatureSetup(): Boolean {
+        if (read().featureSetup == null) return false
+        if (featureSetupController.back()) return true
+        featureSetupController.close()
+        return true
+    }
+
+    fun editFocusedFilters() {
+        val tile = read().focusedTile ?: return
+        featureSetupController.begin(tile)
     }
 
     fun confirmMediaTileNotice() = mediaSetupController.confirmNotice()

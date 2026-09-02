@@ -609,6 +609,9 @@ data class HomeUiState(
 
     val showMediaTileSetup: Boolean get() = customGrid.isMediaSetupOpen
 
+    val featureTileSetup: com.nendo.argosy.ui.components.FeatureTileSetup?
+        get() = customGrid.featureSetup
+
     val showTileFileBrowser: Boolean get() = customGrid.showFileBrowser
 
     fun tilesOnPage(pageIndex: Int): List<com.nendo.argosy.domain.model.HomeTile> =

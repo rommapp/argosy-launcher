@@ -94,6 +94,7 @@
     <string name="custom_tile_menu_action_recurate">Cambiar lo que reproduce</string>
     <string name="custom_tile_menu_action_fit_cover">Ajustar la carátula a la celda</string>
     <string name="custom_tile_menu_action_crop_cover">Rellenar la celda con la carátula</string>
+    <string name="custom_tile_menu_action_edit_filters">Editar filtros</string>
     <string name="custom_tile_menu_action_remove">Quitar de la cuadrícula</string>
     <string name="custom_tile_menu_action_start_game_queue">Crear cola de juegos</string>
     <string name="custom_tile_menu_action_set_focus_game">Definir el juego activo</string>

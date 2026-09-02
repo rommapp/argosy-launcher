@@ -349,6 +349,17 @@
     <string name="ui_tile_picker_empty_apps">Приложения не найдены</string>
     <string name="ui_tile_picker_empty_media">Нет доступных названий для добавления</string>
     <string name="ui_tile_picker_empty_features">Нет доступных виджетов</string>
+    <string name="ui_feature_setup_title">Случайная игра</string>
+    <string name="ui_feature_setup_step_filters">Из чего выбирать</string>
+    <string name="ui_feature_setup_step_platforms">Платформы</string>
+    <string name="ui_feature_setup_step_genres">Жанры</string>
+    <string name="ui_feature_setup_downloaded_only">Только загруженные игры</string>
+    <string name="ui_feature_setup_never_played">Ни разу не сыгранные</string>
+    <string name="ui_feature_setup_platforms">Платформы</string>
+    <string name="ui_feature_setup_genres">Жанры</string>
+    <string name="ui_feature_setup_done">Готово</string>
+    <string name="ui_feature_setup_any">Любые</string>
+    <string name="ui_feature_setup_selected_count">Выбрано: %1$d</string>
     <string name="ui_tile_picker_empty_search">По этому запросу ничего не найдено</string>
     <string name="ui_tile_picker_delete_page">Удалить страницу</string>
 

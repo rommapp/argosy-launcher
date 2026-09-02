@@ -538,6 +538,14 @@
     <string name="dual_tile_feature_random">Random game</string>
     <string name="dual_tile_feature_continue">Continue</string>
     <string name="dual_tile_feature_ra">RetroAchievements</string>
+    <string name="dual_tile_feature_random_empty">No game matches the filters</string>
+    <string name="dual_tile_feature_continue_empty">Nothing played yet</string>
+    <string name="dual_tile_feature_ra_signed_out">Sign in to see your unlocks</string>
+    <string name="dual_tile_feature_ra_no_unlocks">No unlocks yet</string>
+    <!-- %1$s is the title of the most recently unlocked achievement. -->
+    <string name="dual_tile_feature_ra_latest">Latest: %1$s</string>
+    <string name="dual_tile_stat_points">points</string>
+    <string name="dual_tile_stat_unlocks">unlocks</string>
 
     <!-- Second line under a collection in the tile picker, saying how many games it holds. -->
     <plurals name="dual_tile_picker_collection_game_count">

@@ -139,6 +139,10 @@
     <string name="dual_showcase_stat_last_played_never">Никогда</string>
     <string name="dual_showcase_stat_status_label">Статус</string>
     <string name="dual_showcase_stat_status_none">Нет</string>
+    <string name="dual_showcase_stat_main_story_label">Основной сюжет</string>
+    <string name="dual_showcase_stat_main_extras_label">Сюжет + доп. контент</string>
+    <string name="dual_showcase_stat_completionist_label">Полное прохождение</string>
+    <string name="dual_detail_estimated_time_label">Примерное время</string>
 
     <string name="dual_showcase_last_played_today">Сегодня</string>
     <string name="dual_showcase_last_played_yesterday">Вчера</string>

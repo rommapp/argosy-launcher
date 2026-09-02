@@ -88,7 +88,10 @@ data class HomeGameUi(
     val isPlayable: Boolean = isDownloaded,
     val description: String? = null,
     val status: String? = null,
-    val titleId: String? = null
+    val titleId: String? = null,
+    val timeToBeatMainSec: Int? = null,
+    val timeToBeatExtraSec: Int? = null,
+    val timeToBeatCompletionistSec: Int? = null
 )
 
 /**

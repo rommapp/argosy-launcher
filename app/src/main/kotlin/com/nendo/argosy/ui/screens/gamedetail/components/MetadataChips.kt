@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.ThumbDown
 import androidx.compose.material.icons.filled.ThumbUp
@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.R
 import com.nendo.argosy.data.social.GameReview
@@ -33,25 +34,27 @@ import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.common.labelRes
 
 @Composable
-fun MetadataChip(label: String, value: String) {
+fun MetadataChip(label: String, value: String, modifier: Modifier = Modifier) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
+        modifier = modifier
             .background(
                 MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
-                RoundedCornerShape(Dimens.radiusMd)
+                RoundedCornerShape(Dimens.radiusSm)
             )
-            .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm)
+            .padding(horizontal = Dimens.radiusLg, vertical = Dimens.radiusSm)
     ) {
         Text(
             text = value,
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface
         )
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
@@ -61,11 +64,12 @@ fun RatingChip(
     label: String,
     value: Int,
     icon: ImageVector,
-    iconColor: Color
+    iconColor: Color,
+    modifier: Modifier = Modifier
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
+        modifier = modifier
             .background(
                 MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
                 RoundedCornerShape(Dimens.radiusSm)
@@ -104,7 +108,9 @@ fun RatingChip(
                 MaterialTheme.colorScheme.onSurfaceVariant
             } else {
                 MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
-            }
+            },
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
@@ -199,10 +205,10 @@ fun MyReviewChip(review: GameReview?) {
 }
 
 @Composable
-fun CommunityRatingChip(rating: Float) {
+fun CommunityRatingChip(rating: Float, modifier: Modifier = Modifier) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
+        modifier = modifier
             .background(
                 MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
                 RoundedCornerShape(Dimens.radiusSm)
@@ -214,7 +220,7 @@ fun CommunityRatingChip(rating: Float) {
             horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
         ) {
             Icon(
-                imageVector = Icons.Default.People,
+                imageVector = Icons.Default.Public,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(Dimens.iconXs)
@@ -231,7 +237,9 @@ fun CommunityRatingChip(rating: Float) {
         Text(
             text = stringResource(R.string.gamedetail_chip_community_rating_label),
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }

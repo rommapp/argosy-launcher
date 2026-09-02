@@ -79,9 +79,9 @@
     <string name="gamedetail_chip_main_story_label">主线剧情</string>
     <string name="gamedetail_chip_main_extras_label">主线+支线</string>
     <string name="gamedetail_chip_completionist_label">全收集</string>
-    <string name="gamedetail_chip_my_rating_label">我的评分</string>
+    <string name="gamedetail_chip_my_rating_label">评分</string>
     <string name="gamedetail_chip_difficulty_label">难度</string>
-    <string name="gamedetail_chip_community_rating_label">评分</string>
+    <string name="gamedetail_chip_community_rating_label">社区</string>
     <string name="gamedetail_chip_play_time_label">游戏时长</string>
 
     <string name="gamedetail_chip_rating_value">%1$d/10</string>

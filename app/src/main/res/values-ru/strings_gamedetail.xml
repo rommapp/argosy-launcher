@@ -80,9 +80,9 @@
     <string name="gamedetail_chip_main_story_label">Основной сюжет</string>
     <string name="gamedetail_chip_main_extras_label">Сюжет + доп. контент</string>
     <string name="gamedetail_chip_completionist_label">Полное прохождение</string>
-    <string name="gamedetail_chip_my_rating_label">Моя оценка</string>
+    <string name="gamedetail_chip_my_rating_label">Оценка</string>
     <string name="gamedetail_chip_difficulty_label">Сложность</string>
-    <string name="gamedetail_chip_community_rating_label">Рейтинг</string>
+    <string name="gamedetail_chip_community_rating_label">Сообщество</string>
     <string name="gamedetail_chip_play_time_label">Время в игре</string>
 
     <string name="gamedetail_chip_rating_value">%1$d/10</string>

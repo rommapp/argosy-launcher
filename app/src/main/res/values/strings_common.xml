@@ -1506,6 +1506,10 @@
     <string name="util_formatters_playtime_hours_minutes">%1$dh %2$dm</string>
     <string name="util_formatters_playtime_hours">%1$dh</string>
 
+    <string name="util_formatters_time_to_beat_minutes">%1$dm</string>
+    <string name="util_formatters_time_to_beat_hours">%1$dh</string>
+    <string name="util_formatters_time_to_beat_half_hours">%1$d.5h</string>
+
     <!-- Play time on a curated home-grid tile (ui/components/HomeCustomGrid.kt). Same
          phrasing as util_formatters_playtime_* above, a different usage site and so its own
          keys rather than a shared one. -->

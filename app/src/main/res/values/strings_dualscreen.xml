@@ -321,6 +321,10 @@
     <!-- That figure's value when the user has set no status. Pronoun standing for the absent
          value, not the number zero. -->
     <string name="dual_showcase_stat_status_none">None</string>
+    <string name="dual_showcase_stat_main_story_label">Main Story</string>
+    <string name="dual_showcase_stat_main_extras_label">Main + Extras</string>
+    <string name="dual_showcase_stat_completionist_label">Completionist</string>
+    <string name="dual_detail_estimated_time_label">Estimated Time</string>
 
     <!-- Last-played value for a game started earlier the same day. Adverb. -->
     <string name="dual_showcase_last_played_today">Today</string>

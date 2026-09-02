@@ -48,10 +48,11 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.InstallMobile
-import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material3.Icon
@@ -161,6 +162,7 @@ import com.nendo.argosy.ui.theme.LocalUiScale
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.theme.generated.ColorTokens
+import com.nendo.argosy.util.formatTimeToBeat
 import kotlinx.coroutines.launch
 
 @Composable
@@ -1133,6 +1135,7 @@ fun HomeScreen(
                 userDifficulty = uiState.focusedGame?.userDifficulty ?: 0,
                 achievementCount = uiState.focusedGame?.achievementCount ?: 0,
                 earnedAchievementCount = uiState.focusedGame?.earnedAchievementCount ?: 0,
+                timeToBeatMainSec = uiState.focusedGame?.timeToBeatMainSec,
                 showMetadata = !uiState.isVideoPreviewActive,
                 textColorOverride = if (videoTextColor != Color.Unspecified) videoTextColor else null,
                 placement = if (
@@ -1628,6 +1631,7 @@ private fun GameInfo(
     userDifficulty: Int,
     achievementCount: Int,
     earnedAchievementCount: Int,
+    timeToBeatMainSec: Int? = null,
     showMetadata: Boolean = true,
     textColorOverride: Color? = null,
     placement: GameInfoPlacement = GameInfoPlacement.SPLIT,
@@ -1669,7 +1673,8 @@ private fun GameInfo(
             }
         }
     ) {
-        val hasBadges = rating != null || userRating > 0 || userDifficulty > 0 || achievementCount > 0
+        val timeToBeat = formatTimeToBeat(LocalContext.current, timeToBeatMainSec)
+        val hasBadges = rating != null || userRating > 0 || userDifficulty > 0 || achievementCount > 0 || timeToBeat != null
         if (hasBadges) {
             if (!isSplit) Spacer(modifier = Modifier.height(Dimens.spacingXs))
             Row(
@@ -1683,7 +1688,7 @@ private fun GameInfo(
                         horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.People,
+                            imageVector = Icons.Default.Public,
                             contentDescription = null,
                             tint = textColorOverride ?: MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(Dimens.iconXs)
@@ -1744,6 +1749,24 @@ private fun GameInfo(
                         )
                         Text(
                             text = "$earnedAchievementCount/$achievementCount",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = subtitleColor
+                        )
+                    }
+                }
+                if (timeToBeat != null) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Schedule,
+                            contentDescription = null,
+                            tint = textColorOverride ?: subtitleColor,
+                            modifier = Modifier.size(Dimens.iconXs)
+                        )
+                        Text(
+                            text = timeToBeat,
                             style = MaterialTheme.typography.labelMedium,
                             color = subtitleColor
                         )

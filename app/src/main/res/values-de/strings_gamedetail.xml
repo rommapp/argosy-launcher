@@ -88,9 +88,9 @@
     <string name="gamedetail_chip_main_story_label">Hauptgeschichte</string>
     <string name="gamedetail_chip_main_extras_label">Hauptgeschichte + Extras</string>
     <string name="gamedetail_chip_completionist_label">Komplettierung</string>
-    <string name="gamedetail_chip_my_rating_label">Meine Bewertung</string>
+    <string name="gamedetail_chip_my_rating_label">Bewertung</string>
     <string name="gamedetail_chip_difficulty_label">Schwierigkeit</string>
-    <string name="gamedetail_chip_community_rating_label">Bewertung</string>
+    <string name="gamedetail_chip_community_rating_label">Community</string>
     <string name="gamedetail_chip_play_time_label">Spielzeit</string>
 
     <string name="gamedetail_chip_rating_value">%1$d/10</string>

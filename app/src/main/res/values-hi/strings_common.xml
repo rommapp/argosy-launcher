@@ -772,6 +772,9 @@
     <string name="util_formatters_playtime_minutes">%1$dm</string>
     <string name="util_formatters_playtime_hours_minutes">%1$dh %2$dm</string>
     <string name="util_formatters_playtime_hours">%1$dh</string>
+    <string name="util_formatters_time_to_beat_minutes">%1$dm</string>
+    <string name="util_formatters_time_to_beat_hours">%1$dh</string>
+    <string name="util_formatters_time_to_beat_half_hours">%1$d.5h</string>
 
     <string name="common_homegrid_playtime_hours_minutes">%1$dh %2$dm</string>
     <string name="common_homegrid_playtime_minutes">%1$dm</string>

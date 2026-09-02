@@ -69,6 +69,7 @@ import com.nendo.argosy.ui.dualscreen.ShowcaseAmbience
 import com.nendo.argosy.ui.dualscreen.ShowcaseEyebrow
 import com.nendo.argosy.ui.dualscreen.ShowcaseRatingsCluster
 import com.nendo.argosy.ui.dualscreen.ShowcaseStatsRow
+import com.nendo.argosy.ui.dualscreen.ShowcaseTimeToBeatRow
 import com.nendo.argosy.ui.primitives.ActionButton
 import com.nendo.argosy.ui.primitives.GlassPanel
 import com.nendo.argosy.ui.primitives.RowButton
@@ -501,7 +502,14 @@ private fun GameInfoDisplay(
                 ShowcaseStatsRow(
                     playTimeMinutes = state.playTimeMinutes,
                     lastPlayedAt = state.lastPlayedAt,
-                    status = state.status
+                    status = state.status,
+                    valueStyle = MaterialTheme.typography.titleMedium
+                )
+                ShowcaseTimeToBeatRow(
+                    mainSeconds = state.timeToBeatMainSec,
+                    extraSeconds = state.timeToBeatExtraSec,
+                    completionistSeconds = state.timeToBeatCompletionistSec,
+                    modifier = Modifier.padding(top = Dimens.spacingMd)
                 )
             }
         }

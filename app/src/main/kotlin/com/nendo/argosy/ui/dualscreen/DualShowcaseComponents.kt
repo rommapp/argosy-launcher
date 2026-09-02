@@ -7,13 +7,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material3.Icon
@@ -28,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -43,6 +43,7 @@ import com.nendo.argosy.ui.theme.LocalUiScale
 import com.nendo.argosy.ui.theme.backdrop.BackdropRole
 import com.nendo.argosy.ui.theme.backdrop.surfaceBackdrop
 import com.nendo.argosy.util.formatPlayTime
+import com.nendo.argosy.util.formatTimeToBeat
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import androidx.compose.ui.res.pluralStringResource
@@ -129,40 +130,44 @@ fun ShowcaseEyebrow(
 fun ShowcaseRatingsCluster(
     communityRating: Float?,
     userRating: Int,
-    userDifficulty: Int
+    userDifficulty: Int,
+    timeToBeatMainSec: Int? = null
 ) {
-    val hasAnyRating = communityRating != null || userRating > 0 || userDifficulty > 0
+    val theme = LocalArgosyTheme.current
+    val timeToBeat = formatTimeToBeat(LocalContext.current, timeToBeatMainSec)
+    val hasAnyRating = communityRating != null || userRating > 0 || userDifficulty > 0 || timeToBeat != null
     if (!hasAnyRating) return
 
     Row(
-        horizontalArrangement = Arrangement.Center,
+        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingLg),
         verticalAlignment = Alignment.CenterVertically
     ) {
         communityRating?.let { rating ->
             ShowcaseRatingItem(
-                icon = Icons.Default.People,
+                icon = Icons.Default.Public,
                 value = "${rating.toInt()}",
-                iconColor = LocalArgosyTheme.current.focusAccent
+                iconColor = theme.focusAccent
             )
-            Spacer(modifier = Modifier.width(Dimens.spacingLg))
         }
-
         if (userRating > 0) {
             ShowcaseRatingItem(
                 icon = Icons.Default.Star,
                 value = "$userRating",
                 iconColor = ALauncherColors.StarGold
             )
-            if (userDifficulty > 0) {
-                Spacer(modifier = Modifier.width(Dimens.spacingLg))
-            }
         }
-
         if (userDifficulty > 0) {
             ShowcaseRatingItem(
                 icon = Icons.Default.Whatshot,
                 value = "$userDifficulty",
                 iconColor = ALauncherColors.DifficultyRed
+            )
+        }
+        timeToBeat?.let { estimate ->
+            ShowcaseRatingItem(
+                icon = Icons.Default.Schedule,
+                value = estimate,
+                iconColor = theme.textMute
             )
         }
     }
@@ -208,7 +213,8 @@ private fun ShowcaseRatingItem(
 fun ShowcaseStatsRow(
     playTimeMinutes: Int,
     lastPlayedAt: Long,
-    status: String?
+    status: String?,
+    valueStyle: TextStyle = MaterialTheme.typography.titleLarge
 ) {
     val theme = LocalArgosyTheme.current
     val isWideDisplay = LocalUiScale.current.aspectRatioClass.let {
@@ -221,7 +227,8 @@ fun ShowcaseStatsRow(
             label = stringResource(R.string.dual_showcase_stat_play_time_label),
             value = formatPlayTime(context, playTimeMinutes),
             valueColor = theme.textPrimary,
-            modifier = slot
+            modifier = slot,
+            valueStyle = valueStyle
         )
     }
     val lastPlayed: @Composable (Modifier) -> Unit = { slot ->
@@ -233,7 +240,8 @@ fun ShowcaseStatsRow(
                 stringResource(R.string.dual_showcase_stat_last_played_never)
             },
             valueColor = theme.textPrimary,
-            modifier = slot
+            modifier = slot,
+            valueStyle = valueStyle
         )
     }
     val completion: @Composable (Modifier) -> Unit = { slot ->
@@ -245,7 +253,8 @@ fun ShowcaseStatsRow(
                     ?: raw.replace('_', ' ').replaceFirstChar { it.uppercase() }
             } ?: stringResource(R.string.dual_showcase_stat_status_none),
             valueColor = if (status != null) theme.focusAccent else theme.textMute,
-            modifier = slot
+            modifier = slot,
+            valueStyle = valueStyle
         )
     }
 
@@ -277,11 +286,54 @@ fun ShowcaseStatsRow(
 }
 
 @Composable
+fun ShowcaseTimeToBeatRow(
+    mainSeconds: Int?,
+    extraSeconds: Int?,
+    completionistSeconds: Int?,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val estimates = listOf(
+        R.string.dual_showcase_stat_main_story_label to formatTimeToBeat(context, mainSeconds),
+        R.string.dual_showcase_stat_main_extras_label to formatTimeToBeat(context, extraSeconds),
+        R.string.dual_showcase_stat_completionist_label to formatTimeToBeat(context, completionistSeconds)
+    ).mapNotNull { (labelRes, value) -> value?.let { labelRes to it } }
+    if (estimates.isEmpty()) return
+
+    val theme = LocalArgosyTheme.current
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+    ) {
+        Text(
+            text = stringResource(R.string.dual_detail_estimated_time_label).uppercase(),
+            style = MaterialTheme.typography.labelSmall.copy(letterSpacing = 1.5.sp),
+            color = theme.textMute
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
+        ) {
+            estimates.forEach { (labelRes, value) ->
+                ShowcaseStatCell(
+                    label = stringResource(labelRes),
+                    value = value,
+                    valueColor = theme.textDim,
+                    valueStyle = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun ShowcaseStatCell(
     label: String,
     value: String,
     valueColor: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    valueStyle: TextStyle = MaterialTheme.typography.titleLarge
 ) {
     val theme = LocalArgosyTheme.current
     Column(modifier = modifier) {
@@ -294,7 +346,7 @@ private fun ShowcaseStatCell(
         )
         Text(
             text = value,
-            style = MaterialTheme.typography.titleLarge,
+            style = valueStyle,
             color = valueColor,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis

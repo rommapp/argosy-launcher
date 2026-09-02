@@ -151,6 +151,10 @@
     <string name="dual_showcase_stat_last_played_never">Nie</string>
     <string name="dual_showcase_stat_status_label">Status</string>
     <string name="dual_showcase_stat_status_none">Keiner</string>
+    <string name="dual_showcase_stat_main_story_label">Hauptgeschichte</string>
+    <string name="dual_showcase_stat_main_extras_label">Hauptgeschichte + Extras</string>
+    <string name="dual_showcase_stat_completionist_label">Komplettierung</string>
+    <string name="dual_detail_estimated_time_label">Geschätzte Zeit</string>
 
     <string name="dual_showcase_last_played_today">Heute</string>
     <string name="dual_showcase_last_played_yesterday">Gestern</string>

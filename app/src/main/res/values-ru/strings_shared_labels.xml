@@ -92,6 +92,8 @@
 
     <string name="custom_tile_menu_action_arrange">Переместить или изменить размер</string>
     <string name="custom_tile_menu_action_recurate">Изменить, что играет</string>
+    <string name="custom_tile_menu_action_fit_cover">Вписать обложку в ячейку</string>
+    <string name="custom_tile_menu_action_crop_cover">Заполнить ячейку обложкой</string>
     <string name="custom_tile_menu_action_remove">Убрать из сетки</string>
     <string name="custom_tile_menu_action_start_game_queue">Создать очередь игр</string>
     <string name="custom_tile_menu_action_set_focus_game">Задать активную игру</string>

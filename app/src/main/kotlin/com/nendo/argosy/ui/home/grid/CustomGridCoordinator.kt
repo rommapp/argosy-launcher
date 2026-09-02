@@ -7,6 +7,7 @@ import com.nendo.argosy.domain.model.CustomGridMove
 import com.nendo.argosy.domain.model.GridCell
 import com.nendo.argosy.domain.model.GridDirection2D
 import com.nendo.argosy.domain.model.HomeTile
+import com.nendo.argosy.domain.model.TileCoverScale
 import com.nendo.argosy.domain.model.HomeTileTargetRef
 import com.nendo.argosy.domain.model.TileRect
 import com.nendo.argosy.domain.model.customGridStep
@@ -246,6 +247,8 @@ class CustomGridCoordinator(
         when (action) {
             CustomTileMenuAction.ARRANGE -> enterMoveMode()
             CustomTileMenuAction.RECURATE -> recurateFocusedTile()
+            CustomTileMenuAction.FIT_COVER -> setFocusedCoverScale(TileCoverScale.FIT)
+            CustomTileMenuAction.CROP_COVER -> setFocusedCoverScale(TileCoverScale.CROP)
             CustomTileMenuAction.REMOVE -> removeFocusedTile()
             CustomTileMenuAction.START_GAME_QUEUE -> startGameQueue()
             CustomTileMenuAction.SET_FOCUS_GAME -> openPageChooser(PageChooserKind.FOCUS_GAME)
@@ -481,6 +484,12 @@ class CustomGridCoordinator(
         val tile = read().focusedTile ?: return
         val tiles = repository ?: return
         scope.launch { tiles.remove(tile.id) }
+    }
+
+    private fun setFocusedCoverScale(scale: TileCoverScale) {
+        val tile = read().focusedTile ?: return
+        val tiles = repository ?: return
+        scope.launch { tiles.setCoverScale(tile.id, scale) }
     }
 
     /**

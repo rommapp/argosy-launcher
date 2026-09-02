@@ -3525,3 +3525,13 @@ object Migration_180_181 : Migration(180, 181) {
         )
     }
 }
+
+/**
+ * Adds `home_tiles.coverScale`, how one tile draws its cover inside its cell. Null keeps the
+ * existing behaviour, a cover cropped to fill the cell, so no row changes on upgrade.
+ */
+object Migration_181_182 : Migration(181, 182) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `home_tiles` ADD COLUMN `coverScale` TEXT")
+    }
+}

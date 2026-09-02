@@ -89,6 +89,21 @@ fun minimumSpanFor(target: HomeTileTargetRef): Int = when (target) {
 }
 
 /**
+ * How a tile draws its cover inside its cell. [CROP] fills the cell and loses the edges of art
+ * whose shape differs from the cell; [FIT] keeps the whole cover and leaves the cell showing
+ * around it. Chosen per tile, because the same page holds art of several shapes.
+ */
+enum class TileCoverScale {
+    CROP,
+    FIT;
+
+    companion object {
+        fun fromString(value: String?): TileCoverScale =
+            entries.find { it.name == value } ?: CROP
+    }
+}
+
+/**
  * [playlist] is the run a media tile was told to play, in the order it was chosen. It is empty for
  * every other kind and for every play mode that works the run out rather than being handed one.
  */
@@ -97,7 +112,8 @@ data class HomeTile(
     val pageIndex: Int,
     val rect: TileRect,
     val target: HomeTileTargetRef,
-    val playlist: List<String> = emptyList()
+    val playlist: List<String> = emptyList(),
+    val coverScale: TileCoverScale = TileCoverScale.CROP
 ) {
     val minSpan: Int get() = minimumSpanFor(target)
 }

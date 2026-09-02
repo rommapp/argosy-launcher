@@ -8,12 +8,15 @@ import com.nendo.argosy.data.repository.HomeTileRepository
 import com.nendo.argosy.domain.model.GridCell
 import com.nendo.argosy.domain.model.HomeTile
 import com.nendo.argosy.domain.model.HomeTileTargetRef
+import com.nendo.argosy.domain.model.TileCoverScale
 import com.nendo.argosy.domain.model.TileRect
 import com.nendo.argosy.domain.model.fitTilesToPage
 
 enum class CustomTileMenuAction {
     ARRANGE,
     RECURATE,
+    FIT_COVER,
+    CROP_COVER,
     REMOVE,
     START_GAME_QUEUE,
     SET_FOCUS_GAME,
@@ -27,6 +30,8 @@ enum class CustomTileMenuAction {
         get() = when (this) {
             ARRANGE -> R.string.custom_tile_menu_action_arrange
             RECURATE -> R.string.custom_tile_menu_action_recurate
+            FIT_COVER -> R.string.custom_tile_menu_action_fit_cover
+            CROP_COVER -> R.string.custom_tile_menu_action_crop_cover
             REMOVE -> R.string.custom_tile_menu_action_remove
             START_GAME_QUEUE -> R.string.custom_tile_menu_action_start_game_queue
             SET_FOCUS_GAME -> R.string.custom_tile_menu_action_set_focus_game
@@ -387,9 +392,19 @@ data class CustomGridState(
      */
     val menuActions: List<CustomTileMenuAction>
         get() = buildList {
-            if (focusedTile != null) {
+            val focused = focusedTile
+            if (focused != null) {
                 add(CustomTileMenuAction.ARRANGE)
                 if (isFocusedTileCurated) add(CustomTileMenuAction.RECURATE)
+                if (focused.target is HomeTileTargetRef.Game) {
+                    add(
+                        if (focused.coverScale == TileCoverScale.FIT) {
+                            CustomTileMenuAction.CROP_COVER
+                        } else {
+                            CustomTileMenuAction.FIT_COVER
+                        }
+                    )
+                }
                 focusedCollection?.let { collection ->
                     if (collection.focusGameId == null) {
                         add(CustomTileMenuAction.START_GAME_QUEUE)

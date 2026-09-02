@@ -7,6 +7,7 @@ import com.nendo.argosy.data.local.entity.HomeTileTarget
 import com.nendo.argosy.data.local.entity.MediaTilePlayMode
 import com.nendo.argosy.domain.model.HomeTile
 import com.nendo.argosy.domain.model.HomeTileTargetRef
+import com.nendo.argosy.domain.model.TileCoverScale
 import com.nendo.argosy.domain.model.TileRect
 import com.nendo.argosy.domain.model.minimumSpanFor
 import kotlinx.coroutines.flow.Flow
@@ -73,8 +74,13 @@ class HomeTileRepository @Inject constructor(
         pageIndex: Int = tile.pageIndex
     ) {
         homeTileDao.update(
-            entityFor(ownerUserId, pageIndex, rect, tile.target).copy(id = tile.id)
+            entityFor(ownerUserId, pageIndex, rect, tile.target, tile.coverScale).copy(id = tile.id)
         )
+    }
+
+    suspend fun setCoverScale(tileId: Long, scale: TileCoverScale) {
+        val row = homeTileDao.getById(tileId) ?: return
+        homeTileDao.update(row.copy(coverScale = scale.name))
     }
 
     /**
@@ -82,7 +88,7 @@ class HomeTileRepository @Inject constructor(
      */
     suspend fun retarget(tile: HomeTile, ownerUserId: Long?, target: HomeTileTargetRef, playlist: List<String>) {
         homeTileDao.update(
-            entityFor(ownerUserId, tile.pageIndex, tile.rect, target).copy(id = tile.id)
+            entityFor(ownerUserId, tile.pageIndex, tile.rect, target, tile.coverScale).copy(id = tile.id)
         )
         homeTileDao.replaceEpisodes(
             tile.id,
@@ -155,12 +161,14 @@ class HomeTileRepository @Inject constructor(
         ownerUserId: Long?,
         pageIndex: Int,
         rect: TileRect,
-        target: HomeTileTargetRef
+        target: HomeTileTargetRef,
+        coverScale: TileCoverScale = TileCoverScale.CROP
     ): HomeTileEntity {
         val sized = rect.atLeast(minimumSpanFor(target))
         val base = HomeTileEntity(
             ownerUserId = ownerUserId,
             pageIndex = pageIndex,
+            coverScale = coverScale.name,
             columnIndex = sized.columnIndex,
             rowIndex = sized.rowIndex,
             columnSpan = sized.columnSpan,
@@ -207,7 +215,8 @@ private fun HomeTileEntity.toDomain(playlist: List<String>): HomeTile = HomeTile
     pageIndex = pageIndex,
     rect = TileRect(columnIndex, rowIndex, columnSpan, rowSpan),
     target = resolveTarget(),
-    playlist = playlist
+    playlist = playlist,
+    coverScale = TileCoverScale.fromString(coverScale)
 )
 
 /**

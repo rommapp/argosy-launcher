@@ -56,6 +56,7 @@ data class HomeTileEntity(
     val pageIndex: Int,
     val pageId: Long? = null,
     val artStyle: String? = null,
+    val coverScale: String? = null,
     val columnIndex: Int,
     val rowIndex: Int,
     val columnSpan: Int = 1,

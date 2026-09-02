@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import com.nendo.argosy.R
 import com.nendo.argosy.domain.model.GridCell
 import com.nendo.argosy.domain.model.HomeTile
+import com.nendo.argosy.domain.model.TileCoverScale
 import com.nendo.argosy.domain.model.TileRect
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
@@ -262,6 +263,7 @@ fun HomeCustomGridPage(
                     }
                 },
                 content = contentFor(tile),
+                coverScale = tile.coverScale,
                 editModeLabel = editModeLabel.takeIf { tile.id == editingTileId },
                 isOverlapped = tile.id in overlappedTileIds,
                 dragOffset = if (tile.id == editingTileId) dragOffset else
@@ -314,6 +316,7 @@ private fun CustomGridCellBox(
     onClick: () -> Unit,
     onLongClick: (() -> Unit)?,
     content: CustomGridTileContent?,
+    coverScale: TileCoverScale = TileCoverScale.CROP,
     dragOffset: androidx.compose.ui.geometry.Offset = androidx.compose.ui.geometry.Offset.Zero,
     editModeLabel: String?,
     isOverlapped: Boolean,
@@ -388,6 +391,7 @@ private fun CustomGridCellBox(
         WideTileBox(
             placement = placement,
             content = content,
+            coverScale = coverScale,
             isFocused = isFocused,
             isOverlapped = isOverlapped,
             focusScale = focusScaleForSpan(rect),
@@ -436,7 +440,8 @@ private fun CustomGridCellBox(
     if (game != null) {
         val boxArtStyle = com.nendo.argosy.ui.theme.LocalBoxArtStyle.current
         val tileRatio = width / height
-        val artRatio = if (boxArtStyle.nativeAspectRatio) {
+        val keepsWholeCover = boxArtStyle.nativeAspectRatio || coverScale == TileCoverScale.FIT
+        val artRatio = if (keepsWholeCover) {
             game.coverAspectRatio
                 ?: com.nendo.argosy.ui.common.rememberCoverAspectRatio(
                     game.coverPath,
@@ -734,6 +739,7 @@ private fun focusScaleForSpan(rect: TileRect): Float {
 private fun WideTileBox(
     placement: Modifier,
     content: CustomGridTileContent,
+    coverScale: TileCoverScale,
     isFocused: Boolean,
     isOverlapped: Boolean,
     focusScale: Float,
@@ -799,7 +805,11 @@ private fun WideTileBox(
                     cover != null -> coil.compose.AsyncImage(
                         model = cover,
                         contentDescription = null,
-                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                        contentScale = if (coverScale == TileCoverScale.FIT) {
+                            androidx.compose.ui.layout.ContentScale.Fit
+                        } else {
+                            androidx.compose.ui.layout.ContentScale.Crop
+                        },
                         modifier = Modifier.fillMaxSize()
                     )
                 }

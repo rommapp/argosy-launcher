@@ -98,6 +98,8 @@
 
     <string name="custom_tile_menu_action_arrange">移動或調整大小</string>
     <string name="custom_tile_menu_action_recurate">變更播放內容</string>
+    <string name="custom_tile_menu_action_fit_cover">封面完整顯示於格內</string>
+    <string name="custom_tile_menu_action_crop_cover">以封面填滿格子</string>
     <string name="custom_tile_menu_action_remove">從格線中移除</string>
     <string name="custom_tile_menu_action_start_game_queue">建立遊戲佇列</string>
     <string name="custom_tile_menu_action_set_focus_game">設定使用中的遊戲</string>

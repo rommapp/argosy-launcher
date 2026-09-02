@@ -92,6 +92,8 @@
 
     <string name="custom_tile_menu_action_arrange">स्थानांतरित या आकार बदलें</string>
     <string name="custom_tile_menu_action_recurate">प्ले सामग्री बदलें</string>
+    <string name="custom_tile_menu_action_fit_cover">कवर को सेल में फ़िट करें</string>
+    <string name="custom_tile_menu_action_crop_cover">कवर से सेल भरें</string>
     <string name="custom_tile_menu_action_remove">ग्रिड से हटाएँ</string>
     <string name="custom_tile_menu_action_start_game_queue">गेम क्यू बनाएँ</string>
     <string name="custom_tile_menu_action_set_focus_game">सक्रिय गेम सेट करें</string>

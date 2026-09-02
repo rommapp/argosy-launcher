@@ -92,6 +92,8 @@
 
     <string name="custom_tile_menu_action_arrange">Déplacer ou redimensionner</string>
     <string name="custom_tile_menu_action_recurate">Changer ce qu\'elle joue</string>
+    <string name="custom_tile_menu_action_fit_cover">Ajuster la jaquette à la case</string>
+    <string name="custom_tile_menu_action_crop_cover">Remplir la case avec la jaquette</string>
     <string name="custom_tile_menu_action_remove">Retirer de la grille</string>
     <string name="custom_tile_menu_action_start_game_queue">Créer une file de jeux</string>
     <string name="custom_tile_menu_action_set_focus_game">Définir le jeu actif</string>

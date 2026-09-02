@@ -34,6 +34,9 @@ interface HomeTileDao {
     )
     suspend fun getMaxPageIndex(ownerUserId: Long?): Int?
 
+    @Query("SELECT * FROM home_tiles WHERE id = :id")
+    suspend fun getById(id: Long): HomeTileEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(tile: HomeTileEntity): Long
 

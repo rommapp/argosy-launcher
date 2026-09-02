@@ -583,6 +583,11 @@
     <string name="dual_detail_tab_reviews">REVIEWS</string>
     <!-- Shown in the reviews tab before any reviews have loaded or when the game has none. -->
     <string name="dual_detail_reviews_empty">No reviews yet</string>
+    <!-- Row at the top of the reviews tab when this user has not reviewed the game. Selecting it
+         opens the editor on the other screen. Verb phrase. -->
+    <string name="dual_detail_reviews_write_row">Write a review</string>
+    <!-- Row of the options tab. Verb phrase: opens the review editor on the other screen. -->
+    <string name="dual_detail_option_write_review">Write a Review</string>
     <!-- Tab listing what can be done with the game. Noun, plural, drawn in caps in English. -->
     <string name="dual_detail_tab_options">OPTIONS</string>
 

@@ -28,6 +28,8 @@ import com.nendo.argosy.core.notification.NotificationDuration
 import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.NotificationType
+import com.nendo.argosy.core.notification.showError
+import com.nendo.argosy.core.notification.showSuccess
 import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.ByteArrayOutputStream
@@ -109,6 +111,11 @@ class SocialRepository @Inject constructor(
 
     private val _gameReviews = MutableStateFlow<Map<Int, GameReviewsPage>>(emptyMap())
     val gameReviews: StateFlow<Map<Int, GameReviewsPage>> = _gameReviews.asStateFlow()
+
+    private val _reviewWriteEvents = MutableSharedFlow<ReviewWriteEvent>(extraBufferCapacity = 8)
+    val reviewWriteEvents: SharedFlow<ReviewWriteEvent> = _reviewWriteEvents.asSharedFlow()
+
+    private var pendingReviewWriteIgdbId: Int? = null
 
     private val _discordLinked = MutableStateFlow(false)
     val discordLinked: StateFlow<Boolean> = _discordLinked.asStateFlow()
@@ -381,6 +388,20 @@ class SocialRepository @Inject constructor(
                             current + (message.page.igdbId to mergeReviewPage(existing, message.page))
                         }
                     }
+                    is ArgosSocialService.IncomingMessage.ReviewSaved -> {
+                        pendingReviewWriteIgdbId = null
+                        applyMyReview(message.review.igdbId, message.review)
+                        notificationManager.showSuccess(NotificationText.Res(R.string.notif_review_saved))
+                        _reviewWriteEvents.tryEmit(ReviewWriteEvent.Saved(message.review))
+                        requestReviewSummary(message.review.igdbId)
+                    }
+                    is ArgosSocialService.IncomingMessage.ReviewDeleted -> {
+                        pendingReviewWriteIgdbId = null
+                        applyMyReview(message.igdbId, null)
+                        notificationManager.showSuccess(NotificationText.Res(R.string.notif_review_deleted))
+                        _reviewWriteEvents.tryEmit(ReviewWriteEvent.Deleted(message.igdbId))
+                        requestReviewSummary(message.igdbId)
+                    }
                     is ArgosSocialService.IncomingMessage.FeedData -> {
                         val prevCount = _feedEvents.value.size
                         Log.d(TAG, "FeedData received: ${message.events.size} new events, loadingMore=$_isLoadingMoreFeed, prevCount=$prevCount")
@@ -519,6 +540,10 @@ class SocialRepository @Inject constructor(
                         if (message.code == "unknown_type") {
                             Log.w(TAG, "Server returned unknown_type -- suppressing achievement sync for this session")
                             achievementSyncSuppressed = true
+                        }
+                        val pendingReview = pendingReviewWriteIgdbId
+                        if (pendingReview != null && message.code in REVIEW_WRITE_ERROR_CODES) {
+                            failReviewWrite(pendingReview, reviewErrorText(message.code))
                         }
                     }
                     is ArgosSocialService.IncomingMessage.NetplayReady -> {
@@ -984,6 +1009,61 @@ class SocialRepository @Inject constructor(
         val cursor = page.nextCursor
         if (!page.hasMore || cursor == null) return
         if (socialService.isConnected()) socialService.getGameReviews(igdbId, cursor = cursor)
+    }
+
+    /**
+     * One review per user per game, so a save replaces whatever was held. The body is trimmed here
+     * and sent absent when empty, matching what the server would store anyway, so the cached copy
+     * the reply updates never disagrees with the draft that produced it.
+     */
+    fun upsertReview(igdbId: Int, recommended: Boolean, body: String?, visibility: String): Boolean {
+        if (igdbId <= 0) return false
+        if (!socialService.isConnected()) {
+            failReviewWrite(igdbId, NotificationText.Res(R.string.notif_review_error_offline))
+            return false
+        }
+        pendingReviewWriteIgdbId = igdbId
+        val trimmed = body?.trim()?.takeIf { it.isNotEmpty() }
+        val sent = socialService.upsertReview(igdbId, recommended, trimmed, visibility)
+        if (!sent) failReviewWrite(igdbId, NotificationText.Res(R.string.notif_review_error_offline))
+        return sent
+    }
+
+    fun deleteReview(igdbId: Int): Boolean {
+        if (igdbId <= 0) return false
+        if (!socialService.isConnected()) {
+            failReviewWrite(igdbId, NotificationText.Res(R.string.notif_review_error_offline))
+            return false
+        }
+        pendingReviewWriteIgdbId = igdbId
+        val sent = socialService.deleteReview(igdbId)
+        if (!sent) failReviewWrite(igdbId, NotificationText.Res(R.string.notif_review_error_offline))
+        return sent
+    }
+
+    private fun failReviewWrite(igdbId: Int, message: NotificationText) {
+        pendingReviewWriteIgdbId = null
+        notificationManager.showError(message)
+        _reviewWriteEvents.tryEmit(ReviewWriteEvent.Failed(igdbId))
+    }
+
+    private fun reviewErrorText(code: String): NotificationText = NotificationText.Res(
+        when (code) {
+            "body_too_long" -> R.string.notif_review_error_too_long
+            "invalid_payload" -> R.string.notif_review_error_invalid
+            else -> R.string.notif_review_error_server
+        }
+    )
+
+    private fun applyMyReview(igdbId: Int, review: GameReview?) {
+        _reviewSummaries.update { current ->
+            val summary = current[igdbId] ?: return@update current
+            current + (igdbId to summary.copy(myReview = review))
+        }
+        _gameReviews.update { current ->
+            val page = current[igdbId] ?: return@update current
+            current + (igdbId to page.copy(myReview = review))
+        }
     }
 
     private fun mergeReviewPage(existing: GameReviewsPage?, incoming: GameReviewsPage): GameReviewsPage {
@@ -1539,5 +1619,6 @@ class SocialRepository @Inject constructor(
         private const val FEED_PAGE_SIZE = 10
         private const val NOTIFICATIONS_PAGE_SIZE = 20
         private const val NOTIFICATIONS_MAX_CACHE = 100
+        private val REVIEW_WRITE_ERROR_CODES = setOf("invalid_payload", "body_too_long", "db_error")
     }
 }

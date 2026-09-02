@@ -203,4 +203,11 @@
     <string name="notif_sync_platform_completed_with_errors_title">Синхронизация завершена с ошибками</string>
     <string name="notif_sync_platform_error_unknown">Неизвестная ошибка</string>
     <string name="notif_sync_platform_failed_title">Ошибка синхронизации</string>
+
+    <string name="notif_review_saved">Отзыв опубликован</string>
+    <string name="notif_review_deleted">Отзыв удалён</string>
+    <string name="notif_review_error_offline">Нет подключения к Argosy Social</string>
+    <string name="notif_review_error_too_long">Отзыв слишком длинный</string>
+    <string name="notif_review_error_invalid">Сервер не смог прочитать отзыв</string>
+    <string name="notif_review_error_server">Сервер не смог сохранить отзыв</string>
 </resources>

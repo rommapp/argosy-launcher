@@ -35,11 +35,27 @@ import com.nendo.argosy.domain.usecase.save.RestoreCachedSaveUseCase
 import com.nendo.argosy.ui.common.displayTitleId
 import com.nendo.argosy.ui.common.reportTitleIdRecheck
 import com.nendo.argosy.ui.common.toNotificationText
+import com.nendo.argosy.data.social.ReviewWriteEvent
 import com.nendo.argosy.ui.dualscreen.gamedetail.ActiveModal
 import com.nendo.argosy.ui.dualscreen.gamedetail.DualCollectionItem
 import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailUpperState
 import com.nendo.argosy.ui.dualscreen.gamedetail.toJsonString
 import com.nendo.argosy.ui.dualscreen.gamedetail.toSaveEntryData
+import com.nendo.argosy.ui.screens.gamedetail.ReviewEditorAction
+import com.nendo.argosy.ui.screens.gamedetail.ReviewEditorSection
+import com.nendo.argosy.ui.screens.gamedetail.ReviewEditorState
+import com.nendo.argosy.ui.screens.gamedetail.adjusted
+import com.nendo.argosy.ui.screens.gamedetail.focusedOn
+import com.nendo.argosy.ui.screens.gamedetail.movedSection
+import com.nendo.argosy.ui.screens.gamedetail.promptingDelete
+import com.nendo.argosy.ui.screens.gamedetail.promptingDiscard
+import com.nendo.argosy.ui.screens.gamedetail.requestingKeyboard
+import com.nendo.argosy.ui.screens.gamedetail.settled
+import com.nendo.argosy.ui.screens.gamedetail.submitting
+import com.nendo.argosy.ui.screens.gamedetail.withBody
+import com.nendo.argosy.ui.screens.gamedetail.withVerdict
+import com.nendo.argosy.ui.screens.gamedetail.withVisibility
+import com.nendo.argosy.ui.screens.gamedetail.withoutConfirm
 import com.nendo.argosy.ui.screens.gamedetail.UpdateFileType
 import com.nendo.argosy.ui.screens.gamedetail.UpdateFileUi
 import com.nendo.argosy.ui.dualscreen.home.DualCollectionShowcaseState
@@ -999,6 +1015,7 @@ class DualScreenManager(
         observeMedia()
         observeMediaDim()
         observeAchievementUnlocks()
+        observeReviewWrites()
     }
 
     /**
@@ -1784,6 +1801,7 @@ class DualScreenManager(
             "FILES" -> promptDualManageFilePicker(gameId)
             "CHANGE_COVER" -> promptDualCoverPicker(gameId)
             "RESET_COVER" -> handleDualResetCover(gameId)
+            "WRITE_REVIEW" -> promptDualReviewEditor(gameId)
         }
     }
 
@@ -2775,6 +2793,141 @@ class DualScreenManager(
         scope.launch(Dispatchers.IO) {
             imageCacheManager.resetManualCover(gameId)
             refreshDualCover(gameId)
+        }
+    }
+
+    /**
+     * Opens the review editor on the showcase surface. Upper-owned like the cover picker: the
+     * body needs the keyboard, so the draft lives here and both pads drive it through the
+     * methods below. The cached copy of the user's review seeds the draft; a game the reviews
+     * tab has not fetched yet opens as a fresh review and the server's upsert reconciles it.
+     */
+    fun promptDualReviewEditor(gameId: Long) {
+        val state = _dualGameDetailState.value?.takeIf { it.gameId == gameId } ?: return
+        if (!socialRepository.isConnected()) {
+            notificationManager.showError(NotificationText.Res(R.string.notif_review_error_offline))
+            return
+        }
+        scope.launch {
+            val game = withContext(Dispatchers.IO) { gameDao.getById(gameId) } ?: return@launch
+            val igdbId = game.igdbId?.toInt() ?: return@launch
+            val platformName = withContext(Dispatchers.IO) {
+                platformRepository.getById(game.platformId)?.name
+            } ?: state.platformName
+            val existing = socialRepository.gameReviews.value[igdbId]?.myReview
+                ?: socialRepository.reviewSummaries.value[igdbId]?.myReview
+            socialRepository.requestReviewSummary(igdbId)
+            _dualGameDetailState.update { s ->
+                if (s == null || s.gameId != gameId) return@update s
+                s.copy(
+                    modalType = ActiveModal.REVIEW_EDITOR,
+                    reviewEditor = ReviewEditorState.forGame(
+                        igdbId = igdbId,
+                        gameTitle = game.title,
+                        platformName = platformName,
+                        coverPath = game.coverPath,
+                        existing = existing
+                    )
+                )
+            }
+            refocusMain()
+        }
+    }
+
+    private inline fun updateDualReviewEditor(transform: (ReviewEditorState) -> ReviewEditorState) {
+        _dualGameDetailState.update { s ->
+            if (s == null) return@update null
+            val editor = s.reviewEditor ?: return@update s
+            s.copy(reviewEditor = transform(editor))
+        }
+    }
+
+    fun moveDualReviewEditorSection(delta: Int) = updateDualReviewEditor { it.movedSection(delta) }
+
+    fun focusDualReviewEditorSection(section: ReviewEditorSection) =
+        updateDualReviewEditor { it.focusedOn(section) }
+
+    fun adjustDualReviewEditor(delta: Int) = updateDualReviewEditor { it.adjusted(delta) }
+
+    fun setDualReviewVerdict(recommended: Boolean) = updateDualReviewEditor { it.withVerdict(recommended) }
+
+    fun setDualReviewVisibility(visibility: String) = updateDualReviewEditor { it.withVisibility(visibility) }
+
+    fun setDualReviewEditorBody(text: String) = updateDualReviewEditor { it.withBody(text) }
+
+    fun requestDualReviewKeyboard() = updateDualReviewEditor { it.requestingKeyboard() }
+
+    fun submitDualReview() {
+        val editor = _dualGameDetailState.value?.reviewEditor ?: return
+        if (editor.hasConfirm || !editor.canSubmit) return
+        updateDualReviewEditor { it.submitting() }
+        socialRepository.upsertReview(editor.igdbId, editor.recommended, editor.bodyToSend, editor.visibility)
+    }
+
+    fun promptDualReviewDelete() = updateDualReviewEditor { it.promptingDelete() }
+
+    fun confirmDualReviewDelete() {
+        val editor = _dualGameDetailState.value?.reviewEditor ?: return
+        if (!editor.isEditing || editor.isSubmitting) return
+        updateDualReviewEditor { it.submitting() }
+        socialRepository.deleteReview(editor.igdbId)
+    }
+
+    fun dismissDualReviewConfirm() = updateDualReviewEditor { it.withoutConfirm() }
+
+    fun backDualReviewEditor() {
+        val editor = _dualGameDetailState.value?.reviewEditor ?: return
+        when {
+            editor.hasConfirm -> dismissDualReviewConfirm()
+            editor.isSubmitting -> {}
+            editor.isDirty -> updateDualReviewEditor { it.promptingDiscard() }
+            else -> discardDualReviewEditor()
+        }
+    }
+
+    fun discardDualReviewEditor() {
+        if (_dualGameDetailState.value?.modalType != ActiveModal.REVIEW_EDITOR) return
+        dismissDualModal()
+        _dualGameDetailState.update { it?.copy(reviewEditor = null) }
+    }
+
+    fun confirmDualReviewEditor() {
+        val editor = _dualGameDetailState.value?.reviewEditor ?: return
+        when {
+            editor.showDiscardConfirm ->
+                if (editor.confirmFocusIndex == 1) discardDualReviewEditor() else dismissDualReviewConfirm()
+            editor.showDeleteConfirm ->
+                if (editor.confirmFocusIndex == 1) confirmDualReviewDelete() else dismissDualReviewConfirm()
+            else -> when (editor.confirmAction()) {
+                ReviewEditorAction.TOGGLE -> adjustDualReviewEditor(1)
+                ReviewEditorAction.OPEN_KEYBOARD -> requestDualReviewKeyboard()
+                ReviewEditorAction.SUBMIT -> submitDualReview()
+                ReviewEditorAction.DELETE -> promptDualReviewDelete()
+            }
+        }
+    }
+
+    private fun observeReviewWrites() {
+        scope.launch {
+            socialRepository.reviewWriteEvents.collect { event ->
+                val state = _dualGameDetailState.value ?: return@collect
+                val editor = state.reviewEditor ?: return@collect
+                if (editor.igdbId != event.igdbId) return@collect
+                when (event) {
+                    is ReviewWriteEvent.Failed -> updateDualReviewEditor { it.settled() }
+                    is ReviewWriteEvent.Saved, is ReviewWriteEvent.Deleted -> {
+                        if (state.modalType != ActiveModal.REVIEW_EDITOR) return@collect
+                        _dualGameDetailState.update {
+                            it?.copy(modalType = ActiveModal.NONE, reviewEditor = null)
+                        }
+                        companionHost?.onModalResult(
+                            dismissed = false, type = ActiveModal.REVIEW_EDITOR.name,
+                            value = 0, statusSelected = null, selectedIndex = -1,
+                            collectionToggleId = -1, collectionCreateName = null
+                        )
+                    }
+                }
+            }
         }
     }
 

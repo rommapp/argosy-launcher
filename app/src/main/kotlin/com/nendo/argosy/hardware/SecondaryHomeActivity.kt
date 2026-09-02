@@ -1045,7 +1045,7 @@ class SecondaryHomeActivity :
                 vm.loadGame(vm.uiState.value.gameId)
                 refocusSelf()
             }
-            ActiveModal.SAVE_NAME.name -> refocusSelf()
+            ActiveModal.SAVE_NAME.name, ActiveModal.REVIEW_EDITOR.name -> refocusSelf()
             ActiveModal.COLLECTION.name -> {
                 if (collectionCreateName != null) {
                     vm.createAndAddToCollection(collectionCreateName)

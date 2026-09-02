@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderSpecial
 import androidx.compose.material.icons.filled.FolderZip
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.RateReview
 import androidx.compose.material.icons.filled.Restore
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material.icons.filled.Lock
@@ -133,6 +134,7 @@ fun DualGameDetailLowerScreen(
     stateMenuEntries: List<DualStateMenuAction> = emptyList(),
     onScreenshotSelected: (Int) -> Unit,
     onScreenshotView: (Int) -> Unit,
+    onReviewTapped: (Int) -> Unit,
     onOptionSelected: (GameDetailOption) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
@@ -179,7 +181,9 @@ fun DualGameDetailLowerScreen(
                     )
                     DualGameDetailTab.REVIEWS -> ReviewsTabContent(
                         page = state.reviewPage,
-                        focusIndex = state.reviewFocusIndex
+                        focusIndex = state.reviewFocusIndex,
+                        showWriteRow = state.reviewListHasWriteRow,
+                        onEntryTapped = onReviewTapped
                     )
                     DualGameDetailTab.OPTIONS -> OptionsTabContent(
                         visibleOptions = visibleOptions,
@@ -1154,6 +1158,10 @@ private fun OptionsTabContent(
             option, Icons.Filled.FolderSpecial,
             context.getString(R.string.dual_detail_option_add_to_collection)
         )
+        GameDetailOption.WRITE_REVIEW -> OptionEntry(
+            option, Icons.Filled.RateReview,
+            context.getString(R.string.dual_detail_option_write_review)
+        )
         GameDetailOption.REFRESH_METADATA -> OptionEntry(
             option, Icons.Filled.Refresh,
             context.getString(R.string.dual_detail_option_refresh_metadata)
@@ -1201,6 +1209,7 @@ private fun OptionsTabContent(
         GameDetailOption.TITLE_ID,
         GameDetailOption.FILES,
         GameDetailOption.ADD_TO_COLLECTION,
+        GameDetailOption.WRITE_REVIEW,
         GameDetailOption.REFRESH_METADATA,
         GameDetailOption.CHANGE_COVER,
         GameDetailOption.RESET_COVER

@@ -41,6 +41,7 @@ fun ReviewSummarySection(
     summary: ReviewSummary?,
     isActive: Boolean,
     onOpen: () -> Unit,
+    onWriteReview: () -> Unit,
     onPositioned: (Int) -> Unit,
     onSectionFocus: () -> Unit
 ) {
@@ -102,7 +103,10 @@ fun ReviewSummarySection(
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
+                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs),
+                modifier = Modifier
+                    .clickableNoFocus(onClick = onWriteReview)
+                    .padding(horizontal = Dimens.spacingSm, vertical = Dimens.spacingXs)
             ) {
                 val myReview = summary?.myReview
                 Icon(

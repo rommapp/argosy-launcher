@@ -409,4 +409,17 @@
     <string name="notif_sync_platform_completed_with_errors_title">Sync completed with errors</string>
     <string name="notif_sync_platform_error_unknown">Unknown error</string>
     <string name="notif_sync_platform_failed_title">Sync failed</string>
+
+    <!-- Brief message after a game review reached the social server. Past tense statement. -->
+    <string name="notif_review_saved">Review posted</string>
+    <!-- Brief message after a game review was removed from the social server. -->
+    <string name="notif_review_deleted">Review deleted</string>
+    <!-- Error when a review write was attempted without a social connection. -->
+    <string name="notif_review_error_offline">Not connected to Argosy Social</string>
+    <!-- Error when the server refused the review text for exceeding its length limit. -->
+    <string name="notif_review_error_too_long">The review is too long</string>
+    <!-- Error when the server could not read the review it was sent. -->
+    <string name="notif_review_error_invalid">The server could not read the review</string>
+    <!-- Error when the server failed to store the review. -->
+    <string name="notif_review_error_server">The server could not save the review</string>
 </resources>

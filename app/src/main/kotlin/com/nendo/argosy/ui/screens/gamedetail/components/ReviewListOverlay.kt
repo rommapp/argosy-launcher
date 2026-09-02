@@ -41,6 +41,7 @@ import com.nendo.argosy.data.social.SocialUser
 import com.nendo.argosy.ui.common.labelRes
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
+import com.nendo.argosy.ui.util.clickableNoFocus
 import com.nendo.argosy.util.formatPlayTime
 
 /**
@@ -56,6 +57,8 @@ fun ReviewListOverlay(
     gameTitle: String,
     page: GameReviewsPage?,
     focusIndex: Int,
+    showWriteRow: Boolean,
+    onEntryTapped: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     AnimatedVisibility(
@@ -74,7 +77,7 @@ fun ReviewListOverlay(
 
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
-                val entries = reviewEntries(page)
+                val entries = reviewEntries(page, showWriteRow)
                 if (entries.isEmpty()) {
                     Box(
                         modifier = Modifier.fillMaxSize(),
@@ -101,10 +104,7 @@ fun ReviewListOverlay(
                         .padding(horizontal = Dimens.spacingXl),
                     verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
                 ) {
-                    itemsIndexed(
-                        entries,
-                        key = { _, entry -> "${entry.review.userId}:${entry.review.igdbId}" }
-                    ) { index, entry ->
+                    itemsIndexed(entries, key = { _, entry -> entry.key }) { index, entry ->
                         if (entry.heading != null) {
                             Spacer(modifier = Modifier.height(Dimens.spacingMd))
                             Text(
@@ -113,11 +113,20 @@ fun ReviewListOverlay(
                                 color = MaterialTheme.colorScheme.primary
                             )
                         }
-                        ReviewCard(
-                            review = entry.review,
-                            author = page?.users?.get(entry.review.userId),
-                            isFocused = index == focusIndex
-                        )
+                        val review = entry.review
+                        if (review == null) {
+                            WriteReviewRow(
+                                isFocused = index == focusIndex,
+                                onClick = { onEntryTapped(index) }
+                            )
+                        } else {
+                            ReviewCard(
+                                review = review,
+                                author = page?.users?.get(review.userId),
+                                isFocused = index == focusIndex,
+                                onClick = { onEntryTapped(index) }
+                            )
+                        }
                     }
                 }
             }
@@ -125,21 +134,66 @@ fun ReviewListOverlay(
     }
 }
 
+/**
+ * A null [review] is the "write a review" row, which stands where the reader's own review
+ * would sit until one exists.
+ */
 private data class ReviewEntry(
-    val review: GameReview,
+    val review: GameReview?,
     @androidx.annotation.StringRes val heading: Int?
-)
+) {
+    val key: String get() = review?.let { "${it.userId}:${it.igdbId}" } ?: WRITE_ROW_KEY
+}
 
-private fun reviewEntries(page: GameReviewsPage?): List<ReviewEntry> {
-    if (page == null) return emptyList()
-    return buildList {
-        page.myReview?.let { add(ReviewEntry(it, R.string.reviews_heading_yours)) }
-        page.friends.forEachIndexed { index, review ->
-            add(ReviewEntry(review, R.string.reviews_heading_friends.takeIf { index == 0 }))
-        }
-        page.public.forEachIndexed { index, review ->
-            add(ReviewEntry(review, R.string.reviews_heading_everyone.takeIf { index == 0 }))
-        }
+private const val WRITE_ROW_KEY = "write"
+
+private fun reviewEntries(page: GameReviewsPage?, showWriteRow: Boolean): List<ReviewEntry> = buildList {
+    if (showWriteRow) add(ReviewEntry(null, R.string.reviews_heading_yours))
+    if (page == null) return@buildList
+    page.myReview?.let { add(ReviewEntry(it, R.string.reviews_heading_yours)) }
+    page.friends.forEachIndexed { index, review ->
+        add(ReviewEntry(review, R.string.reviews_heading_friends.takeIf { index == 0 }))
+    }
+    page.public.forEachIndexed { index, review ->
+        add(ReviewEntry(review, R.string.reviews_heading_everyone.takeIf { index == 0 }))
+    }
+}
+
+@Composable
+private fun WriteReviewRow(isFocused: Boolean, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f),
+                RoundedCornerShape(Dimens.radiusMd)
+            )
+            .border(
+                width = if (isFocused) Dimens.borderThick else Dimens.borderThin,
+                color = if (isFocused) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.outlineVariant
+                },
+                shape = RoundedCornerShape(Dimens.radiusMd)
+            )
+            .clickableNoFocus(onClick = onClick)
+            .padding(Dimens.spacingMd),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+    ) {
+        Icon(
+            imageVector = Icons.Default.ThumbUp,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f),
+            modifier = Modifier.size(Dimens.iconSm)
+        )
+        Text(
+            text = stringResource(R.string.reviews_reader_write_row),
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }
 
@@ -174,7 +228,12 @@ private fun ReviewListHeader(gameTitle: String, page: GameReviewsPage?) {
 }
 
 @Composable
-private fun ReviewCard(review: GameReview, author: SocialUser?, isFocused: Boolean) {
+private fun ReviewCard(
+    review: GameReview,
+    author: SocialUser?,
+    isFocused: Boolean,
+    onClick: () -> Unit
+) {
     val theme = LocalLauncherTheme.current
     Column(
         modifier = Modifier
@@ -192,6 +251,7 @@ private fun ReviewCard(review: GameReview, author: SocialUser?, isFocused: Boole
                 },
                 shape = RoundedCornerShape(Dimens.radiusMd)
             )
+            .clickableNoFocus(onClick = onClick)
             .padding(Dimens.spacingMd)
     ) {
         Row(

@@ -454,4 +454,39 @@
     <string name="gamedetail_notice_refresh_failed">रीफ्रेश करने में विफल: %1$s</string>
 
     <string name="gamedetail_header_platform_unknown">अज्ञात</string>
+
+    <string name="reviews_reader_write_row">समीक्षा लिखें</string>
+    <string name="reviews_editor_title">समीक्षा लिखें</string>
+    <string name="reviews_editor_title_edit">अपनी समीक्षा संपादित करें</string>
+    <string name="reviews_editor_verdict_label">राय</string>
+    <string name="reviews_editor_verdict_up">अनुशंसित</string>
+    <string name="reviews_editor_verdict_down">अनुशंसित नहीं</string>
+    <string name="reviews_editor_visibility_label">किसे दिखे</string>
+    <string name="reviews_editor_visibility_friends">मित्र</string>
+    <string name="reviews_editor_visibility_public">सभी</string>
+    <string name="reviews_editor_body_placeholder">बताएं कि क्या खास लगा। केवल राय पोस्ट करने के लिए इसे खाली छोड़ दें।</string>
+    <plurals name="reviews_editor_chars_left">
+        <item quantity="one">%d अक्षर शेष</item>
+        <item quantity="other">%d अक्षर शेष</item>
+    </plurals>
+    <plurals name="reviews_editor_chars_over">
+        <item quantity="one">सीमा से %d अक्षर अधिक</item>
+        <item quantity="other">सीमा से %d अक्षर अधिक</item>
+    </plurals>
+    <string name="reviews_editor_submit">समीक्षा पोस्ट करें</string>
+    <string name="reviews_editor_submit_update">समीक्षा अपडेट करें</string>
+    <string name="reviews_editor_submitting">पोस्ट हो रही है</string>
+    <string name="reviews_editor_delete">समीक्षा हटाएं</string>
+    <string name="reviews_editor_delete_title">अपनी समीक्षा हटाएं?</string>
+    <string name="reviews_editor_delete_message">आपकी राय और लिखा हुआ सभी के लिए हटा दिया जाएगा।</string>
+    <string name="reviews_editor_delete_action">हटाएं</string>
+    <string name="reviews_editor_discard_title">बदलाव छोड़ें?</string>
+    <string name="reviews_editor_discard_message">यहां किए गए बदलाव खो जाएंगे।</string>
+    <string name="reviews_editor_discard_action">छोड़ें</string>
+    <string name="reviews_editor_footer_adjust">बदलें</string>
+    <string name="reviews_editor_footer_type">टाइप करें</string>
+    <string name="reviews_editor_footer_select">चुनें</string>
+    <string name="reviews_editor_footer_submit">पोस्ट करें</string>
+    <string name="reviews_editor_footer_delete">हटाएं</string>
+    <string name="reviews_editor_footer_back">वापस</string>
 </resources>

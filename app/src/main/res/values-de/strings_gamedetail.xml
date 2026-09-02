@@ -455,4 +455,39 @@
     <string name="gamedetail_notice_refresh_failed">Aktualisierung fehlgeschlagen: %1$s</string>
 
     <string name="gamedetail_header_platform_unknown">Unbekannt</string>
+
+    <string name="reviews_reader_write_row">Rezension schreiben</string>
+    <string name="reviews_editor_title">Rezension schreiben</string>
+    <string name="reviews_editor_title_edit">Rezension bearbeiten</string>
+    <string name="reviews_editor_verdict_label">Urteil</string>
+    <string name="reviews_editor_verdict_up">Empfohlen</string>
+    <string name="reviews_editor_verdict_down">Nicht empfohlen</string>
+    <string name="reviews_editor_visibility_label">Sichtbar für</string>
+    <string name="reviews_editor_visibility_friends">Freunde</string>
+    <string name="reviews_editor_visibility_public">Alle</string>
+    <string name="reviews_editor_body_placeholder">Was ist dir aufgefallen? Leer lassen, um nur das Urteil zu veröffentlichen.</string>
+    <plurals name="reviews_editor_chars_left">
+        <item quantity="one">Noch %d Zeichen</item>
+        <item quantity="other">Noch %d Zeichen</item>
+    </plurals>
+    <plurals name="reviews_editor_chars_over">
+        <item quantity="one">%d Zeichen über dem Limit</item>
+        <item quantity="other">%d Zeichen über dem Limit</item>
+    </plurals>
+    <string name="reviews_editor_submit">Rezension veröffentlichen</string>
+    <string name="reviews_editor_submit_update">Rezension aktualisieren</string>
+    <string name="reviews_editor_submitting">Wird gesendet</string>
+    <string name="reviews_editor_delete">Rezension löschen</string>
+    <string name="reviews_editor_delete_title">Rezension löschen?</string>
+    <string name="reviews_editor_delete_message">Dein Urteil und dein Text werden für alle entfernt.</string>
+    <string name="reviews_editor_delete_action">Löschen</string>
+    <string name="reviews_editor_discard_title">Änderungen verwerfen?</string>
+    <string name="reviews_editor_discard_message">Deine Änderungen hier gehen verloren.</string>
+    <string name="reviews_editor_discard_action">Verwerfen</string>
+    <string name="reviews_editor_footer_adjust">Anpassen</string>
+    <string name="reviews_editor_footer_type">Eingeben</string>
+    <string name="reviews_editor_footer_select">Auswählen</string>
+    <string name="reviews_editor_footer_submit">Veröffentlichen</string>
+    <string name="reviews_editor_footer_delete">Löschen</string>
+    <string name="reviews_editor_footer_back">Zurück</string>
 </resources>

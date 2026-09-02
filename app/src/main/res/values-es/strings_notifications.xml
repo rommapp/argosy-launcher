@@ -196,4 +196,11 @@
     <string name="notif_sync_platform_completed_with_errors_title">Sincronización completada con errores</string>
     <string name="notif_sync_platform_error_unknown">Error desconocido</string>
     <string name="notif_sync_platform_failed_title">Error de sincronización</string>
+
+    <string name="notif_review_saved">Reseña publicada</string>
+    <string name="notif_review_deleted">Reseña eliminada</string>
+    <string name="notif_review_error_offline">Sin conexión con Argosy Social</string>
+    <string name="notif_review_error_too_long">La reseña es demasiado larga</string>
+    <string name="notif_review_error_invalid">El servidor no pudo leer la reseña</string>
+    <string name="notif_review_error_server">El servidor no pudo guardar la reseña</string>
 </resources>

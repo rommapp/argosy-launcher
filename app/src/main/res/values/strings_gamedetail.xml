@@ -262,6 +262,70 @@
     <string name="reviews_heading_friends">Friends</string>
     <!-- Heading over reviews written by people this user does not know. Noun. -->
     <string name="reviews_heading_everyone">Everyone Else</string>
+    <!-- Row at the top of the review reader when this user has not reviewed the game yet.
+         Selecting it opens the editor. Verb phrase. -->
+    <string name="reviews_reader_write_row">Write a review</string>
+    <!-- Title of the review editor when no review exists yet. Verb phrase. -->
+    <string name="reviews_editor_title">Write a Review</string>
+    <!-- Title of the review editor when this user's review already exists. Verb phrase. -->
+    <string name="reviews_editor_title_edit">Edit Your Review</string>
+    <!-- Label beside the thumbs up / thumbs down choice. Noun. -->
+    <string name="reviews_editor_verdict_label">Verdict</string>
+    <!-- The thumbs up choice. Adjective describing the game. -->
+    <string name="reviews_editor_verdict_up">Recommended</string>
+    <!-- The thumbs down choice. Adjective describing the game. -->
+    <string name="reviews_editor_verdict_down">Not Recommended</string>
+    <!-- Label beside the audience choice. Followed by "Friends" or "Everyone". -->
+    <string name="reviews_editor_visibility_label">Visible to</string>
+    <!-- Audience choice: only this user's friends can read the review. Noun, plural. -->
+    <string name="reviews_editor_visibility_friends">Friends</string>
+    <!-- Audience choice: anyone on the social service can read the review. -->
+    <string name="reviews_editor_visibility_public">Everyone</string>
+    <!-- Placeholder inside the empty review text box. -->
+    <string name="reviews_editor_body_placeholder">Say what stood out. Leave this empty to post the verdict alone.</string>
+    <!-- Counter under the text box while there is room left. -->
+    <plurals name="reviews_editor_chars_left">
+        <item quantity="one">%d character left</item>
+        <item quantity="other">%d characters left</item>
+    </plurals>
+    <!-- Counter under the text box once the text is longer than the server accepts. -->
+    <plurals name="reviews_editor_chars_over">
+        <item quantity="one">%d character over the limit</item>
+        <item quantity="other">%d characters over the limit</item>
+    </plurals>
+    <!-- Button that sends a new review. Verb phrase. -->
+    <string name="reviews_editor_submit">Post Review</string>
+    <!-- Button that sends changes to an existing review. Verb phrase. -->
+    <string name="reviews_editor_submit_update">Update Review</string>
+    <!-- Button label while the review is being sent. Present participle. -->
+    <string name="reviews_editor_submitting">Posting</string>
+    <!-- Button that removes this user's review. Verb phrase. -->
+    <string name="reviews_editor_delete">Delete Review</string>
+    <!-- Title of the confirmation before deleting a review. Question. -->
+    <string name="reviews_editor_delete_title">Delete your review?</string>
+    <!-- Body of that confirmation. -->
+    <string name="reviews_editor_delete_message">Your verdict and what you wrote will be removed for everyone.</string>
+    <!-- Confirming button of that confirmation. Verb. -->
+    <string name="reviews_editor_delete_action">Delete</string>
+    <!-- Title of the confirmation before leaving the editor with unsaved edits. Question. -->
+    <string name="reviews_editor_discard_title">Discard changes?</string>
+    <!-- Body of that confirmation. -->
+    <string name="reviews_editor_discard_message">What you changed here will be lost.</string>
+    <!-- Confirming button of that confirmation. Verb: throws the edits away. -->
+    <string name="reviews_editor_discard_action">Discard</string>
+    <!-- Footer hint while the verdict or audience choice is selected. Verb: left and right
+         change it. -->
+    <string name="reviews_editor_footer_adjust">Adjust</string>
+    <!-- Footer hint while the text box is selected. Verb: raises the keyboard. -->
+    <string name="reviews_editor_footer_type">Type</string>
+    <!-- Footer hint on a button in the editor. Verb: activates it. -->
+    <string name="reviews_editor_footer_select">Select</string>
+    <!-- Footer hint for the button that sends the review from anywhere in the editor. Verb. -->
+    <string name="reviews_editor_footer_submit">Post</string>
+    <!-- Footer hint for the button that removes the review from anywhere in the editor. Verb. -->
+    <string name="reviews_editor_footer_delete">Delete</string>
+    <!-- Footer hint for leaving the editor. Verb. -->
+    <string name="reviews_editor_footer_back">Back</string>
     <!-- Caption under the chip holding how long this user has spent in the game. Noun phrase: an
          amount of time, not an instruction to play. -->
     <string name="gamedetail_chip_play_time_label">Play Time</string>

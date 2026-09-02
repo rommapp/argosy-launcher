@@ -464,4 +464,39 @@
     <string name="gamedetail_notice_refresh_failed">Error al actualizar: %1$s</string>
 
     <string name="gamedetail_header_platform_unknown">Desconocida</string>
+
+    <string name="reviews_reader_write_row">Escribir una reseña</string>
+    <string name="reviews_editor_title">Escribir una reseña</string>
+    <string name="reviews_editor_title_edit">Editar tu reseña</string>
+    <string name="reviews_editor_verdict_label">Veredicto</string>
+    <string name="reviews_editor_verdict_up">Recomendado</string>
+    <string name="reviews_editor_verdict_down">No recomendado</string>
+    <string name="reviews_editor_visibility_label">Visible para</string>
+    <string name="reviews_editor_visibility_friends">Amigos</string>
+    <string name="reviews_editor_visibility_public">Todos</string>
+    <string name="reviews_editor_body_placeholder">Cuenta qué destacó. Déjalo vacío para publicar solo el veredicto.</string>
+    <plurals name="reviews_editor_chars_left">
+        <item quantity="one">Queda %d carácter</item>
+        <item quantity="other">Quedan %d caracteres</item>
+    </plurals>
+    <plurals name="reviews_editor_chars_over">
+        <item quantity="one">%d carácter por encima del límite</item>
+        <item quantity="other">%d caracteres por encima del límite</item>
+    </plurals>
+    <string name="reviews_editor_submit">Publicar reseña</string>
+    <string name="reviews_editor_submit_update">Actualizar reseña</string>
+    <string name="reviews_editor_submitting">Publicando</string>
+    <string name="reviews_editor_delete">Eliminar reseña</string>
+    <string name="reviews_editor_delete_title">¿Eliminar tu reseña?</string>
+    <string name="reviews_editor_delete_message">Tu veredicto y lo que escribiste desaparecerán para todos.</string>
+    <string name="reviews_editor_delete_action">Eliminar</string>
+    <string name="reviews_editor_discard_title">¿Descartar los cambios?</string>
+    <string name="reviews_editor_discard_message">Lo que cambiaste aquí se perderá.</string>
+    <string name="reviews_editor_discard_action">Descartar</string>
+    <string name="reviews_editor_footer_adjust">Ajustar</string>
+    <string name="reviews_editor_footer_type">Escribir</string>
+    <string name="reviews_editor_footer_select">Seleccionar</string>
+    <string name="reviews_editor_footer_submit">Publicar</string>
+    <string name="reviews_editor_footer_delete">Eliminar</string>
+    <string name="reviews_editor_footer_back">Atrás</string>
 </resources>

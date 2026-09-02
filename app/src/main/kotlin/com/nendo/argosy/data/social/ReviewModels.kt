@@ -84,3 +84,20 @@ data class ReviewSummary(
     val myReview: GameReview?,
     val users: Map<String, SocialUser>
 )
+
+/**
+ * Outcome of a review write. The repository has already folded a [Saved] or [Deleted] result
+ * into the cached summary and page and shown the notification; an editor only needs to close or,
+ * on [Failed], let the user try again.
+ */
+sealed interface ReviewWriteEvent {
+    val igdbId: Int
+
+    data class Saved(val review: GameReview) : ReviewWriteEvent {
+        override val igdbId: Int get() = review.igdbId
+    }
+
+    data class Deleted(override val igdbId: Int) : ReviewWriteEvent
+
+    data class Failed(override val igdbId: Int) : ReviewWriteEvent
+}

@@ -289,6 +289,7 @@ data class GameDetailUiState(
     val reviewPage: com.nendo.argosy.data.social.GameReviewsPage? = null,
     val showReviewList: Boolean = false,
     val reviewListFocusIndex: Int = 0,
+    val reviewEditor: ReviewEditorState? = null,
     val hasVariants: Boolean = false,
     val hasSocialAccount: Boolean = false,
     val isPrivate: Boolean = false,
@@ -297,6 +298,9 @@ data class GameDetailUiState(
 ) {
     val hasPreviousGame: Boolean get() = currentGameIndex > 0
     val hasNextGame: Boolean get() = currentGameIndex >= 0 && currentGameIndex < siblingGameIds.size - 1
+
+    val reviewListHasWriteRow: Boolean
+        get() = hasSocialAccount && game?.igdbId != null && reviewPage?.myReview == null
 
     // Convenience accessors for backward compatibility
     val showSaveCacheDialog: Boolean get() = saveChannel.isVisible

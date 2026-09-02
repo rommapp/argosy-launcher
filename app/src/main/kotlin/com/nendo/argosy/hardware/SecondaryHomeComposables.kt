@@ -391,6 +391,17 @@ fun ShowcaseRoleContent(
                         onCoverSelect = showcaseViewModel::onCoverSelect,
                         onCoverQueryChange = showcaseViewModel::onCoverQueryChange,
                         onCoverSearch = showcaseViewModel::onCoverSearch,
+                        onReviewSectionFocus = showcaseViewModel::onReviewSectionFocus,
+                        onReviewVerdictSelect = showcaseViewModel::onReviewVerdictSelect,
+                        onReviewVisibilitySelect = showcaseViewModel::onReviewVisibilitySelect,
+                        onReviewBodyChange = showcaseViewModel::onReviewBodyChange,
+                        onReviewConfirm = showcaseViewModel::onReviewConfirm,
+                        onReviewSubmit = showcaseViewModel::onReviewSubmit,
+                        onReviewDeletePrompt = showcaseViewModel::onReviewDeletePrompt,
+                        onReviewDeleteConfirm = showcaseViewModel::onReviewDeleteConfirm,
+                        onReviewDiscard = showcaseViewModel::onReviewDiscard,
+                        onReviewConfirmDismiss = showcaseViewModel::onReviewConfirmDismiss,
+                        onReviewBack = showcaseViewModel::onReviewBack,
                         footerHints = {
                             FooterBar(
                                 hints = listOf(
@@ -565,6 +576,7 @@ fun DualGameDetailContent(
         onScreenshotView = { index ->
             onScreenshotViewed(index)
         },
+        onReviewTapped = { index -> viewModel.tapReviewEntry(index) },
         onOptionSelected = { option -> onOptionAction(option) },
         onBack = onBack
     )

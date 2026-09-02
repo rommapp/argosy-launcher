@@ -421,4 +421,7 @@
     <string name="dual_detail_save_name_create">Erstellen</string>
 
     <string name="dual_detail_save_slot_auto">Autospeicherung</string>
+
+    <string name="dual_detail_reviews_write_row">Rezension schreiben</string>
+    <string name="dual_detail_option_write_review">Rezension schreiben</string>
 </resources>

@@ -423,4 +423,43 @@
     <string name="gamedetail_notice_refresh_failed">Не удалось обновить: %1$s</string>
 
     <string name="gamedetail_header_platform_unknown">Неизвестно</string>
+
+    <string name="reviews_reader_write_row">Написать отзыв</string>
+    <string name="reviews_editor_title">Написать отзыв</string>
+    <string name="reviews_editor_title_edit">Изменить свой отзыв</string>
+    <string name="reviews_editor_verdict_label">Вердикт</string>
+    <string name="reviews_editor_verdict_up">Рекомендую</string>
+    <string name="reviews_editor_verdict_down">Не рекомендую</string>
+    <string name="reviews_editor_visibility_label">Кто видит</string>
+    <string name="reviews_editor_visibility_friends">Друзья</string>
+    <string name="reviews_editor_visibility_public">Все</string>
+    <string name="reviews_editor_body_placeholder">Расскажите, что запомнилось. Оставьте пустым, чтобы опубликовать только вердикт.</string>
+    <plurals name="reviews_editor_chars_left">
+        <item quantity="one">Остался %d символ</item>
+        <item quantity="few">Осталось %d символа</item>
+        <item quantity="many">Осталось %d символов</item>
+        <item quantity="other">Осталось %d символа</item>
+    </plurals>
+    <plurals name="reviews_editor_chars_over">
+        <item quantity="one">%d символ сверх лимита</item>
+        <item quantity="few">%d символа сверх лимита</item>
+        <item quantity="many">%d символов сверх лимита</item>
+        <item quantity="other">%d символа сверх лимита</item>
+    </plurals>
+    <string name="reviews_editor_submit">Опубликовать отзыв</string>
+    <string name="reviews_editor_submit_update">Обновить отзыв</string>
+    <string name="reviews_editor_submitting">Отправка</string>
+    <string name="reviews_editor_delete">Удалить отзыв</string>
+    <string name="reviews_editor_delete_title">Удалить ваш отзыв?</string>
+    <string name="reviews_editor_delete_message">Ваш вердикт и текст будут удалены для всех.</string>
+    <string name="reviews_editor_delete_action">Удалить</string>
+    <string name="reviews_editor_discard_title">Отменить изменения?</string>
+    <string name="reviews_editor_discard_message">Всё, что вы здесь изменили, будет потеряно.</string>
+    <string name="reviews_editor_discard_action">Отменить</string>
+    <string name="reviews_editor_footer_adjust">Изменить</string>
+    <string name="reviews_editor_footer_type">Ввод</string>
+    <string name="reviews_editor_footer_select">Выбрать</string>
+    <string name="reviews_editor_footer_submit">Опубликовать</string>
+    <string name="reviews_editor_footer_delete">Удалить</string>
+    <string name="reviews_editor_footer_back">Назад</string>
 </resources>

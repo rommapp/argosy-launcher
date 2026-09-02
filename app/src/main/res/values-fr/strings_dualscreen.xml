@@ -427,4 +427,7 @@
     <string name="dual_detail_save_name_create">Créer</string>
 
     <string name="dual_detail_save_slot_auto">Sauvegarde auto</string>
+
+    <string name="dual_detail_reviews_write_row">Écrire un avis</string>
+    <string name="dual_detail_option_write_review">Écrire un avis</string>
 </resources>

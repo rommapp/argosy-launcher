@@ -235,6 +235,58 @@ class SecondaryHomeBroadcastHelper(
         dsm.searchDualCovers()
     }
 
+    fun reviewEditorFocusSection(section: com.nendo.argosy.ui.screens.gamedetail.ReviewEditorSection) {
+        dsm.focusDualReviewEditorSection(section)
+    }
+
+    fun reviewEditorMoveSection(delta: Int) {
+        dsm.moveDualReviewEditorSection(delta)
+    }
+
+    fun reviewEditorAdjust(delta: Int) {
+        dsm.adjustDualReviewEditor(delta)
+    }
+
+    fun reviewEditorSetVerdict(recommended: Boolean) {
+        dsm.setDualReviewVerdict(recommended)
+    }
+
+    fun reviewEditorSetVisibility(visibility: String) {
+        dsm.setDualReviewVisibility(visibility)
+    }
+
+    fun reviewEditorSetBody(text: String) {
+        dsm.setDualReviewEditorBody(text)
+    }
+
+    fun reviewEditorConfirm() {
+        dsm.confirmDualReviewEditor()
+    }
+
+    fun reviewEditorSubmit() {
+        dsm.submitDualReview()
+    }
+
+    fun reviewEditorPromptDelete() {
+        dsm.promptDualReviewDelete()
+    }
+
+    fun reviewEditorConfirmDelete() {
+        dsm.confirmDualReviewDelete()
+    }
+
+    fun reviewEditorDiscard() {
+        dsm.discardDualReviewEditor()
+    }
+
+    fun reviewEditorDismissConfirm() {
+        dsm.dismissDualReviewConfirm()
+    }
+
+    fun reviewEditorBack() {
+        dsm.backDualReviewEditor()
+    }
+
     fun broadcastOpenOverlay(eventName: String) {
         dualHomeViewModel.startDrawerForwarding()
         dsm.onOpenOverlayFromCompanion(eventName)

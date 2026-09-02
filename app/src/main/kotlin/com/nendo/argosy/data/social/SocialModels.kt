@@ -300,6 +300,9 @@ object MessageTypes {
     const val GAME_REVIEWS_DATA = "game_reviews_data"
     const val GET_REVIEW_SUMMARY = "get_review_summary"
     const val REVIEW_SUMMARY_DATA = "review_summary_data"
+    const val UPSERT_REVIEW = "upsert_review"
+    const val DELETE_REVIEW = "delete_review"
+    const val REVIEW_SAVED = "review_saved"
 
     // User settings
     const val GET_USER_SETTINGS = "get_user_settings"

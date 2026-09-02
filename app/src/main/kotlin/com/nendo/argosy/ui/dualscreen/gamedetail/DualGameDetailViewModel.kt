@@ -227,15 +227,46 @@ class DualGameDetailViewModel(
     }
 
     fun moveReviewFocus(delta: Int) {
-        val page = _uiState.value.reviewPage ?: return
-        val count = (if (page.myReview != null) 1 else 0) + page.friends.size + page.public.size
+        val state = _uiState.value
+        val count = reviewEntryCount(state)
         if (count == 0) return
         _uiState.update {
             it.copy(reviewFocusIndex = (it.reviewFocusIndex + delta).coerceIn(0, count - 1))
         }
+        val page = state.reviewPage ?: return
         if (delta > 0 && _uiState.value.reviewFocusIndex >= count - 1) {
             socialRepository.loadMoreGameReviews(page.igdbId)
         }
+    }
+
+    private fun reviewEntryCount(state: DualGameDetailUiState): Int {
+        val writeRow = if (state.reviewListHasWriteRow) 1 else 0
+        val page = state.reviewPage ?: return writeRow
+        return writeRow + (if (page.myReview != null) 1 else 0) + page.friends.size + page.public.size
+    }
+
+    /**
+     * True when the cursor sits on the one row the reader owns: their review, or the row that
+     * stands in for it. That row is the only one Confirm acts on.
+     */
+    fun isReviewEditorEntryFocused(): Boolean {
+        val state = _uiState.value
+        return state.reviewFocusIndex == 0 &&
+            (state.reviewListHasWriteRow || (state.canWriteReview && state.reviewPage?.myReview != null))
+    }
+
+    fun tapReviewEntry(index: Int) {
+        val count = reviewEntryCount(_uiState.value)
+        if (count == 0) return
+        _uiState.update { it.copy(reviewFocusIndex = index.coerceIn(0, count - 1)) }
+        if (isReviewEditorEntryFocused()) openReviewEditor()
+    }
+
+    fun openReviewEditor() {
+        if (!_uiState.value.canWriteReview) return
+        val gameId = _uiState.value.gameId
+        if (gameId < 0) return
+        DualScreenManagerHolder.instance?.handleDirectAction("WRITE_REVIEW", gameId)
     }
 
     fun adjustRatingInline(delta: Int) {
@@ -345,7 +376,7 @@ class DualGameDetailViewModel(
             ActiveModal.MEMORY_CARD,
             ActiveModal.SAVE_NAME,
             ActiveModal.DISC_PICKER, ActiveModal.VARIANT_PICKER,
-            ActiveModal.STEAM_INSTALL -> return
+            ActiveModal.STEAM_INSTALL, ActiveModal.REVIEW_EDITOR -> return
             ActiveModal.FILE_PICKER, ActiveModal.COVER_PICKER -> {}
             ActiveModal.NONE -> return
         }

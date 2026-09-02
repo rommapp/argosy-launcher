@@ -32,6 +32,7 @@ import com.nendo.argosy.ui.common.icon
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.common.labelRes
+import com.nendo.argosy.ui.util.clickableNoFocus
 
 @Composable
 fun MetadataChip(label: String, value: String, modifier: Modifier = Modifier) {
@@ -161,7 +162,7 @@ fun ReviewSentimentChip(sentiment: ReviewSentiment) {
  * rather than as a thumbs down.
  */
 @Composable
-fun MyReviewChip(review: GameReview?) {
+fun MyReviewChip(review: GameReview?, onClick: () -> Unit) {
     val tint = when {
         review == null -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
         review.recommended -> LocalLauncherTheme.current.semanticColors.success
@@ -174,6 +175,7 @@ fun MyReviewChip(review: GameReview?) {
                 MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
                 RoundedCornerShape(Dimens.radiusSm)
             )
+            .clickableNoFocus(onClick = onClick)
             .padding(horizontal = Dimens.radiusLg, vertical = Dimens.radiusSm)
     ) {
         Icon(

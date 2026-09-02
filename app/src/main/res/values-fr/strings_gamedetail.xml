@@ -464,4 +464,39 @@
     <string name="gamedetail_notice_refresh_failed">Échec de l\'actualisation : %1$s</string>
 
     <string name="gamedetail_header_platform_unknown">Inconnue</string>
+
+    <string name="reviews_reader_write_row">Écrire un avis</string>
+    <string name="reviews_editor_title">Écrire un avis</string>
+    <string name="reviews_editor_title_edit">Modifier votre avis</string>
+    <string name="reviews_editor_verdict_label">Verdict</string>
+    <string name="reviews_editor_verdict_up">Recommandé</string>
+    <string name="reviews_editor_verdict_down">Non recommandé</string>
+    <string name="reviews_editor_visibility_label">Visible par</string>
+    <string name="reviews_editor_visibility_friends">Amis</string>
+    <string name="reviews_editor_visibility_public">Tout le monde</string>
+    <string name="reviews_editor_body_placeholder">Dites ce qui vous a marqué. Laissez vide pour ne publier que le verdict.</string>
+    <plurals name="reviews_editor_chars_left">
+        <item quantity="one">%d caractère restant</item>
+        <item quantity="other">%d caractères restants</item>
+    </plurals>
+    <plurals name="reviews_editor_chars_over">
+        <item quantity="one">%d caractère au-delà de la limite</item>
+        <item quantity="other">%d caractères au-delà de la limite</item>
+    </plurals>
+    <string name="reviews_editor_submit">Publier l\'avis</string>
+    <string name="reviews_editor_submit_update">Mettre à jour l\'avis</string>
+    <string name="reviews_editor_submitting">Envoi</string>
+    <string name="reviews_editor_delete">Supprimer l\'avis</string>
+    <string name="reviews_editor_delete_title">Supprimer votre avis ?</string>
+    <string name="reviews_editor_delete_message">Votre verdict et votre texte seront retirés pour tout le monde.</string>
+    <string name="reviews_editor_delete_action">Supprimer</string>
+    <string name="reviews_editor_discard_title">Abandonner les modifications ?</string>
+    <string name="reviews_editor_discard_message">Ce que vous avez modifié ici sera perdu.</string>
+    <string name="reviews_editor_discard_action">Abandonner</string>
+    <string name="reviews_editor_footer_adjust">Régler</string>
+    <string name="reviews_editor_footer_type">Saisir</string>
+    <string name="reviews_editor_footer_select">Sélectionner</string>
+    <string name="reviews_editor_footer_submit">Publier</string>
+    <string name="reviews_editor_footer_delete">Supprimer</string>
+    <string name="reviews_editor_footer_back">Retour</string>
 </resources>

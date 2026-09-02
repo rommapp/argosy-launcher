@@ -80,6 +80,7 @@ import com.nendo.argosy.ui.screens.gamedetail.components.MenuLayoutState
 import com.nendo.argosy.ui.screens.gamedetail.components.menuLayout
 import com.nendo.argosy.ui.screens.gamedetail.components.RelatedGamesSection
 import com.nendo.argosy.ui.screens.gamedetail.components.ScreenshotViewerOverlay
+import com.nendo.argosy.ui.screens.gamedetail.components.ReviewEditorOverlay
 import com.nendo.argosy.ui.screens.gamedetail.components.ReviewListOverlay
 import com.nendo.argosy.ui.screens.gamedetail.components.ReviewSummarySection
 import com.nendo.argosy.ui.screens.gamedetail.components.ScreenshotsSection
@@ -504,7 +505,7 @@ private fun GameDetailContent(
         uiState.showRatingPicker || uiState.showMissingDiscPrompt || isAnySyncing ||
         uiState.showSaveCacheDialog || uiState.showRenameDialog || uiState.showScreenshotViewer ||
         uiState.showExtractionFailedPrompt || uiState.showAchievementList ||
-        uiState.showReviewList || uiState.perGameSettings.visible
+        uiState.showReviewList || uiState.reviewEditor != null || uiState.perGameSettings.visible
     val modalBlur by animateDpAsState(
         targetValue = if (showAnyOverlay) Motion.blurRadiusModal else 0.dp,
         animationSpec = Motion.focusSpringDp,
@@ -756,6 +757,7 @@ private fun GameDetailContent(
                                     summary = uiState.reviewSummary,
                                     isActive = focusedItem == MenuItem.Reviews,
                                     onOpen = { viewModel.showReviewList() },
+                                    onWriteReview = { viewModel.openReviewEditor() },
                                     onPositioned = { y -> onReviewsPositioned(y) },
                                     onSectionFocus = {
                                         viewModel.setMenuFocusIndex(menuLayout.focusIndexOf(MenuItem.Reviews, menuLayoutState))
@@ -932,8 +934,14 @@ private fun GameDetailContent(
             visible = uiState.showReviewList,
             gameTitle = game.title,
             page = uiState.reviewPage,
-            focusIndex = uiState.reviewListFocusIndex
+            focusIndex = uiState.reviewListFocusIndex,
+            showWriteRow = uiState.reviewListHasWriteRow,
+            onEntryTapped = { index -> viewModel.tapReviewListEntry(index) }
         )
+
+        uiState.reviewEditor?.let { editor ->
+            ReviewEditorOverlay(state = editor, viewModel = viewModel)
+        }
 
         AchievementListOverlay(
             visible = uiState.showAchievementList,

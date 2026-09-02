@@ -92,6 +92,7 @@ class DualGameDetailInputHandler(
     fun dispatch(event: GamepadEvent): InputResult {
         handleDualFilePickerInput(event)?.let { return it }
         handleDualCoverPickerInput(event)?.let { return it }
+        handleDualReviewEditorInput(event)?.let { return it }
 
         val vm = viewModel() ?: return InputResult.UNHANDLED
 
@@ -168,7 +169,11 @@ class DualGameDetailInputHandler(
                             onBroadcastScreenshotSelected(idx)
                         }
                     }
-                    DualGameDetailTab.REVIEWS -> Unit
+                    DualGameDetailTab.REVIEWS -> {
+                        if (vm.isReviewEditorEntryFocused()) {
+                            onBroadcastDirectAction("WRITE_REVIEW", vm.uiState.value.gameId, null)
+                        }
+                    }
                     DualGameDetailTab.OPTIONS -> handleOptionAction(vm)
                 }
                 InputResult.HANDLED
@@ -245,6 +250,9 @@ class DualGameDetailInputHandler(
             }
             ActiveModal.COVER_PICKER -> {
                 return handleDualCoverPickerInput(event) ?: InputResult.HANDLED
+            }
+            ActiveModal.REVIEW_EDITOR -> {
+                return handleDualReviewEditorInput(event) ?: InputResult.HANDLED
             }
             ActiveModal.CORE -> {
                 when (event) {
@@ -680,6 +688,7 @@ class DualGameDetailInputHandler(
             }
             GameDetailOption.TITLE_ID -> onBroadcastDirectAction("REFRESH_TITLE_ID", gameId, null)
             GameDetailOption.FILES -> onBroadcastDirectAction("FILES", gameId, null)
+            GameDetailOption.WRITE_REVIEW -> onBroadcastDirectAction("WRITE_REVIEW", gameId, null)
             GameDetailOption.CHANGE_COVER -> onBroadcastDirectAction("CHANGE_COVER", gameId, null)
             GameDetailOption.RESET_COVER -> onBroadcastDirectAction("RESET_COVER", gameId, null)
             GameDetailOption.REFRESH_METADATA -> onBroadcastDirectAction("REFRESH_METADATA", gameId, null)

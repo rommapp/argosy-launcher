@@ -5,7 +5,17 @@ import com.nendo.argosy.hardware.SecondaryHomeBroadcastHelper
 import com.nendo.argosy.ui.dualscreen.gamedetail.ActiveModal
 import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailUpperState
 import com.nendo.argosy.ui.input.GamepadEvent
+import com.nendo.argosy.ui.screens.gamedetail.ReviewEditorSection
+import com.nendo.argosy.ui.screens.gamedetail.ReviewEditorState
+import com.nendo.argosy.ui.screens.gamedetail.adjusted
+import com.nendo.argosy.ui.screens.gamedetail.focusedOn
 import com.nendo.argosy.ui.screens.gamedetail.modals.COVER_PICKER_COLUMNS
+import com.nendo.argosy.ui.screens.gamedetail.movedSection
+import com.nendo.argosy.ui.screens.gamedetail.promptingDelete
+import com.nendo.argosy.ui.screens.gamedetail.withBody
+import com.nendo.argosy.ui.screens.gamedetail.withVerdict
+import com.nendo.argosy.ui.screens.gamedetail.withVisibility
+import com.nendo.argosy.ui.screens.gamedetail.withoutConfirm
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 
@@ -192,6 +202,89 @@ class ShowcaseViewModel(
         if (isControlActive()) broadcasts.searchDualCovers()
     }
 
+    private inline fun updateReviewEditor(transform: (ReviewEditorState) -> ReviewEditorState) {
+        detailState.update { s ->
+            if (s == null) return@update null
+            val editor = s.reviewEditor ?: return@update s
+            s.copy(reviewEditor = transform(editor))
+        }
+    }
+
+    fun onReviewSectionFocus(section: ReviewEditorSection) {
+        updateReviewEditor { it.focusedOn(section) }
+        if (isControlActive()) broadcasts.reviewEditorFocusSection(section)
+    }
+
+    fun onReviewVerdictSelect(recommended: Boolean) {
+        updateReviewEditor { it.withVerdict(recommended) }
+        if (isControlActive()) broadcasts.reviewEditorSetVerdict(recommended)
+    }
+
+    fun onReviewVisibilitySelect(visibility: String) {
+        updateReviewEditor { it.withVisibility(visibility) }
+        if (isControlActive()) broadcasts.reviewEditorSetVisibility(visibility)
+    }
+
+    fun onReviewBodyChange(text: String) {
+        updateReviewEditor { it.withBody(text) }
+        if (isControlActive()) broadcasts.reviewEditorSetBody(text)
+    }
+
+    fun onReviewConfirm() {
+        if (isControlActive()) broadcasts.reviewEditorConfirm()
+    }
+
+    fun onReviewSubmit() {
+        if (isControlActive()) broadcasts.reviewEditorSubmit()
+    }
+
+    fun onReviewDeletePrompt() {
+        updateReviewEditor { it.promptingDelete() }
+        if (isControlActive()) broadcasts.reviewEditorPromptDelete()
+    }
+
+    fun onReviewDeleteConfirm() {
+        if (isControlActive()) broadcasts.reviewEditorConfirmDelete()
+    }
+
+    fun onReviewDiscard() {
+        detailState.update { it?.copy(modalType = ActiveModal.NONE, reviewEditor = null) }
+        if (isControlActive()) broadcasts.reviewEditorDiscard()
+    }
+
+    fun onReviewConfirmDismiss() {
+        updateReviewEditor { it.withoutConfirm() }
+        if (isControlActive()) broadcasts.reviewEditorDismissConfirm()
+    }
+
+    fun onReviewBack() {
+        if (isControlActive()) broadcasts.reviewEditorBack()
+    }
+
+    private fun moveReviewEditorSection(delta: Int) {
+        updateReviewEditor { it.movedSection(delta) }
+        if (isControlActive()) broadcasts.reviewEditorMoveSection(delta)
+    }
+
+    private fun adjustReviewEditor(delta: Int) {
+        updateReviewEditor { it.adjusted(delta) }
+        if (isControlActive()) broadcasts.reviewEditorAdjust(delta)
+    }
+
+    private fun handleReviewEditorEvent(event: GamepadEvent) {
+        when (event) {
+            is GamepadEvent.Up -> moveReviewEditorSection(-1)
+            is GamepadEvent.Down -> moveReviewEditorSection(1)
+            is GamepadEvent.Left -> adjustReviewEditor(-1)
+            is GamepadEvent.Right -> adjustReviewEditor(1)
+            is GamepadEvent.Confirm -> onReviewConfirm()
+            is GamepadEvent.Menu, is GamepadEvent.Select -> onReviewSubmit()
+            is GamepadEvent.SecondaryAction -> onReviewDeletePrompt()
+            is GamepadEvent.Back -> onReviewBack()
+            else -> {}
+        }
+    }
+
     fun moveCoverPickerFocus(delta: Int) {
         detailState.update { state ->
             if (state == null || state.coverCandidates.isEmpty()) return@update state
@@ -312,6 +405,10 @@ class ShowcaseViewModel(
         val state = detailState.value ?: return false
         val modal = state.modalType
         if (modal == ActiveModal.NONE) return false
+        if (modal == ActiveModal.REVIEW_EDITOR) {
+            handleReviewEditorEvent(event)
+            return true
+        }
         when (event) {
             is GamepadEvent.Left -> {
                 if (modal == ActiveModal.RATING || modal == ActiveModal.DIFFICULTY)

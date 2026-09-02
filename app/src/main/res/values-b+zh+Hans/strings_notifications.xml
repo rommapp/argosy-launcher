@@ -182,4 +182,11 @@
     <string name="notif_sync_platform_completed_with_errors_title">同步完成，但存在错误</string>
     <string name="notif_sync_platform_error_unknown">未知错误</string>
     <string name="notif_sync_platform_failed_title">同步失败</string>
+
+    <string name="notif_review_saved">评价已发布</string>
+    <string name="notif_review_deleted">评价已删除</string>
+    <string name="notif_review_error_offline">未连接到 Argosy Social</string>
+    <string name="notif_review_error_too_long">评价内容过长</string>
+    <string name="notif_review_error_invalid">服务器无法读取该评价</string>
+    <string name="notif_review_error_server">服务器无法保存该评价</string>
 </resources>

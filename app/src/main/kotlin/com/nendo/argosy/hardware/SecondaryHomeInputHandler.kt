@@ -64,6 +64,8 @@ class SecondaryHomeInputHandler(
                 ?.let { return it }
             com.nendo.argosy.ui.dualscreen.gamedetail.handleDualCoverPickerInput(event)
                 ?.let { return it }
+            com.nendo.argosy.ui.dualscreen.gamedetail.handleDualReviewEditorInput(event)
+                ?.let { return it }
         }
 
         if (isMediaPanelSurface()) return handleMediaPanelInput(event)
@@ -467,7 +469,11 @@ class SecondaryHomeInputHandler(
                             broadcasts.broadcastScreenshotSelected(idx)
                         }
                     }
-                    DualGameDetailTab.REVIEWS -> Unit
+                    DualGameDetailTab.REVIEWS -> {
+                        if (vm.isReviewEditorEntryFocused()) {
+                            broadcasts.broadcastDirectAction("WRITE_REVIEW", vm.uiState.value.gameId)
+                        }
+                    }
                     DualGameDetailTab.OPTIONS -> handleOptionAction(vm)
                 }
                 InputResult.HANDLED
@@ -676,6 +682,9 @@ class SecondaryHomeInputHandler(
             }
             GameDetailOption.RESET_COVER -> {
                 broadcasts.broadcastDirectAction("RESET_COVER", gameId)
+            }
+            GameDetailOption.WRITE_REVIEW -> {
+                broadcasts.broadcastDirectAction("WRITE_REVIEW", gameId)
             }
             GameDetailOption.REFRESH_METADATA -> {
                 broadcasts.broadcastDirectAction("REFRESH_METADATA", gameId)
@@ -1186,6 +1195,10 @@ class SecondaryHomeInputHandler(
             ActiveModal.COVER_PICKER -> {
                 return com.nendo.argosy.ui.dualscreen.gamedetail
                     .handleDualCoverPickerInput(event) ?: InputResult.HANDLED
+            }
+            ActiveModal.REVIEW_EDITOR -> {
+                return com.nendo.argosy.ui.dualscreen.gamedetail
+                    .handleDualReviewEditorInput(event) ?: InputResult.HANDLED
             }
             ActiveModal.STEAM_INSTALL -> {
                 when (event) {

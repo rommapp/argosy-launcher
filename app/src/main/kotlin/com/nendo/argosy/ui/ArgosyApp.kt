@@ -618,6 +618,8 @@ fun ArgosyApp(
                     }
                 } else if (state?.modalType == ActiveModal.COVER_PICKER) {
                     activity?.moveDualCoverPickerFocus(-1)
+                } else if (state?.modalType == ActiveModal.REVIEW_EDITOR) {
+                    activity?.adjustDualReviewEditor(-1)
                 }
                 return InputResult.HANDLED
             }
@@ -633,6 +635,8 @@ fun ArgosyApp(
                     }
                 } else if (state?.modalType == ActiveModal.COVER_PICKER) {
                     activity?.moveDualCoverPickerFocus(1)
+                } else if (state?.modalType == ActiveModal.REVIEW_EDITOR) {
+                    activity?.adjustDualReviewEditor(1)
                 }
                 return InputResult.HANDLED
             }
@@ -653,6 +657,7 @@ fun ArgosyApp(
                     ActiveModal.COVER_PICKER -> activity?.moveDualCoverPickerFocus(
                         -com.nendo.argosy.ui.screens.gamedetail.modals.COVER_PICKER_COLUMNS
                     )
+                    ActiveModal.REVIEW_EDITOR -> activity?.moveDualReviewEditorSection(-1)
                     else -> {}
                 }
                 return InputResult.HANDLED
@@ -674,6 +679,7 @@ fun ArgosyApp(
                     ActiveModal.COVER_PICKER -> activity?.moveDualCoverPickerFocus(
                         com.nendo.argosy.ui.screens.gamedetail.modals.COVER_PICKER_COLUMNS
                     )
+                    ActiveModal.REVIEW_EDITOR -> activity?.moveDualReviewEditorSection(1)
                     else -> {}
                 }
                 return InputResult.HANDLED
@@ -695,6 +701,7 @@ fun ArgosyApp(
                     ActiveModal.SAVE_NAME -> activity?.confirmDualSaveName()
                     ActiveModal.FILE_PICKER -> activity?.activateDualFilePickerFocused()
                     ActiveModal.COVER_PICKER -> activity?.confirmDualCoverAtFocus()
+                    ActiveModal.REVIEW_EDITOR -> activity?.confirmDualReviewEditor()
                     else -> {}
                 }
                 return InputResult.HANDLED
@@ -729,14 +736,33 @@ fun ArgosyApp(
                     activity?.dismissDualCollectionCreateDialog()
                     return InputResult.HANDLED
                 }
+                if (state?.modalType == ActiveModal.REVIEW_EDITOR) {
+                    activity?.backDualReviewEditor()
+                    return InputResult.HANDLED
+                }
                 activity?.dismissDualModal()
                 return InputResult.HANDLED
             }
-            override fun onMenu(): InputResult = InputResult.HANDLED
-            override fun onSecondaryAction(): InputResult = InputResult.HANDLED
+            override fun onMenu(): InputResult {
+                if (activity?.dualGameDetailState?.value?.modalType == ActiveModal.REVIEW_EDITOR) {
+                    activity?.submitDualReview()
+                }
+                return InputResult.HANDLED
+            }
+            override fun onSecondaryAction(): InputResult {
+                if (activity?.dualGameDetailState?.value?.modalType == ActiveModal.REVIEW_EDITOR) {
+                    activity?.promptDualReviewDelete()
+                }
+                return InputResult.HANDLED
+            }
             override fun onPrevTrigger(): InputResult = InputResult.HANDLED
             override fun onNextTrigger(): InputResult = InputResult.HANDLED
-            override fun onSelect(): InputResult = InputResult.HANDLED
+            override fun onSelect(): InputResult {
+                if (activity?.dualGameDetailState?.value?.modalType == ActiveModal.REVIEW_EDITOR) {
+                    activity?.submitDualReview()
+                }
+                return InputResult.HANDLED
+            }
             override fun onLeftStickClick(): InputResult = InputResult.HANDLED
             override fun onRightStickClick(): InputResult = InputResult.HANDLED
         }
@@ -1320,6 +1346,17 @@ fun ArgosyApp(
                             onCoverSearch = {
                                 activity?.searchDualCovers()
                             },
+                            onReviewSectionFocus = { activity?.focusDualReviewEditorSection(it) },
+                            onReviewVerdictSelect = { activity?.setDualReviewVerdict(it) },
+                            onReviewVisibilitySelect = { activity?.setDualReviewVisibility(it) },
+                            onReviewBodyChange = { activity?.setDualReviewEditorBody(it) },
+                            onReviewConfirm = { activity?.confirmDualReviewEditor() },
+                            onReviewSubmit = { activity?.submitDualReview() },
+                            onReviewDeletePrompt = { activity?.promptDualReviewDelete() },
+                            onReviewDeleteConfirm = { activity?.confirmDualReviewDelete() },
+                            onReviewDiscard = { activity?.discardDualReviewEditor() },
+                            onReviewConfirmDismiss = { activity?.dismissDualReviewConfirm() },
+                            onReviewBack = { activity?.backDualReviewEditor() },
                             footerHints = {
                                 FooterHints(
                                     hints = listOf(
@@ -1926,6 +1963,7 @@ fun ArgosyApp(
                                     GameDetailOption.REFRESH_METADATA,
                                     GameDetailOption.CHANGE_COVER,
                                     GameDetailOption.RESET_COVER,
+                                    GameDetailOption.WRITE_REVIEW,
                                     GameDetailOption.DELETE -> {
                                         dualScreenManager.handleDirectAction(option.name, gameId)
                                     }

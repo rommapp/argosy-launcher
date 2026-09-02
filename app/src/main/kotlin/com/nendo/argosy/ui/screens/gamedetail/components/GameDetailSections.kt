@@ -221,7 +221,10 @@ fun GameHeader(
                     iconColor = ALauncherColors.DifficultyRed
                 )
                 if (uiState.hasSocialAccount) {
-                    MyReviewChip(review = uiState.reviewSummary?.myReview)
+                    MyReviewChip(
+                        review = uiState.reviewSummary?.myReview,
+                        onClick = { viewModel.openReviewEditor() }
+                    )
                 }
                 if (game.playTimeMinutes > 0) {
                     PlayTimeChip(minutes = game.playTimeMinutes)

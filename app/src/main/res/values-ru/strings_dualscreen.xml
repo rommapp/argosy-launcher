@@ -397,4 +397,7 @@
     <string name="dual_detail_save_name_create">Создать</string>
 
     <string name="dual_detail_save_slot_auto">Автосохранение</string>
+
+    <string name="dual_detail_reviews_write_row">Написать отзыв</string>
+    <string name="dual_detail_option_write_review">Написать отзыв</string>
 </resources>

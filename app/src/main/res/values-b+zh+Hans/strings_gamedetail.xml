@@ -395,4 +395,37 @@
     <string name="gamedetail_notice_refresh_failed">刷新失败：%1$s</string>
 
     <string name="gamedetail_header_platform_unknown">未知</string>
+
+    <string name="reviews_reader_write_row">写评价</string>
+    <string name="reviews_editor_title">写评价</string>
+    <string name="reviews_editor_title_edit">编辑我的评价</string>
+    <string name="reviews_editor_verdict_label">评价</string>
+    <string name="reviews_editor_verdict_up">推荐</string>
+    <string name="reviews_editor_verdict_down">不推荐</string>
+    <string name="reviews_editor_visibility_label">可见范围</string>
+    <string name="reviews_editor_visibility_friends">好友</string>
+    <string name="reviews_editor_visibility_public">所有人</string>
+    <string name="reviews_editor_body_placeholder">说说印象最深的地方。留空则只发布推荐与否。</string>
+    <plurals name="reviews_editor_chars_left">
+        <item quantity="other">还可输入 %d 个字符</item>
+    </plurals>
+    <plurals name="reviews_editor_chars_over">
+        <item quantity="other">超出上限 %d 个字符</item>
+    </plurals>
+    <string name="reviews_editor_submit">发布评价</string>
+    <string name="reviews_editor_submit_update">更新评价</string>
+    <string name="reviews_editor_submitting">发布中</string>
+    <string name="reviews_editor_delete">删除评价</string>
+    <string name="reviews_editor_delete_title">删除你的评价？</string>
+    <string name="reviews_editor_delete_message">你的推荐与否和所写内容将对所有人移除。</string>
+    <string name="reviews_editor_delete_action">删除</string>
+    <string name="reviews_editor_discard_title">放弃更改？</string>
+    <string name="reviews_editor_discard_message">你在这里所做的更改将丢失。</string>
+    <string name="reviews_editor_discard_action">放弃</string>
+    <string name="reviews_editor_footer_adjust">调整</string>
+    <string name="reviews_editor_footer_type">输入</string>
+    <string name="reviews_editor_footer_select">选择</string>
+    <string name="reviews_editor_footer_submit">发布</string>
+    <string name="reviews_editor_footer_delete">删除</string>
+    <string name="reviews_editor_footer_back">返回</string>
 </resources>

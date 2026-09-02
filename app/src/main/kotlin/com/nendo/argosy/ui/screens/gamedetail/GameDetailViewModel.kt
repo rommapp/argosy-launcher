@@ -403,6 +403,22 @@ class GameDetailViewModel @Inject constructor(
                 _uiState.update { it.copy(reviewPage = page) }
             }
         }
+
+        viewModelScope.launch {
+            socialRepository.reviewWriteEvents.collect { event ->
+                _uiState.update { state ->
+                    val editor = state.reviewEditor ?: return@update state
+                    if (editor.igdbId != event.igdbId) return@update state
+                    when (event) {
+                        is com.nendo.argosy.data.social.ReviewWriteEvent.Failed ->
+                            state.copy(reviewEditor = editor.settled())
+                        is com.nendo.argosy.data.social.ReviewWriteEvent.Saved,
+                        is com.nendo.argosy.data.social.ReviewWriteEvent.Deleted ->
+                            state.copy(reviewEditor = null)
+                    }
+                }
+            }
+        }
     }
 
     private suspend fun handlePickerSelection(selection: PickerSelection) {
@@ -1924,14 +1940,126 @@ class GameDetailViewModel @Inject constructor(
      * caller's own review sit above it and never grow, so only the tail can load more.
      */
     fun moveReviewListFocus(delta: Int) {
-        val page = _uiState.value.reviewPage ?: return
-        val count = (if (page.myReview != null) 1 else 0) + page.friends.size + page.public.size
+        val state = _uiState.value
+        val count = reviewListEntryCount(state)
         if (count == 0) return
-        _uiState.update { state ->
-            state.copy(reviewListFocusIndex = (state.reviewListFocusIndex + delta).coerceIn(0, count - 1))
+        _uiState.update { current ->
+            current.copy(reviewListFocusIndex = (current.reviewListFocusIndex + delta).coerceIn(0, count - 1))
         }
+        val page = state.reviewPage ?: return
         if (delta > 0 && _uiState.value.reviewListFocusIndex >= count - 1) {
             socialRepository.loadMoreGameReviews(page.igdbId)
+        }
+    }
+
+    private fun reviewListEntryCount(state: GameDetailUiState): Int {
+        val writeRow = if (state.reviewListHasWriteRow) 1 else 0
+        val page = state.reviewPage ?: return writeRow
+        return writeRow + (if (page.myReview != null) 1 else 0) + page.friends.size + page.public.size
+    }
+
+    fun tapReviewListEntry(index: Int) {
+        val count = reviewListEntryCount(_uiState.value)
+        if (count == 0) return
+        _uiState.update { it.copy(reviewListFocusIndex = index.coerceIn(0, count - 1)) }
+        confirmReviewListSelection()
+    }
+
+    /**
+     * Only the first row can be acted on: it is either the reader's own review or the row that
+     * stands in for it. Every other card belongs to someone else.
+     */
+    fun confirmReviewListSelection() {
+        val state = _uiState.value
+        if (state.reviewListFocusIndex != 0) return
+        if (state.reviewListHasWriteRow || state.reviewPage?.myReview != null) openReviewEditor()
+    }
+
+    fun openReviewEditor() {
+        val state = _uiState.value
+        val game = state.game ?: return
+        val igdbId = game.igdbId?.toInt() ?: return
+        if (!state.hasSocialAccount || state.reviewEditor != null) return
+        val existing = state.reviewPage?.myReview ?: state.reviewSummary?.myReview
+        _uiState.update {
+            it.copy(
+                reviewEditor = ReviewEditorState.forGame(
+                    igdbId = igdbId,
+                    gameTitle = game.title,
+                    platformName = game.platformName,
+                    coverPath = game.coverPath,
+                    existing = existing
+                )
+            )
+        }
+    }
+
+    fun closeReviewEditor() {
+        _uiState.update { it.copy(reviewEditor = null) }
+    }
+
+    private inline fun updateReviewEditor(transform: (ReviewEditorState) -> ReviewEditorState) {
+        _uiState.update { state ->
+            val editor = state.reviewEditor ?: return@update state
+            state.copy(reviewEditor = transform(editor))
+        }
+    }
+
+    fun moveReviewEditorSection(delta: Int) = updateReviewEditor { it.movedSection(delta) }
+
+    fun focusReviewEditorSection(section: ReviewEditorSection) = updateReviewEditor { it.focusedOn(section) }
+
+    fun adjustReviewEditor(delta: Int) = updateReviewEditor { it.adjusted(delta) }
+
+    fun setReviewEditorVerdict(recommended: Boolean) = updateReviewEditor { it.withVerdict(recommended) }
+
+    fun setReviewEditorVisibility(visibility: String) = updateReviewEditor { it.withVisibility(visibility) }
+
+    fun setReviewEditorBody(text: String) = updateReviewEditor { it.withBody(text) }
+
+    fun requestReviewEditorKeyboard() = updateReviewEditor { it.requestingKeyboard() }
+
+    fun submitReview() {
+        val editor = _uiState.value.reviewEditor ?: return
+        if (editor.hasConfirm || !editor.canSubmit) return
+        updateReviewEditor { it.submitting() }
+        socialRepository.upsertReview(editor.igdbId, editor.recommended, editor.bodyToSend, editor.visibility)
+    }
+
+    fun promptReviewDelete() = updateReviewEditor { it.promptingDelete() }
+
+    fun confirmReviewDelete() {
+        val editor = _uiState.value.reviewEditor ?: return
+        if (!editor.isEditing || editor.isSubmitting) return
+        updateReviewEditor { it.submitting() }
+        socialRepository.deleteReview(editor.igdbId)
+    }
+
+    fun dismissReviewEditorConfirm() = updateReviewEditor { it.withoutConfirm() }
+
+    fun backFromReviewEditor() {
+        val editor = _uiState.value.reviewEditor ?: return
+        when {
+            editor.hasConfirm -> dismissReviewEditorConfirm()
+            editor.isSubmitting -> {}
+            editor.isDirty -> updateReviewEditor { it.promptingDiscard() }
+            else -> closeReviewEditor()
+        }
+    }
+
+    fun confirmReviewEditorAction() {
+        val editor = _uiState.value.reviewEditor ?: return
+        when {
+            editor.showDiscardConfirm ->
+                if (editor.confirmFocusIndex == 1) closeReviewEditor() else dismissReviewEditorConfirm()
+            editor.showDeleteConfirm ->
+                if (editor.confirmFocusIndex == 1) confirmReviewDelete() else dismissReviewEditorConfirm()
+            else -> when (editor.confirmAction()) {
+                ReviewEditorAction.TOGGLE -> adjustReviewEditor(1)
+                ReviewEditorAction.OPEN_KEYBOARD -> requestReviewEditorKeyboard()
+                ReviewEditorAction.SUBMIT -> submitReview()
+                ReviewEditorAction.DELETE -> promptReviewDelete()
+            }
         }
     }
 
@@ -2066,6 +2194,7 @@ class GameDetailViewModel @Inject constructor(
             val saveState = state.saveChannel
             val pickerState = pickerModalDelegate.state.value
             return when {
+                state.reviewEditor != null -> { moveReviewEditorSection(-1); InputResult.HANDLED }
                 saveState.showRenameDialog -> InputResult.UNHANDLED
                 saveState.showRestoreConfirmation -> InputResult.UNHANDLED
                 saveState.showDeleteConfirmation -> InputResult.UNHANDLED
@@ -2098,6 +2227,7 @@ class GameDetailViewModel @Inject constructor(
             val saveState = state.saveChannel
             val pickerState = pickerModalDelegate.state.value
             return when {
+                state.reviewEditor != null -> { moveReviewEditorSection(1); InputResult.HANDLED }
                 saveState.showRenameDialog -> InputResult.UNHANDLED
                 saveState.showRestoreConfirmation -> InputResult.UNHANDLED
                 saveState.showDeleteConfirmation -> InputResult.UNHANDLED
@@ -2130,6 +2260,7 @@ class GameDetailViewModel @Inject constructor(
             val saveState = state.saveChannel
             val pickerState = pickerModalDelegate.state.value
             when {
+                state.reviewEditor != null -> { adjustReviewEditor(-1); return InputResult.HANDLED }
                 saveState.showRestoreConfirmation || saveState.showDeleteConfirmation || saveState.showRenameDialog || saveState.showMigrateConfirmation || saveState.showDeleteLegacyConfirmation -> return InputResult.HANDLED
                 saveState.isVisible -> {
                     when (saveState.selectedTab) {
@@ -2161,6 +2292,7 @@ class GameDetailViewModel @Inject constructor(
             val saveState = state.saveChannel
             val pickerState = pickerModalDelegate.state.value
             when {
+                state.reviewEditor != null -> { adjustReviewEditor(1); return InputResult.HANDLED }
                 saveState.showRestoreConfirmation || saveState.showDeleteConfirmation || saveState.showRenameDialog || saveState.showMigrateConfirmation || saveState.showDeleteLegacyConfirmation -> return InputResult.HANDLED
                 saveState.isVisible -> {
                     when (saveState.selectedTab) {
@@ -2191,6 +2323,7 @@ class GameDetailViewModel @Inject constructor(
             val state = _uiState.value
             val saveState = state.saveChannel
             val pickerState = pickerModalDelegate.state.value
+            if (state.reviewEditor != null) return InputResult.HANDLED
             if (pickerState.showFilePicker) { jumpFilePickerGroup(-1); return InputResult.HANDLED }
             if (saveState.isVisible) {
                 if (saveState.supportsStates) {
@@ -2210,6 +2343,7 @@ class GameDetailViewModel @Inject constructor(
             val state = _uiState.value
             val saveState = state.saveChannel
             val pickerState = pickerModalDelegate.state.value
+            if (state.reviewEditor != null) return InputResult.HANDLED
             if (pickerState.showFilePicker) { jumpFilePickerGroup(1); return InputResult.HANDLED }
             if (saveState.isVisible) {
                 if (saveState.supportsStates) {
@@ -2232,6 +2366,7 @@ class GameDetailViewModel @Inject constructor(
             val saveState = state.saveChannel
             val pickerState = pickerModalDelegate.state.value
             when {
+                state.reviewEditor != null -> confirmReviewEditorAction()
                 saveState.showRenameDialog -> confirmRename()
                 saveState.showDeleteConfirmation -> confirmDeleteChannel()
                 saveState.showRestoreConfirmation -> restoreSave(syncToServer = false)
@@ -2244,6 +2379,7 @@ class GameDetailViewModel @Inject constructor(
                 saveState.isVisible -> confirmSaveCacheSelection()
                 state.showScreenshotViewer -> closeScreenshotViewer()
                 state.showAchievementList -> {}
+                state.showReviewList -> confirmReviewListSelection()
                 state.showPermissionModal -> return InputResult.HANDLED
                 state.showRatingPicker -> confirmRating()
                 state.showStatusPicker -> confirmStatus()
@@ -2272,6 +2408,7 @@ class GameDetailViewModel @Inject constructor(
             val saveState = state.saveChannel
             val pickerState = pickerModalDelegate.state.value
             when {
+                state.reviewEditor != null -> backFromReviewEditor()
                 saveState.showRenameDialog -> dismissRenameDialog()
                 saveState.showDeleteConfirmation -> dismissDeleteConfirmation()
                 saveState.showRestoreConfirmation -> dismissRestoreConfirmation()
@@ -2310,6 +2447,7 @@ class GameDetailViewModel @Inject constructor(
             val state = _uiState.value
             val saveState = state.saveChannel
             val pickerState = pickerModalDelegate.state.value
+            if (state.reviewEditor != null) { submitReview(); return InputResult.HANDLED }
             if (saveState.showRenameDialog) { dismissRenameDialog(); return InputResult.UNHANDLED }
             if (saveState.showDeleteConfirmation) { dismissDeleteConfirmation(); return InputResult.UNHANDLED }
             if (saveState.showRestoreConfirmation) { dismissRestoreConfirmation(); return InputResult.UNHANDLED }
@@ -2333,6 +2471,7 @@ class GameDetailViewModel @Inject constructor(
         override fun onSecondaryAction(): InputResult {
             val state = _uiState.value
             val saveState = state.saveChannel
+            if (state.reviewEditor != null) { promptReviewDelete(); return InputResult.HANDLED }
             if (pickerModalDelegate.state.value.showCoverPicker) {
                 openCoverFileBrowser(); return InputResult.HANDLED
             }
@@ -2345,6 +2484,7 @@ class GameDetailViewModel @Inject constructor(
         override fun onContextMenu(): InputResult {
             val state = _uiState.value
             val saveState = state.saveChannel
+            if (state.reviewEditor != null) return InputResult.HANDLED
             if (pickerModalDelegate.state.value.showCoverPicker) {
                 searchCoverArt(); return InputResult.HANDLED
             }
@@ -2362,6 +2502,7 @@ class GameDetailViewModel @Inject constructor(
             val state = _uiState.value
             val saveState = state.saveChannel
             val pickerState = pickerModalDelegate.state.value
+            if (state.reviewEditor != null) { submitReview(); return InputResult.HANDLED }
             val anyModalOpen = state.showMoreOptions || state.showPlayOptions || pickerState.hasAnyPickerOpen || state.showRatingPicker || state.showStatusPicker || state.showMissingDiscPrompt || state.showScreenshotViewer || saveState.isVisible
             if (anyModalOpen) { dismissAllModals(); return InputResult.HANDLED }
             toggleMoreOptions(); return InputResult.HANDLED

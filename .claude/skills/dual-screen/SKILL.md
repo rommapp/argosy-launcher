@@ -267,10 +267,10 @@ later. Grep `fun open`, do not scroll. The lower screen dims while a modal is
 active (`isDimmed = activeModal != ActiveModal.NONE`, wired in
 SecondaryHomeComposables.kt).
 
-`ActiveModal` - 16 values (DualGameDetailModels.kt):
+`ActiveModal` - 17 values (DualGameDetailModels.kt):
 NONE, RATING, DIFFICULTY, STATUS, EMULATOR, CORE, SAVE_PATH, DISPLAY_TARGET,
 MEMORY_CARD, COLLECTION, SAVE_NAME, DISC_PICKER, VARIANT_PICKER, STEAM_INSTALL,
-FILE_PICKER, COVER_PICKER.
+FILE_PICKER, COVER_PICKER, REVIEW_EDITOR.
 
 Input ownership per modal, normal (non-swapped) mode. "Companion-owned" =
 `handleModalInput` (SecondaryHomeInputHandler) drives the companion VM and
@@ -296,6 +296,7 @@ mirrors focus to the upper via `broadcastInlineUpdate(<field>)` ->
 | STEAM_INSTALL | Companion | `steam_install_focus`; also opens from Home as a chooser (`openSteamChooserForHome`) |
 | FILE_PICKER | UPPER | companion is Back-only dismiss; all focus/selection state is DSM `filePicker*` fields driven by the upper `dualModalInputHandler` and touch |
 | COVER_PICKER | UPPER | search text needs the keyboard; state is DSM `coverPicker*` / `coverCandidates`, driven by `handleDualCoverPickerInput` (both handlers), the upper `dualModalInputHandler` and touch; opened via direct action CHANGE_COVER, X re-runs the search |
+| REVIEW_EDITOR | UPPER | review body needs the keyboard; draft is DSM `reviewEditor` (`ReviewEditorState`, shared with the single-screen editor), driven by `handleDualReviewEditorInput` (both handlers), the upper `dualModalInputHandler` and touch; opened via direct action WRITE_REVIEW from the REVIEWS tab or the options row; Start/Select submit, Y prompts delete, B discards with a confirm when dirty; closes on the repository's `reviewWriteEvents` |
 
 Rule: new picker modals are companion-owned with live focus forwarding -
 copy the EMULATOR branch, not FILE_PICKER.

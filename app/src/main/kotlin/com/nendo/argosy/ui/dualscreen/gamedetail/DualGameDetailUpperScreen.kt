@@ -75,6 +75,7 @@ import com.nendo.argosy.ui.primitives.GlassPanel
 import com.nendo.argosy.ui.primitives.RowButton
 import com.nendo.argosy.ui.screens.collections.dialogs.CreateCollectionDialog
 import com.nendo.argosy.ui.screens.gamedetail.RatingType
+import com.nendo.argosy.ui.screens.gamedetail.ReviewEditorSection
 import com.nendo.argosy.ui.screens.gamedetail.modals.CoverPickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.RatingPickerModal
 import com.nendo.argosy.ui.screens.gamedetail.modals.StatusPickerModal
@@ -115,6 +116,17 @@ fun DualGameDetailUpperScreen(
     onCoverSelect: (Int) -> Unit = {},
     onCoverQueryChange: (String) -> Unit = {},
     onCoverSearch: () -> Unit = {},
+    onReviewSectionFocus: (ReviewEditorSection) -> Unit = {},
+    onReviewVerdictSelect: (Boolean) -> Unit = {},
+    onReviewVisibilitySelect: (String) -> Unit = {},
+    onReviewBodyChange: (String) -> Unit = {},
+    onReviewConfirm: () -> Unit = {},
+    onReviewSubmit: () -> Unit = {},
+    onReviewDeletePrompt: () -> Unit = {},
+    onReviewDeleteConfirm: () -> Unit = {},
+    onReviewDiscard: () -> Unit = {},
+    onReviewConfirmDismiss: () -> Unit = {},
+    onReviewBack: () -> Unit = {},
     footerHints: @Composable () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -322,6 +334,22 @@ fun DualGameDetailUpperScreen(
                 onQueryChange = onCoverQueryChange,
                 onSearch = onCoverSearch
             )
+            ActiveModal.REVIEW_EDITOR -> state.reviewEditor?.let { editor ->
+                DualReviewEditorModal(
+                    state = editor,
+                    onSectionFocus = onReviewSectionFocus,
+                    onVerdictSelect = onReviewVerdictSelect,
+                    onVisibilitySelect = onReviewVisibilitySelect,
+                    onBodyChange = onReviewBodyChange,
+                    onConfirm = onReviewConfirm,
+                    onSubmit = onReviewSubmit,
+                    onDeletePrompt = onReviewDeletePrompt,
+                    onDeleteConfirm = onReviewDeleteConfirm,
+                    onDiscard = onReviewDiscard,
+                    onConfirmDismiss = onReviewConfirmDismiss,
+                    onBack = onReviewBack
+                )
+            }
             ActiveModal.NONE -> {}
         }
     }

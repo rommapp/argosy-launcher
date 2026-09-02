@@ -128,6 +128,8 @@ class ArgosSocialService @Inject constructor(
         data class EventCommentsData(val eventId: String, val comments: List<FeedComment>) : IncomingMessage()
         data class GameReviewsData(val page: GameReviewsPage) : IncomingMessage()
         data class ReviewSummaryData(val summary: ReviewSummary) : IncomingMessage()
+        data class ReviewSaved(val review: GameReview) : IncomingMessage()
+        data class ReviewDeleted(val igdbId: Int) : IncomingMessage()
         data class Error(val code: String, val message: String) : IncomingMessage()
         data class Raw(val type: String, val payload: String) : IncomingMessage()
         data class SessionRevoked(val reason: String) : IncomingMessage()
@@ -425,6 +427,20 @@ class ArgosSocialService @Inject constructor(
                         Log.d(TAG, "REVIEW_SUMMARY_DATA: igdb=${summary.igdbId}")
                         IncomingMessage.ReviewSummaryData(summary)
                     } else null
+                }
+
+                MessageTypes.REVIEW_SAVED -> {
+                    if (payload == null) {
+                        null
+                    } else if (payload.optBoolean("deleted", false)) {
+                        val igdbId = payload.optInt("igdb_id")
+                        Log.d(TAG, "REVIEW_SAVED: deleted igdb=$igdbId")
+                        IncomingMessage.ReviewDeleted(igdbId)
+                    } else {
+                        val review = parseGameReview(payload)
+                        Log.d(TAG, "REVIEW_SAVED: igdb=${review.igdbId}, recommended=${review.recommended}")
+                        IncomingMessage.ReviewSaved(review)
+                    }
                 }
 
                 MessageTypes.FEED_DATA -> {
@@ -1116,6 +1132,20 @@ class ArgosSocialService @Inject constructor(
         if (limit != null) payload["limit"] = limit
         return send(MessageTypes.GET_GAME_REVIEWS, payload)
     }
+
+    /**
+     * Play time is attached by the server; an absent body means the verdict stands alone.
+     */
+    fun upsertReview(igdbId: Int, recommended: Boolean, body: String?, visibility: String): Boolean =
+        send(MessageTypes.UPSERT_REVIEW, buildMap {
+            put("igdb_id", igdbId)
+            put("recommended", recommended)
+            if (body != null) put("body", body)
+            put("visibility", visibility)
+        })
+
+    fun deleteReview(igdbId: Int): Boolean =
+        send(MessageTypes.DELETE_REVIEW, mapOf("igdb_id" to igdbId))
 
     fun likeEvent(eventId: String) {
         Log.d(TAG, "likeEvent: eventId=$eventId")

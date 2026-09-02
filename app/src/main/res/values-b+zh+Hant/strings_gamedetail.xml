@@ -395,4 +395,37 @@
     <string name="gamedetail_notice_refresh_failed">重新整理失敗：%1$s</string>
 
     <string name="gamedetail_header_platform_unknown">未知</string>
+
+    <string name="reviews_reader_write_row">撰寫評論</string>
+    <string name="reviews_editor_title">撰寫評論</string>
+    <string name="reviews_editor_title_edit">編輯我的評論</string>
+    <string name="reviews_editor_verdict_label">評價</string>
+    <string name="reviews_editor_verdict_up">推薦</string>
+    <string name="reviews_editor_verdict_down">不推薦</string>
+    <string name="reviews_editor_visibility_label">可見範圍</string>
+    <string name="reviews_editor_visibility_friends">好友</string>
+    <string name="reviews_editor_visibility_public">所有人</string>
+    <string name="reviews_editor_body_placeholder">說說印象最深的地方。留空則只發布推薦與否。</string>
+    <plurals name="reviews_editor_chars_left">
+        <item quantity="other">還可輸入 %d 個字元</item>
+    </plurals>
+    <plurals name="reviews_editor_chars_over">
+        <item quantity="other">超出上限 %d 個字元</item>
+    </plurals>
+    <string name="reviews_editor_submit">發布評論</string>
+    <string name="reviews_editor_submit_update">更新評論</string>
+    <string name="reviews_editor_submitting">發布中</string>
+    <string name="reviews_editor_delete">刪除評論</string>
+    <string name="reviews_editor_delete_title">刪除你的評論？</string>
+    <string name="reviews_editor_delete_message">你的推薦與否和所寫內容將對所有人移除。</string>
+    <string name="reviews_editor_delete_action">刪除</string>
+    <string name="reviews_editor_discard_title">放棄變更？</string>
+    <string name="reviews_editor_discard_message">你在這裡所做的變更將會遺失。</string>
+    <string name="reviews_editor_discard_action">放棄</string>
+    <string name="reviews_editor_footer_adjust">調整</string>
+    <string name="reviews_editor_footer_type">輸入</string>
+    <string name="reviews_editor_footer_select">選擇</string>
+    <string name="reviews_editor_footer_submit">發布</string>
+    <string name="reviews_editor_footer_delete">刪除</string>
+    <string name="reviews_editor_footer_back">返回</string>
 </resources>

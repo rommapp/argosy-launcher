@@ -221,4 +221,11 @@
     <string name="notif_sync_platform_completed_with_errors_title">सिंक त्रुटियों के साथ पूर्ण हुआ</string>
     <string name="notif_sync_platform_error_unknown">अज्ञात त्रुटि</string>
     <string name="notif_sync_platform_failed_title">सिंक विफल</string>
+
+    <string name="notif_review_saved">समीक्षा पोस्ट हुई</string>
+    <string name="notif_review_deleted">समीक्षा हटाई गई</string>
+    <string name="notif_review_error_offline">Argosy Social से कनेक्ट नहीं है</string>
+    <string name="notif_review_error_too_long">समीक्षा बहुत लंबी है</string>
+    <string name="notif_review_error_invalid">सर्वर समीक्षा को पढ़ नहीं सका</string>
+    <string name="notif_review_error_server">सर्वर समीक्षा को सहेज नहीं सका</string>
 </resources>

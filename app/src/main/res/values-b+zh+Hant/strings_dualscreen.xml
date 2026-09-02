@@ -378,4 +378,7 @@
     <string name="dual_detail_save_name_create">建立</string>
 
     <string name="dual_detail_save_slot_auto">自動存檔</string>
+
+    <string name="dual_detail_reviews_write_row">撰寫評論</string>
+    <string name="dual_detail_option_write_review">撰寫評論</string>
 </resources>

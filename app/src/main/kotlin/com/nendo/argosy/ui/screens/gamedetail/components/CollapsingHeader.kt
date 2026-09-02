@@ -22,7 +22,10 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material3.Icon
@@ -35,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
@@ -54,6 +58,7 @@ import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 import com.nendo.argosy.ui.theme.LocalUiScale
 import com.nendo.argosy.util.formatPlayTime
+import com.nendo.argosy.util.formatTimeToBeat
 
 private val EXPANDED_COVER_WIDTH = 200.dp
 private val COLLAPSED_THUMBNAIL_SIZE = 48.dp
@@ -167,7 +172,7 @@ private fun LandscapeExpandedHeader(
             TitleSection(game = game)
             Spacer(modifier = Modifier.height(Dimens.spacingSm))
             RatingsRow(game = game)
-            Spacer(modifier = Modifier.height(Dimens.spacingLg))
+            Spacer(modifier = Modifier.height(Dimens.spacingSm))
             PlayStatsRow(game = game)
         }
     }
@@ -260,7 +265,7 @@ private fun TitleSection(
 
         Row(
             horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
-            verticalAlignment = Alignment.Bottom
+            verticalAlignment = Alignment.CenterVertically
         ) {
             EndWeightedText(
                 text = game.platformName,
@@ -269,9 +274,31 @@ private fun TitleSection(
                 modifier = Modifier.weight(1f, fill = false)
             )
             game.releaseYear?.let { year ->
-                Text(text = "|", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
+                Text(
+                    text = "|",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                )
                 Text(
                     text = year.toString(),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                )
+            }
+            game.players?.let { players ->
+                Text(
+                    text = "|",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                )
+                Icon(
+                    imageVector = playerCountGlyph(players),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                    modifier = Modifier.size(Dimens.iconSm)
+                )
+                Text(
+                    text = players,
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
                 )
@@ -318,55 +345,76 @@ private fun TitleSection(
     }
 }
 
+private fun playerCountGlyph(players: String): ImageVector {
+    val most = Regex("\\d+").findAll(players).map { it.value.toInt() }.maxOrNull()
+    return when {
+        most == null || most > 2 || players.contains('+') -> Icons.Default.Groups
+        most == 2 -> Icons.Default.People
+        else -> Icons.Default.Person
+    }
+}
+
 @Composable
-private fun RatingChipContent(game: GameDetailUi) {
-    game.players?.let { players ->
-        MetadataChip(
-            label = stringResource(R.string.gamedetail_chip_players_label),
-            value = players
-        )
-    }
+private fun ScoreChips(game: GameDetailUi, chipModifier: Modifier = Modifier) {
     game.rating?.let { rating ->
-        CommunityRatingChip(rating = rating)
-    }
-    game.timeToBeatMain?.let { time ->
-        MetadataChip(
-            label = stringResource(R.string.gamedetail_chip_main_story_label),
-            value = time
-        )
-    }
-    game.timeToBeatCompletionist?.let { time ->
-        MetadataChip(
-            label = stringResource(R.string.gamedetail_chip_completionist_label),
-            value = time
-        )
+        CommunityRatingChip(rating = rating, modifier = chipModifier)
     }
     RatingChip(
         label = stringResource(R.string.gamedetail_chip_my_rating_label),
         value = game.userRating,
         icon = Icons.Default.Star,
-        iconColor = ALauncherColors.StarGold
+        iconColor = ALauncherColors.StarGold,
+        modifier = chipModifier
     )
     RatingChip(
         label = stringResource(R.string.gamedetail_chip_difficulty_label),
         value = game.userDifficulty,
         icon = Icons.Default.Whatshot,
-        iconColor = ALauncherColors.DifficultyRed
+        iconColor = ALauncherColors.DifficultyRed,
+        modifier = chipModifier
     )
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun TimeToBeatChips(game: GameDetailUi) {
+    val context = LocalContext.current
+    formatTimeToBeat(context, game.timeToBeatMainSec)?.let { time ->
+        MetadataChip(
+            label = stringResource(R.string.gamedetail_chip_main_story_label),
+            value = time
+        )
+    }
+    formatTimeToBeat(context, game.timeToBeatCompletionistSec)?.let { time ->
+        MetadataChip(
+            label = stringResource(R.string.gamedetail_chip_completionist_label),
+            value = time
+        )
+    }
+}
+
+private fun GameDetailUi.hasTimeToBeat(): Boolean =
+    (timeToBeatMainSec ?: 0) > 0 || (timeToBeatCompletionistSec ?: 0) > 0
+
 @Composable
 private fun RatingsRow(
     game: GameDetailUi,
     modifier: Modifier = Modifier
 ) {
-    FlowRow(
+    Column(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd),
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) {
-        RatingChipContent(game)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
+        ) {
+            ScoreChips(game, chipModifier = Modifier.weight(1f))
+        }
+        if (game.hasTimeToBeat()) {
+            Row(horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)) {
+                TimeToBeatChips(game)
+            }
+        }
     }
 }
 
@@ -379,7 +427,8 @@ private fun PortraitRatingsColumn(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
     ) {
-        RatingChipContent(game)
+        ScoreChips(game)
+        TimeToBeatChips(game)
     }
 }
 
@@ -389,15 +438,15 @@ private fun PlayStatsRow(
     modifier: Modifier = Modifier
 ) {
     if (game.playTimeMinutes > 0 || game.status != null) {
-        Row(
+        Column(
             modifier = modifier,
-            horizontalArrangement = Arrangement.spacedBy(Dimens.radiusLg)
+            verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
         ) {
-            if (game.playTimeMinutes > 0) {
-                PlayTimeChip(minutes = game.playTimeMinutes)
-            }
             game.status?.let { status ->
                 StatusChip(statusValue = status)
+            }
+            if (game.playTimeMinutes > 0) {
+                PlayTimeChip(minutes = game.playTimeMinutes)
             }
         }
     }
@@ -413,11 +462,11 @@ private fun PlayStatsColumn(
             modifier = modifier,
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
         ) {
-            if (game.playTimeMinutes > 0) {
-                PlayTimeChip(minutes = game.playTimeMinutes)
-            }
             game.status?.let { status ->
                 StatusChip(statusValue = status)
+            }
+            if (game.playTimeMinutes > 0) {
+                PlayTimeChip(minutes = game.playTimeMinutes)
             }
         }
     }
@@ -481,7 +530,7 @@ internal fun CollapsedHeader(
                             horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.People,
+                                imageVector = Icons.Default.Public,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(16.dp)

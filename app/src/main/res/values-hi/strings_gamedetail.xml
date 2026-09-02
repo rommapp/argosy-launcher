@@ -87,9 +87,9 @@
     <string name="gamedetail_chip_main_story_label">मुख्य कहानी</string>
     <string name="gamedetail_chip_main_extras_label">मुख्य + अतिरिक्त</string>
     <string name="gamedetail_chip_completionist_label">कंप्लीशनिस्ट</string>
-    <string name="gamedetail_chip_my_rating_label">मेरी रेटिंग</string>
+    <string name="gamedetail_chip_my_rating_label">रेटिंग</string>
     <string name="gamedetail_chip_difficulty_label">कठिनाई</string>
-    <string name="gamedetail_chip_community_rating_label">रेटिंग</string>
+    <string name="gamedetail_chip_community_rating_label">समुदाय</string>
     <string name="gamedetail_chip_play_time_label">खेलने का समय</string>
 
     <string name="gamedetail_chip_rating_value">%1$d/10</string>

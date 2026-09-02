@@ -30,7 +30,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -318,7 +318,7 @@ private fun RandomContent(
                         horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
                     ) {
                         Icon(
-                            Icons.Default.People,
+                            Icons.Default.Public,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(Dimens.iconSm + Dimens.borderMedium)

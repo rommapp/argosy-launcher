@@ -80,7 +80,10 @@ suspend fun GameEntity.toHomeGameUi(
         isPlayable = downloaded,
         description = description,
         status = status,
-        titleId = displayTitleId
+        titleId = displayTitleId,
+        timeToBeatMainSec = timeToBeatMainSec,
+        timeToBeatExtraSec = timeToBeatExtraSec,
+        timeToBeatCompletionistSec = timeToBeatCompletionistSec
     )
 }
 

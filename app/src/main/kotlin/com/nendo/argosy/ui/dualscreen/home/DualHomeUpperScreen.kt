@@ -86,6 +86,9 @@ data class DualHomeShowcaseState(
     val developer: String? = null,
     val releaseYear: Int? = null,
     val titleId: String? = null,
+    val timeToBeatMainSec: Int? = null,
+    val timeToBeatExtraSec: Int? = null,
+    val timeToBeatCompletionistSec: Int? = null,
     val isFavorite: Boolean = false,
     val isDownloaded: Boolean = true,
     val useGameBackground: Boolean = true,
@@ -226,7 +229,8 @@ private fun ShowcaseInfoColumn(
         ShowcaseRatingsCluster(
             communityRating = state.communityRating,
             userRating = state.userRating,
-            userDifficulty = state.userDifficulty
+            userDifficulty = state.userDifficulty,
+            timeToBeatMainSec = state.timeToBeatMainSec
         )
         Spacer(modifier = Modifier.height(Dimens.spacingXl))
         ShowcaseStatsRow(

@@ -135,6 +135,10 @@
     <string name="dual_showcase_stat_last_played_never">从未</string>
     <string name="dual_showcase_stat_status_label">状态</string>
     <string name="dual_showcase_stat_status_none">无</string>
+    <string name="dual_showcase_stat_main_story_label">主线剧情</string>
+    <string name="dual_showcase_stat_main_extras_label">主线+支线</string>
+    <string name="dual_showcase_stat_completionist_label">全收集</string>
+    <string name="dual_detail_estimated_time_label">预计时长</string>
 
     <string name="dual_showcase_last_played_today">今天</string>
     <string name="dual_showcase_last_played_yesterday">昨天</string>

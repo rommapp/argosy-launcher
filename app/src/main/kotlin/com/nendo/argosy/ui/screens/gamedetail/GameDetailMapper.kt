@@ -55,9 +55,9 @@ fun GameEntity.toGameDetailUi(
         description = description,
         players = players,
         rating = rating,
-        timeToBeatMain = formatTimeToBeat(timeToBeatMainSec),
-        timeToBeatExtra = formatTimeToBeat(timeToBeatExtraSec),
-        timeToBeatCompletionist = formatTimeToBeat(timeToBeatCompletionistSec),
+        timeToBeatMainSec = timeToBeatMainSec,
+        timeToBeatExtraSec = timeToBeatExtraSec,
+        timeToBeatCompletionistSec = timeToBeatCompletionistSec,
         userRating = userRating,
         userDifficulty = userDifficulty,
         completion = completion,
@@ -92,16 +92,4 @@ fun GameEntity.toGameDetailUi(
         steamAppId = steamAppId,
         rommFileName = rommFileName
     )
-}
-
-private fun formatTimeToBeat(seconds: Int?): String? {
-    if (seconds == null || seconds <= 0) return null
-    val halfHours = Math.round(seconds / 1800f)
-    if (halfHours < 1) return "${(seconds / 60).coerceAtLeast(1)}m"
-    val hours = halfHours / 2
-    return if (halfHours % 2 == 1) {
-        if (hours == 0) "30m" else "${hours}.5h"
-    } else {
-        "${hours}h"
-    }
 }

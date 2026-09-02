@@ -216,12 +216,14 @@
     <!-- Caption under a chip giving how long the game takes to finish completely. Noun: a player
          who does everything a game offers. -->
     <string name="gamedetail_chip_completionist_label">Completionist</string>
-    <!-- Caption under the chip holding the score this user gave the game. Noun phrase. -->
-    <string name="gamedetail_chip_my_rating_label">My Rating</string>
+    <!-- Caption under the chip holding the score this user gave the game; the star glyph marks it
+         as theirs. One word, so it never wraps inside the chip. Noun. -->
+    <string name="gamedetail_chip_my_rating_label">Rating</string>
     <!-- Caption under the chip holding how hard this user found the game. Noun. -->
     <string name="gamedetail_chip_difficulty_label">Difficulty</string>
-    <!-- Caption under the chip holding the score other players gave the game. Noun. -->
-    <string name="gamedetail_chip_community_rating_label">Rating</string>
+    <!-- Caption under the chip holding the score other players gave the game. One word, so it
+         never wraps inside the chip. Noun. -->
+    <string name="gamedetail_chip_community_rating_label">Community</string>
     <!-- Caption under the chip holding how long this user has spent in the game. Noun phrase: an
          amount of time, not an instruction to play. -->
     <string name="gamedetail_chip_play_time_label">Play Time</string>

@@ -13,10 +13,6 @@ import javax.inject.Singleton
 fun controllerIdOf(device: InputDevice): String =
     "${device.vendorId}:${device.productId}:${device.descriptor}"
 
-private fun InputDevice.isGamepad(): Boolean =
-    (sources and InputDevice.SOURCE_GAMEPAD == InputDevice.SOURCE_GAMEPAD) ||
-        (sources and InputDevice.SOURCE_JOYSTICK == InputDevice.SOURCE_JOYSTICK)
-
 @Singleton
 class ConnectedControllerTracker @Inject constructor(
     @ApplicationContext private val context: Context
@@ -44,6 +40,6 @@ class ConnectedControllerTracker @Inject constructor(
         InputDevice.getDeviceIds()
             .toList()
             .mapNotNull { InputDevice.getDevice(it) }
-            .filter { it.isGamepad() }
+            .filter { it.isPhysicalGamepad() }
             .mapTo(mutableSetOf()) { controllerIdOf(it) }
 }

@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.R
+import com.nendo.argosy.core.input.isPhysicalGamepad
 import com.nendo.argosy.data.local.entity.ControllerOrderEntity
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.Modal
@@ -259,32 +260,7 @@ private fun findDeviceByControllerId(controllerId: String): InputDevice? {
     return null
 }
 
-private fun isGamepadDevice(device: InputDevice): Boolean {
-    val sources = device.sources
-    return (sources and InputDevice.SOURCE_GAMEPAD == InputDevice.SOURCE_GAMEPAD) ||
-        (sources and InputDevice.SOURCE_JOYSTICK == InputDevice.SOURCE_JOYSTICK)
-}
+private fun isGamepadDevice(device: InputDevice): Boolean = device.isPhysicalGamepad()
 
-private fun isGamepadButton(keyCode: Int): Boolean {
-    return keyCode in listOf(
-        KeyEvent.KEYCODE_BUTTON_A,
-        KeyEvent.KEYCODE_BUTTON_B,
-        KeyEvent.KEYCODE_BUTTON_C,
-        KeyEvent.KEYCODE_BUTTON_X,
-        KeyEvent.KEYCODE_BUTTON_Y,
-        KeyEvent.KEYCODE_BUTTON_Z,
-        KeyEvent.KEYCODE_BUTTON_L1,
-        KeyEvent.KEYCODE_BUTTON_R1,
-        KeyEvent.KEYCODE_BUTTON_L2,
-        KeyEvent.KEYCODE_BUTTON_R2,
-        KeyEvent.KEYCODE_BUTTON_START,
-        KeyEvent.KEYCODE_BUTTON_SELECT,
-        KeyEvent.KEYCODE_BUTTON_THUMBL,
-        KeyEvent.KEYCODE_BUTTON_THUMBR,
-        KeyEvent.KEYCODE_DPAD_UP,
-        KeyEvent.KEYCODE_DPAD_DOWN,
-        KeyEvent.KEYCODE_DPAD_LEFT,
-        KeyEvent.KEYCODE_DPAD_RIGHT,
-        KeyEvent.KEYCODE_BACK
-    )
-}
+private fun isGamepadButton(keyCode: Int): Boolean =
+    keyCode != KeyEvent.KEYCODE_UNKNOWN && keyCode != KeyEvent.KEYCODE_HOME

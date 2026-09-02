@@ -52,4 +52,21 @@ class HotkeyManagerTest {
 
         assertNull(manager.onKeyDown(keyCode, "pad"))
     }
+
+    @Test
+    fun `any physical key can drive a hotkey except the ones the system owns`() {
+        assertEquals(
+            HotkeyAction.FAST_FORWARD,
+            manager(KeyEvent.KEYCODE_BUTTON_MODE).onKeyDown(KeyEvent.KEYCODE_BUTTON_MODE, "pad")?.action
+        )
+        assertEquals(
+            HotkeyAction.FAST_FORWARD,
+            manager(KeyEvent.KEYCODE_BUTTON_7).onKeyDown(KeyEvent.KEYCODE_BUTTON_7, "pad")?.action
+        )
+        assertEquals(
+            HotkeyAction.FAST_FORWARD,
+            manager(KeyEvent.KEYCODE_F1).onKeyDown(KeyEvent.KEYCODE_F1, "pad")?.action
+        )
+        assertNull(manager(KeyEvent.KEYCODE_HOME).onKeyDown(KeyEvent.KEYCODE_HOME, "pad"))
+    }
 }

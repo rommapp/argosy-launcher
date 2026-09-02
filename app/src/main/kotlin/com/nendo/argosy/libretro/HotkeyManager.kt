@@ -280,9 +280,9 @@ class HotkeyManager(
             KeyEvent.KEYCODE_BACK
         )
 
-        private val HOTKEY_KEYS: Set<Int> = HOTKEY_ORDER.toSet()
+        private val RESERVED_KEYS: Set<Int> = setOf(KeyEvent.KEYCODE_UNKNOWN, KeyEvent.KEYCODE_HOME)
 
-        fun isHotkeyKey(keyCode: Int): Boolean = keyCode in HOTKEY_KEYS
+        fun isHotkeyKey(keyCode: Int): Boolean = keyCode !in RESERVED_KEYS
 
         /**
          * Canonical left-to-right ordering of a combo so Start+Select and
@@ -314,7 +314,10 @@ class HotkeyManager(
                 KeyEvent.KEYCODE_BUTTON_THUMBL -> "L3"
                 KeyEvent.KEYCODE_BUTTON_THUMBR -> "R3"
                 KeyEvent.KEYCODE_BACK -> "Back"
-                else -> KeyEvent.keyCodeToString(keyCode)
+                KeyEvent.KEYCODE_BUTTON_MODE -> "Mode"
+                in KeyEvent.KEYCODE_BUTTON_1..KeyEvent.KEYCODE_BUTTON_16 ->
+                    "B${keyCode - KeyEvent.KEYCODE_BUTTON_1 + 1}"
+                else -> KeyEvent.keyCodeToString(keyCode).removePrefix("KEYCODE_")
             }
         }
 

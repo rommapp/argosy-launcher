@@ -1161,9 +1161,9 @@ data class InputPreset(
 
 object InputPresets {
     /**
-     * Physical buttons the remap editor lets a user bind. Only these may be silenced when a
-     * resolved mapping omits them: a keycode outside this set (D-pad diagonals, for instance) is
-     * one the user was never offered control over, so it keeps its default route to the core.
+     * Gamepad buttons a resolved mapping silences when it omits them. Any other key the user was
+     * offered, a keyboard key for instance, keeps its default route to the core when unbound, so a
+     * remapped controller does not take the keyboard away from a core that reads it.
      */
     val BINDABLE_KEYCODES: Set<Int> = setOf(
         KeyEvent.KEYCODE_BUTTON_A,
@@ -1180,11 +1180,25 @@ object InputPresets {
         KeyEvent.KEYCODE_BUTTON_SELECT,
         KeyEvent.KEYCODE_BUTTON_THUMBL,
         KeyEvent.KEYCODE_BUTTON_THUMBR,
+        KeyEvent.KEYCODE_BUTTON_MODE,
         KeyEvent.KEYCODE_DPAD_UP,
         KeyEvent.KEYCODE_DPAD_DOWN,
         KeyEvent.KEYCODE_DPAD_LEFT,
         KeyEvent.KEYCODE_DPAD_RIGHT
+    ) + (KeyEvent.KEYCODE_BUTTON_1..KeyEvent.KEYCODE_BUTTON_16)
+
+    private val RESERVED_KEYCODES: Set<Int> = setOf(
+        KeyEvent.KEYCODE_UNKNOWN,
+        KeyEvent.KEYCODE_HOME,
+        KeyEvent.KEYCODE_BACK
     )
+
+    /**
+     * Whether a key may be recorded as a binding or a hotkey. Every key a physical device sends is
+     * accepted except the two the system owns, so a controller's extra buttons and keyboard keys
+     * all count without the app having to know them in advance.
+     */
+    fun isBindableKey(keyCode: Int): Boolean = keyCode !in RESERVED_KEYCODES
 
     private val DEFAULT_MAPPING = mapOf(
         KeyEvent.KEYCODE_BUTTON_A to RetroButton.A,
@@ -1320,7 +1334,10 @@ object InputPresets {
             KeyEvent.KEYCODE_DPAD_LEFT -> "D-Pad Left"
             KeyEvent.KEYCODE_DPAD_RIGHT -> "D-Pad Right"
             KeyEvent.KEYCODE_BACK -> "Back"
-            else -> KeyEvent.keyCodeToString(keyCode)
+            KeyEvent.KEYCODE_BUTTON_MODE -> "Mode"
+            in KeyEvent.KEYCODE_BUTTON_1..KeyEvent.KEYCODE_BUTTON_16 ->
+                "B${keyCode - KeyEvent.KEYCODE_BUTTON_1 + 1}"
+            else -> KeyEvent.keyCodeToString(keyCode).removePrefix("KEYCODE_")
         }
     }
 }

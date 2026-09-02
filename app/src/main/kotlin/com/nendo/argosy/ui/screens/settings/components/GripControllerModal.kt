@@ -36,6 +36,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import com.nendo.argosy.R
 import com.nendo.argosy.core.input.controllerIdOf
+import com.nendo.argosy.core.input.isPhysicalGamepad
 import com.nendo.argosy.domain.model.GripAutoController
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.Modal
@@ -43,10 +44,6 @@ import com.nendo.argosy.ui.input.LocalGamepadInputHandler
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.util.clickableNoFocus
-
-private fun InputDevice.isGamepadDevice(): Boolean =
-    (sources and InputDevice.SOURCE_GAMEPAD == InputDevice.SOURCE_GAMEPAD) ||
-        (sources and InputDevice.SOURCE_JOYSTICK == InputDevice.SOURCE_JOYSTICK)
 
 private fun isRemoveKey(keyCode: Int): Boolean =
     keyCode == KeyEvent.KEYCODE_BUTTON_Y || keyCode == KeyEvent.KEYCODE_BUTTON_X
@@ -97,7 +94,7 @@ fun GripControllerModal(
                 when {
                     capturing && isBack -> goBack()
 
-                    capturing && device != null && device.isGamepadDevice() -> {
+                    capturing && device != null && device.isPhysicalGamepad() -> {
                         currentOnAdd.value(controllerIdOf(device), device.name ?: defaultControllerName)
                         capturing = false
                         focusedIndex = entries.size

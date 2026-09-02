@@ -819,27 +819,6 @@ private fun parseComboJson(jsonStr: String): List<Int> {
     }
 }
 
-private fun isGamepadDevice(device: InputDevice): Boolean {
-    val sources = device.sources
-    return (sources and InputDevice.SOURCE_GAMEPAD == InputDevice.SOURCE_GAMEPAD) ||
-        (sources and InputDevice.SOURCE_JOYSTICK == InputDevice.SOURCE_JOYSTICK)
-}
+private fun isGamepadDevice(device: InputDevice): Boolean = !device.isVirtual
 
-private fun isRecordableKey(keyCode: Int): Boolean {
-    return keyCode in listOf(
-        KeyEvent.KEYCODE_BUTTON_A,
-        KeyEvent.KEYCODE_BUTTON_B,
-        KeyEvent.KEYCODE_BUTTON_C,
-        KeyEvent.KEYCODE_BUTTON_X,
-        KeyEvent.KEYCODE_BUTTON_Y,
-        KeyEvent.KEYCODE_BUTTON_Z,
-        KeyEvent.KEYCODE_BUTTON_L1,
-        KeyEvent.KEYCODE_BUTTON_R1,
-        KeyEvent.KEYCODE_BUTTON_L2,
-        KeyEvent.KEYCODE_BUTTON_R2,
-        KeyEvent.KEYCODE_BUTTON_START,
-        KeyEvent.KEYCODE_BUTTON_SELECT,
-        KeyEvent.KEYCODE_BUTTON_THUMBL,
-        KeyEvent.KEYCODE_BUTTON_THUMBR
-    )
-}
+private fun isRecordableKey(keyCode: Int): Boolean = InputPresets.isBindableKey(keyCode)

@@ -759,13 +759,9 @@ private fun RecordingOverlay(
     }
 }
 
-private fun isGamepadDevice(device: InputDevice): Boolean {
-    val sources = device.sources
-    return (sources and InputDevice.SOURCE_GAMEPAD == InputDevice.SOURCE_GAMEPAD) ||
-        (sources and InputDevice.SOURCE_JOYSTICK == InputDevice.SOURCE_JOYSTICK)
-}
+private fun isGamepadDevice(device: InputDevice): Boolean = !device.isVirtual
 
-private fun isMappableButton(keyCode: Int): Boolean = keyCode in InputPresets.BINDABLE_KEYCODES
+private fun isMappableButton(keyCode: Int): Boolean = InputPresets.isBindableKey(keyCode)
 
 private val MAPPABLE_AXES = listOf(
     MotionEvent.AXIS_X,

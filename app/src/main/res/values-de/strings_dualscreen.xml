@@ -288,6 +288,7 @@
     <string name="dual_detail_tab_saves">SPIELSTÄNDE</string>
     <string name="dual_detail_tab_states">SAVESTATES</string>
     <string name="dual_detail_tab_media">MEDIEN</string>
+    <string name="dual_detail_tab_reviews">REZENSIONEN</string>
     <string name="dual_detail_tab_options">OPTIONEN</string>
 
     <string name="dual_state_menu_copy_to">In Slot kopieren</string>
@@ -422,6 +423,7 @@
 
     <string name="dual_detail_save_slot_auto">Autospeicherung</string>
 
+    <string name="dual_detail_reviews_empty">Noch keine Rezensionen</string>
     <string name="dual_detail_reviews_write_row">Rezension schreiben</string>
     <string name="dual_detail_option_write_review">Rezension schreiben</string>
 </resources>

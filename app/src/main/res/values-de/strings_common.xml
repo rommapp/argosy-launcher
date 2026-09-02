@@ -652,6 +652,7 @@
     <string name="ui_startup_status_initializing">Wird initialisiert...</string>
     <string name="ui_startup_status_syncing_collections">Sammlungen werden synchronisiert...</string>
     <string name="ui_startup_status_checking_emulators">Emulatoren werden geprüft...</string>
+    <string name="ui_startup_status_repairing_library">Bibliothek wird repariert...</string>
     <string name="ui_startup_status_preparing_home">Startseite wird vorbereitet...</string>
     <string name="ui_startup_status_waiting_for_storage">Warten auf Speicher...</string>
     <string name="ui_startup_status_scanning_roms">ROM-Dateien werden gescannt...</string>

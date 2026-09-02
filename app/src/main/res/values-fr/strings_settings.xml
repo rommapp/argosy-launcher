@@ -1815,6 +1815,7 @@
     <string name="settings_romm_config_certificate_subtitle">Faire confiance à un serveur doté d\'une autorité de certification privée</string>
     <plurals name="settings_romm_config_certificate_subtitle_count">
         <item quantity="one">%d certificat approuvé par Argosy</item>
+        <item quantity="many">%d certificats approuvés par Argosy</item>
         <item quantity="other">%d certificats approuvés par Argosy</item>
     </plurals>
     <string name="settings_romm_config_certificate_import_failed">Ce fichier n\'est pas un certificat lisible.</string>

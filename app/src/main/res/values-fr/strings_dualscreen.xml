@@ -294,6 +294,7 @@
     <string name="dual_detail_tab_saves">SAUVEGARDES</string>
     <string name="dual_detail_tab_states">ÉTATS</string>
     <string name="dual_detail_tab_media">MÉDIA</string>
+    <string name="dual_detail_tab_reviews">AVIS</string>
     <string name="dual_detail_tab_options">OPTIONS</string>
 
     <string name="dual_state_menu_copy_to">Copier vers l\'emplacement</string>
@@ -428,6 +429,7 @@
 
     <string name="dual_detail_save_slot_auto">Sauvegarde auto</string>
 
+    <string name="dual_detail_reviews_empty">Aucun avis pour le moment</string>
     <string name="dual_detail_reviews_write_row">Écrire un avis</string>
     <string name="dual_detail_option_write_review">Écrire un avis</string>
 </resources>

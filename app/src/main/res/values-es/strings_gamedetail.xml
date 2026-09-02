@@ -7,6 +7,7 @@
     <string name="gamedetail_menu_details">Detalles</string>
     <string name="gamedetail_menu_description">Descripción</string>
     <string name="gamedetail_menu_screenshots">Capturas de pantalla</string>
+    <string name="gamedetail_menu_reviews">Reseñas</string>
     <string name="gamedetail_menu_achievements">Logros</string>
     <string name="gamedetail_menu_related_games">Juegos relacionados</string>
 
@@ -66,6 +67,7 @@
     <string name="gamedetail_footer_options">Opciones</string>
     <string name="gamedetail_footer_view_screenshot">Ver</string>
     <string name="gamedetail_footer_view_all_achievements">Ver todos</string>
+    <string name="gamedetail_footer_view_reviews">Leer reseñas</string>
     <string name="gamedetail_footer_open_related">Abrir</string>
     <string name="gamedetail_footer_back">Atrás</string>
     <string name="gamedetail_footer_new_game">Nueva partida</string>
@@ -79,6 +81,7 @@
     <string name="gamedetail_section_description_heading">DESCRIPCIÓN</string>
     <string name="gamedetail_section_screenshots_heading">CAPTURAS DE PANTALLA</string>
     <string name="gamedetail_section_related_heading">JUEGOS RELACIONADOS</string>
+    <string name="gamedetail_section_reviews_heading">RESEÑAS</string>
     <string name="gamedetail_section_achievements_heading">LOGROS</string>
     <string name="gamedetail_section_achievements_count">(%1$d/%2$d)</string>
 
@@ -91,6 +94,8 @@
     <string name="gamedetail_chip_my_rating_label">Calificación</string>
     <string name="gamedetail_chip_difficulty_label">Dificultad</string>
     <string name="gamedetail_chip_community_rating_label">Comunidad</string>
+    <string name="gamedetail_chip_reviews_label">Reseñas</string>
+    <string name="gamedetail_chip_my_review_label">Mi reseña</string>
     <string name="gamedetail_chip_play_time_label">Tiempo de juego</string>
 
     <string name="gamedetail_chip_rating_value">%1$d/10</string>
@@ -465,6 +470,27 @@
 
     <string name="gamedetail_header_platform_unknown">Desconocida</string>
 
+    <string name="reviews_sentiment_overwhelmingly_positive">Extremadamente positivas</string>
+    <string name="reviews_sentiment_very_positive">Muy positivas</string>
+    <string name="reviews_sentiment_mostly_positive">Mayormente positivas</string>
+    <string name="reviews_sentiment_mixed">Variadas</string>
+    <string name="reviews_sentiment_mostly_negative">Mayormente negativas</string>
+    <string name="reviews_sentiment_overwhelmingly_negative">Extremadamente negativas</string>
+    <string name="reviews_summary_none">Aún no hay reseñas</string>
+    <string name="reviews_my_review_none">Escribir una reseña</string>
+    <plurals name="reviews_count">
+        <item quantity="one">%d reseña</item>
+        <item quantity="many">%d reseñas</item>
+        <item quantity="other">%d reseñas</item>
+    </plurals>
+    <plurals name="reviews_helpful_count">
+        <item quantity="one">A %d persona le pareció útil</item>
+        <item quantity="many">A %d personas les pareció útil</item>
+        <item quantity="other">A %d personas les pareció útil</item>
+    </plurals>
+    <string name="reviews_heading_yours">Tu reseña</string>
+    <string name="reviews_heading_friends">Amigos</string>
+    <string name="reviews_heading_everyone">Todos los demás</string>
     <string name="reviews_reader_write_row">Escribir una reseña</string>
     <string name="reviews_editor_title">Escribir una reseña</string>
     <string name="reviews_editor_title_edit">Editar tu reseña</string>
@@ -477,10 +503,12 @@
     <string name="reviews_editor_body_placeholder">Cuenta qué destacó. Déjalo vacío para publicar solo el veredicto.</string>
     <plurals name="reviews_editor_chars_left">
         <item quantity="one">Queda %d carácter</item>
+        <item quantity="many">Quedan %d caracteres</item>
         <item quantity="other">Quedan %d caracteres</item>
     </plurals>
     <plurals name="reviews_editor_chars_over">
         <item quantity="one">%d carácter por encima del límite</item>
+        <item quantity="many">%d caracteres por encima del límite</item>
         <item quantity="other">%d caracteres por encima del límite</item>
     </plurals>
     <string name="reviews_editor_submit">Publicar reseña</string>

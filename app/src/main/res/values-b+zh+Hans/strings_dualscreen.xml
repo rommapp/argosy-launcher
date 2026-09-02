@@ -247,6 +247,7 @@
     <string name="dual_detail_tab_saves">存档</string>
     <string name="dual_detail_tab_states">即时存档</string>
     <string name="dual_detail_tab_media">媒体</string>
+    <string name="dual_detail_tab_reviews">评价</string>
     <string name="dual_detail_tab_options">选项</string>
 
     <string name="dual_state_menu_copy_to">复制到槽位</string>
@@ -379,6 +380,7 @@
 
     <string name="dual_detail_save_slot_auto">自动存档</string>
 
+    <string name="dual_detail_reviews_empty">暂无评价</string>
     <string name="dual_detail_reviews_write_row">写评价</string>
     <string name="dual_detail_option_write_review">写评价</string>
 </resources>

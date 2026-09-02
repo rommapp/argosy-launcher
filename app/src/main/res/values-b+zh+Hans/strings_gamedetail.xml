@@ -4,6 +4,7 @@
     <string name="gamedetail_menu_details">详情</string>
     <string name="gamedetail_menu_description">简介</string>
     <string name="gamedetail_menu_screenshots">截图</string>
+    <string name="gamedetail_menu_reviews">评价</string>
     <string name="gamedetail_menu_achievements">成就</string>
     <string name="gamedetail_menu_related_games">相关游戏</string>
 
@@ -61,6 +62,7 @@
     <string name="gamedetail_footer_options">选项</string>
     <string name="gamedetail_footer_view_screenshot">查看</string>
     <string name="gamedetail_footer_view_all_achievements">查看全部</string>
+    <string name="gamedetail_footer_view_reviews">阅读评价</string>
     <string name="gamedetail_footer_open_related">打开</string>
     <string name="gamedetail_footer_back">返回</string>
     <string name="gamedetail_footer_new_game">新游戏</string>
@@ -72,6 +74,7 @@
     <string name="gamedetail_section_description_heading">简介</string>
     <string name="gamedetail_section_screenshots_heading">截图</string>
     <string name="gamedetail_section_related_heading">相关游戏</string>
+    <string name="gamedetail_section_reviews_heading">评价</string>
     <string name="gamedetail_section_achievements_heading">成就</string>
     <string name="gamedetail_section_achievements_count">(%1$d/%2$d)</string>
 
@@ -82,6 +85,8 @@
     <string name="gamedetail_chip_my_rating_label">评分</string>
     <string name="gamedetail_chip_difficulty_label">难度</string>
     <string name="gamedetail_chip_community_rating_label">社区</string>
+    <string name="gamedetail_chip_reviews_label">评价</string>
+    <string name="gamedetail_chip_my_review_label">我的评价</string>
     <string name="gamedetail_chip_play_time_label">游戏时长</string>
 
     <string name="gamedetail_chip_rating_value">%1$d/10</string>
@@ -396,6 +401,23 @@
 
     <string name="gamedetail_header_platform_unknown">未知</string>
 
+    <string name="reviews_sentiment_overwhelmingly_positive">好评如潮</string>
+    <string name="reviews_sentiment_very_positive">特别好评</string>
+    <string name="reviews_sentiment_mostly_positive">多半好评</string>
+    <string name="reviews_sentiment_mixed">褒贬不一</string>
+    <string name="reviews_sentiment_mostly_negative">多半差评</string>
+    <string name="reviews_sentiment_overwhelmingly_negative">差评如潮</string>
+    <string name="reviews_summary_none">暂无评价</string>
+    <string name="reviews_my_review_none">写评价</string>
+    <plurals name="reviews_count">
+        <item quantity="other">%d 条评价</item>
+    </plurals>
+    <plurals name="reviews_helpful_count">
+        <item quantity="other">%d 人觉得有用</item>
+    </plurals>
+    <string name="reviews_heading_yours">你的评价</string>
+    <string name="reviews_heading_friends">好友</string>
+    <string name="reviews_heading_everyone">其他人</string>
     <string name="reviews_reader_write_row">写评价</string>
     <string name="reviews_editor_title">写评价</string>
     <string name="reviews_editor_title_edit">编辑我的评价</string>

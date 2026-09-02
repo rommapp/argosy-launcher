@@ -6,6 +6,7 @@
     <string name="gamedetail_menu_details">जानकारी</string>
     <string name="gamedetail_menu_description">विवरण</string>
     <string name="gamedetail_menu_screenshots">स्क्रीनशॉट</string>
+    <string name="gamedetail_menu_reviews">समीक्षाएं</string>
     <string name="gamedetail_menu_achievements">अचीवमेंट्स</string>
     <string name="gamedetail_menu_related_games">संबंधित गेम</string>
 
@@ -65,6 +66,7 @@
     <string name="gamedetail_footer_options">विकल्प</string>
     <string name="gamedetail_footer_view_screenshot">देखें</string>
     <string name="gamedetail_footer_view_all_achievements">सभी देखें</string>
+    <string name="gamedetail_footer_view_reviews">समीक्षाएं पढ़ें</string>
     <string name="gamedetail_footer_open_related">खोलें</string>
     <string name="gamedetail_footer_back">वापस</string>
     <string name="gamedetail_footer_new_game">नया गेम</string>
@@ -78,6 +80,7 @@
     <string name="gamedetail_section_description_heading">विवरण</string>
     <string name="gamedetail_section_screenshots_heading">स्क्रीनशॉट</string>
     <string name="gamedetail_section_related_heading">संबंधित गेम</string>
+    <string name="gamedetail_section_reviews_heading">समीक्षाएं</string>
     <string name="gamedetail_section_achievements_heading">अचीवमेंट्स</string>
     <string name="gamedetail_section_achievements_count">(%1$d/%2$d)</string>
 
@@ -90,6 +93,8 @@
     <string name="gamedetail_chip_my_rating_label">रेटिंग</string>
     <string name="gamedetail_chip_difficulty_label">कठिनाई</string>
     <string name="gamedetail_chip_community_rating_label">समुदाय</string>
+    <string name="gamedetail_chip_reviews_label">समीक्षाएं</string>
+    <string name="gamedetail_chip_my_review_label">मेरी समीक्षा</string>
     <string name="gamedetail_chip_play_time_label">खेलने का समय</string>
 
     <string name="gamedetail_chip_rating_value">%1$d/10</string>
@@ -455,6 +460,25 @@
 
     <string name="gamedetail_header_platform_unknown">अज्ञात</string>
 
+    <string name="reviews_sentiment_overwhelmingly_positive">अत्यधिक सकारात्मक</string>
+    <string name="reviews_sentiment_very_positive">बहुत सकारात्मक</string>
+    <string name="reviews_sentiment_mostly_positive">ज़्यादातर सकारात्मक</string>
+    <string name="reviews_sentiment_mixed">मिश्रित</string>
+    <string name="reviews_sentiment_mostly_negative">ज़्यादातर नकारात्मक</string>
+    <string name="reviews_sentiment_overwhelmingly_negative">अत्यधिक नकारात्मक</string>
+    <string name="reviews_summary_none">अभी कोई समीक्षा नहीं</string>
+    <string name="reviews_my_review_none">समीक्षा लिखें</string>
+    <plurals name="reviews_count">
+        <item quantity="one">%d समीक्षा</item>
+        <item quantity="other">%d समीक्षाएं</item>
+    </plurals>
+    <plurals name="reviews_helpful_count">
+        <item quantity="one">%d को यह उपयोगी लगा</item>
+        <item quantity="other">%d को यह उपयोगी लगा</item>
+    </plurals>
+    <string name="reviews_heading_yours">आपकी समीक्षा</string>
+    <string name="reviews_heading_friends">मित्र</string>
+    <string name="reviews_heading_everyone">बाकी सभी</string>
     <string name="reviews_reader_write_row">समीक्षा लिखें</string>
     <string name="reviews_editor_title">समीक्षा लिखें</string>
     <string name="reviews_editor_title_edit">अपनी समीक्षा संपादित करें</string>

@@ -266,6 +266,7 @@
     <string name="dual_detail_tab_saves">СОХРАНЕНИЯ</string>
     <string name="dual_detail_tab_states">СОСТОЯНИЯ</string>
     <string name="dual_detail_tab_media">МЕДИА</string>
+    <string name="dual_detail_tab_reviews">ОТЗЫВЫ</string>
     <string name="dual_detail_tab_options">ПАРАМЕТРЫ</string>
 
     <string name="dual_state_menu_copy_to">Скопировать в слот</string>
@@ -398,6 +399,7 @@
 
     <string name="dual_detail_save_slot_auto">Автосохранение</string>
 
+    <string name="dual_detail_reviews_empty">Отзывов пока нет</string>
     <string name="dual_detail_reviews_write_row">Написать отзыв</string>
     <string name="dual_detail_option_write_review">Написать отзыв</string>
 </resources>

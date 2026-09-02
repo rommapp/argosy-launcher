@@ -7,6 +7,7 @@
     <string name="gamedetail_menu_details">Details</string>
     <string name="gamedetail_menu_description">Beschreibung</string>
     <string name="gamedetail_menu_screenshots">Screenshots</string>
+    <string name="gamedetail_menu_reviews">Rezensionen</string>
     <string name="gamedetail_menu_achievements">Erfolge</string>
     <string name="gamedetail_menu_related_games">Ähnliche Spiele</string>
 
@@ -66,6 +67,7 @@
     <string name="gamedetail_footer_options">Optionen</string>
     <string name="gamedetail_footer_view_screenshot">Ansehen</string>
     <string name="gamedetail_footer_view_all_achievements">Alle anzeigen</string>
+    <string name="gamedetail_footer_view_reviews">Rezensionen lesen</string>
     <string name="gamedetail_footer_open_related">Öffnen</string>
     <string name="gamedetail_footer_back">Zurück</string>
     <string name="gamedetail_footer_new_game">Neues Spiel</string>
@@ -79,6 +81,7 @@
     <string name="gamedetail_section_description_heading">BESCHREIBUNG</string>
     <string name="gamedetail_section_screenshots_heading">SCREENSHOTS</string>
     <string name="gamedetail_section_related_heading">ÄHNLICHE SPIELE</string>
+    <string name="gamedetail_section_reviews_heading">REZENSIONEN</string>
     <string name="gamedetail_section_achievements_heading">ERFOLGE</string>
     <string name="gamedetail_section_achievements_count">(%1$d/%2$d)</string>
 
@@ -91,6 +94,8 @@
     <string name="gamedetail_chip_my_rating_label">Bewertung</string>
     <string name="gamedetail_chip_difficulty_label">Schwierigkeit</string>
     <string name="gamedetail_chip_community_rating_label">Community</string>
+    <string name="gamedetail_chip_reviews_label">Rezensionen</string>
+    <string name="gamedetail_chip_my_review_label">Meine Rezension</string>
     <string name="gamedetail_chip_play_time_label">Spielzeit</string>
 
     <string name="gamedetail_chip_rating_value">%1$d/10</string>
@@ -456,6 +461,25 @@
 
     <string name="gamedetail_header_platform_unknown">Unbekannt</string>
 
+    <string name="reviews_sentiment_overwhelmingly_positive">Äußerst positiv</string>
+    <string name="reviews_sentiment_very_positive">Sehr positiv</string>
+    <string name="reviews_sentiment_mostly_positive">Größtenteils positiv</string>
+    <string name="reviews_sentiment_mixed">Ausgeglichen</string>
+    <string name="reviews_sentiment_mostly_negative">Größtenteils negativ</string>
+    <string name="reviews_sentiment_overwhelmingly_negative">Äußerst negativ</string>
+    <string name="reviews_summary_none">Noch keine Rezensionen</string>
+    <string name="reviews_my_review_none">Rezension schreiben</string>
+    <plurals name="reviews_count">
+        <item quantity="one">%d Rezension</item>
+        <item quantity="other">%d Rezensionen</item>
+    </plurals>
+    <plurals name="reviews_helpful_count">
+        <item quantity="one">%d Person fand das hilfreich</item>
+        <item quantity="other">%d Personen fanden das hilfreich</item>
+    </plurals>
+    <string name="reviews_heading_yours">Deine Rezension</string>
+    <string name="reviews_heading_friends">Freunde</string>
+    <string name="reviews_heading_everyone">Alle anderen</string>
     <string name="reviews_reader_write_row">Rezension schreiben</string>
     <string name="reviews_editor_title">Rezension schreiben</string>
     <string name="reviews_editor_title_edit">Rezension bearbeiten</string>

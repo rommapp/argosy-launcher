@@ -294,6 +294,7 @@
     <string name="dual_detail_tab_saves">GUARDADOS</string>
     <string name="dual_detail_tab_states">ESTADOS</string>
     <string name="dual_detail_tab_media">MEDIOS</string>
+    <string name="dual_detail_tab_reviews">RESEÑAS</string>
     <string name="dual_detail_tab_options">OPCIONES</string>
 
     <string name="dual_state_menu_copy_to">Copiar a la ranura</string>
@@ -428,6 +429,7 @@
 
     <string name="dual_detail_save_slot_auto">Guardado automático</string>
 
+    <string name="dual_detail_reviews_empty">Aún no hay reseñas</string>
     <string name="dual_detail_reviews_write_row">Escribir una reseña</string>
     <string name="dual_detail_option_write_review">Escribir una reseña</string>
 </resources>

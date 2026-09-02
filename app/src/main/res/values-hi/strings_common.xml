@@ -652,6 +652,7 @@
     <string name="ui_startup_status_initializing">शुरू हो रहा है...</string>
     <string name="ui_startup_status_syncing_collections">कलेक्शन सिंक हो रहे हैं...</string>
     <string name="ui_startup_status_checking_emulators">एमुलेटर जांचे जा रहे हैं...</string>
+    <string name="ui_startup_status_repairing_library">लाइब्रेरी ठीक की जा रही है...</string>
     <string name="ui_startup_status_preparing_home">होम तैयार हो रहा है...</string>
     <string name="ui_startup_status_waiting_for_storage">स्टोरेज का इंतज़ार हो रहा है...</string>
     <string name="ui_startup_status_scanning_roms">ROM फ़ाइलें स्कैन हो रही हैं...</string>

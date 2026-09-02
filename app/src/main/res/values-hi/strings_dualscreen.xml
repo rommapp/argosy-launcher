@@ -288,6 +288,7 @@
     <string name="dual_detail_tab_saves">सेव</string>
     <string name="dual_detail_tab_states">स्टेट</string>
     <string name="dual_detail_tab_media">मीडिया</string>
+    <string name="dual_detail_tab_reviews">समीक्षाएं</string>
     <string name="dual_detail_tab_options">विकल्प</string>
 
     <string name="dual_state_menu_copy_to">स्लॉट में कॉपी करें</string>
@@ -422,6 +423,7 @@
 
     <string name="dual_detail_save_slot_auto">ऑटो सेव</string>
 
+    <string name="dual_detail_reviews_empty">अभी कोई समीक्षा नहीं</string>
     <string name="dual_detail_reviews_write_row">समीक्षा लिखें</string>
     <string name="dual_detail_option_write_review">समीक्षा लिखें</string>
 </resources>

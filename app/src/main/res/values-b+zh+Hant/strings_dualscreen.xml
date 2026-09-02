@@ -247,6 +247,7 @@
     <string name="dual_detail_tab_saves">存檔</string>
     <string name="dual_detail_tab_states">即時存檔</string>
     <string name="dual_detail_tab_media">媒體</string>
+    <string name="dual_detail_tab_reviews">評論</string>
     <string name="dual_detail_tab_options">選項</string>
 
     <string name="dual_state_menu_copy_to">複製到格位</string>
@@ -379,6 +380,7 @@
 
     <string name="dual_detail_save_slot_auto">自動存檔</string>
 
+    <string name="dual_detail_reviews_empty">尚無評論</string>
     <string name="dual_detail_reviews_write_row">撰寫評論</string>
     <string name="dual_detail_option_write_review">撰寫評論</string>
 </resources>

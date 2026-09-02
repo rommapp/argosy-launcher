@@ -1825,6 +1825,7 @@
     <string name="settings_romm_config_certificate_subtitle">Confiar en un servidor con una autoridad certificadora privada</string>
     <plurals name="settings_romm_config_certificate_subtitle_count">
         <item quantity="one">%d certificado en el que Argosy confía</item>
+        <item quantity="many">%d certificados en los que Argosy confía</item>
         <item quantity="other">%d certificados en los que Argosy confía</item>
     </plurals>
     <string name="settings_romm_config_certificate_import_failed">Ese archivo no es un certificado legible.</string>

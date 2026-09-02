@@ -620,6 +620,7 @@
     <string name="ui_startup_status_initializing">正在初始化...</string>
     <string name="ui_startup_status_syncing_collections">正在同步合集...</string>
     <string name="ui_startup_status_checking_emulators">正在检查模拟器...</string>
+    <string name="ui_startup_status_repairing_library">正在修复游戏库...</string>
     <string name="ui_startup_status_preparing_home">正在准备主页...</string>
     <string name="ui_startup_status_waiting_for_storage">正在等待存储...</string>
     <string name="ui_startup_status_scanning_roms">正在扫描ROM文件...</string>

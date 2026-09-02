@@ -5,6 +5,7 @@
     <string name="gamedetail_menu_details">Детали</string>
     <string name="gamedetail_menu_description">Описание</string>
     <string name="gamedetail_menu_screenshots">Скриншоты</string>
+    <string name="gamedetail_menu_reviews">Отзывы</string>
     <string name="gamedetail_menu_achievements">Достижения</string>
     <string name="gamedetail_menu_related_games">Похожие игры</string>
 
@@ -62,6 +63,7 @@
     <string name="gamedetail_footer_options">Параметры</string>
     <string name="gamedetail_footer_view_screenshot">Просмотр</string>
     <string name="gamedetail_footer_view_all_achievements">Все</string>
+    <string name="gamedetail_footer_view_reviews">Читать отзывы</string>
     <string name="gamedetail_footer_open_related">Открыть</string>
     <string name="gamedetail_footer_back">Назад</string>
     <string name="gamedetail_footer_new_game">Новая игра</string>
@@ -73,6 +75,7 @@
     <string name="gamedetail_section_description_heading">ОПИСАНИЕ</string>
     <string name="gamedetail_section_screenshots_heading">СКРИНШОТЫ</string>
     <string name="gamedetail_section_related_heading">ПОХОЖИЕ ИГРЫ</string>
+    <string name="gamedetail_section_reviews_heading">ОТЗЫВЫ</string>
     <string name="gamedetail_section_achievements_heading">ДОСТИЖЕНИЯ</string>
     <string name="gamedetail_section_achievements_count">(%1$d/%2$d)</string>
 
@@ -83,6 +86,8 @@
     <string name="gamedetail_chip_my_rating_label">Оценка</string>
     <string name="gamedetail_chip_difficulty_label">Сложность</string>
     <string name="gamedetail_chip_community_rating_label">Сообщество</string>
+    <string name="gamedetail_chip_reviews_label">Отзывы</string>
+    <string name="gamedetail_chip_my_review_label">Мой отзыв</string>
     <string name="gamedetail_chip_play_time_label">Время в игре</string>
 
     <string name="gamedetail_chip_rating_value">%1$d/10</string>
@@ -424,6 +429,29 @@
 
     <string name="gamedetail_header_platform_unknown">Неизвестно</string>
 
+    <string name="reviews_sentiment_overwhelmingly_positive">Крайне положительные</string>
+    <string name="reviews_sentiment_very_positive">Очень положительные</string>
+    <string name="reviews_sentiment_mostly_positive">В основном положительные</string>
+    <string name="reviews_sentiment_mixed">Смешанные</string>
+    <string name="reviews_sentiment_mostly_negative">В основном отрицательные</string>
+    <string name="reviews_sentiment_overwhelmingly_negative">Крайне отрицательные</string>
+    <string name="reviews_summary_none">Отзывов пока нет</string>
+    <string name="reviews_my_review_none">Написать отзыв</string>
+    <plurals name="reviews_count">
+        <item quantity="one">%d отзыв</item>
+        <item quantity="few">%d отзыва</item>
+        <item quantity="many">%d отзывов</item>
+        <item quantity="other">%d отзыва</item>
+    </plurals>
+    <plurals name="reviews_helpful_count">
+        <item quantity="one">%d человек счёл это полезным</item>
+        <item quantity="few">%d человека сочли это полезным</item>
+        <item quantity="many">%d человек сочли это полезным</item>
+        <item quantity="other">%d человека сочли это полезным</item>
+    </plurals>
+    <string name="reviews_heading_yours">Ваш отзыв</string>
+    <string name="reviews_heading_friends">Друзья</string>
+    <string name="reviews_heading_everyone">Остальные</string>
     <string name="reviews_reader_write_row">Написать отзыв</string>
     <string name="reviews_editor_title">Написать отзыв</string>
     <string name="reviews_editor_title_edit">Изменить свой отзыв</string>

@@ -184,12 +184,30 @@ class RomMApiClient @Inject constructor(
         val code = response.code()
         val message = when (code) {
             400 -> "Bad request - try resyncing (HTTP 400)"
-            401, 403 -> "Authentication failed (HTTP $code)"
+            401, 403 -> if (isAppRefusal(response)) {
+                "Authentication failed (HTTP $code)"
+            } else {
+                "Server refused the file (HTTP $code)"
+            }
             404 -> "$kind not found on server - try resyncing"
             500, 502, 503 -> "Server error (HTTP $code)"
             else -> "Download failed (HTTP $code)"
         }
         return RomMResult.Error(message, code)
+    }
+
+    /**
+     * RomM itself answers a refused download with a JSON `detail` body. Nginx and reverse
+     * proxies answer with their own HTML page, and those refusals have nothing to do with the
+     * token that just served the metadata calls.
+     */
+    private fun isAppRefusal(response: retrofit2.Response<okhttp3.ResponseBody>): Boolean {
+        val text = try { response.errorBody()?.string() } catch (_: Exception) { null } ?: return false
+        return try {
+            org.json.JSONObject(text).has("detail")
+        } catch (_: org.json.JSONException) {
+            false
+        }
     }
 
     suspend fun getCurrentUser(): RomMResult<RomMUser> {

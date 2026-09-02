@@ -29,6 +29,7 @@
 
     <string name="home_footer_grid_page">頁面</string>
     <string name="home_footer_grid_finished">已完成</string>
+    <string name="home_footer_grid_reroll">重新隨機</string>
     <string name="home_footer_grid_options">選項</string>
 
     <string name="home_footer_media_item">項目</string>

@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Casino
 import androidx.compose.material.icons.outlined.Layers
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -55,6 +56,8 @@ import com.nendo.argosy.ui.screens.media.components.MediaProgressBar
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
+import com.nendo.argosy.ui.theme.generated.MotionTokens
+import kotlinx.coroutines.launch
 import com.nendo.argosy.ui.util.clickableNoFocus
 
 /**
@@ -137,7 +140,12 @@ data class CustomGridTileContent(
      * Marks a tile that plays one game out of a collection, so a queue is distinguishable from the
      * plain game tile it otherwise looks exactly like.
      */
-    val isCollectionQueue: Boolean = false
+    val isCollectionQueue: Boolean = false,
+    /**
+     * Marks a random game tile, which otherwise looks exactly like the game it happens to be
+     * showing. The die badge and the re-roll animation hang off this.
+     */
+    val isRandom: Boolean = false
 )
 
 /**
@@ -451,6 +459,7 @@ private fun CustomGridCellBox(
             tileRatio
         }
         val fitByHeight = artRatio <= tileRatio
+        val reroll = rememberRerollAnimation(enabled = content.isRandom, pickKey = game.id)
         Box(modifier = placement, contentAlignment = Alignment.Center) {
             Box(
                 modifier = Modifier
@@ -458,6 +467,10 @@ private fun CustomGridCellBox(
                         if (fitByHeight) Modifier.fillMaxHeight() else Modifier.fillMaxWidth()
                     )
                     .aspectRatio(artRatio, matchHeightConstraintsFirst = fitByHeight)
+                    .graphicsLayer {
+                        scaleX = reroll.scale
+                        scaleY = reroll.scale
+                    }
             ) {
                 GameCard(
                     game = game,
@@ -484,6 +497,12 @@ private fun CustomGridCellBox(
                 )
                 if (content.isCollectionQueue) {
                     CollectionQueueBadge(modifier = Modifier.align(Alignment.TopStart))
+                }
+                if (content.isRandom) {
+                    RandomTileBadge(
+                        rotation = reroll.rotation,
+                        modifier = Modifier.align(Alignment.TopStart)
+                    )
                 }
             }
             if (editModeLabel != null && isFocused) {
@@ -556,6 +575,12 @@ private fun CustomGridCellBox(
                         modifier = Modifier
                             .size(Dimens.iconXl)
                             .clip(RoundedCornerShape(Dimens.radiusSm))
+                    )
+                    content.isRandom -> Icon(
+                        imageVector = Icons.Filled.Casino,
+                        contentDescription = null,
+                        tint = theme.textDim,
+                        modifier = Modifier.size(Dimens.iconXl)
                     )
                 }
                 Text(
@@ -718,6 +743,57 @@ private fun CollectionQueueBadge(modifier: Modifier = Modifier) {
 }
 
 /**
+ * The die in the corner of a random game tile. [rotation] is the re-roll spin, so the badge is
+ * what visibly rolls when the pick changes.
+ */
+@Composable
+private fun RandomTileBadge(rotation: Float, modifier: Modifier = Modifier) {
+    val theme = LocalArgosyTheme.current
+    Box(
+        modifier = modifier
+            .padding(Dimens.spacingXs)
+            .clip(RoundedCornerShape(Dimens.radiusSm))
+            .background(theme.surfaceBase.copy(alpha = COLLECTION_BADGE_SCRIM_ALPHA))
+            .padding(Dimens.spacingXs)
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Casino,
+            contentDescription = null,
+            tint = theme.textPrimary,
+            modifier = Modifier
+                .size(Dimens.iconSm)
+                .graphicsLayer { rotationZ = rotation }
+        )
+    }
+}
+
+private data class RerollAnimation(val rotation: Float, val scale: Float)
+
+/**
+ * Spins the die and gives the tile a short squeeze whenever [pickKey] changes, which on a random
+ * tile is exactly a re-roll. The first pick a tile shows does not animate: the page arriving is
+ * not a roll.
+ */
+@Composable
+private fun rememberRerollAnimation(enabled: Boolean, pickKey: Long): RerollAnimation {
+    val rotation = remember { androidx.compose.animation.core.Animatable(0f) }
+    val scale = remember { androidx.compose.animation.core.Animatable(1f) }
+    var lastKey by remember { mutableStateOf(pickKey) }
+    LaunchedEffect(pickKey) {
+        if (!enabled || lastKey == pickKey) return@LaunchedEffect
+        lastKey = pickKey
+        rotation.snapTo(0f)
+        scale.snapTo(REROLL_SQUEEZE_SCALE)
+        launch { rotation.animateTo(REROLL_SPIN_DEGREES, MotionTokens.Tween.medium) }
+        scale.animateTo(1f, MotionTokens.Spring.focusSnappy)
+    }
+    return RerollAnimation(rotation = rotation.value, scale = if (enabled) scale.value else 1f)
+}
+
+private const val REROLL_SPIN_DEGREES = 360f
+private const val REROLL_SQUEEZE_SCALE = 0.9f
+
+/**
  * A tab hanging off the tile's lower edge naming the mode the d-pad is currently in. It is the
  * inverse of the platform tab, which sits inset within the cover: this one belongs to the cursor
  * rather than to the game, so it reads as attached from outside.
@@ -773,14 +849,15 @@ private fun WideTileBox(
         targetValue = if (isFocused) focusScale else 1f,
         label = "wide-tile-scale"
     )
+    val reroll = rememberRerollAnimation(enabled = content.isRandom, pickKey = content.game?.id ?: 0L)
 
     Box(modifier = placement) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .graphicsLayer {
-                    scaleX = scale
-                    scaleY = scale
+                    scaleX = scale * reroll.scale
+                    scaleY = scale * reroll.scale
                     alpha = if (isOverlapped) OVERLAPPED_ALPHA else 1f
                 }
                 .clip(shape)
@@ -830,6 +907,12 @@ private fun WideTileBox(
                             androidx.compose.ui.layout.ContentScale.Crop
                         },
                         modifier = Modifier.fillMaxSize()
+                    )
+                }
+                if (content.isRandom) {
+                    RandomTileBadge(
+                        rotation = reroll.rotation,
+                        modifier = Modifier.align(Alignment.TopStart)
                     )
                 }
                 content.media?.let { media ->

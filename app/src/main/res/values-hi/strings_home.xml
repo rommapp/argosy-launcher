@@ -29,6 +29,7 @@
 
     <string name="home_footer_grid_page">पेज</string>
     <string name="home_footer_grid_finished">पूर्ण</string>
+    <string name="home_footer_grid_reroll">फिर से चुनें</string>
     <string name="home_footer_grid_options">विकल्प</string>
 
     <string name="home_footer_media_item">आइटम</string>

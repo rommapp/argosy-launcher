@@ -29,6 +29,7 @@
 
     <string name="home_footer_grid_page">Página</string>
     <string name="home_footer_grid_finished">Terminado</string>
+    <string name="home_footer_grid_reroll">Volver a elegir</string>
     <string name="home_footer_grid_options">Opciones</string>
 
     <string name="home_footer_media_item">Elemento</string>

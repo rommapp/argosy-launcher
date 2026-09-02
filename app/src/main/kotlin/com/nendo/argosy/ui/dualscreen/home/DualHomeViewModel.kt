@@ -500,7 +500,8 @@ data class DualHomeUiState(
                 game = game,
                 label = game?.title ?: context.getString(R.string.dual_tile_feature_random_empty),
                 subtitle = context.getString(R.string.dual_tile_feature_random),
-                stats = game?.let { com.nendo.argosy.ui.components.tileStatsFor(it, context) }.orEmpty()
+                stats = game?.let { com.nendo.argosy.ui.components.tileStatsFor(it, context) }.orEmpty(),
+                isRandom = true
             )
         }
         com.nendo.argosy.domain.model.FeatureTileKind.CONTINUE -> {

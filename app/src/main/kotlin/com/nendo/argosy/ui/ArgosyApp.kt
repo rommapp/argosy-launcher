@@ -1418,6 +1418,7 @@ fun ArgosyApp(
                                         viewMode = viewMode,
                                         isDownloaded = showcaseState.isDownloaded,
                                         isFavorite = showcaseState.isFavorite,
+                                        isRandomTile = showcaseState.isRandomTile,
                                         drawerOpen = drawerOpen,
                                         appBarFocused = appBarFocused
                                     )
@@ -1502,8 +1503,13 @@ fun ArgosyApp(
                                         if (inCustomGrid) {
                                             val tileGame = swappedVm.focusedTileGameId()
                                                 ?.let { state.tileGames[it] }
+                                            val isRandomTile = (
+                                                swappedVm.focusedTile()?.target
+                                                    as? com.nendo.argosy.domain.model.HomeTileTargetRef.Feature
+                                                )?.kind == com.nendo.argosy.domain.model.FeatureTileKind.RANDOM_GAME
                                             dualScreenManager.onGameSelected(
-                                                tileGame?.toShowcaseState() ?: DualHomeShowcaseState()
+                                                (tileGame?.toShowcaseState() ?: DualHomeShowcaseState())
+                                                    .copy(isRandomTile = isRandomTile)
                                             )
                                         } else {
                                             val game = state.selectedGame

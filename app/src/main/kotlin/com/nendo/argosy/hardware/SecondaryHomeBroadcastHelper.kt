@@ -169,13 +169,18 @@ class SecondaryHomeBroadcastHelper(
                 return
             }
         }
-        val game = if (state.layoutKind == com.nendo.argosy.domain.model.HomeLayoutKind.CUSTOM_GRID) {
+        val inCustomGrid = state.layoutKind == com.nendo.argosy.domain.model.HomeLayoutKind.CUSTOM_GRID
+        val game = if (inCustomGrid) {
             dualHomeViewModel.focusedTileGameId()?.let { state.tileGames[it] }
         } else {
             state.selectedGame
         }
-        if (game != null) dsm.onGameSelected(game.toShowcaseState())
-        else dsm.onGameSelected(com.nendo.argosy.ui.dualscreen.home.DualHomeShowcaseState())
+        val isRandomTile = inCustomGrid &&
+            (dualHomeViewModel.focusedTile()?.target as? com.nendo.argosy.domain.model.HomeTileTargetRef.Feature)
+                ?.kind == com.nendo.argosy.domain.model.FeatureTileKind.RANDOM_GAME
+        val showcase = game?.toShowcaseState()
+            ?: com.nendo.argosy.ui.dualscreen.home.DualHomeShowcaseState()
+        dsm.onGameSelected(showcase.copy(isRandomTile = isRandomTile))
     }
 
     /**

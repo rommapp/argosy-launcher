@@ -15,6 +15,7 @@ fun companionHomeHints(
     viewMode: String,
     isDownloaded: Boolean,
     isFavorite: Boolean,
+    isRandomTile: Boolean = false,
     drawerOpen: Boolean = false,
     appBarFocused: Boolean = false
 ): List<Pair<InputButton, String>> {
@@ -68,10 +69,10 @@ fun companionHomeHints(
                 InputButton.LB_RB to stringResource(R.string.dual_home_hint_carousel_platform),
                 InputButton.A to actionLabel,
                 InputButton.X to stringResource(R.string.dual_home_hint_carousel_details),
-                InputButton.Y to if (isFavorite) {
-                    stringResource(R.string.dual_home_hint_carousel_unfavorite)
-                } else {
-                    stringResource(R.string.dual_home_hint_carousel_favorite)
+                InputButton.Y to when {
+                    isRandomTile -> stringResource(R.string.dual_home_hint_carousel_reroll)
+                    isFavorite -> stringResource(R.string.dual_home_hint_carousel_unfavorite)
+                    else -> stringResource(R.string.dual_home_hint_carousel_favorite)
                 },
                 InputButton.DPAD_UP to
                     stringResource(R.string.dual_home_hint_carousel_collections),

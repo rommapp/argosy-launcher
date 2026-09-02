@@ -95,6 +95,7 @@
     <string name="dual_home_hint_carousel_details">विवरण</string>
     <string name="dual_home_hint_carousel_favorite">पसंदीदा</string>
     <string name="dual_home_hint_carousel_unfavorite">पसंदीदा हटाएं</string>
+    <string name="dual_home_hint_carousel_reroll">फिर से चुनें</string>
     <string name="dual_home_hint_carousel_collections">कलेक्शन</string>
     <string name="dual_home_hint_carousel_library">लाइब्रेरी</string>
 

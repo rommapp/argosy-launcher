@@ -95,6 +95,7 @@
     <string name="dual_home_hint_carousel_details">Detalles</string>
     <string name="dual_home_hint_carousel_favorite">Favorito</string>
     <string name="dual_home_hint_carousel_unfavorite">Quitar de favoritos</string>
+    <string name="dual_home_hint_carousel_reroll">Volver a elegir</string>
     <string name="dual_home_hint_carousel_collections">Colecciones</string>
     <string name="dual_home_hint_carousel_library">Biblioteca</string>
 

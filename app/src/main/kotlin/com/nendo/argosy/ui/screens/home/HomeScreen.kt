@@ -889,6 +889,7 @@ fun HomeScreen(
                     val grid = uiState.customGrid
                     val gridPageLabel = stringResource(R.string.home_footer_grid_page)
                     val gridFinishedLabel = stringResource(R.string.home_footer_grid_finished)
+                    val gridRerollLabel = stringResource(R.string.home_footer_grid_reroll)
                     val gridOptionsLabel = stringResource(R.string.home_footer_grid_options)
                     val engagedFullscreenLabel =
                         stringResource(R.string.home_footer_grid_engaged_fullscreen)
@@ -958,6 +959,11 @@ fun HomeScreen(
                                 grid.confirmLabel?.let { add(InputButton.A to it) }
                                 if (grid.focusedCollection?.focusGameId != null) {
                                     add(InputButton.Y to gridFinishedLabel)
+                                }
+                                val feature = grid.focusedTile?.target
+                                    as? com.nendo.argosy.domain.model.HomeTileTargetRef.Feature
+                                if (feature?.kind == com.nendo.argosy.domain.model.FeatureTileKind.RANDOM_GAME) {
+                                    add(InputButton.Y to gridRerollLabel)
                                 }
                                 add(InputButton.SELECT to gridOptionsLabel)
                             }

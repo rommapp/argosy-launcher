@@ -86,6 +86,7 @@
     <string name="dual_home_hint_carousel_details">詳情</string>
     <string name="dual_home_hint_carousel_favorite">最愛</string>
     <string name="dual_home_hint_carousel_unfavorite">取消最愛</string>
+    <string name="dual_home_hint_carousel_reroll">重新隨機</string>
     <string name="dual_home_hint_carousel_collections">合輯</string>
     <string name="dual_home_hint_carousel_library">遊戲庫</string>
 

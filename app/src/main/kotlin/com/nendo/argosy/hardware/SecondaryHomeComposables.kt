@@ -442,7 +442,8 @@ fun ShowcaseRoleContent(
                                 hints = com.nendo.argosy.ui.dualscreen.companionHomeHints(
                                     viewMode = viewMode,
                                     isDownloaded = showcase.isDownloaded,
-                                    isFavorite = showcase.isFavorite
+                                    isFavorite = showcase.isFavorite,
+                                    isRandomTile = showcase.isRandomTile
                                 )
                             )
                         }

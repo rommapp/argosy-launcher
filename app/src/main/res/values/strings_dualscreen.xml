@@ -214,6 +214,8 @@
     <!-- Footer hint on the home carousel, for a game that is already a favourite. Verb: takes it
          back out. -->
     <string name="dual_home_hint_carousel_unfavorite">Unfavorite</string>
+    <!-- Hint on a random game tile: pick a different game. -->
+    <string name="dual_home_hint_carousel_reroll">Re-roll</string>
     <!-- Footer hint on the home carousel. Noun, plural: opens the list of collections. -->
     <string name="dual_home_hint_carousel_collections">Collections</string>
     <!-- Footer hint on the home carousel. Noun: opens the full library grid. -->

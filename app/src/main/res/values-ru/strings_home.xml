@@ -29,6 +29,7 @@
 
     <string name="home_footer_grid_page">Страница</string>
     <string name="home_footer_grid_finished">Пройдено</string>
+    <string name="home_footer_grid_reroll">Перевыбрать</string>
     <string name="home_footer_grid_options">Параметры</string>
 
     <string name="home_footer_media_item">Элемент</string>

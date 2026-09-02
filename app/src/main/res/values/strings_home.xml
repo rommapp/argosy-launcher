@@ -82,6 +82,8 @@
          order. Adjective describing the game on the tile: marks it done and moves the tile on to
          the next game in the collection. -->
     <string name="home_footer_grid_finished">Finished</string>
+    <!-- Footer hint on a random game tile: pick a different game. -->
+    <string name="home_footer_grid_reroll">Re-roll</string>
     <!-- Footer hint on the curated grid. Noun, plural: opens the menu of actions for the tile
          under the cursor. -->
     <string name="home_footer_grid_options">Options</string>

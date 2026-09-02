@@ -718,7 +718,8 @@ data class HomeUiState(
                 label = game?.title
                     ?: context.getString(R.string.home_grid_tile_feature_random_empty),
                 subtitle = context.getString(R.string.home_grid_tile_feature_random_label),
-                stats = game?.let { com.nendo.argosy.ui.components.tileStatsFor(it, context) }.orEmpty()
+                stats = game?.let { com.nendo.argosy.ui.components.tileStatsFor(it, context) }.orEmpty(),
+                isRandom = true
             )
         }
         com.nendo.argosy.domain.model.FeatureTileKind.CONTINUE -> {

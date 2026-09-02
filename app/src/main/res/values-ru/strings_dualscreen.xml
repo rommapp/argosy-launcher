@@ -87,6 +87,7 @@
     <string name="dual_home_hint_carousel_details">Детали</string>
     <string name="dual_home_hint_carousel_favorite">В избранное</string>
     <string name="dual_home_hint_carousel_unfavorite">Убрать из избранного</string>
+    <string name="dual_home_hint_carousel_reroll">Перевыбрать</string>
     <string name="dual_home_hint_carousel_collections">Коллекции</string>
     <string name="dual_home_hint_carousel_library">Библиотека</string>
 

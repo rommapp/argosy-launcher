@@ -493,6 +493,13 @@ class SaveSyncRepository @Inject constructor(
         titleId: String?
     ): Boolean = apiClient.clearSavesForTitle(targetPath, platformSlug, titleId)
 
+    suspend fun clearSavesBeforeRestore(
+        targetPath: String,
+        platformSlug: String,
+        titleId: String?,
+        archiveRoots: Set<String>?
+    ): Boolean = apiClient.clearSavesBeforeRestore(targetPath, platformSlug, titleId, archiveRoots)
+
     suspend fun flushPendingDeviceSync(gameId: Long) =
         apiClient.flushPendingDeviceSync(gameId)
 

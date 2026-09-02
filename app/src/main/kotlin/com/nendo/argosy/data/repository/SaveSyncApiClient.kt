@@ -18,6 +18,7 @@ import com.nendo.argosy.data.remote.romm.RomMDeleteSavesRequest
 import com.nendo.argosy.data.remote.romm.RomMSave
 import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.data.sync.SavePathResolver
+import com.nendo.argosy.data.sync.platform.FolderSaveHandler
 import com.nendo.argosy.data.sync.platform.GciSaveHandler
 import com.nendo.argosy.data.sync.platform.PlatformSaveHandler
 import com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry
@@ -387,6 +388,28 @@ class SaveSyncApiClient @Inject constructor(
         targetPath: String,
         platformSlug: String,
         titleId: String?
+    ): Boolean = clearMatchedSaves(targetPath, platformSlug, titleId) { { matches -> matches } }
+
+    /**
+     * The clear that precedes a restore. Unlike [clearSavesForTitle] it removes only what the
+     * incoming archive replaces: a layout whose components map to distinct archive roots keeps
+     * every component absent from [archiveRoots], and defers the clear to placement when the
+     * archive has not been read yet (null). Prefix layouts clear every match, as before.
+     */
+    suspend fun clearSavesBeforeRestore(
+        targetPath: String,
+        platformSlug: String,
+        titleId: String?,
+        archiveRoots: Set<String>?
+    ): Boolean = clearMatchedSaves(targetPath, platformSlug, titleId) { handler ->
+        { matches -> handler.pathsClearedBeforeRestore(matches, archiveRoots) }
+    }
+
+    private suspend fun clearMatchedSaves(
+        targetPath: String,
+        platformSlug: String,
+        titleId: String?,
+        selectFor: (FolderSaveHandler) -> (List<String>) -> List<String>
     ): Boolean = withContext(Dispatchers.IO) {
         val handler = saveHandlerRegistry.getFolderHandler(platformSlug)
         if (handler == null) {
@@ -409,9 +432,15 @@ class SaveSyncApiClient @Inject constructor(
             return@withContext true
         }
 
-        Logger.debug(TAG, "clearSavesForTitle: deleting ${matches.size} folder(s) | titleId=$titleId, parent=$parentPath")
+        val selected = selectFor(handler)(matches)
+        if (selected.size != matches.size) {
+            Logger.debug(TAG, "clearSavesForTitle: keeping ${matches.size - selected.size} component(s) the incoming archive does not carry | titleId=$titleId, kept=${matches - selected.toSet()}")
+        }
+        if (selected.isEmpty()) return@withContext true
+
+        Logger.debug(TAG, "clearSavesForTitle: deleting ${selected.size} folder(s) | titleId=$titleId, parent=$parentPath")
         var allOk = true
-        for (path in matches) {
+        for (path in selected) {
             if (!clearSaveAtPath(path)) allOk = false
         }
         allOk

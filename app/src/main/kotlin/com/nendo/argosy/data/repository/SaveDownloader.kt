@@ -15,6 +15,7 @@ import com.nendo.argosy.data.remote.romm.originDeviceName
 import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.data.sync.SaveArchiver
 import com.nendo.argosy.data.sync.SavePathResolver
+import com.nendo.argosy.data.sync.platform.FolderSaveHandler
 import com.nendo.argosy.data.sync.platform.GciSaveHandler
 import com.nendo.argosy.data.sync.platform.SaveContext
 import com.nendo.argosy.data.sync.platform.SwitchSaveHandler
@@ -735,7 +736,8 @@ class SaveDownloader @Inject constructor(
             return@withContext false
         } ?: return@withContext false
 
-        val platformSlug = gameId?.let { gameDao.getById(it)?.platformSlug }
+        val game = gameId?.let { gameDao.getById(it) }
+        val platformSlug = game?.platformSlug
         val config = if (platformSlug != null) {
             SavePathRegistry.getConfigForPlatform(emulatorId, platformSlug)
         } else {
@@ -848,10 +850,11 @@ class SaveDownloader @Inject constructor(
                 targetFolder.mkdirs()
 
                 val isJksv = saveArchiver.isJksvFormat(tempZipFile)
-                val unzipSuccess = if (isJksv) {
-                    saveArchiver.unzipPreservingStructure(tempZipFile, targetFolder, SwitchSaveHandler.JKSV_EXCLUDE_FILES)
-                } else {
-                    saveArchiver.unzipSingleFolder(tempZipFile, targetFolder)
+                val folderHandler = platformSlug?.let { client.getHandler(config, it, emulatorId) as? FolderSaveHandler }
+                val unzipSuccess = when {
+                    isJksv -> saveArchiver.unzipPreservingStructure(tempZipFile, targetFolder, SwitchSaveHandler.JKSV_EXCLUDE_FILES)
+                    folderHandler != null -> folderHandler.placeArchive(tempZipFile, targetFolder, game?.saveId ?: game?.titleId)
+                    else -> saveArchiver.unzipSingleFolder(tempZipFile, targetFolder)
                 }
                 if (!unzipSuccess) {
                     return@withContext false

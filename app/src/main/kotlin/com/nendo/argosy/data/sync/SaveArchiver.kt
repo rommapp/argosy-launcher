@@ -30,6 +30,15 @@ import javax.inject.Singleton
  */
 class CorruptZipException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
 
+/**
+ * A folder and the top-level name it takes inside an archive. The name is the archive's contract
+ * with every copy already on a server, so a handler chooses it rather than reading it off the
+ * folder.
+ */
+data class ArchiveRoot(val name: String, val folder: File) {
+    val isOwnName: Boolean get() = name == folder.name
+}
+
 @Singleton
 class SaveArchiver @Inject constructor(
     private val androidDataAccessor: AndroidDataAccessor,
@@ -107,38 +116,46 @@ class SaveArchiver @Inject constructor(
      * entry. Used by platforms whose "save unit" spans several sibling directories (e.g. PSP
      * profile folders sharing a 9-char disc id prefix).
      */
-    fun zipFolders(sourceFolders: List<File>, targetZip: File): Boolean {
-        val validFolders = sourceFolders.filter { fal.exists(it.absolutePath) && fal.isDirectory(it.absolutePath) }
-        if (validFolders.isEmpty()) {
+    fun zipFolders(sourceFolders: List<File>, targetZip: File): Boolean =
+        zipNamedFolders(sourceFolders.map { ArchiveRoot(it.name, it) }, targetZip)
+
+    /**
+     * Zips several folders into one archive, each under the root name its [ArchiveRoot] assigns
+     * rather than its own. A save unit spread over directories whose names identify nothing
+     * (3DS `data` beside an extdata id) needs the archive to carry names a restore can place.
+     */
+    fun zipNamedFolders(roots: List<ArchiveRoot>, targetZip: File): Boolean {
+        val validRoots = roots.filter { fal.exists(it.folder.absolutePath) && fal.isDirectory(it.folder.absolutePath) }
+        if (validRoots.isEmpty()) {
             Logger.warn(TAG, "[SaveSync] ARCHIVE | No valid folders to zip")
             return false
         }
 
-        val totalSize = validFolders.sumOf { countFilesUnion(it.absolutePath).second }
-        Logger.debug(TAG, "[SaveSync] ARCHIVE | Zipping ${validFolders.size} folder(s) | totalSize=${totalSize}bytes")
+        val totalSize = validRoots.sumOf { countFilesUnion(it.folder.absolutePath).second }
+        Logger.debug(TAG, "[SaveSync] ARCHIVE | Zipping ${validRoots.size} folder(s) | roots=${validRoots.map { it.name }}, totalSize=${totalSize}bytes")
 
         return try {
             targetZip.parentFile?.mkdirs()
             var filesWritten = 0
             ZipArchiveOutputStream(BufferedOutputStream(FileOutputStream(targetZip))).use { zos ->
                 zos.setUseZip64(Zip64Mode.AsNeeded)
-                for (folder in validFolders) {
-                    zos.putArchiveEntry(ZipArchiveEntry("${folder.name}/"))
+                for (root in validRoots) {
+                    zos.putArchiveEntry(ZipArchiveEntry("${root.name}/"))
                     zos.closeArchiveEntry()
-                    filesWritten += zipFolderRecursive(folder.absolutePath, folder.name, zos)
+                    filesWritten += zipFolderRecursive(root.folder.absolutePath, root.name, zos)
                 }
             }
             if (filesWritten == 0) {
                 Logger.warn(
                     TAG,
-                    "[SaveSync] ARCHIVE | Nothing to archive | folders=${validFolders.map { it.name }}. " +
+                    "[SaveSync] ARCHIVE | Nothing to archive | roots=${validRoots.map { it.name }}. " +
                         "Refusing to produce an empty archive."
                 )
                 targetZip.delete()
                 return false
             }
             val ratio = if (totalSize > 0) (targetZip.length() * 100 / totalSize) else 100
-            Logger.debug(TAG, "[SaveSync] ARCHIVE | Multi-folder zip complete | folders=${validFolders.size}, files=$filesWritten, output=${targetZip.name}, compressedSize=${targetZip.length()}bytes, ratio=$ratio%")
+            Logger.debug(TAG, "[SaveSync] ARCHIVE | Multi-folder zip complete | folders=${validRoots.size}, files=$filesWritten, output=${targetZip.name}, compressedSize=${targetZip.length()}bytes, ratio=$ratio%")
             true
         } catch (e: Exception) {
             Logger.error(TAG, "[SaveSync] ARCHIVE | Multi-folder zip failed", e)
@@ -426,13 +443,100 @@ class SaveArchiver @Inject constructor(
         val targetPath = targetFolder.absolutePath
         val isRestricted = isRestrictedPath(targetPath)
 
-        // For restricted paths, extract to temp then copy via UC Data path
         if (isRestricted) {
             return unzipViaTemp(sourceZip, targetFolder)
         }
 
-        // Non-restricted paths: extract directly
         return unzipDirect(sourceZip, targetFolder)
+    }
+
+    /**
+     * Places every top-level entry into the folder [destinations] maps its name to, with that
+     * name stripped. An entry whose root has no destination fails the whole extraction, so a
+     * caller that mapped only the roots it knows never scatters the rest somewhere unplanned.
+     * Restricted destinations are staged and moved the way [unzipSingleFolder] does.
+     */
+    fun unzipRootsTo(sourceZip: File, destinations: Map<String, File>): Boolean {
+        if (!sourceZip.exists() || !sourceZip.isFile) {
+            Logger.warn(TAG, "[SaveSync] ARCHIVE | Source zip invalid | path=${sourceZip.absolutePath}")
+            return false
+        }
+        val unplaceable = peekRootEntryNames(sourceZip) - destinations.keys
+        if (unplaceable.isNotEmpty()) {
+            Logger.error(TAG, "[SaveSync] ARCHIVE | Archive holds roots with no destination; refusing to extract | roots=$unplaceable, known=${destinations.keys}")
+            return false
+        }
+        val staging = File(sourceZip.parentFile, "roots_${System.currentTimeMillis()}")
+        val writeDirs = destinations.mapValues { (root, destination) ->
+            if (isRestrictedPath(destination.absolutePath)) File(staging, root) else destination
+        }
+        return try {
+            if (!extractRoots(sourceZip, writeDirs)) return false
+            destinations.all { (root, destination) ->
+                val staged = writeDirs.getValue(root)
+                staged == destination ||
+                    !staged.exists() ||
+                    androidDataAccessor.moveDirectory(staged.absolutePath, destination.absolutePath).also { moved ->
+                        if (!moved) {
+                            Logger.error(TAG, "[SaveSync] ARCHIVE | Failed to move a staged root into place | root=$root, target=${destination.absolutePath}")
+                        }
+                    }
+            }
+        } catch (e: CorruptZipException) {
+            throw e
+        } catch (e: Exception) {
+            Logger.error(TAG, "[SaveSync] ARCHIVE | unzipRootsTo failed | ${e.message}")
+            false
+        } finally {
+            staging.deleteRecursively()
+        }
+    }
+
+    private fun extractRoots(sourceZip: File, writeDirs: Map<String, File>): Boolean {
+        return try {
+            var fileCount = 0
+            ZipFile.builder().setFile(sourceZip).get().use { zf ->
+                val buffer = ByteArray(BUFFER_SIZE)
+                for (entry in zf.entries.toList()) {
+                    val entryName = entry.name
+                    val root = entryName.substringBefore('/')
+                    val relativePath = entryName.substringAfter('/', "")
+                    val target = writeDirs[root]
+                    if (target == null) {
+                        Logger.error(TAG, "[SaveSync] ARCHIVE | Entry root has no destination | entry=$entryName, roots=${writeDirs.keys}")
+                        return false
+                    }
+                    if (relativePath.isEmpty()) {
+                        target.mkdirs()
+                        continue
+                    }
+                    val entryFile = File(target, relativePath)
+                    if (!entryFile.canonicalPath.startsWith(target.canonicalPath)) {
+                        Logger.error(TAG, "[SaveSync] ARCHIVE | Zip path traversal detected | entry=$entryName, target=${target.absolutePath}")
+                        return false
+                    }
+                    if (entry.isDirectory) {
+                        entryFile.mkdirs()
+                    } else {
+                        entryFile.parentFile?.mkdirs()
+                        zf.getInputStream(entry).use { input ->
+                            BufferedOutputStream(FileOutputStream(entryFile), BUFFER_SIZE).use { bos ->
+                                var count: Int
+                                while (input.read(buffer, 0, BUFFER_SIZE).also { count = it } != -1) {
+                                    bos.write(buffer, 0, count)
+                                }
+                            }
+                        }
+                        fileCount++
+                    }
+                }
+            }
+            Logger.debug(TAG, "[SaveSync] ARCHIVE | Extracted by root | files=$fileCount, roots=${writeDirs.keys}")
+            true
+        } catch (e: java.util.zip.ZipException) {
+            Logger.error(TAG, "[SaveSync] ARCHIVE | Corrupt zip - server copy is damaged | zip=${sourceZip.name}, ${e.message}", e)
+            throw CorruptZipException("Source zip is damaged: ${e.message}", e)
+        }
     }
 
     private fun unzipViaTemp(sourceZip: File, targetFolder: File): Boolean {
@@ -845,10 +949,16 @@ class SaveArchiver @Inject constructor(
         return finalizeHash(entries)
     }
 
-    fun calculateFoldersAsZipHash(folders: List<File>): String {
+    fun calculateFoldersAsZipHash(folders: List<File>): String =
+        calculateNamedFoldersAsZipHash(folders.map { ArchiveRoot(it.name, it) })
+
+    /**
+     * Equivalent to [zipNamedFolders] + [calculateZipHash] without writing a temp zip.
+     */
+    fun calculateNamedFoldersAsZipHash(roots: List<ArchiveRoot>): String {
         val entries = mutableListOf<Pair<String, String>>()
-        for (folder in folders) {
-            collectUnionFileHashes(folder.absolutePath, folder.name, entries)
+        for (root in roots) {
+            collectUnionFileHashes(root.folder.absolutePath, root.name, entries)
         }
         return finalizeHash(entries)
     }

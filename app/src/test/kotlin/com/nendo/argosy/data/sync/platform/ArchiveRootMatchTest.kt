@@ -109,6 +109,14 @@ class ArchiveRootMatchTest {
     }
 
     @Test
+    fun `the 3ds extdata root is accepted as unidentified`() {
+        assertEquals(
+            FolderSaveHandler.ArchiveRootMatch.UNIDENTIFIED,
+            n3dsHandler.matchArchiveRoot("extdata", "00040000/00113200")
+        )
+    }
+
+    @Test
     fun `a 3ds archive rooted at anything else is still refused`() {
         assertNull(n3dsHandler.matchArchiveRoot("saves", "0004000000033500"))
         assertNull(n3dsHandler.matchArchiveRoot("0004000000033501", "0004000000033500"))

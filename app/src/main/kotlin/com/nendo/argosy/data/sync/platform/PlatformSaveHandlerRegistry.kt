@@ -7,6 +7,7 @@ import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.data.storage.FileInfo
+import com.nendo.argosy.data.sync.ArchiveRoot
 import com.nendo.argosy.data.sync.SaveArchiver
 import com.nendo.argosy.util.Logger
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -400,12 +401,16 @@ private class Xbox360FolderHandler(
 }
 
 /**
- * 3DS save layout: `{baseDir}/{id0}/{id1}/title/{category}/{shortTitleId}/data`. The id0/id1
- * folders are randomized per console install, so we walk the tree to find them. Includes a
- * 3DS-specific basePathOverride normalization (mounting `sdmc/Nintendo 3DS` if missing).
+ * 3DS save layout, two trees under the same id1 root:
+ * `{baseDir}/{id0}/{id1}/title/{category}/{lowId}/data` holds the title's save and
+ * `{baseDir}/{id0}/{id1}/extdata/00000000/{extdataId}` holds its extra data. Some titles keep
+ * their progress only in extdata (Fantasy Life writes nothing under `data`), so the save unit is
+ * both directories and either one alone counts as a save. The id0/id1 folders are randomized per
+ * console install, so the tree is walked to find them. Includes a 3DS-specific basePathOverride
+ * normalization (mounting `sdmc/Nintendo 3DS` if missing).
  *
- * Category and short title id are the two halves of the 16-hex save id. sigil reports the
- * same split as `save_path`; splitting it here stays equivalent for every 16-hex id. See
+ * Category and low id are the two halves of the 16-hex save id. sigil reports the same split
+ * as `save_path`; splitting it here stays equivalent for every 16-hex id. See
  * docs/save-id-to-path.md.
  */
 private class N3dsFolderHandler(
@@ -414,20 +419,51 @@ private class N3dsFolderHandler(
     saveArchiver: SaveArchiver
 ) : FolderSaveHandler(context, fal, saveArchiver, platformSlug = "3ds") {
 
+    private val appContext = context
+
     companion object {
         private const val TAG = "N3dsFolderHandler"
-        private const val DEFAULT_CATEGORY = "00040000"
+        private const val BASE_CATEGORY = "00040000"
         private const val SDMC_DIR = "sdmc"
         private const val SD_ROOT = "Nintendo 3DS"
+        private const val TITLE_DIR = "title"
         private const val TITLE_DATA_ROOT = "data"
+        private const val EXTDATA_DIR = "extdata"
+        private const val EXTDATA_HIGH = "00000000"
+        private const val ID_HEX_LENGTH = 8
+        private const val FULL_ID_HEX_LENGTH = 16
+        private const val EXTDATA_ID_SHIFT = 8
+        private const val HEX_RADIX = 16
+
+        /**
+         * The extdata directory a retail title writes: its low title id shifted right by 8 bits,
+         * rendered as 8 lowercase hex under `extdata/00000000/`. `00113200` becomes `00001132`.
+         * Null when the low id is not hex, in which case no extdata location exists to derive.
+         */
+        fun extdataIdFor(lowId: String): String? = lowId.toLongOrNull(HEX_RADIX)?.let {
+            java.lang.Long.toHexString(it shr EXTDATA_ID_SHIFT).padStart(ID_HEX_LENGTH, '0')
+        }
     }
 
     /**
-     * A 3DS save unit is the `data` directory under `title/<high8>/<low8>`, so that is what
-     * an archive is rooted at and the title never appears inside it. Every archive, current
-     * ones included, lands here; the destination is what identifies the save.
+     * Category, low id and the extdata id the low id derives, all lowercase because that is the
+     * case the emulator writes and internal storage is case-sensitive.
      */
-    override val unidentifiedArchiveRoots: Set<String> = setOf(TITLE_DATA_ROOT)
+    private data class TitleKey(val category: String, val lowId: String, val extdataId: String?)
+
+    /**
+     * The two directories one title's save can occupy under an id1 root. [titleData] is where
+     * a `data` root lands whether or not it exists yet; [extdata] is null only when no extdata
+     * id could be derived.
+     */
+    private data class SaveUnit(val titleData: String, val extdata: String?)
+
+    /**
+     * A 3DS archive is rooted at `data` for the title tree and `extdata` for the extdata tree,
+     * so the title never appears inside it. Every archive, current ones included, lands here;
+     * the destination is what identifies the save.
+     */
+    override val unidentifiedArchiveRoots: Set<String> = setOf(TITLE_DATA_ROOT, EXTDATA_DIR)
 
     /**
      * Saves live under `<userDir>/sdmc/Nintendo 3DS/<id0>/<id1>/title/...`, and which part of
@@ -454,52 +490,32 @@ private class N3dsFolderHandler(
         return trimmed
     }
 
+    /**
+     * The resolved path stays the title `data` directory whenever it exists, so sync rows written
+     * before extdata joined the unit keep their paths; a title with extdata only resolves to the
+     * extdata directory. Across id1 trees the unit written most recently wins.
+     */
     override fun findSaveFolderBySaveId(basePath: String, saveId: String): String? {
-        if (!fal.exists(basePath) || !fal.isDirectory(basePath)) {
+        if (!isDir(basePath)) {
             Logger.debug(TAG, "Base path does not exist | path=$basePath")
             return null
         }
 
-        val normalizedTitleId = saveId.uppercase()
-        val shortTitleId = if (normalizedTitleId.length > 8) {
-            normalizedTitleId.takeLast(8)
-        } else {
-            normalizedTitleId
+        val key = titleKeyFor(saveId)
+        Logger.debug(TAG, "Searching for save | baseDir=$basePath, category=${key.category}, lowId=${key.lowId}, extdataId=${key.extdataId}")
+
+        val unit = discoverUnit(basePath, key) ?: return null
+        val resolved = resolvedPathOf(unit)
+        if (resolved != null) {
+            Logger.debug(TAG, "Save found | path=$resolved, titleData=${unit.titleData}, extdata=${unit.extdata}")
         }
+        return resolved
+    }
 
-        Logger.debug(TAG, "Searching for save | baseDir=$basePath, fullId=$normalizedTitleId, shortId=$shortTitleId")
-
-        var bestMatchPath: String? = null
-        var bestModTime = 0L
-
-        fal.listFiles(basePath)?.filter { it.isDirectory }?.forEach { id0Folder ->
-            fal.listFiles(id0Folder.path)?.filter { it.isDirectory }?.forEach { id1Folder ->
-                val titleBasePath = "${id1Folder.path}/title"
-                if (!fal.exists(titleBasePath) || !fal.isDirectory(titleBasePath)) return@forEach
-
-                fal.listFiles(titleBasePath)?.filter { it.isDirectory }?.forEach { categoryDir ->
-                    val matchingFolder = fal.listFiles(categoryDir.path)?.firstOrNull {
-                        it.isDirectory && it.name.equals(shortTitleId, ignoreCase = true)
-                    }
-                    if (matchingFolder != null) {
-                        val dataPath = "${matchingFolder.path}/data"
-                        if (fal.exists(dataPath) && fal.isDirectory(dataPath)) {
-                            val modTime = newestFileTime(dataPath)
-                            Logger.debug(TAG, "Found candidate | path=$dataPath, modTime=$modTime")
-                            if (modTime > bestModTime) {
-                                bestModTime = modTime
-                                bestMatchPath = dataPath
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        if (bestMatchPath != null) {
-            Logger.debug(TAG, "Save found | path=$bestMatchPath")
-        }
-        return bestMatchPath
+    override fun findAllSaveFoldersBySaveId(basePath: String, saveId: String): List<String> {
+        val key = titleKeyFor(saveId)
+        val unit = unitAt(basePath, key) ?: discoverUnit(basePath, key) ?: return emptyList()
+        return existingComponents(unit).map { it.folder.path }
     }
 
     /**
@@ -509,8 +525,7 @@ private class N3dsFolderHandler(
      * already cached on game rows in the case they were first extracted with.
      */
     override fun constructSavePath(baseDir: String, saveId: String): String? {
-        val category = (if (saveId.length >= 16) saveId.take(8) else DEFAULT_CATEGORY).lowercase()
-        val shortTitleId = (if (saveId.length > 8) saveId.takeLast(8) else saveId).lowercase()
+        val key = titleKeyFor(saveId)
 
         val id0Folder = fal.listFiles(baseDir)?.firstOrNull { it.isDirectory }
         if (id0Folder == null) {
@@ -524,9 +539,199 @@ private class N3dsFolderHandler(
             return null
         }
 
-        val savePath = "${id1Folder.path}/title/$category/$shortTitleId/data"
+        val savePath = titleDataPath(id1Folder.path, key.category, key.lowId)
         Logger.debug(TAG, "Constructed save path | path=$savePath")
         return savePath
+    }
+
+    override fun namedArchiveRoots(savePath: String, saveId: String): List<ArchiveRoot>? =
+        unitAt(savePath, titleKeyFor(saveId))?.let(::existingComponents)
+
+    override suspend fun sourcePathsFor(
+        localPath: String,
+        context: SaveContext
+    ): List<String> = withContext(Dispatchers.IO) {
+        val saveId = context.saveId ?: return@withContext listOf(localPath)
+        val unit = unitAt(localPath, titleKeyFor(saveId)) ?: return@withContext listOf(localPath)
+        existingComponents(unit).map { it.folder.path }
+    }
+
+    /**
+     * Bundles every component of the unit the resolved path belongs to, `data` and `extdata`,
+     * so a title whose progress lives in extdata is uploaded whichever directory was resolved.
+     */
+    override suspend fun prepareForUpload(
+        localPath: String,
+        context: SaveContext
+    ): PreparedSave? = withContext(Dispatchers.IO) {
+        val saveId = context.saveId
+            ?: return@withContext super.prepareForUpload(localPath, context)
+        val unit = unitAt(localPath, titleKeyFor(saveId))
+            ?: return@withContext super.prepareForUpload(localPath, context)
+
+        val roots = existingComponents(unit)
+        if (roots.isEmpty()) {
+            Logger.debug(TAG, "prepareForUpload: neither save tree exists | path=$localPath, saveId=$saveId")
+            return@withContext null
+        }
+        Logger.debug(TAG, "prepareForUpload: bundling ${roots.size} tree(s) | saveId=$saveId, roots=${roots.map { it.name }}")
+
+        val outputFile = File(appContext.cacheDir, "${saveId.asArchiveName()}.zip")
+        if (!saveArchiver.zipNamedFolders(roots, outputFile)) {
+            Logger.error(TAG, "prepareForUpload: failed to zip save trees | saveId=$saveId")
+            return@withContext null
+        }
+        PreparedSave(outputFile, isTemporary = true, roots.map { it.folder.path })
+    }
+
+    /**
+     * A pre-restore clear may only remove a component the archive is about to replace. With the
+     * archive unread nothing is cleared here, because [unpackArchive] clears each component it
+     * places; with it read, only components whose root the archive carries go.
+     */
+    override fun pathsClearedBeforeRestore(paths: List<String>, archiveRoots: Set<String>?): List<String> {
+        if (archiveRoots == null) return emptyList()
+        return paths.filter { componentRootOf(it) in archiveRoots }
+    }
+
+    /**
+     * A `data` root lands in the title tree and an `extdata` root in the extdata tree whichever
+     * component the target names, so an archive holding only extdata restores to the right place
+     * even when the resolved path is the title `data` directory. Each component the archive
+     * carries is replaced, not overlaid, and a component it does not carry is left untouched, so
+     * a legacy archive rooted at `data` alone lands exactly where it always has and never costs
+     * the extdata beside it. A target that is not a component of any unit is unpacked as the
+     * plain folder it was resolved to.
+     */
+    override fun unpackArchive(tempFile: File, targetFolder: File, saveId: String?): Boolean {
+        val unit = saveId?.let { unitAt(targetFolder.path, titleKeyFor(it)) }
+            ?: return super.unpackArchive(tempFile, targetFolder, saveId)
+
+        val destinations = buildMap {
+            put(TITLE_DATA_ROOT, unit.titleData)
+            unit.extdata?.let { put(EXTDATA_DIR, it) }
+        }
+        val archiveRoots = saveArchiver.peekRootEntryNames(tempFile)
+        Logger.debug(TAG, "unpackArchive: placing roots | roots=$archiveRoots, titleData=${unit.titleData}, extdata=${unit.extdata}")
+
+        destinations.filterKeys { it in archiveRoots }.values.filter(::isDir).forEach { component ->
+            Logger.debug(TAG, "unpackArchive: replacing component the archive carries | path=$component")
+            fal.deleteRecursively(component)
+        }
+        return saveArchiver.unzipRootsTo(tempFile, destinations.mapValues { fal.getTransformedFile(it.value) })
+    }
+
+    private fun componentRootOf(path: String): String? {
+        val segments = path.trimEnd('/').split('/')
+        val n = segments.size
+        return when {
+            n >= 4 && segments[n - 1].equals(TITLE_DATA_ROOT, ignoreCase = true) &&
+                segments[n - 4].equals(TITLE_DIR, ignoreCase = true) -> TITLE_DATA_ROOT
+            n >= 3 && segments[n - 3].equals(EXTDATA_DIR, ignoreCase = true) -> EXTDATA_DIR
+            else -> null
+        }
+    }
+
+    private fun titleKeyFor(saveId: String): TitleKey {
+        val flat = saveId.replace("/", "").trim().lowercase()
+        val category = if (flat.length >= FULL_ID_HEX_LENGTH) flat.take(ID_HEX_LENGTH) else BASE_CATEGORY
+        val lowId = flat.takeLast(ID_HEX_LENGTH)
+        return TitleKey(category, lowId, extdataIdFor(lowId))
+    }
+
+    private fun titleDataPath(id1Root: String, category: String, lowId: String): String =
+        "$id1Root/$TITLE_DIR/$category/$lowId/$TITLE_DATA_ROOT"
+
+    private fun extdataPath(id1Root: String, key: TitleKey): String? =
+        key.extdataId?.let { "$id1Root/$EXTDATA_DIR/$EXTDATA_HIGH/$it" }
+
+    private fun isDir(path: String): Boolean = fal.exists(path) && fal.isDirectory(path)
+
+    private fun resolvedPathOf(unit: SaveUnit): String? =
+        unit.titleData.takeIf(::isDir) ?: unit.extdata?.takeIf(::isDir)
+
+    private fun existingComponents(unit: SaveUnit): List<ArchiveRoot> = listOfNotNull(
+        unit.titleData.takeIf(::isDir)?.let { ArchiveRoot(TITLE_DATA_ROOT, fal.getTransformedFile(it)) },
+        unit.extdata?.takeIf(::isDir)?.let { ArchiveRoot(EXTDATA_DIR, fal.getTransformedFile(it)) }
+    )
+
+    private fun unitNewestTime(unit: SaveUnit): Long =
+        existingComponents(unit).maxOfOrNull { newestFileTime(it.folder.path) } ?: 0L
+
+    private fun id1Roots(basePath: String): List<String> =
+        fal.listFiles(basePath).orEmpty()
+            .filter { it.isDirectory }
+            .flatMap { id0 -> fal.listFiles(id0.path).orEmpty().filter { it.isDirectory } }
+            .map { it.path }
+
+    private fun discoverUnit(basePath: String, key: TitleKey): SaveUnit? =
+        id1Roots(basePath)
+            .map { unitUnder(it, key) }
+            .filter { resolvedPathOf(it) != null }
+            .maxByOrNull { unitNewestTime(it) }
+
+    private fun unitUnder(id1Root: String, key: TitleKey): SaveUnit {
+        val titleData = existingTitleData(id1Root, key) ?: titleDataPath(id1Root, key.category, key.lowId)
+        return SaveUnit(titleData, extdataPath(id1Root, key))
+    }
+
+    /**
+     * The `data` directory for this low id under whichever category holds one. The base category
+     * wins over an update or DLC tree carrying the same low id, then the id's own category, then
+     * whichever was written most recently.
+     */
+    private fun existingTitleData(id1Root: String, key: TitleKey): String? {
+        val candidates = fal.listFiles("$id1Root/$TITLE_DIR").orEmpty()
+            .filter { it.isDirectory }
+            .mapNotNull { categoryDir ->
+                val titleDir = fal.listFiles(categoryDir.path).orEmpty()
+                    .firstOrNull { it.isDirectory && it.name.equals(key.lowId, ignoreCase = true) }
+                    ?: return@mapNotNull null
+                "${titleDir.path}/$TITLE_DATA_ROOT".takeIf(::isDir)?.let { categoryDir.name to it }
+            }
+        return candidates
+            .sortedWith(
+                compareBy<Pair<String, String>> { categoryRank(it.first, key) }
+                    .thenByDescending { newestFileTime(it.second) }
+            )
+            .firstOrNull()?.second
+    }
+
+    private fun categoryRank(category: String, key: TitleKey): Int = when {
+        category.equals(BASE_CATEGORY, ignoreCase = true) -> 0
+        category.equals(key.category, ignoreCase = true) -> 1
+        else -> 2
+    }
+
+    /**
+     * Reads the unit back out of a resolved path, which is one of its components: the title
+     * `data` directory or the extdata directory. The id1 root above it locates the other. Null
+     * for a path that is neither, which callers treat as a plain folder.
+     */
+    private fun unitAt(path: String, key: TitleKey): SaveUnit? {
+        val trimmed = path.trimEnd('/')
+        val segments = trimmed.split('/')
+        val n = segments.size
+
+        val atTitleData = n >= 5 &&
+            segments[n - 1].equals(TITLE_DATA_ROOT, ignoreCase = true) &&
+            segments[n - 2].equals(key.lowId, ignoreCase = true) &&
+            segments[n - 4].equals(TITLE_DIR, ignoreCase = true)
+        if (atTitleData) {
+            val id1Root = segments.dropLast(4).joinToString("/")
+            return SaveUnit(trimmed, extdataPath(id1Root, key))
+        }
+
+        val atExtdata = key.extdataId != null && n >= 4 &&
+            segments[n - 1].equals(key.extdataId, ignoreCase = true) &&
+            segments[n - 2] == EXTDATA_HIGH &&
+            segments[n - 3].equals(EXTDATA_DIR, ignoreCase = true)
+        if (atExtdata) {
+            val id1Root = segments.dropLast(3).joinToString("/")
+            val titleData = existingTitleData(id1Root, key) ?: titleDataPath(id1Root, key.category, key.lowId)
+            return SaveUnit(titleData, trimmed)
+        }
+        return null
     }
 }
 

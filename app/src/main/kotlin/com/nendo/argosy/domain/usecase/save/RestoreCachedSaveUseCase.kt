@@ -67,7 +67,12 @@ class RestoreCachedSaveUseCase @Inject constructor(
             folderShaped = entry.serverFileName?.endsWith(".zip", ignoreCase = true)
         ) ?: return Result.Error(RestoreCachedSaveFailureReason.SaveLocationUnresolved)
 
-        if (!saveSyncRepository.clearSavesForTitle(targetPath, game.platformSlug, game.saveId ?: game.titleId)) {
+        val archiveRoots = when (entry.source) {
+            UnifiedSaveEntry.Source.LOCAL,
+            UnifiedSaveEntry.Source.BOTH -> entry.localCacheId?.let { saveCacheManager.archiveRootNames(it) }
+            UnifiedSaveEntry.Source.SERVER -> null
+        }
+        if (!saveSyncRepository.clearSavesBeforeRestore(targetPath, game.platformSlug, game.saveId ?: game.titleId, archiveRoots)) {
             return Result.Error(RestoreCachedSaveFailureReason.ClearExistingSaveFailed)
         }
 

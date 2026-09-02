@@ -156,13 +156,6 @@ class SaveUploader @Inject constructor(
         val isFolderBased = config?.usesFolderBasedSaves == true && isDirectory
         val isGciBundle = config?.usesGciFormat == true
 
-        val localModified = if (isDirectory) {
-            Instant.ofEpochMilli(savePathResolver.findNewestFileTime(localPath))
-        } else {
-            Instant.ofEpochMilli(fal.lastModified(localPath))
-        }
-        Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Local modified time | localModified=$localModified")
-
         val handler = client.getHandler(config, game.platformSlug, resolvedEmulatorId)
         val saveContext = SaveContext(
             config = config ?: SavePathConfig(
@@ -183,6 +176,14 @@ class SaveUploader @Inject constructor(
                 emulatorSaveConfigRepository.resolveUserSavePath(it, game.platformSlug)
             }?.takeIf { it.isNotBlank() }
         )
+
+        val localModified = if (isDirectory) {
+            val unitPaths = handler.sourcePathsFor(localPath, saveContext) + localPath
+            Instant.ofEpochMilli(unitPaths.maxOf { savePathResolver.findNewestFileTime(it) })
+        } else {
+            Instant.ofEpochMilli(fal.lastModified(localPath))
+        }
+        Logger.debug(TAG, "[SaveSync] UPLOAD gameId=$gameId | Local modified time | localModified=$localModified")
 
         val prepared = handler.prepareForUpload(localPath, saveContext)
         if (prepared == null) {

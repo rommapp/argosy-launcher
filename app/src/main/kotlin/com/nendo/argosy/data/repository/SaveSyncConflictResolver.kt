@@ -73,7 +73,13 @@ class SaveSyncConflictResolver @Inject constructor(
 
                     val targetFile = File(resolution.targetPath)
                     if (resolution.isFolderBased) {
-                        val unzipSuccess = saveArchiver.unzipSingleFolder(tempFile, targetFile)
+                        val game = gameDao.getById(resolution.gameId)
+                        val folderHandler = game?.platformSlug?.let { saveHandlerRegistry.getFolderHandler(it) }
+                        val unzipSuccess = if (folderHandler != null && game != null) {
+                            folderHandler.placeArchive(tempFile, targetFile, game.saveId ?: game.titleId)
+                        } else {
+                            saveArchiver.unzipSingleFolder(tempFile, targetFile)
+                        }
                         if (!unzipSuccess) {
                             return@withContext SaveSyncResult.Error("Failed to unzip save")
                         }

@@ -28,12 +28,16 @@ silently mismatches saves rather than failing loudly.
 ### 3DS (`N3dsFolderHandler`)
 
 `save_id` is the on-disk location, already split: `00040000/00033500`. The
-title id it derives from stays flat in `title_id`.
+title id it derives from stays flat in `title_id`. One title occupies two
+directories under the same `id1` root, and the save unit is both of them:
 
 ```
-<base>/<id0>/<id1>/title/00040000/00033500/data
+<base>/<id0>/<id1>/title/00040000/00113200/data
                          ^^^^^^^^^^^^^^^^^
                          save_id, used as-is
+<base>/<id0>/<id1>/extdata/00000000/00001132
+                                    ^^^^^^^^
+                                    extdata id, derived from the low half
 ```
 
 `<base>` is the `Nintendo 3DS` directory under the emulator's `sdmc`.
@@ -41,23 +45,71 @@ title id it derives from stays flat in `title_id`.
 `Nintendo 3DS` folder. `id0`/`id1` are the emulator's own 32-hex directories
 and are discovered, never constructed.
 
+The extdata id rule for retail titles: take the low 8 hex of the title id,
+shift it right by 8 bits, render 8 lowercase hex digits. `00113200` becomes
+`00001132`, `00175e00` becomes `0000175e`. `N3dsFolderHandler.extdataIdFor`
+is the one place that encodes it. Some titles keep every byte of progress in
+extdata and never create `data` (Fantasy Life writes
+`extdata/00000000/00001132/user/fl_ext0.fsd` and nothing under
+`title/00040000/00113200`), which is why either directory alone counts as a
+save and `NoSaveFound` means neither exists.
+
 `FOLDER_SPLIT` flags that the id is nested rather than one flat folder name;
 the split itself arrives in the value, the same way PS2 reports the
 region-prefixed `BASLUS-20565` rather than the disc's `SLUS-20565`. A save id
 goes to the resolver unmodified on every platform, so a nested one needs no
 special derivation.
 
-Argosy's handler still reads the halves with `take(8)`/`takeLast(8)`, which
-lands on the same two segments whether or not the separator is present, so a
-row cached before the split arrived resolves identically to a fresh one.
+Argosy's handler reads the halves off the flattened id with `take(8)` and
+`takeLast(8)`, which lands on the same two segments whether or not the
+separator is present, so a row cached before the split arrived resolves
+identically to a fresh one. The category half is only used to *construct* a
+path. Discovery ignores it and matches the low half under every category
+directory in the tree, then prefers the base category `00040000` over an
+update (`0004000e`) or DLC (`0004008c`) tree carrying the same low id, then
+the id's own category, then whichever was written most recently. Before this
+rule it took the newest `data` across all categories, which let an update
+tree shadow the real save.
 
 A `save_id` shorter than 16 characters has no category in it, and the handler
 falls back to `00040000` - correct for retail applications, a guess for
 anything else.
 
-The save unit is the `data` directory, so an archive's root entry is `data`
-and carries no title. That is the `ArchiveRootMatch.UNIDENTIFIED` tier: the
-resolved destination is the only thing identifying such an archive.
+The resolved local path is the title `data` directory whenever it exists, so
+every sync row written before extdata joined the unit keeps its path, and the
+extdata directory only when there is no `data`. Either component identifies
+the unit: `sourcePathsFor`, `namedArchiveRoots` and `findAllSaveFoldersBySaveId`
+read the `id1` root back out of whichever path they are handed and answer with
+every component that exists.
+
+Archive shape: root `data` for the title directory, unchanged, so every
+archive already uploaded still matches; plus root `extdata` for the extdata
+directory. Neither root names a title, so both sit in
+`unidentifiedArchiveRoots` and match on the `ArchiveRootMatch.UNIDENTIFIED`
+tier: the resolved destination is the only thing identifying such an archive.
+A restore places `data` into `title/<category>/<low>/data` and `extdata` into
+`extdata/00000000/<extid>` whichever component the target path names, creating
+whichever the archive carries, and refuses an archive with a root it cannot
+place. A legacy single-root `data` archive restores exactly as it always has.
+
+A restore never deletes a component the archive does not carry. Placement
+(`N3dsFolderHandler.unpackArchive`) replaces each component whose root is in
+the archive and leaves the other alone, so a legacy `data`-only archive
+restored over a title with extdata on disk keeps that extdata. The clear that
+precedes a restore (`SaveSyncApiClient.clearSavesBeforeRestore`) asks the
+handler `pathsClearedBeforeRestore` with the archive's root names: 3DS keeps
+every component absent from the archive and, when the archive has not been
+read yet (a server restore), clears nothing and lets placement do it. PSP and
+PS2 clear every match either way, as they always have. `clearSavesForTitle`
+without an archive remains the full clear used by "clear active save" and the
+account-switch teardown, which has already verified the archive holds the
+whole unit.
+Every door that zips or unpacks a 3DS unit asks the handler for its named
+roots rather than the folder's own name: upload, the local cache, the cache
+restore, the hardcore downgrade and `downloadSaveById` all go through
+`FolderSaveHandler.namedArchiveRoots` / `placeArchive`. `N3dsSaveCaseRepair`
+reconciles the title tree only; extdata is written lowercase by both sides and
+has never split on case.
 
 ### PS2 (`Ps2FolderHandler`)
 

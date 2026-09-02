@@ -68,7 +68,7 @@ class RestoreCachedSaveServerCachingTest {
         coEvery {
             saveSyncRepository.discoverSavePath(any(), any(), any(), any(), any(), any(), any(), any())
         } returns "/saves/test.srm"
-        coEvery { saveSyncRepository.clearSavesForTitle(any(), any(), any()) } returns true
+        coEvery { saveSyncRepository.clearSavesBeforeRestore(any(), any(), any(), any()) } returns true
     }
 
     @Test

@@ -4,6 +4,7 @@ import android.content.Context
 import com.nendo.argosy.data.emulator.SavePathConfig
 import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.storage.FileAccessLayer
+import com.nendo.argosy.data.sync.ArchiveRoot
 import com.nendo.argosy.data.sync.SaveArchiver
 import com.nendo.argosy.util.Logger
 import kotlinx.coroutines.Dispatchers
@@ -115,6 +116,29 @@ open class FolderSaveHandler(
      */
     protected open fun unpackArchive(tempFile: File, targetFolder: File, saveId: String?): Boolean =
         saveArchiver.unzipSingleFolder(tempFile, targetFolder)
+
+    /**
+     * Places an archive already matched to this save into [targetFolder]. Callers that unpack
+     * outside [extractDownload] (a cache restore, a hardcore downgrade) go through here so a
+     * layout whose archive spans more than one directory lands the same way everywhere.
+     */
+    fun placeArchive(archive: File, targetFolder: File, saveId: String?): Boolean =
+        unpackArchive(archive, targetFolder, saveId)
+
+    /**
+     * The folders an archive of the save at [savePath] is built from, each under the root name
+     * it takes in the archive, or null when the save is the one folder at [savePath] under its
+     * own name. Only a layout whose archive roots differ from the folders' own names answers.
+     */
+    open fun namedArchiveRoots(savePath: String, saveId: String): List<ArchiveRoot>? = null
+
+    /**
+     * Of [paths], the ones a restore of an archive whose top-level entries are [archiveRoots]
+     * clears before unpacking. Null means the archive has not been read yet. The default clears
+     * every path, because a single-root archive replaces the whole save; a layout whose
+     * components map to distinct roots keeps every component the archive does not carry.
+     */
+    open fun pathsClearedBeforeRestore(paths: List<String>, archiveRoots: Set<String>?): List<String> = paths
 
     /**
      * Default folder lookup uses case-insensitive equality. Platforms with prefix or normalized-

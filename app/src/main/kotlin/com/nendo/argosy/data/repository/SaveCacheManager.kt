@@ -12,6 +12,7 @@ import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.storage.FileAccessLayer
+import com.nendo.argosy.data.sync.ArchiveRoot
 import com.nendo.argosy.data.sync.SaveArchiver
 import com.nendo.argosy.data.sync.SaveOwnershipTracker
 import com.nendo.argosy.data.sync.SavePathResolver
@@ -112,26 +113,17 @@ class SaveCacheManager @Inject constructor(
         try {
             val (contentHash, tempOrSource) = if (fal.isDirectory(savePath)) {
                 val game = gameDao.getById(gameId)
-                val folders = resolveFoldersToCache(saveFile, savePath, game)
-                if (folders.isEmpty()) {
+                val roots = resolveArchiveRoots(saveFile, savePath, game)
+                if (roots.isEmpty()) {
                     Log.w(TAG, "No save folders matched for game $gameId at $savePath -- skipping cache to avoid zipping unrelated saves")
                     return@withContext CacheResult.Failed
                 }
                 tempFile = File(context.cacheDir, "temp_save_${System.currentTimeMillis()}.zip")
-                val zipped = if (folders.size == 1) {
-                    saveArchiver.zipFolder(folders[0], tempFile)
-                } else {
-                    saveArchiver.zipFolders(folders, tempFile)
-                }
-                if (!zipped) {
+                if (!zipArchiveRoots(roots, tempFile)) {
                     Log.e(TAG, "Failed to zip save folder(s)")
                     return@withContext CacheResult.Failed
                 }
-                val folderHash = precomputedContentHash ?: if (folders.size == 1) {
-                    saveArchiver.calculateFolderAsZipHash(folders[0])
-                } else {
-                    saveArchiver.calculateFoldersAsZipHash(folders)
-                }
+                val folderHash = precomputedContentHash ?: hashArchiveRoots(roots)
                 folderHash to tempFile
             } else {
                 val fileHash = precomputedContentHash ?: saveArchiver.calculateFileHash(saveFile)
@@ -358,9 +350,14 @@ class SaveCacheManager @Inject constructor(
 
         try {
             val (contentHash, tempOrSource) = if (fal.isDirectory(savePath)) {
-                val folderHash = saveArchiver.calculateFolderAsZipHash(saveFile)
+                val roots = resolveArchiveRoots(saveFile, savePath, gameDao.getById(gameId))
+                if (roots.isEmpty()) {
+                    Log.w(TAG, "No save folders matched for game $gameId at $savePath -- skipping rollback cache")
+                    return@withContext CacheResult.Failed
+                }
+                val folderHash = hashArchiveRoots(roots)
                 tempFile = File(context.cacheDir, "temp_rollback_${System.currentTimeMillis()}.zip")
-                if (!saveArchiver.zipFolder(saveFile, tempFile)) {
+                if (!zipArchiveRoots(roots, tempFile)) {
                     Log.e(TAG, "Failed to zip save folder for rollback")
                     return@withContext CacheResult.Failed
                 }
@@ -450,11 +447,12 @@ class SaveCacheManager @Inject constructor(
                 val targetFile = fal.getTransformedFile(targetPath)
                 val preserveRoots = game?.platformSlug
                     ?.let { PlatformDefinitions.getCanonicalSlug(it) } in FOLDER_PREFIX_PLATFORMS
+                val folderHandler = game?.platformSlug?.let { saveHandlerRegistry.getFolderHandler(it) }
                 Log.d(TAG, "[RESTORE] cache=$cacheId zip=${cacheFile.name} size=${cacheFile.length()} target=$targetPath transformed=${targetFile.absolutePath} exists=${targetFile.exists()} dir=${targetFile.isDirectory} preserveRoots=$preserveRoots platform=${game?.platformSlug}")
-                val ok = if (preserveRoots) {
-                    saveArchiver.unzipToFolder(cacheFile, targetFile)
-                } else {
-                    saveArchiver.unzipSingleFolder(cacheFile, targetFile)
+                val ok = when {
+                    preserveRoots -> saveArchiver.unzipToFolder(cacheFile, targetFile)
+                    folderHandler != null -> folderHandler.placeArchive(cacheFile, targetFile, game?.saveId ?: game?.titleId)
+                    else -> saveArchiver.unzipSingleFolder(cacheFile, targetFile)
                 }
                 Log.d(TAG, "[RESTORE] unzip returned=$ok | post-restore listing of $targetPath: ${restoreListing(targetPath)}")
                 ok
@@ -677,17 +675,41 @@ class SaveCacheManager @Inject constructor(
         return true
     }
 
-    private fun resolveFoldersToCache(saveFile: File, savePath: String, game: GameEntity?): List<File> {
+    /**
+     * The folders an archive of this save is built from and the root name each takes, which is
+     * the same set [SaveUploader] ships: prefix platforms bundle every sibling under its own
+     * name, a layout with named roots (3DS `data` plus `extdata`) answers for itself, and every
+     * other save is the one folder at [savePath].
+     */
+    private fun resolveArchiveRoots(saveFile: File, savePath: String, game: GameEntity?): List<ArchiveRoot> {
         val saveId = game?.saveId ?: game?.titleId
         val handler = game?.platformSlug?.let { saveHandlerRegistry.getFolderHandler(it) }
         val canonical = game?.platformSlug?.let { PlatformDefinitions.getCanonicalSlug(it) }
-        if (canonical !in FOLDER_PREFIX_PLATFORMS || saveId == null || handler == null) {
-            return listOf(saveFile)
+        if (saveId == null || handler == null) return listOf(ArchiveRoot(saveFile.name, saveFile))
+        if (canonical in FOLDER_PREFIX_PLATFORMS) {
+            return handler.findAllSaveFoldersBySaveId(savePath, saveId)
+                .map { fal.getTransformedFile(it) }
+                .filter { it.exists() && it.isDirectory }
+                .map { ArchiveRoot(it.name, it) }
         }
-        return handler.findAllSaveFoldersBySaveId(savePath, saveId)
-            .map { fal.getTransformedFile(it) }
-            .filter { it.exists() && it.isDirectory }
+        return handler.namedArchiveRoots(savePath, saveId)
+            ?.filter { it.folder.exists() && it.folder.isDirectory }
+            ?: listOf(ArchiveRoot(saveFile.name, saveFile))
     }
+
+    private fun zipArchiveRoots(roots: List<ArchiveRoot>, target: File): Boolean =
+        if (roots.size == 1 && roots[0].isOwnName) {
+            saveArchiver.zipFolder(roots[0].folder, target)
+        } else {
+            saveArchiver.zipNamedFolders(roots, target)
+        }
+
+    private fun hashArchiveRoots(roots: List<ArchiveRoot>): String =
+        if (roots.size == 1 && roots[0].isOwnName) {
+            saveArchiver.calculateFolderAsZipHash(roots[0].folder)
+        } else {
+            saveArchiver.calculateNamedFoldersAsZipHash(roots)
+        }
 
     private fun restoreListing(targetPath: String): String = try {
         val f = fal.getTransformedFile(targetPath)
@@ -716,6 +738,13 @@ class SaveCacheManager @Inject constructor(
                 saveArchiver.calculateFolderAsZipHash(matched[0])
             } else {
                 saveArchiver.calculateFoldersAsZipHash(matched)
+            }
+        }
+        if (saveId != null && handler != null) {
+            val roots = handler.namedArchiveRoots(targetPath, saveId)
+                ?.filter { it.folder.exists() && it.folder.isDirectory }
+            if (roots != null) {
+                return if (roots.isEmpty()) null else hashArchiveRoots(roots)
             }
         }
         return calculateLocalSaveHash(targetPath)
@@ -813,6 +842,18 @@ class SaveCacheManager @Inject constructor(
 
     suspend fun getCacheById(cacheId: Long): SaveCacheEntity? =
         saveCacheDao.getById(cacheId)
+
+    /**
+     * The top-level entry names of a cached archive, or null when the cache is not an archive
+     * or its file is gone. A pre-restore clear uses this to remove only what the archive replaces.
+     */
+    suspend fun archiveRootNames(cacheId: Long): Set<String>? = withContext(Dispatchers.IO) {
+        val entity = saveCacheDao.getById(cacheId) ?: return@withContext null
+        if (!entity.cachePath.endsWith(".zip")) return@withContext null
+        val file = File(cacheBaseDir, entity.cachePath)
+        if (!file.exists()) return@withContext null
+        saveArchiver.peekRootEntryNames(file)
+    }
 
     suspend fun getLatestHardcoreSave(gameId: Long): SaveCacheEntity? =
         saveCacheDao.getLatestHardcoreSave(gameId, syncPreferencesRepository.getRommUserId())
@@ -958,14 +999,10 @@ class SaveCacheManager @Inject constructor(
             if (!fal.exists(savePath)) return@withContext null
             if (!fal.isDirectory(savePath)) return@withContext calculateLocalSaveHash(savePath)
             val game = gameDao.getById(gameId)
-            val folders = resolveFoldersToCache(fal.getTransformedFile(savePath), savePath, game)
-            if (folders.isEmpty()) return@withContext null
+            val roots = resolveArchiveRoots(fal.getTransformedFile(savePath), savePath, game)
+            if (roots.isEmpty()) return@withContext null
             try {
-                if (folders.size == 1) {
-                    saveArchiver.calculateFolderAsZipHash(folders[0])
-                } else {
-                    saveArchiver.calculateFoldersAsZipHash(folders)
-                }
+                hashArchiveRoots(roots)
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to hash artifact for game $gameId at $savePath", e)
                 null
@@ -997,12 +1034,29 @@ class SaveCacheManager @Inject constructor(
         if (channelName == null) return
         val row = saveSyncDao.getByGameEmulatorAndChannel(gameId, emulatorId, channelName, ownerUserId) ?: return
         val newest = if (fal.isDirectory(savePath)) {
-            savePathResolver.findNewestFileTime(savePath)
+            newestUnitWriteTime(gameId, savePath)
         } else {
             fal.getTransformedFile(savePath).lastModified()
         }
         if (newest <= 0L) return
         saveSyncDao.upsert(row.copy(localUpdatedAt = Instant.ofEpochMilli(newest)))
+    }
+
+    /**
+     * Newest write across every directory the archive covers, not only the resolved one. The
+     * anchor is compared against the same set on the next scan; anchoring on one component
+     * while scanning both would report the other component dirty on every pass.
+     */
+    private suspend fun newestUnitWriteTime(gameId: Long, savePath: String): Long {
+        val game = gameDao.getById(gameId)
+        val saveId = game?.saveId ?: game?.titleId
+        val handler = game?.platformSlug?.let { saveHandlerRegistry.getFolderHandler(it) }
+        val components = if (saveId != null && handler != null) {
+            handler.namedArchiveRoots(savePath, saveId).orEmpty().map { it.folder.path }
+        } else {
+            emptyList()
+        }
+        return (components + savePath).maxOf { savePathResolver.findNewestFileTime(it) }
     }
 
     private fun resolveDefaultChannel(channelName: String?, isHardcore: Boolean): String? {

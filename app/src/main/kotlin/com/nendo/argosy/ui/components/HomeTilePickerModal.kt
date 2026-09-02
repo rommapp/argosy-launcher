@@ -4,7 +4,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -96,7 +98,7 @@ data class TilePickerEntry(
  * asked for.
  */
 enum class TilePickerCategory {
-    GAMES, COLLECTIONS, APPS, MEDIA;
+    GAMES, COLLECTIONS, APPS, MEDIA, FEATURES;
 
     @get:StringRes
     val labelRes: Int
@@ -105,6 +107,7 @@ enum class TilePickerCategory {
             COLLECTIONS -> R.string.tile_picker_category_collections
             APPS -> R.string.tile_picker_category_apps
             MEDIA -> R.string.tile_picker_category_media
+            FEATURES -> R.string.tile_picker_category_features
         }
 }
 
@@ -171,6 +174,8 @@ fun HomeTilePickerModal(
                             stringResource(R.string.ui_tile_picker_empty_apps)
                         TilePickerCategory.MEDIA ->
                             stringResource(R.string.ui_tile_picker_empty_media)
+                        TilePickerCategory.FEATURES ->
+                            stringResource(R.string.ui_tile_picker_empty_features)
                     }
                 } else {
                     stringResource(R.string.ui_tile_picker_empty_search)
@@ -325,7 +330,9 @@ private fun TilePickerTabs(
     val theme = LocalArgosyTheme.current
     val shape = RoundedCornerShape(Dimens.radiusSm)
     Row(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
     ) {
         categories.forEach { entry ->
@@ -334,6 +341,8 @@ private fun TilePickerTabs(
                 text = stringResource(entry.labelRes).uppercase(),
                 style = MaterialTheme.typography.labelMedium,
                 color = if (isCurrent) theme.focusAccent else theme.textDim,
+                maxLines = 1,
+                softWrap = false,
                 modifier = Modifier
                     .clip(shape)
                     .background(if (isCurrent) theme.surfaceRaised else Color.Transparent)

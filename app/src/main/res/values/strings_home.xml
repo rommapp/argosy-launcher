@@ -258,6 +258,26 @@
     <!-- Drawn on a tile of the curated home grid pointing at something that can no longer be
          worked out at all. Adjective describing the tile's target. -->
     <string name="home_grid_tile_unresolvable">Unavailable</string>
+    <!-- Widgets tab of the tile picker: the three feature tiles a page can hold. -->
+    <string name="tile_picker_feature_random_title">Random game</string>
+    <string name="tile_picker_feature_random_subtitle">Picks a game from your library</string>
+    <string name="tile_picker_feature_continue_title">Continue</string>
+    <string name="tile_picker_feature_continue_subtitle">Jump back into your last game</string>
+    <string name="tile_picker_feature_ra_title">RetroAchievements</string>
+    <string name="tile_picker_feature_ra_subtitle">Your points and latest unlocks</string>
+    <!-- Feature tiles on the custom grid. The label names the feature under the game it shows. -->
+    <string name="home_grid_tile_feature_random_label">Random game</string>
+    <string name="home_grid_tile_feature_random_empty">No game matches the filters</string>
+    <string name="home_grid_tile_feature_continue_label">Continue playing</string>
+    <string name="home_grid_tile_feature_continue_empty">Nothing played yet</string>
+    <string name="home_grid_tile_feature_ra_label">RetroAchievements</string>
+    <string name="home_grid_tile_feature_ra_signed_out">Sign in to see your unlocks</string>
+    <string name="home_grid_tile_feature_ra_no_unlocks">No unlocks yet</string>
+    <!-- %1$s is the title of the most recently unlocked achievement. -->
+    <string name="home_grid_tile_feature_ra_latest">Latest: %1$s</string>
+    <!-- Unit words drawn after a number on the RetroAchievements tile, e.g. "120 points". -->
+    <string name="home_grid_tile_stat_points">points</string>
+    <string name="home_grid_tile_stat_unlocks">unlocks</string>
 
     <!-- Brief message after refreshing one game's metadata from the game server. Past tense
          statement, not a command. -->

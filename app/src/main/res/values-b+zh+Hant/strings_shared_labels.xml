@@ -115,6 +115,7 @@
     <string name="tile_picker_category_collections">合輯</string>
     <string name="tile_picker_category_apps">應用程式</string>
     <string name="tile_picker_category_media">媒體</string>
+    <string name="tile_picker_category_features">小工具</string>
 
     <!-- ================= Home grid tile stats ================= -->
 

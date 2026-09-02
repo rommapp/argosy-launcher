@@ -341,6 +341,7 @@
     <string name="ui_tile_picker_empty_collections">Aún no hay colecciones</string>
     <string name="ui_tile_picker_empty_apps">No se encontraron aplicaciones</string>
     <string name="ui_tile_picker_empty_media">No hay títulos para agregar</string>
+    <string name="ui_tile_picker_empty_features">No hay widgets disponibles</string>
     <string name="ui_tile_picker_empty_search">Nada coincide con esa búsqueda</string>
     <string name="ui_tile_picker_delete_page">Eliminar página</string>
 

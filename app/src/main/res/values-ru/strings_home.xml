@@ -102,6 +102,22 @@
     <string name="home_grid_tile_missing_media">Медиа отсутствует</string>
     <string name="home_grid_tile_local_media_subtitle">На этом устройстве</string>
     <string name="home_grid_tile_unresolvable">Недоступно</string>
+    <string name="tile_picker_feature_random_title">Случайная игра</string>
+    <string name="tile_picker_feature_random_subtitle">Выбирает игру из вашей библиотеки</string>
+    <string name="tile_picker_feature_continue_title">Продолжить</string>
+    <string name="tile_picker_feature_continue_subtitle">Вернуться в последнюю игру</string>
+    <string name="tile_picker_feature_ra_title">RetroAchievements</string>
+    <string name="tile_picker_feature_ra_subtitle">Ваши очки и последние достижения</string>
+    <string name="home_grid_tile_feature_random_label">Случайная игра</string>
+    <string name="home_grid_tile_feature_random_empty">Ни одна игра не подходит под фильтры</string>
+    <string name="home_grid_tile_feature_continue_label">Продолжить игру</string>
+    <string name="home_grid_tile_feature_continue_empty">Пока ничего не сыграно</string>
+    <string name="home_grid_tile_feature_ra_label">RetroAchievements</string>
+    <string name="home_grid_tile_feature_ra_signed_out">Войдите, чтобы увидеть достижения</string>
+    <string name="home_grid_tile_feature_ra_no_unlocks">Пока нет достижений</string>
+    <string name="home_grid_tile_feature_ra_latest">Последнее: %1$s</string>
+    <string name="home_grid_tile_stat_points">очков</string>
+    <string name="home_grid_tile_stat_unlocks">достижений</string>
 
     <string name="home_notice_game_data_refreshed">Данные игры обновлены</string>
     <string name="home_notice_android_data_refreshed">Данные игры обновлены</string>

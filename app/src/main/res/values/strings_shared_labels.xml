@@ -117,6 +117,7 @@
     <string name="tile_picker_category_collections">Collections</string>
     <string name="tile_picker_category_apps">Apps</string>
     <string name="tile_picker_category_media">Media</string>
+    <string name="tile_picker_category_features">Widgets</string>
 
     <!-- ================= Home grid tile stats ================= -->
 

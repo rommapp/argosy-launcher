@@ -102,6 +102,22 @@
     <string name="home_grid_tile_missing_media">Fehlender Titel</string>
     <string name="home_grid_tile_local_media_subtitle">Auf diesem Gerät</string>
     <string name="home_grid_tile_unresolvable">Nicht verfügbar</string>
+    <string name="tile_picker_feature_random_title">Zufälliges Spiel</string>
+    <string name="tile_picker_feature_random_subtitle">Wählt ein Spiel aus deiner Bibliothek</string>
+    <string name="tile_picker_feature_continue_title">Weiterspielen</string>
+    <string name="tile_picker_feature_continue_subtitle">Zurück in dein letztes Spiel</string>
+    <string name="tile_picker_feature_ra_title">RetroAchievements</string>
+    <string name="tile_picker_feature_ra_subtitle">Deine Punkte und letzten Freischaltungen</string>
+    <string name="home_grid_tile_feature_random_label">Zufälliges Spiel</string>
+    <string name="home_grid_tile_feature_random_empty">Kein Spiel passt zu den Filtern</string>
+    <string name="home_grid_tile_feature_continue_label">Weiterspielen</string>
+    <string name="home_grid_tile_feature_continue_empty">Noch nichts gespielt</string>
+    <string name="home_grid_tile_feature_ra_label">RetroAchievements</string>
+    <string name="home_grid_tile_feature_ra_signed_out">Anmelden, um deine Freischaltungen zu sehen</string>
+    <string name="home_grid_tile_feature_ra_no_unlocks">Noch keine Freischaltungen</string>
+    <string name="home_grid_tile_feature_ra_latest">Zuletzt: %1$s</string>
+    <string name="home_grid_tile_stat_points">Punkte</string>
+    <string name="home_grid_tile_stat_unlocks">Freischaltungen</string>
 
     <string name="home_notice_game_data_refreshed">Spieldaten aktualisiert</string>
     <string name="home_notice_android_data_refreshed">Spieldaten aktualisiert</string>

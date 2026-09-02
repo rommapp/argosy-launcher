@@ -26,6 +26,7 @@ import com.nendo.argosy.hardware.AmbientLedContext
 import com.nendo.argosy.hardware.AmbientLedManager
 import com.nendo.argosy.ui.common.GridDirection
 import com.nendo.argosy.ui.common.GridFocusNavigator
+import com.nendo.argosy.domain.model.FeatureTileKind
 import com.nendo.argosy.domain.model.HomeLayoutKind
 import com.nendo.argosy.domain.model.HomeTileTargetRef
 import com.nendo.argosy.domain.model.MediaTilePlayback
@@ -91,6 +92,7 @@ class HomeViewModel @Inject constructor(
     private val appsRepository: com.nendo.argosy.data.repository.AppsRepository,
     private val homeTileRepository: com.nendo.argosy.data.repository.HomeTileRepository,
     private val homeGridPageRepository: com.nendo.argosy.data.repository.HomeGridPageRepository,
+    private val retroAchievementsRepository: com.nendo.argosy.data.repository.RetroAchievementsRepository,
     private val pageChooserEntrySource: com.nendo.argosy.ui.home.grid.PageChooserEntrySource,
     private val collectionRepository: com.nendo.argosy.data.repository.CollectionRepository,
     private val advanceCollectionFocusUseCase:
@@ -132,6 +134,8 @@ class HomeViewModel @Inject constructor(
                     libraryDelegate.appsForTiles(query)
                 com.nendo.argosy.ui.components.TilePickerCategory.MEDIA ->
                     mediaDelegate.searchForTiles(query)
+                com.nendo.argosy.ui.components.TilePickerCategory.FEATURES ->
+                    featureTileEntries()
             }
         },
         mediaCatalog = tilePickerDelegate,
@@ -781,14 +785,28 @@ class HomeViewModel @Inject constructor(
         } else {
             tiles.filterNot { it.target is HomeTileTargetRef.Media }
         }
+        val features = shown.mapNotNull { it.target as? HomeTileTargetRef.Feature }
+        val continueGameId = if (features.any { it.kind == FeatureTileKind.CONTINUE }) {
+            gameRepository.getRecentlyPlayed(1).firstOrNull()?.id
+        } else {
+            null
+        }
+        val raSummary = if (features.any { it.kind == FeatureTileKind.RA_SUMMARY }) {
+            retroAchievementsRepository.getAccountSummary()
+        } else {
+            null
+        }
         val games = libraryDelegate.resolveTileGames(
-            shown.mapNotNull {
-                when (val target = it.target) {
-                    is HomeTileTargetRef.Game -> target.gameId
-                    is HomeTileTargetRef.Collection -> target.focusGameId
-                    else -> null
-                }
-            }.distinct()
+            (
+                shown.mapNotNull {
+                    when (val target = it.target) {
+                        is HomeTileTargetRef.Game -> target.gameId
+                        is HomeTileTargetRef.Collection -> target.focusGameId
+                        is HomeTileTargetRef.Feature -> target.pickedGameId
+                        else -> null
+                    }
+                } + listOfNotNull(continueGameId)
+            ).distinct()
         )
         val collections = libraryDelegate.resolveTileCollections(
             shown.mapNotNull { (it.target as? HomeTileTargetRef.Collection)?.collectionId }.distinct()
@@ -801,9 +819,64 @@ class HomeViewModel @Inject constructor(
         )
         customGrid.setTiles(shown)
         _uiState.update {
-            it.copy(tileGames = games, tileCollections = collections, tileApps = apps)
+            it.copy(
+                tileGames = games,
+                tileCollections = collections,
+                tileApps = apps,
+                continueGameId = continueGameId,
+                raTileSummary = raSummary
+            )
         }
         resolveTilePlayback(shown)
+        ensureRandomPicks(shown, games)
+    }
+
+    /**
+     * Gives every random tile a game it can show. A tile arrives without one when it was just
+     * placed, or its stored pick has since left the library; either way the pick is written back,
+     * and the tile flow re-emits with it. A filter nothing matches leaves the tile empty rather than
+     * writing anything, so this cannot spin.
+     */
+    private suspend fun ensureRandomPicks(
+        tiles: List<com.nendo.argosy.domain.model.HomeTile>,
+        resolved: Map<Long, HomeGameUi>
+    ) {
+        tiles.forEach { tile ->
+            val target = tile.target as? HomeTileTargetRef.Feature ?: return@forEach
+            if (target.kind != FeatureTileKind.RANDOM_GAME) return@forEach
+            if (target.pickedGameId != null && resolved.containsKey(target.pickedGameId)) return@forEach
+            val pick = gameRepository.pickRandomGame(target.filters) ?: return@forEach
+            homeTileRepository.updateFeaturePick(tile.id, pick.id)
+        }
+    }
+
+    private fun featureTileEntries(): List<com.nendo.argosy.ui.components.TilePickerEntry> = listOf(
+        com.nendo.argosy.ui.components.TilePickerEntry(
+            target = HomeTileTargetRef.Feature(FeatureTileKind.RANDOM_GAME),
+            title = context.getString(R.string.tile_picker_feature_random_title),
+            subtitle = context.getString(R.string.tile_picker_feature_random_subtitle)
+        ),
+        com.nendo.argosy.ui.components.TilePickerEntry(
+            target = HomeTileTargetRef.Feature(FeatureTileKind.CONTINUE),
+            title = context.getString(R.string.tile_picker_feature_continue_title),
+            subtitle = context.getString(R.string.tile_picker_feature_continue_subtitle)
+        ),
+        com.nendo.argosy.ui.components.TilePickerEntry(
+            target = HomeTileTargetRef.Feature(FeatureTileKind.RA_SUMMARY),
+            title = context.getString(R.string.tile_picker_feature_ra_title),
+            subtitle = context.getString(R.string.tile_picker_feature_ra_subtitle)
+        )
+    )
+
+    override fun rerollRandomTile() {
+        val tile = _uiState.value.customGrid.focusedTile ?: return
+        val target = tile.target as? HomeTileTargetRef.Feature ?: return
+        if (target.kind != FeatureTileKind.RANDOM_GAME) return
+        viewModelScope.launch {
+            val pick = gameRepository.pickRandomGame(target.filters, excludeGameId = target.pickedGameId)
+                ?: return@launch
+            homeTileRepository.updateFeaturePick(tile.id, pick.id)
+        }
     }
 
     /**

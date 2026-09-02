@@ -804,6 +804,31 @@ class GameRepository @Inject constructor(
 
     suspend fun getRandomGame(): GameEntity? = gameDao.getRandomGame(hiddenOwnerId())
 
+    /**
+     * A random game inside [filters]. Genres are matched here rather than in SQL because a game
+     * carries them as one comma-joined column. [excludeGameId] keeps a re-roll from landing on the
+     * game already showing, unless it is the only one that fits.
+     */
+    suspend fun pickRandomGame(
+        filters: com.nendo.argosy.domain.model.RandomTileFilters,
+        excludeGameId: Long? = null
+    ): GameEntity? {
+        val candidates = gameDao.getRandomCandidates(
+            ownerUserId = hiddenOwnerId(),
+            downloadedOnly = filters.downloadedOnly,
+            neverPlayed = filters.neverPlayed,
+            platformCount = filters.platformIds.size,
+            platformIds = filters.platformIds.toList()
+        )
+        val matching = candidates.filter { candidate ->
+            filters.genres.isEmpty() ||
+                candidate.genres.orEmpty().split(',').any { it.trim() in filters.genres }
+        }
+        val pool = matching.filter { it.id != excludeGameId }.ifEmpty { matching }
+        val pick = pool.randomOrNull() ?: return null
+        return gameDao.getById(pick.id)
+    }
+
     suspend fun getSearchCandidates(): List<SearchCandidate> =
         gameDao.getSearchCandidates(hiddenOwnerId())
 

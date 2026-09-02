@@ -665,6 +665,7 @@
     <!-- Shown on the media tab when the media server offers nothing. "Titles" here means films
          and series. -->
     <string name="ui_tile_picker_empty_media">No titles to add</string>
+    <string name="ui_tile_picker_empty_features">No widgets available</string>
     <!-- Shown on any tab when the typed filter matches nothing. -->
     <string name="ui_tile_picker_empty_search">Nothing matches that search</string>
     <!-- Destructive row pinned under that list. Verb phrase: removes the whole page of the

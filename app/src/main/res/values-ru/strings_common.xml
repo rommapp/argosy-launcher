@@ -348,6 +348,7 @@
     <string name="ui_tile_picker_empty_collections">Пока нет коллекций</string>
     <string name="ui_tile_picker_empty_apps">Приложения не найдены</string>
     <string name="ui_tile_picker_empty_media">Нет доступных названий для добавления</string>
+    <string name="ui_tile_picker_empty_features">Нет доступных виджетов</string>
     <string name="ui_tile_picker_empty_search">По этому запросу ничего не найдено</string>
     <string name="ui_tile_picker_delete_page">Удалить страницу</string>
 

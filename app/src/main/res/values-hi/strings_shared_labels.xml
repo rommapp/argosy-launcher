@@ -108,6 +108,7 @@
     <string name="tile_picker_category_collections">कलेक्शन</string>
     <string name="tile_picker_category_apps">ऐप्स</string>
     <string name="tile_picker_category_media">मीडिया</string>
+    <string name="tile_picker_category_features">विजेट</string>
 
     <!-- ================= Home grid tile stats ================= -->
 

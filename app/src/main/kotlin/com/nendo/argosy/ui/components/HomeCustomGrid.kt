@@ -565,6 +565,25 @@ private fun CustomGridCellBox(
                     maxLines = 2,
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
+                if (appIcon == null && cover == null) {
+                    content.subtitle?.let { subtitle ->
+                        Text(
+                            text = subtitle,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = theme.textMute,
+                            maxLines = 2,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
+                    content.stats.forEach { stat ->
+                        Text(
+                            text = "${stat.value} ${stat.label}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = theme.textDim,
+                            maxLines = 1
+                        )
+                    }
+                }
             }
         }
         }

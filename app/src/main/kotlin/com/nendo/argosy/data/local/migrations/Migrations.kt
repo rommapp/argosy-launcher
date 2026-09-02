@@ -3535,3 +3535,14 @@ object Migration_181_182 : Migration(181, 182) {
         db.execSQL("ALTER TABLE `home_tiles` ADD COLUMN `coverScale` TEXT")
     }
 }
+
+/**
+ * Adds the two columns a feature tile stores: which feature it is and, as JSON, the filters and
+ * the pick a random game tile keeps. Both null on every existing row, which targets none of them.
+ */
+object Migration_182_183 : Migration(182, 183) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `home_tiles` ADD COLUMN `featureKind` TEXT")
+        db.execSQL("ALTER TABLE `home_tiles` ADD COLUMN `featureConfig` TEXT")
+    }
+}

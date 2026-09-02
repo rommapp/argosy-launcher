@@ -264,6 +264,9 @@
     <string name="dual_tile_missing_app">ऐप गायब</string>
     <string name="dual_tile_app_subtitle">ऐप</string>
     <string name="dual_tile_unavailable">अनुपलब्ध</string>
+    <string name="dual_tile_feature_random">यादृच्छिक गेम</string>
+    <string name="dual_tile_feature_continue">जारी रखें</string>
+    <string name="dual_tile_feature_ra">RetroAchievements</string>
 
     <plurals name="dual_tile_picker_collection_game_count">
         <item quantity="one">%d गेम</item>

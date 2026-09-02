@@ -77,14 +77,49 @@ sealed interface HomeTileTargetRef {
      */
     data class LocalMedia(val filePath: String) : HomeTileTargetRef
 
+    /**
+     * A tile that does something rather than pointing at one thing in the library. [filters] and
+     * [pickedGameId] only mean anything to [FeatureTileKind.RANDOM_GAME]: the pick is stored so the
+     * page looks the same when the reader comes back, and only a deliberate re-roll changes it.
+     */
+    data class Feature(
+        val kind: FeatureTileKind,
+        val filters: RandomTileFilters = RandomTileFilters(),
+        val pickedGameId: Long? = null
+    ) : HomeTileTargetRef
+
     data object Unresolvable : HomeTileTargetRef
 }
 
+enum class FeatureTileKind {
+    RANDOM_GAME,
+    CONTINUE,
+    RA_SUMMARY;
+
+    companion object {
+        fun fromStored(value: String?): FeatureTileKind? = entries.find { it.name == value }
+    }
+}
+
 /**
- * The floor [target] imposes on a tile's span. Everything but media sits happily in one cell.
+ * What a random game tile may pick from. Platforms are ids and genres are the raw values the
+ * server sent, never display names, so a rename on either side leaves the stored filter intact.
+ */
+data class RandomTileFilters(
+    val downloadedOnly: Boolean = true,
+    val neverPlayed: Boolean = false,
+    val platformIds: Set<Long> = emptySet(),
+    val genres: Set<String> = emptySet()
+)
+
+/**
+ * The floor [target] imposes on a tile's span. Everything but media and a summary of numbers
+ * sits happily in one cell.
  */
 fun minimumSpanFor(target: HomeTileTargetRef): Int = when (target) {
     is HomeTileTargetRef.Media, is HomeTileTargetRef.LocalMedia -> MEDIA_TILE_MIN_SPAN
+    is HomeTileTargetRef.Feature ->
+        if (target.kind == FeatureTileKind.RA_SUMMARY) MEDIA_TILE_MIN_SPAN else 1
     else -> 1
 }
 

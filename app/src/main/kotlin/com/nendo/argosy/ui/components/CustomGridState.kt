@@ -5,12 +5,23 @@ import com.nendo.argosy.R
 import com.nendo.argosy.data.local.entity.PageAudioKind
 import com.nendo.argosy.data.local.entity.PageBackgroundKind
 import com.nendo.argosy.data.repository.HomeTileRepository
+import com.nendo.argosy.domain.model.FeatureTileKind
 import com.nendo.argosy.domain.model.GridCell
 import com.nendo.argosy.domain.model.HomeTile
 import com.nendo.argosy.domain.model.HomeTileTargetRef
 import com.nendo.argosy.domain.model.TileCoverScale
 import com.nendo.argosy.domain.model.TileRect
 import com.nendo.argosy.domain.model.fitTilesToPage
+
+/**
+ * Whether a tile of this target draws a game's cover, and so can choose how that cover sits in
+ * its cell. A random or continue tile shows whichever game it currently resolves to.
+ */
+private fun HomeTileTargetRef.showsGameCover(): Boolean = when (this) {
+    is HomeTileTargetRef.Game -> true
+    is HomeTileTargetRef.Feature -> kind != FeatureTileKind.RA_SUMMARY
+    else -> false
+}
 
 enum class CustomTileMenuAction {
     ARRANGE,
@@ -346,6 +357,8 @@ data class CustomGridState(
         get() = when (val target = focusedTile?.target) {
             is HomeTileTargetRef.Game -> target.gameId
             is HomeTileTargetRef.Collection -> target.focusGameId
+            is HomeTileTargetRef.Feature ->
+                target.pickedGameId.takeIf { target.kind == FeatureTileKind.RANDOM_GAME }
             else -> null
         }
 
@@ -368,6 +381,8 @@ data class CustomGridState(
             is HomeTileTargetRef.App -> "Open"
             is HomeTileTargetRef.Collection -> if (target.focusGameId != null) "Play" else "Open"
             is HomeTileTargetRef.VirtualCollection -> "Open"
+            is HomeTileTargetRef.Feature ->
+                if (target.kind == FeatureTileKind.RA_SUMMARY) "Open" else "Play"
             HomeTileTargetRef.Unresolvable -> null
             null -> "Add"
         }
@@ -396,7 +411,7 @@ data class CustomGridState(
             if (focused != null) {
                 add(CustomTileMenuAction.ARRANGE)
                 if (isFocusedTileCurated) add(CustomTileMenuAction.RECURATE)
-                if (focused.target is HomeTileTargetRef.Game) {
+                if (focused.target.showsGameCover()) {
                     add(
                         if (focused.coverScale == TileCoverScale.FIT) {
                             CustomTileMenuAction.CROP_COVER

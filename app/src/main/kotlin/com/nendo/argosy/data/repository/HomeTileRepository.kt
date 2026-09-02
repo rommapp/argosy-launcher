@@ -5,13 +5,17 @@ import com.nendo.argosy.data.local.entity.HomeTileEntity
 import com.nendo.argosy.data.local.entity.HomeTileEpisodeEntity
 import com.nendo.argosy.data.local.entity.HomeTileTarget
 import com.nendo.argosy.data.local.entity.MediaTilePlayMode
+import com.nendo.argosy.domain.model.FeatureTileKind
 import com.nendo.argosy.domain.model.HomeTile
 import com.nendo.argosy.domain.model.HomeTileTargetRef
+import com.nendo.argosy.domain.model.RandomTileFilters
 import com.nendo.argosy.domain.model.TileCoverScale
 import com.nendo.argosy.domain.model.TileRect
 import com.nendo.argosy.domain.model.minimumSpanFor
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import org.json.JSONArray
+import org.json.JSONObject
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -190,8 +194,20 @@ class HomeTileRepository @Inject constructor(
                 mediaScopeId = target.scopeId
             )
             is HomeTileTargetRef.LocalMedia -> base.copy(mediaFilePath = target.filePath)
+            is HomeTileTargetRef.Feature -> base.copy(
+                featureKind = target.kind.name,
+                featureConfig = encodeFeatureConfig(target)
+            )
             HomeTileTargetRef.Unresolvable -> base
         }
+    }
+
+    suspend fun updateFeaturePick(tileId: Long, gameId: Long?) {
+        val row = homeTileDao.getById(tileId) ?: return
+        val target = row.resolveTarget() as? HomeTileTargetRef.Feature ?: return
+        homeTileDao.update(
+            row.copy(featureConfig = encodeFeatureConfig(target.copy(pickedGameId = gameId)))
+        )
     }
 
     companion object {
@@ -207,7 +223,46 @@ private fun HomeTileTargetRef.storedType(): String = when (this) {
     is HomeTileTargetRef.App -> HomeTileTarget.APP.name
     is HomeTileTargetRef.Media -> HomeTileTarget.MEDIA.name
     is HomeTileTargetRef.LocalMedia -> HomeTileTarget.MEDIA.name
+    is HomeTileTargetRef.Feature -> HomeTileTarget.FEATURE.name
     HomeTileTargetRef.Unresolvable -> ""
+}
+
+private const val KEY_DOWNLOADED_ONLY = "downloadedOnly"
+private const val KEY_NEVER_PLAYED = "neverPlayed"
+private const val KEY_PLATFORM_IDS = "platformIds"
+private const val KEY_GENRES = "genres"
+private const val KEY_PICKED_GAME_ID = "pickedGameId"
+
+private fun encodeFeatureConfig(target: HomeTileTargetRef.Feature): String =
+    JSONObject().apply {
+        put(KEY_DOWNLOADED_ONLY, target.filters.downloadedOnly)
+        put(KEY_NEVER_PLAYED, target.filters.neverPlayed)
+        put(KEY_PLATFORM_IDS, JSONArray(target.filters.platformIds.toList()))
+        put(KEY_GENRES, JSONArray(target.filters.genres.toList()))
+        target.pickedGameId?.let { put(KEY_PICKED_GAME_ID, it) }
+    }.toString()
+
+private fun decodeFeature(kind: FeatureTileKind, config: String?): HomeTileTargetRef.Feature {
+    val json = config?.let { runCatching { JSONObject(it) }.getOrNull() }
+        ?: return HomeTileTargetRef.Feature(kind)
+    val platformIds = json.optJSONArray(KEY_PLATFORM_IDS)
+        ?.let { array -> (0 until array.length()).map { array.getLong(it) } }
+        .orEmpty()
+        .toSet()
+    val genres = json.optJSONArray(KEY_GENRES)
+        ?.let { array -> (0 until array.length()).map { array.getString(it) } }
+        .orEmpty()
+        .toSet()
+    return HomeTileTargetRef.Feature(
+        kind = kind,
+        filters = RandomTileFilters(
+            downloadedOnly = json.optBoolean(KEY_DOWNLOADED_ONLY, true),
+            neverPlayed = json.optBoolean(KEY_NEVER_PLAYED, false),
+            platformIds = platformIds,
+            genres = genres
+        ),
+        pickedGameId = if (json.has(KEY_PICKED_GAME_ID)) json.getLong(KEY_PICKED_GAME_ID) else null
+    )
 }
 
 private fun HomeTileEntity.toDomain(playlist: List<String>): HomeTile = HomeTile(
@@ -252,5 +307,8 @@ private fun HomeTileEntity.resolveTarget(): HomeTileTargetRef =
                     scopeId = mediaScopeId
                 )
             }
+        HomeTileTarget.FEATURE -> FeatureTileKind.fromStored(featureKind)?.let { kind ->
+            decodeFeature(kind, featureConfig)
+        }
         null -> null
     } ?: HomeTileTargetRef.Unresolvable

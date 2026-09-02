@@ -121,6 +121,19 @@ class RetroAchievementsRepository @Inject constructor(
     suspend fun getCachedAchievements(gameId: Long): List<AchievementEntity> =
         achievementDao.getByGameId(gameId, activeOwnerUserId())
 
+    suspend fun getAccountSummary(): com.nendo.argosy.domain.model.RaAccountSummary? {
+        val credentials = getCredentials() ?: return null
+        val owner = activeOwnerUserId()
+        val latest = achievementDao.getRecentUnlocks(owner, 1).firstOrNull()
+        return com.nendo.argosy.domain.model.RaAccountSummary(
+            username = credentials.username,
+            points = achievementDao.sumUnlockedPoints(owner),
+            unlocks = achievementDao.countUnlocked(owner),
+            latestTitle = latest?.title,
+            latestGameId = latest?.gameId
+        )
+    }
+
     suspend fun isLoggedIn(): Boolean {
         val prefs = prefsRepository.userPreferences.first()
         return !prefs.raUsername.isNullOrBlank() && !prefs.raToken.isNullOrBlank()

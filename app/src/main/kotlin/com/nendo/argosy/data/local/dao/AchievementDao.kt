@@ -27,6 +27,21 @@ interface AchievementDao {
     )
     suspend fun getByGameId(gameId: Long, ownerUserId: Long): List<AchievementEntity>
 
+    @Query(
+        "SELECT COALESCE(SUM(points), 0) FROM achievements " +
+            "WHERE ownerUserId = :ownerUserId AND unlockedAt IS NOT NULL"
+    )
+    suspend fun sumUnlockedPoints(ownerUserId: Long): Int
+
+    @Query("SELECT COUNT(*) FROM achievements WHERE ownerUserId = :ownerUserId AND unlockedAt IS NOT NULL")
+    suspend fun countUnlocked(ownerUserId: Long): Int
+
+    @Query(
+        "SELECT * FROM achievements WHERE ownerUserId = :ownerUserId AND unlockedAt IS NOT NULL " +
+            "ORDER BY unlockedAt DESC LIMIT :limit"
+    )
+    suspend fun getRecentUnlocks(ownerUserId: Long, limit: Int): List<AchievementEntity>
+
     @Query("SELECT * FROM achievements WHERE gameId = :gameId ORDER BY points DESC, title ASC")
     suspend fun getAllForGame(gameId: Long): List<AchievementEntity>
 

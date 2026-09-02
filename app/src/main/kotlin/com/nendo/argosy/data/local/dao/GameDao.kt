@@ -978,6 +978,22 @@ interface GameDao {
     suspend fun getRandomGame(ownerUserId: Long?): GameEntity?
 
     @Query("""
+        SELECT id, genres FROM games
+        WHERE NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+        AND (status IS NULL OR status NOT IN ('retired', 'never_playing'))
+        AND (:downloadedOnly = 0 OR localPath IS NOT NULL)
+        AND (:neverPlayed = 0 OR (playCount = 0 AND lastPlayed IS NULL))
+        AND (:platformCount = 0 OR platformId IN (:platformIds))
+    """)
+    suspend fun getRandomCandidates(
+        ownerUserId: Long?,
+        downloadedOnly: Boolean,
+        neverPlayed: Boolean,
+        platformCount: Int,
+        platformIds: List<Long>
+    ): List<RandomCandidate>
+
+    @Query("""
         SELECT * FROM games
         WHERE searchTitle LIKE '%' || :query || '%'
         AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
@@ -1182,6 +1198,11 @@ data class GameLocalPathInfo(
     val platformSlug: String,
     val source: GameSource,
     val localPath: String?
+)
+
+data class RandomCandidate(
+    val id: Long,
+    val genres: String?
 )
 
 data class GameStorageInfo(

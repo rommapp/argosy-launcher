@@ -102,6 +102,22 @@
     <string name="home_grid_tile_missing_media">Título faltante</string>
     <string name="home_grid_tile_local_media_subtitle">En este dispositivo</string>
     <string name="home_grid_tile_unresolvable">No disponible</string>
+    <string name="tile_picker_feature_random_title">Juego aleatorio</string>
+    <string name="tile_picker_feature_random_subtitle">Elige un juego de tu biblioteca</string>
+    <string name="tile_picker_feature_continue_title">Continuar</string>
+    <string name="tile_picker_feature_continue_subtitle">Vuelve a tu último juego</string>
+    <string name="tile_picker_feature_ra_title">RetroAchievements</string>
+    <string name="tile_picker_feature_ra_subtitle">Tus puntos y últimos logros</string>
+    <string name="home_grid_tile_feature_random_label">Juego aleatorio</string>
+    <string name="home_grid_tile_feature_random_empty">Ningún juego coincide con los filtros</string>
+    <string name="home_grid_tile_feature_continue_label">Seguir jugando</string>
+    <string name="home_grid_tile_feature_continue_empty">Aún no has jugado nada</string>
+    <string name="home_grid_tile_feature_ra_label">RetroAchievements</string>
+    <string name="home_grid_tile_feature_ra_signed_out">Inicia sesión para ver tus logros</string>
+    <string name="home_grid_tile_feature_ra_no_unlocks">Aún sin logros</string>
+    <string name="home_grid_tile_feature_ra_latest">Último: %1$s</string>
+    <string name="home_grid_tile_stat_points">puntos</string>
+    <string name="home_grid_tile_stat_unlocks">logros</string>
 
     <string name="home_notice_game_data_refreshed">Datos del juego actualizados</string>
     <string name="home_notice_android_data_refreshed">Datos del juego actualizados</string>

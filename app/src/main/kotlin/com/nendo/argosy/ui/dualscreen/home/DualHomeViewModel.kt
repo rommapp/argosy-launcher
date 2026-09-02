@@ -476,6 +476,20 @@ data class DualHomeUiState(
                     subtitle = context.getString(R.string.dual_tile_app_subtitle)
                 )
             }
+            is com.nendo.argosy.domain.model.HomeTileTargetRef.Feature ->
+                com.nendo.argosy.ui.components.CustomGridTileContent(
+                    game = null,
+                    label = context.getString(
+                        when (target.kind) {
+                            com.nendo.argosy.domain.model.FeatureTileKind.RANDOM_GAME ->
+                                R.string.dual_tile_feature_random
+                            com.nendo.argosy.domain.model.FeatureTileKind.CONTINUE ->
+                                R.string.dual_tile_feature_continue
+                            com.nendo.argosy.domain.model.FeatureTileKind.RA_SUMMARY ->
+                                R.string.dual_tile_feature_ra
+                        }
+                    )
+                )
             is com.nendo.argosy.domain.model.HomeTileTargetRef.Media,
             is com.nendo.argosy.domain.model.HomeTileTargetRef.LocalMedia,
             com.nendo.argosy.domain.model.HomeTileTargetRef.Unresolvable ->
@@ -633,6 +647,7 @@ class DualHomeViewModel(
                     )
                 }
         com.nendo.argosy.ui.components.TilePickerCategory.MEDIA -> emptyList()
+        com.nendo.argosy.ui.components.TilePickerCategory.FEATURES -> emptyList()
     }
 
     private var latestDownloads: Map<Long, com.nendo.argosy.data.local.entity.DownloadQueueEntity> = emptyMap()

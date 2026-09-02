@@ -102,6 +102,22 @@
     <string name="home_grid_tile_missing_media">टाइटल गायब</string>
     <string name="home_grid_tile_local_media_subtitle">इस डिवाइस पर</string>
     <string name="home_grid_tile_unresolvable">अनुपलब्ध</string>
+    <string name="tile_picker_feature_random_title">यादृच्छिक गेम</string>
+    <string name="tile_picker_feature_random_subtitle">आपकी लाइब्रेरी से एक गेम चुनता है</string>
+    <string name="tile_picker_feature_continue_title">जारी रखें</string>
+    <string name="tile_picker_feature_continue_subtitle">अपने पिछले गेम पर वापस जाएँ</string>
+    <string name="tile_picker_feature_ra_title">RetroAchievements</string>
+    <string name="tile_picker_feature_ra_subtitle">आपके अंक और नवीनतम अनलॉक</string>
+    <string name="home_grid_tile_feature_random_label">यादृच्छिक गेम</string>
+    <string name="home_grid_tile_feature_random_empty">फ़िल्टर से कोई गेम मेल नहीं खाता</string>
+    <string name="home_grid_tile_feature_continue_label">खेलना जारी रखें</string>
+    <string name="home_grid_tile_feature_continue_empty">अभी तक कुछ नहीं खेला</string>
+    <string name="home_grid_tile_feature_ra_label">RetroAchievements</string>
+    <string name="home_grid_tile_feature_ra_signed_out">अपने अनलॉक देखने के लिए साइन इन करें</string>
+    <string name="home_grid_tile_feature_ra_no_unlocks">अभी तक कोई अनलॉक नहीं</string>
+    <string name="home_grid_tile_feature_ra_latest">नवीनतम: %1$s</string>
+    <string name="home_grid_tile_stat_points">अंक</string>
+    <string name="home_grid_tile_stat_unlocks">अनलॉक</string>
 
     <string name="home_notice_game_data_refreshed">गेम डेटा रीफ्रेश हुआ</string>
     <string name="home_notice_android_data_refreshed">गेम डेटा रीफ्रेश हुआ</string>

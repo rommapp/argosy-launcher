@@ -250,6 +250,8 @@ data class HomeUiState(
     val tileCollections: Map<Long, com.nendo.argosy.ui.components.TileCollectionUi> = emptyMap(),
     val tileApps: Map<String, String> = emptyMap(),
     val tileMedia: Map<String, HomeMediaUi> = emptyMap(),
+    val continueGameId: Long? = null,
+    val raTileSummary: com.nendo.argosy.domain.model.RaAccountSummary? = null,
     val isLoading: Boolean = true,
     val isRommConfigured: Boolean = false,
     val showGameMenu: Boolean = false,
@@ -504,8 +506,17 @@ data class HomeUiState(
         get() = customGrid.focusedTile
 
     val focusedTileGame: HomeGameUi?
-        get() = (focusedTile?.target as? com.nendo.argosy.domain.model.HomeTileTargetRef.Game)
-            ?.let { tileGames[it.gameId] }
+        get() = when (val target = focusedTile?.target) {
+            is com.nendo.argosy.domain.model.HomeTileTargetRef.Game -> tileGames[target.gameId]
+            is com.nendo.argosy.domain.model.HomeTileTargetRef.Feature -> when (target.kind) {
+                com.nendo.argosy.domain.model.FeatureTileKind.RANDOM_GAME ->
+                    target.pickedGameId?.let { tileGames[it] }
+                com.nendo.argosy.domain.model.FeatureTileKind.CONTINUE ->
+                    continueGameId?.let { tileGames[it] }
+                com.nendo.argosy.domain.model.FeatureTileKind.RA_SUMMARY -> null
+            }
+            else -> null
+        }
 
     val focusedTileMedia: HomeMediaUi?
         get() = (focusedTile?.target as? com.nendo.argosy.domain.model.HomeTileTargetRef.Media)
@@ -683,6 +694,8 @@ data class HomeUiState(
                     label = target.filePath.substringAfterLast('/').substringBeforeLast('.'),
                     subtitle = context.getString(R.string.home_grid_tile_local_media_subtitle)
                 )
+            is com.nendo.argosy.domain.model.HomeTileTargetRef.Feature ->
+                featureTileContent(target, context)
             com.nendo.argosy.domain.model.HomeTileTargetRef.Unresolvable ->
                 com.nendo.argosy.ui.components.CustomGridTileContent(
                     game = null,
@@ -690,6 +703,60 @@ data class HomeUiState(
                     isMissing = true
                 )
         }
+
+    private fun featureTileContent(
+        target: com.nendo.argosy.domain.model.HomeTileTargetRef.Feature,
+        context: Context
+    ): com.nendo.argosy.ui.components.CustomGridTileContent = when (target.kind) {
+        com.nendo.argosy.domain.model.FeatureTileKind.RANDOM_GAME -> {
+            val game = target.pickedGameId?.let { tileGames[it] }
+            com.nendo.argosy.ui.components.CustomGridTileContent(
+                game = game,
+                label = game?.title
+                    ?: context.getString(R.string.home_grid_tile_feature_random_empty),
+                subtitle = context.getString(R.string.home_grid_tile_feature_random_label),
+                stats = game?.let { com.nendo.argosy.ui.components.tileStatsFor(it, context) }.orEmpty()
+            )
+        }
+        com.nendo.argosy.domain.model.FeatureTileKind.CONTINUE -> {
+            val game = continueGameId?.let { tileGames[it] }
+            com.nendo.argosy.ui.components.CustomGridTileContent(
+                game = game,
+                label = game?.title
+                    ?: context.getString(R.string.home_grid_tile_feature_continue_empty),
+                subtitle = context.getString(R.string.home_grid_tile_feature_continue_label),
+                stats = game?.let { com.nendo.argosy.ui.components.tileStatsFor(it, context) }.orEmpty()
+            )
+        }
+        com.nendo.argosy.domain.model.FeatureTileKind.RA_SUMMARY -> {
+            val summary = raTileSummary
+            com.nendo.argosy.ui.components.CustomGridTileContent(
+                game = null,
+                label = summary?.username
+                    ?: context.getString(R.string.home_grid_tile_feature_ra_label),
+                subtitle = when {
+                    summary == null -> context.getString(R.string.home_grid_tile_feature_ra_signed_out)
+                    summary.latestTitle == null ->
+                        context.getString(R.string.home_grid_tile_feature_ra_no_unlocks)
+                    else -> context.getString(
+                        R.string.home_grid_tile_feature_ra_latest, summary.latestTitle
+                    )
+                },
+                stats = summary?.let {
+                    listOf(
+                        com.nendo.argosy.ui.components.TileStat(
+                            context.getString(R.string.home_grid_tile_stat_points),
+                            it.points.toString()
+                        ),
+                        com.nendo.argosy.ui.components.TileStat(
+                            context.getString(R.string.home_grid_tile_stat_unlocks),
+                            it.unlocks.toString()
+                        )
+                    )
+                }.orEmpty()
+            )
+        }
+    }
 }
 
 data class BreadcrumbItem(val label: String, val isCurrent: Boolean)

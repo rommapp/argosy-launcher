@@ -102,6 +102,22 @@
     <string name="home_grid_tile_missing_media">找不到作品</string>
     <string name="home_grid_tile_local_media_subtitle">在此裝置上</string>
     <string name="home_grid_tile_unresolvable">無法使用</string>
+    <string name="tile_picker_feature_random_title">隨機遊戲</string>
+    <string name="tile_picker_feature_random_subtitle">從你的收藏中挑一款遊戲</string>
+    <string name="tile_picker_feature_continue_title">繼續</string>
+    <string name="tile_picker_feature_continue_subtitle">回到上次玩的遊戲</string>
+    <string name="tile_picker_feature_ra_title">RetroAchievements</string>
+    <string name="tile_picker_feature_ra_subtitle">你的分數和最新解鎖</string>
+    <string name="home_grid_tile_feature_random_label">隨機遊戲</string>
+    <string name="home_grid_tile_feature_random_empty">沒有符合篩選的遊戲</string>
+    <string name="home_grid_tile_feature_continue_label">繼續遊玩</string>
+    <string name="home_grid_tile_feature_continue_empty">還沒有玩過任何遊戲</string>
+    <string name="home_grid_tile_feature_ra_label">RetroAchievements</string>
+    <string name="home_grid_tile_feature_ra_signed_out">登入以查看你的解鎖</string>
+    <string name="home_grid_tile_feature_ra_no_unlocks">還沒有解鎖</string>
+    <string name="home_grid_tile_feature_ra_latest">最新：%1$s</string>
+    <string name="home_grid_tile_stat_points">分</string>
+    <string name="home_grid_tile_stat_unlocks">項解鎖</string>
 
     <string name="home_notice_game_data_refreshed">遊戲資料已重新整理</string>
     <string name="home_notice_android_data_refreshed">遊戲資料已重新整理</string>

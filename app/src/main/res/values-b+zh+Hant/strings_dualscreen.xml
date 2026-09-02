@@ -228,6 +228,9 @@
     <string name="dual_tile_missing_app">找不到應用程式</string>
     <string name="dual_tile_app_subtitle">應用程式</string>
     <string name="dual_tile_unavailable">無法使用</string>
+    <string name="dual_tile_feature_random">隨機遊戲</string>
+    <string name="dual_tile_feature_continue">繼續</string>
+    <string name="dual_tile_feature_ra">RetroAchievements</string>
 
     <plurals name="dual_tile_picker_collection_game_count">
         <item quantity="other">%d款遊戲</item>

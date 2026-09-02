@@ -264,6 +264,9 @@
     <string name="dual_tile_missing_app">Fehlende App</string>
     <string name="dual_tile_app_subtitle">App</string>
     <string name="dual_tile_unavailable">Nicht verfügbar</string>
+    <string name="dual_tile_feature_random">Zufälliges Spiel</string>
+    <string name="dual_tile_feature_continue">Weiterspielen</string>
+    <string name="dual_tile_feature_ra">RetroAchievements</string>
 
     <plurals name="dual_tile_picker_collection_game_count">
         <item quantity="one">%d Spiel</item>

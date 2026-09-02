@@ -37,6 +37,7 @@ interface HomeInputActions {
     fun cancelTileEdit()
     fun toggleTileEditMode()
     fun advanceFocusGame()
+    fun rerollRandomTile()
     fun movePageChooserFocus(delta: Int)
     fun confirmPageChooser()
     fun backOutOfPageChooser()
@@ -263,7 +264,26 @@ class HomeInputHandler(
                 }
             is com.nendo.argosy.domain.model.HomeTileTargetRef.Media ->
                 actions.playTileMedia(target.itemId)
+            is com.nendo.argosy.domain.model.HomeTileTargetRef.Feature -> confirmFeatureTile(target, state)
             else -> actions.openTilePicker()
+        }
+    }
+
+    private fun confirmFeatureTile(
+        target: com.nendo.argosy.domain.model.HomeTileTargetRef.Feature,
+        state: HomeUiState
+    ) {
+        when (target.kind) {
+            com.nendo.argosy.domain.model.FeatureTileKind.RANDOM_GAME -> {
+                val picked = target.pickedGameId
+                if (picked != null) actions.launchGame(picked) else actions.rerollRandomTile()
+            }
+            com.nendo.argosy.domain.model.FeatureTileKind.CONTINUE -> {
+                state.continueGameId?.let { actions.launchGame(it) }
+            }
+            com.nendo.argosy.domain.model.FeatureTileKind.RA_SUMMARY -> {
+                state.raTileSummary?.latestGameId?.let { onGameSelect(it) }
+            }
         }
     }
 
@@ -515,6 +535,12 @@ class HomeInputHandler(
             if (collection?.focusGameId != null) {
                 actions.advanceFocusGame()
                 return InputResult.HANDLED
+            }
+            val feature = state.customGrid.focusedTile?.target
+                as? com.nendo.argosy.domain.model.HomeTileTargetRef.Feature
+            if (feature?.kind == com.nendo.argosy.domain.model.FeatureTileKind.RANDOM_GAME) {
+                actions.rerollRandomTile()
+                return InputResult.handled(SoundType.TOGGLE)
             }
         }
         if (!isCustomGrid(state) && focusedIsMedia(state)) {

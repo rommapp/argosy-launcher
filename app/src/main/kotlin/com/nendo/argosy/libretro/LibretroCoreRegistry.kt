@@ -98,6 +98,14 @@ object LibretroCoreRegistry {
             platforms = setOf("gba"),
             estimatedSizeBytes = 800_000L
         ),
+        CoreInfo(
+            coreId = "gpsp",
+            fileName = "gpsp_libretro_android.so",
+            displayName = "gpSP",
+            platforms = setOf("gba"),
+            estimatedSizeBytes = 600_000L,
+            requiresBios = listOf("gba_bios.bin")
+        ),
 
         // Nintendo 64
         CoreInfo(

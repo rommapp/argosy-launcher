@@ -36,6 +36,7 @@ import com.nendo.argosy.libretro.coreoptions.manifests.FreeintvManifest
 import com.nendo.argosy.libretro.coreoptions.manifests.FuseManifest
 import com.nendo.argosy.libretro.coreoptions.manifests.GearcolecoManifest
 import com.nendo.argosy.libretro.coreoptions.manifests.GenesisPlusGxManifest
+import com.nendo.argosy.libretro.coreoptions.manifests.GpspManifest
 import com.nendo.argosy.libretro.coreoptions.manifests.GwManifest
 import com.nendo.argosy.libretro.coreoptions.manifests.Mame2003PlusManifest
 import com.nendo.argosy.libretro.coreoptions.manifests.MednafenPceManifest
@@ -66,6 +67,7 @@ object CoreOptionManifestRegistry {
         put(MgbaManifest.coreId, MgbaManifest)
         put(GambatteManifest.coreId, GambatteManifest)
         put(VbamManifest.coreId, VbamManifest)
+        put(GpspManifest.coreId, GpspManifest)
         put(MednafenPsxHwManifest.coreId, MednafenPsxHwManifest)
         put(PcsxRearmedManifest.coreId, PcsxRearmedManifest)
         put(MednafenSaturnManifest.coreId, MednafenSaturnManifest)

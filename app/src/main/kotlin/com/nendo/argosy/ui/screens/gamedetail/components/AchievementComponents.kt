@@ -43,6 +43,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import coil.compose.AsyncImage
 import com.nendo.argosy.R
 import com.nendo.argosy.core.game.AchievementUi
+import com.nendo.argosy.ui.components.animateScrollToItemCentered
 import com.nendo.argosy.ui.common.achievementTypeColor
 import com.nendo.argosy.ui.common.achievementTypeLabelRes
 import com.nendo.argosy.ui.primitives.FocusIndicators
@@ -257,7 +258,7 @@ fun AchievementList(
     LaunchedEffect(focusIndex, ordered.size) {
         if (focusIndex in ordered.indices) {
             val lockedHeaderOffset = if (lockedCount > 0 && focusIndex >= unlockedCount) 1 else 0
-            listState.animateScrollToItem(focusIndex + headerOffset + lockedHeaderOffset)
+            listState.animateScrollToItemCentered(focusIndex + headerOffset + lockedHeaderOffset)
         }
     }
 

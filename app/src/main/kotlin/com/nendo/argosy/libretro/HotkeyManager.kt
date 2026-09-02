@@ -148,6 +148,26 @@ class HotkeyManager(
         }
     }
 
+    /**
+     * True when this key on its own is bound to the in-game menu. The menu consumes its own
+     * hotkey while open, so a second press closes it instead of reaching the system, where an
+     * unhandled guide button can act as Home.
+     */
+    fun isMenuToggleKey(keyCode: Int, controllerId: String?): Boolean {
+        if (!isHotkeyKey(keyCode)) return false
+        if (limitToPlayer1 && player1ControllerId != null && controllerId != player1ControllerId) {
+            return false
+        }
+        if (isPlatformMappedButton(keyCode, controllerId)) return false
+        return hotkeys.any { hotkey ->
+            hotkey.isEnabled &&
+                hotkey.action == HotkeyAction.IN_GAME_MENU &&
+                hotkey.keyCodes.size == 1 &&
+                keyCode in hotkey.keyCodes &&
+                (hotkey.controllerId == null || hotkey.controllerId == controllerId)
+        }
+    }
+
     private fun isPlatformMappedButton(keyCode: Int, controllerId: String?): Boolean {
         val controllerButtons = controllerId?.let(platformMappedButtonsByController::get)
         return controllerButtons?.contains(keyCode)

@@ -2803,10 +2803,20 @@ class LibretroActivity : ComponentActivity() {
             if (::hotkeyDispatcher.isInitialized) hotkeyDispatcher.onKeyUp(event.keyCode)
         }
         if (isAnyMenuOpen) {
+            if (isMenuHotkeyEvent(event)) {
+                if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0 && menuVisible) hideMenu()
+                return true
+            }
             if (gamepadInputBridge.handleKeyEvent(event)) return true
             if (menuInputHandler.mapKeyToEvent(event.keyCode) != null) return true
         }
         return super.dispatchKeyEvent(event)
+    }
+
+    private fun isMenuHotkeyEvent(event: KeyEvent): Boolean {
+        if (!::hotkeyDispatcher.isInitialized) return false
+        val controllerId = event.device?.let { getControllerId(it) }
+        return hotkeyDispatcher.isMenuToggleKey(event.keyCode, controllerId)
     }
 
     fun dispatchTouchKey(action: Int, keyCode: Int) {

@@ -86,6 +86,9 @@ class LibretroHotkeyDispatcher(
     fun isPotentialComboKey(keyCode: Int, controllerId: String?): Boolean =
         hotkeyManager.isPotentialComboKey(keyCode, controllerId)
 
+    fun isMenuToggleKey(keyCode: Int, controllerId: String?): Boolean =
+        hotkeyManager.isMenuToggleKey(keyCode, controllerId)
+
     fun onKeyUp(keyCode: Int) {
         hotkeyManager.onKeyUp(keyCode)
         val holdMode = videoSettings.fastForwardMode == FastForwardMode.HOLD

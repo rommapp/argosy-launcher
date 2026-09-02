@@ -6,7 +6,9 @@ import com.nendo.argosy.data.local.entity.HotkeyEntity
 import com.nendo.argosy.data.repository.InputConfigRepository
 import io.mockk.mockk
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class HotkeyManagerTest {
@@ -68,5 +70,34 @@ class HotkeyManagerTest {
             manager(KeyEvent.KEYCODE_F1).onKeyDown(KeyEvent.KEYCODE_F1, "pad")?.action
         )
         assertNull(manager(KeyEvent.KEYCODE_HOME).onKeyDown(KeyEvent.KEYCODE_HOME, "pad"))
+    }
+
+    @Test
+    fun `only a single key bound to the menu counts as the menu toggle`() {
+        val manager = HotkeyManager(mockk<InputConfigRepository>(relaxed = true)).apply {
+            setHotkeys(
+                listOf(
+                    HotkeyEntity(
+                        action = HotkeyAction.IN_GAME_MENU,
+                        buttonComboJson = "[${KeyEvent.KEYCODE_BUTTON_MODE}]"
+                    ),
+                    HotkeyEntity(
+                        action = HotkeyAction.FAST_FORWARD,
+                        buttonComboJson = "[${KeyEvent.KEYCODE_BUTTON_R2}]"
+                    ),
+                    HotkeyEntity(
+                        action = HotkeyAction.QUICK_SAVE,
+                        buttonComboJson = "[${KeyEvent.KEYCODE_BUTTON_SELECT},${KeyEvent.KEYCODE_BUTTON_START}]"
+                    )
+                )
+            )
+        }
+
+        assertTrue(manager.isMenuToggleKey(KeyEvent.KEYCODE_BUTTON_MODE, "pad"))
+        assertFalse(manager.isMenuToggleKey(KeyEvent.KEYCODE_BUTTON_R2, "pad"))
+        assertFalse(manager.isMenuToggleKey(KeyEvent.KEYCODE_BUTTON_SELECT, "pad"))
+
+        manager.setPlatformMappedButtons(mapOf("pad" to setOf(KeyEvent.KEYCODE_BUTTON_MODE)))
+        assertFalse(manager.isMenuToggleKey(KeyEvent.KEYCODE_BUTTON_MODE, "pad"))
     }
 }

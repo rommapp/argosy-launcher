@@ -1509,7 +1509,8 @@ class DualScreenManager(
                 rating = showcase.userRating.takeIf { it > 0 },
                 userDifficulty = showcase.userDifficulty,
                 communityRating = showcase.communityRating,
-                titleId = showcase.titleId
+                titleId = showcase.titleId,
+                players = showcase.players
             )
         } else {
             _dualGameDetailState.value = DualGameDetailUpperState(gameId = gameId)
@@ -1540,7 +1541,8 @@ class DualScreenManager(
                         rating = game.userRating.takeIf { it > 0 },
                         userDifficulty = game.userDifficulty,
                         communityRating = game.rating,
-                        titleId = game.displayTitleId
+                        titleId = game.displayTitleId,
+                        players = game.players
                     )
                 }
             }

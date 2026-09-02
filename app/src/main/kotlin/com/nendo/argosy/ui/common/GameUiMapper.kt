@@ -83,7 +83,8 @@ suspend fun GameEntity.toHomeGameUi(
         titleId = displayTitleId,
         timeToBeatMainSec = timeToBeatMainSec,
         timeToBeatExtraSec = timeToBeatExtraSec,
-        timeToBeatCompletionistSec = timeToBeatCompletionistSec
+        timeToBeatCompletionistSec = timeToBeatCompletionistSec,
+        players = players
     )
 }
 

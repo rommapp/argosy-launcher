@@ -91,7 +91,8 @@ data class HomeGameUi(
     val titleId: String? = null,
     val timeToBeatMainSec: Int? = null,
     val timeToBeatExtraSec: Int? = null,
-    val timeToBeatCompletionistSec: Int? = null
+    val timeToBeatCompletionistSec: Int? = null,
+    val players: String? = null
 )
 
 /**

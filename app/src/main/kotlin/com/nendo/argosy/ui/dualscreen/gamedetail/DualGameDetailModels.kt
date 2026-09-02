@@ -178,6 +178,7 @@ data class DualGameDetailUpperState(
     val userDifficulty: Int = 0,
     val communityRating: Float? = null,
     val titleId: String? = null,
+    val players: String? = null,
     val achievementCount: Int = 0,
     val earnedAchievementCount: Int = 0,
     val screenshots: List<String> = emptyList(),

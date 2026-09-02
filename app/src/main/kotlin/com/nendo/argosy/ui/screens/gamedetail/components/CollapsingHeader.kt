@@ -22,9 +22,6 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Groups
-import androidx.compose.material.icons.filled.People
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Whatshot
@@ -38,7 +35,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
@@ -57,6 +53,7 @@ import com.nendo.argosy.ui.theme.AspectRatioClass
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 import com.nendo.argosy.ui.theme.LocalUiScale
+import com.nendo.argosy.ui.common.playerCountGlyph
 import com.nendo.argosy.util.formatPlayTime
 import com.nendo.argosy.util.formatTimeToBeat
 
@@ -342,15 +339,6 @@ private fun TitleSection(
                 }
             }
         }
-    }
-}
-
-private fun playerCountGlyph(players: String): ImageVector {
-    val most = Regex("\\d+").findAll(players).map { it.value.toInt() }.maxOrNull()
-    return when {
-        most == null || most > 2 || players.contains('+') -> Icons.Default.Groups
-        most == 2 -> Icons.Default.People
-        else -> Icons.Default.Person
     }
 }
 

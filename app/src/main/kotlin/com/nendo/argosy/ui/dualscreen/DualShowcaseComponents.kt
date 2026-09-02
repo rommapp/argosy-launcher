@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.nendo.argosy.domain.model.CompletionStatus
+import com.nendo.argosy.ui.common.playerCountGlyph
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.theme.ALauncherColors
 import com.nendo.argosy.ui.theme.AspectRatioClass
@@ -90,7 +91,7 @@ fun ShowcaseEyebrow(
     platformName: String?,
     releaseYear: Int?,
     developer: String?,
-    titleId: String? = null,
+    players: String? = null,
     stacked: Boolean = false
 ) {
     val style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.5.sp)
@@ -99,17 +100,16 @@ fun ShowcaseEyebrow(
         platformName?.takeIf { it.isNotBlank() }?.uppercase(),
         releaseYear?.toString()
     ).joinToString("  ·  ")
-    val maker = listOfNotNull(
-        developer,
-        titleId?.takeIf { it.isNotBlank() }
-    ).joinToString("  ·  ")
+    val maker = developer.orEmpty()
+    val playerCount = players?.takeIf { it.isNotBlank() }
 
     if (!stacked) {
-        Text(
+        EyebrowLine(
             text = listOfNotNull(
                 provenance.takeIf { it.isNotBlank() },
                 maker.takeIf { it.isNotBlank() }
             ).joinToString("  ·  "),
+            players = playerCount,
             style = style,
             color = color
         )
@@ -120,8 +120,40 @@ fun ShowcaseEyebrow(
         if (provenance.isNotBlank()) {
             Text(text = provenance, style = style, color = color, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
-        if (maker.isNotBlank()) {
-            Text(text = maker, style = style, color = color, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        if (maker.isNotBlank() || playerCount != null) {
+            EyebrowLine(text = maker, players = playerCount, style = style, color = color)
+        }
+    }
+}
+
+@Composable
+private fun EyebrowLine(
+    text: String,
+    players: String?,
+    style: TextStyle,
+    color: Color
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+    ) {
+        if (text.isNotBlank()) {
+            Text(
+                text = if (players != null) "$text  ·" else text,
+                style = style,
+                color = color,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        if (players != null) {
+            Icon(
+                imageVector = playerCountGlyph(players),
+                contentDescription = null,
+                tint = color,
+                modifier = Modifier.size(Dimens.iconSm)
+            )
+            Text(text = players, style = style, color = color, maxLines = 1)
         }
     }
 }

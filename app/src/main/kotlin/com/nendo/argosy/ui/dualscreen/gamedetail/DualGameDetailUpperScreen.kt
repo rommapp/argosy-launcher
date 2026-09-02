@@ -464,7 +464,7 @@ private fun GameInfoDisplay(
                     platformName = state.platformName,
                     releaseYear = state.releaseYear,
                     developer = state.developer,
-                    titleId = state.titleId
+                    players = state.players
                 )
                 Spacer(modifier = Modifier.height(Dimens.spacingSm))
                 GameTitle(

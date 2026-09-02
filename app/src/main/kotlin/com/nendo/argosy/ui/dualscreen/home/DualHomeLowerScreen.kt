@@ -1126,6 +1126,7 @@ fun HomeGameUi.toShowcaseState() = DualHomeShowcaseState(
     timeToBeatMainSec = timeToBeatMainSec,
     timeToBeatExtraSec = timeToBeatExtraSec,
     timeToBeatCompletionistSec = timeToBeatCompletionistSec,
+    players = players,
     isFavorite = isFavorite,
     isDownloaded = isPlayable
 )

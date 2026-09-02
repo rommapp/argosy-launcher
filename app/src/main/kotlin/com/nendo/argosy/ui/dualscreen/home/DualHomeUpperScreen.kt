@@ -89,6 +89,7 @@ data class DualHomeShowcaseState(
     val timeToBeatMainSec: Int? = null,
     val timeToBeatExtraSec: Int? = null,
     val timeToBeatCompletionistSec: Int? = null,
+    val players: String? = null,
     val isFavorite: Boolean = false,
     val isDownloaded: Boolean = true,
     val useGameBackground: Boolean = true,

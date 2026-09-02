@@ -84,6 +84,24 @@ class NczHeaderParserTest {
         assertEquals(3500, block.compressedBlockSizes[1])
     }
 
+    @Test
+    fun `parse accepts version 1 block header`() {
+        val sectionData = buildNczsectnHeader(
+            sections = listOf(TestSection(0x4000, 0x100000, 3)),
+            includeBlockHeader = true,
+            blockVersion = 1,
+            blockCount = 1,
+            decompressedSize = 0x4000,
+            compressedBlockSizes = intArrayOf(4000)
+        )
+
+        val result = NczHeaderParser.parse(
+            ByteArrayInputStream(sectionData)
+        )
+
+        assertNotNull(result.blockHeader)
+    }
+
     @Test(expected = IOException::class)
     fun `parse throws on invalid magic`() {
         val data = "NOTVALID".toByteArray() + ByteArray(100)
@@ -110,6 +128,7 @@ class NczHeaderParserTest {
     private fun buildNczsectnHeader(
         sections: List<TestSection>,
         includeBlockHeader: Boolean = false,
+        blockVersion: Int = 2,
         blockExponent: Int = 14,
         blockCount: Int = 0,
         decompressedSize: Long = 0,
@@ -141,8 +160,8 @@ class NczHeaderParserTest {
 
         if (includeBlockHeader) {
             buf.put("NCZBLOCK".toByteArray())
-            buf.put(1) // version
-            buf.put(0) // type
+            buf.put(blockVersion.toByte())
+            buf.put(1) // type
             buf.put(0) // unused
             buf.put(blockExponent.toByte())
             buf.putInt(blockCount)

@@ -224,8 +224,8 @@ class NszDecompressorIntegrationTest {
             ).order(ByteOrder.LITTLE_ENDIAN)
 
             blockHeaderBuf.put("NCZBLOCK".toByteArray())
-            blockHeaderBuf.put(1)  // version
-            blockHeaderBuf.put(0)  // type
+            blockHeaderBuf.put(2)  // version
+            blockHeaderBuf.put(1)  // type
             blockHeaderBuf.put(0)  // unused
             blockHeaderBuf.put(14) // exponent (1 << 14 = 0x4000)
             blockHeaderBuf.putInt(compressedBlocks.size)

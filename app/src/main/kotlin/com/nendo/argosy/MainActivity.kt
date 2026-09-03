@@ -605,10 +605,8 @@ class MainActivity : ComponentActivity() {
         if (gamepadInputHandler.handleKeyEvent(event)) {
             return true
         }
-        if (event.action == KeyEvent.ACTION_DOWN &&
-            event.keyCode == KeyEvent.KEYCODE_HOME
-        ) {
-            gamepadInputHandler.emitHomeEvent()
+        if (event.keyCode == KeyEvent.KEYCODE_HOME || event.keyCode == KeyEvent.KEYCODE_BUTTON_MODE) {
+            if (event.action == KeyEvent.ACTION_DOWN) gamepadInputHandler.emitHomeEvent()
             return true
         }
         return super.dispatchKeyEvent(event)

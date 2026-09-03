@@ -454,6 +454,11 @@ class SecondaryHomeActivity :
             android.view.KeyEvent.ACTION_UP ->
                 if (handleGamepadKeyUp(event.keyCode, event)) return true
         }
+        if (event.keyCode == android.view.KeyEvent.KEYCODE_HOME ||
+            event.keyCode == android.view.KeyEvent.KEYCODE_BUTTON_MODE
+        ) {
+            return true
+        }
         return super.dispatchKeyEvent(event)
     }
 

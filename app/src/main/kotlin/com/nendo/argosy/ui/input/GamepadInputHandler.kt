@@ -300,7 +300,8 @@ fun mapKeycodeToGamepadEvent(
 
     KeyEvent.KEYCODE_BUTTON_THUMBL -> GamepadEvent.LeftStickClick
     KeyEvent.KEYCODE_BUTTON_THUMBR -> GamepadEvent.RightStickClick
-    KeyEvent.KEYCODE_HOME -> GamepadEvent.Home
+    KeyEvent.KEYCODE_HOME,
+    KeyEvent.KEYCODE_BUTTON_MODE -> GamepadEvent.Home
 
     else -> null
 }

@@ -2864,6 +2864,7 @@ class LibretroActivity : ComponentActivity() {
             showMenu()
             return true
         }
+        if (keyCode == KeyEvent.KEYCODE_BUTTON_MODE) return true
 
         return super.onKeyDown(keyCode, event)
     }
@@ -2881,7 +2882,9 @@ class LibretroActivity : ComponentActivity() {
 
         if (shouldFilterShoulderButton(keyCode, event.device)) return true
 
-        return retroView.onKeyUp(keyCode, event) || super.onKeyUp(keyCode, event)
+        return retroView.onKeyUp(keyCode, event) ||
+            keyCode == KeyEvent.KEYCODE_BUTTON_MODE ||
+            super.onKeyUp(keyCode, event)
     }
 
     override fun onGenericMotionEvent(event: MotionEvent): Boolean {

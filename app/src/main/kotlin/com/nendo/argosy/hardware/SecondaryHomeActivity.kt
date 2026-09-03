@@ -289,6 +289,7 @@ class SecondaryHomeActivity :
                             isMediaPanelVisible = isMediaPanelVisible,
                             mediaToggle = mediaToggle,
                             onMediaToggle = ::openMediaFromAppBar,
+                            onKeyboardToggle = { broadcasts.broadcastToggleKeyboard() },
                             onMediaRowTapped = { index -> dualMediaViewModel?.focusRow(index) },
                             onMediaRowConfirmed = ::playFocusedMediaRow,
                             onMediaSeasonSelected = { dualMediaViewModel?.selectSeason(it) },

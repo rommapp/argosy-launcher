@@ -1164,6 +1164,15 @@ fun ArgosyApp(
                     }
                 }
 
+                val keyboardToggle by activity?.keyboardToggleEvent?.collectAsState()
+                    ?: remember { mutableStateOf(0L) }
+                LaunchedEffect(keyboardToggle) {
+                    if (keyboardToggle == 0L) return@LaunchedEffect
+                    delay(KEY_SINK_RECLAIM_GRACE_MS)
+                    @Suppress("DEPRECATION")
+                    imeManager?.toggleSoftInput(android.view.inputmethod.InputMethodManager.SHOW_FORCED, 0)
+                }
+
                 var drawerWidthPx by remember { mutableStateOf(0f) }
 
                 ModalNavigationDrawer(
@@ -1992,6 +2001,7 @@ fun ArgosyApp(
                             onCustomGridActivate = { swappedInputHandler.onConfirm() },
                             mediaToggle = mediaToggle,
                             onMediaToggle = { dualScreenManager.toggleCompanionMediaView() },
+                            onKeyboardToggle = { dualScreenManager.toggleUpperKeyboard() },
                             dualMediaViewModel = dualScreenManager.swappedMediaViewModel,
                             modifier = Modifier.blur(contentBlur)
                         )

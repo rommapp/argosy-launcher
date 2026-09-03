@@ -726,8 +726,10 @@ class SecondaryHomeInputHandler(
         val inAppBar = state.focusZone == DualHomeFocusZone.APP_BAR
         if (!inAppBar) customGrid.route(event)?.let { return it }
         val apps = homeApps()
-        val appBarSlots = apps.size + mediaSlotCount()
+        val keyboardSlot = apps.size + mediaSlotCount()
+        val appBarSlots = keyboardSlot + 1
         val onMediaSlot = inAppBar && hasMediaSlot() && state.appBarIndex == apps.size
+        val onKeyboardSlot = inAppBar && state.appBarIndex == keyboardSlot
         val inGrid = !inAppBar && state.layoutKind == HomeLayoutKind.AUTO_GRID
         val reversed = state.carouselConfig.inverted
 
@@ -804,7 +806,10 @@ class SecondaryHomeInputHandler(
                 InputResult.HANDLED
             }
             GamepadEvent.Confirm -> {
-                if (onMediaSlot) {
+                if (onKeyboardSlot) {
+                    broadcasts.broadcastToggleKeyboard()
+                    InputResult.HANDLED
+                } else if (onMediaSlot) {
                     val dsm = com.nendo.argosy.DualScreenManagerHolder.instance
                     if (dsm?.mediaPlayback?.value != null) dsm.toggleCompanionMediaView()
                     else dualHomeViewModel.enterMediaGrid {

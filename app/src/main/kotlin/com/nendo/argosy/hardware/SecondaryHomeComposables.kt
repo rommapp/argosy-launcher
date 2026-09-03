@@ -107,6 +107,7 @@ fun SecondaryHomeContent(
     isMediaPanelVisible: Boolean = false,
     mediaToggle: CompanionMediaToggle? = null,
     onMediaToggle: () -> Unit = {},
+    onKeyboardToggle: () -> Unit = {},
     onMediaRowTapped: (Int) -> Unit = {},
     onMediaRowConfirmed: (Int) -> Unit = {},
     onMediaSeasonSelected: (Int) -> Unit = {},
@@ -180,6 +181,7 @@ fun SecondaryHomeContent(
                 onCustomGridActivate = onCustomGridActivate,
                 mediaToggle = mediaToggle,
                 onMediaToggle = onMediaToggle,
+                onKeyboardToggle = onKeyboardToggle,
                 dualMediaViewModel = dualMediaViewModel
             )
         }
@@ -217,7 +219,8 @@ fun SecondaryHomeContent(
                             focusedIndex = -2,
                             onOpenDrawer = { viewModel.openDrawer() },
                             mediaToggle = mediaToggle,
-                            onMediaToggle = onMediaToggle
+                            onMediaToggle = onMediaToggle,
+                            onKeyboardToggle = onKeyboardToggle
                         )
                     }
                 }

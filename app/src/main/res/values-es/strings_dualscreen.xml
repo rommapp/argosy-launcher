@@ -41,6 +41,7 @@
     <string name="dual_companion_app_bar_add_description">Agregar app</string>
     <string name="dual_companion_app_bar_media_to_library_description">Volver a la biblioteca</string>
     <string name="dual_companion_app_bar_media_to_player_description">Viendo ahora</string>
+    <string name="dual_companion_app_bar_keyboard_description">Teclado</string>
 
     <string name="dual_companion_drawer_title">Todas las apps</string>
     <string name="dual_companion_drawer_pinned_description">Fijada</string>

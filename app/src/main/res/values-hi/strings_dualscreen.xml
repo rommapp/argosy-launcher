@@ -41,6 +41,7 @@
     <string name="dual_companion_app_bar_add_description">ऐप जोड़ें</string>
     <string name="dual_companion_app_bar_media_to_library_description">लाइब्रेरी पर वापस जाएं</string>
     <string name="dual_companion_app_bar_media_to_player_description">अभी देख रहे हैं</string>
+    <string name="dual_companion_app_bar_keyboard_description">कीबोर्ड</string>
 
     <string name="dual_companion_drawer_title">सभी ऐप्स</string>
     <string name="dual_companion_drawer_pinned_description">पिन किया गया</string>

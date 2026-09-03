@@ -297,6 +297,8 @@ class SecondaryHomeBroadcastHelper(
         dsm.onOpenOverlayFromCompanion(eventName)
     }
 
+    fun broadcastToggleKeyboard() = dsm.toggleUpperKeyboard()
+
     fun broadcastRefocusUpper() {
         dsm.onRefocusUpper()
     }

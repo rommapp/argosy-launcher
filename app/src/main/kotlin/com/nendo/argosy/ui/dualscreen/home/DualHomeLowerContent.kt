@@ -40,6 +40,7 @@ fun DualHomeLowerContent(
     onCustomGridActivate: () -> Unit = {},
     mediaToggle: com.nendo.argosy.hardware.CompanionMediaToggle? = null,
     onMediaToggle: () -> Unit = {},
+    onKeyboardToggle: () -> Unit = {},
     dualMediaViewModel: com.nendo.argosy.ui.dualscreen.media.DualMediaViewModel? = null,
     modifier: Modifier = Modifier
 ) {
@@ -95,6 +96,7 @@ fun DualHomeLowerContent(
                     onOpenDrawer = onOpenDrawer,
                     mediaToggle = mediaToggle,
                     onMediaToggle = onMediaToggle,
+                    onKeyboardToggle = onKeyboardToggle,
                     carouselConfig = uiState.carouselConfig,
                     autoGridConfig = uiState.autoGridConfig,
                     layoutKind = uiState.layoutKind,

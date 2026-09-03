@@ -1224,6 +1224,9 @@ class DualScreenManager(
     private val _pendingOverlayEvent = MutableStateFlow<String?>(null)
     val pendingOverlayEvent: StateFlow<String?> = _pendingOverlayEvent
 
+    private val _keyboardToggleEvent = MutableStateFlow(0L)
+    val keyboardToggleEvent: StateFlow<Long> = _keyboardToggleEvent
+
     var onOverlayFocusChanged: ((Boolean) -> Unit)? = null
     var isOverlayFocused = false
         set(value) {
@@ -1895,6 +1898,16 @@ class DualScreenManager(
         isOverlayFocused = true
         _pendingOverlayEvent.value = eventName ?: OVERLAY_MENU
         refocusMain()
+    }
+
+    /**
+     * Raises or lowers the system keyboard for the launcher window. The launcher is refocused
+     * first so the keyboard attaches to whatever it has focused rather than to the companion,
+     * which has nothing to type into; where the keyboard lives on screen is the device's choice.
+     */
+    fun toggleUpperKeyboard() {
+        refocusMain()
+        _keyboardToggleEvent.value = System.currentTimeMillis()
     }
 
     fun onRefocusUpper() {

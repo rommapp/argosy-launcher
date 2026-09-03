@@ -36,6 +36,7 @@
     <string name="dual_companion_app_bar_add_description">添加应用</string>
     <string name="dual_companion_app_bar_media_to_library_description">返回游戏库</string>
     <string name="dual_companion_app_bar_media_to_player_description">正在观看</string>
+    <string name="dual_companion_app_bar_keyboard_description">键盘</string>
 
     <string name="dual_companion_drawer_title">全部应用</string>
     <string name="dual_companion_drawer_pinned_description">已固定</string>

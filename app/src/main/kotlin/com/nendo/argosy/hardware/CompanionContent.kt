@@ -33,6 +33,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.Movie
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material3.Icon
@@ -696,7 +697,8 @@ internal fun CompanionAppBar(
     focusedIndex: Int = -1,
     onOpenDrawer: () -> Unit = {},
     mediaToggle: CompanionMediaToggle? = null,
-    onMediaToggle: () -> Unit = {}
+    onMediaToggle: () -> Unit = {},
+    onKeyboardToggle: (() -> Unit)? = null
 ) {
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
 
@@ -773,6 +775,53 @@ internal fun CompanionAppBar(
                 onClick = onMediaToggle
             )
         }
+        if (onKeyboardToggle != null) {
+            val keyboardSlot = apps.size + if (mediaToggle != null) 1 else 0
+            CompanionKeyboardButton(
+                isFocused = focusedIndex == keyboardSlot,
+                onClick = onKeyboardToggle
+            )
+        }
+    }
+}
+
+/**
+ * The far-right slot of the launcher's app bar: raises or lowers the system keyboard for whatever
+ * the other screen has focused. Devices that pin the keyboard to the lower display make this the
+ * one way to bring it up without a text field asking for it.
+ */
+@Composable
+private fun CompanionKeyboardButton(
+    isFocused: Boolean,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .width(COMPANION_APP_BAR_SLOT_WIDTH)
+            .touchOnly(onClick)
+            .padding(Dimens.spacingXs),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier
+                .size(Dimens.iconXl)
+                .argosyFocusIndicators(
+                    focused = isFocused,
+                    indicators = FocusIndicators.Tile,
+                    shape = RoundedCornerShape(Dimens.radiusLg)
+                )
+                .clip(RoundedCornerShape(Dimens.radiusLg))
+                .background(Color.White.copy(alpha = 0.15f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.Keyboard,
+                contentDescription = stringResource(R.string.dual_companion_app_bar_keyboard_description),
+                tint = Color.White.copy(alpha = 0.7f),
+                modifier = Modifier.size(Dimens.iconMd)
+            )
+        }
+        Spacer(modifier = Modifier.height(Dimens.spacingXs))
     }
 }
 

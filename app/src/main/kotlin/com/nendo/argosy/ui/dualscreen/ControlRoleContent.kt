@@ -36,6 +36,7 @@ fun ControlRoleContent(
     onCustomGridActivate: () -> Unit = {},
     mediaToggle: com.nendo.argosy.hardware.CompanionMediaToggle? = null,
     onMediaToggle: () -> Unit = {},
+    onKeyboardToggle: () -> Unit = {},
     dualMediaViewModel: com.nendo.argosy.ui.dualscreen.media.DualMediaViewModel? = null,
     modifier: Modifier = Modifier
 ) {
@@ -58,6 +59,7 @@ fun ControlRoleContent(
                 onCustomGridActivate = onCustomGridActivate,
                 mediaToggle = mediaToggle,
                 onMediaToggle = onMediaToggle,
+                onKeyboardToggle = onKeyboardToggle,
                 dualMediaViewModel = dualMediaViewModel,
                 modifier = modifier
             )

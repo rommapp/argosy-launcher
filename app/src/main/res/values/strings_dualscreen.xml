@@ -101,6 +101,9 @@
     <!-- Spoken description of the app bar's media button while the launcher is on screen. Noun
          phrase naming what the press goes to: the film or episode playing on the other screen. -->
     <string name="dual_companion_app_bar_media_to_player_description">Now watching</string>
+    <!-- Spoken description of the app bar's keyboard button, which raises or lowers the system
+         keyboard for the other screen. Noun. -->
+    <string name="dual_companion_app_bar_keyboard_description">Keyboard</string>
 
     <!-- Heading of the sheet listing every installed app on the companion screen. Noun phrase. -->
     <string name="dual_companion_drawer_title">All Apps</string>

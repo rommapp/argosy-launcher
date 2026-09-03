@@ -41,6 +41,7 @@
     <string name="dual_companion_app_bar_add_description">Ajouter une application</string>
     <string name="dual_companion_app_bar_media_to_library_description">Retour à la bibliothèque</string>
     <string name="dual_companion_app_bar_media_to_player_description">En cours de visionnage</string>
+    <string name="dual_companion_app_bar_keyboard_description">Clavier</string>
 
     <string name="dual_companion_drawer_title">Toutes les applications</string>
     <string name="dual_companion_drawer_pinned_description">Épinglée</string>

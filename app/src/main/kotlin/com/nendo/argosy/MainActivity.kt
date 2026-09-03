@@ -198,6 +198,7 @@ class MainActivity : ComponentActivity() {
     val dualDrawerOpen get() = dualScreenManager.dualDrawerOpen
     val dualCollectionShowcase get() = dualScreenManager.dualCollectionShowcase
     val pendingOverlayEvent get() = dualScreenManager.pendingOverlayEvent
+    val keyboardToggleEvent get() = dualScreenManager.keyboardToggleEvent
     val swappedDualHomeViewModel get() = dualScreenManager.swappedDualHomeViewModel
     val swappedCurrentScreen get() = dualScreenManager.swappedCurrentScreen
     val swappedGameDetailViewModel get() = dualScreenManager.swappedGameDetailViewModel

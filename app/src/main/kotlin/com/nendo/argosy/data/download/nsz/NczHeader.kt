@@ -72,7 +72,7 @@ object NczHeaderParser {
 
     const val NCA_HEADER_SIZE = 0x4000L
     private const val SECTION_ENTRY_SIZE = 64
-    private const val MAX_SECTION_COUNT = 100
+    private const val MAX_SECTION_COUNT = 32768
 
     private val NCZSECTN_MAGIC = "NCZSECTN".toByteArray(Charsets.US_ASCII)
     private val NCZBLOCK_MAGIC = "NCZBLOCK".toByteArray(Charsets.US_ASCII)

@@ -2807,9 +2807,6 @@
     <string name="settings_platform_path_unconfigured">Not configured</string>
     <!-- Shown beside a folder row the user set themselves. Adjective in brackets. -->
     <string name="settings_platform_path_custom_tag">(custom)</string>
-    <!-- Tag on a platform's save path row when Argosy settled on a secondary folder because the
-         emulator's own folder could not be read. -->
-    <string name="settings_platform_path_fallback_tag">(fallback)</string>
     <!-- Row naming the folder this console's games sit in. "ROM" is the usual term for a game
          file. -->
     <string name="settings_platform_rom_path_title">ROM Path</string>
@@ -3746,6 +3743,9 @@
     <!-- Note when Argosy settled on a secondary save folder because the emulator's own folder
          could not be read. %1$s is the emulator name. "Reset" names the button beside it. -->
     <string name="settings_save_path_modal_note_fallback">Argosy can\'t read %1$s\'s own save folder, so it\'s using this one. Reset to check again.</string>
+    <!-- Note when Argosy settled on a secondary save folder because that is where the emulator's
+         saves were found, even though its own folder is readable. %1$s is the emulator name. -->
+    <string name="settings_save_path_modal_note_found_elsewhere">%1$s\'s saves are here rather than in its own folder. Reset to check again.</string>
     <!-- Note explaining that Argosy adjusted a picked folder to the actual save location.
          %1$s is the platform name. -->
     <string name="settings_save_path_modal_note_moved">Moved to where %1$s saves actually live, below the folder you picked.</string>

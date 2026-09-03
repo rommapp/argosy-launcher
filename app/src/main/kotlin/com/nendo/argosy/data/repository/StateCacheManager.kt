@@ -149,8 +149,8 @@ class StateCacheManager @Inject constructor(
                 )
                 retroArchPathResolver.resolveStateDirectories(req)
             }
-            userStateOverride != null -> listOf(userStateOverride)
             emulatorId == "builtin" -> listOf(libretroStatePathResolver.liveStateBaseDir(gameId).absolutePath)
+            userStateOverride != null -> listOf(userStateOverride)
             else -> StatePathRegistry.resolvePath(config, platformId)
         }
         Log.d(TAG, "Searching ${statePaths.size} paths: $statePaths")

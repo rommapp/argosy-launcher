@@ -335,6 +335,7 @@ class StorageSettingsDelegate @Inject constructor(
                     emulatorId = info?.emulatorId,
                     effectiveSavePath = info?.effectiveSavePath,
                     isUserSavePathOverride = info?.isUserSavePathOverride ?: false,
+                    isEvaluatedSavePath = info?.isEvaluatedSavePath ?: false,
                     isFallbackSavePath = info?.isFallbackSavePath ?: false,
                     effectiveStatePath = info?.effectiveStatePath,
                     isUserStatePathOverride = info?.isUserStatePathOverride ?: false,
@@ -355,6 +356,7 @@ class StorageSettingsDelegate @Inject constructor(
         platformId: Long,
         savePath: String?,
         isUserOverride: Boolean,
+        isEvaluatedDefault: Boolean = false,
         isFallbackDefault: Boolean = false
     ) {
         _state.update { current ->
@@ -364,6 +366,7 @@ class StorageSettingsDelegate @Inject constructor(
                         config.copy(
                             effectiveSavePath = savePath,
                             isUserSavePathOverride = isUserOverride,
+                            isEvaluatedSavePath = isEvaluatedDefault,
                             isFallbackSavePath = isFallbackDefault
                         )
                     } else config
@@ -747,6 +750,7 @@ class StorageSettingsDelegate @Inject constructor(
         val emulatorId: String?,
         val effectiveSavePath: String? = null,
         val isUserSavePathOverride: Boolean = false,
+        val isEvaluatedSavePath: Boolean = false,
         val isFallbackSavePath: Boolean = false,
         val effectiveStatePath: String? = null,
         val isUserStatePathOverride: Boolean = false,

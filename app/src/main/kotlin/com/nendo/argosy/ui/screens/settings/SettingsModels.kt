@@ -157,6 +157,7 @@ data class PlatformEmulatorConfig(
     val isUserSavePathOverride: Boolean = false,
     val isEvaluatedSavePath: Boolean = false,
     val isFallbackSavePath: Boolean = false,
+    val isPreferredSavePathReadable: Boolean = true,
     val showSavePath: Boolean = false,
     val retroArchConfigStatus: RetroArchConfigStatus = RetroArchConfigStatus.MISSING,
     val retroArchConfigPath: String? = null,
@@ -705,6 +706,7 @@ data class SavePathModalInfo(
     val savePath: String?,
     val isUserOverride: Boolean,
     val platformSlug: String? = null,
+    val platformId: Long? = null,
     val emulatorPackage: String? = null,
     val savesBesideRom: Boolean = false,
     val besideRomSupported: Boolean = false,
@@ -717,6 +719,7 @@ data class SavePathModalInfo(
      */
     val isEvaluatedDefault: Boolean = false,
     val isFallbackDefault: Boolean = false,
+    val isPreferredReadable: Boolean = true,
     /**
      * Why the chosen folder does not look like this platform's save location, when it does not.
      * Advisory: the path is still used, because a legitimate layout can sit outside the shapes
@@ -729,7 +732,7 @@ data class SavePathModalInfo(
      */
     val unresolvedShape: String? = null
 ) {
-    val canReset: Boolean get() = isUserOverride || isFallbackDefault
+    val canReset: Boolean get() = isUserOverride || isEvaluatedDefault
 }
 
 data class MemcardPickerInfo(
@@ -756,6 +759,7 @@ data class PlatformStorageConfig(
     val effectiveSavePath: String? = null,
     val customSavePath: String? = null,
     val isUserSavePathOverride: Boolean = false,
+    val isEvaluatedSavePath: Boolean = false,
     val isFallbackSavePath: Boolean = false,
     val effectiveStatePath: String? = null,
     val customStatePath: String? = null,
@@ -764,7 +768,7 @@ data class PlatformStorageConfig(
     val folderMemcardCount: Int = -1,
     val selectedMemcardPath: String? = null
 ) {
-    val canResetSavePath: Boolean get() = isUserSavePathOverride || isFallbackSavePath
+    val canResetSavePath: Boolean get() = isUserSavePathOverride || isEvaluatedSavePath
 }
 
 data class StorageState(

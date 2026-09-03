@@ -65,8 +65,10 @@ fun SavePathModal(
                 info.savePath != null && !info.pathPresent ->
                     stringResource(R.string.settings_save_path_modal_note_missing)
                 info.shapeWarning != null -> info.shapeWarning
-                info.isFallbackDefault ->
+                info.isFallbackDefault && !info.isPreferredReadable ->
                     stringResource(R.string.settings_save_path_modal_note_fallback, info.emulatorName)
+                info.isFallbackDefault ->
+                    stringResource(R.string.settings_save_path_modal_note_found_elsewhere, info.emulatorName)
                 info.chosenPath != null ->
                     stringResource(R.string.settings_save_path_modal_note_moved, info.platformName)
                 info.unresolvedShape != null ->

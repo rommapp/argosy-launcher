@@ -1,5 +1,6 @@
 package com.nendo.argosy.data.emulator.savepath
 
+import com.nendo.argosy.data.emulator.LibretroSavePathResolver
 import com.nendo.argosy.data.emulator.RetroArchPathResolver
 import com.nendo.argosy.data.emulator.SavePathConfig
 import com.nendo.argosy.data.emulator.SavePathRegistry
@@ -33,7 +34,8 @@ data class SavePathRequest(
     val platformSlug: String,
     val emulatorId: String? = null,
     val emulatorPackage: String? = null,
-    val perGameOverride: String? = null
+    val perGameOverride: String? = null,
+    val platformId: Long? = null
 )
 
 /**
@@ -45,7 +47,7 @@ data class SavePathRequest(
  *
  * [preferredPath] is the folder the registry would pick first if it could be read. When an
  * evaluated default settled on something else, the screen can say so rather than presenting the
- * fallback as the answer.
+ * fallback as the answer, and [preferredReadable] tells it which of the two reasons applies.
  */
 data class SavePathResolution(
     val config: SavePathConfig?,
@@ -54,7 +56,8 @@ data class SavePathResolution(
     val unresolvedShape: String?,
     val source: SavePathSource,
     val verdict: SavePathVerdict,
-    val preferredPath: String? = null
+    val preferredPath: String? = null,
+    val preferredReadable: Boolean = true
 ) {
     val isRetroArchManaged: Boolean get() = source == SavePathSource.RETROARCH_CFG
     val isEvaluatedDefault: Boolean get() = source == SavePathSource.EVALUATED_DEFAULT
@@ -85,12 +88,14 @@ data class SavePathResolution(
 @Singleton
 open class SavePathAuthority @Inject constructor(
     private val emulatorSaveConfigRepository: EmulatorSaveConfigRepository,
-    private val fal: FileAccessLayer
+    private val fal: FileAccessLayer,
+    private val libretroSavePathResolver: LibretroSavePathResolver
 ) {
     private val shapeRules: List<SavePathShapeRule> = listOf(
         WiiNandShapeRule(),
         GciShapeRule(),
         N3dsShapeRule(),
+        PspShapeRule(),
         FlatSaveShapeRule()
     )
 
@@ -155,6 +160,17 @@ open class SavePathAuthority @Inject constructor(
             return resolution(config, configId, it, SavePathSource.PER_GAME, request)
         }
 
+        if (configId == BUILTIN_ID) {
+            val liveBase = libretroSavePathResolver.liveSaveBaseDir(request.platformId)
+            val basePath = candidatePaths(config, request.emulatorPackage, liveBase.absolutePath).firstOrNull()
+            val source = if (libretroSavePathResolver.isDefaultBase(liveBase)) {
+                SavePathSource.REGISTRY_DEFAULT
+            } else {
+                SavePathSource.USER_OVERRIDE
+            }
+            return resolution(config, configId, basePath, source, request, basePath)
+        }
+
         val override = configId?.let {
             emulatorSaveConfigRepository.resolveUserSavePath(it, request.platformSlug)
         }?.takeIf { it.isNotBlank() }
@@ -165,7 +181,10 @@ open class SavePathAuthority @Inject constructor(
         val preferred = candidatePaths(config, request.emulatorPackage).firstOrNull()
         val evaluated = configId?.let { emulatorSaveConfigRepository.resolveEvaluatedSavePath(it) }
         if (evaluated != null) {
-            return resolution(config, configId, evaluated, SavePathSource.EVALUATED_DEFAULT, request, preferred)
+            val preferredReadable = preferred == null || preferred == evaluated || isReadable(preferred)
+            return resolution(
+                config, configId, evaluated, SavePathSource.EVALUATED_DEFAULT, request, preferred, preferredReadable
+            )
         }
 
         return resolution(config, configId, preferred, SavePathSource.REGISTRY_DEFAULT, request, preferred)
@@ -176,10 +195,13 @@ open class SavePathAuthority @Inject constructor(
      * the answer. Meant for session start, the one moment the emulator is known to be installed
      * and its folders are about to be written.
      *
-     * The candidates are tried in registry order. The first one Argosy can read that already
-     * holds saves wins, then the first readable one. When none can be seen nothing is written and
-     * the next session looks again. Once written, the choice holds until the user resets it: a
-     * folder that later becomes unreadable is reported as unreadable, never swapped for another.
+     * The candidates are tried in registry order, and existing saves outrank the preference:
+     * the first folder that exists and holds entries wins, then the first that exists, then the
+     * first Argosy can read at all. An emulator pointed at the shared folder therefore keeps its
+     * saves there instead of being handed an empty folder it never writes to. When nothing can be
+     * seen nothing is written and the next session looks again. Once written, the choice holds
+     * until the user resets it: a folder that later becomes unreadable is reported as unreadable,
+     * never swapped for another.
      *
      * Only folder-based layouts on external storage take part. Internal layouts have one folder
      * and RetroArch's own configuration decides its layout.
@@ -193,17 +215,23 @@ open class SavePathAuthority @Inject constructor(
 
         val candidates = candidatePaths(config, request.emulatorPackage)
         val chosen = candidates.firstOrNull { isReadable(it) && holdsEntries(it) }
+            ?: candidates.firstOrNull { isReadable(it) && fal.exists(it) }
             ?: candidates.firstOrNull { isReadable(it) }
             ?: return null
         emulatorSaveConfigRepository.setEvaluatedSavePath(configId, chosen)
         return chosen
     }
 
-    protected open fun candidatePaths(config: SavePathConfig, emulatorPackage: String?): List<String> =
+    protected open fun candidatePaths(
+        config: SavePathConfig,
+        emulatorPackage: String?,
+        builtinSavesDir: String? = null
+    ): List<String> =
         SavePathRegistry.resolvePathWithPackage(
             config,
             emulatorPackage,
-            externalStorageRoots = fal.externalStorageRoots()
+            externalStorageRoots = fal.externalStorageRoots(),
+            builtinSavesDir = builtinSavesDir
         )
 
     /**
@@ -260,7 +288,8 @@ open class SavePathAuthority @Inject constructor(
         basePath: String?,
         source: SavePathSource,
         request: SavePathRequest,
-        preferredPath: String? = null
+        preferredPath: String? = null,
+        preferredReadable: Boolean = true
     ): SavePathResolution {
         val shape = basePath?.let { unresolvedShapeFor(config, request.platformSlug, it) }
         return SavePathResolution(
@@ -270,11 +299,13 @@ open class SavePathAuthority @Inject constructor(
             unresolvedShape = shape,
             source = source,
             verdict = basePath?.let { validate(it, config, request.platformSlug) } ?: SavePathVerdict.Ok,
-            preferredPath = preferredPath
+            preferredPath = preferredPath,
+            preferredReadable = preferredReadable
         )
     }
 
     private companion object {
+        const val BUILTIN_ID = "builtin"
         val packageDataPattern = Regex(".*/Android/data/[^/]+")
     }
 }

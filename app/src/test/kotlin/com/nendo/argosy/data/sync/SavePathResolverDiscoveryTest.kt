@@ -88,7 +88,9 @@ class SavePathResolverDiscoveryTest {
             emulatorConfigDao, gameDao, retroArchConfigParser,
             retroArchPathResolver, titleIdExtractor, titleDbRepository, saveArchiver,
             switchSaveHandler, gciSaveHandler, saveHandlerRegistry,
-            builtinPreferences, platformLibretroSettingsDao,
+            com.nendo.argosy.data.emulator.LibretroSavePathResolver(
+                context, platformLibretroSettingsDao, builtinPreferences
+            ),
         )
     }
 

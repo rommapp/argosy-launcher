@@ -1572,7 +1572,6 @@
 
     <string name="settings_platform_path_unconfigured">Не настроено</string>
     <string name="settings_platform_path_custom_tag">(свой)</string>
-    <string name="settings_platform_path_fallback_tag">(запасной)</string>
     <string name="settings_platform_rom_path_title">Путь ROM</string>
     <string name="settings_platform_save_path_title">Путь сохранения</string>
     <string name="settings_platform_save_path_blocked">Доступ заблокирован - задайте свой путь сохранения</string>
@@ -2075,6 +2074,7 @@
     <string name="settings_save_path_modal_save_path_label">Путь сохранения</string>
     <string name="settings_save_path_modal_note_missing">Этой папки сейчас нет на устройстве. Сохранения не будут найдены, пока она не появится.</string>
     <string name="settings_save_path_modal_note_fallback">Argosy не может прочитать собственную папку сохранений %1$s, поэтому используется эта. Сбросьте, чтобы проверить снова.</string>
+    <string name="settings_save_path_modal_note_found_elsewhere">Сохранения %1$s находятся здесь, а не в его собственной папке. Сбросьте, чтобы проверить снова.</string>
     <string name="settings_save_path_modal_note_moved">Перемещено туда, где реально находятся сохранения %1$s, внутри выбранной вами папки.</string>
     <string name="settings_save_path_modal_note_shape">Сохранение каждой игры находится в %1$s внутри этой папки.</string>
     <string name="settings_save_path_modal_beside_rom_title">Сохранять рядом с ROM</string>

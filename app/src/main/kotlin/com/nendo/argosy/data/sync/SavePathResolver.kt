@@ -18,7 +18,6 @@ import com.nendo.argosy.util.Logger
 import com.nendo.argosy.util.SaveDebugLogger
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
@@ -33,6 +32,7 @@ private const val TAG = "SavePathResolver"
  */
 private const val DUCKSTATION_EMULATOR_ID = "duckstation"
 private const val DUCKSTATION_CARD_SUFFIX = "_1.mcd"
+private const val BUILTIN_ID = "builtin"
 
 sealed interface SaveLookup {
     data class Found(val path: String) : SaveLookup
@@ -56,8 +56,7 @@ class SavePathResolver @Inject constructor(
     private val switchSaveHandler: SwitchSaveHandler,
     private val gciSaveHandler: GciSaveHandler,
     private val saveHandlerRegistry: PlatformSaveHandlerRegistry,
-    private val builtinPreferences: com.nendo.argosy.data.preferences.BuiltinEmulatorPreferencesRepository,
-    private val platformLibretroSettingsDao: com.nendo.argosy.data.local.dao.PlatformLibretroSettingsDao
+    private val libretroSavePathResolver: com.nendo.argosy.data.emulator.LibretroSavePathResolver
 ) {
     suspend fun discoverSavePath(
         emulatorId: String,
@@ -136,8 +135,7 @@ class SavePathResolver @Inject constructor(
         val candidates = buildList {
             perGameSaveDir(gameId, config, platformSlug)?.let { add(it) }
             if (userConfig?.savesBesideRom == true && romPath != null) File(romPath).parent?.let { add(it) }
-            emulatorSaveConfigRepository.resolveEffectiveSavePath(effectiveEmulatorId, platformSlug)
-                ?.let { add(it) }
+            userBaseOverride(effectiveEmulatorId, platformSlug)?.let { add(it) }
             gameId?.let { emulatorConfigDao.getSelectedMemcardForGame(it) }?.let { add(it) }
             userConfig?.selectedMemcardPath?.let { add(it) }
             if (isRetroArch) {
@@ -151,10 +149,9 @@ class SavePathResolver @Inject constructor(
                     else retroArchPathResolver.resolveSaveDirectoriesForPlatform(req, platformSlug)
                 )
             } else if (config.usesFolderBasedSaves) {
-                addAll(SavePathRegistry.resolvePathWithPackage(config, emulatorPackage, context.filesDir.absolutePath, fal.externalStorageRoots()))
+                addAll(resolveFolderBasePaths(config, emulatorPackage, gameId))
             } else {
-                addAll(builtinSaveDirOverrides(effectiveEmulatorId, gameId))
-                addAll(resolveSavePaths(config, platformSlug))
+                addAll(resolveSavePaths(config, platformSlug, gameId))
             }
         }
         val unreadable = candidates.distinct().firstOrNull { isUnreadableDir(it) }
@@ -212,8 +209,7 @@ class SavePathResolver @Inject constructor(
         val isRetroArch =
             com.nendo.argosy.data.emulator.RetroArchPathResolver.isRetroArch(effectiveEmulatorId)
         val besideRomBaseDir = if (userConfig?.savesBesideRom == true && romPath != null) File(romPath).parent else null
-        val overrideBaseDir = besideRomBaseDir
-            ?: emulatorSaveConfigRepository.resolveEffectiveSavePath(effectiveEmulatorId, platformSlug)
+        val overrideBaseDir = besideRomBaseDir ?: userBaseOverride(effectiveEmulatorId, platformSlug)
         val savePathOverrideForLog = overrideBaseDir
         val effectiveMemcard =
             (gameId?.let { emulatorConfigDao.getSelectedMemcardForGame(it) } ?: userConfig?.selectedMemcardPath)
@@ -297,7 +293,7 @@ class SavePathResolver @Inject constructor(
                 retroArchPathResolver.resolveSaveDirectoriesForPlatform(req, platformSlug)
             }
         } else {
-            builtinSaveDirOverrides(effectiveEmulatorId, gameId) + resolveSavePaths(config, platformSlug)
+            resolveSavePaths(config, platformSlug, gameId)
         }
 
         Logger.debug(TAG, "discoverSavePath: searching ${paths.size} paths for '$gameTitle' (romPath=$romPath)")
@@ -355,7 +351,7 @@ class SavePathResolver @Inject constructor(
             }
             listOf(effectivePath)
         } else {
-            SavePathRegistry.resolvePathWithPackage(config, emulatorPackage, context.filesDir.absolutePath, fal.externalStorageRoots())
+            resolveFolderBasePaths(config, emulatorPackage, gameId)
         }
         val resolvedPaths = if (selectedMemcardPath != null && platformSlug == "ps2") {
             listOf(selectedMemcardPath) + baseList.filterNot { it == selectedMemcardPath }
@@ -642,26 +638,33 @@ class SavePathResolver @Inject constructor(
     }
 
     /**
-     * Save directories the built-in core may have been launched with. GameLauncher honours a
-     * per-platform override then a global custom path, neither of which is stored in
-     * emulatorSaveConfig, so detection has to resolve them the same way or it searches only
-     * the defaults.
+     * The folder the user pointed this emulator at, or the folder Argosy settled on for it. The
+     * built-in core is the exception: its folder is owned by the libretro settings the launcher
+     * reads, and `resolveSavePaths` resolves it through [LibretroSavePathResolver] instead, so an
+     * `emulator_save_config` row keyed `builtin` is never a base here.
      */
-    private suspend fun builtinSaveDirOverrides(emulatorId: String, gameId: Long?): List<String> {
-        if (emulatorId != "builtin") return emptyList()
-
-        val platformOverride = gameId
-            ?.let { gameDao.getById(it) }
-            ?.let { platformLibretroSettingsDao.getByPlatformId(it.platformId) }
-            ?.savePath
-            ?.takeIf { it.isNotBlank() }
-
-        val globalOverride = builtinPreferences.getBuiltinEmulatorSettings().first()
-            .customSavePath
-            ?.takeIf { it.isNotBlank() }
-
-        return listOfNotNull(platformOverride, globalOverride).distinct()
+    private suspend fun userBaseOverride(configId: String, platformSlug: String?): String? {
+        if (configId == BUILTIN_ID) return null
+        return emulatorSaveConfigRepository.resolveEffectiveSavePath(configId, platformSlug)
     }
+
+    private suspend fun builtinSavesDir(config: SavePathConfig, gameId: Long?): String? {
+        if (config.emulatorId != BUILTIN_ID) return null
+        val platformId = gameId?.let { gameDao.getById(it) }?.platformId
+        return libretroSavePathResolver.liveSaveBaseDir(platformId).absolutePath
+    }
+
+    private suspend fun resolveFolderBasePaths(
+        config: SavePathConfig,
+        emulatorPackage: String?,
+        gameId: Long?
+    ): List<String> = SavePathRegistry.resolvePathWithPackage(
+        config,
+        emulatorPackage,
+        context.filesDir.absolutePath,
+        fal.externalStorageRoots(),
+        builtinSavesDir(config, gameId)
+    )
 
     private fun findSaveInPath(basePath: String, gameTitle: String, extensions: List<String>): String? {
         if (!fal.exists(basePath) || !fal.isDirectory(basePath)) {
@@ -759,8 +762,7 @@ class SavePathResolver @Inject constructor(
 
         val userConfig = emulatorSaveConfigDao.getByEmulator(config.emulatorId)
         val besideRomDir = if (userConfig?.savesBesideRom == true && romPath != null) File(romPath).parent else null
-        val overridePath = besideRomDir
-            ?: emulatorSaveConfigRepository.resolveEffectiveSavePath(config.emulatorId, platformSlug)
+        val overridePath = besideRomDir ?: userBaseOverride(config.emulatorId, platformSlug)
         val baseDir = if (overridePath != null) {
             if (directoryExists(overridePath) || saveArchiver.getFileForPath(overridePath).mkdirs()) {
                 overridePath
@@ -775,7 +777,7 @@ class SavePathResolver @Inject constructor(
         } else {
             null
         } ?: run {
-            val resolvedPaths = resolveSavePaths(config, platformSlug)
+            val resolvedPaths = resolveSavePaths(config, platformSlug, gameId)
             if (resolvedPaths.isEmpty()) {
                 Logger.debug(TAG, "constructSavePath: FAILED - no candidate paths | emulatorId=$emulatorId, platformSlug=$platformSlug, configEmulatorId=${config.emulatorId}")
             }
@@ -888,8 +890,7 @@ class SavePathResolver @Inject constructor(
         if (!config.usesFolderBasedSaves) return null
 
         val userConfig = emulatorSaveConfigDao.getByEmulator(config.emulatorId)
-        val basePathOverride =
-            emulatorSaveConfigRepository.resolveEffectiveSavePath(config.emulatorId, platformSlug)
+        val basePathOverride = userBaseOverride(config.emulatorId, platformSlug)
         val selectedMemcard =
             (emulatorConfigDao.getSelectedMemcardForGame(gameId) ?: userConfig?.selectedMemcardPath)
                 ?.takeIf { directoryExists(it) }
@@ -897,12 +898,13 @@ class SavePathResolver @Inject constructor(
         val baseDir = if (platformSlug == "switch") {
             switchSaveHandler.resolveBasePath(config, basePathOverride, emulatorPackage)
         } else {
+            val packaged = resolveFolderBasePaths(config, emulatorPackage, gameId)
             selectedMemcard
                 ?: saveHandlerRegistry.getFolderHandler(platformSlug)
                     ?.resolveBasePath(config, basePathOverride)
                 ?: basePathOverride
-                ?: config.defaultPaths.firstOrNull { directoryExists(it) }
-                ?: config.defaultPaths.firstOrNull()
+                ?: packaged.firstOrNull { directoryExists(it) }
+                ?: packaged.firstOrNull()
         } ?: return null
 
         if (!directoryExists(baseDir)) {
@@ -943,9 +945,15 @@ class SavePathResolver @Inject constructor(
         return emulatorConfigDao.getSavePathForGame(gameId)?.takeIf { it.isNotBlank() }
     }
 
-    private fun resolveSavePaths(config: SavePathConfig, platformSlug: String): List<String> {
+    private suspend fun resolveSavePaths(config: SavePathConfig, platformSlug: String, gameId: Long?): List<String> {
         val filesDir = if (config.usesInternalStorage) context.filesDir.absolutePath else null
-        return SavePathRegistry.resolvePath(config, platformSlug, filesDir, fal.externalStorageRoots())
+        return SavePathRegistry.resolvePath(
+            config,
+            platformSlug,
+            filesDir,
+            fal.externalStorageRoots(),
+            builtinSavesDir(config, gameId)
+        )
     }
 
     private fun directoryExists(path: String): Boolean = fal.exists(path) && fal.isDirectory(path)

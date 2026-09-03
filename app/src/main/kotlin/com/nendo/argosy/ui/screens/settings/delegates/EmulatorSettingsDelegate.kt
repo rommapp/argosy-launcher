@@ -358,6 +358,7 @@ class EmulatorSettingsDelegate @Inject constructor(
                         isUserOverride = false,
                         isEvaluatedDefault = resolution?.isEvaluatedDefault == true,
                         isFallbackDefault = resolution?.isFallbackDefault == true,
+                        isPreferredReadable = resolution?.preferredReadable != false,
                         chosenPath = null,
                         pathPresent = present,
                         shapeWarning = null
@@ -424,9 +425,11 @@ class EmulatorSettingsDelegate @Inject constructor(
         savePath: String?,
         isUserOverride: Boolean,
         platformSlug: String? = null,
+        platformId: Long? = null,
         emulatorPackage: String? = null,
         isEvaluatedDefault: Boolean = false,
-        isFallbackDefault: Boolean = false
+        isFallbackDefault: Boolean = false,
+        isPreferredReadable: Boolean = true
     ) {
         scope.launch {
             val config = emulatorSaveConfigRepository.getByEmulator(emulatorId)
@@ -449,9 +452,11 @@ class EmulatorSettingsDelegate @Inject constructor(
                         savePath = savePath,
                         isUserOverride = isUserOverride,
                         platformSlug = platformSlug,
+                        platformId = platformId,
                         emulatorPackage = emulatorPackage,
                         isEvaluatedDefault = isEvaluatedDefault,
                         isFallbackDefault = isFallbackDefault,
+                        isPreferredReadable = isPreferredReadable,
                         savesBesideRom = config?.savesBesideRom == true,
                         besideRomSupported = besideRomSupported,
                         pathPresent = pathPresent,
@@ -473,6 +478,23 @@ class EmulatorSettingsDelegate @Inject constructor(
             val enabled = !info.savesBesideRom
             emulatorSaveConfigRepository.setSavesBesideRom(info.emulatorId, enabled)
             _state.update { it.copy(savePathModalInfo = it.savePathModalInfo?.copy(savesBesideRom = enabled)) }
+        }
+    }
+
+    fun setModalSavePath(emulatorId: String, path: String?, isUserOverride: Boolean) {
+        _state.update { state ->
+            val info = state.savePathModalInfo?.takeIf { it.emulatorId == emulatorId } ?: return@update state
+            state.copy(
+                savePathModalInfo = info.copy(
+                    savePath = path,
+                    isUserOverride = isUserOverride,
+                    isEvaluatedDefault = false,
+                    isFallbackDefault = false,
+                    chosenPath = null,
+                    shapeWarning = null
+                ),
+                savePathModalButtonIndex = 0
+            )
         }
     }
 

@@ -1,5 +1,6 @@
 package com.nendo.argosy.data.emulator.savepath
 
+import com.nendo.argosy.data.emulator.LibretroSavePathResolver
 import com.nendo.argosy.data.emulator.SavePathConfig
 import com.nendo.argosy.data.repository.EmulatorSaveConfigRepository
 import com.nendo.argosy.data.storage.FileAccessLayer
@@ -26,10 +27,15 @@ class SavePathAuthorityTest {
 
     private val saveConfigRepo: EmulatorSaveConfigRepository = mockk(relaxed = true)
     private val fal: FileAccessLayer = mockk(relaxed = true)
+    private val libretroSavePathResolver: LibretroSavePathResolver = mockk(relaxed = true)
 
     private fun authority(candidates: List<String> = emptyList()) =
-        object : SavePathAuthority(saveConfigRepo, fal) {
-            override fun candidatePaths(config: SavePathConfig, emulatorPackage: String?) = candidates
+        object : SavePathAuthority(saveConfigRepo, fal, libretroSavePathResolver) {
+            override fun candidatePaths(
+                config: SavePathConfig,
+                emulatorPackage: String?,
+                builtinSavesDir: String?
+            ) = candidates
         }
 
     private val psp = SavePathRequest("psp", "ppsspp", PPSSPP_PKG)
@@ -214,6 +220,28 @@ class SavePathAuthorityTest {
         dirs(PPSSPP_SHARED, "ULUS10064DATA00")
 
         assertEquals(PPSSPP_SHARED, auth.ensureEvaluatedDefault(psp))
+    }
+
+    @Test
+    fun `an existing empty preferred folder outranks a readable root with no folder yet`() = runTest {
+        val auth = authority(pspCandidates)
+        nothingStored()
+        dirs(PPSSPP_ROOT, "files")
+        dirs(PPSSPP_OWN)
+
+        assertEquals(PPSSPP_OWN, auth.ensureEvaluatedDefault(psp))
+    }
+
+    @Test
+    fun `resolve reports whether the preferred folder could be read`() = runTest {
+        val auth = authority(pspCandidates)
+        coEvery { saveConfigRepo.resolveUserSavePath(any(), any()) } returns null
+        coEvery { saveConfigRepo.resolveEvaluatedSavePath("ppsspp") } returns PPSSPP_SHARED
+
+        assertFalse(auth.resolve(psp).preferredReadable)
+
+        dirs(PPSSPP_ROOT, "files")
+        assertTrue(auth.resolve(psp).preferredReadable)
     }
 
     @Test

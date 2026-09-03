@@ -1501,7 +1501,6 @@
 
     <string name="settings_platform_path_unconfigured">Nicht konfiguriert</string>
     <string name="settings_platform_path_custom_tag">(benutzerdefiniert)</string>
-    <string name="settings_platform_path_fallback_tag">(Ausweichordner)</string>
     <string name="settings_platform_rom_path_title">ROM-Pfad</string>
     <string name="settings_platform_save_path_title">Spielstand-Pfad</string>
     <string name="settings_platform_save_path_blocked">Zugriff blockiert -- eigenen Spielstand-Pfad festlegen</string>
@@ -1985,6 +1984,7 @@
     <string name="settings_save_path_modal_save_path_label">Spielstand-Pfad</string>
     <string name="settings_save_path_modal_note_missing">Dieser Ordner ist gerade nicht auf dem Gerät. Spielstände werden erst gefunden, wenn er es ist.</string>
     <string name="settings_save_path_modal_note_fallback">Argosy kann den eigenen Spielstand-Ordner von %1$s nicht lesen und nutzt daher diesen. Zurücksetzen, um es erneut zu prüfen.</string>
+    <string name="settings_save_path_modal_note_found_elsewhere">Die Spielstände von %1$s liegen hier statt im eigenen Ordner. Zurücksetzen, um es erneut zu prüfen.</string>
     <string name="settings_save_path_modal_note_moved">Verschoben dorthin, wo %1$s Spielstände tatsächlich ablegt, unterhalb des gewählten Ordners.</string>
     <string name="settings_save_path_modal_note_shape">Der Spielstand jedes Spiels liegt unter %1$s innerhalb dieses Ordners.</string>
     <string name="settings_save_path_modal_beside_rom_title">Neben ROM speichern</string>

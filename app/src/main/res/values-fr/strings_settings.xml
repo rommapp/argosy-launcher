@@ -1533,7 +1533,6 @@
 
     <string name="settings_platform_path_unconfigured">Non configuré</string>
     <string name="settings_platform_path_custom_tag">(personnalisé)</string>
-    <string name="settings_platform_path_fallback_tag">(repli)</string>
     <string name="settings_platform_rom_path_title">Chemin ROM</string>
     <string name="settings_platform_save_path_title">Chemin de sauvegarde</string>
     <string name="settings_platform_save_path_blocked">Accès bloqué -- définissez un chemin de sauvegarde personnalisé</string>
@@ -2026,6 +2025,7 @@
     <string name="settings_save_path_modal_save_path_label">Chemin de sauvegarde</string>
     <string name="settings_save_path_modal_note_missing">Ce dossier n\'est pas présent sur l\'appareil pour le moment. Les sauvegardes ne seront pas trouvées tant qu\'il ne l\'est pas.</string>
     <string name="settings_save_path_modal_note_fallback">Argosy ne peut pas lire le dossier de sauvegardes de %1$s, il utilise donc celui-ci. Réinitialisez pour vérifier à nouveau.</string>
+    <string name="settings_save_path_modal_note_found_elsewhere">Les sauvegardes de %1$s se trouvent ici plutôt que dans son propre dossier. Réinitialisez pour vérifier à nouveau.</string>
     <string name="settings_save_path_modal_note_moved">Déplacé vers l\'endroit où %1$s stocke réellement ses sauvegardes, sous le dossier que vous avez choisi.</string>
     <string name="settings_save_path_modal_note_shape">La sauvegarde de chaque jeu se trouve sous %1$s dans ce dossier.</string>
     <string name="settings_save_path_modal_beside_rom_title">Sauvegarder à côté de la ROM</string>

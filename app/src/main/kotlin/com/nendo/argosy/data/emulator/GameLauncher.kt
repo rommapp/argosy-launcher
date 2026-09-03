@@ -613,8 +613,7 @@ class GameLauncher @Inject constructor(
         val perGameSavePath = emulatorConfigDao.getSavePathForGame(game.id)?.takeIf { it.isNotBlank() }
         val effectiveSavePath = perGameSavePath
             ?: libretroSavePathResolver.liveSaveBaseDir(
-                platformSavePath = platformLibretroOverride?.savePath,
-                customSavePath = builtinSettings.customSavePath,
+                platformId = game.platformId,
                 besideRomDir = if (builtinBesideRom) romFile.parent else null,
             ).absolutePath
         val effectiveStatePath = libretroStatePathResolver

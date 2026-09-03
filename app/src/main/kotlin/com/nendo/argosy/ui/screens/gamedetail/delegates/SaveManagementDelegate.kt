@@ -191,7 +191,7 @@ class SaveManagementDelegate @Inject constructor(
             ?.takeIf { it.isNotBlank() }
             ?.let { return it }
         val config = SavePathRegistry.getConfig(emulatorId) ?: return null
-        return SavePathRegistry.resolvePathWithPackage(config, emulatorPackage).firstOrNull()
+        return SavePathRegistry.resolvePathWithPackage(config, emulatorPackage, context.filesDir.absolutePath).firstOrNull()
     }
 
     fun confirmSaveCacheSelection(

@@ -393,14 +393,14 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             val savePathRequest = com.nendo.argosy.data.emulator.savepath.SavePathRequest(
                 platformSlug = platform.slug,
                 emulatorId = emulatorId,
-                emulatorPackage = emulatorPackage
+                emulatorPackage = emulatorPackage,
+                platformId = platform.id
             )
             val savePathConfig = vm.savePathAuthority.configFor(savePathRequest)
             val showSavePath = savePathConfig != null
             val effectiveSaveConfigId = savePathConfig?.emulatorId
 
             val userSaveConfig = effectiveSaveConfigId?.let { vm.emulatorDelegate.getEmulatorSaveConfig(it) }
-            val isUserSavePathOverride = userSaveConfig?.isUserOverride == true
             val retroArchSave = if (isRetroArch && emulatorId != null && savePathConfig != null) {
                 vm.retroArchPathResolver.describeSavePath(
                     com.nendo.argosy.data.emulator.RetroArchPathResolver.Request(
@@ -414,6 +414,11 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             val savePathResolution = if (savePathConfig != null && retroArchSave == null) {
                 vm.savePathAuthority.resolve(savePathRequest)
             } else null
+            val isUserSavePathOverride = if (effectiveSaveConfigId == "builtin") {
+                savePathResolution?.source == com.nendo.argosy.data.emulator.savepath.SavePathSource.USER_OVERRIDE
+            } else {
+                userSaveConfig?.isUserOverride == true
+            }
             val effectiveSavePath = when {
                 savePathConfig == null -> null
                 retroArchSave != null -> when (val display = retroArchSave.path) {
@@ -445,6 +450,7 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
                 isUserSavePathOverride = isUserSavePathOverride,
                 isEvaluatedSavePath = savePathResolution?.isEvaluatedDefault == true,
                 isFallbackSavePath = savePathResolution?.isFallbackDefault == true,
+                isPreferredSavePathReadable = savePathResolution?.preferredReadable != false,
                 showSavePath = showSavePath,
                 retroArchConfigStatus = when (retroArchConfigSource) {
                     is RetroArchConfigSource.Loaded -> RetroArchConfigStatus.LOADED
@@ -706,10 +712,19 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
         ))
         vm.storageDelegate.checkAllFilesAccess()
         val platformEmulatorInfoMap = mutableMapOf<Long, StorageSettingsDelegate.PlatformEmulatorInfo>()
+        val builtinStateSettings = vm.libretroSettingsRepo.getBuiltinEmulatorSettings().first()
         for (config in platformConfigs) {
             val emulatorId = config.effectiveEmulatorId
             val userStateConfig = emulatorId?.let { vm.emulatorDelegate.getEmulatorSaveConfig(it) }
-            val isUserStatePathOverride = userStateConfig?.isUserStateOverride == true
+            val builtinStateOverride = if (emulatorId == "builtin") {
+                vm.libretroSettingsRepo.getByPlatformId(config.platform.id)?.statePath?.takeIf { it.isNotBlank() }
+                    ?: builtinStateSettings.customStatePath?.takeIf { it.isNotBlank() }
+            } else null
+            val isUserStatePathOverride = if (emulatorId == "builtin") {
+                builtinStateOverride != null
+            } else {
+                userStateConfig?.isUserStateOverride == true
+            }
             val userStatePathPattern = userStateConfig?.statePathPattern
 
             val statePath = when {
@@ -726,10 +741,9 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
                         com.nendo.argosy.data.emulator.RetroArchPathResolver.DisplayPath.Unknown -> null
                     }
                 }
-                isUserStatePathOverride && userStatePathPattern != null -> userStatePathPattern
                 config.effectiveEmulatorId == "builtin" ->
-                    com.nendo.argosy.data.emulator.StatePathRegistry.getConfig("builtin")
-                        ?.defaultPaths?.firstOrNull()
+                    builtinStateOverride ?: AppPaths.libretroStatesDir(vm.context.filesDir).absolutePath
+                isUserStatePathOverride && userStatePathPattern != null -> userStatePathPattern
                 else -> null
             }
 
@@ -762,6 +776,7 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
                 emulatorId = emulatorId,
                 effectiveSavePath = config.effectiveSavePath,
                 isUserSavePathOverride = config.isUserSavePathOverride,
+                isEvaluatedSavePath = config.isEvaluatedSavePath,
                 isFallbackSavePath = config.isFallbackSavePath,
                 effectiveStatePath = statePath,
                 isUserStatePathOverride = isUserStatePathOverride,

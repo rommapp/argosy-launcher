@@ -31,6 +31,9 @@ import com.nendo.argosy.ui.screens.settings.sections.storageFocusIndexOf
 import com.nendo.argosy.ui.screens.settings.sections.storageMediaVisibleLive
 import com.nendo.argosy.ui.screens.settings.sections.storageSteamVisibleLive
 import kotlinx.coroutines.flow.update
+import com.nendo.argosy.data.local.entity.PlatformLibretroSettingsEntity
+import com.nendo.argosy.util.AppPaths
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 // --- Navigation ---
@@ -294,9 +297,11 @@ internal fun routeShowSavePathModal(vm: SettingsViewModel, config: PlatformEmula
         savePath = config.effectiveSavePath,
         isUserOverride = config.isUserSavePathOverride,
         platformSlug = config.platform.slug,
+        platformId = config.platform.id,
         emulatorPackage = installedEmulator.def.packageName,
         isEvaluatedDefault = config.isEvaluatedSavePath,
-        isFallbackDefault = config.isFallbackSavePath
+        isFallbackDefault = config.isFallbackSavePath,
+        isPreferredReadable = config.isPreferredSavePathReadable
     )
 }
 
@@ -722,6 +727,18 @@ internal fun routeAdjustScreenDimmerLevel(vm: SettingsViewModel, delta: Int) {
 internal fun routeSetPlatformSavePath(vm: SettingsViewModel, platformId: Long, basePath: String) {
     val storageConfig = vm._uiState.value.storage.platformConfigs.find { it.platformId == platformId }
     val emulatorId = storageConfig?.emulatorId ?: return
+    if (emulatorId == "builtin") {
+        vm.viewModelScope.launch {
+            val current = vm.libretroSettingsRepo.getByPlatformId(platformId)
+                ?: PlatformLibretroSettingsEntity(platformId = platformId)
+            vm.libretroSettingsRepo.upsert(current.copy(savePath = basePath))
+            val evaluatedPath = routeComputeEvaluatedSavePath(vm, platformId, null)
+            vm.storageDelegate.updatePlatformSavePath(platformId, evaluatedPath?.path, true)
+            vm.emulatorDelegate.setModalSavePath(emulatorId, evaluatedPath?.path, isUserOverride = true)
+            vm.loadSettings()
+        }
+        return
+    }
     vm.emulatorDelegate.setEmulatorSavePath(vm.viewModelScope, emulatorId, basePath) { resolvedPath ->
         val evaluatedPath = routeComputeEvaluatedSavePath(vm, platformId, resolvedPath)
         vm.storageDelegate.updatePlatformSavePath(platformId, evaluatedPath?.path, true)
@@ -732,6 +749,22 @@ internal fun routeResetPlatformSavePath(vm: SettingsViewModel, platformId: Long)
     val storageConfig = vm._uiState.value.storage.platformConfigs.find { it.platformId == platformId }
     val emulatorId = storageConfig?.emulatorId ?: return
     val emulatorConfig = vm.emulatorDelegate.state.value.platforms.find { it.platform.id == platformId }
+    if (emulatorId == "builtin") {
+        vm.viewModelScope.launch {
+            vm.libretroSettingsRepo.getByPlatformId(platformId)?.let { current ->
+                val updated = current.copy(savePath = null)
+                if (updated.hasAnyOverrides()) vm.libretroSettingsRepo.upsert(updated)
+                else vm.libretroSettingsRepo.deleteByPlatformId(platformId)
+            }
+            val defaultPath = routeComputeEvaluatedSavePath(vm, platformId, null)
+            val stillOverridden = defaultPath != null &&
+                vm.libretroSettingsRepo.getBuiltinEmulatorSettings().first().customSavePath != null
+            vm.storageDelegate.updatePlatformSavePath(platformId, defaultPath?.path, stillOverridden)
+            vm.emulatorDelegate.setModalSavePath(emulatorId, defaultPath?.path, isUserOverride = stillOverridden)
+            vm.loadSettings()
+        }
+        return
+    }
     vm.emulatorDelegate.resetEmulatorSavePath(
         scope = vm.viewModelScope,
         emulatorId = emulatorId,
@@ -743,16 +776,31 @@ internal fun routeResetPlatformSavePath(vm: SettingsViewModel, platformId: Long)
             platformId,
             defaultPath?.path,
             isUserOverride = false,
+            isEvaluatedDefault = defaultPath?.isEvaluatedDefault == true,
             isFallbackDefault = defaultPath?.isFallbackDefault == true
         )
     }
 }
 
-internal data class DisplayedSavePath(val path: String, val isFallbackDefault: Boolean = false)
+internal data class DisplayedSavePath(
+    val path: String,
+    val isEvaluatedDefault: Boolean = false,
+    val isFallbackDefault: Boolean = false
+)
 
 internal fun routeSetPlatformStatePath(vm: SettingsViewModel, platformId: Long, basePath: String) {
     val storageConfig = vm._uiState.value.storage.platformConfigs.find { it.platformId == platformId }
     val emulatorId = storageConfig?.emulatorId ?: return
+    if (emulatorId == "builtin") {
+        vm.viewModelScope.launch {
+            val current = vm.libretroSettingsRepo.getByPlatformId(platformId)
+                ?: PlatformLibretroSettingsEntity(platformId = platformId)
+            vm.libretroSettingsRepo.upsert(current.copy(statePath = basePath))
+            vm.storageDelegate.updatePlatformStatePath(platformId, basePath, true)
+            vm.loadSettings()
+        }
+        return
+    }
     val evaluatedPath = routeComputeEvaluatedStatePath(vm, platformId, basePath)
     vm.emulatorDelegate.setEmulatorStatePath(vm.viewModelScope, emulatorId, basePath) {
         vm.storageDelegate.updatePlatformStatePath(platformId, evaluatedPath, true)
@@ -762,6 +810,20 @@ internal fun routeSetPlatformStatePath(vm: SettingsViewModel, platformId: Long, 
 internal fun routeResetPlatformStatePath(vm: SettingsViewModel, platformId: Long) {
     val storageConfig = vm._uiState.value.storage.platformConfigs.find { it.platformId == platformId }
     val emulatorId = storageConfig?.emulatorId ?: return
+    if (emulatorId == "builtin") {
+        vm.viewModelScope.launch {
+            vm.libretroSettingsRepo.getByPlatformId(platformId)?.let { current ->
+                val updated = current.copy(statePath = null)
+                if (updated.hasAnyOverrides()) vm.libretroSettingsRepo.upsert(updated)
+                else vm.libretroSettingsRepo.deleteByPlatformId(platformId)
+            }
+            val custom = vm.libretroSettingsRepo.getBuiltinEmulatorSettings().first().customStatePath
+            val defaultPath = custom ?: AppPaths.libretroStatesDir(vm.context.filesDir).absolutePath
+            vm.storageDelegate.updatePlatformStatePath(platformId, defaultPath, custom != null)
+            vm.loadSettings()
+        }
+        return
+    }
     vm.emulatorDelegate.resetEmulatorStatePath(vm.viewModelScope, emulatorId) {
         val defaultPath = routeComputeEvaluatedStatePath(vm, platformId, null)
         vm.storageDelegate.updatePlatformStatePath(platformId, defaultPath, false)
@@ -776,16 +838,19 @@ private suspend fun routeComputeEvaluatedSavePath(
     val emulatorConfig = vm.emulatorDelegate.state.value.platforms.find { it.platform.id == platformId }
         ?: return basePathOverride?.let { DisplayedSavePath(it) }
     if (!emulatorConfig.effectiveEmulatorIsRetroArch) {
-        if (basePathOverride != null) return DisplayedSavePath(basePathOverride)
-        val emulatorId = emulatorConfig.effectiveEmulatorId ?: return null
+        val emulatorId = emulatorConfig.effectiveEmulatorId ?: return basePathOverride?.let { DisplayedSavePath(it) }
+        if (basePathOverride != null && emulatorId != "builtin") return DisplayedSavePath(basePathOverride)
         val resolution = vm.savePathAuthority.resolve(
             com.nendo.argosy.data.emulator.savepath.SavePathRequest(
                 platformSlug = emulatorConfig.platform.slug,
                 emulatorId = emulatorId,
-                emulatorPackage = emulatorConfig.effectiveEmulatorPackage
+                emulatorPackage = emulatorConfig.effectiveEmulatorPackage,
+                platformId = platformId
             )
         )
-        return resolution.basePath?.let { DisplayedSavePath(it, resolution.isFallbackDefault) }
+        return resolution.basePath?.let {
+            DisplayedSavePath(it, resolution.isEvaluatedDefault, resolution.isFallbackDefault)
+        }
     }
 
     val packageName = emulatorConfig.effectiveEmulatorPackage

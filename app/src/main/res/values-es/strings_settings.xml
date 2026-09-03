@@ -1543,6 +1543,7 @@
 
     <string name="settings_platform_path_unconfigured">No configurada</string>
     <string name="settings_platform_path_custom_tag">(personalizada)</string>
+    <string name="settings_platform_path_fallback_tag">(alternativa)</string>
     <string name="settings_platform_rom_path_title">Ruta de ROM</string>
     <string name="settings_platform_save_path_title">Ruta de guardado</string>
     <string name="settings_platform_save_path_blocked">Acceso bloqueado: define una ruta de guardado personalizada</string>
@@ -2035,6 +2036,7 @@
     <string name="settings_save_path_modal_intro">Las rutas personalizadas ayudan a corregir la detección de guardados cuando Argosy no encuentra guardados que sincronizar. Esto no cambia dónde tu emulador guarda las partidas.</string>
     <string name="settings_save_path_modal_save_path_label">Ruta de guardado</string>
     <string name="settings_save_path_modal_note_missing">Esta carpeta no está en el dispositivo ahora mismo. No se encontrarán guardados hasta que lo esté.</string>
+    <string name="settings_save_path_modal_note_fallback">Argosy no puede leer la carpeta de guardados propia de %1$s, así que usa esta. Restablece para comprobarlo de nuevo.</string>
     <string name="settings_save_path_modal_note_moved">Se movió a donde %1$s realmente guarda las partidas, dentro de la carpeta que elegiste.</string>
     <string name="settings_save_path_modal_note_shape">El guardado de cada juego se encuentra en %1$s, dentro de esta carpeta.</string>
     <string name="settings_save_path_modal_beside_rom_title">Guardar junto a la ROM</string>
@@ -2045,6 +2047,7 @@
     <!-- ===== Save path option item (shared row inside SavePathModal) ===== -->
 
     <string name="settings_save_path_option_custom_badge">(personalizada)</string>
+    <string name="settings_save_path_option_detected_badge">(detectada)</string>
     <string name="settings_save_path_option_coming_soon">(próximamente)</string>
     <string name="settings_save_path_option_reset_button">Restablecer</string>
     <string name="settings_save_path_option_change_button">Cambiar</string>

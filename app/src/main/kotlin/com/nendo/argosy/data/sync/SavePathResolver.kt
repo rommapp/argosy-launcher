@@ -136,7 +136,7 @@ class SavePathResolver @Inject constructor(
         val candidates = buildList {
             perGameSaveDir(gameId, config, platformSlug)?.let { add(it) }
             if (userConfig?.savesBesideRom == true && romPath != null) File(romPath).parent?.let { add(it) }
-            emulatorSaveConfigRepository.resolveUserSavePath(effectiveEmulatorId, platformSlug)
+            emulatorSaveConfigRepository.resolveEffectiveSavePath(effectiveEmulatorId, platformSlug)
                 ?.let { add(it) }
             gameId?.let { emulatorConfigDao.getSelectedMemcardForGame(it) }?.let { add(it) }
             userConfig?.selectedMemcardPath?.let { add(it) }
@@ -213,7 +213,7 @@ class SavePathResolver @Inject constructor(
             com.nendo.argosy.data.emulator.RetroArchPathResolver.isRetroArch(effectiveEmulatorId)
         val besideRomBaseDir = if (userConfig?.savesBesideRom == true && romPath != null) File(romPath).parent else null
         val overrideBaseDir = besideRomBaseDir
-            ?: emulatorSaveConfigRepository.resolveUserSavePath(effectiveEmulatorId, platformSlug)
+            ?: emulatorSaveConfigRepository.resolveEffectiveSavePath(effectiveEmulatorId, platformSlug)
         val savePathOverrideForLog = overrideBaseDir
         val effectiveMemcard =
             (gameId?.let { emulatorConfigDao.getSelectedMemcardForGame(it) } ?: userConfig?.selectedMemcardPath)
@@ -464,10 +464,10 @@ class SavePathResolver @Inject constructor(
             return best.path
         }
 
-        if (PlatformDefinitions.getCanonicalSlug(platformSlug) == "psp") {
+        if (basePathOverride != null && PlatformDefinitions.getCanonicalSlug(platformSlug) == "psp") {
             val fallback = resolvedPaths.firstOrNull { directoryExists(it) }
             if (fallback != null) {
-                Logger.debug(TAG, "[SaveSync] DISCOVER | PSP fallback to existing parent for first-save watch | path=$fallback")
+                Logger.debug(TAG, "[SaveSync] DISCOVER | PSP fallback to the settled parent for first-save watch | path=$fallback")
                 return fallback
             }
         }
@@ -760,7 +760,7 @@ class SavePathResolver @Inject constructor(
         val userConfig = emulatorSaveConfigDao.getByEmulator(config.emulatorId)
         val besideRomDir = if (userConfig?.savesBesideRom == true && romPath != null) File(romPath).parent else null
         val overridePath = besideRomDir
-            ?: emulatorSaveConfigRepository.resolveUserSavePath(config.emulatorId, platformSlug)
+            ?: emulatorSaveConfigRepository.resolveEffectiveSavePath(config.emulatorId, platformSlug)
         val baseDir = if (overridePath != null) {
             if (directoryExists(overridePath) || saveArchiver.getFileForPath(overridePath).mkdirs()) {
                 overridePath
@@ -889,7 +889,7 @@ class SavePathResolver @Inject constructor(
 
         val userConfig = emulatorSaveConfigDao.getByEmulator(config.emulatorId)
         val basePathOverride =
-            emulatorSaveConfigRepository.resolveUserSavePath(config.emulatorId, platformSlug)
+            emulatorSaveConfigRepository.resolveEffectiveSavePath(config.emulatorId, platformSlug)
         val selectedMemcard =
             (emulatorConfigDao.getSelectedMemcardForGame(gameId) ?: userConfig?.selectedMemcardPath)
                 ?.takeIf { directoryExists(it) }
@@ -933,7 +933,7 @@ class SavePathResolver @Inject constructor(
         config: SavePathConfig,
         emulatorPackage: String?
     ): String? {
-        val basePathOverride = emulatorSaveConfigRepository.resolveUserSavePath(config.emulatorId, "switch")
+        val basePathOverride = emulatorSaveConfigRepository.resolveEffectiveSavePath(config.emulatorId, "switch")
         return switchSaveHandler.resolveSaveTargetPath(zipFile, config, emulatorPackage, basePathOverride)
     }
 

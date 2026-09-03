@@ -335,6 +335,7 @@ class StorageSettingsDelegate @Inject constructor(
                     emulatorId = info?.emulatorId,
                     effectiveSavePath = info?.effectiveSavePath,
                     isUserSavePathOverride = info?.isUserSavePathOverride ?: false,
+                    isFallbackSavePath = info?.isFallbackSavePath ?: false,
                     effectiveStatePath = info?.effectiveStatePath,
                     isUserStatePathOverride = info?.isUserStatePathOverride ?: false,
                     folderMemcardCount = info?.folderMemcardCount ?: -1,
@@ -350,14 +351,20 @@ class StorageSettingsDelegate @Inject constructor(
         pendingEmulatorInfo = infoMap
     }
 
-    fun updatePlatformSavePath(platformId: Long, savePath: String?, isUserOverride: Boolean) {
+    fun updatePlatformSavePath(
+        platformId: Long,
+        savePath: String?,
+        isUserOverride: Boolean,
+        isFallbackDefault: Boolean = false
+    ) {
         _state.update { current ->
             current.copy(
                 platformConfigs = current.platformConfigs.map { config ->
                     if (config.platformId == platformId) {
                         config.copy(
                             effectiveSavePath = savePath,
-                            isUserSavePathOverride = isUserOverride
+                            isUserSavePathOverride = isUserOverride,
+                            isFallbackSavePath = isFallbackDefault
                         )
                     } else config
                 },
@@ -672,7 +679,7 @@ class StorageSettingsDelegate @Inject constructor(
             2 -> {
                 if (buttonIndex == 0) {
                     openPlatformSavePathPicker(scope, platformId)
-                } else if (buttonIndex == 1 && config.isUserSavePathOverride) {
+                } else if (buttonIndex == 1 && config.canResetSavePath) {
                     resetPlatformSavePath(scope, platformId)
                 }
             }
@@ -740,6 +747,7 @@ class StorageSettingsDelegate @Inject constructor(
         val emulatorId: String?,
         val effectiveSavePath: String? = null,
         val isUserSavePathOverride: Boolean = false,
+        val isFallbackSavePath: Boolean = false,
         val effectiveStatePath: String? = null,
         val isUserStatePathOverride: Boolean = false,
         val folderMemcardCount: Int = -1,
@@ -767,7 +775,7 @@ class StorageSettingsDelegate @Inject constructor(
             val statePathIndex = if (config?.supportsStatePath == true) 3 else -1
             val hasReset = when (focusIndex) {
                 1 -> config?.customRomPath != null
-                2 -> config?.isUserSavePathOverride == true
+                2 -> config?.canResetSavePath == true
                 statePathIndex -> config?.isUserStatePathOverride == true
                 else -> false
             }

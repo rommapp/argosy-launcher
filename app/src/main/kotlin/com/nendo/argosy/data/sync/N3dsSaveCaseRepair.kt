@@ -62,7 +62,7 @@ class N3dsSaveCaseRepair @Inject constructor(
             ?: SavePathRegistry.getConfigForPlatform(emulatorId, game.platformSlug)
             ?: return@withContext
 
-        val override = emulatorSaveConfigRepository.resolveUserSavePath(config.emulatorId, game.platformSlug)
+        val override = emulatorSaveConfigRepository.resolveEffectiveSavePath(config.emulatorId, game.platformSlug)
         val basePaths = buildList {
             if (override != null) handler.resolveBasePath(config, override)?.let { add(it) }
             addAll(

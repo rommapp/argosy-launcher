@@ -52,14 +52,21 @@ fun SavePathModal(
             label = stringResource(R.string.settings_save_path_modal_save_path_label),
             path = info.savePath?.let { formatStoragePath(it) },
             isCustom = info.isUserOverride,
+            badge = when {
+                info.isUserOverride -> stringResource(R.string.settings_save_path_option_custom_badge)
+                info.isEvaluatedDefault -> stringResource(R.string.settings_save_path_option_detected_badge)
+                else -> null
+            },
             isFocused = focusIndex == 0,
             buttonFocusIndex = buttonFocusIndex,
             onClick = onChangeSavePath,
-            onReset = if (info.isUserOverride) onResetSavePath else null,
+            onReset = if (info.canReset) onResetSavePath else null,
             note = when {
                 info.savePath != null && !info.pathPresent ->
                     stringResource(R.string.settings_save_path_modal_note_missing)
                 info.shapeWarning != null -> info.shapeWarning
+                info.isFallbackDefault ->
+                    stringResource(R.string.settings_save_path_modal_note_fallback, info.emulatorName)
                 info.chosenPath != null ->
                     stringResource(R.string.settings_save_path_modal_note_moved, info.platformName)
                 info.unresolvedShape != null ->
@@ -107,7 +114,8 @@ private fun SavePathOptionItem(
     onReset: (() -> Unit)? = null,
     enabled: Boolean = true,
     note: String? = null,
-    noteIsWarning: Boolean = false
+    noteIsWarning: Boolean = false,
+    badge: String? = if (isCustom) stringResource(R.string.settings_save_path_option_custom_badge) else null
 ) {
     val focusContent = lerp(LocalArgosyTheme.current.focusAccent, Color.White, 0.45f)
     val contentColor = when {
@@ -155,9 +163,9 @@ private fun SavePathOptionItem(
                     style = MaterialTheme.typography.bodyMedium,
                     color = contentColor
                 )
-                if (isCustom) {
+                if (badge != null) {
                     Text(
-                        text = stringResource(R.string.settings_save_path_option_custom_badge),
+                        text = badge,
                         style = MaterialTheme.typography.labelSmall,
                         color = if (isFocused) focusContent else MaterialTheme.colorScheme.primary
                     )

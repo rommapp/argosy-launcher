@@ -411,6 +411,9 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
                 )
             } else null
             val retroArchConfigSource = retroArchSave?.source
+            val savePathResolution = if (savePathConfig != null && retroArchSave == null) {
+                vm.savePathAuthority.resolve(savePathRequest)
+            } else null
             val effectiveSavePath = when {
                 savePathConfig == null -> null
                 retroArchSave != null -> when (val display = retroArchSave.path) {
@@ -419,8 +422,7 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
                     is com.nendo.argosy.data.emulator.RetroArchPathResolver.DisplayPath.Resolved -> display.path
                     com.nendo.argosy.data.emulator.RetroArchPathResolver.DisplayPath.Unknown -> null
                 }
-                isUserSavePathOverride -> userSaveConfig?.savePathPattern
-                else -> SavePathRegistry.resolvePathWithPackage(savePathConfig, emulatorPackage).firstOrNull()
+                else -> savePathResolution?.basePath
             }
 
             val extensionOptions = EmulatorRegistry.getExtensionOptionsForPlatform(platform.slug)
@@ -441,6 +443,8 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
                 effectiveEmulatorName = effectiveEmulatorDef?.displayName ?: adHocConfig?.displayName,
                 effectiveSavePath = effectiveSavePath,
                 isUserSavePathOverride = isUserSavePathOverride,
+                isEvaluatedSavePath = savePathResolution?.isEvaluatedDefault == true,
+                isFallbackSavePath = savePathResolution?.isFallbackDefault == true,
                 showSavePath = showSavePath,
                 retroArchConfigStatus = when (retroArchConfigSource) {
                     is RetroArchConfigSource.Loaded -> RetroArchConfigStatus.LOADED
@@ -758,6 +762,7 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
                 emulatorId = emulatorId,
                 effectiveSavePath = config.effectiveSavePath,
                 isUserSavePathOverride = config.isUserSavePathOverride,
+                isFallbackSavePath = config.isFallbackSavePath,
                 effectiveStatePath = statePath,
                 isUserStatePathOverride = isUserStatePathOverride,
                 folderMemcardCount = folderMemcardCount,

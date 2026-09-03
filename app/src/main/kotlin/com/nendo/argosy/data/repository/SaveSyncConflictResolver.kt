@@ -412,7 +412,7 @@ class SaveSyncConflictResolver @Inject constructor(
         if (discovered != null) return discovered
 
         val userOverride = emulatorSaveConfigDao.getByEmulator(currentEmulatorId)
-            ?.takeIf { it.isUserOverride }
+            ?.takeIf { it.isUserOverride || it.isAutoDetected }
             ?.savePathPattern
             ?.takeIf { it.isNotBlank() }
         if (userOverride != null) return userOverride

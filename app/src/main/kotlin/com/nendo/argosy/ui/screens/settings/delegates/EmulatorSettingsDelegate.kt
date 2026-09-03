@@ -312,6 +312,8 @@ class EmulatorSettingsDelegate @Inject constructor(
                     savePathModalInfo = info.copy(
                         savePath = resolved,
                         isUserOverride = true,
+                        isEvaluatedDefault = false,
+                        isFallbackDefault = false,
                         chosenPath = path.takeIf { it != resolved },
                         pathPresent = present
                     )
@@ -321,13 +323,48 @@ class EmulatorSettingsDelegate @Inject constructor(
         }
     }
 
+    /**
+     * Clears the user's folder and, when the platform is known, looks again at which packaged
+     * folder Argosy can read. That second step is what lets a user who has since made the
+     * emulator's own folder readable move onto it without waiting for a session start.
+     */
     fun resetEmulatorSavePath(
         scope: CoroutineScope,
         emulatorId: String,
+        platformSlug: String? = null,
+        emulatorPackage: String? = null,
         onLoadSettings: suspend () -> Unit
     ) {
         scope.launch {
             emulatorSaveConfigRepository.resetSavePath(emulatorId)
+            val request = platformSlug?.let {
+                SavePathRequest(platformSlug = it, emulatorId = emulatorId, emulatorPackage = emulatorPackage)
+            }
+            val resolution = request?.let {
+                withContext(Dispatchers.IO) {
+                    savePathAuthority.ensureEvaluatedDefault(it)
+                    savePathAuthority.resolve(it)
+                }
+            }
+            val present = resolution?.basePath?.let {
+                withContext(Dispatchers.IO) { saveHandlerRegistry.pathIsPresent(it) }
+            } ?: true
+            _state.update { state ->
+                val info = state.savePathModalInfo ?: return@update state
+                if (info.emulatorId != emulatorId) return@update state
+                state.copy(
+                    savePathModalInfo = info.copy(
+                        savePath = resolution?.basePath ?: info.savePath,
+                        isUserOverride = false,
+                        isEvaluatedDefault = resolution?.isEvaluatedDefault == true,
+                        isFallbackDefault = resolution?.isFallbackDefault == true,
+                        chosenPath = null,
+                        pathPresent = present,
+                        shapeWarning = null
+                    ),
+                    savePathModalButtonIndex = 0
+                )
+            }
             onLoadSettings()
         }
     }
@@ -386,7 +423,10 @@ class EmulatorSettingsDelegate @Inject constructor(
         platformName: String,
         savePath: String?,
         isUserOverride: Boolean,
-        platformSlug: String? = null
+        platformSlug: String? = null,
+        emulatorPackage: String? = null,
+        isEvaluatedDefault: Boolean = false,
+        isFallbackDefault: Boolean = false
     ) {
         scope.launch {
             val config = emulatorSaveConfigRepository.getByEmulator(emulatorId)
@@ -408,6 +448,10 @@ class EmulatorSettingsDelegate @Inject constructor(
                         platformName = platformName,
                         savePath = savePath,
                         isUserOverride = isUserOverride,
+                        platformSlug = platformSlug,
+                        emulatorPackage = emulatorPackage,
+                        isEvaluatedDefault = isEvaluatedDefault,
+                        isFallbackDefault = isFallbackDefault,
                         savesBesideRom = config?.savesBesideRom == true,
                         besideRomSupported = besideRomSupported,
                         pathPresent = pathPresent,
@@ -528,8 +572,8 @@ class EmulatorSettingsDelegate @Inject constructor(
 
     fun moveSavePathModalButtonFocus(delta: Int) {
         _state.update { state ->
-            val hasReset = state.savePathModalInfo?.isUserOverride == true
-            val maxIndex = if (hasReset) 1 else 0 // 0 = Change, 1 = Reset (only if override exists)
+            val hasReset = state.savePathModalInfo?.canReset == true
+            val maxIndex = if (hasReset) 1 else 0
             val newIndex = (state.savePathModalButtonIndex + delta).coerceIn(0, maxIndex)
             state.copy(savePathModalButtonIndex = newIndex)
         }
@@ -954,8 +998,7 @@ class EmulatorSettingsDelegate @Inject constructor(
     ): List<com.nendo.argosy.data.sync.platform.MemcardInfo> {
         val canonicalId = com.nendo.argosy.data.emulator.SavePathRegistry
             .canonicalConfigId(emulatorId, emulatorPackage)
-        val userConfig = emulatorSaveConfigRepository.getByEmulator(canonicalId)
-        val basePathOverride = if (userConfig?.isUserOverride == true) userConfig.savePathPattern else null
+        val basePathOverride = emulatorSaveConfigRepository.resolveEffectiveSavePath(canonicalId, null)
         return saveHandlerRegistry.listPs2FolderMemcardsForEmulator(
             emulatorId = canonicalId,
             emulatorPackage = emulatorPackage,

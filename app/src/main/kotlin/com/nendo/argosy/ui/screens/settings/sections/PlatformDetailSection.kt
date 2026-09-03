@@ -590,6 +590,7 @@ fun PlatformDetailSection(
                 )
                 PlatformDetailItem.SavePath -> {
                     val hasOverride = storageConfig?.isUserSavePathOverride == true
+                    val isFallback = storageConfig?.isFallbackSavePath == true
                     val isBuiltinEmulator = config.effectiveEmulatorId == "builtin"
                     val accessBlocked = !isBuiltinEmulator && !config.effectiveEmulatorIsRetroArch &&
                         detail.packagePathAccessible == false && !hasOverride
@@ -603,14 +604,14 @@ fun PlatformDetailSection(
                             )
                             else -> formatPath(context, storageConfig?.effectiveSavePath)
                         },
-                        trailingText = if (hasOverride) {
-                            stringResource(R.string.settings_platform_path_custom_tag)
-                        } else {
-                            null
+                        trailingText = when {
+                            hasOverride -> stringResource(R.string.settings_platform_path_custom_tag)
+                            isFallback -> stringResource(R.string.settings_platform_path_fallback_tag)
+                            else -> null
                         },
                         isFocused = isFocused(item),
                         onClick = { viewModel.launchSavePathPicker(config.platform.id) },
-                        showResetButton = hasOverride,
+                        showResetButton = hasOverride || isFallback,
                         onReset = { viewModel.resetPlatformSavePath(config.platform.id) }
                     )
                 }

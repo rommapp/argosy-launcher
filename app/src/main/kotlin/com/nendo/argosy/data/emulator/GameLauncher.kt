@@ -717,7 +717,7 @@ class GameLauncher @Inject constructor(
         ) ?: return null
         val userConfig = emulatorSaveConfigRepository.getByEmulator(emulatorId)
         if (userConfig?.selectedMemcardPath != null) return null
-        val basePathOverride = if (userConfig?.isUserOverride == true) userConfig.savePathPattern else null
+        val basePathOverride = emulatorSaveConfigRepository.resolveEffectiveSavePath(emulatorId, game.platformSlug)
         val cards = saveHandlerRegistry.listPs2FolderMemcardsForEmulator(
             emulatorId = emulatorId,
             emulatorPackage = emulator.packageName,

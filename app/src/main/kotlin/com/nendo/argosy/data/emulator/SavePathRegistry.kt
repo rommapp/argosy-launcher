@@ -436,12 +436,17 @@ object SavePathRegistry {
             supported = true
         ),
 
-        // PSP - folder-based saves
+        /**
+         * PPSSPP on Android 11+ keeps its memory stick in its own `Android/data` folder unless the
+         * user points it elsewhere, so that folder leads and the shared `PSP` folder is the
+         * fallback for devices where Argosy cannot read it. `SavePathAuthority` settles which one
+         * applies once, at session start.
+         */
         "ppsspp" to SavePathConfig(
             emulatorId = "ppsspp",
             defaultPaths = listOf(
-                "{anyStorage}/PSP/SAVEDATA",
-                "{extStorage}/Android/data/org.ppsspp.ppsspp/files/PSP/SAVEDATA"
+                "{extStorage}/Android/data/org.ppsspp.ppsspp/files/PSP/SAVEDATA",
+                "{anyStorage}/PSP/SAVEDATA"
             ),
             saveExtensions = listOf("*"),
             usesFolderBasedSaves = true
@@ -449,8 +454,8 @@ object SavePathRegistry {
         "ppsspp_gold" to SavePathConfig(
             emulatorId = "ppsspp_gold",
             defaultPaths = listOf(
-                "{anyStorage}/PSP/SAVEDATA",
-                "{extStorage}/Android/data/org.ppsspp.ppssppgold/files/PSP/SAVEDATA"
+                "{extStorage}/Android/data/org.ppsspp.ppssppgold/files/PSP/SAVEDATA",
+                "{anyStorage}/PSP/SAVEDATA"
             ),
             saveExtensions = listOf("*"),
             usesFolderBasedSaves = true

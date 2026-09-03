@@ -77,11 +77,11 @@ class SavePathValidator @Inject constructor(
         emulatorPackage: String?,
         platformSlug: String? = null
     ): List<String> {
-        val userConfig = emulatorSaveConfigDao.getByEmulator(emulatorId)
-        return if (userConfig?.isUserOverride == true) {
-            val basePath = userConfig.savePathPattern
-            // Defer per-platform path normalization (e.g. 3DS Nintendo 3DS subfolder) to the
-            // platform handler so this validator stays platform-agnostic.
+        val basePath = emulatorSaveConfigDao.getByEmulator(emulatorId)
+            ?.takeIf { it.isUserOverride || it.isAutoDetected }
+            ?.savePathPattern
+            ?.takeIf { it.isNotBlank() }
+        return if (basePath != null) {
             val effectivePath = platformSlug?.let { slug ->
                 saveHandlerRegistry.getFolderHandler(slug)?.resolveBasePath(config, basePath)
             } ?: basePath

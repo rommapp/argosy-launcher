@@ -1491,6 +1491,7 @@
 
     <string name="settings_platform_path_unconfigured">कॉन्फ़िगर नहीं है</string>
     <string name="settings_platform_path_custom_tag">(कस्टम)</string>
+    <string name="settings_platform_path_fallback_tag">(वैकल्पिक)</string>
     <string name="settings_platform_rom_path_title">ROM पाथ</string>
     <string name="settings_platform_save_path_title">सेव पाथ</string>
     <string name="settings_platform_save_path_blocked">एक्सेस ब्लॉक्ड -- कस्टम सेव पाथ सेट करें</string>
@@ -1973,6 +1974,7 @@
     <string name="settings_save_path_modal_intro">जब Argosy सिंक करने के लिए सेव नहीं ढूँढ पाता तो कस्टम पाथ सेव पहचान ठीक करने में मदद करते हैं। इससे आपका एमुलेटर सेव कहाँ स्टोर करता है, यह नहीं बदलता।</string>
     <string name="settings_save_path_modal_save_path_label">सेव पाथ</string>
     <string name="settings_save_path_modal_note_missing">यह फ़ोल्डर अभी डिवाइस पर नहीं है। जब तक यह नहीं होगा, सेव नहीं मिलेंगे।</string>
+    <string name="settings_save_path_modal_note_fallback">Argosy %1$s का अपना सेव फ़ोल्डर नहीं पढ़ सकता, इसलिए यह फ़ोल्डर इस्तेमाल हो रहा है। दोबारा जाँचने के लिए रीसेट करें।</string>
     <string name="settings_save_path_modal_note_moved">%1$s वाकई जहाँ सेव रखता है वहाँ ले जाया गया, आपके चुने गए फ़ोल्डर के नीचे।</string>
     <string name="settings_save_path_modal_note_shape">हर गेम का सेव इस फ़ोल्डर के नीचे %1$s में रहता है।</string>
     <string name="settings_save_path_modal_beside_rom_title">ROM के बगल में सेव करें</string>
@@ -1983,6 +1985,7 @@
     <!-- ===== Save path option item (shared row inside SavePathModal) ===== -->
 
     <string name="settings_save_path_option_custom_badge">(कस्टम)</string>
+    <string name="settings_save_path_option_detected_badge">(पहचाना गया)</string>
     <string name="settings_save_path_option_coming_soon">(जल्द आ रहा है)</string>
     <string name="settings_save_path_option_reset_button">रीसेट करें</string>
     <string name="settings_save_path_option_change_button">बदलें</string>

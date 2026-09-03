@@ -1454,6 +1454,7 @@
 
     <string name="settings_platform_path_unconfigured">未配置</string>
     <string name="settings_platform_path_custom_tag">(自定义)</string>
+    <string name="settings_platform_path_fallback_tag">(备用)</string>
     <string name="settings_platform_rom_path_title">ROM路径</string>
     <string name="settings_platform_save_path_title">存档路径</string>
     <string name="settings_platform_save_path_blocked">访问被阻止 - 请设置自定义存档路径</string>
@@ -1924,6 +1925,7 @@
     <string name="settings_save_path_modal_intro">当Argosy找不到要同步的存档时，自定义路径有助于修复存档检测问题。这不会改变你的模拟器存储存档的位置。</string>
     <string name="settings_save_path_modal_save_path_label">存档路径</string>
     <string name="settings_save_path_modal_note_missing">此文件夹当前不在设备上。在它出现之前，无法找到存档。</string>
+    <string name="settings_save_path_modal_note_fallback">Argosy 无法读取 %1$s 自己的存档文件夹，因此改用此文件夹。重置以重新检查。</string>
     <string name="settings_save_path_modal_note_moved">已移动到%1$s存档实际所在的位置，位于你所选文件夹之下。</string>
     <string name="settings_save_path_modal_note_shape">每个游戏的存档都位于此文件夹下的%1$s中。</string>
     <string name="settings_save_path_modal_beside_rom_title">存档放在ROM旁</string>
@@ -1934,6 +1936,7 @@
     <!-- ===== Save path option item ===== -->
 
     <string name="settings_save_path_option_custom_badge">(自定义)</string>
+    <string name="settings_save_path_option_detected_badge">(已检测)</string>
     <string name="settings_save_path_option_coming_soon">(即将推出)</string>
     <string name="settings_save_path_option_reset_button">重置</string>
     <string name="settings_save_path_option_change_button">更改</string>

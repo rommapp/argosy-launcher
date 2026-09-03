@@ -17,6 +17,7 @@ enum class SavePathSource {
     PER_GAME,
     USER_OVERRIDE,
     RETROARCH_CFG,
+    EVALUATED_DEFAULT,
     REGISTRY_DEFAULT,
     NONE
 }
@@ -41,6 +42,10 @@ data class SavePathRequest(
  * [basePath] is the directory the platform scans from, and [unresolvedShape] is what still gets
  * appended per game, so a screen can show the user where saves really land instead of a base they
  * will not find them in. For a flat platform the shape is null.
+ *
+ * [preferredPath] is the folder the registry would pick first if it could be read. When an
+ * evaluated default settled on something else, the screen can say so rather than presenting the
+ * fallback as the answer.
  */
 data class SavePathResolution(
     val config: SavePathConfig?,
@@ -48,9 +53,13 @@ data class SavePathResolution(
     val basePath: String?,
     val unresolvedShape: String?,
     val source: SavePathSource,
-    val verdict: SavePathVerdict
+    val verdict: SavePathVerdict,
+    val preferredPath: String? = null
 ) {
     val isRetroArchManaged: Boolean get() = source == SavePathSource.RETROARCH_CFG
+    val isEvaluatedDefault: Boolean get() = source == SavePathSource.EVALUATED_DEFAULT
+    val isFallbackDefault: Boolean
+        get() = isEvaluatedDefault && preferredPath != null && basePath != preferredPath
 }
 
 /**
@@ -74,7 +83,7 @@ data class SavePathResolution(
  * the second is a valid override key, and only the first may be handed to sibling-family logic.
  */
 @Singleton
-class SavePathAuthority @Inject constructor(
+open class SavePathAuthority @Inject constructor(
     private val emulatorSaveConfigRepository: EmulatorSaveConfigRepository,
     private val fal: FileAccessLayer
 ) {
@@ -153,11 +162,65 @@ class SavePathAuthority @Inject constructor(
             return resolution(config, configId, override, SavePathSource.USER_OVERRIDE, request)
         }
 
-        val packaged = SavePathRegistry
-            .resolvePathWithPackage(config, request.emulatorPackage)
-            .firstOrNull()
-        return resolution(config, configId, packaged, SavePathSource.REGISTRY_DEFAULT, request)
+        val preferred = candidatePaths(config, request.emulatorPackage).firstOrNull()
+        val evaluated = configId?.let { emulatorSaveConfigRepository.resolveEvaluatedSavePath(it) }
+        if (evaluated != null) {
+            return resolution(config, configId, evaluated, SavePathSource.EVALUATED_DEFAULT, request, preferred)
+        }
+
+        return resolution(config, configId, preferred, SavePathSource.REGISTRY_DEFAULT, request, preferred)
     }
+
+    /**
+     * Settles which packaged folder [request] uses when the user has chosen none, and remembers
+     * the answer. Meant for session start, the one moment the emulator is known to be installed
+     * and its folders are about to be written.
+     *
+     * The candidates are tried in registry order. The first one Argosy can read that already
+     * holds saves wins, then the first readable one. When none can be seen nothing is written and
+     * the next session looks again. Once written, the choice holds until the user resets it: a
+     * folder that later becomes unreadable is reported as unreadable, never swapped for another.
+     *
+     * Only folder-based layouts on external storage take part. Internal layouts have one folder
+     * and RetroArch's own configuration decides its layout.
+     */
+    suspend fun ensureEvaluatedDefault(request: SavePathRequest): String? {
+        val config = configFor(request) ?: return null
+        if (!config.usesFolderBasedSaves || config.usesInternalStorage || isRetroArchManaged(config)) return null
+        val configId = config.emulatorId
+        if (emulatorSaveConfigRepository.resolveUserSavePath(configId, request.platformSlug) != null) return null
+        emulatorSaveConfigRepository.resolveEvaluatedSavePath(configId)?.let { return it }
+
+        val candidates = candidatePaths(config, request.emulatorPackage)
+        val chosen = candidates.firstOrNull { isReadable(it) && holdsEntries(it) }
+            ?: candidates.firstOrNull { isReadable(it) }
+            ?: return null
+        emulatorSaveConfigRepository.setEvaluatedSavePath(configId, chosen)
+        return chosen
+    }
+
+    protected open fun candidatePaths(config: SavePathConfig, emulatorPackage: String?): List<String> =
+        SavePathRegistry.resolvePathWithPackage(
+            config,
+            emulatorPackage,
+            externalStorageRoots = fal.externalStorageRoots()
+        )
+
+    /**
+     * Readable means listable, not merely present. For a folder inside another app's
+     * `Android/data` the test runs on the package root, which every installed app populates,
+     * so a save folder that does not exist yet does not disqualify a location Argosy can see.
+     */
+    private fun isReadable(path: String): Boolean {
+        val probe = packageDataRoot(path) ?: path
+        return fal.exists(probe) && fal.isDirectory(probe) && fal.listFiles(probe) != null
+    }
+
+    private fun holdsEntries(path: String): Boolean =
+        fal.listFiles(path)?.isNotEmpty() == true
+
+    private fun packageDataRoot(path: String): String? =
+        packageDataPattern.find(path)?.value
 
     /**
      * Whether a folder looks like somewhere this platform's saves live. Advisory only: a wrong
@@ -196,7 +259,8 @@ class SavePathAuthority @Inject constructor(
         configId: String?,
         basePath: String?,
         source: SavePathSource,
-        request: SavePathRequest
+        request: SavePathRequest,
+        preferredPath: String? = null
     ): SavePathResolution {
         val shape = basePath?.let { unresolvedShapeFor(config, request.platformSlug, it) }
         return SavePathResolution(
@@ -205,7 +269,12 @@ class SavePathAuthority @Inject constructor(
             basePath = basePath,
             unresolvedShape = shape,
             source = source,
-            verdict = basePath?.let { validate(it, config, request.platformSlug) } ?: SavePathVerdict.Ok
+            verdict = basePath?.let { validate(it, config, request.platformSlug) } ?: SavePathVerdict.Ok,
+            preferredPath = preferredPath
         )
+    }
+
+    private companion object {
+        val packageDataPattern = Regex(".*/Android/data/[^/]+")
     }
 }

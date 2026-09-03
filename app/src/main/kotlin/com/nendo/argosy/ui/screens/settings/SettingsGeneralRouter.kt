@@ -293,7 +293,10 @@ internal fun routeShowSavePathModal(vm: SettingsViewModel, config: PlatformEmula
         platformName = config.platform.name,
         savePath = config.effectiveSavePath,
         isUserOverride = config.isUserSavePathOverride,
-        platformSlug = config.platform.slug
+        platformSlug = config.platform.slug,
+        emulatorPackage = installedEmulator.def.packageName,
+        isEvaluatedDefault = config.isEvaluatedSavePath,
+        isFallbackDefault = config.isFallbackSavePath
     )
 }
 
@@ -721,18 +724,31 @@ internal fun routeSetPlatformSavePath(vm: SettingsViewModel, platformId: Long, b
     val emulatorId = storageConfig?.emulatorId ?: return
     vm.emulatorDelegate.setEmulatorSavePath(vm.viewModelScope, emulatorId, basePath) { resolvedPath ->
         val evaluatedPath = routeComputeEvaluatedSavePath(vm, platformId, resolvedPath)
-        vm.storageDelegate.updatePlatformSavePath(platformId, evaluatedPath, true)
+        vm.storageDelegate.updatePlatformSavePath(platformId, evaluatedPath?.path, true)
     }
 }
 
 internal fun routeResetPlatformSavePath(vm: SettingsViewModel, platformId: Long) {
     val storageConfig = vm._uiState.value.storage.platformConfigs.find { it.platformId == platformId }
     val emulatorId = storageConfig?.emulatorId ?: return
-    vm.emulatorDelegate.resetEmulatorSavePath(vm.viewModelScope, emulatorId) {
+    val emulatorConfig = vm.emulatorDelegate.state.value.platforms.find { it.platform.id == platformId }
+    vm.emulatorDelegate.resetEmulatorSavePath(
+        scope = vm.viewModelScope,
+        emulatorId = emulatorId,
+        platformSlug = storageConfig.platformSlug,
+        emulatorPackage = emulatorConfig?.effectiveEmulatorPackage
+    ) {
         val defaultPath = routeComputeEvaluatedSavePath(vm, platformId, null)
-        vm.storageDelegate.updatePlatformSavePath(platformId, defaultPath, false)
+        vm.storageDelegate.updatePlatformSavePath(
+            platformId,
+            defaultPath?.path,
+            isUserOverride = false,
+            isFallbackDefault = defaultPath?.isFallbackDefault == true
+        )
     }
 }
+
+internal data class DisplayedSavePath(val path: String, val isFallbackDefault: Boolean = false)
 
 internal fun routeSetPlatformStatePath(vm: SettingsViewModel, platformId: Long, basePath: String) {
     val storageConfig = vm._uiState.value.storage.platformConfigs.find { it.platformId == platformId }
@@ -752,44 +768,42 @@ internal fun routeResetPlatformStatePath(vm: SettingsViewModel, platformId: Long
     }
 }
 
-private fun routeComputeEvaluatedSavePath(vm: SettingsViewModel, platformId: Long, basePathOverride: String?): String? {
+private suspend fun routeComputeEvaluatedSavePath(
+    vm: SettingsViewModel,
+    platformId: Long,
+    basePathOverride: String?
+): DisplayedSavePath? {
     val emulatorConfig = vm.emulatorDelegate.state.value.platforms.find { it.platform.id == platformId }
-        ?: return basePathOverride
+        ?: return basePathOverride?.let { DisplayedSavePath(it) }
     if (!emulatorConfig.effectiveEmulatorIsRetroArch) {
-        if (basePathOverride != null) return basePathOverride
+        if (basePathOverride != null) return DisplayedSavePath(basePathOverride)
         val emulatorId = emulatorConfig.effectiveEmulatorId ?: return null
-        return vm.savePathAuthority.configFor(
+        val resolution = vm.savePathAuthority.resolve(
             com.nendo.argosy.data.emulator.savepath.SavePathRequest(
                 platformSlug = emulatorConfig.platform.slug,
                 emulatorId = emulatorId,
                 emulatorPackage = emulatorConfig.effectiveEmulatorPackage
             )
-        )?.let {
-            com.nendo.argosy.data.emulator.SavePathRegistry
-                .resolvePathWithPackage(it, emulatorConfig.effectiveEmulatorPackage)
-                .firstOrNull()
-        }
+        )
+        return resolution.basePath?.let { DisplayedSavePath(it, resolution.isFallbackDefault) }
     }
 
-    val packageName = emulatorConfig.effectiveEmulatorPackage ?: return basePathOverride
+    val packageName = emulatorConfig.effectiveEmulatorPackage
+        ?: return basePathOverride?.let { DisplayedSavePath(it) }
 
     if (basePathOverride == null) {
         val raConfig = vm.retroArchConfigParser.parse(packageName)
         if (raConfig?.savefilesInContentDir == true) {
-            return vm.context.getString(R.string.settings_shell_router_content_dir_save)
+            return DisplayedSavePath(vm.context.getString(R.string.settings_shell_router_content_dir_save))
         }
     }
-
-    // No specific ROM is in scope at the settings screen, so the content-dir sort suffix
-    // cannot be computed here -- resolveSavePaths will skip it when contentDirName is null.
-    val coreName = emulatorConfig.selectedCore
 
     return vm.retroArchConfigParser.resolveSavePaths(
         packageName = packageName,
         contentDirName = null,
-        coreName = coreName,
+        coreName = emulatorConfig.selectedCore,
         basePathOverride = basePathOverride
-    ).firstOrNull()
+    ).firstOrNull()?.let { DisplayedSavePath(it) }
 }
 
 private fun routeComputeEvaluatedStatePath(vm: SettingsViewModel, platformId: Long, basePathOverride: String?): String? {

@@ -62,6 +62,42 @@ class EmulatorSaveConfigRepository @Inject constructor(
             ?.savePathPattern
     }
 
+    /**
+     * The packaged folder Argosy settled on for [emulatorId] when no user choice exists. Written
+     * once by [setEvaluatedSavePath] and cleared only by [resetSavePath], so the answer holds
+     * across sessions instead of following whichever folder happens to be readable today.
+     */
+    suspend fun resolveEvaluatedSavePath(emulatorId: String): String? =
+        emulatorSaveConfigDao.getByEmulator(emulatorId)
+            ?.takeIf { it.isAutoDetected && !it.isUserOverride }
+            ?.savePathPattern
+            ?.takeIf { it.isNotBlank() }
+
+    /**
+     * The base folder every save-path consumer should use: the user's choice first, then the
+     * evaluated default. Null means the packaged candidates still decide.
+     */
+    suspend fun resolveEffectiveSavePath(emulatorId: String, platformSlug: String?): String? =
+        resolveUserSavePath(emulatorId, platformSlug) ?: resolveEvaluatedSavePath(emulatorId)
+
+    suspend fun setEvaluatedSavePath(emulatorId: String, path: String) {
+        val existing = emulatorSaveConfigDao.getByEmulator(emulatorId)
+        if (existing?.isUserOverride == true) return
+        val base = existing ?: EmulatorSaveConfigEntity(
+            emulatorId = emulatorId,
+            savePathPattern = path,
+            isAutoDetected = true
+        )
+        emulatorSaveConfigDao.upsert(
+            base.copy(
+                savePathPattern = path,
+                isAutoDetected = true,
+                isUserOverride = false,
+                lastVerifiedAt = Instant.now()
+            )
+        )
+    }
+
     suspend fun getAll(): List<EmulatorSaveConfigEntity> =
         emulatorSaveConfigDao.getAll()
 
@@ -130,8 +166,8 @@ class EmulatorSaveConfigRepository @Inject constructor(
 
     suspend fun resetStatePath(emulatorId: String) {
         val existing = emulatorSaveConfigDao.getByEmulator(emulatorId) ?: return
-        val hasSaveOverride = existing.isUserOverride && existing.savePathPattern.isNotEmpty()
-        if (hasSaveOverride) {
+        val hasSavePath = existing.savePathPattern.isNotEmpty()
+        if (hasSavePath) {
             emulatorSaveConfigDao.upsert(
                 existing.copy(
                     statePathPattern = null,
@@ -161,6 +197,7 @@ class EmulatorSaveConfigRepository @Inject constructor(
     suspend fun clearMemcardPath(emulatorId: String) {
         val existing = emulatorSaveConfigDao.getByEmulator(emulatorId) ?: return
         val hasOtherState = existing.isUserOverride ||
+            existing.savePathPattern.isNotEmpty() ||
             existing.isUserStateOverride ||
             existing.statePathPattern != null
         if (hasOtherState) {

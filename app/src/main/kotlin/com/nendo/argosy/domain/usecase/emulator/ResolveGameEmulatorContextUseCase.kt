@@ -68,7 +68,10 @@ class ResolveGameEmulatorContextUseCase @Inject constructor(
         val memcardUserConfig = memcardCanonicalId?.let {
             emulatorSaveConfigRepository.getByEmulator(it)
         }
-        val memcardBaseOverride = memcardUserConfig?.takeIf { it.isUserOverride }?.savePathPattern
+        val memcardBaseOverride = memcardUserConfig
+            ?.takeIf { it.isUserOverride || it.isAutoDetected }
+            ?.savePathPattern
+            ?.takeIf { it.isNotBlank() }
         val memcards = if (memcardCanonicalId != null) {
             withContext(Dispatchers.IO) {
                 saveHandlerRegistry.listPs2FolderMemcardsForEmulator(

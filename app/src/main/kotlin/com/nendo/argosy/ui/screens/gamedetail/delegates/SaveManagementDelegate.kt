@@ -185,10 +185,11 @@ class SaveManagementDelegate @Inject constructor(
                 com.nendo.argosy.data.emulator.RetroArchPathResolver.DisplayPath.Unknown -> null
             }
         }
-        val userConfig = emulatorSaveConfigDao.getByEmulator(emulatorId)
-        if (userConfig?.isUserOverride == true) {
-            return userConfig.savePathPattern
-        }
+        emulatorSaveConfigDao.getByEmulator(emulatorId)
+            ?.takeIf { it.isUserOverride || it.isAutoDetected }
+            ?.savePathPattern
+            ?.takeIf { it.isNotBlank() }
+            ?.let { return it }
         val config = SavePathRegistry.getConfig(emulatorId) ?: return null
         return SavePathRegistry.resolvePathWithPackage(config, emulatorPackage).firstOrNull()
     }

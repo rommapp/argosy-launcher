@@ -832,8 +832,15 @@ class SettingsViewModel @Inject constructor(
 
     fun setEmulatorSavePath(emulatorId: String, path: String) =
         emulatorDelegate.setEmulatorSavePath(viewModelScope, emulatorId, path) { loadSettings() }
-    fun resetEmulatorSavePath(emulatorId: String) =
-        emulatorDelegate.resetEmulatorSavePath(viewModelScope, emulatorId) { loadSettings() }
+    fun resetEmulatorSavePath(emulatorId: String) {
+        val info = emulatorDelegate.state.value.savePathModalInfo?.takeIf { it.emulatorId == emulatorId }
+        emulatorDelegate.resetEmulatorSavePath(
+            scope = viewModelScope,
+            emulatorId = emulatorId,
+            platformSlug = info?.platformSlug,
+            emulatorPackage = info?.emulatorPackage
+        ) { loadSettings() }
+    }
 
     fun showSavePathModal(config: PlatformEmulatorConfig) = routeShowSavePathModal(this, config)
 

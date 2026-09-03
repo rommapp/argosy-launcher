@@ -298,14 +298,15 @@ class PerGameSettingsDelegate @Inject constructor(
                 }
             }
             userSaveConfig?.isUserOverride == true -> userSaveConfig.savePathPattern
-            else -> SavePathRegistry.resolvePathWithPackage(saveConfig, effectivePackage).firstOrNull()
+            else -> emulatorSaveConfigRepository.resolveEvaluatedSavePath(saveConfig.emulatorId)
+                ?: SavePathRegistry.resolvePathWithPackage(saveConfig, effectivePackage).firstOrNull()
         }
 
         val showSaveBasePathRow = !showSavePathRow && saveConfig != null && saveConfig.supported
         val saveBasePath = if (!showSaveBasePathRow || saveConfig == null) {
             null
         } else {
-            emulatorSaveConfigRepository.resolveUserSavePath(saveConfig.emulatorId, game.platformSlug)
+            emulatorSaveConfigRepository.resolveEffectiveSavePath(saveConfig.emulatorId, game.platformSlug)
                 ?: SavePathRegistry.resolvePathWithPackage(saveConfig, effectivePackage).firstOrNull()
         }
         val saveBasePathIsInherited = saveBasePath != null &&

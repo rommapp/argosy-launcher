@@ -80,7 +80,7 @@ fun PlatformSettingsModal(
             isFocused = focusIndex == 2,
             buttonFocusIndex = buttonFocusIndex,
             onChange = onChangeSavePath,
-            onReset = if (config.isUserSavePathOverride) onResetSavePath else null
+            onReset = if (config.canResetSavePath) onResetSavePath else null
         )
 
         var nextIndex = 3

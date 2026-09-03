@@ -61,7 +61,7 @@ class SaveDownloader @Inject constructor(
      */
     private suspend fun overrideBaseFor(config: SavePathConfig?, platformSlug: String): String? =
         config?.emulatorId?.let {
-            emulatorSaveConfigRepository.resolveUserSavePath(it, platformSlug)
+            emulatorSaveConfigRepository.resolveEffectiveSavePath(it, platformSlug)
         }?.takeIf { it.isNotBlank() }
 
     suspend fun downloadSave(

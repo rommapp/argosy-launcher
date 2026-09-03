@@ -155,6 +155,8 @@ data class PlatformEmulatorConfig(
     val effectiveEmulatorName: String? = null,
     val effectiveSavePath: String? = null,
     val isUserSavePathOverride: Boolean = false,
+    val isEvaluatedSavePath: Boolean = false,
+    val isFallbackSavePath: Boolean = false,
     val showSavePath: Boolean = false,
     val retroArchConfigStatus: RetroArchConfigStatus = RetroArchConfigStatus.MISSING,
     val retroArchConfigPath: String? = null,
@@ -702,10 +704,19 @@ data class SavePathModalInfo(
     val platformName: String,
     val savePath: String?,
     val isUserOverride: Boolean,
+    val platformSlug: String? = null,
+    val emulatorPackage: String? = null,
     val savesBesideRom: Boolean = false,
     val besideRomSupported: Boolean = false,
     val chosenPath: String? = null,
     val pathPresent: Boolean = true,
+    /**
+     * Argosy settled on [savePath] itself at a session start rather than the user choosing it.
+     * [isFallbackDefault] narrows that to the case where the folder the registry prefers could
+     * not be read, which is the one worth telling the user about and offering a Reset for.
+     */
+    val isEvaluatedDefault: Boolean = false,
+    val isFallbackDefault: Boolean = false,
     /**
      * Why the chosen folder does not look like this platform's save location, when it does not.
      * Advisory: the path is still used, because a legitimate layout can sit outside the shapes
@@ -717,7 +728,9 @@ data class SavePathModalInfo(
      * per-game directory. Shown so the folder on screen matches what a file browser reveals.
      */
     val unresolvedShape: String? = null
-)
+) {
+    val canReset: Boolean get() = isUserOverride || isFallbackDefault
+}
 
 data class MemcardPickerInfo(
     val emulatorId: String,
@@ -743,13 +756,16 @@ data class PlatformStorageConfig(
     val effectiveSavePath: String? = null,
     val customSavePath: String? = null,
     val isUserSavePathOverride: Boolean = false,
+    val isFallbackSavePath: Boolean = false,
     val effectiveStatePath: String? = null,
     val customStatePath: String? = null,
     val isUserStatePathOverride: Boolean = false,
     val supportsStatePath: Boolean = false,
     val folderMemcardCount: Int = -1,
     val selectedMemcardPath: String? = null
-)
+) {
+    val canResetSavePath: Boolean get() = isUserSavePathOverride || isFallbackSavePath
+}
 
 data class StorageState(
     val romStoragePath: String = "",

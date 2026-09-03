@@ -2807,6 +2807,9 @@
     <string name="settings_platform_path_unconfigured">Not configured</string>
     <!-- Shown beside a folder row the user set themselves. Adjective in brackets. -->
     <string name="settings_platform_path_custom_tag">(custom)</string>
+    <!-- Tag on a platform's save path row when Argosy settled on a secondary folder because the
+         emulator's own folder could not be read. -->
+    <string name="settings_platform_path_fallback_tag">(fallback)</string>
     <!-- Row naming the folder this console's games sit in. "ROM" is the usual term for a game
          file. -->
     <string name="settings_platform_rom_path_title">ROM Path</string>
@@ -3740,6 +3743,9 @@
     <string name="settings_save_path_modal_save_path_label">Save Path</string>
     <!-- Warning note when the configured save folder does not currently exist on the device. -->
     <string name="settings_save_path_modal_note_missing">This folder isn\'t on the device right now. Saves won\'t be found until it is.</string>
+    <!-- Note when Argosy settled on a secondary save folder because the emulator's own folder
+         could not be read. %1$s is the emulator name. "Reset" names the button beside it. -->
+    <string name="settings_save_path_modal_note_fallback">Argosy can\'t read %1$s\'s own save folder, so it\'s using this one. Reset to check again.</string>
     <!-- Note explaining that Argosy adjusted a picked folder to the actual save location.
          %1$s is the platform name. -->
     <string name="settings_save_path_modal_note_moved">Moved to where %1$s saves actually live, below the folder you picked.</string>
@@ -3761,6 +3767,9 @@
 
     <!-- Badge marking a path the user has overridden from the default. -->
     <string name="settings_save_path_option_custom_badge">(custom)</string>
+    <!-- Badge marking a path Argosy settled on itself at a session start rather than the user
+         choosing it. -->
+    <string name="settings_save_path_option_detected_badge">(detected)</string>
     <!-- Shown next to a path row's label when the feature is not implemented yet. -->
     <string name="settings_save_path_option_coming_soon">(coming soon)</string>
     <!-- Button label. Verb: clear a custom path override. -->

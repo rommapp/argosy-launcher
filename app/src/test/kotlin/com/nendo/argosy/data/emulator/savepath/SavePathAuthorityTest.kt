@@ -1,24 +1,44 @@
 package com.nendo.argosy.data.emulator.savepath
 
+import com.nendo.argosy.data.emulator.SavePathConfig
 import com.nendo.argosy.data.repository.EmulatorSaveConfigRepository
 import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.data.storage.FileInfo
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 private const val DOLPHIN_PKG = "org.dolphinemu.dolphinemu"
+private const val PPSSPP_PKG = "org.ppsspp.ppsspp"
+private const val PPSSPP_ROOT = "/storage/emulated/0/Android/data/org.ppsspp.ppsspp"
+private const val PPSSPP_OWN = "$PPSSPP_ROOT/files/PSP/SAVEDATA"
+private const val PPSSPP_SHARED = "/storage/emulated/0/PSP/SAVEDATA"
 
 class SavePathAuthorityTest {
 
     private val saveConfigRepo: EmulatorSaveConfigRepository = mockk(relaxed = true)
     private val fal: FileAccessLayer = mockk(relaxed = true)
 
-    private fun authority() = SavePathAuthority(saveConfigRepo, fal)
+    private fun authority(candidates: List<String> = emptyList()) =
+        object : SavePathAuthority(saveConfigRepo, fal) {
+            override fun candidatePaths(config: SavePathConfig, emulatorPackage: String?) = candidates
+        }
+
+    private val psp = SavePathRequest("psp", "ppsspp", PPSSPP_PKG)
+    private val pspCandidates = listOf(PPSSPP_OWN, PPSSPP_SHARED)
+
+    private fun nothingStored() {
+        coEvery { saveConfigRepo.resolveUserSavePath(any(), any()) } returns null
+        coEvery { saveConfigRepo.resolveEvaluatedSavePath(any()) } returns null
+    }
 
     private fun dirs(path: String, vararg names: String) {
         every { fal.exists(path) } returns true
@@ -158,5 +178,95 @@ class SavePathAuthorityTest {
 
         dirs("/sd/wrong", "Cache", "Logs")
         assertTrue(auth.validate("/sd/wrong", config, "gc") is SavePathVerdict.LooksWrong)
+    }
+
+    /**
+     * PPSSPP's own folder is the preferred default. Readability is judged on the package root,
+     * which every installed app populates, so an empty save folder inside it still counts.
+     */
+    @Test
+    fun `ppsspp settles on its own folder when it can be read`() = runTest {
+        val auth = authority(pspCandidates)
+        nothingStored()
+        dirs(PPSSPP_ROOT, "files")
+        dirs(PPSSPP_OWN, "ULUS10064DATA00")
+
+        assertEquals(PPSSPP_OWN, auth.ensureEvaluatedDefault(psp))
+        coVerify { saveConfigRepo.setEvaluatedSavePath("ppsspp", PPSSPP_OWN) }
+    }
+
+    @Test
+    fun `ppsspp falls back to the shared folder when its own cannot be seen`() = runTest {
+        val auth = authority(pspCandidates)
+        nothingStored()
+        dirs(PPSSPP_SHARED, "ULUS10064DATA00")
+
+        assertEquals(PPSSPP_SHARED, auth.ensureEvaluatedDefault(psp))
+        coVerify { saveConfigRepo.setEvaluatedSavePath("ppsspp", PPSSPP_SHARED) }
+    }
+
+    @Test
+    fun `a folder that already holds saves outranks an empty preferred one`() = runTest {
+        val auth = authority(pspCandidates)
+        nothingStored()
+        dirs(PPSSPP_ROOT, "files")
+        dirs(PPSSPP_OWN)
+        dirs(PPSSPP_SHARED, "ULUS10064DATA00")
+
+        assertEquals(PPSSPP_SHARED, auth.ensureEvaluatedDefault(psp))
+    }
+
+    @Test
+    fun `nothing is written when no folder can be seen`() = runTest {
+        val auth = authority(pspCandidates)
+        nothingStored()
+
+        assertNull(auth.ensureEvaluatedDefault(psp))
+        coVerify(exactly = 0) { saveConfigRepo.setEvaluatedSavePath(any(), any()) }
+    }
+
+    /**
+     * Not on a whim: once a folder is settled, a session that could now read the preferred one
+     * does not move onto it. Only a reset does.
+     */
+    @Test
+    fun `an evaluated folder holds even when the preferred one becomes readable`() = runTest {
+        val auth = authority(pspCandidates)
+        coEvery { saveConfigRepo.resolveUserSavePath(any(), any()) } returns null
+        coEvery { saveConfigRepo.resolveEvaluatedSavePath("ppsspp") } returns PPSSPP_SHARED
+        dirs(PPSSPP_ROOT, "files")
+        dirs(PPSSPP_OWN, "ULUS10064DATA00")
+
+        assertEquals(PPSSPP_SHARED, auth.ensureEvaluatedDefault(psp))
+        coVerify(exactly = 0) { saveConfigRepo.setEvaluatedSavePath(any(), any()) }
+
+        val resolution = auth.resolve(psp)
+        assertEquals(SavePathSource.EVALUATED_DEFAULT, resolution.source)
+        assertEquals(PPSSPP_SHARED, resolution.basePath)
+        assertEquals(PPSSPP_OWN, resolution.preferredPath)
+        assertTrue("the shared folder is a fallback from the preferred one", resolution.isFallbackDefault)
+    }
+
+    @Test
+    fun `an evaluated folder that is the preferred one is not a fallback`() = runTest {
+        val auth = authority(pspCandidates)
+        coEvery { saveConfigRepo.resolveUserSavePath(any(), any()) } returns null
+        coEvery { saveConfigRepo.resolveEvaluatedSavePath("ppsspp") } returns PPSSPP_OWN
+
+        val resolution = auth.resolve(psp)
+        assertEquals(SavePathSource.EVALUATED_DEFAULT, resolution.source)
+        assertFalse(resolution.isFallbackDefault)
+    }
+
+    @Test
+    fun `a user override outranks evaluation and is never overwritten by it`() = runTest {
+        val auth = authority(pspCandidates)
+        coEvery { saveConfigRepo.resolveUserSavePath("ppsspp", "psp") } returns "/sd/psp-saves"
+        dirs(PPSSPP_ROOT, "files")
+        dirs(PPSSPP_OWN, "ULUS10064DATA00")
+
+        assertNull(auth.ensureEvaluatedDefault(psp))
+        coVerify(exactly = 0) { saveConfigRepo.setEvaluatedSavePath(any(), any()) }
+        assertEquals(SavePathSource.USER_OVERRIDE, auth.resolve(psp).source)
     }
 }

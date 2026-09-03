@@ -73,6 +73,7 @@ sealed class SessionEndResult {
     data object Success : SessionEndResult()
     data object Duplicate : SessionEndResult()
     data object Skipped : SessionEndResult()
+    data class SaveUnreadable(val dirPath: String, val emulatorId: String) : SessionEndResult()
     data class Error(val message: String) : SessionEndResult()
 }
 
@@ -107,7 +108,9 @@ class PlaySessionTracker @Inject constructor(
     private val fileAccessLayer: FileAccessLayer,
     private val socialRepository: dagger.Lazy<SocialRepository>,
     private val saveRecoveryGate: com.nendo.argosy.data.sync.SaveRecoveryGate,
-    private val reconcileAchievementsOnSessionEndUseCase: dagger.Lazy<com.nendo.argosy.domain.usecase.achievement.ReconcileAchievementsOnSessionEndUseCase>
+    private val reconcileAchievementsOnSessionEndUseCase: dagger.Lazy<com.nendo.argosy.domain.usecase.achievement.ReconcileAchievementsOnSessionEndUseCase>,
+    private val savePathAuthority: com.nendo.argosy.data.emulator.savepath.SavePathAuthority,
+    private val saveAccessNotices: com.nendo.argosy.data.sync.SaveAccessNotices
 ) {
     companion object {
         private const val TAG = "PlaySessionTracker"
@@ -117,6 +120,8 @@ class PlaySessionTracker @Inject constructor(
     private val sessionStateStore by lazy { SessionStateStore(application) }
     private val endingSession = AtomicBoolean(false)
     private val saveObserved = AtomicBoolean(false)
+    @Volatile
+    private var unreadableSaveDir: Pair<String, String>? = null
     private val sessionServiceMutex = Mutex()
     private val sessionServiceStarted = AtomicBoolean(false)
 
@@ -637,6 +642,13 @@ class PlaySessionTracker @Inject constructor(
         val isVariant = _activeSession.value?.variantFileId != null
 
         val savePath = if (!isVariant && emulatorId != null && SavePathRegistry.getConfig(emulatorId) != null) {
+            savePathAuthority.ensureEvaluatedDefault(
+                com.nendo.argosy.data.emulator.savepath.SavePathRequest(
+                    platformSlug = game.platformSlug,
+                    emulatorId = emulatorId,
+                    emulatorPackage = emulatorPackage
+                )
+            )?.let { Logger.info(TAG, "[GameSession] Save folder settled | emulatorId=$emulatorId, path=$it") }
             saveSyncRepository.get().discoverSavePath(
                 emulatorId = emulatorId,
                 gameTitle = game.title,
@@ -799,7 +811,9 @@ class PlaySessionTracker @Inject constructor(
                     is SaveCacheManager.CacheResult.Created -> SessionEndResult.Success
                     is SaveCacheManager.CacheResult.Duplicate -> SessionEndResult.Duplicate
                     is SaveCacheManager.CacheResult.Failed -> SessionEndResult.Error("Failed to cache save")
-                    null -> SessionEndResult.Skipped
+                    null -> unreadableSaveDir
+                        ?.let { (dir, emulatorId) -> SessionEndResult.SaveUnreadable(dir, emulatorId) }
+                        ?: SessionEndResult.Skipped
                 }
             } catch (e: Exception) {
                 Logger.error(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Session end failed", e)
@@ -845,6 +859,7 @@ class PlaySessionTracker @Inject constructor(
     }
 
     private suspend fun syncAndCacheSave(session: ActiveSession): SaveCacheManager.CacheResult? {
+        unreadableSaveDir = null
         saveCacheDao.clearAllDirtyFlags(session.gameId, activeSaveRepository.activeOwnerId())
 
         val cacheResult = cacheCurrentSave(session)
@@ -1190,7 +1205,7 @@ class PlaySessionTracker @Inject constructor(
                 return null
             }
 
-            val savePath = saveSyncRepository.get().discoverSavePath(
+            val lookup = saveSyncRepository.get().discoverSavePathChecked(
                 emulatorId = emulatorId,
                 gameTitle = game.title,
                 platformSlug = game.platformSlug,
@@ -1200,6 +1215,13 @@ class PlaySessionTracker @Inject constructor(
                 emulatorPackage = session.emulatorPackage,
                 gameId = session.gameId
             )
+            if (lookup is com.nendo.argosy.data.sync.SaveLookup.Unreadable) {
+                Logger.warn(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Save folder exists but cannot be read | dir=${lookup.dirPath}, emulator=$emulatorId")
+                saveAccessNotices.record(lookup.dirPath, emulatorId)
+                unreadableSaveDir = lookup.dirPath to emulatorId
+                return null
+            }
+            val savePath = (lookup as? com.nendo.argosy.data.sync.SaveLookup.Found)?.path
 
             if (savePath != null) {
                 val activeChannel = if (session.isHardcore) null else session.channelName

@@ -234,7 +234,7 @@ class SaveSyncViewModel @Inject constructor(
         val rows = attentionRows + inProgressRows + gameRows
         val resolvedFocus = resolveFocusKey(focusedKey, rows)
 
-        val accessNotice = if (!prefs.secureSaves && inaccessibleLocations.isNotEmpty()) {
+        val accessNotice = if (inaccessibleLocations.isNotEmpty()) {
             SaveAccessNoticeUi(
                 count = inaccessibleLocations.size,
                 emulatorNames = inaccessibleLocations

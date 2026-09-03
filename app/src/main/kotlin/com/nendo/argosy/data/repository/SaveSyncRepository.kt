@@ -152,6 +152,26 @@ class SaveSyncRepository @Inject constructor(
 
     suspend fun clearDirtyFlags(gameId: Long) = entityManager.clearDirtyFlags(gameId)
 
+    suspend fun discoverSavePathChecked(
+        emulatorId: String,
+        gameTitle: String,
+        platformSlug: String,
+        romPath: String? = null,
+        cachedSaveId: String? = null,
+        coreName: String? = null,
+        emulatorPackage: String? = null,
+        gameId: Long? = null
+    ): com.nendo.argosy.data.sync.SaveLookup = apiClient.discoverSavePathChecked(
+        emulatorId = emulatorId,
+        gameTitle = gameTitle,
+        platformSlug = platformSlug,
+        romPath = romPath,
+        cachedSaveId = cachedSaveId,
+        coreName = coreName,
+        emulatorPackage = emulatorPackage,
+        gameId = gameId
+    )
+
     suspend fun discoverSavePath(
         emulatorId: String,
         gameTitle: String,

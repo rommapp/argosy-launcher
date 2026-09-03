@@ -9,7 +9,8 @@ import javax.inject.Singleton
 
 /**
  * In-memory record of save locations that exist on-system but cannot be read, surfaced as a
- * passive notice on the save sync screen. Populated only by secure-saves-OFF flows.
+ * passive notice on the save sync screen. Fed by the secure-saves-OFF scan and by session end,
+ * whichever finds the folder first.
  */
 @Singleton
 class SaveAccessNotices @Inject constructor() {

@@ -619,6 +619,20 @@ class GameLaunchDelegate @Inject constructor(
                         android.util.Log.d("GameLaunchDelegate", "[DualSync] Session end was ${result::class.simpleName}, clearing overlay")
                         _syncOverlayState.value = null
                     }
+                    is SessionEndResult.SaveUnreadable -> {
+                        forceStopIfVita3K(scope, session)
+                        showBlockedOverlay(
+                            gameTitle = gameTitle,
+                            progress = SyncProgress.BlockedReason.AccessDenied(
+                                EmulatorRegistry.getById(result.emulatorId)?.displayName ?: emulatorName,
+                                result.dirPath,
+                                platformSlug = game?.platformSlug
+                            ),
+                            scope = scope,
+                            onSyncComplete = onSyncComplete
+                        )
+                        return@launch
+                    }
                     is SessionEndResult.Error -> {
                         android.util.Log.w("GameLaunchDelegate", "[DualSync] Session end error: ${result.message}")
                         _syncOverlayState.value = SyncOverlayState(gameTitle, SyncProgress.Error(result.message))

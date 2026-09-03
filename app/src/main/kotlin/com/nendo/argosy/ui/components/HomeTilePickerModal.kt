@@ -146,7 +146,7 @@ fun HomeTilePickerModal(
         } else {
             stringResource(R.string.ui_tile_picker_subtitle_matching, query)
         },
-        baseWidth = Dimens.modalWidthLg,
+        baseWidth = Dimens.modalWidthXl,
         onDismiss = onDismiss
     ) {
         TilePickerTabs(

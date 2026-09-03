@@ -113,13 +113,10 @@ data class RandomTileFilters(
 )
 
 /**
- * The floor [target] imposes on a tile's span. Everything but media and a summary of numbers
- * sits happily in one cell.
+ * The floor [target] imposes on a tile's span. Everything but media sits happily in one cell.
  */
 fun minimumSpanFor(target: HomeTileTargetRef): Int = when (target) {
     is HomeTileTargetRef.Media, is HomeTileTargetRef.LocalMedia -> MEDIA_TILE_MIN_SPAN
-    is HomeTileTargetRef.Feature ->
-        if (target.kind == FeatureTileKind.RA_SUMMARY) MEDIA_TILE_MIN_SPAN else 1
     else -> 1
 }
 

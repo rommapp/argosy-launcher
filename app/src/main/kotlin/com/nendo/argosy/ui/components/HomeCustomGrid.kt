@@ -22,6 +22,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Casino
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.outlined.Layers
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -145,7 +147,17 @@ data class CustomGridTileContent(
      * Marks a random game tile, which otherwise looks exactly like the game it happens to be
      * showing. The die badge and the re-roll animation hang off this.
      */
-    val isRandom: Boolean = false
+    val isRandom: Boolean = false,
+    /**
+     * Marks the continue tile, which likewise looks exactly like the game it last showed.
+     */
+    val isContinue: Boolean = false,
+    /**
+     * Marks a tile that is a card of numbers rather than a thing with a cover. It keeps the
+     * icon-and-text layout in every cell shape instead of taking the wide cover-plus-facts layout
+     * a game would.
+     */
+    val isSummary: Boolean = false
 )
 
 /**
@@ -395,7 +407,7 @@ private fun CustomGridCellBox(
         return
     }
 
-    if (rect.columnSpan > rect.rowSpan && content != null && !content.isMissing) {
+    if (rect.columnSpan > rect.rowSpan && content != null && !content.isMissing && !content.isSummary) {
         WideTileBox(
             placement = placement,
             content = content,
@@ -499,8 +511,15 @@ private fun CustomGridCellBox(
                     CollectionQueueBadge(modifier = Modifier.align(Alignment.TopStart))
                 }
                 if (content.isRandom) {
-                    RandomTileBadge(
+                    TileKindBadge(
+                        icon = Icons.Filled.Casino,
                         rotation = reroll.rotation,
+                        modifier = Modifier.align(Alignment.TopStart)
+                    )
+                }
+                if (content.isContinue) {
+                    TileKindBadge(
+                        icon = Icons.Filled.History,
                         modifier = Modifier.align(Alignment.TopStart)
                     )
                 }
@@ -578,6 +597,18 @@ private fun CustomGridCellBox(
                     )
                     content.isRandom -> Icon(
                         imageVector = Icons.Filled.Casino,
+                        contentDescription = null,
+                        tint = theme.textDim,
+                        modifier = Modifier.size(Dimens.iconXl)
+                    )
+                    content.isContinue -> Icon(
+                        imageVector = Icons.Filled.History,
+                        contentDescription = null,
+                        tint = theme.textDim,
+                        modifier = Modifier.size(Dimens.iconXl)
+                    )
+                    content.isSummary -> Icon(
+                        imageVector = Icons.Filled.EmojiEvents,
                         contentDescription = null,
                         tint = theme.textDim,
                         modifier = Modifier.size(Dimens.iconXl)
@@ -743,11 +774,16 @@ private fun CollectionQueueBadge(modifier: Modifier = Modifier) {
 }
 
 /**
- * The die in the corner of a random game tile. [rotation] is the re-roll spin, so the badge is
- * what visibly rolls when the pick changes.
+ * The badge in the corner of a feature tile that otherwise looks like a plain game: a die for a
+ * random pick, a clock for the continue tile. [rotation] is the re-roll spin, so on a random tile
+ * the die is what visibly rolls when the pick changes.
  */
 @Composable
-private fun RandomTileBadge(rotation: Float, modifier: Modifier = Modifier) {
+private fun TileKindBadge(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    modifier: Modifier = Modifier,
+    rotation: Float = 0f
+) {
     val theme = LocalArgosyTheme.current
     Box(
         modifier = modifier
@@ -757,7 +793,7 @@ private fun RandomTileBadge(rotation: Float, modifier: Modifier = Modifier) {
             .padding(Dimens.spacingXs)
     ) {
         Icon(
-            imageVector = Icons.Filled.Casino,
+            imageVector = icon,
             contentDescription = null,
             tint = theme.textPrimary,
             modifier = Modifier
@@ -910,8 +946,15 @@ private fun WideTileBox(
                     )
                 }
                 if (content.isRandom) {
-                    RandomTileBadge(
+                    TileKindBadge(
+                        icon = Icons.Filled.Casino,
                         rotation = reroll.rotation,
+                        modifier = Modifier.align(Alignment.TopStart)
+                    )
+                }
+                if (content.isContinue) {
+                    TileKindBadge(
+                        icon = Icons.Filled.History,
                         modifier = Modifier.align(Alignment.TopStart)
                     )
                 }

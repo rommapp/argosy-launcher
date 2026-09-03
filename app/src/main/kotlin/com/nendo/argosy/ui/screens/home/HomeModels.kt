@@ -729,13 +729,15 @@ data class HomeUiState(
                 label = game?.title
                     ?: context.getString(R.string.home_grid_tile_feature_continue_empty),
                 subtitle = context.getString(R.string.home_grid_tile_feature_continue_label),
-                stats = game?.let { com.nendo.argosy.ui.components.tileStatsFor(it, context) }.orEmpty()
+                stats = game?.let { com.nendo.argosy.ui.components.tileStatsFor(it, context) }.orEmpty(),
+                isContinue = true
             )
         }
         com.nendo.argosy.domain.model.FeatureTileKind.RA_SUMMARY -> {
             val summary = raTileSummary
             com.nendo.argosy.ui.components.CustomGridTileContent(
                 game = null,
+                isSummary = true,
                 label = summary?.username
                     ?: context.getString(R.string.home_grid_tile_feature_ra_label),
                 subtitle = when {

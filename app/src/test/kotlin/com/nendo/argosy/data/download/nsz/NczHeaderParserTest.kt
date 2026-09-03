@@ -58,6 +58,19 @@ class NczHeaderParserTest {
     }
 
     @Test
+    fun `parse reads a header with thousands of sections`() {
+        val sections = (0 until 4008).map { index ->
+            TestSection(0x4000L + index * 0x1000L, 0x1000, 3)
+        }
+
+        val data = buildNczsectnHeader(sections = sections)
+        val result = NczHeaderParser.parse(ByteArrayInputStream(data))
+
+        assertEquals(4008, result.sections.size)
+        assertEquals(0x4000L + 4007 * 0x1000L, result.sections.last().offset)
+    }
+
+    @Test
     fun `parse detects NCZBLOCK header`() {
         val sectionData = buildNczsectnHeader(
             sections = listOf(
@@ -110,11 +123,12 @@ class NczHeaderParserTest {
 
     @Test(expected = IOException::class)
     fun `parse throws on excessive section count`() {
-        val buf = ByteBuffer.allocate(16)
-            .order(ByteOrder.LITTLE_ENDIAN)
-        buf.put("NCZSECTN".toByteArray())
-        buf.putLong(999)
-        NczHeaderParser.parse(ByteArrayInputStream(buf.array()))
+        val sections = (0 until 32769).map { index ->
+            TestSection(0x4000L + index * 0x1000L, 0x1000, 3)
+        }
+
+        val data = buildNczsectnHeader(sections = sections)
+        NczHeaderParser.parse(ByteArrayInputStream(data))
     }
 
     private data class TestSection(

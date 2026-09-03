@@ -286,6 +286,74 @@ class SavePathAuthorityTest {
         assertFalse(resolution.isFallbackDefault)
     }
 
+    private fun builtinAuthority() =
+        object : SavePathAuthority(saveConfigRepo, fal, libretroSavePathResolver) {
+            override fun candidatePaths(
+                config: SavePathConfig,
+                emulatorPackage: String?,
+                builtinSavesDir: String?
+            ) = listOf("$builtinSavesDir/PSP/SAVEDATA")
+        }
+
+    private val builtinPsp = SavePathRequest("psp", "builtin", "argosy.builtin.libretro", platformId = 7L)
+
+    @Test
+    fun `the built-in core resolves through the libretro save directory and names the source`() = runTest {
+        val auth = builtinAuthority()
+        coEvery { libretroSavePathResolver.liveSaveBaseDir(any(), any()) } returns java.io.File("/sd/argosy-saves")
+        every { libretroSavePathResolver.isDefaultBase(any()) } returns false
+
+        val resolution = auth.resolve(builtinPsp)
+
+        assertEquals("/sd/argosy-saves/PSP/SAVEDATA", resolution.basePath)
+        assertEquals(SavePathSource.USER_OVERRIDE, resolution.source)
+        coVerify(exactly = 0) { saveConfigRepo.resolveUserSavePath(any(), any()) }
+    }
+
+    @Test
+    fun `the built-in default base reads as the registry default`() = runTest {
+        val auth = builtinAuthority()
+        coEvery { libretroSavePathResolver.liveSaveBaseDir(any(), any()) } returns java.io.File("/data/app/files/libretro/saves")
+        every { libretroSavePathResolver.isDefaultBase(any()) } returns true
+
+        val resolution = auth.resolve(builtinPsp)
+
+        assertEquals("/data/app/files/libretro/saves/PSP/SAVEDATA", resolution.basePath)
+        assertEquals(SavePathSource.REGISTRY_DEFAULT, resolution.source)
+    }
+
+    @Test
+    fun `the built-in core is never evaluated`() = runTest {
+        val auth = builtinAuthority()
+
+        assertNull(auth.ensureEvaluatedDefault(builtinPsp))
+        coVerify(exactly = 0) { saveConfigRepo.setEvaluatedSavePath(any(), any()) }
+    }
+
+    @Test
+    fun `a psp save folder is accepted at any level of the memory stick`() {
+        val auth = authority()
+        val config = auth.configFor(psp)
+
+        assertEquals(SavePathVerdict.Ok, auth.validate("/sd/MemStick/PSP/SAVEDATA", config, "psp"))
+        dirs("/sd/MemStick/PSP", "SAVEDATA", "SYSTEM")
+        assertEquals(SavePathVerdict.Ok, auth.validate("/sd/MemStick/PSP", config, "psp"))
+        dirs("/sd/MemStick", "PSP")
+        assertEquals(SavePathVerdict.Ok, auth.validate("/sd/MemStick", config, "psp"))
+    }
+
+    @Test
+    fun `a folder with no psp markers is flagged and an unlistable one is unreadable`() {
+        val auth = authority()
+        val config = auth.configFor(psp)
+
+        dirs("/sd/Downloads", "Cache", "Logs")
+        assertTrue(auth.validate("/sd/Downloads", config, "psp") is SavePathVerdict.LooksWrong)
+
+        unlistable("/sd/gone")
+        assertEquals(SavePathVerdict.Unreadable, auth.validate("/sd/gone", config, "psp"))
+    }
+
     @Test
     fun `a user override outranks evaluation and is never overwritten by it`() = runTest {
         val auth = authority(pspCandidates)

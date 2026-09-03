@@ -176,6 +176,97 @@ class SavePathResolverDiscoveryTest {
         assertEquals(File(customDir, "Zelda.srm").absolutePath, result)
     }
 
+    @Test
+    fun `builtin global custom path is the construct target as well`() = runTest {
+        val customDir = File(tempDir, "custom/saves").apply { mkdirs() }
+        builtinSettings = com.nendo.argosy.data.preferences.BuiltinEmulatorSettings(
+            customSavePath = customDir.absolutePath
+        )
+        stubBuiltinSettings()
+        val rom = File(tempDir, "roms/Zelda.gba").apply {
+            parentFile?.mkdirs()
+            writeBytes(byteArrayOf(1))
+        }
+
+        val result = resolver.constructSavePath(
+            emulatorId = "builtin", gameTitle = "Zelda", platformSlug = "gba",
+            romPath = rom.absolutePath, gameId = 1L,
+        )
+
+        assertEquals(File(customDir, "Zelda.srm").absolutePath, result)
+    }
+
+    /**
+     * The launcher gives a per-platform libretro path precedence over the global custom path, so
+     * discovery and the download target have to land in the same place or a restore is written
+     * where the core never reads.
+     */
+    @Test
+    fun `builtin per-platform path beats the global custom path for discover and construct`() = runTest {
+        val customDir = File(tempDir, "custom/saves").apply { mkdirs() }
+        val platformDir = File(tempDir, "custom/gba-only").apply { mkdirs() }
+        builtinSettings = com.nendo.argosy.data.preferences.BuiltinEmulatorSettings(
+            customSavePath = customDir.absolutePath
+        )
+        stubBuiltinSettings()
+        coEvery { gameDao.getById(1L) } returns rommGame().copy(platformId = 10L, platformSlug = "gba")
+        coEvery { platformLibretroSettingsDao.getByPlatformId(10L) } returns
+            com.nendo.argosy.data.local.entity.PlatformLibretroSettingsEntity(
+                platformId = 10L, savePath = platformDir.absolutePath
+            )
+        File(customDir, "Zelda.srm").writeBytes(byteArrayOf(2))
+        val platformSave = File(platformDir, "Zelda.srm").apply { writeBytes(byteArrayOf(1)) }
+        val rom = File(tempDir, "roms/Zelda.gba").apply {
+            parentFile?.mkdirs()
+            writeBytes(byteArrayOf(1))
+        }
+
+        val discovered = resolver.discoverSavePath(
+            emulatorId = "builtin", gameTitle = "Zelda", platformSlug = "gba",
+            romPath = rom.absolutePath, gameId = 1L,
+        )
+        val constructed = resolver.constructSavePath(
+            emulatorId = "builtin", gameTitle = "Zelda", platformSlug = "gba",
+            romPath = rom.absolutePath, gameId = 1L,
+        )
+
+        assertEquals(platformSave.absolutePath, discovered)
+        assertEquals(platformSave.absolutePath, constructed)
+    }
+
+    /**
+     * The Save Path modal used to write a `builtin` row the launcher never read, and discovery
+     * then searched only that row. The row is inert now: the live directory decides.
+     */
+    @Test
+    fun `a builtin override row is ignored in favour of the live save directory`() = runTest {
+        stubBuiltinSettings()
+        val staleDir = File(tempDir, "Documents/saves").apply { mkdirs() }
+        coEvery { emulatorSaveConfigDao.getByEmulator("builtin") } returns
+            EmulatorSaveConfigEntity(
+                emulatorId = "builtin", savePathPattern = staleDir.absolutePath,
+                isAutoDetected = false, isUserOverride = true,
+            )
+        val savesDir = File(tempDir, "libretro/saves").apply { mkdirs() }
+        val liveSave = File(savesDir, "Zelda.srm").apply { writeBytes(byteArrayOf(1)) }
+        val rom = File(tempDir, "roms/Zelda.gba").apply {
+            parentFile?.mkdirs()
+            writeBytes(byteArrayOf(1))
+        }
+
+        val discovered = resolver.discoverSavePath(
+            emulatorId = "builtin", gameTitle = "Zelda", platformSlug = "gba",
+            romPath = rom.absolutePath, gameId = 1L,
+        )
+        val constructed = resolver.constructSavePath(
+            emulatorId = "builtin", gameTitle = "Zelda", platformSlug = "gba",
+            romPath = rom.absolutePath, gameId = 1L,
+        )
+
+        assertEquals(liveSave.absolutePath, discovered)
+        assertEquals(liveSave.absolutePath, constructed)
+    }
+
     @After
     fun tearDown() {
         unmockkStatic(Environment::class)

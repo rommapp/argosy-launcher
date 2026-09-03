@@ -199,7 +199,34 @@ private class PspFolderHandler(
         private const val TAG = "PspFolderHandler"
         private const val PARAM_SFO = "PARAM.SFO"
         private const val MAX_SFO_BYTES = 64 * 1024L
+        private const val SAVEDATA_DIR = "SAVEDATA"
+        private const val PSP_DIR = "PSP"
         private val SAVEDATA_KEYS = listOf("SAVEDATA_PARAMS", "SAVEDATA_FILE_LIST")
+    }
+
+    /**
+     * PPSSPP's memory stick, its `PSP` folder and the `SAVEDATA` folder inside it are all places a
+     * user pointing at "the PSP saves" lands, so a chosen path is walked down to `SAVEDATA`. A
+     * path already at or below it is trimmed back to it.
+     */
+    override fun normalizeBasePath(path: String): String {
+        val trimmed = path.trimEnd('/')
+        val segments = trimmed.split('/')
+        val savedataIndex = segments.indexOfLast { it.equals(SAVEDATA_DIR, ignoreCase = true) }
+        if (savedataIndex >= 0) {
+            return segments.take(savedataIndex + 1).joinToString("/")
+        }
+
+        val candidates = listOf(
+            "$trimmed/$SAVEDATA_DIR",
+            "$trimmed/$PSP_DIR/$SAVEDATA_DIR"
+        )
+        val resolved = candidates.firstOrNull { fal.exists(it) && fal.isDirectory(it) }
+        if (resolved != null) {
+            Logger.debug(TAG, "normalizeBasePath: resolved SAVEDATA below the chosen path | chosen=$path, base=$resolved")
+            return resolved
+        }
+        return trimmed
     }
 
     override fun findAllSaveFoldersBySaveId(basePath: String, saveId: String): List<String> =

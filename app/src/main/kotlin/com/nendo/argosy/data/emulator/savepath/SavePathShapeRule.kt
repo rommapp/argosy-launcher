@@ -117,6 +117,30 @@ class GciShapeRule : SavePathShapeRule {
 }
 
 /**
+ * PSP saves sit in `SAVEDATA` under the memory stick's `PSP` folder. The memory stick root, the
+ * `PSP` folder and `SAVEDATA` itself all resolve downwards, so all three are accepted; anything
+ * without those markers is usually an unrelated folder and worth naming.
+ */
+class PspShapeRule : SavePathShapeRule {
+    override fun appliesTo(config: SavePathConfig, platformSlug: String): Boolean =
+        PlatformDefinitions.getCanonicalSlug(platformSlug) == "psp"
+
+    override fun validate(path: String, config: SavePathConfig, fal: FileAccessLayer): SavePathVerdict {
+        if (path.trimEnd('/').substringAfterLast('/').equals("savedata", ignoreCase = true)) return SavePathVerdict.Ok
+        return listDirectories(fal, path).verdictOr { entries ->
+            val lower = entries.map { it.lowercase() }
+            if ("savedata" in lower || "psp" in lower) {
+                SavePathVerdict.Ok
+            } else {
+                SavePathVerdict.LooksWrong(
+                    "No SAVEDATA folder here. Pick the memory stick folder, its PSP folder, or SAVEDATA inside it."
+                )
+            }
+        }
+    }
+}
+
+/**
  * The 3DS save tree hangs off the emulated SD card root, the `Nintendo 3DS` directory.
  */
 class N3dsShapeRule : SavePathShapeRule {

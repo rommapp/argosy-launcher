@@ -142,10 +142,9 @@ object NczHeaderParser {
 
     private fun parseBlockHeader(input: InputStream): NczBlockHeader {
         val version = readExact(input, 1)[0].toInt() and 0xFF
-        require(version == 1) { "Unsupported NCZBLOCK version: $version" }
+        require(version == 1 || version == 2) { "Unsupported NCZBLOCK version: $version" }
 
-        val typeBytes = readExact(input, 1)[0].toInt() and 0xFF
-        require(typeBytes == 0) { "Unsupported NCZBLOCK type: $typeBytes" }
+        val typeBytes = readExact(input, 1)
 
         val unused = readExact(input, 1)
 

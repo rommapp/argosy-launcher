@@ -68,7 +68,6 @@ class GamepadInputHandler @Inject constructor(
     private var modifierState = ModifierState.IDLE
     private var comboMap: Map<GamepadEvent, GamepadEvent> = emptyMap()
 
-    var onActivity: (() -> Unit)? = null
     override var lastInputDevice: InputDevice? = null
         private set
 
@@ -167,7 +166,6 @@ class GamepadInputHandler @Inject constructor(
     fun handleKeyEvent(event: KeyEvent): Boolean {
         if (event.action == KeyEvent.ACTION_DOWN) {
             lastInputDevice = event.device
-            onActivity?.invoke()
             com.nendo.argosy.util.Logger.verbose("GamepadInput") { "KeyEvent: keyCode=${event.keyCode}, scanCode=${event.scanCode}, device=${event.device?.name}" }
         }
 

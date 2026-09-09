@@ -60,7 +60,6 @@ import com.nendo.argosy.data.netplay.VerifySubState
 import com.nendo.argosy.ui.components.CoreCrashModal
 import com.nendo.argosy.ui.components.SaveConflictModal
 import com.nendo.argosy.ui.components.ScreenDimmerOverlay
-import com.nendo.argosy.ui.components.rememberScreenDimmerState
 import com.nendo.argosy.ui.input.GamepadEvent
 import com.nendo.argosy.ui.input.InputDispatcher
 import com.nendo.argosy.ui.input.InputHandler
@@ -160,7 +159,6 @@ fun ArgosyApp(
     val netplayInvitePrompt by viewModel.netplayInvitePrompt.collectAsState()
     val netplayInviteFocusIndex by viewModel.netplayInviteFocusIndex.collectAsState()
     val netplayJoinState by viewModel.netplayJoinState.collectAsState()
-    val screenDimmerState = rememberScreenDimmerState()
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
@@ -975,12 +973,6 @@ fun ArgosyApp(
         inputDispatcher.blockInputFor(Motion.transitionDebounceMs)
     }
 
-    // Reset dim timer on any gamepad key press and activity lifecycle events
-    LaunchedEffect(Unit) {
-        viewModel.gamepadInputHandler.onActivity = { screenDimmerState.recordActivity() }
-        (context as? com.nendo.argosy.MainActivity)?.onDimmerActivity = { screenDimmerState.recordActivity() }
-    }
-
     // Collect gamepad events (Menu toggles drawer, L3 toggles quick menu, R3 toggles quick settings)
     LaunchedEffect(Unit) {
         viewModel.gamepadInputHandler.eventFlow().collect { input ->
@@ -1119,14 +1111,21 @@ fun ArgosyApp(
 
         val isDarkTheme = LocalLauncherTheme.current.isDarkTheme
         val scrimColor = if (isDarkTheme) Color.Black.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.35f)
-        val dimmerEnabled = screenDimmerPrefs.enabled && !isEmulatorRunning && !uiState.isFirstRun
+        val dimmerDsm = activity?.dualScreenManager
+        val lastUserActivityAtMs by (
+            dimmerDsm?.lastUserActivityAtMs
+                ?: remember { kotlinx.coroutines.flow.MutableStateFlow(0L) }
+            ).collectAsState()
+        val dimmerEnabled = dimmerDsm != null &&
+            screenDimmerPrefs.enabled && !isEmulatorRunning && !uiState.isFirstRun
         val bottomReserved = gripReserveBottomInset()
 
         ScreenDimmerOverlay(
             enabled = dimmerEnabled,
             timeoutMs = screenDimmerPrefs.timeoutMinutes * 60_000L,
             dimLevel = screenDimmerPrefs.level / 100f,
-            dimmerState = screenDimmerState
+            lastActivityAtMs = lastUserActivityAtMs,
+            onWake = { dimmerDsm?.notifyUserActivity("mainDimmerTap") }
         ) {
             var keySinkFocused by remember { mutableStateOf(false) }
             val imeManager = remember(context) {

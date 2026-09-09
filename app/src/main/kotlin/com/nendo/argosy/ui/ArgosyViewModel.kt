@@ -40,6 +40,7 @@ import com.nendo.argosy.data.sync.ConflictResolution
 import com.nendo.argosy.data.sync.SyncQueueManager
 import com.nendo.argosy.ui.components.SaveConflictInfo
 import com.nendo.argosy.data.preferences.ThemeMode
+import com.nendo.argosy.data.preferences.UserPreferences
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.ConnectionState
 import com.nendo.argosy.data.remote.romm.RomMRepository
@@ -156,6 +157,12 @@ data class ScreenDimmerPreferences(
     val enabled: Boolean = true,
     val timeoutMinutes: Int = 2,
     val level: Int = 30
+)
+
+fun UserPreferences.toScreenDimmerPreferences() = ScreenDimmerPreferences(
+    enabled = screenDimmerEnabled,
+    timeoutMinutes = screenDimmerTimeoutMinutes,
+    level = screenDimmerLevel
 )
 
 data class DrawerItem(
@@ -916,13 +923,7 @@ class ArgosyViewModel @Inject constructor(
             )
 
     val screenDimmerPreferences: StateFlow<ScreenDimmerPreferences> = preferencesRepository.userPreferences
-        .map { prefs ->
-            ScreenDimmerPreferences(
-                enabled = prefs.screenDimmerEnabled,
-                timeoutMinutes = prefs.screenDimmerTimeoutMinutes,
-                level = prefs.screenDimmerLevel
-            )
-        }
+        .map { it.toScreenDimmerPreferences() }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),

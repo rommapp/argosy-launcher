@@ -405,7 +405,14 @@ class DualScreenManager(
 
     private var userIdleJob: Job? = null
 
-    private var lastUserActivityAtMs = android.os.SystemClock.elapsedRealtime()
+    private val _lastUserActivityAtMs = MutableStateFlow(android.os.SystemClock.elapsedRealtime())
+
+    /**
+     * When the person last did something, as [android.os.SystemClock.elapsedRealtime], raised by
+     * [notifyUserActivity]. This is the one idle clock: anything that dims or sleeps a screen on
+     * inactivity derives from it, so input on either display resets both.
+     */
+    val lastUserActivityAtMs: StateFlow<Long> = _lastUserActivityAtMs
 
     /**
      * The timers behind idleness and the playback dim run on this scope rather than on [scope],
@@ -426,7 +433,7 @@ class DualScreenManager(
      * the diagnostic log.
      */
     fun notifyUserActivity(source: String) {
-        lastUserActivityAtMs = android.os.SystemClock.elapsedRealtime()
+        _lastUserActivityAtMs.value = android.os.SystemClock.elapsedRealtime()
         Logger.debug(MEDIA_DIM_LOG_TAG, "userActivity source=$source")
         _userActive.value = true
         userIdleJob?.cancel()
@@ -484,7 +491,7 @@ class DualScreenManager(
             _mediaDimCoverAlpha.value = 0f
             return
         }
-        val idleMs = android.os.SystemClock.elapsedRealtime() - lastUserActivityAtMs
+        val idleMs = android.os.SystemClock.elapsedRealtime() - _lastUserActivityAtMs.value
         Logger.debug(MEDIA_DIM_LOG_TAG, "armed reason=$reason idleMs=$idleMs")
         mediaDimJob = idleTimerScope.launch {
             val untilPartial = MEDIA_DIM_PARTIAL_DELAY_MS - idleMs
@@ -492,7 +499,7 @@ class DualScreenManager(
                 _mediaDimBrightness.value = null
                 fadeOutMediaDimCoverOnWake()
                 val remainingToPartial = MEDIA_DIM_PARTIAL_DELAY_MS -
-                    (android.os.SystemClock.elapsedRealtime() - lastUserActivityAtMs)
+                    (android.os.SystemClock.elapsedRealtime() - _lastUserActivityAtMs.value)
                 if (remainingToPartial > 0) delay(remainingToPartial)
             }
             _mediaDimBrightness.value = MEDIA_DIM_PARTIAL_BRIGHTNESS

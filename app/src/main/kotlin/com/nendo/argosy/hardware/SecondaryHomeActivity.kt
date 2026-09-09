@@ -20,6 +20,7 @@ import com.nendo.argosy.ui.theme.CustomFontFamilies
 import com.nendo.argosy.ui.theme.CustomFontLoader
 import com.nendo.argosy.ui.theme.ThemeState
 import com.nendo.argosy.ui.theme.toThemeState
+import com.nendo.argosy.ui.toScreenDimmerPreferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.lifecycle.lifecycleScope
@@ -28,6 +29,8 @@ import com.nendo.argosy.DualScreenManagerHolder
 import com.nendo.argosy.core.game.AchievementUi
 import com.nendo.argosy.data.preferences.SessionStateStore
 import com.nendo.argosy.data.repository.AppsRepository
+import com.nendo.argosy.ui.ScreenDimmerPreferences
+import com.nendo.argosy.ui.components.ScreenDimmerOverlay
 import com.nendo.argosy.ui.dualscreen.ShowcaseViewModel
 import com.nendo.argosy.ui.dualscreen.gamedetail.ActiveModal
 import com.nendo.argosy.ui.dualscreen.gamedetail.DualGameDetailUpperState
@@ -189,11 +192,13 @@ class SecondaryHomeActivity :
             // screen would never reach the secondary.
             val themeState = remember { mutableStateOf(ThemeState()) }
             val customFonts = remember { mutableStateOf(CustomFontFamilies()) }
+            val screenDimmerPrefs = remember { mutableStateOf(ScreenDimmerPreferences()) }
             LaunchedEffect(isInitialized) {
                 if (!isInitialized) return@LaunchedEffect
                 dsm.preferencesRepository.userPreferences.collect { prefs ->
                     themeState.value = prefs.toThemeState()
                     customFonts.value = resolveCustomFonts(prefs.displayFontPath, prefs.bodyFontPath)
+                    screenDimmerPrefs.value = prefs.toScreenDimmerPreferences()
                 }
             }
             LaunchedEffect(isInitialized) {
@@ -209,113 +214,131 @@ class SecondaryHomeActivity :
                             androidx.compose.runtime.derivedStateOf { state.value.isProcessing }
                         }
                     }
+                val lastUserActivityAtMs by dsm.lastUserActivityAtMs.collectAsState()
+                val mediaPlayback by dsm.mediaPlayback.collectAsState()
+                val dimmerPrefs = screenDimmerPrefs.value
+                val dimmerEnabled = dimmerPrefs.enabled &&
+                    !isGameActive && !isWizardActive && mediaPlayback == null
                 androidx.compose.runtime.CompositionLocalProvider(
                     LocalABIconsSwapped provides abIconsSwapped,
                     LocalXYIconsSwapped provides xyIconsSwapped,
                     LocalSwapStartSelect provides startSelectSwapped,
                     com.nendo.argosy.ui.components.LocalArtworkScraping provides scrapingArtwork
                 ) {
-                    val primaryDetail by _companionDetail.collectAsState()
-                    val describingPrimary = primaryDetail
-                        .takeIf { isShowcaseRole && !isMediaPanelVisible }
-                    if (describingPrimary != null) {
-                        val describedViewMode by _showcaseViewMode.collectAsState()
-                        CompanionDetailScreen(
-                            detail = describingPrimary,
-                            modifier = Modifier.fillMaxSize(),
-                            footerHints = {
-                                com.nendo.argosy.ui.components.FooterBar(
-                                    hints = com.nendo.argosy.ui.dualscreen
-                                        .companionDetailHints(describingPrimary, describedViewMode)
-                                )
-                            }
-                        )
-                    } else if (isShowcaseRole) {
-                        ShowcaseRoleContent(
-                            isInitialized = isInitialized,
-                            isArgosyForeground = isArgosyForeground,
-                            isGameActive = isGameActive,
-                            isWizardActive = isWizardActive,
-                            showcaseViewModel = showcaseViewModel!!,
-                            viewModel = viewModel,
-                            homeApps = homeApps,
-                            showcaseState = _showcaseState,
-                            showcaseViewMode = _showcaseViewMode,
-                            collectionShowcaseState = _showcaseCollectionState,
-                            gameDetailState = _showcaseGameDetailState,
-                            syncConflictState = dsm.dualSyncOverlay,
-                            syncConflictFocusIndex = dsm.dualSyncOverlayFocusIndex,
-                            onAppClick = ::launchApp,
-                            dualMediaViewModel = dualMediaViewModel,
-                            isMediaPanelVisible = isMediaPanelVisible,
-                            onMediaSeasonSelected = { dualMediaViewModel?.selectSeason(it) },
-                            onMediaEpisodeTapped = ::playMediaItemId
-                        )
-                    } else {
-                        SecondaryHomeContent(
-                            isInitialized = isInitialized,
-                            isArgosyForeground = isArgosyForeground,
-                            isGameActive = isGameActive,
-                            isWizardActive = isWizardActive,
-                            companionInGameState = companionInGameState,
-                            companionSessionTimer = companionSessionTimer,
-                            homeApps = homeApps,
-                            viewModel = viewModel,
-                            dualHomeViewModel = dualHomeViewModel,
-                            currentScreen = currentScreen,
-                            dualGameDetailViewModel = dualGameDetailViewModel,
-                            onAppClick = ::launchApp,
-                            onGameSelected = ::selectGame,
-                            onViewAllClick = ::handleViewAllClick,
-                            onCollectionTapped = ::handleCollectionTapped,
-                            onGridGameTapped = ::handleGridGameTapped,
-                            onLetterClick = {
-                                dualHomeViewModel.jumpToSection(it)
-                                broadcasts.broadcastLibraryGameSelection()
-                            },
-                            onFilterOptionTapped = {
-                                dualHomeViewModel.moveFilterFocus(
-                                    it - dualHomeViewModel.uiState.value.filterFocusedIndex
-                                )
-                                dualHomeViewModel.confirmFilter()
-                            },
-                            onFilterCategoryTapped = {
-                                dualHomeViewModel.setFilterCategory(it)
-                            },
-                            onSearchQueryChange = { query ->
-                                dualHomeViewModel.updateSearchQuery(query)
-                            },
-                            onDetailBack = ::returnToHome,
-                            onOptionAction = { vm, option ->
-                                inputHandler.handleOption(vm, option)
-                            },
-                            onScreenshotViewed = { index ->
-                                isScreenshotViewerOpen = true
-                                broadcasts.broadcastScreenshotSelected(index)
-                            },
-                            onDimTapped = { broadcasts.broadcastRefocusUpper() },
-                            onCustomGridActivate = {
-                                inputHandler.handleDualHomeInput(
-                                    com.nendo.argosy.ui.input.GamepadEvent.Confirm
-                                )
-                            },
-                            companionAchievements = companionAchievements,
-                            onQuickSave = { dsm.sessionQuickActions?.quickSave() },
-                            onQuickLoad = { dsm.sessionQuickActions?.quickLoad() },
-                            onScreenshot = { dsm.sessionQuickActions?.screenshot() },
-                            dualMediaViewModel = dualMediaViewModel,
-                            isMediaPanelVisible = isMediaPanelVisible,
-                            mediaToggle = mediaToggle,
-                            onMediaToggle = ::openMediaFromAppBar,
-                            onKeyboardToggle = { broadcasts.broadcastToggleKeyboard() },
-                            onMediaRowTapped = { index -> dualMediaViewModel?.focusRow(index) },
-                            onMediaRowConfirmed = ::playFocusedMediaRow,
-                            onMediaSeasonSelected = { dualMediaViewModel?.selectSeason(it) },
-                            onMediaEpisodeTapped = ::playMediaItemId
-                        )
+                    ScreenDimmerOverlay(
+                        enabled = dimmerEnabled,
+                        timeoutMs = dimmerPrefs.timeoutMinutes * 60_000L,
+                        dimLevel = dimmerPrefs.level / 100f,
+                        lastActivityAtMs = lastUserActivityAtMs,
+                        onWake = { dsm.notifyUserActivity("companionDimmerTap") }
+                    ) {
+                        CompanionRoleContent()
                     }
                 }
             }
+        }
+    }
+
+    @androidx.compose.runtime.Composable
+    private fun CompanionRoleContent() {
+        val primaryDetail by _companionDetail.collectAsState()
+        val describingPrimary = primaryDetail
+            .takeIf { isShowcaseRole && !isMediaPanelVisible }
+        if (describingPrimary != null) {
+            val describedViewMode by _showcaseViewMode.collectAsState()
+            CompanionDetailScreen(
+                detail = describingPrimary,
+                modifier = Modifier.fillMaxSize(),
+                footerHints = {
+                    com.nendo.argosy.ui.components.FooterBar(
+                        hints = com.nendo.argosy.ui.dualscreen
+                            .companionDetailHints(describingPrimary, describedViewMode)
+                    )
+                }
+            )
+        } else if (isShowcaseRole) {
+            ShowcaseRoleContent(
+                isInitialized = isInitialized,
+                isArgosyForeground = isArgosyForeground,
+                isGameActive = isGameActive,
+                isWizardActive = isWizardActive,
+                showcaseViewModel = showcaseViewModel!!,
+                viewModel = viewModel,
+                homeApps = homeApps,
+                showcaseState = _showcaseState,
+                showcaseViewMode = _showcaseViewMode,
+                collectionShowcaseState = _showcaseCollectionState,
+                gameDetailState = _showcaseGameDetailState,
+                syncConflictState = dsm.dualSyncOverlay,
+                syncConflictFocusIndex = dsm.dualSyncOverlayFocusIndex,
+                onAppClick = ::launchApp,
+                dualMediaViewModel = dualMediaViewModel,
+                isMediaPanelVisible = isMediaPanelVisible,
+                onMediaSeasonSelected = { dualMediaViewModel?.selectSeason(it) },
+                onMediaEpisodeTapped = ::playMediaItemId
+            )
+        } else {
+            SecondaryHomeContent(
+                isInitialized = isInitialized,
+                isArgosyForeground = isArgosyForeground,
+                isGameActive = isGameActive,
+                isWizardActive = isWizardActive,
+                companionInGameState = companionInGameState,
+                companionSessionTimer = companionSessionTimer,
+                homeApps = homeApps,
+                viewModel = viewModel,
+                dualHomeViewModel = dualHomeViewModel,
+                currentScreen = currentScreen,
+                dualGameDetailViewModel = dualGameDetailViewModel,
+                onAppClick = ::launchApp,
+                onGameSelected = ::selectGame,
+                onViewAllClick = ::handleViewAllClick,
+                onCollectionTapped = ::handleCollectionTapped,
+                onGridGameTapped = ::handleGridGameTapped,
+                onLetterClick = {
+                    dualHomeViewModel.jumpToSection(it)
+                    broadcasts.broadcastLibraryGameSelection()
+                },
+                onFilterOptionTapped = {
+                    dualHomeViewModel.moveFilterFocus(
+                        it - dualHomeViewModel.uiState.value.filterFocusedIndex
+                    )
+                    dualHomeViewModel.confirmFilter()
+                },
+                onFilterCategoryTapped = {
+                    dualHomeViewModel.setFilterCategory(it)
+                },
+                onSearchQueryChange = { query ->
+                    dualHomeViewModel.updateSearchQuery(query)
+                },
+                onDetailBack = ::returnToHome,
+                onOptionAction = { vm, option ->
+                    inputHandler.handleOption(vm, option)
+                },
+                onScreenshotViewed = { index ->
+                    isScreenshotViewerOpen = true
+                    broadcasts.broadcastScreenshotSelected(index)
+                },
+                onDimTapped = { broadcasts.broadcastRefocusUpper() },
+                onCustomGridActivate = {
+                    inputHandler.handleDualHomeInput(
+                        com.nendo.argosy.ui.input.GamepadEvent.Confirm
+                    )
+                },
+                companionAchievements = companionAchievements,
+                onQuickSave = { dsm.sessionQuickActions?.quickSave() },
+                onQuickLoad = { dsm.sessionQuickActions?.quickLoad() },
+                onScreenshot = { dsm.sessionQuickActions?.screenshot() },
+                dualMediaViewModel = dualMediaViewModel,
+                isMediaPanelVisible = isMediaPanelVisible,
+                mediaToggle = mediaToggle,
+                onMediaToggle = ::openMediaFromAppBar,
+                onKeyboardToggle = { broadcasts.broadcastToggleKeyboard() },
+                onMediaRowTapped = { index -> dualMediaViewModel?.focusRow(index) },
+                onMediaRowConfirmed = ::playFocusedMediaRow,
+                onMediaSeasonSelected = { dualMediaViewModel?.selectSeason(it) },
+                onMediaEpisodeTapped = ::playMediaItemId
+            )
         }
     }
 

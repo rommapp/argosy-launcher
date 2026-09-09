@@ -7,6 +7,8 @@ import android.content.Context
 import android.content.Intent
 import android.os.Process
 import android.provider.Settings
+import com.nendo.argosy.data.emulator.PresenceEvent
+import com.nendo.argosy.data.emulator.PresenceEventKind
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -143,6 +145,33 @@ class PermissionHelper @Inject constructor() {
     ): Boolean {
         isPackageOnScreen(context, packageName)?.let { return it }
         return isPackageInForeground(context, packageName, recencyMs)
+    }
+
+    /**
+     * Screen, keyguard and activity lifecycle events between [fromMs] and [toMs]. Empty without
+     * usage access, which the caller must read as "no answer" rather than "nothing happened".
+     */
+    fun presenceEvents(context: Context, fromMs: Long, toMs: Long): List<PresenceEvent> {
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.Q) return emptyList()
+        if (!hasUsageStatsPermission(context)) return emptyList()
+        val usm = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+        val events = usm.queryEvents(fromMs, toMs)
+        val event = UsageEvents.Event()
+        val result = ArrayList<PresenceEvent>()
+        while (events.hasNextEvent()) {
+            events.getNextEvent(event)
+            val kind = when (event.eventType) {
+                UsageEvents.Event.SCREEN_INTERACTIVE -> PresenceEventKind.SCREEN_INTERACTIVE
+                UsageEvents.Event.SCREEN_NON_INTERACTIVE -> PresenceEventKind.SCREEN_NON_INTERACTIVE
+                UsageEvents.Event.KEYGUARD_HIDDEN -> PresenceEventKind.KEYGUARD_HIDDEN
+                UsageEvents.Event.ACTIVITY_RESUMED -> PresenceEventKind.ACTIVITY_RESUMED
+                UsageEvents.Event.ACTIVITY_PAUSED -> PresenceEventKind.ACTIVITY_PAUSED
+                UsageEvents.Event.ACTIVITY_STOPPED -> PresenceEventKind.ACTIVITY_STOPPED
+                else -> continue
+            }
+            result.add(PresenceEvent(event.timeStamp, kind, event.packageName, event.className))
+        }
+        return result
     }
 
     fun currentForegroundPackage(context: Context, lookbackMs: Long = 5 * 60 * 1000L): String? {

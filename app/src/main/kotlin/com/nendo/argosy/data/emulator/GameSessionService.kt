@@ -1,5 +1,6 @@
 package com.nendo.argosy.data.emulator
 
+import android.app.KeyguardManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.BroadcastReceiver
@@ -37,10 +38,13 @@ import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.preferences.SessionStateStore
 import com.nendo.argosy.data.repository.SaveCacheManager
 import com.nendo.argosy.DualScreenManagerHolder
+import com.nendo.argosy.libretro.LibretroActivity
 import com.nendo.argosy.util.Logger
+import com.nendo.argosy.util.PermissionHelper
 import dagger.hilt.android.AndroidEntryPoint
 import com.nendo.argosy.util.SafeCoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -65,6 +69,7 @@ class GameSessionService : Service() {
     @Inject lateinit var playSessionTracker: dagger.Lazy<PlaySessionTracker>
     @Inject lateinit var activityReporter:
         com.nendo.argosy.data.social.uploader.RomMActivityReporter
+    @Inject lateinit var permissionHelper: PermissionHelper
 
     private val serviceScope = SafeCoroutineScope(Dispatchers.IO, "GameSessionService")
     private val handler = Handler(Looper.getMainLooper())
@@ -76,7 +81,8 @@ class GameSessionService : Service() {
     private var windowManager: WindowManager? = null
     private var overlayView: View? = null
 
-    private var activityJob: kotlinx.coroutines.Job? = null
+    private var activityJob: Job? = null
+    private var presenceJob: Job? = null
     private var currentGameId: Long = -1
     private var currentEmulatorId: String? = null
     private var currentSavePath: String? = null
@@ -165,6 +171,7 @@ class GameSessionService : Service() {
 
                 screenshotCaptureMonitor.start(gameId, emulatorPackage, sessionStartTime)
                 startActivityReporting(gameId)
+                startPresenceWatch(emulatorPackage)
             }
         }
         return START_REDELIVER_INTENT
@@ -174,6 +181,7 @@ class GameSessionService : Service() {
 
     override fun onDestroy() {
         Logger.debug(TAG, "Service destroyed")
+        stopPresenceWatch()
         stopActivityReporting()
         activityReporter.clearAsync()
         cleanupPresenceKeepalive()
@@ -239,6 +247,54 @@ class GameSessionService : Service() {
     private fun stopActivityReporting() {
         activityJob?.cancel()
         activityJob = null
+    }
+
+    private fun startPresenceWatch(emulatorPackage: String?) {
+        stopPresenceWatch()
+        if (emulatorPackage == null) return
+        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.Q) return
+        if (!permissionHelper.hasUsageStatsPermission(this)) return
+        val tracker = playSessionTracker.get()
+        if (tracker.activeSession.value?.isNetplayGuest == true) return
+        val emulator = if (emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE) {
+            EmulatorIdentity(packageName, LibretroActivity::class.java.name)
+        } else {
+            EmulatorIdentity(emulatorPackage)
+        }
+        val keyguard: KeyguardManager? = getSystemService(KeyguardManager::class.java)
+        val ownPackage = packageName
+        val watchStart = sessionStartTime
+        presenceJob = serviceScope.launch {
+            var carried = emptyMap<String, PresenceEvent>()
+            var misses = 0
+            while (isActive) {
+                delay(PRESENCE_TICK_MS)
+                if (tracker.activeSession.value == null) return@launch
+                val now = System.currentTimeMillis()
+                val windowStart = maxOf(now - PRESENCE_LOOKBACK_MS, watchStart)
+                val events = carried.values + permissionHelper.presenceEvents(this@GameSessionService, windowStart, now)
+                val decision = EmulatorPresenceDecision.decide(
+                    events = events,
+                    emulator = emulator,
+                    ownPackage = ownPackage,
+                    keyguardLocked = keyguard?.isKeyguardLocked == true,
+                    now = now,
+                    wakeGraceMs = PRESENCE_WAKE_GRACE_MS
+                )
+                carried = decision.emulatorActivities
+                misses = if (decision.verdict.countsAsMiss) misses + 1 else 0
+                if (misses < PRESENCE_MISSES_TO_END) continue
+                Logger.info(TAG, "Emulator left the screen for gameId=$currentGameId, ending session | emulator=${emulator.packageName}")
+                tracker.endSessionInBackground(stopService = false).join()
+                stopSelf()
+                return@launch
+            }
+        }
+    }
+
+    private fun stopPresenceWatch() {
+        presenceJob?.cancel()
+        presenceJob = null
     }
 
     private fun cleanupPresenceKeepalive() {
@@ -666,6 +722,10 @@ class GameSessionService : Service() {
          * does not make the device look like it stopped playing.
          */
         private const val ACTIVITY_HEARTBEAT_INTERVAL_MS = 30_000L
+        private const val PRESENCE_TICK_MS = 2_000L
+        private const val PRESENCE_LOOKBACK_MS = 2 * 60 * 1000L
+        private const val PRESENCE_WAKE_GRACE_MS = 3_000L
+        private const val PRESENCE_MISSES_TO_END = 3
         private const val STARTUP_COOLDOWN_MS = 20000L
         private const val CACHE_DEBOUNCE_MS = 250L
         private val IGNORED_DIRECTORY_PATTERNS = setOf(

@@ -636,8 +636,6 @@ class ArgosyViewModel @Inject constructor(
     fun resetAllModals() {
         _isDrawerOpen.value = false
         _isQuickSettingsOpen.value = false
-        _saveConflictInfo.value = null
-        playSessionTracker.clearPendingSessionConflict()
         _drawerModal.value = DrawerModal.None
         modalResetSignal.emit()
     }

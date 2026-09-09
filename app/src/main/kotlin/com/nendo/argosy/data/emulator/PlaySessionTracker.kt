@@ -35,6 +35,7 @@ import com.nendo.argosy.core.event.GameUpdateBus
 import com.nendo.argosy.util.PermissionHelper
 import com.nendo.argosy.util.SafeCoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -1119,9 +1120,12 @@ class PlaySessionTracker @Inject constructor(
         }
     }
 
-    fun endSessionInBackground(skipSaveSync: Boolean = false) {
-        scope.launch { endSession(skipSaveSync = skipSaveSync) }
-    }
+    /**
+     * Ends the session on the tracker's own scope. A caller whose scope dies with the watcher
+     * service passes stopService=false and stops the service itself once the job completes.
+     */
+    fun endSessionInBackground(skipSaveSync: Boolean = false, stopService: Boolean = true): Job =
+        scope.launch { endSession(stopService = stopService, skipSaveSync = skipSaveSync) }
 
     private fun reconcileAchievementsInBackground(gameId: Long) {
         scope.launch {

@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.nendo.argosy.data.emulator.LaunchOrigin
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -19,7 +20,8 @@ data class PersistedSession(
     val coreName: String?,
     val isHardcore: Boolean,
     val channelName: String? = null,
-    val variantFileId: Long? = null
+    val variantFileId: Long? = null,
+    val origin: LaunchOrigin = LaunchOrigin.INTERNAL
 )
 
 @Singleton
@@ -34,6 +36,7 @@ class SessionPreferencesRepository @Inject constructor(
         val ACTIVE_SESSION_IS_HARDCORE = booleanPreferencesKey("active_session_is_hardcore")
         val ACTIVE_SESSION_CHANNEL_NAME = stringPreferencesKey("active_session_channel_name")
         val ACTIVE_SESSION_VARIANT_FILE_ID = stringPreferencesKey("active_session_variant_file_id")
+        val ACTIVE_SESSION_LAUNCH_ORIGIN = stringPreferencesKey("active_session_launch_origin")
     }
 
     val activeSessionFlow: Flow<PersistedSession?> = dataStore.data.map { prefs ->
@@ -47,7 +50,8 @@ class SessionPreferencesRepository @Inject constructor(
         coreName: String?,
         isHardcore: Boolean,
         channelName: String? = null,
-        variantFileId: Long? = null
+        variantFileId: Long? = null,
+        origin: LaunchOrigin = LaunchOrigin.INTERNAL
     ) {
         dataStore.edit { prefs ->
             prefs[Keys.ACTIVE_SESSION_GAME_ID] = gameId.toString()
@@ -60,6 +64,7 @@ class SessionPreferencesRepository @Inject constructor(
             else prefs.remove(Keys.ACTIVE_SESSION_CHANNEL_NAME)
             if (variantFileId != null) prefs[Keys.ACTIVE_SESSION_VARIANT_FILE_ID] = variantFileId.toString()
             else prefs.remove(Keys.ACTIVE_SESSION_VARIANT_FILE_ID)
+            prefs[Keys.ACTIVE_SESSION_LAUNCH_ORIGIN] = origin.name
         }
     }
 
@@ -72,6 +77,7 @@ class SessionPreferencesRepository @Inject constructor(
             prefs.remove(Keys.ACTIVE_SESSION_IS_HARDCORE)
             prefs.remove(Keys.ACTIVE_SESSION_CHANNEL_NAME)
             prefs.remove(Keys.ACTIVE_SESSION_VARIANT_FILE_ID)
+            prefs.remove(Keys.ACTIVE_SESSION_LAUNCH_ORIGIN)
         }
     }
 
@@ -92,7 +98,8 @@ class SessionPreferencesRepository @Inject constructor(
             coreName = this[Keys.ACTIVE_SESSION_CORE_NAME],
             isHardcore = this[Keys.ACTIVE_SESSION_IS_HARDCORE] ?: false,
             channelName = this[Keys.ACTIVE_SESSION_CHANNEL_NAME],
-            variantFileId = this[Keys.ACTIVE_SESSION_VARIANT_FILE_ID]?.toLongOrNull()
+            variantFileId = this[Keys.ACTIVE_SESSION_VARIANT_FILE_ID]?.toLongOrNull(),
+            origin = LaunchOrigin.fromString(this[Keys.ACTIVE_SESSION_LAUNCH_ORIGIN])
         )
     }
 }

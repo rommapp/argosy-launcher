@@ -9,6 +9,8 @@ import com.nendo.argosy.data.emulator.BuiltinCoreResolver
 import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.LaunchConfig
+import com.nendo.argosy.data.emulator.LaunchOrigin
+import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.emulator.TitleIdRecheck
@@ -100,6 +102,7 @@ class GameDetailViewModel @Inject constructor(
     private val soundManager: SoundFeedbackManager,
     private val gameActions: GameActionsDelegate,
     private val gameLaunchDelegate: GameLaunchDelegate,
+    private val playSessionTracker: PlaySessionTracker,
     private val collectionModalDelegate: CollectionModalDelegate,
     private val imageCacheManager: ImageCacheManager,
     private val preferencesRepository: com.nendo.argosy.data.preferences.UserPreferencesRepository,
@@ -147,6 +150,7 @@ class GameDetailViewModel @Inject constructor(
     val launchEvents: SharedFlow<LaunchEvent> = _launchEvents.asSharedFlow()
 
     private var currentGameId: Long = 0
+    private var pendingLaunchOrigin: LaunchOrigin = LaunchOrigin.INTERNAL
     private var lastActionTime: Long = 0
     private val actionDebounceMs = 300L
     private var pageLoadTime: Long = 0
@@ -231,6 +235,11 @@ class GameDetailViewModel @Inject constructor(
         viewModelScope.launch {
             gameLaunchDelegate.syncOverlayState.collect { overlayState ->
                 _uiState.update { it.copy(syncOverlayState = overlayState) }
+            }
+        }
+        viewModelScope.launch {
+            playSessionTracker.activeSession.collect { session ->
+                if (session != null) pendingLaunchOrigin = LaunchOrigin.INTERNAL
             }
         }
         viewModelScope.launch {
@@ -461,6 +470,7 @@ class GameDetailViewModel @Inject constructor(
                     scope = viewModelScope,
                     gameId = currentGameId,
                     selectedDiscPath = selection.discPath,
+                    origin = pendingLaunchOrigin,
                     callbacks = makeLaunchCallbacks()
                 )
             }
@@ -470,6 +480,7 @@ class GameDetailViewModel @Inject constructor(
                     gameId = currentGameId,
                     variantFileId = selection.variantFileId,
                     skipVariantPrompt = true,
+                    origin = pendingLaunchOrigin,
                     callbacks = makeLaunchCallbacks()
                 )
             }
@@ -1007,14 +1018,14 @@ class GameDetailViewModel @Inject constructor(
         gameLaunchDelegate.handleSessionEnd(viewModelScope)
     }
 
-    fun primaryAction() {
+    fun primaryAction(origin: LaunchOrigin = LaunchOrigin.INTERNAL) {
         val now = System.currentTimeMillis()
         if (now - lastActionTime < actionDebounceMs) return
         lastActionTime = now
 
         val state = _uiState.value
         when (state.downloadStatus) {
-            GameDownloadStatus.DOWNLOADED -> playGame()
+            GameDownloadStatus.DOWNLOADED -> playGame(origin = origin)
             GameDownloadStatus.NEEDS_INSTALL -> downloadDelegate.installApk(viewModelScope, currentGameId)
             GameDownloadStatus.NOT_DOWNLOADED, GameDownloadStatus.FAILED -> {
                 val game = state.game
@@ -1031,8 +1042,9 @@ class GameDetailViewModel @Inject constructor(
         }
     }
 
-    fun playGame(discId: Long? = null) {
+    fun playGame(discId: Long? = null, origin: LaunchOrigin = LaunchOrigin.INTERNAL) {
         if (gameLaunchDelegate.isSyncing) return
+        if (origin != LaunchOrigin.INTERNAL) pendingLaunchOrigin = origin
 
         viewModelScope.launch {
             val currentGame = _uiState.value.game ?: return@launch
@@ -1049,6 +1061,7 @@ class GameDetailViewModel @Inject constructor(
                 scope = viewModelScope,
                 gameId = currentGameId,
                 discId = discId,
+                origin = pendingLaunchOrigin,
                 onLaunch = callbacks.onLaunch,
                 onLaunchFailed = { callbacks.onLaunchFailed() }
             )
@@ -1112,6 +1125,7 @@ class GameDetailViewModel @Inject constructor(
                 gameId = currentGameId,
                 skipPreLaunchSync = skipPreLaunchSync,
                 overrideLaunchMode = launchMode,
+                origin = pendingLaunchOrigin,
                 onLaunch = callbacks.onLaunch,
                 onLaunchFailed = { callbacks.onLaunchFailed() }
             )
@@ -1120,6 +1134,7 @@ class GameDetailViewModel @Inject constructor(
                 scope = viewModelScope,
                 gameId = currentGameId,
                 launchMode = launchMode,
+                origin = pendingLaunchOrigin,
                 callbacks = makeLaunchCallbacks()
             )
         }

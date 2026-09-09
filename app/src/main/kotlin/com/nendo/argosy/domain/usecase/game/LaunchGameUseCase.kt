@@ -2,6 +2,7 @@ package com.nendo.argosy.domain.usecase.game
 
 import android.content.Intent
 import com.nendo.argosy.data.emulator.GameLauncher
+import com.nendo.argosy.data.emulator.LaunchOrigin
 import com.nendo.argosy.data.emulator.LaunchResult
 import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.local.entity.GameEntity
@@ -26,7 +27,8 @@ class LaunchGameUseCase @Inject constructor(
         variantFileId: Long? = null,
         skipVariantPrompt: Boolean = false,
         allowVariantPrompt: Boolean = true,
-        prefetchedGame: GameEntity? = null
+        prefetchedGame: GameEntity? = null,
+        origin: LaunchOrigin = LaunchOrigin.INTERNAL
     ): LaunchResult {
         val result = gameLauncher.launch(gameId, discId, forResume, selectedDiscPath, variantFileId, skipVariantPrompt, allowVariantPrompt, prefetchedGame)
         if (result is LaunchResult.Success && !result.inProcess && !forResume) {
@@ -38,7 +40,8 @@ class LaunchGameUseCase @Inject constructor(
                     ?: "",
                 coreName = coreName,
                 isNewGame = true,
-                variantFileId = variantFileId
+                variantFileId = variantFileId,
+                origin = origin
             )
         }
         return result

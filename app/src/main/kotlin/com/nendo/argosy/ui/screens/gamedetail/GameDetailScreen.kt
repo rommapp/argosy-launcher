@@ -155,9 +155,9 @@ fun GameDetailScreen(
         if (pending.gameId == gameId && uiState.game?.id == gameId) {
             argosyViewModel.consumePendingLaunch()
             if (pending.discId != null) {
-                viewModel.playGame(discId = pending.discId)
+                viewModel.playGame(discId = pending.discId, origin = pending.origin)
             } else {
-                viewModel.primaryAction()
+                viewModel.primaryAction(origin = pending.origin)
             }
         }
     }

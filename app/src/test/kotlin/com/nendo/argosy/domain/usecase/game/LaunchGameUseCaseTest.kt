@@ -2,6 +2,7 @@ package com.nendo.argosy.domain.usecase.game
 
 import android.content.Intent
 import com.nendo.argosy.data.emulator.GameLauncher
+import com.nendo.argosy.data.emulator.LaunchOrigin
 import com.nendo.argosy.data.emulator.LaunchResult
 import com.nendo.argosy.data.emulator.PlaySessionTracker
 import io.mockk.coEvery
@@ -65,6 +66,29 @@ class LaunchGameUseCaseTest {
                 emulatorPackage = "",
                 coreName = null,
                 isNewGame = true
+            )
+        }
+    }
+
+    @Test
+    fun `invoke carries the launch origin into the session`() = runTest {
+        val component = mockk<android.content.ComponentName>(relaxed = true) {
+            coEvery { packageName } returns "com.emulator.test"
+        }
+        val intent = mockk<Intent>(relaxed = true) {
+            coEvery { this@mockk.component } returns component
+        }
+        coEvery { gameLauncher.launch(123L, null, any(), any(), any(), any()) } returns LaunchResult.Success(intent)
+
+        useCase(123L, origin = LaunchOrigin.EXTERNAL)
+
+        coVerify {
+            playSessionTracker.startSession(
+                gameId = 123L,
+                emulatorPackage = "com.emulator.test",
+                coreName = null,
+                isNewGame = true,
+                origin = LaunchOrigin.EXTERNAL
             )
         }
     }

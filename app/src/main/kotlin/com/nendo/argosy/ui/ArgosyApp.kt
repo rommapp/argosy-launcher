@@ -304,7 +304,11 @@ fun ArgosyApp(
                                         launchSingleTop = true
                                     }
                                     viewModel.awaitDeepLinkSyncReady()
-                                    viewModel.initiateGameLaunch(outcome.gameId, outcome.channelName)
+                                    viewModel.initiateGameLaunch(
+                                        outcome.gameId,
+                                        outcome.channelName,
+                                        origin = com.nendo.argosy.data.emulator.LaunchOrigin.EXTERNAL
+                                    )
                                 }
                             }
                             is com.nendo.argosy.ui.deeplink.DeepLinkLaunch.Failed -> {

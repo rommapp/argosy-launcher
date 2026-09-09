@@ -16,6 +16,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.local.dao.DownloadQueueDao
@@ -470,6 +473,7 @@ class MainActivity : ComponentActivity() {
             hasWindowFocus = ::hasWindowFocus
         )
         preferencesObserver.collectIn(activityScope)
+        revealCallerWhenExternalSessionCloses()
 
         setContent {
             ALauncherTheme {
@@ -838,6 +842,19 @@ class MainActivity : ComponentActivity() {
             sessionStateStore.clearSession()
             playSessionTracker.endSessionInBackground()
             dualScreenManager.broadcastSessionCleared()
+        }
+    }
+
+    private fun revealCallerWhenExternalSessionCloses() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                playSessionTracker.externalSessionClosed.collect {
+                    playSessionTracker.pendingSessionConflict.first { it == null }
+                    if (!lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) return@collect
+                    Log.d(TAG, "External session closed, moving task to back")
+                    moveTaskToBack(true)
+                }
+            }
         }
     }
 

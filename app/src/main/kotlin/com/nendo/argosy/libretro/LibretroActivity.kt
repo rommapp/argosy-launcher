@@ -55,6 +55,7 @@ import com.nendo.argosy.BuildConfig
 import com.nendo.argosy.R
 import com.nendo.argosy.data.cheats.CheatsRepository
 import com.nendo.argosy.data.emulator.EmulatorRegistry
+import com.nendo.argosy.data.emulator.LaunchOrigin
 import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.repository.SaveCacheManager
 import com.nendo.argosy.hardware.AmbientLedManager
@@ -280,6 +281,7 @@ class LibretroActivity : ComponentActivity() {
      */
     private lateinit var launchPreferences: UserPreferences
     private var launchMode = LaunchMode.RESUME
+    private var launchOrigin = LaunchOrigin.INTERNAL
     private var statesSupported = true
     private val stateSupportChecked = kotlinx.coroutines.CompletableDeferred<Unit>()
     private var autoSaveEnabled = true
@@ -568,7 +570,16 @@ class LibretroActivity : ComponentActivity() {
 
         if (gameId != -1L) {
             val isNewGame = launchMode == LaunchMode.NEW_CASUAL || launchMode == LaunchMode.NEW_HARDCORE
-            playSessionTracker.startSession(gameId, EmulatorRegistry.BUILTIN_PACKAGE, coreName, hardcoreConfirmed, isNewGame, isNetplayGuest = isGuestJoinedSession, variantFileId = variantFileId.takeIf { it >= 0 })
+            playSessionTracker.startSession(
+                gameId,
+                EmulatorRegistry.BUILTIN_PACKAGE,
+                coreName,
+                hardcoreConfirmed,
+                isNewGame,
+                isNetplayGuest = isGuestJoinedSession,
+                variantFileId = variantFileId.takeIf { it >= 0 },
+                origin = launchOrigin
+            )
             cheatManager.loadCheats(hardcoreMode)
             achievementBridge.start(gameId, romPath, hardcoreMode, retroView)
             observeRaSessionMode()
@@ -626,6 +637,7 @@ class LibretroActivity : ComponentActivity() {
             ?.let { M3uManager.parseAllDiscs(File(it)) } ?: emptyList()
         coreName = intent.getStringExtra(EXTRA_CORE_NAME)
         launchMode = LaunchMode.fromString(intent.getStringExtra(LaunchMode.EXTRA_LAUNCH_MODE))
+        launchOrigin = LaunchOrigin.fromString(intent.getStringExtra(LaunchOrigin.EXTRA_LAUNCH_ORIGIN))
         launchPreferences = kotlinx.coroutines.runBlocking {
             preferencesRepository.preferences.first()
         }

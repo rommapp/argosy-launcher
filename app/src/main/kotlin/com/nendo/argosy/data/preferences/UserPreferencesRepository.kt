@@ -1,6 +1,7 @@
 package com.nendo.argosy.data.preferences
 
 import com.nendo.argosy.data.cache.GradientPreset
+import com.nendo.argosy.data.emulator.LaunchOrigin
 import com.nendo.argosy.core.input.SoundConfig
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.core.input.SoundType
@@ -551,8 +552,9 @@ class UserPreferencesRepository @Inject constructor(
         coreName: String?,
         isHardcore: Boolean,
         channelName: String? = null,
-        variantFileId: Long? = null
-    ) = sessionPrefs.persistActiveSession(gameId, emulatorPackage, startTime, coreName, isHardcore, channelName, variantFileId)
+        variantFileId: Long? = null,
+        origin: LaunchOrigin = LaunchOrigin.INTERNAL
+    ) = sessionPrefs.persistActiveSession(gameId, emulatorPackage, startTime, coreName, isHardcore, channelName, variantFileId, origin)
 
     suspend fun clearActiveSession() = sessionPrefs.clearActiveSession()
 

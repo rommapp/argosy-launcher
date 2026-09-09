@@ -38,8 +38,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -63,7 +66,8 @@ data class ActiveSession(
     val channelName: String? = null,
     val isOnOlderSave: Boolean = false,
     val isNetplayGuest: Boolean = false,
-    val variantFileId: Long? = null
+    val variantFileId: Long? = null,
+    val origin: LaunchOrigin = LaunchOrigin.INTERNAL
 )
 
 sealed class SessionEndResult {
@@ -158,6 +162,22 @@ class PlaySessionTracker @Inject constructor(
 
     fun clearPendingSessionConflict() {
         _pendingSessionConflict.value = null
+    }
+
+    private val _externalSessionClosed = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
+    /**
+     * Fires once a session with [LaunchOrigin.EXTERNAL] has closed and its session-end save work
+     * has returned. No replay: a close nobody is listening to at that moment is not owed later,
+     * so a launcher opened by hand afterwards never reacts to it. A save conflict raised by that
+     * close may still be waiting in [pendingSessionConflict] when this fires.
+     */
+    val externalSessionClosed: SharedFlow<Unit> = _externalSessionClosed.asSharedFlow()
+
+    private fun signalSessionClosed(session: ActiveSession) {
+        if (session.origin != LaunchOrigin.EXTERNAL) return
+        Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | External session closed, releasing the launcher")
+        _externalSessionClosed.tryEmit(Unit)
     }
 
     private var wasInBackground = false
@@ -392,7 +412,8 @@ class PlaySessionTracker @Inject constructor(
             coreName = persisted.coreName,
             isHardcore = persisted.isHardcore,
             channelName = persisted.channelName,
-            variantFileId = persisted.variantFileId
+            variantFileId = persisted.variantFileId,
+            origin = persisted.origin
         )
         broadcastSessionChanged(persisted.gameId, persisted.channelName, persisted.isHardcore)
         sessionServiceMutex.withLock {
@@ -504,7 +525,16 @@ class PlaySessionTracker @Inject constructor(
      * running session first, so a live session here is a caller that skipped it: the call is
      * refused and logged rather than clobbering the running session's play time and save sync.
      */
-    fun startSession(gameId: Long, emulatorPackage: String, coreName: String? = null, isHardcore: Boolean = false, isNewGame: Boolean = false, isNetplayGuest: Boolean = false, variantFileId: Long? = null) {
+    fun startSession(
+        gameId: Long,
+        emulatorPackage: String,
+        coreName: String? = null,
+        isHardcore: Boolean = false,
+        isNewGame: Boolean = false,
+        isNetplayGuest: Boolean = false,
+        variantFileId: Long? = null,
+        origin: LaunchOrigin = LaunchOrigin.INTERNAL
+    ) {
         val running = _activeSession.value
         if (running != null) {
             Logger.error(
@@ -531,9 +561,10 @@ class PlaySessionTracker @Inject constructor(
             isHardcore = isHardcore,
             isNewGame = isNewGame,
             isNetplayGuest = isNetplayGuest,
-            variantFileId = variantFileId
+            variantFileId = variantFileId,
+            origin = origin
         )
-        Logger.debug(TAG, "[SaveSync] SESSION gameId=$gameId | Session started | emulator=$emulatorPackage, core=$coreName, hardcore=$isHardcore, newGame=$isNewGame")
+        Logger.debug(TAG, "[SaveSync] SESSION gameId=$gameId | Session started | emulator=$emulatorPackage, core=$coreName, hardcore=$isHardcore, newGame=$isNewGame, origin=$origin")
 
         scope.launch {
             sessionServiceMutex.withLock {
@@ -550,7 +581,8 @@ class PlaySessionTracker @Inject constructor(
                     coreName = coreName,
                     isHardcore = isHardcore,
                     channelName = channelName,
-                    variantFileId = variantFileId
+                    variantFileId = variantFileId,
+                    origin = origin
                 )
 
                 DualScreenManagerHolder.instance?.assignEmulatorDisplayForSessionStart()
@@ -636,7 +668,8 @@ class PlaySessionTracker @Inject constructor(
                     coreName = updated.coreName,
                     isHardcore = isHardcore,
                     channelName = channelName,
-                    variantFileId = updated.variantFileId
+                    variantFileId = updated.variantFileId,
+                    origin = updated.origin
                 )
                 sessionStateStore.setActiveSession(
                     gameId,
@@ -799,7 +832,7 @@ class PlaySessionTracker @Inject constructor(
             }
 
             val effectiveSkipSaveSync = skipSaveSync || session.isNetplayGuest || session.variantFileId != null
-            return try {
+            val outcome = try {
                 val saveOutcome = runCatching {
                     coroutineScope {
                         val saveJob = async {
@@ -838,6 +871,8 @@ class PlaySessionTracker @Inject constructor(
                 clearSessionAndBroadcast()
                 SessionEndResult.Error(e.message ?: "Unknown error")
             }
+            signalSessionClosed(session)
+            return outcome
         } finally {
             endingSession.set(false)
         }
@@ -1117,6 +1152,7 @@ class PlaySessionTracker @Inject constructor(
                 }
             }
             clearSessionAndBroadcast()
+            signalSessionClosed(session)
         }
     }
 

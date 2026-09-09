@@ -16,6 +16,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.nendo.argosy.data.download.DownloadManager
 import com.nendo.argosy.data.download.DownloadQueueState
+import com.nendo.argosy.data.emulator.LaunchOrigin
 import com.nendo.argosy.data.emulator.LaunchResult
 import com.nendo.argosy.data.netplay.NetplayPreflightChecker
 import com.nendo.argosy.data.netplay.NetplayPreflightResult
@@ -1539,14 +1540,20 @@ class ArgosyViewModel @Inject constructor(
     data class PendingLaunch(
         val gameId: Long,
         val channelName: String? = null,
-        val discId: Long? = null
+        val discId: Long? = null,
+        val origin: LaunchOrigin = LaunchOrigin.INTERNAL
     )
 
     private val _pendingLaunch = MutableStateFlow<PendingLaunch?>(null)
     val pendingLaunch: StateFlow<PendingLaunch?> = _pendingLaunch.asStateFlow()
 
-    fun initiateGameLaunch(gameId: Long, channelName: String? = null, discId: Long? = null) {
-        _pendingLaunch.value = PendingLaunch(gameId, channelName, discId)
+    fun initiateGameLaunch(
+        gameId: Long,
+        channelName: String? = null,
+        discId: Long? = null,
+        origin: LaunchOrigin = LaunchOrigin.INTERNAL
+    ) {
+        _pendingLaunch.value = PendingLaunch(gameId, channelName, discId, origin)
     }
 
     fun consumePendingLaunch(): PendingLaunch? {

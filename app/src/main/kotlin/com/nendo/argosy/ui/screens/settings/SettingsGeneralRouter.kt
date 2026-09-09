@@ -471,13 +471,7 @@ internal fun routeSetDualScreenEnabled(vm: SettingsViewModel, enabled: Boolean) 
 internal fun routeCycleDisplayRoleOverride(vm: SettingsViewModel, direction: Int) {
     val entries = com.nendo.argosy.data.preferences.DisplayRoleOverride.entries
     val current = vm._uiState.value.display.displayRoleOverride
-    val currentSwapped = com.nendo.argosy.DualScreenManagerHolder.instance?.isRolesSwapped?.value
-        ?: overrideResolvesToSwapped(vm, current)
-    val next = (1..entries.size)
-        .asSequence()
-        .map { step -> entries[(current.ordinal + direction * step).mod(entries.size)] }
-        .firstOrNull { overrideResolvesToSwapped(vm, it) != currentSwapped }
-        ?: return
+    val next = entries[(current.ordinal + direction).mod(entries.size)]
     routeSetDisplayRoleOverride(vm, next)
 }
 
@@ -503,17 +497,6 @@ internal fun routeSetDisplayRoleOverride(
             dsm.companionHost?.onRoleSwapped(newSwapped)
         }
     }
-}
-
-private fun overrideResolvesToSwapped(
-    vm: SettingsViewModel,
-    value: com.nendo.argosy.data.preferences.DisplayRoleOverride
-): Boolean = when (value) {
-    com.nendo.argosy.data.preferences.DisplayRoleOverride.SWAPPED -> true
-    com.nendo.argosy.data.preferences.DisplayRoleOverride.STANDARD -> false
-    com.nendo.argosy.data.preferences.DisplayRoleOverride.AUTO ->
-        vm.displayAffinityHelper.secondaryDisplayType ==
-            com.nendo.argosy.util.SecondaryDisplayType.EXTERNAL
 }
 
 // --- Gradient cycle methods ---

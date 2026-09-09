@@ -306,7 +306,8 @@ class ArgosyViewModel @Inject constructor(
 
     private fun observeSaveConflicts() {
         viewModelScope.launch {
-            playSessionTracker.conflictEvents.collect { event ->
+            playSessionTracker.pendingSessionConflict.collect { event ->
+                if (event == null) return@collect
                 val game = gameRepository.getById(event.gameId)
                 _saveConflictInfo.value = SaveConflictInfo(
                     gameId = event.gameId,
@@ -636,6 +637,7 @@ class ArgosyViewModel @Inject constructor(
         _isDrawerOpen.value = false
         _isQuickSettingsOpen.value = false
         _saveConflictInfo.value = null
+        playSessionTracker.clearPendingSessionConflict()
         _drawerModal.value = DrawerModal.None
         modalResetSignal.emit()
     }
@@ -955,6 +957,7 @@ class ArgosyViewModel @Inject constructor(
         val info = _saveConflictInfo.value
         _saveConflictInfo.value = null
         _saveConflictButtonIndex.value = 0
+        playSessionTracker.clearPendingSessionConflict()
         if (info != null) {
             viewModelScope.launch {
                 saveSyncRepository.clearDirtyFlags(info.gameId)

@@ -670,6 +670,9 @@
     <string name="ui_startup_status_preparing_home">正在準備首頁...</string>
     <string name="ui_startup_status_waiting_for_storage">正在等待儲存空間...</string>
     <string name="ui_startup_status_scanning_roms">正在掃描ROM檔案...</string>
+    <string name="ui_deep_link_startup_timeout">Argosy 仍在啟動中，請重試</string>
+    <string name="ui_deep_link_game_not_found">在 Argosy 中找不到該遊戲</string>
+    <string name="ui_deep_link_ambiguous_file_name">有多個遊戲與該檔案名稱相符</string>
     <string name="ui_builtin_cores_ready_title">內建模擬器已就緒</string>
     <plurals name="ui_builtin_cores_ready_subtitle">
         <item quantity="other">已下載%d個核心</item>

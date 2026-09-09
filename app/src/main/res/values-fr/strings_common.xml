@@ -705,6 +705,9 @@
     <string name="ui_startup_status_preparing_home">Préparation de l\'accueil...</string>
     <string name="ui_startup_status_waiting_for_storage">En attente du stockage...</string>
     <string name="ui_startup_status_scanning_roms">Analyse des fichiers ROM...</string>
+    <string name="ui_deep_link_startup_timeout">Argosy était encore en cours de démarrage, réessayez</string>
+    <string name="ui_deep_link_game_not_found">Jeu introuvable dans Argosy</string>
+    <string name="ui_deep_link_ambiguous_file_name">Plusieurs jeux correspondent à ce nom de fichier</string>
     <string name="ui_builtin_cores_ready_title">Émulateur intégré prêt</string>
     <plurals name="ui_builtin_cores_ready_subtitle">
         <item quantity="one">%d core téléchargé</item>

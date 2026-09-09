@@ -115,12 +115,13 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 private const val KEY_SINK_RECLAIM_GRACE_MS = 250L
 private const val NAV_READY_TIMEOUT_MS = 45_000L
-private const val NAV_READY_POLL_MS = 50L
 
 @Composable
 fun ArgosyApp(
@@ -248,79 +249,73 @@ fun ArgosyApp(
     }
     val pendingDeepLink by activity?.pendingDeepLink?.collectAsState() ?: remember { mutableStateOf(null) }
     LaunchedEffect(pendingDeepLink) {
-        pendingDeepLink?.let { uri ->
-            android.util.Log.d("ArgosyApp", "Handling deep link: $uri")
-            if (uri.scheme == "argosy") {
-                when (uri.host) {
-                    "game" -> {
-                        val gameId = uri.lastPathSegment?.toLongOrNull()
-                        if (gameId != null) {
-                            navController.navigate(Screen.GameDetail.createRoute(gameId)) {
-                                launchSingleTop = true
-                            }
+        val uri = pendingDeepLink ?: return@LaunchedEffect
+        android.util.Log.d("ArgosyApp", "Handling deep link: $uri")
+        val showDeepLinkNotice: (Int) -> Unit = { messageRes ->
+            android.widget.Toast.makeText(context, messageRes, android.widget.Toast.LENGTH_LONG).show()
+        }
+        val awaitNavGraph: suspend () -> Boolean = {
+            val ready = withTimeoutOrNull(NAV_READY_TIMEOUT_MS) {
+                navController.currentBackStackEntryFlow.first()
+            } != null
+            if (!ready) {
+                android.util.Log.w("ArgosyApp", "Nav graph not ready, dropping deep link $uri")
+                showDeepLinkNotice(R.string.ui_deep_link_startup_timeout)
+            }
+            ready
+        }
+        if (uri.scheme == "argosy") {
+            when (uri.host) {
+                "game" -> {
+                    val gameId = uri.lastPathSegment?.toLongOrNull()
+                    if (gameId != null && awaitNavGraph()) {
+                        navController.navigate(Screen.GameDetail.createRoute(gameId)) {
+                            launchSingleTop = true
                         }
                     }
-                    "play" -> {
-                        val gameId = uri.lastPathSegment?.toLongOrNull()
-                        if (gameId != null) {
-                            viewModel.initiateGameLaunch(gameId)
-                            navController.navigate(Screen.GameDetail.createRoute(gameId)) {
-                                launchSingleTop = true
-                            }
+                }
+                "play" -> {
+                    val gameId = uri.lastPathSegment?.toLongOrNull()
+                    if (gameId != null && awaitNavGraph()) {
+                        viewModel.initiateGameLaunch(gameId)
+                        navController.navigate(Screen.GameDetail.createRoute(gameId)) {
+                            launchSingleTop = true
                         }
                     }
-                    "apps" -> {
+                }
+                "apps" -> {
+                    if (awaitNavGraph()) {
                         navController.navigate(Screen.Apps.route) {
                             launchSingleTop = true
                         }
                     }
-                    "launch" -> {
-                        val request = com.nendo.argosy.ui.deeplink.DeepLinkParser.parse(uri)
-                        if (request == null) {
-                            android.util.Log.w("ArgosyApp", "Deep link carried no target: $uri")
-                        } else {
-                            when (val outcome = viewModel.resolveDeepLinkLaunch(request)) {
-                                is com.nendo.argosy.ui.deeplink.DeepLinkLaunch.Ready -> {
-                                    val graphReady = kotlinx.coroutines.withTimeoutOrNull(NAV_READY_TIMEOUT_MS) {
-                                        while (runCatching { navController.graph }.isFailure) {
-                                            kotlinx.coroutines.delay(NAV_READY_POLL_MS)
-                                        }
-                                        true
-                                    } ?: false
-                                    if (!graphReady) {
-                                        android.util.Log.w(
-                                            "ArgosyApp",
-                                            "Nav graph not ready, dropping deep link for game ${outcome.gameId}"
-                                        )
-                                        android.widget.Toast.makeText(
-                                            context,
-                                            "Argosy was still starting up, try again",
-                                            android.widget.Toast.LENGTH_LONG
-                                        ).show()
-                                    } else {
-                                        navController.navigate(
-                                            Screen.GameDetail.createRoute(outcome.gameId)
-                                        ) {
-                                            launchSingleTop = true
-                                        }
-                                        viewModel.awaitDeepLinkSyncReady()
-                                        viewModel.initiateGameLaunch(outcome.gameId, outcome.channelName)
+                }
+                "launch" -> {
+                    val request = com.nendo.argosy.ui.deeplink.DeepLinkParser.parse(uri)
+                    if (request == null) {
+                        android.util.Log.w("ArgosyApp", "Deep link carried no target: $uri")
+                    } else {
+                        when (val outcome = viewModel.resolveDeepLinkLaunch(request)) {
+                            is com.nendo.argosy.ui.deeplink.DeepLinkLaunch.Ready -> {
+                                if (awaitNavGraph()) {
+                                    navController.navigate(
+                                        Screen.GameDetail.createRoute(outcome.gameId)
+                                    ) {
+                                        launchSingleTop = true
                                     }
+                                    viewModel.awaitDeepLinkSyncReady()
+                                    viewModel.initiateGameLaunch(outcome.gameId, outcome.channelName)
                                 }
-                                is com.nendo.argosy.ui.deeplink.DeepLinkLaunch.Failed -> {
-                                    android.widget.Toast.makeText(
-                                        context,
-                                        outcome.message,
-                                        android.widget.Toast.LENGTH_LONG
-                                    ).show()
-                                }
+                            }
+                            is com.nendo.argosy.ui.deeplink.DeepLinkLaunch.Failed -> {
+                                showDeepLinkNotice(outcome.messageRes)
                             }
                         }
                     }
                 }
             }
-            activity?.clearPendingDeepLink()
         }
+        activity?.clearPendingDeepLink()
     }
 
     // Drawer state - confirmStateChange handles swipe gestures synchronously

@@ -37,12 +37,8 @@ import com.nendo.argosy.util.SafeCoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.channels.BufferOverflow
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -151,11 +147,17 @@ class PlaySessionTracker @Inject constructor(
         .map { it != null }
         .stateIn(scope, kotlinx.coroutines.flow.SharingStarted.Eagerly, false)
 
-    private val _conflictEvents = MutableSharedFlow<SaveConflictEvent>(
-        extraBufferCapacity = 8,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST
-    )
-    val conflictEvents: SharedFlow<SaveConflictEvent> = _conflictEvents.asSharedFlow()
+    private val _pendingSessionConflict = MutableStateFlow<SaveConflictEvent?>(null)
+
+    /**
+     * The session-end save conflict awaiting the user's answer, or null once answered. Launch paths
+     * hold a new launch on this so the next game's own prompts never stack on an unanswered one.
+     */
+    val pendingSessionConflict: StateFlow<SaveConflictEvent?> = _pendingSessionConflict.asStateFlow()
+
+    fun clearPendingSessionConflict() {
+        _pendingSessionConflict.value = null
+    }
 
     private var wasInBackground = false
     private var lastPauseTime: Instant? = null
@@ -496,7 +498,21 @@ class PlaySessionTracker @Inject constructor(
         }
     }
 
+    /**
+     * Opens a session for a launch that already went through the launch gate. The gate ends any
+     * running session first, so a live session here is a caller that skipped it: the call is
+     * refused and logged rather than clobbering the running session's play time and save sync.
+     */
     fun startSession(gameId: Long, emulatorPackage: String, coreName: String? = null, isHardcore: Boolean = false, isNewGame: Boolean = false, isNetplayGuest: Boolean = false, variantFileId: Long? = null) {
+        val running = _activeSession.value
+        if (running != null) {
+            Logger.error(
+                TAG,
+                "[SaveSync] SESSION gameId=$gameId | startSession refused, session for gameId=${running.gameId} " +
+                    "(emulator=${running.emulatorPackage}) is still active; caller must end it through the launch gate first"
+            )
+            return
+        }
         saveObserved.set(false)
         sessionServiceStarted.set(false)
         lastScreenOnTime = Instant.now()
@@ -958,15 +974,13 @@ class PlaySessionTracker @Inject constructor(
         when (result) {
             is SyncSaveOnSessionEndUseCase.Result.Conflict -> {
                 Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Sync result: CONFLICT | local=${result.localTimestamp}, server=${result.serverTimestamp}")
-                _conflictEvents.tryEmit(
-                    SaveConflictEvent(
-                        gameId = result.gameId,
-                        emulatorId = result.emulatorId,
-                        channelName = result.channelName,
-                        localTimestamp = result.localTimestamp,
-                        serverTimestamp = result.serverTimestamp,
-                        serverDeviceName = result.serverDeviceName
-                    )
+                _pendingSessionConflict.value = SaveConflictEvent(
+                    gameId = result.gameId,
+                    emulatorId = result.emulatorId,
+                    channelName = result.channelName,
+                    localTimestamp = result.localTimestamp,
+                    serverTimestamp = result.serverTimestamp,
+                    serverDeviceName = result.serverDeviceName
                 )
             }
             is SyncSaveOnSessionEndUseCase.Result.Uploaded -> {

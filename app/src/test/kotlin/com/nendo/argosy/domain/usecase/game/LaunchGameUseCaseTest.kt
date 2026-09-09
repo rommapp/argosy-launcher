@@ -70,6 +70,29 @@ class LaunchGameUseCaseTest {
     }
 
     @Test
+    fun `invoke leaves the session to LibretroActivity for an in-process launch`() = runTest {
+        val intent = mockk<Intent>(relaxed = true)
+        coEvery { gameLauncher.launch(123L, null, any(), any(), any(), any()) } returns
+            LaunchResult.Success(intent, inProcess = true)
+
+        val result = useCase(123L)
+
+        assertTrue(result is LaunchResult.Success)
+        coVerify(exactly = 0) { playSessionTracker.startSession(any(), any()) }
+    }
+
+    @Test
+    fun `invoke keeps the running session on resume`() = runTest {
+        val intent = mockk<Intent>(relaxed = true)
+        coEvery { gameLauncher.launch(123L, null, true, any(), any(), any()) } returns LaunchResult.Success(intent)
+
+        val result = useCase(123L, forResume = true)
+
+        assertTrue(result is LaunchResult.Success)
+        coVerify(exactly = 0) { playSessionTracker.startSession(any(), any()) }
+    }
+
+    @Test
     fun `invoke returns NoEmulator when no emulator available`() = runTest {
         coEvery { gameLauncher.launch(123L, null, any(), any(), any(), any()) } returns LaunchResult.NoEmulator("nes")
 

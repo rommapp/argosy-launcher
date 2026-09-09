@@ -682,6 +682,9 @@
     <string name="ui_startup_status_preparing_home">होम तैयार हो रहा है...</string>
     <string name="ui_startup_status_waiting_for_storage">स्टोरेज का इंतज़ार हो रहा है...</string>
     <string name="ui_startup_status_scanning_roms">ROM फ़ाइलें स्कैन हो रही हैं...</string>
+    <string name="ui_deep_link_startup_timeout">Argosy अभी शुरू हो रहा था, फिर से कोशिश करें</string>
+    <string name="ui_deep_link_game_not_found">गेम Argosy में नहीं मिला</string>
+    <string name="ui_deep_link_ambiguous_file_name">उस फ़ाइल नाम से एक से ज़्यादा गेम मेल खाते हैं</string>
     <string name="ui_builtin_cores_ready_title">बिल्ट-इन एमुलेटर तैयार</string>
     <plurals name="ui_builtin_cores_ready_subtitle">
         <item quantity="one">%d कोर डाउनलोड हुआ</item>

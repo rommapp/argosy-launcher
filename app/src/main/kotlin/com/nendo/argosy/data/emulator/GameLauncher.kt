@@ -57,7 +57,12 @@ data class DiscOption(
 )
 
 sealed class LaunchResult {
-    data class Success(val intent: Intent, val discId: Long? = null, val alreadyLaunched: Boolean = false) : LaunchResult()
+    data class Success(
+        val intent: Intent,
+        val discId: Long? = null,
+        val alreadyLaunched: Boolean = false,
+        val inProcess: Boolean = false
+    ) : LaunchResult()
     data class SelectDisc(val gameId: Long, val discs: List<DiscOption>) : LaunchResult()
     data class SelectVariant(val gameId: Long, val variants: List<VariantOption>) : LaunchResult()
     data class SelectMemcard(
@@ -373,7 +378,11 @@ class GameLauncher @Inject constructor(
             }
         })
         val alreadyLaunched = intent.getBooleanExtra(EXTRA_ALREADY_LAUNCHED, false)
-        return LaunchResult.Success(intent, alreadyLaunched = alreadyLaunched)
+        return LaunchResult.Success(
+            intent,
+            alreadyLaunched = alreadyLaunched,
+            inProcess = emulator.launchConfig.isInProcess
+        )
     }
 
     private suspend fun launchVariantFile(game: GameEntity, variant: com.nendo.argosy.data.local.entity.GameFileEntity, forResume: Boolean): LaunchResult {
@@ -390,7 +399,11 @@ class GameLauncher @Inject constructor(
                 val intent = buildIntent(emulator, m3u, game, forResume, variant.id) ?: return LaunchResult.NoCore(game.platformSlug, lastCoreDownloadError)
                 overlayWriter.recordPlayStart(game.id, java.time.Instant.now())
                 val alreadyLaunched = intent.getBooleanExtra(EXTRA_ALREADY_LAUNCHED, false)
-                return LaunchResult.Success(intent, alreadyLaunched = alreadyLaunched)
+                return LaunchResult.Success(
+                    intent,
+                    alreadyLaunched = alreadyLaunched,
+                    inProcess = emulator.launchConfig.isInProcess
+                )
             }
             return LaunchResult.Error("Variant M3U file not found")
         }
@@ -556,7 +569,11 @@ class GameLauncher @Inject constructor(
             append(" | ext=${launchFile.extension}")
         })
         val alreadyLaunched = intent.getBooleanExtra(EXTRA_ALREADY_LAUNCHED, false)
-        return LaunchResult.Success(intent, alreadyLaunched = alreadyLaunched)
+        return LaunchResult.Success(
+            intent,
+            alreadyLaunched = alreadyLaunched,
+            inProcess = emulator.launchConfig.isInProcess
+        )
     }
 
     private suspend fun launchSteamGame(game: GameEntity): LaunchResult {

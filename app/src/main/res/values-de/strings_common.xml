@@ -682,6 +682,9 @@
     <string name="ui_startup_status_preparing_home">Startseite wird vorbereitet...</string>
     <string name="ui_startup_status_waiting_for_storage">Warten auf Speicher...</string>
     <string name="ui_startup_status_scanning_roms">ROM-Dateien werden gescannt...</string>
+    <string name="ui_deep_link_startup_timeout">Argosy wurde noch gestartet, bitte erneut versuchen</string>
+    <string name="ui_deep_link_game_not_found">Spiel in Argosy nicht gefunden</string>
+    <string name="ui_deep_link_ambiguous_file_name">Mehr als ein Spiel passt zu diesem Dateinamen</string>
     <string name="ui_builtin_cores_ready_title">Integrierter Emulator bereit</string>
     <plurals name="ui_builtin_cores_ready_subtitle">
         <item quantity="one">%d Core heruntergeladen</item>

@@ -1388,6 +1388,15 @@
     <!-- Splash status while checking that every game file is still where it was.
          "ROM" is the game file. -->
     <string name="ui_startup_status_scanning_roms">Scanning ROM files...</string>
+    <!-- Brief message when a launch request from another app arrived before the launcher
+         finished starting and had to be dropped. -->
+    <string name="ui_deep_link_startup_timeout">Argosy was still starting up, try again</string>
+    <!-- Brief message when a launch request from another app names a game this library does
+         not hold. -->
+    <string name="ui_deep_link_game_not_found">Game not found in Argosy</string>
+    <!-- Brief message when a launch request from another app gave only a file name and more
+         than one library entry has that file name. -->
+    <string name="ui_deep_link_ambiguous_file_name">More than one game matches that file name</string>
     <!-- Brief message after the built-in emulator finishes setting itself up. -->
     <string name="ui_builtin_cores_ready_title">Built-in Emulator Ready</string>
     <!-- Second line of that message. A "core" is one emulator engine. -->

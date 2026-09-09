@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.deeplink
 
+import androidx.annotation.StringRes
+import com.nendo.argosy.R
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.ConnectionState
 import com.nendo.argosy.data.remote.romm.RomMRepository
@@ -16,7 +18,7 @@ private const val CONNECT_TIMEOUT_MS = 10_000L
 
 sealed interface DeepLinkLaunch {
     data class Ready(val gameId: Long, val channelName: String?) : DeepLinkLaunch
-    data class Failed(val message: String) : DeepLinkLaunch
+    data class Failed(@StringRes val messageRes: Int) : DeepLinkLaunch
 }
 
 /**
@@ -41,11 +43,11 @@ class DeepLinkLaunchCoordinator @Inject constructor(
             }
             is DeepLinkResolution.NotFound -> {
                 Logger.warn(TAG, "Deep link unresolved: ${resolution.reason}")
-                DeepLinkLaunch.Failed("Game not found in Argosy")
+                DeepLinkLaunch.Failed(R.string.ui_deep_link_game_not_found)
             }
             is DeepLinkResolution.Ambiguous -> {
                 Logger.warn(TAG, "Deep link ambiguous: ${resolution.reason}")
-                DeepLinkLaunch.Failed("More than one game matches that file name")
+                DeepLinkLaunch.Failed(R.string.ui_deep_link_ambiguous_file_name)
             }
         }
     }

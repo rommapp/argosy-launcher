@@ -495,7 +495,9 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        handleDeepLink(intent)
+        if (savedInstanceState == null) {
+            handleDeepLink(intent)
+        }
     }
 
     override fun onNewIntent(intent: Intent) {

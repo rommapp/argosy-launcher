@@ -189,6 +189,12 @@ class GameLaunchDelegate @Inject constructor(
 
     private var _onLaunchFailed: (() -> Unit)? = null
 
+    private suspend fun endSessionAndAwaitConflictAnswer(): SessionEndResult {
+        val result = playSessionTracker.endSession()
+        playSessionTracker.pendingSessionConflict.first { it == null }
+        return result
+    }
+
     fun launchGame(
         scope: CoroutineScope,
         gameId: Long,
@@ -222,7 +228,7 @@ class GameLaunchDelegate @Inject constructor(
                 // Emulators flagged requiresEmulatorKill (e.g. Vita3K) don't support resume -- always end stale sessions
                 if (sessionRequiresKill) {
                     android.util.Log.d("GameLaunchDelegate", "Session requires emulator kill, ending before fresh launch")
-                    playSessionTracker.endSession()
+                    endSessionAndAwaitConflictAnswer()
                     delay(EMULATOR_KILL_DELAY_MS)
                 }
 
@@ -237,7 +243,7 @@ class GameLaunchDelegate @Inject constructor(
 
                 if (!canResume && activeSession != null && !sessionRequiresKill) {
                     android.util.Log.d("GameLaunchDelegate", "Evicting stale session for game ${activeSession.gameId}, killing ${activeSession.emulatorPackage}")
-                    playSessionTracker.endSession()
+                    endSessionAndAwaitConflictAnswer()
                     gameLauncher.forceStopEmulator(activeSession.emulatorPackage)
                     delay(EMULATOR_KILL_DELAY_MS)
                 }
@@ -797,6 +803,13 @@ class GameLaunchDelegate @Inject constructor(
         }
         scope.launch {
             try {
+                val activeSession = playSessionTracker.activeSession.value
+                if (activeSession != null) {
+                    android.util.Log.d("GameLaunchDelegate", "launchSimple: ending session for game ${activeSession.gameId} before fresh launch")
+                    endSessionAndAwaitConflictAnswer()
+                    gameLauncher.forceStopEmulator(activeSession.emulatorPackage)
+                    delay(EMULATOR_KILL_DELAY_MS)
+                }
                 val result = launchGameUseCase(
                     gameId = gameId,
                     discId = discId,

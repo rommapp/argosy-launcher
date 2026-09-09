@@ -9,6 +9,7 @@ import com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry
 import com.nendo.argosy.libretro.coreoptions.CoreOptionResolver
 import com.nendo.argosy.util.Logger
 import com.nendo.sigil.Sigil
+import com.nendo.sigil.SigilResult
 import com.nendo.sigil.SigilSaveMember
 import com.nendo.sigil.SigilSaveUnit
 import kotlinx.coroutines.Dispatchers
@@ -90,17 +91,11 @@ class SaveUnitResolver @Inject constructor(
         if (fal.exists(root) && !fal.isDirectory(root)) return@withContext null
         val listing = if (fal.exists(root)) listRoot(root, layout) else emptyList()
         val options = optionsFor(layout, game?.id)
-        val unit = Sigil.resolveSaveUnit(
-            layout = layout,
-            platformSlug = platformSlug,
-            contentName = contentName,
-            titleId = game?.titleId,
-            saveId = game?.saveId,
-            features = game?.let { cartFeatureScanner.featuresFor(it) } ?: 0,
-            options = options,
-            listing = listing,
-            rootPath = if (hash) fal.getTransformedFile(root).absolutePath else null
-        ) ?: return@withContext null
+        val identity = persisted(platformSlug, game, game?.let { cartFeatureScanner.featuresFor(it) } ?: 0)
+        val unit = runCatching {
+            val located = Sigil.locateSaves(identity, layout, contentName, listing = listing, options = options)
+            if (hash) Sigil.hashSaves(located, fal.getTransformedFile(root).absolutePath) else located
+        }.getOrElse { return@withContext null }
         Logger.debug(
             TAG,
             "[SaveSync] UNIT | root=$root layout=$layout content=$contentName shape=${unit.shape} " +
@@ -145,19 +140,15 @@ class SaveUnitResolver @Inject constructor(
         val candidates = entries.flatMap { entry ->
             listOf(entry) + subdirs.map { "$it/$entry" }
         }
-        val unit = Sigil.resolveSaveUnit(
-            layout = layout,
-            platformSlug = platformSlug,
-            contentName = contentName,
-            titleId = game?.titleId,
-            saveId = game?.saveId,
-            features = game?.saveFeatures ?: 0,
-            options = options,
-            listing = candidates,
-            rootPath = null
-        ) ?: return emptyMap()
+        val identity = persisted(platformSlug, game, game?.saveFeatures ?: 0)
+        val unit = runCatching {
+            Sigil.locateSaves(identity, layout, contentName, listing = candidates, options = options)
+        }.getOrElse { return emptyMap() }
         return entries.mapNotNull { entry -> unit.members.firstOrNull { it.entry == entry }?.let { entry to it } }.toMap()
     }
+
+    private fun persisted(platformSlug: String?, game: GameEntity?, features: Int): SigilResult =
+        SigilResult.persisted(platformSlug ?: "", game?.titleId ?: "", game?.saveId ?: "", features)
 
     /**
      * Destinations for a bundle's entries under the root an anchor path sits in, or null when

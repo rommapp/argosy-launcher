@@ -16,6 +16,8 @@ object AppPaths {
 
     const val MEDIA_DIR = "media"
 
+    const val RESET_RECORDS_DIR = "reset_records"
+
     const val LIBRETRO_SAVES_SUBDIR = "libretro/saves"
 
     const val LIBRETRO_STATES_SUBDIR = "libretro/states"
@@ -73,6 +75,8 @@ object AppPaths {
         File(filesDir, "$ROM_STAGING_DIR/$downloadId")
 
     fun mediaDir(filesDir: File): File = File(filesDir, MEDIA_DIR)
+
+    fun resetRecordsDir(filesDir: File): File = File(filesDir, RESET_RECORDS_DIR)
 
     fun libretroSavesDir(filesDir: File): File = File(filesDir, LIBRETRO_SAVES_SUBDIR)
 

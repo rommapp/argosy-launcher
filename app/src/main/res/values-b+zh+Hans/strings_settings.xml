@@ -704,6 +704,10 @@
 
     <string name="settings_storage_games_integrity_title">每周ROM完整性检查</string>
     <string name="settings_storage_games_integrity_subtitle">每周启动时校验已下载的游戏文件</string>
+    <string name="settings_storage_games_not_from_romm_title">非来自RomM</string>
+    <plurals name="settings_storage_games_not_from_romm_subtitle">
+        <item quantity="other">%1$d个游戏文件为手动添加，硬重置时会保留</item>
+    </plurals>
 
     <plurals name="settings_storage_games_totals_count">
         <item quantity="other">已下载%d个</item>
@@ -1911,11 +1915,15 @@
     <plurals name="settings_hard_reset_games_summary">
         <item quantity="other">已下载%1$d个游戏 - 占用磁盘%2$s</item>
     </plurals>
+    <plurals name="settings_hard_reset_kept_summary">
+        <item quantity="other">保留%1$d个游戏文件 - %2$s并非由Argosy下载</item>
+    </plurals>
     <string name="settings_hard_reset_deletes_header">将删除</string>
     <string name="settings_hard_reset_deletes_files">磁盘上所有已下载的游戏文件</string>
     <string name="settings_hard_reset_deletes_database">整个库数据库 - 游戏时长、合集、下载记录、各游戏的单独设置</string>
     <string name="settings_hard_reset_deletes_caches">所有缓存 - 图片、存档与即时存档、已解压的ROM、音效、模拟器安装包、Steam暂存文件、好友状态封面</string>
     <string name="settings_hard_reset_keeps_header">将保留</string>
+    <string name="settings_hard_reset_keeps_adopted_files">你自行复制到设备上的游戏文件</string>
     <string name="settings_hard_reset_keeps_sign_ins">设置与登录状态 - RomM与Steam保持连接</string>
     <string name="settings_hard_reset_keeps_synced_saves">已同步到服务器的存档</string>
     <string name="settings_hard_reset_keeps_emulator_apps">模拟器应用及其自身的存档数据</string>

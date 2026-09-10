@@ -30,6 +30,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.R
 import com.nendo.argosy.core.input.SoundType
+import com.nendo.argosy.data.repository.HardResetPreview
 import com.nendo.argosy.ui.components.GamepadHoldTracker
 import com.nendo.argosy.ui.components.HoldToConfirmButton
 import com.nendo.argosy.ui.components.Modal
@@ -54,8 +55,7 @@ private const val FOCUS_ACTION = 1
  */
 @Composable
 fun HardResetModal(
-    downloadedGamesCount: Int,
-    downloadedGamesBytes: Long,
+    preview: HardResetPreview,
     pendingUploads: Int,
     isResetting: Boolean,
     canSyncNow: Boolean,
@@ -185,13 +185,25 @@ fun HardResetModal(
             Text(
                 text = pluralStringResource(
                     R.plurals.settings_hard_reset_games_summary,
-                    downloadedGamesCount,
-                    downloadedGamesCount,
-                    formatBytes(downloadedGamesBytes)
+                    preview.deleteCount,
+                    preview.deleteCount,
+                    formatBytes(preview.deleteBytes)
                 ),
                 style = MaterialTheme.typography.titleSmall,
                 color = theme.textPrimary
             )
+            if (preview.keepCount > 0) {
+                Text(
+                    text = pluralStringResource(
+                        R.plurals.settings_hard_reset_kept_summary,
+                        preview.keepCount,
+                        preview.keepCount,
+                        formatBytes(preview.keepBytes)
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = semanticColors.success
+                )
+            }
             Spacer(modifier = Modifier.height(Dimens.spacingMd))
             ScopeList(
                 header = stringResource(R.string.settings_hard_reset_deletes_header),
@@ -207,6 +219,7 @@ fun HardResetModal(
                 header = stringResource(R.string.settings_hard_reset_keeps_header),
                 headerColor = semanticColors.success,
                 items = listOf(
+                    stringResource(R.string.settings_hard_reset_keeps_adopted_files),
                     stringResource(R.string.settings_hard_reset_keeps_sign_ins),
                     stringResource(R.string.settings_hard_reset_keeps_synced_saves),
                     stringResource(R.string.settings_hard_reset_keeps_emulator_apps),

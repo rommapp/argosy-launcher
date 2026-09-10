@@ -1,6 +1,7 @@
 package com.nendo.argosy.data.remote.romm
 
 import com.nendo.argosy.data.local.entity.GameEntity
+import com.nendo.argosy.data.model.FileOrigin
 import java.io.File
 
 object GameMigrationHelper {
@@ -13,13 +14,12 @@ object GameMigrationHelper {
         if (sources.size == 1) return sources.first()
 
         val base = sources.first()
-        val validLocalPath = sources
-            .mapNotNull { it.localPath }
-            .firstOrNull { pathValidator(it) }
+        val pathOwner = sources.firstOrNull { it.localPath?.let(pathValidator) == true }
 
         return base.copy(
             id = 0,
-            localPath = validLocalPath,
+            localPath = pathOwner?.localPath,
+            fileOrigin = pathOwner?.fileOrigin ?: FileOrigin.ADOPTED,
             playCount = sources.sumOf { it.playCount },
             playTimeMinutes = sources.sumOf { it.playTimeMinutes },
             userRating = sources.maxOf { it.userRating },

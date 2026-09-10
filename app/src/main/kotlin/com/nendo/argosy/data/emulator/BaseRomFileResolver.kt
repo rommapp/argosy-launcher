@@ -46,7 +46,7 @@ class BaseRomFileResolver @Inject constructor(
             if (chosen?.versionGroup != null && chosenPath != null && File(chosenPath).exists()) {
                 if (chosenPath != romFile.absolutePath) {
                     Logger.info(TAG, "honoring active version ${chosen.fileName} for ${game.title}")
-                    gameDao.updateLocalPath(game.id, chosenPath, game.source)
+                    gameDao.updateLocalPath(game.id, chosenPath, game.source, game.fileOrigin)
                 }
                 return File(chosenPath)
             }
@@ -71,7 +71,7 @@ class BaseRomFileResolver @Inject constructor(
         } ?: return romFile
         if (base.absolutePath == romFile.absolutePath) return romFile
         Logger.info(TAG, "redirecting ${romFile.name} -> ${base.name} for ${game.title}")
-        gameDao.updateLocalPath(game.id, base.absolutePath, game.source)
+        gameDao.updateLocalPath(game.id, base.absolutePath, game.source, game.fileOrigin)
         return base
     }
 

@@ -1,9 +1,11 @@
 package com.nendo.argosy.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.nendo.argosy.data.model.FileOrigin
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.util.SearchNormalizer
 import java.time.Instant
@@ -44,6 +46,8 @@ data class GameEntity(
     val searchTitle: String = SearchNormalizer.normalize(title),
 
     val localPath: String?,
+    @ColumnInfo(defaultValue = "ADOPTED")
+    val fileOrigin: FileOrigin = FileOrigin.ADOPTED,
     val rommId: Long?,
     val rommFileName: String? = null,
     val igdbId: Long?,

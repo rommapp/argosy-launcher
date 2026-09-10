@@ -17,6 +17,7 @@ import com.nendo.argosy.data.local.entity.GameDiscEntity
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.GameFileEntity
 import com.nendo.argosy.data.local.entity.PlatformEntity
+import com.nendo.argosy.data.model.FileOrigin
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.platform.InstalledAppResolver
 import com.nendo.argosy.data.platform.LocalPlatformIds
@@ -903,7 +904,7 @@ class RomMLibrarySyncService @Inject constructor(
             val path = game.localPath
             if (path != null && !fileAccessLayer.exists(path)) {
                 Logger.warn(TAG, "syncRom: existing localPath no longer exists: $path, clearing for ${rom.name}")
-                game.copy(localPath = null)
+                game.copy(localPath = null, fileOrigin = FileOrigin.ADOPTED)
             } else {
                 game
             }
@@ -1000,6 +1001,7 @@ class RomMLibrarySyncService @Inject constructor(
             title = rom.name,
             sortTitle = RomMUtils.createSortTitle(rom.name),
             localPath = localDataSource?.localPath,
+            fileOrigin = localDataSource?.fileOrigin ?: FileOrigin.ADOPTED,
             packageName = installedPackageName,
             rommId = rom.id,
             rommFileName = rom.fileName,

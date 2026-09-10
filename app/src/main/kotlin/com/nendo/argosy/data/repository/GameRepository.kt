@@ -22,6 +22,7 @@ import com.nendo.argosy.data.local.entity.GameFileEntity
 import com.nendo.argosy.data.local.entity.GameListItem
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.platform.platformRomRoots
+import com.nendo.argosy.data.model.FileOrigin
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.model.VariantCategory
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -298,7 +299,7 @@ class GameRepository @Inject constructor(
             } else {
                 entry
             } ?: continue
-            gameDao.updateLocalPath(game.id, resolved.absolutePath, GameSource.ROMM_SYNCED)
+            gameDao.updateLocalPath(game.id, resolved.absolutePath, GameSource.ROMM_SYNCED, FileOrigin.ADOPTED)
             discovered++
             Log.d(TAG, "Discovered: ${game.title} -> ${entry.name}")
         }
@@ -396,7 +397,7 @@ class GameRepository @Inject constructor(
         var repaired = 0
         for (info in gamesWithPaths) {
             val path = info.localPath ?: continue
-            val rebased = rebaseToFolderBase(info.id, info.platformSlug, info.source, path) ?: continue
+            val rebased = rebaseToFolderBase(info.id, info.platformSlug, info.source, info.fileOrigin, path) ?: continue
             repaired++
             Log.i(TAG, "Repaired rom pointer for game ${info.id}: $path -> $rebased")
         }
@@ -424,7 +425,7 @@ class GameRepository @Inject constructor(
                 continue
             }
 
-            gameDao.updateLocalPath(info.id, replacement.absolutePath, info.source)
+            gameDao.updateLocalPath(info.id, replacement.absolutePath, info.source, info.fileOrigin)
             gameDao.updateM3uPath(info.id, null)
             if (m3u.absolutePath != replacement.absolutePath) m3u.delete()
             repaired++
@@ -438,6 +439,7 @@ class GameRepository @Inject constructor(
         gameId: Long,
         platformSlug: String,
         source: GameSource,
+        fileOrigin: FileOrigin,
         localPath: String
     ): String? {
         val file = File(localPath)
@@ -450,7 +452,7 @@ class GameRepository @Inject constructor(
         } ?: return null
         val base = findPrimaryRomInFolder(gameFolder, platformSlug) ?: return null
         if (base.absolutePath == localPath) return null
-        gameDao.updateLocalPath(gameId, base.absolutePath, source)
+        gameDao.updateLocalPath(gameId, base.absolutePath, source, fileOrigin)
         return base.absolutePath
     }
 
@@ -524,7 +526,7 @@ class GameRepository @Inject constructor(
         if (game.localPath != null) {
             if (isGamePathValid(game.localPath, game.platformSlug)) {
                 if (!File(game.localPath).isDirectory) {
-                    rebaseToFolderBase(game.id, game.platformSlug, game.source, game.localPath)
+                    rebaseToFolderBase(game.id, game.platformSlug, game.source, game.fileOrigin, game.localPath)
                 }
                 return@withContext true
             }
@@ -553,6 +555,10 @@ class GameRepository @Inject constructor(
 
     suspend fun getDownloadedGamesCount(): Int = withContext(Dispatchers.IO) {
         gameDao.getGamesWithLocalPathIds().size
+    }
+
+    suspend fun getAdoptedGamesCount(): Int = withContext(Dispatchers.IO) {
+        gameDao.countWithLocalPathByOrigin(FileOrigin.ADOPTED)
     }
 
     suspend fun countBoxArtCapableGames(): Int = withContext(Dispatchers.IO) {
@@ -596,7 +602,7 @@ class GameRepository @Inject constructor(
 
     suspend fun updateLocalPath(gameId: Long, newPath: String) = withContext(Dispatchers.IO) {
         val game = gameDao.getById(gameId) ?: return@withContext
-        gameDao.updateLocalPath(gameId, newPath, game.source)
+        gameDao.updateLocalPath(gameId, newPath, game.source, game.fileOrigin)
     }
 
     suspend fun clearLocalPath(gameId: Long) = withContext(Dispatchers.IO) {
@@ -681,7 +687,7 @@ class GameRepository @Inject constructor(
             if (isGamePathValid(path, game.platformSlug)) continue
             val resolved = resolveFileFallback(path, game.platformSlug)
             if (resolved != null) {
-                gameDao.updateLocalPath(game.id, resolved, game.source)
+                gameDao.updateLocalPath(game.id, resolved, game.source, game.fileOrigin)
                 Log.d(TAG, "Resolved (fallback): ${game.title} -> $resolved")
                 continue
             }

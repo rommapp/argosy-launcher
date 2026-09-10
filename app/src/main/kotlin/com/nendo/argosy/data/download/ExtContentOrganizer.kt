@@ -131,7 +131,7 @@ class ExtContentOrganizer @Inject constructor(
         }
 
         val movedBase = File(platformDir, baseFile.name)
-        gameDao.updateLocalPath(game.id, movedBase.absolutePath, game.source)
+        gameDao.updateLocalPath(game.id, movedBase.absolutePath, game.source, game.fileOrigin)
 
         val kept = gameFolder.walkTopDown().filter { it.isFile && !it.name.startsWith("._") }.count()
         if (kept == 0) {
@@ -247,7 +247,7 @@ class ExtContentOrganizer @Inject constructor(
         for ((source, target) in completed) {
             gameFileDao.updateLocalPathByOldPath(source.absolutePath, target.absolutePath)
         }
-        gameDao.updateLocalPath(game.id, File(gameFolder, baseFile.name).absolutePath, game.source)
+        gameDao.updateLocalPath(game.id, File(gameFolder, baseFile.name).absolutePath, game.source, game.fileOrigin)
         Logger.info(TAG, "restoreFromCombinedLayout: ${game.title} back in ${gameFolder.name} (${moves.size} files)")
         return moves.size
     }

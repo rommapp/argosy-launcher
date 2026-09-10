@@ -8,6 +8,7 @@ import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.entity.DownloadQueueEntity
+import com.nendo.argosy.data.model.FileOrigin
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.model.VariantCategory
 import com.nendo.argosy.data.music.MusicDirectoryManager
@@ -820,7 +821,7 @@ class DownloadManager @Inject constructor(
         val current = game.localPath
         if (current == finalPath) return
         if (current != null && File(current).isFile && !isUnbootableHere(current, game.platformSlug)) return
-        gameDao.updateLocalPath(progress.gameId, finalPath, game.source)
+        gameDao.updateLocalPath(progress.gameId, finalPath, game.source, FileOrigin.ROMM_DOWNLOAD)
         Logger.info(
             TAG,
             "Base rom claimed launch target | game=${progress.gameTitle} path=$finalPath"
@@ -912,7 +913,7 @@ class DownloadManager @Inject constructor(
             }
             val moved = File(gameFolder, baseFile.name)
             if (source.renameTo(moved)) {
-                gameDao.updateLocalPath(gameId, moved.absolutePath, game.source)
+                gameDao.updateLocalPath(gameId, moved.absolutePath, game.source, game.fileOrigin)
                 gameFileDao.getByLocalPath(basePath)?.let { row ->
                     gameFileDao.updateLocalPath(row.id, moved.absolutePath, row.downloadedAt ?: Instant.now())
                 }
@@ -1354,7 +1355,7 @@ class DownloadManager @Inject constructor(
                 m3uManager.generateM3uIfComplete(progress.gameId)
             }
             else -> {
-                gameDao.updateLocalPath(progress.gameId, finalPath, GameSource.ROMM_SYNCED)
+                gameDao.updateLocalPath(progress.gameId, finalPath, GameSource.ROMM_SYNCED, FileOrigin.ROMM_DOWNLOAD)
                 if (progress.selectedFileIds != null) {
                     mapSelectedFilesToDisk(progress.gameId, progress.selectedFileIds, File(finalPath))
                 }
@@ -2059,7 +2060,7 @@ class DownloadManager @Inject constructor(
                     gameFileDao.updateLocalPath(queueEntry.gameFileId, finalPath, Instant.now())
                 }
                 else -> {
-                    gameDao.updateLocalPath(gameId, finalPath, GameSource.ROMM_SYNCED)
+                    gameDao.updateLocalPath(gameId, finalPath, GameSource.ROMM_SYNCED, FileOrigin.ROMM_DOWNLOAD)
                 }
             }
             downloadQueueDao.deleteByGameId(gameId)

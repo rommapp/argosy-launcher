@@ -4,6 +4,7 @@ import android.net.Uri
 import android.util.Log
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PlatformDao
+import com.nendo.argosy.data.model.FileOrigin
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.model.VariantCategory
 import com.nendo.argosy.data.platform.PlatformDef
@@ -76,7 +77,7 @@ class RomScanner @Inject constructor(
                 val existing = gameDao.getBySortTitleAndPlatform(sortTitle, platform.id)
                 if (existing != null) {
                     if (existing.localPath == null) {
-                        gameDao.updateLocalPath(existing.id, localPath, GameSource.ROMM_SYNCED)
+                        gameDao.updateLocalPath(existing.id, localPath, GameSource.ROMM_SYNCED, FileOrigin.ADOPTED)
                         gamesUpdated++
                         platformsWithGames.add(platformSlug)
                         Log.d(TAG, "Marked as installed: ${existing.title}")

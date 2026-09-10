@@ -3,6 +3,7 @@ package com.nendo.argosy.domain.usecase.game
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameLocalPathInfo
 import com.nendo.argosy.data.local.entity.GameEntity
+import com.nendo.argosy.data.model.FileOrigin
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.domain.model.DeepLinkRequest
 import io.mockk.coEvery
@@ -28,6 +29,7 @@ class ResolveDeepLinkGameUseCaseTest {
         platformId = 8L,
         platformSlug = "snes",
         source = GameSource.ROMM_SYNCED,
+        fileOrigin = FileOrigin.ADOPTED,
         localPath = path
     )
 

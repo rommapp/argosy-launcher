@@ -749,6 +749,13 @@
 
     <string name="settings_storage_games_integrity_title">Еженедельная проверка целостности ROM</string>
     <string name="settings_storage_games_integrity_subtitle">Проверяет скачанные файлы игр при запуске раз в неделю</string>
+    <string name="settings_storage_games_not_from_romm_title">Не из RomM</string>
+    <plurals name="settings_storage_games_not_from_romm_subtitle">
+        <item quantity="one">%1$d файл игры добавлен вручную и сохраняется при полном сбросе</item>
+        <item quantity="few">%1$d файла игр добавлены вручную и сохраняются при полном сбросе</item>
+        <item quantity="many">%1$d файлов игр добавлены вручную и сохраняются при полном сбросе</item>
+        <item quantity="other">%1$d файла игр добавлены вручную и сохраняются при полном сбросе</item>
+    </plurals>
 
     <plurals name="settings_storage_games_totals_count">
         <item quantity="one">%d скачано</item>
@@ -2057,11 +2064,18 @@
         <item quantity="many">%1$d скачанных игр - %2$s на диске</item>
         <item quantity="other">%1$d скачанной игры - %2$s на диске</item>
     </plurals>
+    <plurals name="settings_hard_reset_kept_summary">
+        <item quantity="one">%1$d файл игры остаётся - %2$s не скачаны Argosy</item>
+        <item quantity="few">%1$d файла игр остаются - %2$s не скачаны Argosy</item>
+        <item quantity="many">%1$d файлов игр остаются - %2$s не скачаны Argosy</item>
+        <item quantity="other">%1$d файла игр остаются - %2$s не скачаны Argosy</item>
+    </plurals>
     <string name="settings_hard_reset_deletes_header">Удаляет</string>
     <string name="settings_hard_reset_deletes_files">Все скачанные файлы игр на диске</string>
     <string name="settings_hard_reset_deletes_database">Всю базу данных библиотеки - время игры, коллекции, историю загрузок, настройки отдельных игр</string>
     <string name="settings_hard_reset_deletes_caches">Все кэши - изображения, сохранения и состояния, извлечённые ROM, звуковые эффекты, установщики эмуляторов, временные файлы Steam, обложки статусов</string>
     <string name="settings_hard_reset_keeps_header">Сохраняет</string>
+    <string name="settings_hard_reset_keeps_adopted_files">Файлы игр, которые вы сами скопировали на устройство</string>
     <string name="settings_hard_reset_keeps_sign_ins">Настройки и входы в аккаунты - RomM и Steam остаются подключены</string>
     <string name="settings_hard_reset_keeps_synced_saves">Сохранения, уже синхронизированные с сервером</string>
     <string name="settings_hard_reset_keeps_emulator_apps">Приложения эмуляторов и их собственные данные сохранений</string>

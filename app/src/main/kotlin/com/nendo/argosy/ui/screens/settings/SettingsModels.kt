@@ -18,6 +18,7 @@ import com.nendo.argosy.data.local.entity.GameListItem
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.local.entity.PlatformLibretroSettingsEntity
 import com.nendo.argosy.data.preferences.AppLanguage
+import com.nendo.argosy.data.repository.HardResetPreview
 import com.nendo.argosy.data.preferences.BoxArtBorderStyle
 import com.nendo.argosy.data.preferences.GripReserveMode
 import com.nendo.argosy.data.preferences.BoxArtBorderThickness
@@ -778,6 +779,7 @@ data class StorageState(
     val romStoragePath: String = "",
     val downloadedGamesSize: Long = 0,
     val downloadedGamesCount: Int = 0,
+    val adoptedGamesCount: Int = 0,
     val maxConcurrentDownloads: Int = 1,
     val instantDownloadThresholdMb: Int = 50,
     val stageDownloadsInternally: Boolean = true,
@@ -800,6 +802,7 @@ data class StorageState(
     val isPurgingAll: Boolean = false,
     val showHardResetModal: Boolean = false,
     val hardResetPendingUploads: Int = 0,
+    val hardResetPreview: HardResetPreview = HardResetPreview(),
     val isHardResetting: Boolean = false,
     val weeklyIntegrityCheckEnabled: Boolean = true,
     val busyPlatformIds: Set<Long> = emptySet(),

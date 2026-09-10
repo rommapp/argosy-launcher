@@ -745,6 +745,12 @@
 
     <string name="settings_storage_games_integrity_title">Comprobación semanal de integridad de ROM</string>
     <string name="settings_storage_games_integrity_subtitle">Verifica los archivos de juego descargados al iniciar, una vez por semana</string>
+    <string name="settings_storage_games_not_from_romm_title">No provienen de RomM</string>
+    <plurals name="settings_storage_games_not_from_romm_subtitle">
+        <item quantity="one">%1$d archivo de juego se añadió a mano y se conserva en un restablecimiento completo</item>
+        <item quantity="many">%1$d archivos de juego se añadieron a mano y se conservan en un restablecimiento completo</item>
+        <item quantity="other">%1$d archivos de juego se añadieron a mano y se conservan en un restablecimiento completo</item>
+    </plurals>
 
     <plurals name="settings_storage_games_totals_count">
         <item quantity="one">%d descargado</item>
@@ -2019,11 +2025,17 @@
         <item quantity="many">%1$d juegos descargados - %2$s en el disco</item>
         <item quantity="other">%1$d juegos descargados - %2$s en el disco</item>
     </plurals>
+    <plurals name="settings_hard_reset_kept_summary">
+        <item quantity="one">%1$d archivo de juego se conserva - %2$s no descargados por Argosy</item>
+        <item quantity="many">%1$d archivos de juego se conservan - %2$s no descargados por Argosy</item>
+        <item quantity="other">%1$d archivos de juego se conservan - %2$s no descargados por Argosy</item>
+    </plurals>
     <string name="settings_hard_reset_deletes_header">Elimina</string>
     <string name="settings_hard_reset_deletes_files">Todos los archivos de juego descargados en el disco</string>
     <string name="settings_hard_reset_deletes_database">Toda la base de datos de la biblioteca: tiempo de juego, colecciones, historial de descargas, ajustes por juego</string>
     <string name="settings_hard_reset_deletes_caches">Todas las cachés: imágenes, guardados y estados, ROM extraídas, efectos de sonido, instaladores de emuladores, preparación de Steam, carátulas de presencia</string>
     <string name="settings_hard_reset_keeps_header">Conserva</string>
+    <string name="settings_hard_reset_keeps_adopted_files">Los archivos de juego que copiaste al dispositivo por tu cuenta</string>
     <string name="settings_hard_reset_keeps_sign_ins">Ajustes y sesiones iniciadas: RomM y Steam permanecen conectados</string>
     <string name="settings_hard_reset_keeps_synced_saves">Los guardados ya sincronizados con el servidor</string>
     <string name="settings_hard_reset_keeps_emulator_apps">Las apps de emuladores y sus propios datos de guardado</string>

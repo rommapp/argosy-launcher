@@ -34,6 +34,7 @@ import com.nendo.argosy.R
 import com.nendo.argosy.data.storage.PlatformUsage
 import com.nendo.argosy.data.storage.StorageCategory
 import com.nendo.argosy.data.storage.WalkState
+import com.nendo.argosy.ui.components.InfoPreference
 import com.nendo.argosy.ui.components.SegmentedMeterBar
 import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.components.storageVolumeColors
@@ -62,6 +63,8 @@ internal sealed class StorageGamesItem(
 
     data object IntegrityToggle : StorageGamesItem("integrityToggle", "overview")
 
+    data object NotFromRomm : StorageGamesItem("notFromRomm", "overview")
+
     data object PlatformsSpacer : StorageGamesItem("platformsSpacer", "platforms") {
         override val isFocusable = false
     }
@@ -83,6 +86,7 @@ internal sealed class StorageGamesItem(
         fun buildItems(platforms: List<PlatformUsage>): List<StorageGamesItem> = buildList {
             add(TotalsHeader)
             add(IntegrityToggle)
+            add(NotFromRomm)
             add(PlatformsSpacer)
             add(PlatformsHeader)
             if (platforms.isEmpty()) {
@@ -206,6 +210,17 @@ fun StorageGamesSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
                 isEnabled = uiState.storage.weeklyIntegrityCheckEnabled,
                 isFocused = isFocused(item),
                 onToggle = { viewModel.toggleWeeklyIntegrityCheck(it) }
+            )
+
+            StorageGamesItem.NotFromRomm -> InfoPreference(
+                title = stringResource(R.string.settings_storage_games_not_from_romm_title),
+                value = uiState.storage.adoptedGamesCount.toString(),
+                subtitle = pluralStringResource(
+                    R.plurals.settings_storage_games_not_from_romm_subtitle,
+                    uiState.storage.adoptedGamesCount,
+                    uiState.storage.adoptedGamesCount
+                ),
+                isFocused = isFocused(item)
             )
 
             StorageGamesItem.PlatformsSpacer -> Spacer(modifier = Modifier.height(Dimens.spacingMd))

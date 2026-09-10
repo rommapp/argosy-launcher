@@ -30,7 +30,7 @@
     <string name="notif_storage_hardreset_pending_uploads_none">Synchronisez les envois de sauvegardes en attente avant de réinitialiser</string>
     <string name="notif_storage_hardreset_pending_uploads_one">Synchronisez les envois de sauvegardes en attente de %1$s avant de réinitialiser</string>
     <string name="notif_storage_hardreset_pending_uploads_many">Synchronisez les envois de sauvegardes en attente pour %1$s avant de réinitialiser</string>
-    <string name="notif_storage_hardreset_success">Réinitialisation complète terminée - synchronisez pour reconstruire votre bibliothèque</string>
+    <string name="notif_storage_hardreset_success">Réinitialisation complète terminée, relevé des fichiers supprimés enregistré - synchronisez pour reconstruire votre bibliothèque</string>
     <string name="notif_storage_hardreset_failed">Échec de la réinitialisation complète - %1$s</string>
     <string name="notif_storage_hardreset_failed_default_detail">réessayez</string>
 

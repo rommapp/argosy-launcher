@@ -193,7 +193,7 @@ import com.nendo.argosy.data.local.entity.SteamLicenseEntity
         MediaDownloadQueueEntity::class,
         MediaCreditEntity::class
     ],
-    version = 188,
+    version = 189,
     exportSchema = true
 )
 @TypeConverters(Converters::class)

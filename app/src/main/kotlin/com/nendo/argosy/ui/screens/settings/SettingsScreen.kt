@@ -67,7 +67,6 @@ import com.nendo.argosy.ui.primitives.ArgosyConfirmModalHost
 import com.nendo.argosy.util.formatBytes
 import com.nendo.argosy.ui.screens.musicbrowser.MusicBrowserMode
 import com.nendo.argosy.ui.screens.musicbrowser.MusicBrowserScreen
-import com.nendo.argosy.data.storage.StorageCategory
 import com.nendo.argosy.data.sync.UnflushedQueuePolicy
 import com.nendo.argosy.ui.screens.settings.components.HardResetModal
 import com.nendo.argosy.ui.screens.settings.components.PlatformSettingsModal
@@ -970,15 +969,8 @@ fun SettingsScreen(
     }
 
     if (uiState.storage.showHardResetModal) {
-        val snapshot = uiState.attribution.snapshot
-        val gamesBytes = snapshot?.categories?.get(StorageCategory.GAMES)?.bytes
-            ?: uiState.storage.downloadedGamesSize
-        val gamesCount = snapshot?.gamesPerPlatform?.takeIf { it.isNotEmpty() }
-            ?.sumOf { it.downloadedCount }
-            ?: uiState.storage.downloadedGamesCount
         HardResetModal(
-            downloadedGamesCount = gamesCount,
-            downloadedGamesBytes = gamesBytes,
+            preview = uiState.storage.hardResetPreview,
             pendingUploads = uiState.storage.hardResetPendingUploads,
             isResetting = uiState.storage.isHardResetting,
             canSyncNow = uiState.server.connectionStatus == ConnectionStatus.ONLINE &&

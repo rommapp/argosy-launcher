@@ -326,7 +326,7 @@ class GameLauncher @Inject constructor(
                         "resolveLaunchFile: ${romFile.name} names one existing file; " +
                             "pointing ${game.title} at ${onlyEntry.name}"
                     )
-                    gameDao.updateLocalPath(game.id, onlyEntry.absolutePath, game.source)
+                    gameDao.updateLocalPath(game.id, onlyEntry.absolutePath, game.source, game.fileOrigin)
                 }
                 onlyEntry
                     ?: discFiles.firstOrNull()
@@ -1928,7 +1928,7 @@ class GameLauncher @Inject constructor(
             val firstDisc = M3uManager.parseFirstDisc(romFile)
             if (firstDisc != null) {
                 Logger.info(TAG, "${game.platformSlug} doesn't support m3u - using first disc: ${firstDisc.name}")
-                gameDao.updateLocalPath(game.id, firstDisc.absolutePath, game.source)
+                gameDao.updateLocalPath(game.id, firstDisc.absolutePath, game.source, game.fileOrigin)
                 return firstDisc
             }
             Logger.warn(TAG, "Could not parse first disc from m3u for ${game.platformSlug}")
@@ -1963,7 +1963,7 @@ class GameLauncher @Inject constructor(
         if (launchableFiles.size == 1) {
             val discFile = launchableFiles.first()
             Logger.info(TAG, "Single disc game - using ${discFile.name} instead of m3u")
-            gameDao.updateLocalPath(game.id, discFile.absolutePath, game.source)
+            gameDao.updateLocalPath(game.id, discFile.absolutePath, game.source, game.fileOrigin)
             return discFile
         }
 
@@ -1979,7 +1979,7 @@ class GameLauncher @Inject constructor(
             val fallback = launchableFiles.minByOrNull { it.name }
             if (fallback != null) {
                 Logger.warn(TAG, "Invalid m3u detected - falling back to ${fallback.name}")
-                gameDao.updateLocalPath(game.id, fallback.absolutePath, game.source)
+                gameDao.updateLocalPath(game.id, fallback.absolutePath, game.source, game.fileOrigin)
                 return fallback
             }
         }

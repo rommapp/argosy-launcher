@@ -728,6 +728,11 @@
 
     <string name="settings_storage_games_integrity_title">Wöchentliche ROM-Integritätsprüfung</string>
     <string name="settings_storage_games_integrity_subtitle">Prüft heruntergeladene Spieldateien einmal pro Woche beim Start</string>
+    <string name="settings_storage_games_not_from_romm_title">Nicht von RomM</string>
+    <plurals name="settings_storage_games_not_from_romm_subtitle">
+        <item quantity="one">%1$d Spieldatei wurde manuell hinzugefügt und bleibt bei einem vollständigen Zurücksetzen erhalten</item>
+        <item quantity="other">%1$d Spieldateien wurden manuell hinzugefügt und bleiben bei einem vollständigen Zurücksetzen erhalten</item>
+    </plurals>
 
     <plurals name="settings_storage_games_totals_count">
         <item quantity="one">%d heruntergeladen</item>
@@ -1968,11 +1973,16 @@
         <item quantity="one">%1$d heruntergeladenes Spiel - %2$s auf dem Datenträger</item>
         <item quantity="other">%1$d heruntergeladene Spiele - %2$s auf dem Datenträger</item>
     </plurals>
+    <plurals name="settings_hard_reset_kept_summary">
+        <item quantity="one">%1$d Spieldatei bleibt erhalten - %2$s nicht von Argosy heruntergeladen</item>
+        <item quantity="other">%1$d Spieldateien bleiben erhalten - %2$s nicht von Argosy heruntergeladen</item>
+    </plurals>
     <string name="settings_hard_reset_deletes_header">Löscht</string>
     <string name="settings_hard_reset_deletes_files">Alle heruntergeladenen Spieldateien auf dem Datenträger</string>
     <string name="settings_hard_reset_deletes_database">Die gesamte Bibliotheksdatenbank - Spielzeit, Sammlungen, Downloadverlauf, spielspezifische Einstellungen</string>
     <string name="settings_hard_reset_deletes_caches">Jeden Cache - Bilder, Spielstände und Savestates, extrahierte ROMs, Soundeffekte, Emulator-Installer, Steam-Staging, Präsenzbilder</string>
     <string name="settings_hard_reset_keeps_header">Behält</string>
+    <string name="settings_hard_reset_keeps_adopted_files">Spieldateien, die Sie selbst auf das Gerät kopiert haben</string>
     <string name="settings_hard_reset_keeps_sign_ins">Einstellungen und Anmeldungen - RomM und Steam bleiben verbunden</string>
     <string name="settings_hard_reset_keeps_synced_saves">Bereits mit dem Server synchronisierte Spielstände</string>
     <string name="settings_hard_reset_keeps_emulator_apps">Emulator-Apps und ihre eigenen Speicherdaten</string>

@@ -718,6 +718,11 @@
 
     <string name="settings_storage_games_integrity_title">साप्ताहिक ROM इंटीग्रिटी जाँच</string>
     <string name="settings_storage_games_integrity_subtitle">स्टार्टअप पर हफ़्ते में एक बार डाउनलोड की गई गेम फ़ाइलों को सत्यापित करता है</string>
+    <string name="settings_storage_games_not_from_romm_title">RomM से नहीं</string>
+    <plurals name="settings_storage_games_not_from_romm_subtitle">
+        <item quantity="one">%1$d गेम फ़ाइल हाथ से जोड़ी गई थी और हार्ड रीसेट में बनी रहती है</item>
+        <item quantity="other">%1$d गेम फ़ाइलें हाथ से जोड़ी गई थीं और हार्ड रीसेट में बनी रहती हैं</item>
+    </plurals>
 
     <plurals name="settings_storage_games_totals_count">
         <item quantity="one">%d डाउनलोड किया गया</item>
@@ -1958,11 +1963,16 @@
         <item quantity="one">%1$d डाउनलोड किया गया गेम - डिस्क पर %2$s</item>
         <item quantity="other">%1$d डाउनलोड किए गए गेम - डिस्क पर %2$s</item>
     </plurals>
+    <plurals name="settings_hard_reset_kept_summary">
+        <item quantity="one">%1$d गेम फ़ाइल रखी जाएगी - %2$s Argosy द्वारा डाउनलोड नहीं की गई</item>
+        <item quantity="other">%1$d गेम फ़ाइलें रखी जाएंगी - %2$s Argosy द्वारा डाउनलोड नहीं की गईं</item>
+    </plurals>
     <string name="settings_hard_reset_deletes_header">हटाता है</string>
     <string name="settings_hard_reset_deletes_files">डिस्क पर मौजूद सभी डाउनलोड किए गए गेम फ़ाइलें</string>
     <string name="settings_hard_reset_deletes_database">पूरा लाइब्रेरी डेटाबेस - खेलने का समय, कलेक्शन, डाउनलोड हिस्ट्री, प्रति-गेम सेटिंग्स</string>
     <string name="settings_hard_reset_deletes_caches">हर कैश - इमेज, सेव और स्टेट, एक्सट्रैक्ट किए गए ROM, साउंड इफ़ेक्ट, एमुलेटर इंस्टॉलर, Steam स्टेजिंग, प्रेज़ेंस कवर</string>
     <string name="settings_hard_reset_keeps_header">बनाए रखता है</string>
+    <string name="settings_hard_reset_keeps_adopted_files">वे गेम फ़ाइलें जो आपने खुद डिवाइस पर कॉपी की हैं</string>
     <string name="settings_hard_reset_keeps_sign_ins">सेटिंग्स और साइन-इन - RomM और Steam जुड़े रहते हैं</string>
     <string name="settings_hard_reset_keeps_synced_saves">सर्वर पर पहले से सिंक हो चुके सेव</string>
     <string name="settings_hard_reset_keeps_emulator_apps">एमुलेटर ऐप्स और उनका अपना सेव डेटा</string>

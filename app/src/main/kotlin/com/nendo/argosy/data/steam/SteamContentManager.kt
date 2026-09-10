@@ -12,6 +12,7 @@ import com.nendo.argosy.R
 import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.NotificationType
+import com.nendo.argosy.data.model.FileOrigin
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.storage.StorageAttributionRepository
 import com.nendo.argosy.data.storage.StorageCategory
@@ -274,7 +275,13 @@ class SteamContentManager @Inject constructor(
             if (stagingDir.exists()) stagingDir.deleteRecursively()
             gameDao.getBySteamAppId(appId)?.let { game ->
                 if (game.localPath != finalDir.absolutePath) {
-                    gameDao.update(game.copy(localPath = finalDir.absolutePath, source = GameSource.STEAM))
+                    gameDao.update(
+                        game.copy(
+                            localPath = finalDir.absolutePath,
+                            fileOrigin = FileOrigin.STEAM_DOWNLOAD,
+                            source = GameSource.STEAM
+                        )
+                    )
                 }
             }
             steamDownloadQueueDao.updateState(appId, SteamDownloadDbState.COMPLETED.name)
@@ -326,6 +333,7 @@ class SteamContentManager @Inject constructor(
                     gameDao.getBySteamAppId(appId)?.let { game ->
                         gameDao.update(game.copy(
                             localPath = finalDir.absolutePath,
+                            fileOrigin = FileOrigin.STEAM_DOWNLOAD,
                             source = GameSource.STEAM,
                             addedAt = java.time.Instant.now()
                         ))
@@ -1115,6 +1123,7 @@ class SteamContentManager @Inject constructor(
                 gameDao.getBySteamAppId(appId)?.let { game ->
                     gameDao.update(game.copy(
                         localPath = installDir.absolutePath,
+                        fileOrigin = FileOrigin.STEAM_DOWNLOAD,
                         source = GameSource.STEAM,
                         addedAt = java.time.Instant.now()
                     ))
@@ -1419,7 +1428,13 @@ class SteamContentManager @Inject constructor(
                 if (game?.localPath != null) continue
 
                 if (game != null) {
-                    gameDao.update(game.copy(localPath = appDir.absolutePath, source = GameSource.STEAM))
+                    gameDao.update(
+                        game.copy(
+                            localPath = appDir.absolutePath,
+                            fileOrigin = FileOrigin.ADOPTED,
+                            source = GameSource.STEAM
+                        )
+                    )
                     Log.d(TAG, "Discovered Steam game: ${game.title} at ${appDir.absolutePath}")
                     discovered++
                 }
@@ -1465,7 +1480,13 @@ class SteamContentManager @Inject constructor(
                 queueEntry?.installDir == dirName
             }
             if (match != null && match.localPath == null) {
-                gameDao.update(match.copy(localPath = gameDirPath, source = GameSource.STEAM))
+                gameDao.update(
+                    match.copy(
+                        localPath = gameDirPath,
+                        fileOrigin = FileOrigin.ADOPTED,
+                        source = GameSource.STEAM
+                    )
+                )
                 match.steamAppId?.let { appId ->
                     steamDownloadQueueDao.updateState(appId, SteamDownloadDbState.COMPLETED.name)
                     steamDownloadQueueDao.updateInstallPath(appId, gameDirPath)

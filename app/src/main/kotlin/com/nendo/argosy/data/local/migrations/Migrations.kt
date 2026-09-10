@@ -3589,3 +3589,15 @@ object Migration_187_188 : Migration(187, 188) {
         db.execSQL("ALTER TABLE `romm_accounts` ADD COLUMN `lanBaseUrl` TEXT")
     }
 }
+
+/**
+ * Records whether Argosy downloaded the file a game points at. Every existing row backfills as
+ * ADOPTED: download queue rows are deleted on completion and `game_files.downloadedAt` is also
+ * stamped by adoption, so nothing on the device proves a file came from a download. A file that
+ * is downloaded again is marked at that point; until then a hard reset leaves it alone.
+ */
+object Migration_188_189 : Migration(188, 189) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `games` ADD COLUMN `fileOrigin` TEXT NOT NULL DEFAULT 'ADOPTED'")
+    }
+}

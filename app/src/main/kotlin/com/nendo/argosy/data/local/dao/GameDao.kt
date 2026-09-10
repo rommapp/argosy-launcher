@@ -9,6 +9,7 @@ import androidx.room.Update
 import com.nendo.argosy.data.local.entity.GameCategoryInfo
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.GameListItem
+import com.nendo.argosy.data.model.FileOrigin
 import com.nendo.argosy.data.model.GameSource
 import kotlinx.coroutines.flow.Flow
 import java.time.Instant
@@ -242,7 +243,7 @@ interface GameDao {
     """)
     suspend fun getAllCategoryInfo(ownerUserId: Long?): List<GameCategoryInfo>
 
-    @Query("SELECT id, platformId, platformSlug, source, localPath FROM games WHERE localPath IS NOT NULL")
+    @Query("SELECT id, platformId, platformSlug, source, fileOrigin, localPath FROM games WHERE localPath IS NOT NULL")
     suspend fun getGamesWithLocalPathInfo(): List<GameLocalPathInfo>
 
     @Query("""
@@ -448,8 +449,19 @@ interface GameDao {
     @Query("UPDATE games SET steamLauncher = :launcherPackage WHERE id = :gameId")
     suspend fun setSteamLauncher(gameId: Long, launcherPackage: String?)
 
-    @Query("UPDATE games SET localPath = :path, source = :source, addedAt = :addedAt WHERE id = :gameId")
-    suspend fun updateLocalPath(gameId: Long, path: String?, source: GameSource, addedAt: Instant = Instant.now())
+    /**
+     * Every caller states where the file came from: a download completion writes its download
+     * origin, a scan writes ADOPTED, and a repair that re-points the same content passes the
+     * row's current origin through.
+     */
+    @Query("UPDATE games SET localPath = :path, fileOrigin = :fileOrigin, source = :source, addedAt = :addedAt WHERE id = :gameId")
+    suspend fun updateLocalPath(
+        gameId: Long,
+        path: String?,
+        source: GameSource,
+        fileOrigin: FileOrigin,
+        addedAt: Instant = Instant.now()
+    )
 
     /**
      * Repoints a game at the same content in a new location, leaving source and addedAt intact.
@@ -465,6 +477,9 @@ interface GameDao {
 
     @Query("SELECT * FROM games WHERE source IN (:sources) AND localPath IS NOT NULL")
     suspend fun getDownloadedBySources(sources: List<GameSource>): List<GameEntity>
+
+    @Query("SELECT COUNT(*) FROM games WHERE localPath IS NOT NULL AND fileOrigin = :origin")
+    suspend fun countWithLocalPathByOrigin(origin: FileOrigin): Int
 
     @Query("""
         SELECT * FROM games
@@ -637,7 +652,7 @@ interface GameDao {
     @Delete
     suspend fun delete(game: GameEntity)
 
-    @Query("UPDATE games SET localPath = NULL, source = 'ROMM_REMOTE' WHERE id = :gameId")
+    @Query("UPDATE games SET localPath = NULL, fileOrigin = 'ADOPTED', source = 'ROMM_REMOTE' WHERE id = :gameId")
     suspend fun clearLocalPath(gameId: Long)
 
     @Query("UPDATE games SET backgroundPath = :path WHERE id = :gameId")
@@ -1255,6 +1270,7 @@ data class GameLocalPathInfo(
     val platformId: Long,
     val platformSlug: String,
     val source: GameSource,
+    val fileOrigin: FileOrigin,
     val localPath: String?
 )
 

@@ -30,7 +30,7 @@
     <string name="notif_storage_hardreset_pending_uploads_none">Synchronisieren Sie ausstehende Spielstand-Uploads vor dem Zurücksetzen</string>
     <string name="notif_storage_hardreset_pending_uploads_one">Synchronisieren Sie die ausstehenden Spielstand-Uploads von %1$s vor dem Zurücksetzen</string>
     <string name="notif_storage_hardreset_pending_uploads_many">Synchronisieren Sie die ausstehenden Spielstand-Uploads für %1$s vor dem Zurücksetzen</string>
-    <string name="notif_storage_hardreset_success">Vollständiges Zurücksetzen abgeschlossen - synchronisieren Sie, um Ihre Bibliothek wiederherzustellen</string>
+    <string name="notif_storage_hardreset_success">Vollständiges Zurücksetzen abgeschlossen, Protokoll der entfernten Dateien gespeichert - synchronisieren Sie, um Ihre Bibliothek wiederherzustellen</string>
     <string name="notif_storage_hardreset_failed">Zurücksetzen fehlgeschlagen - %1$s</string>
     <string name="notif_storage_hardreset_failed_default_detail">erneut versuchen</string>
 

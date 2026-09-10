@@ -300,10 +300,12 @@ class StorageSettingsDelegate @Inject constructor(
         scope.launch {
             val downloadedSize = gameRepository.getDownloadedGamesSize()
             val downloadedCount = gameRepository.getDownloadedGamesCount()
+            val adoptedCount = gameRepository.getAdoptedGamesCount()
             _state.update {
                 it.copy(
                     downloadedGamesSize = downloadedSize,
-                    downloadedGamesCount = downloadedCount
+                    downloadedGamesCount = downloadedCount,
+                    adoptedGamesCount = adoptedCount
                 )
             }
         }
@@ -919,8 +921,13 @@ class StorageSettingsDelegate @Inject constructor(
         if (_state.value.isHardResetting || _state.value.isPurgingAll) return
         scope.launch {
             val pendingUploads = saveCacheRepository.getPendingSyncCounts().pendingUploads
+            val preview = databaseAdminRepository.previewHardReset()
             _state.update {
-                it.copy(showHardResetModal = true, hardResetPendingUploads = pendingUploads)
+                it.copy(
+                    showHardResetModal = true,
+                    hardResetPendingUploads = pendingUploads,
+                    hardResetPreview = preview
+                )
             }
         }
     }

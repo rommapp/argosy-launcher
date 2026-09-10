@@ -30,7 +30,7 @@
     <string name="notif_storage_hardreset_pending_uploads_none">Синхронизируйте ожидающие отправки сохранения перед сбросом</string>
     <string name="notif_storage_hardreset_pending_uploads_one">Синхронизируйте ожидающие сохранения пользователя %1$s перед сбросом</string>
     <string name="notif_storage_hardreset_pending_uploads_many">Синхронизируйте ожидающие сохранения для %1$s перед сбросом</string>
-    <string name="notif_storage_hardreset_success">Полный сброс завершён - синхронизируйте, чтобы восстановить библиотеку</string>
+    <string name="notif_storage_hardreset_success">Полный сброс завершён, список удалённых файлов сохранён - синхронизируйте, чтобы восстановить библиотеку</string>
     <string name="notif_storage_hardreset_failed">Не удалось выполнить полный сброс - %1$s</string>
     <string name="notif_storage_hardreset_failed_default_detail">попробуйте снова</string>
 

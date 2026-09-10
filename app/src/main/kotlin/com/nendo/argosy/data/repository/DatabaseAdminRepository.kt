@@ -8,6 +8,7 @@ import com.nendo.argosy.data.download.DownloadManager
 import com.nendo.argosy.data.download.MediaDownloadManager
 import com.nendo.argosy.data.emulator.EmulatorDownloadManager
 import com.nendo.argosy.data.local.ALauncherDatabase
+import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.preferences.SessionStateStore
 import com.nendo.argosy.data.social.SocialRepository
@@ -48,6 +49,31 @@ data class PendingUploadAccount(
     val pendingCount: Int
 )
 
+/**
+ * What a hard reset would do to game files on disk: rows whose file Argosy downloaded are
+ * deleted, rows whose file was found on disk are kept. Byte counts walk directories so a
+ * folder-based game is sized as a whole.
+ */
+data class HardResetPreview(
+    val deleteCount: Int = 0,
+    val deleteBytes: Long = 0L,
+    val keepCount: Int = 0,
+    val keepBytes: Long = 0L
+)
+
+data class FileDeletionSummary(
+    val deleted: Int,
+    val kept: Int,
+    val failed: Int,
+    val recordFile: File?
+)
+
+private data class ResetTarget(
+    val game: GameEntity,
+    val path: String,
+    val deletable: Boolean
+)
+
 @Singleton
 class DatabaseAdminRepository @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -59,7 +85,8 @@ class DatabaseAdminRepository @Inject constructor(
     private val steamContentManager: Lazy<SteamContentManager>,
     private val mediaDownloadManager: Lazy<MediaDownloadManager>,
     private val socialRepository: Lazy<SocialRepository>,
-    private val soundFeedbackManager: Lazy<SoundFeedbackManager>
+    private val soundFeedbackManager: Lazy<SoundFeedbackManager>,
+    private val hardResetRecorder: HardResetRecorder
 ) {
     private val sessionStateStore by lazy { SessionStateStore(context) }
 
@@ -85,14 +112,20 @@ class DatabaseAdminRepository @Inject constructor(
     }
 
     /**
-     * Deletes all downloaded game files, the full library database, and every cache while
-     * keeping settings and logins. All-or-nothing: returns the first blocker without
+     * Deletes the game files Argosy downloaded, the full library database, and every cache while
+     * keeping settings and logins. Files Argosy only found on disk stay where they are; their
+     * rows go with the rest of the database. All-or-nothing: returns the first blocker without
      * deleting anything, or null after a completed reset.
      */
     suspend fun hardReset(): HardResetBlocker? = withContext(Dispatchers.IO) {
         checkHardResetBlockers()?.let { return@withContext it }
 
-        deleteDownloadedFiles(GameSource.entries)
+        val summary = deleteDownloadedFiles(GameSource.entries)
+        Log.i(
+            TAG,
+            "hardReset: deleted ${summary.deleted}, kept ${summary.kept}, failed ${summary.failed}" +
+                (summary.recordFile?.let { ", record ${it.absolutePath}" } ?: "")
+        )
         purgeDatabase(GameSource.entries, includeLocalCollections = true, clearImages = true)
         downloadManager.get().cleanAbandonedStaging()
         soundFeedbackManager.get().clearSfxCache()
@@ -173,20 +206,87 @@ class DatabaseAdminRepository @Inject constructor(
         }
     }
 
-    suspend fun deleteDownloadedFiles(sources: List<GameSource>) = withContext(Dispatchers.IO) {
-        for (game in database.gameDao().getDownloadedBySources(sources)) {
-            val path = game.localPath ?: continue
-            try {
-                val file = File(path)
-                if (file.exists()) {
-                    if (file.isDirectory) file.deleteRecursively() else file.delete()
+    suspend fun previewHardReset(): HardResetPreview = withContext(Dispatchers.IO) {
+        val targets = resetTargets(GameSource.entries)
+        val (deletable, kept) = targets.partition { it.deletable }
+        HardResetPreview(
+            deleteCount = deletable.size,
+            deleteBytes = deletable.sumOf { sizeOf(it.path) },
+            keepCount = kept.size,
+            keepBytes = kept.sumOf { sizeOf(it.path) }
+        )
+    }
+
+    /**
+     * Deletes the files of every row whose origin says Argosy downloaded it and leaves the rest
+     * on disk. The record is written before the first delete so a crash mid-pass still leaves a
+     * list of what was about to go.
+     */
+    suspend fun deleteDownloadedFiles(sources: List<GameSource>): FileDeletionSummary =
+        withContext(Dispatchers.IO) {
+            val targets = resetTargets(sources)
+            val session = hardResetRecorder.begin(targets.map { it.toRecordEntry() })
+            var deleted = 0
+            var kept = 0
+            var failed = 0
+            for (target in targets) {
+                if (!target.deletable) {
+                    session.recordKept(target.game.id)
+                    kept++
+                    continue
                 }
-            } catch (e: Exception) {
-                Log.e(TAG, "deleteDownloadedFiles: failed to delete $path: ${e.message}")
+                try {
+                    val file = File(target.path)
+                    if (!file.exists()) {
+                        session.recordMissing(target.game.id)
+                        deleted++
+                        continue
+                    }
+                    val removed = if (file.isDirectory) file.deleteRecursively() else file.delete()
+                    if (removed) {
+                        session.recordDeleted(target.game.id)
+                        deleted++
+                    } else {
+                        session.recordFailed(target.game.id, null)
+                        failed++
+                        Log.e(TAG, "deleteDownloadedFiles: could not delete ${target.path}")
+                    }
+                } catch (e: Exception) {
+                    session.recordFailed(target.game.id, e.message)
+                    failed++
+                    Log.e(TAG, "deleteDownloadedFiles: failed to delete ${target.path}: ${e.message}")
+                }
             }
+            session.complete()
+            Log.i(TAG, "deleteDownloadedFiles: deleted $deleted, kept $kept, failed $failed")
+            deleteCacheDirs(sources)
+            attributionRepository.markDirty(StorageCategory.GAMES)
+            FileDeletionSummary(deleted = deleted, kept = kept, failed = failed, recordFile = session.file)
         }
-        deleteCacheDirs(sources)
-        attributionRepository.markDirty(StorageCategory.GAMES)
+
+    private suspend fun resetTargets(sources: List<GameSource>): List<ResetTarget> =
+        database.gameDao().getDownloadedBySources(sources).mapNotNull { game ->
+            val path = game.localPath ?: return@mapNotNull null
+            ResetTarget(game = game, path = path, deletable = game.fileOrigin.deletedOnReset)
+        }
+
+    private fun ResetTarget.toRecordEntry() = HardResetRecordEntry(
+        gameId = game.id,
+        title = game.title,
+        platformSlug = game.platformSlug,
+        path = path,
+        origin = game.fileOrigin.name,
+        action = if (deletable) HardResetRecorder.ACTION_DELETE else HardResetRecorder.ACTION_KEEP,
+        result = null
+    )
+
+    private fun sizeOf(path: String): Long {
+        val file = File(path)
+        return when {
+            !file.exists() -> 0L
+            file.isDirectory -> file.walkTopDown().filter { it.isFile }.sumOf { it.length() }
+            else -> file.length()
+        }
     }
 
     /**

@@ -6,6 +6,7 @@ import android.os.StatFs
 import android.util.Log
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PlatformDao
+import com.nendo.argosy.data.model.FileOrigin
 import com.nendo.argosy.data.platform.LocalPlatformIds
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.storage.AndroidDataAccessor
@@ -139,7 +140,7 @@ class SteamPathResolver @Inject constructor(
         val installed = File(expected, ".download_complete").exists() ||
             androidDataAccessor.exists("$expectedPath/.download_complete")
         if (installed && game.localPath != expectedPath) {
-            runCatching { gameDao.update(game.copy(localPath = expectedPath)) }
+            runCatching { gameDao.update(game.copy(localPath = expectedPath, fileOrigin = FileOrigin.ADOPTED)) }
         }
         if (!installed && path != null && isPositivelyGone(path)) {
             Log.d(TAG, "isGameInstalled: install is gone, clearing stale path | appId=$appId, path=$path")

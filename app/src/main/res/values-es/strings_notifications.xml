@@ -30,7 +30,7 @@
     <string name="notif_storage_hardreset_pending_uploads_none">Sincroniza las partidas guardadas pendientes de subir antes de restablecer</string>
     <string name="notif_storage_hardreset_pending_uploads_one">Sincroniza las partidas guardadas pendientes de %1$s antes de restablecer</string>
     <string name="notif_storage_hardreset_pending_uploads_many">Sincroniza las partidas guardadas pendientes de %1$s antes de restablecer</string>
-    <string name="notif_storage_hardreset_success">Restablecimiento completo terminado; sincroniza para reconstruir tu biblioteca</string>
+    <string name="notif_storage_hardreset_success">Restablecimiento completo terminado, registro de archivos eliminados guardado; sincroniza para reconstruir tu biblioteca</string>
     <string name="notif_storage_hardreset_failed">Error en el restablecimiento completo: %1$s</string>
     <string name="notif_storage_hardreset_failed_default_detail">inténtalo de nuevo</string>
 

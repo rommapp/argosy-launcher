@@ -33,7 +33,7 @@
     <string name="notif_storage_hardreset_pending_uploads_none">रीसेट करने से पहले लंबित सेव अपलोड सिंक करें</string>
     <string name="notif_storage_hardreset_pending_uploads_one">रीसेट करने से पहले %1$s के लंबित सेव अपलोड सिंक करें</string>
     <string name="notif_storage_hardreset_pending_uploads_many">रीसेट करने से पहले %1$s के लिए लंबित सेव अपलोड सिंक करें</string>
-    <string name="notif_storage_hardreset_success">हार्ड रीसेट पूर्ण - अपनी लाइब्रेरी फिर से बनाने के लिए सिंक करें</string>
+    <string name="notif_storage_hardreset_success">हार्ड रीसेट पूर्ण, हटाई गई फ़ाइलों का रिकॉर्ड सहेजा गया - अपनी लाइब्रेरी फिर से बनाने के लिए सिंक करें</string>
     <string name="notif_storage_hardreset_failed">हार्ड रीसेट विफल - %1$s</string>
     <string name="notif_storage_hardreset_failed_default_detail">फिर कोशिश करें</string>
 

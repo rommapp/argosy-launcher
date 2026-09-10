@@ -30,7 +30,7 @@
     <string name="notif_storage_hardreset_pending_uploads_none">请先同步待上传的存档，然后再重置</string>
     <string name="notif_storage_hardreset_pending_uploads_one">请先同步%1$s的待上传存档，然后再重置</string>
     <string name="notif_storage_hardreset_pending_uploads_many">请先同步%1$s的待上传存档，然后再重置</string>
-    <string name="notif_storage_hardreset_success">硬重置完成，请同步以重建你的游戏库</string>
+    <string name="notif_storage_hardreset_success">硬重置完成，已保存被删除文件的记录，请同步以重建你的游戏库</string>
     <string name="notif_storage_hardreset_failed">硬重置失败：%1$s</string>
     <string name="notif_storage_hardreset_failed_default_detail">请重试</string>
 

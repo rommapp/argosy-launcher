@@ -96,8 +96,9 @@
          comma-separated list of usernames (untranslated, user content). Command. -->
     <string name="notif_storage_hardreset_pending_uploads_many">Sync pending save uploads for %1$s before resetting</string>
     <!-- Success notification after a hard reset finishes. Statement plus a suggested next
-         step, not a command to the reader. -->
-    <string name="notif_storage_hardreset_success">Hard reset complete - sync to rebuild your library</string>
+         step, not a command to the reader. "Record" is the file listing what was deleted and
+         kept, saved on the device for support. -->
+    <string name="notif_storage_hardreset_success">Hard reset complete, record of removed files saved - sync to rebuild your library</string>
     <!-- Failure notification when a hard reset throws. %1$s is either the exception detail
          or the fallback below. -->
     <string name="notif_storage_hardreset_failed">Hard reset failed - %1$s</string>

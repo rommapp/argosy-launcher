@@ -1375,6 +1375,15 @@
     <!-- Second line of that row. -->
     <string name="settings_storage_games_integrity_subtitle">Verifies downloaded game files at startup once a week</string>
 
+    <!-- Row title. Games whose file was copied to the device by hand rather than downloaded
+         through the app. "RomM" is a service name, never translated. -->
+    <string name="settings_storage_games_not_from_romm_title">Not from RomM</string>
+    <!-- Second line of that row. %1$d is the number of such games. -->
+    <plurals name="settings_storage_games_not_from_romm_subtitle">
+        <item quantity="one">%1$d game file was added by hand and is kept through a hard reset</item>
+        <item quantity="other">%1$d game files were added by hand and are kept through a hard reset</item>
+    </plurals>
+
     <!-- Total at the top, counting the games on the device. Adjective describing them. -->
     <plurals name="settings_storage_games_totals_count">
         <item quantity="one">%d downloaded</item>
@@ -3723,6 +3732,12 @@
         <item quantity="one">%1$d downloaded game - %2$s on disk</item>
         <item quantity="other">%1$d downloaded games - %2$s on disk</item>
     </plurals>
+    <!-- Line under the summary naming how many game files stay on disk because Argosy did not
+         download them (the user copied them there). %1$d is the count, %2$s the formatted size. -->
+    <plurals name="settings_hard_reset_kept_summary">
+        <item quantity="one">%1$d game file kept - %2$s not downloaded by Argosy</item>
+        <item quantity="other">%1$d game files kept - %2$s not downloaded by Argosy</item>
+    </plurals>
     <!-- Heading over the list of things a hard reset removes. Verb, rendered in caps in English
          by code; use whatever casing suits a heading in your language. -->
     <string name="settings_hard_reset_deletes_header">Deletes</string>
@@ -3735,6 +3750,9 @@
     <!-- Heading over the list of things a hard reset preserves. Verb, rendered in caps in
          English by code; use whatever casing suits a heading in your language. -->
     <string name="settings_hard_reset_keeps_header">Keeps</string>
+    <!-- Bullet item under the Keeps heading. Game files the user put on the device by hand
+         rather than downloading through the app. -->
+    <string name="settings_hard_reset_keeps_adopted_files">Game files you copied to the device yourself</string>
     <!-- Bullet item under the Keeps heading. "RomM" and "Steam" are service names, never
          translated. -->
     <string name="settings_hard_reset_keeps_sign_ins">Settings and sign-ins - RomM and Steam stay connected</string>

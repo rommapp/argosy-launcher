@@ -2513,7 +2513,10 @@ class DualScreenManager(
         dismissDualModal()
         if (!confirm) return
         scope.launch(Dispatchers.IO) {
-            deleteSaveChannelUseCase(state.gameId, channelName)
+            val result = deleteSaveChannelUseCase(state.gameId, channelName)
+            if (result is com.nendo.argosy.domain.usecase.savechannel.DeleteSaveChannelUseCase.Result.ServerDeleteFailed) {
+                Log.w(TAG, "Dual save delete: server copy of '$channelName' for gameId=${state.gameId} not removed")
+            }
             broadcastUnifiedSaves(state.gameId)
             broadcastUnifiedStates(state.gameId)
         }

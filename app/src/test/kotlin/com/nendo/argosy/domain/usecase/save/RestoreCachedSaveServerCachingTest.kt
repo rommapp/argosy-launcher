@@ -79,7 +79,7 @@ class RestoreCachedSaveServerCachingTest {
 
         useCase(serverEntry(), gameId, emulatorId = "vbam", syncToServer = false)
 
-        coVerify(exactly = 1) { saveSyncRepository.downloadAndCacheSave(serverSaveId, gameId, null) }
+        coVerify(exactly = 1) { saveSyncRepository.downloadAndCacheSave(serverSaveId, gameId, null, activate = true) }
     }
 
     @Test
@@ -90,6 +90,6 @@ class RestoreCachedSaveServerCachingTest {
 
         useCase(serverEntry(), gameId, emulatorId = "vbam", syncToServer = false)
 
-        coVerify(exactly = 0) { saveSyncRepository.downloadAndCacheSave(any(), any(), any()) }
+        coVerify(exactly = 0) { saveSyncRepository.downloadAndCacheSave(any(), any(), any(), any()) }
     }
 }

@@ -28,10 +28,10 @@ private const val THROTTLE_MS = 5 * 60 * 1000L
  * from the wrong save. Fetching earlier does not make that call more reliable, it makes it
  * unnecessary - a pre-launch check that fails now finds the data already cached.
  *
- * Nothing here writes the live save or state directory. Only the cache is filled; deciding what
- * the emulator actually sees stays with the launch and with the save manager, where the user's
- * intent is known. That is also why this can never conflict with them: it fills the same cache
- * they read, and holds no lock they wait on.
+ * Nothing here writes the live save or state directory, moves the active save pointer, or clears a
+ * dirty flag. Only the cache is filled; deciding what the emulator actually sees stays with the
+ * launch and with the save manager, where the user's intent is known. That is also why this can
+ * never conflict with them: it fills the same cache they read, and holds no lock they wait on.
  */
 @Singleton
 class PrefetchGameSaveDataUseCase @Inject constructor(
@@ -93,7 +93,8 @@ class PrefetchGameSaveDataUseCase @Inject constructor(
             saveSyncRepository.downloadAndCacheSave(
                 serverSaveId = entry.serverSaveId!!,
                 gameId = gameId,
-                channelName = entry.channelName
+                channelName = entry.channelName,
+                activate = false
             )
         }
         Logger.debug(TAG, "Prefetched ${serverOnly.size} server saves for gameId=$gameId")

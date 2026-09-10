@@ -35,4 +35,10 @@ interface SaveOwnershipDao {
 
     @Query("DELETE FROM save_ownership WHERE ownerUserId = :ownerUserId")
     suspend fun deleteByOwner(ownerUserId: Long)
+
+    @Query("""
+        UPDATE save_ownership SET channelName = NULL
+        WHERE gameId = :gameId AND channelName = :channelName AND ownerUserId = :ownerUserId
+    """)
+    suspend fun detachChannel(gameId: Long, channelName: String, ownerUserId: Long): Int
 }

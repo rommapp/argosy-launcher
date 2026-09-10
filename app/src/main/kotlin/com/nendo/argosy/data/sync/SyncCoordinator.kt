@@ -438,6 +438,15 @@ class SyncCoordinator @Inject constructor(
             return false
         }
 
+        val namedChannel = SaveSyncApiClient.namedChannelOrNull(channel)
+        if (pinnedCache == null && namedChannel != null) {
+            Logger.warn(
+                TAG,
+                "processSaveFile: queue row for gameId=${item.gameId} channel=$namedChannel pins no cache row (cacheId=${item.cacheId}); refusing to upload live-path bytes under a named channel"
+            )
+            return false
+        }
+
         syncQueueManager.addOperation(
             SyncOperation(
                 gameId = item.gameId,

@@ -8,6 +8,8 @@ import com.nendo.argosy.domain.usecase.save.GetUnifiedSavesUseCase
 import com.nendo.argosy.domain.usecase.save.RestoreCachedSaveUseCase
 import com.nendo.argosy.domain.usecase.state.RestoreCachedStatesUseCase
 import com.nendo.argosy.data.local.entity.StateCacheEntity
+import com.nendo.argosy.data.sync.SyncPayloadCodec
+import com.squareup.moshi.Moshi
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -170,7 +172,9 @@ class SaveChannelStateParityTest {
 
         val useCase = DeleteSaveChannelUseCase(
             getUnifiedSaves, saveCacheManager, saveSyncRepository,
-            stateCacheManager, activeSaveRepository
+            stateCacheManager, activeSaveRepository,
+            mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true),
+            SyncPayloadCodec(Moshi.Builder().build())
         )
 
         useCase(GAME_ID, "doomed")
@@ -216,7 +220,9 @@ class SaveChannelStateParityTest {
 
         val useCase = DeleteSaveChannelUseCase(
             getUnifiedSaves, saveCacheManager, saveSyncRepository,
-            stateCacheManager, activeSaveRepository
+            stateCacheManager, activeSaveRepository,
+            mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true),
+            SyncPayloadCodec(Moshi.Builder().build())
         )
 
         useCase(GAME_ID, "doomed")

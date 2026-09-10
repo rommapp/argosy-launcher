@@ -48,6 +48,9 @@ interface PendingConflictDao {
     @Query("DELETE FROM pending_conflicts WHERE ownerUserId = :ownerUserId")
     suspend fun deleteByOwner(ownerUserId: Long)
 
+    @Query("DELETE FROM pending_conflicts WHERE gameId = :gameId AND slot = :slot AND ownerUserId IN (:owners)")
+    suspend fun deleteByGameAndSlot(gameId: Long, slot: String, owners: List<Long>): Int
+
     @Query("DELETE FROM pending_conflicts")
     suspend fun deleteAll()
 }

@@ -146,6 +146,13 @@ interface SaveSyncDao {
     @Query("DELETE FROM save_sync WHERE gameId = :gameId AND ownerUserId IS :ownerUserId")
     suspend fun deleteByGameForOwner(gameId: Long, ownerUserId: Long?)
 
+    @Query("""
+        DELETE FROM save_sync
+        WHERE gameId = :gameId AND channelName = :channelName
+          AND (ownerUserId IS NULL OR ownerUserId IS :ownerUserId)
+    """)
+    suspend fun deleteByGameAndChannel(gameId: Long, channelName: String, ownerUserId: Long?): Int
+
     @Query("DELETE FROM save_sync WHERE gameId = :gameId")
     suspend fun deleteByGame(gameId: Long)
 

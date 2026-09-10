@@ -1003,6 +1003,7 @@ class SaveDownloader @Inject constructor(
                 emulatorId = emulatorId ?: "unknown",
                 downloadedFile = tempFile,
                 channelName = channelName,
+                activate = true,
                 serverTimestamp = serverTime,
                 isLocked = true,
                 needsRemoteSync = false,
@@ -1019,7 +1020,8 @@ class SaveDownloader @Inject constructor(
     suspend fun downloadAndCacheSave(
         serverSaveId: Long,
         gameId: Long,
-        channelName: String?
+        channelName: String?,
+        activate: Boolean
     ): Boolean = withContext(Dispatchers.IO) {
         val client = apiClient.get()
         val api = client.getApi() ?: return@withContext false
@@ -1077,6 +1079,7 @@ class SaveDownloader @Inject constructor(
                 emulatorId = resolvedEmulatorId,
                 downloadedFile = tempFile,
                 channelName = channelName,
+                activate = activate,
                 serverTimestamp = serverTime,
                 isLocked = channelName != null,
                 needsRemoteSync = false,

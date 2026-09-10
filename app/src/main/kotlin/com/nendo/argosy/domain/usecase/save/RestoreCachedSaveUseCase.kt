@@ -106,7 +106,7 @@ class RestoreCachedSaveUseCase @Inject constructor(
                 // next sync. Log and carry on -- reporting Error here would tell the user a restore
                 // that succeeded had failed.
                 if (downloaded &&
-                    !saveSyncRepository.downloadAndCacheSave(serverSaveId, gameId, entry.channelName)
+                    !saveSyncRepository.downloadAndCacheSave(serverSaveId, gameId, entry.channelName, activate = true)
                 ) {
                     Log.w(TAG, "Restored server save $serverSaveId but failed to cache it locally; unified view stays server-only until the next sync")
                 }

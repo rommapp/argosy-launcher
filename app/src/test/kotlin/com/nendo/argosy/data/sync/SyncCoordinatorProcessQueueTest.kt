@@ -190,6 +190,48 @@ class SyncCoordinatorProcessQueueTest {
         coVerify(exactly = 0) { pendingSyncQueueDao.deleteById(22L) }
     }
 
+    /**
+     * A named channel's bytes live in its cache. A row that names one but pins nothing would
+     * upload whatever is on the live path under that name, which is how a deleted slot comes back.
+     */
+    @Test
+    fun `a named-channel row with no pinned cache is refused and never reads the live path`() = runTest {
+        val row = saveFileRow(id = 30L, sessionId = null, channel = "slot1")
+        coEvery { pendingSyncQueueDao.getPendingByPriorityTier(SyncPriority.SAVE_FILE) } returns listOf(row)
+
+        coordinator.processQueue()
+
+        coVerify(exactly = 0) { saveSyncRepository.uploadSave(any(), any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { saveSyncRepository.uploadCacheEntry(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+        coVerify(exactly = 1) { pendingSyncQueueDao.markFailed(30L, any(), any()) }
+    }
+
+    @Test
+    fun `a named-channel row whose pinned cache row is gone is refused`() = runTest {
+        val row = saveFileRow(id = 31L, sessionId = null, channel = "slot1", cacheId = 93L)
+        coEvery { pendingSyncQueueDao.getPendingByPriorityTier(SyncPriority.SAVE_FILE) } returns listOf(row)
+        coEvery { saveCacheDao.getById(93L) } returns null
+
+        coordinator.processQueue()
+
+        coVerify(exactly = 0) { saveSyncRepository.uploadSave(any(), any(), any(), any(), any(), any()) }
+        coVerify(exactly = 1) { pendingSyncQueueDao.markFailed(31L, any(), any()) }
+    }
+
+    @Test
+    fun `an autosave row with no pinned cache still uploads from the live path`() = runTest {
+        val row = saveFileRow(id = 32L, sessionId = null, channel = "autosave")
+        coEvery { pendingSyncQueueDao.getPendingByPriorityTier(SyncPriority.SAVE_FILE) } returns listOf(row)
+        coEvery {
+            saveSyncRepository.uploadSave(any(), any(), any(), any(), any(), any())
+        } returns SaveSyncResult.Success()
+
+        coordinator.processQueue()
+
+        coVerify(exactly = 1) { saveSyncRepository.uploadSave(1L, "snes9x", "autosave", any(), any(), any()) }
+        coVerify(exactly = 1) { pendingSyncQueueDao.deleteById(32L) }
+    }
+
     @Test
     fun `returns NotConnected when RomM is not connected`() = runTest {
         connectionState.value = ConnectionState.Disconnected
@@ -204,6 +246,7 @@ class SyncCoordinatorProcessQueueTest {
         id: Long,
         sessionId: Long?,
         channel: String? = null,
+        cacheId: Long? = null,
     ): PendingSyncQueueEntity {
         val payload = SaveFilePayload(emulatorId = "snes9x", channelName = channel)
         return PendingSyncQueueEntity(
@@ -213,6 +256,7 @@ class SyncCoordinatorProcessQueueTest {
             status = SyncStatus.PENDING,
             createdAt = Instant.now(), updatedAt = Instant.now(),
             sessionId = sessionId,
+            cacheId = cacheId,
         )
     }
 }

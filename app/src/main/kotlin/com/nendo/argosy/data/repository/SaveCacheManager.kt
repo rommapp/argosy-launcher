@@ -266,11 +266,17 @@ class SaveCacheManager @Inject constructor(
         }
     }
 
+    /**
+     * Files a server save into the cache. [activate] decides whether the new row also becomes the
+     * game's active save and the game's dirty flags are cleared; a history fill passes false so
+     * the save the user resumes from does not move under them.
+     */
     suspend fun cacheServerDownload(
         gameId: Long,
         emulatorId: String,
         downloadedFile: File,
         channelName: String?,
+        activate: Boolean,
         serverTimestamp: Instant? = null,
         isLocked: Boolean = false,
         needsRemoteSync: Boolean = false,
@@ -334,12 +340,12 @@ class SaveCacheManager @Inject constructor(
             )
             val insertedId = saveCacheDao.insert(entity)
 
-            if (channelName != null) {
+            if (activate) {
                 saveCacheDao.setActiveRow(gameId, ownerUserId, insertedId)
                 saveCacheDao.clearDirtyFlagForLatest(gameId, ownerUserId)
             }
 
-            Log.d(TAG, "Cached server download for game $gameId at $cachePath (zip=$isZip, channel=$channelName)")
+            Log.d(TAG, "Cached server download for game $gameId at $cachePath (zip=$isZip, channel=$channelName, activate=$activate)")
 
             SaveDebugLogger.logCacheCreated(
                 gameId = gameId,

@@ -82,8 +82,23 @@ class PrefetchGameSaveDataUseCaseTest {
 
         useCase()(GAME_ID)
 
-        coVerify { saveSyncRepository.downloadAndCacheSave(77L, GAME_ID, "primary") }
+        coVerify { saveSyncRepository.downloadAndCacheSave(77L, GAME_ID, "primary", activate = false) }
         coVerify { getUnifiedStates(GAME_ID, any(), "primary", any(), any()) }
+    }
+
+    /**
+     * Named channels sort after the autosave, so a prefetch that activated each row as it landed
+     * would leave the last named slot active. History fills never move the pointer.
+     */
+    @Test
+    fun `prefetch never activates what it caches`() = runTest {
+        arrange()
+        coEvery { getUnifiedSaves(GAME_ID, true, any()) } returns listOf(serverEntry(77L), serverEntry(78L))
+
+        useCase()(GAME_ID)
+
+        coVerify(exactly = 0) { saveSyncRepository.downloadAndCacheSave(any(), any(), any(), activate = true) }
+        coVerify(exactly = 2) { saveSyncRepository.downloadAndCacheSave(any(), GAME_ID, any(), activate = false) }
     }
 
     @Test
@@ -95,7 +110,7 @@ class PrefetchGameSaveDataUseCaseTest {
         useCase(GAME_ID)
         useCase(GAME_ID)
 
-        coVerify(exactly = 1) { saveSyncRepository.downloadAndCacheSave(77L, GAME_ID, "primary") }
+        coVerify(exactly = 1) { saveSyncRepository.downloadAndCacheSave(77L, GAME_ID, "primary", any()) }
     }
 
     @Test
@@ -114,7 +129,7 @@ class PrefetchGameSaveDataUseCaseTest {
 
         useCase()(GAME_ID)
 
-        coVerify(exactly = 0) { saveSyncRepository.downloadAndCacheSave(any(), any(), any()) }
+        coVerify(exactly = 0) { saveSyncRepository.downloadAndCacheSave(any(), any(), any(), any()) }
         coVerify(exactly = 0) { getUnifiedStates(any(), any(), any(), any(), any()) }
     }
 
@@ -124,7 +139,7 @@ class PrefetchGameSaveDataUseCaseTest {
 
         useCase()(GAME_ID)
 
-        coVerify(exactly = 0) { saveSyncRepository.downloadAndCacheSave(any(), any(), any()) }
+        coVerify(exactly = 0) { saveSyncRepository.downloadAndCacheSave(any(), any(), any(), any()) }
         coVerify(exactly = 0) { getUnifiedStates(any(), any(), any(), any(), any()) }
     }
 
@@ -139,7 +154,7 @@ class PrefetchGameSaveDataUseCaseTest {
 
         useCase()(GAME_ID)
 
-        coVerify(exactly = 0) { saveSyncRepository.downloadAndCacheSave(any(), any(), any()) }
+        coVerify(exactly = 0) { saveSyncRepository.downloadAndCacheSave(any(), any(), any(), any()) }
         coVerify(exactly = 0) { getUnifiedStates(any(), any(), any(), any(), any()) }
     }
 
@@ -150,7 +165,7 @@ class PrefetchGameSaveDataUseCaseTest {
 
         useCase()(GAME_ID)
 
-        coVerify(exactly = 0) { saveSyncRepository.downloadAndCacheSave(any(), any(), any()) }
+        coVerify(exactly = 0) { saveSyncRepository.downloadAndCacheSave(any(), any(), any(), any()) }
         coVerify(exactly = 0) { getUnifiedStates(any(), any(), any(), any(), any()) }
     }
 

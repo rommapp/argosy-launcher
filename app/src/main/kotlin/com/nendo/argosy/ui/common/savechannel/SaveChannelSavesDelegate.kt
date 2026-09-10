@@ -773,7 +773,7 @@ class SaveChannelSavesDelegate @Inject constructor(
         val channelName = entry.channelName ?: return
 
         scope.launch {
-            deleteSaveChannelUseCase(currentGameId, channelName)
+            val result = deleteSaveChannelUseCase(currentGameId, channelName)
 
             if (state.activeChannel == channelName) {
                 _state.update {
@@ -794,9 +794,14 @@ class SaveChannelSavesDelegate @Inject constructor(
                     )
                 )
             }
-            notificationManager.showSuccess(
-                NotificationText.Res(R.string.ui_save_channel_notice_slot_deleted, listOf(channelName))
-            )
+            when (result) {
+                DeleteSaveChannelUseCase.Result.Deleted -> notificationManager.showSuccess(
+                    NotificationText.Res(R.string.ui_save_channel_notice_slot_deleted, listOf(channelName))
+                )
+                DeleteSaveChannelUseCase.Result.ServerDeleteFailed -> notificationManager.showError(
+                    NotificationText.Res(R.string.ui_save_channel_notice_slot_deleted_server_failed, listOf(channelName))
+                )
+            }
         }
     }
 
@@ -903,7 +908,7 @@ class SaveChannelSavesDelegate @Inject constructor(
         val channelName = state.deleteLegacyChannelName ?: return
 
         scope.launch {
-            deleteSaveChannelUseCase(currentGameId, channelName)
+            val result = deleteSaveChannelUseCase(currentGameId, channelName)
 
             refreshEntries()
             _state.update {
@@ -915,9 +920,14 @@ class SaveChannelSavesDelegate @Inject constructor(
                     )
                 )
             }
-            notificationManager.showSuccess(
-                NotificationText.Res(R.string.ui_save_channel_notice_legacy_deleted, listOf(channelName))
-            )
+            when (result) {
+                DeleteSaveChannelUseCase.Result.Deleted -> notificationManager.showSuccess(
+                    NotificationText.Res(R.string.ui_save_channel_notice_legacy_deleted, listOf(channelName))
+                )
+                DeleteSaveChannelUseCase.Result.ServerDeleteFailed -> notificationManager.showError(
+                    NotificationText.Res(R.string.ui_save_channel_notice_legacy_deleted_server_failed, listOf(channelName))
+                )
+            }
         }
     }
 
@@ -939,7 +949,8 @@ class SaveChannelSavesDelegate @Inject constructor(
                 saveSyncRepository.downloadAndCacheSave(
                     serverSaveId = entry.serverSaveId!!,
                     gameId = currentGameId,
-                    channelName = entry.channelName
+                    channelName = entry.channelName,
+                    activate = false
                 )
             }
 

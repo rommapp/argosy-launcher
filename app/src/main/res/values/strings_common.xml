@@ -349,6 +349,9 @@
     <string name="ui_save_channel_notice_renamed">Renamed to \'%1$s\'</string>
     <!-- Brief message after a save slot is erased. %1$s is its name. -->
     <string name="ui_save_channel_notice_slot_deleted">Deleted save slot \'%1$s\'</string>
+    <!-- Brief message after a save slot is erased on this device but the server copies could not
+         be removed. %1$s is its name. -->
+    <string name="ui_save_channel_notice_slot_deleted_server_failed">Deleted save slot \'%1$s\' here; the server copy could not be removed</string>
     <!-- Brief message after a legacy slot is brought into the current save system. %1$s is its
          name. -->
     <string name="ui_save_channel_notice_migrated">Migrated \'%1$s\'</string>
@@ -356,6 +359,9 @@
     <string name="ui_save_channel_notice_migrate_failed">Failed to migrate save</string>
     <!-- Brief message after a legacy slot is erased. %1$s is its name. -->
     <string name="ui_save_channel_notice_legacy_deleted">Deleted \'%1$s\'</string>
+    <!-- Brief message after a legacy slot is erased on this device but the server copies could
+         not be removed. %1$s is its name. -->
+    <string name="ui_save_channel_notice_legacy_deleted_server_failed">Deleted \'%1$s\' here; the server copy could not be removed</string>
     <!-- Brief message after fetching every server save for a game. Past tense statement. -->
     <string name="ui_save_channel_notice_saves_synced">Saves synced from server</string>
 

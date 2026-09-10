@@ -295,11 +295,16 @@ class SaveSyncRepository @Inject constructor(
         skipDeviceId: Boolean = false
     ): Boolean = apiClient.downloadSaveAsChannel(gameId, serverSaveId, channelName, emulatorId, skipDeviceId)
 
+    /**
+     * Pulls one server save into the cache. [activate] true makes it the game's active save, as an
+     * explicit restore intends; false files it as history only.
+     */
     suspend fun downloadAndCacheSave(
         serverSaveId: Long,
         gameId: Long,
-        channelName: String?
-    ): Boolean = apiClient.downloadAndCacheSave(serverSaveId, gameId, channelName)
+        channelName: String?,
+        activate: Boolean
+    ): Boolean = apiClient.downloadAndCacheSave(serverSaveId, gameId, channelName, activate)
 
     suspend fun queueUpload(
         gameId: Long,

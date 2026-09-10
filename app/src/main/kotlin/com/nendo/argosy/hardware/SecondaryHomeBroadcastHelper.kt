@@ -19,6 +19,11 @@ class SecondaryHomeBroadcastHelper(
         dsm.handleGameDetailOpened(gameId)
     }
 
+    fun updateSaveName(text: String) = dsm.updateDualSaveNameText(text)
+    fun confirmSaveName() = dsm.confirmDualSaveName()
+    fun moveSaveDeleteFocus(delta: Int) = dsm.moveDualSaveDeleteFocus(delta)
+    fun confirmSaveDelete(confirm: Boolean) = dsm.confirmDualSaveDelete(confirm)
+
     fun broadcastGameDetailClosed() {
         dsm.onGameDetailClosed()
     }

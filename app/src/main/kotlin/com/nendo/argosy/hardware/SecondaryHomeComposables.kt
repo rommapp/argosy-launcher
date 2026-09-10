@@ -388,6 +388,7 @@ fun ShowcaseRoleContent(
                         onModalCollectionCreateDismiss = showcaseViewModel::onModalCollectionCreateDismiss,
                         onSaveNameTextChange = showcaseViewModel::onSaveNameTextChange,
                         onSaveNameConfirm = showcaseViewModel::onSaveNameConfirm,
+                        onSaveDeleteConfirm = showcaseViewModel::onSaveDeleteConfirm,
                         onDiscSelect = showcaseViewModel::onDiscSelect,
                         onModalSteamInstallSelect = showcaseViewModel::onModalSteamInstallSelect,
                         onModalDismiss = showcaseViewModel::onModalDismiss,
@@ -557,11 +558,16 @@ fun DualGameDetailContent(
         onDimTapped = onDimTapped,
         onTabChanged = { viewModel.setTab(it) },
         onSlotTapped = { index ->
+            viewModel.focusSlotsColumn()
             viewModel.moveSlotSelection(index - viewModel.selectedSlotIndex.value)
         },
         onHistoryTapped = { index ->
+            viewModel.focusHistoryColumn()
             viewModel.moveHistorySelection(index - viewModel.selectedHistoryIndex.value)
         },
+        canManageSaveChannel = viewModel.manageableSaveChannel != null,
+        onRenameSaveChannel = viewModel::renameSelectedSaveChannel,
+        onDeleteSaveChannel = viewModel::deleteSelectedSaveChannel,
         onStateTapped = { index -> viewModel.tapStateEntry(index) },
         onStateMenuSelect = { index ->
             viewModel.setStateMenuFocus(index)

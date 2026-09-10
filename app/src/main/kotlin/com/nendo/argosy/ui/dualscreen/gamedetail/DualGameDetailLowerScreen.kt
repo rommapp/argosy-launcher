@@ -66,7 +66,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import com.nendo.argosy.ui.components.CustomTileMenuModal
+import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.primitives.ArgosyConfirmModal
+import com.nendo.argosy.ui.components.FooterBar
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import com.nendo.argosy.ui.primitives.ArgosyProgressBar
@@ -126,6 +128,9 @@ fun DualGameDetailLowerScreen(
     onTabChanged: (DualGameDetailTab) -> Unit,
     onSlotTapped: (Int) -> Unit,
     onHistoryTapped: (Int) -> Unit,
+    canManageSaveChannel: Boolean = false,
+    onRenameSaveChannel: () -> Unit = {},
+    onDeleteSaveChannel: () -> Unit = {},
     onStateTapped: (Int) -> Unit = {},
     onStateMenuSelect: (Int) -> Unit = {},
     onStateMenuDismiss: () -> Unit = {},
@@ -166,7 +171,10 @@ fun DualGameDetailLowerScreen(
                         isApplying = savesApplying,
                         isSyncing = savesSyncing,
                         onSlotTapped = onSlotTapped,
-                        onHistoryTapped = onHistoryTapped
+                        onHistoryTapped = onHistoryTapped,
+                        canManageSaveChannel = canManageSaveChannel,
+                        onRenameSaveChannel = onRenameSaveChannel,
+                        onDeleteSaveChannel = onDeleteSaveChannel
                     )
                     DualGameDetailTab.STATES -> StatesTabContent(
                         entries = stateEntries,
@@ -335,7 +343,10 @@ private fun SavesTabContent(
     isApplying: Boolean,
     isSyncing: Boolean = false,
     onSlotTapped: (Int) -> Unit,
-    onHistoryTapped: (Int) -> Unit
+    onHistoryTapped: (Int) -> Unit,
+    canManageSaveChannel: Boolean,
+    onRenameSaveChannel: () -> Unit,
+    onDeleteSaveChannel: () -> Unit
 ) {
     val theme = LocalArgosyTheme.current
     if (isLoading) {
@@ -384,6 +395,21 @@ private fun SavesTabContent(
                     modifier = Modifier
                         .weight(0.6f)
                         .fillMaxHeight()
+                )
+            }
+            if (canManageSaveChannel) {
+                FooterBar(
+                    hints = listOf(
+                        InputButton.X to stringResource(R.string.ui_save_channel_footer_rename),
+                        InputButton.Y to stringResource(R.string.ui_save_channel_footer_delete_slot)
+                    ),
+                    onHintClick = { button ->
+                        when (button) {
+                            InputButton.X -> onRenameSaveChannel()
+                            InputButton.Y -> onDeleteSaveChannel()
+                            else -> Unit
+                        }
+                    }
                 )
             }
         }

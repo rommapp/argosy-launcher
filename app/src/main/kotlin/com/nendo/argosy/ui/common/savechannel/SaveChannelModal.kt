@@ -884,7 +884,7 @@ private fun RestoreConfirmationOverlay() {
 }
 
 @Composable
-private fun RenameChannelOverlay(
+internal fun RenameChannelOverlay(
     mode: RenameMode,
     text: String,
     onTextChange: (String) -> Unit,

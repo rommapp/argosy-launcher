@@ -27,7 +27,7 @@ enum class DualGameDetailTab(@StringRes val labelRes: Int) {
     OPTIONS(R.string.dual_detail_tab_options)
 }
 
-enum class ActiveModal { NONE, RATING, DIFFICULTY, STATUS, EMULATOR, CORE, SAVE_PATH, DISPLAY_TARGET, MEMORY_CARD, COLLECTION, SAVE_NAME, DISC_PICKER, VARIANT_PICKER, STEAM_INSTALL, FILE_PICKER, COVER_PICKER, REVIEW_EDITOR }
+enum class ActiveModal { NONE, RATING, DIFFICULTY, STATUS, EMULATOR, CORE, SAVE_PATH, DISPLAY_TARGET, MEMORY_CARD, COLLECTION, SAVE_NAME, SAVE_DELETE, DISC_PICKER, VARIANT_PICKER, STEAM_INSTALL, FILE_PICKER, COVER_PICKER, REVIEW_EDITOR }
 
 enum class DualStateMenuAction(@StringRes val labelRes: Int) {
     COPY_TO(R.string.dual_state_menu_copy_to),
@@ -223,6 +223,8 @@ data class DualGameDetailUpperState(
     val saveNamePromptAction: String? = null,
     val saveNameCacheId: Long? = null,
     val saveNameText: String = "",
+    val saveChannelName: String? = null,
+    val saveDeleteFocusIndex: Int = 0,
     val updateFiles: List<UpdateFileUi> = emptyList(),
     val dlcFiles: List<UpdateFileUi> = emptyList(),
     val focusedStateEntry: UnifiedStateEntry? = null,

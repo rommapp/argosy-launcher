@@ -189,7 +189,13 @@ class DualGameDetailInputHandler(
             }
             GamepadEvent.ContextMenu -> {
                 when (vm.uiState.value.currentTab) {
-                    DualGameDetailTab.SAVES -> handleSaveLockAsSlot(vm)
+                    DualGameDetailTab.SAVES -> {
+                        if (vm.uiState.value.saveFocusColumn == SaveFocusColumn.SLOTS) {
+                            vm.renameSelectedSaveChannel()
+                        } else {
+                            handleSaveLockAsSlot(vm)
+                        }
+                    }
                     DualGameDetailTab.STATES -> {
                         val entry = vm.getFocusedStateEntry()
                         if (entry?.screenshotPath != null) {
@@ -201,6 +207,9 @@ class DualGameDetailInputHandler(
                 InputResult.HANDLED
             }
             GamepadEvent.SecondaryAction -> {
+                if (vm.uiState.value.currentTab == DualGameDetailTab.SAVES) {
+                    vm.deleteSelectedSaveChannel()
+                }
                 if (vm.uiState.value.currentTab == DualGameDetailTab.STATES) {
                     vm.promptStateDelete()
                 }
@@ -564,7 +573,7 @@ class DualGameDetailInputHandler(
                 }
                 return InputResult.HANDLED
             }
-            ActiveModal.SAVE_NAME, ActiveModal.NONE -> {}
+            ActiveModal.SAVE_NAME, ActiveModal.SAVE_DELETE, ActiveModal.NONE -> {}
         }
 
         return InputResult.HANDLED

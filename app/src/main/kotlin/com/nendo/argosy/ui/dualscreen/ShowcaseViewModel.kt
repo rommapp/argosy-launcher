@@ -168,10 +168,15 @@ class ShowcaseViewModel(
 
     fun onSaveNameTextChange(text: String) {
         detailState.update { it?.copy(saveNameText = text) }
+        if (isControlActive()) broadcasts.updateSaveName(text)
     }
 
     fun onSaveNameConfirm() {
-        detailState.update { it?.copy(modalType = ActiveModal.NONE) }
+        if (isControlActive()) broadcasts.confirmSaveName()
+    }
+
+    fun onSaveDeleteConfirm() {
+        if (isControlActive()) broadcasts.confirmSaveDelete(true)
     }
 
     fun onDiscSelect(index: Int) {
@@ -414,11 +419,13 @@ class ShowcaseViewModel(
                 if (modal == ActiveModal.RATING || modal == ActiveModal.DIFFICULTY)
                     adjustModalRating(-1)
                 if (modal == ActiveModal.COVER_PICKER) moveCoverPickerFocus(-1)
+                if (modal == ActiveModal.SAVE_DELETE && isControlActive()) broadcasts.moveSaveDeleteFocus(-1)
             }
             is GamepadEvent.Right -> {
                 if (modal == ActiveModal.RATING || modal == ActiveModal.DIFFICULTY)
                     adjustModalRating(1)
                 if (modal == ActiveModal.COVER_PICKER) moveCoverPickerFocus(1)
+                if (modal == ActiveModal.SAVE_DELETE && isControlActive()) broadcasts.moveSaveDeleteFocus(1)
             }
             is GamepadEvent.Up -> {
                 if (state.showCreateDialog) return true
@@ -486,6 +493,9 @@ class ShowcaseViewModel(
                     ActiveModal.STEAM_INSTALL ->
                         onModalSteamInstallSelect(state.steamInstallFocusIndex)
                     ActiveModal.SAVE_NAME -> onSaveNameConfirm()
+                    ActiveModal.SAVE_DELETE -> if (isControlActive()) {
+                        broadcasts.confirmSaveDelete(state.saveDeleteFocusIndex == 1)
+                    }
                     ActiveModal.COVER_PICKER -> onCoverSelect(state.coverPickerFocusIndex)
                     else -> {}
                 }

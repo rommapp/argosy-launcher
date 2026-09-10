@@ -55,7 +55,6 @@ import com.nendo.argosy.R
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.nendo.argosy.data.emulator.DiscOption
-import androidx.compose.material3.OutlinedTextField
 import com.nendo.argosy.domain.model.UnifiedStateEntry
 import androidx.compose.foundation.layout.fillMaxHeight
 import com.nendo.argosy.ui.common.displayName
@@ -70,7 +69,8 @@ import com.nendo.argosy.ui.dualscreen.ShowcaseEyebrow
 import com.nendo.argosy.ui.dualscreen.ShowcaseRatingsCluster
 import com.nendo.argosy.ui.dualscreen.ShowcaseStatsRow
 import com.nendo.argosy.ui.dualscreen.ShowcaseTimeToBeatRow
-import com.nendo.argosy.ui.primitives.ActionButton
+import com.nendo.argosy.ui.common.savechannel.RenameChannelOverlay
+import com.nendo.argosy.ui.common.savechannel.RenameMode
 import com.nendo.argosy.ui.primitives.GlassPanel
 import com.nendo.argosy.ui.primitives.RowButton
 import com.nendo.argosy.ui.screens.collections.dialogs.CreateCollectionDialog
@@ -106,6 +106,7 @@ fun DualGameDetailUpperScreen(
     onModalCollectionCreateDismiss: () -> Unit = {},
     onSaveNameTextChange: (String) -> Unit = {},
     onSaveNameConfirm: () -> Unit = {},
+    onSaveDeleteConfirm: () -> Unit = {},
     onDiscSelect: (Int) -> Unit = {},
     onModalSteamInstallSelect: (Int) -> Unit = {},
     onModalDismiss: () -> Unit = {},
@@ -244,11 +245,25 @@ fun DualGameDetailUpperScreen(
                     onDismiss = onModalDismiss
                 )
             }
-            ActiveModal.SAVE_NAME -> DualSaveNamePrompt(
+            ActiveModal.SAVE_NAME -> RenameChannelOverlay(
+                mode = when (state.saveNamePromptAction) {
+                    "RENAME_SLOT" -> RenameMode.RENAME
+                    "LOCK_AS_SLOT" -> RenameMode.SAVE_AS
+                    else -> RenameMode.NEW_SLOT
+                },
                 text = state.saveNameText,
                 onTextChange = onSaveNameTextChange,
                 onConfirm = onSaveNameConfirm,
-                onDismiss = onModalDismiss
+                onCancel = onModalDismiss
+            )
+            ActiveModal.SAVE_DELETE -> com.nendo.argosy.ui.primitives.ArgosyConfirmModal(
+                title = stringResource(R.string.ui_save_channel_delete_slot_title),
+                message = stringResource(R.string.ui_save_channel_delete_slot_message, state.saveChannelName.orEmpty()),
+                confirmLabel = stringResource(R.string.ui_save_channel_delete_slot_confirm),
+                onConfirm = onSaveDeleteConfirm,
+                onDismiss = onModalDismiss,
+                focusedIndex = state.saveDeleteFocusIndex,
+                destructive = true
             )
             ActiveModal.DISC_PICKER -> DualDiscPickerContent(
                 discs = state.discPickerOptions,
@@ -1219,65 +1234,5 @@ private fun StatePreviewDisplay(
         )
 
         footerHints()
-    }
-}
-
-@Composable
-private fun DualSaveNamePrompt(
-    text: String,
-    onTextChange: (String) -> Unit,
-    onConfirm: () -> Unit,
-    onDismiss: () -> Unit
-) {
-    val theme = LocalArgosyTheme.current
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.6f))
-            .touchOnly { onDismiss() },
-        contentAlignment = Alignment.Center
-    ) {
-        GlassPanel(
-            modifier = Modifier
-                .fillMaxWidth(0.5f)
-                .touchOnly { }
-        ) {
-            Column(
-                modifier = Modifier.padding(Dimens.spacingLg),
-                verticalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
-            ) {
-                Text(
-                    text = stringResource(R.string.dual_detail_save_name_heading),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = theme.textPrimary
-                )
-
-                OutlinedTextField(
-                    value = text,
-                    onValueChange = onTextChange,
-                    label = { Text(stringResource(R.string.dual_detail_save_name_field_label)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    ActionButton(
-                        label = stringResource(R.string.dual_detail_save_name_cancel),
-                        onClick = onDismiss
-                    )
-                    Spacer(modifier = Modifier.width(Dimens.spacingSm))
-                    ActionButton(
-                        label = stringResource(R.string.dual_detail_save_name_create),
-                        onClick = onConfirm,
-                        primary = true
-                    )
-                }
-            }
-        }
     }
 }

@@ -128,6 +128,10 @@ class DualScreenManager(
         com.nendo.argosy.domain.usecase.savechannel.CreateSaveChannelUseCase,
     private val copySaveChannelUseCase:
         com.nendo.argosy.domain.usecase.savechannel.CopySaveChannelUseCase,
+    private val renameSaveChannelUseCase:
+        com.nendo.argosy.domain.usecase.savechannel.RenameSaveChannelUseCase,
+    private val deleteSaveChannelUseCase:
+        com.nendo.argosy.domain.usecase.savechannel.DeleteSaveChannelUseCase,
     private val restoreStateUseCase:
         com.nendo.argosy.domain.usecase.state.RestoreStateUseCase,
     private val emulatorResolver: EmulatorResolver,
@@ -1237,9 +1241,13 @@ class DualScreenManager(
 
     var onOverlayFocusChanged: ((Boolean) -> Unit)? = null
     var isOverlayFocused = false
+        get() {
+            val modal = _dualGameDetailState.value?.modalType
+            return field || (!isRolesSwapped.value && modal != null && modal != ActiveModal.NONE)
+        }
         set(value) {
             field = value
-            onOverlayFocusChanged?.invoke(value)
+            onOverlayFocusChanged?.invoke(isOverlayFocused)
         }
     var swappedDualHomeViewModel: DualHomeViewModel? = null
         private set
@@ -1787,6 +1795,8 @@ class DualScreenManager(
             "HIDE" -> handleDualHide(gameId)
             "UNHIDE" -> handleDualUnhide(gameId)
             "SAVE_SWITCH_CHANNEL" -> handleSaveSwitchChannel(gameId, channelName)
+            "SAVE_RENAME_CHANNEL" -> openSaveChannelAction(gameId, channelName, false)
+            "SAVE_DELETE_CHANNEL" -> openSaveChannelAction(gameId, channelName, true)
             "SAVE_SET_RESTORE_POINT" -> handleSaveSetRestorePoint(gameId, channelName, timestamp ?: 0L)
             "DOWNLOAD_UPDATE_FILE" -> {
                 val fileId = channelName?.toLongOrNull()
@@ -2468,6 +2478,47 @@ class DualScreenManager(
         )
     }
 
+    private fun openSaveChannelAction(gameId: Long, channelName: String?, delete: Boolean) {
+        if (channelName == null || isReservedSaveSlotName(channelName)) return
+        scope.launch {
+            val manageable = kotlinx.coroutines.withContext(Dispatchers.IO) {
+                getUnifiedSavesUseCase(gameId, expandHistory = true).any {
+                    it.channelName == channelName && it.isLocked
+                }
+            }
+            if (!manageable || _dualGameDetailState.value?.gameId != gameId) return@launch
+            _dualGameDetailState.update {
+                it?.copy(
+                    modalType = if (delete) ActiveModal.SAVE_DELETE else ActiveModal.SAVE_NAME,
+                    saveNamePromptAction = "RENAME_SLOT",
+                    saveChannelName = channelName,
+                    saveNameText = channelName,
+                    saveDeleteFocusIndex = 0
+                )
+            }
+            refocusMain()
+        }
+    }
+
+    fun moveDualSaveDeleteFocus(delta: Int) {
+        _dualGameDetailState.update {
+            it?.copy(saveDeleteFocusIndex = (it.saveDeleteFocusIndex + delta).coerceIn(0, 1))
+        }
+    }
+
+    fun confirmDualSaveDelete(confirm: Boolean = _dualGameDetailState.value?.saveDeleteFocusIndex == 1) {
+        val state = _dualGameDetailState.value ?: return
+        if (state.modalType != ActiveModal.SAVE_DELETE) return
+        val channelName = state.saveChannelName ?: return
+        dismissDualModal()
+        if (!confirm) return
+        scope.launch(Dispatchers.IO) {
+            deleteSaveChannelUseCase(state.gameId, channelName)
+            broadcastUnifiedSaves(state.gameId)
+            broadcastUnifiedStates(state.gameId)
+        }
+    }
+
     fun updateDualSaveNameText(text: String) {
         _dualGameDetailState.update { it?.copy(saveNameText = text) }
     }
@@ -2490,6 +2541,14 @@ class DualScreenManager(
         val gameId = state.gameId
 
         when (state.saveNamePromptAction) {
+            "RENAME_SLOT" -> {
+                val oldName = state.saveChannelName ?: return
+                scope.launch(Dispatchers.IO) {
+                    renameSaveChannelUseCase(gameId, oldName, name)
+                    broadcastUnifiedSaves(gameId)
+                    broadcastUnifiedStates(gameId)
+                }
+            }
             "CREATE_SLOT" -> handleCreateSlot(gameId, name)
             "LOCK_AS_SLOT" -> handleLockAsSlot(
                 gameId, state.saveNameCacheId, name

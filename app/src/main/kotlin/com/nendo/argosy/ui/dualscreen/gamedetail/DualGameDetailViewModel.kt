@@ -105,6 +105,28 @@ class DualGameDetailViewModel(
 
     private var _rawEntries: List<SaveEntryData> = emptyList()
 
+    val manageableSaveChannel: String?
+        get() {
+            val state = _uiState.value
+            if (state.currentTab != DualGameDetailTab.SAVES ||
+                state.saveFocusColumn != SaveFocusColumn.SLOTS ||
+                _savesLoading.value || _savesApplying.value
+            ) return null
+            val slot = _saveSlots.value.getOrNull(_selectedSlotIndex.value) ?: return null
+            if (slot.isCreateAction || slot.channelName == null) return null
+            return slot.channelName.takeIf { channel ->
+                _rawEntries.any { it.channelName == channel && it.isLocked }
+            }
+        }
+
+    fun renameSelectedSaveChannel() {
+        manageableSaveChannel?.let { stateDirectAction("SAVE_RENAME_CHANNEL", it) }
+    }
+
+    fun deleteSelectedSaveChannel() {
+        manageableSaveChannel?.let { stateDirectAction("SAVE_DELETE_CHANNEL", it) }
+    }
+
     private val _savesLoading = MutableStateFlow(true)
     val savesLoading: StateFlow<Boolean> = _savesLoading.asStateFlow()
 
@@ -377,7 +399,7 @@ class DualGameDetailViewModel(
             ActiveModal.EMULATOR, ActiveModal.CORE, ActiveModal.COLLECTION,
             ActiveModal.SAVE_PATH, ActiveModal.DISPLAY_TARGET,
             ActiveModal.MEMORY_CARD,
-            ActiveModal.SAVE_NAME,
+            ActiveModal.SAVE_NAME, ActiveModal.SAVE_DELETE,
             ActiveModal.DISC_PICKER, ActiveModal.VARIANT_PICKER,
             ActiveModal.STEAM_INSTALL, ActiveModal.REVIEW_EDITOR -> return
             ActiveModal.FILE_PICKER, ActiveModal.COVER_PICKER -> {}

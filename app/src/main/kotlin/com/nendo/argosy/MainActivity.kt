@@ -139,6 +139,10 @@ class MainActivity : ComponentActivity() {
         com.nendo.argosy.domain.usecase.savechannel.CreateSaveChannelUseCase
     @Inject lateinit var copySaveChannelUseCase:
         com.nendo.argosy.domain.usecase.savechannel.CopySaveChannelUseCase
+    @Inject lateinit var renameSaveChannelUseCase:
+        com.nendo.argosy.domain.usecase.savechannel.RenameSaveChannelUseCase
+    @Inject lateinit var deleteSaveChannelUseCase:
+        com.nendo.argosy.domain.usecase.savechannel.DeleteSaveChannelUseCase
     @Inject lateinit var restoreStateUseCase:
         com.nendo.argosy.domain.usecase.state.RestoreStateUseCase
     @Inject lateinit var prefetchGameSaveDataUseCase:
@@ -382,6 +386,8 @@ class MainActivity : ComponentActivity() {
                 restoreSaveChannelPointUseCase = restoreSaveChannelPointUseCase,
                 createSaveChannelUseCase = createSaveChannelUseCase,
                 copySaveChannelUseCase = copySaveChannelUseCase,
+                renameSaveChannelUseCase = renameSaveChannelUseCase,
+                deleteSaveChannelUseCase = deleteSaveChannelUseCase,
                 restoreStateUseCase = restoreStateUseCase,
                 prefetchGameSaveDataUseCase = prefetchGameSaveDataUseCase,
                 emulatorResolver = emulatorResolver,

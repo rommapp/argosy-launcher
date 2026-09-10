@@ -62,6 +62,12 @@ interface RomMAccountDao {
     @Query("UPDATE romm_accounts SET deviceId = :deviceId, deviceClientVersion = :clientVersion WHERE id = :id")
     suspend fun updateDevice(id: Long, deviceId: String?, clientVersion: String?)
 
+    @Query("UPDATE romm_accounts SET lanBaseUrl = :lanBaseUrl WHERE id = :id")
+    suspend fun updateLanBaseUrl(id: Long, lanBaseUrl: String?)
+
+    @Query("UPDATE romm_accounts SET baseUrl = :baseUrl WHERE id = :id")
+    suspend fun updateBaseUrl(id: Long, baseUrl: String)
+
     @Query("DELETE FROM romm_accounts WHERE id = :id")
     suspend fun deleteById(id: Long)
 }

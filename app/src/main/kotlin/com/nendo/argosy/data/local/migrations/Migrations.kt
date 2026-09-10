@@ -3583,3 +3583,9 @@ object Migration_186_187 : Migration(186, 187) {
         db.execSQL("ALTER TABLE `save_cache` ADD COLUMN `identityHash` TEXT")
     }
 }
+
+object Migration_187_188 : Migration(187, 188) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `romm_accounts` ADD COLUMN `lanBaseUrl` TEXT")
+    }
+}

@@ -22,9 +22,10 @@ import javax.inject.Singleton
 /**
  * Owns the set of paired RomM accounts and which one is live.
  *
- * `romm_accounts` is the registry; the RomM credential keys in DataStore are a mirror of the
- * active account so the boot path and existing readers keep working unchanged. This class is
- * the only writer of that mirror, so the two cannot drift.
+ * `romm_accounts` is the registry; the RomM credential keys in DataStore mirror the active
+ * account so existing readers keep working unchanged. The mirrored URL is the one address the
+ * live session is using right now, which the connection manager rewrites whenever a different
+ * one of the account's addresses answers; the row holds the full set.
  */
 @Singleton
 class RomMAccountRepository @Inject constructor(
@@ -52,6 +53,25 @@ class RomMAccountRepository @Inject constructor(
     suspend fun accountCount(): Int = rommAccountDao.count()
 
     /**
+     * The active account's addresses in the order a connect should try them: LAN, then WAN.
+     * Empty when no account row exists.
+     */
+    suspend fun activeAddresses(): List<String> =
+        rommAccountDao.getActive()?.addressCandidates().orEmpty()
+
+    suspend fun setLanAddress(id: Long, url: String?) {
+        rommAccountDao.updateLanBaseUrl(id, url?.trim()?.takeIf { it.isNotBlank() })
+    }
+
+    suspend fun setWanAddress(id: Long, url: String) {
+        rommAccountDao.updateBaseUrl(id, url.trim())
+        rommApiProvider.invalidate(id)
+    }
+
+    private suspend fun inheritedLanBaseUrl(existing: RomMAccountEntity?): String? =
+        existing?.lanBaseUrl ?: rommAccountDao.getActive()?.lanBaseUrl
+
+    /**
      * Records a successful pairing and makes it the live account. Returns the row id.
      *
      * An existing row for the same RomM user is updated in place rather than duplicated, so a
@@ -73,6 +93,7 @@ class RomMAccountRepository @Inject constructor(
                 rommUserId = rommUserId,
                 username = username,
                 baseUrl = baseUrl,
+                lanBaseUrl = inheritedLanBaseUrl(existing),
                 token = token,
                 deviceId = deviceId ?: existing?.deviceId,
                 deviceClientVersion = deviceClientVersion ?: existing?.deviceClientVersion,
@@ -150,6 +171,7 @@ class RomMAccountRepository @Inject constructor(
                 rommUserId = rommUserId,
                 username = username,
                 baseUrl = baseUrl,
+                lanBaseUrl = inheritedLanBaseUrl(existing),
                 token = token,
                 deviceId = deviceId ?: existing?.deviceId,
                 deviceClientVersion = deviceClientVersion ?: existing?.deviceClientVersion,

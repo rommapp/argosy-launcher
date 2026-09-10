@@ -5,6 +5,7 @@ import android.content.Context
 import android.os.Build
 import android.provider.Settings
 import com.nendo.argosy.BuildConfig
+import com.nendo.argosy.data.local.entity.RomMAccountEntity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.BiosRepository
 import com.nendo.argosy.data.sync.AccountRemovalResult
@@ -38,6 +39,7 @@ import javax.inject.Singleton
 
 private const val TAG = "RomMConnectionManager"
 private const val MIN_DEVICE_API_VERSION = "4.7.0"
+private const val CANDIDATE_PROBE_TIMEOUT_SECONDS = 5L
 
 private val RECONNECT_BACKOFF_MS = listOf(5_000L, 10_000L, 20_000L, 40_000L, 60_000L)
 
@@ -129,18 +131,31 @@ class RomMConnectionManager @Inject constructor(
     }
 
     suspend fun initialize() {
-        val prefs = userPreferencesRepository.preferences.first()
-        Logger.info(TAG, "initialize: baseUrl=${prefs.rommBaseUrl?.take(30)}, hasToken=${prefs.rommToken != null}")
         rommAccountRepository.get().adoptLegacyCredentialsIfNeeded()
-        cachedDeviceId = prefs.rommDeviceId
+        val stored = storedConnection()
+        Logger.info(TAG, "initialize: candidates=${stored.candidates.map { it.take(30) }}, hasToken=${stored.token != null}")
+        cachedDeviceId = stored.deviceId
         if (cachedDeviceId != null) {
             saveSyncRepository.get().setDeviceId(cachedDeviceId)
         }
-        if (prefs.rommBaseUrl.isNullOrBlank()) return
+        if (stored.candidates.isEmpty()) return
         registerNetworkCallback()
-        val result = attemptConnection(prefs.rommBaseUrl, prefs.rommToken)
+        val result = attemptConnection(stored.candidates, stored.token)
         Logger.info(TAG, "initialize: connect result=$result, state=${_connectionState.value}")
-        if (result is RomMResult.Error) scheduleReconnect() else backfillIdentityIfMissing(prefs.rommToken)
+        if (result is RomMResult.Error) scheduleReconnect() else backfillIdentityIfMissing(stored.token)
+    }
+
+    private data class StoredConnection(
+        val candidates: List<String>,
+        val token: String?,
+        val deviceId: String?
+    )
+
+    private suspend fun storedConnection(): StoredConnection {
+        val prefs = userPreferencesRepository.preferences.first()
+        val candidates = rommAccountRepository.get().activeAddresses()
+            .ifEmpty { listOfNotNull(prefs.rommBaseUrl?.takeIf { it.isNotBlank() }) }
+        return StoredConnection(candidates, prefs.rommToken, prefs.rommDeviceId)
     }
 
     /**
@@ -172,11 +187,10 @@ class RomMConnectionManager @Inject constructor(
             for (backoffMs in RECONNECT_BACKOFF_MS) {
                 delay(backoffMs)
                 if (!reconnectPending) return@launch
-                val prefs = userPreferencesRepository.preferences.first()
-                val url = prefs.rommBaseUrl
-                if (url.isNullOrBlank()) return@launch
+                val stored = storedConnection()
+                if (stored.candidates.isEmpty()) return@launch
                 Logger.info(TAG, "scheduleReconnect: retrying after ${backoffMs}ms")
-                if (attemptConnection(url, prefs.rommToken) is RomMResult.Success) return@launch
+                if (attemptConnection(stored.candidates, stored.token) is RomMResult.Success) return@launch
             }
             if (!reconnectPending) return@launch
             Logger.info(TAG, "scheduleReconnect: exhausted retries, marking disconnected")
@@ -190,13 +204,11 @@ class RomMConnectionManager @Inject constructor(
         val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         cm.registerDefaultNetworkCallback(object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
-                if (isConnected()) return
                 scope.launch {
-                    val prefs = userPreferencesRepository.preferences.first()
-                    val url = prefs.rommBaseUrl
-                    if (url.isNullOrBlank()) return@launch
-                    Logger.info(TAG, "network available, attempting reconnect")
-                    if (attemptConnection(url, prefs.rommToken) is RomMResult.Error) scheduleReconnect()
+                    val stored = storedConnection()
+                    if (stored.candidates.isEmpty()) return@launch
+                    Logger.info(TAG, "network available, re-evaluating addresses (connected=${isConnected()})")
+                    if (attemptConnection(stored.candidates, stored.token) is RomMResult.Error) scheduleReconnect()
                 }
             }
         })
@@ -212,29 +224,57 @@ class RomMConnectionManager @Inject constructor(
     private fun normalizeServerKey(url: String): String =
         url.trim().lowercase().removePrefix("https://").removePrefix("http://").trimEnd('/')
 
-    /**
-     * Refuses a sign-in that would put a second server's library alongside the first.
-     *
-     * Rom ids are only unique within one RomM instance, so two servers on one device collide on
-     * every id the library, saves and sync queues are keyed by. Accounts are the supported way to
-     * hold more than one identity, and they share the server the device is already registered to.
-     * Nothing is deleted here; the existing library stays exactly as it is and the sign-in simply
-     * does not happen.
-     */
-    private suspend fun requireSameServer(newBaseUrl: String) {
+    private suspend fun requireSameInstance(newBaseUrl: String) {
         val accounts = rommAccountRepository.get().accounts()
-        val known = accounts.map { normalizeServerKey(it.baseUrl) }.filter { it.isNotBlank() }.toSet()
-        if (known.isEmpty()) return
+        if (accounts.isEmpty()) return
+        val known = accounts.flatMap { it.addressCandidates() }.map(::normalizeServerKey).toSet()
         val newKey = normalizeServerKey(newBaseUrl)
         if (newKey in known) return
+        val reference = accounts.firstOrNull { it.isActive } ?: accounts.first()
+        if (identifiesStoredUser(newBaseUrl, reference)) return
         Logger.info(TAG, "persistRommCredentials: refused sign-in to $newKey, device is registered to ${known.joinToString()}")
         throw IllegalStateException(
             "This device is already signed in to a different RomM server. Remove the existing accounts before connecting to another server."
         )
     }
 
+    private suspend fun identifiesStoredUser(normalizedUrl: String, account: RomMAccountEntity): Boolean {
+        val user = fetchCurrentUser(createProbeApi(normalizedUrl, account.token)) ?: return false
+        return user.id == account.rommUserId
+    }
+
+    /**
+     * Checks that [url] reaches the instance the active account is signed in to, without touching
+     * the live session. The saved token has to identify the saved user there; a server that is
+     * merely alive does not qualify. Returns the normalized URL the caller should store.
+     */
+    suspend fun validateAddress(url: String): RomMResult<String> {
+        val account = rommAccountRepository.get().activeAccount()
+            ?: return RomMResult.Error("Not signed in")
+        var lastError: String? = null
+        var lastKind: RomMErrorKind? = null
+        for (candidateUrl in buildUrlsToTry(url)) {
+            val normalizedUrl = candidateUrl.trimEnd('/') + "/"
+            try {
+                val response = createProbeApi(normalizedUrl).heartbeat()
+                if (!response.isSuccessful) {
+                    lastError = "Server returned ${response.code()}"
+                    lastKind = null
+                    continue
+                }
+                if (identifiesStoredUser(normalizedUrl, account)) return RomMResult.Success(normalizedUrl)
+                lastError = "That address is not the server this account is signed in to"
+                lastKind = null
+            } catch (e: Exception) {
+                lastError = e.message ?: "Connection failed"
+                lastKind = if (e.isCertificateTrustFailure()) RomMErrorKind.UNTRUSTED_CERTIFICATE else null
+            }
+        }
+        return RomMResult.Error(lastError ?: "Connection failed", kind = lastKind)
+    }
+
     private suspend fun persistRommCredentials(newBaseUrl: String, token: String, user: RomMUser?) {
-        requireSameServer(newBaseUrl)
+        requireSameInstance(newBaseUrl)
         userPreferencesRepository.setRomMCredentials(newBaseUrl, token, user?.username, user?.id)
         if (user != null) {
             val stored = userPreferencesRepository.preferences.first()
@@ -251,7 +291,7 @@ class RomMConnectionManager @Inject constructor(
 
     suspend fun connect(url: String, token: String? = null): RomMResult<String> {
         _connectionState.value = ConnectionState.Connecting
-        val result = attemptConnection(url, token)
+        val result = attemptConnection(listOf(url), token, recordAddress = false)
         if (result is RomMResult.Error) {
             _connectionState.value = ConnectionState.Failed(result.message)
         }
@@ -283,72 +323,77 @@ class RomMConnectionManager @Inject constructor(
         return RomMResult.Error(lastError ?: "Connection failed", kind = lastKind)
     }
 
-    /**
-     * The scheme is settled by an unauthenticated heartbeat before the token is attached.
-     * [buildUrlsToTry] guesses http first for an address given as a bare IP, so authenticating
-     * against each candidate in turn would put the token on a cleartext hop the server never
-     * needed. Only the URL that has already answered gets an authenticated client.
-     */
     private suspend fun attemptConnection(
-        url: String,
+        candidates: List<String>,
         token: String?,
-        registerDevice: Boolean = true
+        registerDevice: Boolean = true,
+        recordAddress: Boolean = true
     ): RomMResult<String> = connectMutex.withLock {
-        val urlsToTry = buildUrlsToTry(url)
-        var lastError: String? = null
-        var lastKind: RomMErrorKind? = null
+        var lastFailure: RomMResult.Error? = null
 
-        for (candidateUrl in urlsToTry) {
-            val normalizedUrl = candidateUrl.trimEnd('/') + "/"
-            try {
-                val response = createApi(normalizedUrl, null).heartbeat()
-
-                if (response.isSuccessful) {
-                    val newApi = createApi(normalizedUrl, token)
-                    if (token != null && !isTokenAccepted(newApi)) {
-                        lastError = "Sign in again"
-                        lastKind = null
-                        Logger.info(TAG, "connect: server live at $normalizedUrl but the token was rejected")
-                        continue
+        for (address in candidates) {
+            for (candidateUrl in buildUrlsToTry(address)) {
+                val normalizedUrl = candidateUrl.trimEnd('/') + "/"
+                when (val outcome = connectAt(normalizedUrl, token, registerDevice)) {
+                    is RomMResult.Success -> {
+                        if (recordAddress && token != null) {
+                            userPreferencesRepository.setRomMCredentials(normalizedUrl, token)
+                        }
+                        return outcome
                     }
-                    baseUrl = normalizedUrl
-                    accessToken = token
-                    api = newApi
-                    saveSyncRepository.get().setApi(api)
-                    biosRepository.setApi(api)
-                    val body = response.body()
-                    val version = body?.version ?: "unknown"
-                    val capabilities = RomMCapabilities.from(version, body?.libretroApiEnabled, body?.steamGridDbEnabled)
-                    _connectionState.value = ConnectionState.Connected(version, capabilities)
-                    saveSyncRepository.get().setCapabilities(capabilities)
-                    reconnectPending = false
-                    Logger.info(TAG, "connect: success at $normalizedUrl, version=$version, capabilities=$capabilities")
-                    if (registerDevice && token != null && isVersionAtLeast(MIN_DEVICE_API_VERSION)) {
-                        registerDeviceIfNeeded()
-                    }
-                    return RomMResult.Success(normalizedUrl)
-                } else {
-                    lastError = "Server returned ${response.code()}"
-                    lastKind = null
-                    Logger.info(TAG, "connect: heartbeat failed at $normalizedUrl with ${response.code()}")
+                    is RomMResult.Error -> lastFailure = outcome
                 }
-            } catch (e: Exception) {
-                lastError = e.message ?: "Connection failed"
-                lastKind = if (e.isCertificateTrustFailure()) {
-                    RomMErrorKind.UNTRUSTED_CERTIFICATE
-                } else {
-                    null
-                }
-                Logger.info(TAG, "connect: exception at $normalizedUrl: ${e.message}")
             }
         }
 
-        return RomMResult.Error(lastError ?: "Connection failed", kind = lastKind)
+        return lastFailure ?: RomMResult.Error("Connection failed")
+    }
+
+    private suspend fun connectAt(
+        normalizedUrl: String,
+        token: String?,
+        registerDevice: Boolean
+    ): RomMResult<String> {
+        try {
+            val response = createProbeApi(normalizedUrl).heartbeat()
+            if (!response.isSuccessful) {
+                Logger.info(TAG, "connect: heartbeat failed at $normalizedUrl with ${response.code()}")
+                return RomMResult.Error("Server returned ${response.code()}")
+            }
+            val newApi = createApi(normalizedUrl, token)
+            if (token != null && !isTokenAccepted(newApi)) {
+                Logger.info(TAG, "connect: server live at $normalizedUrl but the token was rejected")
+                return RomMResult.Error("Sign in again")
+            }
+            if (baseUrl.isNotEmpty() && baseUrl != normalizedUrl) {
+                Logger.info(TAG, "connect: moving from $baseUrl to $normalizedUrl")
+            }
+            baseUrl = normalizedUrl
+            accessToken = token
+            api = newApi
+            saveSyncRepository.get().setApi(api)
+            biosRepository.setApi(api)
+            val body = response.body()
+            val version = body?.version ?: "unknown"
+            val capabilities = RomMCapabilities.from(version, body?.libretroApiEnabled, body?.steamGridDbEnabled)
+            _connectionState.value = ConnectionState.Connected(version, capabilities)
+            saveSyncRepository.get().setCapabilities(capabilities)
+            reconnectPending = false
+            Logger.info(TAG, "connect: success at $normalizedUrl, version=$version, capabilities=$capabilities")
+            if (registerDevice && token != null && isVersionAtLeast(MIN_DEVICE_API_VERSION)) {
+                registerDeviceIfNeeded()
+            }
+            return RomMResult.Success(normalizedUrl)
+        } catch (e: Exception) {
+            Logger.info(TAG, "connect: exception at $normalizedUrl: ${e.message}")
+            val kind = if (e.isCertificateTrustFailure()) RomMErrorKind.UNTRUSTED_CERTIFICATE else null
+            return RomMResult.Error(e.message ?: "Connection failed", kind = kind)
+        }
     }
 
     suspend fun connectWithToken(url: String, token: String): RomMResult<String> {
         _connectionState.value = ConnectionState.Connecting
-        val connectResult = attemptConnection(url, token, registerDevice = false)
+        val connectResult = attemptConnection(listOf(url), token, registerDevice = false, recordAddress = false)
         if (connectResult is RomMResult.Error) {
             _connectionState.value = ConnectionState.Failed(connectResult.message)
             return connectResult
@@ -574,6 +619,7 @@ class RomMConnectionManager @Inject constructor(
         reconnectJob = null
         api = null
         biosRepository.setApi(null)
+        saveSyncRepository.get().setApi(null)
         saveSyncRepository.get().setCapabilities(RomMCapabilities.NONE)
         accessToken = null
         baseUrl = ""
@@ -633,15 +679,14 @@ class RomMConnectionManager @Inject constructor(
      */
     suspend fun rebindToActiveAccount(): RomMResult<String> {
         disconnect()
-        val prefs = userPreferencesRepository.preferences.first()
-        val url = prefs.rommBaseUrl
-        if (url.isNullOrBlank()) {
+        val stored = storedConnection()
+        if (stored.candidates.isEmpty()) {
             Logger.info(TAG, "rebindToActiveAccount: no stored server for the active account")
             return RomMResult.Error("No server configured for this account")
         }
-        cachedDeviceId = prefs.rommDeviceId
+        cachedDeviceId = stored.deviceId
         saveSyncRepository.get().setDeviceId(cachedDeviceId)
-        val result = attemptConnection(url, prefs.rommToken)
+        val result = attemptConnection(stored.candidates, stored.token)
         if (result is RomMResult.Error) {
             Logger.info(TAG, "rebindToActiveAccount: offline after swap, scheduling reconnect")
             scheduleReconnect()
@@ -793,4 +838,7 @@ class RomMConnectionManager @Inject constructor(
     }
 
     fun createApi(baseUrl: String, token: String?): RomMApi = apiFactory.create(baseUrl, token)
+
+    private fun createProbeApi(baseUrl: String, token: String? = null): RomMApi =
+        apiFactory.create(baseUrl, token, probeTimeoutSeconds = CANDIDATE_PROBE_TIMEOUT_SECONDS)
 }

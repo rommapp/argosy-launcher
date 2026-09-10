@@ -13,19 +13,19 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 private const val DOWNLOAD_STALL_TIMEOUT_SECONDS = 900
+private const val CONNECT_TIMEOUT_SECONDS = 30L
+private const val READ_WRITE_TIMEOUT_SECONDS = 60L
 
-/**
- * Builds a RomM client bound to one base URL and token.
- *
- * Extracted so a client can be built for an account that is not the live one, which is what
- * lets queued work upload under the identity that created it rather than whoever is signed in.
- */
 @Singleton
 class RomMApiFactory @Inject constructor(
     private val userCertStore: com.nendo.argosy.data.remote.ssl.UserCertStore
 ) {
 
-    fun create(baseUrl: String, token: String?): RomMApi {
+    fun create(
+        baseUrl: String,
+        token: String?,
+        probeTimeoutSeconds: Long? = null
+    ): RomMApi {
         val moshi = Moshi.Builder().build()
 
         val loggingInterceptor = HttpLoggingInterceptor().apply {
@@ -59,9 +59,10 @@ class RomMApiFactory @Inject constructor(
             .addInterceptor(authInterceptor)
             .addInterceptor(downloadTimeoutInterceptor)
             .addInterceptor(loggingInterceptor)
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(60, TimeUnit.SECONDS)
-            .writeTimeout(60, TimeUnit.SECONDS)
+            .connectTimeout(probeTimeoutSeconds ?: CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .readTimeout(probeTimeoutSeconds ?: READ_WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .writeTimeout(probeTimeoutSeconds ?: READ_WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            .callTimeout(probeTimeoutSeconds ?: 0L, TimeUnit.SECONDS)
             .dns(okhttp3.Dns.SYSTEM)
             .withUserCertTrust(userCertStore)
             .build()

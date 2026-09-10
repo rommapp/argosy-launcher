@@ -329,6 +329,11 @@ class SyncPreferencesRepository @Inject constructor(
         }
     }
 
+    /**
+     * The device id is dropped only when the identity changes. [baseUrl] names the address in
+     * use, and one instance answers on more than one address, so a URL change on its own says
+     * nothing about which server the device is registered with.
+     */
     suspend fun setRomMCredentials(
         baseUrl: String,
         token: String,
@@ -336,15 +341,13 @@ class SyncPreferencesRepository @Inject constructor(
         userId: Long? = null
     ) {
         dataStore.edit { prefs ->
-            val previousUrl = prefs[Keys.ROMM_URL]
             val previousUserId = prefs[Keys.ROMM_USER_ID]
             prefs[Keys.ROMM_URL] = baseUrl
             prefs[Keys.ROMM_TOKEN] = token
             if (username != null) prefs[Keys.ROMM_USERNAME] = username
             if (userId != null) prefs[Keys.ROMM_USER_ID] = userId
-            val serverChanged = previousUrl != null && previousUrl != baseUrl
             val userChanged = previousUserId != null && userId != null && previousUserId != userId
-            if (serverChanged || userChanged) {
+            if (userChanged) {
                 prefs.remove(Keys.ROMM_DEVICE_ID)
                 prefs.remove(Keys.ROMM_DEVICE_CLIENT_VERSION)
             }

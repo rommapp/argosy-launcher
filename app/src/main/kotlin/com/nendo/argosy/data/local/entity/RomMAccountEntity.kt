@@ -44,3 +44,10 @@ data class RomMAccountEntity(
     fun addressCandidates(): List<String> =
         listOfNotNull(lanBaseUrl, baseUrl).filter { it.isNotBlank() }.distinct()
 }
+
+/**
+ * Scheme-, case- and trailing-slash-insensitive form of a server address, used wherever two
+ * addresses are compared to decide whether they name the same RomM instance.
+ */
+fun serverInstanceKey(url: String): String =
+    url.trim().lowercase().removePrefix("https://").removePrefix("http://").trimEnd('/')

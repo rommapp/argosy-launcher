@@ -1733,6 +1733,42 @@
     <string name="settings_romm_device_pairing_cancel_title">取消</string>
     <string name="settings_romm_device_pairing_cancel_subtitle">停止配对</string>
 
+    <!-- ===== RomM config form, signed-in address cards ===== -->
+
+    <string name="settings_romm_config_section_addresses">地址</string>
+    <string name="settings_romm_config_section_pairing">配对</string>
+    <string name="settings_romm_config_address_status_in_use">使用中</string>
+    <string name="settings_romm_config_address_status_verified">已验证</string>
+    <string name="settings_romm_config_address_status_unverified">未验证</string>
+    <string name="settings_romm_config_address_status_checking">正在验证…</string>
+    <string name="settings_romm_config_add_address_title">添加地址</string>
+    <string name="settings_romm_config_add_address_subtitle">在服务器所在的局域网内访问它</string>
+    <string name="settings_romm_config_menu_local_header">局域网地址</string>
+    <string name="settings_romm_config_menu_remote_header">远程地址</string>
+    <string name="settings_romm_config_menu_edit">编辑地址</string>
+    <string name="settings_romm_config_menu_verify">立即验证</string>
+    <string name="settings_romm_config_menu_use_as_local">用作局域网地址</string>
+    <string name="settings_romm_config_menu_use_as_remote">用作远程地址</string>
+    <string name="settings_romm_config_menu_remove">移除</string>
+    <string name="settings_romm_config_editor_edit_title">编辑地址</string>
+    <string name="settings_romm_config_editor_add_title">添加地址</string>
+    <string name="settings_romm_config_editor_label">地址</string>
+    <string name="settings_romm_config_editor_placeholder_local">http://192.168.1.10:8080</string>
+    <string name="settings_romm_config_editor_placeholder_remote">https://romm.example.com</string>
+    <string name="settings_romm_config_editor_save">保存</string>
+    <string name="settings_romm_config_editor_save_busy">正在保存…</string>
+    <string name="settings_romm_config_editor_cancel">取消</string>
+    <string name="settings_romm_config_notif_saved">地址已保存。正在重新连接。</string>
+    <string name="settings_romm_config_notif_saved_unverified">地址已保存，未经验证。</string>
+    <string name="settings_romm_config_notif_removed">已移除局域网地址。</string>
+    <string name="settings_romm_config_notif_address_required">请输入地址。</string>
+    <string name="settings_romm_config_notif_save_failed">没有已登录的账户，因此未保存该地址。</string>
+    <string name="settings_romm_config_notif_verified">地址已验证。</string>
+    <string name="settings_romm_config_notif_verify_failed">无法验证 %1$s：%2$s</string>
+    <string name="settings_romm_config_verify_failed_title">地址未通过验证</string>
+    <string name="settings_romm_config_verify_failed_message">无法验证 %1$s：%2$s\n\n“保留”会在不连接的情况下保存它。服务器地址在其所在的局域网内部往往无法访问。</string>
+    <string name="settings_romm_config_verify_failed_keep">保留</string>
+
     <!-- ===== Jellyfin config form ===== -->
 
     <string name="settings_jellyfin_config_server_address_label">服务器地址</string>

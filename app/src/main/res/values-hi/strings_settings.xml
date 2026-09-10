@@ -1778,6 +1778,42 @@
     <string name="settings_romm_device_pairing_cancel_title">रद्द करें</string>
     <string name="settings_romm_device_pairing_cancel_subtitle">पेयरिंग रोकें</string>
 
+    <!-- ===== RomM config form, signed-in address cards ===== -->
+
+    <string name="settings_romm_config_section_addresses">पते</string>
+    <string name="settings_romm_config_section_pairing">पेयरिंग</string>
+    <string name="settings_romm_config_address_status_in_use">उपयोग में</string>
+    <string name="settings_romm_config_address_status_verified">सत्यापित</string>
+    <string name="settings_romm_config_address_status_unverified">सत्यापित नहीं</string>
+    <string name="settings_romm_config_address_status_checking">जाँच हो रही है…</string>
+    <string name="settings_romm_config_add_address_title">पता जोड़ें</string>
+    <string name="settings_romm_config_add_address_subtitle">इस सर्वर तक उसके अपने नेटवर्क से पहुँचें</string>
+    <string name="settings_romm_config_menu_local_header">स्थानीय नेटवर्क पता</string>
+    <string name="settings_romm_config_menu_remote_header">रिमोट पता</string>
+    <string name="settings_romm_config_menu_edit">पता संपादित करें</string>
+    <string name="settings_romm_config_menu_verify">अभी सत्यापित करें</string>
+    <string name="settings_romm_config_menu_use_as_local">स्थानीय नेटवर्क के लिए उपयोग करें</string>
+    <string name="settings_romm_config_menu_use_as_remote">रिमोट के रूप में उपयोग करें</string>
+    <string name="settings_romm_config_menu_remove">हटाएँ</string>
+    <string name="settings_romm_config_editor_edit_title">पता संपादित करें</string>
+    <string name="settings_romm_config_editor_add_title">पता जोड़ें</string>
+    <string name="settings_romm_config_editor_label">पता</string>
+    <string name="settings_romm_config_editor_placeholder_local">http://192.168.1.10:8080</string>
+    <string name="settings_romm_config_editor_placeholder_remote">https://romm.example.com</string>
+    <string name="settings_romm_config_editor_save">सहेजें</string>
+    <string name="settings_romm_config_editor_save_busy">सहेजा जा रहा है…</string>
+    <string name="settings_romm_config_editor_cancel">रद्द करें</string>
+    <string name="settings_romm_config_notif_saved">पता सहेजा गया। फिर से कनेक्ट किया जा रहा है।</string>
+    <string name="settings_romm_config_notif_saved_unverified">पता बिना जाँच के सहेजा गया।</string>
+    <string name="settings_romm_config_notif_removed">स्थानीय नेटवर्क पता हटा दिया गया।</string>
+    <string name="settings_romm_config_notif_address_required">एक पता दर्ज करें।</string>
+    <string name="settings_romm_config_notif_save_failed">कोई खाता साइन इन नहीं है, इसलिए पता सहेजा नहीं गया।</string>
+    <string name="settings_romm_config_notif_verified">पता सत्यापित हुआ।</string>
+    <string name="settings_romm_config_notif_verify_failed">%1$s सत्यापित नहीं हो सका: %2$s</string>
+    <string name="settings_romm_config_verify_failed_title">पता सत्यापित नहीं हुआ</string>
+    <string name="settings_romm_config_verify_failed_message">%1$s सत्यापित नहीं हो सका: %2$s\n\n“रखें” इसे कनेक्ट किए बिना सहेजता है। सर्वर पता अक्सर उसके अपने नेटवर्क के भीतर से पहुँच योग्य नहीं होता।</string>
+    <string name="settings_romm_config_verify_failed_keep">रखें</string>
+
     <!-- ===== Jellyfin config form (Settings > components > JellyfinConfigForm) ===== -->
 
     <string name="settings_jellyfin_config_server_address_label">सर्वर एड्रेस</string>

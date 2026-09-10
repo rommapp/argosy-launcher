@@ -70,6 +70,17 @@ class RomMRepository @Inject constructor(
 
     suspend fun checkConnection() = connectionManager.checkConnection()
 
+    /**
+     * The address the live session is on right now; empty while disconnected.
+     */
+    fun getBaseUrl(): String = connectionManager.getBaseUrl()
+
+    suspend fun validateAddress(url: String): RomMResult<String> =
+        connectionManager.validateAddress(url)
+
+    suspend fun reconnectWithStoredAddresses(): RomMResult<String> =
+        connectionManager.reconnectWithStoredAddresses()
+
     fun getCurrentDeviceId(): String? = connectionManager.getDeviceId()
 
     suspend fun getRegisteredDevices(): List<RomMDevice> {

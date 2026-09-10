@@ -6,6 +6,7 @@ import android.os.Build
 import android.provider.Settings
 import com.nendo.argosy.BuildConfig
 import com.nendo.argosy.data.local.entity.RomMAccountEntity
+import com.nendo.argosy.data.local.entity.serverInstanceKey
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.BiosRepository
 import com.nendo.argosy.data.sync.AccountRemovalResult
@@ -205,13 +206,24 @@ class RomMConnectionManager @Inject constructor(
         cm.registerDefaultNetworkCallback(object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
                 scope.launch {
-                    val stored = storedConnection()
-                    if (stored.candidates.isEmpty()) return@launch
                     Logger.info(TAG, "network available, re-evaluating addresses (connected=${isConnected()})")
-                    if (attemptConnection(stored.candidates, stored.token) is RomMResult.Error) scheduleReconnect()
+                    reconnectWithStoredAddresses()
                 }
             }
         })
+    }
+
+    /**
+     * Runs the stored LAN-then-WAN candidate pass again without tearing the live session down,
+     * so an address that just started answering (new network, edited address) takes over now.
+     * A pass that fails everywhere leaves the current session as it is and starts the backoff.
+     */
+    suspend fun reconnectWithStoredAddresses(): RomMResult<String> {
+        val stored = storedConnection()
+        if (stored.candidates.isEmpty()) return RomMResult.Error("No server configured")
+        val result = attemptConnection(stored.candidates, stored.token)
+        if (result is RomMResult.Error) scheduleReconnect()
+        return result
     }
 
     private suspend fun fetchCurrentUser(target: RomMApi): RomMUser? = try {
@@ -221,14 +233,11 @@ class RomMConnectionManager @Inject constructor(
         null
     }
 
-    private fun normalizeServerKey(url: String): String =
-        url.trim().lowercase().removePrefix("https://").removePrefix("http://").trimEnd('/')
-
     private suspend fun requireSameInstance(newBaseUrl: String) {
         val accounts = rommAccountRepository.get().accounts()
         if (accounts.isEmpty()) return
-        val known = accounts.flatMap { it.addressCandidates() }.map(::normalizeServerKey).toSet()
-        val newKey = normalizeServerKey(newBaseUrl)
+        val known = accounts.flatMap { it.addressCandidates() }.map(::serverInstanceKey).toSet()
+        val newKey = serverInstanceKey(newBaseUrl)
         if (newKey in known) return
         val reference = accounts.firstOrNull { it.isActive } ?: accounts.first()
         if (identifiesStoredUser(newBaseUrl, reference)) return
@@ -820,20 +829,30 @@ class RomMConnectionManager @Inject constructor(
 
     private fun buildUrlsToTry(url: String): List<String> {
         val trimmed = url.trim()
-        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-            return listOf(trimmed)
-        }
-
+        if (hasScheme(trimmed)) return listOf(trimmed)
         val hostPart = trimmed.removePrefix("//")
-        val isIpAddress = hostPart.split("/").first().split(":").first().let { host ->
-            host.matches(Regex("""^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$""")) ||
-                host == "localhost"
-        }
+        val preferred = withDefaultScheme(hostPart)
+        val fallback = if (preferred.startsWith("http://")) "https://$hostPart" else "http://$hostPart"
+        return listOf(preferred, fallback)
+    }
 
-        return if (isIpAddress) {
-            listOf("http://$hostPart", "https://$hostPart")
-        } else {
-            listOf("https://$hostPart", "http://$hostPart")
+    companion object {
+        private val IPV4 = Regex("""^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$""")
+
+        private fun hasScheme(url: String): Boolean =
+            url.startsWith("http://") || url.startsWith("https://")
+
+        /**
+         * A bare address gains the scheme the app tries first for it: plain http for an IP or
+         * localhost, https for a hostname. Addresses that already carry a scheme are returned as is.
+         */
+        fun withDefaultScheme(url: String): String {
+            val trimmed = url.trim()
+            if (trimmed.isBlank() || hasScheme(trimmed)) return trimmed
+            val hostPart = trimmed.removePrefix("//")
+            val host = hostPart.split("/").first().split(":").first()
+            val plain = host.matches(IPV4) || host == "localhost"
+            return if (plain) "http://$hostPart" else "https://$hostPart"
         }
     }
 

@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings
 
+import com.nendo.argosy.ui.components.TextEntryRow
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.core.input.SoundType
 
@@ -31,6 +32,9 @@ internal class ModalInputRouter(private val viewModel: SettingsViewModel) {
         interceptPlatformFiltersModal(state, method)?.let { return it }
         interceptSyncFiltersModal(state, method)?.let { return it }
         interceptForceSyncConfirm(state, method)?.let { return it }
+        interceptAddressVerifyPrompt(state, method)?.let { return it }
+        interceptAddressEditor(state, method)?.let { return it }
+        interceptAddressMenu(state, method)?.let { return it }
         interceptUpdateModal(state, method)?.let { return it }
         interceptVariantPicker(state, method)?.let { return it }
         interceptSteamVariantPicker(state, method)?.let { return it }
@@ -286,6 +290,48 @@ internal class ModalInputRouter(private val viewModel: SettingsViewModel) {
                 InputResult.HANDLED
             }
             InputMethod.BACK -> { viewModel.cancelSyncSaves(); InputResult.HANDLED }
+            else -> InputResult.HANDLED
+        }
+    }
+
+    private fun interceptAddressVerifyPrompt(state: SettingsUiState, method: InputMethod): InputResult? {
+        if (state.server.rommAddressVerifyPrompt == null) return null
+        return when (method) {
+            InputMethod.LEFT -> { viewModel.moveRommAddressVerifyFocus(-1); InputResult.HANDLED }
+            InputMethod.RIGHT -> { viewModel.moveRommAddressVerifyFocus(1); InputResult.HANDLED }
+            InputMethod.CONFIRM -> {
+                if (state.server.rommAddressVerifyFocusIndex == 0) {
+                    viewModel.cancelUnverifiedRommAddress()
+                } else {
+                    viewModel.keepUnverifiedRommAddress()
+                }
+                InputResult.HANDLED
+            }
+            InputMethod.BACK -> { viewModel.cancelUnverifiedRommAddress(); InputResult.handled(SoundType.CLOSE_MODAL) }
+            else -> InputResult.HANDLED
+        }
+    }
+
+    private fun interceptAddressEditor(state: SettingsUiState, method: InputMethod): InputResult? {
+        if (state.server.rommAddressEditor == null) return null
+        return when (method) {
+            InputMethod.UP -> { viewModel.moveRommAddressEditorRow(TextEntryRow.FIELD); InputResult.HANDLED }
+            InputMethod.DOWN -> { viewModel.moveRommAddressEditorRow(TextEntryRow.BUTTONS); InputResult.HANDLED }
+            InputMethod.LEFT -> { viewModel.moveRommAddressEditorButton(-1); InputResult.HANDLED }
+            InputMethod.RIGHT -> { viewModel.moveRommAddressEditorButton(1); InputResult.HANDLED }
+            InputMethod.CONFIRM -> { viewModel.confirmRommAddressEditor(); InputResult.HANDLED }
+            InputMethod.BACK -> { viewModel.closeRommAddressEditor(); InputResult.handled(SoundType.CLOSE_MODAL) }
+            else -> InputResult.HANDLED
+        }
+    }
+
+    private fun interceptAddressMenu(state: SettingsUiState, method: InputMethod): InputResult? {
+        if (state.server.rommAddressMenu == null) return null
+        return when (method) {
+            InputMethod.UP -> { viewModel.moveRommAddressMenuFocus(-1); InputResult.HANDLED }
+            InputMethod.DOWN -> { viewModel.moveRommAddressMenuFocus(1); InputResult.HANDLED }
+            InputMethod.CONFIRM -> { viewModel.selectRommAddressAction(); InputResult.HANDLED }
+            InputMethod.BACK -> { viewModel.closeRommAddressMenu(); InputResult.handled(SoundType.CLOSE_MODAL) }
             else -> InputResult.HANDLED
         }
     }

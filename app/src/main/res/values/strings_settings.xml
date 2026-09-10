@@ -3372,6 +3372,80 @@
     <!-- Second line of that button. -->
     <string name="settings_romm_device_pairing_cancel_subtitle">Stop pairing</string>
 
+    <!-- ===== RomM config form, signed-in address cards =====
+         Shown instead of the single pairing field once an account is signed in. Each stored
+         address is a card whose icon says whether it is the one for the server's own local
+         network or the one that reaches it from anywhere (remote). Selecting a card opens an
+         action menu; Edit and Add open a one-field editor. -->
+
+    <!-- Group header above the address cards. Short, rendered in capitals. -->
+    <string name="settings_romm_config_section_addresses">Addresses</string>
+    <!-- Group header above the pairing rows (auth method, pair device, certificate, cancel). Short, rendered in capitals. -->
+    <string name="settings_romm_config_section_pairing">Pairing</string>
+    <!-- Card subtitle: this address is the one the live connection is using right now. Short. -->
+    <string name="settings_romm_config_address_status_in_use">In use</string>
+    <!-- Card subtitle: a check against the server reached it during this visit. Short. -->
+    <string name="settings_romm_config_address_status_verified">Verified</string>
+    <!-- Card subtitle: the address was stored without a successful check. Short. -->
+    <string name="settings_romm_config_address_status_unverified">Not verified</string>
+    <!-- Card subtitle while a check against the server is running. Short. -->
+    <string name="settings_romm_config_address_status_checking">Checking...</string>
+    <!-- Title of the card that adds the second address. Verb phrase. -->
+    <string name="settings_romm_config_add_address_title">Add address</string>
+    <!-- Second line of that card. -->
+    <string name="settings_romm_config_add_address_subtitle">Reach this server on its own network</string>
+    <!-- Header of the action menu for the local-network address card. -->
+    <string name="settings_romm_config_menu_local_header">Local network address</string>
+    <!-- Header of the action menu for the remote address card. -->
+    <string name="settings_romm_config_menu_remote_header">Remote address</string>
+    <!-- Action menu entry. Verb phrase: open the editor for this address. -->
+    <string name="settings_romm_config_menu_edit">Edit address</string>
+    <!-- Action menu entry. Verb phrase: check this address against the server now. -->
+    <string name="settings_romm_config_menu_verify">Verify now</string>
+    <!-- Action menu entry on the remote card. Verb phrase: make this the local-network address (the other becomes remote). -->
+    <string name="settings_romm_config_menu_use_as_local">Use as local network</string>
+    <!-- Action menu entry on the local card. Verb phrase: make this the remote address (the other becomes local). -->
+    <string name="settings_romm_config_menu_use_as_remote">Use as remote</string>
+    <!-- Action menu entry. Verb: forget the local-network address. Destructive. -->
+    <string name="settings_romm_config_menu_remove">Remove</string>
+    <!-- Title of the address editor when changing an existing address. -->
+    <string name="settings_romm_config_editor_edit_title">Edit address</string>
+    <!-- Title of the address editor when adding the second address. -->
+    <string name="settings_romm_config_editor_add_title">Add address</string>
+    <!-- Text field label inside the address editor. -->
+    <string name="settings_romm_config_editor_label">Address</string>
+    <!-- Placeholder illustrating a typical local-network address. Not a real address. -->
+    <string name="settings_romm_config_editor_placeholder_local">http://192.168.1.10:8080</string>
+    <!-- Placeholder illustrating a typical remote address. Not a real address. -->
+    <string name="settings_romm_config_editor_placeholder_remote">https://romm.example.com</string>
+    <!-- Editor button. Verb: check the typed address against the server and store it. -->
+    <string name="settings_romm_config_editor_save">Save</string>
+    <!-- Editor button label while the typed address is being checked and stored. -->
+    <string name="settings_romm_config_editor_save_busy">Saving...</string>
+    <!-- Editor button. Verb: close the editor without storing. -->
+    <string name="settings_romm_config_editor_cancel">Cancel</string>
+    <!-- Notification after a verified save. -->
+    <string name="settings_romm_config_notif_saved">Address saved. Reconnecting.</string>
+    <!-- Notification after the user kept an address that failed verification. -->
+    <string name="settings_romm_config_notif_saved_unverified">Address saved without verifying.</string>
+    <!-- Notification after the local-network address was removed. -->
+    <string name="settings_romm_config_notif_removed">Local network address removed.</string>
+    <!-- Error notification when Save was pressed with an empty address. -->
+    <string name="settings_romm_config_notif_address_required">Enter an address.</string>
+    <!-- Error notification when no account is signed in to attach the address to. -->
+    <string name="settings_romm_config_notif_save_failed">No account is signed in, so the address was not saved.</string>
+    <!-- Notification after Verify now reached the server. -->
+    <string name="settings_romm_config_notif_verified">Address verified.</string>
+    <!-- Error notification after Verify now failed. %1$s is the address, %2$s the reason the check failed. -->
+    <string name="settings_romm_config_notif_verify_failed">%1$s could not be verified: %2$s</string>
+    <!-- Title of the prompt shown when a typed address could not be verified. -->
+    <string name="settings_romm_config_verify_failed_title">Address not verified</string>
+    <!-- Body of that prompt. %1$s is the typed address, %2$s the reason the check failed. "Keep"
+         names the settings_romm_config_verify_failed_keep button. -->
+    <string name="settings_romm_config_verify_failed_message">%1$s could not be verified: %2$s\n\nKeep stores it without connecting. A server address is often unreachable from inside its own network.</string>
+    <!-- Button in that prompt. Verb: store the address even though it failed verification. -->
+    <string name="settings_romm_config_verify_failed_keep">Keep</string>
+
     <!-- ===== Jellyfin config form (Settings > components > JellyfinConfigForm) =====
          "Jellyfin" is the media server software's name, never translated. -->
 

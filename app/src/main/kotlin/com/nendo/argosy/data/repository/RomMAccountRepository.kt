@@ -11,6 +11,7 @@ import com.nendo.argosy.data.local.dao.SaveSyncDao
 import com.nendo.argosy.data.local.dao.StateCacheDao
 import com.nendo.argosy.data.local.dao.StateTombstoneDao
 import com.nendo.argosy.data.local.entity.RomMAccountEntity
+import com.nendo.argosy.data.local.entity.serverInstanceKey
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMApiProvider
 import kotlinx.coroutines.flow.Flow
@@ -59,8 +60,17 @@ class RomMAccountRepository @Inject constructor(
     suspend fun activeAddresses(): List<String> =
         rommAccountDao.getActive()?.addressCandidates().orEmpty()
 
-    suspend fun setLanAddress(id: Long, url: String?) {
-        rommAccountDao.updateLanBaseUrl(id, url?.trim()?.takeIf { it.isNotBlank() })
+    /**
+     * A LAN address belongs to the instance, not the login: every account whose [RomMAccountEntity.baseUrl]
+     * names the same server as [instanceBaseUrl] gets it. Null or blank removes it.
+     */
+    suspend fun setLanAddressForInstance(instanceBaseUrl: String, url: String?) {
+        val key = serverInstanceKey(instanceBaseUrl)
+        val ids = rommAccountDao.getAll()
+            .filter { serverInstanceKey(it.baseUrl) == key }
+            .map { it.id }
+        if (ids.isEmpty()) return
+        rommAccountDao.updateLanBaseUrlForIds(ids, url?.trim()?.takeIf { it.isNotBlank() })
     }
 
     suspend fun setWanAddress(id: Long, url: String) {

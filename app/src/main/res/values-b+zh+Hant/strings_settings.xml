@@ -1641,6 +1641,42 @@
     <string name="settings_romm_device_pairing_cancel_title">取消</string>
     <string name="settings_romm_device_pairing_cancel_subtitle">停止配對</string>
 
+    <!-- ===== RomM config form, signed-in address cards ===== -->
+
+    <string name="settings_romm_config_section_addresses">位址</string>
+    <string name="settings_romm_config_section_pairing">配對</string>
+    <string name="settings_romm_config_address_status_in_use">使用中</string>
+    <string name="settings_romm_config_address_status_verified">已驗證</string>
+    <string name="settings_romm_config_address_status_unverified">未驗證</string>
+    <string name="settings_romm_config_address_status_checking">正在驗證…</string>
+    <string name="settings_romm_config_add_address_title">新增位址</string>
+    <string name="settings_romm_config_add_address_subtitle">在伺服器所在的區域網路內存取它</string>
+    <string name="settings_romm_config_menu_local_header">區域網路位址</string>
+    <string name="settings_romm_config_menu_remote_header">遠端位址</string>
+    <string name="settings_romm_config_menu_edit">編輯位址</string>
+    <string name="settings_romm_config_menu_verify">立即驗證</string>
+    <string name="settings_romm_config_menu_use_as_local">用作區域網路位址</string>
+    <string name="settings_romm_config_menu_use_as_remote">用作遠端位址</string>
+    <string name="settings_romm_config_menu_remove">移除</string>
+    <string name="settings_romm_config_editor_edit_title">編輯位址</string>
+    <string name="settings_romm_config_editor_add_title">新增位址</string>
+    <string name="settings_romm_config_editor_label">位址</string>
+    <string name="settings_romm_config_editor_placeholder_local">http://192.168.1.10:8080</string>
+    <string name="settings_romm_config_editor_placeholder_remote">https://romm.example.com</string>
+    <string name="settings_romm_config_editor_save">儲存</string>
+    <string name="settings_romm_config_editor_save_busy">正在儲存…</string>
+    <string name="settings_romm_config_editor_cancel">取消</string>
+    <string name="settings_romm_config_notif_saved">位址已儲存。正在重新連線。</string>
+    <string name="settings_romm_config_notif_saved_unverified">位址已儲存，未經驗證。</string>
+    <string name="settings_romm_config_notif_removed">已移除區域網路位址。</string>
+    <string name="settings_romm_config_notif_address_required">請輸入位址。</string>
+    <string name="settings_romm_config_notif_save_failed">沒有已登入的帳戶，因此未儲存該位址。</string>
+    <string name="settings_romm_config_notif_verified">位址已驗證。</string>
+    <string name="settings_romm_config_notif_verify_failed">無法驗證 %1$s：%2$s</string>
+    <string name="settings_romm_config_verify_failed_title">位址未通過驗證</string>
+    <string name="settings_romm_config_verify_failed_message">無法驗證 %1$s：%2$s\n\n「保留」會在不連線的情況下儲存它。伺服器位址在其所在的區域網路內部往往無法存取。</string>
+    <string name="settings_romm_config_verify_failed_keep">保留</string>
+
     <string name="settings_jellyfin_config_server_address_label">伺服器位址</string>
     <string name="settings_jellyfin_config_server_address_placeholder">https://jellyfin.example.com</string>
     <string name="settings_jellyfin_config_save_title">儲存</string>

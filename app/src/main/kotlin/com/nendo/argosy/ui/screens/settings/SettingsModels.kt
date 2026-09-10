@@ -1,7 +1,9 @@
 package com.nendo.argosy.ui.screens.settings
 
+import androidx.annotation.StringRes
 import com.nendo.argosy.R
 import com.nendo.argosy.ui.common.DisplayText
+import com.nendo.argosy.ui.components.TextEntryFocus
 import com.nendo.argosy.core.emulator.EmulatorDownloadState
 import com.nendo.argosy.data.cache.GradientExtractionConfig
 import com.nendo.argosy.ui.common.GradientExtractionResult
@@ -874,6 +876,84 @@ data class PlatformLibretroState(
     val platformSettings: Map<Long, PlatformLibretroSettingsEntity> = emptyMap()
 )
 
+/**
+ * Which stored column an address row writes to: LOCAL is the per-instance `lanBaseUrl`, REMOTE
+ * the account's `baseUrl`. With two rows exactly one is LOCAL.
+ */
+enum class RomMAddressRole { LOCAL, REMOTE }
+
+/**
+ * What the address card's subtitle reports about its address. NONE is nothing yet this
+ * session; VERIFIED follows a probe that reached the signed-in server; UNVERIFIED follows a
+ * save the user kept after the probe failed, or a Verify now that failed.
+ */
+enum class RomMAddressVerification { NONE, VERIFIED, UNVERIFIED }
+
+/**
+ * One stored address. [stored] is the value committed to the row's column and is what the
+ * card shows; [text] is the editor draft, equal to [stored] whenever no editor is open.
+ * [inUse] marks the address the live session is on.
+ */
+data class RomMAddressRow(
+    val text: String,
+    val stored: String,
+    val role: RomMAddressRole,
+    val inUse: Boolean = false,
+    val saving: Boolean = false,
+    val verification: RomMAddressVerification = RomMAddressVerification.NONE
+)
+
+enum class RomMAddressAction(@StringRes val labelRes: Int) {
+    EDIT(R.string.settings_romm_config_menu_edit),
+    VERIFY(R.string.settings_romm_config_menu_verify),
+    USE_AS_LOCAL(R.string.settings_romm_config_menu_use_as_local),
+    USE_AS_REMOTE(R.string.settings_romm_config_menu_use_as_remote),
+    REMOVE(R.string.settings_romm_config_menu_remove)
+}
+
+/**
+ * The entries the action modal offers for [row]. Swapping roles and removing need the
+ * second address to exist: a lone address is the account's base URL and cannot leave that
+ * column, and Remove only ever clears the local-network column.
+ */
+fun rommAddressActions(rows: List<RomMAddressRow>, row: Int): List<RomMAddressAction> {
+    val target = rows.getOrNull(row) ?: return emptyList()
+    val hasBoth = rows.size == 2
+    return buildList {
+        add(RomMAddressAction.EDIT)
+        add(RomMAddressAction.VERIFY)
+        if (hasBoth) {
+            add(
+                when (target.role) {
+                    RomMAddressRole.LOCAL -> RomMAddressAction.USE_AS_REMOTE
+                    RomMAddressRole.REMOTE -> RomMAddressAction.USE_AS_LOCAL
+                }
+            )
+        }
+        if (hasBoth && target.role == RomMAddressRole.LOCAL) add(RomMAddressAction.REMOVE)
+    }
+}
+
+data class RomMAddressMenu(
+    val row: Int,
+    val focusIndex: Int = 0
+)
+
+data class RomMAddressEditor(
+    val row: Int,
+    val focus: TextEntryFocus = TextEntryFocus()
+)
+
+/**
+ * The verification-failed prompt for one address row. [url] is what the user typed, [reason]
+ * the probe's own description of the failure.
+ */
+data class RomMAddressVerifyPrompt(
+    val row: Int,
+    val url: String,
+    val reason: String
+)
+
 data class ServerState(
     val connectionStatus: ConnectionStatus = ConnectionStatus.NOT_CONFIGURED,
     val rommUrl: String = "",
@@ -881,9 +961,20 @@ data class ServerState(
     val rommVersion: String? = null,
     val lastRommSync: java.time.Instant? = null,
     val rommConfiguring: Boolean = false,
+    /**
+     * True when the config form belongs to a signed-in account, which replaces the single pairing
+     * field with the address cards. [rommConfigUrl] then mirrors the first row's text so the
+     * pairing rows below keep reading the address the user sees.
+     */
+    val rommEditingAddresses: Boolean = false,
     val importedCertCount: Int = 0,
     val rommAuthMethod: RomMAuthMethod = RomMAuthMethod.PAIRING_CODE,
     val rommConfigUrl: String = "",
+    val rommAddressRows: List<RomMAddressRow> = emptyList(),
+    val rommAddressMenu: RomMAddressMenu? = null,
+    val rommAddressEditor: RomMAddressEditor? = null,
+    val rommAddressVerifyPrompt: RomMAddressVerifyPrompt? = null,
+    val rommAddressVerifyFocusIndex: Int = 0,
     val rommConfigPairingCode: String = "",
     val rommShowScanner: Boolean = false,
     val rommHasCamera: Boolean = false,

@@ -1788,6 +1788,42 @@
     <string name="settings_romm_device_pairing_cancel_title">Abbrechen</string>
     <string name="settings_romm_device_pairing_cancel_subtitle">Pairing stoppen</string>
 
+    <!-- ===== RomM config form, signed-in address cards ===== -->
+
+    <string name="settings_romm_config_section_addresses">Adressen</string>
+    <string name="settings_romm_config_section_pairing">Pairing</string>
+    <string name="settings_romm_config_address_status_in_use">In Verwendung</string>
+    <string name="settings_romm_config_address_status_verified">Bestätigt</string>
+    <string name="settings_romm_config_address_status_unverified">Nicht bestätigt</string>
+    <string name="settings_romm_config_address_status_checking">Wird geprüft…</string>
+    <string name="settings_romm_config_add_address_title">Adresse hinzufügen</string>
+    <string name="settings_romm_config_add_address_subtitle">Diesen Server in seinem eigenen Netzwerk erreichen</string>
+    <string name="settings_romm_config_menu_local_header">Adresse im lokalen Netzwerk</string>
+    <string name="settings_romm_config_menu_remote_header">Externe Adresse</string>
+    <string name="settings_romm_config_menu_edit">Adresse bearbeiten</string>
+    <string name="settings_romm_config_menu_verify">Jetzt prüfen</string>
+    <string name="settings_romm_config_menu_use_as_local">Für lokales Netzwerk verwenden</string>
+    <string name="settings_romm_config_menu_use_as_remote">Als externe Adresse verwenden</string>
+    <string name="settings_romm_config_menu_remove">Entfernen</string>
+    <string name="settings_romm_config_editor_edit_title">Adresse bearbeiten</string>
+    <string name="settings_romm_config_editor_add_title">Adresse hinzufügen</string>
+    <string name="settings_romm_config_editor_label">Adresse</string>
+    <string name="settings_romm_config_editor_placeholder_local">http://192.168.1.10:8080</string>
+    <string name="settings_romm_config_editor_placeholder_remote">https://romm.example.com</string>
+    <string name="settings_romm_config_editor_save">Speichern</string>
+    <string name="settings_romm_config_editor_save_busy">Wird gespeichert…</string>
+    <string name="settings_romm_config_editor_cancel">Abbrechen</string>
+    <string name="settings_romm_config_notif_saved">Adresse gespeichert. Verbindung wird neu aufgebaut.</string>
+    <string name="settings_romm_config_notif_saved_unverified">Adresse ohne Prüfung gespeichert.</string>
+    <string name="settings_romm_config_notif_removed">Adresse im lokalen Netzwerk entfernt.</string>
+    <string name="settings_romm_config_notif_address_required">Geben Sie eine Adresse ein.</string>
+    <string name="settings_romm_config_notif_save_failed">Kein Konto ist angemeldet, daher wurde die Adresse nicht gespeichert.</string>
+    <string name="settings_romm_config_notif_verified">Adresse bestätigt.</string>
+    <string name="settings_romm_config_notif_verify_failed">%1$s konnte nicht bestätigt werden: %2$s</string>
+    <string name="settings_romm_config_verify_failed_title">Adresse nicht bestätigt</string>
+    <string name="settings_romm_config_verify_failed_message">%1$s konnte nicht bestätigt werden: %2$s\n\n„Behalten“ speichert sie, ohne zu verbinden. Eine Serveradresse ist aus dem eigenen Netzwerk heraus oft nicht erreichbar.</string>
+    <string name="settings_romm_config_verify_failed_keep">Behalten</string>
+
     <!-- ===== Jellyfin config form (Settings > components > JellyfinConfigForm) ===== -->
 
     <string name="settings_jellyfin_config_server_address_label">Serveradresse</string>

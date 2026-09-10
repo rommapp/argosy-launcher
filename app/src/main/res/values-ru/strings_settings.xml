@@ -1873,6 +1873,42 @@
     <string name="settings_romm_device_pairing_cancel_title">Отмена</string>
     <string name="settings_romm_device_pairing_cancel_subtitle">Остановить привязку</string>
 
+    <!-- ===== RomM config form, signed-in address cards ===== -->
+
+    <string name="settings_romm_config_section_addresses">Адреса</string>
+    <string name="settings_romm_config_section_pairing">Привязка</string>
+    <string name="settings_romm_config_address_status_in_use">Используется</string>
+    <string name="settings_romm_config_address_status_verified">Проверен</string>
+    <string name="settings_romm_config_address_status_unverified">Не проверен</string>
+    <string name="settings_romm_config_address_status_checking">Проверка…</string>
+    <string name="settings_romm_config_add_address_title">Добавить адрес</string>
+    <string name="settings_romm_config_add_address_subtitle">Доступ к этому серверу из его собственной сети</string>
+    <string name="settings_romm_config_menu_local_header">Адрес в локальной сети</string>
+    <string name="settings_romm_config_menu_remote_header">Удалённый адрес</string>
+    <string name="settings_romm_config_menu_edit">Изменить адрес</string>
+    <string name="settings_romm_config_menu_verify">Проверить сейчас</string>
+    <string name="settings_romm_config_menu_use_as_local">Использовать для локальной сети</string>
+    <string name="settings_romm_config_menu_use_as_remote">Использовать как удалённый</string>
+    <string name="settings_romm_config_menu_remove">Удалить</string>
+    <string name="settings_romm_config_editor_edit_title">Изменить адрес</string>
+    <string name="settings_romm_config_editor_add_title">Добавить адрес</string>
+    <string name="settings_romm_config_editor_label">Адрес</string>
+    <string name="settings_romm_config_editor_placeholder_local">http://192.168.1.10:8080</string>
+    <string name="settings_romm_config_editor_placeholder_remote">https://romm.example.com</string>
+    <string name="settings_romm_config_editor_save">Сохранить</string>
+    <string name="settings_romm_config_editor_save_busy">Сохранение…</string>
+    <string name="settings_romm_config_editor_cancel">Отмена</string>
+    <string name="settings_romm_config_notif_saved">Адрес сохранён. Переподключение.</string>
+    <string name="settings_romm_config_notif_saved_unverified">Адрес сохранён без проверки.</string>
+    <string name="settings_romm_config_notif_removed">Адрес в локальной сети удалён.</string>
+    <string name="settings_romm_config_notif_address_required">Введите адрес.</string>
+    <string name="settings_romm_config_notif_save_failed">Ни один аккаунт не выполнил вход, поэтому адрес не сохранён.</string>
+    <string name="settings_romm_config_notif_verified">Адрес проверен.</string>
+    <string name="settings_romm_config_notif_verify_failed">Не удалось проверить %1$s: %2$s</string>
+    <string name="settings_romm_config_verify_failed_title">Адрес не подтверждён</string>
+    <string name="settings_romm_config_verify_failed_message">Не удалось проверить %1$s: %2$s\n\n«Оставить» сохраняет адрес без подключения. Адрес сервера часто недоступен изнутри его собственной сети.</string>
+    <string name="settings_romm_config_verify_failed_keep">Оставить</string>
+
     <!-- ===== Jellyfin config form (Settings > components > JellyfinConfigForm) ===== -->
 
     <string name="settings_jellyfin_config_server_address_label">Адрес сервера</string>

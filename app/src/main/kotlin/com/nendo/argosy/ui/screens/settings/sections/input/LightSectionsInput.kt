@@ -7,6 +7,7 @@ import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.screens.settings.SettingsInputHandler
 import com.nendo.argosy.ui.screens.settings.SettingsSection
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
+import com.nendo.argosy.ui.screens.settings.components.rommConfigIndices
 import com.nendo.argosy.ui.screens.settings.sections.AboutItem
 import com.nendo.argosy.ui.screens.settings.sections.BiosItem
 import com.nendo.argosy.ui.screens.settings.sections.BuiltinEmulatorItem
@@ -134,8 +135,9 @@ internal class LightSectionsInput(
 
     private fun handleRomMLeftRight(direction: Int): InputResult {
         val state = viewModel.uiState.value
-        if (state.server.rommConfiguring) {
-            if (!state.server.rommDevicePairing && state.focusedIndex == 1) {
+        if (state.server.rommConfiguring && !state.server.rommDevicePairing) {
+            val indices = rommConfigIndices(state.server)
+            if (state.focusedIndex == indices.authMethodIndex) {
                 val methods = com.nendo.argosy.ui.screens.settings.RomMAuthMethod.entries
                 val next = methods[(methods.indexOf(state.server.rommAuthMethod) + direction).mod(methods.size)]
                 viewModel.setRommAuthMethod(next)

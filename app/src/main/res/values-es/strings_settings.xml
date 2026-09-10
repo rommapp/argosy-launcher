@@ -1837,6 +1837,42 @@
     <string name="settings_romm_device_pairing_cancel_title">Cancelar</string>
     <string name="settings_romm_device_pairing_cancel_subtitle">Detener la vinculación</string>
 
+    <!-- ===== RomM config form, signed-in address cards ===== -->
+
+    <string name="settings_romm_config_section_addresses">Direcciones</string>
+    <string name="settings_romm_config_section_pairing">Vinculación</string>
+    <string name="settings_romm_config_address_status_in_use">En uso</string>
+    <string name="settings_romm_config_address_status_verified">Comprobada</string>
+    <string name="settings_romm_config_address_status_unverified">Sin comprobar</string>
+    <string name="settings_romm_config_address_status_checking">Comprobando…</string>
+    <string name="settings_romm_config_add_address_title">Añadir dirección</string>
+    <string name="settings_romm_config_add_address_subtitle">Acceder a este servidor desde su propia red</string>
+    <string name="settings_romm_config_menu_local_header">Dirección en la red local</string>
+    <string name="settings_romm_config_menu_remote_header">Dirección remota</string>
+    <string name="settings_romm_config_menu_edit">Editar dirección</string>
+    <string name="settings_romm_config_menu_verify">Comprobar ahora</string>
+    <string name="settings_romm_config_menu_use_as_local">Usar para la red local</string>
+    <string name="settings_romm_config_menu_use_as_remote">Usar como remota</string>
+    <string name="settings_romm_config_menu_remove">Eliminar</string>
+    <string name="settings_romm_config_editor_edit_title">Editar dirección</string>
+    <string name="settings_romm_config_editor_add_title">Añadir dirección</string>
+    <string name="settings_romm_config_editor_label">Dirección</string>
+    <string name="settings_romm_config_editor_placeholder_local">http://192.168.1.10:8080</string>
+    <string name="settings_romm_config_editor_placeholder_remote">https://romm.example.com</string>
+    <string name="settings_romm_config_editor_save">Guardar</string>
+    <string name="settings_romm_config_editor_save_busy">Guardando…</string>
+    <string name="settings_romm_config_editor_cancel">Cancelar</string>
+    <string name="settings_romm_config_notif_saved">Dirección guardada. Reconectando.</string>
+    <string name="settings_romm_config_notif_saved_unverified">Dirección guardada sin comprobar.</string>
+    <string name="settings_romm_config_notif_removed">Dirección en la red local eliminada.</string>
+    <string name="settings_romm_config_notif_address_required">Introduce una dirección.</string>
+    <string name="settings_romm_config_notif_save_failed">No hay ninguna cuenta con sesión iniciada, así que la dirección no se guardó.</string>
+    <string name="settings_romm_config_notif_verified">Dirección comprobada.</string>
+    <string name="settings_romm_config_notif_verify_failed">No se pudo comprobar %1$s: %2$s</string>
+    <string name="settings_romm_config_verify_failed_title">Dirección no comprobada</string>
+    <string name="settings_romm_config_verify_failed_message">No se pudo comprobar %1$s: %2$s\n\n«Conservar» la guarda sin conectar. Una dirección del servidor suele no ser accesible desde dentro de su propia red.</string>
+    <string name="settings_romm_config_verify_failed_keep">Conservar</string>
+
     <!-- ===== Jellyfin config form (Settings > components > JellyfinConfigForm) ===== -->
 
     <string name="settings_jellyfin_config_server_address_label">Dirección del servidor</string>

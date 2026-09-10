@@ -106,6 +106,8 @@ import com.nendo.argosy.ui.screens.settings.components.JELLYFIN_CONFIG_CANCEL_IN
 import com.nendo.argosy.ui.screens.settings.components.JELLYFIN_CONFIG_SAVE_INDEX
 import com.nendo.argosy.ui.screens.settings.components.JELLYFIN_LOGIN_CANCEL_INDEX
 import com.nendo.argosy.ui.screens.settings.components.JELLYFIN_LOGIN_SUBMIT_INDEX
+import com.nendo.argosy.ui.screens.settings.components.rommConfigIndices
+import com.nendo.argosy.ui.screens.settings.components.rommConfigMaxIndex
 import com.nendo.argosy.ui.screens.settings.sections.JellyfinItem
 import com.nendo.argosy.ui.screens.settings.sections.JellyfinLayoutState
 import com.nendo.argosy.ui.screens.settings.sections.jellyfinItemAtFocusIndex
@@ -128,31 +130,6 @@ import com.nendo.argosy.ui.screens.settings.sections.libraryMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.libraryItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.LibraryItem
 import com.nendo.argosy.ui.screens.settings.sections.LibraryLayoutState
-
-private fun rommConfigMaxIndex(server: ServerState): Int {
-    if (server.rommDevicePairing) return 0
-    return when (server.rommAuthMethod) {
-        RomMAuthMethod.DEVICE -> 4
-        RomMAuthMethod.PAIRING_CODE -> if (server.rommHasCamera) 6 else 5
-    }
-}
-
-private data class RommConfigIndices(
-    val connectIndex: Int,
-    val scanIndex: Int?,
-    val certificateIndex: Int,
-    val cancelIndex: Int
-)
-
-private fun rommConfigIndices(server: ServerState): RommConfigIndices = when (server.rommAuthMethod) {
-    RomMAuthMethod.DEVICE -> RommConfigIndices(2, null, 3, 4)
-    RomMAuthMethod.PAIRING_CODE ->
-        if (server.rommHasCamera) {
-            RommConfigIndices(3, 4, 5, 6)
-        } else {
-            RommConfigIndices(3, null, 4, 5)
-        }
-}
 
 private fun nextRommAuthMethod(current: RomMAuthMethod): RomMAuthMethod = when (current) {
     RomMAuthMethod.DEVICE -> RomMAuthMethod.PAIRING_CODE
@@ -341,9 +318,17 @@ private fun routeRomMConfirm(vm: SettingsViewModel, state: SettingsUiState): Inp
             return InputResult.HANDLED
         }
         val indices = rommConfigIndices(state.server)
+        indices.addressRowAt(state.focusedIndex)?.let { row ->
+            vm.openRommAddressMenu(row)
+            return InputResult.handled(SoundType.OPEN_MODAL)
+        }
         when (state.focusedIndex) {
-            1 -> {
+            indices.authMethodIndex -> {
                 vm.requestEnumPicker(ROMM_AUTH_METHOD_PICKER_KEY)
+                return InputResult.handled(SoundType.OPEN_MODAL)
+            }
+            indices.addAddressIndex -> {
+                vm.addRommAddress()
                 return InputResult.handled(SoundType.OPEN_MODAL)
             }
             indices.connectIndex -> vm.connectToRomm()
@@ -1124,6 +1109,9 @@ private fun routeDismissTopOverlay(vm: SettingsViewModel): Boolean {
         state.builtinControls.showHotkeysModal -> { vm.hideHotkeysModal(); true }
         state.accounts.pairing.active -> { vm.cancelAddAccount(); true }
         state.accounts.switchInProgress -> true
+        state.server.rommAddressVerifyPrompt != null -> { vm.cancelUnverifiedRommAddress(); true }
+        state.server.rommAddressEditor != null -> { vm.closeRommAddressEditor(); true }
+        state.server.rommAddressMenu != null -> { vm.closeRommAddressMenu(); true }
         state.server.rommConfiguring -> { vm.cancelRommConfig(); true }
         state.jellyfin.configuring -> { vm.cancelJellyfinConfig(); true }
         state.jellyfin.showLoginForm -> { vm.hideJellyfinLoginForm(); true }

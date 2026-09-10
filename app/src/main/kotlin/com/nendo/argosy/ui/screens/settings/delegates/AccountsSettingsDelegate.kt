@@ -25,6 +25,7 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
@@ -39,7 +40,8 @@ import javax.inject.Inject
  * Add-account deliberately does not reuse [ServerSettingsDelegate.connectToRomm]: that path is
  * URL-entry-first and models a successful pairing as replacing the single stored connection. A
  * second account on a server this device already knows has no URL step, so pairing starts from
- * the active account's baseUrl and reports its own outcome.
+ * the address the live session is on (falling back to the active account's WAN address) and
+ * reports its own outcome.
  */
 class AccountsSettingsDelegate @Inject constructor(
     private val accountRepository: RomMAccountRepository,
@@ -54,18 +56,25 @@ class AccountsSettingsDelegate @Inject constructor(
 
     private var pairingJob: Job? = null
 
+    /**
+     * The active row is labelled with the address the session is actually on, which the
+     * connection manager may swap between LAN and WAN on every network change, so the list is
+     * rebuilt on connection-state emissions as well as on row changes.
+     */
     fun start(scope: CoroutineScope) {
-        accountRepository.observeAccounts()
+        combine(accountRepository.observeAccounts(), romMRepository.connectionState) { rows, _ -> rows }
             .onEach { rows ->
+                val inUse = romMRepository.getBaseUrl()
                 val ui = rows
                     .sortedByDescending { it.lastLoginAt }
                     .map { row ->
+                        val labelUrl = if (row.isActive) inUse.ifBlank { row.baseUrl } else row.baseUrl
                         AccountUi(
                             id = row.id,
                             username = row.username.ifBlank {
                                 context.getString(R.string.settings_accounts_delegate_fallback_username, row.rommUserId)
                             },
-                            serverLabel = serverLabel(row.baseUrl),
+                            serverLabel = serverLabel(labelUrl),
                             isActive = row.isActive
                         )
                     }
@@ -331,7 +340,7 @@ class AccountsSettingsDelegate @Inject constructor(
         pairingJob?.cancel()
         romMRepository.cancelDeviceAuth()
         pairingJob = scope.launch {
-            val baseUrl = accountRepository.activeAccount()?.baseUrl
+            val baseUrl = romMRepository.getBaseUrl().ifBlank { accountRepository.activeAccount()?.baseUrl }
             if (baseUrl.isNullOrBlank()) {
                 _state.update {
                     it.copy(

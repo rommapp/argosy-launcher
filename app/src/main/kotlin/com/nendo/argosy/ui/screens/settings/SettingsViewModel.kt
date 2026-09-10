@@ -60,6 +60,7 @@ import com.nendo.argosy.ui.screens.settings.delegates.SteamSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.StorageAttributionDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.StorageSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.delegates.SyncSettingsDelegate
+import com.nendo.argosy.ui.components.TextEntryRow
 import com.nendo.argosy.core.emulator.LibretroSettingDef
 import com.nendo.argosy.util.LogLevel
 import com.nendo.argosy.util.PlatformFilterLogic
@@ -1737,6 +1738,20 @@ class SettingsViewModel @Inject constructor(
     fun cancelRommConfig() = routeCancelRommConfig(this)
 
     fun setRommConfigUrl(url: String) = serverDelegate.setRommConfigUrl(url)
+    fun setRommAddressText(row: Int, text: String) = serverDelegate.setAddressText(row, text)
+    fun openRommAddressMenu(row: Int) = serverDelegate.openAddressMenu(row)
+    fun moveRommAddressMenuFocus(delta: Int) = serverDelegate.moveAddressMenuFocus(delta)
+    fun closeRommAddressMenu() = serverDelegate.closeAddressMenu()
+    fun selectRommAddressAction(index: Int? = null) = serverDelegate.selectAddressAction(viewModelScope, index)
+    fun addRommAddress() = serverDelegate.addAddress()
+    fun closeRommAddressEditor() = serverDelegate.closeAddressEditor()
+    fun moveRommAddressEditorRow(row: TextEntryRow) = serverDelegate.moveAddressEditorRow(row)
+    fun moveRommAddressEditorButton(delta: Int) = serverDelegate.moveAddressEditorButton(delta)
+    fun confirmRommAddressEditor() = serverDelegate.confirmAddressEditor(viewModelScope)
+    fun saveRommAddress(row: Int) = serverDelegate.saveAddress(viewModelScope, row)
+    fun moveRommAddressVerifyFocus(delta: Int) = serverDelegate.moveAddressVerifyFocus(delta)
+    fun keepUnverifiedRommAddress() = serverDelegate.keepUnverifiedAddress(viewModelScope)
+    fun cancelUnverifiedRommAddress() = serverDelegate.cancelUnverifiedAddress()
     fun commitRommUrl() = serverDelegate.commitRommUrl(viewModelScope)
     fun setRommConfigPairingCode(code: String) = serverDelegate.setRommConfigPairingCode(code)
     fun setRommAuthMethod(method: RomMAuthMethod) = serverDelegate.setRommAuthMethod(method)

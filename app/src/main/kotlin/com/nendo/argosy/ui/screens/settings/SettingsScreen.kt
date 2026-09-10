@@ -50,9 +50,12 @@ import com.nendo.argosy.ui.theme.backdrop.surfaceBackdrop
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.nendo.argosy.libretro.frame.FrameRegistry
+import androidx.compose.ui.text.input.KeyboardType
+import com.nendo.argosy.ui.components.CustomTileMenuModal
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.FooterSpacer
 import com.nendo.argosy.ui.components.InputButton
+import com.nendo.argosy.ui.components.TextEntryModal
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.filebrowser.FileBrowserMode
 import com.nendo.argosy.ui.filebrowser.FileBrowserScreen
@@ -1173,6 +1176,74 @@ fun SettingsScreen(
         onConfirm = { viewModel.confirmSyncSaves() },
         onDismiss = { viewModel.cancelSyncSaves() },
         focusedIndex = uiState.syncSettings.syncConfirmButtonIndex
+    )
+
+    uiState.server.rommAddressMenu?.let { menu ->
+        val rows = uiState.server.rommAddressRows
+        val actions = rommAddressActions(rows, menu.row)
+        val row = rows.getOrNull(menu.row)
+        if (row != null && actions.isNotEmpty()) {
+            CustomTileMenuModal(
+                header = stringResource(
+                    when (row.role) {
+                        RomMAddressRole.LOCAL -> R.string.settings_romm_config_menu_local_header
+                        RomMAddressRole.REMOTE -> R.string.settings_romm_config_menu_remote_header
+                    }
+                ),
+                title = row.stored,
+                entries = actions.map { stringResource(it.labelRes) },
+                focusIndex = menu.focusIndex,
+                onSelect = { viewModel.selectRommAddressAction(it) },
+                onDismiss = { viewModel.closeRommAddressMenu() },
+                dangerFromIndex = actions.indexOf(RomMAddressAction.REMOVE).takeIf { it >= 0 }
+            )
+        }
+    }
+
+    uiState.server.rommAddressEditor?.let { editor ->
+        val row = uiState.server.rommAddressRows.getOrNull(editor.row)
+        if (row != null) {
+            TextEntryModal(
+                title = stringResource(
+                    if (row.stored.isBlank()) R.string.settings_romm_config_editor_add_title
+                    else R.string.settings_romm_config_editor_edit_title
+                ),
+                label = stringResource(R.string.settings_romm_config_editor_label),
+                confirmLabel = stringResource(
+                    if (row.saving) R.string.settings_romm_config_editor_save_busy
+                    else R.string.settings_romm_config_editor_save
+                ),
+                cancelLabel = stringResource(R.string.settings_romm_config_editor_cancel),
+                text = row.text,
+                onTextChange = { viewModel.setRommAddressText(editor.row, it) },
+                onDismiss = { viewModel.closeRommAddressEditor() },
+                onSubmit = { viewModel.saveRommAddress(editor.row) },
+                focus = editor.focus,
+                placeholder = stringResource(
+                    when (row.role) {
+                        RomMAddressRole.LOCAL -> R.string.settings_romm_config_editor_placeholder_local
+                        RomMAddressRole.REMOTE -> R.string.settings_romm_config_editor_placeholder_remote
+                    }
+                ),
+                canSubmit = row.text.isNotBlank() && !row.saving,
+                keyboardType = KeyboardType.Uri
+            )
+        }
+    }
+
+    val addressPrompt = uiState.server.rommAddressVerifyPrompt
+    ArgosyConfirmModal(
+        visible = addressPrompt != null,
+        title = stringResource(R.string.settings_romm_config_verify_failed_title),
+        message = stringResource(
+            R.string.settings_romm_config_verify_failed_message,
+            addressPrompt?.url.orEmpty(),
+            addressPrompt?.reason.orEmpty()
+        ),
+        confirmLabel = stringResource(R.string.settings_romm_config_verify_failed_keep),
+        onConfirm = { viewModel.keepUnverifiedRommAddress() },
+        onDismiss = { viewModel.cancelUnverifiedRommAddress() },
+        focusedIndex = uiState.server.rommAddressVerifyFocusIndex
     )
 
     if (showFileBrowser) {

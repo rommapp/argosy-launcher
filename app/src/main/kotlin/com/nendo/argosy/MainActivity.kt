@@ -312,8 +312,6 @@ class MainActivity : ComponentActivity() {
     // --- Lifecycle State ---
 
     private var hasResumedBefore = false
-    private var hadFocusBefore = false
-    private var focusLostTime = 0L
     private var yieldedFocusToGame = false
 
     // --- Lifecycle ---
@@ -748,12 +746,6 @@ class MainActivity : ComponentActivity() {
         super.onWindowFocusChanged(hasFocus)
         Log.d(TAG, "onWindowFocusChanged: hasFocus=$hasFocus swapped=${if (::dualScreenManager.isInitialized) dualScreenManager.isRolesSwapped.value else "N/A"} gameActive=${if (::dualScreenManager.isInitialized) dualScreenManager.swappedIsGameActive.value else "N/A"}")
         if (hasFocus) {
-            val timeSinceFocusLost = System.currentTimeMillis() - focusLostTime
-            if (hadFocusBefore && focusLostTime > 0 && timeSinceFocusLost < 1000) {
-                gamepadInputHandler.emitHomeEvent()
-            }
-            hadFocusBefore = true
-            focusLostTime = 0L
             if (yieldedFocusToGame) {
                 yieldedFocusToGame = false
                 reassertCompanionForwarding()
@@ -767,7 +759,6 @@ class MainActivity : ComponentActivity() {
                 gamepadInputHandler.blockInputFor(200)
             }
         } else {
-            focusLostTime = System.currentTimeMillis()
             if (::dualScreenManager.isInitialized &&
                 displayAffinityHelper.hasSecondaryDisplay &&
                 !dualScreenManager.isRolesSwapped.value

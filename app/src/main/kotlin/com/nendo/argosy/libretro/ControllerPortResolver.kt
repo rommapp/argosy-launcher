@@ -1,15 +1,15 @@
 package com.nendo.argosy.libretro
 
 import android.view.InputDevice
+import com.nendo.argosy.core.input.ControllerDetector
+import com.nendo.argosy.core.input.isPhysicalGamepad
 import com.nendo.argosy.data.local.entity.ControllerOrderEntity
 import com.swordfish.libretrodroid.PortResolver
 
 /**
- * Seats pads on the port they are assigned in settings, and otherwise on the first input they
- * send. Android numbers controllers per device rather than per session and leaves 0 on pads it
- * cannot number, so seating by those numbers can make the pad in the player's hands player two:
- * on a handheld docked to a TV the built-in controls take the number and the pad being played on
- * takes what is left. Whoever presses something first is player one instead.
+ * Seats pads on their settings-assigned port, otherwise on their first input. A built-in pad
+ * leaves player one open while an external pad is connected and unseated, and gives its seat
+ * back once no external pad remains.
  */
 class ControllerPortResolver : PortResolver {
     private var controllerOrder: Map<String, Int> = emptyMap()
@@ -28,12 +28,15 @@ class ControllerPortResolver : PortResolver {
     }
 
     /**
-     * Gives up the seats of pads that are no longer connected, so the next pad to send something
-     * can take player one rather than inheriting a disconnected pad's leftovers. Assignments made
-     * in settings are kept: they describe a pad that is expected back.
+     * Drops the claims of disconnected pads, and of built-in pads once no external pad remains.
+     * Settings assignments are kept.
      */
     fun releaseDisconnected(connectedControllerIds: Set<String>) {
         claimedPorts.keys.retainAll(connectedControllerIds)
+        val pads = connectedGamepads()
+        if (pads.any { !ControllerDetector.isBuiltInPad(it) }) return
+        pads.filter { ControllerDetector.isBuiltInPad(it) }
+            .forEach { claimedPorts.remove(getControllerId(it)) }
     }
 
     fun claimedPortFor0(): String? = claimedPorts.entries.firstOrNull { it.value == 0 }?.key
@@ -43,7 +46,7 @@ class ControllerPortResolver : PortResolver {
         val controllerId = getControllerId(device)
         controllerOrder[controllerId]?.let { return it }
         claimedPorts[controllerId]?.let { return it }
-        return claimPort(controllerId)
+        return claimPort(controllerId, lowestPort = if (yieldsPlayerOne(device)) 1 else 0)
     }
 
     /**
@@ -63,14 +66,29 @@ class ControllerPortResolver : PortResolver {
 
     fun hasCustomOrder(): Boolean = controllerOrder.isNotEmpty()
 
-    private fun claimPort(controllerId: String): Int {
+    private fun claimPort(controllerId: String, lowestPort: Int): Int {
         val taken = controllerOrder.values.toSet() + claimedPorts.values.toSet()
-        var port = 0
+        var port = lowestPort
         while (port in taken) port++
         claimedPorts[controllerId] = port
         onPortClaimed?.invoke(controllerId, port)
         return port
     }
+
+    private fun yieldsPlayerOne(device: InputDevice): Boolean {
+        if (!device.isPhysicalGamepad() || !ControllerDetector.isBuiltInPad(device)) return false
+        return connectedGamepads().any { pad ->
+            !ControllerDetector.isBuiltInPad(pad) && isUnseated(getControllerId(pad))
+        }
+    }
+
+    private fun isUnseated(controllerId: String): Boolean =
+        controllerId !in controllerOrder && controllerId !in claimedPorts
+
+    private fun connectedGamepads(): List<InputDevice> =
+        InputDevice.getDeviceIds().toList()
+            .mapNotNull { InputDevice.getDevice(it) }
+            .filter { it.isPhysicalGamepad() }
 
     private fun getControllerId(device: InputDevice): String {
         return "${device.vendorId}:${device.productId}:${device.descriptor}"

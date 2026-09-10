@@ -144,7 +144,7 @@ object ControllerDetector {
         return DetectionResult(null, device.name, vendorId, DetectionSource.UNKNOWN)
     }
 
-    private fun isBuiltInPad(device: InputDevice): Boolean =
+    fun isBuiltInPad(device: InputDevice): Boolean =
         android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q && !device.isExternal
 
     /** Built-in pads on handhelds often report generic names (virtual_gamepad) and junk vendor ids; fall back to the device build. */

@@ -178,8 +178,9 @@
     <string name="downloads_action_options">विकल्प</string>
     <string name="downloads_action_view">देखें</string>
     <string name="downloads_action_cancel">रद्द करें</string>
-    <string name="downloads_action_remove">हटाएं</string>
+    <string name="downloads_action_remove">साफ़ करें</string>
     <string name="downloads_action_retry">पुनः प्रयास करें</string>
+    <string name="downloads_action_clear_finished">पूर्ण साफ़ करें</string>
 
     <string name="downloads_steam_status_preparing">तैयारी हो रही है…</string>
     <string name="downloads_steam_status_connecting">Steam से कनेक्ट हो रहा है…</string>

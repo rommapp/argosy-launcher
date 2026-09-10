@@ -185,8 +185,9 @@
     <string name="downloads_action_options">Options</string>
     <string name="downloads_action_view">Voir</string>
     <string name="downloads_action_cancel">Annuler</string>
-    <string name="downloads_action_remove">Retirer</string>
+    <string name="downloads_action_remove">Effacer</string>
     <string name="downloads_action_retry">Réessayer</string>
+    <string name="downloads_action_clear_finished">Effacer les terminés</string>
 
     <string name="downloads_steam_status_preparing">Préparation…</string>
     <string name="downloads_steam_status_connecting">Connexion à Steam…</string>

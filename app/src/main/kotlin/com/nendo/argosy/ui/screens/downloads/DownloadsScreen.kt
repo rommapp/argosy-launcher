@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -68,7 +70,9 @@ import com.nendo.argosy.ui.primitives.ArgosyConfirmModalHost
 import com.nendo.argosy.ui.primitives.ArgosyProgressBar
 import com.nendo.argosy.ui.primitives.ProgressBarStyle
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.common.rememberCoverAspectRatio
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
+import com.nendo.argosy.ui.theme.LocalBoxArtStyle
 import com.nendo.argosy.ui.theme.LocalUiScale
 import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.theme.generated.ColorTokens
@@ -184,7 +188,7 @@ fun DownloadsScreen(
                             isFocused = isFocused,
                             availableStorage = state.availableStorageBytes,
                             onTap = { viewModel.handleRowTap(group.primary.id) },
-                            controls = touchControlsFor(isFocused, uiState, viewModel)
+                            controls = touchControlsFor(isFocused, uiState, viewModel, onNavigateToGame)
                         )
                         if (group.isGroup) GroupFileRows(group)
                     }
@@ -202,7 +206,7 @@ fun DownloadsScreen(
                             isFocused = isFocused,
                             availableStorage = state.availableStorageBytes,
                             onTap = { viewModel.handleRowTap(group.primary.id) },
-                            controls = touchControlsFor(isFocused, uiState, viewModel)
+                            controls = touchControlsFor(isFocused, uiState, viewModel, onNavigateToGame)
                         )
                         if (group.isGroup) GroupFileRows(group)
                     }
@@ -210,7 +214,21 @@ fun DownloadsScreen(
             }
 
             if (completedGroups.isNotEmpty()) {
-                item { SectionHeader(stringResource(R.string.downloads_section_header_finished)) }
+                item {
+                    SectionHeader(
+                        title = stringResource(R.string.downloads_section_header_finished),
+                        action = if (uiState.isTouchMode) {
+                            {
+                                ActionButton(
+                                    label = stringResource(R.string.downloads_action_clear_finished),
+                                    onClick = viewModel::clearFinished
+                                )
+                            }
+                        } else {
+                            null
+                        }
+                    )
+                }
                 val completedStartIndex = activeGroups.size + queuedGroups.size
                 itemsIndexed(completedGroups, key = { _, g -> g.primary.id }) { index, group ->
                     val isFocused = (completedStartIndex + index) == uiState.focusedIndex
@@ -218,13 +236,13 @@ fun DownloadsScreen(
                         download = group.aggregate(context),
                         isFocused = isFocused,
                         onTap = { viewModel.handleRowTap(group.primary.id) },
-                        controls = touchControlsFor(isFocused, uiState, viewModel)
+                        controls = touchControlsFor(isFocused, uiState, viewModel, onNavigateToGame)
                     )
                 }
             }
         }
 
-        if (uiState.allItems.isNotEmpty()) {
+        if (uiState.allItems.isNotEmpty() && !uiState.isTouchMode) {
             val footerHints = buildList {
                 add(InputButton.DPAD_VERTICAL to stringResource(R.string.downloads_hint_navigate))
                 if (uiState.focusedItem != null) {
@@ -313,11 +331,17 @@ private fun GroupFileRows(group: DownloadGroup) {
 }
 
 @Composable
-private fun SectionHeader(title: String, speedSuffix: String? = null) {
+private fun SectionHeader(
+    title: String,
+    speedSuffix: String? = null,
+    action: (@Composable () -> Unit)? = null
+) {
     Row(
-        modifier = Modifier.padding(bottom = Dimens.spacingSm),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = Dimens.spacingSm),
         horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
-        verticalAlignment = Alignment.Bottom
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = title,
@@ -331,18 +355,24 @@ private fun SectionHeader(title: String, speedSuffix: String? = null) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
             )
         }
+        if (action != null) {
+            Spacer(modifier = Modifier.weight(1f))
+            action()
+        }
     }
 }
 
 private fun touchControlsFor(
     isFocused: Boolean,
     uiState: DownloadsUiState,
-    viewModel: DownloadsViewModel
+    viewModel: DownloadsViewModel,
+    onNavigateToGame: (Long) -> Unit
 ): (@Composable RowScope.() -> Unit)? {
     if (!isFocused || !uiState.showTouchControls) return null
     return {
         DownloadControlStrip(
             uiState = uiState,
+            onView = { viewModel.openFocusedGame(onNavigateToGame) },
             onToggle = viewModel::toggleFocusedItem,
             onCancel = viewModel::cancelFocusedItem,
             onRemove = { uiState.focusedItem?.let { viewModel.removeFromCompleted(it.id) } },
@@ -354,6 +384,7 @@ private fun touchControlsFor(
 @Composable
 private fun DownloadControlStrip(
     uiState: DownloadsUiState,
+    onView: () -> Unit,
     onToggle: () -> Unit,
     onCancel: () -> Unit,
     onRemove: () -> Unit,
@@ -365,6 +396,9 @@ private fun DownloadControlStrip(
             ActionButton(label = stringResource(R.string.downloads_action_remove), onClick = onRemove)
         }
         uiState.canRemove -> {
+            if (uiState.canView) {
+                ActionButton(label = stringResource(R.string.downloads_action_view), onClick = onView, primary = true)
+            }
             ActionButton(label = stringResource(R.string.downloads_action_remove), onClick = onRemove)
         }
         else -> {
@@ -383,6 +417,7 @@ private fun DownloadCard(
     isFocused: Boolean,
     onTap: () -> Unit,
     controls: (@Composable RowScope.() -> Unit)?,
+    cover: @Composable (Modifier) -> Unit,
     content: @Composable RowScope.() -> Unit
 ) {
     val theme = LocalArgosyTheme.current
@@ -398,7 +433,20 @@ private fun DownloadCard(
         animationSpec = Motion.focusColorSpec,
         label = "download-wash"
     )
-    Column(
+    val expanded = controls != null
+    val rowHeight = (ComponentDefaults.DownloadItem.rowHeight * scale).dp
+    val cardHeight = if (expanded) rowHeight + Dimens.buttonHeight + Dimens.spacingSm else rowHeight
+    val cardPadding = if (expanded) {
+        PaddingValues(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm)
+    } else {
+        PaddingValues(horizontal = Dimens.spacingMd)
+    }
+    val coverModifier = if (expanded) {
+        Modifier.fillMaxHeight()
+    } else {
+        Modifier.size((ComponentDefaults.DownloadItem.thumbSize * scale).dp)
+    }
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(shape)
@@ -406,25 +454,27 @@ private fun DownloadCard(
             .background(washColor)
             .border(width = Dimens.borderThin, color = borderColor, shape = shape)
             .clickableNoFocus(onClick = onTap)
+            .height(cardHeight)
+            .padding(cardPadding),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height((ComponentDefaults.DownloadItem.rowHeight * scale).dp)
-                .padding(horizontal = Dimens.spacingMd),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            content()
-        }
-        if (controls != null) {
+        cover(coverModifier)
+        Spacer(modifier = Modifier.width(Dimens.spacingMd))
+        Column(modifier = Modifier.weight(1f).fillMaxHeight()) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = Dimens.spacingMd, end = Dimens.spacingMd, bottom = Dimens.spacingSm),
-                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
+                modifier = Modifier.fillMaxWidth().weight(1f),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                controls()
+                content()
+            }
+            if (controls != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm, Alignment.End),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    controls()
+                }
             }
         }
     }
@@ -474,9 +524,12 @@ private fun DownloadItem(
         else -> Icons.Default.Schedule to theme.textMute
     }
 
-    DownloadCard(isFocused = isFocused, onTap = onTap, controls = controls) {
-        DownloadCover(download)
-        Spacer(modifier = Modifier.width(Dimens.spacingMd))
+    DownloadCard(
+        isFocused = isFocused,
+        onTap = onTap,
+        controls = controls,
+        cover = { DownloadCover(download, it) }
+    ) {
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
@@ -592,9 +645,12 @@ private fun CompletedDownloadItem(
         else -> Icons.Default.CheckCircle to theme.textMute
     }
 
-    DownloadCard(isFocused = isFocused, onTap = onTap, controls = controls) {
-        DownloadCover(download)
-        Spacer(modifier = Modifier.width(Dimens.spacingMd))
+    DownloadCard(
+        isFocused = isFocused,
+        onTap = onTap,
+        controls = controls,
+        cover = { DownloadCover(download, it) }
+    ) {
         Column(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
@@ -627,12 +683,15 @@ private fun CompletedDownloadItem(
 }
 
 @Composable
-private fun DownloadCover(download: DownloadProgress) {
+private fun DownloadCover(download: DownloadProgress, modifier: Modifier) {
     val theme = LocalArgosyTheme.current
-    val scale = LocalUiScale.current.scale
-    val thumbModifier = Modifier
-        .size((ComponentDefaults.DownloadItem.thumbSize * scale).dp)
-        .clip(RoundedCornerShape(Dimens.radiusPanel))
+    val boxArtStyle = LocalBoxArtStyle.current
+    val aspectRatio = if (boxArtStyle.nativeAspectRatio) {
+        rememberCoverAspectRatio(download.coverPath, boxArtStyle.aspectRatio)
+    } else {
+        boxArtStyle.aspectRatio
+    }
+    val thumbModifier = modifier.aspectRatio(aspectRatio).clip(RoundedCornerShape(Dimens.radiusPanel))
     if (download.coverPath != null) {
         AsyncImage(
             model = rememberFileImageModel(download.coverPath),

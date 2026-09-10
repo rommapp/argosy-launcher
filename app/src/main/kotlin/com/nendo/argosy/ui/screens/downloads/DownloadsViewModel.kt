@@ -169,6 +169,11 @@ data class DownloadsUiState(
     val canRemove: Boolean
         get() = focusedItem != null && isFocusedItemCompleted
 
+    val canView: Boolean
+        get() = focusedItem?.let {
+            isFocusedItemCompleted && !isFocusedItemFailed && it.platformSlug != MEDIA_SLUG
+        } ?: false
+
     val hasFinishedItems: Boolean
         get() = completedItems.isNotEmpty()
 
@@ -468,6 +473,11 @@ class DownloadsViewModel @Inject constructor(
 
     private fun isSteamItem(item: DownloadProgress) = !isMediaItem(item) && item.id < 0
 
+    fun openFocusedGame(onNavigateToGame: (Long) -> Unit) {
+        val item = _uiState.value.focusedItem ?: return
+        if (!isMediaItem(item)) onNavigateToGame(item.gameId)
+    }
+
     fun toggleFocusedItem() {
         val group = _uiState.value.focusedGroup ?: return
         for (item in group.items) {
@@ -590,7 +600,7 @@ class DownloadsViewModel @Inject constructor(
         override fun onConfirm(): InputResult {
             exitTouchMode()
             val state = _uiState.value
-            val item = state.focusedItem ?: return InputResult.UNHANDLED
+            if (state.focusedItem == null) return InputResult.UNHANDLED
 
             return when {
                 state.isFocusedItemFailed -> {
@@ -598,7 +608,7 @@ class DownloadsViewModel @Inject constructor(
                     InputResult.HANDLED
                 }
                 state.isFocusedItemCompleted -> {
-                    if (!isMediaItem(item)) onNavigateToGame(item.gameId)
+                    openFocusedGame(onNavigateToGame)
                     InputResult.HANDLED
                 }
                 state.canToggle -> {

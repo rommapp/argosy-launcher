@@ -298,12 +298,15 @@
     <!-- Inline row button. Verb: cancel an in-progress or queued download.
          Distinct key from downloads_hint_cancel (footer hint). -->
     <string name="downloads_action_cancel">Cancel</string>
-    <!-- Inline row button. Verb: remove a finished download entry from the list.
+    <!-- Inline row button. Verb: clear a finished download entry from the list.
          Distinct key from downloads_hint_remove (footer hint). -->
-    <string name="downloads_action_remove">Remove</string>
+    <string name="downloads_action_remove">Clear</string>
     <!-- Inline row button. Verb: retry a failed download.
          Distinct key from downloads_failed_dialog_confirm (dialog button). -->
     <string name="downloads_action_retry">Retry</string>
+    <!-- Inline section-header button. Verb: clear every finished download from the list.
+         Distinct key from downloads_hint_clear_finished (footer hint). -->
+    <string name="downloads_action_clear_finished">Clear Finished</string>
 
     <!-- === downloads/DownloadsViewModel.kt: Steam status messages === -->
     <string name="downloads_steam_status_preparing">Preparing&#8230;</string>

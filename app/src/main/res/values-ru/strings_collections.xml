@@ -192,8 +192,9 @@
     <string name="downloads_action_options">Параметры</string>
     <string name="downloads_action_view">Просмотр</string>
     <string name="downloads_action_cancel">Отмена</string>
-    <string name="downloads_action_remove">Удалить</string>
+    <string name="downloads_action_remove">Очистить</string>
     <string name="downloads_action_retry">Повторить</string>
+    <string name="downloads_action_clear_finished">Очистить завершённые</string>
 
     <string name="downloads_steam_status_preparing">Подготовка…</string>
     <string name="downloads_steam_status_connecting">Подключение к Steam…</string>

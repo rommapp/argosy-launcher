@@ -170,6 +170,9 @@
     <string name="downloads_action_toggle">切换</string>
     <string name="downloads_action_options">选项</string>
     <string name="downloads_action_view">查看</string>
+    <string name="downloads_action_cancel">取消</string>
+    <string name="downloads_action_remove">移除</string>
+    <string name="downloads_action_retry">重试</string>
 
     <string name="downloads_steam_status_preparing">正在准备&#8230;</string>
     <string name="downloads_steam_status_connecting">正在连接Steam&#8230;</string>

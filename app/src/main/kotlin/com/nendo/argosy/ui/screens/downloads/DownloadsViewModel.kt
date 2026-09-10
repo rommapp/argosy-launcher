@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -70,7 +71,8 @@ data class DownloadsUiState(
     val downloadState: DownloadQueueState = DownloadQueueState(),
     val focusedDownloadId: Long? = null,
     val maxActiveSlots: Int = 1,
-    val showFailedActionDialog: Boolean = false
+    val showFailedActionDialog: Boolean = false,
+    val isTouchMode: Boolean = false
 ) {
     val activeItems: List<DownloadProgress>
         get() = buildList {
@@ -131,8 +133,26 @@ data class DownloadsUiState(
         get() = orderedGroups.indexOfFirst { g -> g.items.any { it.id == focusedDownloadId } }
             .takeIf { it >= 0 } ?: 0
 
+    /**
+     * Position of the focused group in the rendered list, counting the section headers above it.
+     */
+    val focusedListIndex: Int
+        get() {
+            val active = activeGroups.size
+            val queued = queuedGroups.size
+            val index = focusedIndex
+            var headers = 0
+            if (active > 0) headers++
+            if (index >= active && queued > 0) headers++
+            if (index >= active + queued) headers++
+            return index + headers
+        }
+
     val focusedItem: DownloadProgress?
         get() = focusedGroup?.primary
+
+    val showTouchControls: Boolean
+        get() = isTouchMode && focusedItem != null
 
     val isFocusedItemCompleted: Boolean
         get() = focusedItem?.let { it.id in completedItems.map { c -> c.id } } ?: false
@@ -141,7 +161,7 @@ data class DownloadsUiState(
         get() = focusedItem?.state == DownloadState.FAILED
 
     val canToggle: Boolean
-        get() = focusedItem != null && !isFocusedItemCompleted
+        get() = focusedItem?.let { !isFocusedItemCompleted && it.state in TOGGLEABLE_STATES } ?: false
 
     val canCancel: Boolean
         get() = focusedItem != null && !isFocusedItemCompleted
@@ -156,7 +176,7 @@ data class DownloadsUiState(
     val toggleLabelRes: Int
         get() = when (focusedItem?.state) {
             DownloadState.DOWNLOADING -> R.string.downloads_action_pause
-            DownloadState.PAUSED, DownloadState.WAITING_FOR_STORAGE, DownloadState.FAILED -> R.string.downloads_action_resume
+            DownloadState.PAUSED, DownloadState.WAITING_FOR_STORAGE -> R.string.downloads_action_resume
             DownloadState.QUEUED -> R.string.downloads_action_pause
             else -> R.string.downloads_action_toggle
         }
@@ -225,11 +245,14 @@ class DownloadsViewModel @Inject constructor(
                     else -> allItems.firstOrNull()?.id
                 }
 
-                _uiState.value = _uiState.value.copy(
-                    downloadState = merged,
-                    focusedDownloadId = newFocusedId,
-                    maxActiveSlots = maxActive
-                )
+                _uiState.update {
+                    it.copy(
+                        downloadState = merged,
+                        focusedDownloadId = newFocusedId,
+                        maxActiveSlots = maxActive,
+                        isTouchMode = it.isTouchMode && newFocusedId == currentFocusedId
+                    )
+                }
             }
         }
 
@@ -422,10 +445,23 @@ class DownloadsViewModel @Inject constructor(
         val newIndex = (currentIndex + delta).coerceIn(0, groups.size - 1)
 
         if (newIndex != currentIndex) {
-            _uiState.value = currentState.copy(focusedDownloadId = groups[newIndex].primary.id)
+            _uiState.update { it.copy(focusedDownloadId = groups[newIndex].primary.id, isTouchMode = false) }
             return true
         }
         return false
+    }
+
+    private fun exitTouchMode() {
+        if (_uiState.value.isTouchMode) {
+            _uiState.update { it.copy(isTouchMode = false) }
+        }
+    }
+
+    fun handleRowTap(downloadId: Long) {
+        _uiState.update {
+            val sameRow = it.focusedDownloadId == downloadId
+            it.copy(focusedDownloadId = downloadId, isTouchMode = !(sameRow && it.isTouchMode))
+        }
     }
 
     private fun isMediaItem(item: DownloadProgress) = item.platformSlug == MEDIA_SLUG
@@ -454,8 +490,9 @@ class DownloadsViewModel @Inject constructor(
             }
             when (item.state) {
                 DownloadState.DOWNLOADING -> downloadManager.pauseDownload(item.rommId)
-                DownloadState.PAUSED, DownloadState.WAITING_FOR_STORAGE, DownloadState.FAILED ->
+                DownloadState.PAUSED, DownloadState.WAITING_FOR_STORAGE ->
                     downloadManager.resumeDownload(item.gameId)
+                DownloadState.FAILED -> downloadManager.retryDownload(item.id)
                 DownloadState.QUEUED -> downloadManager.pauseDownload(item.rommId)
                 else -> {}
             }
@@ -534,11 +571,24 @@ class DownloadsViewModel @Inject constructor(
         onBack: () -> Unit,
         onNavigateToGame: (Long) -> Unit
     ): InputHandler = object : InputHandler {
-        override fun onUp(): InputResult = if (moveFocus(-1)) InputResult.HANDLED else InputResult.UNHANDLED
-        override fun onDown(): InputResult = if (moveFocus(1)) InputResult.HANDLED else InputResult.UNHANDLED
-        override fun onLeft(): InputResult = InputResult.UNHANDLED
-        override fun onRight(): InputResult = InputResult.UNHANDLED
+        override fun onUp(): InputResult {
+            exitTouchMode()
+            return if (moveFocus(-1)) InputResult.HANDLED else InputResult.UNHANDLED
+        }
+        override fun onDown(): InputResult {
+            exitTouchMode()
+            return if (moveFocus(1)) InputResult.HANDLED else InputResult.UNHANDLED
+        }
+        override fun onLeft(): InputResult {
+            exitTouchMode()
+            return InputResult.UNHANDLED
+        }
+        override fun onRight(): InputResult {
+            exitTouchMode()
+            return InputResult.UNHANDLED
+        }
         override fun onConfirm(): InputResult {
+            exitTouchMode()
             val state = _uiState.value
             val item = state.focusedItem ?: return InputResult.UNHANDLED
 
@@ -559,11 +609,16 @@ class DownloadsViewModel @Inject constructor(
             }
         }
         override fun onBack(): InputResult {
+            exitTouchMode()
             onBack()
             return InputResult.HANDLED
         }
-        override fun onMenu(): InputResult = InputResult.UNHANDLED
+        override fun onMenu(): InputResult {
+            exitTouchMode()
+            return InputResult.UNHANDLED
+        }
         override fun onSecondaryAction(): InputResult {
+            exitTouchMode()
             if (_uiState.value.hasFinishedItems) {
                 clearFinished()
                 return InputResult.HANDLED
@@ -571,6 +626,7 @@ class DownloadsViewModel @Inject constructor(
             return InputResult.UNHANDLED
         }
         override fun onContextMenu(): InputResult {
+            exitTouchMode()
             val state = _uiState.value
             return when {
                 state.canRemove -> {
@@ -588,6 +644,13 @@ class DownloadsViewModel @Inject constructor(
 }
 
 private const val MEDIA_SLUG = "media"
+
+private val TOGGLEABLE_STATES = setOf(
+    DownloadState.DOWNLOADING,
+    DownloadState.QUEUED,
+    DownloadState.PAUSED,
+    DownloadState.WAITING_FOR_STORAGE
+)
 
 /**
  * Media rows share one list with rom and Steam rows, which is keyed on a Long. Steam already claims

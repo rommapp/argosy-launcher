@@ -295,6 +295,15 @@
     <string name="downloads_action_options">Options</string>
     <!-- Button. Verb: open the completed download's game. -->
     <string name="downloads_action_view">View</string>
+    <!-- Inline row button. Verb: cancel an in-progress or queued download.
+         Distinct key from downloads_hint_cancel (footer hint). -->
+    <string name="downloads_action_cancel">Cancel</string>
+    <!-- Inline row button. Verb: remove a finished download entry from the list.
+         Distinct key from downloads_hint_remove (footer hint). -->
+    <string name="downloads_action_remove">Remove</string>
+    <!-- Inline row button. Verb: retry a failed download.
+         Distinct key from downloads_failed_dialog_confirm (dialog button). -->
+    <string name="downloads_action_retry">Retry</string>
 
     <!-- === downloads/DownloadsViewModel.kt: Steam status messages === -->
     <string name="downloads_steam_status_preparing">Preparing&#8230;</string>

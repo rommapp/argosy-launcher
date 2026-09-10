@@ -177,6 +177,9 @@
     <string name="downloads_action_toggle">Umschalten</string>
     <string name="downloads_action_options">Optionen</string>
     <string name="downloads_action_view">Ansehen</string>
+    <string name="downloads_action_cancel">Abbrechen</string>
+    <string name="downloads_action_remove">Entfernen</string>
+    <string name="downloads_action_retry">Wiederholen</string>
 
     <string name="downloads_steam_status_preparing">Wird vorbereitet…</string>
     <string name="downloads_steam_status_connecting">Verbindung zu Steam wird hergestellt…</string>

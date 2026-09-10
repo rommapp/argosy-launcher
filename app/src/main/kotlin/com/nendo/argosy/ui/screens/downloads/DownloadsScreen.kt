@@ -60,8 +60,10 @@ import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.common.toNotificationText
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.InputButton
+import com.nendo.argosy.ui.components.animateScrollToItemCentered
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
+import com.nendo.argosy.ui.primitives.ActionButton
 import com.nendo.argosy.ui.primitives.ArgosyConfirmModalHost
 import com.nendo.argosy.ui.primitives.ArgosyProgressBar
 import com.nendo.argosy.ui.primitives.ProgressBarStyle
@@ -71,6 +73,7 @@ import com.nendo.argosy.ui.theme.LocalUiScale
 import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.theme.generated.ColorTokens
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
+import com.nendo.argosy.ui.util.clickableNoFocus
 import com.nendo.argosy.util.formatBytes
 
 @Composable
@@ -107,9 +110,9 @@ fun DownloadsScreen(
     val listState = rememberLazyListState()
     val context = LocalContext.current
 
-    LaunchedEffect(uiState.focusedIndex) {
+    LaunchedEffect(uiState.focusedListIndex) {
         if (uiState.allItems.isNotEmpty()) {
-            listState.animateScrollToItem(uiState.focusedIndex)
+            listState.animateScrollToItemCentered(uiState.focusedListIndex)
         }
     }
 
@@ -173,12 +176,15 @@ fun DownloadsScreen(
                     SectionHeader(headerText, if (totalSpeed > 0) formatSpeed(totalSpeed) else null)
                 }
                 itemsIndexed(activeGroups, key = { _, g -> g.primary.id }) { index, group ->
+                    val isFocused = index == uiState.focusedIndex
                     Column {
                         DownloadItem(
                             download = group.aggregate(context),
                             isInActiveList = true,
-                            isFocused = index == uiState.focusedIndex,
-                            availableStorage = state.availableStorageBytes
+                            isFocused = isFocused,
+                            availableStorage = state.availableStorageBytes,
+                            onTap = { viewModel.handleRowTap(group.primary.id) },
+                            controls = touchControlsFor(isFocused, uiState, viewModel)
                         )
                         if (group.isGroup) GroupFileRows(group)
                     }
@@ -188,12 +194,15 @@ fun DownloadsScreen(
             if (queuedGroups.isNotEmpty()) {
                 item { SectionHeader(stringResource(R.string.downloads_section_header_queued)) }
                 itemsIndexed(queuedGroups, key = { _, g -> g.primary.id }) { index, group ->
+                    val isFocused = (activeGroups.size + index) == uiState.focusedIndex
                     Column {
                         DownloadItem(
                             download = group.aggregate(context),
                             isInActiveList = false,
-                            isFocused = (activeGroups.size + index) == uiState.focusedIndex,
-                            availableStorage = state.availableStorageBytes
+                            isFocused = isFocused,
+                            availableStorage = state.availableStorageBytes,
+                            onTap = { viewModel.handleRowTap(group.primary.id) },
+                            controls = touchControlsFor(isFocused, uiState, viewModel)
                         )
                         if (group.isGroup) GroupFileRows(group)
                     }
@@ -204,9 +213,12 @@ fun DownloadsScreen(
                 item { SectionHeader(stringResource(R.string.downloads_section_header_finished)) }
                 val completedStartIndex = activeGroups.size + queuedGroups.size
                 itemsIndexed(completedGroups, key = { _, g -> g.primary.id }) { index, group ->
+                    val isFocused = (completedStartIndex + index) == uiState.focusedIndex
                     CompletedDownloadItem(
                         download = group.aggregate(context),
-                        isFocused = (completedStartIndex + index) == uiState.focusedIndex
+                        isFocused = isFocused,
+                        onTap = { viewModel.handleRowTap(group.primary.id) },
+                        controls = touchControlsFor(isFocused, uiState, viewModel)
                     )
                 }
             }
@@ -322,9 +334,55 @@ private fun SectionHeader(title: String, speedSuffix: String? = null) {
     }
 }
 
+private fun touchControlsFor(
+    isFocused: Boolean,
+    uiState: DownloadsUiState,
+    viewModel: DownloadsViewModel
+): (@Composable RowScope.() -> Unit)? {
+    if (!isFocused || !uiState.showTouchControls) return null
+    return {
+        DownloadControlStrip(
+            uiState = uiState,
+            onToggle = viewModel::toggleFocusedItem,
+            onCancel = viewModel::cancelFocusedItem,
+            onRemove = { uiState.focusedItem?.let { viewModel.removeFromCompleted(it.id) } },
+            onRetry = { uiState.focusedItem?.let { viewModel.retryDownload(it.id) } }
+        )
+    }
+}
+
+@Composable
+private fun DownloadControlStrip(
+    uiState: DownloadsUiState,
+    onToggle: () -> Unit,
+    onCancel: () -> Unit,
+    onRemove: () -> Unit,
+    onRetry: () -> Unit
+) {
+    when {
+        uiState.isFocusedItemFailed -> {
+            ActionButton(label = stringResource(R.string.downloads_action_retry), onClick = onRetry, primary = true)
+            ActionButton(label = stringResource(R.string.downloads_action_remove), onClick = onRemove)
+        }
+        uiState.canRemove -> {
+            ActionButton(label = stringResource(R.string.downloads_action_remove), onClick = onRemove)
+        }
+        else -> {
+            if (uiState.canToggle) {
+                ActionButton(label = stringResource(uiState.toggleLabelRes), onClick = onToggle, primary = true)
+            }
+            if (uiState.canCancel) {
+                ActionButton(label = stringResource(R.string.downloads_action_cancel), onClick = onCancel)
+            }
+        }
+    }
+}
+
 @Composable
 private fun DownloadCard(
     isFocused: Boolean,
+    onTap: () -> Unit,
+    controls: (@Composable RowScope.() -> Unit)?,
     content: @Composable RowScope.() -> Unit
 ) {
     val theme = LocalArgosyTheme.current
@@ -340,18 +398,35 @@ private fun DownloadCard(
         animationSpec = Motion.focusColorSpec,
         label = "download-wash"
     )
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .height((ComponentDefaults.DownloadItem.rowHeight * scale).dp)
             .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .background(washColor)
             .border(width = Dimens.borderThin, color = borderColor, shape = shape)
-            .padding(horizontal = Dimens.spacingMd),
-        verticalAlignment = Alignment.CenterVertically
+            .clickableNoFocus(onClick = onTap)
     ) {
-        content()
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height((ComponentDefaults.DownloadItem.rowHeight * scale).dp)
+                .padding(horizontal = Dimens.spacingMd),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            content()
+        }
+        if (controls != null) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = Dimens.spacingMd, end = Dimens.spacingMd, bottom = Dimens.spacingSm),
+                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                controls()
+            }
+        }
     }
 }
 
@@ -377,7 +452,9 @@ private fun DownloadItem(
     download: DownloadProgress,
     isInActiveList: Boolean,
     isFocused: Boolean,
-    availableStorage: Long
+    availableStorage: Long,
+    onTap: () -> Unit,
+    controls: (@Composable RowScope.() -> Unit)?
 ) {
     val theme = LocalArgosyTheme.current
     val workingColor = if (theme.isDark) ColorTokens.Semantic.Dark.progress else ColorTokens.Semantic.Light.progress
@@ -397,7 +474,7 @@ private fun DownloadItem(
         else -> Icons.Default.Schedule to theme.textMute
     }
 
-    DownloadCard(isFocused = isFocused) {
+    DownloadCard(isFocused = isFocused, onTap = onTap, controls = controls) {
         DownloadCover(download)
         Spacer(modifier = Modifier.width(Dimens.spacingMd))
         Column(
@@ -504,7 +581,9 @@ private fun DownloadItem(
 @Composable
 private fun CompletedDownloadItem(
     download: DownloadProgress,
-    isFocused: Boolean
+    isFocused: Boolean,
+    onTap: () -> Unit,
+    controls: (@Composable RowScope.() -> Unit)?
 ) {
     val theme = LocalArgosyTheme.current
     val (icon, iconColor) = when (download.state) {
@@ -513,7 +592,7 @@ private fun CompletedDownloadItem(
         else -> Icons.Default.CheckCircle to theme.textMute
     }
 
-    DownloadCard(isFocused = isFocused) {
+    DownloadCard(isFocused = isFocused, onTap = onTap, controls = controls) {
         DownloadCover(download)
         Spacer(modifier = Modifier.width(Dimens.spacingMd))
         Column(

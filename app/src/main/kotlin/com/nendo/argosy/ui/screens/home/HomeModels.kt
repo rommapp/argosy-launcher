@@ -8,6 +8,7 @@ import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.local.entity.getDisplayName
 import com.nendo.argosy.data.media.MediaAvailability
+import com.nendo.argosy.data.model.SortableProps
 import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.data.preferences.HomeBackgroundMode
 import com.nendo.argosy.domain.model.HomeSectionKind
@@ -110,6 +111,20 @@ data class HomeGameUi(
     val timeToBeatCompletionistSec: Int? = null,
     val players: String? = null
 )
+
+object HomeGameUiSortProps : SortableProps<HomeGameUi> {
+    override fun isInstalled(item: HomeGameUi) = item.isDownloaded
+    override fun isFavorite(item: HomeGameUi) = item.isFavorite
+    override fun sortTitle(item: HomeGameUi) = item.sortTitle
+    override fun rating(item: HomeGameUi) = item.rating
+    override fun userRating(item: HomeGameUi) = item.userRating
+    override fun userDifficulty(item: HomeGameUi) = item.userDifficulty
+    override fun releaseYear(item: HomeGameUi) = item.releaseYear
+    override fun playCount(item: HomeGameUi) = item.playCount
+    override fun playTimeMinutes(item: HomeGameUi) = item.playTimeMinutes
+    override fun lastPlayedEpochMilli(item: HomeGameUi) = item.lastPlayedAt
+    override fun addedAtEpochMilli(item: HomeGameUi) = item.addedAt ?: 0L
+}
 
 /**
  * One tile on a media row.

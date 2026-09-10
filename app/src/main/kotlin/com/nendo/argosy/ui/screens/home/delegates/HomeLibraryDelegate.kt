@@ -4,12 +4,9 @@ import android.content.Context
 import com.nendo.argosy.R
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.getDisplayName
-import com.nendo.argosy.data.model.ActiveSort
-import com.nendo.argosy.data.model.GameEntityProps
 import com.nendo.argosy.data.model.GameSource
-import com.nendo.argosy.data.model.SortOption
-import com.nendo.argosy.data.model.SortPartition
-import com.nendo.argosy.data.model.computePartitionedSections
+import com.nendo.argosy.data.model.orderedForEveryGame
+import com.nendo.argosy.data.model.tieredByOwnership
 import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.platform.LocalPlatformIds
 import com.nendo.argosy.data.preferences.BoxArtBorderStyle
@@ -32,6 +29,7 @@ import com.nendo.argosy.ui.common.toHomeGameUi
 import com.nendo.argosy.ui.screens.common.GameGradientRequest
 import com.nendo.argosy.ui.screens.common.GradientExtractionDelegate
 import com.nendo.argosy.ui.screens.home.HomeGameUi
+import com.nendo.argosy.ui.screens.home.HomeGameUiSortProps
 import com.nendo.argosy.ui.screens.home.HomePlatformUi
 import com.nendo.argosy.ui.screens.home.HomeRow
 import com.nendo.argosy.ui.screens.home.HomeRowItem
@@ -159,8 +157,7 @@ class HomeLibraryDelegate @Inject constructor(
         var favorites = gameRepository.getFavorites()
         val androidGames = gameRepository.getByPlatformSorted(LocalPlatformIds.ANDROID, limit = PLATFORM_GAMES_LIMIT)
             .let { if (installedOnly) filterPlayable(it) else it }
-        val steamGames = gameRepository.getByPlatformSorted(LocalPlatformIds.STEAM, limit = PLATFORM_GAMES_LIMIT)
-            .let { if (installedOnly) filterSteamInstalled(it) else it }
+        val steamGameUis = loadSteamRow(installedOnly)
 
         val newThreshold = Instant.now().minus(NEW_GAME_THRESHOLD_HOURS, ChronoUnit.HOURS)
         var recentlyPlayed = gameRepository.getRecentlyPlayed(RECENT_GAMES_CANDIDATE_POOL)
@@ -187,7 +184,6 @@ class HomeLibraryDelegate @Inject constructor(
         val platformUis = platforms.map { it.toHomePlatformUi(emulatorDetector) }
         val favoriteUis = favorites.map { it.toUi() }
         val androidGameUis = androidGames.map { it.toUi() }
-        val steamGameUis = steamGames.map { it.toUi() }
 
         val startRow = when {
             validatedRecent.isNotEmpty() -> HomeRow.Continue
@@ -395,9 +391,7 @@ class HomeLibraryDelegate @Inject constructor(
         val androidGames = gameRepository.getByPlatformSorted(LocalPlatformIds.ANDROID, limit = PLATFORM_GAMES_LIMIT)
             .let { if (installedOnly) filterPlayable(it) else it }
         val androidGameUis = androidGames.map { it.toUi() }
-        val steamGames = gameRepository.getByPlatformSorted(LocalPlatformIds.STEAM, limit = PLATFORM_GAMES_LIMIT)
-            .let { if (installedOnly) filterSteamInstalled(it) else it }
-        val steamGameUis = steamGames.map { it.toUi() }
+        val steamGameUis = loadSteamRow(installedOnly)
         _state.update {
             it.copy(
                 platforms = platformUis,
@@ -418,11 +412,8 @@ class HomeLibraryDelegate @Inject constructor(
         if (prefs.installedOnlyHome) {
             games = filterPlayable(games)
         }
-        if (uncapped) {
-            games = orderedForEveryGame(games, prefs)
-        }
         val platform = _state.value.platforms.getOrNull(platformIndex)
-        val gameItems: List<HomeRowItem> = games.map { HomeRowItem.Game(it.toUi()) }
+        val gameItems: List<HomeRowItem> = orderedPlatformRow(games, uncapped).map { HomeRowItem.Game(it) }
         val items: List<HomeRowItem> = if (platform != null && !uncapped) {
             gameItems + HomeRowItem.ViewAll(
                 platformId = platform.id,
@@ -444,26 +435,9 @@ class HomeLibraryDelegate @Inject constructor(
         prefs.homeLayout.selected == HomeLayoutKind.AUTO_GRID &&
             prefs.homeLayout.autoGrid.showAllGames
 
-    /**
-     * Put a whole platform in the order the user chose for their library.
-     *
-     * The DAO's order leads with what is installed, favourited and recently played and then falls
-     * back to community rating, which suits a rail of twenty covers and reads as shuffled once the
-     * row carries hundreds.
-     */
-    private fun orderedForEveryGame(
-        games: List<GameEntity>,
-        prefs: UserPreferences
-    ): List<GameEntity> {
-        val option = runCatching { SortOption.valueOf(prefs.libraryDefaultSort) }
-            .getOrDefault(SortOption.TITLE)
-        val sort = ActiveSort(option, prefs.libraryDefaultSortDescending ?: option.defaultDescending)
-        val partition = SortPartition(
-            installedFirst = prefs.sortInstalledFirst,
-            favoritesFirst = prefs.sortFavoritesFirst
-        )
-        return computePartitionedSections(games, sort, GameEntityProps, partition)
-            .flatMap { it.items }
+    private suspend fun orderedPlatformRow(games: List<GameEntity>, uncapped: Boolean): List<HomeGameUi> {
+        val gameUis = games.map { it.toUi() }
+        return if (uncapped) orderedForEveryGame(gameUis, HomeGameUiSortProps) else gameUis
     }
 
     suspend fun loadGamesForPinnedCollection(pinId: Long) {
@@ -529,10 +503,7 @@ class HomeLibraryDelegate @Inject constructor(
                 if (prefs.installedOnlyHome) {
                     games = filterPlayable(games)
                 }
-                if (uncapped) {
-                    games = orderedForEveryGame(games, prefs)
-                }
-                val gameItems: List<HomeRowItem> = games.map { HomeRowItem.Game(it.toUi()) }
+                val gameItems: List<HomeRowItem> = orderedPlatformRow(games, uncapped).map { HomeRowItem.Game(it) }
                 val items: List<HomeRowItem> = if (uncapped) {
                     gameItems
                 } else {
@@ -559,9 +530,7 @@ class HomeLibraryDelegate @Inject constructor(
             }
             HomeRow.Steam -> {
                 val installedOnly = preferencesRepository.userPreferences.first().installedOnlyHome
-                val games = gameRepository.getByPlatformSorted(LocalPlatformIds.STEAM, limit = PLATFORM_GAMES_LIMIT)
-                    .let { if (installedOnly) filterSteamInstalled(it) else it }
-                val gameUis = games.map { it.toUi() }
+                val gameUis = loadSteamRow(installedOnly)
                 _state.update { it.copy(steamGames = gameUis) }
                 RefreshResult(gameUis.map { it.id }, isEmpty = gameUis.isEmpty())
             }
@@ -908,8 +877,16 @@ class HomeLibraryDelegate @Inject constructor(
         gradientColors = gradientExtractionDelegate.getGradient(id)
     )
 
-    private suspend fun filterSteamInstalled(games: List<GameEntity>): List<GameEntity> =
-        games.filter { steamPathResolver.isGameInstalled(it) }
+    private suspend fun loadSteamRow(installedOnly: Boolean): List<HomeGameUi> {
+        val candidates = gameRepository.getByPlatformSorted(LocalPlatformIds.STEAM, limit = PLATFORM_GAMES_LIMIT)
+        withContext(Dispatchers.IO) {
+            candidates.forEach { steamPathResolver.isGameInstalled(it) }
+        }
+        val games = gameRepository.getByPlatformSorted(LocalPlatformIds.STEAM, limit = PLATFORM_GAMES_LIMIT)
+            .map { it.toUi() }
+        val shown = if (installedOnly) games.filter { it.isDownloaded } else games
+        return tieredByOwnership(shown, HomeGameUiSortProps)
+    }
 }
 
 data class RefreshResult(

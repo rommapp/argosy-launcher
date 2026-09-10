@@ -54,10 +54,20 @@ class DownloadFileStatusRepository @Inject constructor(
      */
     suspend fun isContentAvailable(game: GameEntity): Boolean = when {
         game.source == GameSource.ANDROID_APP -> true
+        game.steamAppId != null -> isSteamInstalled(game.isExternallyManaged, game.localPath)
         game.isExternallyManaged -> true
         game.localPath != null -> pathExists(game.localPath)
         else -> false
     }
+
+    /**
+     * Whether a Steam game can be played: handed to another launcher, or carrying the completion
+     * marker under its install path. The path column alone does not answer it. A download in
+     * flight has a path and no marker, and an install removed behind the app's back keeps its
+     * path until a validation pass clears it. Every tile and every home ordering reads this.
+     */
+    suspend fun isSteamInstalled(isExternallyManaged: Boolean, localPath: String?): Boolean =
+        isExternallyManaged || isDownloadComplete(localPath)
 
     private fun joinMarker(localPath: String, marker: String): String =
         "${localPath.trimEnd('/')}/$marker"

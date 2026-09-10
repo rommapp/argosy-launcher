@@ -16,9 +16,7 @@ private suspend fun GameEntity.resolveDownloaded(
     downloadStatus: DownloadFileStatusRepository
 ): Boolean = when {
     source == GameSource.ANDROID_APP -> true
-    steamAppId != null && isExternallyManaged -> true
-    steamAppId != null && localPath != null ->
-        downloadStatus.isDownloadComplete(localPath)
+    steamAppId != null -> downloadStatus.isSteamInstalled(isExternallyManaged, localPath)
     else -> localPath != null
 }
 
@@ -26,9 +24,7 @@ private suspend fun GameListItem.resolveDownloaded(
     downloadStatus: DownloadFileStatusRepository
 ): Boolean = when {
     source == GameSource.ANDROID_APP -> true
-    steamAppId != null && isExternallyManaged -> true
-    steamAppId != null && localPath != null ->
-        downloadStatus.isDownloadComplete(localPath)
+    steamAppId != null -> downloadStatus.isSteamInstalled(isExternallyManaged, localPath)
     else -> localPath != null
 }
 

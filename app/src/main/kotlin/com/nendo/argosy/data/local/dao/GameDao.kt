@@ -652,7 +652,13 @@ interface GameDao {
     @Delete
     suspend fun delete(game: GameEntity)
 
-    @Query("UPDATE games SET localPath = NULL, fileOrigin = 'ADOPTED', source = 'ROMM_REMOTE' WHERE id = :gameId")
+    @Query("""
+        UPDATE games
+        SET localPath = NULL,
+            fileOrigin = 'ADOPTED',
+            source = CASE WHEN source = 'ROMM_SYNCED' THEN 'ROMM_REMOTE' ELSE source END
+        WHERE id = :gameId
+    """)
     suspend fun clearLocalPath(gameId: Long)
 
     @Query("UPDATE games SET backgroundPath = :path WHERE id = :gameId")

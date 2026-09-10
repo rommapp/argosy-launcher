@@ -111,6 +111,21 @@ private fun <T> flatOrdered(
     props: SortableProps<T>
 ): List<T> = orderedSections(items, sort, props).flatMap { it.items }
 
+private val HOME_TITLE_ORDER = ActiveSort(SortOption.TITLE, descending = false)
+
+fun <T> ownershipTier(item: T, props: SortableProps<T>): Int = when {
+    props.isInstalled(item) && props.isFavorite(item) -> 0
+    props.isInstalled(item) -> 1
+    props.isFavorite(item) -> 2
+    else -> 3
+}
+
+fun <T> tieredByOwnership(items: List<T>, props: SortableProps<T>): List<T> =
+    items.sortedBy { ownershipTier(it, props) }
+
+fun <T> orderedForEveryGame(items: List<T>, props: SortableProps<T>): List<T> =
+    tieredByOwnership(flatOrdered(items, HOME_TITLE_ORDER, props), props)
+
 fun <T> computeGenericSections(
     items: List<T>,
     sort: ActiveSort,

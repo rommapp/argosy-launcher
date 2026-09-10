@@ -38,8 +38,9 @@ import com.nendo.argosy.data.model.ActiveSort
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.model.Section
 import com.nendo.argosy.data.model.SortOption
-import com.nendo.argosy.data.model.SortableProps
 import com.nendo.argosy.data.model.computeGenericSections
+import com.nendo.argosy.data.model.orderedForEveryGame
+import com.nendo.argosy.data.model.tieredByOwnership
 import com.nendo.argosy.domain.usecase.cache.RepairImageCacheUseCase
 import com.nendo.argosy.ui.common.GridDirection
 import com.nendo.argosy.ui.common.GridFocusNavigator
@@ -48,6 +49,7 @@ import com.nendo.argosy.ui.components.autoGridMove
 import com.nendo.argosy.ui.common.toHomeGameUi
 import com.nendo.argosy.ui.screens.home.GameDownloadIndicator
 import com.nendo.argosy.ui.screens.home.HomeGameUi
+import com.nendo.argosy.ui.screens.home.HomeGameUiSortProps
 import com.nendo.argosy.ui.screens.home.toHomeMediaUi
 import com.nendo.argosy.ui.screens.media.episodeLabel
 import com.nendo.argosy.ui.screens.media.toCompanionDetail
@@ -1144,7 +1146,8 @@ class DualHomeViewModel(
                     section.id, limit = platformLimit
                 )
                 if (installedOnly) platformGames = filterPlayable(platformGames)
-                platformGames.map { it.toUi() }
+                val platformUis = platformGames.map { it.toUi() }
+                if (uncapped) orderedForEveryGame(platformUis, HomeGameUiSortProps) else platformUis
             }
             is DualHomeSection.Recommendations -> {
                 val ids = recommendedGameIds()
@@ -1159,9 +1162,10 @@ class DualHomeViewModel(
                 androidGames.map { it.toUi() }
             }
             is DualHomeSection.Steam -> {
-                gameRepository.getByPlatformSorted(
+                val steamUis = gameRepository.getByPlatformSorted(
                     LocalPlatformIds.STEAM, limit = platformLimit
                 ).map { it.toUi() }
+                tieredByOwnership(steamUis, HomeGameUiSortProps)
             }
             is DualHomeSection.Pinned -> {
                 var pinnedGames = getGamesForPinnedCollectionUseCase?.invoke(section.pinned)?.first().orEmpty()
@@ -3550,18 +3554,4 @@ class DualHomeViewModel(
             pendingCoverRepairs.remove(gameId)
         }
     }
-}
-
-object HomeGameUiSortProps : SortableProps<HomeGameUi> {
-    override fun isInstalled(item: HomeGameUi) = item.isDownloaded
-    override fun isFavorite(item: HomeGameUi) = item.isFavorite
-    override fun sortTitle(item: HomeGameUi) = item.sortTitle
-    override fun rating(item: HomeGameUi) = item.rating
-    override fun userRating(item: HomeGameUi) = item.userRating
-    override fun userDifficulty(item: HomeGameUi) = item.userDifficulty
-    override fun releaseYear(item: HomeGameUi) = item.releaseYear
-    override fun playCount(item: HomeGameUi) = item.playCount
-    override fun playTimeMinutes(item: HomeGameUi) = item.playTimeMinutes
-    override fun lastPlayedEpochMilli(item: HomeGameUi) = item.lastPlayedAt
-    override fun addedAtEpochMilli(item: HomeGameUi) = item.addedAt ?: 0L
 }

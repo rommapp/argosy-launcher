@@ -64,9 +64,7 @@ class GamepadInputHandler @Inject constructor(
     private var swapXY = false
     private var swapStartSelect = false
 
-    private enum class ModifierState { IDLE, HELD, COMBO_FIRED }
-    private var modifierState = ModifierState.IDLE
-    private var comboMap: Map<GamepadEvent, GamepadEvent> = emptyMap()
+    private val selectModifier = SelectModifier()
 
     override var lastInputDevice: InputDevice? = null
         private set
@@ -80,22 +78,9 @@ class GamepadInputHandler @Inject constructor(
                 swapAB = prefs.swapAB
                 swapXY = prefs.swapXY
                 swapStartSelect = prefs.swapStartSelect
-                comboMap = buildComboMap(prefs.selectLCombo, prefs.selectRCombo)
+                selectModifier.comboMap = SelectModifier.comboMapFrom(prefs.selectLCombo, prefs.selectRCombo)
             }
         }
-    }
-
-    private fun buildComboMap(selectL: String, selectR: String): Map<GamepadEvent, GamepadEvent> {
-        val map = mutableMapOf<GamepadEvent, GamepadEvent>()
-        comboActionToEvent(selectL)?.let { map[GamepadEvent.PrevSection] = it }
-        comboActionToEvent(selectR)?.let { map[GamepadEvent.NextSection] = it }
-        return map
-    }
-
-    private fun comboActionToEvent(action: String): GamepadEvent? = when (action) {
-        "quick_menu" -> GamepadEvent.LeftStickClick
-        "quick_settings" -> GamepadEvent.RightStickClick
-        else -> null
     }
 
     fun eventFlow(): Flow<GamepadInput> = _events.asSharedFlow()
@@ -121,7 +106,7 @@ class GamepadInputHandler @Inject constructor(
 
     override fun setRawKeyEventListener(listener: ((KeyEvent) -> Boolean)?) {
         rawKeyEventListener = listener
-        if (listener != null) modifierState = ModifierState.IDLE
+        if (listener != null) selectModifier.reset()
     }
 
     override fun setRawMotionEventListener(listener: ((MotionEvent) -> Boolean)?) {
@@ -163,6 +148,11 @@ class GamepadInputHandler @Inject constructor(
         return false
     }
 
+    /**
+     * Confirm is deferred by the long-press threshold on a coroutine timer rather than decided on
+     * release: controllers send repeated ACTION_DOWN and an unreliable ACTION_UP, so the timer
+     * firing while the button is still held is what turns a Confirm into a LongConfirm.
+     */
     fun handleKeyEvent(event: KeyEvent): Boolean {
         if (event.action == KeyEvent.ACTION_DOWN) {
             lastInputDevice = event.device
@@ -175,28 +165,6 @@ class GamepadInputHandler @Inject constructor(
 
         val gamepadEvent = mapKeyToEvent(event.keyCode) ?: return false
 
-        // Select modifier: hold Select to enter alt-mode for combo shortcuts
-        if (gamepadEvent == GamepadEvent.Select && comboMap.isNotEmpty()) {
-            when (event.action) {
-                KeyEvent.ACTION_DOWN -> {
-                    modifierState = ModifierState.HELD
-                    return true
-                }
-                KeyEvent.ACTION_UP -> {
-                    val wasHeld = modifierState == ModifierState.HELD
-                    modifierState = ModifierState.IDLE
-                    if (wasHeld) {
-                        emitWithDebounce(GamepadEvent.Select)
-                    }
-                    return true
-                }
-            }
-        }
-
-        // Confirm long-press: defer Confirm by the threshold duration. If the button is still
-        // held when the timer fires, emit LongConfirm instead. If released (no more repeats),
-        // the deferred Confirm fires. Uses a coroutine timer since ACTION_UP is unreliable
-        // (controllers send repeated ACTION_DOWN instead).
         if (gamepadEvent == GamepadEvent.Confirm && event.action == KeyEvent.ACTION_DOWN) {
             if (event.repeatCount == 0) {
                 confirmDownTime = System.currentTimeMillis()
@@ -228,23 +196,15 @@ class GamepadInputHandler @Inject constructor(
             return true
         }
 
-        if (event.action != KeyEvent.ACTION_DOWN) return true
-
-        val isRepeat = event.repeatCount > 0
-
-        val signature = InputSignature.of(event)
-
-        // While Select is held, check combo map before normal dispatch
-        if (modifierState == ModifierState.HELD || modifierState == ModifierState.COMBO_FIRED) {
-            val comboEvent = comboMap[gamepadEvent]
-            if (comboEvent != null) {
-                modifierState = ModifierState.COMBO_FIRED
-                emitWithDebounce(comboEvent, isRepeat, signature)
-                return true
-            }
+        val emitted = selectModifier.filter(gamepadEvent, event.action) ?: return true
+        if (event.action == KeyEvent.ACTION_UP) {
+            emitWithDebounce(emitted)
+            return true
         }
 
-        emitWithDebounce(gamepadEvent, isRepeat, signature)
+        val isRepeat = event.repeatCount > 0
+        val signature = InputSignature.of(event)
+        emitWithDebounce(emitted, isRepeat, signature)
         return true
     }
 

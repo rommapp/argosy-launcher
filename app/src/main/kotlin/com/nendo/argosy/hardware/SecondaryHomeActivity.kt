@@ -46,7 +46,10 @@ import com.nendo.argosy.ui.input.LocalABIconsSwapped
 import com.nendo.argosy.ui.input.LocalXYIconsSwapped
 import com.nendo.argosy.ui.dualscreen.CompanionDetail
 import com.nendo.argosy.ui.dualscreen.CompanionDetailScreen
+import com.nendo.argosy.ui.input.GamepadEvent
+import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.LocalSwapStartSelect
+import com.nendo.argosy.ui.input.SelectModifier
 import com.nendo.argosy.ui.input.mapKeycodeToGamepadEvent
 import com.nendo.argosy.ui.screens.secondaryhome.SecondaryHomeViewModel
 import com.nendo.argosy.util.Logger
@@ -135,7 +138,7 @@ class SecondaryHomeActivity :
     private var abIconsSwapped by mutableStateOf(false)
     private var xyIconsSwapped by mutableStateOf(false)
     private var startSelectSwapped by mutableStateOf(false)
-
+    private val selectModifier = SelectModifier()
 
     private lateinit var broadcasts: SecondaryHomeBroadcastHelper
     private lateinit var inputHandler: SecondaryHomeInputHandler
@@ -533,27 +536,34 @@ class SecondaryHomeActivity :
             return false
         }
         val gamepadEvent = mapKeycodeToGamepadEvent(keyCode, swapAB, swapXY, swapStartSelect)
-        if (gamepadEvent == com.nendo.argosy.ui.input.GamepadEvent.Confirm && deferConfirm()) {
+            ?: return false
+        val pressed = selectModifier.filter(gamepadEvent, android.view.KeyEvent.ACTION_DOWN)
+            ?: return true
+        if (pressed == GamepadEvent.Confirm && deferConfirm()) {
             if (event.repeatCount == 0) beginConfirmHold()
             return true
         }
-        if (event.repeatCount == 0 && gamepadEvent != null) {
-            val result = inputHandler.routeInput(
-                gamepadEvent, true, isGameActive, currentScreen
-            )
-            if (::dsm.isInitialized) dsm.inputFeedback.play(gamepadEvent, result)
-            if (result.handled) return true
-        }
-        return false
+        if (event.repeatCount > 0) return false
+        return routeCompanionEvent(pressed).handled
     }
 
     private fun handleGamepadKeyUp(keyCode: Int, event: android.view.KeyEvent): Boolean {
         val gamepadEvent = mapKeycodeToGamepadEvent(keyCode, swapAB, swapXY, swapStartSelect)
-        if (gamepadEvent == com.nendo.argosy.ui.input.GamepadEvent.Confirm && confirmHoldJob != null) {
+            ?: return false
+        if (gamepadEvent == GamepadEvent.Confirm && confirmHoldJob != null) {
             endConfirmHold()
             return true
         }
-        return false
+        val released = selectModifier.filter(gamepadEvent, android.view.KeyEvent.ACTION_UP)
+            ?: return false
+        if (isShowcaseRole) return false
+        return routeCompanionEvent(released).handled
+    }
+
+    private fun routeCompanionEvent(event: GamepadEvent): InputResult {
+        val result = inputHandler.routeInput(event, true, isGameActive, currentScreen)
+        if (::dsm.isInitialized) dsm.inputFeedback.play(event, result)
+        return result
     }
 
     /**
@@ -858,7 +868,7 @@ class SecondaryHomeActivity :
             }
         }
         val gamepadEvent = mapKeycodeToGamepadEvent(keyCode, swapAB, swapXY, swapStartSelect) ?: return
-        if (gamepadEvent == com.nendo.argosy.ui.input.GamepadEvent.Confirm &&
+        if (gamepadEvent == GamepadEvent.Confirm &&
             (confirmHoldJob != null || deferConfirm())
         ) {
             when (action) {
@@ -867,9 +877,9 @@ class SecondaryHomeActivity :
             }
             return
         }
-        if (action == android.view.KeyEvent.ACTION_DOWN && repeatCount == 0) {
-            inputHandler.routeInput(gamepadEvent, true, isGameActive, currentScreen)
-        }
+        val routed = selectModifier.filter(gamepadEvent, action) ?: return
+        if (action == android.view.KeyEvent.ACTION_DOWN && repeatCount > 0) return
+        inputHandler.routeInput(routed, true, isGameActive, currentScreen)
     }
 
     /**
@@ -1229,6 +1239,8 @@ class SecondaryHomeActivity :
         lifecycleScope.launch {
             dsm.preferencesRepository.userPreferences.collect { prefs ->
                 applyInputSwapState(stateManager.inputSwapStateFrom(prefs))
+                selectModifier.comboMap =
+                    SelectModifier.comboMapFrom(prefs.selectLCombo, prefs.selectRCombo)
             }
         }
         dimWhileMediaIdle()

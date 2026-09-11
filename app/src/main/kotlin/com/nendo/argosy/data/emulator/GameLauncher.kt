@@ -293,6 +293,7 @@ class GameLauncher @Inject constructor(
 
         var builtInDiscM3u: String? = null
         if (emulator.launchConfig.isInProcess && romFile.extension.equals("m3u", ignoreCase = true)) {
+            romFile = repairedPlaylistOr(game, romFile)
             val firstDisc = if (selectedDiscPath != null) File(selectedDiscPath) else M3uManager.parseFirstDisc(romFile)
             if (firstDisc != null && firstDisc.exists()) {
                 Logger.info(TAG, "Built-in: loading disc ${firstDisc.name} directly instead of m3u ${romFile.name}")
@@ -423,8 +424,33 @@ class GameLauncher @Inject constructor(
      * launcher hands the core one disc instead of the playlist, and a core that decides an m3u by
      * substring reads that disc as a playlist and fails to open it.
      */
+    private suspend fun repairedPlaylistOr(game: GameEntity, playlist: File): File {
+        if (M3uManager.parseFirstDisc(playlist)?.exists() == true) return playlist
+        Logger.warn(TAG, "playlist ${playlist.name} names no disc that exists; rebuilding it for gameId=${game.id}")
+        return when (val result = m3uManager.ensureM3u(game)) {
+            is M3uResult.Valid -> result.m3uFile
+            is M3uResult.Generated -> result.m3uFile.also {
+                Logger.info(TAG, "playlist rebuilt for gameId=${game.id}: ${it.absolutePath}")
+            }
+            is M3uResult.SingleDisc -> result.discFile
+            else -> playlist
+        }
+    }
+
     private suspend fun backfillDiscModel(game: GameEntity): GameEntity {
         if (game.isMultiDisc) return game
+
+        val registered = gameDiscDao.getDiscsForGame(game.id)
+        if (registered.size >= 2) {
+            val restored = game.copy(isMultiDisc = true)
+            gameDao.update(restored)
+            Logger.info(
+                TAG,
+                "backfillDiscModel: gameId=${game.id} already had ${registered.size} discs registered; " +
+                    "restoring the multi-disc flag"
+            )
+            return restored
+        }
 
         val discFiles = gameFileDao.getFilesForGame(game.id)
             .mapNotNull { file ->

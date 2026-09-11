@@ -331,6 +331,20 @@ interface RomMApi {
     ): Response<RomMPlaySessionIngestResponse>
 
     /**
+     * Sessions the server holds, scoped to the calling device unless [deviceId] names another
+     * of the account's devices. Pages by [offset]; the server default limit is 50.
+     */
+    @GET("api/play-sessions")
+    suspend fun getPlaySessions(
+        @Query("rom_id") romId: Long? = null,
+        @Query("device_id") deviceId: String? = null,
+        @Query("start_after") startAfter: String? = null,
+        @Query("end_before") endBefore: String? = null,
+        @Query("limit") limit: Int = 50,
+        @Query("offset") offset: Int = 0
+    ): Response<List<RomMPlaySession>>
+
+    /**
      * Says this device is playing [RomMActivityHeartbeatPayload.romId] right now. The server holds
      * it for 90 seconds, so it has to be repeated while play continues; the reply is discarded
      * because everything it carries is already known here.

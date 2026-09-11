@@ -90,6 +90,10 @@
     </plurals>
     <!-- Second line of that row when nothing is on the device. -->
     <string name="settings_main_storage_subtitle_empty">No downloads</string>
+    <!-- Row opening the play-time hub. "Play" is the noun: time spent playing. -->
+    <string name="settings_main_play_time_title">Play Time</string>
+    <!-- Second line of that row, listing what the hub shows. -->
+    <string name="settings_main_play_time_subtitle">Patterns, top games, devices</string>
 
     <!-- Row opening the RomM game server settings. Proper name of the server software Argosy
          talks to, never translated. -->
@@ -4321,4 +4325,204 @@
     <string name="settings_main_language_name_zh_hant" translatable="false">&#32321;&#39636;&#20013;&#25991;</string>
     <string name="settings_main_language_name_ru" translatable="false">&#1056;&#1091;&#1089;&#1089;&#1082;&#1080;&#1081;</string>
     <string name="settings_main_language_name_hi" translatable="false">&#2361;&#2367;&#2344;&#2381;&#2342;&#2368;</string>
+
+    <!-- ===== Play Time hub ===== -->
+    <!-- Throughout this block "play" and "session" are nouns: a session is one sitting with a
+         game, from launch to close. Rendered in caps in English where noted. -->
+
+    <!-- Rail entry for the day-by-day calendar at the top. Noun. Caps in English. -->
+    <string name="settings_play_time_section_activity">ACTIVITY</string>
+    <!-- Heading over the weekday-by-hour waveform. Caps in English. -->
+    <string name="settings_play_time_section_when">WHEN YOU PLAY</string>
+    <!-- Heading over the platform figures. Caps in English. -->
+    <string name="settings_play_time_section_platforms">PLATFORMS</string>
+    <!-- Heading over the device figures. Caps in English. -->
+    <string name="settings_play_time_section_where">DEVICES</string>
+    <!-- Heading over the top-games figures. Caps in English. -->
+    <string name="settings_play_time_section_what">WHAT YOU PLAY</string>
+    <!-- Heading over the grid of single-number readings. Caps in English. -->
+    <string name="settings_play_time_section_facts">QUICK FACTS</string>
+    <!-- Heading over the server rows. Product name, never translated. -->
+    <string name="settings_play_time_section_romm" translatable="false">ROMM</string>
+
+    <string name="settings_play_time_loading_title">Reading sessions...</string>
+    <string name="settings_play_time_loading_message">Your play patterns will appear in a moment.</string>
+    <string name="settings_play_time_empty_title">No play sessions yet</string>
+    <string name="settings_play_time_empty_message">Play a game and your patterns will build up here. Refresh from RomM to include sessions from your other devices.</string>
+
+    <!-- Replaces the summary when the window holds no play. -->
+    <string name="settings_play_time_summary_empty">Nothing played yet. Start a game and it lands here.</string>
+    <!-- Summary stats beside the calendar. Labels sit under their figure. -->
+    <string name="settings_play_time_summary_total">Played</string>
+    <string name="settings_play_time_summary_platforms">Platforms</string>
+    <string name="settings_play_time_summary_peak">Busiest hour</string>
+    <string name="settings_play_time_summary_device">Most played on</string>
+    <!-- Summary window length under the total; the argument is the day count. -->
+    <plurals name="settings_play_time_summary_window">
+        <item quantity="one">Across %d day</item>
+        <item quantity="other">Across %d days</item>
+    </plurals>
+    <!-- Busiest hour figure: %1$s is a weekday name, %2$s a clock time such as "6:00 PM". -->
+    <string name="settings_play_time_summary_peak_value">%1$s %2$s</string>
+
+    <!-- Row choosing how many days the calendar, waveform and timeline cover. Noun. -->
+    <!-- Calendar card header when every day in the range is empty. -->
+    <string name="settings_play_time_activity_empty">No play in this range</string>
+    <!-- Streak: days in a row with at least one session, counted up to today. -->
+    <string name="settings_play_time_streak_current">Current streak</string>
+    <string name="settings_play_time_streak_longest">Longest streak</string>
+    <plurals name="settings_play_time_streak_days">
+        <item quantity="one">%d day</item>
+        <item quantity="other">%d days</item>
+    </plurals>
+    <!-- Calendar card subtitle while a day is selected: how many games were played that day. -->
+    <plurals name="settings_play_time_day_game_count">
+        <item quantity="one">%d game</item>
+        <item quantity="other">%d games</item>
+    </plurals>
+    <!-- Day breakdown when the selected day holds no sessions. -->
+    <string name="settings_play_time_day_empty">Nothing played</string>
+    <!-- Sitting count under a day breakdown row's duration, shown only above one. Multiplication sign. -->
+    <string name="settings_play_time_day_session_count">%1$dx</string>
+    <!-- Day breakdown footer for games past the rows that fit. -->
+    <plurals name="settings_play_time_day_more">
+        <item quantity="one">%d more game</item>
+        <item quantity="other">%d more games</item>
+    </plurals>
+
+    <!-- Waveform card header: the scrubbed weekday (%1$s, full name) and clock hour (%2$s). -->
+    <string name="settings_play_time_wave_header">%1$s at %2$s</string>
+    <!-- Direct label on the busiest hour of the week: short weekday name, then the clock hour. -->
+    <string name="settings_play_time_wave_peak">Peak %1$s %2$s</string>
+    <!-- Waveform card header when the range holds no play. -->
+    <string name="settings_play_time_wave_empty">No play in this range</string>
+
+
+    <!-- Titles over the two proportional bands. Nouns. -->
+    <string name="settings_play_time_platform_band_title">Platforms</string>
+    <string name="settings_play_time_device_band_title">Devices</string>
+    <!-- Band legend entries for the remainder beyond the coloured slots. -->
+    <string name="settings_play_time_platform_others">Other platforms</string>
+    <string name="settings_play_time_device_others">Other devices</string>
+    <!-- Share of the whole beside a legend row or band segment. -->
+    <string name="settings_play_time_share_percent">%d%%</string>
+
+    <!-- Tile opening the per-platform list. -->
+    <string name="settings_play_time_platforms_tile_title">By platform</string>
+    <plurals name="settings_play_time_platforms_tile_count">
+        <item quantity="one">%d platform</item>
+        <item quantity="other">%d platforms</item>
+    </plurals>
+    <!-- Tile opening the per-device list. -->
+    <string name="settings_play_time_devices_tile_title">By device</string>
+    <plurals name="settings_play_time_devices_tile_count">
+        <item quantity="one">%d device</item>
+        <item quantity="other">%d devices</item>
+    </plurals>
+    <!-- Tile opening the per-game list. -->
+    <string name="settings_play_time_games_tile_title">Top games</string>
+    <plurals name="settings_play_time_games_tile_count">
+        <item quantity="one">%d game</item>
+        <item quantity="other">%d games</item>
+    </plurals>
+    <!-- Cover mosaic: the tile folding the games too small for a tile of their own. -->
+    <string name="settings_play_time_mosaic_others">Others</string>
+    <!-- Under the mosaic header while the Others tile is selected. -->
+    <plurals name="settings_play_time_mosaic_others_count">
+        <item quantity="one">%d more game</item>
+        <item quantity="other">%d more games</item>
+    </plurals>
+    <!-- Mosaic card header when no game has active play. -->
+    <string name="settings_play_time_mosaic_empty">No active play yet</string>
+    <!-- Under the mosaic header; the argument is a relative time such as "2 days ago". -->
+    <string name="settings_play_time_entry_last_played">Last played %s</string>
+    <!-- Badge in the device legend for the device the launcher is running on. -->
+    <string name="settings_play_time_this_device">This device</string>
+    <!-- Name shown for a session whose game could not be identified. -->
+    <string name="settings_play_time_unknown_game">Unknown game</string>
+
+    <!-- Quick-facts labels; each sits under its figure. -->
+    <string name="settings_play_time_facts_average">Average session</string>
+    <string name="settings_play_time_facts_longest">Longest session</string>
+    <string name="settings_play_time_facts_sessions">Sessions</string>
+    <string name="settings_play_time_facts_days_played">Days played</string>
+    <string name="settings_play_time_facts_per_active_day">Per day played</string>
+    <string name="settings_play_time_facts_busiest_day">Busiest day</string>
+    <!-- Days with play over days in the window, such as "42 of 182". -->
+    <string name="settings_play_time_facts_days_played_value">%1$d of %2$d</string>
+    <!-- Stands in for a figure the window holds no data for. -->
+    <string name="settings_play_time_facts_none">None yet</string>
+
+    <string name="settings_play_time_romm_on_server_title">Sessions on RomM</string>
+    <!-- Sessions the next upload will send. -->
+    <string name="settings_play_time_romm_pending_title">Ready to upload</string>
+    <string name="settings_play_time_romm_pending_subtitle">Sent on the next upload</string>
+    <!-- Sessions held back because their game is not in the RomM library any more. -->
+    <string name="settings_play_time_romm_unlinked_title">Unlinked</string>
+    <string name="settings_play_time_romm_unlinked_subtitle">No matching RomM game to attach them to</string>
+    <string name="settings_play_time_romm_last_upload_title">Last upload</string>
+    <!-- Value of that row when no upload has run. -->
+    <string name="settings_play_time_romm_last_upload_never">Never</string>
+    <!-- Sessions copied down from the account's other devices. -->
+    <string name="settings_play_time_romm_pulled_title">From other devices</string>
+    <string name="settings_play_time_romm_last_refresh_title">Last refresh</string>
+    <!-- Value of that row when no refresh has run. -->
+    <string name="settings_play_time_romm_last_refresh_never">Never</string>
+    <!-- Action sending local sessions to the server. Verb phrase. -->
+    <string name="settings_play_time_romm_upload_title">Upload now</string>
+    <string name="settings_play_time_romm_upload_subtitle">Send local sessions to RomM</string>
+    <string name="settings_play_time_romm_upload_busy">Uploading...</string>
+    <string name="settings_play_time_romm_upload_offline">Connect to RomM to upload</string>
+    <!-- Outcome of an upload: sessions sent, sessions the server already had, sessions refused. -->
+    <string name="settings_play_time_romm_upload_result">Sent %1$d, %2$d already on RomM, %3$d refused</string>
+    <!-- The argument is the reason the run stopped early. -->
+    <string name="settings_play_time_romm_upload_stopped">Upload stopped: %s</string>
+    <!-- Action copying the other devices' sessions down. Verb phrase. -->
+    <string name="settings_play_time_romm_refresh_title">Refresh from RomM</string>
+    <string name="settings_play_time_romm_refresh_subtitle">Pull sessions from your other devices</string>
+    <string name="settings_play_time_romm_refresh_busy">Refreshing...</string>
+    <string name="settings_play_time_romm_refresh_offline">Connect to RomM to refresh</string>
+    <plurals name="settings_play_time_romm_refresh_result">
+        <item quantity="one">Added %d session from other devices</item>
+        <item quantity="other">Added %d sessions from other devices</item>
+    </plurals>
+    <!-- The argument is the reason the run stopped early. -->
+    <string name="settings_play_time_romm_refresh_stopped">Refresh stopped: %s</string>
+
+    <!-- ===== Play Time lists (platform, device, game drill-ins) ===== -->
+
+    <string name="settings_play_time_list_unknown_game">Unknown game</string>
+    <!-- Under a game row: its platform, then when it was last played. -->
+    <string name="settings_play_time_list_game_detail">%1$s, last played %2$s</string>
+    <plurals name="settings_play_time_list_sessions">
+        <item quantity="one">%d session</item>
+        <item quantity="other">%d sessions</item>
+    </plurals>
+    <string name="settings_play_time_list_this_device">This device</string>
+    <plurals name="settings_play_time_platforms_totals_count">
+        <item quantity="one">%d platform</item>
+        <item quantity="other">%d platforms</item>
+    </plurals>
+    <plurals name="settings_play_time_devices_totals_count">
+        <item quantity="one">%d device</item>
+        <item quantity="other">%d devices</item>
+    </plurals>
+    <plurals name="settings_play_time_games_totals_count">
+        <item quantity="one">%d game</item>
+        <item quantity="other">%d games</item>
+    </plurals>
+    <!-- The argument is a duration such as "12h 30m". -->
+    <string name="settings_play_time_list_totals_played">%s played</string>
+    <!-- List headings. Caps in English. -->
+    <string name="settings_play_time_platforms_list_header">PLATFORMS</string>
+    <string name="settings_play_time_devices_list_header">DEVICES</string>
+    <string name="settings_play_time_games_list_header">GAMES</string>
+    <string name="settings_play_time_games_sort_toggle_description">Change sort</string>
+    <!-- Sort orders for the game list: by time played, by number of sessions, by last played. -->
+    <string name="settings_play_time_games_sort_hours">Hours</string>
+    <string name="settings_play_time_games_sort_sessions">Sessions</string>
+    <string name="settings_play_time_games_sort_recent">Recent</string>
+    <string name="settings_play_time_platforms_list_empty">No platform has play yet.</string>
+    <string name="settings_play_time_devices_list_empty">No device has play yet.</string>
+    <string name="settings_play_time_games_list_empty">No game has play yet.</string>
 </resources>

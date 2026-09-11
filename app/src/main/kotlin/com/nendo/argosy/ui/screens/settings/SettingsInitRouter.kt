@@ -151,6 +151,21 @@ internal fun routeObserveDelegateStates(vm: SettingsViewModel) {
         vm._uiState.update { it.copy(storageCaches = storageCaches) }
     }.launchIn(vm.viewModelScope)
 
+    vm.playTimeDelegate.state.onEach { playTime ->
+        vm._uiState.update { state ->
+            val updated = state.copy(playTime = playTime)
+            if (state.currentSection == SettingsSection.PLAY_TIME ||
+                state.currentSection == SettingsSection.PLAY_TIME_PLATFORMS ||
+                state.currentSection == SettingsSection.PLAY_TIME_DEVICES ||
+                state.currentSection == SettingsSection.PLAY_TIME_GAMES
+            ) {
+                updated.copy(focusedIndex = state.focusedIndex.coerceIn(0, routeMaxFocusIndexOf(vm, updated)))
+            } else {
+                updated
+            }
+        }
+    }.launchIn(vm.viewModelScope)
+
     vm.syncDelegate.state.onEach { syncSettings ->
         vm._uiState.update { it.copy(syncSettings = syncSettings) }
     }.launchIn(vm.viewModelScope)

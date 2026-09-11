@@ -481,4 +481,13 @@
     <plurals name="settings_shell_vm_bios_copied_subtitle">
         <item quantity="other">已复制%1$d个文件</item>
     </plurals>
+    <string name="settings_shell_header_play_time">游戏时长</string>
+    <string name="settings_shell_header_play_time_platforms">按平台的游戏时长</string>
+    <string name="settings_shell_header_play_time_devices">按设备的游戏时长</string>
+    <string name="settings_shell_header_play_time_games">按游戏的游戏时长</string>
+    <string name="settings_shell_footer_play_time_refresh">刷新</string>
+    <string name="settings_shell_footer_play_time_inspect">查看</string>
+    <string name="settings_shell_footer_play_time_move">移动</string>
+    <string name="settings_shell_footer_play_time_open">打开</string>
+    <string name="settings_shell_footer_play_time_sort">排序</string>
 </resources>

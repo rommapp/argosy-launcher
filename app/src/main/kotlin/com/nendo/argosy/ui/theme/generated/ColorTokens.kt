@@ -104,6 +104,40 @@ object ColorTokens {
         object Code {
             val background = Color(0x1A888888)
         }
+        object Chart {
+            object Series1 {
+                val dark = Color(0xFF3987E5)
+                val light = Color(0xFF2A78D6)
+            }
+            object Series2 {
+                val dark = Color(0xFFD95926)
+                val light = Color(0xFFEB6834)
+            }
+            object Series3 {
+                val dark = Color(0xFF199E70)
+                val light = Color(0xFF1BAF7A)
+            }
+            object Series4 {
+                val dark = Color(0xFFC98500)
+                val light = Color(0xFFEDA100)
+            }
+            object Series5 {
+                val dark = Color(0xFFD55181)
+                val light = Color(0xFFE87BA4)
+            }
+            object Series6 {
+                val dark = Color(0xFF008300)
+                val light = Color(0xFF008300)
+            }
+            object Series7 {
+                val dark = Color(0xFF9085E9)
+                val light = Color(0xFF4A3AA7)
+            }
+            object Series8 {
+                val dark = Color(0xFFE66767)
+                val light = Color(0xFFE34948)
+            }
+        }
     }
 
     val accentPresets: List<AccentPreset> = listOf(

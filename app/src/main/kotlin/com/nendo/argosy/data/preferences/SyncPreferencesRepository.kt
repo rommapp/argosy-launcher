@@ -117,6 +117,8 @@ class SyncPreferencesRepository @Inject constructor(
         val LAST_STATE_VALIDATION = stringPreferencesKey("last_state_validation")
         val SOCIAL_LAST_PLAY_SESSION_SYNC = stringPreferencesKey("social_last_play_session_sync")
         val ROMM_PLAY_SESSION_BACKFILL_DONE = stringPreferencesKey("romm_play_session_backfill_done")
+        val ROMM_PLAY_SESSION_LAST_UPLOAD = stringPreferencesKey("romm_play_session_last_upload")
+        val ROMM_PLAY_SESSION_LAST_PULL = stringPreferencesKey("romm_play_session_last_pull")
         val SOCIAL_HIDDEN_GAME_IDS = stringPreferencesKey("social_hidden_game_ids")
         val SAVE_SYNC_LOCAL_REKEY_DONE = booleanPreferencesKey("save_sync_local_rekey_done")
         val SAVE_PATH_CACHE_PURGED = booleanPreferencesKey("save_path_cache_purged")
@@ -361,6 +363,8 @@ class SyncPreferencesRepository @Inject constructor(
             prefs.remove(Keys.ROMM_DEVICE_ID)
             prefs.remove(Keys.ROMM_DEVICE_CLIENT_VERSION)
             prefs.remove(Keys.ROMM_PLAY_SESSION_BACKFILL_DONE)
+            prefs.remove(Keys.ROMM_PLAY_SESSION_LAST_UPLOAD)
+            prefs.remove(Keys.ROMM_PLAY_SESSION_LAST_PULL)
         }
     }
 
@@ -650,6 +654,20 @@ class SyncPreferencesRepository @Inject constructor(
 
     suspend fun setRommPlaySessionBackfillDone(scopeKey: String) {
         dataStore.edit { it[Keys.ROMM_PLAY_SESSION_BACKFILL_DONE] = scopeKey }
+    }
+
+    suspend fun getRommPlaySessionLastUpload(): Instant? =
+        dataStore.data.map { it[Keys.ROMM_PLAY_SESSION_LAST_UPLOAD] }.first()?.let { Instant.parse(it) }
+
+    suspend fun setRommPlaySessionLastUpload(time: Instant) {
+        dataStore.edit { it[Keys.ROMM_PLAY_SESSION_LAST_UPLOAD] = time.toString() }
+    }
+
+    suspend fun getRommPlaySessionLastPull(): Instant? =
+        dataStore.data.map { it[Keys.ROMM_PLAY_SESSION_LAST_PULL] }.first()?.let { Instant.parse(it) }
+
+    suspend fun setRommPlaySessionLastPull(time: Instant) {
+        dataStore.edit { it[Keys.ROMM_PLAY_SESSION_LAST_PULL] = time.toString() }
     }
 
     fun hiddenGameIds(): Flow<Set<Int>> = dataStore.data.map { prefs ->

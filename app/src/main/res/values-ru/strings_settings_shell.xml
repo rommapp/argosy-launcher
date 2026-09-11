@@ -524,4 +524,13 @@
         <item quantity="many">%1$d файлов скопировано</item>
         <item quantity="other">%1$d файла скопировано</item>
     </plurals>
+    <string name="settings_shell_header_play_time">ВРЕМЯ ИГРЫ</string>
+    <string name="settings_shell_header_play_time_platforms">ИГРА ПО ПЛАТФОРМАМ</string>
+    <string name="settings_shell_header_play_time_devices">ИГРА ПО УСТРОЙСТВАМ</string>
+    <string name="settings_shell_header_play_time_games">ИГРА ПО ИГРАМ</string>
+    <string name="settings_shell_footer_play_time_refresh">Обновить</string>
+    <string name="settings_shell_footer_play_time_inspect">Просмотр</string>
+    <string name="settings_shell_footer_play_time_move">Переместить</string>
+    <string name="settings_shell_footer_play_time_open">Открыть</string>
+    <string name="settings_shell_footer_play_time_sort">Сортировка</string>
 </resources>

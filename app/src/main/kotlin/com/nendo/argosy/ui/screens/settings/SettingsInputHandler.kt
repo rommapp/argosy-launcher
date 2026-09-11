@@ -15,6 +15,8 @@ import com.nendo.argosy.ui.screens.settings.sections.input.DisplaysSectionInput
 import com.nendo.argosy.ui.screens.settings.sections.input.DriversSectionInput
 import com.nendo.argosy.ui.screens.settings.sections.input.InterfaceSectionInput
 import com.nendo.argosy.ui.screens.settings.sections.input.LightSectionsInput
+import com.nendo.argosy.ui.screens.settings.sections.input.PlayTimeListSectionInput
+import com.nendo.argosy.ui.screens.settings.sections.input.PlayTimeSectionInput
 import com.nendo.argosy.ui.screens.settings.sections.input.ShaderStackSectionInput
 import com.nendo.argosy.ui.screens.settings.sections.input.StorageCachesSectionInput
 import com.nendo.argosy.ui.screens.settings.sections.input.StorageGamesSectionInput
@@ -62,6 +64,11 @@ class SettingsInputHandler(
         put(SettingsSection.STORAGE_MEDIA, StorageMediaSectionInput(viewModel))
         put(SettingsSection.STORAGE_PLATFORM_GAMES, StoragePlatformGamesSectionInput(viewModel))
         put(SettingsSection.STORAGE_CACHES, StorageCachesSectionInput(viewModel))
+        put(SettingsSection.PLAY_TIME, PlayTimeSectionInput(viewModel))
+        val playTimeListInput = PlayTimeListSectionInput(viewModel)
+        put(SettingsSection.PLAY_TIME_PLATFORMS, playTimeListInput)
+        put(SettingsSection.PLAY_TIME_DEVICES, playTimeListInput)
+        put(SettingsSection.PLAY_TIME_GAMES, playTimeListInput)
         put(SettingsSection.DRIVERS, DriversSectionInput(viewModel))
         put(SettingsSection.FRAME_PICKER, FrameSectionInput(viewModel))
         for (s in listOf(

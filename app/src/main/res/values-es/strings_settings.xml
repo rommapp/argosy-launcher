@@ -2315,4 +2315,154 @@
     <string name="settings_main_language_title">Idioma</string>
     <string name="settings_main_language_subtitle">Cambia el texto en todo el lanzador</string>
     <string name="settings_main_language_system_default">Predeterminado del sistema</string>
+
+    <string name="settings_main_play_time_title">Tiempo de juego</string>
+    <string name="settings_main_play_time_subtitle">Patrones, juegos destacados, dispositivos</string>
+
+    <string name="settings_play_time_section_activity">ACTIVIDAD</string>
+    <string name="settings_play_time_section_when">CUÁNDO JUEGAS</string>
+    <string name="settings_play_time_section_platforms">PLATAFORMAS</string>
+    <string name="settings_play_time_section_where">DISPOSITIVOS</string>
+    <string name="settings_play_time_section_what">A QUÉ JUEGAS</string>
+    <string name="settings_play_time_section_facts">DATOS RÁPIDOS</string>
+    <string name="settings_play_time_loading_title">Leyendo sesiones...</string>
+    <string name="settings_play_time_loading_message">Tus patrones de juego aparecerán en un momento.</string>
+    <string name="settings_play_time_empty_title">Aún no hay sesiones de juego</string>
+    <string name="settings_play_time_empty_message">Juega a algo y tus patrones se irán formando aquí. Actualiza desde RomM para incluir las sesiones de tus otros dispositivos.</string>
+    <string name="settings_play_time_summary_empty">Aún no has jugado nada. Empieza una partida y aparecerá aquí.</string>
+    <string name="settings_play_time_summary_total">Jugado</string>
+    <string name="settings_play_time_summary_platforms">Plataformas</string>
+    <string name="settings_play_time_summary_peak">Hora más activa</string>
+    <string name="settings_play_time_summary_device">Más jugado en</string>
+    <plurals name="settings_play_time_summary_window">
+        <item quantity="one">En %d día</item>
+        <item quantity="many">En %d días</item>
+        <item quantity="other">En %d días</item>
+    </plurals>
+    <string name="settings_play_time_summary_peak_value">%1$s %2$s</string>
+    <string name="settings_play_time_activity_empty">Sin juego en este periodo</string>
+    <string name="settings_play_time_streak_current">Racha actual</string>
+    <string name="settings_play_time_streak_longest">Racha más larga</string>
+    <plurals name="settings_play_time_streak_days">
+        <item quantity="one">%d día</item>
+        <item quantity="many">%d días</item>
+        <item quantity="other">%d días</item>
+    </plurals>
+    <plurals name="settings_play_time_day_game_count">
+        <item quantity="one">%d juego</item>
+        <item quantity="many">%d juegos</item>
+        <item quantity="other">%d juegos</item>
+    </plurals>
+    <string name="settings_play_time_day_empty">Nada jugado</string>
+    <string name="settings_play_time_day_session_count">%1$dx</string>
+    <plurals name="settings_play_time_day_more">
+        <item quantity="one">%d juego más</item>
+        <item quantity="many">%d juegos más</item>
+        <item quantity="other">%d juegos más</item>
+    </plurals>
+    <string name="settings_play_time_wave_header">%1$s a las %2$s</string>
+    <string name="settings_play_time_wave_peak">Pico %1$s %2$s</string>
+    <string name="settings_play_time_wave_empty">Sin juego en este periodo</string>
+    <string name="settings_play_time_platform_band_title">Plataformas</string>
+    <string name="settings_play_time_device_band_title">Dispositivos</string>
+    <string name="settings_play_time_platform_others">Otras plataformas</string>
+    <string name="settings_play_time_device_others">Otros dispositivos</string>
+    <string name="settings_play_time_share_percent">%d %%</string>
+    <string name="settings_play_time_platforms_tile_title">Por plataforma</string>
+    <plurals name="settings_play_time_platforms_tile_count">
+        <item quantity="one">%d plataforma</item>
+        <item quantity="many">%d plataformas</item>
+        <item quantity="other">%d plataformas</item>
+    </plurals>
+    <string name="settings_play_time_devices_tile_title">Por dispositivo</string>
+    <plurals name="settings_play_time_devices_tile_count">
+        <item quantity="one">%d dispositivo</item>
+        <item quantity="many">%d dispositivos</item>
+        <item quantity="other">%d dispositivos</item>
+    </plurals>
+    <string name="settings_play_time_games_tile_title">Juegos destacados</string>
+    <plurals name="settings_play_time_games_tile_count">
+        <item quantity="one">%d juego</item>
+        <item quantity="many">%d juegos</item>
+        <item quantity="other">%d juegos</item>
+    </plurals>
+    <string name="settings_play_time_mosaic_others">Otros</string>
+    <plurals name="settings_play_time_mosaic_others_count">
+        <item quantity="one">%d juego más</item>
+        <item quantity="many">%d juegos más</item>
+        <item quantity="other">%d juegos más</item>
+    </plurals>
+    <string name="settings_play_time_mosaic_empty">Aún sin juego activo</string>
+    <string name="settings_play_time_entry_last_played">Última partida %s</string>
+    <string name="settings_play_time_this_device">Este dispositivo</string>
+    <string name="settings_play_time_unknown_game">Juego desconocido</string>
+    <string name="settings_play_time_facts_average">Sesión media</string>
+    <string name="settings_play_time_facts_longest">Sesión más larga</string>
+    <string name="settings_play_time_facts_sessions">Sesiones</string>
+    <string name="settings_play_time_facts_days_played">Días jugados</string>
+    <string name="settings_play_time_facts_per_active_day">Por día jugado</string>
+    <string name="settings_play_time_facts_busiest_day">Día más activo</string>
+    <string name="settings_play_time_facts_days_played_value">%1$d de %2$d</string>
+    <string name="settings_play_time_facts_none">Aún ninguno</string>
+
+    <string name="settings_play_time_romm_on_server_title">Sesiones en RomM</string>
+    <string name="settings_play_time_romm_pending_title">Listas para subir</string>
+    <string name="settings_play_time_romm_pending_subtitle">Se enviarán en la próxima subida</string>
+    <string name="settings_play_time_romm_unlinked_title">Sin vincular</string>
+    <string name="settings_play_time_romm_unlinked_subtitle">Sin juego de RomM al que asociarlas</string>
+    <string name="settings_play_time_romm_last_upload_title">Última subida</string>
+    <string name="settings_play_time_romm_last_upload_never">Nunca</string>
+    <string name="settings_play_time_romm_pulled_title">De otros dispositivos</string>
+    <string name="settings_play_time_romm_last_refresh_title">Última actualización</string>
+    <string name="settings_play_time_romm_last_refresh_never">Nunca</string>
+    <string name="settings_play_time_romm_upload_title">Subir ahora</string>
+    <string name="settings_play_time_romm_upload_subtitle">Enviar las sesiones locales a RomM</string>
+    <string name="settings_play_time_romm_upload_busy">Subiendo...</string>
+    <string name="settings_play_time_romm_upload_offline">Conéctate a RomM para subir</string>
+    <string name="settings_play_time_romm_upload_result">%1$d enviadas, %2$d ya en RomM, %3$d rechazadas</string>
+    <string name="settings_play_time_romm_upload_stopped">Subida detenida: %s</string>
+    <string name="settings_play_time_romm_refresh_title">Actualizar desde RomM</string>
+    <string name="settings_play_time_romm_refresh_subtitle">Traer las sesiones de tus otros dispositivos</string>
+    <string name="settings_play_time_romm_refresh_busy">Actualizando...</string>
+    <string name="settings_play_time_romm_refresh_offline">Conéctate a RomM para actualizar</string>
+    <plurals name="settings_play_time_romm_refresh_result">
+        <item quantity="one">%d sesión añadida de otros dispositivos</item>
+        <item quantity="many">%d sesiones añadidas de otros dispositivos</item>
+        <item quantity="other">%d sesiones añadidas de otros dispositivos</item>
+    </plurals>
+    <string name="settings_play_time_romm_refresh_stopped">Actualización detenida: %s</string>
+    <string name="settings_play_time_list_unknown_game">Juego desconocido</string>
+    <string name="settings_play_time_list_game_detail">%1$s, última partida %2$s</string>
+    <plurals name="settings_play_time_list_sessions">
+        <item quantity="one">%d sesión</item>
+        <item quantity="many">%d sesiones</item>
+        <item quantity="other">%d sesiones</item>
+    </plurals>
+    <string name="settings_play_time_list_this_device">Este dispositivo</string>
+    <plurals name="settings_play_time_platforms_totals_count">
+        <item quantity="one">%d plataforma</item>
+        <item quantity="many">%d plataformas</item>
+        <item quantity="other">%d plataformas</item>
+    </plurals>
+    <plurals name="settings_play_time_devices_totals_count">
+        <item quantity="one">%d dispositivo</item>
+        <item quantity="many">%d dispositivos</item>
+        <item quantity="other">%d dispositivos</item>
+    </plurals>
+    <plurals name="settings_play_time_games_totals_count">
+        <item quantity="one">%d juego</item>
+        <item quantity="many">%d juegos</item>
+        <item quantity="other">%d juegos</item>
+    </plurals>
+    <string name="settings_play_time_list_totals_played">%s jugado</string>
+    <string name="settings_play_time_platforms_list_header">PLATAFORMAS</string>
+    <string name="settings_play_time_devices_list_header">DISPOSITIVOS</string>
+    <string name="settings_play_time_games_list_header">JUEGOS</string>
+    <string name="settings_play_time_games_sort_toggle_description">Cambiar orden</string>
+    <string name="settings_play_time_games_sort_hours">Horas</string>
+    <string name="settings_play_time_games_sort_sessions">Sesiones</string>
+    <string name="settings_play_time_games_sort_recent">Recientes</string>
+    <string name="settings_play_time_platforms_list_empty">Ninguna plataforma tiene juego todavía.</string>
+    <string name="settings_play_time_devices_list_empty">Ningún dispositivo tiene juego todavía.</string>
+    <string name="settings_play_time_games_list_empty">Ningún juego tiene tiempo todavía.</string>
 </resources>

@@ -137,6 +137,7 @@ private fun routeApplySectionEntry(vm: SettingsViewModel, section: SettingsSecti
                 )
             }
         }
+        SettingsSection.PLAY_TIME -> vm.playTimeDelegate.load(vm.viewModelScope)
         SettingsSection.STEAM_SETTINGS -> vm.steamDelegate.loadSteamSettings(vm.context, vm.viewModelScope)
         SettingsSection.JELLYFIN -> {
             vm.jellyfinDelegate.refreshMediaDirPath(vm.viewModelScope)

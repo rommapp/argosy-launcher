@@ -2356,4 +2356,167 @@
     <string name="settings_main_language_title">Язык</string>
     <string name="settings_main_language_subtitle">Изменить язык текста во всём лаунчере</string>
     <string name="settings_main_language_system_default">Как в системе</string>
+
+    <string name="settings_main_play_time_title">Время игры</string>
+    <string name="settings_main_play_time_subtitle">Привычки, любимые игры, устройства</string>
+
+    <string name="settings_play_time_section_activity">АКТИВНОСТЬ</string>
+    <string name="settings_play_time_section_when">КОГДА ВЫ ИГРАЕТЕ</string>
+    <string name="settings_play_time_section_platforms">ПЛАТФОРМЫ</string>
+    <string name="settings_play_time_section_where">УСТРОЙСТВА</string>
+    <string name="settings_play_time_section_what">ВО ЧТО ВЫ ИГРАЕТЕ</string>
+    <string name="settings_play_time_section_facts">КОРОТКО О ГЛАВНОМ</string>
+    <string name="settings_play_time_loading_title">Чтение сессий...</string>
+    <string name="settings_play_time_loading_message">Ваши игровые привычки появятся через мгновение.</string>
+    <string name="settings_play_time_empty_title">Игровых сессий пока нет</string>
+    <string name="settings_play_time_empty_message">Поиграйте, и здесь начнут складываться ваши привычки. Обновите из RomM, чтобы учесть сессии с других устройств.</string>
+    <string name="settings_play_time_summary_empty">Пока ничего не сыграно. Запустите игру, и она появится здесь.</string>
+    <string name="settings_play_time_summary_total">Сыграно</string>
+    <string name="settings_play_time_summary_platforms">Платформы</string>
+    <string name="settings_play_time_summary_peak">Самый активный час</string>
+    <string name="settings_play_time_summary_device">Чаще всего на</string>
+    <plurals name="settings_play_time_summary_window">
+        <item quantity="one">За %d день</item>
+        <item quantity="few">За %d дня</item>
+        <item quantity="many">За %d дней</item>
+        <item quantity="other">За %d дня</item>
+    </plurals>
+    <string name="settings_play_time_summary_peak_value">%1$s %2$s</string>
+    <string name="settings_play_time_activity_empty">За этот период игры не было</string>
+    <string name="settings_play_time_streak_current">Текущая серия</string>
+    <string name="settings_play_time_streak_longest">Самая длинная серия</string>
+    <plurals name="settings_play_time_streak_days">
+        <item quantity="one">%d день</item>
+        <item quantity="few">%d дня</item>
+        <item quantity="many">%d дней</item>
+        <item quantity="other">%d дня</item>
+    </plurals>
+    <plurals name="settings_play_time_day_game_count">
+        <item quantity="one">%d игра</item>
+        <item quantity="few">%d игры</item>
+        <item quantity="many">%d игр</item>
+        <item quantity="other">%d игры</item>
+    </plurals>
+    <string name="settings_play_time_day_empty">Ничего не сыграно</string>
+    <string name="settings_play_time_day_session_count">%1$dx</string>
+    <plurals name="settings_play_time_day_more">
+        <item quantity="one">ещё %d игра</item>
+        <item quantity="few">ещё %d игры</item>
+        <item quantity="many">ещё %d игр</item>
+        <item quantity="other">ещё %d игры</item>
+    </plurals>
+    <string name="settings_play_time_wave_header">%1$s, %2$s</string>
+    <string name="settings_play_time_wave_peak">Пик %1$s %2$s</string>
+    <string name="settings_play_time_wave_empty">За этот период игры не было</string>
+    <string name="settings_play_time_platform_band_title">Платформы</string>
+    <string name="settings_play_time_device_band_title">Устройства</string>
+    <string name="settings_play_time_platform_others">Другие платформы</string>
+    <string name="settings_play_time_device_others">Другие устройства</string>
+    <string name="settings_play_time_share_percent">%d %%</string>
+    <string name="settings_play_time_platforms_tile_title">По платформам</string>
+    <plurals name="settings_play_time_platforms_tile_count">
+        <item quantity="one">%d платформа</item>
+        <item quantity="few">%d платформы</item>
+        <item quantity="many">%d платформ</item>
+        <item quantity="other">%d платформы</item>
+    </plurals>
+    <string name="settings_play_time_devices_tile_title">По устройствам</string>
+    <plurals name="settings_play_time_devices_tile_count">
+        <item quantity="one">%d устройство</item>
+        <item quantity="few">%d устройства</item>
+        <item quantity="many">%d устройств</item>
+        <item quantity="other">%d устройства</item>
+    </plurals>
+    <string name="settings_play_time_games_tile_title">Топ игр</string>
+    <plurals name="settings_play_time_games_tile_count">
+        <item quantity="one">%d игра</item>
+        <item quantity="few">%d игры</item>
+        <item quantity="many">%d игр</item>
+        <item quantity="other">%d игры</item>
+    </plurals>
+    <string name="settings_play_time_mosaic_others">Другие</string>
+    <plurals name="settings_play_time_mosaic_others_count">
+        <item quantity="one">Ещё %d игра</item>
+        <item quantity="few">Ещё %d игры</item>
+        <item quantity="many">Ещё %d игр</item>
+        <item quantity="other">Ещё %d игры</item>
+    </plurals>
+    <string name="settings_play_time_mosaic_empty">Активной игры пока не было</string>
+    <string name="settings_play_time_entry_last_played">Последняя игра %s</string>
+    <string name="settings_play_time_this_device">Это устройство</string>
+    <string name="settings_play_time_unknown_game">Неизвестная игра</string>
+    <string name="settings_play_time_facts_average">Средняя сессия</string>
+    <string name="settings_play_time_facts_longest">Самая длинная сессия</string>
+    <string name="settings_play_time_facts_sessions">Сессии</string>
+    <string name="settings_play_time_facts_days_played">Дней с игрой</string>
+    <string name="settings_play_time_facts_per_active_day">За день с игрой</string>
+    <string name="settings_play_time_facts_busiest_day">Самый активный день</string>
+    <string name="settings_play_time_facts_days_played_value">%1$d из %2$d</string>
+    <string name="settings_play_time_facts_none">Пока нет</string>
+
+    <string name="settings_play_time_romm_on_server_title">Сессий на RomM</string>
+    <string name="settings_play_time_romm_pending_title">Готовы к отправке</string>
+    <string name="settings_play_time_romm_pending_subtitle">Будут отправлены при следующей загрузке</string>
+    <string name="settings_play_time_romm_unlinked_title">Не привязаны</string>
+    <string name="settings_play_time_romm_unlinked_subtitle">Нет подходящей игры RomM, к которой их привязать</string>
+    <string name="settings_play_time_romm_last_upload_title">Последняя отправка</string>
+    <string name="settings_play_time_romm_last_upload_never">Никогда</string>
+    <string name="settings_play_time_romm_pulled_title">С других устройств</string>
+    <string name="settings_play_time_romm_last_refresh_title">Последнее обновление</string>
+    <string name="settings_play_time_romm_last_refresh_never">Никогда</string>
+    <string name="settings_play_time_romm_upload_title">Отправить сейчас</string>
+    <string name="settings_play_time_romm_upload_subtitle">Отправить локальные сессии на RomM</string>
+    <string name="settings_play_time_romm_upload_busy">Отправка...</string>
+    <string name="settings_play_time_romm_upload_offline">Подключитесь к RomM, чтобы отправить</string>
+    <string name="settings_play_time_romm_upload_result">Отправлено %1$d, уже на RomM %2$d, отклонено %3$d</string>
+    <string name="settings_play_time_romm_upload_stopped">Отправка остановлена: %s</string>
+    <string name="settings_play_time_romm_refresh_title">Обновить из RomM</string>
+    <string name="settings_play_time_romm_refresh_subtitle">Загрузить сессии с других устройств</string>
+    <string name="settings_play_time_romm_refresh_busy">Обновление...</string>
+    <string name="settings_play_time_romm_refresh_offline">Подключитесь к RomM, чтобы обновить</string>
+    <plurals name="settings_play_time_romm_refresh_result">
+        <item quantity="one">Добавлена %d сессия с других устройств</item>
+        <item quantity="few">Добавлено %d сессии с других устройств</item>
+        <item quantity="many">Добавлено %d сессий с других устройств</item>
+        <item quantity="other">Добавлено %d сессии с других устройств</item>
+    </plurals>
+    <string name="settings_play_time_romm_refresh_stopped">Обновление остановлено: %s</string>
+    <string name="settings_play_time_list_unknown_game">Неизвестная игра</string>
+    <string name="settings_play_time_list_game_detail">%1$s, последняя игра %2$s</string>
+    <plurals name="settings_play_time_list_sessions">
+        <item quantity="one">%d сессия</item>
+        <item quantity="few">%d сессии</item>
+        <item quantity="many">%d сессий</item>
+        <item quantity="other">%d сессии</item>
+    </plurals>
+    <string name="settings_play_time_list_this_device">Это устройство</string>
+    <plurals name="settings_play_time_platforms_totals_count">
+        <item quantity="one">%d платформа</item>
+        <item quantity="few">%d платформы</item>
+        <item quantity="many">%d платформ</item>
+        <item quantity="other">%d платформы</item>
+    </plurals>
+    <plurals name="settings_play_time_devices_totals_count">
+        <item quantity="one">%d устройство</item>
+        <item quantity="few">%d устройства</item>
+        <item quantity="many">%d устройств</item>
+        <item quantity="other">%d устройства</item>
+    </plurals>
+    <plurals name="settings_play_time_games_totals_count">
+        <item quantity="one">%d игра</item>
+        <item quantity="few">%d игры</item>
+        <item quantity="many">%d игр</item>
+        <item quantity="other">%d игры</item>
+    </plurals>
+    <string name="settings_play_time_list_totals_played">Сыграно %s</string>
+    <string name="settings_play_time_platforms_list_header">ПЛАТФОРМЫ</string>
+    <string name="settings_play_time_devices_list_header">УСТРОЙСТВА</string>
+    <string name="settings_play_time_games_list_header">ИГРЫ</string>
+    <string name="settings_play_time_games_sort_toggle_description">Изменить сортировку</string>
+    <string name="settings_play_time_games_sort_hours">Часы</string>
+    <string name="settings_play_time_games_sort_sessions">Сессии</string>
+    <string name="settings_play_time_games_sort_recent">Недавние</string>
+    <string name="settings_play_time_platforms_list_empty">Ни на одной платформе пока нет игры.</string>
+    <string name="settings_play_time_devices_list_empty">Ни на одном устройстве пока нет игры.</string>
+    <string name="settings_play_time_games_list_empty">Ни в одну игру пока не играли.</string>
 </resources>

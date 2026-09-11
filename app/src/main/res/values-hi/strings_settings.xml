@@ -2251,4 +2251,141 @@
     <string name="settings_main_language_subtitle">पूरे लॉन्चर में टेक्स्ट बदलें</string>
     <string name="settings_main_language_system_default">सिस्टम डिफ़ॉल्ट</string>
 
+    <string name="settings_main_play_time_title">खेलने का समय</string>
+    <string name="settings_main_play_time_subtitle">पैटर्न, शीर्ष गेम, डिवाइस</string>
+
+    <string name="settings_play_time_section_activity">गतिविधि</string>
+    <string name="settings_play_time_section_when">आप कब खेलते हैं</string>
+    <string name="settings_play_time_section_platforms">प्लेटफ़ॉर्म</string>
+    <string name="settings_play_time_section_where">डिवाइस</string>
+    <string name="settings_play_time_section_what">आप क्या खेलते हैं</string>
+    <string name="settings_play_time_section_facts">त्वरित तथ्य</string>
+    <string name="settings_play_time_loading_title">सत्र पढ़े जा रहे हैं...</string>
+    <string name="settings_play_time_loading_message">आपके खेलने के पैटर्न कुछ ही पल में दिखेंगे।</string>
+    <string name="settings_play_time_empty_title">अभी कोई खेल सत्र नहीं</string>
+    <string name="settings_play_time_empty_message">कोई गेम खेलें और आपके पैटर्न यहाँ बनने लगेंगे। अपने अन्य डिवाइस के सत्र शामिल करने के लिए RomM से रीफ़्रेश करें।</string>
+    <string name="settings_play_time_summary_empty">अभी तक कुछ नहीं खेला। कोई गेम शुरू करें, वह यहाँ दिखेगा।</string>
+    <string name="settings_play_time_summary_total">खेला गया</string>
+    <string name="settings_play_time_summary_platforms">प्लेटफ़ॉर्म</string>
+    <string name="settings_play_time_summary_peak">सबसे व्यस्त घंटा</string>
+    <string name="settings_play_time_summary_device">सबसे ज़्यादा खेला गया</string>
+    <plurals name="settings_play_time_summary_window">
+        <item quantity="one">%d दिन में</item>
+        <item quantity="other">%d दिनों में</item>
+    </plurals>
+    <string name="settings_play_time_summary_peak_value">%1$s %2$s</string>
+    <string name="settings_play_time_activity_empty">इस अवधि में कोई खेल नहीं</string>
+    <string name="settings_play_time_streak_current">मौजूदा सिलसिला</string>
+    <string name="settings_play_time_streak_longest">सबसे लंबा सिलसिला</string>
+    <plurals name="settings_play_time_streak_days">
+        <item quantity="one">%d दिन</item>
+        <item quantity="other">%d दिन</item>
+    </plurals>
+    <plurals name="settings_play_time_day_game_count">
+        <item quantity="one">%d गेम</item>
+        <item quantity="other">%d गेम</item>
+    </plurals>
+    <string name="settings_play_time_day_empty">कुछ नहीं खेला</string>
+    <string name="settings_play_time_day_session_count">%1$dx</string>
+    <plurals name="settings_play_time_day_more">
+        <item quantity="one">%d और गेम</item>
+        <item quantity="other">%d और गेम</item>
+    </plurals>
+    <string name="settings_play_time_wave_header">%1$s, %2$s बजे</string>
+    <string name="settings_play_time_wave_peak">शिखर %1$s %2$s</string>
+    <string name="settings_play_time_wave_empty">इस अवधि में कोई खेल नहीं</string>
+    <string name="settings_play_time_platform_band_title">प्लेटफ़ॉर्म</string>
+    <string name="settings_play_time_device_band_title">डिवाइस</string>
+    <string name="settings_play_time_platform_others">अन्य प्लेटफ़ॉर्म</string>
+    <string name="settings_play_time_device_others">अन्य डिवाइस</string>
+    <string name="settings_play_time_share_percent">%d%%</string>
+    <string name="settings_play_time_platforms_tile_title">प्लेटफ़ॉर्म के अनुसार</string>
+    <plurals name="settings_play_time_platforms_tile_count">
+        <item quantity="one">%d प्लेटफ़ॉर्म</item>
+        <item quantity="other">%d प्लेटफ़ॉर्म</item>
+    </plurals>
+    <string name="settings_play_time_devices_tile_title">डिवाइस के अनुसार</string>
+    <plurals name="settings_play_time_devices_tile_count">
+        <item quantity="one">%d डिवाइस</item>
+        <item quantity="other">%d डिवाइस</item>
+    </plurals>
+    <string name="settings_play_time_games_tile_title">शीर्ष गेम</string>
+    <plurals name="settings_play_time_games_tile_count">
+        <item quantity="one">%d गेम</item>
+        <item quantity="other">%d गेम</item>
+    </plurals>
+    <string name="settings_play_time_mosaic_others">अन्य</string>
+    <plurals name="settings_play_time_mosaic_others_count">
+        <item quantity="one">%d और गेम</item>
+        <item quantity="other">%d और गेम</item>
+    </plurals>
+    <string name="settings_play_time_mosaic_empty">अभी कोई सक्रिय खेल नहीं</string>
+    <string name="settings_play_time_entry_last_played">आख़िरी बार खेला %s</string>
+    <string name="settings_play_time_this_device">यह डिवाइस</string>
+    <string name="settings_play_time_unknown_game">अज्ञात गेम</string>
+    <string name="settings_play_time_facts_average">औसत सत्र</string>
+    <string name="settings_play_time_facts_longest">सबसे लंबा सत्र</string>
+    <string name="settings_play_time_facts_sessions">सत्र</string>
+    <string name="settings_play_time_facts_days_played">खेले गए दिन</string>
+    <string name="settings_play_time_facts_per_active_day">प्रति खेले दिन</string>
+    <string name="settings_play_time_facts_busiest_day">सबसे व्यस्त दिन</string>
+    <string name="settings_play_time_facts_days_played_value">%2$d में से %1$d</string>
+    <string name="settings_play_time_facts_none">अभी कोई नहीं</string>
+
+    <string name="settings_play_time_romm_on_server_title">RomM पर सत्र</string>
+    <string name="settings_play_time_romm_pending_title">अपलोड के लिए तैयार</string>
+    <string name="settings_play_time_romm_pending_subtitle">अगले अपलोड में भेजे जाएँगे</string>
+    <string name="settings_play_time_romm_unlinked_title">लिंक नहीं</string>
+    <string name="settings_play_time_romm_unlinked_subtitle">जोड़ने के लिए कोई मेल खाता RomM गेम नहीं</string>
+    <string name="settings_play_time_romm_last_upload_title">आख़िरी अपलोड</string>
+    <string name="settings_play_time_romm_last_upload_never">कभी नहीं</string>
+    <string name="settings_play_time_romm_pulled_title">अन्य डिवाइस से</string>
+    <string name="settings_play_time_romm_last_refresh_title">आख़िरी रीफ़्रेश</string>
+    <string name="settings_play_time_romm_last_refresh_never">कभी नहीं</string>
+    <string name="settings_play_time_romm_upload_title">अभी अपलोड करें</string>
+    <string name="settings_play_time_romm_upload_subtitle">लोकल सत्र RomM को भेजें</string>
+    <string name="settings_play_time_romm_upload_busy">अपलोड हो रहा है...</string>
+    <string name="settings_play_time_romm_upload_offline">अपलोड करने के लिए RomM से जुड़ें</string>
+    <string name="settings_play_time_romm_upload_result">%1$d भेजे गए, %2$d पहले से RomM पर, %3$d अस्वीकृत</string>
+    <string name="settings_play_time_romm_upload_stopped">अपलोड रुक गया: %s</string>
+    <string name="settings_play_time_romm_refresh_title">RomM से रीफ़्रेश करें</string>
+    <string name="settings_play_time_romm_refresh_subtitle">अपने अन्य डिवाइस के सत्र लाएँ</string>
+    <string name="settings_play_time_romm_refresh_busy">रीफ़्रेश हो रहा है...</string>
+    <string name="settings_play_time_romm_refresh_offline">रीफ़्रेश करने के लिए RomM से जुड़ें</string>
+    <plurals name="settings_play_time_romm_refresh_result">
+        <item quantity="one">अन्य डिवाइस से %d सत्र जोड़ा गया</item>
+        <item quantity="other">अन्य डिवाइस से %d सत्र जोड़े गए</item>
+    </plurals>
+    <string name="settings_play_time_romm_refresh_stopped">रीफ़्रेश रुक गया: %s</string>
+    <string name="settings_play_time_list_unknown_game">अज्ञात गेम</string>
+    <string name="settings_play_time_list_game_detail">%1$s, आख़िरी बार खेला %2$s</string>
+    <plurals name="settings_play_time_list_sessions">
+        <item quantity="one">%d सत्र</item>
+        <item quantity="other">%d सत्र</item>
+    </plurals>
+    <string name="settings_play_time_list_this_device">यह डिवाइस</string>
+    <plurals name="settings_play_time_platforms_totals_count">
+        <item quantity="one">%d प्लेटफ़ॉर्म</item>
+        <item quantity="other">%d प्लेटफ़ॉर्म</item>
+    </plurals>
+    <plurals name="settings_play_time_devices_totals_count">
+        <item quantity="one">%d डिवाइस</item>
+        <item quantity="other">%d डिवाइस</item>
+    </plurals>
+    <plurals name="settings_play_time_games_totals_count">
+        <item quantity="one">%d गेम</item>
+        <item quantity="other">%d गेम</item>
+    </plurals>
+    <string name="settings_play_time_list_totals_played">%s खेला गया</string>
+    <string name="settings_play_time_platforms_list_header">प्लेटफ़ॉर्म</string>
+    <string name="settings_play_time_devices_list_header">डिवाइस</string>
+    <string name="settings_play_time_games_list_header">गेम</string>
+    <string name="settings_play_time_games_sort_toggle_description">क्रम बदलें</string>
+    <string name="settings_play_time_games_sort_hours">घंटे</string>
+    <string name="settings_play_time_games_sort_sessions">सत्र</string>
+    <string name="settings_play_time_games_sort_recent">हाल के</string>
+    <string name="settings_play_time_platforms_list_empty">अभी किसी प्लेटफ़ॉर्म पर खेल नहीं हुआ।</string>
+    <string name="settings_play_time_devices_list_empty">अभी किसी डिवाइस पर खेल नहीं हुआ।</string>
+    <string name="settings_play_time_games_list_empty">अभी कोई गेम नहीं खेला गया।</string>
+
 </resources>

@@ -11,6 +11,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -20,14 +21,16 @@ private const val BATCH_SIZE = 100
 /**
  * Uploads every play session RomM has not acknowledged for the signed-in account, in batches,
  * and answers how the batches fared. Runs by itself once per account and device after the
- * first RomM connect; callers run it on demand after that.
+ * first RomM connect, then pulls the other devices' sessions down; callers run it on demand
+ * after that.
  */
 @Singleton
 class PlaySessionBackfill @Inject constructor(
     private val playSessionDao: PlaySessionDao,
     private val uploader: RomMPlaySessionUploader,
     private val syncPreferencesRepository: SyncPreferencesRepository,
-    private val connectionManager: RomMConnectionManager
+    private val connectionManager: RomMConnectionManager,
+    private val pull: PlaySessionPull
 ) {
     data class Summary(
         val sent: Int,
@@ -49,6 +52,8 @@ class PlaySessionBackfill @Inject constructor(
 
     suspend fun run(): Summary = runMutex.withLock {
         val ownerUserId = syncPreferencesRepository.getRommUserId()
+        val relinked = playSessionDao.relinkOrphans(ownerUserId)
+        if (relinked > 0) Logger.info(TAG, "run: relinked $relinked sessions to current game rows")
         var afterId = 0L
         var sent = 0
         var duplicates = 0
@@ -73,6 +78,7 @@ class PlaySessionBackfill @Inject constructor(
             }
             afterId = batch.last().session.id
         }
+        syncPreferencesRepository.setRommPlaySessionLastUpload(Instant.now())
         Logger.info(TAG, "run: sent=$sent duplicates=$duplicates failed=$failed")
         Summary(sent, duplicates, failed)
     }
@@ -87,6 +93,8 @@ class PlaySessionBackfill @Inject constructor(
         if (summary.stoppedBy != null) return
         syncPreferencesRepository.setRommPlaySessionBackfillDone(scopeKey)
         Logger.info(TAG, "backfill complete | user=$userId sent=${summary.sent} duplicates=${summary.duplicates} failed=${summary.failed}")
+        val pulled = pull.run()
+        Logger.info(TAG, "first pull | added=${pulled.added} devices=${pulled.devices} stoppedBy=${pulled.stoppedBy}")
     }
 
     private fun backfillScopeKey(userId: Long, deviceId: String): String = "$userId:$deviceId"

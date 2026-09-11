@@ -98,6 +98,16 @@ import com.nendo.argosy.ui.screens.settings.sections.StorageMediaItem
 import com.nendo.argosy.ui.screens.settings.sections.createStorageMediaLayoutInfo
 import com.nendo.argosy.ui.screens.settings.sections.storageMediaItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.storageMediaMaxFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.PlayTimeItem
+import com.nendo.argosy.ui.screens.settings.sections.createPlayTimeLayoutInfo
+import com.nendo.argosy.ui.screens.settings.sections.createPlayTimeListLayoutInfo
+import com.nendo.argosy.ui.screens.settings.sections.playTimeFigureOf
+import com.nendo.argosy.ui.screens.settings.sections.playTimeItemAtFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.playTimeMosaicScrub
+import com.nendo.argosy.ui.screens.settings.sections.playTimeListMaxFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.playTimeMaxFocusIndex
+import com.nendo.argosy.ui.screens.settings.sections.playTimeMosaicTiles
+import com.nendo.argosy.ui.screens.settings.sections.playTimeScrubIndex
 import com.nendo.argosy.ui.screens.settings.sections.StorageCachesItem
 import com.nendo.argosy.ui.screens.settings.sections.createStorageCachesLayoutInfo
 import com.nendo.argosy.ui.screens.settings.sections.storageCachesItemAtFocusIndex
@@ -148,6 +158,7 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
                 MainSettingsItem.Saves -> vm.navigateToSection(SettingsSection.SAVES)
                 MainSettingsItem.RetroAchievements -> vm.navigateToSection(SettingsSection.RETRO_ACHIEVEMENTS)
                 MainSettingsItem.Storage -> vm.navigateToSection(SettingsSection.STORAGE)
+                MainSettingsItem.PlayTime -> vm.navigateToSection(SettingsSection.PLAY_TIME)
                 MainSettingsItem.Theme -> vm.navigateToSection(SettingsSection.THEME)
                 MainSettingsItem.Interface -> vm.navigateToSection(SettingsSection.INTERFACE)
                 MainSettingsItem.Navigation -> vm.navigateToSection(SettingsSection.NAVIGATION)
@@ -239,6 +250,10 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
         SettingsSection.STORAGE_MEDIA -> routeStorageMediaConfirm(vm, state)
         SettingsSection.STORAGE_PLATFORM_GAMES -> routeStoragePlatformGamesConfirm(vm, state)
         SettingsSection.STORAGE_CACHES -> routeStorageCachesConfirm(vm, state)
+        SettingsSection.PLAY_TIME -> routePlayTimeConfirm(vm, state)
+        SettingsSection.PLAY_TIME_PLATFORMS,
+        SettingsSection.PLAY_TIME_DEVICES,
+        SettingsSection.PLAY_TIME_GAMES -> InputResult.HANDLED
         SettingsSection.THEME -> routeThemeConfirm(vm, state)
         SettingsSection.AUDIO -> routeAudioConfirm(vm, state)
         SettingsSection.THEME_SOUNDS -> routeThemeSoundsConfirm(vm, state)
@@ -507,6 +522,43 @@ private fun routeStorageConfirm(vm: SettingsViewModel, state: SettingsUiState): 
             if (!state.storage.isHardResetting && !state.storage.isPurgingAll) vm.requestHardReset()
         }
         else -> {}
+    }
+    return InputResult.HANDLED
+}
+
+private fun routePlayTimeConfirm(vm: SettingsViewModel, state: SettingsUiState): InputResult {
+    val isOnline = state.server.connectionStatus == ConnectionStatus.ONLINE
+    val playTime = state.playTime
+    val focused = playTimeItemAtFocusIndex(state.focusedIndex, createPlayTimeLayoutInfo(state))
+    if (focused == PlayTimeItem.MosaicCard && playTime.engagedFigure == PlayTimeFigure.MOSAIC) {
+        val tiles = playTimeMosaicTiles(playTime)
+        val tile = playTimeScrubIndex(playTimeMosaicScrub(playTime), playTime)?.let { tiles.getOrNull(it) }
+            ?: return InputResult.handled(SoundType.SILENT)
+        val gameId = tile.gameId
+        if (gameId == null) {
+            vm.setPlayTimeMosaicFolded(true)
+            return InputResult.handled(SoundType.TOGGLE)
+        }
+        vm.openPlayTimeGame(gameId)
+        return InputResult.HANDLED
+    }
+    playTimeFigureOf(focused)?.let { figure ->
+        vm.setPlayTimeEngagedFigure(figure.takeIf { it != playTime.engagedFigure })
+        return InputResult.handled(SoundType.TOGGLE)
+    }
+    when (focused) {
+        PlayTimeItem.PlatformsTile -> vm.navigateToPlayTimePlatforms()
+        PlayTimeItem.DevicesTile -> vm.navigateToPlayTimeDevices()
+        PlayTimeItem.GamesTile -> vm.navigateToPlayTimeGames()
+        PlayTimeItem.UploadNow -> {
+            if (!isOnline || playTime.isUploading) return InputResult.handled(SoundType.SILENT)
+            vm.uploadPlaySessionsNow()
+        }
+        PlayTimeItem.RefreshFromRomm -> {
+            if (!isOnline || playTime.isPulling) return InputResult.handled(SoundType.SILENT)
+            vm.refreshPlaySessionsFromRomm()
+        }
+        else -> return InputResult.handled(SoundType.SILENT)
     }
     return InputResult.HANDLED
 }
@@ -1088,6 +1140,8 @@ internal fun routeNavigateBack(vm: SettingsViewModel): Boolean {
 private fun routeDismissTopOverlay(vm: SettingsViewModel): Boolean {
     val state = vm._uiState.value
     return when {
+        state.playTime.mosaicFolded -> { vm.setPlayTimeMosaicFolded(false); true }
+        state.playTime.engagedFigure != null -> { vm.setPlayTimeEngagedFigure(null); true }
         state.changelog.visible -> { vm.closeChangelog(); true }
         state.systemizeResult != null -> { vm.dismissSystemizeDialog(); true }
         state.storagePlatformGames.deleteConfirm != null -> { vm.dismissStoragePlatformGameDelete(); true }
@@ -1216,6 +1270,10 @@ private fun computeMaxFocusIndex(
     SettingsSection.STORAGE_MEDIA -> storageMediaMaxFocusIndex(createStorageMediaLayoutInfo(state))
     SettingsSection.STORAGE_PLATFORM_GAMES -> storagePlatformGamesMaxFocusIndex(createStoragePlatformGamesLayoutInfo(state))
     SettingsSection.STORAGE_CACHES -> storageCachesMaxFocusIndex(createStorageCachesLayoutInfo(state))
+    SettingsSection.PLAY_TIME -> playTimeMaxFocusIndex(createPlayTimeLayoutInfo(state))
+    SettingsSection.PLAY_TIME_PLATFORMS -> playTimeListMaxFocusIndex(createPlayTimeListLayoutInfo(state, PlayTimeListKind.PLATFORMS))
+    SettingsSection.PLAY_TIME_DEVICES -> playTimeListMaxFocusIndex(createPlayTimeListLayoutInfo(state, PlayTimeListKind.DEVICES))
+    SettingsSection.PLAY_TIME_GAMES -> playTimeListMaxFocusIndex(createPlayTimeListLayoutInfo(state, PlayTimeListKind.GAMES))
     SettingsSection.THEME -> themeMaxFocusIndex()
     SettingsSection.AUDIO -> audioMaxFocusIndex()
     SettingsSection.THEME_SOUNDS -> themeSoundsMaxFocusIndex(ThemeSoundsLayoutState.from(state))

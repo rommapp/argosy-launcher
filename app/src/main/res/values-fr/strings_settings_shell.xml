@@ -512,4 +512,13 @@
         <item quantity="many">%1$d fichiers copiés</item>
         <item quantity="other">%1$d fichiers copiés</item>
     </plurals>
+    <string name="settings_shell_header_play_time">TEMPS DE JEU</string>
+    <string name="settings_shell_header_play_time_platforms">JEU PAR PLATEFORME</string>
+    <string name="settings_shell_header_play_time_devices">JEU PAR APPAREIL</string>
+    <string name="settings_shell_header_play_time_games">JEU PAR TITRE</string>
+    <string name="settings_shell_footer_play_time_refresh">Actualiser</string>
+    <string name="settings_shell_footer_play_time_inspect">Inspecter</string>
+    <string name="settings_shell_footer_play_time_move">Déplacer</string>
+    <string name="settings_shell_footer_play_time_open">Ouvrir</string>
+    <string name="settings_shell_footer_play_time_sort">Trier</string>
 </resources>

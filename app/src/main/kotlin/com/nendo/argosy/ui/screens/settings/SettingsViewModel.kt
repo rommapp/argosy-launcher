@@ -127,6 +127,7 @@ class SettingsViewModel @Inject constructor(
     val attributionDelegate: StorageAttributionDelegate,
     val storagePlatformGamesDelegate: com.nendo.argosy.ui.screens.settings.delegates.StoragePlatformGamesDelegate,
     val storageCachesDelegate: com.nendo.argosy.ui.screens.settings.delegates.StorageCachesDelegate,
+    val playTimeDelegate: com.nendo.argosy.ui.screens.settings.delegates.PlayTimeSettingsDelegate,
     val syncDelegate: SyncSettingsDelegate,
     val steamDelegate: SteamSettingsDelegate,
     val jellyfinDelegate: com.nendo.argosy.ui.screens.settings.delegates.JellyfinSettingsDelegate,
@@ -1084,6 +1085,57 @@ class SettingsViewModel @Inject constructor(
     fun navigateToStorageMedia() = routeNavigateToStorageMedia(this)
     fun navigateToStorageCaches() = routeNavigateToStorageCaches(this, CACHES_ENTRY_TOP)
     fun navigateToStorageCachesForSteam() = routeNavigateToStorageCaches(this, CACHES_ENTRY_STEAM)
+    fun navigateToPlayTimePlatforms() = routePushSection(this, SettingsSection.PLAY_TIME_PLATFORMS)
+    fun navigateToPlayTimeDevices() = routePushSection(this, SettingsSection.PLAY_TIME_DEVICES)
+    fun navigateToPlayTimeGames() = routePushSection(this, SettingsSection.PLAY_TIME_GAMES)
+
+    fun uploadPlaySessionsNow() = playTimeDelegate.uploadNow(viewModelScope)
+    fun refreshPlaySessionsFromRomm() = playTimeDelegate.refreshFromRomm(viewModelScope)
+    fun setPlayTimeScrub(scrub: PlayTimeScrub, index: Int) = playTimeDelegate.setScrub(scrub, index)
+    fun setPlayTimeEngagedFigure(figure: PlayTimeFigure?) = playTimeDelegate.setEngagedFigure(figure)
+    fun setPlayTimeMosaicFolded(folded: Boolean) = playTimeDelegate.setMosaicFolded(folded)
+
+    fun movePlayTimeMosaic(dx: Int, dy: Int) {
+        val playTime = _uiState.value.playTime
+        val tiles = com.nendo.argosy.ui.screens.settings.sections.playTimeMosaicTiles(playTime)
+        val scrub = com.nendo.argosy.ui.screens.settings.sections.playTimeMosaicScrub(playTime)
+        val current = com.nendo.argosy.ui.screens.settings.sections.playTimeScrubIndex(scrub, playTime) ?: return
+        val next = com.nendo.argosy.ui.components.playtime.mosaicNeighbour(
+            tiles = tiles,
+            current = current,
+            dx = dx,
+            dy = dy,
+            aspect = com.nendo.argosy.ui.theme.generated.ComponentDefaults.PlayTimeChart.mosaicNavAspect
+        ) ?: return
+        playTimeDelegate.setScrub(scrub, next)
+    }
+
+    fun scrubPlayTime(scrub: PlayTimeScrub, direction: Int, step: Int = 1) {
+        val playTime = _uiState.value.playTime
+        playTimeDelegate.scrub(
+            scrub = scrub,
+            direction = direction,
+            size = com.nendo.argosy.ui.screens.settings.sections.playTimeScrubSize(scrub, playTime),
+            initial = com.nendo.argosy.ui.screens.settings.sections.playTimeScrubInitial(scrub, playTime),
+            step = step
+        )
+    }
+
+    fun openPlayTimeGame(gameId: Long) {
+        viewModelScope.launch {
+            _navigationEvents.emit(
+                NavigationEvent(com.nendo.argosy.ui.navigation.Screen.GameDetail.createRoute(gameId))
+            )
+        }
+    }
+
+    fun togglePlayTimeGamesSortMode() = playTimeDelegate.setGamesSortMode(
+        when (_uiState.value.playTime.gamesSortMode) {
+            PlayTimeGamesSortMode.HOURS -> PlayTimeGamesSortMode.SESSIONS
+            PlayTimeGamesSortMode.SESSIONS -> PlayTimeGamesSortMode.RECENT
+            PlayTimeGamesSortMode.RECENT -> PlayTimeGamesSortMode.HOURS
+        }
+    )
 
     fun navigateToSaveSyncScreen() {
         viewModelScope.launch {

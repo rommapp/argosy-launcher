@@ -36,6 +36,26 @@ data class RomMPlaySessionIngestResult(
     @Json(name = "detail") val detail: String? = null
 )
 
+/**
+ * One session as RomM holds it. [id] is the dedup key for anything pulled back; the server
+ * scopes GET to the calling device unless a device id is passed, so [deviceId] is always the
+ * device that was asked for.
+ */
+@JsonClass(generateAdapter = true)
+data class RomMPlaySession(
+    @Json(name = "id") val id: Long,
+    @Json(name = "user_id") val userId: Long? = null,
+    @Json(name = "device_id") val deviceId: String? = null,
+    @Json(name = "rom_id") val romId: Long? = null,
+    @Json(name = "sync_session_id") val syncSessionId: Long? = null,
+    @Json(name = "save_slot") val saveSlot: String? = null,
+    @Json(name = "start_time") val startTime: String,
+    @Json(name = "end_time") val endTime: String,
+    @Json(name = "duration_ms") val durationMs: Long? = null,
+    @Json(name = "created_at") val createdAt: String? = null,
+    @Json(name = "updated_at") val updatedAt: String? = null
+)
+
 @JsonClass(generateAdapter = true)
 data class RomMPlaySessionIngestResponse(
     @Json(name = "results") val results: List<RomMPlaySessionIngestResult> = emptyList(),

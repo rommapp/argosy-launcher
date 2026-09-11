@@ -134,6 +134,11 @@
     <!-- Fallback heading for the per-platform storage screen when the platform name is blank. -->
     <string name="settings_shell_header_storage_platform_games_fallback">PLATFORM GAMES</string>
     <string name="settings_shell_header_storage_caches">CACHES &amp; SYSTEM</string>
+    <!-- Heading of the play-time hub. "Play" is the noun: time spent playing. -->
+    <string name="settings_shell_header_play_time">PLAY TIME</string>
+    <string name="settings_shell_header_play_time_platforms">PLAY BY PLATFORM</string>
+    <string name="settings_shell_header_play_time_devices">PLAY BY DEVICE</string>
+    <string name="settings_shell_header_play_time_games">PLAY BY GAME</string>
     <string name="settings_shell_header_theme">THEME</string>
     <string name="settings_shell_header_audio">AUDIO</string>
     <string name="settings_shell_header_theme_sounds">SOUNDS</string>
@@ -391,6 +396,16 @@
     <string name="settings_shell_footer_switch_remove">Switch / Remove</string>
     <string name="settings_shell_footer_refresh">Refresh</string>
     <string name="settings_shell_footer_sort">Sort</string>
+    <!-- Play-time hub: pulls sessions from RomM. Verb. -->
+    <string name="settings_shell_footer_play_time_refresh">Refresh</string>
+    <!-- Play-time hub, d-pad on a figure: moves the reading across its marks. Verb. -->
+    <string name="settings_shell_footer_play_time_inspect">Inspect</string>
+    <!-- Play-time hub, d-pad inside an engaged figure: moves the reading across its grid. Verb. -->
+    <string name="settings_shell_footer_play_time_move">Move</string>
+    <!-- Play-time hub, confirm on a cover tile: opens that game. Verb. -->
+    <string name="settings_shell_footer_play_time_open">Open</string>
+    <!-- Play-time game list: changes the ordering. Verb. -->
+    <string name="settings_shell_footer_play_time_sort">Sort</string>
     <string name="settings_shell_footer_category">Category</string>
     <string name="settings_shell_footer_delete">Delete</string>
     <!-- D-pad hint on the platform detail screen: adjusts the focused row's value. Separate

@@ -493,4 +493,13 @@
         <item quantity="one">%1$d फ़ाइल कॉपी की गई</item>
         <item quantity="other">%1$d फ़ाइलें कॉपी की गईं</item>
     </plurals>
+    <string name="settings_shell_header_play_time">खेलने का समय</string>
+    <string name="settings_shell_header_play_time_platforms">प्लेटफ़ॉर्म के अनुसार खेल</string>
+    <string name="settings_shell_header_play_time_devices">डिवाइस के अनुसार खेल</string>
+    <string name="settings_shell_header_play_time_games">गेम के अनुसार खेल</string>
+    <string name="settings_shell_footer_play_time_refresh">रीफ़्रेश</string>
+    <string name="settings_shell_footer_play_time_inspect">देखें</string>
+    <string name="settings_shell_footer_play_time_move">ले जाएं</string>
+    <string name="settings_shell_footer_play_time_open">खोलें</string>
+    <string name="settings_shell_footer_play_time_sort">क्रम</string>
 </resources>

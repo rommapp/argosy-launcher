@@ -119,6 +119,13 @@ import com.nendo.argosy.ui.screens.settings.sections.StoragePlatformGamesItem
 import com.nendo.argosy.ui.screens.settings.sections.createStoragePlatformGamesLayoutInfo
 import com.nendo.argosy.ui.screens.settings.sections.storagePlatformGamesItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.StorageSection
+import com.nendo.argosy.ui.screens.settings.sections.PlayTimeListSection
+import com.nendo.argosy.ui.screens.settings.sections.PlayTimeSection
+import com.nendo.argosy.ui.screens.settings.sections.PlayTimeItem
+import com.nendo.argosy.ui.screens.settings.sections.createPlayTimeLayoutInfo
+import com.nendo.argosy.ui.screens.settings.sections.playTimeFigureOf
+import com.nendo.argosy.ui.screens.settings.sections.playTimeHorizontalScrubOf
+import com.nendo.argosy.ui.screens.settings.sections.playTimeItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.SyncSettingsSection
 import com.nendo.argosy.data.preferences.FontSlot
 import com.nendo.argosy.ui.screens.settings.sections.ThemeBackdropSection
@@ -599,6 +606,10 @@ fun SettingsScreen(
                                 stringResource(R.string.settings_shell_header_storage_platform_games_fallback)
                             }
                         SettingsSection.STORAGE_CACHES -> stringResource(R.string.settings_shell_header_storage_caches)
+                        SettingsSection.PLAY_TIME -> stringResource(R.string.settings_shell_header_play_time)
+                        SettingsSection.PLAY_TIME_PLATFORMS -> stringResource(R.string.settings_shell_header_play_time_platforms)
+                        SettingsSection.PLAY_TIME_DEVICES -> stringResource(R.string.settings_shell_header_play_time_devices)
+                        SettingsSection.PLAY_TIME_GAMES -> stringResource(R.string.settings_shell_header_play_time_games)
                         SettingsSection.THEME -> stringResource(R.string.settings_shell_header_theme)
                         SettingsSection.AUDIO -> stringResource(R.string.settings_shell_header_audio)
                         SettingsSection.THEME_SOUNDS -> stringResource(R.string.settings_shell_header_theme_sounds)
@@ -677,6 +688,13 @@ fun SettingsScreen(
                     SettingsSection.STORAGE_MEDIA -> StorageMediaSection(uiState, viewModel)
                     SettingsSection.STORAGE_PLATFORM_GAMES -> StoragePlatformGamesSection(uiState, viewModel)
                     SettingsSection.STORAGE_CACHES -> StorageCachesSection(uiState, viewModel)
+                    SettingsSection.PLAY_TIME -> PlayTimeSection(uiState, viewModel)
+                    SettingsSection.PLAY_TIME_PLATFORMS ->
+                        PlayTimeListSection(uiState, viewModel, PlayTimeListKind.PLATFORMS)
+                    SettingsSection.PLAY_TIME_DEVICES ->
+                        PlayTimeListSection(uiState, viewModel, PlayTimeListKind.DEVICES)
+                    SettingsSection.PLAY_TIME_GAMES ->
+                        PlayTimeListSection(uiState, viewModel, PlayTimeListKind.GAMES)
                     SettingsSection.THEME -> ThemeSection(uiState, viewModel)
                     SettingsSection.AUDIO -> AudioSection(uiState, viewModel)
                     SettingsSection.THEME_SOUNDS -> ThemeSoundsSection(uiState, viewModel)
@@ -1685,6 +1703,11 @@ private fun SettingsFooter(
     val switchRemoveHint = stringResource(R.string.settings_shell_footer_switch_remove)
     val refreshHint = stringResource(R.string.settings_shell_footer_refresh)
     val sortHint = stringResource(R.string.settings_shell_footer_sort)
+    val playTimeRefreshHint = stringResource(R.string.settings_shell_footer_play_time_refresh)
+    val playTimeInspectHint = stringResource(R.string.settings_shell_footer_play_time_inspect)
+    val playTimeMoveHint = stringResource(R.string.settings_shell_footer_play_time_move)
+    val playTimeOpenHint = stringResource(R.string.settings_shell_footer_play_time_open)
+    val playTimeSortHint = stringResource(R.string.settings_shell_footer_play_time_sort)
     val categoryHint = stringResource(R.string.settings_shell_footer_category)
     val deleteHint = stringResource(R.string.settings_shell_footer_delete)
     val adjustPlatformDetailHint = stringResource(R.string.settings_shell_footer_adjust_platformdetail)
@@ -1798,6 +1821,23 @@ private fun SettingsFooter(
         if (uiState.currentSection == SettingsSection.STORAGE_GAMES) {
             add(InputButton.X to sortHint)
         }
+        if (uiState.currentSection == SettingsSection.PLAY_TIME) {
+            val focusedPlayTime = playTimeItemAtFocusIndex(uiState.focusedIndex, createPlayTimeLayoutInfo(uiState))
+            val figure = playTimeFigureOf(focusedPlayTime)
+            val engaged = figure != null && figure == uiState.playTime.engagedFigure
+            when {
+                engaged -> add(InputButton.DPAD to playTimeMoveHint)
+                figure != null -> add(InputButton.A to playTimeInspectHint)
+                playTimeHorizontalScrubOf(focusedPlayTime) != null -> add(InputButton.DPAD_HORIZONTAL to playTimeInspectHint)
+            }
+            if (engaged && focusedPlayTime == PlayTimeItem.MosaicCard) {
+                add(InputButton.A to playTimeOpenHint)
+            }
+            add(InputButton.X to playTimeRefreshHint)
+        }
+        if (uiState.currentSection == SettingsSection.PLAY_TIME_GAMES) {
+            add(InputButton.X to playTimeSortHint)
+        }
         if (uiState.currentSection == SettingsSection.STORAGE_PLATFORM_GAMES) {
             val pgInfo = createStoragePlatformGamesLayoutInfo(uiState)
             val focusedPg = storagePlatformGamesItemAtFocusIndex(uiState.focusedIndex, pgInfo)
@@ -1851,7 +1891,11 @@ private fun SettingsFooter(
                 else -> selectLabelHint
             }
             add(InputButton.A to aLabel)
-        } else if (uiState.currentSection != SettingsSection.SHADER_STACK) {
+        } else if (uiState.currentSection != SettingsSection.SHADER_STACK &&
+            uiState.currentSection != SettingsSection.PLAY_TIME_PLATFORMS &&
+            uiState.currentSection != SettingsSection.PLAY_TIME_DEVICES &&
+            uiState.currentSection != SettingsSection.PLAY_TIME_GAMES
+        ) {
             add(InputButton.A to selectDefaultHint)
         }
         if (uiState.currentSection == SettingsSection.PLATFORMS) {

@@ -2199,4 +2199,128 @@
     <string name="settings_main_language_subtitle">更改启动器中的全部文字</string>
     <string name="settings_main_language_system_default">跟随系统</string>
 
+    <string name="settings_main_play_time_title">游戏时长</string>
+    <string name="settings_main_play_time_subtitle">习惯、常玩游戏、设备</string>
+
+    <string name="settings_play_time_section_activity">活动</string>
+    <string name="settings_play_time_section_when">你何时玩</string>
+    <string name="settings_play_time_section_platforms">平台</string>
+    <string name="settings_play_time_section_where">设备</string>
+    <string name="settings_play_time_section_what">你玩什么</string>
+    <string name="settings_play_time_section_facts">速览</string>
+    <string name="settings_play_time_loading_title">正在读取会话...</string>
+    <string name="settings_play_time_loading_message">你的游戏习惯马上就会显示。</string>
+    <string name="settings_play_time_empty_title">还没有游戏会话</string>
+    <string name="settings_play_time_empty_message">玩一局游戏，你的习惯就会在这里逐渐成形。从 RomM 刷新可纳入其他设备上的会话。</string>
+    <string name="settings_play_time_summary_empty">还没有游戏记录。开始一局，它就会出现在这里。</string>
+    <string name="settings_play_time_summary_total">已游玩</string>
+    <string name="settings_play_time_summary_platforms">平台</string>
+    <string name="settings_play_time_summary_peak">最活跃时段</string>
+    <string name="settings_play_time_summary_device">最常使用</string>
+    <plurals name="settings_play_time_summary_window">
+        <item quantity="other">过去 %d 天</item>
+    </plurals>
+    <string name="settings_play_time_summary_peak_value">%1$s %2$s</string>
+    <string name="settings_play_time_activity_empty">此范围内没有游戏</string>
+    <string name="settings_play_time_streak_current">当前连续天数</string>
+    <string name="settings_play_time_streak_longest">最长连续天数</string>
+    <plurals name="settings_play_time_streak_days">
+        <item quantity="other">%d 天</item>
+    </plurals>
+    <plurals name="settings_play_time_day_game_count">
+        <item quantity="other">%d 款游戏</item>
+    </plurals>
+    <string name="settings_play_time_day_empty">未进行游戏</string>
+    <string name="settings_play_time_day_session_count">%1$dx</string>
+    <plurals name="settings_play_time_day_more">
+        <item quantity="other">还有 %d 款游戏</item>
+    </plurals>
+    <string name="settings_play_time_wave_header">%1$s %2$s</string>
+    <string name="settings_play_time_wave_peak">峰值 %1$s %2$s</string>
+    <string name="settings_play_time_wave_empty">此范围内没有游戏</string>
+    <string name="settings_play_time_platform_band_title">平台</string>
+    <string name="settings_play_time_device_band_title">设备</string>
+    <string name="settings_play_time_platform_others">其他平台</string>
+    <string name="settings_play_time_device_others">其他设备</string>
+    <string name="settings_play_time_share_percent">%d%%</string>
+    <string name="settings_play_time_platforms_tile_title">按平台</string>
+    <plurals name="settings_play_time_platforms_tile_count">
+        <item quantity="other">%d 个平台</item>
+    </plurals>
+    <string name="settings_play_time_devices_tile_title">按设备</string>
+    <plurals name="settings_play_time_devices_tile_count">
+        <item quantity="other">%d 台设备</item>
+    </plurals>
+    <string name="settings_play_time_games_tile_title">常玩游戏</string>
+    <plurals name="settings_play_time_games_tile_count">
+        <item quantity="other">%d 个游戏</item>
+    </plurals>
+    <string name="settings_play_time_mosaic_others">其他</string>
+    <plurals name="settings_play_time_mosaic_others_count">
+        <item quantity="other">另有 %d 款游戏</item>
+    </plurals>
+    <string name="settings_play_time_mosaic_empty">还没有活跃游戏记录</string>
+    <string name="settings_play_time_entry_last_played">上次游玩 %s</string>
+    <string name="settings_play_time_this_device">本设备</string>
+    <string name="settings_play_time_unknown_game">未知游戏</string>
+    <string name="settings_play_time_facts_average">平均时长</string>
+    <string name="settings_play_time_facts_longest">最长一次</string>
+    <string name="settings_play_time_facts_sessions">次数</string>
+    <string name="settings_play_time_facts_days_played">游玩天数</string>
+    <string name="settings_play_time_facts_per_active_day">每个游玩日</string>
+    <string name="settings_play_time_facts_busiest_day">最活跃的一天</string>
+    <string name="settings_play_time_facts_days_played_value">%2$d 天中的 %1$d 天</string>
+    <string name="settings_play_time_facts_none">暂无</string>
+
+    <string name="settings_play_time_romm_on_server_title">RomM 上的会话</string>
+    <string name="settings_play_time_romm_pending_title">待上传</string>
+    <string name="settings_play_time_romm_pending_subtitle">下次上传时发送</string>
+    <string name="settings_play_time_romm_unlinked_title">未关联</string>
+    <string name="settings_play_time_romm_unlinked_subtitle">没有可关联的 RomM 游戏</string>
+    <string name="settings_play_time_romm_last_upload_title">上次上传</string>
+    <string name="settings_play_time_romm_last_upload_never">从未</string>
+    <string name="settings_play_time_romm_pulled_title">来自其他设备</string>
+    <string name="settings_play_time_romm_last_refresh_title">上次刷新</string>
+    <string name="settings_play_time_romm_last_refresh_never">从未</string>
+    <string name="settings_play_time_romm_upload_title">立即上传</string>
+    <string name="settings_play_time_romm_upload_subtitle">把本地会话发送到 RomM</string>
+    <string name="settings_play_time_romm_upload_busy">正在上传...</string>
+    <string name="settings_play_time_romm_upload_offline">连接 RomM 后即可上传</string>
+    <string name="settings_play_time_romm_upload_result">已发送 %1$d，RomM 已有 %2$d，被拒 %3$d</string>
+    <string name="settings_play_time_romm_upload_stopped">上传已中止：%s</string>
+    <string name="settings_play_time_romm_refresh_title">从 RomM 刷新</string>
+    <string name="settings_play_time_romm_refresh_subtitle">拉取其他设备上的会话</string>
+    <string name="settings_play_time_romm_refresh_busy">正在刷新...</string>
+    <string name="settings_play_time_romm_refresh_offline">连接 RomM 后即可刷新</string>
+    <plurals name="settings_play_time_romm_refresh_result">
+        <item quantity="other">已从其他设备添加 %d 次会话</item>
+    </plurals>
+    <string name="settings_play_time_romm_refresh_stopped">刷新已中止：%s</string>
+    <string name="settings_play_time_list_unknown_game">未知游戏</string>
+    <string name="settings_play_time_list_game_detail">%1$s，上次游玩 %2$s</string>
+    <plurals name="settings_play_time_list_sessions">
+        <item quantity="other">%d 次会话</item>
+    </plurals>
+    <string name="settings_play_time_list_this_device">本设备</string>
+    <plurals name="settings_play_time_platforms_totals_count">
+        <item quantity="other">%d 个平台</item>
+    </plurals>
+    <plurals name="settings_play_time_devices_totals_count">
+        <item quantity="other">%d 台设备</item>
+    </plurals>
+    <plurals name="settings_play_time_games_totals_count">
+        <item quantity="other">%d 个游戏</item>
+    </plurals>
+    <string name="settings_play_time_list_totals_played">已玩 %s</string>
+    <string name="settings_play_time_platforms_list_header">平台</string>
+    <string name="settings_play_time_devices_list_header">设备</string>
+    <string name="settings_play_time_games_list_header">游戏</string>
+    <string name="settings_play_time_games_sort_toggle_description">更改排序</string>
+    <string name="settings_play_time_games_sort_hours">时长</string>
+    <string name="settings_play_time_games_sort_sessions">会话</string>
+    <string name="settings_play_time_games_sort_recent">最近</string>
+    <string name="settings_play_time_platforms_list_empty">还没有平台有游戏记录。</string>
+    <string name="settings_play_time_devices_list_empty">还没有设备有游戏记录。</string>
+    <string name="settings_play_time_games_list_empty">还没有游戏有游玩记录。</string>
+
 </resources>

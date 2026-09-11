@@ -88,6 +88,21 @@ interface PlaySessionDao {
     @Query("UPDATE play_sessions SET rommSessionId = :rommSessionId WHERE id = :id")
     suspend fun setRommSessionId(id: Long, rommSessionId: Long)
 
+    @Query("""
+        UPDATE play_sessions SET gameId = (
+            SELECT g.id FROM games g
+            WHERE g.igdbId = play_sessions.igdbId AND g.platformSlug = play_sessions.platformSlug
+        )
+        WHERE ownerUserId IS :ownerUserId
+          AND igdbId IS NOT NULL
+          AND NOT EXISTS (SELECT 1 FROM games WHERE games.id = play_sessions.gameId)
+          AND (
+            SELECT COUNT(*) FROM games g
+            WHERE g.igdbId = play_sessions.igdbId AND g.platformSlug = play_sessions.platformSlug
+          ) = 1
+    """)
+    suspend fun relinkOrphans(ownerUserId: Long?): Int
+
     @Query("DELETE FROM play_sessions WHERE ownerUserId = :ownerUserId")
     suspend fun deleteByOwner(ownerUserId: Long)
 
@@ -96,7 +111,153 @@ interface PlaySessionDao {
 
     @Query("UPDATE play_sessions SET ownerUserId = :ownerUserId WHERE ownerUserId IS NULL")
     suspend fun adoptUnowned(ownerUserId: Long)
+
+    @Query("""
+        SELECT MAX(startTime) FROM play_sessions
+        WHERE deviceId = :deviceId AND ownerUserId IS :ownerUserId AND rommSessionId IS NOT NULL
+    """)
+    suspend fun getLatestRommStartForDevice(deviceId: String, ownerUserId: Long?): Instant?
+
+    @Query("SELECT rommSessionId FROM play_sessions WHERE rommSessionId IN (:rommSessionIds)")
+    suspend fun getHeldRommSessionIds(rommSessionIds: List<Long>): List<Long>
+
+    @Query("""
+        SELECT day, SUM(gameMs) AS activeMs FROM (
+            SELECT strftime('%Y-%m-%d', startTime / 1000, 'unixepoch', 'localtime') AS day,
+                   gameId, SUM(activePlayMs) AS gameMs
+            FROM play_sessions
+            WHERE ownerUserId IS :ownerUserId AND startTime >= :since
+            GROUP BY day, gameId
+            HAVING gameMs >= :minActiveMs
+        )
+        GROUP BY day
+        ORDER BY day ASC
+    """)
+    suspend fun getActiveMsPerDay(ownerUserId: Long?, since: Instant, minActiveMs: Long): List<PlayDayTotal>
+
+    @Query("""
+        SELECT day FROM (
+            SELECT strftime('%Y-%m-%d', startTime / 1000, 'unixepoch', 'localtime') AS day,
+                   gameId, SUM(activePlayMs) AS gameMs
+            FROM play_sessions
+            WHERE ownerUserId IS :ownerUserId
+            GROUP BY day, gameId
+            HAVING gameMs >= :minActiveMs
+        )
+        GROUP BY day
+        ORDER BY day ASC
+    """)
+    suspend fun getPlayDays(ownerUserId: Long?, minActiveMs: Long): List<String>
+
+    @Query("""
+        SELECT * FROM play_sessions
+        WHERE ownerUserId IS :ownerUserId AND startTime >= :since
+        ORDER BY startTime ASC
+    """)
+    suspend fun getSessionsForOwnerSince(ownerUserId: Long?, since: Instant): List<PlaySessionEntity>
+
+    @Query("""
+        SELECT platformSlug, SUM(activePlayMs) AS activeMs, COUNT(*) AS sessionCount,
+               MAX(startTime) AS lastPlayed
+        FROM play_sessions
+        WHERE ownerUserId IS :ownerUserId AND startTime >= :since
+        GROUP BY platformSlug
+        HAVING activeMs >= :minActiveMs
+        ORDER BY activeMs DESC
+    """)
+    suspend fun getActiveMsPerPlatform(ownerUserId: Long?, since: Instant, minActiveMs: Long): List<PlatformPlayTotal>
+
+    @Query("""
+        SELECT deviceId, MAX(deviceManufacturer) AS deviceManufacturer, MAX(deviceModel) AS deviceModel,
+               SUM(activePlayMs) AS activeMs, COUNT(*) AS sessionCount, MAX(startTime) AS lastPlayed
+        FROM play_sessions
+        WHERE ownerUserId IS :ownerUserId AND startTime >= :since
+        GROUP BY deviceId
+        HAVING activeMs >= :minActiveMs
+        ORDER BY activeMs DESC
+    """)
+    suspend fun getActiveMsPerDevice(ownerUserId: Long?, since: Instant, minActiveMs: Long): List<DevicePlayTotal>
+
+    @Query("""
+        SELECT gameId, MAX(gameTitle) AS gameTitle, MAX(platformSlug) AS platformSlug, MAX(igdbId) AS igdbId,
+               SUM(activePlayMs) AS activeMs, COUNT(*) AS sessionCount, MAX(startTime) AS lastPlayed
+        FROM play_sessions
+        WHERE ownerUserId IS :ownerUserId AND startTime >= :since
+        GROUP BY gameId
+        HAVING activeMs >= :minActiveMs
+        ORDER BY activeMs DESC
+        LIMIT :limit
+    """)
+    suspend fun getActiveMsPerGame(ownerUserId: Long?, since: Instant, minActiveMs: Long, limit: Int): List<GamePlayTotal>
+
+    @Query("""
+        SELECT COUNT(*) AS sessionCount
+        FROM play_sessions
+        WHERE ownerUserId IS :ownerUserId AND startTime >= :since
+    """)
+    suspend fun getSessionShape(ownerUserId: Long?, since: Instant): PlaySessionShape
+
+    @Query("""
+        SELECT COALESCE(SUM(CASE WHEN ps.rommSessionId IS NULL
+                                  AND (ps.endTime / 1000) > (ps.startTime / 1000)
+                                  AND EXISTS (SELECT 1 FROM games g WHERE g.id = ps.gameId AND g.rommId > 0)
+                                 THEN 1 ELSE 0 END), 0) AS pending,
+               COALESCE(SUM(CASE WHEN ps.rommSessionId IS NULL
+                                  AND NOT EXISTS (SELECT 1 FROM games g WHERE g.id = ps.gameId AND g.rommId > 0)
+                                 THEN 1 ELSE 0 END), 0) AS unlinked,
+               COALESCE(SUM(CASE WHEN ps.rommSessionId IS NOT NULL THEN 1 ELSE 0 END), 0) AS onRomm,
+               COALESCE(SUM(CASE WHEN ps.deviceId != :localDeviceId THEN 1 ELSE 0 END), 0) AS fromOtherDevices
+        FROM play_sessions ps
+        WHERE ps.ownerUserId IS :ownerUserId
+    """)
+    suspend fun getRommSyncCounts(ownerUserId: Long?, localDeviceId: String): PlaySessionSyncCounts
 }
+
+data class PlayDayTotal(
+    val day: String,
+    val activeMs: Long
+)
+
+data class PlatformPlayTotal(
+    val platformSlug: String,
+    val activeMs: Long,
+    val sessionCount: Int,
+    val lastPlayed: Instant
+)
+
+data class DevicePlayTotal(
+    val deviceId: String,
+    val deviceManufacturer: String,
+    val deviceModel: String,
+    val activeMs: Long,
+    val sessionCount: Int,
+    val lastPlayed: Instant
+)
+
+data class GamePlayTotal(
+    val gameId: Long,
+    val gameTitle: String,
+    val platformSlug: String,
+    val igdbId: Long?,
+    val activeMs: Long,
+    val sessionCount: Int,
+    val lastPlayed: Instant
+)
+
+data class PlaySessionShape(
+    val sessionCount: Int
+)
+
+/**
+ * [pending] rows are exactly what [PlaySessionDao.getPendingForRomM] would upload; [unlinked]
+ * rows are held back because no current games row with a RomM id backs them.
+ */
+data class PlaySessionSyncCounts(
+    val pending: Int,
+    val unlinked: Int,
+    val onRomm: Int,
+    val fromOtherDevices: Int
+)
 
 data class PlayTimeSummary(
     val igdbId: Long,

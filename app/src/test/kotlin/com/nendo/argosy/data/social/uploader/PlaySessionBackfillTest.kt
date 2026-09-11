@@ -8,6 +8,7 @@ import com.nendo.argosy.data.remote.romm.ConnectionState
 import com.nendo.argosy.data.remote.romm.RomMConnectionManager
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,7 +19,9 @@ import java.time.Instant
 
 class PlaySessionBackfillTest {
 
-    private val playSessionDao: PlaySessionDao = mockk()
+    private val playSessionDao: PlaySessionDao = mockk {
+        coEvery { relinkOrphans(any()) } returns 0
+    }
     private val uploader: RomMPlaySessionUploader = mockk {
         every { canUpload } returns true
     }
@@ -26,12 +29,16 @@ class PlaySessionBackfillTest {
         coEvery { getRommUserId() } returns 7L
         coEvery { getRommPlaySessionBackfillDone() } returns null
         coEvery { setRommPlaySessionBackfillDone(any()) } returns Unit
+        coEvery { setRommPlaySessionLastUpload(any()) } returns Unit
     }
     private val connectionManager: RomMConnectionManager = mockk {
         every { connectionState } returns MutableStateFlow<ConnectionState>(ConnectionState.Disconnected)
         every { getDeviceId() } returns "dev-1"
     }
-    private val backfill = PlaySessionBackfill(playSessionDao, uploader, syncPreferencesRepository, connectionManager)
+    private val pull: PlaySessionPull = mockk {
+        coEvery { run() } returns PlaySessionPull.Summary(0, 0)
+    }
+    private val backfill = PlaySessionBackfill(playSessionDao, uploader, syncPreferencesRepository, connectionManager, pull)
 
     private fun pending(id: Long) = PendingRomMPlaySession(
         session = PlaySessionEntity(
@@ -92,6 +99,19 @@ class PlaySessionBackfillTest {
     }
 
     @Test
+    fun `orphaned sessions are relinked for the owner before pending rows are read`() = runTest {
+        coEvery { playSessionDao.relinkOrphans(7L) } returns 3
+        coEvery { playSessionDao.getPendingForRomM(7L, 0L, 100) } returns emptyList()
+
+        backfill.run()
+
+        coVerifyOrder {
+            playSessionDao.relinkOrphans(7L)
+            playSessionDao.getPendingForRomM(7L, 0L, 100)
+        }
+    }
+
+    @Test
     fun `nothing pending uploads nothing`() = runTest {
         coEvery { playSessionDao.getPendingForRomM(7L, 0L, 100) } returns emptyList()
 
@@ -111,6 +131,15 @@ class PlaySessionBackfillTest {
     }
 
     @Test
+    fun `first connect pulls the other devices' sessions once the backfill is recorded`() = runTest {
+        coEvery { playSessionDao.getPendingForRomM(7L, 0L, 100) } returns emptyList()
+
+        backfill.runOnceAfterConnect()
+
+        coVerify(exactly = 1) { pull.run() }
+    }
+
+    @Test
     fun `a recorded run for the same user and device is not repeated`() = runTest {
         coEvery { syncPreferencesRepository.getRommPlaySessionBackfillDone() } returns "7:dev-1"
 
@@ -118,6 +147,7 @@ class PlaySessionBackfillTest {
 
         coVerify(exactly = 0) { playSessionDao.getPendingForRomM(any(), any(), any()) }
         coVerify(exactly = 0) { syncPreferencesRepository.setRommPlaySessionBackfillDone(any()) }
+        coVerify(exactly = 0) { pull.run() }
     }
 
     @Test
@@ -139,6 +169,7 @@ class PlaySessionBackfillTest {
         backfill.runOnceAfterConnect()
 
         coVerify(exactly = 0) { syncPreferencesRepository.setRommPlaySessionBackfillDone(any()) }
+        coVerify(exactly = 0) { pull.run() }
     }
 
     @Test

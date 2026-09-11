@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Storage
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -116,6 +117,12 @@ internal sealed class MainSettingsItem(
     )
     data object Storage :
         MainSettingsItem("storage", Icons.Default.Storage, R.string.settings_main_storage_title, "library")
+    data object PlayTime : MainSettingsItem(
+        "playTime",
+        Icons.Default.Timer,
+        R.string.settings_main_play_time_title,
+        "library"
+    )
 
     data object RomM :
         MainSettingsItem("romm", Icons.Default.Dns, R.string.settings_main_romm_title, "connections")
@@ -157,7 +164,7 @@ internal sealed class MainSettingsItem(
                 Header("gameplayHeader", "gameplay", R.string.settings_main_section_gameplay),
                 BuiltinEmulator, Saves, RetroAchievements, Bios, Drivers,
                 Header("libraryHeader", "library", R.string.settings_main_section_library),
-                Platforms, Storage,
+                Platforms, Storage, PlayTime,
                 Header("connectionsHeader", "connections", R.string.settings_main_section_connections),
                 RomM, Steam, Jellyfin, Social,
                 Header("systemHeader", "system", R.string.settings_main_section_system),
@@ -229,6 +236,7 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
         } else {
             context.getString(R.string.settings_main_storage_subtitle_empty)
         }
+        MainSettingsItem.PlayTime -> context.getString(R.string.settings_main_play_time_subtitle)
         MainSettingsItem.Theme -> context.getString(R.string.settings_main_theme_subtitle)
         MainSettingsItem.Interface -> context.getString(R.string.settings_main_interface_subtitle)
         MainSettingsItem.Navigation -> context.getString(R.string.settings_main_navigation_subtitle)
@@ -290,6 +298,7 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
             MainSettingsItem.Saves -> viewModel.navigateToSection(SettingsSection.SAVES)
             MainSettingsItem.RetroAchievements -> viewModel.navigateToSection(SettingsSection.RETRO_ACHIEVEMENTS)
             MainSettingsItem.Storage -> viewModel.navigateToSection(SettingsSection.STORAGE)
+            MainSettingsItem.PlayTime -> viewModel.navigateToSection(SettingsSection.PLAY_TIME)
             MainSettingsItem.Theme -> viewModel.navigateToSection(SettingsSection.THEME)
             MainSettingsItem.Interface -> viewModel.navigateToSection(SettingsSection.INTERFACE)
             MainSettingsItem.Navigation -> viewModel.navigateToSection(SettingsSection.NAVIGATION)

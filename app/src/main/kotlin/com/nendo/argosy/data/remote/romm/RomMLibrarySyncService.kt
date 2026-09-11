@@ -12,6 +12,7 @@ import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.dao.PlatformLibretroSettingsDao
+import com.nendo.argosy.data.local.dao.PlaySessionDao
 import com.nendo.argosy.data.local.entity.CollectionType
 import com.nendo.argosy.data.local.entity.GameDiscEntity
 import com.nendo.argosy.data.local.entity.GameEntity
@@ -71,6 +72,7 @@ class RomMLibrarySyncService @Inject constructor(
     private val platformDao: PlatformDao,
     private val emulatorConfigDao: EmulatorConfigDao,
     private val platformLibretroSettingsDao: PlatformLibretroSettingsDao,
+    private val playSessionDao: PlaySessionDao,
     private val firmwareDao: FirmwareDao,
     private val controllerMappingDao: ControllerMappingDao,
     private val collectionDao: CollectionDao,
@@ -520,6 +522,11 @@ class RomMLibrarySyncService @Inject constructor(
             cleanupLegacyPlatforms(platforms)
 
             androidGameScanner.get().relinkInstalledRommAndroidApps()
+
+            val relinkedSessions = playSessionDao.relinkOrphans(scope.ownerUserId)
+            if (relinkedSessions > 0) {
+                Logger.info(TAG, "doSyncLibrary: relinked $relinkedSessions play sessions to current game rows")
+            }
 
             userPreferencesRepository.setLastRommSyncTime(Instant.now())
 

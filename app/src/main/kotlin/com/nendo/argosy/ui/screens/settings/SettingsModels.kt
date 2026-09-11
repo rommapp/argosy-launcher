@@ -12,6 +12,7 @@ import com.nendo.argosy.data.emulator.EmulatorDef
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.data.emulator.ExtensionOption
+import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.data.emulator.InstalledEmulator
 import com.nendo.argosy.data.emulator.RetroArchCore
 import com.nendo.argosy.data.local.entity.GameListItem
@@ -92,6 +93,10 @@ enum class SettingsSection {
     STORAGE_MEDIA,
     STORAGE_PLATFORM_GAMES,
     STORAGE_CACHES,
+    PLAY_TIME,
+    PLAY_TIME_PLATFORMS,
+    PLAY_TIME_DEVICES,
+    PLAY_TIME_GAMES,
     BIOS,
     THEME,
     AUDIO,
@@ -867,6 +872,93 @@ data class StorageCachesState(
     val steamStagingBytes: Long? = null
 )
 
+enum class PlayTimeGamesSortMode { HOURS, SESSIONS, RECENT }
+
+/**
+ * The axes a d-pad can scrub along in the Play Time overview. Each keeps its own index so moving
+ * focus between figures does not lose a reading; WEEKDAY and HOUR are the two axes of the waveform.
+ */
+enum class PlayTimeScrub { CALENDAR, WEEKDAY, HOUR, MOSAIC, MOSAIC_FOLDED }
+
+enum class PlayTimeFigure { CALENDAR, WAVEFORM, MOSAIC }
+
+/**
+ * Which drill-in list the shared Play Time list section is rendering; the section enum
+ * decides it, the list items are shaped the same way for all three.
+ */
+enum class PlayTimeListKind { PLATFORMS, DEVICES, GAMES }
+
+/**
+ * One row of a Play Time list. [name] is blank when a pulled session's rom could not be
+ * named, and the row shows its placeholder label instead.
+ */
+data class PlayTimeEntryUi(
+    val key: String,
+    val name: String,
+    val platformName: String = "",
+    val activeMs: Long,
+    val sessionCount: Int,
+    val lastPlayed: java.time.Instant,
+    val isThisDevice: Boolean = false
+)
+
+data class PlayTimeSessionUi(
+    val id: Long,
+    val gameId: Long,
+    val gameTitle: String,
+    val platformSlug: String,
+    val platformName: String,
+    val startTime: java.time.Instant,
+    val activeMs: Long,
+    val deviceName: String,
+    val isThisDevice: Boolean
+)
+
+/**
+ * The readings the overview sentence is written from. [hour] is 0 to 23 in the device zone.
+ */
+data class PlayTimeSummaryUi(
+    val totalActiveMs: Long,
+    val platformCount: Int,
+    val platformName: String,
+    val weekday: java.time.DayOfWeek,
+    val hour: Int,
+    val deviceName: String,
+    val isThisDevice: Boolean
+)
+
+data class PlayTimeState(
+    val isLoading: Boolean = false,
+    val hasLoaded: Boolean = false,
+    val scrubs: Map<PlayTimeScrub, Int> = emptyMap(),
+    val engagedFigure: PlayTimeFigure? = null,
+    val mosaicFolded: Boolean = false,
+    val summary: PlayTimeSummaryUi? = null,
+    val days: List<com.nendo.argosy.data.model.PlayDay> = emptyList(),
+    val currentStreak: Int = 0,
+    val longestStreak: Int = 0,
+    val weekHourMs: List<List<Long>> = emptyList(),
+    val sessions: List<PlayTimeSessionUi> = emptyList(),
+    val coverPaths: Map<Long, String> = emptyMap(),
+    val platforms: List<PlayTimeEntryUi> = emptyList(),
+    val devices: List<PlayTimeEntryUi> = emptyList(),
+    val games: List<PlayTimeEntryUi> = emptyList(),
+    val gamesSortMode: PlayTimeGamesSortMode = PlayTimeGamesSortMode.HOURS,
+    val sessionCount: Int = 0,
+    val sessionsOnRomm: Int = 0,
+    val sessionsPending: Int = 0,
+    val sessionsUnlinked: Int = 0,
+    val sessionsFromOtherDevices: Int = 0,
+    val lastUploadAt: java.time.Instant? = null,
+    val lastPullAt: java.time.Instant? = null,
+    val isUploading: Boolean = false,
+    val isPulling: Boolean = false,
+    val uploadNotice: com.nendo.argosy.ui.common.DisplayText? = null,
+    val pullNotice: com.nendo.argosy.ui.common.DisplayText? = null
+) {
+    val isEmpty: Boolean get() = hasLoaded && sessionCount == 0
+}
+
 data class PlatformMigrationInfo(
     val platformId: Long,
     val platformName: String,
@@ -1567,6 +1659,7 @@ data class SettingsUiState(
     val attribution: StorageAttributionState = StorageAttributionState(),
     val storagePlatformGames: StoragePlatformGamesState = StoragePlatformGamesState(),
     val storageCaches: StorageCachesState = StorageCachesState(),
+    val playTime: PlayTimeState = PlayTimeState(),
     val platformLibretro: PlatformLibretroState = PlatformLibretroState(),
     val syncSettings: SyncSettingsState = SyncSettingsState(),
     val steam: SteamSettingsState = SteamSettingsState(),

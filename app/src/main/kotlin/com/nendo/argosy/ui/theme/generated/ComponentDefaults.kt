@@ -115,6 +115,40 @@ object ComponentDefaults {
         const val minHeight = 52
     }
 
+    object PlayTimeChart {
+        const val seriesSlots = 6
+        const val surfaceGap = 2
+        const val waveRowHeight = 24
+        const val waveRowGap = 2
+        const val waveLabelWidth = 36
+        const val waveSamplesPerHour = 6
+        const val waveMinAmplitude = 1
+        const val waveRestAlpha = 0.55f
+        const val waveEdgeAlpha = 0.6f
+        const val calendarCell = 18
+        const val calendarLabelWidth = 30
+        const val calendarLevels = 4
+        const val calendarEmptyAlpha = 0.35f
+        const val calendarRampFloor = 0.35f
+        const val calendarDetailRows = 6
+        const val calendarDetailCover = 28
+        const val calendarWeeks = 26
+        const val calendarPanelWidth = 300
+        const val mosaicHeight = 220
+        const val mosaicMinShareRatio = 0.04f
+        const val mosaicMaxTiles = 12
+        const val mosaicFallbackAlpha = 0.25f
+        const val mosaicCollageCell = 40
+        const val mosaicRestAlpha = 0.4f
+        const val mosaicZoom = 1.6f
+        const val mosaicNavAspect = 3.2f
+        const val legendSwatch = 10
+        const val legendRowsPerColumn = 3
+        const val factsColumns = 3
+        const val factsTrimRatio = 0.1f
+        const val legendShareWidth = 44
+    }
+
     object HoldButton {
         const val height = 44
         const val radius = 8

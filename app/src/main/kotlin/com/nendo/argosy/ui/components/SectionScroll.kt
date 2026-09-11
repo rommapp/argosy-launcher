@@ -179,6 +179,73 @@ fun FocusedScroll(
     }
 }
 
+/**
+ * Header-lock scrolling for a sectioned pane. When focus enters a different section, the list
+ * scrolls so that section's header (its list index from [headerListIndexOf]) snaps to the top of
+ * the viewport. While focus moves inside a section the focused item is kept fully in view below
+ * any pinned sticky header ([headerListIndices]) with the smallest scroll that does so, so the
+ * header stays put until the next section pushes it off.
+ */
+@Composable
+fun SectionHeaderLockScroll(
+    listState: LazyListState,
+    focusedIndex: Int,
+    focusToListIndex: (Int) -> Int,
+    sections: List<ListSection>,
+    headerListIndexOf: (ListSection) -> Int,
+    headerListIndices: Set<Int>
+) {
+    var previousSection by remember(listState) { mutableIntStateOf(Int.MIN_VALUE) }
+    var isInitialPass by remember(listState) { mutableStateOf(true) }
+
+    LaunchedEffect(focusedIndex, sections) {
+        val sectionIndex = sections.indexOfLast { focusedIndex >= it.focusStartIndex }
+        val sectionChanged = sectionIndex != previousSection
+        previousSection = sectionIndex
+        val instant = isInitialPass
+        isInitialPass = false
+
+        if (listState.layoutInfo.totalItemsCount == 0) {
+            snapshotFlow { listState.layoutInfo.totalItemsCount }.first { it > 0 }
+        }
+        val listIndex = focusToListIndex(focusedIndex)
+        if (sectionChanged && sectionIndex >= 0) {
+            val header = headerListIndexOf(sections[sectionIndex])
+                .coerceIn(0, listState.layoutInfo.totalItemsCount - 1)
+            if (instant) listState.scrollToItem(header, 0) else listState.fastAnimateScrollToItem(header, 0)
+            listState.keepFocusedVisible(listIndex, headerListIndices, instant = true)
+            return@LaunchedEffect
+        }
+        listState.keepFocusedVisible(listIndex, headerListIndices, instant)
+    }
+}
+
+private suspend fun LazyListState.keepFocusedVisible(listIndex: Int, headerListIndices: Set<Int>, instant: Boolean) {
+    if (listIndex < 0 || listIndex >= layoutInfo.totalItemsCount) return
+    if (!canScrollForward && !canScrollBackward) return
+    val item = layoutInfo.visibleItemsInfo.firstOrNull { it.index == listIndex }
+    if (item == null) {
+        if (instant) scrollToItem(listIndex) else fastAnimateScrollToItem(listIndex)
+        return
+    }
+    val info = layoutInfo
+    val pinnedHeader = info.visibleItemsInfo
+        .filter { it.index in headerListIndices && it.index < listIndex && it.offset <= info.viewportStartOffset }
+        .maxOfOrNull { it.offset + it.size - info.viewportStartOffset }
+        ?.coerceAtLeast(0)
+        ?: 0
+    val safeTop = info.viewportStartOffset + pinnedHeader
+    val safeBottom = info.viewportEndOffset
+    val itemBottom = item.offset + item.size
+    val delta = when {
+        item.offset < safeTop -> item.offset - safeTop
+        itemBottom > safeBottom -> minOf(itemBottom - safeBottom, item.offset - safeTop)
+        else -> 0
+    }
+    if (delta == 0) return
+    if (instant) scrollBy(delta.toFloat()) else animateScrollBy(delta.toFloat())
+}
+
 private fun LazyGridState.focusedItem(index: Int): LazyGridItemInfo? =
     layoutInfo.visibleItemsInfo.firstOrNull { it.index == index }
 

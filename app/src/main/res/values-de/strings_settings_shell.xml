@@ -500,4 +500,13 @@
         <item quantity="one">%1$d Datei kopiert</item>
         <item quantity="other">%1$d Dateien kopiert</item>
     </plurals>
+    <string name="settings_shell_header_play_time">SPIELZEIT</string>
+    <string name="settings_shell_header_play_time_platforms">SPIELZEIT NACH PLATTFORM</string>
+    <string name="settings_shell_header_play_time_devices">SPIELZEIT NACH GERÄT</string>
+    <string name="settings_shell_header_play_time_games">SPIELZEIT NACH SPIEL</string>
+    <string name="settings_shell_footer_play_time_refresh">Aktualisieren</string>
+    <string name="settings_shell_footer_play_time_inspect">Ablesen</string>
+    <string name="settings_shell_footer_play_time_move">Bewegen</string>
+    <string name="settings_shell_footer_play_time_open">Öffnen</string>
+    <string name="settings_shell_footer_play_time_sort">Sortieren</string>
 </resources>

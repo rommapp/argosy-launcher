@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -20,9 +21,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import com.nendo.argosy.ui.components.ListSection
 import com.nendo.argosy.ui.components.SectionFocusedScroll
+import com.nendo.argosy.ui.components.SectionHeaderLockScroll
 import com.nendo.argosy.ui.theme.AspectRatioClass
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.util.verticalEdgeFade
@@ -42,6 +43,7 @@ fun <Item> SectionPaneLayout(
     modifier: Modifier = Modifier,
     isHeader: (Item) -> Boolean = { false },
     verticalArrangement: Arrangement.Vertical = Arrangement.Top,
+    headerLock: Boolean = false,
     itemContent: @Composable (Item) -> Unit
 ) {
     val aspectRatioClass = LocalUiScale.current.aspectRatioClass
@@ -49,6 +51,10 @@ fun <Item> SectionPaneLayout(
         aspectRatioClass == AspectRatioClass.WIDE
     val namedSections = remember(sections) { sections.filter { it.name != null } }
     val useSplitPane = isWide && namedSections.size >= 2
+    val headerListIndices = remember(items) { items.indices.filter { isHeader(items[it]) }.toSet() }
+
+    fun headerListIndexOf(section: ListSection): Int =
+        (section.listStartIndex..section.listEndIndex).firstOrNull { it in headerListIndices } ?: section.listStartIndex
 
     if (useSplitPane) {
         val activeSectionIndex = namedSections.indexOfLast {
@@ -67,17 +73,26 @@ fun <Item> SectionPaneLayout(
             }
             mapping
         }
+        val filteredHeaderIndices = remember(headerListIndices, indexMapping) {
+            headerListIndices.mapNotNull { indexMapping[it] }.toSet()
+        }
 
         val contentListState = rememberLazyListState()
 
-        SectionFocusedScroll(
+        PaneScroll(
             listState = contentListState,
             focusedIndex = focusedIndex,
             focusToListIndex = { focusIdx ->
                 val originalListIndex = focusToListIndex(focusIdx)
                 indexMapping[originalListIndex] ?: originalListIndex
             },
-            sections = sections
+            sections = sections,
+            headerLock = headerLock,
+            headerListIndexOf = { section ->
+                val original = headerListIndexOf(section)
+                indexMapping[original] ?: original
+            },
+            headerListIndices = filteredHeaderIndices
         )
 
         Row(modifier = modifier) {
@@ -108,22 +123,23 @@ fun <Item> SectionPaneLayout(
                     .weight(0.75f)
                     .fillMaxHeight()
                     .padding(start = Dimens.spacingMd)
-                    .verticalEdgeFade(contentListState, fadeHeight = Dimens.spacingMd),
+                    .verticalEdgeFade(contentListState, fadeHeight = Dimens.spacingMd, top = !headerLock),
                 verticalArrangement = verticalArrangement
             ) {
-                items(filteredItems, key = { itemKey(it) }) { item ->
-                    itemContent(item)
-                }
+                paneItems(filteredItems, itemKey, isHeader, itemContent)
             }
         }
     } else {
         val listState = rememberLazyListState()
 
-        SectionFocusedScroll(
+        PaneScroll(
             listState = listState,
             focusedIndex = focusedIndex,
             focusToListIndex = focusToListIndex,
-            sections = sections
+            sections = sections,
+            headerLock = headerLock,
+            headerListIndexOf = ::headerListIndexOf,
+            headerListIndices = headerListIndices
         )
 
         LazyColumn(
@@ -131,22 +147,61 @@ fun <Item> SectionPaneLayout(
             modifier = modifier.verticalEdgeFade(listState, fadeHeight = Dimens.spacingMd, top = false),
             verticalArrangement = verticalArrangement
         ) {
-            items.forEach { item ->
-                if (isHeader(item)) {
-                    stickyHeader(key = itemKey(item)) {
-                        Box(
-                            modifier = Modifier
-                                .fillParentMaxWidth()
-                                .background(MaterialTheme.colorScheme.background)
-                        ) {
-                            itemContent(item)
-                        }
-                    }
-                } else {
-                    item(key = itemKey(item)) {
-                        itemContent(item)
-                    }
+            paneItems(items, itemKey, isHeader, itemContent)
+        }
+    }
+}
+
+@Composable
+private fun PaneScroll(
+    listState: LazyListState,
+    focusedIndex: Int,
+    focusToListIndex: (Int) -> Int,
+    sections: List<ListSection>,
+    headerLock: Boolean,
+    headerListIndexOf: (ListSection) -> Int,
+    headerListIndices: Set<Int>
+) {
+    if (headerLock) {
+        SectionHeaderLockScroll(
+            listState = listState,
+            focusedIndex = focusedIndex,
+            focusToListIndex = focusToListIndex,
+            sections = sections,
+            headerListIndexOf = headerListIndexOf,
+            headerListIndices = headerListIndices
+        )
+    } else {
+        SectionFocusedScroll(
+            listState = listState,
+            focusedIndex = focusedIndex,
+            focusToListIndex = focusToListIndex,
+            sections = sections
+        )
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+private fun <Item> LazyListScope.paneItems(
+    items: List<Item>,
+    itemKey: (Item) -> Any,
+    isHeader: (Item) -> Boolean,
+    itemContent: @Composable (Item) -> Unit
+) {
+    items.forEach { item ->
+        if (isHeader(item)) {
+            stickyHeader(key = itemKey(item)) {
+                Box(
+                    modifier = Modifier
+                        .fillParentMaxWidth()
+                        .background(MaterialTheme.colorScheme.background)
+                ) {
+                    itemContent(item)
                 }
+            }
+        } else {
+            item(key = itemKey(item)) {
+                itemContent(item)
             }
         }
     }

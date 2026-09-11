@@ -16,7 +16,7 @@ import com.nendo.argosy.data.local.entity.PendingSocialSyncEntity
 import com.nendo.argosy.data.local.entity.SocialSyncType
 import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
-import com.nendo.argosy.data.social.uploader.RomMPlaySessionUploader
+import com.nendo.argosy.data.social.uploader.PlaySessionBackfill
 import com.nendo.argosy.data.storage.StorageAttributionRepository
 import com.nendo.argosy.data.storage.StorageCategory
 import com.nendo.argosy.data.sync.SocialSyncCoordinator
@@ -71,7 +71,7 @@ class SocialRepository @Inject constructor(
     private val socialSyncCoordinator: Lazy<SocialSyncCoordinator>,
     private val syncPreferencesRepository: SyncPreferencesRepository,
     private val imageCacheManager: ImageCacheManager,
-    private val rommPlaySessionUploader: RomMPlaySessionUploader,
+    private val playSessionBackfill: PlaySessionBackfill,
     private val attributionRepository: StorageAttributionRepository,
     private val quayPassService: Lazy<com.nendo.argosy.data.quaypass.QuayPassService>
 ) {
@@ -821,24 +821,16 @@ class SocialRepository @Inject constructor(
     }
 
     /**
-     * Hands new play sessions to the social queue and to the RomM ingest.
-     *
-     * The two destinations keep separate watermarks. They shared one, advanced the moment the
-     * social rows were enqueued, which is before the RomM upload is even attempted -- so any
-     * RomM-side failure was permanent, its sessions already behind the mark. The RomM watermark
-     * now moves only after the ingest returns success, and both are read once here and scoped to
-     * the account that owns the sessions.
-     *
-     * Without a social account nothing is queued and the watermark still advances, so linking
-     * one later starts from that moment rather than replaying old sessions. The RomM ingest is
-     * a separate destination and wants the sessions either way.
+     * Hands new play sessions to the social queue and to the RomM ingest. Without a social
+     * account nothing is queued and the social watermark still advances, so linking one later
+     * starts from that moment rather than replaying old sessions.
      */
     suspend fun syncPlaySessions(): SyncResult {
         val prefs = preferencesRepository.userPreferences.first()
         val ownerUserId = prefs.rommUserId
         val sessions = playSessionDao.getUnsyncedForSocial(prefs.lastPlaySessionSync, ownerUserId)
 
-        uploadPlaySessionsToRomM(prefs.lastRomMPlaySessionSync, ownerUserId)
+        scope.launch { playSessionBackfill.run() }
 
         if (sessions.isEmpty()) {
             return SyncResult.Success(0)
@@ -893,23 +885,7 @@ class SocialRepository @Inject constructor(
         return SyncResult.Success(queued)
     }
 
-    private suspend fun uploadPlaySessionsToRomM(since: Instant?, ownerUserId: Long?) {
-        if (!rommPlaySessionUploader.canUpload) return
-        val sessions = playSessionDao.getUnsyncedForRomM(since, ownerUserId)
-        if (sessions.isEmpty()) return
-        scope.launch {
-            when (val result = rommPlaySessionUploader.upload(sessions)) {
-                is RomMPlaySessionUploader.UploadResult.Success -> {
-                    preferencesRepository.setLastRomMPlaySessionSyncTime(sessions.maxOf { it.endTime })
-                    Log.d(TAG, "RomM play session ingest: ${result.ingested} accepted")
-                }
-                is RomMPlaySessionUploader.UploadResult.Skipped ->
-                    Log.d(TAG, "RomM play session ingest skipped: ${result.reason}")
-                is RomMPlaySessionUploader.UploadResult.Error ->
-                    Log.w(TAG, "RomM play session ingest failed: ${result.message}")
-            }
-        }
-    }
+    suspend fun backfillRomMPlaySessions(): PlaySessionBackfill.Summary = playSessionBackfill.run()
 
     private fun observeAchievementUpdates() {
         scope.launch {

@@ -68,7 +68,6 @@ object AccountScopedPreferenceKeys {
         "social_suppress_notifications_in_game",
         "social_hidden_game_ids",
         "social_last_play_session_sync",
-        "romm_last_play_session_sync",
         "discord_rich_presence_enabled"
     )
 

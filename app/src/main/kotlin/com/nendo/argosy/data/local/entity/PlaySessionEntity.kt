@@ -37,5 +37,15 @@ data class PlaySessionEntity(
      * the two identities are independent, a device can be linked to one and not the other, and
      * the RomM ingest must not upload another account's sessions under whoever is connected.
      */
-    val ownerUserId: Long? = null
-)
+    val ownerUserId: Long? = null,
+    /**
+     * Id RomM assigned when it accepted this session, or [ROMM_SESSION_ID_UNKNOWN] when it
+     * reported the session as already held without saying under which id. Null means the RomM
+     * ingest has not accepted the row yet; that is the whole selection rule for what to upload.
+     */
+    val rommSessionId: Long? = null
+) {
+    companion object {
+        const val ROMM_SESSION_ID_UNKNOWN = -1L
+    }
+}

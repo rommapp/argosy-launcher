@@ -764,7 +764,17 @@ class RomMConnectionManager @Inject constructor(
         }
     }
 
-    private suspend fun registerDeviceIfNeeded() {
+    /**
+     * Re-runs device registration after the server has answered that the stored device id is
+     * not registered to this user. Updates the stored id in place when the server accepts it and
+     * registers a fresh one otherwise.
+     */
+    suspend fun reregisterDevice() {
+        if (!isConnected() || !isVersionAtLeast(MIN_DEVICE_API_VERSION)) return
+        registerDeviceIfNeeded(trustStoredRegistration = false)
+    }
+
+    private suspend fun registerDeviceIfNeeded(trustStoredRegistration: Boolean = true) {
         val currentApi = api ?: return
         val clientVersion = BuildConfig.VERSION_NAME
 
@@ -772,7 +782,7 @@ class RomMConnectionManager @Inject constructor(
         val existingDeviceId = prefs.rommDeviceId
         val existingClientVersion = prefs.rommDeviceClientVersion
 
-        if (existingDeviceId != null && existingClientVersion == clientVersion) {
+        if (trustStoredRegistration && existingDeviceId != null && existingClientVersion == clientVersion) {
             cachedDeviceId = existingDeviceId
             saveSyncRepository.get().setDeviceId(existingDeviceId)
             Logger.info(TAG, "Device already registered: $existingDeviceId")

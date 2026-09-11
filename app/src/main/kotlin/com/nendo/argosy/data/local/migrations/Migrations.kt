@@ -3601,3 +3601,9 @@ object Migration_188_189 : Migration(188, 189) {
         db.execSQL("ALTER TABLE `games` ADD COLUMN `fileOrigin` TEXT NOT NULL DEFAULT 'ADOPTED'")
     }
 }
+
+object Migration_189_190 : Migration(189, 190) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `play_sessions` ADD COLUMN `rommSessionId` INTEGER")
+    }
+}

@@ -38,14 +38,13 @@ class SettingsBackupKeysTest {
     private val syncWatermarksAndResume = setOf(
         "last_romm_sync", "last_favorites_sync", "last_favorites_check", "last_negotiate_at",
         "last_state_validation", "sync_resume_completed", "sync_resume_generation",
-        "social_last_play_session_sync", "romm_last_play_session_sync",
-        "emulator_update_last_check"
+        "social_last_play_session_sync", "emulator_update_last_check"
     )
 
     private val oneShotAndVersionMarkers = setOf(
         "builtin_migration_v2", "first_run_complete", "save_sync_local_rekey_done",
         "save_path_cache_purged", "per_account_prefs_adopted_by", "last_seen_version",
-        "last_integrity_check_time"
+        "last_integrity_check_time", "romm_play_session_backfill_done"
     )
 
     private val liveSessionState = setOf(

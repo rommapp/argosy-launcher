@@ -1,6 +1,7 @@
 package com.nendo.argosy.data.local.dao
 
 import androidx.room.Dao
+import androidx.room.Embedded
 import androidx.room.Insert
 import androidx.room.Query
 import com.nendo.argosy.data.local.entity.PlaySessionEntity
@@ -67,23 +68,25 @@ interface PlaySessionDao {
         limit: Int = 100
     ): List<PlaySessionEntity>
 
-    /**
-     * Sessions the RomM ingest has not seen. Deliberately not gated on the social id: RomM
-     * attribution is [PlaySessionEntity.ownerUserId], and a device with no social link still has
-     * play time to report.
-     */
     @Query("""
-        SELECT * FROM play_sessions
-        WHERE (:since IS NULL OR endTime > :since)
-          AND ownerUserId IS :ownerUserId
-        ORDER BY endTime ASC
+        SELECT ps.*, g.rommId AS rommId FROM play_sessions ps
+        INNER JOIN games g ON g.id = ps.gameId
+        WHERE ps.rommSessionId IS NULL
+          AND ps.ownerUserId IS :ownerUserId
+          AND g.rommId > 0
+          AND (ps.endTime / 1000) > (ps.startTime / 1000)
+          AND ps.id > :afterId
+        ORDER BY ps.id ASC
         LIMIT :limit
     """)
-    suspend fun getUnsyncedForRomM(
-        since: Instant?,
+    suspend fun getPendingForRomM(
         ownerUserId: Long?,
-        limit: Int = 100
-    ): List<PlaySessionEntity>
+        afterId: Long,
+        limit: Int
+    ): List<PendingRomMPlaySession>
+
+    @Query("UPDATE play_sessions SET rommSessionId = :rommSessionId WHERE id = :id")
+    suspend fun setRommSessionId(id: Long, rommSessionId: Long)
 
     @Query("DELETE FROM play_sessions WHERE ownerUserId = :ownerUserId")
     suspend fun deleteByOwner(ownerUserId: Long)
@@ -100,4 +103,9 @@ data class PlayTimeSummary(
     val gameTitle: String,
     val platformSlug: String,
     val totalMinutes: Double
+)
+
+data class PendingRomMPlaySession(
+    @Embedded val session: PlaySessionEntity,
+    val rommId: Long
 )

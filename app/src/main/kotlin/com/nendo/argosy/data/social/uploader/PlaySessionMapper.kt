@@ -1,6 +1,5 @@
 package com.nendo.argosy.data.social.uploader
 
-import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.entity.PlaySessionEntity
 import com.nendo.argosy.data.remote.romm.RomMPlaySessionEntry
 import java.time.temporal.ChronoUnit
@@ -12,11 +11,10 @@ object PlaySessionMapper {
      * start, so a session opening and closing inside one second reads as zero-length there even
      * though it is not here. The comparison is made at the server's resolution for that reason.
      */
-    suspend fun toRomMEntry(session: PlaySessionEntity, gameDao: GameDao): RomMPlaySessionEntry? {
+    fun toRomMEntry(session: PlaySessionEntity, rommId: Long): RomMPlaySessionEntry? {
         val start = session.startTime.truncatedTo(ChronoUnit.SECONDS)
         val end = session.endTime.truncatedTo(ChronoUnit.SECONDS)
         if (!end.isAfter(start)) return null
-        val rommId = gameDao.getById(session.gameId)?.rommId
         return RomMPlaySessionEntry(
             romId = rommId,
             saveSlot = null,

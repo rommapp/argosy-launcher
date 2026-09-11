@@ -229,18 +229,12 @@ class GameSessionService : Service() {
     /**
      * Keeps RomM's live view of this device current for as long as the session runs. Restarted on
      * each launch so a session that follows another does not inherit the previous game's loop.
-     *
-     * A game RomM cannot place, or a server that refuses the first report, ends the loop rather
-     * than repeating a call that has already been answered.
      */
     private fun startActivityReporting(gameId: Long) {
         stopActivityReporting()
         if (gameId <= 0) return
         activityJob = serviceScope.launch {
-            while (isActive) {
-                if (!activityReporter.report(gameId)) return@launch
-                delay(ACTIVITY_HEARTBEAT_INTERVAL_MS)
-            }
+            activityReporter.runHeartbeatLoop(gameId)
         }
     }
 
@@ -716,12 +710,6 @@ class GameSessionService : Service() {
         private const val RESET_DELAY_MS = 1700L
         private const val OVERLAY_DEBOUNCE_MS = 30 * 1000L
         private const val POLL_INTERVAL_MS = 2000L
-
-        /**
-         * Comfortably inside the 90 seconds RomM holds a device's activity for, so one lost call
-         * does not make the device look like it stopped playing.
-         */
-        private const val ACTIVITY_HEARTBEAT_INTERVAL_MS = 30_000L
         private const val PRESENCE_TICK_MS = 2_000L
         private const val PRESENCE_LOOKBACK_MS = 2 * 60 * 1000L
         private const val PRESENCE_WAKE_GRACE_MS = 3_000L

@@ -1,42 +1,22 @@
 package com.nendo.argosy.data.social.uploader
 
-import com.nendo.argosy.data.local.dao.GameDao
-import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.PlaySessionEntity
-import com.nendo.argosy.data.model.GameSource
-import io.mockk.coEvery
-import io.mockk.mockk
-import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Test
 import java.time.Instant
 
 class PlaySessionMapperTest {
 
-    private val gameDao: GameDao = mockk()
-
-    private fun gameEntity(id: Long, rommId: Long?): GameEntity = GameEntity(
-        id = id,
-        title = "Test Game",
-        sortTitle = "test game",
-        platformId = 1L,
-        platformSlug = "snes",
-        localPath = null,
-        rommId = rommId,
-        igdbId = null,
-        source = GameSource.LOCAL_ONLY
-    )
-
     private fun session(
-        gameId: Long = 1L,
         start: Instant = Instant.parse("2026-05-15T12:00:00Z"),
         end: Instant = Instant.parse("2026-05-15T12:30:00Z"),
         activePlayMs: Long = 1_800_000L
     ) = PlaySessionEntity(
         id = 0,
         userId = "user-1",
-        gameId = gameId,
+        gameId = 1L,
         igdbId = 42L,
         gameTitle = "Test Game",
         platformSlug = "snes",
@@ -51,54 +31,46 @@ class PlaySessionMapperTest {
     )
 
     @Test
-    fun `maps active session with rommId`() = runTest {
-        coEvery { gameDao.getById(1L) } returns gameEntity(1L, rommId = 99L)
-
-        val entry = PlaySessionMapper.toRomMEntry(session(), gameDao)
+    fun `maps active session against the rom id it was selected with`() {
+        val entry = PlaySessionMapper.toRomMEntry(session(), rommId = 99L)
 
         assertEquals(99L, entry?.romId)
         assertEquals("2026-05-15T12:00:00Z", entry?.startTime)
         assertEquals("2026-05-15T12:30:00Z", entry?.endTime)
         assertEquals(1_800_000L, entry?.durationMs)
+        assertNull(entry?.saveSlot)
     }
 
     @Test
-    fun `null rommId is preserved (local-only game)`() = runTest {
-        coEvery { gameDao.getById(2L) } returns gameEntity(2L, rommId = null)
-
-        val entry = PlaySessionMapper.toRomMEntry(session(gameId = 2L), gameDao)
-
-        assertNull(entry?.romId)
-    }
-
-    @Test
-    fun `filters degenerate session where end equals start`() = runTest {
+    fun `drops session where end equals start`() {
         val t = Instant.parse("2026-05-15T12:00:00Z")
-        val degenerate = session(start = t, end = t)
 
-        val entry = PlaySessionMapper.toRomMEntry(degenerate, gameDao)
-
-        assertNull(entry)
+        assertNull(PlaySessionMapper.toRomMEntry(session(start = t, end = t), rommId = 99L))
     }
 
     @Test
-    fun `filters session where end is before start`() = runTest {
+    fun `drops session where end is before start`() {
         val degenerate = session(
             start = Instant.parse("2026-05-15T12:30:00Z"),
             end = Instant.parse("2026-05-15T12:00:00Z")
         )
 
-        val entry = PlaySessionMapper.toRomMEntry(degenerate, gameDao)
-
-        assertNull(entry)
+        assertNull(PlaySessionMapper.toRomMEntry(degenerate, rommId = 99L))
     }
 
     @Test
-    fun `unknown game returns entry with null romId`() = runTest {
-        coEvery { gameDao.getById(99L) } returns null
+    fun `drops session that lives inside one second`() {
+        val start = Instant.parse("2026-05-15T12:00:00.100Z")
+        val end = Instant.parse("2026-05-15T12:00:00.900Z")
 
-        val entry = PlaySessionMapper.toRomMEntry(session(gameId = 99L), gameDao)
+        assertNull(PlaySessionMapper.toRomMEntry(session(start = start, end = end), rommId = 99L))
+    }
 
-        assertNull(entry?.romId)
+    @Test
+    fun `keeps session that crosses a second boundary`() {
+        val start = Instant.parse("2026-05-15T12:00:00.900Z")
+        val end = Instant.parse("2026-05-15T12:00:01.100Z")
+
+        assertNotNull(PlaySessionMapper.toRomMEntry(session(start = start, end = end), rommId = 99L))
     }
 }

@@ -34,18 +34,14 @@
     <string name="home_footer_grid_reroll">Volver a elegir</string>
     <string name="home_footer_grid_options">Opciones</string>
 
-    <string name="home_footer_media_item">Elemento</string>
     <string name="home_footer_media_section">Sección</string>
-    <string name="home_footer_media_row">Fila</string>
     <string name="home_footer_media_refresh">Actualizar</string>
     <string name="home_footer_media_resume">Reanudar</string>
     <string name="home_footer_media_play">Reproducir</string>
     <string name="home_footer_media_unfavorite">Quitar de favoritos</string>
     <string name="home_footer_media_details">Detalles</string>
 
-    <string name="home_footer_game_item">Juego</string>
     <string name="home_footer_game_section">Sección</string>
-    <string name="home_footer_game_platform">Plataforma</string>
     <string name="home_footer_game_install">Instalar</string>
     <string name="home_footer_game_play">Jugar</string>
     <string name="home_footer_game_download">Descargar</string>

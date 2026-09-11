@@ -34,18 +34,14 @@
     <string name="home_footer_grid_reroll">फिर से चुनें</string>
     <string name="home_footer_grid_options">विकल्प</string>
 
-    <string name="home_footer_media_item">आइटम</string>
     <string name="home_footer_media_section">सेक्शन</string>
-    <string name="home_footer_media_row">रो</string>
     <string name="home_footer_media_refresh">रीफ्रेश</string>
     <string name="home_footer_media_resume">रिज़्यूम</string>
     <string name="home_footer_media_play">प्ले</string>
     <string name="home_footer_media_unfavorite">पसंदीदा हटाएं</string>
     <string name="home_footer_media_details">विवरण</string>
 
-    <string name="home_footer_game_item">गेम</string>
     <string name="home_footer_game_section">सेक्शन</string>
-    <string name="home_footer_game_platform">प्लेटफ़ॉर्म</string>
     <string name="home_footer_game_install">इंस्टॉल</string>
     <string name="home_footer_game_play">प्ले</string>
     <string name="home_footer_game_download">डाउनलोड</string>

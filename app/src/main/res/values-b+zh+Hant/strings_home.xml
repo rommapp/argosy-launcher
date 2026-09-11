@@ -34,18 +34,14 @@
     <string name="home_footer_grid_reroll">重新隨機</string>
     <string name="home_footer_grid_options">選項</string>
 
-    <string name="home_footer_media_item">項目</string>
     <string name="home_footer_media_section">區段</string>
-    <string name="home_footer_media_row">列</string>
     <string name="home_footer_media_refresh">重新整理</string>
     <string name="home_footer_media_resume">繼續播放</string>
     <string name="home_footer_media_play">播放</string>
     <string name="home_footer_media_unfavorite">取消最愛</string>
     <string name="home_footer_media_details">詳情</string>
 
-    <string name="home_footer_game_item">遊戲</string>
     <string name="home_footer_game_section">區段</string>
-    <string name="home_footer_game_platform">平台</string>
     <string name="home_footer_game_install">安裝</string>
     <string name="home_footer_game_play">遊玩</string>
     <string name="home_footer_game_download">下載</string>

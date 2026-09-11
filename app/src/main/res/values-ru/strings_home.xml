@@ -34,18 +34,14 @@
     <string name="home_footer_grid_reroll">Перевыбрать</string>
     <string name="home_footer_grid_options">Параметры</string>
 
-    <string name="home_footer_media_item">Элемент</string>
     <string name="home_footer_media_section">Раздел</string>
-    <string name="home_footer_media_row">Ряд</string>
     <string name="home_footer_media_refresh">Обновить</string>
     <string name="home_footer_media_resume">Продолжить</string>
     <string name="home_footer_media_play">Воспроизвести</string>
     <string name="home_footer_media_unfavorite">Убрать из избранного</string>
     <string name="home_footer_media_details">Детали</string>
 
-    <string name="home_footer_game_item">Игра</string>
     <string name="home_footer_game_section">Раздел</string>
-    <string name="home_footer_game_platform">Платформа</string>
     <string name="home_footer_game_install">Установить</string>
     <string name="home_footer_game_play">Играть</string>
     <string name="home_footer_game_download">Скачать</string>

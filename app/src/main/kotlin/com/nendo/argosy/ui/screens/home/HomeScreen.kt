@@ -1013,9 +1013,7 @@ fun HomeScreen(
                     FooterSpacer()
                 } else if (uiState.isMediaRow || uiState.focusedMedia != null) {
                     val focusedMedia = uiState.focusedMedia
-                    val mediaItemLabel = stringResource(R.string.home_footer_media_item)
                     val mediaSectionLabel = stringResource(R.string.home_footer_media_section)
-                    val mediaRowLabel = stringResource(R.string.home_footer_media_row)
                     val mediaRefreshLabel = stringResource(R.string.home_footer_media_refresh)
                     val mediaResumeLabel = stringResource(R.string.home_footer_media_resume)
                     val mediaPlayLabel = stringResource(R.string.home_footer_media_play)
@@ -1024,13 +1022,7 @@ fun HomeScreen(
                     val mediaDetailsLabel = stringResource(R.string.home_footer_media_details)
                     FooterHints(
                         hints = buildList {
-                            if (isAutoGrid) {
-                                add(InputButton.DPAD to mediaItemLabel)
-                                add(InputButton.LB_RB to mediaSectionLabel)
-                            } else {
-                                add(InputButton.DPAD_HORIZONTAL to mediaItemLabel)
-                                add(InputButton.DPAD_VERTICAL to mediaRowLabel)
-                            }
+                            if (isAutoGrid) add(InputButton.LB_RB to mediaSectionLabel)
                             if (focusedMedia == null) {
                                 add(InputButton.A to mediaRefreshLabel)
                             } else {
@@ -1061,15 +1053,12 @@ fun HomeScreen(
                 } else if (focusedGame != null && !uiState.showGameMenu) {
                     if (!uiState.isVideoPreviewActive) {
                         FooterHints(
-                            hints = listOf(
-                                (if (isAutoGrid) InputButton.DPAD else InputButton.DPAD_HORIZONTAL)
-                                    to stringResource(R.string.home_footer_game_item),
+                            hints = listOfNotNull(
                                 if (isAutoGrid) {
                                     InputButton.LB_RB to
                                         stringResource(R.string.home_footer_game_section)
                                 } else {
-                                    InputButton.DPAD_VERTICAL to
-                                        stringResource(R.string.home_footer_game_platform)
+                                    null
                                 },
                                 InputButton.A to when {
                                     focusedGame.needsInstall ->

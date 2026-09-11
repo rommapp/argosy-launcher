@@ -34,18 +34,14 @@
     <string name="home_footer_grid_reroll">Relancer</string>
     <string name="home_footer_grid_options">Options</string>
 
-    <string name="home_footer_media_item">Élément</string>
     <string name="home_footer_media_section">Section</string>
-    <string name="home_footer_media_row">Ligne</string>
     <string name="home_footer_media_refresh">Actualiser</string>
     <string name="home_footer_media_resume">Reprendre</string>
     <string name="home_footer_media_play">Lecture</string>
     <string name="home_footer_media_unfavorite">Retirer des favoris</string>
     <string name="home_footer_media_details">Détails</string>
 
-    <string name="home_footer_game_item">Jeu</string>
     <string name="home_footer_game_section">Section</string>
-    <string name="home_footer_game_platform">Plateforme</string>
     <string name="home_footer_game_install">Installer</string>
     <string name="home_footer_game_play">Jouer</string>
     <string name="home_footer_game_download">Télécharger</string>

@@ -34,18 +34,14 @@
     <string name="home_footer_grid_reroll">Neu würfeln</string>
     <string name="home_footer_grid_options">Optionen</string>
 
-    <string name="home_footer_media_item">Element</string>
     <string name="home_footer_media_section">Abschnitt</string>
-    <string name="home_footer_media_row">Zeile</string>
     <string name="home_footer_media_refresh">Aktualisieren</string>
     <string name="home_footer_media_resume">Fortsetzen</string>
     <string name="home_footer_media_play">Wiedergabe</string>
     <string name="home_footer_media_unfavorite">Favorit entfernen</string>
     <string name="home_footer_media_details">Details</string>
 
-    <string name="home_footer_game_item">Spiel</string>
     <string name="home_footer_game_section">Abschnitt</string>
-    <string name="home_footer_game_platform">Plattform</string>
     <string name="home_footer_game_install">Installieren</string>
     <string name="home_footer_game_play">Spielen</string>
     <string name="home_footer_game_download">Herunterladen</string>

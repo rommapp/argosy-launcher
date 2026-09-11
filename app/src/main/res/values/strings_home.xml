@@ -94,15 +94,9 @@
          under the cursor. -->
     <string name="home_footer_grid_options">Options</string>
 
-    <!-- Footer hint on a row of films and episodes. Noun: the directions move between the tiles in
-         the row. -->
-    <string name="home_footer_media_item">Item</string>
     <!-- Footer hint on a row of films and episodes, grid layout. Noun: the shoulder buttons move
          between the home screen's rows. -->
     <string name="home_footer_media_section">Section</string>
-    <!-- Footer hint on a row of films and episodes, carousel layout. Noun: up and down move
-         between the home screen's rows. -->
-    <string name="home_footer_media_row">Row</string>
     <!-- Footer hint on an empty row of films and episodes. Verb: fetches the row again from the
          media server. -->
     <string name="home_footer_media_refresh">Refresh</string>
@@ -118,14 +112,9 @@
     <!-- Footer hint on a film or episode. Noun, plural: opens the page describing the title. -->
     <string name="home_footer_media_details">Details</string>
 
-    <!-- Footer hint on a row of games. Noun: the directions move between the games in the row. -->
-    <string name="home_footer_game_item">Game</string>
     <!-- Footer hint on a row of games, grid layout. Noun: the shoulder buttons move between the
          home screen's rows. -->
     <string name="home_footer_game_section">Section</string>
-    <!-- Footer hint on a row of games, carousel layout. Noun: up and down move between the home
-         screen's rows, which are mostly one platform each. -->
-    <string name="home_footer_game_platform">Platform</string>
     <!-- Footer hint on an Android game whose package is downloaded but not yet installed. Verb:
          hands the package to the system installer. -->
     <string name="home_footer_game_install">Install</string>

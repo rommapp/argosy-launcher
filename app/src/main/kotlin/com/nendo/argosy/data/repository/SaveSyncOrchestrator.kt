@@ -348,6 +348,16 @@ class SaveSyncOrchestrator @Inject constructor(
                 Logger.debug(TAG, "downloadPendingServerSaves: skipping non-installed gameId=${entity.gameId} silently")
                 return@mapNotNull null
             }
+            if (localMovedSinceUpload(entity, entity.gameId, entity.emulatorId)) {
+                if (entity.syncStatus != SaveSyncEntity.STATUS_CONFLICT) {
+                    saveSyncDao.upsert(entity.copy(syncStatus = SaveSyncEntity.STATUS_CONFLICT))
+                }
+                Logger.warn(
+                    TAG,
+                    "downloadPendingServerSaves: gameId=${entity.gameId} channel=${entity.channelName} changed locally since its last upload; leaving it as a conflict rather than overwriting"
+                )
+                return@mapNotNull null
+            }
             entity to game
         }
         if (actionable.isEmpty()) {
@@ -419,7 +429,7 @@ class SaveSyncOrchestrator @Inject constructor(
         } else emulatorId
 
         for (serverSave in serverSaves) {
-            val channelName = SaveSyncApiClient.parseServerChannelNameForSync(serverSave.fileName, romBaseName)
+            val channelName = SaveSyncApiClient.resolveServerChannelName(serverSave, romBaseName)
             val serverTime = SaveSyncApiClient.parseTimestamp(serverSave.updatedAt)
 
             val existing = if (channelName != null) {
@@ -456,6 +466,18 @@ class SaveSyncOrchestrator @Inject constructor(
         }
     }
 
+    private suspend fun localMovedSinceUpload(
+        existing: SaveSyncEntity?,
+        gameId: Long,
+        emulatorId: String
+    ): Boolean {
+        val path = existing?.localSavePath ?: return false
+        val uploadedHash = existing.lastUploadedHash ?: return false
+        if (!File(path).exists()) return false
+        val liveHash = saveCacheManager.get().calculateLocalSaveHash(path, gameId, emulatorId) ?: return false
+        return liveHash != uploadedHash
+    }
+
     suspend fun forceSaveCheck(): ForceSaveCheckResult = withContext(Dispatchers.IO) {
         val prefs = userPreferencesRepository.preferences.first()
         if (!prefs.saveSyncEnabled) return@withContext ForceSaveCheckResult(0, 0, "Save sync disabled")
@@ -480,9 +502,7 @@ class SaveSyncOrchestrator @Inject constructor(
 
             val latestPerChannel = serverSaves
                 .filter { !SaveSyncApiClient.isStateShapedSave(it) }
-                .groupBy { save ->
-                    save.slot ?: SaveSyncApiClient.parseServerChannelNameForSync(save.fileName, romBaseName)
-                }
+                .groupBy { save -> SaveSyncApiClient.resolveServerChannelName(save, romBaseName) }
                 .mapValues { (_, saves) ->
                     saves.maxByOrNull { SaveSyncApiClient.parseTimestamp(it.updatedAt) }
                 }
@@ -490,7 +510,7 @@ class SaveSyncOrchestrator @Inject constructor(
                 .filterNotNull()
 
             for (latest in latestPerChannel) {
-                val channelName = latest.slot ?: SaveSyncApiClient.parseServerChannelNameForSync(latest.fileName, romBaseName)
+                val channelName = SaveSyncApiClient.resolveServerChannelName(latest, romBaseName)
                 val existing = if (channelName != null) {
                     saveSyncDao.getByGameEmulatorAndChannel(game.id, emulatorId, channelName, ownerUserId)
                 } else {
@@ -511,8 +531,19 @@ class SaveSyncOrchestrator @Inject constructor(
                 val isActiveChannel = channelName == null ||
                     channelName.equals(SaveSyncApiClient.AUTOSAVE_SLOT_NAME, ignoreCase = true) ||
                     channelName.equals(SaveSyncApiClient.DEFAULT_SAVE_NAME, ignoreCase = true)
-                val shouldDownload = firstTimeForGame || isActiveChannel
-                val status = if (shouldDownload) SaveSyncEntity.STATUS_SERVER_NEWER else SaveSyncEntity.STATUS_SYNCED
+                val wouldDownload = firstTimeForGame || isActiveChannel
+                val localMoved = wouldDownload && localMovedSinceUpload(existing, game.id, emulatorId)
+                val status = when {
+                    localMoved -> SaveSyncEntity.STATUS_CONFLICT
+                    wouldDownload -> SaveSyncEntity.STATUS_SERVER_NEWER
+                    else -> SaveSyncEntity.STATUS_SYNCED
+                }
+                if (localMoved) {
+                    Logger.warn(
+                        TAG,
+                        "forceSaveCheck: gameId=${game.id} channel=$channelName changed on both sides; parking a conflict instead of overwriting the local save"
+                    )
+                }
 
                 saveSyncDao.upsert(
                     SaveSyncEntity(
@@ -534,7 +565,7 @@ class SaveSyncOrchestrator @Inject constructor(
                         ownerUserId = existing?.ownerUserId ?: ownerUserId
                     )
                 )
-                if (shouldDownload) queued++
+                if (status == SaveSyncEntity.STATUS_SERVER_NEWER) queued++
             }
         }
         val downloaded = downloadPendingServerSaves()

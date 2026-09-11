@@ -39,7 +39,9 @@ import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.ui.screens.gamedetail.UpdateFileType
 import com.nendo.argosy.ui.screens.gamedetail.UpdateFileUi
 import com.nendo.argosy.ui.screens.gamedetail.UpdateFileVersionSort
+import com.nendo.argosy.data.repository.SaveSyncApiClient
 import com.nendo.argosy.domain.model.CompletionStatus
+import com.nendo.argosy.domain.model.SaveSlotClassifier
 import com.nendo.argosy.domain.model.UnifiedStateEntry
 import com.nendo.argosy.ui.common.savechannel.SaveFocusColumn
 import com.nendo.argosy.ui.common.savechannel.SaveHistoryItem
@@ -716,28 +718,31 @@ class DualGameDetailViewModel(
     ) {
         _rawEntries = entries
 
-        val channelGroups = entries.groupBy { it.channelName }
+        val channelGroups = entries.groupBy {
+            SaveSlotClassifier.slotKeyOf(it.channelName, it.isLatest, it.isArchival)
+        }
         val slotItems = mutableListOf<SaveSlotItem>()
 
-        val autoSaves = channelGroups[null] ?: emptyList()
+        val autoSaves = channelGroups[SaveSyncApiClient.AUTOSAVE_SLOT_NAME] ?: emptyList()
         slotItems.add(
             SaveSlotItem(
-                channelName = null,
+                channelName = SaveSyncApiClient.AUTOSAVE_SLOT_NAME,
                 displayName = context.getString(R.string.dual_detail_save_slot_auto),
-                isActive = activeChannel == null,
+                isActive = SaveSlotClassifier.isActiveSlot(SaveSyncApiClient.AUTOSAVE_SLOT_NAME, activeChannel),
                 saveCount = autoSaves.size,
                 latestTimestamp = autoSaves.maxByOrNull { it.timestamp }
                     ?.timestamp
             )
         )
 
-        channelGroups.filterKeys { it != null }
+        channelGroups
+            .filterKeys { it != null && !it.equals(SaveSyncApiClient.AUTOSAVE_SLOT_NAME, ignoreCase = true) }
             .forEach { (name, saves) ->
                 slotItems.add(
                     SaveSlotItem(
                         channelName = name,
                         displayName = name!!,
-                        isActive = name == activeChannel,
+                        isActive = SaveSlotClassifier.isActiveSlot(name, activeChannel),
                         saveCount = saves.size,
                         latestTimestamp = saves.maxByOrNull { it.timestamp }
                             ?.timestamp

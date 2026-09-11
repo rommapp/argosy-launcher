@@ -10,6 +10,7 @@ import com.nendo.argosy.data.repository.SaveSyncApiClient
 import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.data.repository.StateCacheManager
 import com.nendo.argosy.data.sync.SyncCoordinator
+import com.nendo.argosy.domain.model.SaveSlotClassifier
 import com.nendo.argosy.domain.model.UnifiedSaveEntry
 import com.nendo.argosy.domain.usecase.save.GetUnifiedSavesUseCase
 import com.nendo.argosy.domain.usecase.save.RestoreCachedSaveUseCase
@@ -59,24 +60,25 @@ class SaveChannelSavesDelegate @Inject constructor(
         isDeviceAwareMode: Boolean = false,
         registeredChannels: List<String> = emptyList()
     ): List<SaveSlotItem> {
-        val channelGroups = entries.groupBy { it.channelName } + registeredChannels
+        val channelGroups = entries.groupBy {
+            SaveSlotClassifier.slotKeyOf(it.channelName, it.isLatest, it.isArchival)
+        } + registeredChannels
             .filterNot { name -> entries.any { it.channelName.equals(name, ignoreCase = true) } }
             .associateWith { emptyList<UnifiedSaveEntry>() }
         val slotItems = mutableListOf<SaveSlotItem>()
         val legacyNames = mutableListOf<String>()
 
-        val archivalSaves = (channelGroups[null] ?: emptyList()).filter { it.isArchival }
+        val archivalSaves = channelGroups[null] ?: emptyList()
 
         val namedChannels = channelGroups.filterKeys { it != null }
             .toSortedMap(compareBy { it?.lowercase() })
 
         val autosaveSaves = namedChannels[SaveSyncApiClient.AUTOSAVE_SLOT_NAME] ?: emptyList()
-        val effectiveActiveChannel = activeChannel ?: SaveSyncApiClient.AUTOSAVE_SLOT_NAME
         slotItems.add(
             SaveSlotItem(
                 channelName = SaveSyncApiClient.AUTOSAVE_SLOT_NAME,
                 displayName = context.getString(R.string.ui_save_channel_slot_autosave),
-                isActive = effectiveActiveChannel.equals(SaveSyncApiClient.AUTOSAVE_SLOT_NAME, ignoreCase = true),
+                isActive = SaveSlotClassifier.isActiveSlot(SaveSyncApiClient.AUTOSAVE_SLOT_NAME, activeChannel),
                 saveCount = autosaveSaves.size,
                 latestTimestamp = autosaveSaves.maxByOrNull { it.timestamp }?.timestamp?.toEpochMilli()
             )

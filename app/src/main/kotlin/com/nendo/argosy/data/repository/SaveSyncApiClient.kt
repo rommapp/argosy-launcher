@@ -256,7 +256,8 @@ class SaveSyncApiClient @Inject constructor(
                 Logger.warn(TAG, "[SaveSync] WORKER gameId=${game.id} | Skipping save - cannot resolve emulator | serverSaveId=${serverSave.id}, fileName=${serverSave.fileName}")
                 continue
             }
-            val channelName = serverSave.slot ?: parseServerChannelName(serverSave.fileName)
+            val romBaseName = game.localPath?.let { File(it).nameWithoutExtension }
+            val channelName = resolveServerChannelName(serverSave, romBaseName)
 
             if (channelName == null) continue
 
@@ -644,10 +645,21 @@ class SaveSyncApiClient @Inject constructor(
             }
         }
 
-        internal fun parseServerChannelName(fileName: String): String? {
-            val baseName = File(fileName).nameWithoutExtension
-            if (isTimestampSaveName(baseName)) return null
-            return baseName
+        /**
+         * The channel a server save belongs to, or null for the game's latest save. The explicit
+         * [RomMSave.slot] decides when the server sent one; the file name is read only when it did
+         * not, because a latest save is usually named after the rom and parsing it invents a named
+         * slot the user never made. Every site that files a server save under a channel uses this.
+         */
+        internal fun resolveServerChannelName(save: RomMSave, romBaseName: String?): String? {
+            if (isLatestSlot(save, romBaseName)) return null
+            return save.slot ?: parseServerChannelNameForSync(save.fileName, romBaseName)
+        }
+
+        internal fun isLatestSlot(save: RomMSave, romBaseName: String?): Boolean {
+            val slot = save.slot
+            if (slot != null) return isLatestSaveFileName(slot, romBaseName)
+            return isLatestSaveFileName(save.fileName, romBaseName)
         }
 
         internal fun parseServerChannelNameForSync(fileName: String, romBaseName: String?): String? {

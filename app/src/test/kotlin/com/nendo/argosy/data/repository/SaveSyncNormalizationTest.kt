@@ -3,7 +3,9 @@ package com.nendo.argosy.data.repository
 import com.nendo.argosy.data.repository.SaveSyncApiClient.Companion.dropPrefixNormalized
 import com.nendo.argosy.data.repository.SaveSyncApiClient.Companion.equalsNormalized
 import com.nendo.argosy.data.repository.SaveSyncApiClient.Companion.isLatestSaveFileName
+import com.nendo.argosy.data.remote.romm.RomMSave
 import com.nendo.argosy.data.repository.SaveSyncApiClient.Companion.parseServerChannelNameForSync
+import com.nendo.argosy.data.repository.SaveSyncApiClient.Companion.resolveServerChannelName
 import com.nendo.argosy.data.repository.SaveSyncApiClient.Companion.startsWithNormalized
 import com.nendo.argosy.data.repository.SaveSyncApiClient.Companion.stripAccents
 import org.junit.Assert.assertEquals
@@ -180,4 +182,58 @@ class SaveSyncNormalizationTest {
         )
     }
 
+    private fun serverSave(fileName: String, slot: String? = null) = RomMSave(
+        id = 1L,
+        romId = 2L,
+        userId = 3L,
+        emulator = "snes9x",
+        fileName = fileName,
+        updatedAt = "2026-09-10T00:00:00Z",
+        slot = slot
+    )
+
+    @Test
+    fun `a save named after the rom is the latest save, not a named slot`() {
+        assertNull(
+            resolveServerChannelName(serverSave("Super Metroid.srm"), "Super Metroid")
+        )
+    }
+
+    @Test
+    fun `an explicit autosave slot is the latest save even when the file is named otherwise`() {
+        assertNull(
+            resolveServerChannelName(serverSave("Super Metroid.srm", slot = "autosave"), "Super Metroid")
+        )
+    }
+
+    @Test
+    fun `an explicit slot wins over the file name`() {
+        assertEquals(
+            "checkpoint",
+            resolveServerChannelName(serverSave("Super Metroid.srm", slot = "checkpoint"), "Super Metroid")
+        )
+    }
+
+    @Test
+    fun `a file name is read only when the server sent no slot`() {
+        assertEquals(
+            "checkpoint",
+            resolveServerChannelName(serverSave("checkpoint.srm"), "Super Metroid")
+        )
+    }
+
+    @Test
+    fun `a rom-named save with no rom base name still resolves to a channel`() {
+        assertEquals(
+            "Super Metroid",
+            resolveServerChannelName(serverSave("Super Metroid.srm"), null)
+        )
+    }
+
+    @Test
+    fun `a timestamped archive is not a named slot`() {
+        assertNull(
+            resolveServerChannelName(serverSave("2024-01-15_14-30-00.srm"), "Super Metroid")
+        )
+    }
 }

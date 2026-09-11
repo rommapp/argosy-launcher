@@ -264,6 +264,7 @@ data class SaveEntryData(
     val isHardcore: Boolean,
     val isRollback: Boolean,
     val cheatsUsed: Boolean,
+    val isArchival: Boolean = false,
     val displayName: String
 ) {
     fun toJson(): JSONObject = JSONObject().apply {
@@ -278,6 +279,7 @@ data class SaveEntryData(
         put("isHardcore", isHardcore)
         put("isRollback", isRollback)
         put("cheatsUsed", cheatsUsed)
+        put("isArchival", isArchival)
         put("displayName", displayName)
     }
 
@@ -297,6 +299,7 @@ data class SaveEntryData(
             isHardcore = json.getBoolean("isHardcore"),
             isRollback = json.getBoolean("isRollback"),
             cheatsUsed = json.getBoolean("cheatsUsed"),
+            isArchival = json.optBoolean("isArchival", false),
             displayName = json.getString("displayName")
         )
     }
@@ -326,5 +329,6 @@ fun UnifiedSaveEntry.toSaveEntryData(): SaveEntryData = SaveEntryData(
     isHardcore = isHardcore,
     isRollback = isRollback,
     cheatsUsed = cheatsUsed,
+    isArchival = isArchival,
     displayName = displayName
 )

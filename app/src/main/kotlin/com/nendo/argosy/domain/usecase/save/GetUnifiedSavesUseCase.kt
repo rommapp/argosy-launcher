@@ -162,10 +162,9 @@ class GetUnifiedSavesUseCase @Inject constructor(
 
             if (matchingServer != null) {
                 usedServerIds.add(matchingServer.id)
-                val isLatest = !localIsArchival &&
-                    isLatestSlot(matchingServer.slot, matchingServer.fileName, romBaseName)
+                val isLatest = !localIsArchival && isLatestSlot(matchingServer, romBaseName)
                 val serverChannelName = if (isLatest) null
-                    else matchingServer.slot ?: SaveSyncApiClient.parseServerChannelNameForSync(matchingServer.fileName, romBaseName)
+                    else SaveSyncApiClient.resolveServerChannelName(matchingServer, romBaseName)
                 val mergedChannelName = if (localIsArchival) null else (channelName ?: serverChannelName)
                 val isLocked = !localIsArchival && (mergedChannelName != null || cache.isLocked)
                 val deviceSyncCurrent = saveSyncRepository.getDeviceId()?.let { devId ->
@@ -245,7 +244,7 @@ class GetUnifiedSavesUseCase @Inject constructor(
             val slotKey = resolveSlotKey(serverSave.slot, serverSave.fileName, romBaseName)
             if (!expandHistory && slotKey in claimedSlots) continue
 
-            val isLatest = isLatestSlot(serverSave.slot, serverSave.fileName, romBaseName)
+            val isLatest = isLatestSlot(serverSave, romBaseName)
             val serverChannelName = if (isLatest) null else serverSave.slot
             val isLocked = serverChannelName != null
 
@@ -292,10 +291,8 @@ class GetUnifiedSavesUseCase @Inject constructor(
         return SaveSyncApiClient.isLatestSaveFileName(serverSave.fileName, romBaseName)
     }
 
-    private fun isLatestSlot(slot: String?, fileName: String, romBaseName: String?): Boolean {
-        if (slot != null) return SaveSyncApiClient.isLatestSaveFileName(slot, romBaseName)
-        return SaveSyncApiClient.isLatestSaveFileName(fileName, romBaseName)
-    }
+    private fun isLatestSlot(serverSave: RomMSave, romBaseName: String?): Boolean =
+        SaveSyncApiClient.isLatestSlot(serverSave, romBaseName)
 
     private fun sortEntries(entries: List<UnifiedSaveEntry>): List<UnifiedSaveEntry> {
         val latest = entries.filter { it.isLatest }

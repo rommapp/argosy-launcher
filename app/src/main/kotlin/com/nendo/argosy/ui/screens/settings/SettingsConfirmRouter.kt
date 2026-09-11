@@ -103,10 +103,8 @@ import com.nendo.argosy.ui.screens.settings.sections.createPlayTimeLayoutInfo
 import com.nendo.argosy.ui.screens.settings.sections.createPlayTimeListLayoutInfo
 import com.nendo.argosy.ui.screens.settings.sections.playTimeFigureOf
 import com.nendo.argosy.ui.screens.settings.sections.playTimeItemAtFocusIndex
-import com.nendo.argosy.ui.screens.settings.sections.playTimeMosaicScrub
 import com.nendo.argosy.ui.screens.settings.sections.playTimeListMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.playTimeMaxFocusIndex
-import com.nendo.argosy.ui.screens.settings.sections.playTimeMosaicTiles
 import com.nendo.argosy.ui.screens.settings.sections.playTimeScrubIndex
 import com.nendo.argosy.ui.screens.settings.sections.StorageCachesItem
 import com.nendo.argosy.ui.screens.settings.sections.createStorageCachesLayoutInfo
@@ -530,18 +528,6 @@ private fun routePlayTimeConfirm(vm: SettingsViewModel, state: SettingsUiState):
     val isOnline = state.server.connectionStatus == ConnectionStatus.ONLINE
     val playTime = state.playTime
     val focused = playTimeItemAtFocusIndex(state.focusedIndex, createPlayTimeLayoutInfo(state))
-    if (focused == PlayTimeItem.MosaicCard && playTime.engagedFigure == PlayTimeFigure.MOSAIC) {
-        val tiles = playTimeMosaicTiles(playTime)
-        val tile = playTimeScrubIndex(playTimeMosaicScrub(playTime), playTime)?.let { tiles.getOrNull(it) }
-            ?: return InputResult.handled(SoundType.SILENT)
-        val gameId = tile.gameId
-        if (gameId == null) {
-            vm.setPlayTimeMosaicFolded(true)
-            return InputResult.handled(SoundType.TOGGLE)
-        }
-        vm.openPlayTimeGame(gameId)
-        return InputResult.HANDLED
-    }
     playTimeFigureOf(focused)?.let { figure ->
         vm.setPlayTimeEngagedFigure(figure.takeIf { it != playTime.engagedFigure })
         return InputResult.handled(SoundType.TOGGLE)
@@ -549,7 +535,7 @@ private fun routePlayTimeConfirm(vm: SettingsViewModel, state: SettingsUiState):
     when (focused) {
         PlayTimeItem.PlatformsTile -> vm.navigateToPlayTimePlatforms()
         PlayTimeItem.DevicesTile -> vm.navigateToPlayTimeDevices()
-        PlayTimeItem.GamesTile -> vm.navigateToPlayTimeGames()
+        PlayTimeItem.MosaicCard, PlayTimeItem.GamesTile -> vm.navigateToPlayTimeGames()
         PlayTimeItem.UploadNow -> {
             if (!isOnline || playTime.isUploading) return InputResult.handled(SoundType.SILENT)
             vm.uploadPlaySessionsNow()
@@ -1140,7 +1126,6 @@ internal fun routeNavigateBack(vm: SettingsViewModel): Boolean {
 private fun routeDismissTopOverlay(vm: SettingsViewModel): Boolean {
     val state = vm._uiState.value
     return when {
-        state.playTime.mosaicFolded -> { vm.setPlayTimeMosaicFolded(false); true }
         state.playTime.engagedFigure != null -> { vm.setPlayTimeEngagedFigure(null); true }
         state.changelog.visible -> { vm.closeChangelog(); true }
         state.systemizeResult != null -> { vm.dismissSystemizeDialog(); true }

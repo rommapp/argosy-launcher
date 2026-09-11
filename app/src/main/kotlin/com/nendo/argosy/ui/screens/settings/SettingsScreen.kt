@@ -1830,7 +1830,7 @@ private fun SettingsFooter(
                 figure != null -> add(InputButton.A to playTimeInspectHint)
                 playTimeHorizontalScrubOf(focusedPlayTime) != null -> add(InputButton.DPAD_HORIZONTAL to playTimeInspectHint)
             }
-            if (engaged && focusedPlayTime == PlayTimeItem.MosaicCard) {
+            if (focusedPlayTime == PlayTimeItem.MosaicCard) {
                 add(InputButton.A to playTimeOpenHint)
             }
             add(InputButton.X to playTimeRefreshHint)

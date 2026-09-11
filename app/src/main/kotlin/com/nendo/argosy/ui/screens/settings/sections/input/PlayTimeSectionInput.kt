@@ -46,10 +46,6 @@ internal class PlayTimeSectionInput(
 
     private fun vertical(direction: Int): InputResult {
         engagedFigure()?.let { figure ->
-            if (figure == PlayTimeFigure.MOSAIC) {
-                viewModel.movePlayTimeMosaic(dx = 0, dy = direction)
-                return InputResult.HANDLED
-            }
             val scrub = playTimeVerticalScrubOf(figure)
             viewModel.scrubPlayTime(scrub, direction, playTimeScrubStep(scrub, horizontal = false))
             return InputResult.HANDLED
@@ -71,10 +67,6 @@ internal class PlayTimeSectionInput(
         val figure = playTimeFigureOf(item)
         if (figure != null && figure != viewModel.uiState.value.playTime.engagedFigure) {
             return InputResult.handled(SoundType.BOUNDARY)
-        }
-        if (figure == PlayTimeFigure.MOSAIC) {
-            viewModel.movePlayTimeMosaic(dx = direction, dy = 0)
-            return InputResult.HANDLED
         }
         playTimeHorizontalScrubOf(item)?.let { scrub ->
             viewModel.scrubPlayTime(scrub, direction, playTimeScrubStep(scrub, horizontal = true))

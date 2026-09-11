@@ -156,9 +156,11 @@
     <string name="ui_save_channel_notice_save_as_failed">Не удалось создать слот сохранения</string>
     <string name="ui_save_channel_notice_renamed">Переименовано в \'%1$s\'</string>
     <string name="ui_save_channel_notice_slot_deleted">Слот сохранения \'%1$s\' удалён</string>
+    <string name="ui_save_channel_notice_slot_deleted_server_failed">Слот сохранения \'%1$s\' удалён здесь; копию на сервере удалить не удалось</string>
     <string name="ui_save_channel_notice_migrated">\'%1$s\' перенесён</string>
     <string name="ui_save_channel_notice_migrate_failed">Не удалось перенести сохранение</string>
     <string name="ui_save_channel_notice_legacy_deleted">\'%1$s\' удалён</string>
+    <string name="ui_save_channel_notice_legacy_deleted_server_failed">\'%1$s\' удалён здесь; копию на сервере удалить не удалось</string>
     <string name="ui_save_channel_notice_saves_synced">Сохранения синхронизированы с сервером</string>
 
     <string name="ui_state_slot_row_empty">(Пусто)</string>

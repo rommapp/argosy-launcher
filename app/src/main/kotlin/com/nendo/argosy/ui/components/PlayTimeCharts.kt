@@ -38,6 +38,7 @@ fun PlayBarRow(
     detail: String? = null,
     badge: String? = null,
     isFocused: Boolean = false,
+    leading: (@Composable () -> Unit)? = null,
     onClick: (() -> Unit)? = null
 ) {
     val theme = LocalArgosyTheme.current
@@ -69,6 +70,10 @@ fun PlayBarRow(
         verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
+            if (leading != null) {
+                leading()
+                Spacer(modifier = Modifier.width(Dimens.spacingSm))
+            }
             Text(
                 text = name,
                 style = MaterialTheme.typography.titleSmall,

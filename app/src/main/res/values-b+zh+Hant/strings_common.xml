@@ -155,9 +155,11 @@
     <string name="ui_save_channel_notice_save_as_failed">無法建立存檔槽</string>
     <string name="ui_save_channel_notice_renamed">已重新命名為「%1$s」</string>
     <string name="ui_save_channel_notice_slot_deleted">已刪除存檔槽「%1$s」</string>
+    <string name="ui_save_channel_notice_slot_deleted_server_failed">已在本機刪除存檔槽「%1$s」；伺服器上的副本無法移除</string>
     <string name="ui_save_channel_notice_migrated">已轉換「%1$s」</string>
     <string name="ui_save_channel_notice_migrate_failed">無法轉換存檔</string>
     <string name="ui_save_channel_notice_legacy_deleted">已刪除「%1$s」</string>
+    <string name="ui_save_channel_notice_legacy_deleted_server_failed">已在本機刪除「%1$s」；伺服器上的副本無法移除</string>
     <string name="ui_save_channel_notice_saves_synced">已從伺服器同步存檔</string>
 
     <string name="ui_state_slot_row_empty">(空)</string>

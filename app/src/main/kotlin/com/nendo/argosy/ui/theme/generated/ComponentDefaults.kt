@@ -138,10 +138,9 @@ object ComponentDefaults {
         const val mosaicMinShareRatio = 0.04f
         const val mosaicMaxTiles = 12
         const val mosaicFallbackAlpha = 0.25f
+        const val mosaicCollageAlpha = 0.7f
         const val mosaicCollageCell = 40
-        const val mosaicRestAlpha = 0.4f
-        const val mosaicZoom = 1.6f
-        const val mosaicNavAspect = 3.2f
+        const val listCoverWidth = 34
         const val legendSwatch = 10
         const val legendRowsPerColumn = 3
         const val factsColumns = 3

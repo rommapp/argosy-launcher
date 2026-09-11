@@ -20,11 +20,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.nendo.argosy.R
+import com.nendo.argosy.ui.common.rememberFileImageModel
+import com.nendo.argosy.ui.components.PlatformIconAssets
 import com.nendo.argosy.ui.components.PlayBarRow
 import com.nendo.argosy.ui.screens.settings.PlayTimeEntryUi
 import com.nendo.argosy.ui.screens.settings.PlayTimeGamesSortMode
@@ -37,6 +43,8 @@ import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
+import com.nendo.argosy.ui.theme.LocalUiScale
+import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.ui.util.clickableNoFocus
 import com.nendo.argosy.util.formatPlayTime
 import com.nendo.argosy.util.formatRelativeTime
@@ -169,12 +177,65 @@ fun PlayTimeListSection(uiState: SettingsUiState, viewModel: SettingsViewModel, 
                     },
                     badge = if (entry.isThisDevice) stringResource(R.string.settings_play_time_list_this_device) else null,
                     isFocused = isFocused(item),
+                    leading = when (kind) {
+                        PlayTimeListKind.GAMES -> {
+                            { PlayTimeRowCover(coverPath = entry.coverPath) }
+                        }
+                        PlayTimeListKind.PLATFORMS -> {
+                            { PlayTimeRowGlyph(platformSlug = entry.platformSlug) }
+                        }
+                        PlayTimeListKind.DEVICES -> null
+                    },
                     onClick = { viewModel.setFocusIndex(layout.focusIndexOf(item, Unit)) }
                 )
             }
         }
     }
 }
+
+@Composable
+private fun PlayTimeRowCover(coverPath: String?) {
+    val theme = LocalArgosyTheme.current
+    val s = LocalUiScale.current.scale
+    val width = (ComponentDefaults.PlayTimeChart.listCoverWidth * s).dp
+    val model = coverPath?.let { rememberFileImageModel(it) }
+    Box(
+        modifier = Modifier
+            .size(width = width, height = width * LIST_COVER_ASPECT)
+            .clip(RoundedCornerShape(Dimens.radiusSm))
+            .background(theme.surfaceRaised),
+        contentAlignment = Alignment.Center
+    ) {
+        if (model != null) {
+            AsyncImage(
+                model = model,
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+    }
+}
+
+@Composable
+private fun PlayTimeRowGlyph(platformSlug: String) {
+    val context = LocalContext.current
+    val s = LocalUiScale.current.scale
+    val size = (ComponentDefaults.PlayTimeChart.listCoverWidth * s).dp
+    val glyph = remember(platformSlug) { PlatformIconAssets.resolveAssetUri(context, platformSlug) }
+    Box(modifier = Modifier.size(size), contentAlignment = Alignment.Center) {
+        if (glyph != null) {
+            AsyncImage(
+                model = glyph,
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+    }
+}
+
+private const val LIST_COVER_ASPECT = 1.4f
 
 @Composable
 private fun ListTotalsHeader(kind: PlayTimeListKind, count: Int, totalMs: Long) {

@@ -156,9 +156,11 @@
     <string name="ui_save_channel_notice_save_as_failed">सेव स्लॉट बनाने में विफल</string>
     <string name="ui_save_channel_notice_renamed">नाम बदलकर \'%1$s\' किया गया</string>
     <string name="ui_save_channel_notice_slot_deleted">सेव स्लॉट \'%1$s\' हटाया गया</string>
+    <string name="ui_save_channel_notice_slot_deleted_server_failed">सेव स्लॉट \'%1$s\' यहाँ हटाया गया; सर्वर की प्रति नहीं हटाई जा सकी</string>
     <string name="ui_save_channel_notice_migrated">\'%1$s\' माइग्रेट किया गया</string>
     <string name="ui_save_channel_notice_migrate_failed">सेव माइग्रेट करने में विफल</string>
     <string name="ui_save_channel_notice_legacy_deleted">\'%1$s\' हटाया गया</string>
+    <string name="ui_save_channel_notice_legacy_deleted_server_failed">\'%1$s\' यहाँ हटाया गया; सर्वर की प्रति नहीं हटाई जा सकी</string>
     <string name="ui_save_channel_notice_saves_synced">सर्वर से सेव सिंक हुए</string>
 
     <string name="ui_state_slot_row_empty">(खाली)</string>

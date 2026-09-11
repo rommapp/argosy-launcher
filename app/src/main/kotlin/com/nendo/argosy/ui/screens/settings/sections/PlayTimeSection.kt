@@ -26,7 +26,6 @@ import com.nendo.argosy.ui.components.ListSection
 import com.nendo.argosy.ui.components.playtime.MosaicGame
 import com.nendo.argosy.ui.components.playtime.MosaicTile
 import com.nendo.argosy.ui.components.playtime.foldMosaic
-import com.nendo.argosy.ui.components.playtime.foldedGames
 import com.nendo.argosy.ui.screens.settings.ConnectionStatus
 import com.nendo.argosy.ui.screens.settings.PlayTimeFigure
 import com.nendo.argosy.ui.screens.settings.PlayTimeScrub
@@ -165,7 +164,6 @@ internal fun playTimeSections(info: PlayTimeLayoutInfo): List<ListSection> =
 internal fun playTimeFigureOf(item: PlayTimeItem?): PlayTimeFigure? = when (item) {
     PlayTimeItem.CalendarCard -> PlayTimeFigure.CALENDAR
     PlayTimeItem.WaveformCard -> PlayTimeFigure.WAVEFORM
-    PlayTimeItem.MosaicCard -> PlayTimeFigure.MOSAIC
     else -> null
 }
 
@@ -178,7 +176,6 @@ internal fun playTimeHorizontalScrubOf(item: PlayTimeItem?): PlayTimeScrub? = wh
 internal fun playTimeVerticalScrubOf(figure: PlayTimeFigure): PlayTimeScrub = when (figure) {
     PlayTimeFigure.CALENDAR -> PlayTimeScrub.CALENDAR
     PlayTimeFigure.WAVEFORM -> PlayTimeScrub.WEEKDAY
-    PlayTimeFigure.MOSAIC -> PlayTimeScrub.MOSAIC
 }
 
 internal fun playTimeScrubStep(scrub: PlayTimeScrub, horizontal: Boolean): Int =
@@ -198,28 +195,16 @@ private fun mosaicGames(state: PlayTimeState): List<MosaicGame> =
     }
 
 internal fun playTimeMosaicTiles(state: PlayTimeState): List<MosaicTile> =
-    if (state.mosaicFolded) {
-        foldedGames(
-            games = mosaicGames(state),
-            maxTiles = ComponentDefaults.PlayTimeChart.mosaicMaxTiles,
-            minShare = ComponentDefaults.PlayTimeChart.mosaicMinShareRatio
-        )
-    } else {
-        foldMosaic(
-            games = mosaicGames(state),
-            maxTiles = ComponentDefaults.PlayTimeChart.mosaicMaxTiles,
-            minShare = ComponentDefaults.PlayTimeChart.mosaicMinShareRatio
-        )
-    }
-
-internal fun playTimeMosaicScrub(state: PlayTimeState): PlayTimeScrub =
-    if (state.mosaicFolded) PlayTimeScrub.MOSAIC_FOLDED else PlayTimeScrub.MOSAIC
+    foldMosaic(
+        games = mosaicGames(state),
+        maxTiles = ComponentDefaults.PlayTimeChart.mosaicMaxTiles,
+        minShare = ComponentDefaults.PlayTimeChart.mosaicMinShareRatio
+    )
 
 internal fun playTimeScrubSize(scrub: PlayTimeScrub, state: PlayTimeState): Int = when (scrub) {
     PlayTimeScrub.CALENDAR -> state.days.size
     PlayTimeScrub.WEEKDAY -> DAYS_IN_WEEK
     PlayTimeScrub.HOUR -> HOURS_IN_DAY
-    PlayTimeScrub.MOSAIC, PlayTimeScrub.MOSAIC_FOLDED -> playTimeMosaicTiles(state).size
 }
 
 internal fun playTimeScrubInitial(scrub: PlayTimeScrub, state: PlayTimeState): Int? = when (scrub) {
@@ -227,8 +212,6 @@ internal fun playTimeScrubInitial(scrub: PlayTimeScrub, state: PlayTimeState): I
         .takeIf { it >= 0 } ?: state.days.lastIndex.takeIf { it >= 0 }
     PlayTimeScrub.WEEKDAY -> LocalDateTime.now().dayOfWeek.value - 1
     PlayTimeScrub.HOUR -> LocalDateTime.now().hour
-    PlayTimeScrub.MOSAIC, PlayTimeScrub.MOSAIC_FOLDED ->
-        0.takeIf { playTimeMosaicTiles(state).isNotEmpty() }
 }
 
 internal fun playTimeScrubIndex(scrub: PlayTimeScrub, state: PlayTimeState): Int? {
@@ -354,13 +337,8 @@ fun PlayTimeSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             PlayTimeItem.MosaicCard -> PlayTimeMosaicCard(
                 state = playTime,
                 isFocused = isFocused(item),
-                isEngaged = isEngaged(item),
                 onFocus = { focusOn(item) },
-                onTileTap = { index ->
-                    focusOn(item)
-                    viewModel.setPlayTimeEngagedFigure(PlayTimeFigure.MOSAIC)
-                    viewModel.setPlayTimeScrub(playTimeMosaicScrub(playTime), index)
-                }
+                onOpen = { openFrom(item) { viewModel.navigateToPlayTimeGames() } }
             )
 
             PlayTimeItem.GamesTile -> CategoryTile(

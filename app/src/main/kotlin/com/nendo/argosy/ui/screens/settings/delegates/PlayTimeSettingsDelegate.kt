@@ -39,7 +39,7 @@ class PlayTimeSettingsDelegate @Inject constructor(
 
     fun load(scope: CoroutineScope) {
         loadJob?.cancel()
-        _state.update { it.copy(isLoading = !it.hasLoaded, engagedFigure = null, mosaicFolded = false) }
+        _state.update { it.copy(isLoading = !it.hasLoaded, engagedFigure = null) }
         loadJob = scope.launch {
             val snapshot = playStatsRepository.loadSnapshot(
                 ComponentDefaults.PlayTimeChart.calendarWeeks * DAYS_IN_WEEK
@@ -61,16 +61,7 @@ class PlayTimeSettingsDelegate @Inject constructor(
     }
 
     fun setEngagedFigure(figure: PlayTimeFigure?) {
-        _state.update { it.copy(engagedFigure = figure, mosaicFolded = false) }
-    }
-
-    fun setMosaicFolded(folded: Boolean) {
-        _state.update {
-            it.copy(
-                mosaicFolded = folded,
-                scrubs = if (folded) it.scrubs - PlayTimeScrub.MOSAIC_FOLDED else it.scrubs
-            )
-        }
+        _state.update { it.copy(engagedFigure = figure) }
     }
 
     fun scrub(scrub: PlayTimeScrub, direction: Int, size: Int, initial: Int?, step: Int = 1) {
@@ -158,6 +149,7 @@ class PlayTimeSettingsDelegate @Inject constructor(
                 PlayTimeEntryUi(
                     key = total.platformSlug,
                     name = platformNames[total.platformSlug] ?: total.platformSlug,
+                    platformSlug = total.platformSlug,
                     activeMs = total.activeMs,
                     sessionCount = total.sessionCount,
                     lastPlayed = total.lastPlayed
@@ -178,6 +170,8 @@ class PlayTimeSettingsDelegate @Inject constructor(
                     key = total.gameId.toString(),
                     name = total.gameTitle,
                     platformName = platformNames[total.platformSlug] ?: total.platformSlug,
+                    platformSlug = total.platformSlug,
+                    coverPath = coverPaths[total.gameId],
                     activeMs = total.activeMs,
                     sessionCount = total.sessionCount,
                     lastPlayed = total.lastPlayed

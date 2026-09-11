@@ -878,9 +878,9 @@ enum class PlayTimeGamesSortMode { HOURS, SESSIONS, RECENT }
  * The axes a d-pad can scrub along in the Play Time overview. Each keeps its own index so moving
  * focus between figures does not lose a reading; WEEKDAY and HOUR are the two axes of the waveform.
  */
-enum class PlayTimeScrub { CALENDAR, WEEKDAY, HOUR, MOSAIC, MOSAIC_FOLDED }
+enum class PlayTimeScrub { CALENDAR, WEEKDAY, HOUR }
 
-enum class PlayTimeFigure { CALENDAR, WAVEFORM, MOSAIC }
+enum class PlayTimeFigure { CALENDAR, WAVEFORM }
 
 /**
  * Which drill-in list the shared Play Time list section is rendering; the section enum
@@ -896,6 +896,8 @@ data class PlayTimeEntryUi(
     val key: String,
     val name: String,
     val platformName: String = "",
+    val platformSlug: String = "",
+    val coverPath: String? = null,
     val activeMs: Long,
     val sessionCount: Int,
     val lastPlayed: java.time.Instant,
@@ -932,7 +934,6 @@ data class PlayTimeState(
     val hasLoaded: Boolean = false,
     val scrubs: Map<PlayTimeScrub, Int> = emptyMap(),
     val engagedFigure: PlayTimeFigure? = null,
-    val mosaicFolded: Boolean = false,
     val summary: PlayTimeSummaryUi? = null,
     val days: List<com.nendo.argosy.data.model.PlayDay> = emptyList(),
     val currentStreak: Int = 0,

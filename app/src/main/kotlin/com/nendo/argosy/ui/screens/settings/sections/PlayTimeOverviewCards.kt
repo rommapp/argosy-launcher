@@ -657,46 +657,27 @@ internal fun PlayTimeDeviceBand(state: PlayTimeState) {
 internal fun PlayTimeMosaicCard(
     state: PlayTimeState,
     isFocused: Boolean,
-    isEngaged: Boolean,
     onFocus: () -> Unit,
-    onTileTap: (Int) -> Unit
+    onOpen: () -> Unit
 ) {
-    val context = LocalContext.current
-    val tiles = remember(state.games, state.coverPaths, state.mosaicFolded) { playTimeMosaicTiles(state) }
-    val selected = playTimeScrubIndex(playTimeMosaicScrub(state), state)
-    val tile = selected?.let { tiles.getOrNull(it) }
+    val tiles = remember(state.games, state.coverPaths) { playTimeMosaicTiles(state) }
     val othersLabel = stringResource(R.string.settings_play_time_mosaic_others)
     val othersCountLabel = tiles.firstOrNull { it.gameId == null }?.let {
         pluralStringResource(R.plurals.settings_play_time_mosaic_others_count, it.foldedCount, it.foldedCount)
     }
-    PlayFigureCard(isFocused = isFocused, isEngaged = isEngaged, onFocus = onFocus) {
-        PlayFigureHeader(
-            title = when {
-                tile == null -> stringResource(R.string.settings_play_time_mosaic_empty)
-                tile.gameId == null -> othersLabel
-                else -> tile.title.ifBlank { stringResource(R.string.settings_play_time_unknown_game) }
-            },
-            value = tile?.let { playTimeLabel(it.activeMs) },
-            subtitle = when {
-                state.mosaicFolded -> pluralStringResource(
-                    R.plurals.settings_play_time_mosaic_others_count,
-                    tiles.size,
-                    tiles.size
-                )
-                tile == null -> null
-                tile.gameId == null -> othersCountLabel
-                else -> tile.lastPlayed?.let { last ->
-                    stringResource(R.string.settings_play_time_entry_last_played, formatRelativeTime(context, last))
-                }
-            }
-        )
+    PlayFigureCard(isFocused = isFocused, onFocus = onFocus) {
+        if (tiles.isEmpty()) {
+            PlayFigureHeader(
+                title = stringResource(R.string.settings_play_time_mosaic_empty),
+                value = null
+            )
+            return@PlayFigureCard
+        }
         PlayCoverMosaic(
             tiles = tiles,
             othersLabel = othersLabel,
             othersCountLabel = othersCountLabel,
-            selectedIndex = selected,
-            isEngaged = isEngaged,
-            onTileTap = onTileTap
+            onOpen = onOpen
         )
     }
 }

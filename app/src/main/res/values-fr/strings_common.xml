@@ -168,9 +168,11 @@
     <string name="ui_save_channel_notice_save_as_failed">Échec de la création de l\'emplacement de sauvegarde</string>
     <string name="ui_save_channel_notice_renamed">Renommé en \'%1$s\'</string>
     <string name="ui_save_channel_notice_slot_deleted">Emplacement de sauvegarde \'%1$s\' supprimé</string>
+    <string name="ui_save_channel_notice_slot_deleted_server_failed">Emplacement de sauvegarde \'%1$s\' supprimé ici ; la copie sur le serveur n\'a pas pu être retirée</string>
     <string name="ui_save_channel_notice_migrated">\'%1$s\' migré</string>
     <string name="ui_save_channel_notice_migrate_failed">Échec de la migration de la sauvegarde</string>
     <string name="ui_save_channel_notice_legacy_deleted">\'%1$s\' supprimé</string>
+    <string name="ui_save_channel_notice_legacy_deleted_server_failed">\'%1$s\' supprimé ici ; la copie sur le serveur n\'a pas pu être retirée</string>
     <string name="ui_save_channel_notice_saves_synced">Sauvegardes synchronisées depuis le serveur</string>
 
     <string name="ui_state_slot_row_empty">(Vide)</string>

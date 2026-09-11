@@ -1093,22 +1093,6 @@ class SettingsViewModel @Inject constructor(
     fun refreshPlaySessionsFromRomm() = playTimeDelegate.refreshFromRomm(viewModelScope)
     fun setPlayTimeScrub(scrub: PlayTimeScrub, index: Int) = playTimeDelegate.setScrub(scrub, index)
     fun setPlayTimeEngagedFigure(figure: PlayTimeFigure?) = playTimeDelegate.setEngagedFigure(figure)
-    fun setPlayTimeMosaicFolded(folded: Boolean) = playTimeDelegate.setMosaicFolded(folded)
-
-    fun movePlayTimeMosaic(dx: Int, dy: Int) {
-        val playTime = _uiState.value.playTime
-        val tiles = com.nendo.argosy.ui.screens.settings.sections.playTimeMosaicTiles(playTime)
-        val scrub = com.nendo.argosy.ui.screens.settings.sections.playTimeMosaicScrub(playTime)
-        val current = com.nendo.argosy.ui.screens.settings.sections.playTimeScrubIndex(scrub, playTime) ?: return
-        val next = com.nendo.argosy.ui.components.playtime.mosaicNeighbour(
-            tiles = tiles,
-            current = current,
-            dx = dx,
-            dy = dy,
-            aspect = com.nendo.argosy.ui.theme.generated.ComponentDefaults.PlayTimeChart.mosaicNavAspect
-        ) ?: return
-        playTimeDelegate.setScrub(scrub, next)
-    }
 
     fun scrubPlayTime(scrub: PlayTimeScrub, direction: Int, step: Int = 1) {
         val playTime = _uiState.value.playTime

@@ -157,9 +157,11 @@
     <string name="ui_save_channel_notice_save_as_failed">No se pudo crear la ranura de guardado</string>
     <string name="ui_save_channel_notice_renamed">Renombrado a \'%1$s\'</string>
     <string name="ui_save_channel_notice_slot_deleted">Ranura de guardado \'%1$s\' eliminada</string>
+    <string name="ui_save_channel_notice_slot_deleted_server_failed">Ranura de guardado \'%1$s\' eliminada aquí; no se pudo quitar la copia del servidor</string>
     <string name="ui_save_channel_notice_migrated">\'%1$s\' migrada</string>
     <string name="ui_save_channel_notice_migrate_failed">No se pudo migrar la partida guardada</string>
     <string name="ui_save_channel_notice_legacy_deleted">\'%1$s\' eliminada</string>
+    <string name="ui_save_channel_notice_legacy_deleted_server_failed">\'%1$s\' eliminada aquí; no se pudo quitar la copia del servidor</string>
     <string name="ui_save_channel_notice_saves_synced">Partidas guardadas sincronizadas desde el servidor</string>
 
     <string name="ui_state_slot_row_empty">(Vacío)</string>

@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
@@ -31,8 +32,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.nendo.argosy.ui.common.rememberFileImageModel
-import com.nendo.argosy.ui.primitives.FocusIndicators
-import com.nendo.argosy.ui.primitives.argosyFocusIndicators
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.LocalUiScale
@@ -103,55 +102,7 @@ fun foldMosaic(games: List<MosaicGame>, maxTiles: Int, minShare: Float): List<Mo
     )
 }
 
-fun foldedGames(games: List<MosaicGame>, maxTiles: Int, minShare: Float): List<MosaicTile> {
-    val played = games.filter { it.activeMs > 0L }.sortedByDescending { it.activeMs }
-    val total = played.sumOf { it.activeMs }
-    if (total <= 0L) return emptyList()
-    val keptCount = played.take(maxTiles.coerceAtLeast(1))
-        .takeWhile { it.activeMs.toDouble() / total >= minShare }
-        .ifEmpty { played.take(1) }
-        .size
-    return played.drop(keptCount).map { game ->
-        MosaicTile(
-            key = "folded_${game.gameId}",
-            gameId = game.gameId,
-            title = game.title,
-            activeMs = game.activeMs,
-            lastPlayed = game.lastPlayed,
-            coverPath = game.coverPath,
-            foldedCount = 0
-        )
-    }
-}
-
-fun mosaicNeighbour(
-    tiles: List<MosaicTile>,
-    current: Int,
-    dx: Int,
-    dy: Int,
-    aspect: Float
-): Int? {
-    if (tiles.isEmpty()) return null
-    val rects = Squarify.layout(tiles.map { it.activeMs.toFloat() }, TreemapRect(0f, 0f, aspect, 1f))
-    val from = rects.getOrNull(current) ?: return null
-    val fromX = from.x + from.width / 2f
-    val fromY = from.y + from.height / 2f
-    return rects.indices
-        .filter { it != current }
-        .mapNotNull { index ->
-            val rect = rects[index]
-            val toX = rect.x + rect.width / 2f
-            val toY = rect.y + rect.height / 2f
-            val alongAxis = (toX - fromX) * dx + (toY - fromY) * dy
-            if (alongAxis <= 0f) return@mapNotNull null
-            val offAxis = kotlin.math.abs((toX - fromX) * dy + (toY - fromY) * dx)
-            index to (alongAxis + offAxis * OFF_AXIS_PENALTY)
-        }
-        .minByOrNull { it.second }
-        ?.first
-}
-
-private const val OFF_AXIS_PENALTY = 2f
+private const val COLLAGE_SCRIM_ALPHA = 0.85f
 
 /**
  * Top games as a squarified cover treemap: tile area is proportional to active time, each tile
@@ -163,9 +114,7 @@ fun PlayCoverMosaic(
     tiles: List<MosaicTile>,
     othersLabel: String,
     othersCountLabel: String?,
-    selectedIndex: Int?,
-    isEngaged: Boolean,
-    onTileTap: (Int) -> Unit,
+    onOpen: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val s = LocalUiScale.current.scale
@@ -174,8 +123,6 @@ fun PlayCoverMosaic(
     val gap = (ComponentDefaults.PlayTimeChart.surfaceGap * s).dp
     val shape = RoundedCornerShape(Dimens.radiusSm)
     val fallbackTint = MaterialTheme.colorScheme.primary.copy(alpha = ComponentDefaults.PlayTimeChart.mosaicFallbackAlpha)
-    val restAlpha = ComponentDefaults.PlayTimeChart.mosaicRestAlpha
-    val zoom = ComponentDefaults.PlayTimeChart.mosaicZoom
 
     BoxWithConstraints(modifier = modifier.fillMaxWidth().height(height)) {
         val widthPx = with(density) { maxWidth.toPx() }
@@ -188,36 +135,15 @@ fun PlayCoverMosaic(
         tiles.forEachIndexed { index, tile ->
             val rect = rects.getOrNull(index) ?: return@forEachIndexed
             if (rect.width <= 0f || rect.height <= 0f) return@forEachIndexed
-            val selected = isEngaged && index == selectedIndex
-            if (selected) return@forEachIndexed
             key(tile.key) {
                 MosaicTileBox(
                     tile = tile,
                     rect = rect,
-                    selected = false,
-                    alpha = if (isEngaged) restAlpha else 1f,
                     othersLabel = othersLabel,
                     othersCountLabel = othersCountLabel,
                     shape = shape,
                     fallbackTint = fallbackTint,
-                    onTap = { onTileTap(index) }
-                )
-            }
-        }
-        val selectedRect = selectedIndex?.let { rects.getOrNull(it) }
-        val selectedTile = selectedIndex?.let { tiles.getOrNull(it) }
-        if (isEngaged && selectedRect != null && selectedTile != null) {
-            key(selectedTile.key) {
-                MosaicTileBox(
-                    tile = selectedTile,
-                    rect = selectedRect.grow(zoom, widthPx, heightPx),
-                    selected = true,
-                    alpha = 1f,
-                    othersLabel = othersLabel,
-                    othersCountLabel = othersCountLabel,
-                    shape = shape,
-                    fallbackTint = fallbackTint,
-                    onTap = { onTileTap(selectedIndex) }
+                    onTap = onOpen
                 )
             }
         }
@@ -228,8 +154,6 @@ fun PlayCoverMosaic(
 private fun MosaicTileBox(
     tile: MosaicTile,
     rect: TreemapRect,
-    selected: Boolean,
-    alpha: Float,
     othersLabel: String,
     othersCountLabel: String?,
     shape: RoundedCornerShape,
@@ -244,13 +168,6 @@ private fun MosaicTileBox(
         modifier = Modifier
             .offset { IntOffset(rect.x.roundToInt(), rect.y.roundToInt()) }
             .size(with(density) { rect.width.toDp() }, with(density) { rect.height.toDp() })
-            .alpha(alpha)
-            .argosyFocusIndicators(
-                focused = selected,
-                indicators = FocusIndicators(ring = true),
-                tint = theme.focusAccent,
-                shape = shape
-            )
             .clip(shape)
             .background(if (cover != null) theme.surfaceBase else fallbackTint)
             .clickableNoFocus(onClick = onTap)
@@ -266,7 +183,7 @@ private fun MosaicTileBox(
             cover != null -> AsyncImage(
                 model = cover,
                 contentDescription = null,
-                contentScale = ContentScale.Crop,
+                contentScale = ContentScale.Fit,
                 modifier = Modifier.fillMaxSize()
             )
             else -> Column(
@@ -304,7 +221,7 @@ private fun OthersCollage(
     val rows = (heightPx / cellPx).toInt().coerceAtLeast(1)
     val shown = remember(covers, columns, rows) { covers.take(columns * rows) }
     Box(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize().alpha(ComponentDefaults.PlayTimeChart.mosaicFallbackAlpha)) {
+        Column(modifier = Modifier.fillMaxSize().alpha(ComponentDefaults.PlayTimeChart.mosaicCollageAlpha)) {
             shown.chunked(columns).forEach { row ->
                 Row {
                     row.forEach { path ->
@@ -325,6 +242,11 @@ private fun OthersCollage(
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .fillMaxWidth()
+                .background(
+                    Brush.verticalGradient(
+                        listOf(Color.Transparent, theme.surfaceBase.copy(alpha = COLLAGE_SCRIM_ALPHA))
+                    )
+                )
                 .padding(Dimens.spacingXs)
         ) {
             Text(
@@ -353,15 +275,3 @@ private fun TreemapRect.inset(amount: Float): TreemapRect {
     return TreemapRect(x + amount, y + amount, w, h)
 }
 
-private fun TreemapRect.grow(factor: Float, boundsWidth: Float, boundsHeight: Float): TreemapRect {
-    val w = (width * factor).coerceAtMost(boundsWidth)
-    val h = (height * factor).coerceAtMost(boundsHeight)
-    val cx = x + width / 2f
-    val cy = y + height / 2f
-    return TreemapRect(
-        x = (cx - w / 2f).coerceIn(0f, boundsWidth - w),
-        y = (cy - h / 2f).coerceIn(0f, boundsHeight - h),
-        width = w,
-        height = h
-    )
-}

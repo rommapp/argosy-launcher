@@ -153,9 +153,11 @@
     <string name="ui_save_channel_notice_save_as_failed">创建存档槽位失败</string>
     <string name="ui_save_channel_notice_renamed">已重命名为“%1$s”</string>
     <string name="ui_save_channel_notice_slot_deleted">已删除存档槽位“%1$s”</string>
+    <string name="ui_save_channel_notice_slot_deleted_server_failed">已在本机删除存档槽位“%1$s”；服务器上的副本无法移除</string>
     <string name="ui_save_channel_notice_migrated">已迁移“%1$s”</string>
     <string name="ui_save_channel_notice_migrate_failed">迁移存档失败</string>
     <string name="ui_save_channel_notice_legacy_deleted">已删除“%1$s”</string>
+    <string name="ui_save_channel_notice_legacy_deleted_server_failed">已在本机删除“%1$s”；服务器上的副本无法移除</string>
     <string name="ui_save_channel_notice_saves_synced">已从服务器同步存档</string>
 
     <string name="ui_state_slot_row_empty">（空）</string>

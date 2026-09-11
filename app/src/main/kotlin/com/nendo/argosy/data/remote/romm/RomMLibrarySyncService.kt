@@ -1096,12 +1096,6 @@ class RomMLibrarySyncService @Inject constructor(
         overlayDao.setBacklogged(owner, gameId, romUser.backlogged)
         overlayDao.setNowPlaying(owner, gameId, romUser.nowPlaying)
 
-        if (pendingSyncQueueDao.hasPending(gameId, com.nendo.argosy.data.local.entity.SyncType.HIDDEN)) return
-        if (romUser.hidden) {
-            userRomsHiddenDao.hide(owner, gameId)
-        } else {
-            userRomsHiddenDao.unhide(owner, gameId)
-        }
     }
 
     private suspend fun syncGameFiles(gameId: Long, rom: RomMRom, platformSlug: String) {

@@ -56,19 +56,17 @@ class RomMUserPropertyService @Inject constructor(
     }
 
     /**
-     * The user's own hide choice: recorded locally first so the library reacts immediately, then
-     * queued onto the rom's `rom_user` block. A rom with no server id stops at the local write.
+     * The user's own hide choice, and it stays on this device: hiding tidies one launcher's shelf
+     * and is never pushed, so a game hidden here stays visible on the server and everywhere else.
+     * Unhiding is the exception and does travel, because it is the only way to clear a server flag
+     * an older Argosy set, and a write that can only ever reveal a rom cannot lose one.
      */
     suspend fun updateHidden(gameId: Long, hidden: Boolean): RomMResult<Unit> {
         val game = gameDao.getById(gameId) ?: return RomMResult.Error("Game not found")
         overlayWriter.setHidden(gameId, hidden)
+        if (hidden) return RomMResult.Success(Unit)
         val rommId = game.rommId ?: return RomMResult.Success(Unit)
-        syncCoordinator.get().queuePropertyChange(
-            gameId,
-            rommId,
-            SyncType.HIDDEN,
-            intValue = if (hidden) 1 else 0
-        )
+        syncCoordinator.get().queuePropertyChange(gameId, rommId, SyncType.HIDDEN, intValue = 0)
         return RomMResult.Success(Unit)
     }
 
@@ -90,13 +88,11 @@ class RomMUserPropertyService @Inject constructor(
             val hasRating = pendingSyncQueueDao.hasPending(gameId, SyncType.RATING)
             val hasDifficulty = pendingSyncQueueDao.hasPending(gameId, SyncType.DIFFICULTY)
             val hasStatus = pendingSyncQueueDao.hasPending(gameId, SyncType.STATUS)
-            val hasHidden = pendingSyncQueueDao.hasPending(gameId, SyncType.HIDDEN)
 
             val current = gameDao.getById(gameId) ?: return RomMResult.Success(Unit)
             if (!hasRating) overlayWriter.updateUserRating(gameId, romUser.rating)
             if (!hasDifficulty) overlayWriter.updateUserDifficulty(gameId, romUser.difficulty)
             if (!hasStatus) overlayWriter.updateStatus(gameId, romUser.status)
-            if (!hasHidden) overlayWriter.setHidden(gameId, romUser.hidden)
             if (current.backlogged != romUser.backlogged) {
                 overlayWriter.updateBacklogged(gameId, romUser.backlogged)
             }

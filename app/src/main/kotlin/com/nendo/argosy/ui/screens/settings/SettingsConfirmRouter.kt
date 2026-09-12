@@ -101,6 +101,8 @@ import com.nendo.argosy.ui.screens.settings.sections.storageMediaMaxFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.PlayTimeItem
 import com.nendo.argosy.ui.screens.settings.sections.createPlayTimeLayoutInfo
 import com.nendo.argosy.ui.screens.settings.sections.createPlayTimeListLayoutInfo
+import com.nendo.argosy.ui.screens.settings.sections.PlayTimeConfirmAction
+import com.nendo.argosy.ui.screens.settings.sections.playTimeConfirmActionOf
 import com.nendo.argosy.ui.screens.settings.sections.playTimeFigureOf
 import com.nendo.argosy.ui.screens.settings.sections.playTimeItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.playTimeListMaxFocusIndex
@@ -528,7 +530,9 @@ private fun routePlayTimeConfirm(vm: SettingsViewModel, state: SettingsUiState):
     val isOnline = state.server.connectionStatus == ConnectionStatus.ONLINE
     val playTime = state.playTime
     val focused = playTimeItemAtFocusIndex(state.focusedIndex, createPlayTimeLayoutInfo(state))
-    playTimeFigureOf(focused)?.let { figure ->
+    val action = playTimeConfirmActionOf(focused) ?: return InputResult.handled(SoundType.SILENT)
+    if (action == PlayTimeConfirmAction.INSPECT) {
+        val figure = playTimeFigureOf(focused) ?: return InputResult.handled(SoundType.SILENT)
         vm.setPlayTimeEngagedFigure(figure.takeIf { it != playTime.engagedFigure })
         return InputResult.handled(SoundType.TOGGLE)
     }

@@ -121,10 +121,10 @@ import com.nendo.argosy.ui.screens.settings.sections.storagePlatformGamesItemAtF
 import com.nendo.argosy.ui.screens.settings.sections.StorageSection
 import com.nendo.argosy.ui.screens.settings.sections.PlayTimeListSection
 import com.nendo.argosy.ui.screens.settings.sections.PlayTimeSection
-import com.nendo.argosy.ui.screens.settings.sections.PlayTimeItem
+import com.nendo.argosy.ui.screens.settings.sections.PlayTimeConfirmAction
 import com.nendo.argosy.ui.screens.settings.sections.createPlayTimeLayoutInfo
+import com.nendo.argosy.ui.screens.settings.sections.playTimeConfirmActionOf
 import com.nendo.argosy.ui.screens.settings.sections.playTimeFigureOf
-import com.nendo.argosy.ui.screens.settings.sections.playTimeHorizontalScrubOf
 import com.nendo.argosy.ui.screens.settings.sections.playTimeItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.SyncSettingsSection
 import com.nendo.argosy.data.preferences.FontSlot
@@ -1726,7 +1726,8 @@ private fun SettingsFooter(
 
     val hints = buildList {
         if (uiState.currentSection != SettingsSection.BOX_ART &&
-            uiState.currentSection != SettingsSection.SHADER_STACK) {
+            uiState.currentSection != SettingsSection.SHADER_STACK &&
+            uiState.currentSection != SettingsSection.PLAY_TIME) {
             add(InputButton.DPAD to navigateHint)
         }
         if (uiState.currentSection == SettingsSection.SHADER_STACK &&
@@ -1825,13 +1826,12 @@ private fun SettingsFooter(
             val focusedPlayTime = playTimeItemAtFocusIndex(uiState.focusedIndex, createPlayTimeLayoutInfo(uiState))
             val figure = playTimeFigureOf(focusedPlayTime)
             val engaged = figure != null && figure == uiState.playTime.engagedFigure
-            when {
-                engaged -> add(InputButton.DPAD to playTimeMoveHint)
-                figure != null -> add(InputButton.A to playTimeInspectHint)
-                playTimeHorizontalScrubOf(focusedPlayTime) != null -> add(InputButton.DPAD_HORIZONTAL to playTimeInspectHint)
-            }
-            if (focusedPlayTime == PlayTimeItem.MosaicCard) {
-                add(InputButton.A to playTimeOpenHint)
+            add(InputButton.DPAD to if (engaged) playTimeMoveHint else navigateHint)
+            when (playTimeConfirmActionOf(focusedPlayTime)) {
+                PlayTimeConfirmAction.INSPECT -> if (!engaged) add(InputButton.A to playTimeInspectHint)
+                PlayTimeConfirmAction.OPEN -> add(InputButton.A to playTimeOpenHint)
+                PlayTimeConfirmAction.RUN -> add(InputButton.A to selectDefaultHint)
+                null -> Unit
             }
             add(InputButton.X to playTimeRefreshHint)
         }
@@ -1892,6 +1892,7 @@ private fun SettingsFooter(
             }
             add(InputButton.A to aLabel)
         } else if (uiState.currentSection != SettingsSection.SHADER_STACK &&
+            uiState.currentSection != SettingsSection.PLAY_TIME &&
             uiState.currentSection != SettingsSection.PLAY_TIME_PLATFORMS &&
             uiState.currentSection != SettingsSection.PLAY_TIME_DEVICES &&
             uiState.currentSection != SettingsSection.PLAY_TIME_GAMES

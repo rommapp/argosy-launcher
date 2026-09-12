@@ -167,6 +167,16 @@ internal fun playTimeFigureOf(item: PlayTimeItem?): PlayTimeFigure? = when (item
     else -> null
 }
 
+internal enum class PlayTimeConfirmAction { INSPECT, OPEN, RUN }
+
+internal fun playTimeConfirmActionOf(item: PlayTimeItem?): PlayTimeConfirmAction? = when (item) {
+    PlayTimeItem.CalendarCard, PlayTimeItem.WaveformCard -> PlayTimeConfirmAction.INSPECT
+    PlayTimeItem.PlatformsTile, PlayTimeItem.DevicesTile,
+    PlayTimeItem.MosaicCard, PlayTimeItem.GamesTile -> PlayTimeConfirmAction.OPEN
+    PlayTimeItem.UploadNow, PlayTimeItem.RefreshFromRomm -> PlayTimeConfirmAction.RUN
+    else -> null
+}
+
 internal fun playTimeHorizontalScrubOf(item: PlayTimeItem?): PlayTimeScrub? = when (item) {
     PlayTimeItem.CalendarCard -> PlayTimeScrub.CALENDAR
     PlayTimeItem.WaveformCard -> PlayTimeScrub.HOUR

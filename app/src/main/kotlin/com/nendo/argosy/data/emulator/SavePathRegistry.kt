@@ -364,11 +364,27 @@ object SavePathRegistry {
             saveExtensions = listOf("sav")
         ),
 
+        "pizza_boy_gba_pro" to SavePathConfig(
+            emulatorId = "pizza_boy_gba_pro",
+            defaultPaths = listOf(
+                "{extStorage}/PizzaBoyGBA/saves",
+                "{extStorage}/Android/data/it.dbtecno.pizzaboygbapro/files/saves"
+            ),
+            saveExtensions = listOf("sav")
+        ),
         "pizza_boy_gba" to SavePathConfig(
             emulatorId = "pizza_boy_gba",
             defaultPaths = listOf(
                 "{extStorage}/PizzaBoyGBA/saves",
                 "{extStorage}/Android/data/it.dbtecno.pizzaboygba/files/saves"
+            ),
+            saveExtensions = listOf("sav")
+        ),
+        "pizza_boy_gb_pro" to SavePathConfig(
+            emulatorId = "pizza_boy_gb_pro",
+            defaultPaths = listOf(
+                "{extStorage}/PizzaBoy/saves",
+                "{extStorage}/Android/data/it.dbtecno.pizzaboypro/files/saves"
             ),
             saveExtensions = listOf("sav")
         ),
@@ -715,7 +731,9 @@ object SavePathRegistry {
         "me.magnum.melondualds" to "melondualds",
         "com.dsemu.drastic" to "drastic",
         "it.dbtecno.pizzaboygba" to "pizza_boy_gba",
+        "it.dbtecno.pizzaboygbapro" to "pizza_boy_gba_pro",
         "it.dbtecno.pizzaboy" to "pizza_boy_gb",
+        "it.dbtecno.pizzaboypro" to "pizza_boy_gb_pro",
         "info.cemu.cemu" to "cemu",
         "org.vita3k.emulator" to "vita3k",
         "org.vita3k.emulator.ikhoeyZX" to "vita3k-zx",

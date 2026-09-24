@@ -6,11 +6,14 @@ import android.view.MotionEvent
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.util.SafeCoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -86,8 +89,8 @@ class GamepadInputHandler @Inject constructor(
     fun eventFlow(): Flow<GamepadInput> = _events.asSharedFlow()
     fun homeEventFlow(): Flow<Unit> = _homeEvents.receiveAsFlow()
 
-    fun injectEvent(event: GamepadEvent) {
-        emitWithDebounce(event, isRepeat = false)
+    fun injectEvent(event: GamepadEvent, isRepeat: Boolean) {
+        emitWithDebounce(event, isRepeat)
     }
 
     private val lastInputTimes = mutableMapOf<GamepadEvent, Long>()
@@ -111,34 +114,74 @@ class GamepadInputHandler @Inject constructor(
 
     override fun setRawMotionEventListener(listener: ((MotionEvent) -> Boolean)?) {
         rawMotionEventListener = listener
+        if (listener != null) resetStickMotion()
     }
 
     private var confirmDownTime = 0L
     private var confirmFired = false
     private var confirmDeferred = false
-    private var confirmDeferJob: kotlinx.coroutines.Job? = null
+    private var confirmDeferJob: Job? = null
     private val longPressThresholdMs = 500L
 
-    private var lastStickDirection: GamepadEvent? = null
-    private val stickDeadZone = 0.5f
+    private val stickTracker = AxisDirectionTracker()
+    private val hatTracker = AxisDirectionTracker()
+    private var heldDirection: GamepadEvent? = null
+    private var directionRepeatJob: Job? = null
+    private val directionRepeatDelayMs = 400L
+    private val directionRepeatIntervalMs = 150L
 
-    fun processStickMotion(event: MotionEvent): GamepadEvent? {
-        if (event.source and InputDevice.SOURCE_JOYSTICK == 0) return null
-
-        val x = event.getAxisValue(MotionEvent.AXIS_X)
-        val y = event.getAxisValue(MotionEvent.AXIS_Y)
-
-        val direction = when {
-            y < -stickDeadZone -> GamepadEvent.Up
-            y > stickDeadZone -> GamepadEvent.Down
-            x < -stickDeadZone -> GamepadEvent.Left
-            x > stickDeadZone -> GamepadEvent.Right
-            else -> null
+    /**
+     * Joystick sample to directional event conversion once a raw motion listener declines it.
+     * [deliver] gets a direction entered, or taken over by the hat from a released stick, with
+     * isRepeat false, then the held direction per repeat tick with isRepeat true until neutral.
+     * The result is whether the event was a joystick sample, consumed either way.
+     */
+    fun processStickMotion(event: MotionEvent, deliver: (GamepadEvent, Boolean) -> Unit): Boolean {
+        if (!event.isFromSource(InputDevice.SOURCE_CLASS_JOYSTICK)) return false
+        if (handleMotionEvent(event)) {
+            resetStickMotion()
+            return true
         }
 
-        if (direction == lastStickDirection) return null
-        lastStickDirection = direction
-        return direction
+        val stickEdge = stickTracker.update(
+            event.getAxisValue(MotionEvent.AXIS_X),
+            event.getAxisValue(MotionEvent.AXIS_Y)
+        )
+        val hatEdge = hatTracker.update(
+            event.getAxisValue(MotionEvent.AXIS_HAT_X),
+            event.getAxisValue(MotionEvent.AXIS_HAT_Y)
+        )
+        val direction = stickTracker.direction ?: hatTracker.direction
+        val takenOver = direction.takeIf { it != heldDirection }
+        updateDirectionRepeat(direction, deliver)
+
+        (stickEdge ?: hatEdge ?: takenOver)?.let { deliver(it, false) }
+        return true
+    }
+
+    fun resetStickMotion() {
+        stickTracker.reset()
+        hatTracker.reset()
+        heldDirection = null
+        directionRepeatJob?.cancel()
+        directionRepeatJob = null
+    }
+
+    private fun updateDirectionRepeat(direction: GamepadEvent?, deliver: (GamepadEvent, Boolean) -> Unit) {
+        if (direction == heldDirection) return
+        heldDirection = direction
+        directionRepeatJob?.cancel()
+        directionRepeatJob = if (direction == null) {
+            null
+        } else {
+            scope.launch {
+                delay(directionRepeatDelayMs)
+                while (isActive) {
+                    deliver(direction, true)
+                    delay(directionRepeatIntervalMs)
+                }
+            }
+        }
     }
 
     fun handleMotionEvent(event: MotionEvent): Boolean {
@@ -172,7 +215,7 @@ class GamepadInputHandler @Inject constructor(
                 confirmDeferred = true
                 confirmDeferJob?.cancel()
                 confirmDeferJob = scope.launch {
-                    kotlinx.coroutines.delay(longPressThresholdMs)
+                    delay(longPressThresholdMs)
                     if (confirmDeferred && !confirmFired) {
                         confirmFired = true
                         confirmDeferred = false

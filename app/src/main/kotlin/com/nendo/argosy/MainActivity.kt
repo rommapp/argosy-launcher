@@ -41,6 +41,7 @@ import com.nendo.argosy.hardware.AmbientLedManager
 import com.nendo.argosy.hardware.ScreenCaptureManager
 import com.nendo.argosy.ui.ArgosyApp
 import com.nendo.argosy.ui.audio.AmbientAudioManager
+import com.nendo.argosy.ui.input.GamepadEvent
 import com.nendo.argosy.ui.input.GamepadInputHandler
 import com.nendo.argosy.ui.input.gamepadEventToKeyCode
 import com.nendo.argosy.ui.screens.common.GameActionsDelegate
@@ -488,6 +489,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onStop() {
+        super.onStop()
+        gamepadInputHandler.resetStickMotion()
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         if (::screenCaptureManager.isInitialized) screenCaptureManager.stopCapture()
@@ -618,6 +624,7 @@ class MainActivity : ComponentActivity() {
 
         if (!dualScreenManager.claimInput(event)) return true
         if (dualScreenManager.swappedIsGameActive.value && !isOverlayFocused && isGameOnOtherDisplay()) {
+            gamepadInputHandler.resetStickMotion()
             val emulatorDispatcher = dualScreenManager.emulatorMotionDispatcher
             if (emulatorDispatcher != null) {
                 return emulatorDispatcher(event)
@@ -625,43 +632,38 @@ class MainActivity : ComponentActivity() {
             return true
         }
 
-        val stickEvent = gamepadInputHandler.processStickMotion(event)
-        if (stickEvent != null) {
-            if (dualScreenManager.companionHoldsPrimary.value && !isOverlayFocused) {
-                val keyCode = gamepadEventToKeyCode(stickEvent)
-                if (keyCode != null) {
-                    dualScreenManager.controlCompanion?.onForwardKey(
-                        keyCode,
-                        KeyEvent.ACTION_DOWN,
-                        0,
-                        sessionStateStore.getSwapAB(),
-                        sessionStateStore.getSwapXY(),
-                        sessionStateStore.getSwapStartSelect()
-                    )
-                }
-                return true
-            }
-
-            if (!dualScreenManager.isRolesSwapped.value &&
-                isOnHomeScreen &&
-                !isOverlayFocused &&
-                !dualScreenManager.isCompanionActive.value &&
-                !dualScreenManager.swappedIsGameActive.value &&
-                !sessionStateStore.isForeignAppOnSecondary() &&
-                displayAffinityHelper.hasSecondaryDisplay
-            ) {
-                reassertCompanionForwarding()
-                return true
-            }
-
-            gamepadInputHandler.injectEvent(stickEvent)
-            return true
-        }
-
-        if (gamepadInputHandler.handleMotionEvent(event)) {
-            return true
-        }
+        if (gamepadInputHandler.processStickMotion(event, ::deliverStickEvent)) return true
+        if (gamepadInputHandler.handleMotionEvent(event)) return true
         return super.dispatchGenericMotionEvent(event)
+    }
+
+    private fun deliverStickEvent(stickEvent: GamepadEvent, isRepeat: Boolean) {
+        if (dualScreenManager.companionHoldsPrimary.value && !isOverlayFocused) {
+            val keyCode = gamepadEventToKeyCode(stickEvent) ?: return
+            dualScreenManager.controlCompanion?.onForwardKey(
+                keyCode,
+                KeyEvent.ACTION_DOWN,
+                if (isRepeat) 1 else 0,
+                sessionStateStore.getSwapAB(),
+                sessionStateStore.getSwapXY(),
+                sessionStateStore.getSwapStartSelect()
+            )
+            return
+        }
+
+        if (!dualScreenManager.isRolesSwapped.value &&
+            isOnHomeScreen &&
+            !isOverlayFocused &&
+            !dualScreenManager.isCompanionActive.value &&
+            !dualScreenManager.swappedIsGameActive.value &&
+            !sessionStateStore.isForeignAppOnSecondary() &&
+            displayAffinityHelper.hasSecondaryDisplay
+        ) {
+            if (!isRepeat) reassertCompanionForwarding()
+            return
+        }
+
+        gamepadInputHandler.injectEvent(stickEvent, isRepeat)
     }
 
     // --- Window Focus ---
@@ -684,6 +686,7 @@ class MainActivity : ComponentActivity() {
                 gamepadInputHandler.blockInputFor(200)
             }
         } else {
+            gamepadInputHandler.resetStickMotion()
             if (::dualScreenManager.isInitialized &&
                 displayAffinityHelper.hasSecondaryDisplay &&
                 !dualScreenManager.isRolesSwapped.value

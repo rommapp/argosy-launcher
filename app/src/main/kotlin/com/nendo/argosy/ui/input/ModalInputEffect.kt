@@ -8,10 +8,13 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 
 /** Captures gamepad input for a modal while [active] by pushing [handler] on the modal stack. */
 @Composable
-fun ModalInputEffect(active: Boolean, handler: InputHandler) {
-    val inputDispatcher = LocalInputDispatcher.current
+fun ModalInputEffect(
+    active: Boolean,
+    handler: InputHandler,
+    inputDispatcher: InputDispatcher = LocalInputDispatcher.current
+) {
     val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner, handler, active) {
+    DisposableEffect(lifecycleOwner, handler, active, inputDispatcher) {
         if (!active) return@DisposableEffect onDispose { }
         inputDispatcher.pushModal(handler)
         val observer = LifecycleEventObserver { _, event ->

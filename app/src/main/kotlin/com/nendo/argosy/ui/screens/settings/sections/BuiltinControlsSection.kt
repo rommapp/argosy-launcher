@@ -30,6 +30,7 @@ import com.nendo.argosy.libretro.coreoptions.CoreControlManifestRegistry
 import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.NavigationPreference
 import com.nendo.argosy.ui.components.SwitchPreference
+import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.screens.gamedetail.components.OptionItem
 import com.nendo.argosy.ui.screens.settings.BuiltinControlsState
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
@@ -494,6 +495,7 @@ fun BuiltinControlsSection(
         if (controlsState.showInputMappingModal) {
             InputMappingModal(
                 controllers = viewModel.getConnectedControllers(),
+                inputDispatcher = LocalInputDispatcher.current,
                 lockedPlatformIndex = if (!isGlobal && platformSlug != null) {
                     MappingPlatforms.indexForPlatformSlug(platformSlug)
                 } else {

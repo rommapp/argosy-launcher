@@ -25,6 +25,7 @@ import com.nendo.argosy.ui.theme.toThemeState
 import com.nendo.argosy.ui.toScreenDimmerPreferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import com.nendo.argosy.DualScreenManager
 import com.nendo.argosy.DualScreenManagerHolder
@@ -261,11 +262,14 @@ class SecondaryHomeActivity :
         val emulatorDisplay = dsm.emulatorDisplayId ?: return
         val ownDisplay = window.decorView.display?.displayId ?: return
         if (emulatorDisplay != ownDisplay) return
-        if (dsm.isEmulatorStillOnScreen(this)) return
-        android.util.Log.d("SecondaryHome", "Companion resumed and the emulator is gone, ending session")
-        dsm.emulatorDisplayId = null
-        dsm.playSessionTracker.endSessionInBackground()
-        dsm.broadcastSessionCleared()
+        lifecycleScope.launch {
+            val emulatorGone = dsm.emulatorLeftScreen(this@SecondaryHomeActivity) {
+                lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) && !dsm.isLaunchingGame
+            }
+            if (!emulatorGone || !dsm.sessionStateStore.hasActiveSession()) return@launch
+            android.util.Log.d("SecondaryHome", "Companion resumed and the emulator is gone, ending session")
+            dsm.endSessionAfterEmulatorLeft()
+        }
     }
 
     override fun onStop() {

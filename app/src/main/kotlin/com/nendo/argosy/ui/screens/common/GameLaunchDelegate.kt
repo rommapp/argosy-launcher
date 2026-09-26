@@ -517,6 +517,8 @@ class GameLaunchDelegate @Inject constructor(
         return intent
     }
 
+    suspend fun stopBackgroundEmulator(packageName: String) = gameLauncher.forceStopEmulator(packageName)
+
     private fun forceStopIfVita3K(scope: CoroutineScope, session: ActiveSession) {
         val emulatorId = emulatorResolver.resolveEmulatorId(session.emulatorPackage) ?: return
         val emulatorDef = EmulatorRegistry.getById(emulatorId) ?: return

@@ -1645,9 +1645,42 @@ class DualScreenManager(
      * here. Answering false without evidence would end a live session and archive its save mid-play,
      * so an emulator that cannot be observed is treated as still running.
      */
-    fun isEmulatorStillOnScreen(context: Context): Boolean {
+    private fun isEmulatorStillOnScreen(context: Context): Boolean {
         val emulatorPackage = sessionStateStore.getEmulatorPackage() ?: return false
         return permissionHelper.isPackageOnScreenOrRecent(context, emulatorPackage)
+    }
+
+    /**
+     * Whether the emulator has left the screen a launcher surface just resumed on. The emulator
+     * reports stopped only after the launcher resumes, so a first answer of "still there" is asked
+     * again after [EMULATOR_SETTLE_MS] while [launcherStillInFront] holds.
+     */
+    suspend fun emulatorLeftScreen(context: Context, launcherStillInFront: () -> Boolean): Boolean {
+        if (!isEmulatorStillOnScreen(context)) return true
+        delay(EMULATOR_SETTLE_MS)
+        return launcherStillInFront() && !isEmulatorStillOnScreen(context)
+    }
+
+    /**
+     * Ends the session whose emulator [emulatorLeftScreen] reported gone. On a dual-screen device it
+     * then kills the stopped emulator along with any presentation window it left on the other
+     * display, retrying until the process is cached or a new session starts.
+     */
+    fun endSessionAfterEmulatorLeft() {
+        val emulatorPackage = sessionStateStore.getEmulatorPackage()
+        emulatorDisplayId = null
+        sessionStateStore.clearSession()
+        val sessionEnd = playSessionTracker.endSessionInBackground()
+        broadcastSessionCleared()
+        if (emulatorPackage == null || !_isDualScreenDevice.value) return
+        scope.launch {
+            sessionEnd.join()
+            repeat(EMULATOR_RELEASE_ATTEMPTS) {
+                if (sessionStateStore.hasActiveSession()) return@launch
+                gameLaunchDelegate.stopBackgroundEmulator(emulatorPackage)
+                delay(EMULATOR_RELEASE_INTERVAL_MS)
+            }
+        }
     }
 
     val homeAppsList: List<String>
@@ -2358,6 +2391,9 @@ class DualScreenManager(
     }
 
     companion object {
+        private const val EMULATOR_SETTLE_MS = 2_000L
+        private const val EMULATOR_RELEASE_ATTEMPTS = 6
+        private const val EMULATOR_RELEASE_INTERVAL_MS = 5_000L
         const val ACTION_WIZARD_STATE = "com.nendo.argosy.WIZARD_STATE"
         const val EXTRA_WIZARD_ACTIVE = "wizard_active"
         const val OVERLAY_MENU = "com.nendo.argosy.OVERLAY_MENU"

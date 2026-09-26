@@ -770,15 +770,15 @@ class MainActivity : ComponentActivity() {
             val emulatorDisplay = dualScreenManager.emulatorDisplayId
             val ownDisplay = window.decorView.display?.displayId
             if (emulatorDisplay != null && ownDisplay != null && emulatorDisplay != ownDisplay) return@launch
-            if (dualScreenManager.isEmulatorStillOnScreen(this@MainActivity)) return@launch
+            val emulatorGone = dualScreenManager.emulatorLeftScreen(this@MainActivity) {
+                lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) && !dualScreenManager.isLaunchingGame
+            }
+            if (!emulatorGone) return@launch
             if (playSessionTracker.activeSession.value == null &&
                 preferencesRepository.getPersistedSession() == null
             ) return@launch
 
-            dualScreenManager.emulatorDisplayId = null
-            sessionStateStore.clearSession()
-            playSessionTracker.endSessionInBackground()
-            dualScreenManager.broadcastSessionCleared()
+            dualScreenManager.endSessionAfterEmulatorLeft()
         }
     }
 

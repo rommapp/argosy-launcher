@@ -154,7 +154,7 @@ class HomeLibraryDelegate @Inject constructor(
         val installedOnly = prefs.installedOnlyHome
 
         val allPlatforms = platformRepository.getPlatformsWithGames()
-        val platforms = allPlatforms.filter { it.id != LocalPlatformIds.STEAM && it.id != LocalPlatformIds.ANDROID }
+        val platforms = allPlatforms.withoutOwnRowPlatforms()
         cachedPlatformDisplayNames = allPlatforms.associate { it.id to it.getDisplayName() }
         var favorites = gameRepository.getFavorites()
         val androidGames = gameRepository.getByPlatformSorted(LocalPlatformIds.ANDROID, limit = PLATFORM_ROW_LIMIT)
@@ -224,7 +224,7 @@ class HomeLibraryDelegate @Inject constructor(
             platformRepository.observePlatformsWithGames().collect { platforms ->
                 cachedPlatformDisplayNames = platforms.associate { it.id to it.getDisplayName() }
                 val currentPlatforms = _state.value.platforms
-                val newPlatformUis = platforms.map { it.toHomePlatformUi(emulatorDetector) }
+                val newPlatformUis = platforms.withoutOwnRowPlatforms().map { it.toHomePlatformUi(emulatorDetector) }
                 onPlatformsChanged(currentPlatforms, newPlatformUis)
                 _state.update { it.copy(platforms = newPlatformUis) }
             }
@@ -384,16 +384,17 @@ class HomeLibraryDelegate @Inject constructor(
     suspend fun loadPlatforms() {
         val installedOnly = preferencesRepository.userPreferences.first().installedOnlyHome
         val allPlatforms = platformRepository.getPlatformsWithGames()
-        val platforms = allPlatforms.filter { it.id != LocalPlatformIds.STEAM && it.id != LocalPlatformIds.ANDROID }
+        val platforms = allPlatforms.withoutOwnRowPlatforms()
         cachedPlatformDisplayNames = allPlatforms.associate { it.id to it.getDisplayName() }
         val platformUis = platforms.map { it.toHomePlatformUi(emulatorDetector) }
         val androidGames = gameRepository.getByPlatformSorted(LocalPlatformIds.ANDROID, limit = PLATFORM_ROW_LIMIT)
             .let { if (installedOnly) filterPlayable(it) else it }
         val androidGameUis = androidGames.map { it.toUi() }
         val steamGameUis = loadSteamRow(installedOnly)
-        _state.update {
-            it.copy(
-                platforms = platformUis,
+        _state.update { state ->
+            val sameRows = state.platforms.map { it.id } == platformUis.map { it.id }
+            state.copy(
+                platforms = if (sameRows) platformUis else state.platforms,
                 androidGames = androidGameUis,
                 steamGames = steamGameUis
             )
@@ -825,7 +826,7 @@ class HomeLibraryDelegate @Inject constructor(
 
     suspend fun platformOptionsForTiles(): List<com.nendo.argosy.ui.components.FeatureSetupOption> =
         platformRepository.getPlatformsWithGames()
-            .filter { it.id != LocalPlatformIds.STEAM && it.id != LocalPlatformIds.ANDROID }
+            .withoutOwnRowPlatforms()
             .map {
                 com.nendo.argosy.ui.components.FeatureSetupOption(
                     id = it.id,
@@ -857,3 +858,6 @@ data class RefreshResult(
     val gameIds: List<Long>,
     val isEmpty: Boolean = false
 )
+
+private fun List<com.nendo.argosy.data.local.entity.PlatformEntity>.withoutOwnRowPlatforms() =
+    filter { it.id != LocalPlatformIds.STEAM && it.id != LocalPlatformIds.ANDROID }

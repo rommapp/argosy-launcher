@@ -180,10 +180,7 @@ class HomeNavigationDelegate @Inject constructor(
             return PlatformChangeResult.Initial(newRow, newPlatforms)
         }
 
-        val currentIds = currentPlatforms.map { it.id }.toSet()
-        val newIds = newPlatforms.map { it.id }.toSet()
-
-        if (currentIds == newIds) {
+        if (currentPlatforms.map { it.id } == newPlatforms.map { it.id }) {
             return PlatformChangeResult.DisplayOnly(newPlatforms)
         }
 

@@ -1248,6 +1248,62 @@ fun HomeScreen(
         }
         }
 
+        val hasPresentationScreen by (
+            com.nendo.argosy.DualScreenManagerHolder.instance?.hasPresentationScreen
+                ?: remember { kotlinx.coroutines.flow.MutableStateFlow(false) }
+            ).collectAsState()
+        val dsmForFocus = com.nendo.argosy.DualScreenManagerHolder.instance
+        val focusPickerOpen by (
+            dsmForFocus?.focusPickerOpen
+                ?: remember { kotlinx.coroutines.flow.MutableStateFlow(false) }
+            ).collectAsState()
+        val focusPickerIndex by (
+            dsmForFocus?.focusPickerIndex
+                ?: remember { kotlinx.coroutines.flow.MutableStateFlow(0) }
+            ).collectAsState()
+        val focusDisplays = remember(hasPresentationScreen, focusPickerOpen) {
+            dsmForFocus?.focusableDisplays()?.map { screen ->
+                com.nendo.argosy.ui.components.DisplayFocusTarget(screen.displayId, screen.number)
+            }.orEmpty()
+        }
+        val selectSwapsRoles = com.nendo.argosy.ui.dualscreen.selectSwapsRolesState()
+        if (hasPresentationScreen && uiState.homeApps.isNotEmpty()) {
+            com.nendo.argosy.ui.components.CompanionAppBar(
+                apps = uiState.homeApps,
+                onAppClick = { viewModel.launchTileApp(it) },
+                focusedIndex = if (uiState.appBarFocused) {
+                    uiState.appBarIndex
+                } else {
+                    com.nendo.argosy.ui.components.APP_BAR_NOTHING_FOCUSED
+                },
+                onOpenDrawer = { viewModel.openAppDrawer() },
+                onAppLongPress = { packageName ->
+                    val index = uiState.homeApps.indexOf(packageName)
+                    if (index >= 0) {
+                        viewModel.moveAppBarFocus(index - uiState.appBarIndex)
+                        viewModel.openAppBarAppMenu()
+                    }
+                },
+                onKeyboardToggle = {
+                    com.nendo.argosy.DualScreenManagerHolder.instance?.toggleUpperKeyboard()
+                },
+                focusDisplays = focusDisplays,
+                focusPickerOpen = focusPickerOpen,
+                focusPickerIndex = focusPickerIndex,
+                onFocusPickerToggle = dsmForFocus?.let {
+                    { if (focusPickerOpen) it.closeFocusPicker() else it.openFocusPicker() }
+                },
+                onFocusDisplay = { displayId ->
+                    dsmForFocus?.focusDisplay(displayId)
+                    dsmForFocus?.closeFocusPicker()
+                },
+                onSwapRoles = dsmForFocus
+                    ?.takeIf { selectSwapsRoles }
+                    ?.let { { it.swapRoles() } },
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
+        }
+
         uiState.appDrawer?.let { drawer ->
             com.nendo.argosy.ui.components.CompanionAppDrawer(
                 apps = drawer.apps,
@@ -1536,62 +1592,6 @@ fun HomeScreen(
                 onAction = { action ->
                     onChangelogAction(viewModel.handleChangelogAction(action))
                 }
-            )
-        }
-
-        val hasPresentationScreen by (
-            com.nendo.argosy.DualScreenManagerHolder.instance?.hasPresentationScreen
-                ?: remember { kotlinx.coroutines.flow.MutableStateFlow(false) }
-            ).collectAsState()
-        val dsmForFocus = com.nendo.argosy.DualScreenManagerHolder.instance
-        val focusPickerOpen by (
-            dsmForFocus?.focusPickerOpen
-                ?: remember { kotlinx.coroutines.flow.MutableStateFlow(false) }
-            ).collectAsState()
-        val focusPickerIndex by (
-            dsmForFocus?.focusPickerIndex
-                ?: remember { kotlinx.coroutines.flow.MutableStateFlow(0) }
-            ).collectAsState()
-        val focusDisplays = remember(hasPresentationScreen, focusPickerOpen) {
-            dsmForFocus?.focusableDisplays()?.map { screen ->
-                com.nendo.argosy.ui.components.DisplayFocusTarget(screen.displayId, screen.number)
-            }.orEmpty()
-        }
-        val selectSwapsRoles = com.nendo.argosy.ui.dualscreen.selectSwapsRolesState()
-        if (hasPresentationScreen && uiState.homeApps.isNotEmpty()) {
-            com.nendo.argosy.ui.components.CompanionAppBar(
-                apps = uiState.homeApps,
-                onAppClick = { viewModel.launchTileApp(it) },
-                focusedIndex = if (uiState.appBarFocused) {
-                    uiState.appBarIndex
-                } else {
-                    com.nendo.argosy.ui.components.APP_BAR_NOTHING_FOCUSED
-                },
-                onOpenDrawer = { viewModel.openAppDrawer() },
-                onAppLongPress = { packageName ->
-                    val index = uiState.homeApps.indexOf(packageName)
-                    if (index >= 0) {
-                        viewModel.moveAppBarFocus(index - uiState.appBarIndex)
-                        viewModel.openAppBarAppMenu()
-                    }
-                },
-                onKeyboardToggle = {
-                    com.nendo.argosy.DualScreenManagerHolder.instance?.toggleUpperKeyboard()
-                },
-                focusDisplays = focusDisplays,
-                focusPickerOpen = focusPickerOpen,
-                focusPickerIndex = focusPickerIndex,
-                onFocusPickerToggle = dsmForFocus?.let {
-                    { if (focusPickerOpen) it.closeFocusPicker() else it.openFocusPicker() }
-                },
-                onFocusDisplay = { displayId ->
-                    dsmForFocus?.focusDisplay(displayId)
-                    dsmForFocus?.closeFocusPicker()
-                },
-                onSwapRoles = dsmForFocus
-                    ?.takeIf { selectSwapsRoles }
-                    ?.let { { it.swapRoles() } },
-                modifier = Modifier.align(Alignment.BottomCenter)
             )
         }
     }

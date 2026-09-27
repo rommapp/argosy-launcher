@@ -381,6 +381,14 @@ object BiosPathRegistry {
             ),
             supportedPlatforms = setOf("gba")
         ),
+        "pizza_boy_gba_pro" to BiosPathConfig(
+            emulatorId = "pizza_boy_gba_pro",
+            defaultPaths = listOf(
+                "$primaryRoot/PizzaBoyGBA",
+                "$primaryRoot/Android/data/it.dbtecno.pizzaboygbapro/files"
+            ),
+            supportedPlatforms = setOf("gba")
+        ),
         "nethersx2" to BiosPathConfig(
             emulatorId = "nethersx2",
             defaultPaths = listOf(

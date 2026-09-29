@@ -15,7 +15,12 @@ class PhobosRegistryTest {
 
     @Test
     fun `Phobos is offered on the platforms it runs, not on PC Engine CD`() {
-        listOf("n64", "psx", "genesis", "snes", "gba", "neogeo", "wsc", "zx").forEach { platform ->
+        listOf(
+            "nes", "fds", "snes", "n64", "n64dd", "gb", "gbc", "gba",
+            "sg1000", "sms", "genesis", "scd", "gg", "psx",
+            "tg16", "supergrafx", "neogeo", "neogeocd", "ngp", "ngpc",
+            "atari2600", "coleco", "wonderswan", "wsc", "msx", "msx2", "zx"
+        ).forEach { platform ->
             assertTrue(platform, EmulatorRegistry.getForPlatform(platform).any { it.id == "phobos" })
         }
         assertFalse(EmulatorRegistry.getForPlatform("tgcd").any { it.id == "phobos" })

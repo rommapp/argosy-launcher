@@ -748,6 +748,7 @@ fun InGameSettingsScreen(
         if (showInputMappingModal) {
             InputMappingModal(
                 controllers = modalCallbacks.connectedControllers,
+                inputDispatcher = null,
                 lockedPlatformIndex = modalCallbacks.lockedProfileIndex
                     ?: MappingPlatforms.indexForPlatformSlug(platformSlug ?: ""),
                 onGetMapping = modalCallbacks.onGetMapping,

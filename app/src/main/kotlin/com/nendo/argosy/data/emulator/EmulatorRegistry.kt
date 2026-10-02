@@ -1041,6 +1041,24 @@ object EmulatorRegistry {
             downloadUrl = "https://play.google.com/store/apps/details?id=aenu.aps3e"
         ),
 
+        EmulatorDef(
+            id = "phobos",
+            packageName = "com.phobos.emulator",
+            displayName = "Phobos",
+            supportedPlatforms = setOf(
+                "nes", "fds", "snes", "n64", "n64dd", "gb", "gbc", "gba",
+                "sg1000", "sms", "genesis", "scd", "gg", "psx",
+                "tg16", "supergrafx", "neogeo", "neogeocd", "ngp", "ngpc",
+                "atari2600", "coleco", "wonderswan", "wsc", "msx", "msx2", "zx"
+            ),
+            launchConfig = LaunchConfig.Custom(
+                activityClass = "com.phobos.emulator.MainActivity",
+                intentExtras = mapOf("platform" to ExtraValue.Platform)
+            ),
+            downloadUrl = "https://github.com/pwnedbygary/phobos/releases",
+            releaseSource = ReleaseSource.GitHub("pwnedbygary/phobos")
+        ),
+
         // Steam launchers
         EmulatorDef(
             id = "gamehub",

@@ -1,13 +1,13 @@
 [versions]
 agp = "8.7.3"
-kotlin = "2.1.21"
-ksp = "2.1.21-2.0.2"
+kotlin = "2.3.20"
+ksp = "2.3.7"
 detekt = "1.23.7"
 coreKtx = "1.15.0"
 lifecycleRuntimeKtx = "2.8.7"
 activityCompose = "1.9.3"
 composeBom = "2024.12.01"
-hilt = "2.54"
+hilt = "2.57.2"
 hiltNavigation = "1.2.0"
 room = "2.7.1"
 datastore = "1.1.1"
@@ -35,6 +35,7 @@ upokecenterCbor = "4.5.4"
 socketIoClient = "2.1.1"
 
 [libraries]
+kotlin-metadata-jvm = { module = "org.jetbrains.kotlin:kotlin-metadata-jvm", version.ref = "kotlin" }
 # Core Android
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }

@@ -339,7 +339,8 @@ fun CarouselRail(
     onCoverLoadFailed: ((Long, String) -> Unit)? = null,
     onCoverLoaded: ((Long, Bitmap) -> Unit)? = null,
     onPosterLoaded: ((String, Bitmap) -> Unit)? = null,
-    availableWidth: Dp = LocalConfiguration.current.screenWidthDp.dp
+    availableWidth: Dp = LocalConfiguration.current.screenWidthDp.dp,
+    verticalContentPadding: Dp = 0.dp
 ) {
     val boxArtStyle = LocalBoxArtStyle.current
     /**
@@ -357,7 +358,9 @@ fun CarouselRail(
     val layoutDirection = LocalLayoutDirection.current
     val contentPadding = PaddingValues(
         start = horizontalPadding.calculateStartPadding(layoutDirection),
-        end = horizontalPadding.calculateEndPadding(layoutDirection)
+        end = horizontalPadding.calculateEndPadding(layoutDirection),
+        top = verticalContentPadding,
+        bottom = verticalContentPadding
     )
     val indicatorFor by rememberUpdatedState(downloadIndicatorFor)
 

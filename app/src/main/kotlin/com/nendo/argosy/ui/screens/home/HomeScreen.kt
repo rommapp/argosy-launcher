@@ -34,6 +34,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -924,6 +925,7 @@ fun HomeScreen(
                                 focusedIndex = uiState.focusedGameIndex,
                                 listState = listState,
                                 availableWidth = availableCarouselWidth,
+                                verticalContentPadding = railTop,
                                 metrics = CarouselMetrics.hero(
                                     cardWidth = cardSize.width,
                                     cardHeight = cardSize.height,
@@ -945,7 +947,7 @@ fun HomeScreen(
                                 onItemLongPress = viewModel::handleItemLongPress,
                                 modifier = Modifier
                                     .align(Alignment.BottomStart)
-                                    .height(railHeight)
+                                    .requiredHeight(railHeight + railTop * 2)
                             )
                         }
                     }

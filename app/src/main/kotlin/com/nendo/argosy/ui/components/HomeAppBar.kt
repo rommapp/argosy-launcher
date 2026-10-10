@@ -68,6 +68,7 @@ import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
+import com.nendo.argosy.ui.util.horizontalEdgeFade
 import com.nendo.argosy.ui.util.touchOnly
 
 const val APP_BAR_NOTHING_FOCUSED = -2
@@ -146,7 +147,8 @@ fun CompanionAppBar(
             if (apps.isNotEmpty()) {
                 LazyRow(
                     state = listState,
-                    modifier = Modifier.width(widths.appsWidth.dp),
+                    modifier = Modifier.width(widths.appsWidth.dp)
+                        .horizontalEdgeFade(listState, fadeWidth = padding),
                     horizontalArrangement = Arrangement.spacedBy(gap),
                     userScrollEnabled = widths.appsWidth <
                         apps.size * slot.value + (apps.size - 1) * gap.value

@@ -6,21 +6,28 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,6 +47,7 @@ import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.util.clickableNoFocus
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun FloatingNavBar(
     visible: Boolean,
@@ -59,21 +67,33 @@ fun FloatingNavBar(
             fadeOut(tween(Motion.durationSlide))
     ) {
         val shape = RoundedCornerShape(Dimens.radiusPill)
+        val scrollState = rememberScrollState()
+        val currentDestination = remember { BringIntoViewRequester() }
+        LaunchedEffect(currentRoute, destinations, scrollState.viewportSize, scrollState.maxValue) {
+            if (scrollState.viewportSize > 0) currentDestination.bringIntoView()
+        }
         Row(
             modifier = Modifier
                 .observeTouchDowns { _, _ -> onInteract() }
                 .frostedSurface(shape)
-                .padding(horizontal = Dimens.spacingSm, vertical = Dimens.spacingXs),
+                .padding(horizontal = Dimens.spacingSm, vertical = Dimens.spacingXs)
+                .horizontalScroll(scrollState),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
         ) {
             destinations.forEach { item ->
                 key(item.route) {
+                    val isCurrent = NavRing.routeMatches(item.route, currentRoute)
                     NavBarDestination(
                         item = item,
-                        isCurrent = NavRing.routeMatches(item.route, currentRoute),
+                        isCurrent = isCurrent,
                         hasBadge = badgeFor(item.route) != null,
-                        onClick = { onNavigate(item.route) }
+                        onClick = { onNavigate(item.route) },
+                        modifier = if (isCurrent) {
+                            Modifier.bringIntoViewRequester(currentDestination)
+                        } else {
+                            Modifier
+                        }
                     )
                 }
             }
@@ -103,11 +123,12 @@ private fun NavBarDestination(
     item: DrawerItem,
     isCurrent: Boolean,
     hasBadge: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val theme = LocalArgosyTheme.current
     Box(
-        modifier = Modifier
+        modifier = modifier
             .argosyFocusIndicators(
                 focused = isCurrent,
                 indicators = FocusIndicators.Pill,

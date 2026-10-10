@@ -1146,10 +1146,7 @@ fun ArgosyApp(
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.background)
                     .padding(bottom = bottomReserved)
-                    .revealOnBottomEdgeTouch(
-                        edgeHeight = Dimens.footerHeight,
-                        onOutsideEdgeTouch = viewModel::hideNavBar
-                    ) {
+                    .revealOnBottomEdgeTouch(edgeHeight = Dimens.footerHeight) {
                         if (currentNavBarAllowed) viewModel.showNavBar()
                     }
                     .onFocusChanged { keySinkFocused = it.isFocused }

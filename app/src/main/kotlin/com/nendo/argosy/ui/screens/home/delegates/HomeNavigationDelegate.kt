@@ -99,14 +99,13 @@ class HomeNavigationDelegate @Inject constructor(
         savedStateHandle[KEY_GAME_INDEX] = focusedGameIndex
     }
 
-    fun nextRow(state: HomeUiState, wrap: Boolean = true): Pair<HomeRow, Int>? {
+    fun nextRow(state: HomeUiState): Pair<HomeRow, Int>? {
         val rows = state.availableRows
         if (rows.isEmpty()) return null
 
         rowGameIndexes[state.currentRow] = state.focusedGameIndex
 
         val currentIdx = rows.indexOf(state.currentRow)
-        if (!wrap && currentIdx == rows.lastIndex) return null
         val nextIdx = if (currentIdx >= rows.lastIndex) 0 else currentIdx + 1
         val nextRow = rows[nextIdx]
         val savedIndex = rowGameIndexes[nextRow] ?: 0

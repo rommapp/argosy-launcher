@@ -8,6 +8,7 @@ import com.nendo.argosy.ui.components.AutoGridMove
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.screens.home.delegates.HomeInputActions
 import com.nendo.argosy.ui.screens.home.delegates.HomeInputHandler
+import com.nendo.argosy.ui.screens.home.delegates.HomeNavigationDelegate
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -73,6 +74,64 @@ class HomeOverflowScrollInputTest {
     }
 
     @Test
+    fun `down from the last carousel row focuses the dock without changing rows`() {
+        val fixture = Fixture(
+            HomeUiState(platforms = listOf(mockk(), mockk()), currentRow = HomeRow.Platform(1)),
+            dockAvailable = true
+        )
+
+        assertEquals(InputResult.handled(SoundType.SECTION_CHANGE), fixture.handler().onDown())
+        assertTrue(fixture.state.value.appBarFocused)
+        assertEquals(1, fixture.row)
+    }
+
+    @Test
+    fun `down from an earlier carousel row advances before the dock`() {
+        val fixture = Fixture(
+            HomeUiState(platforms = listOf(mockk(), mockk()), currentRow = HomeRow.Platform(0)),
+            dockAvailable = true
+        )
+
+        assertEquals(InputResult.handled(SoundType.SECTION_CHANGE), fixture.handler().onDown())
+        assertFalse(fixture.state.value.appBarFocused)
+        assertEquals(2, fixture.row)
+    }
+
+    @Test
+    fun `down from the last carousel row preserves row navigation when the dock is absent`() {
+        val fixture = Fixture(
+            HomeUiState(platforms = listOf(mockk(), mockk()), currentRow = HomeRow.Platform(1))
+        )
+
+        assertEquals(InputResult.handled(SoundType.SECTION_CHANGE), fixture.handler().onDown())
+        assertFalse(fixture.state.value.appBarFocused)
+        assertEquals(2, fixture.row)
+    }
+
+    @Test
+    fun `category triggers and bumpers wrap the last row without focusing the dock`() {
+        for (quickNavigation in listOf(true, false)) {
+            val fixture = Fixture(
+                HomeUiState(platforms = listOf(mockk(), mockk()), currentRow = HomeRow.Platform(1)),
+                dockAvailable = true
+            )
+            val navigation = HomeNavigationDelegate(mockk(), mockk())
+            every { fixture.actions.quickNavigation() } returns quickNavigation
+            every { fixture.actions.nextRow() } answers {
+                val next = requireNotNull(navigation.nextRow(fixture.state.value))
+                fixture.state.update { it.copy(currentRow = next.first, focusedGameIndex = next.second) }
+            }
+            val handler = fixture.handler()
+
+            val result = if (quickNavigation) handler.onNextTrigger() else handler.onNextSection()
+
+            assertEquals(InputResult.handled(SoundType.SECTION_CHANGE), result)
+            assertEquals(HomeRow.Platform(0), fixture.state.value.currentRow)
+            assertFalse(fixture.state.value.appBarFocused)
+        }
+    }
+
+    @Test
     fun `focused dock retains its boundary and release behavior`() {
         val fixture = Fixture(HomeUiState(appBarFocused = true))
         val handler = fixture.handler { error("Dock input reached carousel scrolling") }
@@ -134,7 +193,7 @@ class HomeOverflowScrollInputTest {
         assertEquals(1, fixture.row)
     }
 
-    private class Fixture(initialState: HomeUiState = HomeUiState()) {
+    private class Fixture(initialState: HomeUiState = HomeUiState(), dockAvailable: Boolean = false) {
         val state = MutableStateFlow(initialState)
         val actions = mockk<HomeInputActions>(relaxed = true)
         var row = 1
@@ -143,6 +202,10 @@ class HomeOverflowScrollInputTest {
             every { actions.uiState } returns state
             every { actions.previousRow() } answers { row -= 1 }
             every { actions.nextRow() } answers { row += 1 }
+            every { actions.focusAppBar() } answers {
+                if (dockAvailable) state.update { it.copy(appBarFocused = true) }
+                dockAvailable
+            }
             every { actions.releaseAppBar() } answers {
                 state.update { it.copy(appBarFocused = false) }
             }

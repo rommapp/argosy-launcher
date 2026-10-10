@@ -3,8 +3,7 @@
     <application>
         <receiver
             android:name=".debugtools.DebugSeedReceiver"
-            android:exported="true"
-            android:permission="android.permission.DUMP">
+            android:exported="true">
             <intent-filter>
                 <action android:name="com.nendo.argosy.DEBUG_SEED_ROMM" />
             </intent-filter>

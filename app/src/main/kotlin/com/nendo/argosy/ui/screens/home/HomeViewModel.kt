@@ -936,7 +936,7 @@ class HomeViewModel @Inject constructor(
     }
 
     override fun nextRow() {
-        val result = navigationDelegate.nextRow(_uiState.value, wrap = !appBarIsDrawn()) ?: run {
+        val result = navigationDelegate.nextRow(_uiState.value) ?: run {
             focusAppBar()
             return
         }

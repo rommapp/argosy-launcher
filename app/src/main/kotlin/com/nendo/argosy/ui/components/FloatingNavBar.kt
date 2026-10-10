@@ -81,14 +81,10 @@ fun FloatingNavBar(
     }
 }
 
-fun Modifier.revealOnBottomEdgeTouch(
-    edgeHeight: Dp,
-    onOutsideEdgeTouch: () -> Unit = {},
-    onReveal: () -> Unit
-): Modifier = composed {
+fun Modifier.revealOnBottomEdgeTouch(edgeHeight: Dp, onReveal: () -> Unit): Modifier = composed {
     val edgePx = with(LocalDensity.current) { edgeHeight.toPx() }
     observeTouchDowns { y, height ->
-        if (y >= height - edgePx) onReveal() else onOutsideEdgeTouch()
+        if (y >= height - edgePx) onReveal()
     }
 }
 

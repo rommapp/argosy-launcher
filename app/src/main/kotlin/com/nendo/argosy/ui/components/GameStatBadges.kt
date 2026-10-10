@@ -40,7 +40,9 @@ fun GameStatBadges(
     stacked: Boolean = false,
     centered: Boolean = false
 ) {
-    val badges = gameStatBadges(rating, userRating, userDifficulty, achievementCount, earnedAchievementCount, timeToBeatMainSec, textColor)
+    val badges = gameStatBadges(
+        rating, userRating, userDifficulty, achievementCount, earnedAchievementCount, timeToBeatMainSec, textColor
+    )
     if (badges.isEmpty()) return
 
     val content: @Composable () -> Unit = {
@@ -74,30 +76,43 @@ internal fun gameStatBadges(
     earnedAchievementCount: Int,
     timeToBeatMainSec: Int?,
     textColor: Color = MaterialTheme.colorScheme.onSurfaceVariant
-): List<StatBadge> {
-    val timeToBeat = formatTimeToBeat(LocalContext.current, timeToBeatMainSec)
-    return buildList {
-        if (rating != null) {
-            add(StatBadge(Icons.Default.Public, MaterialTheme.colorScheme.primary, "${rating.toInt()}%"))
-        }
-        if (userRating > 0) {
-            add(StatBadge(Icons.Default.Star, ALauncherColors.StarGold, "$userRating/10"))
-        }
-        if (userDifficulty > 0) {
-            add(StatBadge(Icons.Default.Whatshot, ALauncherColors.DifficultyRed, "$userDifficulty/10"))
-        }
-        if (achievementCount > 0) {
-            add(
-                StatBadge(
-                    Icons.Filled.EmojiEvents,
-                    ALauncherColors.TrophyAmber,
-                    "$earnedAchievementCount/$achievementCount"
-                )
+): List<StatBadge> = gameStatBadges(
+    rating, userRating, userDifficulty, achievementCount, earnedAchievementCount,
+    timeToBeat = formatTimeToBeat(LocalContext.current, timeToBeatMainSec),
+    textColor = textColor,
+    ratingColor = MaterialTheme.colorScheme.primary
+)
+
+internal fun gameStatBadges(
+    rating: Float?,
+    userRating: Int,
+    userDifficulty: Int,
+    achievementCount: Int,
+    earnedAchievementCount: Int,
+    timeToBeat: String?,
+    textColor: Color,
+    ratingColor: Color
+): List<StatBadge> = buildList {
+    if (rating != null) {
+        add(StatBadge(Icons.Default.Public, ratingColor, "${rating.toInt()}%"))
+    }
+    if (userRating > 0) {
+        add(StatBadge(Icons.Default.Star, ALauncherColors.StarGold, "$userRating/10"))
+    }
+    if (userDifficulty > 0) {
+        add(StatBadge(Icons.Default.Whatshot, ALauncherColors.DifficultyRed, "$userDifficulty/10"))
+    }
+    if (achievementCount > 0) {
+        add(
+            StatBadge(
+                Icons.Filled.EmojiEvents,
+                ALauncherColors.TrophyAmber,
+                "$earnedAchievementCount/$achievementCount"
             )
-        }
-        if (timeToBeat != null) {
-            add(StatBadge(Icons.Default.Schedule, textColor, timeToBeat))
-        }
+        )
+    }
+    if (timeToBeat != null) {
+        add(StatBadge(Icons.Default.Schedule, textColor, timeToBeat))
     }
 }
 

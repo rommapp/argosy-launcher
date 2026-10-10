@@ -185,8 +185,15 @@ private fun GameShowcaseContent(
                             ComponentDefaults.Presentation.titleOverscanHeightRatio
                         )
                         val brush = Brush.radialGradient(
-                            0f to color.copy(alpha = presentationScrimAlpha(ComponentDefaults.Presentation.titleCenterAlpha, strength)),
-                            ComponentDefaults.Presentation.titleMidRatio to color.copy(alpha = presentationScrimAlpha(ComponentDefaults.Presentation.titleMidAlpha, strength)),
+                            0f to color.copy(
+                                alpha = presentationScrimAlpha(
+                                    ComponentDefaults.Presentation.titleCenterAlpha,
+                                    strength
+                                )
+                            ),
+                            ComponentDefaults.Presentation.titleMidRatio to color.copy(
+                                alpha = presentationScrimAlpha(ComponentDefaults.Presentation.titleMidAlpha, strength)
+                            ),
                             1f to color.copy(alpha = 0f),
                             center = bounds.center,
                             radius = radii.height
@@ -369,12 +376,16 @@ private fun CinematicShowcase(
             ) {
                 Column(
                     modifier = Modifier.onGloballyPositioned {
-                        onTitleBoundsChanged(Rect(it.positionInRoot(), Size(it.size.width.toFloat(), it.size.height.toFloat())))
+                        onTitleBoundsChanged(
+                            Rect(it.positionInRoot(), Size(it.size.width.toFloat(), it.size.height.toFloat()))
+                        )
                     },
                     verticalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
                 ) {
                     ShowcaseTitle(detail = detail)
-                    developer?.let { Text(text = it, style = MaterialTheme.typography.titleMedium, color = theme.textDim) }
+                    developer?.let {
+                        Text(text = it, style = MaterialTheme.typography.titleMedium, color = theme.textDim)
+                    }
                     ShowcaseRail(rows = rows)
                     if (friends.isNotEmpty()) FriendsActivityBadge(friends = friends, textColor = theme.textPrimary)
                 }

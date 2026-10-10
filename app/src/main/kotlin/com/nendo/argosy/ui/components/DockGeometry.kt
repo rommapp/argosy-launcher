@@ -39,7 +39,7 @@ internal fun dockToolFocusMove(index: Int, delta: Int, enabled: List<Boolean>): 
     val direction = if (delta < 0) -1 else 1
     var next = index.coerceIn(enabled.indices)
     repeat(enabled.size) {
-        next = (next + direction + enabled.size) % enabled.size
+        next = (next + direction).mod(enabled.size)
         if (enabled[next]) return next
     }
     return index

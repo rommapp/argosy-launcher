@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.components.friends
 
+import android.content.res.Resources
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -8,11 +9,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.pluralStringResource
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.zIndex
 import com.nendo.argosy.R
@@ -71,12 +73,20 @@ fun FriendsActivityBadge(
 
 @Composable
 internal fun friendsActivityLine(friends: List<FriendActivity>, playingNow: Boolean): String {
+    val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+    return remember(friends, playingNow, context, configuration) {
+        friendsActivityLine(context.resources, friends, playingNow)
+    }
+}
+
+internal fun friendsActivityLine(resources: Resources, friends: List<FriendActivity>, playingNow: Boolean): String {
     val lead = friends.first().displayName
     val others = friends.size - 1
     return when {
-        playingNow && others == 0 -> stringResource(R.string.social_friends_activity_playing_one, lead)
-        playingNow -> pluralStringResource(R.plurals.social_friends_activity_playing_more, others, lead, others)
-        others == 0 -> stringResource(R.string.social_friends_activity_recent_one, lead)
-        else -> pluralStringResource(R.plurals.social_friends_activity_recent_more, others, lead, others)
+        playingNow && others == 0 -> resources.getString(R.string.social_friends_activity_playing_one, lead)
+        playingNow -> resources.getQuantityString(R.plurals.social_friends_activity_playing_more, others, lead, others)
+        others == 0 -> resources.getString(R.string.social_friends_activity_recent_one, lead)
+        else -> resources.getQuantityString(R.plurals.social_friends_activity_recent_more, others, lead, others)
     }
 }

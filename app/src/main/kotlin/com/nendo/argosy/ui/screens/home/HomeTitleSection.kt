@@ -19,6 +19,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.semantics
@@ -32,16 +34,16 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.unit.dp
 import com.nendo.argosy.data.social.FriendActivity
 import com.nendo.argosy.ui.components.StatBadgeItem
 import com.nendo.argosy.ui.components.gameStatBadges
 import com.nendo.argosy.ui.components.friends.FriendsActivityBadge
 import com.nendo.argosy.ui.components.friends.friendsActivityLine
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.util.formatTimeToBeat
 import kotlin.math.ceil
 
-private data class HomeMetadataMeasureInput(
+internal data class HomeMetadataMeasureInput(
     val developer: String?,
     val badges: List<String>,
     val friendsLabel: String?,
@@ -49,9 +51,45 @@ private data class HomeMetadataMeasureInput(
 )
 
 @Composable
-internal fun rememberHomeTitleReserve(uiState: HomeUiState, maxWidth: Dp): Dp {
+internal fun rememberHomeTitleMetadata(uiState: HomeUiState): List<HomeMetadataMeasureInput> {
+    val items = uiState.currentItems
+    val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+    return remember(items, uiState.friendsActivity, context, configuration) {
+        items.mapNotNull { item ->
+            when (item) {
+                is HomeRowItem.Game -> {
+                    val game = item.game
+                    val friends = uiState.friendsFor(game)
+                    val playing = friends.filter { it.playingNow }
+                    val shown = playing.ifEmpty { friends }
+                    HomeMetadataMeasureInput(
+                        developer = game.developer,
+                        badges = gameStatBadges(
+                            game.rating, game.userRating, game.userDifficulty,
+                            game.achievementCount, game.earnedAchievementCount,
+                            timeToBeat = formatTimeToBeat(context, game.timeToBeatMainSec),
+                            textColor = Color.Unspecified,
+                            ratingColor = Color.Unspecified
+                        ).map { it.label },
+                        friendsLabel = shown.takeIf { it.isNotEmpty() }?.let {
+                            friendsActivityLine(context.resources, it, playingNow = playing.isNotEmpty())
+                        },
+                        avatarCount = shown.size.coerceAtMost(3)
+                    )
+                }
+                is HomeRowItem.Media -> HomeMetadataMeasureInput(item.media.subtitle, emptyList(), null, 0)
+                is HomeRowItem.ViewAll -> null
+            }
+        }
+    }
+}
+
+@Composable
+internal fun rememberHomeTitleReserve(inputs: List<HomeMetadataMeasureInput>, maxWidth: Dp): Dp {
     val textMeasurer = rememberTextMeasurer()
     val density = LocalDensity.current
+    val configuration = LocalConfiguration.current
     val titleStyle = MaterialTheme.typography.headlineMedium
     val developerStyle = MaterialTheme.typography.bodyMedium
     val badgeStyle = MaterialTheme.typography.labelMedium
@@ -60,53 +98,41 @@ internal fun rememberHomeTitleReserve(uiState: HomeUiState, maxWidth: Dp): Dp {
     val friendGap = with(density) { Dimens.spacingSm.roundToPx() }
     val icon = with(density) { Dimens.iconXs.roundToPx() }
     val avatar = with(density) { Dimens.iconMd.toPx() }
-    val gameInputs = uiState.currentItems.filterIsInstance<HomeRowItem.Game>().map { item ->
-        val game = item.game
-        val friends = uiState.friendsFor(game)
-        val playing = friends.filter { it.playingNow }
-        val shown = playing.ifEmpty { friends }
-        HomeMetadataMeasureInput(
-            developer = game.developer,
-            badges = gameStatBadges(
-                game.rating, game.userRating, game.userDifficulty,
-                game.achievementCount, game.earnedAchievementCount, game.timeToBeatMainSec
-            ).map { it.label },
-            friendsLabel = shown.takeIf { it.isNotEmpty() }?.let {
-                friendsActivityLine(it, playingNow = playing.isNotEmpty())
-            },
-            avatarCount = shown.size.coerceAtMost(3)
-        )
-    }
-    val inputs = gameInputs + uiState.currentItems.filterIsInstance<HomeRowItem.Media>().map {
-        HomeMetadataMeasureInput(it.media.subtitle, emptyList(), null, 0)
-    }
-    return remember(inputs, maxWidth, titleStyle, developerStyle, badgeStyle, density, textMeasurer, gap, rowGap, friendGap, icon, avatar) {
-            val width = with(density) { maxWidth.roundToPx().coerceAtLeast(1) }
-            fun measure(value: String, style: TextStyle, available: Int = width, maxLines: Int = Int.MAX_VALUE): HomeFlowSize {
-                val result = textMeasurer.measure(
-                    value, style = style, maxLines = maxLines, overflow = TextOverflow.Ellipsis,
-                    constraints = Constraints(maxWidth = available.coerceAtLeast(1))
-                )
-                return HomeFlowSize(result.size.width, result.size.height)
-            }
-            val metadata = inputs.maxOfOrNull { input ->
-                val items = buildList {
-                    input.developer?.let { add(measure(it, developerStyle)) }
-                    input.friendsLabel?.let {
-                        val avatarsWidth = (avatar + avatar * 0.65f * (input.avatarCount - 1)).toInt()
-                        val label = measure(it, badgeStyle, width - avatarsWidth - friendGap, maxLines = 2)
-                        add(HomeFlowSize(avatarsWidth + friendGap + label.width, maxOf(avatar.toInt(), label.height)))
-                    }
-                    input.badges.forEach {
-                        val label = measure(it, badgeStyle, width - icon - gap)
-                        add(HomeFlowSize(icon + gap + label.width, maxOf(icon, label.height)))
-                    }
+    return remember(
+        inputs, maxWidth, titleStyle, developerStyle, badgeStyle, density, configuration,
+        textMeasurer, gap, rowGap, friendGap, icon, avatar
+    ) {
+        val width = with(density) { maxWidth.roundToPx().coerceAtLeast(1) }
+        fun measure(
+            value: String,
+            style: TextStyle,
+            available: Int = width,
+            maxLines: Int = Int.MAX_VALUE
+        ): HomeFlowSize {
+            val result = textMeasurer.measure(
+                value, style = style, maxLines = maxLines, overflow = TextOverflow.Ellipsis,
+                constraints = Constraints(maxWidth = available.coerceAtLeast(1))
+            )
+            return HomeFlowSize(result.size.width, result.size.height)
+        }
+        val metadata = inputs.maxOfOrNull { input ->
+            val items = buildList {
+                input.developer?.let { add(measure(it, developerStyle)) }
+                input.friendsLabel?.let {
+                    val avatarsWidth = (avatar + avatar * 0.65f * (input.avatarCount - 1)).toInt()
+                    val label = measure(it, badgeStyle, width - avatarsWidth - friendGap, maxLines = 2)
+                    add(HomeFlowSize(avatarsWidth + friendGap + label.width, maxOf(avatar.toInt(), label.height)))
                 }
-                val metadataHeight = homeFlowSize(items, width, rowGap, gap).height
-                metadataHeight + if (metadataHeight > 0) gap else 0
-            } ?: 0
-            val twoTitleLines = measure("M\nM", titleStyle).height
-            with(density) { (twoTitleLines + metadata).toDp() }
+                input.badges.forEach {
+                    val label = measure(it, badgeStyle, width - icon - gap)
+                    add(HomeFlowSize(icon + gap + label.width, maxOf(icon, label.height)))
+                }
+            }
+            val metadataHeight = homeFlowSize(items, width, rowGap, gap).height
+            metadataHeight + if (metadataHeight > 0) gap else 0
+        } ?: 0
+        val twoTitleLines = measure("M\nM", titleStyle).height
+        with(density) { (twoTitleLines + metadata).toDp() }
     }
 }
 
@@ -163,7 +189,9 @@ internal fun HomeTitleSection(
             }
         }
     ) { measurables, constraints ->
-        val contentConstraints = Constraints(maxWidth = minOf(maxWidth.roundToPx().coerceAtLeast(0), constraints.maxWidth))
+        val contentConstraints = Constraints(
+            maxWidth = minOf(maxWidth.roundToPx().coerceAtLeast(0), constraints.maxWidth)
+        )
         val placeables = measurables.map { it.measure(contentConstraints) }
         val visible = placeables.filter { it.height > 0 }
         val width = visible.maxOfOrNull { it.width } ?: 0
@@ -183,7 +211,9 @@ private fun HomeMeasuredTitle(title: String, maxWidth: Dp, centered: Boolean, co
     val textMeasurer = rememberTextMeasurer()
     val density = LocalDensity.current
     val direction = LocalLayoutDirection.current
-    val style = MaterialTheme.typography.headlineMedium.copy(textAlign = if (centered) TextAlign.Center else TextAlign.Start)
+    val style = MaterialTheme.typography.headlineMedium.copy(
+        textAlign = if (centered) TextAlign.Center else TextAlign.Start
+    )
     val result = textMeasurer.measure(
         text = title,
         style = style,

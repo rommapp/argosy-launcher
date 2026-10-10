@@ -7,8 +7,6 @@ import kotlin.math.PI
 import kotlin.math.sqrt
 import kotlin.math.tanh
 
-internal const val HOME_COMPACT_WIDTH_DP = 600f
-
 internal data class HomeCarouselGeometry(
     val cardWidth: Float,
     val cardHeight: Float,
@@ -64,7 +62,9 @@ internal fun homeCarouselGeometry(
     val aboveRemaining = (available - aboveTitleReserve.coerceAtLeast(0f) - gap).coerceAtLeast(0f)
     val aboveCardHeight = minOf((aboveRemaining / maximumScale - badgeOverflow).coerceAtLeast(0f), widthCap)
     val bottomSideHeightLimit = available - titleReserve - 2f * gap - 2f * badgeOverflow
-    val fittedSideHeight = if (showTitle && width > height && !centeredFocus && rowAlignment == HomeRowAlignment.BOTTOM) {
+    val fittedSideHeight = if (
+        showTitle && width > height && !centeredFocus && rowAlignment == HomeRowAlignment.BOTTOM
+    ) {
         bottomSideHeightLimit
     } else Float.POSITIVE_INFINITY
     val sideCardHeight = minOf(available / maximumScale - badgeOverflow, widthCap, fittedSideHeight).coerceAtLeast(0f)
@@ -106,8 +106,8 @@ internal fun homeCarouselGeometry(
         logicalCenterX - settledSweptRight - gap,
         usableWidth - edge - logicalCenterX
     )).coerceAtLeast(0f)
-    val titleAbove = showTitle && (width <= height || centeredFocus || sideCardHeight < aboveCardHeight || safeWidth <= 0f ||
-        bandTop < contentTop || bandBottom > contentBottom)
+    val titleAbove = showTitle && (width <= height || centeredFocus || sideCardHeight < aboveCardHeight ||
+        safeWidth <= 0f || bandTop < contentTop || bandBottom > contentBottom)
     if (showTitle && !titleAbove) {
         return HomeCarouselGeometry(
             sideCardWidth, sideCardHeight, artTop, artAvailable,
@@ -125,7 +125,8 @@ internal fun homeCarouselGeometry(
     val groupHeight = reserve + titleGap + allocatedBadge + railHeight
     val groupTop = when {
         showTitle && width >= height -> contentTop
-        width < height || rowAlignment == HomeRowAlignment.CENTER -> contentTop + (available - groupHeight).coerceAtLeast(0f) / 2f
+        width < height || rowAlignment == HomeRowAlignment.CENTER ->
+            contentTop + (available - groupHeight).coerceAtLeast(0f) / 2f
         rowAlignment == HomeRowAlignment.TOP -> contentTop
         else -> (contentBottom - groupHeight).coerceAtLeast(contentTop)
     }
@@ -155,7 +156,12 @@ internal fun homeFocusedCardSweptRight(
 
 internal data class HomeFlowSize(val width: Int, val height: Int)
 
-internal fun homeFlowSize(items: List<HomeFlowSize>, maxWidth: Int, horizontalGap: Int, verticalGap: Int): HomeFlowSize {
+internal fun homeFlowSize(
+    items: List<HomeFlowSize>,
+    maxWidth: Int,
+    horizontalGap: Int,
+    verticalGap: Int
+): HomeFlowSize {
     var width = 0
     var height = 0
     var rowWidth = 0

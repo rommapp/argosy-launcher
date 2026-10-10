@@ -78,7 +78,8 @@ internal class CarouselScaleAnimationTracker {
         if (entries.containsKey(key)) entries[key] = Report(configurationScale, focusIndex, running)
     }
 
-    fun isSettled(configurationScale: Float, focusIndex: Int = 0): Boolean = entries.isNotEmpty() && entries.values.all {
-        it != null && it.configurationScale == configurationScale && it.focusIndex == focusIndex && !it.running
-    }
+    fun isSettled(configurationScale: Float, focusIndex: Int = 0): Boolean =
+        entries.isNotEmpty() && entries.values.all {
+            it != null && it.configurationScale == configurationScale && it.focusIndex == focusIndex && !it.running
+        }
 }

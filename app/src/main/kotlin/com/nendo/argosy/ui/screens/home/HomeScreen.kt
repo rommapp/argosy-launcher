@@ -72,7 +72,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
@@ -94,6 +93,7 @@ import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.backdrop.BackdropRole
 import com.nendo.argosy.ui.theme.backdrop.LocalSurfaceBackdrop
 import com.nendo.argosy.ui.theme.backdrop.surfaceBackdrop
+import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
@@ -308,7 +308,11 @@ fun HomeScreen(
             onNavigateToDefault = onNavigateToDefault,
             onDrawerToggle = onDrawerToggle,
             onScrollOverflow = { direction ->
-                val canScroll = if (direction < 0) overflowScrollState.canScrollBackward else overflowScrollState.canScrollForward
+                val canScroll = if (direction < 0) {
+                    overflowScrollState.canScrollBackward
+                } else {
+                    overflowScrollState.canScrollForward
+                }
                 if (overflowScrollEnabled && overflowViewportHeightPx > 0f && canScroll) {
                     scope.launch { overflowScrollState.animateScrollBy(direction * overflowViewportHeightPx) }
                     true
@@ -340,7 +344,10 @@ fun HomeScreen(
 
     val siblingChoiceOpen = viewModel.siblingChoiceState.collectAsState().value != null
     val modalBlur by animateDpAsState(
-        targetValue = if (uiState.showGameMenu || uiState.syncOverlayState != null || uiState.changelogEntry != null || uiState.discPickerState != null || uiState.memcardPickerState != null || siblingChoiceOpen) Motion.blurRadiusModal else 0.dp,
+        targetValue = if (
+            uiState.showGameMenu || uiState.syncOverlayState != null || uiState.changelogEntry != null ||
+            uiState.discPickerState != null || uiState.memcardPickerState != null || siblingChoiceOpen
+        ) Motion.blurRadiusModal else 0.dp,
         animationSpec = Motion.focusSpringDp,
         label = "modalBlur"
     )
@@ -549,7 +556,7 @@ fun HomeScreen(
         var dockHeight by remember { mutableStateOf(0.dp) }
         val localDensity = LocalDensity.current
     val edgeThresholdPx = with(LocalDensity.current) {
-        com.nendo.argosy.ui.theme.generated.ComponentDefaults.Carousel.edgeTouchHeightDp.dp.toPx()
+        ComponentDefaults.Carousel.edgeTouchHeightDp.dp.toPx()
     }
 
         val swipeGestureModifier = Modifier
@@ -688,10 +695,15 @@ fun HomeScreen(
             } else {
                 LocalFooterHost.current.measuredHeight
             }
-            val edge = if (maxWidth.value < HOME_COMPACT_WIDTH_DP) Dimens.spacingMd else Dimens.spacingLg
+            val edge = if (maxWidth.value < ComponentDefaults.Carousel.compactWidthDp) {
+                Dimens.spacingMd
+            } else {
+                Dimens.spacingLg
+            }
             val gap = Dimens.spacingMd
             val fullTitleWidth = (maxWidth - edge * 2).coerceAtLeast(0.dp)
-            val aboveReserve = if (showTitle) rememberHomeTitleReserve(uiState, fullTitleWidth) else 0.dp
+            val titleMetadata = if (showTitle) rememberHomeTitleMetadata(uiState) else emptyList()
+            val aboveReserve = if (showTitle) rememberHomeTitleReserve(titleMetadata, fullTitleWidth) else 0.dp
             val mirrored = (LocalLayoutDirection.current == LayoutDirection.Rtl) xor uiState.carouselConfig.inverted
             val coverAspectRatio = LocalBoxArtStyle.current.aspectRatio
             var minimumRestingScaleSeen by remember { mutableFloatStateOf(uiState.carouselConfig.restingScale) }
@@ -725,7 +737,7 @@ fun HomeScreen(
             )
             val candidate = resolveGeometry(aboveReserve)
             val sideReserve = if (showTitle && !candidate.titleAbove) {
-                rememberHomeTitleReserve(uiState, candidate.titleMaxWidth.dp)
+                rememberHomeTitleReserve(titleMetadata, candidate.titleMaxWidth.dp)
             } else aboveReserve
             val fittedGeometry = resolveGeometry(sideReserve)
             val content = homeCarouselContent(
@@ -742,8 +754,10 @@ fun HomeScreen(
                 springMinimumRestingScale = springMinimumRestingScale,
                 badgeOverflow = NEW_BADGE_TOP_OVERFLOW.value,
                 dampingRatio = MotionTokens.Spring.focusDampingRatio,
-                minimumFocusedExtent = com.nendo.argosy.ui.theme.generated.ComponentDefaults.FrostedSurface.minimumTouchTargetDp.toFloat(),
-                preferredCardHeight = (Dimens.gameCardHeight * com.nendo.argosy.ui.components.HERO_MIN_CARD_SCALE).value,
+                minimumFocusedExtent = ComponentDefaults.FrostedSurface.minimumTouchTargetDp.toFloat(),
+                preferredCardHeight = (
+                    Dimens.gameCardHeight * com.nendo.argosy.ui.components.HERO_MIN_CARD_SCALE
+                ).value,
                 enabled = showTitle
             )
             androidx.compose.runtime.SideEffect {
@@ -913,7 +927,10 @@ fun HomeScreen(
                                 listState = listState,
                                 availableWidth = availableCarouselWidth,
                                 onScaleAnimationsSettled = { focusScale, focusIndex ->
-                                    if (focusScale == uiState.carouselConfig.focusScale && focusIndex == uiState.focusedGameIndex) {
+                                    if (
+                                        focusScale == uiState.carouselConfig.focusScale &&
+                                        focusIndex == uiState.focusedGameIndex
+                                    ) {
                                         minimumRestingScaleSeen = uiState.carouselConfig.restingScale
                                     }
                                 },
@@ -928,7 +945,8 @@ fun HomeScreen(
                                     viewAllAlpha = if (uiState.isVideoPreviewActive) 0f else 1f
                                 ),
                                 showPlatformBadge = uiState.carouselConfig.showPlatformBadge &&
-                                    uiState.currentRow !is HomeRow.Platform && uiState.currentRow != HomeRow.Steam && uiState.currentRow != HomeRow.Android,
+                                    uiState.currentRow !is HomeRow.Platform &&
+                                    uiState.currentRow != HomeRow.Steam && uiState.currentRow != HomeRow.Android,
                                 useBoxArt = uiState.boxArt3d,
                                 onCoverLoadFailed = viewModel::repairCoverImage,
                                 onCoverLoaded = viewModel::extractGradientForGame,
@@ -1255,7 +1273,7 @@ fun HomeScreen(
                 headerOffset = videoModeHeaderOffset,
                 showSections = !isCustomGrid,
                 compact = (isAutoGrid && !uiState.autoGridConfig.showTitles) ||
-                    maxHeight < com.nendo.argosy.ui.theme.generated.ComponentDefaults.FrostedSurface.compactHeaderViewportHeightDp.dp
+                    maxHeight < ComponentDefaults.FrostedSurface.compactHeaderViewportHeightDp.dp
             )
         }
 

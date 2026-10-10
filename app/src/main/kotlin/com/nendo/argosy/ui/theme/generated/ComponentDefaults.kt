@@ -227,6 +227,7 @@ object ComponentDefaults {
     }
 
     object Carousel {
+        const val compactWidthDp = 600
         const val edgeTouchHeightDp = 80
         const val badgeHeadroomDp = 24
         const val newBadgeOverflowDp = 20

@@ -276,12 +276,15 @@ private fun DockToolsPopup(
         val up by rememberUpdatedState<() -> Unit> {
             if (pickerOpen) onPickerMove(-1)
         }
+        val down by rememberUpdatedState<() -> Unit> {
+            if (pickerOpen) onPickerMove(1) else dismiss()
+        }
         val handler = remember {
             object : CapturingInputHandler {
                 override fun onLeft(): InputResult { move(-1); return InputResult.HANDLED }
                 override fun onRight(): InputResult { move(1); return InputResult.HANDLED }
                 override fun onUp(): InputResult { up(); return InputResult.HANDLED }
-                override fun onDown(): InputResult { close(); return InputResult.HANDLED }
+                override fun onDown(): InputResult { down(); return InputResult.HANDLED }
                 override fun onConfirm(): InputResult { confirm(); return InputResult.HANDLED }
                 override fun onBack(): InputResult { close(); return InputResult.HANDLED }
             }

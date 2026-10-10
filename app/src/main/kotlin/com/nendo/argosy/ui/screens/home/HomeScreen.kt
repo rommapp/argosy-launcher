@@ -554,7 +554,11 @@ fun HomeScreen(
         val compactHeader = (isAutoGrid && !uiState.autoGridConfig.showTitles) ||
             maxHeight < ComponentDefaults.FrostedSurface.compactHeaderViewportHeightDp.dp
         val headerHorizontalPadding = if (compactHeader || isPortrait) Dimens.spacingMd else Dimens.spacingLg
-        val chromeVerticalPadding = if (compactHeader) Dimens.spacingXs else headerHorizontalPadding
+        val chromeVerticalPadding = if (compactHeader) {
+            ComponentDefaults.FrostedSurface.compactChromeVerticalPaddingDp.dp * LocalUiScale.current.scale
+        } else {
+            headerHorizontalPadding
+        }
         val defaultHeaderHeight = Dimens.headerHeight
         var headerBlockHeight by remember { mutableStateOf(defaultHeaderHeight) }
         var dockHeight by remember { mutableStateOf(0.dp) }

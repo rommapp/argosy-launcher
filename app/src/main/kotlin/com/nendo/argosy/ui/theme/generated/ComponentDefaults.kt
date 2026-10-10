@@ -410,6 +410,7 @@ object ComponentDefaults {
         const val fillAlpha = 0.8f
         const val chromeHeightDp = 52
         const val compactHeaderViewportHeightDp = 480
+        const val compactChromeVerticalPaddingDp = 6
         const val minimumTouchTargetDp = 48
         const val chromeFontSizeSp = 20
         const val navigationTriggerViewportToPaintedHeightRatio = 1.5f

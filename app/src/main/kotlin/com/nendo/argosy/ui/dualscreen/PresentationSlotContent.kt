@@ -244,7 +244,6 @@ private fun InGameAppBar(state: InGameAppBarState, modifier: Modifier = Modifier
             null
         },
         onOpenDrawer = { drawerOpen = true },
-        onKeyboardToggle = { manager.toggleUpperKeyboard() },
         focusDisplays = state.displays,
         focusPickerOpen = state.pickerOpen,
         focusPickerIndex = state.pickerIndex,

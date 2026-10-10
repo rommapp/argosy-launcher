@@ -30,8 +30,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -103,6 +105,10 @@ fun CompanionAppBar(
     controllerInputEnabled: Boolean = true,
     maximumWidth: Dp = Dimens.breadcrumbMaxWidth
 ) {
+    var showToolFocus by remember { mutableStateOf(true) }
+    LaunchedEffect(toolsOpen) {
+        if (!toolsOpen) showToolFocus = true
+    }
     val uiScale = LocalUiScale.current
     val dockScale = maxOf(uiScale.scale, minimumTouchTarget / DimensionTokens.Icon.xl.dp)
     CompositionLocalProvider(LocalUiScale provides uiScale.copy(scale = dockScale)) {
@@ -175,6 +181,7 @@ fun CompanionAppBar(
                         slot,
                         focusedIndex == apps.size || toolsOpen,
                         onClick = {
+                            showToolFocus = false
                             if (toolsOpen && focusPickerOpen) onFocusPickerToggle?.invoke()
                             onToolsToggle()
                         }
@@ -194,6 +201,8 @@ fun CompanionAppBar(
                             gap = gap,
                             padding = padding,
                             toolIndex = toolIndex,
+                            showToolFocus = controllerInputEnabled && showToolFocus,
+                            onToolFocusVisibilityChange = { showToolFocus = it },
                             onToolFocus = onToolFocus,
                             onDismiss = onToolsDismiss,
                             onSwapRoles = onSwapRoles,
@@ -237,6 +246,8 @@ private fun DockToolsPopup(
     gap: Dp,
     padding: Dp,
     toolIndex: Int,
+    showToolFocus: Boolean,
+    onToolFocusVisibilityChange: (Boolean) -> Unit,
     onToolFocus: (Int) -> Unit,
     onDismiss: () -> Unit,
     onSwapRoles: (() -> Unit)?,
@@ -268,10 +279,12 @@ private fun DockToolsPopup(
 
     if (controllerInputEnabled) {
         val move by rememberUpdatedState<(Int) -> Unit> { delta ->
+            onToolFocusVisibilityChange(true)
             if (pickerOpen) onPickerMove(delta)
             else onToolFocus(dockToolFocusMove(toolIndex, delta, enabled))
         }
         val confirm by rememberUpdatedState<() -> Unit> {
+            onToolFocusVisibilityChange(true)
             if (pickerOpen) {
                 displays.getOrNull(pickerIndex)?.let { onFocusDisplay(it.displayId) }
                 onDismiss()
@@ -281,9 +294,11 @@ private fun DockToolsPopup(
         }
         val close by rememberUpdatedState(dismiss)
         val up by rememberUpdatedState<() -> Unit> {
+            onToolFocusVisibilityChange(true)
             if (pickerOpen) onPickerMove(-1)
         }
         val down by rememberUpdatedState<() -> Unit> {
+            onToolFocusVisibilityChange(true)
             if (pickerOpen) onPickerMove(1) else dismiss()
         }
         val handler = remember {
@@ -329,10 +344,16 @@ private fun DockToolsPopup(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     itemsIndexed(displays, key = { _, target -> target.displayId }) { index, target ->
-                        DockControl(slot, index == pickerIndex, onClick = {
-                            onFocusDisplay(target.displayId)
-                            onDismiss()
-                        }) { tint ->
+                        DockControl(
+                            slot,
+                            focused = false,
+                            onClick = {
+                                onToolFocusVisibilityChange(false)
+                                onFocusDisplay(target.displayId)
+                                onDismiss()
+                            },
+                            showFocusRing = showToolFocus && index == pickerIndex
+                        ) { tint ->
                             Text(target.number.toString(), color = tint,
                                 style = MaterialTheme.typography.titleLarge)
                         }
@@ -347,17 +368,29 @@ private fun DockToolsPopup(
                 horizontalArrangement = Arrangement.spacedBy(gap),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                DockControl(slot, false, enabled[0], { activate(0) }) { tint ->
+                DockControl(
+                    slot, false, enabled[0],
+                    onClick = { onToolFocusVisibilityChange(false); activate(0) },
+                    showFocusRing = showToolFocus && !pickerOpen && toolIndex == 0
+                ) { tint ->
                     Icon(painterResource(R.drawable.ic_swap_screens),
                         stringResource(R.string.dual_companion_app_bar_swap_description),
                         tint = tint, modifier = Modifier.size(Dimens.iconMd))
                 }
-                DockControl(slot, false, enabled[1], { activate(1) }) { tint ->
+                DockControl(
+                    slot, false, enabled[1],
+                    onClick = { onToolFocusVisibilityChange(false); activate(1) },
+                    showFocusRing = showToolFocus && !pickerOpen && toolIndex == 1
+                ) { tint ->
                     Icon(Icons.Default.Keyboard,
                         stringResource(R.string.dual_companion_app_bar_keyboard_description),
                         tint = tint, modifier = Modifier.size(Dimens.iconMd))
                 }
-                DockControl(slot, false, enabled[2], { activate(2) }) { tint ->
+                DockControl(
+                    slot, false, enabled[2],
+                    onClick = { onToolFocusVisibilityChange(false); activate(2) },
+                    showFocusRing = showToolFocus && !pickerOpen && toolIndex == 2
+                ) { tint ->
                     Icon(Icons.Default.Tv,
                         stringResource(R.string.dual_companion_app_bar_focus_description),
                         tint = tint, modifier = Modifier.size(Dimens.iconMd))
@@ -378,11 +411,17 @@ private fun DockControl(
     focused: Boolean,
     enabled: Boolean = true,
     onClick: () -> Unit,
+    showFocusRing: Boolean = false,
     content: @Composable (Color) -> Unit
 ) {
     val tint = if (focused) LocalArgosyTheme.current.focusAccent else MaterialTheme.colorScheme.onSurface
     Box(
         Modifier.size(slot)
+            .argosyFocusIndicators(
+                focused = showFocusRing && enabled,
+                indicators = FocusIndicators.Ring,
+                shape = RoundedCornerShape(Dimens.radiusSm)
+            )
             .then(if (enabled) Modifier.touchOnly(onClick) else Modifier)
             .semantics(mergeDescendants = true) {
                 role = Role.Button

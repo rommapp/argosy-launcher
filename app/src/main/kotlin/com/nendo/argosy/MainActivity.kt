@@ -110,6 +110,7 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var jellyfinConnectionManager: com.nendo.argosy.data.remote.jellyfin.JellyfinConnectionManager
     @Inject lateinit var preferencesRepository: UserPreferencesRepository
     @Inject lateinit var syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository
+    @Inject lateinit var displayPreferencesRepository: com.nendo.argosy.data.preferences.DisplayPreferencesRepository
     @Inject lateinit var homeTileRepository: com.nendo.argosy.data.repository.HomeTileRepository
     @Inject lateinit var homeTilePromptQueue: com.nendo.argosy.data.repository.HomeTilePromptQueue
     @Inject lateinit var appsRepository: com.nendo.argosy.data.repository.AppsRepository
@@ -192,7 +193,6 @@ class MainActivity : ComponentActivity() {
     // --- Screen Capture ---
 
     private var screenCapturePromptedThisSession = false
-    private var liveWallpaperPromptedThisSession = false
     private val screenCaptureLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -788,17 +788,17 @@ class MainActivity : ComponentActivity() {
             }
 
             if (shouldOfferLiveWallpaper(prefs)) {
-                liveWallpaperPromptedThisSession = true
+                displayPreferencesRepository.setLiveWallpaperOffered()
                 runCatching { startActivity(LockScreenScenes.pickerIntent(this@MainActivity)) }
                     .onFailure { Log.w(TAG, "Live wallpaper picker unavailable: ${it.message}") }
             }
         }
     }
 
-    private fun shouldOfferLiveWallpaper(prefs: UserPreferences): Boolean =
-        !liveWallpaperPromptedThisSession &&
-            LockScreenScenes.canOffer(this, prefs.lockScreenArt) &&
-            !LockScreenScenes.isLiveActive(this)
+    private suspend fun shouldOfferLiveWallpaper(prefs: UserPreferences): Boolean =
+        LockScreenScenes.canOffer(this, prefs.lockScreenArt) &&
+            !LockScreenScenes.isLiveActive(this) &&
+            !displayPreferencesRepository.isLiveWallpaperOffered()
 
 
 

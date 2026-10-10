@@ -710,6 +710,7 @@ class GameDetailViewModel @Inject constructor(
 
             val isHiddenForOwner = gameRepository.isGameHidden(gameId)
             val art = gameRepository.getArt(gameId)
+            val screenshotRows = gameRepository.getScreenshots(gameId)
 
             val isPrivate = game.igdbId != null &&
                 game.igdbId.toInt() in socialRepository.hiddenGameIds.value
@@ -724,6 +725,7 @@ class GameDetailViewModel @Inject constructor(
                 state.copy(
                     game = game.toGameDetailUi(
                         art = art,
+                        screenshotRows = screenshotRows,
                         platformName = platform?.name
                             ?: context.getString(R.string.gamedetail_header_platform_unknown),
                         emulatorName = emulatorName,

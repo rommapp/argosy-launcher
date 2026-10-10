@@ -66,7 +66,7 @@ class SteamSignInFailureTest {
     }
 
     @Test
-    fun `a connection that drops before the QR shows ends in an error`() {
+    fun `a drop the service gives up on ends in an error`() {
         startSignIn()
 
         serviceState.value = SteamServiceState(connectionState = SteamConnectionState.CONNECTING)
@@ -79,6 +79,23 @@ class SteamSignInFailureTest {
 
         assertEquals(SteamConnectionState.DISCONNECTED, delegate.state.value.connectionState)
         assertEquals(UNREACHABLE, delegate.state.value.error)
+    }
+
+    @Test
+    fun `a drop the service reconnects from still reaches the QR`() {
+        startSignIn()
+
+        serviceState.value = SteamServiceState(connectionState = SteamConnectionState.CONNECTING)
+        scope.runCurrent()
+        serviceState.value = SteamServiceState(connectionState = SteamConnectionState.DISCONNECTED)
+        scope.runCurrent()
+        serviceState.value = SteamServiceState(connectionState = SteamConnectionState.CONNECTING)
+        scope.runCurrent()
+        serviceState.value = SteamServiceState(connectionState = SteamConnectionState.CONNECTED)
+        scope.runCurrent()
+
+        verify(exactly = 1) { authManager.startQrAuth() }
+        assertEquals(null, delegate.state.value.error)
     }
 
     @Test

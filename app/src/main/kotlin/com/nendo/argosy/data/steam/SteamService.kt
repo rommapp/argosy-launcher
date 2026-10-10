@@ -15,6 +15,7 @@ import com.nendo.argosy.R
 import com.nendo.argosy.core.service.ServiceNotificationIds
 import dagger.hilt.android.AndroidEntryPoint
 import `in`.dragonbra.javasteam.enums.EResult
+import `in`.dragonbra.javasteam.networking.steam3.ProtocolTypes
 import `in`.dragonbra.javasteam.steam.steamclient.SteamClient
 import `in`.dragonbra.javasteam.steam.steamclient.callbackmgr.CallbackManager
 import `in`.dragonbra.javasteam.steam.steamclient.callbacks.ConnectedCallback
@@ -262,6 +263,7 @@ class SteamService : Service() {
         val configuration = SteamConfiguration.create { builder ->
             builder
                 .withConnectionTimeout(60_000L)
+                .withProtocolTypes(ProtocolTypes.TCP)
                 .withHttpClient(httpClient)
         }
 
@@ -296,14 +298,15 @@ class SteamService : Service() {
                 Log.d(TAG, "Disconnect suppressed (reconnecting for auth)")
                 return@subscribe
             }
+            val willReconnect = !callback.isUserInitiated && isRunning
             _state.value = _state.value.copy(
                 connectionState = SteamConnectionState.DISCONNECTED,
-                error = if (!callback.isUserInitiated) "Connection lost" else null
+                error = if (!callback.isUserInitiated && !willReconnect) "Connection lost" else null
             )
             steamAuthManager.onDisconnected()
             steamContentManager.onDisconnected()
 
-            if (!callback.isUserInitiated && isRunning) {
+            if (willReconnect) {
                 scope.launch {
                     if (!isRunning) {
                         Log.d(TAG, "Not running, stopping reconnect")

@@ -133,7 +133,8 @@ class RomMLibrarySyncChangesTest {
             siblingConfigCarryOver = mockk(relaxed = true),
             siblingGroupRepository = siblingGroupRepository,
             variantFileCleanup = mockk(relaxed = true),
-            gameArtDao = mockk(relaxed = true)
+            gameArtDao = mockk(relaxed = true),
+            gameScreenshotDao = mockk(relaxed = true)
         )
     }
 

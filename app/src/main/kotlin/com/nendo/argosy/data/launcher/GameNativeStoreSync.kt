@@ -3,6 +3,8 @@ package com.nendo.argosy.data.launcher
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.cache.recordArtSource
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.dao.GameScreenshotDao
+import com.nendo.argosy.data.local.dao.forGames
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.PlatformEntity
@@ -91,7 +93,8 @@ class GameNativeStoreSync @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
     private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository,
     private val steamLibraryRepair: com.nendo.argosy.data.steam.SteamLibraryRepair,
-    private val gameArtDao: com.nendo.argosy.data.local.dao.GameArtDao
+    private val gameArtDao: com.nendo.argosy.data.local.dao.GameArtDao,
+    private val gameScreenshotDao: GameScreenshotDao
 ) {
     private val httpClient by lazy {
         OkHttpClient.Builder()
@@ -236,7 +239,6 @@ class GameNativeStoreSync @Inject constructor(
                 steamAppId = id.toLong(),
                 steamLauncher = GAMENATIVE_LAUNCHER,
                 source = GameSource.GAMENATIVE,
-                screenshotPaths = meta.screenshotUrls.takeIf { it.isNotEmpty() }?.joinToString(","),
                 developer = meta.developer,
                 releaseYear = meta.releaseYear,
                 genre = meta.genre,
@@ -246,12 +248,14 @@ class GameNativeStoreSync @Inject constructor(
             val insertedId = gameDao.insert(game)
             writeArtSource(insertedId, ArtSlot.COVER, meta.coverUrl, meta.title)
             writeArtSource(insertedId, ArtSlot.BACKGROUND, meta.backgroundUrl, meta.title)
-            queueScreenshotCache(insertedId, meta.screenshotUrls, cacheScreenshots)
+            recordScreenshots(insertedId, meta.screenshotUrls, cacheScreenshots)
             Logger.debug(TAG, "reconcile: added | store=${store.slug}, title=${meta.title}, id=$id")
             added++
         }
-        existing
-            .filter { it.steamAppId in markerIds && it.description == null && it.screenshotPaths == null }
+        val detailless = existing.filter { it.steamAppId in markerIds && it.description == null }
+        val withScreenshots = gameScreenshotDao.forGames(detailless.map { it.id }).keys
+        detailless
+            .filter { it.id !in withScreenshots }
             .forEach { game ->
                 val id = game.steamAppId?.toInt() ?: return@forEach
                 val meta = fetchMetadata(store, id, game.title)
@@ -259,11 +263,10 @@ class GameNativeStoreSync @Inject constructor(
                 gameDao.update(
                     game.copy(
                         description = meta.description ?: game.description,
-                        screenshotPaths = meta.screenshotUrls.takeIf { it.isNotEmpty() }?.joinToString(","),
                         genre = meta.genre ?: game.genre
                     )
                 )
-                queueScreenshotCache(game.id, meta.screenshotUrls, cacheScreenshots)
+                recordScreenshots(game.id, meta.screenshotUrls, cacheScreenshots)
                 Logger.debug(TAG, "reconcile: backfilled details | store=${store.slug}, title=${game.title}")
             }
 
@@ -281,9 +284,9 @@ class GameNativeStoreSync @Inject constructor(
         recordArtSource(gameArtDao, imageCacheManager, gameId, slot, listOf(url), title)
     }
 
-    private suspend fun queueScreenshotCache(gameId: Long, urls: List<String>, enabled: Boolean) {
-        if (urls.isEmpty() || !enabled) return
-        imageCacheManager.queueScreenshotCacheByGameId(gameId, urls)
+    private suspend fun recordScreenshots(gameId: Long, urls: List<String>, cache: Boolean) {
+        val rows = gameScreenshotDao.replaceSources(gameId, urls)
+        if (cache && rows.isNotEmpty()) imageCacheManager.queueScreenshotCacheByGameId(gameId)
     }
 
     private suspend fun fetchMetadata(store: GameNativeStore, id: Int, markerName: String): StoreGameMetadata {

@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.first
 import com.nendo.argosy.data.local.dao.GameArtDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameFileDao
+import com.nendo.argosy.data.local.dao.GameScreenshotDao
 import com.nendo.argosy.data.local.dao.PendingSyncQueueDao
 import com.nendo.argosy.data.local.dao.resolved
 import com.nendo.argosy.data.model.ArtSlot
@@ -34,7 +35,8 @@ class RomMUserPropertyService @Inject constructor(
     private val gameFileSync: RomMGameFileSync,
     private val gameFileDao: GameFileDao,
     private val siblingGroupRepository: com.nendo.argosy.data.repository.SiblingGroupRepository,
-    private val gameArtDao: GameArtDao
+    private val gameArtDao: GameArtDao,
+    private val gameScreenshotDao: GameScreenshotDao
 ) {
     private val api: RomMApi? get() = connectionManager.getApi()
 
@@ -243,6 +245,7 @@ class RomMUserPropertyService @Inject constructor(
                 gameArtDao.setSourceUrl(game.id, ArtSlot.BOX_SPINE, boxSpineUrls.firstOrNull())
                 gameArtDao.setSourceUrl(game.id, ArtSlot.BOX_BACK, boxBackUrls.firstOrNull())
             }
+            gameScreenshotDao.replaceSources(game.id, screenshotUrls)
 
             imageCacheManager.cacheGameImagesNow(
                 rommId = rom.id,
@@ -256,7 +259,6 @@ class RomMUserPropertyService @Inject constructor(
             )
 
             val updatedGame = game.withRomMetadata(rom).copy(
-                screenshotPaths = screenshotUrls.joinToString(","),
                 rommFileName = rom.fileName ?: game.rommFileName
             )
 

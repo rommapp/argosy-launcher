@@ -357,6 +357,8 @@ class LibretroActivity : ComponentActivity() {
     private var corePortDevices by mutableStateOf<List<List<com.swordfish.libretrodroid.Controller>>>(emptyList())
     private var gameControllerTypes by mutableStateOf<Map<Int, Int>>(emptyMap())
     private var platformControllerTypes by mutableStateOf<Map<Int, Int>>(emptyMap())
+    private var storedGameControllerTypes: String? = null
+    private var storedPlatformControllerTypes: String? = null
     private var appliedControllerTypes by mutableStateOf<Map<Int, Int>>(emptyMap())
     private var inputDeviceListener: android.hardware.input.InputManager.InputDeviceListener? = null
     private var splitColumn: android.widget.LinearLayout? = null
@@ -1863,8 +1865,12 @@ class LibretroActivity : ComponentActivity() {
                 }
                 g to p
             }
-            gameControllerTypes = ControllerTypeSelection.decode(game)
-            platformControllerTypes = ControllerTypeSelection.decode(platform)
+            val coreId = resolvedCoreId ?: return@launch
+            val legacyApplies = ControllerTypeSelection.legacyApplies(platformSlug)
+            storedGameControllerTypes = game
+            storedPlatformControllerTypes = platform
+            gameControllerTypes = ControllerTypeSelection.decode(game, coreId, legacyApplies)
+            platformControllerTypes = ControllerTypeSelection.decode(platform, coreId, legacyApplies)
             applyControllerTypes()
         }
     }
@@ -1957,8 +1963,12 @@ class LibretroActivity : ComponentActivity() {
     }
 
     private fun persistControllerTypes(perGame: Boolean) {
-        val encodedGame = ControllerTypeSelection.encode(gameControllerTypes)
-        val encodedPlatform = ControllerTypeSelection.encode(platformControllerTypes)
+        val coreId = resolvedCoreId ?: return
+        val legacyApplies = ControllerTypeSelection.legacyApplies(platformSlug)
+        val encodedGame = ControllerTypeSelection.update(storedGameControllerTypes, coreId, legacyApplies, gameControllerTypes)
+        val encodedPlatform =
+            ControllerTypeSelection.update(storedPlatformControllerTypes, coreId, legacyApplies, platformControllerTypes)
+        if (perGame) storedGameControllerTypes = encodedGame else storedPlatformControllerTypes = encodedPlatform
         lifecycleScope.launch(Dispatchers.IO) {
             if (perGame) {
                 configureEmulatorUseCase.setControllerTypesForGame(gameId, encodedGame)

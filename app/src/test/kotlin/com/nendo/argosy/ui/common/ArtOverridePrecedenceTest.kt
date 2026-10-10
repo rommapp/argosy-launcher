@@ -153,7 +153,7 @@ class ArtOverridePrecedenceTest {
             row(ArtSlot.LOGO, overridePath = "/cache/logo.png")
         ).toResolvedArt()
 
-        val ui = game().toHomeGameUi(downloadStatus, art)
+        val ui = game().toHomeGameUi(downloadStatus, art, firstScreenshotUrl = null)
 
         assertEquals(override, ui.coverPath)
         assertEquals("/cache/bg.jpg", ui.backgroundPath)
@@ -176,6 +176,7 @@ class ArtOverridePrecedenceTest {
 
         val detail = game().toGameDetailUi(
             art = art,
+            screenshotRows = emptyList(),
             platformName = "SNES",
             emulatorName = null,
             canPlay = false
@@ -190,6 +191,7 @@ class ArtOverridePrecedenceTest {
     fun `game detail without art shows nothing overridden`() {
         val detail = game().toGameDetailUi(
             art = null,
+            screenshotRows = emptyList(),
             platformName = "SNES",
             emulatorName = null,
             canPlay = false

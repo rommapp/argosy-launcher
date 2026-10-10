@@ -7,6 +7,16 @@ import org.junit.Test
 class PlatformDefinitionsTest {
 
     @Test
+    fun `aliased platforms keep their own short names instead of the parent's`() {
+        assertEquals("Win 3.x", PlatformDefinitions.getAliasDisplayName("win3x")?.second)
+        assertEquals("Win 9x", PlatformDefinitions.getAliasDisplayName("win9x")?.second)
+        assertEquals("Famicom", PlatformDefinitions.getAliasDisplayName("famicom")?.second)
+        assertEquals("SFC", PlatformDefinitions.getAliasDisplayName("sfam")?.second)
+        assertEquals("windows", PlatformDefinitions.getCanonicalSlug("win3x"))
+        assertEquals("snes", PlatformDefinitions.getCanonicalSlug("sfam"))
+    }
+
+    @Test
     fun `resolveImportSlug remaps RomM pico folder to pico8 by name`() {
         assertEquals("pico8", PlatformDefinitions.resolveImportSlug("pico", "PICO-8"))
         assertEquals("pico8", PlatformDefinitions.resolveImportSlug("pico", "Pico-8"))

@@ -2,7 +2,7 @@ package com.nendo.argosy.ui.home.grid
 
 import android.content.Context
 import com.nendo.argosy.R
-import com.nendo.argosy.data.local.entity.GameEntity
+import com.nendo.argosy.data.local.entity.GameScreenshotEntity
 import com.nendo.argosy.data.model.ResolvedGameArt
 import com.nendo.argosy.data.music.BgmPlaylistRepository
 import com.nendo.argosy.data.repository.CollectionRepository
@@ -102,7 +102,8 @@ class PageChooserEntrySource @Inject constructor(
         val matches = gameRepository.searchForQuickMenu(query.trim(), ART_SEARCH_LIMIT).first()
         val platformNames = platformRepository.getAllPlatforms().associate { it.id to it.name }
         val art = gameRepository.getArt(matches.map { it.id })
-        return matches.filter { artworkOf(it, art[it.id]).isNotEmpty() }.map { game ->
+        val screenshots = gameRepository.getScreenshots(matches.map { it.id })
+        return matches.filter { artworkOf(art[it.id], screenshots[it.id].orEmpty()).isNotEmpty() }.map { game ->
             PageChooserEntry(
                 label = game.title,
                 subtitle = platformNames[game.platformId].orEmpty(),
@@ -113,8 +114,8 @@ class PageChooserEntrySource @Inject constructor(
     }
 
     private suspend fun gameArtEntries(gameId: Long): List<PageChooserEntry> {
-        val game = gameRepository.getById(gameId) ?: return emptyList()
-        return artworkOf(game, gameRepository.getArt(gameId)).map { art ->
+        gameRepository.getById(gameId) ?: return emptyList()
+        return artworkOf(gameRepository.getArt(gameId), gameRepository.getScreenshots(gameId)).map { art ->
             PageChooserEntry(
                 label = art.label,
                 previewPath = art.path,
@@ -123,7 +124,7 @@ class PageChooserEntrySource @Inject constructor(
         }
     }
 
-    private fun artworkOf(game: GameEntity, art: ResolvedGameArt?): List<PageArtwork> = buildList {
+    private fun artworkOf(art: ResolvedGameArt?, screenshots: List<GameScreenshotEntity>): List<PageArtwork> = buildList {
         art?.backgroundPath?.takeIf { it.startsWith("/") }?.let {
             add(
                 PageArtwork(
@@ -136,10 +137,9 @@ class PageChooserEntrySource @Inject constructor(
         art?.coverPath?.takeIf { it.startsWith("/") }?.let {
             add(PageArtwork(context.getString(R.string.ui_page_chooser_art_cover), it, PageChooserAction.UseArt(it)))
         }
-        game.cachedScreenshotPaths
-            ?.split(",")
-            ?.filter { it.isNotBlank() && it.startsWith("/") }
-            ?.forEachIndexed { index, path ->
+        screenshots
+            .mapNotNull { row -> row.cachedPath?.takeIf { it.startsWith("/") } }
+            .forEachIndexed { index, path ->
                 val number: Int = index + 1
                 val label = context.getString(R.string.ui_page_chooser_art_screenshot, number)
                 add(PageArtwork(label, path, PageChooserAction.UseArt(path)))

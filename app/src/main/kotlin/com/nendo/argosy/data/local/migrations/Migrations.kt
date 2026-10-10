@@ -4058,6 +4058,145 @@ object Migration_207_208 : Migration(207, 208) {
     }
 }
 
+internal fun legacyScreenshotRows(sources: String?, cached: String?): List<Pair<String, String?>> {
+    val urls = sources?.split(",")?.filter { it.isNotBlank() }.orEmpty()
+    val paths = cached?.split(",")?.filter { it.isNotBlank() }.orEmpty()
+    return urls.mapIndexed { position, url -> url to paths.getOrNull(position) }
+}
+
+/**
+ * Moves screenshots into `game_screenshots`, one row per position, and rebuilds `games` without
+ * the screenshot and box face columns. `cachedFromUrl` starts null for the image cache to
+ * backfill from the cached file name.
+ */
+object Migration_208_209 : Migration(208, 209) {
+    private fun copyScreenshots(db: SupportSQLiteDatabase) {
+        db.query(
+            "SELECT `id`, `screenshotPaths`, `cachedScreenshotPaths` FROM `games` " +
+                "WHERE `screenshotPaths` IS NOT NULL AND `screenshotPaths` != ''"
+        ).use { cursor ->
+            while (cursor.moveToNext()) {
+                val gameId = cursor.getLong(0)
+                val cached = if (cursor.isNull(2)) null else cursor.getString(2)
+                legacyScreenshotRows(cursor.getString(1), cached).forEachIndexed { position, (url, path) ->
+                    db.execSQL(
+                        "INSERT OR IGNORE INTO `game_screenshots` " +
+                            "(`gameId`, `position`, `sourceUrl`, `cachedPath`, `cachedFromUrl`) " +
+                            "VALUES (?, ?, ?, ?, NULL)",
+                        arrayOf<Any?>(gameId, position, url, path)
+                    )
+                }
+            }
+        }
+    }
+
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("PRAGMA foreign_keys=OFF")
+
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `game_screenshots` (" +
+                "`gameId` INTEGER NOT NULL, `position` INTEGER NOT NULL, `sourceUrl` TEXT NOT NULL, " +
+                "`cachedPath` TEXT, `cachedFromUrl` TEXT, " +
+                "PRIMARY KEY(`gameId`, `position`), " +
+                "FOREIGN KEY(`gameId`) REFERENCES `games`(`id`) " +
+                "ON UPDATE NO ACTION ON DELETE CASCADE )"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_game_screenshots_gameId` ON `game_screenshots` (`gameId`)"
+        )
+        copyScreenshots(db)
+
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `games_new` (" +
+                "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `platformId` INTEGER NOT NULL, " +
+                "`platformSlug` TEXT NOT NULL, `title` TEXT NOT NULL, `sortTitle` TEXT NOT NULL, " +
+                "`searchTitle` TEXT NOT NULL, `localPath` TEXT, " +
+                "`fileOrigin` TEXT NOT NULL DEFAULT 'ADOPTED', `rommId` INTEGER, " +
+                "`rommFileName` TEXT, `igdbId` INTEGER, `raId` INTEGER, `steamAppId` INTEGER, " +
+                "`steamLauncher` TEXT, `steamInstallDir` TEXT, `packageName` TEXT, " +
+                "`launcherSetManually` INTEGER NOT NULL, `source` TEXT NOT NULL, " +
+                "`developer` TEXT, `publisher` TEXT, `releaseYear` INTEGER, `genre` TEXT, " +
+                "`description` TEXT, `players` TEXT, `rating` REAL, `regions` TEXT, " +
+                "`languages` TEXT, `gameModes` TEXT, `franchises` TEXT, `genres` TEXT, " +
+                "`collections` TEXT, `alternativeNames` TEXT, `ageRatings` TEXT, `mobyId` INTEGER, " +
+                "`sgdbId` INTEGER, `ssId` INTEGER, `launchboxId` INTEGER, `hasheousId` INTEGER, " +
+                "`tgdbId` INTEGER, `hltbId` INTEGER, `timeToBeatMainSec` INTEGER, " +
+                "`timeToBeatExtraSec` INTEGER, `timeToBeatCompletionistSec` INTEGER, " +
+                "`flashpointId` TEXT, `gamelistId` TEXT, `libretroId` TEXT, `crcHash` TEXT, " +
+                "`md5Hash` TEXT, `sha1Hash` TEXT, `raHash` TEXT, `hasManual` INTEGER NOT NULL, " +
+                "`manualPath` TEXT, `remoteHasSoundtrack` INTEGER NOT NULL, " +
+                "`isIdentified` INTEGER NOT NULL, `userRating` INTEGER NOT NULL, " +
+                "`userDifficulty` INTEGER NOT NULL, `completion` INTEGER NOT NULL, `status` TEXT, " +
+                "`backlogged` INTEGER NOT NULL, `nowPlaying` INTEGER NOT NULL, " +
+                "`isFavorite` INTEGER NOT NULL, `playCount` INTEGER NOT NULL, " +
+                "`playTimeMinutes` INTEGER NOT NULL, " +
+                "`lastPlayed` INTEGER, `addedAt` INTEGER NOT NULL, `isMultiDisc` INTEGER NOT NULL, " +
+                "`lastPlayedDiscId` INTEGER, `m3uPath` TEXT, `activeVariantFileId` INTEGER, " +
+                "`lastPlayedFileId` INTEGER, `achievementCount` INTEGER NOT NULL, " +
+                "`earnedAchievementCount` INTEGER NOT NULL, `titleId` TEXT, " +
+                "`titleIdLocked` INTEGER NOT NULL, `saveTarget` TEXT, `saveTargetLayout` TEXT, " +
+                "`hasFileOnDisk` INTEGER NOT NULL, `storeEnrichStatus` INTEGER NOT NULL, " +
+                "`titleIdCandidates` TEXT, `saveId` TEXT, `saveFeatures` INTEGER, " +
+                "`youtubeVideoId` TEXT, " +
+                "`cheatsFetched` INTEGER NOT NULL, `cheatsFetchedAt` INTEGER, " +
+                "`cheatsSelectedRegion` TEXT, `cheatsSelectedVersion` TEXT, " +
+                "`achievementsFetchedAt` INTEGER, `romHash` TEXT, `verifiedRaId` INTEGER, " +
+                "`raIdVerified` INTEGER NOT NULL, `fileSizeBytes` INTEGER, " +
+                "`perGameSettingsEnabled` INTEGER NOT NULL, " +
+                "`perGameControlsEnabled` INTEGER NOT NULL, `syncDirty` INTEGER NOT NULL, " +
+                "`siblingGroupKey` TEXT, `isHackVariant` INTEGER NOT NULL DEFAULT 0, " +
+                "`isTranslationVariant` INTEGER NOT NULL DEFAULT 0, " +
+                "`isGroupVisible` INTEGER NOT NULL DEFAULT 1, " +
+                "FOREIGN KEY(`platformId`) REFERENCES `platforms`(`id`) " +
+                "ON UPDATE NO ACTION ON DELETE CASCADE )"
+        )
+
+        val carriedColumns = "`id`, `platformId`, `platformSlug`, `title`, `sortTitle`, " +
+            "`searchTitle`, `localPath`, `fileOrigin`, `rommId`, `rommFileName`, `igdbId`, " +
+            "`raId`, `steamAppId`, `steamLauncher`, `steamInstallDir`, `packageName`, " +
+            "`launcherSetManually`, `source`, `developer`, `publisher`, " +
+            "`releaseYear`, `genre`, `description`, `players`, `rating`, `regions`, " +
+            "`languages`, `gameModes`, `franchises`, `genres`, `collections`, " +
+            "`alternativeNames`, `ageRatings`, `mobyId`, `sgdbId`, `ssId`, `launchboxId`, " +
+            "`hasheousId`, `tgdbId`, `hltbId`, `timeToBeatMainSec`, `timeToBeatExtraSec`, " +
+            "`timeToBeatCompletionistSec`, `flashpointId`, `gamelistId`, `libretroId`, " +
+            "`crcHash`, `md5Hash`, `sha1Hash`, `raHash`, `hasManual`, `manualPath`, " +
+            "`remoteHasSoundtrack`, `isIdentified`, `userRating`, `userDifficulty`, " +
+            "`completion`, `status`, `backlogged`, `nowPlaying`, `isFavorite`, " +
+            "`playCount`, `playTimeMinutes`, `lastPlayed`, `addedAt`, `isMultiDisc`, " +
+            "`lastPlayedDiscId`, `m3uPath`, `activeVariantFileId`, `lastPlayedFileId`, " +
+            "`achievementCount`, `earnedAchievementCount`, `titleId`, `titleIdLocked`, " +
+            "`saveTarget`, `saveTargetLayout`, `hasFileOnDisk`, " +
+            "`storeEnrichStatus`, `titleIdCandidates`, `saveId`, `saveFeatures`, " +
+            "`youtubeVideoId`, `cheatsFetched`, `cheatsFetchedAt`, `cheatsSelectedRegion`, " +
+            "`cheatsSelectedVersion`, `achievementsFetchedAt`, `romHash`, `verifiedRaId`, " +
+            "`raIdVerified`, `fileSizeBytes`, `perGameSettingsEnabled`, " +
+            "`perGameControlsEnabled`, `syncDirty`, `siblingGroupKey`, `isHackVariant`, " +
+            "`isTranslationVariant`, `isGroupVisible`"
+
+        db.execSQL("INSERT INTO `games_new` ($carriedColumns) SELECT $carriedColumns FROM `games`")
+        db.execSQL("DROP TABLE `games`")
+        db.execSQL("ALTER TABLE `games_new` RENAME TO `games`")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_games_platformId` ON `games` (`platformId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_games_title` ON `games` (`title`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_games_lastPlayed` ON `games` (`lastPlayed`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_games_source` ON `games` (`source`)")
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_games_rommId` ON `games` (`rommId`)")
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_games_steamAppId` ON `games` (`steamAppId`)")
+        db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_games_packageName` ON `games` (`packageName`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_games_regions` ON `games` (`regions`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_games_gameModes` ON `games` (`gameModes`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_games_franchises` ON `games` (`franchises`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_games_genres` ON `games` (`genres`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_games_collections` ON `games` (`collections`)")
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_games_siblingGroupKey` ON `games` (`siblingGroupKey`)"
+        )
+
+        db.execSQL("PRAGMA foreign_keys=ON")
+    }
+}
+
 object Migration_203_204 : Migration(203, 204) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL(

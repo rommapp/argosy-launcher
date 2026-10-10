@@ -844,6 +844,7 @@ class HomeLibraryDelegate @Inject constructor(
     private suspend fun GameEntity.toUi(art: ResolvedGameArt?): HomeGameUi = toHomeGameUi(
         downloadStatus = downloadFileStatusRepository,
         art = art,
+        firstScreenshotUrl = null,
         platformDisplayName = cachedPlatformDisplayNames[platformId],
         gradientColors = gradientExtractionDelegate.getGradient(id)
     )

@@ -6,6 +6,7 @@ import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.cache.recordArtSource
 import com.nendo.argosy.data.local.dao.GameArtDao
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.dao.GameScreenshotDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.PlatformEntity
@@ -44,7 +45,8 @@ class SteamRepository @Inject constructor(
     private val imageCacheManager: ImageCacheManager,
     private val steamDownloadQueueDao: com.nendo.argosy.data.local.dao.SteamDownloadQueueDao,
     private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository,
-    private val gameArtDao: GameArtDao
+    private val gameArtDao: GameArtDao,
+    private val gameScreenshotDao: GameScreenshotDao
 ) {
     private val api: SteamStoreApi by lazy { createApi() }
 
@@ -119,7 +121,6 @@ class SteamRepository @Inject constructor(
                 steamAppId = steamAppId,
                 steamLauncher = launcherPackage,
                 source = GameSource.STEAM,
-                screenshotPaths = screenshotUrls.joinToString(","),
                 developer = appData.developers?.firstOrNull(),
                 publisher = appData.publishers?.firstOrNull(),
                 releaseYear = parseReleaseYear(appData.releaseDate?.date),
@@ -133,6 +134,7 @@ class SteamRepository @Inject constructor(
             val savedGame = gameDao.getById(insertedId)
 
             writeArtSources(insertedId, steamAppId, appData.name, appData, backgroundUrl)
+            gameScreenshotDao.replaceSources(insertedId, screenshotUrls)
 
             updatePlatformGameCount()
 
@@ -173,12 +175,12 @@ class SteamRepository @Inject constructor(
             val updatedGame = game.copy(
                 description = appData.shortDescription ?: game.description,
                 genre = if (!storeGenres.isNullOrBlank()) storeGenres else game.genre,
-                screenshotPaths = if (screenshotUrls.isNotEmpty()) screenshotUrls.joinToString(",") else game.screenshotPaths,
                 rating = appData.metacritic?.score?.toFloat() ?: game.rating
             )
 
             gameDao.update(updatedGame)
             writeArtSources(game.id, steamAppId, game.title, appData, backgroundUrl)
+            if (screenshotUrls.isNotEmpty()) gameScreenshotDao.replaceSources(game.id, screenshotUrls)
 
             Log.d(TAG, "Enriched ${game.title} with store data")
             SteamResult.Success(updatedGame)
@@ -290,7 +292,6 @@ class SteamRepository @Inject constructor(
                         game.copy(
                             title = appData.name,
                             sortTitle = createSortTitle(appData.name),
-                            screenshotPaths = screenshotUrls.joinToString(","),
                             developer = appData.developers?.firstOrNull() ?: game.developer,
                             publisher = appData.publishers?.firstOrNull() ?: game.publisher,
                             releaseYear = parseReleaseYear(appData.releaseDate?.date) ?: game.releaseYear,
@@ -300,6 +301,7 @@ class SteamRepository @Inject constructor(
                         )
                     )
                     writeArtSources(game.id, steamAppId, appData.name, appData, backgroundUrl)
+                    gameScreenshotDao.replaceSources(game.id, screenshotUrls)
 
                     refreshedCount++
                     Log.d(TAG, "Refreshed metadata for: ${appData.name}")

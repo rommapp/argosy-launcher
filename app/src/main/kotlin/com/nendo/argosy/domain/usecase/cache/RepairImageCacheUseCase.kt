@@ -74,33 +74,6 @@ class RepairImageCacheUseCase @Inject constructor(
         recordArtSource(gameArtDao, imageCacheManager, game.id, slot, urls, game.title, rommId = game.rommId)
     }
 
-    suspend fun repairScreenshots(gameId: Long, cachedPaths: List<String>?): List<String>? {
-        if (cachedPaths.isNullOrEmpty()) return null
-
-        val anyMissing = cachedPaths.any { path ->
-            path.startsWith("/") && !File(path).exists()
-        }
-        if (!anyMissing) return cachedPaths
-        if (!romMRepository.isConnected()) return null
-
-        val game = gameDao.getById(gameId) ?: return null
-        val rommId = game.rommId ?: return null
-
-        return when (val result = romMRepository.getRom(rommId)) {
-            is RomMResult.Success -> {
-                val screenshotUrls = result.data.screenshotPaths?.mapNotNull { path ->
-                    romMRepository.buildMediaUrlPublic(path)
-                } ?: return null
-
-                if (screenshotUrls.isNotEmpty()) {
-                    imageCacheManager.queueScreenshotCache(gameId, rommId, screenshotUrls, game.title)
-                }
-                screenshotUrls
-            }
-            is RomMResult.Error -> null
-        }
-    }
-
     private suspend fun isGenuinelyAbsent(path: String): Boolean =
         withContext(Dispatchers.IO) { volumeHealth.newProbe().isGenuinelyAbsent(path) }
 

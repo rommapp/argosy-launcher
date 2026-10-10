@@ -6,8 +6,11 @@ import coil.ImageLoader
 import com.nendo.argosy.data.local.dao.AchievementDao
 import com.nendo.argosy.data.local.dao.GameArtDao
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.dao.GameScreenshotDao
+import com.nendo.argosy.data.local.dao.PendingScreenshot
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.entity.GameArtEntity
+import com.nendo.argosy.data.local.entity.GameScreenshotEntity
 import com.nendo.argosy.data.model.ArtSlot
 import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.data.storage.StorageVolumeHealth
@@ -45,6 +48,7 @@ class ImageCacheManagerTest {
     private lateinit var context: Context
     private lateinit var gameDao: GameDao
     private lateinit var gameArtDao: GameArtDao
+    private lateinit var gameScreenshotDao: GameScreenshotDao
     private lateinit var platformDao: PlatformDao
     private lateinit var achievementDao: AchievementDao
     private lateinit var volumeHealth: StorageVolumeHealth
@@ -63,6 +67,7 @@ class ImageCacheManagerTest {
         }
         gameDao = mockk(relaxed = true)
         gameArtDao = mockk(relaxed = true)
+        gameScreenshotDao = mockk(relaxed = true)
         platformDao = mockk(relaxed = true)
         achievementDao = mockk(relaxed = true)
         volumeHealth = mockk(relaxed = true)
@@ -71,6 +76,7 @@ class ImageCacheManagerTest {
             context,
             gameDao,
             gameArtDao,
+            gameScreenshotDao,
             platformDao,
             achievementDao,
             volumeHealth,
@@ -323,7 +329,7 @@ class ImageCacheManagerTest {
         assertTrue(backgroundOverride.exists())
         assertTrue(logoOverride.exists())
         coVerify(exactly = 1) { gameArtDao.clearCachedForPlatform("snes") }
-        coVerify(exactly = 1) { gameDao.clearCachedScreenshotsForPlatform("snes") }
+        coVerify(exactly = 1) { gameScreenshotDao.clearCachedForPlatform("snes") }
         coVerify(exactly = 0) { gameArtDao.updateOverride(any(), any(), any()) }
         coVerify(exactly = 0) { gameArtDao.updateSourceUrl(any(), any(), any()) }
     }
@@ -401,7 +407,7 @@ class ImageCacheManagerTest {
             "/gone/cover_override_7_abc.jpg",
             "/kept/bg_override_7_def.jpg"
         )
-        coEvery { gameDao.getCachedScreenshotInfo() } returns emptyList()
+        coEvery { gameScreenshotDao.getCached() } returns emptyList()
         coEvery { platformDao.getAllPlatforms() } returns emptyList()
 
         imageCacheManager.validateAndCleanCache(force = true)
@@ -421,11 +427,50 @@ class ImageCacheManagerTest {
             "/unmounted/bg_42_def.jpg"
         )
         coEvery { gameArtDao.getAllOverridePaths() } returns emptyList()
-        coEvery { gameDao.getCachedScreenshotInfo() } returns emptyList()
+        coEvery { gameScreenshotDao.getCached() } returns emptyList()
         coEvery { platformDao.getAllPlatforms() } returns emptyList()
 
         imageCacheManager.validateAndCleanCache(force = true)
 
         coVerify(exactly = 1) { gameArtDao.clearCachedPaths(listOf("/gone/cover_42_abc.jpg")) }
+    }
+
+    @Test
+    fun `missing-file sweep clears a screenshot row whose file is gone`() = runTest {
+        stubDecodedImageCache()
+        val probe = mockk<VolumeProbe>(relaxed = true)
+        every { volumeHealth.newProbe() } returns probe
+        every { probe.isGenuinelyAbsent("/gone/ss_42_0_abc.jpg") } returns true
+        coEvery { gameArtDao.getAllCachedPaths() } returns emptyList()
+        coEvery { gameArtDao.getAllOverridePaths() } returns emptyList()
+        coEvery { gameScreenshotDao.getCached() } returns listOf(
+            GameScreenshotEntity(7L, 0, oldUrl, "/gone/ss_42_0_abc.jpg", oldUrl)
+        )
+        coEvery { platformDao.getAllPlatforms() } returns emptyList()
+
+        imageCacheManager.validateAndCleanCache(force = true)
+
+        coVerify(exactly = 1) { gameScreenshotDao.clearCachedPaths(listOf("/gone/ss_42_0_abc.jpg")) }
+    }
+
+    @Test
+    fun `a pending screenshot whose file name carries the source hash is backfilled and one from another url is queued`() {
+        val matching = PendingScreenshot(7L, 0, oldUrl, cachedFromOld, null, 42L, "Game")
+        val stale = PendingScreenshot(8L, 0, newUrl, cachedFromOld, null, 43L, "Other")
+        coEvery { gameScreenshotDao.getPending() } returns listOf(matching, stale)
+
+        imageCacheManager.resumePendingScreenshotCache()
+
+        coVerify(timeout = 5_000) { gameScreenshotDao.backfillCachedFromUrls(listOf(matching)) }
+        coVerify(timeout = 5_000) { gameScreenshotDao.getForGame(8L) }
+        coVerify(exactly = 0) { gameScreenshotDao.getForGame(7L) }
+    }
+
+    @Test
+    fun `only a cached file named for its source url can be backfilled`() {
+        assertTrue(canBackfillCachedFromUrl(cachedFromOld, null, oldUrl))
+        assertFalse(canBackfillCachedFromUrl(cachedFromOld, null, newUrl))
+        assertFalse(canBackfillCachedFromUrl(cachedFromOld, oldUrl, oldUrl))
+        assertFalse(canBackfillCachedFromUrl(null, null, oldUrl))
     }
 }

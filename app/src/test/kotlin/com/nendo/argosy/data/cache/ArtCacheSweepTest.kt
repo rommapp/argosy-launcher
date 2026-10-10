@@ -52,7 +52,7 @@ class ArtCacheSweepTest {
     fun `local-only art the sweep does not own is never an orphan`() {
         val localOnly = listOf(
             file("icons", "appicon_123.png"),
-            file("screenshots", "ss_42_0_abc.jpg"),
+            file("screenshots", "uss_42_9_abc.png"),
             file("covers", "box_back_42_abc.jpg"),
             file("covers", "box_spine_42_abc.jpg"),
             file("badges", "badge_9_abc.png")
@@ -69,12 +69,36 @@ class ArtCacheSweepTest {
             file("covers", "cover_g7_abc.jpg"),
             file("backgrounds", "bg_42_abc.jpg"),
             file("backgrounds", "steam_bg_620_abc.jpg"),
-            file("covers", "game_logo_42_abc.png")
+            file("covers", "game_logo_42_abc.png"),
+            file("screenshots", "ss_42_0_abc.jpg"),
+            file("screenshots", "ss_g7_1_abc.jpg")
         )
 
         val plan = planArtSweep(swept, emptyList(), emptyList(), cutoff)
 
         assertEquals(swept.map { it.path }.toSet(), plan.orphanFiles.toSet())
+    }
+
+    @Test
+    fun `a screenshot file a screenshot row references is kept`() {
+        val kept = file("screenshots", "ss_42_0_abc.jpg")
+
+        val plan = planArtSweep(listOf(kept), listOf(kept.path), emptyList(), cutoff)
+
+        assertTrue(plan.orphanFiles.isEmpty())
+    }
+
+    @Test
+    fun `user screenshots are never swept even with nothing referencing them`() {
+        val userShots = listOf(
+            file("screenshots", "uss_42_9_abc.png"),
+            file("screenshots", "uss_g7_1_abc.png")
+        )
+
+        val plan = planArtSweep(userShots, emptyList(), emptyList(), cutoff)
+
+        assertTrue(plan.orphanFiles.isEmpty())
+        userShots.forEach { assertFalse(isSweptArtFileName(it.name)) }
     }
 
     @Test
@@ -119,6 +143,7 @@ class ArtCacheSweepTest {
         assertTrue(isSweptArtFileName("bg_g7_abc.jpg"))
         assertFalse(isSweptArtFileName("cover_override_7_abc.jpg"))
         assertFalse(isSweptArtFileName("logo_12_abc.png"))
-        assertFalse(isSweptArtFileName("ss_42_0_abc.jpg"))
+        assertTrue(isSweptArtFileName("ss_42_0_abc.jpg"))
+        assertFalse(isSweptArtFileName("uss_42_9_abc.png"))
     }
 }

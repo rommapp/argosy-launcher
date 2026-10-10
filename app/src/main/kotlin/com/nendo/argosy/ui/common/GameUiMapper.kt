@@ -32,12 +32,12 @@ private suspend fun GameListItem.resolveDownloaded(
 suspend fun GameEntity.toHomeGameUi(
     downloadStatus: DownloadFileStatusRepository,
     art: ResolvedGameArt?,
+    firstScreenshotUrl: String?,
     platformDisplayName: String? = null,
     gradientColors: Pair<Color, Color>? = null,
     newThreshold: Instant = Instant.now().minus(NEW_GAME_THRESHOLD_HOURS, ChronoUnit.HOURS)
 ): HomeGameUi {
-    val firstScreenshot = screenshotPaths?.split(",")?.firstOrNull()?.takeIf { it.isNotBlank() }
-    val effectiveBackground = art?.backgroundPath ?: firstScreenshot ?: art?.coverPath
+    val effectiveBackground = art?.backgroundPath ?: firstScreenshotUrl ?: art?.coverPath
     val downloaded = resolveDownloaded(downloadStatus)
     return HomeGameUi(
         id = id,

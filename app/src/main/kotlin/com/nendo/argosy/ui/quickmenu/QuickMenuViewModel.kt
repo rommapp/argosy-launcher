@@ -395,7 +395,7 @@ class QuickMenuViewModel @Inject constructor(
 
     private suspend fun GameEntity.toGameCardUi(): GameCardUi {
         val platformName = getPlatformName(platformId)
-        val firstScreenshot = screenshotPaths?.split(",")?.firstOrNull()?.takeIf { it.isNotBlank() }
+        val firstScreenshot = gameRepository.getScreenshots(id).firstOrNull()?.sourceUrl
         val art = gameRepository.getArt(id)
         return GameCardUi(
             id = id,

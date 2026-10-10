@@ -37,7 +37,6 @@ class GameMigrationHelperTest {
         rommId = rommId,
         igdbId = igdbId,
         source = GameSource.ROMM_REMOTE,
-        screenshotPaths = null,
         description = null,
         releaseYear = null,
         genre = null,

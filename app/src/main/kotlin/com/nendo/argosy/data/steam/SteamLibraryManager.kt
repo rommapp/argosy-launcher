@@ -424,14 +424,7 @@ class SteamLibraryManager @Inject constructor(
             try {
                 val result = steamRepository.get().enrichWithStoreData(steamAppId)
                 if (cacheScreenshots && result is SteamResult.Success) {
-                    val enrichedGame = result.data
-                    val screenshotUrls = enrichedGame.screenshotPaths
-                        ?.split(",")
-                        ?.filter { it.startsWith("http") }
-                        ?: emptyList()
-                    if (screenshotUrls.isNotEmpty()) {
-                        imageCacheManager.queueScreenshotCacheByGameId(enrichedGame.id, screenshotUrls)
-                    }
+                    imageCacheManager.queueScreenshotCacheByGameId(result.data.id)
                 }
                 if (result is SteamResult.Success) {
                     gameDao.updateStoreEnrichStatus(game.id, GameEntity.STORE_SUCCESS)

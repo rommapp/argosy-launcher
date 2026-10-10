@@ -737,9 +737,6 @@ interface GameDao {
     @Query("SELECT id FROM games")
     suspend fun getAllGameIds(): List<Long>
 
-    @Query("SELECT id, cachedScreenshotPaths FROM games WHERE cachedScreenshotPaths IS NOT NULL")
-    suspend fun getCachedScreenshotInfo(): List<GameScreenshotCacheInfo>
-
     @Query("SELECT * FROM games WHERE rommId IS NOT NULL AND localPath IS NULL")
     suspend fun getGamesWithRommIdButNoPath(): List<GameEntity>
 
@@ -827,20 +824,10 @@ interface GameDao {
     @Query(
         """
         SELECT COUNT(*) FROM games
-        $COVER_ART_JOIN
         WHERE NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
-          AND (
-            EXISTS (
-              SELECT 1 FROM game_art box WHERE box.gameId = games.id AND box.slot = 'BOX_3D'
-                AND COALESCE(box.overridePath, box.cachedPath) LIKE '/%'
-            )
-            OR (
-              EXISTS (
-                SELECT 1 FROM game_art spine WHERE spine.gameId = games.id AND spine.slot = 'BOX_SPINE'
-                  AND COALESCE(spine.overridePath, spine.cachedPath) LIKE '/%'
-              )
-              AND COALESCE(art.overridePath, art.cachedPath) LIKE '/%'
-            )
+          AND EXISTS (
+            SELECT 1 FROM game_art box WHERE box.gameId = games.id AND box.slot = 'BOX_3D'
+              AND COALESCE(box.overridePath, box.cachedPath) LIKE '/%'
           )
         """
     )
@@ -1024,27 +1011,6 @@ interface GameDao {
         ownerUserId: Long?,
         limit: Int
     ): List<GameListItem>
-
-    @Query("SELECT * FROM games WHERE screenshotPaths IS NOT NULL AND cachedScreenshotPaths IS NULL AND rommId IS NOT NULL")
-    suspend fun getGamesWithUncachedScreenshots(): List<GameEntity>
-
-    @Query("SELECT cachedScreenshotPaths FROM games WHERE id = :gameId")
-    suspend fun getCachedScreenshotPaths(gameId: Long): String?
-
-    @Query("SELECT screenshotPaths FROM games WHERE id = :gameId")
-    suspend fun getScreenshotPaths(gameId: Long): String?
-
-    @Query("UPDATE games SET cachedScreenshotPaths = :paths WHERE id = :gameId")
-    suspend fun updateCachedScreenshotPaths(gameId: Long, paths: String)
-
-    @Query("UPDATE games SET cachedScreenshotPaths = NULL WHERE id = :gameId")
-    suspend fun clearCachedScreenshotPaths(gameId: Long)
-
-    @Query("SELECT COUNT(*) FROM games WHERE screenshotPaths IS NOT NULL AND rommId IS NOT NULL")
-    suspend fun countGamesWithScreenshots(): Int
-
-    @Query("SELECT COUNT(*) FROM games WHERE cachedScreenshotPaths IS NOT NULL AND rommId IS NOT NULL")
-    suspend fun countGamesWithCachedScreenshots(): Int
 
     @Query("UPDATE games SET lastPlayedDiscId = :discId WHERE id = :gameId")
     suspend fun updateLastPlayedDisc(gameId: Long, discId: Long)
@@ -1276,12 +1242,6 @@ interface GameDao {
     """)
     suspend fun getByRaId(raId: Long): GameEntity?
 
-    @Query(
-        "UPDATE games SET cachedScreenshotPaths = NULL " +
-            "WHERE platformSlug = :platformSlug AND cachedScreenshotPaths IS NOT NULL"
-    )
-    suspend fun clearCachedScreenshotsForPlatform(platformSlug: String)
-
     @Query("""
         SELECT id, title, rating FROM games
         WHERE isGroupVisible = 1
@@ -1448,11 +1408,6 @@ data class GameStorageInfo(
     val id: Long,
     val platformId: Long,
     val localPath: String?
-)
-
-data class GameScreenshotCacheInfo(
-    val id: Long,
-    val cachedScreenshotPaths: String?
 )
 
 data class RommIdMapping(

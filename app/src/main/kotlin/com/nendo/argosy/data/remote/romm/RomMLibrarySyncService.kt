@@ -98,11 +98,13 @@ class RomMLibrarySyncService @Inject constructor(
     private val siblingConfigCarryOver: SiblingConfigCarryOver,
     private val siblingGroupRepository: com.nendo.argosy.data.repository.SiblingGroupRepository,
     private val variantFileCleanup: com.nendo.argosy.data.emulator.VariantFileCleanup,
-    private val gameArtDao: com.nendo.argosy.data.local.dao.GameArtDao
+    private val gameArtDao: com.nendo.argosy.data.local.dao.GameArtDao,
+    private val gameScreenshotDao: com.nendo.argosy.data.local.dao.GameScreenshotDao
 ) {
     private val api: RomMApi? get() = connectionManager.getApi()
     private val syncMutex = Mutex()
     private var boxArtCacheEnabledForSync = true
+    private var screenshotCacheEnabledForSync = false
     private var decodedImageCacheDirty = false
 
     private val _syncProgress = MutableStateFlow(SyncProgress())
@@ -161,6 +163,7 @@ class RomMLibrarySyncService @Inject constructor(
         val prefs = userPreferencesRepository.preferences.first()
         val filters = prefs.syncFilters
         boxArtCacheEnabledForSync = prefs.boxArtCacheEnabled
+        screenshotCacheEnabledForSync = prefs.syncScreenshotsEnabled
         val scope = resolveSyncScope(currentApi)
         val syncStartedAt = Instant.now()
         val queryFrom = since.minus(CHANGES_OVERLAP)
@@ -292,7 +295,9 @@ class RomMLibrarySyncService @Inject constructor(
                 is RomMResult.Error -> return@withContext fetched
             }
             syncMutex.withLock {
-                boxArtCacheEnabledForSync = userPreferencesRepository.preferences.first().boxArtCacheEnabled
+                val prefs = userPreferencesRepository.preferences.first()
+                boxArtCacheEnabledForSync = prefs.boxArtCacheEnabled
+                screenshotCacheEnabledForSync = prefs.syncScreenshotsEnabled
                 try {
                     if (!ensurePlatformRow(currentApi, rom.platformId)) {
                         return@withLock RomMResult.Error("Platform ${rom.platformId} not found on the server")
@@ -335,6 +340,7 @@ class RomMLibrarySyncService @Inject constructor(
         val prefs = userPreferencesRepository.preferences.first()
         val filters = prefs.syncFilters
         boxArtCacheEnabledForSync = prefs.boxArtCacheEnabled
+        screenshotCacheEnabledForSync = prefs.syncScreenshotsEnabled
         val scope = resolveSyncScope(currentApi)
 
         _syncProgress.update {
@@ -576,6 +582,7 @@ class RomMLibrarySyncService @Inject constructor(
         val prefs = userPreferencesRepository.preferences.first()
         val filters = prefs.syncFilters
         boxArtCacheEnabledForSync = prefs.boxArtCacheEnabled
+        screenshotCacheEnabledForSync = prefs.syncScreenshotsEnabled
         val scope = resolveSyncScope(currentApi)
 
         _syncProgress.value = SyncProgress(isSyncing = true)
@@ -1185,7 +1192,6 @@ class RomMLibrarySyncService @Inject constructor(
                 localDataSource?.localPath != null -> GameSource.ROMM_SYNCED
                 else -> GameSource.ROMM_REMOTE
             },
-            screenshotPaths = screenshotUrls.joinToString(","),
             userRating = localDataSource?.userRating ?: 0,
             userDifficulty = localDataSource?.userDifficulty ?: 0,
             completion = localDataSource?.completion ?: 0,
@@ -1230,6 +1236,10 @@ class RomMLibrarySyncService @Inject constructor(
         if (savedGame != null) {
             if (contentChanged) imageCacheManager.forgetCachedArt(savedGame.id)
             writeArtSources(savedGame.id, rom, artSources)
+            val screenshots = gameScreenshotDao.replaceSources(savedGame.id, screenshotUrls)
+            if (screenshotCacheEnabledForSync && screenshots.any { !it.isCachedFromSource }) {
+                imageCacheManager.queueScreenshotCache(savedGame.id, rom.id, rom.name)
+            }
             applyRomUserProperties(savedGame.id, rom, scope)
             syncGameFiles(savedGame.id, rom, platformSlug)
             if (rom.isFolderMultiDisc) {

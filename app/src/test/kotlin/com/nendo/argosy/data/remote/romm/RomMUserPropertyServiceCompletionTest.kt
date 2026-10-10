@@ -54,7 +54,8 @@ class RomMUserPropertyServiceCompletionTest {
             gameFileSync = mockk(relaxed = true),
             gameFileDao = mockk(relaxed = true),
             siblingGroupRepository = mockk(relaxed = true),
-            gameArtDao = mockk(relaxed = true)
+            gameArtDao = mockk(relaxed = true),
+            gameScreenshotDao = mockk(relaxed = true)
         )
 
     @Test

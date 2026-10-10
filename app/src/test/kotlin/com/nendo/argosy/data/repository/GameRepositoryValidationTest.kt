@@ -71,7 +71,8 @@ class GameRepositoryValidationTest {
             fileAccessLayer = fal,
             volumeHealth = volumeHealth,
             attributionRepository = mockk(relaxed = true),
-            gameArtDao = mockk(relaxed = true)
+            gameArtDao = mockk(relaxed = true),
+            gameScreenshotDao = mockk(relaxed = true)
         )
     }
 

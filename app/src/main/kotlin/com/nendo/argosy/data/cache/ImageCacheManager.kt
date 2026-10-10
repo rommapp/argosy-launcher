@@ -16,7 +16,7 @@ import com.nendo.argosy.data.storage.StorageVolumeHealth
 import com.nendo.argosy.data.storage.VolumeProbe
 import com.nendo.argosy.data.local.dao.GameArtDao
 import com.nendo.argosy.data.local.dao.GameDao
-import com.nendo.argosy.data.local.dao.PendingArt
+import com.nendo.argosy.data.local.dao.GameScreenshotDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.dao.clearCached
 import com.nendo.argosy.data.local.dao.clearCachedPathsChunked
@@ -100,7 +100,6 @@ data class ImageCacheProgress(
 data class ScreenshotCacheRequest(
     val gameId: Long,
     val rommId: Long,
-    val screenshotUrls: List<String>,
     val gameTitle: String = ""
 )
 
@@ -133,6 +132,9 @@ internal fun artUrlHash(url: String): String {
 internal fun isCachedFileFrom(cachedPath: String, sourceUrl: String): Boolean =
     File(cachedPath).nameWithoutExtension.endsWith("_${artUrlHash(sourceUrl)}")
 
+internal fun canBackfillCachedFromUrl(cachedPath: String?, cachedFromUrl: String?, sourceUrl: String): Boolean =
+    cachedPath != null && cachedFromUrl == null && isCachedFileFrom(cachedPath, sourceUrl)
+
 internal enum class CachedArtDecision { KEEP_AND_RENAME, REPLACE, SKIP, DROP }
 
 internal fun cachedArtDecision(
@@ -153,6 +155,7 @@ class ImageCacheManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val gameDao: GameDao,
     private val gameArtDao: GameArtDao,
+    private val gameScreenshotDao: GameScreenshotDao,
     private val platformDao: PlatformDao,
     private val achievementDao: AchievementDao,
     private val volumeHealth: StorageVolumeHealth,
@@ -607,7 +610,7 @@ class ImageCacheManager @Inject constructor(
             }
         }
         gameArtDao.clearCachedForPlatform(platformSlug)
-        gameDao.clearCachedScreenshotsForPlatform(platformSlug)
+        gameScreenshotDao.clearCachedForPlatform(platformSlug)
         clearDecodedImageCache()
         reclaimed
     }
@@ -661,6 +664,7 @@ class ImageCacheManager @Inject constructor(
 
     suspend fun forgetCachedArt(gameId: Long) {
         ArtSlot.entries.forEach { forgetCachedArt(gameId, it) }
+        gameScreenshotDao.clearCachedForGame(gameId)
     }
 
     suspend fun forgetCachedArt(gameId: Long, slot: ArtSlot) {
@@ -801,14 +805,6 @@ class ImageCacheManager @Inject constructor(
     private suspend fun updateDatabasePaths(oldBasePath: String, newBasePath: String) {
         var updated = 0
 
-        gameDao.getCachedScreenshotInfo().forEach { info ->
-            val paths = info.cachedScreenshotPaths ?: return@forEach
-            if (paths.contains(oldBasePath)) {
-                gameDao.updateCachedScreenshotPaths(info.id, paths.replace(oldBasePath, newBasePath))
-                updated++
-            }
-        }
-
         updated += relocateArtPaths { path ->
             if (path.startsWith(oldBasePath)) path.replace(oldBasePath, newBasePath) else path
         }
@@ -843,6 +839,14 @@ class ImageCacheManager @Inject constructor(
                 }
             }
         }
+        gameScreenshotDao.getCached().forEach { row ->
+            val old = row.cachedPath ?: return@forEach
+            val moved = relocate(old)
+            if (moved != old) {
+                gameScreenshotDao.relocateCachedPath(row.gameId, row.position, old, moved)
+                updated++
+            }
+        }
         return updated
     }
 
@@ -859,7 +863,9 @@ class ImageCacheManager @Inject constructor(
             val pending = gameArtDao.getPending()
                 .filterNot { missingArt.isKnownMissing(it.sourceUrl) }
                 .filter { includeBoxFaces || it.slot !in BOX_FACE_SLOT_NAMES }
-            val (backfill, stale) = pending.partition { it.canBackfillCachedFromUrl() }
+            val (backfill, stale) = pending.partition {
+                canBackfillCachedFromUrl(it.cachedPath, it.cachedFromUrl, it.sourceUrl)
+            }
             if (backfill.isNotEmpty()) gameArtDao.backfillCachedFromUrls(backfill)
             stale.forEach { art ->
                 val slot = ArtSlot.entries.firstOrNull { it.name == art.slot } ?: return@forEach
@@ -875,11 +881,6 @@ class ImageCacheManager @Inject constructor(
                 )
             }
         }
-    }
-
-    private fun PendingArt.canBackfillCachedFromUrl(): Boolean {
-        val path = cachedPath ?: return false
-        return cachedFromUrl == null && isCachedFileFrom(path, sourceUrl)
     }
 
     /**
@@ -902,7 +903,7 @@ class ImageCacheManager @Inject constructor(
         val cachedPath = row?.cachedPath?.takeUnless { volumeHealth.newProbe().isGenuinelyAbsent(it) }
         if (cachedPath == null && row?.cachedPath != null) gameArtDao.clearCached(gameId, slot)
         if (cachedPath != null && cachedFrom == source) return
-        if (cachedPath != null && cachedFrom == null && isCachedFileFrom(cachedPath, source)) {
+        if (cachedPath != null && canBackfillCachedFromUrl(cachedPath, cachedFrom, source)) {
             gameArtDao.backfillCachedFromUrl(gameId, slot.name, cachedPath, source)
             return
         }
@@ -951,67 +952,75 @@ class ImageCacheManager @Inject constructor(
         }
     }
 
-    fun queueScreenshotCache(gameId: Long, rommId: Long, screenshotUrls: List<String>, gameTitle: String) {
+    fun queueScreenshotCache(gameId: Long, rommId: Long, gameTitle: String) {
         scope.launch {
-            screenshotQueue.send(ScreenshotCacheRequest(gameId, rommId, screenshotUrls, gameTitle))
+            screenshotQueue.send(ScreenshotCacheRequest(gameId, rommId, gameTitle))
             startScreenshotProcessingIfNeeded()
         }
     }
 
-    fun queueScreenshotCacheByGameId(gameId: Long, screenshotUrls: List<String>) {
+    /**
+     * Caches every screenshot row of [gameId] not yet cached from its source url. When the game
+     * has no cached background, the second cached screenshot, or the only one, becomes it.
+     */
+    fun queueScreenshotCacheByGameId(gameId: Long) {
         scope.launch {
-            val cachedPaths = mutableListOf<String>()
-            val slug = resolveGamePlatformSlug(gameId)
-
-            screenshotUrls.forEachIndexed { index, url ->
-                val fileName = "ss_g${gameId}_${index}_${url.md5Hash()}.jpg"
-                val cachedFile = File(platformDir(slug, "screenshots"), fileName)
-
-                if (cachedFile.exists()) {
-                    if (isValidImageFile(cachedFile)) {
-                        cachedPaths.add(cachedFile.absolutePath)
-                        return@forEachIndexed
-                    } else {
-                        cachedFile.delete()
-                        Log.w(TAG, "Deleted invalid cached screenshot: ${cachedFile.name}")
-                    }
-                }
-
-                val bitmap = downloadAndResize(url, 960) ?: return@forEachIndexed
-
-                try {
-                    FileOutputStream(cachedFile).use { out ->
-                        bitmap.compress(Bitmap.CompressFormat.JPEG, 80, out)
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to write screenshot cache for gameId $gameId: ${e.message}", e)
-                    cachedFile.delete()
-                    return@forEachIndexed
-                } finally {
-                    bitmap.recycle()
-                }
-
-                if (!isValidImageFile(cachedFile)) {
-                    cachedFile.delete()
-                    Log.w(TAG, "Deleted newly cached invalid screenshot: ${cachedFile.name}")
-                    return@forEachIndexed
-                }
-
-                Log.d(TAG, "Cached screenshot $index for gameId $gameId: ${cachedFile.length() / 1024}KB")
-                cachedPaths.add(cachedFile.absolutePath)
+            val cachedPaths = cacheScreenshotRows(gameId, "ss_g$gameId", maxWidth = 960, quality = 80)
+            if (cachedPaths.isEmpty()) return@launch
+            val background = gameArtDao.get(gameId, ArtSlot.BACKGROUND.name)
+            if (background?.cachedPath == null) {
+                val backgroundPath = cachedPaths.getOrNull(1) ?: cachedPaths.first()
+                gameArtDao.setCached(gameId, ArtSlot.BACKGROUND, backgroundPath, null)
+                Log.d(TAG, "Set screenshot ${if (cachedPaths.size > 1) "2" else "1"} as background for gameId $gameId")
             }
+        }
+    }
 
-            if (cachedPaths.isNotEmpty()) {
-                gameDao.updateCachedScreenshotPaths(gameId, cachedPaths.joinToString(","))
-
-                val background = gameArtDao.get(gameId, ArtSlot.BACKGROUND.name)
-                if (background?.cachedPath == null) {
-                    val backgroundPath = cachedPaths.getOrNull(1) ?: cachedPaths.first()
-                    gameArtDao.setCached(gameId, ArtSlot.BACKGROUND, backgroundPath, null)
-                    Log.d(TAG, "Set screenshot ${if (cachedPaths.size > 1) "2" else "1"} as background for gameId $gameId")
+    private suspend fun cacheScreenshotRows(gameId: Long, filePrefix: String, maxWidth: Int, quality: Int): List<String> {
+        val dir = platformDir(resolveGamePlatformSlug(gameId), "screenshots")
+        return gameScreenshotDao.getForGame(gameId).mapNotNull { row ->
+            val current = row.cachedPath
+            when {
+                current != null && row.cachedFromUrl == row.sourceUrl -> current
+                current != null && canBackfillCachedFromUrl(current, row.cachedFromUrl, row.sourceUrl) -> {
+                    gameScreenshotDao.backfillCachedFromUrl(gameId, row.position, current, row.sourceUrl)
+                    current
+                }
+                else -> {
+                    val cachedFile = File(dir, "${filePrefix}_${row.position}_${row.sourceUrl.md5Hash()}.jpg")
+                    if (!writeScreenshotFile(cachedFile, row.sourceUrl, maxWidth, quality)) return@mapNotNull null
+                    gameScreenshotDao.setCached(gameId, row.position, cachedFile.absolutePath, row.sourceUrl)
+                    cachedFile.absolutePath
                 }
             }
         }
+    }
+
+    private fun writeScreenshotFile(cachedFile: File, url: String, maxWidth: Int, quality: Int): Boolean {
+        if (cachedFile.exists()) {
+            if (isValidImageFile(cachedFile)) return true
+            cachedFile.delete()
+            Log.w(TAG, "Deleted invalid cached screenshot: ${cachedFile.name}")
+        }
+        val bitmap = downloadAndResize(url, maxWidth) ?: return false
+        try {
+            FileOutputStream(cachedFile).use { out ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, quality, out)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to write screenshot cache ${cachedFile.name}: ${e.message}", e)
+            cachedFile.delete()
+            return false
+        } finally {
+            bitmap.recycle()
+        }
+        if (!isValidImageFile(cachedFile)) {
+            cachedFile.delete()
+            Log.w(TAG, "Deleted newly cached invalid screenshot: ${cachedFile.name}")
+            return false
+        }
+        Log.d(TAG, "Cached screenshot ${cachedFile.name}: ${cachedFile.length() / 1024}KB")
+        return true
     }
 
     suspend fun cacheSingleScreenshot(gameId: Long, url: String, index: Int): String? {
@@ -1019,17 +1028,16 @@ class ImageCacheManager @Inject constructor(
         val fileName = "ss_g${gameId}_${index}_${url.md5Hash()}.jpg"
         val cachedFile = File(platformDir(slug, "screenshots"), fileName)
 
-        if (cachedFile.exists() && isValidImageFile(cachedFile)) {
-            return cachedFile.absolutePath
+        if (!cachedFile.exists() || !isValidImageFile(cachedFile)) {
+            val bitmap = downloadAndResize(url, 480) ?: return null
+            FileOutputStream(cachedFile).use { out ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 75, out)
+            }
+            bitmap.recycle()
+            if (!isValidImageFile(cachedFile)) return null
         }
-
-        val bitmap = downloadAndResize(url, 480) ?: return null
-        FileOutputStream(cachedFile).use { out ->
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 75, out)
-        }
-        bitmap.recycle()
-
-        return if (isValidImageFile(cachedFile)) cachedFile.absolutePath else null
+        gameScreenshotDao.setCached(gameId, index, cachedFile.absolutePath, url)
+        return cachedFile.absolutePath
     }
 
     private fun startScreenshotProcessingIfNeeded() {
@@ -1066,8 +1074,8 @@ class ImageCacheManager @Inject constructor(
     }
 
     private suspend fun updateScreenshotProgressFromDb(isProcessing: Boolean) {
-        val total = gameDao.countGamesWithScreenshots()
-        val cached = gameDao.countGamesWithCachedScreenshots()
+        val total = gameScreenshotDao.countWithSource()
+        val cached = gameScreenshotDao.countCached()
         _screenshotProgress.value = _screenshotProgress.value.copy(
             isProcessing = isProcessing,
             cachedCount = cached,
@@ -1076,43 +1084,7 @@ class ImageCacheManager @Inject constructor(
     }
 
     private suspend fun processScreenshotRequest(request: ScreenshotCacheRequest) {
-        val cachedPaths = mutableListOf<String>()
-        val slug = resolveRommPlatformSlug(request.rommId)
-
-        request.screenshotUrls.forEachIndexed { index, url ->
-            val fileName = "ss_${request.rommId}_${index}_${url.md5Hash()}.jpg"
-            val cachedFile = File(platformDir(slug, "screenshots"), fileName)
-
-            if (cachedFile.exists()) {
-                if (isValidImageFile(cachedFile)) {
-                    cachedPaths.add(cachedFile.absolutePath)
-                    return@forEachIndexed
-                } else {
-                    cachedFile.delete()
-                    Log.w(TAG, "Deleted invalid cached screenshot: ${cachedFile.name}")
-                }
-            }
-
-            val bitmap = downloadAndResize(url, 480) ?: return@forEachIndexed
-
-            FileOutputStream(cachedFile).use { out ->
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 75, out)
-            }
-            bitmap.recycle()
-
-            if (!isValidImageFile(cachedFile)) {
-                cachedFile.delete()
-                Log.w(TAG, "Deleted newly cached invalid screenshot: ${cachedFile.name}")
-                return@forEachIndexed
-            }
-
-            Log.d(TAG, "Cached screenshot $index for rommId ${request.rommId}: ${cachedFile.length() / 1024}KB")
-            cachedPaths.add(cachedFile.absolutePath)
-        }
-
-        if (cachedPaths.isNotEmpty()) {
-            gameDao.updateCachedScreenshotPaths(request.gameId, cachedPaths.joinToString(","))
-        }
+        cacheScreenshotRows(request.gameId, "ss_${request.rommId}", maxWidth = 480, quality = 75)
     }
 
     suspend fun userScreenshotTargetFile(rommId: Long, screenshotId: Long, version: String): File {
@@ -1126,20 +1098,25 @@ class ImageCacheManager @Inject constructor(
         }
     }
 
+    /**
+     * Queues every RomM game holding a screenshot whose cached file does not come from its source
+     * url. Rows cached before `cachedFromUrl` existed are matched by file name first and only
+     * queued when the name does not carry the source url's hash.
+     */
     fun resumePendingScreenshotCache() {
         scope.launch {
-            val uncached = gameDao.getGamesWithUncachedScreenshots()
-            if (uncached.isEmpty()) return@launch
-
-            Log.d(TAG, "Resuming cache for ${uncached.size} games with uncached screenshots")
-            uncached.forEach { game ->
-                val urls = game.screenshotPaths?.split(",") ?: return@forEach
-                val rommId = game.rommId ?: return@forEach
-                queueScreenshotCache(game.id, rommId, urls, game.title)
+            val (backfill, stale) = gameScreenshotDao.getPending().partition {
+                canBackfillCachedFromUrl(it.cachedPath, it.cachedFromUrl, it.sourceUrl)
+            }
+            if (backfill.isNotEmpty()) gameScreenshotDao.backfillCachedFromUrls(backfill)
+            val queued = stale.distinctBy { it.gameId }.mapNotNull { row ->
+                row.rommId?.let { rommId -> queueScreenshotCache(row.gameId, rommId, row.title) }
+            }
+            if (backfill.isNotEmpty() || queued.isNotEmpty()) {
+                Log.i(TAG, "Pending screenshots: ${backfill.size} matched by name, ${queued.size} games queued")
             }
         }
     }
-
     fun queuePlatformLogoCache(platformId: Long, logoUrl: String) {
         scope.launch {
             logoQueue.send(PlatformLogoCacheRequest(platformId, logoUrl))
@@ -2114,9 +2091,10 @@ class ImageCacheManager @Inject constructor(
         }
 
         withContext(Dispatchers.IO) {
+            val screenshotPaths = gameScreenshotDao.getCached().mapNotNull { it.cachedPath }
             val plan = planArtSweep(
                 listedFiles = listed.filterNot { it.path in invalid },
-                cachedPaths = gameArtDao.getAllCachedPaths(),
+                cachedPaths = gameArtDao.getAllCachedPaths() + screenshotPaths,
                 overridePaths = gameArtDao.getAllOverridePaths(),
                 recentCutoff = sweepStartedAt - SWEEP_RECENT_FILE_GRACE_MS
             )
@@ -2124,37 +2102,15 @@ class ImageCacheManager @Inject constructor(
                 if (File(path).delete()) deleted++
             }
             val goneCached = plan.missingCachedPaths.filter { shouldClearMissingPath(it, probe) }
-            if (goneCached.isNotEmpty()) gameArtDao.clearCachedPathsChunked(goneCached)
+            if (goneCached.isNotEmpty()) {
+                gameArtDao.clearCachedPathsChunked(goneCached)
+                gameScreenshotDao.clearCachedPathsChunked(goneCached)
+            }
             val goneOverrides = plan.missingOverridePaths.filter { shouldClearMissingPath(it, probe) }
             goneOverrides.chunked(ART_PATH_CHUNK).forEach { gameArtDao.clearOverridePaths(it) }
             cleared += goneCached.size + goneOverrides.size
             if (plan.orphanFiles.isNotEmpty()) {
                 Log.i(TAG, "Art sweep removed ${plan.orphanFiles.size} files no game references")
-            }
-        }
-
-        val screenshotInfos = withContext(Dispatchers.IO) { gameDao.getCachedScreenshotInfo() }
-        val totalGames = screenshotInfos.size
-        onProgress?.invoke("Validating $totalGames game paths...", 0, totalGames)
-
-        withContext(Dispatchers.IO) {
-            screenshotInfos.forEachIndexed { index, info ->
-                val stored = info.cachedScreenshotPaths
-                if (stored != null) {
-                    val paths = stored.split(",")
-                    val validPaths = paths.filter { path -> !shouldClearMissingPath(path, probe) }
-                    if (validPaths.size != paths.size) {
-                        if (validPaths.isEmpty()) {
-                            gameDao.clearCachedScreenshotPaths(info.id)
-                        } else {
-                            gameDao.updateCachedScreenshotPaths(info.id, validPaths.joinToString(","))
-                        }
-                        cleared += paths.size - validPaths.size
-                    }
-                }
-                if (index % 100 == 0) {
-                    onProgress?.invoke("Validating game paths...", index, totalGames)
-                }
             }
         }
 
@@ -2334,22 +2290,6 @@ class ImageCacheManager @Inject constructor(
     private suspend fun updateDatabasePathsAfterSharding() {
         val cachePath = cacheDir.absolutePath
         var updated = 0
-
-        gameDao.getCachedScreenshotInfo().forEach { info ->
-            val stored = info.cachedScreenshotPaths ?: return@forEach
-            if (!stored.contains(cachePath)) return@forEach
-            val paths = stored.split(",")
-            val newPaths = paths.map { path ->
-                if (path.startsWith(cachePath) && !File(path).exists()) {
-                    val dest = resolveShardedDestination(File(path).name)
-                    if (dest != null && dest.exists()) dest.absolutePath else path
-                } else path
-            }
-            if (newPaths != paths) {
-                gameDao.updateCachedScreenshotPaths(info.id, newPaths.joinToString(","))
-                updated++
-            }
-        }
 
         updated += relocateArtPaths { path ->
             if (path.startsWith(cachePath) && !File(path).exists()) {

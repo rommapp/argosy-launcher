@@ -134,7 +134,8 @@ class RomMLibrarySyncArtOverrideTest {
             siblingConfigCarryOver = mockk(relaxed = true),
             siblingGroupRepository = mockk(relaxed = true),
             variantFileCleanup = mockk(relaxed = true),
-            gameArtDao = gameArtDao
+            gameArtDao = gameArtDao,
+            gameScreenshotDao = mockk(relaxed = true)
         )
     }
 

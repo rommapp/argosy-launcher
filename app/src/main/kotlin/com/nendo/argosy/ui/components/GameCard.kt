@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -131,13 +130,18 @@ fun GameCard(
     val borderColor = MaterialTheme.colorScheme.primary
 
     val box3dImagePath = resolvedArt?.box3dPath ?: game.box3dPath
-    val spinePath = resolvedArt?.boxSpinePath ?: game.boxSpinePath
     val repairArt = com.nendo.argosy.ui.common.rememberArtRepair()
-    var failedRoutes by remember(useBoxArt, spinePath, box3dImagePath, effectiveCoverPath) {
+    var failedRoutes by remember(useBoxArt, box3dImagePath, effectiveCoverPath) {
         mutableStateOf(emptySet<BoxArtRoute>())
     }
-    val route = boxArtRoutes(useBoxArt, spinePath, box3dImagePath, effectiveCoverPath).firstWorking(failedRoutes)
-    val drawsAs3d = route == BoxArtRoute.SPINE_RENDER || route == BoxArtRoute.BOX_3D_IMAGE
+    val route = boxArtRoutes(
+        useBoxArt = useBoxArt,
+        spinePath = null,
+        box3dPath = box3dImagePath,
+        coverPath = effectiveCoverPath,
+        allowSpineRender = false
+    ).firstWorking(failedRoutes)
+    val drawsAs3d = route == BoxArtRoute.BOX_3D_IMAGE
 
     val spineActiveForBackground = !drawsAs3d && showPlatformBadge &&
         boxArtStyle.platformIndicatorStyle == com.nendo.argosy.data.preferences.PlatformIndicatorStyle.SPINE
@@ -296,20 +300,7 @@ fun GameCard(
 
         val coverBody: @Composable () -> Unit = {
             when (route) {
-                BoxArtRoute.SPINE_RENDER -> box3dBody {
-                    Box3dCover(
-                        frontPath = effectiveCoverPath,
-                        spinePath = spinePath.orEmpty(),
-                        isInteractive = false,
-                        modifier = Modifier.fillMaxHeight(),
-                        onUnavailable = {
-                            failedRoutes = failedRoutes + BoxArtRoute.SPINE_RENDER
-                            repairArt(game.id, ArtSlot.BOX_SPINE)
-                            repairArt(game.id, ArtSlot.COVER)
-                        }
-                    )
-                }
-                BoxArtRoute.BOX_3D_IMAGE -> box3dBody {
+                BoxArtRoute.SPINE_RENDER, BoxArtRoute.BOX_3D_IMAGE -> box3dBody {
                     AsyncImage(
                         model = rememberFileImageModel(box3dImagePath),
                         contentDescription = null,

@@ -177,6 +177,7 @@ class DisplayPreferencesRepository @Inject constructor(
         val COMPACT_FOOTER = booleanPreferencesKey("compact_footer")
         val LOCK_SCREEN_ART = booleanPreferencesKey("lock_screen_art")
         val LOCK_SCREEN_ART_APPLIED = booleanPreferencesKey("lock_screen_art_applied")
+        val LIVE_WALLPAPER_OFFERED = booleanPreferencesKey("live_wallpaper_offered")
         val GRIP_AUTO_CONTROLLERS = stringPreferencesKey("grip_auto_controllers")
         val GRIP_RESERVE_MODE = stringPreferencesKey("grip_reserve_mode")
         val BOX_ART_SHAPE = stringPreferencesKey("box_art_shape")
@@ -581,6 +582,13 @@ class DisplayPreferencesRepository @Inject constructor(
 
     suspend fun setLockScreenArtApplied(applied: Boolean) {
         dataStore.edit { it[Keys.LOCK_SCREEN_ART_APPLIED] = applied }
+    }
+
+    suspend fun isLiveWallpaperOffered(): Boolean =
+        dataStore.data.first()[Keys.LIVE_WALLPAPER_OFFERED] ?: false
+
+    suspend fun setLiveWallpaperOffered() {
+        dataStore.edit { it[Keys.LIVE_WALLPAPER_OFFERED] = true }
     }
 
     suspend fun setGripAutoControllers(

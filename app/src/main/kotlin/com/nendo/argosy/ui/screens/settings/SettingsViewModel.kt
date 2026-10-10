@@ -176,8 +176,12 @@ class SettingsViewModel @Inject constructor(
     suspend fun presentationSample(): com.nendo.argosy.ui.dualscreen.CompanionDetail? {
         val game = gameRepository.getRecentlyPlayed(limit = 1).firstOrNull() ?: return null
         val platformName = platformRepository.getById(game.platformId)?.getDisplayName()
-        return game.toHomeGameUi(downloadFileStatusRepository, gameRepository.getArt(game.id), platformDisplayName = platformName)
-            .toCompanionDetail()
+        return game.toHomeGameUi(
+            downloadFileStatusRepository,
+            gameRepository.getArt(game.id),
+            gameRepository.getScreenshots(game.id).firstOrNull()?.sourceUrl,
+            platformDisplayName = platformName
+        ).toCompanionDetail()
     }
 
     internal val _uiState = MutableStateFlow(SettingsUiState())

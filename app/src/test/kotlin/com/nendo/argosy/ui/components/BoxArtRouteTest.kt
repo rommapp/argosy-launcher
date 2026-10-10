@@ -67,6 +67,14 @@ class BoxArtRouteTest {
     }
 
     @Test
+    fun `where the spine render is not allowed the 3d image leads`() {
+        assertEquals(
+            listOf(BoxArtRoute.BOX_3D_IMAGE, BoxArtRoute.FLAT_COVER, BoxArtRoute.TEXT),
+            boxArtRoutes(useBoxArt = true, spine, box3d, cover, allowSpineRender = false)
+        )
+    }
+
+    @Test
     fun `a game with no art at all draws the title`() {
         assertEquals(listOf(BoxArtRoute.TEXT), boxArtRoutes(true, null, null, null))
         assertEquals(listOf(BoxArtRoute.TEXT), boxArtRoutes(true, null, "", ""))

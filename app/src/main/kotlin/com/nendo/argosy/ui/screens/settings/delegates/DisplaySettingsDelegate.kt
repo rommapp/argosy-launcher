@@ -108,19 +108,13 @@ class DisplaySettingsDelegate @Inject constructor(
     }
 
     suspend fun getFirstCachedScreenshot(gameId: Long): String? {
-        val paths = gameRepository.getCachedScreenshotPaths(gameId) ?: return null
-        val validPaths = paths.split(",").filter { it.startsWith("/") && java.io.File(it).exists() }
-        return when {
-            validPaths.size > 1 -> validPaths[1]
-            validPaths.isNotEmpty() -> validPaths[0]
-            else -> null
-        }
+        val validPaths = gameRepository.getScreenshots(gameId)
+            .mapNotNull { row -> row.cachedPath?.takeIf { it.startsWith("/") && java.io.File(it).exists() } }
+        return validPaths.getOrNull(1) ?: validPaths.firstOrNull()
     }
 
-    suspend fun getScreenshotUrls(gameId: Long): List<String> {
-        val raw = gameRepository.getScreenshotPaths(gameId) ?: return emptyList()
-        return raw.split(",").filter { it.isNotBlank() }
-    }
+    suspend fun getScreenshotUrls(gameId: Long): List<String> =
+        gameRepository.getScreenshots(gameId).map { it.sourceUrl }
 
     fun updateState(newState: DisplayState) {
         _state.value = newState

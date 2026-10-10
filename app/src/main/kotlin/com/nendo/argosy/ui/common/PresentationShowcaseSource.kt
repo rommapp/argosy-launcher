@@ -68,7 +68,11 @@ class PresentationShowcaseSource @Inject constructor(
     ): CompanionDetail {
         val platformName = platformRepository.getById(game.platformId)?.getDisplayName()
         val friends = game.igdbId?.let { friendsByIgdbId[it.toInt()] }.orEmpty()
-        return game.toHomeGameUi(downloadStatus, gameRepository.getArt(game.id), platformDisplayName = platformName)
-            .toCompanionDetail(friends)
+        return game.toHomeGameUi(
+            downloadStatus,
+            gameRepository.getArt(game.id),
+            gameRepository.getScreenshots(game.id).firstOrNull()?.sourceUrl,
+            platformDisplayName = platformName
+        ).toCompanionDetail(friends)
     }
 }

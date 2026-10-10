@@ -478,8 +478,7 @@ class DownloadDelegate @Inject constructor(
                             description = details.description ?: game.description,
                             developer = details.developer ?: game.developer,
                             genre = details.genre ?: game.genre,
-                            rating = details.ratingPercent ?: game.rating,
-                            screenshotPaths = details.screenshotUrls.takeIf { it.isNotEmpty() }?.joinToString(",") ?: game.screenshotPaths
+                            rating = details.ratingPercent ?: game.rating
                         )
                         gameRepository.update(updated)
 
@@ -490,7 +489,8 @@ class DownloadDelegate @Inject constructor(
                             artSourceRecorder.record(gameId, ArtSlot.BACKGROUND, listOf(url), game.title)
                         }
                         if (details.screenshotUrls.isNotEmpty()) {
-                            imageCacheManager.queueScreenshotCacheByGameId(gameId, details.screenshotUrls)
+                            gameRepository.replaceScreenshotSources(gameId, details.screenshotUrls)
+                            imageCacheManager.queueScreenshotCacheByGameId(gameId)
                         }
 
                         notificationManager.showSuccess(

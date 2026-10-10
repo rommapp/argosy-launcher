@@ -1357,14 +1357,27 @@ internal fun routeCyclePlatformContext(vm: SettingsViewModel, direction: Int) {
 
 internal fun routeLoadControllerPorts(vm: SettingsViewModel) {
     val platform = vm._uiState.value.builtinVideo.currentPlatformContext
-    val devices = platform?.let { CorePortDeviceCatalog.devicesFor(it.platformSlug) }.orEmpty()
-    if (platform == null || devices.size < 2) {
+    val clearPorts = {
         vm._uiState.update { it.copy(builtinControls = it.builtinControls.copy(controllerPorts = emptyList())) }
+    }
+    if (platform == null) {
+        clearPorts()
         return
     }
     vm.viewModelScope.launch {
-        val stored = ControllerTypeSelection.decode(vm.configureEmulatorUseCase.getControllerTypesForPlatform(platform.platformId))
-        val ports = (0 until CorePortDeviceCatalog.PORT_COUNT).map { port ->
+        val coreId = vm.builtinCoreResolver.resolveCoreId(null, platform.platformId, platform.platformSlug)
+        val portDevices = coreId?.let { CorePortDeviceCatalog.portDevices(it, platform.platformSlug) }.orEmpty()
+        if (coreId == null || portDevices.none { it.size > 1 }) {
+            clearPorts()
+            return@launch
+        }
+        val stored = ControllerTypeSelection.decode(
+            vm.configureEmulatorUseCase.getControllerTypesForPlatform(platform.platformId),
+            coreId,
+            ControllerTypeSelection.legacyApplies(platform.platformSlug)
+        )
+        val ports = portDevices.mapIndexedNotNull { port, devices ->
+            if (devices.size < 2) return@mapIndexedNotNull null
             ControllerPortChoiceUi(
                 port = port,
                 deviceIds = devices.map { it.id },
@@ -1393,9 +1406,16 @@ internal fun routeSelectControllerType(vm: SettingsViewModel, port: Int, index: 
         )
     }
     vm.viewModelScope.launch {
-        val stored = ControllerTypeSelection.decode(vm.configureEmulatorUseCase.getControllerTypesForPlatform(platform.platformId))
+        val coreId = vm.builtinCoreResolver.resolveCoreId(null, platform.platformId, platform.platformSlug)
+            ?: return@launch
+        val legacyApplies = ControllerTypeSelection.legacyApplies(platform.platformSlug)
+        val encoded = vm.configureEmulatorUseCase.getControllerTypesForPlatform(platform.platformId)
+        val stored = ControllerTypeSelection.decode(encoded, coreId, legacyApplies)
         val updated = if (index == 0) stored - port else stored + (port to deviceId)
-        vm.configureEmulatorUseCase.setControllerTypesForPlatform(platform.platformId, ControllerTypeSelection.encode(updated))
+        vm.configureEmulatorUseCase.setControllerTypesForPlatform(
+            platform.platformId,
+            ControllerTypeSelection.update(encoded, coreId, legacyApplies, updated)
+        )
     }
 }
 

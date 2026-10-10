@@ -724,7 +724,11 @@ object PlatformDefinitions {
         "fbneo" to ("FB Neo" to "FBNeo"),
         "fba" to ("FB Alpha" to "FBA"),
         "naomi2" to ("NAOMI 2" to "NAOMI 2"),
-        "hikaru" to ("Hikaru" to "Hikaru")
+        "hikaru" to ("Hikaru" to "Hikaru"),
+        "win3x" to ("Windows 3.x" to "Win 3.x"),
+        "win9x" to ("Windows 9x" to "Win 9x"),
+        "famicom" to ("Famicom" to "Famicom"),
+        "sfam" to ("Super Famicom" to "SFC")
     )
 
     fun getPlatformsForExtension(extension: String): List<PlatformDef> =

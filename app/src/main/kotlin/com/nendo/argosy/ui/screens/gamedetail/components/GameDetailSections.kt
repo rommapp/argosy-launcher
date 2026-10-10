@@ -484,11 +484,8 @@ fun ScreenshotsSection(
     val cacheManager = com.nendo.argosy.ui.common.LocalImageCacheManager.current
     LaunchedEffect(gameId, cacheEnabled, screenshots) {
         if (!cacheEnabled || cacheManager == null || gameId == 0L) return@LaunchedEffect
-        val missingRemotes = screenshots
-            .filter { it.cachedPath == null && it.remoteUrl.isNotBlank() }
-            .map { it.remoteUrl }
-        if (missingRemotes.isNotEmpty()) {
-            cacheManager.queueScreenshotCacheByGameId(gameId, missingRemotes)
+        if (screenshots.any { it.cachedPath == null }) {
+            cacheManager.queueScreenshotCacheByGameId(gameId)
         }
     }
 

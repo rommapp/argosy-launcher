@@ -14,11 +14,13 @@ import com.nendo.argosy.data.local.dao.GameArtDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.GameFileDao
+import com.nendo.argosy.data.local.dao.GameScreenshotDao
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.dao.PlatformShowcaseStats
 import com.nendo.argosy.data.local.dao.SearchCandidate
 import com.nendo.argosy.data.local.dao.UserRomsHiddenDao
 import com.nendo.argosy.data.local.dao.coverPathsForGamesChunked
+import com.nendo.argosy.data.local.dao.forGames
 import com.nendo.argosy.data.local.dao.getByIdsChunked
 import com.nendo.argosy.data.local.dao.resolved
 import com.nendo.argosy.data.local.dao.resolvedFor
@@ -26,6 +28,7 @@ import com.nendo.argosy.data.local.dao.statsForGamesChunked
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.GameFileEntity
 import com.nendo.argosy.data.local.entity.GameListItem
+import com.nendo.argosy.data.local.entity.GameScreenshotEntity
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.platform.platformRomRoots
 import com.nendo.argosy.data.model.FileOrigin
@@ -82,7 +85,8 @@ class GameRepository @Inject constructor(
     private val fileAccessLayer: com.nendo.argosy.data.storage.FileAccessLayer,
     private val volumeHealth: StorageVolumeHealth,
     private val attributionRepository: StorageAttributionRepository,
-    private val gameArtDao: GameArtDao
+    private val gameArtDao: GameArtDao,
+    private val gameScreenshotDao: GameScreenshotDao
 ) {
     private val defaultDownloadDir: File by lazy {
         File(context.getExternalFilesDir(null), "downloads")
@@ -1139,11 +1143,14 @@ class GameRepository @Inject constructor(
     ): List<GameListItem> =
         gameDao.getRecentlyPlayedOnPlatforms(platformSlugs, hiddenOwnerId(), limit)
 
-    suspend fun getCachedScreenshotPaths(gameId: Long): String? =
-        gameDao.getCachedScreenshotPaths(gameId)
+    suspend fun getScreenshots(gameId: Long): List<GameScreenshotEntity> =
+        gameScreenshotDao.getForGame(gameId)
 
-    suspend fun getScreenshotPaths(gameId: Long): String? =
-        gameDao.getScreenshotPaths(gameId)
+    suspend fun getScreenshots(gameIds: Collection<Long>): Map<Long, List<GameScreenshotEntity>> =
+        gameScreenshotDao.forGames(gameIds)
+
+    suspend fun replaceScreenshotSources(gameId: Long, urls: List<String>?) =
+        gameScreenshotDao.replaceSources(gameId, urls)
 
     suspend fun getByIgdbId(igdbId: Long): GameEntity? = gameDao.getByIgdbId(igdbId)
 

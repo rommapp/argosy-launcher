@@ -294,7 +294,8 @@ private fun DrawerDeviceStatus(isRommConnected: Boolean) {
         )
         SystemStatusBar(
             contentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-            scrim = false
+            scrim = false,
+            allowWrap = true
         )
     }
 }

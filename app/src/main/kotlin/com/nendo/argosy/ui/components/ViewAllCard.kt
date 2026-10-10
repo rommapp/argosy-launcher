@@ -1,7 +1,6 @@
 package com.nendo.argosy.ui.components
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -61,12 +60,15 @@ fun ViewAllCard(
     tapMode: CarouselTapMode = CarouselTapMode.CLICK,
     remainingCount: Int = 0,
     focusScale: Float = 1f,
-    scalePivotY: Float = 0.5f
+    scalePivotY: Float = 0.5f,
+    onScaleAnimationStateChanged: ((Boolean) -> Unit)? = null
 ) {
-    val scale by animateFloatAsState(
-        targetValue = if (isFocused) focusScale else 1f,
+    val scaleTarget = if (isFocused) focusScale else 1f
+    val scale by observedFocusScaleAsState(
+        targetValue = scaleTarget,
         animationSpec = spring(stiffness = VIEW_ALL_OUTLINE_SCALE_STIFFNESS),
-        label = "viewAllScale"
+        label = "viewAllScale",
+        onStateChanged = onScaleAnimationStateChanged
     )
     val tapModifier = when (tapMode) {
         CarouselTapMode.CLICK -> Modifier.clickableNoFocus(onClick = onClick)

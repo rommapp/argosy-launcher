@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -176,7 +177,7 @@ private fun QuickPanelHeader(title: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(Dimens.quickPanelHeaderHeight)
+            .heightIn(min = Dimens.quickPanelHeaderHeight)
             .padding(horizontal = Dimens.spacingMd),
         verticalAlignment = Alignment.CenterVertically
     ) {

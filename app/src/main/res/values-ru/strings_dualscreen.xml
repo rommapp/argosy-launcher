@@ -60,6 +60,7 @@
     <string name="dual_companion_app_bar_keyboard_description">Клавиатура</string>
     <string name="dual_companion_app_bar_swap_description">Поменять экраны местами</string>
     <string name="dual_companion_app_bar_focus_description">Направить ввод на экран</string>
+    <string name="dual_companion_app_bar_tools_description">Инструменты док-панели</string>
 
     <string name="dual_companion_drawer_title">Все приложения</string>
     <string name="dual_companion_drawer_pinned_description">Закреплено</string>

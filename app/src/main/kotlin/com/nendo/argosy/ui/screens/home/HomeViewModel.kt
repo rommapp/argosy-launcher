@@ -888,16 +888,10 @@ class HomeViewModel @Inject constructor(
     // --- Public API: Navigation ---
 
     private fun appBarSlotCount(): Int =
-        _uiState.value.homeApps.size + 1 + if (hasFocusPickerSlot()) 1 else 0
-
-    private fun hasFocusPickerSlot(): Boolean =
-        (DualScreenManagerHolder.instance?.focusableDisplays()?.size ?: 0) > 1
-
-    private fun focusPickerSlotIndex(): Int = _uiState.value.homeApps.size + 1
+        _uiState.value.homeApps.size + 1
 
     private fun appBarIsDrawn(): Boolean =
-        _uiState.value.homeApps.isNotEmpty() &&
-            DualScreenManagerHolder.instance?.presentationShowsHints?.value == true
+        DualScreenManagerHolder.instance?.presentationShowsHints?.value == true
 
     override fun focusAppBar(): Boolean {
         if (!appBarIsDrawn()) return false
@@ -906,7 +900,7 @@ class HomeViewModel @Inject constructor(
     }
 
     override fun releaseAppBar() {
-        _uiState.update { it.copy(appBarFocused = false) }
+        _uiState.update { it.copy(appBarFocused = false, appBarToolsOpen = false) }
     }
 
     override fun moveAppBarFocus(delta: Int) {
@@ -920,21 +914,29 @@ class HomeViewModel @Inject constructor(
             return
         }
         val state = _uiState.value
-        val dsm = DualScreenManagerHolder.instance
         when (val index = state.appBarIndex) {
             APP_BAR_DRAWER_INDEX -> openAppDrawer()
             in state.homeApps.indices -> launchTileApp(state.homeApps[index])
-            focusPickerSlotIndex() -> if (hasFocusPickerSlot()) {
-                if (dsm?.focusPickerOpen?.value == true) dsm.closeFocusPicker() else dsm?.openFocusPicker()
-            } else {
-                dsm?.toggleUpperKeyboard()
-            }
-            else -> dsm?.toggleUpperKeyboard()
+            else -> toggleAppBarTools()
         }
     }
 
+    fun toggleAppBarTools() {
+        _uiState.update {
+            it.copy(appBarToolsOpen = !it.appBarToolsOpen, appBarToolIndex = 1)
+        }
+    }
+
+    fun focusAppBarTool(index: Int) {
+        _uiState.update { it.copy(appBarToolIndex = index) }
+    }
+
+    fun dismissAppBarTools() {
+        _uiState.update { it.copy(appBarToolsOpen = false) }
+    }
+
     override fun nextRow() {
-        val result = navigationDelegate.nextRow(_uiState.value) ?: run {
+        val result = navigationDelegate.nextRow(_uiState.value, wrap = !appBarIsDrawn()) ?: run {
             focusAppBar()
             return
         }
@@ -2260,13 +2262,15 @@ class HomeViewModel @Inject constructor(
         isDefaultView: Boolean,
         onGameSelect: (Long) -> Unit,
         onNavigateToDefault: () -> Unit,
-        onDrawerToggle: () -> Unit
+        onDrawerToggle: () -> Unit,
+        onScrollOverflow: ((Int) -> Boolean)? = null
     ): InputHandler = HomeInputHandler(
         actions = this,
         isDefaultView = isDefaultView,
         onGameSelect = onGameSelect,
         onNavigateToDefault = onNavigateToDefault,
-        onDrawerToggle = onDrawerToggle
+        onDrawerToggle = onDrawerToggle,
+        onScrollOverflow = onScrollOverflow
     )
 
     // --- HomeInputActions Implementation ---

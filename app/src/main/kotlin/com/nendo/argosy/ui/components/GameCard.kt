@@ -604,17 +604,20 @@ fun GameCardWithNewBadge(
     onCoverLoaded: ((gameId: Long, bitmap: Bitmap) -> Unit)? = null,
     scaleOverride: Float? = null,
     alphaOverride: Float? = null,
-    useBoxArt: Boolean = false
+    useBoxArt: Boolean = false,
+    onScaleAnimationStateChanged: ((Boolean) -> Unit)? = null
 ) {
     val showNewBadge = game.isNew && !downloadIndicator.isActive
-    val badgeWidthDp = 44.dp
-    val badgeHeightDp = 30.dp
+    val badgeWidthDp = ComponentDefaults.Carousel.newBadgeWidthDp.dp
+    val badgeHeightDp = ComponentDefaults.Carousel.newBadgeHeightDp.dp
 
 
-    val scale by animateFloatAsState(
-        targetValue = scaleOverride ?: if (isFocused) focusScale else ComponentDefaults.Focus.scaleDefault,
+    val scaleTarget = scaleOverride ?: if (isFocused) focusScale else ComponentDefaults.Focus.scaleDefault
+    val scale by observedFocusScaleAsState(
+        targetValue = scaleTarget,
         animationSpec = Motion.focusSpring,
-        label = "wrapperScale"
+        label = "wrapperScale",
+        onStateChanged = onScaleAnimationStateChanged
     )
 
     val alpha by animateFloatAsState(
@@ -644,7 +647,7 @@ fun GameCardWithNewBadge(
                 NewBadge(
                     width = badgeWidthDp,
                     height = badgeHeightDp,
-                    rotation = 15f
+                    rotation = ComponentDefaults.Carousel.newBadgeRotationDegrees.toFloat()
                 )
             }
         },

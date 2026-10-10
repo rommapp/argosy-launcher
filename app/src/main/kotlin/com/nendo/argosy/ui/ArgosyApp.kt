@@ -9,6 +9,7 @@ import androidx.compose.ui.res.stringResource
 import com.nendo.argosy.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
@@ -55,6 +56,9 @@ import com.nendo.argosy.ui.components.revealOnBottomEdgeTouch
 import com.nendo.argosy.ui.components.FooterHost
 import com.nendo.argosy.ui.components.FooterHostController
 import com.nendo.argosy.ui.components.LocalFooterHost
+import com.nendo.argosy.ui.components.LocalFrostedBackdrop
+import com.nendo.argosy.ui.components.rememberFrostedBackdrop
+import com.nendo.argosy.ui.components.LocalTransientHomeStatusVisible
 import com.nendo.argosy.data.sync.ConflictResolution
 import com.nendo.argosy.ui.components.MainDrawer
 import com.nendo.argosy.ui.components.QuickSettingsInputRouter
@@ -1067,6 +1071,11 @@ fun ArgosyApp(
         }
     }
 
+    val frostedBackdrop = rememberFrostedBackdrop()
+    val hasCapturingOverlay = inputDispatcher.hasCapturingOverlay()
+    LaunchedEffect(hasCapturingOverlay) {
+        if (hasCapturingOverlay) viewModel.hideNavBar()
+    }
     CompositionLocalProvider(
         LocalInputDispatcher provides inputDispatcher,
         com.nendo.argosy.ui.input.LocalModalPresence provides inputDispatcher,
@@ -1075,6 +1084,7 @@ fun ArgosyApp(
         LocalXYIconsSwapped provides uiState.xyIconsSwapped,
         LocalSwapStartSelect provides uiState.swapStartSelect,
         LocalFooterHost provides footerHostController,
+        LocalFrostedBackdrop provides frostedBackdrop,
         com.nendo.argosy.ui.common.LocalImageCacheManager provides viewModel.imageCacheManager,
         com.nendo.argosy.ui.components.LocalArtworkScraping provides isScrapingArtwork,
         com.nendo.argosy.ui.components.LocalStatusBarItems provides
@@ -1112,11 +1122,36 @@ fun ArgosyApp(
                 context.getSystemService(android.view.inputmethod.InputMethodManager::class.java)
             }
 
+            val onRingDestination = navRingState.destinations.any { NavRing.routeMatches(it.route, currentRoute) }
+            val homeAppBarOwnsBottom = currentRoute == Screen.Home.route &&
+                presentationShowsHints
+            val appPromptShowing = saveConflictInfo != null ||
+                backgroundConflictInfo != null ||
+                coreCrashPrompt != null ||
+                netplayInvitePrompt != null ||
+                netplayJoinModalActive ||
+                steamDownloadPrompt != null
+            val navBarAllowed = onRingDestination &&
+                !hasCapturingOverlay &&
+                !homeAppBarOwnsBottom &&
+                !uiState.isFirstRun &&
+                !isDrawerOpen &&
+                !isQuickSettingsOpen &&
+                !quickMenuState.isVisible &&
+                !appPromptShowing
+            val currentNavBarAllowed by rememberUpdatedState(navBarAllowed)
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.background)
                     .padding(bottom = bottomReserved)
+                    .revealOnBottomEdgeTouch(
+                        edgeHeight = Dimens.footerHeight,
+                        onOutsideEdgeTouch = viewModel::hideNavBar
+                    ) {
+                        if (currentNavBarAllowed) viewModel.showNavBar()
+                    }
                     .onFocusChanged { keySinkFocused = it.isFocused }
                     .focusRequester(rootFocusRequester)
                     .focusable()
@@ -1198,48 +1233,33 @@ fun ArgosyApp(
                 )
                 val contentBlur = maxOf(drawerBlur, quickMenuBlur)
 
-                val onRingDestination = navRingState.destinations.any { NavRing.routeMatches(it.route, currentRoute) }
-                val homeAppBarOwnsBottom = currentRoute == Screen.Home.route &&
-                    presentationShowsHints && navRingState.homeAppBarConfigured
-                val appPromptShowing = saveConflictInfo != null ||
-                    backgroundConflictInfo != null ||
-                    coreCrashPrompt != null ||
-                    netplayInvitePrompt != null ||
-                    netplayJoinModalActive ||
-                    steamDownloadPrompt != null
-                val navBarAllowed = onRingDestination &&
-                    !homeAppBarOwnsBottom &&
-                    !uiState.isFirstRun &&
-                    !isDrawerOpen &&
-                    !isQuickSettingsOpen &&
-                    !quickMenuState.isVisible &&
-                    !appPromptShowing
-                val currentNavBarAllowed by rememberUpdatedState(navBarAllowed)
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .revealOnBottomEdgeTouch(Dimens.footerHeight) {
-                            if (currentNavBarAllowed) viewModel.showNavBar()
-                        }
+                BoxWithConstraints(
+                    modifier = Modifier.fillMaxSize()
                 ) {
-                    NavGraph(
-                        navController = navController,
-                        startDestination = startDestination,
-                        onDrawerToggle = { if (isDrawerOpen) closeDrawer() else openDrawer() },
-                        argosyViewModel = viewModel,
-                        onPlayMedia = { itemId, startOver ->
-                            dsm?.playMediaItem(itemId, startOver)
-                                ?: PlayerActivity.start(
-                                    context = context,
-                                    args = PlayerArgs(
-                                        itemId = itemId,
-                                        startPositionMs = if (startOver) 0L else -1L
+                    CompositionLocalProvider(
+                        LocalTransientHomeStatusVisible provides (
+                            currentRoute == Screen.Home.route && maxWidth <= maxHeight &&
+                                !presentationShowsHints && navBarAllowed && navRingState.isBarVisible
+                            )
+                    ) {
+                        NavGraph(
+                            navController = navController,
+                            startDestination = startDestination,
+                            onDrawerToggle = { if (isDrawerOpen) closeDrawer() else openDrawer() },
+                            argosyViewModel = viewModel,
+                            onPlayMedia = { itemId, startOver ->
+                                dsm?.playMediaItem(itemId, startOver)
+                                    ?: PlayerActivity.start(
+                                        context = context,
+                                        args = PlayerArgs(
+                                            itemId = itemId,
+                                            startPositionMs = if (startOver) 0L else -1L
+                                        )
                                     )
-                                )
-                        },
-                        modifier = Modifier.blur(contentBlur)
-                    )
+                            },
+                            modifier = Modifier.blur(contentBlur)
+                        )
+                    }
 
                     FloatingNavBar(
                         visible = navBarAllowed && navRingState.isBarVisible,

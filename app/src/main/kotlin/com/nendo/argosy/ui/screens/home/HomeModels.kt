@@ -283,6 +283,8 @@ data class HomeUiState(
     val homeApps: List<String> = emptyList(),
     val appBarFocused: Boolean = false,
     val appBarIndex: Int = 0,
+    val appBarToolsOpen: Boolean = false,
+    val appBarToolIndex: Int = 1,
     val appBarMenu: AppBarLaunchMenu? = null,
     val appDrawer: AppDrawerState? = null,
     val platforms: List<HomePlatformUi> = emptyList(),

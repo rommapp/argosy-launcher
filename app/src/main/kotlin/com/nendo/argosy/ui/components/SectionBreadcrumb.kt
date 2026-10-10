@@ -1,16 +1,22 @@
 package com.nendo.argosy.ui.components
 
-import androidx.compose.foundation.background
+import android.graphics.Paint
+import android.graphics.Rect
+import android.graphics.Typeface
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -28,11 +34,27 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFontFamilyResolver
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontSynthesis
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.Dp
 import com.nendo.argosy.R
 import com.nendo.argosy.ui.icons.InputIcons
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.theme.LocalUiScale
+import com.nendo.argosy.ui.theme.generated.ComponentDefaults
+import com.nendo.argosy.ui.theme.generated.TypographyTokens
 import com.nendo.argosy.ui.util.clickableNoFocus
 
 /**
@@ -50,12 +72,65 @@ fun SectionBreadcrumb(
     onNext: () -> Unit,
     onSelect: (Int) -> Unit,
     fillAvailableWidth: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onPillWidthChanged: ((Dp) -> Unit)? = null
 ) {
-    val currentIdx = currentIndex.coerceAtLeast(0)
+    if (labels.isEmpty()) return
+    val currentIdx = currentIndex.coerceIn(labels.indices)
     val navIconTint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+    val previousDescription = stringResource(R.string.ui_section_breadcrumb_previous)
+    val nextDescription = stringResource(R.string.ui_section_breadcrumb_next)
+    val fadeWidth = Dimens.spacingMd
+    val uiScale = LocalUiScale.current.scale
+    val navigationMaxWidth = ComponentDefaults.FrostedSurface.navigationMaxWidthDp.dp * uiScale
+    val navigationSlotWidth = minimumTouchTarget * uiScale
+    val navigationHeight = frostedVisualChromeHeight
+    val selectedTextStyle = chromeTextStyle(
+        MaterialTheme.typography.titleMedium,
+        TypographyTokens.titleMedium,
+        ComponentDefaults.FrostedSurface.navigationSelectedFontSizeSp.sp
+    )
+    val inactiveTextStyle = chromeTextStyle(
+        MaterialTheme.typography.bodyMedium,
+        TypographyTokens.bodyMedium,
+        ComponentDefaults.FrostedSurface.navigationInactiveFontSizeSp.sp
+    )
+    val separatorTextStyle = chromeTextStyle(
+        MaterialTheme.typography.labelMedium,
+        TypographyTokens.labelMedium,
+        TypographyTokens.labelMedium.fontSize
+    )
+    val density = LocalDensity.current
+    val resolvedTypeface by LocalFontFamilyResolver.current.resolve(
+        fontFamily = selectedTextStyle.fontFamily,
+        fontWeight = selectedTextStyle.fontWeight ?: FontWeight.Normal,
+        fontStyle = selectedTextStyle.fontStyle ?: FontStyle.Normal,
+        fontSynthesis = selectedTextStyle.fontSynthesis ?: FontSynthesis.All
+    )
+    val triggerFontSizePx = with(density) { selectedTextStyle.fontSize.toPx() }
+    val triggerGlyphHeightPx = remember(resolvedTypeface, triggerFontSizePx) {
+        val typeface = resolvedTypeface as? Typeface
+        if (typeface == null) {
+            triggerFontSizePx
+        } else {
+            val bounds = Rect()
+            Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                this.typeface = typeface
+                textSize = triggerFontSizePx
+            }.getTextBounds("H", 0, 1, bounds)
+            bounds.height().toFloat().takeIf { it > 0f } ?: triggerFontSizePx
+        }
+    }
+    val triggerPaintedHeight = with(density) { triggerGlyphHeightPx.toDp() }
+    val triggerViewportScale = ComponentDefaults.FrostedSurface.navigationTriggerViewportToPaintedHeightRatio
+    val triggerIconModifier = Modifier
+        .size(triggerPaintedHeight)
+        .requiredSize(triggerPaintedHeight * triggerViewportScale)
 
-    Row(modifier = modifier) {
+    Row(
+        modifier = modifier.heightIn(min = minimumTouchTarget),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         Row(
             modifier = Modifier.weight(1f),
             verticalAlignment = Alignment.CenterVertically,
@@ -64,14 +139,17 @@ fun SectionBreadcrumb(
             Row(
                 modifier = Modifier
                     .clickableNoFocus(onClick = onPrevious)
-                    .padding(Dimens.spacingXs),
-                verticalAlignment = Alignment.CenterVertically
+                    .semantics { contentDescription = previousDescription }
+                    .sizeIn(minWidth = navigationSlotWidth, minHeight = navigationHeight)
+                    .padding(Dimens.spacingSm),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
             ) {
                 Icon(
                     painter = InputIcons.TriggerLeft,
-                    contentDescription = stringResource(R.string.ui_section_breadcrumb_previous),
+                    contentDescription = null,
                     tint = navIconTint,
-                    modifier = Modifier.size(Dimens.iconSm)
+                    modifier = triggerIconModifier
                 )
             }
 
@@ -130,60 +208,78 @@ fun SectionBreadcrumb(
                 }
             }
 
-            val fadeBrush = Brush.horizontalGradient(
-                0f to Color.Transparent,
-                0.15f to Color.Black,
-                0.85f to Color.Black,
-                1f to Color.Transparent
-            )
-
-            Box(
+            BoxWithConstraints(
                 modifier = Modifier
+                    .weight(1f, fill = false)
+                    .widthIn(max = navigationMaxWidth)
                     .then(
-                        if (fillAvailableWidth) Modifier.weight(1f)
-                        else Modifier.widthIn(max = Dimens.breadcrumbMaxWidth)
+                        if (fillAvailableWidth) Modifier.fillMaxWidth() else Modifier
                     )
-                    .background(
-                        MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
-                        RoundedCornerShape(Dimens.radiusMd)
-                    )
-                    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-                    .drawWithContent {
-                        drawContent()
-                        drawRect(
-                            brush = fadeBrush,
-                            blendMode = BlendMode.DstIn
-                        )
-                    }
-                    .padding(vertical = Dimens.spacingXs)
+                    .heightIn(min = navigationHeight)
+                    .onSizeChanged { onPillWidthChanged?.invoke(with(density) { it.width.toDp() }) }
+                    .frostedSurface(),
+                contentAlignment = Alignment.Center
             ) {
+                val itemMaxWidth = (maxWidth - fadeWidth * 2).coerceAtLeast(0.dp)
                 LazyRow(
+                    modifier = Modifier
+                        .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                        .drawWithContent {
+                            drawContent()
+                            val fade = fadeWidth.toPx().coerceAtMost(size.width / 2)
+                            drawRect(
+                                brush = Brush.horizontalGradient(
+                                    listOf(Color.Transparent, Color.Black),
+                                    startX = 0f,
+                                    endX = fade
+                                ),
+                                size = Size(fade, size.height),
+                                blendMode = BlendMode.DstIn
+                            )
+                            drawRect(
+                                brush = Brush.horizontalGradient(
+                                    listOf(Color.Black, Color.Transparent),
+                                    startX = size.width - fade,
+                                    endX = size.width
+                                ),
+                                topLeft = Offset(size.width - fade, 0f),
+                                size = Size(fade, size.height),
+                                blendMode = BlendMode.DstIn
+                            )
+                        },
                     state = breadcrumbListState,
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs),
                     contentPadding = PaddingValues(horizontal = 0.dp),
                     userScrollEnabled = false
                 ) {
-                    items(virtualSize) { virtualIndex ->
+                    items(virtualSize, key = { it }) { virtualIndex ->
                         val realIndex = virtualIndex.mod(labels.size)
                         if (virtualIndex > 0) {
                             Text(
                                 text = "·",
-                                style = MaterialTheme.typography.labelMedium,
+                                style = separatorTextStyle,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f),
                                 modifier = Modifier.padding(end = Dimens.spacingXs)
                             )
                         }
-                        Text(
-                            text = labels[realIndex],
-                            style = if (virtualIndex == virtualPosition) MaterialTheme.typography.titleMedium
-                                    else MaterialTheme.typography.labelMedium,
-                            color = if (virtualIndex == virtualPosition) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f),
+                        Box(
                             modifier = Modifier
                                 .clickableNoFocus { onSelect(realIndex) }
-                                .padding(horizontal = Dimens.spacingXs)
-                        )
+                                .widthIn(max = itemMaxWidth)
+                                .sizeIn(minWidth = navigationSlotWidth, minHeight = navigationHeight)
+                                .padding(horizontal = Dimens.spacingXs, vertical = Dimens.spacingSm),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = labels[realIndex],
+                                style = if (virtualIndex == virtualPosition) selectedTextStyle else inactiveTextStyle,
+                                color = if (virtualIndex == virtualPosition) MaterialTheme.colorScheme.primary
+                                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
                 }
             }
@@ -191,14 +287,17 @@ fun SectionBreadcrumb(
             Row(
                 modifier = Modifier
                     .clickableNoFocus(onClick = onNext)
-                    .padding(Dimens.spacingXs),
-                verticalAlignment = Alignment.CenterVertically
+                    .semantics { contentDescription = nextDescription }
+                    .sizeIn(minWidth = navigationSlotWidth, minHeight = navigationHeight)
+                    .padding(Dimens.spacingSm),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
             ) {
                 Icon(
                     painter = InputIcons.TriggerRight,
-                    contentDescription = stringResource(R.string.ui_section_breadcrumb_next),
+                    contentDescription = null,
                     tint = navIconTint,
-                    modifier = Modifier.size(Dimens.iconSm)
+                    modifier = triggerIconModifier
                 )
             }
         }

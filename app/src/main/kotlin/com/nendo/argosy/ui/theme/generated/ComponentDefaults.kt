@@ -27,6 +27,16 @@ import com.nendo.argosy.data.preferences.SystemIconPosition
 import com.nendo.argosy.data.preferences.ThemeMode
 
 object ComponentDefaults {
+    object Presentation {
+        const val edgeAlpha = 0.4f
+        const val edgeClearRatio = 0.5f
+        const val titleCenterAlpha = 0.5f
+        const val titleMidAlpha = 0.32f
+        const val titleMidRatio = 0.6f
+        const val titleOverscanWidthRatio = 0.19f
+        const val titleOverscanHeightRatio = 0.1815f
+    }
+
     object BoxArt {
         val shape = BoxArtShape.STANDARD
         val cornerRadius = BoxArtCornerRadius.MEDIUM
@@ -217,8 +227,12 @@ object ComponentDefaults {
     }
 
     object Carousel {
+        const val edgeTouchHeightDp = 80
         const val badgeHeadroomDp = 24
         const val newBadgeOverflowDp = 20
+        const val newBadgeWidthDp = 44
+        const val newBadgeHeightDp = 30
+        const val newBadgeRotationDegrees = 15
         const val companionCardWidth = 140
         const val companionCardWidthFocused = 200
         const val companionCardGap = 16
@@ -390,6 +404,21 @@ object ComponentDefaults {
         const val backdropScrimStartAlpha = 0.55f
         const val backdropScrimEndAlpha = 0.85f
         const val descriptionMaxLines = 3
+    }
+
+    object FrostedSurface {
+        const val fillAlpha = 0.8f
+        const val chromeHeightDp = 51.5f
+        const val compactHeaderViewportHeightDp = 480
+        const val minimumTouchTargetDp = 48
+        const val navigationSelectedFontSizeSp = 20.7f
+        const val navigationTriggerViewportToPaintedHeightRatio = 1.5f
+        const val navigationInactiveFontSizeSp = 18
+        const val navigationMaxWidthDp = 487
+        const val statusClockFontSizeSp = 20.7f
+        const val statusBatteryFontSizeRatio = 0.75f
+        const val statusPaddingHorizontalDp = 27
+        const val footerLabelFontSizeSp = 14
     }
 
 }

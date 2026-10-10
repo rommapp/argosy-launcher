@@ -64,6 +64,7 @@
     <string name="dual_companion_app_bar_keyboard_description">Teclado</string>
     <string name="dual_companion_app_bar_swap_description">Intercambiar pantallas</string>
     <string name="dual_companion_app_bar_focus_description">Enviar la entrada a una pantalla</string>
+    <string name="dual_companion_app_bar_tools_description">Herramientas del dock</string>
 
     <string name="dual_companion_drawer_title">Todas las apps</string>
     <string name="dual_companion_drawer_pinned_description">Fijada</string>

@@ -7,7 +7,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
@@ -15,6 +14,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -40,8 +40,6 @@ import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.util.clickableNoFocus
 
-private const val NAV_BAR_SURFACE_ALPHA = 0.92f
-
 @Composable
 fun FloatingNavBar(
     visible: Boolean,
@@ -60,14 +58,11 @@ fun FloatingNavBar(
         exit = slideOutVertically(tween(Motion.durationSlide)) { it } +
             fadeOut(tween(Motion.durationSlide))
     ) {
-        val theme = LocalArgosyTheme.current
         val shape = RoundedCornerShape(Dimens.radiusPill)
         Row(
             modifier = Modifier
                 .observeTouchDowns { _, _ -> onInteract() }
-                .clip(shape)
-                .background(theme.surfaceRaised.copy(alpha = NAV_BAR_SURFACE_ALPHA), shape)
-                .border(width = Dimens.borderThin, color = theme.hairlineLow, shape = shape)
+                .frostedSurface(shape)
                 .padding(horizontal = Dimens.spacingSm, vertical = Dimens.spacingXs),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
@@ -86,10 +81,14 @@ fun FloatingNavBar(
     }
 }
 
-fun Modifier.revealOnBottomEdgeTouch(edgeHeight: Dp, onReveal: () -> Unit): Modifier = composed {
+fun Modifier.revealOnBottomEdgeTouch(
+    edgeHeight: Dp,
+    onOutsideEdgeTouch: () -> Unit = {},
+    onReveal: () -> Unit
+): Modifier = composed {
     val edgePx = with(LocalDensity.current) { edgeHeight.toPx() }
     observeTouchDowns { y, height ->
-        if (y >= height - edgePx) onReveal()
+        if (y >= height - edgePx) onReveal() else onOutsideEdgeTouch()
     }
 }
 
@@ -120,6 +119,7 @@ private fun NavBarDestination(
             )
             .clip(CircleShape)
             .clickableNoFocus(onClick = onClick)
+            .sizeIn(minWidth = minimumTouchTarget, minHeight = minimumTouchTarget)
             .padding(Dimens.spacingSm),
         contentAlignment = Alignment.Center
     ) {

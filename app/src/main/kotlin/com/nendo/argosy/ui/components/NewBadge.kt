@@ -80,6 +80,7 @@ fun NewBadge(
     backgroundColor: Color = ALauncherColors.DifficultyRed,
     textColor: Color = Color.White
 ) {
+    val textSize = (height.value * 0.32f).sp
     Box(
         modifier = modifier
             .graphicsLayer {
@@ -96,9 +97,12 @@ fun NewBadge(
         Text(
             text = stringResource(R.string.ui_new_badge_label),
             color = textColor,
-            fontSize = (height.value * 0.32f).sp,
+            fontSize = textSize,
+            lineHeight = textSize,
             fontWeight = FontWeight.Black,
-            letterSpacing = (-0.5).sp
+            letterSpacing = (-0.5).sp,
+            maxLines = 1,
+            softWrap = false
         )
     }
 }

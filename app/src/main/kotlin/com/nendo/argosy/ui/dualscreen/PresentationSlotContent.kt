@@ -49,6 +49,9 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.FooterBar
+import com.nendo.argosy.ui.components.LocalFrostedBackdrop
+import com.nendo.argosy.ui.components.rememberFrostedBackdrop
+import com.nendo.argosy.ui.components.frostedBackdropSource
 import com.nendo.argosy.ui.components.HomeLayoutPreview
 import com.nendo.argosy.ui.components.ScreenNumberBadge
 import com.nendo.argosy.ui.components.animateScrollToItemCentered
@@ -72,7 +75,9 @@ fun PresentationSlotContent(
 ) {
     val artSource = com.nendo.argosy.ui.common.LocalImageCacheManager.current
         ?: com.nendo.argosy.DualScreenManagerHolder.instance?.imageCacheManager
+    val frostedBackdrop = rememberFrostedBackdrop()
     androidx.compose.runtime.CompositionLocalProvider(
+        LocalFrostedBackdrop provides frostedBackdrop,
         com.nendo.argosy.ui.common.LocalImageCacheManager provides artSource
     ) {
         PresentationSlotBody(slot, showControlHints, showsNotifications)
@@ -89,8 +94,16 @@ private fun PresentationSlotBody(
     val hints = com.nendo.argosy.DualScreenManagerHolder.instance
         ?.controlHints?.collectAsState()?.value.orEmpty()
     var measuredHintsHeight by remember { mutableStateOf(0.dp) }
-    val hintsHeight = if (hints.isEmpty()) 0.dp else measuredHintsHeight
-    Box(modifier = Modifier.fillMaxSize().surfaceBackdrop(BackdropRole.WALLPAPER)) {
+    val hintsHeight = if (!showControlHints || hints.isEmpty()) 0.dp else measuredHintsHeight
+    val frostedBackdrop = LocalFrostedBackdrop.current
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (slot !is PresentationSlot.Detail) {
+            Box(
+                modifier = Modifier.fillMaxSize()
+                    .then(if (frostedBackdrop != null) Modifier.frostedBackdropSource(frostedBackdrop) else Modifier)
+                    .surfaceBackdrop(BackdropRole.WALLPAPER)
+            )
+        }
         when (slot) {
             PresentationSlot.Fallback -> Unit
             is PresentationSlot.HomeLayoutPreview -> Box(
@@ -108,9 +121,12 @@ private fun PresentationSlotBody(
                 val style = com.nendo.argosy.DualScreenManagerHolder.instance
                     ?.presentationStyle?.collectAsState()?.value
                     ?: com.nendo.argosy.domain.model.PresentationStyle()
+                val backgroundBlur = com.nendo.argosy.DualScreenManagerHolder.instance
+                    ?.presentationBackgroundBlur?.collectAsState()?.value ?: 0
                 CompanionDetailScreen(
                     detail = slot.detail,
                     style = style,
+                    backgroundBlur = backgroundBlur,
                     bottomInset = hintsHeight,
                     modifier = Modifier.fillMaxSize()
                 )
@@ -205,6 +221,8 @@ private fun InGameAppBar(state: InGameAppBarState, modifier: Modifier = Modifier
     val manager = state.manager
     var menuPackage by remember { mutableStateOf<String?>(null) }
     var drawerOpen by remember { mutableStateOf(false) }
+    var toolsOpen by remember { mutableStateOf(false) }
+    var toolIndex by remember { mutableStateOf(1) }
     var drawerApps by remember {
         mutableStateOf(emptyList<com.nendo.argosy.ui.components.AppDrawerEntry>())
     }
@@ -226,12 +244,14 @@ private fun InGameAppBar(state: InGameAppBarState, modifier: Modifier = Modifier
             null
         },
         onOpenDrawer = { drawerOpen = true },
+        onKeyboardToggle = { manager.toggleUpperKeyboard() },
         focusDisplays = state.displays,
         focusPickerOpen = state.pickerOpen,
         focusPickerIndex = state.pickerIndex,
         onFocusPickerToggle = {
             if (state.pickerOpen) manager.closeFocusPicker() else manager.openFocusPicker()
         },
+        onFocusPickerMove = manager::moveFocusPicker,
         onFocusDisplay = { displayId ->
             manager.focusDisplay(displayId)
             manager.closeFocusPicker()
@@ -241,8 +261,13 @@ private fun InGameAppBar(state: InGameAppBarState, modifier: Modifier = Modifier
         } else {
             null
         },
-        drawsScrim = false,
-        modifier = modifier
+        toolsOpen = toolsOpen,
+        toolIndex = toolIndex,
+        onToolsToggle = { toolsOpen = !toolsOpen; toolIndex = 1 },
+        onToolFocus = { toolIndex = it },
+        onToolsDismiss = { toolsOpen = false },
+        controllerInputEnabled = false,
+        modifier = modifier.padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingMd)
     )
 
     if (drawerOpen) {

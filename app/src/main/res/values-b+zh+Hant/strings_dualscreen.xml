@@ -59,6 +59,7 @@
     <string name="dual_companion_app_bar_keyboard_description">鍵盤</string>
     <string name="dual_companion_app_bar_swap_description">交換螢幕</string>
     <string name="dual_companion_app_bar_focus_description">將輸入傳送到某個螢幕</string>
+    <string name="dual_companion_app_bar_tools_description">停駐列工具</string>
 
     <string name="dual_companion_drawer_title">所有應用程式</string>
     <string name="dual_companion_drawer_pinned_description">已釘選</string>

@@ -70,7 +70,7 @@ fun FriendsActivityBadge(
 }
 
 @Composable
-private fun friendsActivityLine(friends: List<FriendActivity>, playingNow: Boolean): String {
+internal fun friendsActivityLine(friends: List<FriendActivity>, playingNow: Boolean): String {
     val lead = friends.first().displayName
     val others = friends.size - 1
     return when {

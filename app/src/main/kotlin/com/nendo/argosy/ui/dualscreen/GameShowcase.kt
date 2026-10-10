@@ -32,6 +32,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -336,6 +337,10 @@ private fun CinematicShowcase(
     onTitleBoundsChanged: (Rect) -> Unit
 ) {
     val theme = LocalArgosyTheme.current
+    val scrollState = rememberScrollState()
+    LaunchedEffect(detail.gameId) {
+        scrollState.scrollTo(0)
+    }
     val gutter = if (viewportWidth.value < ComponentDefaults.Carousel.compactWidthDp) {
         Dimens.spacingMd
     } else {
@@ -373,7 +378,7 @@ private fun CinematicShowcase(
         Box(Modifier.weight(1f).heightIn(max = availableHeight)) {
           CompositionLocalProvider(LocalLayoutDirection provides textDirection) {
             Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()),
+                modifier = Modifier.verticalScroll(scrollState),
                 verticalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
             ) {
                 Column(

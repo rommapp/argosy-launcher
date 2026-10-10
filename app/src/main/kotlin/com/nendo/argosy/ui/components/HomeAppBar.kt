@@ -27,6 +27,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -66,8 +67,10 @@ import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
+import com.nendo.argosy.ui.theme.LocalUiScale
 import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
+import com.nendo.argosy.ui.theme.generated.DimensionTokens
 import com.nendo.argosy.ui.util.horizontalEdgeFade
 import com.nendo.argosy.ui.util.touchOnly
 
@@ -100,106 +103,110 @@ fun CompanionAppBar(
     controllerInputEnabled: Boolean = true,
     maximumWidth: Dp = Dimens.breadcrumbMaxWidth
 ) {
-    val listState = rememberLazyListState()
-    val appIconSize = Dimens.iconXl
-    val controlIconSize = Dimens.iconMd
-    val slot = maxOf(minimumTouchTarget, appIconSize)
-    val gap = Dimens.spacingSm
-    val padding = Dimens.spacingMd
-    val height = slot + gap * 2
-    val caretRotation by animateFloatAsState(
-        targetValue = if (toolsOpen) 180f else 0f,
-        animationSpec = tween(Motion.durationMicro),
-        label = "dock-caret"
-    )
-
-    LaunchedEffect(focusedIndex, apps.size) {
-        if (focusedIndex in apps.indices) listState.animateScrollToItem(focusedIndex)
-    }
-
-    BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
-        val widths = dockWidths(
-            maximum = minOf(maxWidth, maximumWidth).value,
-            appCount = apps.size,
-            slot = slot.value,
-            gap = gap.value,
-            padding = padding.value,
-            appIconSize = appIconSize.value,
-            controlIconSize = controlIconSize.value
+    val uiScale = LocalUiScale.current
+    val dockScale = maxOf(uiScale.scale, minimumTouchTarget / DimensionTokens.Icon.xl.dp)
+    CompositionLocalProvider(LocalUiScale provides uiScale.copy(scale = dockScale)) {
+        val listState = rememberLazyListState()
+        val appIconSize = Dimens.iconXl
+        val controlIconSize = Dimens.iconMd
+        val slot = maxOf(minimumTouchTarget, appIconSize)
+        val gap = Dimens.spacingSm
+        val padding = Dimens.spacingMd
+        val height = slot + gap * 2
+        val caretRotation by animateFloatAsState(
+            targetValue = if (toolsOpen) 180f else 0f,
+            animationSpec = tween(Motion.durationMicro),
+            label = "dock-caret"
         )
-        Row(
-            modifier = Modifier
-                .width(widths.width.dp)
-                .height(height)
-                .frostedSurface()
-                .padding(horizontal = widths.padding.dp, vertical = gap),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            DockControl(slot, focusedIndex == APP_BAR_DRAWER_INDEX, onClick = onOpenDrawer) { tint ->
-                Icon(
-                    Icons.Default.Apps,
-                    stringResource(R.string.dual_home_hint_app_bar_all_apps),
-                    tint = tint,
-                    modifier = Modifier.size(controlIconSize)
-                )
-            }
-            Spacer(Modifier.width(widths.groupGap.dp))
-            if (apps.isNotEmpty()) {
-                LazyRow(
-                    state = listState,
-                    modifier = Modifier.width(widths.appsWidth.dp)
-                        .horizontalEdgeFade(listState, fadeWidth = padding),
-                    horizontalArrangement = Arrangement.spacedBy(gap),
-                    userScrollEnabled = widths.appsWidth <
-                        apps.size * slot.value + (apps.size - 1) * gap.value
-                ) {
-                    itemsIndexed(apps, key = { _, app -> app }) { index, app ->
-                        CompanionAppItem(
-                            packageName = app,
-                            isFocused = index == focusedIndex,
-                            onClick = { onAppClick(app) },
-                            onLongPress = onAppLongPress?.let { press -> { press(app) } }
-                        )
-                    }
-                }
-                Spacer(Modifier.width(widths.groupGap.dp))
-            }
-            Box {
-                DockControl(
-                    slot,
-                    focusedIndex == apps.size || toolsOpen,
-                    onClick = {
-                        if (toolsOpen && focusPickerOpen) onFocusPickerToggle?.invoke()
-                        onToolsToggle()
-                    }
-                ) { tint ->
+
+        LaunchedEffect(focusedIndex, apps.size) {
+            if (focusedIndex in apps.indices) listState.animateScrollToItem(focusedIndex)
+        }
+
+        BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
+            val widths = dockWidths(
+                maximum = minOf(maxWidth, maximumWidth).value,
+                appCount = apps.size,
+                slot = slot.value,
+                gap = gap.value,
+                padding = padding.value,
+                appIconSize = appIconSize.value,
+                controlIconSize = controlIconSize.value
+            )
+            Row(
+                modifier = Modifier
+                    .width(widths.width.dp)
+                    .height(height)
+                    .frostedSurface()
+                    .padding(horizontal = widths.padding.dp, vertical = gap),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                DockControl(slot, focusedIndex == APP_BAR_DRAWER_INDEX, onClick = onOpenDrawer) { tint ->
                     Icon(
-                        Icons.Default.KeyboardArrowUp,
-                        stringResource(R.string.dual_companion_app_bar_tools_description),
+                        Icons.Default.Apps,
+                        stringResource(R.string.dual_home_hint_app_bar_all_apps),
                         tint = tint,
                         modifier = Modifier.size(controlIconSize)
-                            .graphicsLayer { rotationZ = caretRotation }
                     )
                 }
-                if (toolsOpen) {
-                    DockToolsPopup(
-                        slot = slot,
-                        height = height,
-                        gap = gap,
-                        padding = padding,
-                        toolIndex = toolIndex,
-                        onToolFocus = onToolFocus,
-                        onDismiss = onToolsDismiss,
-                        onSwapRoles = onSwapRoles,
-                        onKeyboardToggle = onKeyboardToggle,
-                        displays = focusDisplays,
-                        pickerOpen = focusPickerOpen,
-                        pickerIndex = focusPickerIndex,
-                        onPickerToggle = onFocusPickerToggle,
-                        onPickerMove = onFocusPickerMove,
-                        onFocusDisplay = onFocusDisplay,
-                        controllerInputEnabled = controllerInputEnabled
-                    )
+                Spacer(Modifier.width(widths.groupGap.dp))
+                if (apps.isNotEmpty()) {
+                    LazyRow(
+                        state = listState,
+                        modifier = Modifier.width(widths.appsWidth.dp)
+                            .horizontalEdgeFade(listState, fadeWidth = padding),
+                        horizontalArrangement = Arrangement.spacedBy(gap),
+                        userScrollEnabled = widths.appsWidth <
+                            apps.size * slot.value + (apps.size - 1) * gap.value
+                    ) {
+                        itemsIndexed(apps, key = { _, app -> app }) { index, app ->
+                            CompanionAppItem(
+                                packageName = app,
+                                isFocused = index == focusedIndex,
+                                onClick = { onAppClick(app) },
+                                onLongPress = onAppLongPress?.let { press -> { press(app) } }
+                            )
+                        }
+                    }
+                    Spacer(Modifier.width(widths.groupGap.dp))
+                }
+                Box {
+                    DockControl(
+                        slot,
+                        focusedIndex == apps.size || toolsOpen,
+                        onClick = {
+                            if (toolsOpen && focusPickerOpen) onFocusPickerToggle?.invoke()
+                            onToolsToggle()
+                        }
+                    ) { tint ->
+                        Icon(
+                            Icons.Default.KeyboardArrowUp,
+                            stringResource(R.string.dual_companion_app_bar_tools_description),
+                            tint = tint,
+                            modifier = Modifier.size(controlIconSize)
+                                .graphicsLayer { rotationZ = caretRotation }
+                        )
+                    }
+                    if (toolsOpen) {
+                        DockToolsPopup(
+                            slot = slot,
+                            height = height,
+                            gap = gap,
+                            padding = padding,
+                            toolIndex = toolIndex,
+                            onToolFocus = onToolFocus,
+                            onDismiss = onToolsDismiss,
+                            onSwapRoles = onSwapRoles,
+                            onKeyboardToggle = onKeyboardToggle,
+                            displays = focusDisplays,
+                            pickerOpen = focusPickerOpen,
+                            pickerIndex = focusPickerIndex,
+                            onPickerToggle = onFocusPickerToggle,
+                            onPickerMove = onFocusPickerMove,
+                            onFocusDisplay = onFocusDisplay,
+                            controllerInputEnabled = controllerInputEnabled
+                        )
+                    }
                 }
             }
         }
@@ -303,6 +310,7 @@ private fun DockToolsPopup(
     }
     val pickerMaxHeight = (LocalConfiguration.current.screenHeightDp.dp - height * 2 - padding * 2)
         .coerceAtLeast(slot)
+    val popupWidth = slot * 3 + gap * 2 + padding * 2
 
     Popup(
         popupPositionProvider = positionProvider,
@@ -333,7 +341,7 @@ private fun DockToolsPopup(
                 Spacer(Modifier.height(gap))
             }
             Row(
-                modifier = Modifier.width(slot * 3 + gap * 2 + padding * 2)
+                modifier = Modifier.width(popupWidth)
                     .height(height).frostedSurface()
                     .padding(horizontal = padding, vertical = gap),
                 horizontalArrangement = Arrangement.spacedBy(gap),
@@ -356,8 +364,8 @@ private fun DockToolsPopup(
                 }
             }
             Spacer(
-                Modifier.width(slot * 3 + gap * 2 + padding * 2)
-                    .height(slot + gap * 2)
+                Modifier.width(popupWidth)
+                    .height(height)
                     .touchOnly(dismiss)
             )
         }

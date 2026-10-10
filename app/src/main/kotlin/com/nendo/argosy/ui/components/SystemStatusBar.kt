@@ -241,7 +241,7 @@ fun SystemStatusBar(
                 style = chromeTextStyle(
                     MaterialTheme.typography.titleMedium,
                     TypographyTokens.titleMedium,
-                    ComponentDefaults.FrostedSurface.statusClockFontSizeSp.sp
+                    ComponentDefaults.FrostedSurface.chromeFontSizeSp.sp
                 ),
                 color = effectiveColor,
                 maxLines = 1,
@@ -350,7 +350,7 @@ private fun BatteryIndicator(
             style = chromeTextStyle(
                 MaterialTheme.typography.titleMedium,
                 TypographyTokens.titleMedium,
-                ComponentDefaults.FrostedSurface.statusClockFontSizeSp.sp *
+                ComponentDefaults.FrostedSurface.chromeFontSizeSp.sp *
                     ComponentDefaults.FrostedSurface.statusBatteryFontSizeRatio
             ),
             color = color,

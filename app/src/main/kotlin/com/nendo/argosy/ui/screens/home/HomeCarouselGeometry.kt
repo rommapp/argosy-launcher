@@ -3,9 +3,6 @@ package com.nendo.argosy.ui.screens.home
 import com.nendo.argosy.domain.model.HomeRowAlignment
 import com.nendo.argosy.ui.components.HERO_MAX_WIDTH_FRACTION
 import com.nendo.argosy.ui.components.HERO_START_PADDING_SCREEN_RATIO
-import kotlin.math.PI
-import kotlin.math.sqrt
-import kotlin.math.tanh
 
 internal data class HomeCarouselGeometry(
     val cardWidth: Float,
@@ -18,14 +15,6 @@ internal data class HomeCarouselGeometry(
     val titleAbove: Boolean
 )
 
-internal fun interruptedSpringMaximum(minimum: Float, maximum: Float, dampingRatio: Float): Float {
-    require(dampingRatio > 0f)
-    val gain = if (dampingRatio >= 1f) 1.0 else {
-        1.0 / tanh(PI * dampingRatio / (2.0 * sqrt(1.0 - dampingRatio * dampingRatio)))
-    }
-    return ((minimum + maximum) / 2.0 + (maximum - minimum) * gain / 2.0).toFloat()
-}
-
 internal fun homeCarouselGeometry(
     width: Float,
     height: Float,
@@ -37,13 +26,10 @@ internal fun homeCarouselGeometry(
     aboveTitleReserve: Float = titleReserve,
     aspectRatio: Float,
     restingScale: Float,
-    springMinimumRestingScale: Float = restingScale,
     rowAlignment: HomeRowAlignment,
     centeredFocus: Boolean,
     mirrored: Boolean,
     badgeOverflow: Float,
-    dampingRatio: Float,
-    neighbourPush: Boolean = true,
     scrollAnchorOffset: Float = 0f,
     showTitle: Boolean = true
 ): HomeCarouselGeometry {
@@ -53,21 +39,21 @@ internal fun homeCarouselGeometry(
     val available = contentBottom - contentTop
     val aspect = aspectRatio.takeIf { it > 0f && it.isFinite() } ?: 1f
     val focusScale = 1f / restingScale.coerceAtLeast(0.5f)
-    val springFocusScale = 1f / minOf(restingScale, springMinimumRestingScale).coerceAtLeast(0.5f)
-    val maximumScale = interruptedSpringMaximum(1f, springFocusScale, dampingRatio)
-    val badgeReserve = badgeOverflow * maximumScale
+    val badgeReserve = badgeOverflow * focusScale
     val artTop = contentTop + badgeReserve
     val artAvailable = (available - badgeReserve).coerceAtLeast(0f)
     val widthCap = usableWidth * HERO_MAX_WIDTH_FRACTION / aspect
-    val aboveRemaining = (available - aboveTitleReserve.coerceAtLeast(0f) - gap).coerceAtLeast(0f)
-    val aboveCardHeight = minOf((aboveRemaining / maximumScale - badgeOverflow).coerceAtLeast(0f), widthCap)
+    val reserve = if (showTitle) aboveTitleReserve.coerceAtLeast(0f) else 0f
+    val titleGap = if (showTitle) gap else 0f
+    val aboveRemaining = (available - reserve - titleGap).coerceAtLeast(0f)
+    val aboveCardHeight = minOf((aboveRemaining / focusScale - badgeOverflow).coerceAtLeast(0f), widthCap)
     val bottomSideHeightLimit = available - titleReserve - 2f * gap - 2f * badgeOverflow
     val fittedSideHeight = if (
         showTitle && width > height && !centeredFocus && rowAlignment == HomeRowAlignment.BOTTOM
     ) {
         bottomSideHeightLimit
     } else Float.POSITIVE_INFINITY
-    val sideCardHeight = minOf(available / maximumScale - badgeOverflow, widthCap, fittedSideHeight).coerceAtLeast(0f)
+    val sideCardHeight = minOf(available / focusScale - badgeOverflow, widthCap, fittedSideHeight).coerceAtLeast(0f)
     val sideCardWidth = sideCardHeight * aspect
     val leading = maxOf(
         usableWidth * HERO_START_PADDING_SCREEN_RATIO,
@@ -99,11 +85,9 @@ internal fun homeCarouselGeometry(
     } else {
         bandBottom > restingTop - badgeOverflow && bandTop < restingTop + sideCardHeight
     }
-    val settledSweptRight = if (crossesRestingBand) usableWidth else homeFocusedCardSweptRight(
-        leading + scrollAnchorOffset, sideCardWidth, springFocusScale, dampingRatio, neighbourPush
-    )
+    val occupiedRight = if (crossesRestingBand) usableWidth else focusedRight + scrollAnchorOffset
     val safeWidth = minOf(usableWidth / 2f, 2f * minOf(
-        logicalCenterX - settledSweptRight - gap,
+        logicalCenterX - occupiedRight - gap,
         usableWidth - edge - logicalCenterX
     )).coerceAtLeast(0f)
     val titleAbove = showTitle && (width <= height || centeredFocus || sideCardHeight < aboveCardHeight ||
@@ -116,12 +100,9 @@ internal fun homeCarouselGeometry(
         )
     }
 
-    val reserve = if (showTitle) aboveTitleReserve.coerceAtLeast(0f) else 0f
-    val titleGap = if (showTitle) gap else 0f
-    val remaining = (available - reserve - titleGap).coerceAtLeast(0f)
-    val cardHeight = minOf((remaining / maximumScale - badgeOverflow).coerceAtLeast(0f), widthCap)
-    val railHeight = minOf(cardHeight * maximumScale, remaining)
-    val allocatedBadge = minOf(badgeReserve, (remaining - railHeight).coerceAtLeast(0f))
+    val cardHeight = aboveCardHeight
+    val railHeight = minOf(cardHeight * focusScale, aboveRemaining)
+    val allocatedBadge = minOf(badgeReserve, (aboveRemaining - railHeight).coerceAtLeast(0f))
     val groupHeight = reserve + titleGap + allocatedBadge + railHeight
     val groupTop = when {
         showTitle && width >= height -> contentTop
@@ -136,22 +117,6 @@ internal fun homeCarouselGeometry(
         usableWidth / 2f, groupTop + reserve / 2f,
         (usableWidth - edge * 2f).coerceAtLeast(0f), titleAbove
     )
-}
-
-internal fun homeFocusedCardSweptRight(
-    leading: Float,
-    cardWidth: Float,
-    focusScale: Float,
-    dampingRatio: Float,
-    neighbourPush: Boolean
-): Float {
-    val halfWidth = cardWidth / 2f
-    val maximumRightExtent = if (neighbourPush) {
-        interruptedSpringMaximum(halfWidth * (2f - focusScale), halfWidth * focusScale, dampingRatio)
-    } else {
-        halfWidth * interruptedSpringMaximum(1f, focusScale, dampingRatio)
-    }
-    return leading + halfWidth + maximumRightExtent
 }
 
 internal data class HomeFlowSize(val width: Int, val height: Int)

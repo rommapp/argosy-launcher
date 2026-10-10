@@ -21,9 +21,7 @@ internal fun homeCarouselContent(
     titleReserve: Float,
     aspectRatio: Float,
     restingScale: Float,
-    springMinimumRestingScale: Float,
     badgeOverflow: Float,
-    dampingRatio: Float,
     minimumFocusedExtent: Float,
     preferredCardHeight: Float,
     enabled: Boolean
@@ -36,18 +34,15 @@ internal fun homeCarouselContent(
     if (!enabled || (focusedExtent >= minimumFocusedExtent && titleReserve <= viewport)) {
         return HomeCarouselContent(fitted, 0f, height.coerceAtLeast(0f), height.coerceAtLeast(0f), false)
     }
-    val maximumScale = interruptedSpringMaximum(
-        1f, 1f / minOf(restingScale, springMinimumRestingScale).coerceAtLeast(0.5f), dampingRatio
-    )
     val horizontalFit = minOf(
         width.coerceAtLeast(0f) * HERO_MAX_WIDTH_FRACTION / aspect,
-        (width - edge * 2f).coerceAtLeast(0f) / (aspect * maximumScale)
+        (width - edge * 2f).coerceAtLeast(0f) / (aspect * focusScale)
     )
     val minimumCardHeight = minimumFocusedExtent / (focusScale * minOf(1f, aspect))
     val cardHeight = minOf(maxOf(preferredCardHeight, minimumCardHeight), horizontalFit)
     val reserve = titleReserve.coerceAtLeast(0f)
-    val railTop = reserve + gap + badgeOverflow * maximumScale
-    val railHeight = cardHeight * maximumScale
+    val railTop = reserve + gap + badgeOverflow * focusScale
+    val railHeight = cardHeight * focusScale
     val geometry = HomeCarouselGeometry(
         cardHeight * aspect, cardHeight, railTop, railHeight,
         width.coerceAtLeast(0f) / 2f, reserve / 2f,

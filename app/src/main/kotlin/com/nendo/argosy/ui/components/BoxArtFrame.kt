@@ -57,8 +57,7 @@ fun Modifier.boxArtFrame(
     artworkGradient: Pair<Color, Color>? = null,
     background: Brush? = null,
     drawBorder: Boolean = true,
-    shapeOverride: Shape? = null,
-    onScaleAnimationStateChanged: ((Boolean) -> Unit)? = null
+    shapeOverride: Shape? = null
 ): Modifier {
     val boxArtStyle = LocalBoxArtStyle.current
     val themeConfig = LocalLauncherTheme.current
@@ -78,11 +77,10 @@ fun Modifier.boxArtFrame(
     }
 
     val scaleTarget = scaleOverride ?: if (isFocused) focusScale else ComponentDefaults.Focus.scaleDefault
-    val scale by observedFocusScaleAsState(
+    val scale by animateFloatAsState(
         targetValue = scaleTarget,
         animationSpec = Motion.focusSpring,
-        label = "boxArtScale",
-        onStateChanged = onScaleAnimationStateChanged
+        label = "boxArtScale"
     )
     val alpha by animateFloatAsState(
         targetValue = alphaOverride

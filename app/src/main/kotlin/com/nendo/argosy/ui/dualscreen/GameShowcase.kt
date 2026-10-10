@@ -181,8 +181,7 @@ private fun GameShowcaseContent(
                     if (bounds.width > 0f && bounds.height > 0f && strength > 0f) {
                         val radii = presentationTitleRadii(
                             size.width, size.height, bounds.width, bounds.height,
-                            ComponentDefaults.Presentation.titleOverscanWidthRatio,
-                            ComponentDefaults.Presentation.titleOverscanHeightRatio
+                            ComponentDefaults.Presentation.titleOverscanRatio
                         )
                         val brush = Brush.radialGradient(
                             0f to color.copy(
@@ -212,7 +211,6 @@ private fun GameShowcaseContent(
                 detail = detail,
                 style = style,
                 friends = friends,
-                gutter = gutter,
                 bottom = bottomInset,
                 viewportWidth = maxWidth,
                 viewportHeight = maxHeight,
@@ -332,13 +330,17 @@ private fun CinematicShowcase(
     detail: CompanionDetail,
     style: PresentationStyle,
     friends: List<FriendActivity>,
-    gutter: Dp,
     bottom: Dp,
     viewportWidth: Dp,
     viewportHeight: Dp,
     onTitleBoundsChanged: (Rect) -> Unit
 ) {
     val theme = LocalArgosyTheme.current
+    val gutter = if (viewportWidth.value < ComponentDefaults.Carousel.compactWidthDp) {
+        Dimens.spacingMd
+    } else {
+        Dimens.spacingLg
+    }
     val zero = 0.dp
     val availableHeight = (viewportHeight - bottom - gutter * 2).coerceAtLeast(zero)
     val availableWidth = (viewportWidth - gutter * 2).coerceAtLeast(zero)

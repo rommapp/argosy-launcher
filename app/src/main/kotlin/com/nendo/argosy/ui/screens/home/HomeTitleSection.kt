@@ -38,6 +38,9 @@ import com.nendo.argosy.data.social.FriendActivity
 import com.nendo.argosy.ui.components.StatBadgeItem
 import com.nendo.argosy.ui.components.gameStatBadges
 import com.nendo.argosy.ui.components.friends.FriendsActivityBadge
+import com.nendo.argosy.ui.components.friends.FRIENDS_AVATAR_OVERLAP_SHARE
+import com.nendo.argosy.ui.components.friends.FRIENDS_LINE_MAX_LINES
+import com.nendo.argosy.ui.components.friends.FRIENDS_MAX_STACKED_AVATARS
 import com.nendo.argosy.ui.components.friends.friendsActivityLine
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.util.formatTimeToBeat
@@ -75,7 +78,7 @@ internal fun rememberHomeTitleMetadata(uiState: HomeUiState): List<HomeMetadataM
                         friendsLabel = shown.takeIf { it.isNotEmpty() }?.let {
                             friendsActivityLine(context.resources, it, playingNow = playing.isNotEmpty())
                         },
-                        avatarCount = shown.size.coerceAtMost(3)
+                        avatarCount = shown.size.coerceAtMost(FRIENDS_MAX_STACKED_AVATARS)
                     )
                 }
                 is HomeRowItem.Media -> HomeMetadataMeasureInput(item.media.subtitle, emptyList(), null, 0)
@@ -119,8 +122,11 @@ internal fun rememberHomeTitleReserve(inputs: List<HomeMetadataMeasureInput>, ma
             val items = buildList {
                 input.developer?.let { add(measure(it, developerStyle)) }
                 input.friendsLabel?.let {
-                    val avatarsWidth = (avatar + avatar * 0.65f * (input.avatarCount - 1)).toInt()
-                    val label = measure(it, badgeStyle, width - avatarsWidth - friendGap, maxLines = 2)
+                    val avatarAdvance = avatar * (1f - FRIENDS_AVATAR_OVERLAP_SHARE)
+                    val avatarsWidth = (avatar + avatarAdvance * (input.avatarCount - 1)).toInt()
+                    val label = measure(
+                        it, badgeStyle, width - avatarsWidth - friendGap, maxLines = FRIENDS_LINE_MAX_LINES
+                    )
                     add(HomeFlowSize(avatarsWidth + friendGap + label.width, maxOf(avatar.toInt(), label.height)))
                 }
                 input.badges.forEach {

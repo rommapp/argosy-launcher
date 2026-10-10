@@ -165,7 +165,6 @@ import com.nendo.argosy.ui.theme.LocalUiScale
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.theme.generated.ColorTokens
-import com.nendo.argosy.ui.theme.generated.MotionTokens
 import kotlinx.coroutines.launch
 
 @Composable
@@ -706,11 +705,6 @@ fun HomeScreen(
             val aboveReserve = if (showTitle) rememberHomeTitleReserve(titleMetadata, fullTitleWidth) else 0.dp
             val mirrored = (LocalLayoutDirection.current == LayoutDirection.Rtl) xor uiState.carouselConfig.inverted
             val coverAspectRatio = LocalBoxArtStyle.current.aspectRatio
-            var minimumRestingScaleSeen by remember { mutableFloatStateOf(uiState.carouselConfig.restingScale) }
-            val springMinimumRestingScale = minOf(minimumRestingScaleSeen, uiState.carouselConfig.restingScale)
-            androidx.compose.runtime.SideEffect {
-                minimumRestingScaleSeen = springMinimumRestingScale
-            }
             val scrollAnchorOffset = with(localDensity) {
                 kotlin.math.abs(CarouselAnchor.START.snapOffsetPx).toDp()
             }
@@ -725,13 +719,10 @@ fun HomeScreen(
                 aboveTitleReserve = aboveReserve.value,
                 aspectRatio = coverAspectRatio,
                 restingScale = uiState.carouselConfig.restingScale,
-                springMinimumRestingScale = springMinimumRestingScale,
                 rowAlignment = uiState.carouselConfig.rowAlignment,
                 centeredFocus = uiState.carouselConfig.focusPosition == HomeFocusPosition.CENTER,
                 mirrored = mirrored,
                 badgeOverflow = NEW_BADGE_TOP_OVERFLOW.value,
-                dampingRatio = MotionTokens.Spring.focusDampingRatio,
-                neighbourPush = uiState.carouselConfig.neighbourPush,
                 scrollAnchorOffset = scrollAnchorOffset.value,
                 showTitle = showTitle
             )
@@ -751,9 +742,7 @@ fun HomeScreen(
                 titleReserve = aboveReserve.value,
                 aspectRatio = coverAspectRatio,
                 restingScale = uiState.carouselConfig.restingScale,
-                springMinimumRestingScale = springMinimumRestingScale,
                 badgeOverflow = NEW_BADGE_TOP_OVERFLOW.value,
-                dampingRatio = MotionTokens.Spring.focusDampingRatio,
                 minimumFocusedExtent = ComponentDefaults.FrostedSurface.minimumTouchTargetDp.toFloat(),
                 preferredCardHeight = (
                     Dimens.gameCardHeight * com.nendo.argosy.ui.components.HERO_MIN_CARD_SCALE
@@ -926,14 +915,6 @@ fun HomeScreen(
                                 focusedIndex = uiState.focusedGameIndex,
                                 listState = listState,
                                 availableWidth = availableCarouselWidth,
-                                onScaleAnimationsSettled = { focusScale, focusIndex ->
-                                    if (
-                                        focusScale == uiState.carouselConfig.focusScale &&
-                                        focusIndex == uiState.focusedGameIndex
-                                    ) {
-                                        minimumRestingScaleSeen = uiState.carouselConfig.restingScale
-                                    }
-                                },
                                 metrics = CarouselMetrics.hero(
                                     cardWidth = cardSize.width,
                                     cardHeight = cardSize.height,

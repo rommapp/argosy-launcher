@@ -339,14 +339,9 @@ fun CarouselRail(
     onCoverLoadFailed: ((Long, String) -> Unit)? = null,
     onCoverLoaded: ((Long, Bitmap) -> Unit)? = null,
     onPosterLoaded: ((String, Bitmap) -> Unit)? = null,
-    availableWidth: Dp = LocalConfiguration.current.screenWidthDp.dp,
-    onScaleAnimationsSettled: ((focusScale: Float, focusIndex: Int) -> Unit)? = null
+    availableWidth: Dp = LocalConfiguration.current.screenWidthDp.dp
 ) {
     val boxArtStyle = LocalBoxArtStyle.current
-    val scaleAnimations = remember { CarouselScaleAnimationTracker() }
-    val currentFocusScale by rememberUpdatedState(metrics.focusScale)
-    val currentFocusIndex by rememberUpdatedState(focusedIndex)
-    val reportScalesSettled by rememberUpdatedState(onScaleAnimationsSettled)
     /**
      * The push is a screen-space translation while the item order is not, so a reversed rail has to
      * flip it: the indices below the focused one sit to its right there, and pushing them the way
@@ -388,25 +383,6 @@ fun CarouselRail(
             .offset(y = originShift)
     ) {
         itemsIndexed(items, key = { _, item -> item.key }) { index, item ->
-            val configurationScale = metrics.focusScale
-            val onScaleStateChanged: ((Boolean) -> Unit)? = if (onScaleAnimationsSettled != null) {
-                androidx.compose.runtime.DisposableEffect(item.key) {
-                    scaleAnimations.register(item.key)
-                    onDispose {
-                        scaleAnimations.remove(item.key)
-                        if (scaleAnimations.isSettled(currentFocusScale, currentFocusIndex)) {
-                            reportScalesSettled?.invoke(currentFocusScale, currentFocusIndex)
-                        }
-                    }
-                }
-                val report: (Boolean) -> Unit = { running ->
-                    scaleAnimations.report(item.key, configurationScale, running, focusedIndex)
-                    if (scaleAnimations.isSettled(currentFocusScale, currentFocusIndex)) {
-                        reportScalesSettled?.invoke(currentFocusScale, currentFocusIndex)
-                    }
-                }
-                report
-            } else null
             val isFocused = index == focusedIndex
             val pushTargetPx = carouselNeighbourTranslation(
                 index, focusedIndex, neighbourPushPx, metrics.reversed, layoutDirection
@@ -444,7 +420,6 @@ fun CarouselRail(
                         useBoxArt = useBoxArt,
                         onCoverLoadFailed = onCoverLoadFailed,
                         onCoverLoaded = onCoverLoaded,
-                        onScaleAnimationStateChanged = onScaleStateChanged,
                         modifier = cardModifier
                     )
                 }
@@ -457,7 +432,6 @@ fun CarouselRail(
                         metrics = metrics,
                         overrides = overrides,
                         onPosterLoaded = onPosterLoaded,
-                        onScaleAnimationStateChanged = onScaleStateChanged,
                         modifier = placementModifier
                             .padding(top = NEW_BADGE_TOP_OVERFLOW)
                             .then(tapModifier)
@@ -477,7 +451,6 @@ fun CarouselRail(
                         remainingCount = item.remainingCount,
                         focusScale = metrics.focusScale,
                         scalePivotY = metrics.scalePivotY,
-                        onScaleAnimationStateChanged = onScaleStateChanged,
                         modifier = Modifier
                             .graphicsLayer {
                                 this.translationX = translationX
@@ -523,7 +496,6 @@ private fun CarouselMediaCard(
     metrics: CarouselMetrics,
     overrides: CarouselOverrides,
     onPosterLoaded: ((String, Bitmap) -> Unit)?,
-    onScaleAnimationStateChanged: ((Boolean) -> Unit)?,
     modifier: Modifier = Modifier
 ) {
     val maxWidth = if (isFocused) metrics.focusedCardWidth else metrics.cardWidth
@@ -539,7 +511,6 @@ private fun CarouselMediaCard(
         alphaOverride = if (isFocused) overrides.focusedAlpha else overrides.unfocusedAlpha,
         downloadIndicator = downloadIndicator,
         onPosterLoaded = onPosterLoaded,
-        onScaleAnimationStateChanged = onScaleAnimationStateChanged,
         modifier = modifier.size(cardSize.width, cardSize.height)
     )
 }
@@ -559,7 +530,6 @@ private fun CarouselGameCard(
     useBoxArt: Boolean,
     onCoverLoadFailed: ((Long, String) -> Unit)?,
     onCoverLoaded: ((Long, Bitmap) -> Unit)?,
-    onScaleAnimationStateChanged: ((Boolean) -> Unit)?,
     modifier: Modifier = Modifier
 ) {
     val maxWidth = if (isFocused) metrics.focusedCardWidth else metrics.cardWidth
@@ -591,7 +561,6 @@ private fun CarouselGameCard(
         coverPathOverride = item.coverPathOverride,
         onCoverLoadFailed = onCoverLoadFailed,
         onCoverLoaded = onCoverLoaded,
-        onScaleAnimationStateChanged = onScaleAnimationStateChanged,
         scaleOverride = scaleOverride,
         alphaOverride = alphaOverride,
         modifier = modifier

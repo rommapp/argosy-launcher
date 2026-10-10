@@ -88,7 +88,7 @@ fun SectionBreadcrumb(
     val selectedTextStyle = chromeTextStyle(
         MaterialTheme.typography.titleMedium,
         TypographyTokens.titleMedium,
-        ComponentDefaults.FrostedSurface.navigationSelectedFontSizeSp.sp
+        ComponentDefaults.FrostedSurface.chromeFontSizeSp.sp
     )
     val inactiveTextStyle = chromeTextStyle(
         MaterialTheme.typography.bodyMedium,

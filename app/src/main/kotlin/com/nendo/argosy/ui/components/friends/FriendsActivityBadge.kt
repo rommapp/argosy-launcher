@@ -21,9 +21,9 @@ import com.nendo.argosy.R
 import com.nendo.argosy.data.social.FriendActivity
 import com.nendo.argosy.ui.theme.Dimens
 
-private const val MAX_STACKED_AVATARS = 3
-private const val AVATAR_OVERLAP_SHARE = 0.35f
-private const val FRIENDS_LINE_MAX_LINES = 2
+internal const val FRIENDS_MAX_STACKED_AVATARS = 3
+internal const val FRIENDS_AVATAR_OVERLAP_SHARE = 0.35f
+internal const val FRIENDS_LINE_MAX_LINES = 2
 
 /**
  * Stacked avatars and one line naming the friends tied to a game. Friends playing now lead; a game
@@ -39,8 +39,8 @@ fun FriendsActivityBadge(
     val playing = friends.filter { it.playingNow }
     val shown = playing.ifEmpty { friends }
     val avatarSize = Dimens.iconMd
-    val overlap = avatarSize * AVATAR_OVERLAP_SHARE
-    val stacked = shown.take(MAX_STACKED_AVATARS)
+    val overlap = avatarSize * FRIENDS_AVATAR_OVERLAP_SHARE
+    val stacked = shown.take(FRIENDS_MAX_STACKED_AVATARS)
 
     Row(
         modifier = modifier,

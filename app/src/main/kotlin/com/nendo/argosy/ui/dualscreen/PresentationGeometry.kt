@@ -15,11 +15,10 @@ internal fun presentationTitleRadii(
     viewportHeight: Float,
     titleWidth: Float,
     titleHeight: Float,
-    horizontalOverscan: Float,
-    verticalOverscan: Float
+    overscanRatio: Float
 ): PresentationSize = PresentationSize(
-    titleWidth.coerceAtLeast(0f) / 2f + viewportWidth.coerceAtLeast(0f) * horizontalOverscan,
-    titleHeight.coerceAtLeast(0f) / 2f + viewportHeight.coerceAtLeast(0f) * verticalOverscan
+    titleWidth.coerceAtLeast(0f) / 2f + viewportWidth.coerceAtLeast(0f) * overscanRatio,
+    titleHeight.coerceAtLeast(0f) / 2f + viewportHeight.coerceAtLeast(0f) * overscanRatio
 )
 
 internal fun presentationScrimAlpha(baseAlpha: Float, strengthScale: Float): Float =

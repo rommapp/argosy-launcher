@@ -347,17 +347,17 @@ private fun DockToolsPopup(
                 horizontalArrangement = Arrangement.spacedBy(gap),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                DockControl(slot, toolIndex == 0 && !pickerOpen, enabled[0], { activate(0) }) { tint ->
+                DockControl(slot, false, enabled[0], { activate(0) }) { tint ->
                     Icon(painterResource(R.drawable.ic_swap_screens),
                         stringResource(R.string.dual_companion_app_bar_swap_description),
                         tint = tint, modifier = Modifier.size(Dimens.iconMd))
                 }
-                DockControl(slot, toolIndex == 1 && !pickerOpen, enabled[1], { activate(1) }) { tint ->
+                DockControl(slot, false, enabled[1], { activate(1) }) { tint ->
                     Icon(Icons.Default.Keyboard,
                         stringResource(R.string.dual_companion_app_bar_keyboard_description),
                         tint = tint, modifier = Modifier.size(Dimens.iconMd))
                 }
-                DockControl(slot, toolIndex == 2 || pickerOpen, enabled[2], { activate(2) }) { tint ->
+                DockControl(slot, false, enabled[2], { activate(2) }) { tint ->
                     Icon(Icons.Default.Tv,
                         stringResource(R.string.dual_companion_app_bar_focus_description),
                         tint = tint, modifier = Modifier.size(Dimens.iconMd))

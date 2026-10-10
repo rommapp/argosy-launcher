@@ -549,7 +549,12 @@ fun HomeScreen(
         if (isLoading) {
             SplashOverlay()
         } else {
-    Box(modifier = Modifier.fillMaxSize()) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val isPortrait = maxWidth <= maxHeight
+        val compactHeader = (isAutoGrid && !uiState.autoGridConfig.showTitles) ||
+            maxHeight < ComponentDefaults.FrostedSurface.compactHeaderViewportHeightDp.dp
+        val headerHorizontalPadding = if (compactHeader || isPortrait) Dimens.spacingMd else Dimens.spacingLg
+        val chromeVerticalPadding = if (compactHeader) Dimens.spacingXs else headerHorizontalPadding
         val defaultHeaderHeight = Dimens.headerHeight
         var headerBlockHeight by remember { mutableStateOf(defaultHeaderHeight) }
         var dockHeight by remember { mutableStateOf(0.dp) }
@@ -690,7 +695,7 @@ fun HomeScreen(
             val availableCarouselWidth = maxWidth
             val showTitle = !presentationShowsHints && !isAutoGrid && !isCustomGrid && !uiState.isMediaRow
             val footerHeight = if (presentationShowsHints) {
-                dockHeight + Dimens.spacingMd
+                dockHeight + chromeVerticalPadding
             } else {
                 LocalFooterHost.current.measuredHeight
             }
@@ -1231,7 +1236,7 @@ fun HomeScreen(
         }
         }
 
-        BoxWithConstraints(
+        Box(
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .fillMaxWidth()
@@ -1241,7 +1246,6 @@ fun HomeScreen(
                     if (measured != headerBlockHeight) headerBlockHeight = measured
                 }
         ) {
-            val isPortrait = maxWidth <= maxHeight
             HomeHeader(
                 uiState = uiState,
                 onPreviousRow = viewModel::previousRow,
@@ -1251,10 +1255,10 @@ fun HomeScreen(
                 showStatus = !presentationShowsHints &&
                     (!isPortrait || com.nendo.argosy.ui.components.LocalTransientHomeStatusVisible.current),
                 onNavigationWidthChanged = { navigationPillWidth = it },
+                horizontalPadding = headerHorizontalPadding,
+                verticalPadding = chromeVerticalPadding,
                 headerOffset = videoModeHeaderOffset,
-                showSections = !isCustomGrid,
-                compact = (isAutoGrid && !uiState.autoGridConfig.showTitles) ||
-                    maxHeight < ComponentDefaults.FrostedSurface.compactHeaderViewportHeightDp.dp
+                showSections = !isCustomGrid
             )
         }
 
@@ -1314,7 +1318,7 @@ fun HomeScreen(
                 onToolsDismiss = viewModel::dismissAppBarTools,
                 maximumWidth = navigationPillWidth.takeIf { it > 0.dp } ?: Dimens.breadcrumbMaxWidth,
                 modifier = Modifier.align(Alignment.BottomCenter)
-                    .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingMd)
+                    .padding(horizontal = Dimens.spacingMd, vertical = chromeVerticalPadding)
                     .onSizeChanged { size ->
                         val measured = with(localDensity) { size.height.toDp() }
                         if (measured != dockHeight) dockHeight = measured
@@ -1664,22 +1668,21 @@ private fun HomeHeader(
     isStacked: Boolean,
     showStatus: Boolean,
     onNavigationWidthChanged: (Dp) -> Unit,
+    horizontalPadding: Dp,
+    verticalPadding: Dp,
     headerOffset: androidx.compose.ui.unit.Dp = 0.dp,
-    showSections: Boolean = true,
-    compact: Boolean = false
+    showSections: Boolean = true
 ) {
     val statusVisible = showStatus && hasStatusBarContent(
         LocalStatusBarItems.current,
         LocalArtworkScraping.current
     )
-    val edge = if (compact || isStacked) Dimens.spacingMd else Dimens.spacingLg
-    val verticalEdge = if (compact) Dimens.spacingXs else edge
     if (!showSections && !statusVisible) return
     if (!showSections) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = edge, vertical = verticalEdge)
+                .padding(horizontal = horizontalPadding, vertical = verticalPadding)
                 .offset(y = headerOffset),
             horizontalArrangement = if (isStacked) Arrangement.Center else Arrangement.End,
             verticalAlignment = Alignment.CenterVertically
@@ -1693,7 +1696,7 @@ private fun HomeHeader(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = edge, vertical = verticalEdge)
+                .padding(horizontal = horizontalPadding, vertical = verticalPadding)
                 .offset(y = headerOffset),
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
         ) {
@@ -1721,7 +1724,7 @@ private fun HomeHeader(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = edge, vertical = verticalEdge)
+            .padding(horizontal = horizontalPadding, vertical = verticalPadding)
             .offset(y = headerOffset),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically

@@ -2,6 +2,7 @@ package com.nendo.argosy.ui.components
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -17,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Apps
@@ -36,6 +38,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -456,11 +459,15 @@ internal fun CompanionAppItem(
         AsyncImage(
             model = AppIconData(packageName),
             contentDescription = packageName,
-            modifier = Modifier.size(Dimens.iconXl).argosyFocusIndicators(
-                focused = isFocused,
-                indicators = FocusIndicators(ring = true),
-                shape = RoundedCornerShape(Dimens.radiusSm)
-            ),
+            modifier = Modifier
+                .size(Dimens.iconXl)
+                .argosyFocusIndicators(
+                    focused = isFocused,
+                    indicators = FocusIndicators.Ring,
+                    shape = CircleShape
+                )
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surface),
             contentScale = ContentScale.Fit
         )
     }

@@ -1,9 +1,5 @@
 package com.nendo.argosy.ui.filebrowser
 
-import android.content.Intent
-import android.net.Uri
-import android.os.Build
-import android.provider.Settings
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -86,6 +82,7 @@ import com.nendo.argosy.ui.primitives.ModalActionButton
 import androidx.compose.ui.graphics.lerp
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
+import com.nendo.argosy.util.openStorageAccessSettings
 
 @Composable
 fun FileBrowserScreen(
@@ -102,13 +99,7 @@ fun FileBrowserScreen(
 
     val requestStoragePermission = remember(context) {
         {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
-                    data = Uri.parse("package:${context.packageName}")
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                }
-                context.startActivity(intent)
-            }
+            context.openStorageAccessSettings()
         }
     }
 

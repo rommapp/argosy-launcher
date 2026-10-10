@@ -70,6 +70,7 @@ import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.primitives.ArgosyConfirmModal
 import com.nendo.argosy.ui.primitives.ArgosyConfirmModalHost
 import com.nendo.argosy.util.formatBytes
+import com.nendo.argosy.util.openStorageAccessSettings
 import com.nendo.argosy.ui.screens.musicbrowser.MusicBrowserMode
 import com.nendo.argosy.ui.screens.musicbrowser.MusicBrowserScreen
 import com.nendo.argosy.data.sync.UnflushedQueuePolicy
@@ -340,12 +341,7 @@ fun SettingsScreen(
 
     LaunchedEffect(Unit) {
         viewModel.requestStoragePermissionEvent.collect {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
-                    data = Uri.parse("package:${context.packageName}")
-                }
-                context.startActivity(intent)
-            }
+            context.openStorageAccessSettings()
         }
     }
 

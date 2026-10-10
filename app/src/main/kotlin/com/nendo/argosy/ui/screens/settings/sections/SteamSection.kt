@@ -86,6 +86,7 @@ import com.nendo.argosy.ui.screens.settings.components.SteamLauncherPreference
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
+import com.nendo.argosy.util.openStorageAccessSettings
 
 private const val GN_PACKAGE = "app.gamenative"
 
@@ -487,14 +488,7 @@ fun SteamSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                         title = stringResource(R.string.settings_steam_storage_note_title),
                         subtitle = stringResource(R.string.settings_steam_storage_note_subtitle),
                         isFocused = false,
-                        onClick = {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                                val intent = Intent(
-                                    Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION
-                                ).apply { data = Uri.parse("package:${context.packageName}") }
-                                context.startActivity(intent)
-                            }
-                        }
+                        onClick = { context.openStorageAccessSettings() }
                     )
                 }
 

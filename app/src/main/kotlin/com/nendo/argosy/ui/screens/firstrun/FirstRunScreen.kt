@@ -88,6 +88,7 @@ import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.ui.components.PermissionCard
 import com.nendo.argosy.ui.components.PlatformFilterHeader
 import com.nendo.argosy.ui.components.SwitchPreference
+import com.nendo.argosy.util.openStorageAccessSettings
 import com.nendo.argosy.ui.filebrowser.FileBrowserMode
 import com.nendo.argosy.ui.filebrowser.FileBrowserScreen
 import com.nendo.argosy.ui.filebrowser.FileFilter
@@ -107,12 +108,7 @@ fun FirstRunScreen(
     val context = LocalContext.current
 
     val requestStorage = {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
-                data = Uri.parse("package:${context.packageName}")
-            }
-            context.startActivity(intent)
-        }
+        context.openStorageAccessSettings()
     }
 
     val requestNotifications = {

@@ -16,6 +16,7 @@ import com.nendo.argosy.hardware.ScreenCaptureManager
 import com.nendo.argosy.ui.screens.settings.PermissionsState
 import com.nendo.argosy.data.preferences.DisplayPreferencesRepository
 import com.nendo.argosy.util.PermissionHelper
+import com.nendo.argosy.util.openStorageAccessSettings
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.CoroutineScope
@@ -102,13 +103,7 @@ class PermissionsSettingsDelegate @Inject constructor(
     fun isScreenCaptureRelevant(): Boolean = ledController.isAvailable
 
     fun openStorageSettings() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
-                data = Uri.parse("package:${application.packageName}")
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-            }
-            application.startActivity(intent)
-        }
+        application.openStorageAccessSettings()
     }
 
     fun openUsageStatsSettings() {

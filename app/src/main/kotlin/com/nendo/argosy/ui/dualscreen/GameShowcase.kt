@@ -311,6 +311,7 @@ private fun LogoShowcase(detail: CompanionDetail, gutter: Dp) {
             Text(
                 text = detail.title,
                 style = MaterialTheme.typography.displayLarge,
+                fontWeight = FontWeight.Bold,
                 color = theme.textPrimary,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
@@ -432,6 +433,7 @@ private fun JournalShowcase(
             Text(
                 text = detail.title,
                 style = MaterialTheme.typography.displayMedium,
+                fontWeight = FontWeight.Bold,
                 color = theme.textPrimary,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis

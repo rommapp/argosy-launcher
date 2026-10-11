@@ -574,6 +574,11 @@ class ArgosyViewModel @Inject constructor(
             return InputResult.handled(SoundType.CLOSE_MODAL)
         }
 
+        override fun onRight(): InputResult {
+            onDismiss()
+            return InputResult.handled(SoundType.CLOSE_MODAL)
+        }
+
         override fun onMenu(): InputResult {
             onDismiss()
             return InputResult.handled(SoundType.CLOSE_MODAL)

@@ -175,6 +175,7 @@ fun HomeScreen(
     onNavigateToSettings: (String) -> Unit = {},
     onPlayMedia: (itemId: String, startOver: Boolean) -> Unit = { _, _ -> },
     onMediaSelect: (String) -> Unit = {},
+    videoPreviewBlocked: Boolean = false,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -399,30 +400,43 @@ fun HomeScreen(
         }
     }
 
-    LaunchedEffect(uiState.focusedGameIndex, uiState.focusedGame?.youtubeVideoId, uiState.videoWallpaperEnabled) {
-        viewModel.deactivateVideoPreview()
-        if (!uiState.videoWallpaperEnabled) return@LaunchedEffect
-        if (uiState.layoutKind != HomeLayoutKind.CAROUSEL) return@LaunchedEffect
-        val game = uiState.focusedGame ?: return@LaunchedEffect
-        val videoId = game.youtubeVideoId ?: return@LaunchedEffect
-        val shouldSkip = uiState.showGameMenu ||
-            uiState.discPickerState != null ||
-            suppressVideoPreview ||
-            videoPlayedForGameId == game.id
-        if (shouldSkip) {
-            return@LaunchedEffect
-        }
-        delay(uiState.videoWallpaperDelayMs)
-        val isResumed = lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
-        val stillValid = isResumed &&
-            uiState.videoWallpaperEnabled &&
-            !suppressVideoPreview &&
-            uiState.discPickerState == null &&
-            videoPlayedForGameId != game.id
-        if (stillValid) {
-            videoPlayedForGameId = game.id
-            viewModel.startVideoPreviewLoading(videoId)
-        }
+    val dsmForFocus = com.nendo.argosy.DualScreenManagerHolder.instance
+    val focusPickerOpen by (
+        dsmForFocus?.focusPickerOpen
+            ?: remember { kotlinx.coroutines.flow.MutableStateFlow(false) }
+        ).collectAsState()
+    val previewBlocked = videoPreviewBlocked || focusPickerOpen || uiState.showGameMenu ||
+        uiState.appDrawer != null || uiState.appBarMenu != null ||
+        uiState.showAddToCollectionModal || uiState.showCreateCollectionDialog ||
+        uiState.discPickerState != null || uiState.memcardPickerState != null ||
+        uiState.syncOverlayState != null || uiState.changelogEntry != null || siblingChoiceOpen
+    val currentPreviewBlocked by rememberUpdatedState(previewBlocked)
+
+    LaunchedEffect(
+        uiState.focusedGame?.id,
+        uiState.focusedGame?.youtubeVideoId,
+        uiState.videoWallpaperEnabled,
+        uiState.videoWallpaperDelayMs,
+        uiState.layoutKind,
+        previewBlocked,
+        suppressVideoPreview
+    ) {
+        scheduleHomeVideoPreview(
+            state = uiState,
+            blocked = previewBlocked,
+            suppressed = suppressVideoPreview,
+            alreadyPlayed = videoPlayedForGameId == uiState.focusedGame?.id,
+            canStart = { gameId ->
+                lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED) &&
+                    uiState.videoWallpaperEnabled && !currentPreviewBlocked &&
+                    !suppressVideoPreview && videoPlayedForGameId != gameId
+            },
+            deactivate = viewModel::deactivateVideoPreview,
+            start = { gameId, videoId ->
+                videoPlayedForGameId = gameId
+                viewModel.startVideoPreviewLoading(videoId)
+            }
+        )
     }
 
     DisposableEffect(lifecycleOwner) {
@@ -580,7 +594,7 @@ fun HomeScreen(
                 }
             }
 
-            if (uiState.isVideoPreviewLoading || uiState.isVideoPreviewActive) {
+            if (!previewBlocked && (uiState.isVideoPreviewLoading || uiState.isVideoPreviewActive)) {
                 val videoAlpha by animateFloatAsState(
                     targetValue = if (uiState.isVideoPreviewActive) 1f else 0f,
                     animationSpec = tween(500),
@@ -595,8 +609,18 @@ fun HomeScreen(
                         YouTubeVideoPlayer(
                             videoId = videoId,
                             muted = uiState.muteVideoPreview,
-                            onReady = { viewModel.activateVideoPreview() },
-                            onError = { viewModel.cancelVideoPreviewLoading() }
+                            onReady = {
+                                viewModel.activateVideoPreview(
+                                    videoId,
+                                    currentPreviewBlocked,
+                                    lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)
+                                )
+                            },
+                            onError = {
+                                if (viewModel.uiState.value.videoPreviewId == videoId) {
+                                    viewModel.cancelVideoPreviewLoading()
+                                }
+                            }
                         )
                     }
                 }
@@ -1204,11 +1228,6 @@ fun HomeScreen(
 
         val hasPresentationScreen by (
             com.nendo.argosy.DualScreenManagerHolder.instance?.hasPresentationScreen
-                ?: remember { kotlinx.coroutines.flow.MutableStateFlow(false) }
-            ).collectAsState()
-        val dsmForFocus = com.nendo.argosy.DualScreenManagerHolder.instance
-        val focusPickerOpen by (
-            dsmForFocus?.focusPickerOpen
                 ?: remember { kotlinx.coroutines.flow.MutableStateFlow(false) }
             ).collectAsState()
         val focusPickerIndex by (

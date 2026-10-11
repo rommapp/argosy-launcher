@@ -2216,7 +2216,8 @@ class HomeViewModel @Inject constructor(
     // --- Public API: Video Preview ---
 
     fun startVideoPreviewLoading(videoId: String) = videoPreviewDelegate.startVideoPreviewLoading(videoId)
-    fun activateVideoPreview() = videoPreviewDelegate.activateVideoPreview()
+    fun activateVideoPreview(videoId: String, blocked: Boolean, isResumed: Boolean) =
+        videoPreviewDelegate.activateVideoPreview(videoId, blocked, isResumed)
     fun cancelVideoPreviewLoading() = videoPreviewDelegate.cancelVideoPreviewLoading()
     fun deactivateVideoPreview() = videoPreviewDelegate.deactivateVideoPreview()
 

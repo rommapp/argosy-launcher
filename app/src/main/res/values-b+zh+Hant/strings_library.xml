@@ -171,4 +171,5 @@
     <string name="library_showcase_fact_watched">已觀看</string>
     <string name="library_showcase_play_time_hours">%1$d小時</string>
     <string name="library_showcase_play_time_minutes">%1$d分鐘</string>
+    <string name="library_apps_launch_failed">無法開啟應用程式</string>
 </resources>

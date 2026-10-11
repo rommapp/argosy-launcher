@@ -1228,6 +1228,8 @@ fun ArgosyApp(
                         startDestination = startDestination,
                         onDrawerToggle = { if (isDrawerOpen) closeDrawer() else openDrawer() },
                         argosyViewModel = viewModel,
+                        videoPreviewBlocked = isDrawerOpen || isQuickSettingsOpen ||
+                            quickMenuState.isVisible || appPromptShowing,
                         onPlayMedia = { itemId, startOver ->
                             dsm?.playMediaItem(itemId, startOver)
                                 ?: PlayerActivity.start(

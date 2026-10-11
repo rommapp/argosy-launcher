@@ -415,12 +415,10 @@ class AppsViewModel @Inject constructor(
             return
         }
         if (state.hasSecondaryDisplay) {
-            val dsm = DualScreenManagerHolder.instance
-            val presentation = displayAffinityHelper
-                .getRoleDisplayIds(dsm?.isRolesSwapped?.value == true)
-                ?.second
+            val topDisplayId = launchableScreens().firstOrNull { it.number == 1 }?.displayId
+                ?: return
             state.focusedApp?.let {
-                launchApp(it.packageName, overrideDisplayId = presentation)
+                launchApp(it.packageName, overrideDisplayId = topDisplayId)
             }
         } else {
             enterReorderMode()

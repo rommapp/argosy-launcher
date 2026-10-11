@@ -181,4 +181,5 @@
     <string name="library_showcase_fact_watched">देखे गए</string>
     <string name="library_showcase_play_time_hours">%1$d घं</string>
     <string name="library_showcase_play_time_minutes">%1$d मि</string>
+    <string name="library_apps_launch_failed">ऐप नहीं खोला जा सका</string>
 </resources>

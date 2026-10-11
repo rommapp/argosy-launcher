@@ -201,4 +201,5 @@
     <string name="library_showcase_fact_watched">Просмотрено</string>
     <string name="library_showcase_play_time_hours">%1$d ч</string>
     <string name="library_showcase_play_time_minutes">%1$d мин</string>
+    <string name="library_apps_launch_failed">Не удалось открыть приложение</string>
 </resources>

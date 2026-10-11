@@ -3,6 +3,8 @@ package com.nendo.argosy.ui.screens.apps
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -111,7 +113,9 @@ fun AppsScreen(
                         } else {
                             context.startActivity(event.intent)
                         }
-                    } catch (_: Exception) {
+                    } catch (error: Exception) {
+                        Log.e("AppsScreen", "Failed to launch ${event.intent.component}", error)
+                        Toast.makeText(context, R.string.library_apps_launch_failed, Toast.LENGTH_SHORT).show()
                     }
                 }
                 is AppsEvent.OpenAppInfo -> {

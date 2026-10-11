@@ -43,6 +43,7 @@ fun NavGraph(
     onDrawerToggle: () -> Unit,
     argosyViewModel: ArgosyViewModel,
     modifier: Modifier = Modifier,
+    videoPreviewBlocked: Boolean = false,
     onPlayMedia: (itemId: String, startOver: Boolean) -> Unit = { _, _ -> }
 ) {
     val navigateToDefault = remember {
@@ -74,6 +75,7 @@ fun NavGraph(
         composable(Screen.Home.route) {
             HomeScreen(
                 isDefaultView = true,
+                videoPreviewBlocked = videoPreviewBlocked,
                 onNavigateToCollections = { collectionId ->
                     navController.navigate(
                         if (collectionId > 0) {

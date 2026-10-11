@@ -1,6 +1,9 @@
 package com.nendo.argosy
 
+import android.app.KeyguardManager
 import android.hardware.display.DisplayManager
+import android.content.BroadcastReceiver
+import android.content.IntentFilter
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -146,6 +149,8 @@ class DualScreenManager(
 ) {
 
     private val appContext: Context = context.applicationContext
+    internal val isKeyguardShowing: Boolean
+        get() = appContext.getSystemService(KeyguardManager::class.java).isKeyguardLocked
 
     private val activityIndependentScope =
         com.nendo.argosy.util.SafeCoroutineScope(Dispatchers.Main, "DualScreenState")
@@ -854,6 +859,7 @@ class DualScreenManager(
      * Moves input focus to [displayId], through whichever surface of ours is rendered there.
      */
     fun focusDisplay(displayId: Int) {
+        if (isKeyguardShowing) return
         FocusDirectorActivity.launchOnDisplay(activityContext, displayId)
     }
 
@@ -1180,6 +1186,7 @@ class DualScreenManager(
         mediaFocusJob?.cancel()
         mediaFocusJob = scope.launch {
             delay(MEDIA_FOCUS_DIRECT_DELAY_MS)
+            if (isKeyguardShowing) return@launch
             if (sessionStateStore.hasActiveSession()) return@launch
             try {
                 FocusDirectorActivity.launchOnDisplay(appContext, displayId)
@@ -1512,6 +1519,7 @@ class DualScreenManager(
     }
 
     private fun focusGameDisplay(displayId: Int) {
+        if (isKeyguardShowing) return
         try {
             FocusDirectorActivity.launchOnDisplay(appContext, displayId)
         } catch (e: SecurityException) {
@@ -1530,7 +1538,7 @@ class DualScreenManager(
     private var companionPausedPending = false
     private var companionLaunchAttempts = 0
 
-    private val displayListener = object : DisplayManager.DisplayListener {
+    private val displayListener: DisplayManager.DisplayListener = object : DisplayManager.DisplayListener {
         override fun onDisplayAdded(displayId: Int) {
             if (!displayAffinityHelper.isPhysicalDisplay(displayId)) return
             reprobeSecondaryDisplay()
@@ -2030,11 +2038,13 @@ class DualScreenManager(
     }
 
     fun restoreEmulatorFocus() {
+        if (isKeyguardShowing) return
         val displayId = emulatorDisplayId ?: return
         if (!sessionStateStore.hasActiveSession()) return
         if (gameMoveInProgress) return
         scope.launch {
             delay(200)
+            if (isKeyguardShowing || gameMoveInProgress) return@launch
             val a11y = FocusAccessibilityService.instance
             if (a11y != null) {
                 Log.d(TAG, "Restoring emulator focus via accessibility tap on display $displayId")
@@ -2081,6 +2091,7 @@ class DualScreenManager(
     }
 
     fun ensureCompanionLaunched(allowDuringSession: Boolean = false) {
+        if (isKeyguardShowing) return
         Log.d(
             TAG,
             "ensureCompanionLaunched: secondary=${displayAffinityHelper.hasSecondaryDisplay} " +
@@ -2148,6 +2159,7 @@ class DualScreenManager(
     }
 
     private fun launchCompanionOnSecondaryDisplay() {
+        if (isKeyguardShowing) return
         val options = displayAffinityHelper.getCompanionLaunchOptions() ?: return
         val intent = Intent(activityContext, SecondaryHomeActivity::class.java).apply {
             addFlags(
@@ -2165,6 +2177,7 @@ class DualScreenManager(
         }
         scope.launch {
             delay(COMPANION_LAUNCH_VERIFY_MS)
+            if (isKeyguardShowing) return@launch
             if (_isCompanionActive.value) return@launch
             if (companionLaunchAttempts < MAX_COMPANION_LAUNCH_ATTEMPTS) return@launch
             if (sessionStateStore.isForeignAppOnSecondary()) return@launch
@@ -2267,7 +2280,7 @@ class DualScreenManager(
 
     // --- Registration ---
 
-    private val blankPanelsSettingObserver =
+    private val blankPanelsSettingObserver: android.database.ContentObserver =
         object : android.database.ContentObserver(android.os.Handler(android.os.Looper.getMainLooper())) {
             override fun onChange(selfChange: Boolean) {
                 Log.d(TAG, "Blank-panels-on-video-output setting changed, docked=${displayAffinityHelper.isDockedDark}")
@@ -2286,7 +2299,15 @@ class DualScreenManager(
         }
     }
 
+    private val unlockReceiver = CompanionUnlockReceiver { ensureCompanionLaunched() }
+
     fun registerReceivers() {
+        androidx.core.content.ContextCompat.registerReceiver(
+            appContext,
+            unlockReceiver,
+            IntentFilter(Intent.ACTION_USER_PRESENT),
+            androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED
+        )
         displayAffinityHelper.registerDisplayListener(displayListener)
         appContext.contentResolver.registerContentObserver(
             android.provider.Settings.System.getUriFor(
@@ -2300,6 +2321,7 @@ class DualScreenManager(
     }
 
     fun unregisterReceivers() {
+        appContext.unregisterReceiver(unlockReceiver)
         companionLaunchJob?.cancel()
         companionLaunchJob = null
         dockedResyncJob?.cancel()
@@ -2308,11 +2330,13 @@ class DualScreenManager(
     }
 
     fun refocusSession() {
+        if (isKeyguardShowing || gameMoveInProgress) return
         if (!sessionStateStore.hasActiveSession()) return
         sessionRefocus?.invoke()
     }
 
     private fun refocusMain() {
+        if (isKeyguardShowing || gameMoveInProgress) return
         if (emulatorDisplayId == android.view.Display.DEFAULT_DISPLAY &&
             sessionStateStore.hasActiveSession()
         ) return
@@ -2347,5 +2371,13 @@ class DualScreenManager(
                 overrideDisplayId = android.view.Display.DEFAULT_DISPLAY
             )
         )
+    }
+}
+
+private class CompanionUnlockReceiver(
+    private val onUnlock: () -> Unit
+) : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action == Intent.ACTION_USER_PRESENT) onUnlock()
     }
 }

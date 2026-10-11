@@ -73,7 +73,11 @@ class HomeVideoPreviewDelegate @Inject constructor(
         }
     }
 
-    fun activateVideoPreview() {
+    fun activateVideoPreview(videoId: String, blocked: Boolean, isResumed: Boolean) {
+        val current = _state.value
+        if (blocked || !isResumed || !current.isVideoPreviewLoading ||
+            current.videoPreviewId != videoId
+        ) return
         _state.update {
             it.copy(
                 isVideoPreviewActive = true,

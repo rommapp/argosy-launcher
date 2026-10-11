@@ -298,6 +298,7 @@
     <!-- Button hint on the apps screen for a device with two screens. Verb phrase, starts the
          focused app on the upper screen. -->
     <string name="library_apps_hint_open_on_top">Open on Top</string>
+    <string name="library_apps_launch_failed">Could not open app</string>
     <!-- Button hint on the apps screen for a device with one screen. Verb, begins arranging
          the apps into a new order. -->
     <string name="library_apps_hint_reorder">Reorder</string>

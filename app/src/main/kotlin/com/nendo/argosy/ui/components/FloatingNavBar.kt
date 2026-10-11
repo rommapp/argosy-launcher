@@ -6,27 +6,24 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
-import androidx.compose.foundation.relocation.BringIntoViewRequester
-import androidx.compose.foundation.relocation.bringIntoViewRequester
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
@@ -47,7 +44,6 @@ import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.Motion
 import com.nendo.argosy.ui.util.clickableNoFocus
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun FloatingNavBar(
     visible: Boolean,
@@ -67,35 +63,35 @@ fun FloatingNavBar(
             fadeOut(tween(Motion.durationSlide))
     ) {
         val shape = RoundedCornerShape(Dimens.radiusPill)
-        val scrollState = rememberScrollState()
-        val currentDestination = remember { BringIntoViewRequester() }
-        LaunchedEffect(currentRoute, destinations, scrollState.viewportSize, scrollState.maxValue) {
-            if (scrollState.viewportSize > 0) currentDestination.bringIntoView()
+        val currentIndex = destinations.indexOfFirst { NavRing.routeMatches(it.route, currentRoute) }
+        val listState = rememberLazyListState(initialFirstVisibleItemIndex = currentIndex.coerceAtLeast(0))
+        val viewportSize by remember { derivedStateOf { listState.layoutInfo.viewportSize } }
+        LaunchedEffect(currentIndex, destinations, viewportSize) {
+            if (currentIndex < 0) return@LaunchedEffect
+            val layoutInfo = listState.layoutInfo
+            val currentItem = layoutInfo.visibleItemsInfo.firstOrNull { it.index == currentIndex }
+            if (currentItem == null || currentItem.offset < layoutInfo.viewportStartOffset ||
+                currentItem.offset + currentItem.size > layoutInfo.viewportEndOffset
+            ) {
+                listState.animateScrollToItem(currentIndex)
+            }
         }
-        Row(
+        LazyRow(
+            state = listState,
             modifier = Modifier
                 .observeTouchDowns { _, _ -> onInteract() }
                 .frostedSurface(shape)
-                .padding(horizontal = Dimens.spacingSm, vertical = Dimens.spacingXs)
-                .horizontalScroll(scrollState),
+                .padding(horizontal = Dimens.spacingSm, vertical = Dimens.spacingXs),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
         ) {
-            destinations.forEach { item ->
-                key(item.route) {
-                    val isCurrent = NavRing.routeMatches(item.route, currentRoute)
-                    NavBarDestination(
-                        item = item,
-                        isCurrent = isCurrent,
-                        hasBadge = badgeFor(item.route) != null,
-                        onClick = { onNavigate(item.route) },
-                        modifier = if (isCurrent) {
-                            Modifier.bringIntoViewRequester(currentDestination)
-                        } else {
-                            Modifier
-                        }
-                    )
-                }
+            items(destinations, key = { it.route }) { item ->
+                NavBarDestination(
+                    item = item,
+                    isCurrent = NavRing.routeMatches(item.route, currentRoute),
+                    hasBadge = badgeFor(item.route) != null,
+                    onClick = { onNavigate(item.route) }
+                )
             }
         }
     }
@@ -123,12 +119,11 @@ private fun NavBarDestination(
     item: DrawerItem,
     isCurrent: Boolean,
     hasBadge: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    onClick: () -> Unit
 ) {
     val theme = LocalArgosyTheme.current
     Box(
-        modifier = modifier
+        modifier = Modifier
             .argosyFocusIndicators(
                 focused = isCurrent,
                 indicators = FocusIndicators.Pill,

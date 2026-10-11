@@ -6,11 +6,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.performScrollToIndex
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.nendo.argosy.domain.model.PresentationStyle
@@ -66,9 +65,8 @@ class GameShowcaseScrollTest {
         fun scrollRange() = metadata.fetchSemanticsNode()
             .config[SemanticsProperties.VerticalScrollAxisRange]
 
-        val firstGameOverflow = scrollRange().maxValue()
-        assertTrue("Game A should have scrollable metadata", firstGameOverflow > 0f)
-        metadata.performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, firstGameOverflow) }
+        assertTrue("Game A should have scrollable metadata", scrollRange().maxValue() > 0f)
+        metadata.performScrollToIndex(1)
         compose.waitForIdle()
         assertTrue(scrollRange().value() > 0f)
 
@@ -78,9 +76,8 @@ class GameShowcaseScrollTest {
         compose.waitForIdle()
         assertEquals(0f, scrollRange().value(), 0f)
 
-        val nextGameOverflow = scrollRange().maxValue()
-        assertTrue("Game B should have scrollable metadata", nextGameOverflow > 0f)
-        metadata.performSemanticsAction(SemanticsActions.ScrollBy) { it(0f, nextGameOverflow) }
+        assertTrue("Game B should have scrollable metadata", scrollRange().maxValue() > 0f)
+        metadata.performScrollToIndex(1)
         compose.waitForIdle()
         val beforeRefresh = scrollRange().value()
         assertTrue(beforeRefresh > 0f)

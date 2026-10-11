@@ -15,8 +15,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
@@ -338,9 +339,9 @@ private fun CinematicShowcase(
     onTitleBoundsChanged: (Rect) -> Unit
 ) {
     val theme = LocalArgosyTheme.current
-    val scrollState = rememberScrollState()
+    val scrollState = rememberLazyListState()
     LaunchedEffect(detail.gameId) {
-        scrollState.scrollTo(0)
+        scrollState.scrollToItem(0)
     }
     val gutter = if (viewportWidth.value < ComponentDefaults.Carousel.compactWidthDp) {
         Dimens.spacingMd
@@ -354,11 +355,13 @@ private fun CinematicShowcase(
     val items = detail.stats?.let { showcaseRailItems(it, style, journeyShown = false) }.orEmpty()
     val developer = items.firstOrNull { it.first == PresentationStat.DEVELOPER }?.second?.text
     val rows = if (detail.stats == null) {
-        listOf(detail.facts.map { RailItem(null, null, it.value) }).filter { it.isNotEmpty() }
+        listOf(RailGroup.FACTS to detail.facts.map { RailItem(null, null, it.value) })
+            .filter { it.second.isNotEmpty() }
     } else {
         RailGroup.entries.mapNotNull { group ->
             items.filter { it.first.railGroup == group && it.first != PresentationStat.DEVELOPER }
                 .map { it.second }.takeIf { it.isNotEmpty() }
+                ?.let { group to it }
         }
     }
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
@@ -378,24 +381,33 @@ private fun CinematicShowcase(
         )
         Box(Modifier.weight(1f).heightIn(max = availableHeight)) {
           CompositionLocalProvider(LocalLayoutDirection provides textDirection) {
-            Column(
-                modifier = Modifier.verticalScroll(scrollState),
-                verticalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
+            LazyColumn(
+                state = scrollState,
+                modifier = Modifier.onGloballyPositioned {
+                    onTitleBoundsChanged(
+                        Rect(it.positionInRoot(), Size(it.size.width.toFloat(), it.size.height.toFloat()))
+                    )
+                }
             ) {
-                Column(
-                    modifier = Modifier.onGloballyPositioned {
-                        onTitleBoundsChanged(
-                            Rect(it.positionInRoot(), Size(it.size.width.toFloat(), it.size.height.toFloat()))
-                        )
-                    },
-                    verticalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
-                ) {
-                    ShowcaseTitle(detail = detail)
-                    developer?.let {
-                        Text(text = it, style = MaterialTheme.typography.titleMedium, color = theme.textDim)
+                item(key = "heading") {
+                    Column(verticalArrangement = Arrangement.spacedBy(Dimens.spacingMd)) {
+                        ShowcaseTitle(detail = detail)
+                        developer?.let {
+                            Text(text = it, style = MaterialTheme.typography.titleMedium, color = theme.textDim)
+                        }
                     }
-                    ShowcaseRail(rows = rows)
-                    if (friends.isNotEmpty()) FriendsActivityBadge(friends = friends, textColor = theme.textPrimary)
+                }
+                itemsIndexed(rows, key = { _, row -> row.first.name }) { index, row ->
+                    Box(Modifier.padding(top = if (index == 0) Dimens.spacingMd else Dimens.spacingSm)) {
+                        ShowcaseRailRow(row.second)
+                    }
+                }
+                if (friends.isNotEmpty()) {
+                    item(key = "friends") {
+                        Box(Modifier.padding(top = Dimens.spacingMd)) {
+                            FriendsActivityBadge(friends = friends, textColor = theme.textPrimary)
+                        }
+                    }
                 }
             }
           }
@@ -716,14 +728,6 @@ private fun showcaseRailItems(
             }?.let { RailItem(Icons.Filled.EmojiEvents, ALauncherColors.TrophyAmber, "${stats.earnedAchievementCount}/$it") }
             PresentationStat.FRIENDS -> null
         }?.let { stat to it }
-    }
-}
-
-@Composable
-private fun ShowcaseRail(rows: List<List<RailItem>>) {
-    if (rows.isEmpty()) return
-    Column(verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)) {
-        rows.forEach { ShowcaseRailRow(it) }
     }
 }
 

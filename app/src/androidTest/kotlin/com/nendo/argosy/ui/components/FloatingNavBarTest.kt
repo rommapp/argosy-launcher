@@ -6,10 +6,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToKey
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -50,8 +51,9 @@ class FloatingNavBarTest {
         compose.onNodeWithContentDescription(context.getString(R.string.ui_drawer_nav_home))
             .assertIsDisplayed()
 
+        compose.onNode(hasScrollToIndexAction())
+            .performScrollToKey(Screen.Settings.route)
         compose.onNodeWithContentDescription(context.getString(R.string.ui_drawer_nav_settings))
-            .performScrollTo()
             .assertIsDisplayed()
             .performClick()
         compose.runOnIdle {

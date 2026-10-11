@@ -10,24 +10,34 @@ import org.junit.Test
 
 class VirtualPadTest {
 
-    private fun event(virtual: Boolean, source: Int): KeyEvent {
+    private fun event(
+        virtual: Boolean,
+        source: Int,
+        keyCode: Int = KeyEvent.KEYCODE_DPAD_UP
+    ): KeyEvent {
         val device: InputDevice = mockk { every { isVirtual } returns virtual }
         return mockk {
             every { this@mockk.device } returns device
             every { this@mockk.source } returns source
+            every { this@mockk.keyCode } returns keyCode
         }
     }
 
     @Test
     fun `only a virtual device sending pad input counts, and only once`() {
-        assertFalse(VirtualPad.observe(event(virtual = true, source = InputDevice.SOURCE_KEYBOARD)))
+        val keyboard = InputDevice.SOURCE_KEYBOARD
+        assertFalse(VirtualPad.observe(event(virtual = true, source = keyboard)))
         assertFalse(VirtualPad.observe(event(virtual = true, source = InputDevice.SOURCE_DPAD)))
         assertFalse(VirtualPad.observe(event(virtual = false, source = InputDevice.SOURCE_GAMEPAD)))
+        assertFalse(
+            VirtualPad.observe(event(virtual = false, source = keyboard, keyCode = KeyEvent.KEYCODE_BUTTON_A))
+        )
         assertFalse(VirtualPad.seen)
 
-        val firmwarePad = 16778257
-        assertTrue(VirtualPad.observe(event(virtual = true, source = firmwarePad)))
+        assertTrue(
+            VirtualPad.observe(event(virtual = true, source = keyboard, keyCode = KeyEvent.KEYCODE_BUTTON_A))
+        )
         assertTrue(VirtualPad.seen)
-        assertFalse(VirtualPad.observe(event(virtual = true, source = firmwarePad)))
+        assertFalse(VirtualPad.observe(event(virtual = true, source = 16778257)))
     }
 }

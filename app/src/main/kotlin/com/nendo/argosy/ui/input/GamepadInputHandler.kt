@@ -150,6 +150,7 @@ class GamepadInputHandler @Inject constructor(
     private val stickDeadZone = 0.5f
 
     fun processStickMotion(event: MotionEvent): GamepadEvent? {
+        com.nendo.argosy.core.input.VirtualPad.observe(event)
         if (event.source and InputDevice.SOURCE_JOYSTICK == 0) return null
 
         val x = event.getAxisValue(MotionEvent.AXIS_X)
@@ -186,7 +187,7 @@ class GamepadInputHandler @Inject constructor(
         if (event.action == KeyEvent.ACTION_DOWN) {
             lastInputDevice = event.device
             com.nendo.argosy.core.input.VirtualPad.observe(event)
-            com.nendo.argosy.util.Logger.verbose("GamepadInput") { "KeyEvent: keyCode=${event.keyCode}, scanCode=${event.scanCode}, device=${event.device?.name}" }
+            com.nendo.argosy.util.Logger.verbose("GamepadInput") { "KeyEvent: keyCode=${event.keyCode}, scanCode=${event.scanCode}, device=${event.device?.name}, deviceId=${event.deviceId}, source=${event.source}" }
         }
 
         rawKeyEventListener?.let { listener ->

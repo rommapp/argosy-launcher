@@ -3185,10 +3185,14 @@ class LibretroActivity : ComponentActivity() {
 
     @SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        observeVirtualPad(event)
+        return dispatchKeyFrom(event, KeyPressGate.Source.Key, coreBound = true)
+    }
+
+    private fun observeVirtualPad(event: android.view.InputEvent) {
         if (VirtualPad.observe(event) && ::inputConfig.isInitialized) {
             lifecycleScope.launch { inputConfig.refreshInputMappings() }
         }
-        return dispatchKeyFrom(event, KeyPressGate.Source.Key, coreBound = true)
     }
 
     @SuppressLint("RestrictedApi")
@@ -3290,6 +3294,7 @@ class LibretroActivity : ComponentActivity() {
     }
 
     override fun onGenericMotionEvent(event: MotionEvent): Boolean {
+        observeVirtualPad(event)
         val device = event.device
         triggerAxisKeyEmitter.emitByAxis(event).forEach { (axis, key) ->
             val analogMapped = device != null && inputMapper.hasAnalogMappingForAxis(device, axis)

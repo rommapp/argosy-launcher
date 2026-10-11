@@ -2,13 +2,14 @@ package com.nendo.argosy.core.input
 
 import android.view.InputDevice
 import android.view.InputEvent
+import android.view.KeyEvent
 
 private const val OEM_VIRTUAL_DEVICE_PREFIX = "uinput-"
 
 /**
  * Firmware that re-injects its built-in controls through Android's virtual device. The device
- * describes itself as a keyboard, so it counts as a pad only once it sends an event that carries
- * a pad source.
+ * describes itself as a keyboard, so it counts as a pad only once it sends pad input: an event
+ * that carries a pad source, or a gamepad button code.
  */
 object VirtualPad {
     @Volatile
@@ -17,13 +18,19 @@ object VirtualPad {
 
     fun observe(event: InputEvent): Boolean {
         if (seen || event.device?.isVirtual != true) return false
-        val source = event.source
-        val padSource = source and InputDevice.SOURCE_GAMEPAD == InputDevice.SOURCE_GAMEPAD ||
-            source and InputDevice.SOURCE_JOYSTICK == InputDevice.SOURCE_JOYSTICK
-        if (!padSource) return false
+        if (!event.hasPadSource() && !(event is KeyEvent && event.keyCode.isGamepadButtonCode())) {
+            return false
+        }
         seen = true
         return true
     }
+
+    private fun InputEvent.hasPadSource(): Boolean =
+        source and InputDevice.SOURCE_GAMEPAD == InputDevice.SOURCE_GAMEPAD ||
+            source and InputDevice.SOURCE_JOYSTICK == InputDevice.SOURCE_JOYSTICK
+
+    private fun Int.isGamepadButtonCode(): Boolean =
+        this in KeyEvent.KEYCODE_BUTTON_A..KeyEvent.KEYCODE_BUTTON_MODE
 }
 
 fun InputDevice.actsAsGamepad(): Boolean = isPhysicalGamepad() || (isVirtual && VirtualPad.seen)

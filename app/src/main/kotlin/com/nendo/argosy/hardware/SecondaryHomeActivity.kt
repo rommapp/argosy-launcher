@@ -394,12 +394,12 @@ class SecondaryHomeActivity :
             val forward = dsm.mediaPlayerMotionDispatcher
             if (forward != null && forward(event)) return true
         }
+        if (gamepadInputHandler.handleMotionEvent(event)) return true
         val stickEvent = gamepadInputHandler.processStickMotion(event)
         if (stickEvent != null) {
             gamepadInputHandler.injectEvent(stickEvent)
             return true
         }
-        if (gamepadInputHandler.handleMotionEvent(event)) return true
         return super.dispatchGenericMotionEvent(event)
     }
 

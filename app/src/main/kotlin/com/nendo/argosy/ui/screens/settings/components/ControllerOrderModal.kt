@@ -35,7 +35,7 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.R
-import com.nendo.argosy.core.input.isPhysicalGamepad
+import com.nendo.argosy.core.input.actsAsGamepad
 import com.nendo.argosy.data.local.entity.ControllerOrderEntity
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.Modal
@@ -260,7 +260,7 @@ private fun findDeviceByControllerId(controllerId: String): InputDevice? {
     return null
 }
 
-private fun isGamepadDevice(device: InputDevice): Boolean = device.isPhysicalGamepad()
+private fun isGamepadDevice(device: InputDevice): Boolean = device.actsAsGamepad()
 
 private fun isGamepadButton(keyCode: Int): Boolean =
     keyCode != KeyEvent.KEYCODE_UNKNOWN && keyCode != KeyEvent.KEYCODE_HOME

@@ -172,7 +172,6 @@ fun InputMappingModal(
                 if (event.action == KeyEvent.ACTION_UP) suppressBackUntilRelease = false
                 true
             } else {
-            val device = event.device
             when (val currentState = state) {
                 is InputMappingState.ControllerList -> {
                     if (event.action == KeyEvent.ACTION_DOWN) {
@@ -292,7 +291,6 @@ fun InputMappingModal(
                     }
                 }
                 is InputMappingState.Recording -> {
-                    val isGamepad = device != null && isGamepadDevice(device)
                     val heldLongEnough = event.eventTime - event.downTime >= MIN_PRESS_MS
                     when {
                         event.keyCode == KeyEvent.KEYCODE_BACK -> {
@@ -307,12 +305,12 @@ fun InputMappingModal(
                                 cancelHoldActive = true
                             } else if (event.action == KeyEvent.ACTION_UP && cancelHoldActive) {
                                 cancelHoldActive = false
-                                if (isGamepad && heldLongEnough && isMappableButton(event.keyCode)) {
+                                if (heldLongEnough && isMappableButton(event.keyCode)) {
                                     recordMapping(currentState, InputSource.Button(event.keyCode))
                                 }
                             }
                         }
-                        event.action == KeyEvent.ACTION_DOWN && isGamepad && isMappableButton(event.keyCode) -> {
+                        event.action == KeyEvent.ACTION_DOWN && isMappableButton(event.keyCode) -> {
                             recordMapping(currentState, InputSource.Button(event.keyCode))
                         }
                     }
@@ -325,8 +323,7 @@ fun InputMappingModal(
         val motionListener: (MotionEvent) -> Boolean = { event ->
             when (val currentState = state) {
                 is InputMappingState.Recording -> {
-                    val device = event.device
-                    if (device != null && isGamepadDevice(device)) {
+                    if (event.isFromSource(InputDevice.SOURCE_JOYSTICK)) {
                         val analogInput = detectAnalogInput(event)
                         if (analogInput != null) {
                             recordMapping(currentState, analogInput)
@@ -335,7 +332,7 @@ fun InputMappingModal(
                 }
                 else -> {}
             }
-            false
+            true
         }
 
         gamepadInputHandler?.setRawKeyEventListener(keyListener)
@@ -750,8 +747,6 @@ private fun RecordingOverlay(
         }
     }
 }
-
-private fun isGamepadDevice(device: InputDevice): Boolean = !device.isVirtual
 
 private fun isMappableButton(keyCode: Int): Boolean = InputPresets.isBindableKey(keyCode)
 

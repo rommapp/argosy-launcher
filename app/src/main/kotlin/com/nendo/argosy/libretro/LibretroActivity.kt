@@ -49,6 +49,7 @@ import androidx.compose.ui.res.stringResource
 import com.nendo.argosy.libretro.ui.RAConnectionNotification
 import com.nendo.argosy.core.input.ConnectedControllerTracker
 import com.nendo.argosy.core.input.ControllerDetector
+import com.nendo.argosy.core.input.VirtualPad
 import com.nendo.argosy.ui.input.LocalABIconsSwapped
 import com.nendo.argosy.ui.input.LocalSwapStartSelect
 import com.nendo.argosy.ui.input.LocalXYIconsSwapped
@@ -3183,8 +3184,12 @@ class LibretroActivity : ComponentActivity() {
     }
 
     @SuppressLint("RestrictedApi")
-    override fun dispatchKeyEvent(event: KeyEvent): Boolean =
-        dispatchKeyFrom(event, KeyPressGate.Source.Key, coreBound = true)
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (VirtualPad.observe(event) && ::inputConfig.isInitialized) {
+            lifecycleScope.launch { inputConfig.refreshInputMappings() }
+        }
+        return dispatchKeyFrom(event, KeyPressGate.Source.Key, coreBound = true)
+    }
 
     @SuppressLint("RestrictedApi")
     private fun dispatchKeyFrom(event: KeyEvent, source: KeyPressGate.Source, coreBound: Boolean): Boolean {

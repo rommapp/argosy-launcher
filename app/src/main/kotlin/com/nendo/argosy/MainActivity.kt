@@ -585,6 +585,8 @@ class MainActivity : ComponentActivity() {
             return true
         }
 
+        if (gamepadInputHandler.handleMotionEvent(event)) return true
+
         val stickEvent = gamepadInputHandler.processStickMotion(event)
         if (stickEvent != null) {
             if (dualScreenManager.companionHoldsPrimary.value && !isOverlayFocused) {
@@ -618,9 +620,6 @@ class MainActivity : ComponentActivity() {
             return true
         }
 
-        if (gamepadInputHandler.handleMotionEvent(event)) {
-            return true
-        }
         return super.dispatchGenericMotionEvent(event)
     }
 

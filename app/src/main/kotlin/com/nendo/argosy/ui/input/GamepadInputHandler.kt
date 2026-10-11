@@ -185,6 +185,7 @@ class GamepadInputHandler @Inject constructor(
     fun handleKeyEvent(event: KeyEvent): Boolean {
         if (event.action == KeyEvent.ACTION_DOWN) {
             lastInputDevice = event.device
+            com.nendo.argosy.core.input.VirtualPad.observe(event)
             com.nendo.argosy.util.Logger.verbose("GamepadInput") { "KeyEvent: keyCode=${event.keyCode}, scanCode=${event.scanCode}, device=${event.device?.name}" }
         }
 

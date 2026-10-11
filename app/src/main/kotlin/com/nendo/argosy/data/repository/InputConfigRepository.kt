@@ -16,7 +16,7 @@ import com.nendo.argosy.data.local.entity.HotkeyScopeType
 import com.nendo.argosy.libretro.HotkeyManager
 import com.nendo.argosy.core.input.ControllerDetector
 import com.nendo.argosy.core.input.DetectedLayout
-import com.nendo.argosy.core.input.isPhysicalGamepad
+import com.nendo.argosy.core.input.actsAsGamepad
 import com.nendo.argosy.util.Logger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -568,7 +568,7 @@ class InputConfigRepository @Inject constructor(
         for (deviceId in deviceIds) {
             val device = InputDevice.getDevice(deviceId) ?: continue
 
-            if (device.isPhysicalGamepad()) {
+            if (device.actsAsGamepad()) {
                 val detection = ControllerDetector.detectFromDevice(device)
                 controllers.add(
                     ControllerInfo(

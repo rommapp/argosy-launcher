@@ -1,6 +1,5 @@
 package com.nendo.argosy.ui.screens.settings.components
 
-import android.view.InputDevice
 import android.view.KeyEvent
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -214,8 +213,6 @@ fun HotkeysModal(
 
     DisposableEffect(state, gamepadInputHandler, focusableRows) {
         val listener: (KeyEvent) -> Boolean = { event ->
-            val device = event.device
-
             when (val currentState = state) {
                 is HotkeysState.ActionList -> {
                     if (event.action == KeyEvent.ACTION_DOWN) {
@@ -242,7 +239,7 @@ fun HotkeysModal(
                         if (event.action == KeyEvent.ACTION_DOWN) {
                             if (event.keyCode == KeyEvent.KEYCODE_BUTTON_B || event.keyCode == KeyEvent.KEYCODE_BACK) {
                                 state = HotkeysState.ActionList(focusedIndex = currentState.returnFocusIndex)
-                            } else if (device != null && isGamepadDevice(device) && isRecordableKey(event.keyCode)) {
+                            } else if (isRecordableKey(event.keyCode)) {
                                 val newKeys = currentState.heldKeys + event.keyCode
                                 if (newKeys.size <= 3) {
                                     state = currentState.copy(heldKeys = newKeys)
@@ -819,7 +816,5 @@ private fun parseComboJson(jsonStr: String): List<Int> {
         emptyList()
     }
 }
-
-private fun isGamepadDevice(device: InputDevice): Boolean = !device.isVirtual
 
 private fun isRecordableKey(keyCode: Int): Boolean = InputPresets.isBindableKey(keyCode)

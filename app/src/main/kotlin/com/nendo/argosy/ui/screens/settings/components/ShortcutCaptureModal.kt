@@ -23,7 +23,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import com.nendo.argosy.R
-import com.nendo.argosy.core.input.isPhysicalGamepad
+import com.nendo.argosy.core.input.actsAsGamepad
 import com.nendo.argosy.libretro.HotkeyManager
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.Modal
@@ -52,7 +52,7 @@ fun ShortcutCaptureModal(
                     gamepadInputHandler?.mapKeyToEvent(event.keyCode) == GamepadEvent.Back
                 when {
                     isBack -> currentOnDismiss.value()
-                    device == null || !device.isPhysicalGamepad() -> {}
+                    device == null || !device.actsAsGamepad() -> {}
                     UiShortcutKeys.isBindable(event.keyCode) -> currentOnAssign.value(event.keyCode)
                     else -> rejectedKey = event.keyCode
                 }

@@ -9,6 +9,7 @@ internal data class DockWidths(
 
 internal fun dockWidths(
     maximum: Float,
+    preferredMaximum: Float,
     appCount: Int,
     slot: Float,
     gap: Float,
@@ -16,7 +17,6 @@ internal fun dockWidths(
     appIconSize: Float,
     controlIconSize: Float
 ): DockWidths {
-    val usable = maximum.coerceAtLeast(slot * 2)
     val groupCount = if (appCount > 0) 2 else 1
     val appInset = (slot - appIconSize).coerceAtLeast(0f) / 2f
     val controlInset = (slot - controlIconSize).coerceAtLeast(0f) / 2f
@@ -24,10 +24,16 @@ internal fun dockWidths(
     val desiredGroupGap = if (appCount > 0) {
         (visibleAppGap * 2 - appInset - controlInset).coerceAtLeast(0f)
     } else gap * 2
-    val groupGap = desiredGroupGap.coerceAtMost((usable - slot * 2) / groupCount)
+    val desiredMinimumApps = if (appCount > 0) slot else 0f
+    val minimumWidth = slot * 2 + desiredMinimumApps + desiredGroupGap * groupCount + padding * 2
+    val usable = preferredMaximum.coerceAtLeast(minimumWidth).coerceAtMost(maximum)
+    val availableAfterControls = (usable - slot * 2).coerceAtLeast(0f)
+    val minimumApps = desiredMinimumApps.coerceAtMost(availableAfterControls)
+    val groupGap = desiredGroupGap.coerceAtMost((availableAfterControls - minimumApps) / groupCount)
     val controlsAndGaps = slot * 2 + groupGap * groupCount
-    val minimumApps = if (appCount > 0) slot.coerceAtMost(usable - controlsAndGaps) else 0f
-    val resolvedPadding = padding.coerceIn(0f, (usable - controlsAndGaps - minimumApps) / 2f)
+    val resolvedPadding = padding.coerceIn(
+        0f, (availableAfterControls - minimumApps - groupGap * groupCount) / 2f
+    )
     val fixed = controlsAndGaps + resolvedPadding * 2
     val desiredApps = appCount * slot + (appCount - 1).coerceAtLeast(0) * gap
     val apps = desiredApps.coerceAtMost((usable - fixed).coerceAtLeast(0f))

@@ -134,7 +134,8 @@ fun CompanionAppBar(
 
         BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
             val widths = dockWidths(
-                maximum = minOf(maxWidth, maximumWidth).value,
+                maximum = maxWidth.value,
+                preferredMaximum = maximumWidth.value,
                 appCount = apps.size,
                 slot = slot.value,
                 gap = gap.value,

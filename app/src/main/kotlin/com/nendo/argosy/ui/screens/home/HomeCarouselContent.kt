@@ -27,11 +27,12 @@ internal fun homeCarouselContent(
     enabled: Boolean
 ): HomeCarouselContent {
     val top = headerHeight.coerceIn(0f, height.coerceAtLeast(0f))
-    val viewport = (height - footerHeight - edge - top).coerceAtLeast(0f)
+    val viewport = (height - footerHeight - top).coerceAtLeast(0f)
+    val bottomInset = edge.coerceIn(0f, viewport)
     val aspect = aspectRatio.takeIf { it > 0f && it.isFinite() } ?: 1f
     val focusScale = 1f / restingScale.coerceAtLeast(0.5f)
     val focusedExtent = fitted.cardHeight * minOf(1f, aspect) * focusScale
-    if (!enabled || (focusedExtent >= minimumFocusedExtent && titleReserve <= viewport)) {
+    if (!enabled || (focusedExtent >= minimumFocusedExtent && titleReserve <= viewport - bottomInset)) {
         return HomeCarouselContent(fitted, 0f, height.coerceAtLeast(0f), height.coerceAtLeast(0f), false)
     }
     val horizontalFit = minOf(
@@ -48,5 +49,5 @@ internal fun homeCarouselContent(
         width.coerceAtLeast(0f) / 2f, reserve / 2f,
         (width - edge * 2f).coerceAtLeast(0f), true
     )
-    return HomeCarouselContent(geometry, top, viewport, maxOf(viewport, railTop + railHeight), true)
+    return HomeCarouselContent(geometry, top, viewport, maxOf(viewport, railTop + railHeight + bottomInset), true)
 }

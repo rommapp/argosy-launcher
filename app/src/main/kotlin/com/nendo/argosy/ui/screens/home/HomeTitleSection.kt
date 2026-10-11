@@ -22,12 +22,16 @@ import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFontFamilyResolver
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.text
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontSynthesis
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -51,6 +55,13 @@ internal data class HomeMetadataMeasureInput(
     val badges: List<String>,
     val friendsLabel: String?,
     val avatarCount: Int
+)
+
+private data class HomeTextMeasureKey(
+    val text: String,
+    val style: TextStyle,
+    val maxWidth: Int,
+    val maxLines: Int
 )
 
 @Composable
@@ -96,6 +107,19 @@ internal fun rememberHomeTitleReserve(inputs: List<HomeMetadataMeasureInput>, ma
     val titleStyle = MaterialTheme.typography.headlineMedium
     val developerStyle = MaterialTheme.typography.bodyMedium
     val badgeStyle = MaterialTheme.typography.labelMedium
+    val fontFamilyResolver = LocalFontFamilyResolver.current
+    val resolvedTypefaces = listOf(titleStyle, developerStyle, badgeStyle).map { style ->
+        fontFamilyResolver.resolve(
+            fontFamily = style.fontFamily,
+            fontWeight = style.fontWeight ?: FontWeight.Normal,
+            fontStyle = style.fontStyle ?: FontStyle.Normal,
+            fontSynthesis = style.fontSynthesis ?: FontSynthesis.All
+        ).value
+    }
+    val measurements = remember(
+        maxWidth, titleStyle, developerStyle, badgeStyle, density, configuration,
+        textMeasurer, resolvedTypefaces
+    ) { mutableMapOf<HomeTextMeasureKey, HomeFlowSize>() }
     val gap = with(density) { Dimens.spacingXs.roundToPx() }
     val rowGap = with(density) { Dimens.spacingSm.roundToPx() }
     val friendGap = with(density) { Dimens.spacingSm.roundToPx() }
@@ -103,20 +127,25 @@ internal fun rememberHomeTitleReserve(inputs: List<HomeMetadataMeasureInput>, ma
     val avatar = with(density) { Dimens.iconMd.toPx() }
     return remember(
         inputs, maxWidth, titleStyle, developerStyle, badgeStyle, density, configuration,
-        textMeasurer, gap, rowGap, friendGap, icon, avatar
+        textMeasurer, resolvedTypefaces, measurements, gap, rowGap, friendGap, icon, avatar
     ) {
         val width = with(density) { maxWidth.roundToPx().coerceAtLeast(1) }
+        val usedMeasurements = mutableSetOf<HomeTextMeasureKey>()
         fun measure(
             value: String,
             style: TextStyle,
             available: Int = width,
             maxLines: Int = Int.MAX_VALUE
         ): HomeFlowSize {
-            val result = textMeasurer.measure(
-                value, style = style, maxLines = maxLines, overflow = TextOverflow.Ellipsis,
-                constraints = Constraints(maxWidth = available.coerceAtLeast(1))
-            )
-            return HomeFlowSize(result.size.width, result.size.height)
+            val key = HomeTextMeasureKey(value, style, available.coerceAtLeast(1), maxLines)
+            usedMeasurements.add(key)
+            return measurements.getOrPut(key) {
+                val result = textMeasurer.measure(
+                    value, style = style, maxLines = maxLines, overflow = TextOverflow.Ellipsis,
+                    constraints = Constraints(maxWidth = key.maxWidth)
+                )
+                HomeFlowSize(result.size.width, result.size.height)
+            }
         }
         val metadata = inputs.maxOfOrNull { input ->
             val items = buildList {
@@ -138,6 +167,7 @@ internal fun rememberHomeTitleReserve(inputs: List<HomeMetadataMeasureInput>, ma
             metadataHeight + if (metadataHeight > 0) gap else 0
         } ?: 0
         val twoTitleLines = measure("M\nM", titleStyle).height
+        measurements.keys.retainAll(usedMeasurements)
         with(density) { (twoTitleLines + metadata).toDp() }
     }
 }

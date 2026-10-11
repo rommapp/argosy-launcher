@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -108,13 +109,17 @@ internal fun rememberHomeTitleReserve(inputs: List<HomeMetadataMeasureInput>, ma
     val developerStyle = MaterialTheme.typography.bodyMedium
     val badgeStyle = MaterialTheme.typography.labelMedium
     val fontFamilyResolver = LocalFontFamilyResolver.current
-    val resolvedTypefaces = listOf(titleStyle, developerStyle, badgeStyle).map { style ->
-        fontFamilyResolver.resolve(
-            fontFamily = style.fontFamily,
-            fontWeight = style.fontWeight ?: FontWeight.Normal,
-            fontStyle = style.fontStyle ?: FontStyle.Normal,
-            fontSynthesis = style.fontSynthesis ?: FontSynthesis.All
-        ).value
+    val resolvedTypefaces by remember(fontFamilyResolver, titleStyle, developerStyle, badgeStyle) {
+        derivedStateOf {
+            listOf(titleStyle, developerStyle, badgeStyle).map { style ->
+                fontFamilyResolver.resolve(
+                    fontFamily = style.fontFamily,
+                    fontWeight = style.fontWeight ?: FontWeight.Normal,
+                    fontStyle = style.fontStyle ?: FontStyle.Normal,
+                    fontSynthesis = style.fontSynthesis ?: FontSynthesis.All
+                ).value
+            }
+        }
     }
     val measurements = remember(
         maxWidth, titleStyle, developerStyle, badgeStyle, density, configuration,

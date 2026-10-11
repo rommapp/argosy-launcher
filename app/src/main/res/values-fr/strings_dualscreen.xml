@@ -64,6 +64,7 @@
     <string name="dual_companion_app_bar_keyboard_description">Clavier</string>
     <string name="dual_companion_app_bar_swap_description">Permuter les écrans</string>
     <string name="dual_companion_app_bar_focus_description">Envoyer les commandes vers un écran</string>
+    <string name="dual_companion_app_bar_tools_description">Outils du dock</string>
 
     <string name="dual_companion_drawer_title">Toutes les applications</string>
     <string name="dual_companion_drawer_pinned_description">Épinglée</string>

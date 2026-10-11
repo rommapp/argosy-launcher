@@ -58,6 +58,14 @@ object ColorTokens {
     }
 
     object Domain {
+        object FrostedSurface {
+            val dark = Color(0xFF1C1E26)
+            val light = Color(0xFFE9EBF0)
+        }
+        object PresentationScrim {
+            val dark = Color(0xFF0E1116)
+            val light = Color(0xFFF6F8FB)
+        }
         val ratingStar = Color(0xFFFFD700)
         val difficulty = Color(0xFFE53935)
         val trophyAmber = Color(0xFFFFB300)

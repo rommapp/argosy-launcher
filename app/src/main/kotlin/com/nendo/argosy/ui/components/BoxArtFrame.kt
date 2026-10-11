@@ -76,8 +76,9 @@ fun Modifier.boxArtFrame(
         GlowColorMode.COVER -> artworkGradient
     }
 
+    val scaleTarget = scaleOverride ?: if (isFocused) focusScale else ComponentDefaults.Focus.scaleDefault
     val scale by animateFloatAsState(
-        targetValue = scaleOverride ?: if (isFocused) focusScale else ComponentDefaults.Focus.scaleDefault,
+        targetValue = scaleTarget,
         animationSpec = Motion.focusSpring,
         label = "boxArtScale"
     )

@@ -26,6 +26,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.nendo.argosy.ui.common.coverSizeWithin
@@ -60,6 +61,22 @@ internal const val HERO_MIN_CARD_SCALE = 0.4f
  */
 internal fun neighbourPushFor(cardWidth: Dp, focusScale: Float): Dp =
     (cardWidth * (focusScale - 1f) / 2f).coerceAtLeast(0.dp)
+
+internal fun carouselNeighbourTranslation(
+    index: Int,
+    focusedIndex: Int,
+    neighbourPushPx: Float,
+    reversed: Boolean,
+    layoutDirection: LayoutDirection
+): Float {
+    val towardLeft = (layoutDirection == LayoutDirection.Rtl) xor reversed
+    val pushAway = if (towardLeft) -neighbourPushPx else neighbourPushPx
+    return when {
+        index < focusedIndex -> -pushAway
+        index > focusedIndex -> pushAway
+        else -> 0f
+    }
+}
 
 internal fun HomeRowAlignment.toScalePivotY(): Float = when (this) {
     HomeRowAlignment.TOP -> 0f
@@ -321,9 +338,10 @@ fun CarouselRail(
     onItemLongPress: ((Int) -> Unit)? = null,
     onCoverLoadFailed: ((Long, String) -> Unit)? = null,
     onCoverLoaded: ((Long, Bitmap) -> Unit)? = null,
-    onPosterLoaded: ((String, Bitmap) -> Unit)? = null
+    onPosterLoaded: ((String, Bitmap) -> Unit)? = null,
+    availableWidth: Dp = LocalConfiguration.current.screenWidthDp.dp,
+    verticalContentPadding: Dp = 0.dp
 ) {
-    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     val boxArtStyle = LocalBoxArtStyle.current
     /**
      * The push is a screen-space translation while the item order is not, so a reversed rail has to
@@ -334,13 +352,15 @@ fun CarouselRail(
 
     val horizontalPadding = carouselContentPadding(
         metrics = metrics,
-        availableWidth = screenWidth,
+        availableWidth = availableWidth,
         startGutter = Dimens.spacingMd
     )
     val layoutDirection = LocalLayoutDirection.current
     val contentPadding = PaddingValues(
         start = horizontalPadding.calculateStartPadding(layoutDirection),
-        end = horizontalPadding.calculateEndPadding(layoutDirection)
+        end = horizontalPadding.calculateEndPadding(layoutDirection),
+        top = verticalContentPadding,
+        bottom = verticalContentPadding
     )
     val indicatorFor by rememberUpdatedState(downloadIndicatorFor)
 
@@ -367,12 +387,9 @@ fun CarouselRail(
     ) {
         itemsIndexed(items, key = { _, item -> item.key }) { index, item ->
             val isFocused = index == focusedIndex
-            val pushAway = if (metrics.reversed) -neighbourPushPx else neighbourPushPx
-            val pushTargetPx = when {
-                index < focusedIndex -> -pushAway
-                index > focusedIndex -> pushAway
-                else -> 0f
-            }
+            val pushTargetPx = carouselNeighbourTranslation(
+                index, focusedIndex, neighbourPushPx, metrics.reversed, layoutDirection
+            )
             val translationX by animateFloatAsState(
                 targetValue = pushTargetPx,
                 animationSpec = Motion.focusSpring,

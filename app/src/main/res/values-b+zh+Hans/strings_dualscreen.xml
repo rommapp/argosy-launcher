@@ -59,6 +59,7 @@
     <string name="dual_companion_app_bar_keyboard_description">键盘</string>
     <string name="dual_companion_app_bar_swap_description">交换屏幕</string>
     <string name="dual_companion_app_bar_focus_description">将输入发送到某个屏幕</string>
+    <string name="dual_companion_app_bar_tools_description">停靠栏工具</string>
 
     <string name="dual_companion_drawer_title">全部应用</string>
     <string name="dual_companion_drawer_pinned_description">已固定</string>

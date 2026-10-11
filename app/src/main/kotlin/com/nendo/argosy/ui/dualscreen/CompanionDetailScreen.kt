@@ -44,10 +44,17 @@ fun CompanionDetailScreen(
     modifier: Modifier = Modifier,
     style: PresentationStyle = PresentationStyle(),
     bottomInset: Dp = 0.dp,
+    backgroundBlur: Int = 0,
     footerHints: @Composable (() -> Unit)? = null
 ) {
     if (detail.isGameTitle) {
-        GameShowcase(detail = detail, style = style, bottomInset = bottomInset, modifier = modifier)
+        GameShowcase(
+            detail = detail,
+            style = style,
+            bottomInset = bottomInset,
+            backgroundBlur = backgroundBlur,
+            modifier = modifier
+        )
         return
     }
     val theme = LocalArgosyTheme.current

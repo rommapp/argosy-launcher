@@ -1,12 +1,19 @@
 package com.nendo.argosy
 
+import com.nendo.argosy.core.event.AchievementUpdateBus
+import com.nendo.argosy.data.media.MediaPlaybackTracker
 import com.nendo.argosy.data.preferences.DisplayRoleOverride
+import com.nendo.argosy.data.preferences.UserPreferences
+import com.nendo.argosy.domain.model.PresentationStat
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.resetMain
@@ -39,8 +46,48 @@ class DualScreenManagerRoleSwapTest {
 
     @After
     fun tearDown() {
+        testScope.cancel()
+        testScope.testScheduler.runCurrent()
         io.mockk.unmockkAll()
         Dispatchers.resetMain()
+    }
+
+    @Test
+    fun `rebinding after activity destruction resumes presentation preference updates`() {
+        val preferences = MutableStateFlow(UserPreferences())
+        every { preferencesRepository.userPreferences } returns preferences
+        testScope.testScheduler.runCurrent()
+        val initial = preferences.value
+        assertEquals(initial.presentationStyle, manager.presentationStyle.value)
+        assertEquals(initial.backgroundBlur, manager.presentationBackgroundBlur.value)
+
+        testScope.cancel()
+        val hidden = initial.copy(
+            presentationStyle = initial.presentationStyle.copy(hiddenStats = PresentationStat.entries.toSet()),
+            backgroundBlur = 80
+        )
+        preferences.value = hidden
+        testScope.testScheduler.runCurrent()
+        assertEquals(initial.presentationStyle, manager.presentationStyle.value)
+        assertEquals(initial.backgroundBlur, manager.presentationBackgroundBlur.value)
+
+        val replacementScope = TestScope(testDispatcher)
+        try {
+            manager.rebind(mockk(relaxed = true), replacementScope)
+            testScope.testScheduler.runCurrent()
+            assertTrue(replacementScope.isActive)
+            assertEquals(hidden.presentationStyle, manager.presentationStyle.value)
+            assertEquals(hidden.backgroundBlur, manager.presentationBackgroundBlur.value)
+
+            val shown = initial.copy(backgroundBlur = 0)
+            preferences.value = shown
+            testScope.testScheduler.runCurrent()
+            assertEquals(shown.presentationStyle, manager.presentationStyle.value)
+            assertEquals(shown.backgroundBlur, manager.presentationBackgroundBlur.value)
+        } finally {
+            replacementScope.cancel()
+            testScope.testScheduler.runCurrent()
+        }
     }
 
     @Test
@@ -233,7 +280,7 @@ class DualScreenManagerRoleSwapTest {
         saveCacheManager = mockk(relaxed = true),
         raRepository = mockk(relaxed = true),
         raTileContentRepository = mockk(relaxed = true),
-        achievementUpdateBus = mockk(relaxed = true),
+        achievementUpdateBus = AchievementUpdateBus(),
         displayAffinityHelper = displayAffinityHelper,
         sessionStateStore = sessionStateStore,
         preferencesRepository = preferencesRepository,
@@ -275,7 +322,7 @@ class DualScreenManagerRoleSwapTest {
         mediaRepository = mockk(relaxed = true),
         getRelatedMediaUseCase = mockk(relaxed = true),
         resolveMediaPlayTargetUseCase = mockk(relaxed = true),
-        mediaPlaybackTracker = mockk(relaxed = true),
+        mediaPlaybackTracker = MediaPlaybackTracker(),
         mediaAvailabilityVerifier = mockk(relaxed = true),
         mediaDownloadDelegate = mockk(relaxed = true),
         mediaSeriesDelegate = mockk(relaxed = true),

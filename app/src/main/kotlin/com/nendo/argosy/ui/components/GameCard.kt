@@ -598,12 +598,13 @@ fun GameCardWithNewBadge(
     useBoxArt: Boolean = false
 ) {
     val showNewBadge = game.isNew && !downloadIndicator.isActive
-    val badgeWidthDp = 44.dp
-    val badgeHeightDp = 30.dp
+    val badgeWidthDp = ComponentDefaults.Carousel.newBadgeWidthDp.dp
+    val badgeHeightDp = ComponentDefaults.Carousel.newBadgeHeightDp.dp
 
 
+    val scaleTarget = scaleOverride ?: if (isFocused) focusScale else ComponentDefaults.Focus.scaleDefault
     val scale by animateFloatAsState(
-        targetValue = scaleOverride ?: if (isFocused) focusScale else ComponentDefaults.Focus.scaleDefault,
+        targetValue = scaleTarget,
         animationSpec = Motion.focusSpring,
         label = "wrapperScale"
     )
@@ -635,7 +636,7 @@ fun GameCardWithNewBadge(
                 NewBadge(
                     width = badgeWidthDp,
                     height = badgeHeightDp,
-                    rotation = 15f
+                    rotation = ComponentDefaults.Carousel.newBadgeRotationDegrees.toFloat()
                 )
             }
         },

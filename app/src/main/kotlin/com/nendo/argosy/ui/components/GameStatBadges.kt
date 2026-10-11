@@ -1,7 +1,6 @@
 package com.nendo.argosy.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -24,67 +23,58 @@ import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.util.formatTimeToBeat
 
 @Composable
-fun GameStatBadges(
+internal fun gameStatBadges(
     rating: Float?,
     userRating: Int,
     userDifficulty: Int,
     achievementCount: Int,
     earnedAchievementCount: Int,
     timeToBeatMainSec: Int?,
-    modifier: Modifier = Modifier,
-    textColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-    tintOverride: Color? = null,
-    stacked: Boolean = false
-) {
-    val timeToBeat = formatTimeToBeat(LocalContext.current, timeToBeatMainSec)
-    val badges = buildList {
-        if (rating != null) {
-            add(StatBadge(Icons.Default.Public, MaterialTheme.colorScheme.primary, "${rating.toInt()}%"))
-        }
-        if (userRating > 0) {
-            add(StatBadge(Icons.Default.Star, ALauncherColors.StarGold, "$userRating/10"))
-        }
-        if (userDifficulty > 0) {
-            add(StatBadge(Icons.Default.Whatshot, ALauncherColors.DifficultyRed, "$userDifficulty/10"))
-        }
-        if (achievementCount > 0) {
-            add(
-                StatBadge(
-                    Icons.Filled.EmojiEvents,
-                    ALauncherColors.TrophyAmber,
-                    "$earnedAchievementCount/$achievementCount"
-                )
-            )
-        }
-        if (timeToBeat != null) {
-            add(StatBadge(Icons.Default.Schedule, textColor, timeToBeat))
-        }
-    }
-    if (badges.isEmpty()) return
+    textColor: Color = MaterialTheme.colorScheme.onSurfaceVariant
+): List<StatBadge> = gameStatBadges(
+    rating, userRating, userDifficulty, achievementCount, earnedAchievementCount,
+    timeToBeat = formatTimeToBeat(LocalContext.current, timeToBeatMainSec),
+    textColor = textColor,
+    ratingColor = MaterialTheme.colorScheme.primary
+)
 
-    val content: @Composable () -> Unit = {
-        badges.forEach { badge ->
-            StatBadgeItem(badge = badge, tint = tintOverride ?: badge.tint, textColor = textColor)
-        }
+internal fun gameStatBadges(
+    rating: Float?,
+    userRating: Int,
+    userDifficulty: Int,
+    achievementCount: Int,
+    earnedAchievementCount: Int,
+    timeToBeat: String?,
+    textColor: Color,
+    ratingColor: Color
+): List<StatBadge> = buildList {
+    if (rating != null) {
+        add(StatBadge(Icons.Default.Public, ratingColor, "${rating.toInt()}%"))
     }
-    if (stacked) {
-        Column(
-            modifier = modifier,
-            verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-        ) { content() }
-    } else {
-        Row(
-            modifier = modifier,
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Dimens.radiusLg)
-        ) { content() }
+    if (userRating > 0) {
+        add(StatBadge(Icons.Default.Star, ALauncherColors.StarGold, "$userRating/10"))
+    }
+    if (userDifficulty > 0) {
+        add(StatBadge(Icons.Default.Whatshot, ALauncherColors.DifficultyRed, "$userDifficulty/10"))
+    }
+    if (achievementCount > 0) {
+        add(
+            StatBadge(
+                Icons.Filled.EmojiEvents,
+                ALauncherColors.TrophyAmber,
+                "$earnedAchievementCount/$achievementCount"
+            )
+        )
+    }
+    if (timeToBeat != null) {
+        add(StatBadge(Icons.Default.Schedule, textColor, timeToBeat))
     }
 }
 
-private data class StatBadge(val icon: ImageVector, val tint: Color, val label: String)
+internal data class StatBadge(val icon: ImageVector, val tint: Color, val label: String)
 
 @Composable
-private fun StatBadgeItem(badge: StatBadge, tint: Color, textColor: Color) {
+internal fun StatBadgeItem(badge: StatBadge, tint: Color, textColor: Color) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs)

@@ -150,6 +150,7 @@
     <string name="dual_companion_app_bar_swap_description">Swap screens</string>
     <!-- Icon button that expands to list the screens input can be sent to -->
     <string name="dual_companion_app_bar_focus_description">Send input to a screen</string>
+    <string name="dual_companion_app_bar_tools_description">Dock tools</string>
 
     <!-- Heading of the sheet listing every installed app on the companion screen. Noun phrase. -->
     <string name="dual_companion_drawer_title">All Apps</string>

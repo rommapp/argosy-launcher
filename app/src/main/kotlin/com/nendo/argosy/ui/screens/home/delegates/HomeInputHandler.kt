@@ -141,7 +141,8 @@ class HomeInputHandler(
     private val isDefaultView: Boolean,
     private val onGameSelect: (Long) -> Unit,
     private val onNavigateToDefault: () -> Unit,
-    private val onDrawerToggle: () -> Unit
+    private val onDrawerToggle: () -> Unit,
+    private val onScrollOverflow: ((direction: Int) -> Boolean)? = null
 ) : InputHandler {
 
     private val focusPicker: com.nendo.argosy.DualScreenManager?
@@ -205,6 +206,7 @@ class HomeInputHandler(
             isCustomGrid(state) -> customMove(GridDirection2D.UP)
             isGrid(state) -> gridMove(GridDirection.UP)
             else -> {
+                if (onScrollOverflow?.invoke(-1) == true) return InputResult.HANDLED
                 actions.previousRow()
                 InputResult.handled(SoundType.SECTION_CHANGE)
             }
@@ -260,6 +262,10 @@ class HomeInputHandler(
             isCustomGrid(state) -> customMove(GridDirection2D.DOWN)
             isGrid(state) -> gridMove(GridDirection.DOWN)
             else -> {
+                if (onScrollOverflow?.invoke(1) == true) return InputResult.HANDLED
+                if (state.currentRow == state.availableRows.lastOrNull() && actions.focusAppBar()) {
+                    return InputResult.handled(SoundType.SECTION_CHANGE)
+                }
                 actions.nextRow()
                 InputResult.handled(SoundType.SECTION_CHANGE)
             }

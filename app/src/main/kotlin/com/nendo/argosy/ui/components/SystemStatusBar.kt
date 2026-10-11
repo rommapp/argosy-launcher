@@ -16,7 +16,10 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -43,16 +46,16 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import com.nendo.argosy.ui.theme.ALauncherColors
 import com.nendo.argosy.ui.theme.generated.ColorTokens
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
-import androidx.compose.foundation.background
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.theme.LocalUiScale
+import com.nendo.argosy.ui.theme.generated.TypographyTokens
 import com.nendo.argosy.util.formatClockTime
 import kotlinx.coroutines.delay
 
@@ -116,17 +119,6 @@ fun rememberBatteryState(): State<BatteryState> {
  */
 val LocalArtworkScraping = androidx.compose.runtime.compositionLocalOf { false }
 
-private fun Color.legibilityGlow(): Color {
-    val base = if (luminance() > 0.5f) Color.Black else Color.White
-    return base.copy(alpha = ComponentDefaults.OverlayLegibility.scrimAlpha)
-}
-
-private fun Modifier.legibilityScrim(content: Color): Modifier =
-    background(
-        color = content.legibilityGlow(),
-        shape = RoundedCornerShape(Dimens.radiusPill)
-    )
-
 data class StatusBarItems(
     val clock: Boolean = true,
     val battery: Boolean = true,
@@ -176,6 +168,8 @@ private fun NetworkCapabilities?.toNetworkLink(): NetworkLink {
 
 val LocalStatusBarItems = androidx.compose.runtime.compositionLocalOf { StatusBarItems() }
 
+val LocalTransientHomeStatusVisible = androidx.compose.runtime.compositionLocalOf { false }
+
 fun statusBarItemsOf(prefs: com.nendo.argosy.data.preferences.UserPreferences) = StatusBarItems(
     clock = prefs.showStatusClock,
     battery = prefs.showStatusBattery,
@@ -199,14 +193,19 @@ fun ProvideStatusBarItems(
 /**
  * [scrim] backs the bar with a plate so it reads over artwork. Turn it off on a flat surface,
  * where the plate has nothing to separate the bar from and only shows as a panel of its own.
+ * [allowWrap] lets narrow containers move whole status items onto another line.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SystemStatusBar(
     modifier: Modifier = Modifier,
     contentColor: Color = Color.Unspecified,
-    scrim: Boolean = true
+    scrim: Boolean = true,
+    allowWrap: Boolean = false
 ) {
     val isScrapingArtwork = LocalArtworkScraping.current
+    val shown = LocalStatusBarItems.current
+    if (!hasStatusBarContent(shown, isScrapingArtwork)) return
     val effectiveColor = if (contentColor == Color.Unspecified) {
         MaterialTheme.colorScheme.onSurface
     } else {
@@ -222,43 +221,70 @@ fun SystemStatusBar(
         }
     }
 
-    Row(
-        modifier = modifier
-            .then(if (scrim) Modifier.legibilityScrim(effectiveColor) else Modifier)
-            .padding(
-                horizontal = ComponentDefaults.OverlayLegibility.scrimPaddingHorizDp.dp,
-                vertical = ComponentDefaults.OverlayLegibility.scrimPaddingVertDp.dp
-            ),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Dimens.radiusLg)
-    ) {
+    val statusModifier = modifier
+        .then(if (scrim) Modifier.heightIn(min = frostedVisualChromeHeight).frostedSurface() else Modifier)
+        .padding(
+            horizontal = if (scrim) {
+                ComponentDefaults.FrostedSurface.statusPaddingHorizontalDp.dp * LocalUiScale.current.scale
+            } else ComponentDefaults.OverlayLegibility.scrimPaddingHorizDp.dp,
+            vertical = if (scrim) Dimens.spacingSm else ComponentDefaults.OverlayLegibility.scrimPaddingVertDp.dp
+        )
+    val content: @Composable (Modifier, Modifier) -> Unit = { clockModifier, itemModifier ->
         if (isScrapingArtwork) {
-            ArtworkScrapeIndicator(color = effectiveColor)
+            ArtworkScrapeIndicator(color = effectiveColor, modifier = itemModifier)
         }
-
-        val shown = LocalStatusBarItems.current
 
         if (shown.clock) {
             Text(
                 text = formatClockTime(LocalContext.current, currentTime.longValue),
-                style = MaterialTheme.typography.titleMedium,
-                color = effectiveColor
+                modifier = clockModifier,
+                style = chromeTextStyle(
+                    MaterialTheme.typography.titleMedium,
+                    TypographyTokens.titleMedium,
+                    ComponentDefaults.FrostedSurface.chromeFontSizeSp.sp
+                ),
+                color = effectiveColor,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis
             )
         }
 
         if (shown.network) {
-            NetworkIndicator(color = effectiveColor)
+            NetworkIndicator(color = effectiveColor, modifier = itemModifier)
         }
 
         if (shown.battery) {
             BatteryIndicator(
                 level = batteryState.level,
                 isCharging = batteryState.isCharging,
-                color = effectiveColor
+                color = effectiveColor,
+                modifier = itemModifier
             )
         }
     }
+    if (allowWrap) {
+        FlowRow(
+            modifier = statusModifier,
+            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm),
+            verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+        ) {
+            val itemModifier = Modifier.align(Alignment.CenterVertically)
+            content(itemModifier, itemModifier)
+        }
+    } else {
+        Row(
+            modifier = statusModifier,
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+        ) {
+            content(Modifier.weight(1f, fill = false), Modifier)
+        }
+    }
 }
+
+internal fun hasStatusBarContent(items: StatusBarItems, scrapingArtwork: Boolean): Boolean =
+    items.clock || items.battery || items.network || scrapingArtwork
 
 /**
  * Says that artwork is still being fetched, without saying what. It pulses so it reads as work in
@@ -321,8 +347,15 @@ private fun BatteryIndicator(
         )
         Text(
             text = "$level%",
-            style = MaterialTheme.typography.labelMedium,
-            color = color
+            style = chromeTextStyle(
+                MaterialTheme.typography.titleMedium,
+                TypographyTokens.titleMedium,
+                ComponentDefaults.FrostedSurface.chromeFontSizeSp.sp *
+                    ComponentDefaults.FrostedSurface.statusBatteryFontSizeRatio
+            ),
+            color = color,
+            maxLines = 1,
+            softWrap = false
         )
     }
 }

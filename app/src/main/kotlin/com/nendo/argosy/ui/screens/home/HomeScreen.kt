@@ -14,12 +14,17 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import com.nendo.argosy.ui.util.clickableNoFocus
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import com.nendo.argosy.ui.components.LocalFrostedBackdrop
+import com.nendo.argosy.ui.components.frostedBackdropSource
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -29,6 +34,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -58,17 +64,15 @@ import androidx.compose.material3.Text
 import com.nendo.argosy.ui.common.AlwaysCrossfadeFactory
 import com.nendo.argosy.ui.common.backgroundBlurDp
 import com.nendo.argosy.ui.common.rememberFileImageModel
-import com.nendo.argosy.ui.components.GameStatBadges
-import com.nendo.argosy.ui.components.GameTitle
 import com.nendo.argosy.ui.components.SectionBreadcrumb
 import com.nendo.argosy.ui.icons.InputIcons
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
@@ -90,17 +94,22 @@ import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.backdrop.BackdropRole
 import com.nendo.argosy.ui.theme.backdrop.LocalSurfaceBackdrop
 import com.nendo.argosy.ui.theme.backdrop.surfaceBackdrop
+import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -128,21 +137,21 @@ import com.nendo.argosy.ui.components.HomeAutoGrid
 import com.nendo.argosy.ui.components.HomeCustomGridPage
 import com.nendo.argosy.ui.components.HomeTilePickerModal
 import com.nendo.argosy.ui.components.TileEditMode
-import androidx.compose.foundation.layout.ColumnScope
-import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.domain.model.HomeFocusPosition
 import com.nendo.argosy.domain.model.HomeLayoutKind
-import com.nendo.argosy.domain.model.HomeRowAlignment
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import com.nendo.argosy.ui.components.HERO_MIN_CARD_SCALE
-import com.nendo.argosy.ui.components.carouselCardSize
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.FooterSpacer
+import com.nendo.argosy.ui.components.LocalFooterHost
+import com.nendo.argosy.ui.components.NEW_BADGE_TOP_OVERFLOW
 import com.nendo.argosy.ui.components.FooterVariant
 import com.nendo.argosy.ui.components.DiscPickerModal
 import com.nendo.argosy.ui.components.MemcardPickerModal
 import com.nendo.argosy.ui.components.SystemStatusBar
+import com.nendo.argosy.ui.components.LocalArtworkScraping
+import com.nendo.argosy.ui.components.LocalStatusBarItems
+import com.nendo.argosy.ui.components.hasStatusBarContent
 import com.nendo.argosy.ui.components.YouTubeVideoPlayer
 import com.nendo.argosy.ui.input.ChangelogInputHandler
 import com.nendo.argosy.ui.input.DiscPickerInputHandler
@@ -178,6 +187,15 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val hasPresentationScreen by (
+        com.nendo.argosy.DualScreenManagerHolder.instance?.hasPresentationScreen
+            ?: remember { kotlinx.coroutines.flow.MutableStateFlow(false) }
+        ).collectAsState()
+    val presentationShowsHints by (
+        com.nendo.argosy.DualScreenManagerHolder.instance?.presentationShowsHints
+            ?: remember { kotlinx.coroutines.flow.MutableStateFlow(false) }
+        ).collectAsState()
+    var navigationPillWidth by remember { mutableStateOf(0.dp) }
     val downloadIndicators = viewModel.downloadIndicators.collectAsState()
     val mediaDownloadProgress = viewModel.mediaDownloadProgress.collectAsState()
     val listState = rememberLazyListState()
@@ -187,6 +205,12 @@ fun HomeScreen(
     val quickNavigation by viewModel.quickNavigationEnabled.collectAsState()
     val rowButtons = if (quickNavigation) InputButton.LT_RT else InputButton.LB_RB
     val scope = rememberCoroutineScope()
+    val overflowScrollState = rememberScrollState()
+    var overflowScrollEnabled by remember { mutableStateOf(false) }
+    var overflowViewportHeightPx by remember { mutableFloatStateOf(0f) }
+    LaunchedEffect(uiState.currentRow, overflowScrollEnabled) {
+        overflowScrollState.scrollTo(0)
+    }
     var isProgrammaticScroll by remember { mutableStateOf(false) }
     var skipNextProgrammaticScroll by remember { mutableStateOf(false) }
     var suppressVideoPreview by remember { mutableStateOf(false) }
@@ -282,7 +306,18 @@ fun HomeScreen(
             isDefaultView = isDefaultView,
             onGameSelect = onGameSelect,
             onNavigateToDefault = onNavigateToDefault,
-            onDrawerToggle = onDrawerToggle
+            onDrawerToggle = onDrawerToggle,
+            onScrollOverflow = { direction ->
+                val canScroll = if (direction < 0) {
+                    overflowScrollState.canScrollBackward
+                } else {
+                    overflowScrollState.canScrollForward
+                }
+                if (overflowScrollEnabled && overflowViewportHeightPx > 0f && canScroll) {
+                    scope.launch { overflowScrollState.animateScrollBy(direction * overflowViewportHeightPx) }
+                    true
+                } else false
+            }
         )
     }
 
@@ -309,7 +344,10 @@ fun HomeScreen(
 
     val siblingChoiceOpen = viewModel.siblingChoiceState.collectAsState().value != null
     val modalBlur by animateDpAsState(
-        targetValue = if (uiState.showGameMenu || uiState.syncOverlayState != null || uiState.changelogEntry != null || uiState.discPickerState != null || uiState.memcardPickerState != null || siblingChoiceOpen) Motion.blurRadiusModal else 0.dp,
+        targetValue = if (
+            uiState.showGameMenu || uiState.syncOverlayState != null || uiState.changelogEntry != null ||
+            uiState.discPickerState != null || uiState.memcardPickerState != null || siblingChoiceOpen
+        ) Motion.blurRadiusModal else 0.dp,
         animationSpec = Motion.focusSpringDp,
         label = "modalBlur"
     )
@@ -512,8 +550,61 @@ fun HomeScreen(
         if (isLoading) {
             SplashOverlay()
         } else {
-    Box(modifier = Modifier.fillMaxSize()) {
-        Box(modifier = Modifier.fillMaxSize()) {
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val isPortrait = maxWidth <= maxHeight
+        val compactHeader = (isAutoGrid && !uiState.autoGridConfig.showTitles) ||
+            maxHeight < ComponentDefaults.FrostedSurface.compactHeaderViewportHeightDp.dp
+        val headerHorizontalPadding = if (compactHeader || isPortrait) Dimens.spacingMd else Dimens.spacingLg
+        val chromeVerticalPadding = if (compactHeader) {
+            ComponentDefaults.FrostedSurface.compactChromeVerticalPaddingDp.dp * LocalUiScale.current.scale
+        } else {
+            headerHorizontalPadding
+        }
+        val defaultHeaderHeight = Dimens.headerHeight
+        var headerBlockHeight by remember { mutableStateOf(defaultHeaderHeight) }
+        var dockHeight by remember { mutableStateOf(0.dp) }
+        val localDensity = LocalDensity.current
+    val edgeThresholdPx = with(LocalDensity.current) {
+        ComponentDefaults.Carousel.edgeTouchHeightDp.dp.toPx()
+    }
+
+        val swipeGestureModifier = Modifier
+            .pointerInput(swipeThreshold) {
+                var totalDragY = 0f
+                detectVerticalDragGestures(
+                    onDragStart = { totalDragY = 0f },
+                    onDragEnd = {
+                        when {
+                            totalDragY < -swipeThreshold -> viewModel.nextRow()
+                            totalDragY > swipeThreshold -> viewModel.previousRow()
+                        }
+                    },
+                    onVerticalDrag = { _, dragAmount -> totalDragY += dragAmount }
+                )
+            }
+            .pointerInput(swipeThreshold, edgeThresholdPx) {
+                var totalDragX = 0f
+                var startX = 0f
+                detectHorizontalDragGestures(
+                    onDragStart = { offset ->
+                        totalDragX = 0f
+                        startX = offset.x
+                    },
+                    onDragEnd = {
+                        if (startX < edgeThresholdPx && totalDragX > swipeThreshold) {
+                            currentOnDrawerToggle()
+                        }
+                    },
+                    onHorizontalDrag = { _, dragAmount -> totalDragX += dragAmount }
+                )
+            }
+        val frostedBackdrop = LocalFrostedBackdrop.current
+        Box(
+            modifier = Modifier.fillMaxSize().then(
+                if (frostedBackdrop != null) Modifier.frostedBackdropSource(frostedBackdrop)
+                else Modifier
+            )
+        ) {
             if (backdropEnabled) {
                 Box(modifier = Modifier.fillMaxSize().surfaceBackdrop(BackdropRole.CONTENT))
             }
@@ -602,129 +693,96 @@ fun HomeScreen(
                 }
             }
 
-        val edgeThresholdPx = with(LocalDensity.current) { 80.dp.toPx() }
-
-        val swipeGestureModifier = Modifier
-            .pointerInput(swipeThreshold) {
-                var totalDragY = 0f
-                detectVerticalDragGestures(
-                    onDragStart = { totalDragY = 0f },
-                    onDragEnd = {
-                        when {
-                            totalDragY < -swipeThreshold -> viewModel.nextRow()
-                            totalDragY > swipeThreshold -> viewModel.previousRow()
-                        }
-                    },
-                    onVerticalDrag = { _, dragAmount -> totalDragY += dragAmount }
-                )
-            }
-            .pointerInput(swipeThreshold, edgeThresholdPx) {
-                var totalDragX = 0f
-                var startX = 0f
-                detectHorizontalDragGestures(
-                    onDragStart = { offset ->
-                        totalDragX = 0f
-                        startX = offset.x
-                    },
-                    onDragEnd = {
-                        if (startX < edgeThresholdPx && totalDragX > swipeThreshold) {
-                            currentOnDrawerToggle()
-                        }
-                    },
-                    onHorizontalDrag = { _, dragAmount -> totalDragX += dragAmount }
-                )
-            }
-
-        val defaultHeaderHeight = Dimens.headerHeight
-        var headerBlockHeight by remember { mutableStateOf(defaultHeaderHeight) }
-        val localDensity = LocalDensity.current
-
         BoxWithConstraints(modifier = Modifier
             .fillMaxSize()
             .then(swipeGestureModifier)
         ) {
-            /**
-             * The details block takes room of its own only when the row rests in the middle. Hung
-             * from the top or the bottom, the rail fills the height and the block overlays it; a
-             * media row draws no block at all. Reserving for a block that is not on screen would
-             * shrink the rail for no reason.
-             */
-            val infoReserve = reservedGameInfoHeight()
-            val isPortrait = maxWidth <= maxHeight
-            val centredFocus = uiState.carouselConfig.focusPosition == HomeFocusPosition.CENTER
-            val railOnlyHeight = maxHeight - headerBlockHeight - Dimens.footerHeight -
-                Dimens.spacingLg - Dimens.spacingXl
-            val overlaidCardSize = rememberCarouselCardSize(
-                availableHeight = railOnlyHeight,
-                config = uiState.carouselConfig
+            val availableCarouselWidth = maxWidth
+            val showTitle = !presentationShowsHints && !isAutoGrid && !isCustomGrid && !uiState.isMediaRow
+            val footerHeight = if (presentationShowsHints) {
+                dockHeight + chromeVerticalPadding
+            } else {
+                LocalFooterHost.current.measuredHeight
+            }
+            val edge = if (maxWidth.value < ComponentDefaults.Carousel.compactWidthDp) {
+                Dimens.spacingMd
+            } else {
+                Dimens.spacingLg
+            }
+            val gap = Dimens.spacingMd
+            val fullTitleWidth = (maxWidth - edge * 2).coerceAtLeast(0.dp)
+            val titleMetadata = if (showTitle) rememberHomeTitleMetadata(uiState) else emptyList()
+            val aboveReserve = if (showTitle) rememberHomeTitleReserve(titleMetadata, fullTitleWidth) else 0.dp
+            val mirrored = (LocalLayoutDirection.current == LayoutDirection.Rtl) xor uiState.carouselConfig.inverted
+            val coverAspectRatio = LocalBoxArtStyle.current.aspectRatio
+            val scrollAnchorOffset = with(localDensity) {
+                kotlin.math.abs(CarouselAnchor.START.snapOffsetPx).toDp()
+            }
+            fun resolveGeometry(reserve: Dp): HomeCarouselGeometry = homeCarouselGeometry(
+                width = maxWidth.value,
+                height = maxHeight.value,
+                headerHeight = headerBlockHeight.value,
+                footerHeight = footerHeight.value,
+                edge = edge.value,
+                gap = gap.value,
+                titleReserve = reserve.value,
+                aboveTitleReserve = aboveReserve.value,
+                aspectRatio = coverAspectRatio,
+                restingScale = uiState.carouselConfig.restingScale,
+                rowAlignment = uiState.carouselConfig.rowAlignment,
+                centeredFocus = uiState.carouselConfig.focusPosition == HomeFocusPosition.CENTER,
+                mirrored = mirrored,
+                badgeOverflow = NEW_BADGE_TOP_OVERFLOW.value,
+                scrollAnchorOffset = scrollAnchorOffset.value,
+                showTitle = showTitle
             )
-            val splitGap = overlaidCardSize.width * uiState.carouselConfig.focusScale + Dimens.spacingLg * 2
-            val splitSide = (maxWidth - Dimens.spacingXxl * 2 - splitGap) / 2
-            val infoSplits = !isPortrait && centredFocus &&
-                splitSide >= ComponentDefaults.Carousel.infoSplitMinSideDp.dp
-            val infoStacksAbove = !isPortrait && centredFocus && !infoSplits
-            val infoOverlaysRail = !uiState.isMediaRow && !infoStacksAbove &&
-                uiState.carouselConfig.rowAlignment != HomeRowAlignment.CENTER
-            val infoHeight = if (uiState.isMediaRow || infoOverlaysRail) 0.dp else infoReserve
-            val cardSize = if (infoHeight == 0.dp) {
-                overlaidCardSize
-            } else {
-                rememberCarouselCardSize(
-                    availableHeight = railOnlyHeight - infoHeight,
-                    config = uiState.carouselConfig
-                )
+            val candidate = resolveGeometry(aboveReserve)
+            val sideReserve = if (showTitle && !candidate.titleAbove) {
+                rememberHomeTitleReserve(titleMetadata, candidate.titleMaxWidth.dp)
+            } else aboveReserve
+            val fittedGeometry = resolveGeometry(sideReserve)
+            val content = homeCarouselContent(
+                fitted = fittedGeometry,
+                width = maxWidth.value,
+                height = maxHeight.value,
+                headerHeight = headerBlockHeight.value,
+                footerHeight = footerHeight.value,
+                edge = edge.value,
+                gap = gap.value,
+                titleReserve = aboveReserve.value,
+                aspectRatio = coverAspectRatio,
+                restingScale = uiState.carouselConfig.restingScale,
+                badgeOverflow = NEW_BADGE_TOP_OVERFLOW.value,
+                minimumFocusedExtent = ComponentDefaults.FrostedSurface.minimumTouchTargetDp.toFloat(),
+                preferredCardHeight = (
+                    Dimens.gameCardHeight * com.nendo.argosy.ui.components.HERO_MIN_CARD_SCALE
+                ).value,
+                enabled = showTitle
+            )
+            androidx.compose.runtime.SideEffect {
+                overflowScrollEnabled = content.scrollable
+                overflowViewportHeightPx = with(localDensity) { content.viewportHeight.dp.toPx() }
             }
-            val infoAtBottom = uiState.carouselConfig.rowAlignment == HomeRowAlignment.TOP && !infoStacksAbove
-            /**
-             * How far the overlaid block moves off the header or footer to sit midway in the band
-             * the resting cards leave free. The band is the same height whichever edge the row
-             * hangs from, since the rail fills the space either way.
-             */
-            val infoBandInset = if (infoOverlaysRail) {
-                (
-                    (
-                        maxHeight - headerBlockHeight - Dimens.footerHeight - Dimens.spacingLg -
-                            cardSize.height - infoReserve
-                        ) / 2
-                    ).coerceAtLeast(0.dp)
-            } else {
-                0.dp
-            }
-            val railHeight = when {
-                isAutoGrid || isCustomGrid ->
-                    (maxHeight - headerBlockHeight - Dimens.footerHeight - Dimens.spacingLg)
-                        .coerceAtLeast(Dimens.spacingXl)
-                infoAtBottom ->
-                    (maxHeight - headerBlockHeight - Dimens.footerHeight - Dimens.spacingLg)
-                        .coerceAtLeast(Dimens.spacingXl)
-                else -> cardSize.height * uiState.carouselConfig.focusScale + Dimens.spacingMd
-            }
+            val geometry = content.geometry
+            val cardSize = DpSize(geometry.cardWidth.dp, geometry.cardHeight.dp)
+            val railHeight = if (isAutoGrid || isCustomGrid) {
+                (maxHeight - headerBlockHeight - footerHeight - edge).coerceAtLeast(0.dp)
+            } else geometry.railHeight.dp
+            val railTop = if (isAutoGrid || isCustomGrid) headerBlockHeight else geometry.railTop.dp
             Box(
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .onSizeChanged { size ->
-                        val measured = with(localDensity) { size.height.toDp() }
-                        if (measured != headerBlockHeight) headerBlockHeight = measured
-                    }
+                Modifier
+                    .fillMaxWidth()
+                    .offset(y = content.viewportTop.dp)
+                    .height(content.viewportHeight.dp)
+                    .then(if (content.scrollable) Modifier.verticalScroll(overflowScrollState) else Modifier)
             ) {
-                HomeHeader(
-                    uiState = uiState,
-                    onPreviousRow = viewModel::previousRow,
-                    onNextRow = viewModel::nextRow,
-                    onSelectRow = viewModel::selectRow,
-                    isStacked = isPortrait,
-                    headerOffset = videoModeHeaderOffset,
-                    showSections = !isCustomGrid,
-                    compact = isAutoGrid && !uiState.autoGridConfig.showTitles
-                )
-            }
-
+            Box(Modifier.fillMaxWidth().height(content.contentHeight.dp)) {
             Column(
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
+                    .align(Alignment.TopCenter)
                     .fillMaxWidth()
+                    .offset(y = railTop)
                     .offset(x = videoModeRailOffsetX, y = videoModeFooterOffset)
-                    .padding(bottom = Dimens.spacingLg)
             ) {
                 Box(
                     modifier = Modifier
@@ -866,6 +924,8 @@ fun HomeScreen(
                                 },
                                 focusedIndex = uiState.focusedGameIndex,
                                 listState = listState,
+                                availableWidth = availableCarouselWidth,
+                                verticalContentPadding = railTop,
                                 metrics = CarouselMetrics.hero(
                                     cardWidth = cardSize.width,
                                     cardHeight = cardSize.height,
@@ -877,7 +937,8 @@ fun HomeScreen(
                                     viewAllAlpha = if (uiState.isVideoPreviewActive) 0f else 1f
                                 ),
                                 showPlatformBadge = uiState.carouselConfig.showPlatformBadge &&
-                                    uiState.currentRow !is HomeRow.Platform && uiState.currentRow != HomeRow.Steam && uiState.currentRow != HomeRow.Android,
+                                    uiState.currentRow !is HomeRow.Platform &&
+                                    uiState.currentRow != HomeRow.Steam && uiState.currentRow != HomeRow.Android,
                                 useBoxArt = uiState.boxArt3d,
                                 onCoverLoadFailed = viewModel::repairCoverImage,
                                 onCoverLoaded = viewModel::extractGradientForGame,
@@ -886,7 +947,7 @@ fun HomeScreen(
                                 onItemLongPress = viewModel::handleItemLongPress,
                                 modifier = Modifier
                                     .align(Alignment.BottomStart)
-                                    .height(railHeight)
+                                    .requiredHeight(railHeight + railTop * 2)
                             )
                         }
                     }
@@ -1115,22 +1176,7 @@ fun HomeScreen(
                 }
             }
 
-            if (!isAutoGrid && !isCustomGrid && !uiState.isMediaRow) {
-            val gameInfoWidth by animateFloatAsState(
-                targetValue = 1f,
-                animationSpec = tween(500),
-                label = "gameInfoWidth"
-            )
-            val gameInfoTopPadding by animateDpAsState(
-                targetValue = if (uiState.isVideoPreviewActive) {
-                    Dimens.spacingMd
-                } else {
-                    (headerBlockHeight - Dimens.spacingLg).coerceAtLeast(Dimens.spacingMd) +
-                        infoBandInset
-                },
-                animationSpec = tween(500),
-                label = "gameInfoTopPadding"
-            )
+            if (showTitle) {
             val videoTitleBackgroundOffset by animateDpAsState(
                 targetValue = if (uiState.isVideoPreviewActive) 0.dp else (-72).dp,
                 animationSpec = tween(500),
@@ -1159,53 +1205,69 @@ fun HomeScreen(
                     .height(Dimens.headerHeight)
             )
 
-            GameInfo(
-                title = uiState.focusedGame?.title ?: uiState.focusedMedia?.title ?: "",
-                developer = uiState.focusedGame?.developer ?: uiState.focusedMedia?.subtitle,
-                rating = uiState.focusedGame?.rating,
-                userRating = uiState.focusedGame?.userRating ?: 0,
-                userDifficulty = uiState.focusedGame?.userDifficulty ?: 0,
-                achievementCount = uiState.focusedGame?.achievementCount ?: 0,
-                earnedAchievementCount = uiState.focusedGame?.earnedAchievementCount ?: 0,
-                timeToBeatMainSec = uiState.focusedGame?.timeToBeatMainSec,
-                friends = uiState.friendsFor(uiState.focusedGame),
-                showMetadata = !uiState.isVideoPreviewActive,
-                textColorOverride = if (videoTextColor != Color.Unspecified) videoTextColor else null,
-                placement = if (infoSplits) GameInfoPlacement.SPLIT else GameInfoPlacement.CENTERED,
-                splitGap = splitGap,
-                modifier = Modifier
-                    .fillMaxWidth(
-                        when {
-                            isPortrait -> 1f
-                            uiState.carouselConfig.focusPosition == HomeFocusPosition.CENTER ->
-                                gameInfoWidth
-                            else -> GAME_INFO_SIDE_WIDTH_FRACTION
-                        }
-                    )
-                    .align(
-                        gameInfoAlignment(
-                            atBottom = infoAtBottom,
-                            centred = isPortrait || centredFocus,
-                            inverted = uiState.carouselConfig.inverted
+            (uiState.focusedGame?.title ?: uiState.focusedMedia?.title)?.let { title ->
+                val game = uiState.focusedGame
+                val titleWidth = geometry.titleMaxWidth.dp
+                Layout(
+                    modifier = Modifier.fillMaxSize(),
+                    content = {
+                        HomeTitleSection(
+                            game = game,
+                            title = title,
+                            developer = game?.developer ?: uiState.focusedMedia?.subtitle,
+                            friends = uiState.friendsFor(game),
+                            maxWidth = titleWidth,
+                            centered = geometry.titleAbove,
+                            showMetadata = !uiState.isVideoPreviewActive,
+                            textColorOverride = videoTextColor.takeIf { it != Color.Unspecified }
+                        )
+                    }
+                ) { measurables, constraints ->
+                    val section = measurables.single().measure(
+                        Constraints(
+                            maxWidth = titleWidth.roundToPx().coerceAtLeast(0)
                         )
                     )
-                    .padding(
-                        top = if (infoAtBottom) 0.dp else gameInfoTopPadding,
-                        bottom = if (infoAtBottom) {
-                            Dimens.footerHeight + Dimens.spacingLg + infoBandInset
-                        } else {
-                            0.dp
-                        }
-                    )
-            )
+                    layout(constraints.maxWidth, constraints.maxHeight) {
+                        section.place(
+                            (geometry.titleCenterX.dp.toPx() - section.width / 2f).toInt(),
+                            (geometry.titleCenterY.dp.toPx() - section.height / 2f).toInt()
+                        )
+                    }
+                }
+            }
+            }
+            }
             }
         }
         }
 
-        val hasPresentationScreen by (
-            com.nendo.argosy.DualScreenManagerHolder.instance?.hasPresentationScreen
-                ?: remember { kotlinx.coroutines.flow.MutableStateFlow(false) }
-            ).collectAsState()
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxWidth()
+                .then(swipeGestureModifier)
+                .onSizeChanged { size ->
+                    val measured = with(localDensity) { size.height.toDp() }
+                    if (measured != headerBlockHeight) headerBlockHeight = measured
+                }
+        ) {
+            HomeHeader(
+                uiState = uiState,
+                onPreviousRow = viewModel::previousRow,
+                onNextRow = viewModel::nextRow,
+                onSelectRow = viewModel::selectRow,
+                isStacked = isPortrait,
+                showStatus = !presentationShowsHints &&
+                    (!isPortrait || com.nendo.argosy.ui.components.LocalTransientHomeStatusVisible.current),
+                onNavigationWidthChanged = { navigationPillWidth = it },
+                horizontalPadding = headerHorizontalPadding,
+                verticalPadding = chromeVerticalPadding,
+                headerOffset = videoModeHeaderOffset,
+                showSections = !isCustomGrid
+            )
+        }
+
         val dsmForFocus = com.nendo.argosy.DualScreenManagerHolder.instance
         val focusPickerOpen by (
             dsmForFocus?.focusPickerOpen
@@ -1221,11 +1283,7 @@ fun HomeScreen(
             }.orEmpty()
         }
         val canSwapRoles = com.nendo.argosy.ui.dualscreen.selectSwapModeState() != null
-        val presentationShowsHints by (
-            dsmForFocus?.presentationShowsHints
-                ?: remember { kotlinx.coroutines.flow.MutableStateFlow(false) }
-            ).collectAsState()
-        if (presentationShowsHints && uiState.homeApps.isNotEmpty()) {
+        if (presentationShowsHints) {
             com.nendo.argosy.ui.components.CompanionAppBar(
                 apps = uiState.homeApps,
                 onAppClick = { viewModel.launchTileApp(it) },
@@ -1251,6 +1309,7 @@ fun HomeScreen(
                 onFocusPickerToggle = dsmForFocus?.let {
                     { if (focusPickerOpen) it.closeFocusPicker() else it.openFocusPicker() }
                 },
+                onFocusPickerMove = { dsmForFocus?.moveFocusPicker(it) },
                 onFocusDisplay = { displayId ->
                     dsmForFocus?.focusDisplay(displayId)
                     dsmForFocus?.closeFocusPicker()
@@ -1258,7 +1317,18 @@ fun HomeScreen(
                 onSwapRoles = dsmForFocus
                     ?.takeIf { canSwapRoles }
                     ?.let { { it.swapRoles() } },
+                toolsOpen = uiState.appBarToolsOpen,
+                toolIndex = uiState.appBarToolIndex,
+                onToolsToggle = viewModel::toggleAppBarTools,
+                onToolFocus = viewModel::focusAppBarTool,
+                onToolsDismiss = viewModel::dismissAppBarTools,
+                maximumWidth = navigationPillWidth.takeIf { it > 0.dp } ?: Dimens.breadcrumbMaxWidth,
                 modifier = Modifier.align(Alignment.BottomCenter)
+                    .padding(horizontal = Dimens.spacingMd, vertical = chromeVerticalPadding)
+                    .onSizeChanged { size ->
+                        val measured = with(localDensity) { size.height.toDp() }
+                        if (measured != dockHeight) dockHeight = measured
+                    }
             )
         }
 
@@ -1602,22 +1672,28 @@ private fun HomeHeader(
     onNextRow: () -> Unit,
     onSelectRow: (HomeRow) -> Unit,
     isStacked: Boolean,
+    showStatus: Boolean,
+    onNavigationWidthChanged: (Dp) -> Unit,
+    horizontalPadding: Dp,
+    verticalPadding: Dp,
     headerOffset: androidx.compose.ui.unit.Dp = 0.dp,
-    showSections: Boolean = true,
-    compact: Boolean = false
+    showSections: Boolean = true
 ) {
-    val edge = if (compact) Dimens.spacingMd else Dimens.spacingLg
-    val verticalEdge = if (compact) Dimens.spacingXs else Dimens.spacingLg
+    val statusVisible = showStatus && hasStatusBarContent(
+        LocalStatusBarItems.current,
+        LocalArtworkScraping.current
+    )
+    if (!showSections && !statusVisible) return
     if (!showSections) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = edge, vertical = verticalEdge)
+                .padding(horizontal = horizontalPadding, vertical = verticalPadding)
                 .offset(y = headerOffset),
-            horizontalArrangement = Arrangement.End,
+            horizontalArrangement = if (isStacked) Arrangement.Center else Arrangement.End,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            SystemStatusBar()
+            if (statusVisible) SystemStatusBar()
         }
         return
     }
@@ -1626,15 +1702,17 @@ private fun HomeHeader(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = edge, vertical = verticalEdge)
+                .padding(horizontal = horizontalPadding, vertical = verticalPadding)
                 .offset(y = headerOffset),
             verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                SystemStatusBar()
+            if (statusVisible) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    SystemStatusBar()
+                }
             }
             PlatformBreadcrumb(
                 uiState = uiState,
@@ -1642,6 +1720,7 @@ private fun HomeHeader(
                 onNextRow = onNextRow,
                 onSelectRow = onSelectRow,
                 fillAvailableWidth = true,
+                onPillWidthChanged = onNavigationWidthChanged,
                 modifier = Modifier.fillMaxWidth()
             )
         }
@@ -1651,7 +1730,7 @@ private fun HomeHeader(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = edge, vertical = verticalEdge)
+            .padding(horizontal = horizontalPadding, vertical = verticalPadding)
             .offset(y = headerOffset),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
@@ -1661,11 +1740,12 @@ private fun HomeHeader(
             onPreviousRow = onPreviousRow,
             onNextRow = onNextRow,
             onSelectRow = onSelectRow,
-            fillAvailableWidth = false,
+            fillAvailableWidth = !statusVisible,
+            onPillWidthChanged = onNavigationWidthChanged,
             modifier = Modifier.weight(1f)
         )
 
-        SystemStatusBar()
+        if (statusVisible) SystemStatusBar()
     }
 }
 
@@ -1676,6 +1756,7 @@ private fun PlatformBreadcrumb(
     onNextRow: () -> Unit,
     onSelectRow: (HomeRow) -> Unit,
     fillAvailableWidth: Boolean,
+    onPillWidthChanged: (Dp) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val rows = uiState.availableRows
@@ -1688,217 +1769,13 @@ private fun PlatformBreadcrumb(
         onNext = onNextRow,
         onSelect = { index -> rows.getOrNull(index)?.let(onSelectRow) },
         fillAvailableWidth = fillAvailableWidth,
+        onPillWidthChanged = onPillWidthChanged,
         modifier = modifier
     )
 }
 
-/**
- * Where the focused game's details sit relative to the rail.
- *
- * A centred focus leaves no room above the card for a centred block, so the two halves split to
- * either side of it; an edge-anchored focus keeps them together on the side the rail leaves free.
- */
-enum class GameInfoPlacement { CENTERED, SPLIT }
-
-/**
- * How much of the row's width the details block occupies when it sits to one side.
- */
-/**
- * What a curated page will accept behind its tiles. Stills and animations sit alongside short video
- * because a page background is decoration rather than something being watched.
- */
 private val PAGE_BACKGROUND_EXTENSIONS: Set<String> =
     setOf("png", "jpg", "jpeg", "webp", "gif") + com.nendo.argosy.core.media.VideoFileTypes.EXTENSIONS
-
-private const val GAME_INFO_SIDE_WIDTH_FRACTION = 0.6f
-
-/**
- * The room the details block is given, as a constant rather than whatever the current game happens
- * to measure.
- *
- * Measuring it fed the rail: a game with no subtitle produced a shorter block, which grew every
- * card, which moved every card and gap one frame after the focus changed. Stepping across a game
- * that had one and a game that did not resized the whole rail mid-scroll. The schematic preview of
- * this layout already models the block as a fixed two-line reserve, so this is what the two were
- * meant to agree on.
- *
- * Sized for the tallest the block gets: a title that wraps to a second line for its series, the
- * subtitle beneath it, and the badge row.
- */
-@Composable
-private fun reservedGameInfoHeight(): Dp {
-    val typography = MaterialTheme.typography
-    val density = LocalDensity.current
-    return with(density) {
-        val titleLine = typography.headlineMedium.lineHeight.toDp()
-        val bodyLine = typography.bodyMedium.lineHeight.toDp()
-        titleLine * 2 + Dimens.spacingXs + bodyLine + Dimens.spacingXs + bodyLine
-    }
-}
-
-/**
- * Which corner the details block occupies. It sits opposite the focused card, on the half of the
- * row the rail leaves free, and moves below the cards when they are hung from the top.
- *
- * Portrait passes [centred] regardless of the configured focus position: there is no free half
- * beside the rail on a narrow screen, so the block spans the full width above or below it.
- */
-private fun gameInfoAlignment(
-    atBottom: Boolean,
-    centred: Boolean,
-    inverted: Boolean
-): Alignment = when {
-    centred && atBottom -> Alignment.BottomCenter
-    centred -> Alignment.TopCenter
-    atBottom && inverted -> Alignment.BottomStart
-    atBottom -> Alignment.BottomEnd
-    inverted -> Alignment.TopStart
-    else -> Alignment.TopEnd
-}
-
-@Composable
-private fun GameInfo(
-    title: String,
-    developer: String?,
-    rating: Float?,
-    userRating: Int,
-    userDifficulty: Int,
-    achievementCount: Int,
-    earnedAchievementCount: Int,
-    timeToBeatMainSec: Int? = null,
-    friends: List<com.nendo.argosy.data.social.FriendActivity> = emptyList(),
-    showMetadata: Boolean = true,
-    textColorOverride: Color? = null,
-    placement: GameInfoPlacement = GameInfoPlacement.SPLIT,
-    splitGap: Dp = 0.dp,
-    modifier: Modifier = Modifier
-) {
-    val metadataAlpha by animateFloatAsState(
-        targetValue = if (showMetadata) 1f else 0f,
-        animationSpec = tween(500),
-        label = "metadataAlpha"
-    )
-
-    val titleColor = textColorOverride ?: MaterialTheme.colorScheme.onSurface
-    val subtitleColor = textColorOverride?.copy(alpha = 0.8f) ?: MaterialTheme.colorScheme.onSurfaceVariant
-
-    val isSplit = placement == GameInfoPlacement.SPLIT
-
-    GameInfoLayout(
-        isSplit = isSplit,
-        splitGap = splitGap,
-        modifier = modifier.padding(horizontal = Dimens.spacingXxl),
-        details = {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                GameTitle(
-                    title = title,
-                    titleStyle = MaterialTheme.typography.headlineMedium,
-                    titleColor = titleColor,
-                    textAlign = TextAlign.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                )
-
-                if (developer != null) {
-                    Spacer(modifier = Modifier.height(Dimens.spacingXs))
-                    Text(
-                        text = developer,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = subtitleColor,
-                        modifier = Modifier.graphicsLayer { alpha = metadataAlpha }
-                    )
-                }
-            }
-        }
-    ) {
-        com.nendo.argosy.ui.components.friends.FriendsActivityBadge(
-            friends = friends,
-            textColor = subtitleColor,
-            modifier = Modifier
-                .padding(top = if (isSplit) 0.dp else Dimens.spacingXs)
-                .graphicsLayer { alpha = metadataAlpha }
-        )
-        GameStatBadges(
-            rating = rating,
-            userRating = userRating,
-            userDifficulty = userDifficulty,
-            achievementCount = achievementCount,
-            earnedAchievementCount = earnedAchievementCount,
-            timeToBeatMainSec = timeToBeatMainSec,
-            textColor = subtitleColor,
-            tintOverride = textColorOverride,
-            modifier = Modifier
-                .padding(top = if (isSplit) 0.dp else Dimens.spacingXs)
-                .graphicsLayer { alpha = metadataAlpha }
-        )
-    }
-}
-
-/**
- * Puts the title block and the badges either above one another or on opposite sides, so the same
- * content serves a rail that hugs an edge and one that sits in the middle.
- */
-@Composable
-private fun GameInfoLayout(
-    isSplit: Boolean,
-    splitGap: Dp,
-    modifier: Modifier = Modifier,
-    details: @Composable () -> Unit,
-    badges: @Composable ColumnScope.() -> Unit
-) {
-    if (isSplit) {
-        Row(
-            modifier = modifier
-                .fillMaxWidth()
-                .padding(vertical = Dimens.spacingLg),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier.weight(1f),
-                contentAlignment = Alignment.Center
-            ) {
-                details()
-            }
-            Spacer(modifier = Modifier.width(splitGap))
-            Box(
-                modifier = Modifier.weight(1f),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, content = badges)
-            }
-        }
-        return
-    }
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        details()
-        badges()
-    }
-}
-
-/**
- * Carousel card size, driven by the height actually left over after the header, the game info
- * block and the footer, so the focused card at [CAROUSEL_FOCUS_SCALE] fills that space exactly
- * instead of overrunning the platform carousel on extended-widescreen or collapsing to a thin
- * strip when the window is tall. The width cap inside [carouselCardSize] keeps one card from
- * dominating the row on very tall windows, where height alone would size it wider than the screen.
- *
- * Callers must subtract a gap of their own for the focused card to grow into: the card scales from
- * its bottom edge, so without one the only clearance above it is what [CAROUSEL_CARD_SCALE] happens
- * to leave over, which at square ratios is a few dp and overlaps the game info.
- */
-@Composable
-private fun rememberCarouselCardSize(
-    availableHeight: Dp,
-    config: com.nendo.argosy.domain.model.CarouselConfig
-): DpSize = carouselCardSize(
-    availableHeight = availableHeight,
-    availableWidth = LocalConfiguration.current.screenWidthDp.dp,
-    coverAspectRatio = LocalBoxArtStyle.current.aspectRatio,
-    restingScale = config.restingScale,
-    minCardHeight = Dimens.gameCardHeight * HERO_MIN_CARD_SCALE
-)
 
 @Composable
 private fun rememberHomeCarouselItems(

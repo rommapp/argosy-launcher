@@ -64,6 +64,7 @@
     <string name="dual_companion_app_bar_keyboard_description">Tastatur</string>
     <string name="dual_companion_app_bar_swap_description">Bildschirme tauschen</string>
     <string name="dual_companion_app_bar_focus_description">Eingabe an einen Bildschirm senden</string>
+    <string name="dual_companion_app_bar_tools_description">Dock-Werkzeuge</string>
 
     <string name="dual_companion_drawer_title">Alle Apps</string>
     <string name="dual_companion_drawer_pinned_description">Angeheftet</string>

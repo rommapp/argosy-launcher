@@ -1,7 +1,7 @@
 package com.nendo.argosy.ui.components
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -63,8 +63,9 @@ fun ViewAllCard(
     focusScale: Float = 1f,
     scalePivotY: Float = 0.5f
 ) {
+    val scaleTarget = if (isFocused) focusScale else 1f
     val scale by animateFloatAsState(
-        targetValue = if (isFocused) focusScale else 1f,
+        targetValue = scaleTarget,
         animationSpec = spring(stiffness = VIEW_ALL_OUTLINE_SCALE_STIFFNESS),
         label = "viewAllScale"
     )

@@ -693,6 +693,7 @@ class DualScreenManager(
         scope = newScope
         companionWatchdogJob?.cancel()
         companionLaunchJob?.cancel()
+        observePreferences()
         observeActiveAccount()
         observeMedia()
         observeAchievementUnlocks()
@@ -950,6 +951,10 @@ class DualScreenManager(
     val presentationStyle: StateFlow<com.nendo.argosy.domain.model.PresentationStyle> =
         _presentationStyle
 
+    private val _presentationBackgroundBlur =
+        MutableStateFlow(preferencesRepository.latest?.backgroundBlur ?: 0)
+    val presentationBackgroundBlur: StateFlow<Int> = _presentationBackgroundBlur
+
     private val _selectSwapMode =
         MutableStateFlow(com.nendo.argosy.data.preferences.SelectSwapMode.HOLD)
     val selectSwapMode: StateFlow<com.nendo.argosy.data.preferences.SelectSwapMode> =
@@ -1194,6 +1199,7 @@ class DualScreenManager(
         }
     }
 
+    private var preferencesObserverJob: Job? = null
     private var accountObserverJob: Job? = null
     private var mediaObserverJob: Job? = null
 
@@ -1236,14 +1242,20 @@ class DualScreenManager(
         _companionAchievements.value = emptyList()
     }
 
-    init {
-        scope.launch {
+    private fun observePreferences() {
+        preferencesObserverJob?.cancel()
+        preferencesObserverJob = scope.launch {
             preferencesRepository.userPreferences.collect { prefs ->
                 menuWrapMode = prefs.menuWrapMode
                 _presentationStyle.value = prefs.presentationStyle
+                _presentationBackgroundBlur.value = prefs.backgroundBlur
                 _selectSwapMode.value = prefs.selectSwapMode
             }
         }
+    }
+
+    init {
+        observePreferences()
         observeActiveAccount()
         observeMedia()
         observeMediaDim()
@@ -2300,6 +2312,8 @@ class DualScreenManager(
     }
 
     fun unregisterReceivers() {
+        preferencesObserverJob?.cancel()
+        preferencesObserverJob = null
         companionLaunchJob?.cancel()
         companionLaunchJob = null
         dockedResyncJob?.cancel()

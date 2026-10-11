@@ -1,6 +1,11 @@
 package com.nendo.argosy.ui.input
 
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.data.preferences.MenuWrapMode
@@ -10,10 +15,10 @@ class InputDispatcher(
     private val hapticManager: HapticFeedbackManager? = null,
     private val soundManager: SoundFeedbackManager? = null
 ) {
-    private val modalStack = mutableListOf<InputHandler>()
-    private val shownModals = mutableSetOf<Any>()
+    private val modalStack = mutableStateListOf<InputHandler>()
+    private val shownModals = mutableStateMapOf<Any, Unit>()
     private var interceptHandler: InputHandler? = null
-    private var criticalHandler: InputHandler? = null
+    private var criticalInputHandler by mutableStateOf<InputHandler?>(null)
     private var drawerHandler: InputHandler? = null
     private var viewHandler: InputHandler? = null
     private var viewRoute: String? = null
@@ -69,10 +74,10 @@ class InputDispatcher(
     fun hasActiveModal(): Boolean = modalStack.isNotEmpty()
 
     fun hasCapturingOverlay(): Boolean =
-        criticalHandler != null || modalStack.isNotEmpty() || shownModals.isNotEmpty()
+        criticalInputHandler != null || modalStack.isNotEmpty() || shownModals.isNotEmpty()
 
     fun markModalShown(token: Any) {
-        shownModals.add(token)
+        shownModals[token] = Unit
     }
 
     fun markModalHidden(token: Any) {
@@ -115,7 +120,7 @@ class InputDispatcher(
     /** Top-priority slot for app-level modals (save-conflict resolution) that must capture input
      * over any screen or drawer. Unlike modalStack, it is never cleared by screen subscriptions. */
     fun setCriticalHandler(handler: InputHandler?) {
-        criticalHandler = handler
+        criticalInputHandler = handler
         processPendingEvent()
     }
 
@@ -193,7 +198,7 @@ class InputDispatcher(
             }
         }
 
-        val overlay = criticalHandler ?: modalStack.lastOrNull() ?: drawerHandler
+        val overlay = criticalInputHandler ?: modalStack.lastOrNull() ?: drawerHandler
         if (overlay == null && viewHandler != null && !viewOwnsCurrentRoute()) {
             pendingInput = null
             return InputResult.HANDLED

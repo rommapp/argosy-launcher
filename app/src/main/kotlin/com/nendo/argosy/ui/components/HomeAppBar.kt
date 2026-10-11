@@ -1,419 +1,439 @@
 package com.nendo.argosy.ui.components
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.Keyboard
-import androidx.compose.material.icons.filled.Movie
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.onClick as semanticClick
+import androidx.compose.ui.semantics.onLongClick as semanticLongClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.nendo.argosy.R
 import com.nendo.argosy.ui.coil.AppIconData
+import com.nendo.argosy.ui.input.CapturingInputHandler
+import com.nendo.argosy.ui.input.InputResult
+import com.nendo.argosy.ui.input.ModalInputEffect
+import com.nendo.argosy.ui.input.ModalPresenceEffect
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
+import com.nendo.argosy.ui.theme.LocalUiScale
+import com.nendo.argosy.ui.theme.Motion
+import com.nendo.argosy.ui.theme.generated.ComponentDefaults
+import com.nendo.argosy.ui.theme.generated.DimensionTokens
+import com.nendo.argosy.ui.util.horizontalEdgeFade
 import com.nendo.argosy.ui.util.touchOnly
 
-private val COMPANION_APP_BAR_SLOT_WIDTH =
-    com.nendo.argosy.ui.theme.generated.DimensionTokens.Layout.companionAppBarSlotWidth.dp
-private const val APP_BAR_SCRIM_ALPHA = 0.8f
-private const val FOCUS_PICKER_SCRIM_ALPHA = 0.7f
-
-private val APP_BAR_FOCUS = FocusIndicators(ring = true, fill = true)
-
-/**
- * Focus index meaning no slot is focused. The drawer slot owns -1, so a caller that has not placed
- * focus in the bar has to say so with a value the drawer will not match.
- */
 const val APP_BAR_NOTHING_FOCUSED = -2
-
 const val APP_BAR_DRAWER_INDEX = -1
 
-data class CompanionMediaToggle(
-    val showingMedia: Boolean,
-    val isPlaying: Boolean
-)
+data class DisplayFocusTarget(val displayId: Int, val number: Int)
 
 @Composable
 fun CompanionAppBar(
     apps: List<String>,
     onAppClick: (String) -> Unit,
     modifier: Modifier = Modifier,
-    focusedIndex: Int = -1,
+    focusedIndex: Int = APP_BAR_NOTHING_FOCUSED,
     onAppLongPress: ((String) -> Unit)? = null,
     onOpenDrawer: () -> Unit = {},
-    mediaToggle: CompanionMediaToggle? = null,
-    onMediaToggle: () -> Unit = {},
     onKeyboardToggle: (() -> Unit)? = null,
     focusDisplays: List<DisplayFocusTarget> = emptyList(),
     focusPickerOpen: Boolean = false,
     focusPickerIndex: Int = 0,
     onFocusPickerToggle: (() -> Unit)? = null,
+    onFocusPickerMove: (Int) -> Unit = {},
     onFocusDisplay: (Int) -> Unit = {},
     onSwapRoles: (() -> Unit)? = null,
-    drawsScrim: Boolean = true
+    toolsOpen: Boolean = false,
+    toolIndex: Int = 1,
+    onToolsToggle: () -> Unit = {},
+    onToolFocus: (Int) -> Unit = {},
+    onToolsDismiss: () -> Unit = {},
+    controllerInputEnabled: Boolean = true,
+    maximumWidth: Dp = Dimens.breadcrumbMaxWidth
 ) {
-    val listState = androidx.compose.foundation.lazy.rememberLazyListState()
-
-    LaunchedEffect(focusedIndex) {
-        if (focusedIndex >= 0) {
-            listState.animateScrollToItem(focusedIndex)
-        }
+    var showToolFocus by remember { mutableStateOf(true) }
+    LaunchedEffect(toolsOpen) {
+        if (!toolsOpen) showToolFocus = true
     }
+    val uiScale = LocalUiScale.current
+    val dockScale = maxOf(uiScale.scale, minimumTouchTarget / DimensionTokens.Icon.xl.dp)
+    CompositionLocalProvider(LocalUiScale provides uiScale.copy(scale = dockScale)) {
+        val listState = rememberLazyListState()
+        val appIconSize = Dimens.iconXl
+        val controlIconSize = Dimens.iconMd
+        val slot = maxOf(minimumTouchTarget, appIconSize)
+        val gap = Dimens.spacingSm
+        val padding = Dimens.spacingMd
+        val height = slot + gap * 2
+        val caretRotation by animateFloatAsState(
+            targetValue = if (toolsOpen) 180f else 0f,
+            animationSpec = tween(Motion.durationMicro),
+            label = "dock-caret"
+        )
 
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .then(
-                if (drawsScrim) {
-                    Modifier.background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                MaterialTheme.colorScheme.scrim.copy(alpha = APP_BAR_SCRIM_ALPHA)
-                            )
-                        )
-                    )
-                } else {
-                    Modifier
-                }
+        LaunchedEffect(focusedIndex, apps.size) {
+            if (focusedIndex in apps.indices) listState.animateScrollToItem(focusedIndex)
+        }
+
+        BoxWithConstraints(modifier, contentAlignment = Alignment.Center) {
+            val widths = dockWidths(
+                maximum = maxWidth.value,
+                preferredMaximum = maximumWidth.value,
+                appCount = apps.size,
+                slot = slot.value,
+                gap = gap.value,
+                padding = padding.value,
+                appIconSize = appIconSize.value,
+                controlIconSize = controlIconSize.value
             )
-            .padding(vertical = Dimens.spacingSm + Dimens.spacingXs),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(
-            modifier = Modifier
-                .width(COMPANION_APP_BAR_SLOT_WIDTH)
-                .touchOnly(onOpenDrawer)
-                .padding(Dimens.spacingXs),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Box(
+            Row(
                 modifier = Modifier
-                    .size(Dimens.iconXl)
-                    .argosyFocusIndicators(
-                        focused = focusedIndex == -1,
-                        indicators = APP_BAR_FOCUS,
-                        shape = RoundedCornerShape(Dimens.radiusLg)
-                    )
-                    .clip(RoundedCornerShape(Dimens.radiusLg))
-                    .background(Color.White.copy(alpha = 0.15f)),
-                contentAlignment = Alignment.Center
+                    .width(widths.width.dp)
+                    .height(height)
+                    .frostedSurface()
+                    .padding(horizontal = widths.padding.dp, vertical = gap),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = stringResource(
-                        R.string.dual_companion_app_bar_add_description
-                    ),
-                    tint = Color.White.copy(alpha = 0.7f),
-                    modifier = Modifier.size(Dimens.iconMd)
-                )
+                DockControl(slot, focusedIndex == APP_BAR_DRAWER_INDEX, onClick = onOpenDrawer) { tint ->
+                    Icon(
+                        Icons.Default.Apps,
+                        stringResource(R.string.dual_home_hint_app_bar_all_apps),
+                        tint = tint,
+                        modifier = Modifier.size(controlIconSize)
+                    )
+                }
+                Spacer(Modifier.width(widths.groupGap.dp))
+                if (apps.isNotEmpty()) {
+                    LazyRow(
+                        state = listState,
+                        modifier = Modifier.width(widths.appsWidth.dp)
+                            .horizontalEdgeFade(listState, fadeWidth = padding),
+                        horizontalArrangement = Arrangement.spacedBy(gap),
+                        userScrollEnabled = widths.appsWidth <
+                            apps.size * slot.value + (apps.size - 1) * gap.value
+                    ) {
+                        itemsIndexed(apps, key = { _, app -> app }) { index, app ->
+                            CompanionAppItem(
+                                packageName = app,
+                                isFocused = index == focusedIndex,
+                                onClick = { onAppClick(app) },
+                                onLongPress = onAppLongPress?.let { press -> { press(app) } }
+                            )
+                        }
+                    }
+                    Spacer(Modifier.width(widths.groupGap.dp))
+                }
+                Box {
+                    DockControl(
+                        slot,
+                        focusedIndex == apps.size || toolsOpen,
+                        onClick = {
+                            showToolFocus = false
+                            if (toolsOpen && focusPickerOpen) onFocusPickerToggle?.invoke()
+                            onToolsToggle()
+                        }
+                    ) { tint ->
+                        Icon(
+                            Icons.Default.KeyboardArrowUp,
+                            stringResource(R.string.dual_companion_app_bar_tools_description),
+                            tint = tint,
+                            modifier = Modifier.size(controlIconSize)
+                                .graphicsLayer { rotationZ = caretRotation }
+                        )
+                    }
+                    if (toolsOpen) {
+                        DockToolsPopup(
+                            slot = slot,
+                            height = height,
+                            gap = gap,
+                            padding = padding,
+                            toolIndex = toolIndex,
+                            showToolFocus = controllerInputEnabled && showToolFocus,
+                            onToolFocusVisibilityChange = { showToolFocus = it },
+                            onToolFocus = onToolFocus,
+                            onDismiss = onToolsDismiss,
+                            onSwapRoles = onSwapRoles,
+                            onKeyboardToggle = onKeyboardToggle,
+                            displays = focusDisplays,
+                            pickerOpen = focusPickerOpen,
+                            pickerIndex = focusPickerIndex,
+                            onPickerToggle = onFocusPickerToggle,
+                            onPickerMove = onFocusPickerMove,
+                            onFocusDisplay = onFocusDisplay,
+                            controllerInputEnabled = controllerInputEnabled
+                        )
+                    }
+                }
             }
-            Spacer(modifier = Modifier.height(Dimens.spacingXs))
-        }
-
-        LazyRow(
-            state = listState,
-            contentPadding = PaddingValues(end = Dimens.spacingLg),
-            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd),
-            modifier = Modifier.weight(1f)
-        ) {
-            items(apps.size, key = { apps[it] }) { index ->
-                CompanionAppItem(
-                    packageName = apps[index],
-                    isFocused = index == focusedIndex,
-                    onClick = { onAppClick(apps[index]) },
-                    onLongPress = onAppLongPress?.let { press -> { press(apps[index]) } }
-                )
-            }
-        }
-
-        if (mediaToggle != null) {
-            CompanionMediaButton(
-                toggle = mediaToggle,
-                isFocused = focusedIndex == apps.size,
-                onClick = onMediaToggle
-            )
-        }
-        if (onSwapRoles != null) {
-            CompanionSwapScreensButton(
-                onClick = onSwapRoles
-            )
-        }
-        if (onKeyboardToggle != null) {
-            val keyboardSlot = apps.size + if (mediaToggle != null) 1 else 0
-            CompanionKeyboardButton(
-                isFocused = focusedIndex == keyboardSlot,
-                onClick = onKeyboardToggle
-            )
-        }
-        if (onFocusPickerToggle != null && focusDisplays.size > 1) {
-            val pickerSlot = apps.size + 1
-            DisplayFocusButton(
-                displays = focusDisplays,
-                isOpen = focusPickerOpen,
-                isFocused = focusedIndex == pickerSlot,
-                selectedIndex = focusPickerIndex,
-                onToggle = onFocusPickerToggle,
-                onSelect = onFocusDisplay
-            )
         }
     }
 }
 
-data class DisplayFocusTarget(val displayId: Int, val number: Int)
-
-private object AboveAnchorPositionProvider : PopupPositionProvider {
+internal class DockPopupPositionProvider(
+    private val inset: Int
+) : PopupPositionProvider {
     override fun calculatePosition(
         anchorBounds: IntRect,
         windowSize: IntSize,
         layoutDirection: LayoutDirection,
         popupContentSize: IntSize
     ): IntOffset = IntOffset(
-        x = anchorBounds.left + (anchorBounds.width - popupContentSize.width) / 2,
-        y = anchorBounds.top - popupContentSize.height
+        x = dockPopupLeft(anchorBounds.center.x, popupContentSize.width, windowSize.width, inset),
+        y = (anchorBounds.bottom - popupContentSize.height).coerceIn(
+            inset.coerceAtMost((windowSize.height - popupContentSize.height).coerceAtLeast(0)),
+            (windowSize.height - popupContentSize.height - inset).coerceAtLeast(inset)
+        )
     )
 }
 
 @Composable
-private fun DisplayFocusButton(
+private fun DockToolsPopup(
+    slot: Dp,
+    height: Dp,
+    gap: Dp,
+    padding: Dp,
+    toolIndex: Int,
+    showToolFocus: Boolean,
+    onToolFocusVisibilityChange: (Boolean) -> Unit,
+    onToolFocus: (Int) -> Unit,
+    onDismiss: () -> Unit,
+    onSwapRoles: (() -> Unit)?,
+    onKeyboardToggle: (() -> Unit)?,
     displays: List<DisplayFocusTarget>,
-    isOpen: Boolean,
-    isFocused: Boolean,
-    selectedIndex: Int,
-    onToggle: () -> Unit,
-    onSelect: (Int) -> Unit
+    pickerOpen: Boolean,
+    pickerIndex: Int,
+    onPickerToggle: (() -> Unit)?,
+    onPickerMove: (Int) -> Unit,
+    onFocusDisplay: (Int) -> Unit,
+    controllerInputEnabled: Boolean
 ) {
-    Box(contentAlignment = Alignment.TopCenter) {
-        if (isOpen) {
-            Popup(
-                popupPositionProvider = AboveAnchorPositionProvider,
-                properties = PopupProperties(focusable = false)
-            ) {
-                Column(
-                    modifier = Modifier
-                        .width(COMPANION_APP_BAR_SLOT_WIDTH)
-                        .clip(
-                            RoundedCornerShape(
-                                topStart = Dimens.radiusLg,
-                                topEnd = Dimens.radiusLg
-                            )
-                        )
-                        .background(
-                            MaterialTheme.colorScheme.scrim.copy(alpha = FOCUS_PICKER_SCRIM_ALPHA)
-                        )
-                        .padding(Dimens.spacingXs),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
+    val enabled = listOf(onSwapRoles != null, onKeyboardToggle != null,
+        onPickerToggle != null && displays.size > 1)
+    val dismiss = {
+        if (pickerOpen) onPickerToggle?.invoke()
+        onDismiss()
+    }
+    val activate: (Int) -> Unit = { index ->
+        if (enabled.getOrNull(index) == true) {
+            onToolFocus(index)
+            when (index) {
+                0 -> { dismiss(); onSwapRoles?.invoke() }
+                1 -> { dismiss(); onKeyboardToggle?.invoke() }
+                2 -> onPickerToggle?.invoke()
+            }
+        }
+    }
+
+    if (controllerInputEnabled) {
+        val move by rememberUpdatedState<(Int) -> Unit> { delta ->
+            onToolFocusVisibilityChange(true)
+            if (pickerOpen) onPickerMove(delta)
+            else onToolFocus(dockToolFocusMove(toolIndex, delta, enabled))
+        }
+        val confirm by rememberUpdatedState<() -> Unit> {
+            onToolFocusVisibilityChange(true)
+            if (pickerOpen) {
+                displays.getOrNull(pickerIndex)?.let { onFocusDisplay(it.displayId) }
+                onDismiss()
+            } else {
+                activate(toolIndex)
+            }
+        }
+        val close by rememberUpdatedState(dismiss)
+        val up by rememberUpdatedState<() -> Unit> {
+            onToolFocusVisibilityChange(true)
+            if (pickerOpen) onPickerMove(-1)
+        }
+        val down by rememberUpdatedState<() -> Unit> {
+            onToolFocusVisibilityChange(true)
+            if (pickerOpen) onPickerMove(1) else dismiss()
+        }
+        val handler = remember {
+            object : CapturingInputHandler {
+                override fun onLeft(): InputResult { move(-1); return InputResult.HANDLED }
+                override fun onRight(): InputResult { move(1); return InputResult.HANDLED }
+                override fun onUp(): InputResult { up(); return InputResult.HANDLED }
+                override fun onDown(): InputResult { down(); return InputResult.HANDLED }
+                override fun onConfirm(): InputResult { confirm(); return InputResult.HANDLED }
+                override fun onBack(): InputResult { close(); return InputResult.HANDLED }
+            }
+        }
+        ModalPresenceEffect()
+        ModalInputEffect(active = true, handler = handler)
+    }
+
+    val density = LocalDensity.current
+    val positionProvider = remember(density, padding) {
+        with(density) { DockPopupPositionProvider(padding.roundToPx()) }
+    }
+    val pickerState = rememberLazyListState()
+    LaunchedEffect(pickerOpen, pickerIndex, displays.size) {
+        if (pickerOpen && pickerIndex in displays.indices) pickerState.animateScrollToItem(pickerIndex)
+    }
+    val pickerMaxHeight = (LocalConfiguration.current.screenHeightDp.dp - height * 2 - padding * 2)
+        .coerceAtLeast(slot)
+    val popupWidth = slot * 3 + gap * 2 + padding * 2
+
+    Popup(
+        popupPositionProvider = positionProvider,
+        onDismissRequest = dismiss,
+        properties = PopupProperties(focusable = false, clippingEnabled = true)
+    ) {
+        Column(horizontalAlignment = Alignment.End) {
+            if (pickerOpen) {
+                LazyColumn(
+                    state = pickerState,
+                    modifier = Modifier.width(slot + padding * 2)
+                        .heightIn(max = pickerMaxHeight)
+                        .frostedSurface(RoundedCornerShape(Dimens.radiusLg))
+                        .padding(padding),
+                    verticalArrangement = Arrangement.spacedBy(gap),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    displays.forEachIndexed { index, target ->
-                        val selected = index == selectedIndex
-                        Box(
-                            modifier = Modifier
-                                .size(Dimens.iconXl)
-                                .argosyFocusIndicators(
-                                    focused = selected,
-                                    indicators = APP_BAR_FOCUS,
-                                    shape = RoundedCornerShape(Dimens.radiusLg)
-                                )
-                                .clip(RoundedCornerShape(Dimens.radiusLg))
-                                .background(MaterialTheme.colorScheme.surfaceVariant)
-                                .touchOnly { onSelect(target.displayId) },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            androidx.compose.material3.Text(
-                                text = target.number.toString(),
-                                style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
+                    itemsIndexed(displays, key = { _, target -> target.displayId }) { index, target ->
+                        DockControl(
+                            slot,
+                            focused = false,
+                            onClick = {
+                                onToolFocusVisibilityChange(false)
+                                onFocusDisplay(target.displayId)
+                                onDismiss()
+                            },
+                            showFocusRing = showToolFocus && index == pickerIndex
+                        ) { tint ->
+                            Text(target.number.toString(), color = tint,
+                                style = MaterialTheme.typography.titleLarge)
                         }
                     }
                 }
+                Spacer(Modifier.height(gap))
             }
-        }
-        Column(
-            modifier = Modifier
-                .width(COMPANION_APP_BAR_SLOT_WIDTH)
-                .then(
-                    if (isOpen) {
-                        Modifier
-                            .clip(
-                                RoundedCornerShape(
-                                    bottomStart = Dimens.radiusLg,
-                                    bottomEnd = Dimens.radiusLg
-                                )
-                            )
-                            .background(
-                                MaterialTheme.colorScheme.scrim
-                                    .copy(alpha = FOCUS_PICKER_SCRIM_ALPHA)
-                            )
-                    } else {
-                        Modifier
-                    }
-                )
-                .touchOnly(onToggle)
-                .padding(Dimens.spacingXs),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(Dimens.iconXl)
-                    .argosyFocusIndicators(
-                        focused = isFocused,
-                        indicators = APP_BAR_FOCUS,
-                        shape = RoundedCornerShape(Dimens.radiusLg)
-                    )
-                    .clip(RoundedCornerShape(Dimens.radiusLg))
-                    .background(Color.White.copy(alpha = 0.15f)),
-                contentAlignment = Alignment.Center
+            Row(
+                modifier = Modifier.width(popupWidth)
+                    .height(height).frostedSurface()
+                    .padding(horizontal = padding, vertical = gap),
+                horizontalArrangement = Arrangement.spacedBy(gap),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Default.Tv,
-                    contentDescription = stringResource(R.string.dual_companion_app_bar_focus_description),
-                    tint = Color.White.copy(alpha = 0.7f),
-                    modifier = Modifier.size(Dimens.iconMd)
-                )
+                DockControl(
+                    slot, false, enabled[0],
+                    onClick = { onToolFocusVisibilityChange(false); activate(0) },
+                    showFocusRing = showToolFocus && !pickerOpen && toolIndex == 0
+                ) { tint ->
+                    Icon(painterResource(R.drawable.ic_swap_screens),
+                        stringResource(R.string.dual_companion_app_bar_swap_description),
+                        tint = tint, modifier = Modifier.size(Dimens.iconMd))
+                }
+                DockControl(
+                    slot, false, enabled[1],
+                    onClick = { onToolFocusVisibilityChange(false); activate(1) },
+                    showFocusRing = showToolFocus && !pickerOpen && toolIndex == 1
+                ) { tint ->
+                    Icon(Icons.Default.Keyboard,
+                        stringResource(R.string.dual_companion_app_bar_keyboard_description),
+                        tint = tint, modifier = Modifier.size(Dimens.iconMd))
+                }
+                DockControl(
+                    slot, false, enabled[2],
+                    onClick = { onToolFocusVisibilityChange(false); activate(2) },
+                    showFocusRing = showToolFocus && !pickerOpen && toolIndex == 2
+                ) { tint ->
+                    Icon(Icons.Default.Tv,
+                        stringResource(R.string.dual_companion_app_bar_focus_description),
+                        tint = tint, modifier = Modifier.size(Dimens.iconMd))
+                }
             }
+            Spacer(
+                Modifier.width(popupWidth)
+                    .height(height)
+                    .touchOnly(dismiss)
+            )
         }
     }
 }
 
 @Composable
-private fun CompanionKeyboardButton(
-    isFocused: Boolean,
-    onClick: () -> Unit
+private fun DockControl(
+    slot: Dp,
+    focused: Boolean,
+    enabled: Boolean = true,
+    onClick: () -> Unit,
+    showFocusRing: Boolean = false,
+    content: @Composable (Color) -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .width(COMPANION_APP_BAR_SLOT_WIDTH)
-            .touchOnly(onClick)
-            .padding(Dimens.spacingXs),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Box(
-            modifier = Modifier
-                .size(Dimens.iconXl)
-                .argosyFocusIndicators(
-                    focused = isFocused,
-                    indicators = APP_BAR_FOCUS,
-                    shape = RoundedCornerShape(Dimens.radiusLg)
-                )
-                .clip(RoundedCornerShape(Dimens.radiusLg))
-                .background(Color.White.copy(alpha = 0.15f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.Keyboard,
-                contentDescription = stringResource(R.string.dual_companion_app_bar_keyboard_description),
-                tint = Color.White.copy(alpha = 0.7f),
-                modifier = Modifier.size(Dimens.iconMd)
+    val tint = if (focused) LocalArgosyTheme.current.focusAccent else MaterialTheme.colorScheme.onSurface
+    Box(
+        Modifier.size(slot)
+            .argosyFocusIndicators(
+                focused = showFocusRing && enabled,
+                indicators = FocusIndicators.Ring,
+                shape = RoundedCornerShape(Dimens.radiusSm)
             )
-        }
-        Spacer(modifier = Modifier.height(Dimens.spacingXs))
-    }
-}
-
-@Composable
-private fun CompanionSwapScreensButton(onClick: () -> Unit) {
-    val contentAlpha = 0.7f
-    Column(
-        modifier = Modifier
-            .width(COMPANION_APP_BAR_SLOT_WIDTH)
-            .touchOnly(onClick)
-            .padding(Dimens.spacingXs),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .then(if (enabled) Modifier.touchOnly(onClick) else Modifier)
+            .semantics(mergeDescendants = true) {
+                role = Role.Button
+                if (enabled) semanticClick { onClick(); true } else disabled()
+            },
+        contentAlignment = Alignment.Center
     ) {
-        Box(
-            modifier = Modifier
-                .size(Dimens.iconXl)
-                .clip(RoundedCornerShape(Dimens.radiusLg))
-                .background(Color.White.copy(alpha = 0.15f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_swap_screens),
-                contentDescription = stringResource(R.string.dual_companion_app_bar_swap_description),
-                tint = Color.White.copy(alpha = contentAlpha),
-                modifier = Modifier.size(Dimens.iconMd)
-            )
-        }
-        Spacer(modifier = Modifier.height(Dimens.spacingXs))
-    }
-}
-
-@Composable
-private fun CompanionMediaButton(
-    toggle: CompanionMediaToggle,
-    isFocused: Boolean,
-    onClick: () -> Unit
-) {
-    val theme = LocalArgosyTheme.current
-    Column(
-        modifier = Modifier
-            .width(COMPANION_APP_BAR_SLOT_WIDTH)
-            .touchOnly(onClick)
-            .padding(Dimens.spacingXs),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Box(
-            modifier = Modifier
-                .size(Dimens.iconXl)
-                .argosyFocusIndicators(
-                    focused = isFocused,
-                    indicators = APP_BAR_FOCUS,
-                    shape = RoundedCornerShape(Dimens.radiusLg)
-                )
-                .clip(RoundedCornerShape(Dimens.radiusLg))
-                .background(Color.White.copy(alpha = 0.15f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = if (toggle.showingMedia) Icons.Default.Home else Icons.Default.Movie,
-                contentDescription = if (toggle.showingMedia) {
-                    stringResource(R.string.dual_companion_app_bar_media_to_library_description)
-                } else {
-                    stringResource(R.string.dual_companion_app_bar_media_to_player_description)
-                },
-                tint = if (toggle.isPlaying) theme.focusAccent else Color.White.copy(alpha = 0.7f),
-                modifier = Modifier.size(Dimens.iconMd)
-            )
-        }
-        Spacer(modifier = Modifier.height(Dimens.spacingXs))
+        content(if (enabled) tint else tint.copy(alpha = ComponentDefaults.QuickPanel.disabledContentAlpha))
     }
 }
 
@@ -424,30 +444,32 @@ internal fun CompanionAppItem(
     onClick: () -> Unit,
     onLongPress: (() -> Unit)? = null
 ) {
-    Column(
-        modifier = Modifier
-            .width(COMPANION_APP_BAR_SLOT_WIDTH)
+    Box(
+        modifier = Modifier.size(maxOf(minimumTouchTarget, Dimens.iconXl))
             .let { base ->
                 if (onLongPress == null) base.touchOnly(onClick)
                 else base.touchOnly(onClick = onClick, onLongPress = onLongPress)
             }
-            .padding(Dimens.spacingXs),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .semantics(mergeDescendants = true) {
+                role = Role.Button
+                semanticClick { onClick(); true }
+                if (onLongPress != null) semanticLongClick { onLongPress(); true }
+            },
+        contentAlignment = Alignment.Center
     ) {
         AsyncImage(
             model = AppIconData(packageName),
-            contentDescription = null,
+            contentDescription = packageName,
             modifier = Modifier
                 .size(Dimens.iconXl)
                 .argosyFocusIndicators(
                     focused = isFocused,
-                    indicators = APP_BAR_FOCUS,
-                    shape = RoundedCornerShape(Dimens.radiusLg)
+                    indicators = FocusIndicators.Ring,
+                    shape = CircleShape
                 )
-                .clip(RoundedCornerShape(Dimens.radiusLg)),
-            contentScale = ContentScale.Crop
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surface),
+            contentScale = ContentScale.Fit
         )
-
-        Spacer(modifier = Modifier.height(Dimens.spacingXs))
     }
 }

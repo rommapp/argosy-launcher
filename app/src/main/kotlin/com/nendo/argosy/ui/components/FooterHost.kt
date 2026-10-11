@@ -5,17 +5,18 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.nendo.argosy.ui.theme.Dimens
-import com.nendo.argosy.ui.theme.Motion
 
 enum class FooterVariant { STANDARD, SUBTLE }
 
@@ -32,6 +33,8 @@ data class FooterEntry(
 class FooterHostController {
     private var nextId = 0L
     private val stack = mutableStateListOf<Pair<Long, FooterEntry>>()
+    var measuredHeight: Dp by mutableStateOf(0.dp)
+        internal set
 
     internal fun allocateId(): Long = nextId++
 
@@ -93,16 +96,23 @@ fun FooterHost(
     modifier: Modifier = Modifier
 ) {
     val entry = controller.top
+    val density = LocalDensity.current
+    val measuredModifier = modifier.onSizeChanged {
+        controller.measuredHeight = with(density) { it.height.toDp() }
+    }
+    DisposableEffect(controller) {
+        onDispose { controller.measuredHeight = 0.dp }
+    }
     CompositionLocalProvider(LocalFooterStyle provides (entry?.style ?: FooterStyleConfig())) {
         when (entry?.variant) {
             FooterVariant.SUBTLE -> SubtleFooterBar(
                 hints = entry.hints.map { it.button to it.action },
-                modifier = modifier,
+                modifier = measuredModifier,
                 onHintClick = entry.onHintClick
             )
             else -> FooterBarWithState(
                 hints = entry?.hints ?: emptyList(),
-                modifier = modifier,
+                modifier = measuredModifier,
                 onHintClick = entry?.onHintClick,
                 trailingContent = entry?.trailingContent,
                 forceVisible = entry?.forced == true
@@ -120,10 +130,5 @@ val FooterHostController.isBarVisible: Boolean
 @Composable
 fun FooterSpacer() {
     val controller = LocalFooterHost.current
-    val height by animateDpAsState(
-        targetValue = if (controller.isBarVisible) Dimens.footerHeight else 0.dp,
-        animationSpec = tween(Motion.durationContent, easing = Motion.argosyEase),
-        label = "footer-spacer",
-    )
-    Spacer(Modifier.height(height))
+    Spacer(Modifier.height(controller.measuredHeight))
 }

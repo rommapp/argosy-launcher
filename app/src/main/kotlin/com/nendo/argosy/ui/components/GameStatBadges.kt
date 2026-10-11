@@ -1,9 +1,6 @@
 package com.nendo.argosy.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -24,48 +21,6 @@ import androidx.compose.ui.platform.LocalContext
 import com.nendo.argosy.ui.theme.ALauncherColors
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.util.formatTimeToBeat
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-fun GameStatBadges(
-    rating: Float?,
-    userRating: Int,
-    userDifficulty: Int,
-    achievementCount: Int,
-    earnedAchievementCount: Int,
-    timeToBeatMainSec: Int?,
-    modifier: Modifier = Modifier,
-    textColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-    tintOverride: Color? = null,
-    stacked: Boolean = false,
-    centered: Boolean = false
-) {
-    val badges = gameStatBadges(
-        rating, userRating, userDifficulty, achievementCount, earnedAchievementCount, timeToBeatMainSec, textColor
-    )
-    if (badges.isEmpty()) return
-
-    val content: @Composable () -> Unit = {
-        badges.forEach { badge ->
-            StatBadgeItem(badge = badge, tint = tintOverride ?: badge.tint, textColor = textColor)
-        }
-    }
-    if (stacked) {
-        Column(
-            modifier = modifier,
-            verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-        ) { content() }
-    } else {
-        FlowRow(
-            modifier = modifier,
-            horizontalArrangement = Arrangement.spacedBy(
-                Dimens.spacingMd,
-                if (centered) Alignment.CenterHorizontally else Alignment.Start
-            ),
-            verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
-        ) { content() }
-    }
-}
 
 @Composable
 internal fun gameStatBadges(

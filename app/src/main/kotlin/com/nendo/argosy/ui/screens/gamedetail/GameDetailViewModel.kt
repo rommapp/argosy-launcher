@@ -49,6 +49,7 @@ import com.nendo.argosy.ui.common.labelRes
 import com.nendo.argosy.ui.common.reportTitleIdRecheck
 import com.nendo.argosy.ui.common.isSteamGame
 import com.nendo.argosy.ui.common.toHomeGameUi
+import com.nendo.argosy.util.openStorageAccessSettings
 import com.nendo.argosy.ui.screens.common.CollectionModalDelegate
 import com.nendo.argosy.ui.screens.common.GameActionsDelegate
 import com.nendo.argosy.ui.screens.common.GameLaunchDelegate
@@ -2391,11 +2392,7 @@ class GameDetailViewModel @Inject constructor(
 
     fun openAllFilesAccessSettings() {
         _uiState.update { it.copy(showPermissionModal = false) }
-        val intent = android.content.Intent(android.provider.Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
-            data = android.net.Uri.parse("package:${context.packageName}")
-            flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
-        }
-        context.startActivity(intent)
+        context.openStorageAccessSettings()
     }
 
     fun disableSaveSync() {

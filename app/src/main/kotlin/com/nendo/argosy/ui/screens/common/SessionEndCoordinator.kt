@@ -2,9 +2,7 @@ package com.nendo.argosy.ui.screens.common
 
 import android.app.Application
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
-import android.provider.Settings
 import android.util.Log
 import com.nendo.argosy.data.emulator.ActiveSession
 import com.nendo.argosy.data.emulator.EmulatorRegistry
@@ -18,6 +16,7 @@ import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.domain.model.SyncProgress
 import com.nendo.argosy.util.SafeCoroutineScope
+import com.nendo.argosy.util.openStorageAccessSettings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -209,11 +208,6 @@ class SessionEndCoordinator @Inject constructor(
     }
 
     private fun openAllFilesAccessSettings() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return
-        val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
-            data = Uri.parse("package:${application.packageName}")
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
-        }
-        application.startActivity(intent)
+        application.openStorageAccessSettings()
     }
 }

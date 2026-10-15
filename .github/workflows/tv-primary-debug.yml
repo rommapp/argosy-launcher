@@ -1,6 +1,6 @@
 name: Mirror-only debug APK
 
-on:
+"on":
   push:
     branches: [codex/mirror-only-display-fix]
   workflow_dispatch:

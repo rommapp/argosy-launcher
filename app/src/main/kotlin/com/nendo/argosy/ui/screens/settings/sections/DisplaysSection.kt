@@ -83,7 +83,7 @@ internal sealed class DisplaysItem(
     data object ScreenLayout : DisplaysItem(
         key = "screenLayout",
         section = "displays",
-        visibleWhen = { it.hasPhysicalSecondaryDisplay }
+        visibleWhen = { it.dualScreenEnabled && it.hasPhysicalSecondaryDisplay }
     )
     data object AmbientLedSettings : DisplaysItem(
         key = "ambientLedSettings",
@@ -94,17 +94,17 @@ internal sealed class DisplaysItem(
     data object GamesTarget : DisplaysItem(
         key = "gamesTarget",
         section = DISPLAY_TARGETS_SECTION,
-        visibleWhen = { it.hasPhysicalSecondaryDisplay }
+        visibleWhen = { it.dualScreenEnabled && it.hasPhysicalSecondaryDisplay }
     )
     data object AppsTarget : DisplaysItem(
         key = "appsTarget",
         section = DISPLAY_TARGETS_SECTION,
-        visibleWhen = { it.hasPhysicalSecondaryDisplay }
+        visibleWhen = { it.dualScreenEnabled && it.hasPhysicalSecondaryDisplay }
     )
     data object ByPlatformAndApp : DisplaysItem(
         key = "byPlatformAndApp",
         section = DISPLAY_TARGETS_SECTION,
-        visibleWhen = { it.hasPhysicalSecondaryDisplay }
+        visibleWhen = { it.dualScreenEnabled && it.hasPhysicalSecondaryDisplay }
     )
 
     companion object {
@@ -116,13 +116,13 @@ internal sealed class DisplaysItem(
         private val DisplayTargetsSpacer = SectionSpacer(
             "displayTargetsSpacer",
             DISPLAY_TARGETS_SECTION,
-            visibleWhen = { it.hasPhysicalSecondaryDisplay }
+            visibleWhen = { it.dualScreenEnabled && it.hasPhysicalSecondaryDisplay }
         )
         private val DisplayTargetsHeader = Header(
             "displayTargetsHeader",
             DISPLAY_TARGETS_SECTION,
             R.string.settings_displays_section_display_targets,
-            visibleWhen = { it.hasPhysicalSecondaryDisplay }
+            visibleWhen = { it.dualScreenEnabled && it.hasPhysicalSecondaryDisplay }
         )
 
         val ALL: List<DisplaysItem>

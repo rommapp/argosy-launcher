@@ -246,7 +246,7 @@
     <string name="settings_displays_dim_level_title">Dimmstufe</string>
 
     <string name="settings_displays_dual_screen_title">Dual-Screen-Modus aktivieren</string>
-    <string name="settings_displays_dual_screen_subtitle">Zweiten Bildschirm als Begleitbildschirm nutzen</string>
+    <string name="settings_displays_dual_screen_subtitle">Aus: Argosy nutzt einen Bildschirm; Android steuert die TV-Spiegelung. Ein: getrennte Bildschirmrollen nutzen.</string>
     <string name="settings_displays_dual_screen_subtitle_unsupported">Dieses System erlaubt keine Companion-App auf dem zweiten Bildschirm; zum erneuten Versuch aus- und wieder einschalten</string>
 
     <string name="settings_displays_display_roles_title">Steuerbildschirm</string>
@@ -2690,4 +2690,3 @@
     <string name="settings_builtin_gpu_driver_reason_backend">Gilt, wenn das Backend Vulkan ist</string>
     <string name="settings_builtin_gpu_driver_reason_device">Eigene Treiber benötigen eine Adreno-GPU</string>
 </resources>
-

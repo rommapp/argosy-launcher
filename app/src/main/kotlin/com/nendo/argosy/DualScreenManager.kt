@@ -253,9 +253,12 @@ class DualScreenManager(
         size: com.nendo.argosy.hardware.DisplayBadgeSize =
             com.nendo.argosy.hardware.DisplayBadgeSize.LARGE
     ) {
-        val numbers = com.nendo.argosy.util.ScreenCatalog(appContext)
-            .attachedScreens()
-            .associate { it.displayId to it.number }
+        val displays = focusableDisplays()
+        if (displays.size < 2) {
+            hideScreenNumbers()
+            return
+        }
+        val numbers = displays.associate { it.displayId to it.number }
         _screenNumbers.value = numbers
         displayBadges.show(numbers, size)
     }
@@ -327,9 +330,14 @@ class DualScreenManager(
     }
 
     fun applyStoredScreenLayout(promptWhenUnknown: Boolean = false) {
-        if (displayAffinityHelper.isDockedDark || displayAffinityHelper.isDesktopMode) return
+        if (!displayAffinityHelper.hasSecondaryDisplay ||
+            displayAffinityHelper.isDockedDark || displayAffinityHelper.isDesktopMode
+        ) return
         scope.launch {
             val resolved = resolveScreenLayout() ?: return@launch
+            if (!displayAffinityHelper.hasSecondaryDisplay ||
+                displayAffinityHelper.isDockedDark || displayAffinityHelper.isDesktopMode
+            ) return@launch
             val attached = resolved.attached
             val setKey = resolved.setKey
             val known = resolved.known
@@ -428,15 +436,29 @@ class DualScreenManager(
     }
 
     fun applyDualScreenEnabled(enabled: Boolean, isToggle: Boolean) {
-        setSecondaryHomeComponentEnabled(enabled && displayAffinityHelper.secondaryDisplayUsable)
-        if (!isToggle) return
-        if (enabled) {
-            clearForeignAppOnSecondary("dual screen enabled")
-            reprobeSecondaryDisplay()
-            ensureCompanionLaunched()
-        } else {
-            teardownCompanion()
+        val docked = displayAffinityHelper.isDockedDark
+        setSecondaryHomeComponentEnabled(
+            (enabled || docked) && displayAffinityHelper.secondaryDisplayUsable
+        )
+        if (!enabled) {
+            hideScreenNumbers()
+            _focusPickerOpen.value = false
+            _unconfiguredScreenSet.value = null
+            _hasPresentationScreen.value = false
+            displayAffinityHelper.appTargetDisplayId = null
+            displayAffinityHelper.roleDisplayIds = null
+            displayAffinityHelper.offDisplayIds = emptySet()
+            mediaPlayerDisplayId = null
+            _isDualScreenDevice.value = displayAffinityHelper.hasSecondaryDisplay
+            releaseStaleAppScreens()
+            if (docked) ensureCompanionLaunched() else teardownCompanion()
+            return
         }
+        if (!isToggle) return
+        clearForeignAppOnSecondary("dual screen enabled")
+        reprobeSecondaryDisplay()
+        applyStoredScreenLayout()
+        ensureCompanionLaunched()
     }
 
     /**
@@ -912,8 +934,16 @@ class DualScreenManager(
      * The displays a viewer can hand input to, in screen-number order, each with the number the
      * badge draws for it.
      */
-    fun focusableDisplays(): List<com.nendo.argosy.util.AttachedScreen> =
-        com.nendo.argosy.util.ScreenCatalog(appContext).attachedScreens()
+    fun focusableDisplays(): List<com.nendo.argosy.util.AttachedScreen> {
+        val screens = com.nendo.argosy.util.ScreenCatalog(appContext).attachedScreens()
+        if (displayAffinityHelper.dualScreenEnabled && displayAffinityHelper.hasSecondaryDisplay) {
+            return screens
+        }
+        val displayId = displayAffinityHelper.desktopModeDisplayId
+            ?: displayAffinityHelper.dockedDisplayId
+            ?: android.view.Display.DEFAULT_DISPLAY
+        return screens.filter { it.displayId == displayId }
+    }
 
     /**
      * Moves input focus to [displayId], through whichever surface of ours is rendered there.
@@ -1204,6 +1234,7 @@ class DualScreenManager(
      */
     fun mediaPlayerRelocationDisplayId(): Int? {
         displayAffinityHelper.desktopModeDisplayId?.let { return it }
+        if (!displayAffinityHelper.hasSecondaryDisplay) return null
         val emulator = emulatorDisplayId
         if (emulator != null) return displayAffinityHelper.getMediaPlayerDisplayId(emulator)
         return displayAffinityHelper.largestDisplayId() ?: interactiveDisplayId()
@@ -1619,9 +1650,11 @@ class DualScreenManager(
                 onRoleSwapped?.invoke(newSwapped)
                 eachCompanion { it.onRoleSwapped(newSwapped) }
             }
-            _isDualScreenDevice.value = true
-            CompanionGuardService.start(appContext)
-            ensureCompanionLaunched()
+            _isDualScreenDevice.value = displayAffinityHelper.hasSecondaryDisplay
+            if (displayAffinityHelper.hasSecondaryDisplay) {
+                CompanionGuardService.start(appContext)
+                ensureCompanionLaunched()
+            }
             applyStoredScreenLayout(promptWhenUnknown = true)
             scheduleDockedResync()
         }

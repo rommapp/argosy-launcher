@@ -148,6 +148,7 @@ class DisplayAffinityHelper @Inject constructor(
      * roles that already carry a surface.
      */
     fun appScreenDisplayId(rolesSwapped: Boolean): Int? {
+        if (singleSurfaceDisplayId != null || !hasSecondaryDisplay) return null
         val target = resolvedAppTarget ?: return null
         val roles = getRoleDisplayIds(rolesSwapped) ?: return target
         if (target == roles.first || target == roles.second) return null
@@ -177,6 +178,7 @@ class DisplayAffinityHelper @Inject constructor(
         defaultTarget: EmulatorDisplayTarget = EmulatorDisplayTarget.DEFAULT
     ): Int? {
         singleSurfaceDisplayId?.let { return it }
+        if (!hasSecondaryDisplay) return null
         val roles = getRoleDisplayIds(rolesSwapped)
         return resolveAppLaunchDisplayId(
             preferredDisplayId = preferredScreenKey?.let { key ->
@@ -210,12 +212,15 @@ class DisplayAffinityHelper @Inject constructor(
      * The display a game goes to under [target], or null while [target] names no screen of its own
      * and the launch should be placed the way it is on a device with two screens.
      */
-    fun getDisplayTargetId(target: EmulatorDisplayTarget, rolesSwapped: Boolean): Int? =
-        singleSurfaceDisplayId ?: resolveDisplayTargetId(
+    fun getDisplayTargetId(target: EmulatorDisplayTarget, rolesSwapped: Boolean): Int? {
+        singleSurfaceDisplayId?.let { return it }
+        if (!hasSecondaryDisplay) return null
+        return resolveDisplayTargetId(
             target = target,
             roleDisplayIds = getRoleDisplayIds(rolesSwapped),
             appScreenDisplayId = appScreenDisplayId(rolesSwapped)
         )
+    }
 
     /**
      * Which physical display holds each role: the one the viewer is driving, then the one
@@ -226,9 +231,11 @@ class DisplayAffinityHelper @Inject constructor(
      * moves them, so a caller asks which display holds its role instead of naming a display id,
      * and keeps landing correctly after a swap.
      */
-    fun getRoleDisplayIds(rolesSwapped: Boolean): Pair<Int, Int>? =
-        singleSurfaceDisplayId?.let { it to it }
-            ?: resolveRoleDisplayIds(roleDisplayIds, attachedIds, secondaryDisplayId, rolesSwapped)
+    fun getRoleDisplayIds(rolesSwapped: Boolean): Pair<Int, Int>? {
+        singleSurfaceDisplayId?.let { return it to it }
+        if (!hasSecondaryDisplay) return null
+        return resolveRoleDisplayIds(roleDisplayIds, attachedIds, secondaryDisplayId, rolesSwapped)
+    }
 
     /**
      * Where the video player belongs once a game has claimed [emulatorDisplayId]: the other physical
@@ -265,13 +272,9 @@ class DisplayAffinityHelper @Inject constructor(
         rolesSwapped: Boolean = false,
         overrideDisplayId: Int? = null
     ): Bundle? {
-        if (overrideDisplayId == null && !isDesktopMode && !hasSecondaryDisplay &&
-            (forEmulator || resolvedAppTarget == null)
-        ) {
-            return null
-        }
+        if (singleSurfaceDisplayId == null && !hasSecondaryDisplay) return null
 
-        val targetDisplayId = overrideDisplayId
+        val targetDisplayId = singleSurfaceDisplayId ?: overrideDisplayId
             ?: if (forEmulator) {
                 getRoleDisplayIds(rolesSwapped)?.second
             } else {

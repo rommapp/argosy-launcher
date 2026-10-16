@@ -59,6 +59,9 @@ public:
         GLint gPreviousPassTextureHandle = 0;
         GLint gScreenDensityHandle = 0;
         GLint gTextureSizeHandle = 0;
+        GLint gOrigTextureHandle = -1;
+        GLint gOrigTextureSizeHandle = -1;
+        GLint gOrigInputSizeHandle = -1;
         GLint gInputSizeHandle = -1;
         GLint gOutputSizeHandle = -1;
         GLint gFrameCountHandle = -1;

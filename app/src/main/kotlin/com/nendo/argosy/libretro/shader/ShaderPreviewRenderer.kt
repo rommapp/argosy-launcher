@@ -109,11 +109,11 @@ class ShaderPreviewRenderer {
                 GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mainTexture)
                 GLES20.glUniform1i(compiled.textureHandle, 0)
 
-                // Also provide original texture for shaders that need it
-                if (compiled.previousPassHandle != -1) {
+                if (compiled.previousPassHandle != -1 || compiled.origTextureHandle != -1) {
                     GLES20.glActiveTexture(GLES20.GL_TEXTURE1)
                     GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, inputTexture)
-                    GLES20.glUniform1i(compiled.previousPassHandle, 1)
+                    setUniformInt(compiled.previousPassHandle, 1)
+                    setUniformInt(compiled.origTextureHandle, 1)
                 }
 
                 val outW: Float
@@ -131,6 +131,8 @@ class ShaderPreviewRenderer {
                 val inH = if (i > 0) fbos[i - 1].height.toFloat() else texH
                 setUniformVec2(compiled.textureSizeHandle, inW, inH)
                 setUniformVec2(compiled.inputSizeHandle, inW, inH)
+                setUniformVec2(compiled.origTextureSizeHandle, texW, texH)
+                setUniformVec2(compiled.origInputSizeHandle, texW, texH)
                 setUniformVec2(compiled.outputSizeHandle, outW, outH)
                 setUniformInt(compiled.frameCountHandle, 0)
                 setUniformInt(compiled.frameDirectionHandle, 1)
@@ -149,6 +151,10 @@ class ShaderPreviewRenderer {
 
                 if (compiled.positionHandle != -1) GLES20.glDisableVertexAttribArray(compiled.positionHandle)
                 if (compiled.coordHandle != -1) GLES20.glDisableVertexAttribArray(compiled.coordHandle)
+                if (compiled.previousPassHandle != -1 || compiled.origTextureHandle != -1) {
+                    GLES20.glActiveTexture(GLES20.GL_TEXTURE1)
+                    GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0)
+                }
                 GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
                 GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0)
                 GLES20.glUseProgram(0)
@@ -305,6 +311,9 @@ class ShaderPreviewRenderer {
             coordHandle = coordHandle,
             textureHandle = textureHandle,
             previousPassHandle = GLES20.glGetUniformLocation(program, "previousPass"),
+            origTextureHandle = GLES20.glGetUniformLocation(program, "OrigTexture"),
+            origTextureSizeHandle = GLES20.glGetUniformLocation(program, "OrigTextureSize"),
+            origInputSizeHandle = GLES20.glGetUniformLocation(program, "OrigInputSize"),
             textureSizeHandle = textureSizeHandle,
             inputSizeHandle = GLES20.glGetUniformLocation(program, "InputSize"),
             outputSizeHandle = GLES20.glGetUniformLocation(program, "OutputSize"),
@@ -372,6 +381,9 @@ class ShaderPreviewRenderer {
         val coordHandle: Int,
         val textureHandle: Int,
         val previousPassHandle: Int,
+        val origTextureHandle: Int,
+        val origTextureSizeHandle: Int,
+        val origInputSizeHandle: Int,
         val textureSizeHandle: Int,
         val inputSizeHandle: Int,
         val outputSizeHandle: Int,

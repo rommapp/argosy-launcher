@@ -535,9 +535,7 @@
 
     <!-- Row title. Verb phrase: turn on use of a second screen. -->
     <string name="settings_displays_dual_screen_title">Enable Dual-screen Mode</string>
-    <!-- Second line of that row. "Companion screen" is the second screen showing extra
-         information. -->
-    <string name="settings_displays_dual_screen_subtitle">Use secondary display as companion screen</string>
+    <string name="settings_displays_dual_screen_subtitle">Extend the interface to a second screen</string>
     <!-- Second line of that row on a device whose firmware refuses to host the second screen. -->
     <string name="settings_displays_dual_screen_subtitle_unsupported">This system does not allow a companion app on the secondary display; toggle off and on to retry</string>
 

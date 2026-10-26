@@ -302,6 +302,11 @@ class GameDetailViewModel @Inject constructor(
             }
         }
         viewModelScope.launch {
+            gameLaunchDelegate.sessionEndRunning.collect { running ->
+                _uiState.update { it.copy(sessionEndRunning = running) }
+            }
+        }
+        viewModelScope.launch {
             playSessionTracker.activeSession.collect { session ->
                 if (session != null) pendingLaunchOrigin = LaunchOrigin.INTERNAL
             }
@@ -1188,7 +1193,7 @@ class GameDetailViewModel @Inject constructor(
     }
 
     fun playGame(discId: Long? = null, origin: LaunchOrigin = LaunchOrigin.INTERNAL) {
-        if (gameLaunchDelegate.isSyncing) return
+        if (gameLaunchDelegate.isSessionEndBusy) return
         if (origin != LaunchOrigin.INTERNAL) pendingLaunchOrigin = origin
 
         viewModelScope.launch {

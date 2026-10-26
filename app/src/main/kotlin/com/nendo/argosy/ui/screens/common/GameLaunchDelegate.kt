@@ -186,6 +186,8 @@ class GameLaunchDelegate @Inject constructor(
 
     val syncOverlayState: StateFlow<SyncOverlayState?> = sessionEndCoordinator.syncOverlayState
 
+    val sessionEndRunning: StateFlow<Boolean> = sessionEndCoordinator.sessionEndRunning
+
     private val _discPickerState = MutableStateFlow<DiscPickerState?>(null)
     val discPickerState: StateFlow<DiscPickerState?> = _discPickerState.asStateFlow()
 
@@ -197,6 +199,8 @@ class GameLaunchDelegate @Inject constructor(
     val memcardPickerState: StateFlow<MemcardPickerState?> = _memcardPickerState.asStateFlow()
 
     val isSyncing: Boolean get() = syncOverlayState.value != null
+
+    val isSessionEndBusy: Boolean get() = isSyncing || sessionEndRunning.value
 
     private var _onLaunchFailed: (() -> Unit)? = null
 

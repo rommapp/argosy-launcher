@@ -34,6 +34,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
@@ -313,6 +314,29 @@ class GameLaunchDelegateTest {
         assertNull(tracker.progress.value)
         assertTrue(sessionEndRunning.value)
         assertNotNull(tracker.begin(gameId, "Game"))
+    }
+
+    @Test
+    fun `a running session end makes the delegate busy, which GameDetail Play refuses on`() = runTest {
+        val delegate = delegate(tracker(), router())
+        assertFalse(delegate.isSessionEndBusy)
+        assertFalse(delegate.sessionEndRunning.value)
+
+        sessionEndRunning.value = true
+
+        assertTrue(delegate.isSessionEndBusy)
+        assertTrue(delegate.sessionEndRunning.value)
+        assertFalse(delegate.isSyncing)
+    }
+
+    @Test
+    fun `a blocked prompt makes the delegate busy with no session end running`() = runTest {
+        val delegate = delegate(tracker(), router())
+
+        syncOverlayState.value = SyncOverlayState("Game", SyncProgress.BlockedReason.PermissionRequired())
+
+        assertTrue(delegate.isSessionEndBusy)
+        assertFalse(delegate.sessionEndRunning.value)
     }
 
     @Test

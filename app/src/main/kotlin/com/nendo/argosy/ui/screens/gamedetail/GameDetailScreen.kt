@@ -144,7 +144,7 @@ fun GameDetailScreen(
     }
 
     val pendingLaunch by argosyViewModel.pendingLaunch.collectAsState()
-    val sessionEndSyncing = uiState.syncOverlayState != null
+    val sessionEndSyncing = uiState.syncOverlayState != null || uiState.sessionEndRunning
     LaunchedEffect(pendingLaunch, uiState.game?.id, sessionEndSyncing) {
         val pending = pendingLaunch ?: return@LaunchedEffect
         if (pending.gameId == gameId && uiState.game?.id == gameId && !sessionEndSyncing) {

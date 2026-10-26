@@ -270,7 +270,7 @@ class SessionEndNoticesTest {
     }
 
     @Test
-    fun `an I/O error while posting a notice never throws into the session end`() = runTest {
+    fun `an input-output error while posting a notice never throws into the session end`() = runTest {
         coEvery { gameArtDao.getForGame(gameId) } throws IOException("disk I/O error")
 
         notices.sessionSaveSynced(gameId, SyncSaveOnSessionEndUseCase.Result.Uploaded())

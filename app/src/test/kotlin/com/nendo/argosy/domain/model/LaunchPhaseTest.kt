@@ -3,7 +3,6 @@ package com.nendo.argosy.domain.model
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
-import java.time.Instant
 
 class LaunchPhaseTest {
 
@@ -19,13 +18,6 @@ class LaunchPhaseTest {
         targetPath = "/save",
         isFolderBased = false,
         channelName = null
-    )
-
-    private val postSessionConflict = SyncProgress.PostSessionConflict(
-        gameTitle = "Game",
-        channelName = null,
-        localTimestamp = Instant.EPOCH,
-        serverTimestamp = Instant.EPOCH
     )
 
     private val flags = listOf(null, true, false)
@@ -45,13 +37,7 @@ class LaunchPhaseTest {
         SyncProgress.Error("download failed"),
         hardcoreConflict,
         localModified,
-        postSessionConflict,
-        SyncProgress.PostSession.CheckingSave(null, found = true),
-        SyncProgress.PostSession.Connecting(null, success = false),
-        SyncProgress.PostSession.Uploading(null, success = null),
-        SyncProgress.PostSession.Complete,
         SyncProgress.BlockedReason.PermissionRequired(),
-        SyncProgress.BlockedReason.SavePathNotFound(),
         SyncProgress.BlockedReason.AccessDenied()
     )
 

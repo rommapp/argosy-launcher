@@ -15,29 +15,13 @@
     <string name="sync_prelaunch_write_failed">Échec de l\'écriture</string>
     <string name="sync_prelaunch_launching">Lancement du jeu...</string>
 
-    <string name="sync_postsession_checking_save">Vérification de la sauvegarde...</string>
-    <string name="sync_postsession_save_found">Sauvegarde trouvée</string>
-    <string name="sync_postsession_save_absent">Sauvegarde introuvable</string>
-    <string name="sync_postsession_connecting">Connexion...</string>
-    <string name="sync_postsession_connected">Connecté</string>
-    <string name="sync_postsession_connect_failed">Échec de la connexion</string>
-    <string name="sync_postsession_uploading">Envoi...</string>
-    <string name="sync_postsession_upload_complete">Envoi terminé</string>
-    <string name="sync_postsession_upload_queued">Envoi en file d\'attente</string>
-    <string name="sync_postsession_complete">Synchronisation terminée</string>
-
     <string name="sync_progress_skipped">Synchronisation ignorée</string>
     <string name="sync_progress_hardcore_conflict">Conflit de sauvegarde en mode hardcore</string>
     <string name="sync_progress_local_modified">Sauvegarde locale modifiée</string>
-    <string name="sync_progress_save_conflict">Conflit de sauvegarde</string>
 
     <string name="sync_blocked_permission_title">Autorisation d\'accès aux fichiers requise</string>
     <string name="sync_blocked_permission_detail">Accordez l\'autorisation \"Accès à tous les fichiers\" pour synchroniser les sauvegardes de %1$s.</string>
     <string name="sync_blocked_permission_emulator_fallback">cet émulateur</string>
-
-    <string name="sync_blocked_path_not_found_title">Dossier de sauvegarde introuvable</string>
-    <string name="sync_blocked_path_not_found_detail">Le dossier de sauvegarde de %1$s est introuvable. L\'émulateur utilise peut-être un emplacement de sauvegarde non standard.</string>
-    <string name="sync_blocked_path_not_found_emulator_fallback">cet émulateur</string>
 
     <string name="sync_blocked_access_denied_title">Accès au dossier de sauvegarde bloqué</string>
     <string name="sync_blocked_access_denied_detail">Votre appareil bloque l\'accès aux données de sauvegarde de %1$s. Cela peut être dû à des restrictions du fabricant (Samsung, Xiaomi, etc.) ou à des politiques de sécurité.</string>
@@ -63,9 +47,6 @@
     <string name="sync_download_service_moving">Déplacement vers le stockage ROM : %1$s</string>
     <string name="sync_download_service_downloading">Téléchargement : %1$s</string>
     <string name="sync_download_service_queued">En file d\'attente : %1$s</string>
-    <string name="sync_session_save_queued">Enregistrée sur cet appareil. Elle sera envoyée plus tard.</string>
-    <string name="sync_session_save_queued_orphan">Enregistrée sur cet appareil. Elle sera envoyée plus tard.</string>
-    <string name="sync_session_save_not_kept">Impossible de copier cette sauvegarde en lieu sûr. Argosy réessaiera.</string>
     <string name="sync_download_service_pending">Téléchargement en attente...</string>
     <string name="sync_download_service_media_preparing">%1$s : %2$s</string>
     <string name="sync_download_service_media_downloading">Téléchargement : %1$s</string>
@@ -82,6 +63,9 @@
     <string name="sync_session_save_upload_failed">Échec de l\'envoi</string>
     <string name="sync_session_save_upload_failed_subtitle">%1$s : %2$s</string>
     <string name="sync_session_save_upload_failed_name_fallback">Sauvegarde</string>
+    <string name="sync_session_save_queued">Enregistrée sur cet appareil. Elle sera envoyée plus tard.</string>
+    <string name="sync_session_save_queued_orphan">Enregistrée sur cet appareil. Elle sera envoyée plus tard.</string>
+    <string name="sync_session_save_not_kept">Impossible de copier cette sauvegarde en lieu sûr. Argosy réessaiera.</string>
     <string name="sync_migration_refused_title">Impossible de déplacer la sauvegarde de %1$s</string>
     <string name="sync_migration_refused_no_route">Argosy ne peut pas convertir les sauvegardes entre ces deux émulateurs</string>
     <string name="sync_migration_refused_unreadable">Le dossier de sauvegarde de l\'émulateur est illisible</string>

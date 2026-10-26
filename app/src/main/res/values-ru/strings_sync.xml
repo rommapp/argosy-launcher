@@ -15,29 +15,13 @@
     <string name="sync_prelaunch_write_failed">Ошибка записи</string>
     <string name="sync_prelaunch_launching">Запуск игры...</string>
 
-    <string name="sync_postsession_checking_save">Проверка сохранения...</string>
-    <string name="sync_postsession_save_found">Сохранение найдено</string>
-    <string name="sync_postsession_save_absent">Сохранение не найдено</string>
-    <string name="sync_postsession_connecting">Подключение...</string>
-    <string name="sync_postsession_connected">Подключено</string>
-    <string name="sync_postsession_connect_failed">Ошибка подключения</string>
-    <string name="sync_postsession_uploading">Отправка...</string>
-    <string name="sync_postsession_upload_complete">Отправка завершена</string>
-    <string name="sync_postsession_upload_queued">Отправка в очереди</string>
-    <string name="sync_postsession_complete">Синхронизация завершена</string>
-
     <string name="sync_progress_skipped">Синхронизация пропущена</string>
     <string name="sync_progress_hardcore_conflict">Конфликт сохранения в режиме хардкор</string>
     <string name="sync_progress_local_modified">Локальное сохранение изменено</string>
-    <string name="sync_progress_save_conflict">Конфликт сохранений</string>
 
     <string name="sync_blocked_permission_title">Требуется разрешение на доступ к файлам</string>
     <string name="sync_blocked_permission_detail">Предоставьте разрешение \"Доступ ко всем файлам\", чтобы синхронизировать сохранения для %1$s.</string>
     <string name="sync_blocked_permission_emulator_fallback">этого эмулятора</string>
-
-    <string name="sync_blocked_path_not_found_title">Папка сохранений не найдена</string>
-    <string name="sync_blocked_path_not_found_detail">Папка сохранений для %1$s не найдена. Возможно, эмулятор использует нестандартное расположение сохранений.</string>
-    <string name="sync_blocked_path_not_found_emulator_fallback">этого эмулятора</string>
 
     <string name="sync_blocked_access_denied_title">Доступ к папке сохранений заблокирован</string>
     <string name="sync_blocked_access_denied_detail">Ваше устройство блокирует доступ к данным сохранений %1$s. Это может быть связано с ограничениями производителя (Samsung, Xiaomi и др.) или политиками безопасности.</string>
@@ -63,9 +47,6 @@
     <string name="sync_download_service_moving">Перемещение в хранилище ROM: %1$s</string>
     <string name="sync_download_service_downloading">Загрузка: %1$s</string>
     <string name="sync_download_service_queued">В очереди: %1$s</string>
-    <string name="sync_session_save_queued">Сохранено на этом устройстве. Будет отправлено позже.</string>
-    <string name="sync_session_save_queued_orphan">Сохранено на этом устройстве. Будет отправлено позже.</string>
-    <string name="sync_session_save_not_kept">Не удалось создать резервную копию сохранения. Argosy попробует снова.</string>
     <string name="sync_download_service_pending">Загрузка ожидает...</string>
     <string name="sync_download_service_media_preparing">%1$s: %2$s</string>
     <string name="sync_download_service_media_downloading">Загрузка: %1$s</string>
@@ -82,6 +63,9 @@
     <string name="sync_session_save_upload_failed">Ошибка отправки</string>
     <string name="sync_session_save_upload_failed_subtitle">%1$s: %2$s</string>
     <string name="sync_session_save_upload_failed_name_fallback">Сохранение</string>
+    <string name="sync_session_save_queued">Сохранено на этом устройстве. Будет отправлено позже.</string>
+    <string name="sync_session_save_queued_orphan">Сохранено на этом устройстве. Будет отправлено позже.</string>
+    <string name="sync_session_save_not_kept">Не удалось создать резервную копию сохранения. Argosy попробует снова.</string>
     <string name="sync_migration_refused_title">Не удалось перенести сохранение %1$s</string>
     <string name="sync_migration_refused_no_route">Argosy не умеет преобразовывать сохранения между этими эмуляторами</string>
     <string name="sync_migration_refused_unreadable">Папка сохранений эмулятора недоступна для чтения</string>

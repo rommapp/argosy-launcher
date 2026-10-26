@@ -19,31 +19,15 @@
 
     <!-- Save sync overlay, after a play session ends. -->
 
-    <string name="sync_postsession_checking_save">सेव फ़ाइल जांची जा रही है...</string>
-    <string name="sync_postsession_save_found">सेव मिली</string>
-    <string name="sync_postsession_save_absent">सेव नहीं मिली</string>
-    <string name="sync_postsession_connecting">कनेक्ट हो रहा है...</string>
-    <string name="sync_postsession_connected">कनेक्टेड</string>
-    <string name="sync_postsession_connect_failed">कनेक्शन विफल</string>
-    <string name="sync_postsession_uploading">अपलोड हो रहा है...</string>
-    <string name="sync_postsession_upload_complete">अपलोड पूर्ण</string>
-    <string name="sync_postsession_upload_queued">अपलोड कतार में</string>
-    <string name="sync_postsession_complete">सिंक पूर्ण</string>
-
     <string name="sync_progress_skipped">सिंक छोड़ा गया</string>
     <string name="sync_progress_hardcore_conflict">हार्डकोर सेव कॉन्फ्लिक्ट</string>
     <string name="sync_progress_local_modified">लोकल सेव में बदलाव</string>
-    <string name="sync_progress_save_conflict">सेव कॉन्फ्लिक्ट</string>
 
     <!-- Save sync overlay, blocked. -->
 
     <string name="sync_blocked_permission_title">फ़ाइल एक्सेस अनुमति आवश्यक</string>
     <string name="sync_blocked_permission_detail">%1$s के लिए सेव सिंक करने के लिए \"All files access\" अनुमति दें।</string>
     <string name="sync_blocked_permission_emulator_fallback">इस एमुलेटर</string>
-
-    <string name="sync_blocked_path_not_found_title">सेव फ़ोल्डर नहीं मिला</string>
-    <string name="sync_blocked_path_not_found_detail">%1$s के लिए सेव फ़ोल्डर नहीं मिला। हो सकता है एमुलेटर एक अलग सेव लोकेशन इस्तेमाल कर रहा हो।</string>
-    <string name="sync_blocked_path_not_found_emulator_fallback">इस एमुलेटर</string>
 
     <string name="sync_blocked_access_denied_title">सेव फ़ोल्डर एक्सेस अवरुद्ध</string>
     <string name="sync_blocked_access_denied_detail">आपका डिवाइस %1$s के सेव डेटा तक पहुंच रोक रहा है। यह निर्माता की पाबंदियों (Samsung, Xiaomi, आदि) या सुरक्षा नीतियों की वजह से हो सकता है।</string>
@@ -78,9 +62,6 @@
     <string name="sync_download_service_media_preparing">%1$s: %2$s</string>
     <string name="sync_download_service_media_downloading">डाउनलोड हो रहा है: %1$s</string>
 
-    <string name="sync_session_save_queued">इस डिवाइस पर सेव हो गई। बाद में अपलोड होगी।</string>
-    <string name="sync_session_save_queued_orphan">इस डिवाइस पर सेव हो गई। बाद में अपलोड होगी।</string>
-    <string name="sync_session_save_not_kept">यह सेव बैकअप नहीं हो सकी। Argosy फिर से कोशिश करेगा।</string>
     <!-- Android system notification shown while a game is being played. -->
 
     <string name="sync_session_channel_name">गेम सेशन</string>
@@ -97,6 +78,9 @@
     <string name="sync_session_save_upload_failed">अपलोड विफल</string>
     <string name="sync_session_save_upload_failed_subtitle">%1$s: %2$s</string>
     <string name="sync_session_save_upload_failed_name_fallback">सेव</string>
+    <string name="sync_session_save_queued">इस डिवाइस पर सेव हो गई। बाद में अपलोड होगी।</string>
+    <string name="sync_session_save_queued_orphan">इस डिवाइस पर सेव हो गई। बाद में अपलोड होगी।</string>
+    <string name="sync_session_save_not_kept">यह सेव बैकअप नहीं हो सकी। Argosy फिर से कोशिश करेगा।</string>
     <string name="sync_migration_refused_title">%1$s का सेव नहीं ले जाया जा सका</string>
     <string name="sync_migration_refused_no_route">Argosy इन दोनों एमुलेटर के बीच सेव नहीं बदल सकता</string>
     <string name="sync_migration_refused_unreadable">एमुलेटर का सेव फ़ोल्डर पढ़ा नहीं जा सकता</string>

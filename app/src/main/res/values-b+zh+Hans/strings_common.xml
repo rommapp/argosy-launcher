@@ -751,17 +751,6 @@
     <string name="ui_sync_overlay_snapshot_conflict_branch_subtitle">将本设备的存档移到新频道</string>
     <string name="ui_sync_overlay_snapshot_conflict_revert">还原</string>
     <string name="ui_sync_overlay_snapshot_conflict_revert_subtitle">回到本设备上次同步的存档（会创建备份）</string>
-    <string name="ui_sync_overlay_post_session_title">存档冲突</string>
-    <string name="ui_sync_overlay_post_session_subject">“%1$s” -- %2$s</string>
-    <string name="ui_sync_overlay_post_session_default_slot">默认存档</string>
-    <string name="ui_sync_overlay_post_session_message">服务器上有更新的存档。上传后，你的本地存档将成为最新存档，服务器上的副本会保留。</string>
-    <string name="ui_sync_overlay_post_session_local">本地</string>
-    <string name="ui_sync_overlay_post_session_server">服务器</string>
-    <string name="ui_sync_overlay_post_session_server_named">服务器（%1$s）</string>
-    <string name="ui_sync_overlay_post_session_skip">跳过同步</string>
-    <string name="ui_sync_overlay_post_session_skip_subtitle">保留本地存档，不上传</string>
-    <string name="ui_sync_overlay_post_session_overwrite">上传本地存档</string>
-    <string name="ui_sync_overlay_post_session_overwrite_subtitle">你的本地存档将成为最新存档，服务器上的副本会保留。</string>
     <string name="ui_sync_overlay_legacy_status">正在同步...</string>
 
     <string name="ui_quick_menu_orb_search">搜索</string>

@@ -786,17 +786,6 @@
     <string name="ui_sync_overlay_snapshot_conflict_branch_subtitle">Den Spielstand dieses Geräts in einen neuen Kanal verschieben</string>
     <string name="ui_sync_overlay_snapshot_conflict_revert">Zurücksetzen</string>
     <string name="ui_sync_overlay_snapshot_conflict_revert_subtitle">Zum zuletzt von diesem Gerät synchronisierten Spielstand zurückkehren (Sicherung wird erstellt)</string>
-    <string name="ui_sync_overlay_post_session_title">Spielstandkonflikt</string>
-    <string name="ui_sync_overlay_post_session_subject">\"%1$s\" -- %2$s</string>
-    <string name="ui_sync_overlay_post_session_default_slot">Standard-Spielstand</string>
-    <string name="ui_sync_overlay_post_session_message">Der Server hat einen neueren Spielstand. Beim Hochladen wird Ihr lokaler Spielstand zum neuesten, und die Kopie auf dem Server bleibt erhalten.</string>
-    <string name="ui_sync_overlay_post_session_local">Lokal</string>
-    <string name="ui_sync_overlay_post_session_server">Server</string>
-    <string name="ui_sync_overlay_post_session_server_named">Server (%1$s)</string>
-    <string name="ui_sync_overlay_post_session_skip">Sync überspringen</string>
-    <string name="ui_sync_overlay_post_session_skip_subtitle">Lokalen Spielstand behalten, nicht hochladen</string>
-    <string name="ui_sync_overlay_post_session_overwrite">Lokalen Spielstand hochladen</string>
-    <string name="ui_sync_overlay_post_session_overwrite_subtitle">Ihr lokaler Spielstand wird zum neuesten. Die Kopie auf dem Server bleibt erhalten.</string>
     <string name="ui_sync_overlay_legacy_status">Synchronisierung...</string>
 
     <!-- Quick menu (ui/quickmenu) -->

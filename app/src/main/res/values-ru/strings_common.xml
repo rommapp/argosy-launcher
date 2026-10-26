@@ -814,17 +814,6 @@
     <string name="ui_sync_overlay_snapshot_conflict_branch_subtitle">Перенести сохранение этого устройства в новый канал</string>
     <string name="ui_sync_overlay_snapshot_conflict_revert">Откатить</string>
     <string name="ui_sync_overlay_snapshot_conflict_revert_subtitle">Вернуться к сохранению, которое это устройство синхронизировало последним (будет создана резервная копия)</string>
-    <string name="ui_sync_overlay_post_session_title">Конфликт сохранений</string>
-    <string name="ui_sync_overlay_post_session_subject">\"%1$s\" -- %2$s</string>
-    <string name="ui_sync_overlay_post_session_default_slot">Сохранение по умолчанию</string>
-    <string name="ui_sync_overlay_post_session_message">На сервере есть более новое сохранение. При отправке на сервер ваше локальное сохранение станет самым новым, а копия на сервере сохранится.</string>
-    <string name="ui_sync_overlay_post_session_local">Локальное</string>
-    <string name="ui_sync_overlay_post_session_server">Сервер</string>
-    <string name="ui_sync_overlay_post_session_server_named">Сервер (%1$s)</string>
-    <string name="ui_sync_overlay_post_session_skip">Пропустить синхронизацию</string>
-    <string name="ui_sync_overlay_post_session_skip_subtitle">Оставить локальное сохранение, не отправлять</string>
-    <string name="ui_sync_overlay_post_session_overwrite">Отправить локальное сохранение</string>
-    <string name="ui_sync_overlay_post_session_overwrite_subtitle">Ваше локальное сохранение станет самым новым. Копия на сервере сохранится.</string>
     <string name="ui_sync_overlay_legacy_status">Синхронизация...</string>
 
     <string name="ui_quick_menu_orb_search">Поиск</string>

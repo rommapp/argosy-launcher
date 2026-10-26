@@ -15,29 +15,13 @@
     <string name="sync_prelaunch_write_failed">寫入失敗</string>
     <string name="sync_prelaunch_launching">正在啟動遊戲...</string>
 
-    <string name="sync_postsession_checking_save">正在檢查存檔...</string>
-    <string name="sync_postsession_save_found">已找到存檔</string>
-    <string name="sync_postsession_save_absent">找不到存檔</string>
-    <string name="sync_postsession_connecting">連線中...</string>
-    <string name="sync_postsession_connected">已連線</string>
-    <string name="sync_postsession_connect_failed">連線失敗</string>
-    <string name="sync_postsession_uploading">上傳中...</string>
-    <string name="sync_postsession_upload_complete">上傳完成</string>
-    <string name="sync_postsession_upload_queued">已排入上傳佇列</string>
-    <string name="sync_postsession_complete">同步完成</string>
-
     <string name="sync_progress_skipped">已略過同步</string>
     <string name="sync_progress_hardcore_conflict">硬核存檔衝突</string>
     <string name="sync_progress_local_modified">本機存檔已變更</string>
-    <string name="sync_progress_save_conflict">存檔衝突</string>
 
     <string name="sync_blocked_permission_title">需要檔案存取權限</string>
     <string name="sync_blocked_permission_detail">請授予「所有檔案存取權」以同步%1$s的存檔。</string>
     <string name="sync_blocked_permission_emulator_fallback">此模擬器</string>
-
-    <string name="sync_blocked_path_not_found_title">找不到存檔資料夾</string>
-    <string name="sync_blocked_path_not_found_detail">找不到%1$s的存檔資料夾，該模擬器可能使用了非標準的存檔位置。</string>
-    <string name="sync_blocked_path_not_found_emulator_fallback">此模擬器</string>
 
     <string name="sync_blocked_access_denied_title">存檔資料夾存取遭封鎖</string>
     <string name="sync_blocked_access_denied_detail">您的裝置封鎖了對%1$s存檔資料的存取，這可能是製造商限制（如Samsung、Xiaomi等）或安全性原則所致。</string>
@@ -63,9 +47,6 @@
     <string name="sync_download_service_moving">正在移至ROM儲存空間：%1$s</string>
     <string name="sync_download_service_downloading">下載中：%1$s</string>
     <string name="sync_download_service_queued">排隊中：%1$s</string>
-    <string name="sync_session_save_queued">已儲存在此裝置上，稍後上傳。</string>
-    <string name="sync_session_save_queued_orphan">已儲存在此裝置上，稍後上傳。</string>
-    <string name="sync_session_save_not_kept">無法備份此存檔。Argosy 會再試一次。</string>
     <string name="sync_download_service_pending">下載等待中...</string>
     <string name="sync_download_service_media_preparing">%1$s：%2$s</string>
     <string name="sync_download_service_media_downloading">下載中：%1$s</string>
@@ -82,6 +63,9 @@
     <string name="sync_session_save_upload_failed">上傳失敗</string>
     <string name="sync_session_save_upload_failed_subtitle">%1$s：%2$s</string>
     <string name="sync_session_save_upload_failed_name_fallback">存檔</string>
+    <string name="sync_session_save_queued">已儲存在此裝置上，稍後上傳。</string>
+    <string name="sync_session_save_queued_orphan">已儲存在此裝置上，稍後上傳。</string>
+    <string name="sync_session_save_not_kept">無法備份此存檔。Argosy 會再試一次。</string>
     <string name="sync_migration_refused_title">無法移轉 %1$s 的存檔</string>
     <string name="sync_migration_refused_no_route">Argosy 無法在這兩個模擬器之間轉換存檔</string>
     <string name="sync_migration_refused_unreadable">無法讀取模擬器的存檔資料夾</string>

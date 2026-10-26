@@ -15,29 +15,13 @@
     <string name="sync_prelaunch_write_failed">Schreibvorgang fehlgeschlagen</string>
     <string name="sync_prelaunch_launching">Spiel wird gestartet...</string>
 
-    <string name="sync_postsession_checking_save">Spielstand wird geprüft...</string>
-    <string name="sync_postsession_save_found">Spielstand gefunden</string>
-    <string name="sync_postsession_save_absent">Spielstand nicht gefunden</string>
-    <string name="sync_postsession_connecting">Verbindung wird hergestellt...</string>
-    <string name="sync_postsession_connected">Verbunden</string>
-    <string name="sync_postsession_connect_failed">Verbindung fehlgeschlagen</string>
-    <string name="sync_postsession_uploading">Wird hochgeladen...</string>
-    <string name="sync_postsession_upload_complete">Upload abgeschlossen</string>
-    <string name="sync_postsession_upload_queued">Upload eingereiht</string>
-    <string name="sync_postsession_complete">Synchronisierung abgeschlossen</string>
-
     <string name="sync_progress_skipped">Synchronisierung übersprungen</string>
     <string name="sync_progress_hardcore_conflict">Hardcore-Spielstandkonflikt</string>
     <string name="sync_progress_local_modified">Lokaler Spielstand geändert</string>
-    <string name="sync_progress_save_conflict">Spielstandkonflikt</string>
 
     <string name="sync_blocked_permission_title">Dateizugriffsberechtigung erforderlich</string>
     <string name="sync_blocked_permission_detail">Erteilen Sie die Berechtigung \"Zugriff auf alle Dateien\", um Spielstände für %1$s zu synchronisieren.</string>
     <string name="sync_blocked_permission_emulator_fallback">diesen Emulator</string>
-
-    <string name="sync_blocked_path_not_found_title">Speicherordner nicht gefunden</string>
-    <string name="sync_blocked_path_not_found_detail">Der Speicherordner für %1$s wurde nicht gefunden. Der Emulator verwendet möglicherweise einen nicht standardmäßigen Speicherort.</string>
-    <string name="sync_blocked_path_not_found_emulator_fallback">diesen Emulator</string>
 
     <string name="sync_blocked_access_denied_title">Zugriff auf Speicherordner blockiert</string>
     <string name="sync_blocked_access_denied_detail">Ihr Gerät blockiert den Zugriff auf die Spielstanddaten von %1$s. Dies kann an Herstellerbeschränkungen (Samsung, Xiaomi usw.) oder an Sicherheitsrichtlinien liegen.</string>
@@ -63,9 +47,6 @@
     <string name="sync_download_service_moving">Wird in ROM-Speicher verschoben: %1$s</string>
     <string name="sync_download_service_downloading">Wird heruntergeladen: %1$s</string>
     <string name="sync_download_service_queued">In Warteschlange: %1$s</string>
-    <string name="sync_session_save_queued">Auf diesem Gerät gespeichert. Wird später hochgeladen.</string>
-    <string name="sync_session_save_queued_orphan">Auf diesem Gerät gespeichert. Wird später hochgeladen.</string>
-    <string name="sync_session_save_not_kept">Dieser Spielstand konnte nicht gesichert werden. Argosy versucht es erneut.</string>
     <string name="sync_download_service_pending">Download ausstehend...</string>
     <string name="sync_download_service_media_preparing">%1$s: %2$s</string>
     <string name="sync_download_service_media_downloading">Wird heruntergeladen: %1$s</string>
@@ -82,6 +63,9 @@
     <string name="sync_session_save_upload_failed">Upload fehlgeschlagen</string>
     <string name="sync_session_save_upload_failed_subtitle">%1$s: %2$s</string>
     <string name="sync_session_save_upload_failed_name_fallback">Spielstand</string>
+    <string name="sync_session_save_queued">Auf diesem Gerät gespeichert. Wird später hochgeladen.</string>
+    <string name="sync_session_save_queued_orphan">Auf diesem Gerät gespeichert. Wird später hochgeladen.</string>
+    <string name="sync_session_save_not_kept">Dieser Spielstand konnte nicht gesichert werden. Argosy versucht es erneut.</string>
     <string name="sync_migration_refused_title">Spielstand für %1$s konnte nicht übertragen werden</string>
     <string name="sync_migration_refused_no_route">Argosy kann Spielstände zwischen diesen beiden Emulatoren nicht umwandeln</string>
     <string name="sync_migration_refused_unreadable">Der Speicherordner des Emulators ist nicht lesbar</string>

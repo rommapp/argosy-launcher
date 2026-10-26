@@ -765,17 +765,6 @@
     <string name="ui_sync_overlay_snapshot_conflict_branch_subtitle">將本裝置的存檔移到新頻道</string>
     <string name="ui_sync_overlay_snapshot_conflict_revert">還原</string>
     <string name="ui_sync_overlay_snapshot_conflict_revert_subtitle">回到本裝置上次同步的存檔（會建立備份）</string>
-    <string name="ui_sync_overlay_post_session_title">存檔衝突</string>
-    <string name="ui_sync_overlay_post_session_subject">「%1$s」—%2$s</string>
-    <string name="ui_sync_overlay_post_session_default_slot">預設存檔</string>
-    <string name="ui_sync_overlay_post_session_message">伺服器上有較新的存檔，上傳後，本機存檔將成為最新存檔，伺服器上的副本會保留。</string>
-    <string name="ui_sync_overlay_post_session_local">本機</string>
-    <string name="ui_sync_overlay_post_session_server">伺服器</string>
-    <string name="ui_sync_overlay_post_session_server_named">伺服器（%1$s）</string>
-    <string name="ui_sync_overlay_post_session_skip">略過同步</string>
-    <string name="ui_sync_overlay_post_session_skip_subtitle">保留本機存檔，不上傳</string>
-    <string name="ui_sync_overlay_post_session_overwrite">上傳本機存檔</string>
-    <string name="ui_sync_overlay_post_session_overwrite_subtitle">本機存檔將成為最新存檔，伺服器上的副本會保留。</string>
     <string name="ui_sync_overlay_legacy_status">同步中...</string>
 
     <!-- Quick menu (ui/quickmenu) -->

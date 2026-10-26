@@ -50,6 +50,17 @@ class SessionEndCoordinator @Inject constructor(
     private val _syncOverlayState = MutableStateFlow<SyncOverlayState?>(null)
     val syncOverlayState: StateFlow<SyncOverlayState?> = _syncOverlayState.asStateFlow()
 
+    private val _sessionEndRunning = MutableStateFlow(false)
+
+    /**
+     * True while a session end this coordinator started is capturing and syncing its save: from
+     * the call into [PlaySessionTracker.endSession] until that call has returned and its result is
+     * handled, whether it returned or threw. False on the short-session, unresolved-emulator and
+     * sync-off paths, while a blocked prompt is up, and for the session end that answering the
+     * prompt starts. A launch pressed while this is true waits for it to turn false.
+     */
+    val sessionEndRunning: StateFlow<Boolean> = _sessionEndRunning.asStateFlow()
+
     /**
      * Ends the session whose game has closed, or recovers a persisted one when none is live. The
      * returned job completes once the session end and its save work have returned.

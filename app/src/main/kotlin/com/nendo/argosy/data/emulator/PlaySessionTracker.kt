@@ -9,10 +9,8 @@ import android.content.IntentFilter
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
-import com.nendo.argosy.R
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PlaySessionDao
-import com.nendo.argosy.data.local.dao.resolved
 import com.nendo.argosy.data.local.entity.PlaySessionEntity
 import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.util.Logger
@@ -26,10 +24,6 @@ import com.nendo.argosy.data.social.SocialRepository
 import com.nendo.argosy.domain.usecase.save.SyncSaveOnSessionEndUseCase
 import com.nendo.argosy.domain.usecase.state.StateSyncResult
 import com.nendo.argosy.domain.usecase.state.SyncStatesOnSessionEndUseCase
-import com.nendo.argosy.core.notification.NotificationDuration
-import com.nendo.argosy.core.notification.NotificationManager
-import com.nendo.argosy.core.notification.NotificationText
-import com.nendo.argosy.core.notification.NotificationType
 import com.nendo.argosy.DualScreenManagerHolder
 import com.nendo.argosy.core.event.GameUpdateBus
 import com.nendo.argosy.util.PermissionHelper
@@ -105,14 +99,13 @@ class PlaySessionTracker @Inject constructor(
     private val permissionHelper: PermissionHelper,
     private val gameUpdateBus: GameUpdateBus,
     private val emulatorResolver: EmulatorResolver,
-    private val notificationManager: NotificationManager,
     private val fileAccessLayer: FileAccessLayer,
     private val socialRepository: dagger.Lazy<SocialRepository>,
     private val saveRecoveryGate: com.nendo.argosy.data.sync.SaveRecoveryGate,
     private val reconcileAchievementsOnSessionEndUseCase: dagger.Lazy<com.nendo.argosy.domain.usecase.achievement.ReconcileAchievementsOnSessionEndUseCase>,
     private val savePathAuthority: com.nendo.argosy.data.emulator.savepath.SavePathAuthority,
     private val sessionSaveFinalizer: SessionSaveFinalizer,
-    private val gameArtDao: com.nendo.argosy.data.local.dao.GameArtDao,
+    private val sessionEndNotices: SessionEndNotices,
     private val snapshotRouter: dagger.Lazy<com.nendo.argosy.data.sync.snapshot.SnapshotSyncRouter>,
     private val sessionRecapFactsRecorder: SessionRecapFactsRecorder
 ) {
@@ -297,19 +290,7 @@ class PlaySessionTracker @Inject constructor(
             return SessionSaveOutcome.CacheFailed
         }
         Logger.info(TAG, "[SaveSync] ORPHAN gameId=${orphaned.gameId} | Recovery outcome=${outcome::class.simpleName} settled=${outcome.isSettled}")
-        val sync = (outcome as? SessionSaveOutcome.Synced)?.sync
-        if (sync is SyncSaveOnSessionEndUseCase.Result.Uploaded) {
-            val game = gameDao.getById(orphaned.gameId)
-            notificationManager.show(
-                title = NotificationText.Res(R.string.sync_session_save_uploaded_orphan),
-                subtitle = game?.title?.let { NotificationText.Raw(it) },
-                type = NotificationType.SUCCESS,
-                imagePath = coverPathFor(orphaned.gameId),
-                duration = NotificationDuration.MEDIUM,
-                key = "sync-${orphaned.gameId}",
-                immediate = true
-            )
-        }
+        sessionEndNotices.orphanSaveRecovered(orphaned.gameId, outcome)
         return outcome
     }
 
@@ -802,7 +783,7 @@ class PlaySessionTracker @Inject constructor(
                 }
 
                 if (saveOutcome is SessionSaveOutcome.Synced) {
-                    handleSaveSyncResult(session, gameDao.getById(session.gameId), saveOutcome.sync)
+                    sessionEndNotices.sessionSaveSynced(session.gameId, saveOutcome.sync)
                 }
                 releaseSession(keepRecord = !saveOutcome.isSettled, startedAt = session.startTime)
 
@@ -884,70 +865,6 @@ class PlaySessionTracker @Inject constructor(
             isHardcoreDowngrade = conflict.upload.isHardcoreDowngrade
         )
     }
-
-    private suspend fun handleSaveSyncResult(
-        session: ActiveSession,
-        game: com.nendo.argosy.data.local.entity.GameEntity?,
-        result: SyncSaveOnSessionEndUseCase.Result
-    ) {
-        when (result) {
-            is SyncSaveOnSessionEndUseCase.Result.Conflict -> Unit
-            is SyncSaveOnSessionEndUseCase.Result.Uploaded -> {
-                Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Sync result: UPLOADED")
-                notificationManager.show(
-                    title = NotificationText.Res(R.string.sync_session_save_uploaded),
-                    subtitle = game?.title?.let { NotificationText.Raw(it) },
-                    type = NotificationType.SUCCESS,
-                    imagePath = coverPathFor(session.gameId),
-                    duration = NotificationDuration.MEDIUM,
-                    key = "sync-${session.gameId}",
-                    immediate = true
-                )
-            }
-            is SyncSaveOnSessionEndUseCase.Result.NoChange -> {
-                Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Sync result: NO_CHANGE")
-                notificationManager.show(
-                    title = NotificationText.Res(R.string.sync_session_save_unchanged),
-                    subtitle = game?.title?.let { NotificationText.Raw(it) },
-                    type = NotificationType.INFO,
-                    imagePath = coverPathFor(session.gameId),
-                    duration = NotificationDuration.SHORT,
-                    key = "sync-${session.gameId}",
-                    immediate = true
-                )
-            }
-            is SyncSaveOnSessionEndUseCase.Result.Queued -> {
-                Logger.info(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Sync result: QUEUED")
-            }
-            is SyncSaveOnSessionEndUseCase.Result.NoSaveFound -> {
-                Logger.info(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Sync result: NO_SAVE_FOUND")
-            }
-            is SyncSaveOnSessionEndUseCase.Result.NotConfigured -> {
-                Logger.info(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Sync result: NOT_CONFIGURED")
-            }
-            is SyncSaveOnSessionEndUseCase.Result.Error -> {
-                Logger.error(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Sync result: ERROR | ${result.message}")
-                notificationManager.show(
-                    title = NotificationText.Res(R.string.sync_session_save_upload_failed),
-                    subtitle = NotificationText.Res(
-                        R.string.sync_session_save_upload_failed_subtitle,
-                        listOf(
-                            game?.title
-                                ?: application.getString(R.string.sync_session_save_upload_failed_name_fallback),
-                            result.message
-                        )
-                    ),
-                    type = NotificationType.ERROR,
-                    imagePath = coverPathFor(session.gameId),
-                    duration = NotificationDuration.MEDIUM,
-                    key = "sync-${session.gameId}",
-                    immediate = true
-                )
-            }
-        }
-    }
-
-    private suspend fun coverPathFor(gameId: Long): String? = gameArtDao.resolved(gameId).coverPath
 
     private suspend fun syncStateData(gameId: Long, emulatorPackage: String) {
         val result = syncStatesOnSessionEndUseCase.get()(gameId, emulatorPackage)

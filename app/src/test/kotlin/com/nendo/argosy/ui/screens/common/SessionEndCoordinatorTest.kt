@@ -1,7 +1,9 @@
 package com.nendo.argosy.ui.screens.common
 
 import com.nendo.argosy.data.emulator.ActiveSession
+import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.EmulatorResolver
+import com.nendo.argosy.data.emulator.GameLauncher
 import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.emulator.SavePathValidator
@@ -18,6 +20,8 @@ import io.mockk.unmockkObject
 import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
@@ -26,6 +30,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -50,14 +55,17 @@ class SessionEndCoordinatorTest {
     private val preferencesRepository: UserPreferencesRepository = mockk(relaxed = true)
     private val savePathValidator: SavePathValidator = mockk(relaxed = true)
     private val preferences = MutableStateFlow(UserPreferences(saveSyncEnabled = true))
+    private val activeSession = MutableStateFlow<ActiveSession?>(session)
+    private val gameLauncher: GameLauncher = mockk(relaxed = true)
 
     @Before
     fun setup() {
         Dispatchers.setMain(StandardTestDispatcher())
         mockkObject(SavePathRegistry)
+        mockkObject(EmulatorRegistry)
         every { SavePathRegistry.canSyncWithSettings(emulatorId, true) } returns true
         every { SavePathRegistry.canSyncWithSettings(emulatorId, false) } returns false
-        every { playSessionTracker.activeSession } returns MutableStateFlow(session)
+        every { playSessionTracker.activeSession } returns activeSession
         every { playSessionTracker.getSessionDuration() } returns Duration.ofMinutes(10)
         every { playSessionTracker.sawSaveActivity() } returns false
         coEvery { emulatorResolver.resolveEmulatorId(emulatorPackage) } returns emulatorId
@@ -69,6 +77,7 @@ class SessionEndCoordinatorTest {
     @After
     fun tearDown() {
         unmockkObject(SavePathRegistry)
+        unmockkObject(EmulatorRegistry)
         Dispatchers.resetMain()
     }
 
@@ -79,7 +88,7 @@ class SessionEndCoordinatorTest {
         preferencesRepository = preferencesRepository,
         gameRepository = mockk(relaxed = true) { coEvery { getById(any()) } returns null },
         savePathValidator = savePathValidator,
-        gameLauncher = mockk(relaxed = true)
+        gameLauncher = gameLauncher
     )
 
     private fun TestScope.recordRunning(coordinator: SessionEndCoordinator): List<Boolean> {
@@ -213,5 +222,78 @@ class SessionEndCoordinatorTest {
         assertEquals("/saves/test", (prompt!!.syncProgress as SyncProgress.BlockedReason.AccessDenied).path)
         assertEquals(listOf(false, true, false), running)
         assertFalse(coordinator.sessionEndRunning.value)
+    }
+
+    private fun endingClearsTheLiveSession(result: SessionEndResult) {
+        every { EmulatorRegistry.getById(emulatorId) } returns mockk(relaxed = true)
+        coEvery { playSessionTracker.endSession() } coAnswers {
+            activeSession.value = null
+            result
+        }
+    }
+
+    @Test
+    fun `a failed session end still stops the emulator the user closes on session end`() = runTest {
+        endingClearsTheLiveSession(SessionEndResult.Error("Failed to cache save"))
+
+        coordinator().endClosedSession().join()
+
+        coVerify(timeout = 2_000) { gameLauncher.forceStopEmulator(emulatorPackage) }
+    }
+
+    @Test
+    fun `answering a permission prompt ends the session and then stops the emulator`() = runTest {
+        coEvery { savePathValidator.validateAccess(emulatorId, emulatorPackage) } returns
+            SavePathValidator.Result.PermissionRequired
+        endingClearsTheLiveSession(SessionEndResult.Success)
+        val coordinator = coordinator()
+
+        coordinator.endClosedSession().join()
+        coordinator.syncOverlayState.value!!.onSkip!!.invoke()
+        advanceUntilIdle()
+
+        coVerify(timeout = 2_000) { gameLauncher.forceStopEmulator(emulatorPackage) }
+    }
+
+    @Test
+    fun `an unreadable save raises its prompt before running turns false`() = runTest {
+        coEvery { playSessionTracker.endSession() } returns SessionEndResult.SaveUnreadable("/saves/test", emulatorId)
+        val coordinator = coordinator()
+        val overlayWhenIdle = mutableListOf<SyncOverlayState?>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            coordinator.sessionEndRunning.collect { running ->
+                if (!running) overlayWhenIdle += coordinator.syncOverlayState.value
+            }
+        }
+
+        coordinator.endClosedSession().join()
+
+        assertEquals(2, overlayWhenIdle.size)
+        assertTrue(overlayWhenIdle.last()?.syncProgress is SyncProgress.BlockedReason.AccessDenied)
+    }
+
+    @Test
+    fun `a cancelled session end clears running and is not ended again in the background`() = runTest {
+        coEvery { playSessionTracker.endSession() } coAnswers { awaitCancellation() }
+        val coordinator = coordinator()
+
+        val job = coordinator.endClosedSession()
+        runCurrent()
+        assertTrue(coordinator.sessionEndRunning.value)
+        job.cancelAndJoin()
+
+        assertFalse(coordinator.sessionEndRunning.value)
+        assertTrue(job.isCancelled)
+        verify(exactly = 0) { playSessionTracker.endSessionInBackground() }
+    }
+
+    @Test
+    fun `a session of exactly the short-session limit is ended and synced`() = runTest {
+        every { playSessionTracker.getSessionDuration() } returns Duration.ofSeconds(30)
+
+        coordinator().endClosedSession().join()
+
+        verify(exactly = 0) { playSessionTracker.cancelSession() }
+        coVerify(exactly = 1) { playSessionTracker.endSession() }
     }
 }

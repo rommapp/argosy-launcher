@@ -332,6 +332,21 @@ class GameLaunchDelegateTest {
     }
 
     @Test
+    fun `the session-end wait step names the save channel the launch plays`() = runTest {
+        coEvery { preLaunchRecapStep.run(any(), any(), any()) } returns false
+        sessionEndRunning.value = true
+        val tracker = tracker()
+
+        delegate(tracker, router()).launchGame(this, gameId, channelName = "Slot 2", start = GameStart(gameId))
+        runCurrent()
+
+        assertEquals(LaunchStep.Save(SyncProgress.PreLaunch.CheckingSave("Slot 2")), tracker.progress.value?.step)
+
+        sessionEndRunning.value = false
+        runCurrent()
+    }
+
+    @Test
     fun `a launch with no session end running publishes no wait step`() = runTest {
         coEvery { preLaunchRecapStep.run(any(), any(), any()) } returns false
         val tracker = tracker()

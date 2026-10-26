@@ -4,7 +4,9 @@ import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.preferences.PersistedSession
 import com.nendo.argosy.data.preferences.UserPreferences
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.repository.SaveCacheManager
 import com.nendo.argosy.data.sync.SaveRecoveryGate
+import com.nendo.argosy.domain.usecase.save.SyncSaveOnSessionEndUseCase
 import com.nendo.argosy.util.PermissionHelper
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -102,5 +104,46 @@ class PlaySessionTrackerNoticesTest {
         coVerify(exactly = 0) { notices.sessionSaveNotKept(any()) }
         coVerify(exactly = 0) { notices.sessionSaveSynced(any(), any()) }
         coVerify(exactly = 0) { notices.orphanSaveRecovered(any(), any()) }
+    }
+
+    @Test
+    fun `a live session end whose save synced posts the sync result`() = runTest {
+        val uploaded = SyncSaveOnSessionEndUseCase.Result.Uploaded()
+        coEvery { sessionSaveFinalizer.finalize(any()) } returns
+            SessionSaveOutcome.Synced(SaveCacheManager.CacheResult.Created(timestamp = 1L), uploaded, conflictId = null)
+        val tracker = trackerWithLiveSession()
+
+        tracker.endSession(stopService = false)
+
+        coVerify(exactly = 1) { notices.sessionSaveSynced(gameId, uploaded) }
+        coVerify(exactly = 0) { notices.sessionSaveNotKept(any()) }
+    }
+
+    @Test
+    fun `a session end with only a persisted record reports through orphan recovery`() = runTest {
+        val outcome = SessionSaveOutcome.Synced(
+            SaveCacheManager.CacheResult.Created(timestamp = 1L),
+            SyncSaveOnSessionEndUseCase.Result.Queued,
+            conflictId = null
+        )
+        coEvery { sessionSaveFinalizer.finalize(any()) } returns outcome
+        coEvery { preferencesRepository.getPersistedSession() } returns persisted
+
+        tracker().endSession(stopService = false)
+
+        coVerify(exactly = 1) { notices.orphanSaveRecovered(gameId, outcome) }
+        coVerify(exactly = 0) { notices.sessionSaveSynced(any(), any()) }
+        coVerify(exactly = 0) { notices.sessionSaveNotKept(any()) }
+    }
+
+    @Test
+    fun `an orphan recovery whose save work throws posts no notice`() = runTest {
+        coEvery { sessionSaveFinalizer.finalize(any()) } throws IOException("db")
+        coEvery { preferencesRepository.getPersistedSession() } returns persisted
+
+        tracker().endSession(stopService = false)
+
+        coVerify(exactly = 0) { notices.orphanSaveRecovered(any(), any()) }
+        coVerify(exactly = 0) { notices.sessionSaveNotKept(any()) }
     }
 }

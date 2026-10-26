@@ -10,6 +10,7 @@ import com.nendo.argosy.data.emulator.LaunchOrigin
 import com.nendo.argosy.data.emulator.LaunchProgressTracker
 import com.nendo.argosy.data.emulator.LaunchResult
 import com.nendo.argosy.data.emulator.PlaySessionTracker
+import com.nendo.argosy.data.emulator.SaveConflictEvent
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.domain.model.LaunchProgress
@@ -41,6 +42,7 @@ import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.time.Instant
 
 class GameLaunchDelegateTest {
 
@@ -58,6 +60,7 @@ class GameLaunchDelegateTest {
     private val manager: DualScreenManager = mockk()
     private val syncOverlayState = MutableStateFlow<SyncOverlayState?>(null)
     private val sessionEndRunning = MutableStateFlow(false)
+    private val sessionConflict = MutableStateFlow<SaveConflictEvent?>(null)
     private val sessionEndCoordinator: SessionEndCoordinator = mockk(relaxed = true)
 
     @Before
@@ -67,6 +70,7 @@ class GameLaunchDelegateTest {
         every { game.title } returns "Game"
         coEvery { gameRepository.getById(gameId) } returns game
         every { playSessionTracker.activeSession } returns MutableStateFlow(null)
+        every { playSessionTracker.pendingSessionConflict } returns sessionConflict
         coEvery { emulatorResolver.getEmulatorPackageForGame(any(), any(), any()) } returns null
         coEvery { preLaunchRecapStep.run(any(), any(), any()) } returns true
         coEvery { resolver.launchOptionsFor(gameId, any(), any()) } returns options
@@ -265,6 +269,8 @@ class GameLaunchDelegateTest {
 
     private val sessionEndWaitStep = LaunchStep.Save(SyncProgress.PreLaunch.CheckingSave(null))
 
+    private val conflict = SaveConflictEvent(gameId, "mgba", null, Instant.EPOCH, Instant.EPOCH)
+
     @Test
     fun `a launch pressed while a session end runs shows the save step and continues when it ends`() = runTest {
         coEvery { preLaunchRecapStep.run(any(), any(), any()) } returns false
@@ -283,6 +289,46 @@ class GameLaunchDelegateTest {
 
         coVerify(exactly = 1) { preLaunchRecapStep.run(any(), gameId, "Game") }
         assertEquals(1, failedCalls)
+    }
+
+    @Test
+    fun `a session-end conflict holds the waiting launch until it is answered`() = runTest {
+        coEvery { preLaunchRecapStep.run(any(), any(), any()) } returns false
+        sessionEndRunning.value = true
+        val tracker = tracker()
+
+        launchGame(delegate(tracker, router()))
+        runCurrent()
+        sessionConflict.value = conflict
+        sessionEndRunning.value = false
+        runCurrent()
+
+        coVerify(exactly = 0) { preLaunchRecapStep.run(any(), any(), any()) }
+        assertEquals(sessionEndWaitStep, tracker.progress.value?.step)
+
+        sessionConflict.value = null
+        runCurrent()
+
+        coVerify(exactly = 1) { preLaunchRecapStep.run(any(), gameId, "Game") }
+    }
+
+    @Test
+    fun `cancel while a session-end conflict is unanswered stops the waiting launch`() = runTest {
+        sessionEndRunning.value = true
+        val tracker = tracker()
+        var failedCalls = 0
+
+        launchGame(delegate(tracker, router()), onLaunchFailed = { failedCalls++ })
+        runCurrent()
+        sessionConflict.value = conflict
+        sessionEndRunning.value = false
+        runCurrent()
+        assertTrue(tracker.cancel())
+        runCurrent()
+
+        assertEquals(1, failedCalls)
+        coVerify(exactly = 0) { preLaunchRecapStep.run(any(), any(), any()) }
+        assertNull(tracker.progress.value)
     }
 
     @Test

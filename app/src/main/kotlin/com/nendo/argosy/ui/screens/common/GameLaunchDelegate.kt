@@ -281,8 +281,12 @@ class GameLaunchDelegate @Inject constructor(
             try {
                 if (sessionEndCoordinator.sessionEndRunning.value) {
                     ticket.step(LaunchStep.Save(SyncProgress.PreLaunch.CheckingSave(channelName)))
-                    combine(sessionEndCoordinator.sessionEndRunning, launchProgressTracker.progress) { running, shown ->
-                        !running || shown == null
+                    combine(
+                        sessionEndCoordinator.sessionEndRunning,
+                        playSessionTracker.pendingSessionConflict,
+                        launchProgressTracker.progress
+                    ) { running, conflict, shown ->
+                        (!running && conflict == null) || shown == null
                     }.first { it }
                     if (ticket.isCancelled || isSyncing) {
                         onLaunchFailed()

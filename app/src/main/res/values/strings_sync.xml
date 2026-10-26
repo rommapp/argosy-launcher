@@ -201,13 +201,14 @@
          game. Noun, singular: the save file itself. -->
     <string name="sync_session_save_upload_failed_name_fallback">Save</string>
     <!-- Notice after a session ends while the server cannot take the save yet. The save is
-         kept on this device and sent later on its own. The game's title is shown
-         underneath. Two short sentences; promise no time. -->
-    <string name="sync_session_save_queued">Saved on this device. It\'ll upload later.</string>
+         kept on this device and has not reached the server. The game's title is shown
+         underneath. Two short sentences; promise no upload, since a refused upload may never
+         go up. -->
+    <string name="sync_session_save_queued">Saved on this device. It hasn\'t uploaded yet.</string>
     <!-- Notice after a save left over from an earlier session was kept on this device but
          could not reach the server yet. The game's title is shown underneath. Same wording
          as the notice above, kept as its own key. -->
-    <string name="sync_session_save_queued_orphan">Saved on this device. It\'ll upload later.</string>
+    <string name="sync_session_save_queued_orphan">Saved on this device. It hasn\'t uploaded yet.</string>
     <!-- Notice after the save from the session that just ended could not be copied into
          Argosy's local backup. The game's title is shown underneath. One short sentence;
          promise no retry. -->

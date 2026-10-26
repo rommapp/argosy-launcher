@@ -78,8 +78,8 @@
     <string name="sync_session_save_upload_failed">अपलोड विफल</string>
     <string name="sync_session_save_upload_failed_subtitle">%1$s: %2$s</string>
     <string name="sync_session_save_upload_failed_name_fallback">सेव</string>
-    <string name="sync_session_save_queued">इस डिवाइस पर सेव हो गई। बाद में अपलोड होगी।</string>
-    <string name="sync_session_save_queued_orphan">इस डिवाइस पर सेव हो गई। बाद में अपलोड होगी।</string>
+    <string name="sync_session_save_queued">इस डिवाइस पर सेव हो गई। अभी तक अपलोड नहीं हुई।</string>
+    <string name="sync_session_save_queued_orphan">इस डिवाइस पर सेव हो गई। अभी तक अपलोड नहीं हुई।</string>
     <string name="sync_session_save_not_kept">यह सेव बैकअप नहीं हो सकी।</string>
     <string name="sync_migration_refused_title">%1$s का सेव नहीं ले जाया जा सका</string>
     <string name="sync_migration_refused_no_route">Argosy इन दोनों एमुलेटर के बीच सेव नहीं बदल सकता</string>

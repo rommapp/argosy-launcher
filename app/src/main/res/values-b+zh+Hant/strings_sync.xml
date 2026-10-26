@@ -63,8 +63,8 @@
     <string name="sync_session_save_upload_failed">上傳失敗</string>
     <string name="sync_session_save_upload_failed_subtitle">%1$s：%2$s</string>
     <string name="sync_session_save_upload_failed_name_fallback">存檔</string>
-    <string name="sync_session_save_queued">已儲存在此裝置上，稍後上傳。</string>
-    <string name="sync_session_save_queued_orphan">已儲存在此裝置上，稍後上傳。</string>
+    <string name="sync_session_save_queued">已儲存在此裝置上，尚未上傳。</string>
+    <string name="sync_session_save_queued_orphan">已儲存在此裝置上，尚未上傳。</string>
     <string name="sync_session_save_not_kept">無法備份此存檔。</string>
     <string name="sync_migration_refused_title">無法移轉 %1$s 的存檔</string>
     <string name="sync_migration_refused_no_route">Argosy 無法在這兩個模擬器之間轉換存檔</string>

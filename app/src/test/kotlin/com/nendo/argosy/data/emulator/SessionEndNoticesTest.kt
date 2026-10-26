@@ -83,7 +83,7 @@ class SessionEndNoticesTest {
     }
 
     @Test
-    fun `a queued upload at session end toasts that the save will upload later`() = runTest {
+    fun `a queued upload at session end toasts that the save is on this device and not uploaded yet`() = runTest {
         notices.sessionSaveSynced(gameId, SyncSaveOnSessionEndUseCase.Result.Queued)
 
         verifyToast(R.string.sync_session_save_queued, NotificationType.INFO, NotificationDuration.MEDIUM)
@@ -148,7 +148,7 @@ class SessionEndNoticesTest {
     }
 
     @Test
-    fun `an orphaned save whose upload is queued toasts that it will upload later`() = runTest {
+    fun `an orphaned save whose upload is queued toasts that it is on this device and not uploaded yet`() = runTest {
         notices.orphanSaveRecovered(gameId, synced(SyncSaveOnSessionEndUseCase.Result.Queued))
 
         verifyToast(R.string.sync_session_save_queued_orphan, NotificationType.INFO, NotificationDuration.MEDIUM)

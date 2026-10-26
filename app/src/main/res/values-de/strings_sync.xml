@@ -63,6 +63,9 @@
     <string name="sync_download_service_moving">Wird in ROM-Speicher verschoben: %1$s</string>
     <string name="sync_download_service_downloading">Wird heruntergeladen: %1$s</string>
     <string name="sync_download_service_queued">In Warteschlange: %1$s</string>
+    <string name="sync_session_save_queued">Auf diesem Gerät gespeichert. Wird später hochgeladen.</string>
+    <string name="sync_session_save_queued_orphan">Auf diesem Gerät gespeichert. Wird später hochgeladen.</string>
+    <string name="sync_session_save_not_kept">Dieser Spielstand konnte nicht gesichert werden. Argosy versucht es erneut.</string>
     <string name="sync_download_service_pending">Download ausstehend...</string>
     <string name="sync_download_service_media_preparing">%1$s: %2$s</string>
     <string name="sync_download_service_media_downloading">Wird heruntergeladen: %1$s</string>

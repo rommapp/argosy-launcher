@@ -63,6 +63,9 @@
     <string name="sync_download_service_moving">正在移至ROM儲存空間：%1$s</string>
     <string name="sync_download_service_downloading">下載中：%1$s</string>
     <string name="sync_download_service_queued">排隊中：%1$s</string>
+    <string name="sync_session_save_queued">已儲存在此裝置上，稍後上傳。</string>
+    <string name="sync_session_save_queued_orphan">已儲存在此裝置上，稍後上傳。</string>
+    <string name="sync_session_save_not_kept">無法備份此存檔。Argosy 會再試一次。</string>
     <string name="sync_download_service_pending">下載等待中...</string>
     <string name="sync_download_service_media_preparing">%1$s：%2$s</string>
     <string name="sync_download_service_media_downloading">下載中：%1$s</string>

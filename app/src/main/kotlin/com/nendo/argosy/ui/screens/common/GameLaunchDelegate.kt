@@ -43,6 +43,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -274,6 +275,17 @@ class GameLaunchDelegate @Inject constructor(
                 return@launch
             }
             try {
+                if (sessionEndCoordinator.sessionEndRunning.value) {
+                    ticket.step(LaunchStep.Save(SyncProgress.PreLaunch.CheckingSave(channelName)))
+                    combine(sessionEndCoordinator.sessionEndRunning, launchProgressTracker.progress) { running, shown ->
+                        !running || shown == null
+                    }.first { it }
+                    if (ticket.isCancelled || isSyncing) {
+                        onLaunchFailed()
+                        return@launch
+                    }
+                }
+
                 val activeSession = playSessionTracker.activeSession.value
                 val sessionRequiresKill = activeSession?.let { session ->
                     val emuId = emulatorResolver.resolveEmulatorId(session.emulatorPackage)

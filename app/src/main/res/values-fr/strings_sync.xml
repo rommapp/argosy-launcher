@@ -63,6 +63,9 @@
     <string name="sync_download_service_moving">Déplacement vers le stockage ROM : %1$s</string>
     <string name="sync_download_service_downloading">Téléchargement : %1$s</string>
     <string name="sync_download_service_queued">En file d\'attente : %1$s</string>
+    <string name="sync_session_save_queued">Enregistrée sur cet appareil. Elle sera envoyée plus tard.</string>
+    <string name="sync_session_save_queued_orphan">Enregistrée sur cet appareil. Elle sera envoyée plus tard.</string>
+    <string name="sync_session_save_not_kept">Impossible de copier cette sauvegarde en lieu sûr. Argosy réessaiera.</string>
     <string name="sync_download_service_pending">Téléchargement en attente...</string>
     <string name="sync_download_service_media_preparing">%1$s : %2$s</string>
     <string name="sync_download_service_media_downloading">Téléchargement : %1$s</string>

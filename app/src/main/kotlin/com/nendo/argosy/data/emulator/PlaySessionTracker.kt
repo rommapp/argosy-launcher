@@ -792,7 +792,10 @@ class PlaySessionTracker @Inject constructor(
                         is SaveCacheManager.CacheResult.Duplicate -> SessionEndResult.Duplicate
                         else -> SessionEndResult.Success
                     }
-                    SessionSaveOutcome.CacheFailed -> SessionEndResult.Error("Failed to cache save")
+                    SessionSaveOutcome.CacheFailed -> {
+                        sessionEndNotices.sessionSaveNotKept(session.gameId)
+                        SessionEndResult.Error("Failed to cache save")
+                    }
                     is SessionSaveOutcome.Unreadable -> SessionEndResult.SaveUnreadable(saveOutcome.dirPath, saveOutcome.emulatorId)
                     SessionSaveOutcome.Exempt, SessionSaveOutcome.NothingToSave -> SessionEndResult.Skipped
                 }
@@ -802,6 +805,7 @@ class PlaySessionTracker @Inject constructor(
             } catch (e: Exception) {
                 Logger.error(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Session end failed, keeping the session for recovery", e)
                 releaseSession(keepRecord = true, startedAt = session.startTime)
+                sessionEndNotices.sessionSaveNotKept(session.gameId)
                 SessionEndResult.Error(e.message ?: "Unknown error")
             }
             signalSessionClosed(session)

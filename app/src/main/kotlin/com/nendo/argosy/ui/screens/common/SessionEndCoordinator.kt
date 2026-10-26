@@ -19,7 +19,6 @@ import com.nendo.argosy.util.SafeCoroutineScope
 import com.nendo.argosy.util.openStorageAccessSettings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,8 +29,6 @@ import javax.inject.Singleton
 
 private const val TAG = "SessionEnd"
 private const val SHORT_SESSION_SECONDS = 30L
-private const val COMPLETE_HOLD_MS = 800L
-private const val ERROR_HOLD_MS = 1500L
 
 @Singleton
 class SessionEndCoordinator @Inject constructor(
@@ -161,37 +158,30 @@ class SessionEndCoordinator @Inject constructor(
             }
 
             Log.d(TAG, "[DualSync] Starting post-session sync | game=$gameTitle, channel=${session.channelName}, emulator=$emulatorId")
-            _syncOverlayState.value = SyncOverlayState(gameTitle, SyncProgress.PostSession.CheckingSave(session.channelName))
+            _sessionEndRunning.value = true
+            try {
+                val result = playSessionTracker.endSession()
+                Log.d(TAG, "[DualSync] endSession result: ${result::class.simpleName}")
 
-            val result = playSessionTracker.endSession()
-            Log.d(TAG, "[DualSync] endSession result: ${result::class.simpleName}")
-
-            when (result) {
-                is SessionEndResult.Success -> {
-                    _syncOverlayState.value = SyncOverlayState(gameTitle, SyncProgress.PostSession.Complete)
-                    delay(COMPLETE_HOLD_MS)
-                    _syncOverlayState.value = null
+                when (result) {
+                    is SessionEndResult.Success, is SessionEndResult.Duplicate, is SessionEndResult.Skipped -> Unit
+                    is SessionEndResult.SaveUnreadable -> {
+                        stopEmulatorAfterSession(session)
+                        showBlockedOverlay(
+                            gameTitle,
+                            SyncProgress.BlockedReason.AccessDenied(
+                                EmulatorRegistry.getById(result.emulatorId)?.displayName ?: emulatorName,
+                                result.dirPath,
+                                platformSlug = game?.platformSlug
+                            ),
+                            session = null
+                        )
+                        return
+                    }
+                    is SessionEndResult.Error -> Log.w(TAG, "[DualSync] Session end error: ${result.message}")
                 }
-                is SessionEndResult.Duplicate, is SessionEndResult.Skipped -> _syncOverlayState.value = null
-                is SessionEndResult.SaveUnreadable -> {
-                    stopEmulatorAfterSession(session)
-                    showBlockedOverlay(
-                        gameTitle,
-                        SyncProgress.BlockedReason.AccessDenied(
-                            EmulatorRegistry.getById(result.emulatorId)?.displayName ?: emulatorName,
-                            result.dirPath,
-                            platformSlug = game?.platformSlug
-                        ),
-                        session = null
-                    )
-                    return
-                }
-                is SessionEndResult.Error -> {
-                    Log.w(TAG, "[DualSync] Session end error: ${result.message}")
-                    _syncOverlayState.value = SyncOverlayState(gameTitle, SyncProgress.Error(result.message))
-                    delay(ERROR_HOLD_MS)
-                    _syncOverlayState.value = null
-                }
+            } finally {
+                _sessionEndRunning.value = false
             }
             stopEmulatorAfterSession(session)
         } catch (e: kotlinx.coroutines.CancellationException) {

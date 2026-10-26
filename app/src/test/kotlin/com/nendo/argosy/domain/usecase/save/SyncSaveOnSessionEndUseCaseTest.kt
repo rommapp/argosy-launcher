@@ -145,6 +145,32 @@ class SyncSaveOnSessionEndUseCaseTest {
     }
 
     @Test
+    fun `offline at session end queues the upload`() = runTest {
+        val save = givenReadableSave()
+        coEvery { romMRepository.isConnected() } returns false
+
+        val result = useCase(GAME_ID, duckstation.packageName)
+
+        assertEquals(SyncSaveOnSessionEndUseCase.Result.Queued, result)
+        coVerify(exactly = 1) { romMRepository.checkConnection() }
+        coVerify(exactly = 1) { saveSyncRepository.queueUpload(GAME_ID, "duckstation", save, any()) }
+        coVerify(exactly = 0) { saveSyncRepository.uploadSave(any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `a failed upload while connected queues it`() = runTest {
+        val save = givenReadableSave()
+        coEvery { saveSyncRepository.uploadSave(GAME_ID, any(), any(), any(), any(), any()) } returns
+            SaveSyncResult.Error("server refused")
+
+        val result = useCase(GAME_ID, duckstation.packageName)
+
+        assertEquals(SyncSaveOnSessionEndUseCase.Result.Queued, result)
+        coVerify(exactly = 1) { saveSyncRepository.uploadSave(GAME_ID, "duckstation", any(), any(), any(), any()) }
+        coVerify(exactly = 1) { saveSyncRepository.queueUpload(GAME_ID, "duckstation", save, any()) }
+    }
+
+    @Test
     fun `canSync answers for the emulator that actually ran`() = runTest {
         mockkObject(SavePathRegistry)
         try {
@@ -155,6 +181,17 @@ class SyncSaveOnSessionEndUseCaseTest {
         } finally {
             unmockkObject(SavePathRegistry)
         }
+    }
+
+    private fun givenReadableSave(): String {
+        val save = "/saves/duckstation/memcards/test-game.mcd"
+        coEvery {
+            saveSyncRepository.discoverSavePath(any(), any(), any(), any(), any(), any(), any(), any())
+        } returns save
+        every { fileAccessLayer.exists(save) } returns true
+        every { fileAccessLayer.isDirectory(save) } returns false
+        every { fileAccessLayer.lastModified(save) } returns 1_000L
+        return save
     }
 
     private fun installed(def: EmulatorDef) =

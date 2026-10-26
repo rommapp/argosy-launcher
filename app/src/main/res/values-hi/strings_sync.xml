@@ -78,6 +78,9 @@
     <string name="sync_download_service_media_preparing">%1$s: %2$s</string>
     <string name="sync_download_service_media_downloading">डाउनलोड हो रहा है: %1$s</string>
 
+    <string name="sync_session_save_queued">इस डिवाइस पर सेव हो गई। बाद में अपलोड होगी।</string>
+    <string name="sync_session_save_queued_orphan">इस डिवाइस पर सेव हो गई। बाद में अपलोड होगी।</string>
+    <string name="sync_session_save_not_kept">यह सेव बैकअप नहीं हो सकी। Argosy फिर से कोशिश करेगा।</string>
     <!-- Android system notification shown while a game is being played. -->
 
     <string name="sync_session_channel_name">गेम सेशन</string>

@@ -200,6 +200,18 @@
     <!-- Notification line while a film or episode is being fetched. %1$s is the
          title. -->
     <string name="sync_download_service_media_downloading">Downloading: %1$s</string>
+    <!-- Notice after a session ends while the server cannot take the save yet. The save is
+         kept on this device and sent later on its own. The game's title is shown
+         underneath. Two short sentences; promise no time. -->
+    <string name="sync_session_save_queued">Saved on this device. It\'ll upload later.</string>
+    <!-- Notice after a save left over from an earlier session was kept on this device but
+         could not reach the server yet. The game's title is shown underneath. Same wording
+         as the notice above, kept as its own key. -->
+    <string name="sync_session_save_queued_orphan">Saved on this device. It\'ll upload later.</string>
+    <!-- Notice after the save from the session that just ended could not be backed up.
+         The game's title is shown underneath. Argosy keeps the session and tries again
+         on its own later. Two short sentences. -->
+    <string name="sync_session_save_not_kept">Couldn\'t back up this save. Argosy will try again.</string>
 
     <!-- Android system notification shown while a game is being played. -->
 

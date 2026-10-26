@@ -63,6 +63,9 @@
     <string name="sync_download_service_moving">Перемещение в хранилище ROM: %1$s</string>
     <string name="sync_download_service_downloading">Загрузка: %1$s</string>
     <string name="sync_download_service_queued">В очереди: %1$s</string>
+    <string name="sync_session_save_queued">Сохранено на этом устройстве. Будет отправлено позже.</string>
+    <string name="sync_session_save_queued_orphan">Сохранено на этом устройстве. Будет отправлено позже.</string>
+    <string name="sync_session_save_not_kept">Не удалось создать резервную копию сохранения. Argosy попробует снова.</string>
     <string name="sync_download_service_pending">Загрузка ожидает...</string>
     <string name="sync_download_service_media_preparing">%1$s: %2$s</string>
     <string name="sync_download_service_media_downloading">Загрузка: %1$s</string>

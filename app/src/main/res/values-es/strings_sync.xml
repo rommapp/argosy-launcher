@@ -63,6 +63,9 @@
     <string name="sync_download_service_moving">Moviendo al almacenamiento de ROM: %1$s</string>
     <string name="sync_download_service_downloading">Descargando: %1$s</string>
     <string name="sync_download_service_queued">En cola: %1$s</string>
+    <string name="sync_session_save_queued">Guardada en este dispositivo. Se subirá más tarde.</string>
+    <string name="sync_session_save_queued_orphan">Guardada en este dispositivo. Se subirá más tarde.</string>
+    <string name="sync_session_save_not_kept">No se pudo respaldar esta partida guardada. Argosy lo volverá a intentar.</string>
     <string name="sync_download_service_pending">Descarga pendiente...</string>
     <string name="sync_download_service_media_preparing">%1$s: %2$s</string>
     <string name="sync_download_service_media_downloading">Descargando: %1$s</string>

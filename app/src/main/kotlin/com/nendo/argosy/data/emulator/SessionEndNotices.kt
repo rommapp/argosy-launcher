@@ -16,11 +16,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * The toasts a session end posts about its save. Every one is keyed `sync-<gameId>`, shown
- * immediately, and replaces any earlier toast under that key. Live session ends report through
- * [sessionSaveSynced] and [sessionSaveNotKept]; orphan recovery reports through
- * [orphanSaveRecovered]. A notice that fails to post is logged and never thrown, so it cannot
- * change how the session end that called it turns out.
+ * The toasts a session end posts about its save, each keyed `sync-<gameId>` so it replaces any
+ * earlier toast for that game. A notice that fails to post is logged and never thrown, so it
+ * cannot change how the session end that called it turns out.
  */
 @Singleton
 class SessionEndNotices @Inject constructor(

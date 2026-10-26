@@ -134,7 +134,7 @@ class SessionEndNoticesTest {
     }
 
     @Test
-    fun `a save the session end could not back up toasts that argosy will try again`() = runTest {
+    fun `a save the session end could not back up toasts that it could not back it up`() = runTest {
         notices.sessionSaveNotKept(gameId)
 
         verifyToast(R.string.sync_session_save_not_kept, NotificationType.ERROR, NotificationDuration.LONG)

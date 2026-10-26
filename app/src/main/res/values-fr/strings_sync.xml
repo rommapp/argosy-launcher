@@ -65,7 +65,7 @@
     <string name="sync_session_save_upload_failed_name_fallback">Sauvegarde</string>
     <string name="sync_session_save_queued">Enregistrée sur cet appareil. Elle sera envoyée plus tard.</string>
     <string name="sync_session_save_queued_orphan">Enregistrée sur cet appareil. Elle sera envoyée plus tard.</string>
-    <string name="sync_session_save_not_kept">Impossible de copier cette sauvegarde en lieu sûr. Argosy réessaiera.</string>
+    <string name="sync_session_save_not_kept">Impossible de copier cette sauvegarde en lieu sûr.</string>
     <string name="sync_migration_refused_title">Impossible de déplacer la sauvegarde de %1$s</string>
     <string name="sync_migration_refused_no_route">Argosy ne peut pas convertir les sauvegardes entre ces deux émulateurs</string>
     <string name="sync_migration_refused_unreadable">Le dossier de sauvegarde de l\'émulateur est illisible</string>

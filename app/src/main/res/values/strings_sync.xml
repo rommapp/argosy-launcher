@@ -208,10 +208,10 @@
          could not reach the server yet. The game's title is shown underneath. Same wording
          as the notice above, kept as its own key. -->
     <string name="sync_session_save_queued_orphan">Saved on this device. It\'ll upload later.</string>
-    <!-- Notice after the save from the session that just ended could not be backed up.
-         The game's title is shown underneath. Argosy keeps the session and tries again
-         on its own later. Two short sentences. -->
-    <string name="sync_session_save_not_kept">Couldn\'t back up this save. Argosy will try again.</string>
+    <!-- Notice after the save from the session that just ended could not be copied into
+         Argosy's local backup. The game's title is shown underneath. One short sentence;
+         promise no retry. -->
+    <string name="sync_session_save_not_kept">Couldn\'t back up this save.</string>
 
     <!-- Notice before a launch when the game's save, last played under another emulator,
          could not be moved into the emulator about to start. The game still starts and the

@@ -65,7 +65,7 @@
     <string name="sync_session_save_upload_failed_name_fallback">Сохранение</string>
     <string name="sync_session_save_queued">Сохранено на этом устройстве. Будет отправлено позже.</string>
     <string name="sync_session_save_queued_orphan">Сохранено на этом устройстве. Будет отправлено позже.</string>
-    <string name="sync_session_save_not_kept">Не удалось создать резервную копию сохранения. Argosy попробует снова.</string>
+    <string name="sync_session_save_not_kept">Не удалось создать резервную копию сохранения.</string>
     <string name="sync_migration_refused_title">Не удалось перенести сохранение %1$s</string>
     <string name="sync_migration_refused_no_route">Argosy не умеет преобразовывать сохранения между этими эмуляторами</string>
     <string name="sync_migration_refused_unreadable">Папка сохранений эмулятора недоступна для чтения</string>

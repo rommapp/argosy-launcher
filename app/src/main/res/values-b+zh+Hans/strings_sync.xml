@@ -65,7 +65,7 @@
     <string name="sync_session_save_upload_failed_name_fallback">存档</string>
     <string name="sync_session_save_queued">已保存在此设备上，稍后上传。</string>
     <string name="sync_session_save_queued_orphan">已保存在此设备上，稍后上传。</string>
-    <string name="sync_session_save_not_kept">无法备份此存档。Argosy 会再次尝试。</string>
+    <string name="sync_session_save_not_kept">无法备份此存档。</string>
     <string name="sync_migration_refused_title">无法迁移 %1$s 的存档</string>
     <string name="sync_migration_refused_no_route">Argosy 无法在这两个模拟器之间转换存档</string>
     <string name="sync_migration_refused_unreadable">无法读取模拟器的存档文件夹</string>

@@ -65,7 +65,7 @@
     <string name="sync_session_save_upload_failed_name_fallback">Partida guardada</string>
     <string name="sync_session_save_queued">Guardada en este dispositivo. Se subirá más tarde.</string>
     <string name="sync_session_save_queued_orphan">Guardada en este dispositivo. Se subirá más tarde.</string>
-    <string name="sync_session_save_not_kept">No se pudo respaldar esta partida guardada. Argosy lo volverá a intentar.</string>
+    <string name="sync_session_save_not_kept">No se pudo respaldar esta partida guardada.</string>
     <string name="sync_migration_refused_title">No se pudo mover la partida guardada de %1$s</string>
     <string name="sync_migration_refused_no_route">Argosy no puede convertir partidas entre estos dos emuladores</string>
     <string name="sync_migration_refused_unreadable">No se puede leer la carpeta de guardado del emulador</string>

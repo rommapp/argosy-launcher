@@ -4,6 +4,7 @@ import com.nendo.argosy.data.emulator.ActiveSession
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.emulator.GameLauncher
+import com.nendo.argosy.data.emulator.LaunchProgressTracker
 import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.emulator.SavePathValidator
@@ -54,9 +55,12 @@ class SessionEndCoordinatorTest {
     private val emulatorResolver: EmulatorResolver = mockk(relaxed = true)
     private val preferencesRepository: UserPreferencesRepository = mockk(relaxed = true)
     private val savePathValidator: SavePathValidator = mockk(relaxed = true)
-    private val preferences = MutableStateFlow(UserPreferences(saveSyncEnabled = true))
+    private val preferences = MutableStateFlow(UserPreferences(saveSyncEnabled = true, closeEmulatorOnSessionEnd = true))
     private val activeSession = MutableStateFlow<ActiveSession?>(session)
     private val gameLauncher: GameLauncher = mockk(relaxed = true)
+    private val launchProgressTracker: LaunchProgressTracker = mockk(relaxed = true) {
+        every { launchLive } returns MutableStateFlow(false)
+    }
 
     @Before
     fun setup() {
@@ -88,7 +92,8 @@ class SessionEndCoordinatorTest {
         preferencesRepository = preferencesRepository,
         gameRepository = mockk(relaxed = true) { coEvery { getById(any()) } returns null },
         savePathValidator = savePathValidator,
-        gameLauncher = gameLauncher
+        gameLauncher = gameLauncher,
+        launchProgressTracker = launchProgressTracker
     )
 
     private fun TestScope.recordRunning(coordinator: SessionEndCoordinator): List<Boolean> {

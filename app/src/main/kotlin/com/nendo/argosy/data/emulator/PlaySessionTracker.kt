@@ -782,8 +782,10 @@ class PlaySessionTracker @Inject constructor(
                     }.await()
                 }
 
-                if (saveOutcome is SessionSaveOutcome.Synced) {
-                    sessionEndNotices.sessionSaveSynced(session.gameId, saveOutcome.sync)
+                when (saveOutcome) {
+                    is SessionSaveOutcome.Synced -> sessionEndNotices.sessionSaveSynced(session.gameId, saveOutcome.sync)
+                    SessionSaveOutcome.CacheFailed -> sessionEndNotices.sessionSaveNotKept(session.gameId)
+                    else -> Unit
                 }
                 releaseSession(keepRecord = !saveOutcome.isSettled, startedAt = session.startTime)
 
@@ -792,10 +794,7 @@ class PlaySessionTracker @Inject constructor(
                         is SaveCacheManager.CacheResult.Duplicate -> SessionEndResult.Duplicate
                         else -> SessionEndResult.Success
                     }
-                    SessionSaveOutcome.CacheFailed -> {
-                        sessionEndNotices.sessionSaveNotKept(session.gameId)
-                        SessionEndResult.Error("Failed to cache save")
-                    }
+                    SessionSaveOutcome.CacheFailed -> SessionEndResult.Error("Failed to cache save")
                     is SessionSaveOutcome.Unreadable -> SessionEndResult.SaveUnreadable(saveOutcome.dirPath, saveOutcome.emulatorId)
                     SessionSaveOutcome.Exempt, SessionSaveOutcome.NothingToSave -> SessionEndResult.Skipped
                 }

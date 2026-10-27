@@ -12,6 +12,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Before
@@ -92,6 +93,17 @@ class PlaySessionTrackerNoticesTest {
 
         coVerify(exactly = 1) { notices.sessionSaveNotKept(gameId) }
         coVerify(exactly = 0) { notices.sessionSaveSynced(any(), any()) }
+    }
+
+    @Test
+    fun `a cancel while the not-kept notice posts counts the failed capture once`() = runTest {
+        coEvery { sessionSaveFinalizer.finalize(any()) } returns SessionSaveOutcome.CacheFailed
+        coEvery { notices.sessionSaveNotKept(gameId) } throws CancellationException("left")
+        val tracker = trackerWithLiveSession()
+
+        runCatching { tracker.endSession(stopService = false) }
+
+        coVerify(exactly = 1) { preferencesRepository.keepSessionForRetry(any(), any()) }
     }
 
     @Test

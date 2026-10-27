@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -94,16 +95,18 @@ class SessionEndCoordinator @Inject constructor(
     }
 
     private fun stopEmulatorAfterSession(session: ActiveSession) {
-        scope.launch(Dispatchers.IO) {
-            val current = playSessionTracker.activeSession.value
-            if (current?.emulatorPackage == session.emulatorPackage) return@launch
-            if (launchProgressTracker.launchLive.value) {
-                Log.d(TAG, "launch in progress, leaving ${session.emulatorPackage} running")
-                return@launch
-            }
-            if (shouldStopAfterSession(session.emulatorPackage)) {
-                gameLauncher.forceStopEmulator(session.emulatorPackage)
-            }
+        scope.launch(Dispatchers.IO) { stopEmulatorUnlessLaunching(session, launchWaiting = false) }
+    }
+
+    private suspend fun stopEmulatorUnlessLaunching(session: ActiveSession, launchWaiting: Boolean) {
+        val current = playSessionTracker.activeSession.value
+        if (current?.emulatorPackage == session.emulatorPackage) return
+        if (launchProgressTracker.launchLive.value && !launchWaiting) {
+            Log.d(TAG, "launch in progress, leaving ${session.emulatorPackage} running")
+            return
+        }
+        if (shouldStopAfterSession(session.emulatorPackage)) {
+            gameLauncher.forceStopEmulator(session.emulatorPackage)
         }
     }
 
@@ -158,6 +161,7 @@ class SessionEndCoordinator @Inject constructor(
             }
 
             Log.d(TAG, "[DualSync] Starting post-session sync | game=$gameTitle, channel=${session.channelName}, emulator=$emulatorId")
+            val launchLiveBefore = launchProgressTracker.launchLive.value
             _sessionEndRunning.value = true
             try {
                 val result = playSessionTracker.endSession()
@@ -180,10 +184,10 @@ class SessionEndCoordinator @Inject constructor(
                     }
                     is SessionEndResult.Error -> Log.w(TAG, "[DualSync] Session end error: ${result.message}")
                 }
+                withContext(Dispatchers.IO) { stopEmulatorUnlessLaunching(session, launchWaiting = !launchLiveBefore) }
             } finally {
                 _sessionEndRunning.value = false
             }
-            stopEmulatorAfterSession(session)
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (e: Exception) {

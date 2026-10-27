@@ -58,8 +58,9 @@ class SessionEndCoordinatorTest {
     private val preferences = MutableStateFlow(UserPreferences(saveSyncEnabled = true, closeEmulatorOnSessionEnd = true))
     private val activeSession = MutableStateFlow<ActiveSession?>(session)
     private val gameLauncher: GameLauncher = mockk(relaxed = true)
+    private val launchLive = MutableStateFlow(false)
     private val launchProgressTracker: LaunchProgressTracker = mockk(relaxed = true) {
-        every { launchLive } returns MutableStateFlow(false)
+        every { launchLive } returns this@SessionEndCoordinatorTest.launchLive
     }
 
     @Before
@@ -244,6 +245,37 @@ class SessionEndCoordinatorTest {
         coordinator().endClosedSession().join()
 
         coVerify(timeout = 2_000) { gameLauncher.forceStopEmulator(emulatorPackage) }
+    }
+
+    @Test
+    fun `a launch that waits on the session end still lets the closed emulator stop first`() = runTest {
+        endingClearsTheLiveSession(SessionEndResult.Success)
+        coEvery { playSessionTracker.endSession() } coAnswers {
+            activeSession.value = null
+            launchLive.value = true
+            SessionEndResult.Success
+        }
+        val coordinator = coordinator()
+        var runningAtStop: Boolean? = null
+        coEvery { gameLauncher.forceStopEmulator(emulatorPackage) } coAnswers {
+            runningAtStop = coordinator.sessionEndRunning.value
+        }
+
+        coordinator.endClosedSession().join()
+
+        coVerify(exactly = 1) { gameLauncher.forceStopEmulator(emulatorPackage) }
+        assertEquals(true, runningAtStop)
+    }
+
+    @Test
+    fun `a launch already live when the session end starts leaves the emulator running`() = runTest {
+        endingClearsTheLiveSession(SessionEndResult.Success)
+        launchLive.value = true
+
+        coordinator().endClosedSession().join()
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) { gameLauncher.forceStopEmulator(any()) }
     }
 
     @Test

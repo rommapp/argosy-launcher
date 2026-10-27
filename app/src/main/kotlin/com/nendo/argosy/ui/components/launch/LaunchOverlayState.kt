@@ -23,6 +23,9 @@ enum class CalmLaunchBar { NONE, INDETERMINATE, DETERMINATE }
 val LaunchStep.mirrorsToPresentation: Boolean
     get() = this is LaunchStep.Recap
 
+fun LaunchStep.showsCancelHint(appPromptShowing: Boolean): Boolean =
+    !appPromptShowing && this !is LaunchStep.Recap && this != LaunchStep.Launching
+
 data class CalmLaunchUi(
     @StringRes val line: Int?,
     val lineIsFailure: Boolean,

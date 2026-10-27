@@ -1323,7 +1323,7 @@ fun ArgosyApp(
 
             com.nendo.argosy.ui.components.recap.MonthlyRecapOverlay()
 
-            com.nendo.argosy.ui.components.LaunchOverlay()
+            com.nendo.argosy.ui.components.LaunchOverlay(appPromptShowing = appPromptShowing)
 
             val mutedNotificationKeys = if (currentRoute == Screen.SyncMonitor.route) {
                 com.nendo.argosy.domain.usecase.sync.SyncNotificationKeys.ALL

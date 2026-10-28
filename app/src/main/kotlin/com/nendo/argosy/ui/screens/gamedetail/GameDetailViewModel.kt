@@ -547,6 +547,7 @@ class GameDetailViewModel @Inject constructor(
                 loadGame(currentGameId)
             }
             is PickerSelection.Disc -> {
+                if (gameLaunchDelegate.isSessionEndBusy) return
                 gameLaunchDelegate.launchSimple(
                     scope = viewModelScope,
                     gameId = currentGameId,
@@ -556,6 +557,7 @@ class GameDetailViewModel @Inject constructor(
                 )
             }
             is PickerSelection.Variant -> {
+                if (gameLaunchDelegate.isSessionEndBusy) return
                 gameLaunchDelegate.launchSimple(
                     scope = viewModelScope,
                     gameId = currentGameId,
@@ -1220,6 +1222,7 @@ class GameDetailViewModel @Inject constructor(
     }
 
     fun showPlayOptions() {
+        if (gameLaunchDelegate.isSessionEndBusy) return
         val game = _uiState.value.game
         val hasRASupport = game?.isBuiltInEmulator == true
         playOptionsDelegate.showPlayOptions(viewModelScope, currentGameId, hasRASupport)
@@ -1256,6 +1259,7 @@ class GameDetailViewModel @Inject constructor(
         launchMode: com.nendo.argosy.libretro.LaunchMode,
         skipPreLaunchSync: Boolean
     ) {
+        if (gameLaunchDelegate.isSessionEndBusy) return
         if (launchMode == com.nendo.argosy.libretro.LaunchMode.NEW_CASUAL ||
             launchMode == com.nendo.argosy.libretro.LaunchMode.NEW_HARDCORE) {
             activeSaveRepository.clearActive(currentGameId)

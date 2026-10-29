@@ -5,21 +5,36 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.isImeVisible
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -61,13 +76,16 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.SoftwareKeyboardController
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.components.QrCodeWithOverlay
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -96,7 +114,11 @@ import androidx.compose.ui.graphics.Color
 import com.nendo.argosy.ui.primitives.ActionButton
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
+import com.nendo.argosy.ui.theme.LocalMotionTier
+import com.nendo.argosy.ui.theme.MotionTier
+import com.nendo.argosy.ui.theme.generated.MotionTokens
 import com.nendo.argosy.util.PlatformFilterLogic
+import kotlinx.coroutines.delay
 
 @Composable
 fun FirstRunScreen(
@@ -387,16 +409,40 @@ fun FirstRunScreen(
 private fun StepColumn(
     modifier: Modifier = Modifier,
     horizontalAlignment: Alignment.Horizontal = Alignment.CenterHorizontally,
+    verticalArrangement: Arrangement.Vertical = Arrangement.Top,
     content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit
 ) {
-    Column(
-        horizontalAlignment = horizontalAlignment,
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = Dimens.spacingXl, vertical = Dimens.spacingMd),
-        content = content
-    )
+    BoxWithConstraints(modifier = modifier.fillMaxSize().imePadding()) {
+        Column(
+            horizontalAlignment = horizontalAlignment,
+            verticalArrangement = verticalArrangement,
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .heightIn(min = maxHeight)
+                .padding(horizontal = Dimens.spacingXl, vertical = Dimens.spacingMd),
+            content = content
+        )
+    }
+}
+
+@Composable
+private fun StepBrand() {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            painter = painterResource(R.drawable.ic_helm),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(Dimens.iconLg)
+        )
+        Spacer(modifier = Modifier.width(Dimens.spacingSm))
+        Text(
+            text = stringResource(R.string.firstrun_step_brand_wordmark),
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
+    Spacer(modifier = Modifier.height(Dimens.spacingMd))
 }
 
 @Composable
@@ -404,7 +450,7 @@ private fun WelcomeStep(isFocused: Boolean, onGetStarted: () -> Unit) {
     StepColumn {
         Spacer(modifier = Modifier.height(Dimens.spacingXl))
         Text(
-            text = "ARGOSY",
+            text = stringResource(R.string.firstrun_welcome_wordmark),
             style = MaterialTheme.typography.displayMedium,
             color = MaterialTheme.colorScheme.primary
         )
@@ -424,6 +470,7 @@ private fun WelcomeStep(isFocused: Boolean, onGetStarted: () -> Unit) {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
 private fun RommLoginStep(
     url: String,
@@ -480,6 +527,31 @@ private fun RommLoginStep(
     val codeComplete = normalizedCode.length == 8
     var wasUrlFocused by remember { mutableStateOf(false) }
 
+    val compact = WindowInsets.isImeVisible && focusedIndex in 0..2
+    val roomMs = if (LocalMotionTier.current == MotionTier.Reduced) 0 else MotionTokens.Tween.drawerMs
+    val roomEnter = remember(roomMs) { roomEnterVertical(roomMs) }
+    val roomExit = remember(roomMs) { roomExitVertical(roomMs) }
+    val roomEnterSide = remember(roomMs) { roomEnterHorizontal(roomMs) }
+    val roomExitSide = remember(roomMs) { roomExitHorizontal(roomMs) }
+    val actionGroupRequester = remember { BringIntoViewRequester() }
+    val fieldWidthFraction by animateFloatAsState(
+        targetValue = if (compact) 1f else 0.8f,
+        animationSpec = roomTween(roomMs),
+        label = "romm_field_width"
+    )
+    val actionGap by animateDpAsState(
+        targetValue = if (compact) Dimens.spacingSm else Dimens.spacingLg,
+        animationSpec = roomTween(roomMs),
+        label = "romm_action_gap"
+    )
+
+    LaunchedEffect(compact, error) {
+        if (compact) {
+            delay(roomMs.toLong())
+            actionGroupRequester.bringIntoView()
+        }
+    }
+
     LaunchedEffect(rommFocusField) {
         when (rommFocusField) {
             0 -> urlFocusRequester.requestFocus()
@@ -497,102 +569,152 @@ private fun RommLoginStep(
                 focusManager.clearFocus()
             }
         }
-        StepColumn {
-            StepHeader(title = stringResource(R.string.firstrun_romm_url_title))
-            Spacer(modifier = Modifier.height(Dimens.spacingLg))
+        val continueLabel = if (isConnecting) {
+            stringResource(R.string.firstrun_romm_url_button_checking)
+        } else {
+            stringResource(R.string.firstrun_romm_url_button_continue)
+        }
+        val canContinue = !isConnecting && url.isNotBlank()
+        StepColumn(verticalArrangement = Arrangement.Center) {
+            AnimatedVisibility(visible = !compact, enter = roomEnter, exit = roomExit) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    StepBrand()
+                    StepHeader(title = stringResource(R.string.firstrun_romm_url_title))
+                    Spacer(modifier = Modifier.height(Dimens.spacingLg))
+                }
+            }
 
-            OutlinedTextField(
-                value = url,
-                onValueChange = onUrlChange,
-                label = { Text(stringResource(R.string.firstrun_romm_url_field_label)) },
-                placeholder = { Text("https://romm.example.com") },
-                singleLine = true,
-                shape = inputShape,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Go),
-                keyboardActions = KeyboardActions(
-                    onGo = {
-                        if (!isConnecting && url.isNotBlank()) {
-                            keyboard?.hide()
-                            focusManager.clearFocus()
-                            onCommitUrl()
-                        }
-                    }
-                ),
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
-                    .fillMaxWidth(0.8f)
-                    .focusRequester(urlFocusRequester)
-                    .onFocusChanged { fs ->
-                        if (wasUrlFocused && !fs.isFocused && url.isNotBlank()) {
-                            onCommitUrl()
+                    .fillMaxWidth()
+                    .bringIntoViewRequester(actionGroupRequester)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth(fieldWidthFraction)
+                ) {
+                    OutlinedTextField(
+                        value = url,
+                        onValueChange = { onUrlChange(it.trim()) },
+                        label = { Text(stringResource(R.string.firstrun_romm_url_field_label)) },
+                        placeholder = {
+                            Text(
+                                text = stringResource(R.string.firstrun_romm_url_field_placeholder),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        },
+                        singleLine = true,
+                        shape = inputShape,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Go),
+                        keyboardActions = KeyboardActions(
+                            onGo = {
+                                if (canContinue) {
+                                    keyboard?.hide()
+                                    focusManager.clearFocus()
+                                    onCommitUrl()
+                                }
+                            }
+                        ),
+                        modifier = Modifier
+                            .weight(1f)
+                            .focusRequester(urlFocusRequester)
+                            .onFocusChanged { fs ->
+                                if (wasUrlFocused && !fs.isFocused && url.isNotBlank()) {
+                                    onCommitUrl()
+                                }
+                                wasUrlFocused = fs.isFocused
+                            }
+                            .then(
+                                if (focusedIndex == 0)
+                                    Modifier
+                                        .border(Dimens.borderMedium, MaterialTheme.colorScheme.primary, inputShape)
+                                        .background(LocalArgosyTheme.current.focusAccent.copy(alpha = 0.15f), inputShape)
+                                else Modifier
+                            )
+                    )
+                    AnimatedVisibility(
+                        visible = compact,
+                        enter = roomEnterSide,
+                        exit = roomExitSide
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Spacer(modifier = Modifier.width(Dimens.spacingSm))
+                            FocusableButton(
+                                text = continueLabel,
+                                isFocused = focusedIndex == 1,
+                                enabled = canContinue,
+                                onClick = onCommitUrl
+                            )
                         }
-                        wasUrlFocused = fs.isFocused
                     }
-                    .then(
-                        if (focusedIndex == 0)
-                            Modifier
-                                .border(2.dp, MaterialTheme.colorScheme.primary, inputShape)
-                                .background(LocalArgosyTheme.current.focusAccent.copy(alpha = 0.15f), inputShape)
-                        else Modifier
-                    )
-            )
-            Spacer(modifier = Modifier.height(Dimens.spacingMd))
-
-            Text(
-                text = stringResource(R.string.firstrun_romm_url_hint),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(0.8f)
-            )
-
-            if (error != null) {
+                }
                 Spacer(modifier = Modifier.height(Dimens.spacingMd))
+
                 Text(
-                    text = error,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = stringResource(R.string.firstrun_romm_url_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth(0.8f)
+                    modifier = Modifier.fillMaxWidth(fieldWidthFraction)
                 )
-            }
 
-            Spacer(modifier = Modifier.height(Dimens.spacingLg))
-
-            Row {
-                FocusableButton(
-                    text = if (isConnecting) {
-                        stringResource(R.string.firstrun_romm_url_button_checking)
-                    } else {
-                        stringResource(R.string.firstrun_romm_url_button_continue)
-                    },
-                    isFocused = focusedIndex == 1,
-                    enabled = !isConnecting && url.isNotBlank(),
-                    onClick = onCommitUrl
-                )
-                Spacer(modifier = Modifier.width(Dimens.spacingMd))
-                FocusableOutlinedButton(
-                    text = stringResource(R.string.firstrun_romm_url_button_back),
-                    isFocused = focusedIndex == 2,
-                    enabled = !isConnecting,
-                    onClick = onBack
-                )
-            }
-
-            Spacer(modifier = Modifier.height(Dimens.spacingMd))
-
-            FocusableOutlinedButton(
-                text = if (importedCertCount > 0) {
-                    stringResource(
-                        R.string.firstrun_romm_certificate_button_count,
-                        importedCertCount
+                if (error != null) {
+                    Spacer(modifier = Modifier.height(Dimens.spacingMd))
+                    Text(
+                        text = error,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth(fieldWidthFraction)
                     )
-                } else {
-                    stringResource(R.string.firstrun_romm_certificate_button)
-                },
-                isFocused = focusedIndex == 3,
-                enabled = !isConnecting,
-                onClick = onAddCertificate
-            )
+                }
+            }
+
+            AnimatedVisibility(visible = !compact, enter = roomEnter, exit = roomExit) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Spacer(modifier = Modifier.height(Dimens.spacingLg))
+
+                    Row {
+                        FocusableButton(
+                            text = continueLabel,
+                            isFocused = focusedIndex == 1,
+                            enabled = canContinue,
+                            onClick = onCommitUrl
+                        )
+                        Spacer(modifier = Modifier.width(Dimens.spacingMd))
+                        FocusableOutlinedButton(
+                            text = stringResource(R.string.firstrun_romm_url_button_back),
+                            isFocused = focusedIndex == 2,
+                            enabled = !isConnecting,
+                            onClick = onBack
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(Dimens.spacingMd))
+
+                    FocusableOutlinedButton(
+                        text = if (importedCertCount > 0) {
+                            stringResource(
+                                R.string.firstrun_romm_certificate_button_count,
+                                importedCertCount
+                            )
+                        } else {
+                            stringResource(R.string.firstrun_romm_certificate_button)
+                        },
+                        isFocused = focusedIndex == 3,
+                        enabled = !isConnecting,
+                        onClick = onAddCertificate
+                    )
+                }
+            }
         }
         return
     }
@@ -605,18 +727,27 @@ private fun RommLoginStep(
         }
     }
 
-    StepColumn {
-        StepHeader(title = stringResource(R.string.firstrun_pairing_code_title))
-        Spacer(modifier = Modifier.height(Dimens.spacingSm))
+    val canConnect = !isConnecting && codeComplete
+    StepColumn(verticalArrangement = Arrangement.Center) {
+        AnimatedVisibility(visible = !compact, enter = roomEnter, exit = roomExit) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                StepBrand()
+                StepHeader(title = stringResource(R.string.firstrun_pairing_code_title))
+                Spacer(modifier = Modifier.height(Dimens.spacingSm))
 
-        Text(
-            text = url,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth(0.8f)
-        )
-        Spacer(modifier = Modifier.height(Dimens.spacingMd))
+                Text(
+                    text = url,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(0.8f)
+                )
+                Spacer(modifier = Modifier.height(Dimens.spacingMd))
+            }
+        }
 
         Text(
             text = stringResource(R.string.firstrun_pairing_code_hint),
@@ -627,86 +758,112 @@ private fun RommLoginStep(
         )
         Spacer(modifier = Modifier.height(Dimens.spacingSm))
 
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .fillMaxWidth()
+                .bringIntoViewRequester(actionGroupRequester)
         ) {
-            com.nendo.argosy.ui.screens.settings.components.PairingCodeInput(
-                code = pairingCode,
-                onCodeChange = onPairingCodeChange,
-                isFocused = focusedIndex == 0,
-                focusRequester = pairingCodeFocusRequester
-            )
-            if (pairingCode.isNotEmpty()) {
-                IconButton(
-                    onClick = onClearPairingCode,
-                    modifier = Modifier.size(32.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Clear,
-                        contentDescription = stringResource(R.string.firstrun_pairing_code_clear_description),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+            ) {
+                com.nendo.argosy.ui.screens.settings.components.PairingCodeInput(
+                    code = pairingCode,
+                    onCodeChange = onPairingCodeChange,
+                    isFocused = focusedIndex == 0,
+                    focusRequester = pairingCodeFocusRequester,
+                    onImeAction = {
+                        if (canConnect) {
+                            onConnect()
+                        }
+                    }
+                )
+                if (pairingCode.isNotEmpty()) {
+                    IconButton(
+                        onClick = onClearPairingCode,
+                        modifier = Modifier.size(Dimens.iconLg)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Clear,
+                            contentDescription = stringResource(R.string.firstrun_pairing_code_clear_description),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            if (error != null) {
+                Spacer(modifier = Modifier.height(Dimens.spacingMd))
+                Text(
+                    text = error,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(0.8f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(actionGap))
+
+            Row {
+                FocusableButton(
+                    text = if (isConnecting) {
+                        stringResource(R.string.firstrun_pairing_code_button_connecting)
+                    } else {
+                        stringResource(R.string.firstrun_pairing_code_button_connect)
+                    },
+                    isFocused = focusedIndex == 1,
+                    enabled = canConnect,
+                    onClick = onConnect
+                )
+                Spacer(modifier = Modifier.width(Dimens.spacingMd))
+                FocusableOutlinedButton(
+                    text = stringResource(R.string.firstrun_pairing_code_button_edit_url),
+                    isFocused = focusedIndex == 2,
+                    enabled = !isConnecting,
+                    onClick = onEditUrl
+                )
+            }
+        }
+
+        AnimatedVisibility(visible = !compact, enter = roomEnter, exit = roomExit) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                var nextIndex = 3
+                if (hasCamera) {
+                    Spacer(modifier = Modifier.height(Dimens.spacingSm))
+                    FocusableOutlinedButton(
+                        text = stringResource(R.string.firstrun_pairing_code_button_scan),
+                        isFocused = focusedIndex == nextIndex,
+                        enabled = !isConnecting,
+                        onClick = onScan
+                    )
+                    nextIndex++
+                }
+
+                if (supportsDeviceAuth) {
+                    Spacer(modifier = Modifier.height(Dimens.spacingSm))
+                    FocusableOutlinedButton(
+                        text = stringResource(R.string.firstrun_pairing_code_button_device_pairing),
+                        isFocused = focusedIndex == nextIndex,
+                        enabled = !isConnecting,
+                        onClick = onUseDevicePairing
                     )
                 }
             }
         }
-
-        if (error != null) {
-            Spacer(modifier = Modifier.height(Dimens.spacingMd))
-            Text(
-                text = error,
-                color = MaterialTheme.colorScheme.error,
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(0.8f)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(Dimens.spacingLg))
-
-        Row {
-            FocusableButton(
-                text = if (isConnecting) {
-                    stringResource(R.string.firstrun_pairing_code_button_connecting)
-                } else {
-                    stringResource(R.string.firstrun_pairing_code_button_connect)
-                },
-                isFocused = focusedIndex == 1,
-                enabled = !isConnecting && codeComplete,
-                onClick = onConnect
-            )
-            Spacer(modifier = Modifier.width(Dimens.spacingMd))
-            FocusableOutlinedButton(
-                text = stringResource(R.string.firstrun_pairing_code_button_edit_url),
-                isFocused = focusedIndex == 2,
-                enabled = !isConnecting,
-                onClick = onEditUrl
-            )
-        }
-
-        var nextIndex = 3
-        if (hasCamera) {
-            Spacer(modifier = Modifier.height(Dimens.spacingSm))
-            FocusableOutlinedButton(
-                text = stringResource(R.string.firstrun_pairing_code_button_scan),
-                isFocused = focusedIndex == nextIndex,
-                enabled = !isConnecting,
-                onClick = onScan
-            )
-            nextIndex++
-        }
-
-        if (supportsDeviceAuth) {
-            Spacer(modifier = Modifier.height(Dimens.spacingSm))
-            FocusableOutlinedButton(
-                text = stringResource(R.string.firstrun_pairing_code_button_device_pairing),
-                isFocused = focusedIndex == nextIndex,
-                enabled = !isConnecting,
-                onClick = onUseDevicePairing
-            )
-        }
     }
 }
+
+private fun <T> roomTween(ms: Int) = tween<T>(durationMillis = ms)
+
+private fun roomEnterVertical(ms: Int) = fadeIn(animationSpec = roomTween(ms)) + expandVertically(animationSpec = roomTween(ms))
+private fun roomExitVertical(ms: Int) = fadeOut(animationSpec = roomTween(ms)) + shrinkVertically(animationSpec = roomTween(ms))
+private fun roomEnterHorizontal(ms: Int) = fadeIn(animationSpec = roomTween(ms)) + expandHorizontally(animationSpec = roomTween(ms))
+private fun roomExitHorizontal(ms: Int) = fadeOut(animationSpec = roomTween(ms)) + shrinkHorizontally(animationSpec = roomTween(ms))
 
 @Composable
 private fun DevicePairingStep(
@@ -719,7 +876,7 @@ private fun DevicePairingStep(
     onUseManualCode: () -> Unit,
     onCancel: () -> Unit
 ) {
-    StepColumn {
+    StepColumn(verticalArrangement = Arrangement.Center) {
         StepHeader(title = stringResource(R.string.firstrun_device_pairing_title))
         Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
@@ -814,7 +971,7 @@ private fun RommSuccessStep(
     isFocused: Boolean,
     onContinue: () -> Unit
 ) {
-    StepColumn {
+    StepColumn(verticalArrangement = Arrangement.Center) {
         Icon(
             Icons.Default.Check,
             contentDescription = null,

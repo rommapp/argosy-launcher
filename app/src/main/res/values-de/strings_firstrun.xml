@@ -5,7 +5,8 @@
 
     <string name="firstrun_romm_url_title">Rom Manager-Anmeldung</string>
     <string name="firstrun_romm_url_field_label">Server-URL</string>
-    <string name="firstrun_romm_url_hint">Geben Sie die Adresse Ihres RomM-Servers ein, wir ermitteln dann die passende Anmeldemethode.</string>
+    <string name="firstrun_romm_url_field_placeholder">romm.local:8080 oder https://...</string>
+    <string name="firstrun_romm_url_hint">Geben Sie die Adresse Ihres RomM-Servers ein, mit oder ohne https://, wir ermitteln dann die passende Anmeldemethode.</string>
     <string name="firstrun_romm_url_button_continue">Weiter</string>
     <string name="firstrun_romm_url_button_checking">Wird geprüft...</string>
     <string name="firstrun_romm_url_button_back">Zurück</string>

@@ -17,6 +17,10 @@
 
     <!-- ===== Step 1: welcome ===== -->
 
+    <!-- Product wordmark on the welcome step. A brand name, never translated. -->
+    <string name="firstrun_welcome_wordmark" translatable="false">ARGOSY</string>
+    <!-- Product wordmark beside the helm above the RomM login steps. A brand name, never translated. -->
+    <string name="firstrun_step_brand_wordmark" translatable="false">ARGOSY</string>
     <!-- Greeting under the app name on the first screen of the setup wizard. Full sentence.
          "Let us begin the setup" in tone, not a literal welcome mat. -->
     <string name="firstrun_welcome_intro">Welcome! Let\'s get you set up.</string>
@@ -30,9 +34,13 @@
     <string name="firstrun_romm_url_title">Rom Manager Login</string>
     <!-- Floating label on the text field for the server web address. Noun phrase. -->
     <string name="firstrun_romm_url_field_label">Server URL</string>
+    <!-- Greyed example text inside the empty address field. The first part is a sample host
+         name and port; "or" is the only word to translate. Shows that https:// is optional. -->
+    <string name="firstrun_romm_url_field_placeholder">romm.local:8080 or https://...</string>
     <!-- Explanatory line under the address field. "we" is the app. "sign in" is the account
-         login that follows. RomM is a product name and is not translated. -->
-    <string name="firstrun_romm_url_hint">Enter your RomM server address and we\'ll detect how to sign in.</string>
+         login that follows. RomM is a product name and is not translated. The scheme prefix
+         https:// is literal and stays as is. -->
+    <string name="firstrun_romm_url_hint">Enter your RomM server address, with or without https://, and we\'ll detect how to sign in.</string>
     <!-- Button that submits the typed server address. Verb, imperative. -->
     <string name="firstrun_romm_url_button_continue">Continue</string>
     <!-- Label the same button takes on while the app is contacting the server to see which

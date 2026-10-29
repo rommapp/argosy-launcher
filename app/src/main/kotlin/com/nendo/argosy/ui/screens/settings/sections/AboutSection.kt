@@ -35,7 +35,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.common.labelRes
@@ -470,10 +469,10 @@ private fun VersionInfoRow(
         }
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs),
             modifier = Modifier
                 .clickableNoFocus(onClick = onLicensesClick)
-                .padding(horizontal = 8.dp, vertical = 4.dp)
+                .padding(horizontal = Dimens.spacingSm, vertical = Dimens.spacingXs)
         ) {
             Text(
                 text = stringResource(R.string.settings_about_licenses_label),
@@ -484,7 +483,7 @@ private fun VersionInfoRow(
                 imageVector = Icons.Outlined.Article,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(Dimens.iconSm)
             )
         }
     }

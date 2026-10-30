@@ -26,6 +26,7 @@ import kotlin.io.path.createTempDirectory
 class NszRoundTripTest {
 
     private lateinit var tempDir: File
+    private val baselineProvider = Cipher.getInstance("AES/CTR/NoPadding").provider
 
     @Before
     fun setup() {
@@ -35,6 +36,34 @@ class NszRoundTripTest {
     @After
     fun tearDown() {
         tempDir.deleteRecursively()
+    }
+
+    @Test
+    fun `solid NSZ with short unaligned CTR sections survives buffering provider`() {
+        assertShortSectionsRoundTrip(null)
+    }
+
+    @Test
+    fun `block NSZ with short unaligned CTR sections survives buffering provider`() {
+        assertShortSectionsRoundTrip(14)
+    }
+
+    private fun assertShortSectionsRoundTrip(blockSizeExponent: Int?) {
+        val sections = listOf(
+            SectionSpec(NCA_HEADER, 1L, ByteArray(0x4003) { 0x5A }),
+            SectionSpec(NCA_HEADER + 0x4003, 3L, ByteArray(7) { (it + 1).toByte() }),
+            SectionSpec(NCA_HEADER + 0x400A, 4L, ByteArray(19) { (it * 3).toByte() }),
+            SectionSpec(NCA_HEADER + 0x401D, 1L, ByteArray(0x4000) { 0x33 })
+        )
+        val fixture = buildFixture(blockSizeExponent, sectionsOverride = sections)
+        BufferingCtrProvider.withProvider { provider ->
+            try {
+                val result = NszDecompressor.decompress(fixture.nszFile, null)
+                assertArrayEquals(fixture.expectedNsp, result.readBytes())
+            } finally {
+                assertTrue("NCZ writer must select buffering provider", provider.initializations > 0)
+            }
+        }
     }
 
     @Test
@@ -271,9 +300,10 @@ class NszRoundTripTest {
 
     private fun buildFixture(
         blockSizeExponent: Int?,
-        cryptoTypeOverride: Long? = null
+        cryptoTypeOverride: Long? = null,
+        sectionsOverride: List<SectionSpec>? = null
     ): Fixture {
-        val sections = listOf(
+        val sections = sectionsOverride ?: listOf(
             SectionSpec(
                 offset = NCA_HEADER,
                 cryptoType = 1L,
@@ -320,13 +350,15 @@ class NszRoundTripTest {
     private fun encryptCtr(offset: Long, plaintext: ByteArray): ByteArray {
         val iv = CRYPTO_COUNTER.copyOf()
         ByteBuffer.wrap(iv, 8, 8).order(ByteOrder.BIG_ENDIAN).putLong(offset / 16)
-        val cipher = Cipher.getInstance("AES/CTR/NoPadding")
+        val cipher = Cipher.getInstance("AES/CTR/NoPadding", baselineProvider)
         cipher.init(
             Cipher.ENCRYPT_MODE,
             SecretKeySpec(CRYPTO_KEY, "AES"),
             IvParameterSpec(iv)
         )
-        return cipher.doFinal(plaintext)
+        val prefixSize = (offset % 16).toInt()
+        return cipher.doFinal(ByteArray(prefixSize) + plaintext)
+            .copyOfRange(prefixSize, prefixSize + plaintext.size)
     }
 
     private fun buildSectionHeader(sections: List<SectionSpec>): ByteArray {

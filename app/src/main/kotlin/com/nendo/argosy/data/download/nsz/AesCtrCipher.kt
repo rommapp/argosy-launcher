@@ -23,32 +23,42 @@ class AesCtrCipher(
     initialOffset: Long
 ) {
     private val cipher: Cipher
+    private val keySpec: SecretKeySpec
+    private val nonce: ByteArray
+    private var position = initialOffset
 
     init {
         require(key.size == 16) { "AES-128-CTR requires 16-byte key" }
         require(counter.size == 16) { "CTR counter must be 16 bytes" }
 
-        val iv = counter.copyOf()
-        writeBlockIndexBigEndian(iv, initialOffset / 16)
-
-        cipher = Cipher.getInstance("AES/CTR/NoPadding").apply {
-            init(
-                Cipher.ENCRYPT_MODE,
-                SecretKeySpec(key, "AES"),
-                IvParameterSpec(iv)
-            )
-        }
-
-        val misalignment = (initialOffset % 16).toInt()
-        if (misalignment > 0) {
-            cipher.update(ByteArray(misalignment))
-        }
+        keySpec = SecretKeySpec(key, "AES")
+        nonce = counter.copyOf()
+        cipher = Cipher.getInstance("AES/CTR/NoPadding")
     }
 
-    fun process(data: ByteArray): ByteArray = cipher.update(data)
+    fun process(data: ByteArray): ByteArray = process(data, 0, data.size)
 
-    fun process(data: ByteArray, offset: Int, length: Int): ByteArray =
-        cipher.update(data, offset, length)
+    fun process(data: ByteArray, offset: Int, length: Int): ByteArray {
+        require(offset >= 0 && length >= 0 && offset <= data.size - length) {
+            "Invalid input slice"
+        }
+        if (length == 0) return ByteArray(0)
+
+        val iv = nonce.copyOf()
+        writeBlockIndexBigEndian(iv, position / 16)
+        cipher.init(Cipher.ENCRYPT_MODE, keySpec, IvParameterSpec(iv))
+
+        val prefixSize = (position % 16).toInt()
+        val output = if (prefixSize == 0) {
+            cipher.doFinal(data, offset, length)
+        } else {
+            val input = ByteArray(prefixSize + length)
+            data.copyInto(input, prefixSize, offset, offset + length)
+            cipher.doFinal(input).copyOfRange(prefixSize, input.size)
+        }
+        position += length
+        return output
+    }
 
     companion object {
         private const val NONCE_SIZE = 8

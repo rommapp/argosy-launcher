@@ -422,6 +422,12 @@
         <item quantity="other">अधिकतम %d</item>
     </plurals>
 
+    <string name="settings_home_screen_new_badge_title">नया बैज</string>
+    <string name="settings_home_screen_new_badge_subtitle">होम कार्ड पर नया बैज कहाँ दिखे, या इसे छिपाएँ</string>
+    <string name="settings_home_screen_new_badge_option_right">दाईं ओर</string>
+    <string name="settings_home_screen_new_badge_option_left">बाईं ओर</string>
+    <string name="settings_home_screen_new_badge_option_hidden">छिपा हुआ</string>
+
     <!-- ===== Saves section ===== -->
 
     <string name="settings_saves_section_sync">सिंक</string>

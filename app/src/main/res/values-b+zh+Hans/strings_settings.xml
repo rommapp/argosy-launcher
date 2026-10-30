@@ -414,6 +414,12 @@
         <item quantity="other">最多 %d 个</item>
     </plurals>
 
+    <string name="settings_home_screen_new_badge_title">NEW 徽章</string>
+    <string name="settings_home_screen_new_badge_subtitle">主页卡片上 NEW 徽章的位置，或将其隐藏</string>
+    <string name="settings_home_screen_new_badge_option_right">右侧</string>
+    <string name="settings_home_screen_new_badge_option_left">左侧</string>
+    <string name="settings_home_screen_new_badge_option_hidden">隐藏</string>
+
     <!-- ===== Saves section ===== -->
 
     <string name="settings_saves_section_sync">同步</string>

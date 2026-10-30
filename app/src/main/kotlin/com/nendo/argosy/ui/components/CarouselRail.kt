@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import com.nendo.argosy.data.preferences.NewBadgePlacement
 import com.nendo.argosy.ui.common.coverSizeWithin
 import com.nendo.argosy.ui.common.rememberGameArtAspectRatio
 import com.nendo.argosy.ui.screens.home.GameDownloadIndicator
@@ -323,7 +324,8 @@ fun CarouselRail(
     overrides: CarouselOverrides = CarouselOverrides(),
     showFocusVisuals: Boolean = true,
     showPlatformBadge: Boolean = true,
-    showNewBadge: Boolean = true,
+    newBadgePlacement: NewBadgePlacement = NewBadgePlacement.RIGHT,
+    showDownloadedIndicator: Boolean = true,
     useBoxArt: Boolean = false,
     viewAllStyle: ViewAllCardStyle = ViewAllCardStyle.OUTLINE_GRID,
     downloadIndicatorFor: (CarouselItem) -> GameDownloadIndicator = { item ->
@@ -417,7 +419,8 @@ fun CarouselRail(
                         nativeAspectRatio = boxArtStyle.nativeAspectRatio,
                         fallbackAspectRatio = boxArtStyle.aspectRatio,
                         showPlatformBadge = showPlatformBadge,
-                        showNewBadge = showNewBadge,
+                        newBadgePlacement = newBadgePlacement,
+                        showDownloadedIndicator = showDownloadedIndicator,
                         useBoxArt = useBoxArt,
                         onCoverLoadFailed = onCoverLoadFailed,
                         onCoverLoaded = onCoverLoaded,
@@ -531,7 +534,8 @@ private fun CarouselGameCard(
     nativeAspectRatio: Boolean,
     fallbackAspectRatio: Float,
     showPlatformBadge: Boolean,
-    showNewBadge: Boolean,
+    newBadgePlacement: NewBadgePlacement,
+    showDownloadedIndicator: Boolean,
     useBoxArt: Boolean,
     onCoverLoadFailed: ((Long, String) -> Unit)?,
     onCoverLoaded: ((Long, Bitmap) -> Unit)?,
@@ -563,6 +567,8 @@ private fun CarouselGameCard(
         scalePivotY = metrics.scalePivotY,
         downloadIndicator = downloadIndicator,
         showPlatformBadge = showPlatformBadge,
+        newBadgePlacement = newBadgePlacement,
+        showDownloadedIndicator = showDownloadedIndicator,
         useBoxArt = useBoxArt,
         coverPathOverride = item.coverPathOverride,
         onCoverLoadFailed = onCoverLoadFailed,

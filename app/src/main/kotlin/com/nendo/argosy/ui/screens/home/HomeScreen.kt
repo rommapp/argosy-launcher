@@ -905,6 +905,7 @@ fun HomeScreen(
                                 onCoverLoaded = viewModel::extractGradientForGame,
                                 onPosterLoaded = viewModel::extractGradientForMedia,
                                 useBoxArt = uiState.boxArt3d,
+                                showDownloadedIndicator = !uiState.installedOnlyHome,
                                 modifier = Modifier.fillMaxSize()
                             )
                         }
@@ -943,6 +944,7 @@ fun HomeScreen(
                                 config = uiState.autoGridConfig,
                                 showFocusVisuals = !uiState.appBarFocused,
                                 useBoxArt = uiState.boxArt3d,
+                                showDownloadedIndicator = !uiState.installedOnlyHome,
                                 gridState = gridState,
                                 entryAnimationKey = (uiState.currentPlatform?.id ?: uiState.currentRow)
                                     .takeIf { uiState.autoGridConfig.showAllGames },
@@ -1002,6 +1004,8 @@ fun HomeScreen(
                                     uiState.currentRow !is HomeRow.Platform &&
                                     uiState.currentRow != HomeRow.Steam && uiState.currentRow != HomeRow.Android,
                                 useBoxArt = uiState.boxArt3d,
+                                newBadgePlacement = uiState.newBadgePlacement,
+                                showDownloadedIndicator = !uiState.installedOnlyHome,
                                 onCoverLoadFailed = viewModel::repairCoverImage,
                                 onCoverLoaded = viewModel::extractGradientForGame,
                                 onPosterLoaded = viewModel::extractGradientForMedia,

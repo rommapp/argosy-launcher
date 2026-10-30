@@ -437,6 +437,12 @@
         <item quantity="other">До %d</item>
     </plurals>
 
+    <string name="settings_home_screen_new_badge_title">Значок NEW</string>
+    <string name="settings_home_screen_new_badge_subtitle">Расположение значка NEW на карточках главного экрана или скрыть его</string>
+    <string name="settings_home_screen_new_badge_option_right">Справа</string>
+    <string name="settings_home_screen_new_badge_option_left">Слева</string>
+    <string name="settings_home_screen_new_badge_option_hidden">Скрыт</string>
+
     <!-- ===== Saves section ===== -->
 
     <string name="settings_saves_section_sync">СИНХРОНИЗАЦИЯ</string>

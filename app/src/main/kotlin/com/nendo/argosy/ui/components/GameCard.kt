@@ -84,6 +84,7 @@ import android.graphics.drawable.BitmapDrawable
 import coil.compose.AsyncImage
 import com.nendo.argosy.data.preferences.BoxArtBorderStyle
 import com.nendo.argosy.data.preferences.BoxArtInnerEffect
+import com.nendo.argosy.data.preferences.NewBadgePlacement
 import com.nendo.argosy.data.preferences.SystemIconPosition
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.screens.home.GameDownloadIndicator
@@ -104,6 +105,7 @@ fun GameCard(
     downloadIndicator: GameDownloadIndicator = GameDownloadIndicator.NONE,
     showPlatformBadge: Boolean = true,
     showStatusOverlays: Boolean = true,
+    showDownloadedIndicator: Boolean = true,
     coverPathOverride: String? = null,
     onCoverLoadFailed: ((gameId: Long, failedPath: String) -> Unit)? = null,
     onCoverLoaded: ((gameId: Long, bitmap: Bitmap) -> Unit)? = null,
@@ -350,7 +352,7 @@ fun GameCard(
                     if (showStatusOverlays) {
                         StatusIndicators(
                             isFavorite = game.isFavorite,
-                            isDownloaded = game.isDownloaded
+                            isDownloaded = game.isDownloaded && showDownloadedIndicator
                         )
                     }
                 }
@@ -394,7 +396,7 @@ fun GameCard(
                  boxArtStyle.systemIconPosition == SystemIconPosition.BOTTOM_RIGHT)
             StatusIndicators(
                 isFavorite = game.isFavorite,
-                isDownloaded = game.isDownloaded,
+                isDownloaded = game.isDownloaded && showDownloadedIndicator,
                 tabAtBottom = tabAtBottom
             )
         }
@@ -594,9 +596,12 @@ fun GameCardWithNewBadge(
     scaleOverride: Float? = null,
     alphaOverride: Float? = null,
     useBoxArt: Boolean = false,
+    newBadgePlacement: NewBadgePlacement = NewBadgePlacement.RIGHT,
+    showDownloadedIndicator: Boolean = true,
     interactionModifier: Modifier = Modifier
 ) {
-    val showNewBadge = game.isNew && !downloadIndicator.isActive
+    val showNewBadge = game.isNew && !downloadIndicator.isActive &&
+        newBadgePlacement != NewBadgePlacement.HIDDEN
     val badgeWidthDp = ComponentDefaults.Carousel.newBadgeWidthDp.dp
     val badgeHeightDp = ComponentDefaults.Carousel.newBadgeHeightDp.dp
 
@@ -623,6 +628,7 @@ fun GameCardWithNewBadge(
                 scalePivotY = scalePivotY,
                 downloadIndicator = downloadIndicator,
                 showPlatformBadge = showPlatformBadge,
+                showDownloadedIndicator = showDownloadedIndicator,
                 useBoxArt = useBoxArt,
                 coverPathOverride = coverPathOverride,
                 onCoverLoadFailed = onCoverLoadFailed,
@@ -670,7 +676,11 @@ fun GameCardWithNewBadge(
         layout(cardPlaceable.width, layoutHeight) {
             cardPlaceable.placeRelative(0, topOverflow)
             badgePlaceable?.placeRelative(
-                x = cardPlaceable.width - badgePlaceable.width,
+                x = if (newBadgePlacement == NewBadgePlacement.LEFT) {
+                    0
+                } else {
+                    cardPlaceable.width - badgePlaceable.width
+                },
                 y = topOverflow - (badgePlaceable.height / 2)
             )
         }

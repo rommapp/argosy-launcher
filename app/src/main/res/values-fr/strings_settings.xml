@@ -430,6 +430,12 @@
         <item quantity="other">Jusqu\'à %d</item>
     </plurals>
 
+    <string name="settings_home_screen_new_badge_title">Badge NOUVEAU</string>
+    <string name="settings_home_screen_new_badge_subtitle">Emplacement du badge NOUVEAU sur les cartes d\'accueil, ou le masquer</string>
+    <string name="settings_home_screen_new_badge_option_right">Droite</string>
+    <string name="settings_home_screen_new_badge_option_left">Gauche</string>
+    <string name="settings_home_screen_new_badge_option_hidden">Masqué</string>
+
     <!-- ===== Section Sauvegardes ===== -->
 
     <string name="settings_saves_section_sync">SYNCHRO</string>

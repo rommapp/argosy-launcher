@@ -110,6 +110,7 @@ class JellyfinDeviceProfileBuilder @Inject constructor() {
         val videoCodecs = decoders.videoCodecs.toList()
         val audioCodecs = decoders.audioCodecs.toList()
         val maxBitrateBps = maxStreamingBitrateKbps?.let { it * KBPS_TO_BPS }
+            ?: UNCAPPED_STREAMING_BITRATE_BPS
 
         return JellyfinDeviceProfile(
             name = "Argosy",
@@ -350,5 +351,10 @@ class JellyfinDeviceProfileBuilder @Inject constructor() {
          * output device actually is. Direct play is not gated by this value at all.
          */
         const val DEFAULT_MAX_AUDIO_CHANNELS = 6
+
+        /**
+         * Streaming ceiling, in bits per second, declared for a tier that sets none.
+         */
+        const val UNCAPPED_STREAMING_BITRATE_BPS = 120_000_000
     }
 }

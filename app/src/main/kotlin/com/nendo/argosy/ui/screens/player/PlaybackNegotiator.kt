@@ -112,7 +112,7 @@ class PlaybackNegotiator @Inject constructor(
 
         val request = JellyfinPlaybackInfoRequest(
             userId = userId,
-            maxStreamingBitrate = ceilings.maxBitrateKbps?.let { it * KBPS_TO_BPS },
+            maxStreamingBitrate = profile.maxStreamingBitrate,
             startTimeTicks = startPositionMs * TICKS_PER_MILLISECOND,
             audioStreamIndex = audioStreamIndex,
             subtitleStreamIndex = subtitleStreamIndex,

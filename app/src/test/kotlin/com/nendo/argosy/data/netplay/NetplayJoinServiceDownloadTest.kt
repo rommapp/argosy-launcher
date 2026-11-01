@@ -7,7 +7,9 @@ import com.nendo.argosy.data.download.DownloadQueueState
 import com.nendo.argosy.data.download.DownloadState
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.entity.GameEntity
+import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.domain.usecase.game.LaunchGameUseCase
+import io.mockk.Called
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.confirmVerified
@@ -38,7 +40,10 @@ class NetplayJoinServiceDownloadTest {
         platformSlug = "snes",
         title = "Synthetic ROM",
         sortTitle = "synthetic rom",
-        rommId = 20L
+        localPath = null,
+        rommId = 20L,
+        igdbId = null,
+        source = GameSource.ROMM_REMOTE
     )
 
     @Test

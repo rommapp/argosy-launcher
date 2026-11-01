@@ -230,16 +230,46 @@ class DownloadManagerTransferLifecycleTest {
         assertEquals(if (offset > 0) "bytes=$offset-" else null, request.getHeader("Range"))
     }
 
-    @Test fun `canonical PICO8 platform permits plain PNG cartridge through manager`() = runBlocking {
-        val image = java.awt.image.BufferedImage(160, 205, java.awt.image.BufferedImage.TYPE_INT_ARGB)
+    private fun syntheticPng(): ByteArray {
+        val output = ByteArrayOutputStream()
+        val data = java.io.DataOutputStream(output)
+        data.write(byteArrayOf(0x89.toByte(), 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a))
+        fun chunk(type: String, payload: ByteArray) {
+            val typeBytes = type.toByteArray(Charsets.US_ASCII)
+            val crc = java.util.zip.CRC32().apply {
+                update(typeBytes)
+                update(payload)
+            }
+            data.writeInt(payload.size)
+            data.write(typeBytes)
+            data.write(payload)
+            data.writeInt(crc.value.toInt())
+        }
+        val header = ByteArrayOutputStream().apply {
+            java.io.DataOutputStream(this).apply {
+                writeInt(160)
+                writeInt(205)
+                write(byteArrayOf(8, 6, 0, 0, 0))
+            }
+        }.toByteArray()
+        chunk("IHDR", header)
         val random = java.util.Random(42)
-        for (y in 0 until image.height) {
-            for (x in 0 until image.width) image.setRGB(x, y, random.nextInt())
-        }
-        val png = ByteArrayOutputStream().use { output ->
-            assertTrue(javax.imageio.ImageIO.write(image, "png", output))
-            output.toByteArray()
-        }
+        val compressed = ByteArrayOutputStream().apply {
+            java.util.zip.DeflaterOutputStream(this).use { deflater ->
+                repeat(205) {
+                    deflater.write(0)
+                    val row = ByteArray(160 * 4).also(random::nextBytes)
+                    deflater.write(row)
+                }
+            }
+        }.toByteArray()
+        chunk("IDAT", compressed)
+        chunk("IEND", byteArrayOf())
+        return output.toByteArray()
+    }
+
+    @Test fun `canonical PICO8 platform permits plain PNG cartridge through manager`() = runBlocking {
+        val png = syntheticPng()
         assertTrue(png.size >= 1024)
         part = File(destination, "cart.PNG.tmp")
         rows[1] = rows.getValue(1).copy(

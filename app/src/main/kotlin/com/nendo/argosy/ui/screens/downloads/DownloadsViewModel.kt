@@ -37,6 +37,8 @@ data class DownloadGroup(val items: List<DownloadProgress>) {
         if (!isGroup) return primary
         val state = when {
             items.any { it.state == DownloadState.DOWNLOADING } -> DownloadState.DOWNLOADING
+            items.any { it.state == DownloadState.RETRYING } -> DownloadState.RETRYING
+            items.any { it.state == DownloadState.WAITING_FOR_NETWORK } -> DownloadState.WAITING_FOR_NETWORK
             items.any { it.state == DownloadState.EXTRACTING } -> DownloadState.EXTRACTING
             items.any { it.state == DownloadState.MOVING } -> DownloadState.MOVING
             items.any { it.state == DownloadState.QUEUED } -> DownloadState.QUEUED
@@ -177,7 +179,8 @@ data class DownloadsUiState(
     @get:StringRes
     val toggleLabelRes: Int
         get() = when (focusedItem?.state) {
-            DownloadState.DOWNLOADING -> R.string.downloads_action_pause
+            DownloadState.DOWNLOADING, DownloadState.RETRYING,
+            DownloadState.WAITING_FOR_NETWORK -> R.string.downloads_action_pause
             DownloadState.PAUSED, DownloadState.WAITING_FOR_STORAGE -> R.string.downloads_action_resume
             DownloadState.QUEUED -> R.string.downloads_action_pause
             else -> R.string.downloads_action_toggle
@@ -352,7 +355,8 @@ class DownloadsViewModel @Inject constructor(
                 continue
             }
             when (item.state) {
-                DownloadState.DOWNLOADING -> downloadManager.pauseDownload(item.rommId)
+                DownloadState.DOWNLOADING, DownloadState.RETRYING,
+                DownloadState.WAITING_FOR_NETWORK -> downloadManager.pauseDownload(item.rommId)
                 DownloadState.PAUSED, DownloadState.WAITING_FOR_STORAGE ->
                     downloadManager.resumeDownload(item.gameId)
                 DownloadState.FAILED -> downloadManager.retryDownload(item.id)
@@ -506,6 +510,8 @@ private const val MEDIA_SLUG = "media"
 
 private val TOGGLEABLE_STATES = setOf(
     DownloadState.DOWNLOADING,
+    DownloadState.RETRYING,
+    DownloadState.WAITING_FOR_NETWORK,
     DownloadState.QUEUED,
     DownloadState.PAUSED,
     DownloadState.WAITING_FOR_STORAGE

@@ -1,5 +1,6 @@
 package com.nendo.argosy.data.local.entity
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -42,5 +43,13 @@ data class DownloadQueueEntity(
      * every account, so this is attribution for removal and pending-work accounting, not a
      * visibility filter on the queue.
      */
-    val ownerUserId: Long? = null
+    val ownerUserId: Long? = null,
+    val resumeValidator: String? = null,
+    val responseTotalBytes: Long? = null,
+    val validatedBytes: Long? = null,
+    @ColumnInfo(defaultValue = "0")
+    val retryAttempt: Int = 0,
+    val nextRetryAt: Long? = null,
+    val requestKey: String? = null,
+    val representationChecksum: String? = null
 )

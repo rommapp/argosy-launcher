@@ -75,7 +75,7 @@ class DownloadNotificationObserver @Inject constructor(
             DownloadState.QUEUED -> return
             DownloadState.WAITING_FOR_STORAGE ->
                 Triple(R.string.ui_download_notice_no_space, NotificationType.WARNING, true)
-            DownloadState.DOWNLOADING -> return
+            DownloadState.DOWNLOADING, DownloadState.RETRYING, DownloadState.WAITING_FOR_NETWORK -> return
             DownloadState.EXTRACTING ->
                 Triple(R.string.ui_download_notice_extracting, NotificationType.INFO, false)
             DownloadState.MOVING ->

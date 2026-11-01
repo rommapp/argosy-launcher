@@ -34,6 +34,8 @@
     <string name="gamedetail_menu_play_button_download">Herunterladen</string>
     <string name="gamedetail_menu_play_button_progress_percent">%1$d%%</string>
     <string name="gamedetail_menu_play_button_waiting_for_server">Warten auf Server…</string>
+    <string name="gamedetail_menu_play_button_retrying">Erneuter Versuch…</string>
+    <string name="gamedetail_menu_play_button_waiting_for_network">Warten auf Netzwerk…</string>
 
     <string name="gamedetail_menu_saves_syncing">Wird synchronisiert...</string>
     <string name="gamedetail_menu_saves_default_channel">Autospeicherung</string>

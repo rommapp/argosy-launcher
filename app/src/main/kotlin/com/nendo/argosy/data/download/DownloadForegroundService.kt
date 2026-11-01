@@ -16,8 +16,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import com.nendo.argosy.util.SafeCoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -38,13 +36,18 @@ class DownloadForegroundService : Service() {
 
     private val serviceScope = SafeCoroutineScope(Dispatchers.Main, "DownloadForegroundService")
     private var wakeLock: PowerManager.WakeLock? = null
+    private val downloadWakeLock = DownloadWakeLock(
+        scope = serviceScope,
+        renewMs = WAKELOCK_RENEW_MS,
+        acquire = ::acquireWakeLock,
+        release = ::releaseWakeLock
+    )
     private var lastRendered: Triple<String, Int, Int>? = null
 
     private val batchIds = mutableSetOf<Long>()
 
     override fun onCreate() {
         super.onCreate()
-        acquireWakeLock()
         startForegroundWithNotification(getString(R.string.sync_download_service_preparing), 0, 0)
         observeDownloadState()
     }
@@ -54,22 +57,16 @@ class DownloadForegroundService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
-        releaseWakeLock()
+        downloadWakeLock.stop()
         serviceScope.cancel()
         super.onDestroy()
     }
 
     private fun acquireWakeLock() {
-        val powerManager = getSystemService(PowerManager::class.java)
-        val lock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKELOCK_TAG)
-        wakeLock = lock
-        serviceScope.launch {
-            while (true) {
-                if (!lock.isHeld) lock.acquire(WAKELOCK_LEASE_MS)
-                delay(WAKELOCK_RENEW_MS)
-                if (lock.isHeld) lock.release()
-            }
-        }
+        val lock = wakeLock ?: getSystemService(PowerManager::class.java)
+            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKELOCK_TAG)
+            .also { wakeLock = it }
+        if (!lock.isHeld) lock.acquire(WAKELOCK_LEASE_MS)
     }
 
     private fun releaseWakeLock() {
@@ -91,9 +88,13 @@ class DownloadForegroundService : Service() {
                 .collect { snapshot ->
                     val rommState = snapshot.rommState
                     val rommActive = rommState.activeDownloads
-                    val rommQueued = rommState.queue.filter { it.state == DownloadState.QUEUED }
+                    val rommQueued = rommState.queue.filter {
+                        it.state == DownloadState.QUEUED || it.state == DownloadState.RETRYING ||
+                            it.state == DownloadState.WAITING_FOR_NETWORK
+                    }
                     val mediaBusy = snapshot.mediaState is MediaDownloadState.Preparing ||
                         snapshot.mediaState is MediaDownloadState.Downloading
+                    downloadWakeLock.update(rommActive.map { it.state }, mediaBusy)
 
                     if (rommActive.isEmpty() && rommQueued.isEmpty() && !mediaBusy) {
                         stopSelf()
@@ -113,6 +114,12 @@ class DownloadForegroundService : Service() {
                     val currentDownload = rommActive.firstOrNull()
                     if (currentDownload != null) {
                         val name = when (currentDownload.state) {
+                            DownloadState.RETRYING -> getString(
+                                R.string.sync_download_service_retrying, currentDownload.displayTitle
+                            )
+                            DownloadState.WAITING_FOR_NETWORK -> getString(
+                                R.string.sync_download_service_waiting_for_network, currentDownload.displayTitle
+                            )
                             DownloadState.EXTRACTING -> getString(
                                 R.string.sync_download_service_extracting, currentDownload.displayTitle
                             )

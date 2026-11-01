@@ -460,7 +460,7 @@ private fun GameDetailContent(
     val menuDisplayState = GameDetailMenuState(
         focusedIndex = uiState.menuFocusIndex,
         downloadStatus = uiState.downloadStatus,
-        isAwaitingServer = uiState.isAwaitingServer,
+        downloadWaitStatus = uiState.downloadWaitStatus,
         isFavorite = game.isFavorite,
         saveStatus = uiState.saveStatusInfo,
         isSyncingSaves = uiState.isSyncingSaves,

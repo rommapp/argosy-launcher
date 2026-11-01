@@ -323,6 +323,7 @@ dependencies {
 
     // Testing
     testImplementation(libs.junit)
+    testImplementation(libs.okhttp.mockwebserver)
     // The zstd aar ships Android natives only; unit tests need the JVM jar.
     testImplementation(libs.zstd.jni)
     testImplementation(libs.mockk)

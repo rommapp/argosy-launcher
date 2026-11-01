@@ -90,7 +90,7 @@ class DownloadThermalManager @Inject constructor(
     private fun observeDownloads() {
         scope.launch {
             kotlinx.coroutines.flow.combine(
-                downloadManager.state.map { it.activeDownloads.isNotEmpty() },
+                downloadManager.state.map(::hasActiveRomDownloads),
                 mediaDownloadManager.downloadState.map { state ->
                     state is MediaDownloadState.Downloading || state is MediaDownloadState.Preparing
                 }
@@ -255,8 +255,13 @@ class DownloadThermalManager @Inject constructor(
         return ThermalStatus(worstState, cpuTemp, batteryTemp, multiplier)
     }
 
+    private fun hasActiveRomDownloads(state: DownloadQueueState): Boolean =
+        state.activeDownloads.any {
+            it.state != DownloadState.RETRYING && it.state != DownloadState.WAITING_FOR_NETWORK
+        }
+
     private fun hasActiveDownloads(): Boolean {
-        if (downloadManager.state.value.activeDownloads.isNotEmpty()) return true
+        if (hasActiveRomDownloads(downloadManager.state.value)) return true
         return mediaDownloadManager.hasActiveMediaDownload()
     }
 

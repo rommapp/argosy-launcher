@@ -1050,6 +1050,8 @@
     <string name="gamedetail_action_buttons_no_space">ESPACE INSUFFISANT</string>
     <string name="gamedetail_action_buttons_downloading_percent">%1$d%%</string>
     <string name="gamedetail_action_buttons_waiting_for_server">En attente du serveur…</string>
+    <string name="gamedetail_action_buttons_retrying">Nouvelle tentative…</string>
+    <string name="gamedetail_action_buttons_waiting_for_network">En attente du réseau…</string>
     <string name="gamedetail_action_buttons_extracting">EXTRACTION...</string>
     <string name="gamedetail_action_buttons_resume_percent">REPRENDRE %1$d%%</string>
     <string name="gamedetail_action_buttons_retry">RÉESSAYER</string>

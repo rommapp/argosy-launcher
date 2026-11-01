@@ -346,7 +346,7 @@ class GameDetailViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(
                         downloadStatus = dlState.downloadStatus,
-                        isAwaitingServer = dlState.isAwaitingServer,
+                        downloadWaitStatus = dlState.downloadWaitStatus,
                         downloadSizeBytes = dlState.downloadSizeBytes,
                         isRefreshingGameData = dlState.isRefreshingGameData,
                         showExtractionFailedPrompt = dlState.showExtractionFailedPrompt,

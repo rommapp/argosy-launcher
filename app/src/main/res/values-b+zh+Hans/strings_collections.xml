@@ -171,6 +171,10 @@
     <string name="downloads_file_state_queued">排队中</string>
     <string name="downloads_file_state_percent">%1$d%%</string>
     <string name="downloads_file_state_waiting_for_server">等待服务器&#8230;</string>
+    <string name="downloads_file_state_retrying">正在重试&#8230;</string>
+    <string name="downloads_file_state_waiting_for_network">正在等待网络&#8230;</string>
+    <string name="downloads_item_status_retrying">正在重试&#8230;</string>
+    <string name="downloads_item_status_waiting_for_network">正在等待网络&#8230;</string>
     <string name="downloads_item_status_moving">正在移动到ROM存储&#8230;</string>
     <string name="downloads_item_status_extracting_fallback">正在解压&#8230;</string>
     <string name="downloads_item_status_waiting_for_server">等待服务器&#8230;</string>

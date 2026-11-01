@@ -64,7 +64,7 @@ class DownloadManagerPlatformFolderTest {
         coEvery { gameDao.getById(PACKAGE_GAME) } returns game(PACKAGE_GAME, PACKAGES_ID)
         coEvery { gameDao.getById(DISC_GAME) } returns game(DISC_GAME, DISCS_ID)
         coEvery { downloadQueueDao.getByGameId(any()) } returns null
-        coEvery { downloadQueueDao.getPendingDownloads() } returns emptyList()
+        coEvery { downloadQueueDao.getRecoverableDownloads() } returns emptyList()
         coEvery { downloadQueueDao.insert(capture(inserted)) } returns 1L
 
         val romMRepository = mockk<RomMRepository>(relaxed = true)

@@ -32,6 +32,8 @@
     <string name="gamedetail_menu_play_button_download">Скачать</string>
     <string name="gamedetail_menu_play_button_progress_percent">%1$d%%</string>
     <string name="gamedetail_menu_play_button_waiting_for_server">Ожидание сервера…</string>
+    <string name="gamedetail_menu_play_button_retrying">Повторная попытка…</string>
+    <string name="gamedetail_menu_play_button_waiting_for_network">Ожидание сети…</string>
 
     <string name="gamedetail_menu_saves_syncing">Синхронизация...</string>
     <string name="gamedetail_menu_saves_default_channel">Автосохранение</string>

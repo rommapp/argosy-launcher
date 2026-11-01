@@ -295,7 +295,7 @@ data class GameDetailUiState(
     val isRefreshingGameData: Boolean = false,
     val downloadStatus: GameDownloadStatus = GameDownloadStatus.NOT_DOWNLOADED,
     val hasManageableFiles: Boolean = false,
-    val isAwaitingServer: Boolean = false,
+    val downloadWaitStatus: DownloadWaitStatus? = null,
     val downloadSizeBytes: Long? = null,
     val selectedCoreId: String? = null,
     val siblingGameIds: List<Long> = emptyList(),

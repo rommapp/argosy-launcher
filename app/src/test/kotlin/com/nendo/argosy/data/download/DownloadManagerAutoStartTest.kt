@@ -310,6 +310,16 @@ class DownloadManagerAutoStartTest {
         coVerify(exactly = 1) { downloadQueueDao.insert(any()) }
     }
 
+    @Test
+    fun `enqueue existing paused request accepts without implicitly starting it`() = runTest {
+        val manager = manager(autoStart = false)
+        assertEquals(DownloadEnqueueResult.Accepted(INSERTED_ID), manager.enqueueRom())
+        assertEquals(DownloadEnqueueResult.Accepted(INSERTED_ID), manager.enqueueRom())
+        assertEquals(DownloadState.PAUSED, manager.state.value.queue.single().state)
+        coVerify(exactly = 1) { downloadQueueDao.insert(any()) }
+        coVerify(exactly = 0) { downloadQueueDao.updateState(any(), any(), any()) }
+    }
+
     private companion object {
         const val GAME_ID = 123L
         const val ROMM_ID = 456L

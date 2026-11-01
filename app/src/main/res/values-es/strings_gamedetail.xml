@@ -585,4 +585,5 @@
     <string name="gamedetail_per_game_gpu_driver_reason_core_unknown">este núcleo</string>
     <string name="gamedetail_per_game_gpu_driver_reason_backend">Se aplica cuando el motor de renderizado es Vulkan</string>
     <string name="gamedetail_per_game_gpu_driver_reason_device">Los controladores personalizados requieren una GPU Adreno</string>
+    <string name="gamedetail_notice_variant_request_conflict">Una descarga sin terminar entra en conflicto con esta selección. Cancélala o quítala de Descargas antes de cambiar la selección.</string>
 </resources>

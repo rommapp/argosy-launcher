@@ -1,6 +1,7 @@
 package com.nendo.argosy.data.download
 
 import com.nendo.argosy.data.download.transfer.DownloadRetryPolicy
+import com.nendo.argosy.data.download.transfer.ExpectedTransferContent
 import com.nendo.argosy.data.download.transfer.TransferCheckpoint
 import com.nendo.argosy.data.download.transfer.TransferResult
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -106,6 +107,7 @@ class DownloadTransferRunnerTest {
     private suspend fun DownloadTransferRunner.runFixture(
         attempt: Int = 0,
         retryAt: Long? = null,
+        expectedContent: ExpectedTransferContent = ExpectedTransferContent.ROM,
         retry: suspend (Int, Long?) -> Unit = { _, _ -> },
         state: suspend (DownloadState) -> Unit = {},
         newCall: (String?, String?) -> retrofit2.Call<okhttp3.ResponseBody> = { _, _ ->
@@ -115,8 +117,26 @@ class DownloadTransferRunnerTest {
         storage.newFile(), TransferCheckpoint(), attempt, retryAt,
         newCall = newCall,
         persist = {}, persistRetry = retry, onState = state,
-        onProgress = { _, _ -> }, beforeRead = {}, afterWrite = {}
+        onProgress = { _, _ -> }, beforeRead = {}, afterWrite = {}, expectedContent = expectedContent
     )
+
+    @Test fun `expected content survives retry and continue attempts`() = runTest {
+        val seen = mutableListOf<ExpectedTransferContent>()
+        val runner = DownloadTransferRunner(
+            DownloadConnectivity.AlwaysAvailable, DownloadRetryPolicy { 0.5 },
+            nowMillis = { testScheduler.currentTime },
+            transfer = { _, _, _, _, _, _, _, _, _, expected ->
+                seen += expected
+                when (seen.size) {
+                    1 -> TransferResult.Retryable("synthetic interruption")
+                    2 -> TransferResult.Continue
+                    else -> TransferResult.Verified(2048)
+                }
+            }
+        )
+        assertEquals(TransferResult.Verified(2048), runner.runFixture(expectedContent = ExpectedTransferContent.PICO8_PNG))
+        assertEquals(List(3) { ExpectedTransferContent.PICO8_PNG }, seen)
+    }
 
     private fun unexecutedCall(): retrofit2.Call<okhttp3.ResponseBody> = retrofit2.Retrofit.Builder()
         .baseUrl("http://127.0.0.1/").build()
@@ -129,7 +149,7 @@ class DownloadTransferRunnerTest {
         val permanent = TransferResult.Permanent("unchanged")
         val runner = DownloadTransferRunner(
             DownloadConnectivity { flowOf(++subscriptions == 1) },
-            transfer = { _, _, call, _, _, _, _, _, _ ->
+            transfer = { _, _, call, _, _, _, _, _, _, _ ->
                 org.junit.Assert.assertSame(original, call(null, null))
                 assertTrue(original.isCanceled)
                 permanent
@@ -143,7 +163,7 @@ class DownloadTransferRunnerTest {
         val permanent = TransferResult.Permanent("unchanged")
         val runner = DownloadTransferRunner(
             DownloadConnectivity { flowOf(true) },
-            transfer = { _, _, call, _, _, _, _, _, _ ->
+            transfer = { _, _, call, _, _, _, _, _, _, _ ->
                 call(null, null)
                 delay(10000)
                 assertFalse(original.isCanceled)
@@ -160,7 +180,7 @@ class DownloadTransferRunnerTest {
         var attempts = 0
         val runner = DownloadTransferRunner(
             DownloadConnectivity { online },
-            transfer = { _, _, call, _, _, _, _, _, _ ->
+            transfer = { _, _, call, _, _, _, _, _, _, _ ->
                 attempts++
                 assertEquals(1, online.subscriptionCount.value)
                 call(null, null)
@@ -206,7 +226,7 @@ class DownloadTransferRunnerTest {
         val runner = DownloadTransferRunner(
             DownloadConnectivity.AlwaysAvailable, DownloadRetryPolicy { 0.5 },
             nowMillis = { testScheduler.currentTime },
-            transfer = { _, _, _, _, _, _, _, _, _ -> calls++; TransferResult.Retryable("offline") }
+            transfer = { _, _, _, _, _, _, _, _, _, _ -> calls++; TransferResult.Retryable("offline") }
         )
         val job = launch { runner.runFixture(state = { states += it }) }
         runCurrent()
@@ -223,7 +243,7 @@ class DownloadTransferRunnerTest {
         var calls = 0
         val runner = DownloadTransferRunner(
             DownloadConnectivity { online }, nowMillis = { testScheduler.currentTime },
-            transfer = { _, _, _, _, _, _, _, _, _ -> calls++; TransferResult.Verified(1024) }
+            transfer = { _, _, _, _, _, _, _, _, _, _ -> calls++; TransferResult.Verified(1024) }
         )
         val job = launch { runner.runFixture(retryAt = 10000) }
         runCurrent()
@@ -244,7 +264,7 @@ class DownloadTransferRunnerTest {
         val states = mutableListOf<DownloadState>()
         val runner = DownloadTransferRunner(
             DownloadConnectivity { online },
-            transfer = { _, _, _, _, _, _, _, _, _ -> calls++; TransferResult.Verified(1024) }
+            transfer = { _, _, _, _, _, _, _, _, _, _ -> calls++; TransferResult.Verified(1024) }
         )
         val job = launch { runner.runFixture(state = { states += it }) }
         runCurrent()
@@ -262,7 +282,7 @@ class DownloadTransferRunnerTest {
         val runner = DownloadTransferRunner(
             DownloadConnectivity.AlwaysAvailable, DownloadRetryPolicy { 0.5 },
             nowMillis = { testScheduler.currentTime },
-            transfer = { _, _, _, _, progress, _, _, _, _ ->
+            transfer = { _, _, _, _, progress, _, _, _, _, _ ->
                 calls++
                 progress(calls * 600000L, 3000000L)
                 if (calls < 3) TransferResult.Retryable("disconnect") else TransferResult.Verified(3000000)
@@ -278,7 +298,7 @@ class DownloadTransferRunnerTest {
         val runner = DownloadTransferRunner(
             DownloadConnectivity.AlwaysAvailable, DownloadRetryPolicy { 0.5 },
             nowMillis = { testScheduler.currentTime },
-            transfer = { _, _, _, _, _, _, _, _, _ ->
+            transfer = { _, _, _, _, _, _, _, _, _, _ ->
                 calls++
                 if (calls == 2) TransferResult.Retryable("disconnect") else TransferResult.RestartRequired
             }
@@ -333,7 +353,7 @@ class DownloadTransferRunnerTest {
         var writes = 0
         val runner = DownloadTransferRunner(
             DownloadConnectivity.AlwaysAvailable,
-            transfer = { _, _, _, _, progress, _, _, _, _ ->
+            transfer = { _, _, _, _, progress, _, _, _, _, _ ->
                 repeat(8) { progress((it + 1) * 1048576L, 8388608L) }
                 TransferResult.Verified(8388608L)
             }

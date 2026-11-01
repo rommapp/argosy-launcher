@@ -11,6 +11,7 @@ package com.nendo.argosy.data.download
  * everything else is a fixed condition the UI layer labels from a string resource.
  */
 sealed class DownloadFailureReason {
+    data object RequestConflict : DownloadFailureReason()
     data class InvalidContentType(val contentType: String) : DownloadFailureReason()
     data object FileTooSmall : DownloadFailureReason()
     data class ServerError(val message: String) : DownloadFailureReason()
@@ -49,6 +50,7 @@ sealed class DownloadFailureReason {
  */
 object DownloadFailureReasonCodec {
     private const val SEP = ":"
+    private const val TOKEN_REQUEST_CONFLICT = "REQUEST_CONFLICT"
 
     private const val TOKEN_INVALID_CONTENT_TYPE = "INVALID_CONTENT_TYPE"
     private const val TOKEN_FILE_TOO_SMALL = "FILE_TOO_SMALL"
@@ -66,6 +68,7 @@ object DownloadFailureReasonCodec {
     private const val TOKEN_EXTRACTION_FAILED = "EXTRACTION_FAILED"
 
     fun encode(reason: DownloadFailureReason): String = when (reason) {
+        DownloadFailureReason.RequestConflict -> TOKEN_REQUEST_CONFLICT
         is DownloadFailureReason.InvalidContentType ->
             "$TOKEN_INVALID_CONTENT_TYPE$SEP${reason.contentType}"
         DownloadFailureReason.FileTooSmall -> TOKEN_FILE_TOO_SMALL
@@ -94,6 +97,7 @@ object DownloadFailureReasonCodec {
         val token = raw.substringBefore(SEP)
         fun rest(limit: Int): List<String> = raw.split(SEP, limit = limit)
         return when (token) {
+            TOKEN_REQUEST_CONFLICT -> DownloadFailureReason.RequestConflict
             TOKEN_INVALID_CONTENT_TYPE -> DownloadFailureReason.InvalidContentType(rest(2).getOrElse(1) { "" })
             TOKEN_FILE_TOO_SMALL -> DownloadFailureReason.FileTooSmall
             TOKEN_SERVER_ERROR -> DownloadFailureReason.ServerError(rest(2).getOrElse(1) { "" })

@@ -231,6 +231,19 @@ class PushInstallUseCaseTest {
     }
 
     @Test
+    fun `a conflicting unfinished download fails instead of reporting queued`() = runTest {
+        coEvery { downloadGameUseCase(any(), any()) } returns
+            DownloadResult.Error(DownloadGameFailureReason.RequestConflict)
+
+        assertEquals(
+            PushInstallOutcome.Failed(
+                PushInstallFailure.DOWNLOAD_ERROR, "unfinished download conflicts with requested selection"
+            ),
+            useCase(ROM_ID, emptyList())
+        )
+    }
+
+    @Test
     fun `a download error fails with its detail`() = runTest {
         coEvery { downloadGameUseCase(any(), any()) } returns
             DownloadResult.Error(DownloadGameFailureReason.GameNotSynced)

@@ -53,4 +53,6 @@
     <string name="error_download_extraction_failed">解壓縮失敗</string>
 
     <string name="error_filepicker_already_downloaded">遊戲已下載</string>
+    <string name="error_download_request_conflict">未完成的下載與此選擇衝突。請先在下載清單中取消或移除該下載，再變更選擇。</string>
+    <string name="error_download_game_request_conflict">未完成的下載與此選擇衝突。請先在下載清單中取消或移除該下載，再變更選擇。</string>
 </resources>

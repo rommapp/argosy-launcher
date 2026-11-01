@@ -53,4 +53,6 @@
     <string name="error_download_extraction_failed">Extraktion fehlgeschlagen</string>
 
     <string name="error_filepicker_already_downloaded">Spiel bereits heruntergeladen</string>
+    <string name="error_download_request_conflict">Ein nicht abgeschlossener Download steht im Konflikt mit dieser Auswahl. Brich ihn unter Downloads ab oder entferne ihn dort, bevor du die Auswahl änderst.</string>
+    <string name="error_download_game_request_conflict">Ein nicht abgeschlossener Download steht im Konflikt mit dieser Auswahl. Brich ihn unter Downloads ab oder entferne ihn dort, bevor du die Auswahl änderst.</string>
 </resources>

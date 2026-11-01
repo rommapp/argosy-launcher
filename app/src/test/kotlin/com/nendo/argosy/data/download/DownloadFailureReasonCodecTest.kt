@@ -17,6 +17,7 @@ class DownloadFailureReasonCodecTest {
     @Test
     fun `every reason survives a round trip`() {
         val reasons = listOf(
+            DownloadFailureReason.RequestConflict,
             DownloadFailureReason.FileTooSmall,
             DownloadFailureReason.InvalidContentType("image/png"),
             DownloadFailureReason.ServerError("500 Internal Server Error"),
@@ -57,6 +58,11 @@ class DownloadFailureReasonCodecTest {
             DownloadFailureReason.LegacyRaw(legacy),
             DownloadFailureReasonCodec.decode(legacy)
         )
+    }
+
+    @Test
+    fun `request conflict has a stable token`() {
+        assertEquals("REQUEST_CONFLICT", DownloadFailureReasonCodec.encode(DownloadFailureReason.RequestConflict))
     }
 
     @Test

@@ -185,7 +185,8 @@ class DownloadDelegate @Inject constructor(
         onApplied: () -> Unit
     ) {
         scope.launch {
-            val (added, removed) = filePickerFlow.applyManagedSelection(gameId, rows, selected)
+            val (added, removed, issues) = filePickerFlow.applyManagedSelection(gameId, rows, selected)
+            issues.distinct().forEach { notificationManager.showError(it.toNotificationText()) }
             if (removed > 0) onApplied()
             val parts = buildList {
                 if (added > 0) {

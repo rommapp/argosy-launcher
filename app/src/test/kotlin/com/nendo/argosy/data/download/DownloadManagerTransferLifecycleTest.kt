@@ -3,6 +3,8 @@ package com.nendo.argosy.data.download
 import android.content.Context
 import com.nendo.argosy.data.local.dao.DownloadQueueDao
 import com.nendo.argosy.data.local.dao.GameDao
+import com.nendo.argosy.data.local.dao.GameDiscDao
+import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.local.entity.DownloadQueueEntity
 import com.nendo.argosy.data.platform.PlatformFolderResolver
 import com.nendo.argosy.data.preferences.UserPreferences
@@ -10,6 +12,7 @@ import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.ConnectionState
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.spyk
@@ -61,6 +64,9 @@ class DownloadManagerTransferLifecycleTest {
     private val dispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
     private val jobs = mutableListOf<kotlinx.coroutines.Job>()
     private val dao = mockk<DownloadQueueDao>(relaxed = true)
+    private val gameDao = mockk<GameDao>(relaxed = true)
+    private val gameDiscDao = mockk<GameDiscDao>(relaxed = true)
+    private val gameFileDao = mockk<GameFileDao>(relaxed = true)
     private val repository = mockk<RomMRepository>(relaxed = true)
     private lateinit var staging: RomStagingManager
     private lateinit var destination: File
@@ -155,7 +161,6 @@ class DownloadManagerTransferLifecycleTest {
         val folders = mockk<PlatformFolderResolver>()
         coEvery { folders.storageBase() } returns destination
         coEvery { folders.downloadDirForGame(any(), any()) } returns destination
-        val gameDao = mockk<GameDao>(relaxed = true)
         coEvery { gameDao.getById(any()) } returns null
         coEvery { gameDao.getByPath(any()) } returns null
         coEvery { gameDao.updateLocalPath(any(), any(), any(), any(), any()) } answers {
@@ -165,7 +170,7 @@ class DownloadManagerTransferLifecycleTest {
         val thermal = mockk<DownloadThermalManager>()
         every { thermal.thermalStatus } returns MutableStateFlow(ThermalStatus())
         return DownloadManager(
-            gameDao, mockk(relaxed = true), mockk(relaxed = true), dao, mockk(relaxed = true),
+            gameDao, gameDiscDao, gameFileDao, dao, mockk(relaxed = true),
             repository, preferences, mockk(relaxed = true), mockk(relaxed = true), dagger.Lazy { thermal },
             dagger.Lazy { mockk<MediaDownloadManager>(relaxed = true) }, mockk(relaxed = true),
             mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true),
@@ -187,6 +192,72 @@ class DownloadManagerTransferLifecycleTest {
         part.writeBytes(bytes.copyOf(offset))
         rows[1] = rows.getValue(1).copy(state = state.name, bytesDownloaded = 17,
             resumeValidator = "\"v1\"", responseTotalBytes = bytes.size.toLong())
+    }
+
+    @Test fun `ordinary ROM PNG error fails without promotion or linking`() = runBlocking {
+        rejectOrdinaryPng(0)
+    }
+
+    @Test fun `ordinary ROM PNG error preserves resumed prefix without promotion or linking`() = runBlocking {
+        rejectOrdinaryPng(8192)
+    }
+
+    private suspend fun rejectOrdinaryPng(offset: Int) {
+        part = File(destination, "game.nes.tmp")
+        rows[1] = rows.getValue(1).copy(
+            gameFileId = null, fileCategory = null, selectedFileIds = null,
+            fileName = "game.nes", tempFilePath = part.absolutePath
+        )
+        if (offset > 0) retained(offset)
+        val original = rows.getValue(1)
+        server.enqueue(full().setHeader("Content-Type", "image/png"))
+
+        manager().awaitState(DownloadState.FAILED)
+
+        assertEquals(DownloadState.FAILED.name, rows.getValue(1).state)
+        assertEquals(offset.toLong(), part.length())
+        if (offset > 0) assertArrayEquals(bytes.copyOf(offset), part.readBytes())
+        assertNull(rows.getValue(1).validatedBytes)
+        assertEquals(original.resumeValidator, rows.getValue(1).resumeValidator)
+        assertEquals(original.responseTotalBytes, rows.getValue(1).responseTotalBytes)
+        assertFalse(File(destination, "game.nes").exists())
+        assertNull(linkedPath)
+        coVerify(exactly = 0) { gameDao.updateLocalPath(any(), any(), any(), any(), any()) }
+        coVerify(exactly = 0) { gameFileDao.updateLocalPath(any(), any(), any()) }
+        coVerify(exactly = 0) { gameDiscDao.updateLocalPath(any(), any()) }
+        assertEquals(1, server.requestCount)
+        val request = server.takeRequest()
+        assertEquals(if (offset > 0) "bytes=$offset-" else null, request.getHeader("Range"))
+    }
+
+    @Test fun `canonical PICO8 platform permits plain PNG cartridge through manager`() = runBlocking {
+        val image = java.awt.image.BufferedImage(160, 205, java.awt.image.BufferedImage.TYPE_INT_ARGB)
+        val random = java.util.Random(42)
+        for (y in 0 until image.height) {
+            for (x in 0 until image.width) image.setRGB(x, y, random.nextInt())
+        }
+        val png = ByteArrayOutputStream().use { output ->
+            assertTrue(javax.imageio.ImageIO.write(image, "png", output))
+            output.toByteArray()
+        }
+        assertTrue(png.size >= 1024)
+        part = File(destination, "cart.PNG.tmp")
+        rows[1] = rows.getValue(1).copy(
+            gameFileId = null, fileCategory = null, selectedFileIds = null,
+            fileName = "cart.PNG", platformSlug = "PICO-8", totalBytes = png.size.toLong(),
+            tempFilePath = part.absolutePath
+        )
+        server.enqueue(MockResponse().setBody(Buffer().write(png)).setHeader("Content-Type", "IMAGE/PNG; charset=binary"))
+
+        manager().awaitState(DownloadState.COMPLETED)
+
+        val installed = File(destination, "cart.PNG")
+        assertEquals(DownloadState.COMPLETED.name, rows.getValue(1).state)
+        assertArrayEquals(png, installed.readBytes())
+        assertEquals(installed.absolutePath, linkedPath)
+        assertFalse(part.exists())
+        coVerify(exactly = 1) { gameDao.updateLocalPath(10, installed.absolutePath, any(), any(), any()) }
+        assertEquals(1, server.requestCount)
     }
 
     @Test fun `automatic retry resumes exact eighty percent prefix`() = runBlocking {

@@ -53,4 +53,6 @@
     <string name="error_download_extraction_failed">解压失败</string>
 
     <string name="error_filepicker_already_downloaded">游戏已下载</string>
+    <string name="error_download_request_conflict">未完成的下载与此选择冲突。请先在下载列表中取消或移除该下载，再更改选择。</string>
+    <string name="error_download_game_request_conflict">未完成的下载与此选择冲突。请先在下载列表中取消或移除该下载，再更改选择。</string>
 </resources>

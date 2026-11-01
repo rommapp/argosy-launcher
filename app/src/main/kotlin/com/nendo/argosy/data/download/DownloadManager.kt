@@ -35,6 +35,7 @@ import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import com.nendo.argosy.data.download.transfer.ExpectedTransferContent
 import com.nendo.argosy.data.download.transfer.TransferCheckpoint
 import com.nendo.argosy.data.download.transfer.TransferResult
 import kotlinx.coroutines.delay
@@ -475,6 +476,16 @@ class DownloadManager internal constructor(
         downloadJobs[progress.id]?.let { return it }
         val job = scope.launch(start = CoroutineStart.LAZY) {
             try {
+                val conflict = enqueueMutex.withLock {
+                    val row = downloadQueueDao.getById(progress.id) ?: progress.reservationRow()
+                    admissionResult(row, reuseExact = false)
+                }
+                if (conflict != null) {
+                    val result = DownloadResult.Failure(DownloadFailureReason.RequestConflict)
+                    settleDownload(progress, result)
+                    onResult(result)
+                    return@launch
+                }
                 val plan = planStorage(progress, claimStaging = true)
                 if (plan is StoragePlan.StagingBusy) {
                     stagingBlocked.add(progress.id)
@@ -625,21 +636,12 @@ class DownloadManager internal constructor(
         isMultiFileRom: Boolean = false,
         selectedFileIds: List<Long>? = null,
         startNow: Boolean = false
-    ) {
-        val effectiveMultiFile = isMultiFileRom || (selectedFileIds?.size ?: 0) > 1
-        enqueueMutex.withLock {
-            val currentState = _state.value
-            if (currentState.activeDownloads.any { it.gameId == gameId }) return
-            if (currentState.queue.any { it.gameId == gameId }) return
+    ): DownloadEnqueueResult {
+        val canonicalIds = selectedFileIds?.distinct()?.sorted()
+        val effectiveMultiFile = isMultiFileRom || (canonicalIds?.size ?: 0) > 1
+        return enqueueMutex.withLock {
             val initialState = initialQueueState(startNow)
-
-            val existing = downloadQueueDao.getByGameId(gameId)
-            if (existing != null) {
-                requeueFailed(existing.toDownloadProgress())
-                return
-            }
-
-            val platformDir = getDownloadDir(gameId, platformSlug)
+            val platformDir = platformFolderResolver.downloadDirForGame(gameId, platformSlug)
             val diskFileName = FileNames.sanitize(fileName)
             val tempFilePath = File(platformDir, "${diskFileName}.tmp").absolutePath
 
@@ -657,10 +659,11 @@ class DownloadManager internal constructor(
                 tempFilePath = tempFilePath,
                 createdAt = Instant.now(),
                 isMultiFileRom = effectiveMultiFile,
-                selectedFileIds = selectedFileIds?.joinToString(","),
+                selectedFileIds = canonicalIds?.joinToString(","),
                 ownerUserId = syncPreferencesRepository.getRommUserId()
             )
 
+            admissionResult(entity)?.let { return@withLock reuseAdmission(it) }
             val id = downloadQueueDao.insert(entity)
             Logger.info(
                 TAG,
@@ -680,11 +683,75 @@ class DownloadManager internal constructor(
                 totalBytes = expectedSizeBytes,
                 state = initialState,
                 isMultiFileRom = effectiveMultiFile,
-                selectedFileIds = selectedFileIds
+                selectedFileIds = canonicalIds
             )
 
             admitEnqueued(progress, expectedSizeBytes)
+            DownloadEnqueueResult.Accepted(id)
         }
+    }
+
+    private suspend fun reuseAdmission(result: DownloadEnqueueResult): DownloadEnqueueResult {
+        if (result !is DownloadEnqueueResult.Accepted) return result
+        val row = downloadQueueDao.getById(result.downloadId) ?: return result
+        if (row.state != DownloadState.FAILED.name) return result
+        admissionResult(row, reuseExact = false)?.let { return it }
+        val finishing = downloadJobs[row.id]
+        if (finishing != null) {
+            scope.launch {
+                finishing.join()
+                enqueueMutex.withLock { reuseAdmission(result) }
+            }
+            return result
+        }
+        downloadQueueDao.updateState(row.id, DownloadState.QUEUED.name)
+        val progress = row.toDownloadProgress().copy(state = DownloadState.QUEUED, errorReason = null)
+        _state.update { current ->
+            current.copy(
+                completed = current.completed.filter { it.id != row.id },
+                queue = (current.queue.filter { it.id != row.id } + progress).sortedBy { it.id }
+            )
+        }
+        scope.launch { processQueue() }
+        return result
+    }
+
+    private suspend fun admissionResult(
+        request: DownloadQueueEntity,
+        reuseExact: Boolean = true
+    ): DownloadEnqueueResult? = withContext(Dispatchers.IO) {
+        val memory = _state.value.let { it.activeDownloads + it.queue + it.completed }
+        val candidates = (downloadQueueDao.getRecoverableDownloads() + memory.map { it.reservationRow() })
+            .distinctBy { it.id }
+            .filter { it.id != request.id && it.state != DownloadState.COMPLETED.name &&
+                it.state != DownloadState.CANCELLED.name }
+        val identity = DownloadRequestIdentity.from(request)
+        val exact = candidates.firstOrNull { DownloadRequestIdentity.from(it) == identity }
+        val files = knownTransferFiles(request)
+        for (candidate in candidates) {
+            if (reuseExact && candidate.id == exact?.id) continue
+            if (identity.sharesSlot(DownloadRequestIdentity.from(candidate)) ||
+                files.intersect(knownTransferFiles(candidate)).isNotEmpty()
+            ) return@withContext DownloadEnqueueResult.Conflict(candidate.id)
+        }
+        exact?.let { DownloadEnqueueResult.Accepted(it.id) }
+    }
+
+    private suspend fun knownTransferFiles(row: DownloadQueueEntity): Set<File> {
+        val folder = if (row.gameFileId != null && row.fileCategory != null) {
+            val gameFolder = resolveAddonFolder(
+                row.gameId, row.platformSlug, row.gameFolderName, row.gameTitle, row.fileCategory, preview = true
+            )
+            resolveGameFileDir(
+                row.gameId, row.gameFileId, row.platformSlug, row.fileCategory, gameFolder, preview = true
+            )
+        } else {
+            platformFolderResolver.downloadDirForGame(row.gameId, row.platformSlug)
+        }
+        val files = row.transferFiles(File(folder, "${row.fileName}.tmp"))
+        val staged = romStagingManager.list().firstOrNull { it.manifest.downloadId == row.id }
+        return if (staged == null) files else files +
+            row.transferFiles(File(staged.archiveDir, "${row.fileName}.tmp"))
     }
 
     private suspend fun initialQueueState(startNow: Boolean): DownloadState =
@@ -726,18 +793,11 @@ class DownloadManager internal constructor(
         coverPath: String?,
         expectedSizeBytes: Long = 0,
         startNow: Boolean = false
-    ) {
-        enqueueMutex.withLock {
-            val currentState = _state.value
-            if (currentState.activeDownloads.any { it.discId == discId }) return
-            if (currentState.queue.any { it.discId == discId }) return
-            downloadQueueDao.getRecoverableDownloads().firstOrNull { it.discId == discId }?.let {
-                requeueFailed(it.toDownloadProgress())
-                return
-            }
+    ): DownloadEnqueueResult {
+        return enqueueMutex.withLock {
             val initialState = initialQueueState(startNow)
 
-            val platformDir = getDownloadDir(gameId, platformSlug)
+            val platformDir = platformFolderResolver.downloadDirForGame(gameId, platformSlug)
             val diskFileName = FileNames.sanitize(fileName)
             val tempFilePath = File(platformDir, "${diskFileName}.tmp").absolutePath
 
@@ -760,6 +820,7 @@ class DownloadManager internal constructor(
                 ownerUserId = syncPreferencesRepository.getRommUserId()
             )
 
+            admissionResult(entity)?.let { return@withLock reuseAdmission(it) }
             val id = downloadQueueDao.insert(entity)
 
             val progress = DownloadProgress(
@@ -779,6 +840,7 @@ class DownloadManager internal constructor(
             )
 
             admitEnqueued(progress, expectedSizeBytes)
+            DownloadEnqueueResult.Accepted(id)
         }
     }
 
@@ -794,19 +856,16 @@ class DownloadManager internal constructor(
         expectedSizeBytes: Long = 0,
         gameFolderName: String? = null,
         startNow: Boolean = false
-    ) {
-        enqueueMutex.withLock {
-            val currentState = _state.value
-            if (currentState.activeDownloads.any { it.gameFileId == gameFileId }) return
-            if (currentState.queue.any { it.gameFileId == gameFileId }) return
-            downloadQueueDao.getRecoverableDownloads().firstOrNull { it.gameFileId == gameFileId }?.let {
-                requeueFailed(it.toDownloadProgress())
-                return
-            }
+    ): DownloadEnqueueResult {
+        return enqueueMutex.withLock {
             val initialState = initialQueueState(startNow)
 
-            val gameFolder = resolveAddonFolder(gameId, platformSlug, gameFolderName, gameTitle, category)
-            val categoryFolder = resolveGameFileDir(gameId, gameFileId, platformSlug, category, gameFolder)
+            val (gameFolder, categoryFolder) = withContext(Dispatchers.IO) {
+                val folder = resolveAddonFolder(
+                    gameId, platformSlug, gameFolderName, gameTitle, category, preview = true
+                )
+                folder to resolveGameFileDir(gameId, gameFileId, platformSlug, category, folder, preview = true)
+            }
             val diskFileName = FileNames.sanitize(fileName)
             val tempFilePath = File(categoryFolder, "${diskFileName}.tmp").absolutePath
             Logger.info(
@@ -834,6 +893,7 @@ class DownloadManager internal constructor(
                 ownerUserId = syncPreferencesRepository.getRommUserId()
             )
 
+            admissionResult(entity)?.let { return@withLock reuseAdmission(it) }
             val id = downloadQueueDao.insert(entity)
 
             val progress = DownloadProgress(
@@ -853,6 +913,7 @@ class DownloadManager internal constructor(
             )
 
             admitEnqueued(progress, expectedSizeBytes)
+            DownloadEnqueueResult.Accepted(id)
         }
     }
 
@@ -886,9 +947,11 @@ class DownloadManager internal constructor(
             .removeSuffix(".m3u")
     }
 
-    private suspend fun getGameFolder(gameId: Long, platformSlug: String, vararg names: String): File {
-        val platformDir = getDownloadDir(gameId, platformSlug)
-        return resolveGameFolder(platformDir, names.map(::sanitizeFolderName)).apply { mkdirs() }
+    private suspend fun getGameFolder(
+        gameId: Long, platformSlug: String, vararg names: String, preview: Boolean = false
+    ): File {
+        val platformDir = platformFolderResolver.downloadDirForGame(gameId, platformSlug)
+        return resolveGameFolder(platformDir, names.map(::sanitizeFolderName)).apply { if (!preview) mkdirs() }
     }
 
     /**
@@ -936,7 +999,8 @@ class DownloadManager internal constructor(
         gameFileId: Long?,
         platformSlug: String,
         category: String,
-        gameFolder: File
+        gameFolder: File,
+        preview: Boolean = false
     ): File {
         val destination = when {
             extContentOrganizer.placesInExtcontent(gameId, platformSlug, category) ->
@@ -947,7 +1011,7 @@ class DownloadManager internal constructor(
                 if (serverRelativeDir != null) File(gameFolder, serverRelativeDir) else File(gameFolder, category)
             }
         }
-        return destination.apply { mkdirs() }
+        return destination.apply { if (!preview) mkdirs() }
     }
 
     /**
@@ -1009,9 +1073,10 @@ class DownloadManager internal constructor(
         platformSlug: String,
         gameFolderName: String?,
         gameTitle: String,
-        category: String? = null
+        category: String? = null,
+        preview: Boolean = false
     ): File {
-        val platformDir = getDownloadDir(gameId, platformSlug)
+        val platformDir = platformFolderResolver.downloadDirForGame(gameId, platformSlug)
         val romFolderName = romFileFolderName(gameId)
         if (extContentOrganizer.usesCombinedLayout(gameId)) {
             return if (isFlatUnderCombine(category)) {
@@ -1020,7 +1085,8 @@ class DownloadManager internal constructor(
                 getGameFolder(
                     gameId,
                     platformSlug,
-                    *listOfNotNull(romFolderName, gameTitle, gameFolderName).toTypedArray()
+                    *listOfNotNull(romFolderName, gameTitle, gameFolderName).toTypedArray(),
+                    preview = preview
                 )
             }
         }
@@ -1036,8 +1102,10 @@ class DownloadManager internal constructor(
         val gameFolder = getGameFolder(
             gameId,
             platformSlug,
-            *listOfNotNull(romFolderName, gameTitle, gameFolderName).toTypedArray()
+            *listOfNotNull(romFolderName, gameTitle, gameFolderName).toTypedArray(),
+            preview = preview
         )
+        if (preview) return gameFolder
         val baseFile = basePath?.let { File(it) }
         if (baseFile != null && baseFile.isFile &&
             baseFile.parentFile?.absolutePath == platformDir.absolutePath
@@ -1143,6 +1211,14 @@ class DownloadManager internal constructor(
                     ?: persistedPart?.takeIf { it.exists() || row.requestKey != null }
                     ?: File(fileDir, "${progress.fileName}.tmp")
                 val targetFile = File(tempFile.parentFile, progress.fileName)
+                val reserved = enqueueMutex.withLock {
+                    val actual = row.copy(tempFilePath = tempFile.absolutePath)
+                    if (admissionResult(actual, reuseExact = false) != null) false else {
+                        downloadQueueDao.update(actual)
+                        true
+                    }
+                }
+                if (!reserved) return@withContext DownloadResult.Failure(DownloadFailureReason.RequestConflict)
                 tempFile.parentFile?.mkdirs()
                 val requestKey = DownloadTransferRunner(connectivity).resolveRequestKey(
                     row.retryAttempt, row.nextRetryAt,
@@ -1269,7 +1345,10 @@ class DownloadManager internal constructor(
                 if (multiplier < 1.0f) delay((((1.0f / multiplier) - 1) * 100).toLong())
             },
             requireZip = progress.isMultiFileRom || progress.fileName.endsWith(".zip", ignoreCase = true),
-            initialRange = progress.isMultiFileRom
+            initialRange = progress.isMultiFileRom,
+            expectedContent = ExpectedTransferContent.forDownload(
+                progress.fileName, progress.platformSlug, progress.isMultiFileRom
+            )
         )
     }
 
@@ -2049,7 +2128,7 @@ class DownloadManager internal constructor(
     }
 
     suspend fun retryExtraction(gameId: Long): ExtractionResult = withContext(Dispatchers.IO) {
-        val queueEntry = downloadQueueDao.getByGameId(gameId)
+        val queueEntry = failedBaseRecoveryEntry(gameId)
             ?: return@withContext ExtractionResult.Failure(DownloadFailureReason.NoDownloadEntryFound)
 
         val isStaged = romStagingManager.list().any { it.manifest.downloadId == queueEntry.id } ||
@@ -2102,6 +2181,10 @@ class DownloadManager internal constructor(
             }
         }
 
+        val conflict = enqueueMutex.withLock { admissionResult(queueEntry, reuseExact = false) }
+        if (conflict != null) {
+            return@withContext ExtractionResult.Failure(DownloadFailureReason.RequestConflict)
+        }
         try {
             val discId = queueEntry.discId
             val isDiscDownload = discId != null
@@ -2142,7 +2225,10 @@ class DownloadManager internal constructor(
                     gameDao.updateLocalPath(gameId, finalPath, GameSource.ROMM_SYNCED, FileOrigin.ROMM_DOWNLOAD)
                 }
             }
-            downloadQueueDao.deleteByGameId(gameId)
+            downloadQueueDao.deleteById(queueEntry.id)
+            _state.update { current ->
+                current.copy(completed = current.completed.filter { it.id != queueEntry.id })
+            }
             attributionRepository.markDirty(StorageCategory.GAMES)
 
             _completionEvents.emit(
@@ -2169,9 +2255,16 @@ class DownloadManager internal constructor(
         }
     }
 
-    suspend fun deleteFileAndRedownload(gameId: Long) {
-        val queueEntry = downloadQueueDao.getByGameId(gameId)
+    private suspend fun failedBaseRecoveryEntry(gameId: Long): DownloadQueueEntity? =
+        downloadQueueDao.getRecoverableDownloads().filter {
+            it.gameId == gameId && it.discId == null && it.gameFileId == null &&
+                it.state == DownloadState.FAILED.name
+        }.singleOrNull()
+
+    suspend fun deleteFileAndRedownload(gameId: Long) = enqueueMutex.withLock {
+        val queueEntry = failedBaseRecoveryEntry(gameId)
         if (queueEntry != null) {
+            if (admissionResult(queueEntry, reuseExact = false) != null) return@withLock
             downloadJobs[queueEntry.id]?.cancelAndJoin()
             val platformDir = getDownloadDir(queueEntry.gameId, queueEntry.platformSlug)
             val tempFile = queueEntry.tempFilePath?.let(::File)
@@ -2184,7 +2277,7 @@ class DownloadManager internal constructor(
             }
 
             discardStagingFor(queueEntry.id)
-            downloadQueueDao.deleteByGameId(gameId)
+            downloadQueueDao.deleteById(queueEntry.id)
             _state.update { current ->
                 current.copy(
                     activeDownloads = current.activeDownloads.filter { it.id != queueEntry.id },
@@ -2283,7 +2376,6 @@ class DownloadManager internal constructor(
             isMultiFileRom = isMultiFileRom,
             selectedFileIds = selectedFileIds
                 ?.split(",")?.mapNotNull { it.trim().toLongOrNull() }
-                ?.takeIf { it.isNotEmpty() }
         )
     }
 

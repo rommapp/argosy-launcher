@@ -62,4 +62,6 @@
 
     <!-- FilePickerFlowUseCase -->
     <string name="error_filepicker_already_downloaded">गेम पहले से डाउनलोड हो चुका है</string>
+    <string name="error_download_request_conflict">एक अधूरा डाउनलोड इस चयन से मेल नहीं खाता। चयन बदलने से पहले उसे रद्द करें या डाउनलोड सूची से हटाएँ।</string>
+    <string name="error_download_game_request_conflict">एक अधूरा डाउनलोड इस चयन से मेल नहीं खाता। चयन बदलने से पहले उसे रद्द करें या डाउनलोड सूची से हटाएँ।</string>
 </resources>

@@ -53,4 +53,6 @@
     <string name="error_download_extraction_failed">Error al extraer</string>
 
     <string name="error_filepicker_already_downloaded">Juego ya descargado</string>
+    <string name="error_download_request_conflict">Una descarga sin terminar entra en conflicto con esta selección. Cancélala o quítala de Descargas antes de cambiar la selección.</string>
+    <string name="error_download_game_request_conflict">Una descarga sin terminar entra en conflicto con esta selección. Cancélala o quítala de Descargas antes de cambiar la selección.</string>
 </resources>

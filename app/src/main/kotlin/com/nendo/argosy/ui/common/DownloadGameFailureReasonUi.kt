@@ -10,6 +10,8 @@ import com.nendo.argosy.domain.usecase.download.DownloadGameFailureReason
  * the server's own message untranslated inside the sentence describing what failed.
  */
 fun DownloadGameFailureReason.toNotificationText(): NotificationText = when (this) {
+    DownloadGameFailureReason.RequestConflict ->
+        NotificationText.Res(R.string.error_download_game_request_conflict)
     DownloadGameFailureReason.GameNotFound ->
         NotificationText.Res(R.string.error_download_game_not_found)
     DownloadGameFailureReason.GameNotSynced ->

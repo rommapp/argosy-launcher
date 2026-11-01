@@ -81,4 +81,6 @@
          in the cherry-pick file list, distinct from the success-notice wording used
          elsewhere for the same underlying case). -->
     <string name="error_filepicker_already_downloaded">Game already downloaded</string>
+    <string name="error_download_request_conflict">An unfinished download conflicts with this selection. Cancel or remove it from Downloads before changing the selection.</string>
+    <string name="error_download_game_request_conflict">An unfinished download conflicts with this selection. Cancel or remove it from Downloads before changing the selection.</string>
 </resources>

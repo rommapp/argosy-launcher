@@ -1,6 +1,7 @@
 package com.nendo.argosy.domain.usecase.download
 
 import com.nendo.argosy.data.download.ZipExtractor
+import com.nendo.argosy.data.download.DownloadEnqueueResult
 import com.nendo.argosy.data.emulator.M3uManager
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameFileDao
@@ -29,6 +30,12 @@ private fun pathOnDisk(path: String?): Boolean = path != null && File(path).exis
 data class FilePickerSetup(
     val rows: List<FilePickerRow>,
     val preselectedFileIds: Set<Long>
+)
+
+data class ManagedSelectionResult(
+    val added: Int,
+    val removed: Int,
+    val issues: List<DownloadGameFailureReason>
 )
 
 /**
@@ -217,17 +224,17 @@ class FilePickerFlowUseCase @Inject constructor(
         return FilePickerSetup(rows, preselected)
     }
 
-    /** Checked-but-missing files get queued; unchecked-but-present files get deleted. Returns added to removed. */
     suspend fun applyManagedSelection(
         gameId: Long,
         rows: List<FilePickerRow>,
         selected: Set<Long>
-    ): Pair<Int, Int> {
+    ): ManagedSelectionResult {
         val dbRows = gameFileDao.getFilesForGame(gameId)
         val byRommId = dbRows.associateBy { it.rommFileId }
         val gameFolder = gameDao.getById(gameId)?.let { gameFolderOf(it) }
         var added = 0
         var removed = 0
+        val issues = mutableListOf<DownloadGameFailureReason>()
         for (row in rows) {
             val rommFileId = row.rommFileId ?: continue
             if (row.isHeader || row.isLocked) continue
@@ -237,7 +244,7 @@ class FilePickerFlowUseCase @Inject constructor(
             when {
                 wantIt && onDisk == null -> {
                     val game = gameDao.getById(gameId) ?: continue
-                    downloadManager.enqueueGameFileDownload(
+                    val enqueueResult = downloadManager.enqueueGameFileDownload(
                         gameId = gameId,
                         gameFileId = db.id,
                         rommFileId = rommFileId,
@@ -249,7 +256,10 @@ class FilePickerFlowUseCase @Inject constructor(
                         expectedSizeBytes = db.fileSize,
                         gameFolderName = game.rommFileName
                     )
-                    added++
+                    when (enqueueResult) {
+                        is DownloadEnqueueResult.Accepted -> added++
+                        is DownloadEnqueueResult.Conflict -> issues += DownloadGameFailureReason.RequestConflict
+                    }
                 }
                 !wantIt && onDisk != null -> {
                     if (onDisk.delete()) {
@@ -263,7 +273,7 @@ class FilePickerFlowUseCase @Inject constructor(
         }
         attributionRepository.markDirty(StorageCategory.GAMES)
         attributionRepository.markDirty(StorageCategory.MUSIC)
-        return added to removed
+        return ManagedSelectionResult(added, removed, issues.toList())
     }
 
     /**
@@ -308,6 +318,7 @@ class FilePickerFlowUseCase @Inject constructor(
         val explicit = selectedFileIds.toList().takeIf { it.isNotEmpty() }
         when (val r = downloadGameUseCase(gameId, selectedFileIds = explicit)) {
             is DownloadResult.Queued -> queued++
+            is DownloadResult.MultiDiscQueued -> queued += r.discCount
             is DownloadResult.AlreadyDownloaded -> issues += r
             is DownloadResult.Error -> issues += r
             else -> {}

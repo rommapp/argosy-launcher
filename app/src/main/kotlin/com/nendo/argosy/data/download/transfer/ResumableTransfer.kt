@@ -1,5 +1,6 @@
 package com.nendo.argosy.data.download.transfer
 
+import com.nendo.argosy.data.download.DownloadFailureReason
 import com.nendo.argosy.data.download.ZipExtractor
 import com.nendo.argosy.util.Logger
 import java.io.File
@@ -8,6 +9,7 @@ import java.io.RandomAccessFile
 import java.net.ProtocolException
 import java.security.cert.CertificateException
 import java.util.zip.ZipFile
+import java.util.zip.ZipException
 import javax.net.ssl.SSLHandshakeException
 import javax.net.ssl.SSLPeerUnverifiedException
 import kotlinx.coroutines.CancellationException
@@ -41,7 +43,7 @@ class ResumableTransfer {
             val offset = try {
                 partFile.length()
             } catch (e: SecurityException) {
-                return@coroutineScope TransferResult.Permanent(e.message ?: "Storage access denied")
+                return@coroutineScope TransferResult.Permanent(DownloadFailureReason.StorageAccessFailed, e.message ?: "Storage access denied")
             }
             val resume = offset > 0 && TransferHeaders.resumable(checkpoint.validator)
             val requestOffset = if (resume) offset else 0L
@@ -67,7 +69,7 @@ class ResumableTransfer {
                     call.execute()
                 } catch (e: ProtocolException) {
                     currentCoroutineContext().ensureActive()
-                    return@coroutineScope TransferResult.Permanent(e.message ?: "Invalid HTTP response")
+                    return@coroutineScope TransferResult.Permanent(DownloadFailureReason.InvalidResponse, e.message ?: "Invalid HTTP response")
                 }
                 try {
                     currentCoroutineContext().ensureActive()
@@ -77,8 +79,8 @@ class ResumableTransfer {
                         code == 416 -> TransferResult.RestartRequired
                         code == 408 || code == 429 || code in setOf(500, 502, 503, 504, 524) ->
                             TransferResult.Retryable("HTTP $code", response.headers()["Retry-After"])
-                        code != 200 && code != 206 -> TransferResult.Permanent("HTTP $code")
-                        code == 206 && !rangeRequested -> TransferResult.Permanent("Unsolicited partial response")
+                        code != 200 && code != 206 -> TransferResult.Permanent(DownloadFailureReason.HttpError(code), "HTTP $code")
+                        code == 206 && !rangeRequested -> TransferResult.Permanent(DownloadFailureReason.InvalidResponse, "Unsolicited partial response")
                         else -> {
                             val framedStream = response.raw().protocol in setOf(Protocol.HTTP_2, Protocol.H2_PRIOR_KNOWLEDGE)
                             val append = code == 206 && resume
@@ -94,14 +96,14 @@ class ResumableTransfer {
                             }
                             Logger.info("ResumableTransfer", "Response | validatorCategory=$validatorCategory")
                             if (code == 206 && !resume && !complete && !TransferHeaders.resumable(headers.validator)) {
-                                return@coroutineScope TransferResult.Permanent("Partial response without resume validator")
+                                return@coroutineScope TransferResult.Permanent(DownloadFailureReason.InvalidResponse, "Partial response without resume validator")
                             }
                             val checksums = TransferChecksums.parse(
                                 response.headers(), complete, code == 206,
                                 checkpoint.representationChecksum.takeIf { append },
                                 fullBody = !append && complete
                             )
-                            val body = response.body() ?: return@coroutineScope TransferResult.Permanent("Missing response body")
+                            val body = response.body() ?: return@coroutineScope TransferResult.Permanent(DownloadFailureReason.InvalidResponse, "Missing response body")
                             if (!append) Logger.info("ResumableTransfer", "Reset | resetReason=fresh-response")
                             writeBody(partFile, body, headers, checksums, append, requestOffset, persist, onProgress, beforeRead, afterWrite, requireZip)
                         }
@@ -113,11 +115,11 @@ class ResumableTransfer {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: InvalidTransferHeaders) {
-                TransferResult.Permanent(e.message ?: "Invalid response headers")
+                TransferResult.Permanent(e.reason, e.message ?: "Invalid response headers")
             } catch (e: DiskFailure) {
-                TransferResult.Permanent(e.cause?.message ?: "Disk failure")
+                TransferResult.Permanent(DownloadFailureReason.StorageAccessFailed, e.cause?.message ?: "Disk failure")
             } catch (e: SecurityException) {
-                TransferResult.Permanent(e.message ?: "Storage access denied")
+                TransferResult.Permanent(DownloadFailureReason.StorageAccessFailed, e.message ?: "Storage access denied")
             } catch (e: IOException) {
                 currentCoroutineContext().ensureActive()
                 networkFailure(e)
@@ -177,7 +179,7 @@ class ResumableTransfer {
                 if (count == 0) continue
                 if (received > Long.MAX_VALUE - initial - count ||
                     (headers.segment != null && count > headers.segment - received)) {
-                    return TransferResult.Permanent("Response exceeds declared length")
+                    return TransferResult.Permanent(DownloadFailureReason.InvalidResponse, "Response exceeds declared length")
                 }
                 disk { output.write(buffer, 0, count) }
                 checksums.update(buffer, count)
@@ -202,14 +204,18 @@ class ResumableTransfer {
             }
         }
         if (headers.segment != null && received != headers.segment) return TransferResult.Retryable("Truncated response")
-        if (received == 0L) return TransferResult.Permanent("Empty response")
-        if (checksumMismatch) return TransferResult.Permanent("Checksum mismatch")
+        if (received == 0L) return TransferResult.Permanent(DownloadFailureReason.FileTooSmall, "Empty response")
+        if (checksumMismatch) return TransferResult.Permanent(DownloadFailureReason.IntegrityCheckFailed, "Checksum mismatch")
         val bytes = initial + received
         if (headers.total != null && bytes < headers.total) return TransferResult.Continue
         if (requireZip && disk { ZipExtractor.detectRomFormatByMagic(file) } == null) disk {
-            ZipFile(file).use { zip ->
-                val entries = zip.entries()
-                while (entries.hasMoreElements()) entries.nextElement()
+            try {
+                ZipFile(file).use { zip ->
+                    val entries = zip.entries()
+                    while (entries.hasMoreElements()) entries.nextElement()
+                }
+            } catch (e: ZipException) {
+                return TransferResult.Permanent(DownloadFailureReason.IntegrityCheckFailed, e.message ?: "Invalid ZIP archive")
             }
         }
         disk { persist(metadata.copy(validatedBytes = bytes)) }
@@ -220,7 +226,7 @@ class ResumableTransfer {
         val certificateFailure = error is SSLHandshakeException &&
             generateSequence<Throwable>(error) { it.cause }.take(16).any { it is CertificateException }
         return if (error is SSLPeerUnverifiedException || certificateFailure) {
-            TransferResult.Permanent(error.message ?: "TLS identity verification failed")
+            TransferResult.Permanent(DownloadFailureReason.TlsVerificationFailed, error.message ?: "TLS identity verification failed")
         } else TransferResult.Retryable(error.message ?: "Connection failure")
     }
 

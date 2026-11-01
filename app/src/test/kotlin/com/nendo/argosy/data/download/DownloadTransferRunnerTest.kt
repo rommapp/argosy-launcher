@@ -146,7 +146,7 @@ class DownloadTransferRunnerTest {
     @Test fun `loss before publication cancels the original newly created call`() = runTest {
         var subscriptions = 0
         val original = unexecutedCall()
-        val permanent = TransferResult.Permanent("unchanged")
+        val permanent = TransferResult.Permanent(DownloadFailureReason.InvalidResponse, "unchanged")
         val runner = DownloadTransferRunner(
             DownloadConnectivity { flowOf(++subscriptions == 1) },
             transfer = { _, _, call, _, _, _, _, _, _, _ ->
@@ -160,7 +160,7 @@ class DownloadTransferRunnerTest {
 
     @Test fun `finite online flow does not cancel a delayed attempt or alter permanent result`() = runTest {
         val original = unexecutedCall()
-        val permanent = TransferResult.Permanent("unchanged")
+        val permanent = TransferResult.Permanent(DownloadFailureReason.InvalidResponse, "unchanged")
         val runner = DownloadTransferRunner(
             DownloadConnectivity { flowOf(true) },
             transfer = { _, _, call, _, _, _, _, _, _, _ ->
@@ -303,7 +303,7 @@ class DownloadTransferRunnerTest {
                 if (calls == 2) TransferResult.Retryable("disconnect") else TransferResult.RestartRequired
             }
         )
-        assertTrue(runner.runFixture() is TransferResult.Permanent)
+        assertEquals(DownloadFailureReason.InvalidResponse, (runner.runFixture() as TransferResult.Permanent).reason)
         assertEquals(3, calls)
     }
 

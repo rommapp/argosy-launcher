@@ -1,5 +1,7 @@
 package com.nendo.argosy.data.download.transfer
 
+import com.nendo.argosy.data.download.DownloadFailureReason
+
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.RandomAccessFile
@@ -227,6 +229,34 @@ class ResumableTransferTest {
         }
     }
 
+    @Test fun corruptZipIsIntegrityFailure() = runBlocking {
+        server.enqueue(MockResponse().setBody("not a zip archive"))
+        val result = transfer.attempt(temporary.newFile(), TransferCheckpoint(), api::download,
+            {}, { _, _ -> }, requireZip = true)
+        assertEquals(DownloadFailureReason.IntegrityCheckFailed, (result as TransferResult.Permanent).reason)
+    }
+
+    @Test fun storageSecurityFailureHasTypedReason() = runBlocking {
+        server.enqueue(response())
+        val result = transfer.attempt(temporary.newFile(), TransferCheckpoint(), api::download,
+            { throw SecurityException("denied") }, { _, _ -> })
+        assertEquals(DownloadFailureReason.StorageAccessFailed, (result as TransferResult.Permanent).reason)
+    }
+
+    @Test fun responseFailuresHaveTypedReasons() = runBlocking {
+        val cases = listOf(
+            MockResponse().setBody("body").setHeader("Content-Encoding", "gzip") to DownloadFailureReason.InvalidResponse,
+            MockResponse().setBody("body").setHeader("Content-Type", "text/html") to DownloadFailureReason.InvalidContentType("text/html"),
+            MockResponse().setBody("") to DownloadFailureReason.FileTooSmall,
+            MockResponse().setChunkedBody("", 1) to DownloadFailureReason.FileTooSmall,
+            MockResponse().setBody("body").setHeader("Content-MD5", "AAAAAAAAAAAAAAAAAAAAAA==") to DownloadFailureReason.IntegrityCheckFailed
+        )
+        for ((response, reason) in cases) {
+            server.enqueue(response)
+            assertEquals(reason, (attempt(temporary.newFile()) as TransferResult.Permanent).reason)
+        }
+    }
+
     @Test fun retryableAndPermanentHttpStatuses() = runBlocking {
         for (code in listOf(408, 429, 500, 502, 503, 504, 524)) {
             server.enqueue(MockResponse().setResponseCode(code).setHeader("Retry-After", "120"))
@@ -234,7 +264,7 @@ class ResumableTransferTest {
         }
         for (code in listOf(204, 400, 401, 403, 404, 501)) {
             server.enqueue(MockResponse().setResponseCode(code))
-            assertTrue(attempt(temporary.newFile()) is TransferResult.Permanent)
+            assertEquals(DownloadFailureReason.HttpError(code), (attempt(temporary.newFile()) as TransferResult.Permanent).reason)
         }
     }
 
@@ -372,7 +402,7 @@ class ResumableTransferTest {
 
     @Test fun diskFailuresArePermanent() = runBlocking {
         server.enqueue(response())
-        assertTrue(attempt(temporary.newFolder()) is TransferResult.Permanent)
+        assertEquals(DownloadFailureReason.StorageAccessFailed, (attempt(temporary.newFolder()) as TransferResult.Permanent).reason)
     }
 
     @Test fun callCreationConnectionFailureIsRetryable() = runBlocking {
@@ -395,7 +425,7 @@ class ResumableTransferTest {
         }
         for (error in listOf(javax.net.ssl.SSLPeerUnverifiedException("hostname"), certificate)) {
             val result = transfer.attempt(temporary.newFile(), TransferCheckpoint(), { _, _ -> throw error }, {}, { _, _ -> })
-            assertTrue(result is TransferResult.Permanent)
+            assertEquals(DownloadFailureReason.TlsVerificationFailed, (result as TransferResult.Permanent).reason)
         }
         val result = transfer.attempt(temporary.newFile(), TransferCheckpoint(), { _, _ ->
             throw javax.net.ssl.SSLHandshakeException("connection closed")

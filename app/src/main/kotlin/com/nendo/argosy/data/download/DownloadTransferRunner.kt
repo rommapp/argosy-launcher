@@ -140,7 +140,7 @@ internal class DownloadTransferRunner(
                 TransferResult.Continue -> retryAt = null
                 TransferResult.RestartRequired -> {
                     Logger.info("DownloadTransferRunner", "Reset | resetReason=range-not-satisfiable repeated=$restarted")
-                    if (restarted) return TransferResult.Permanent("Repeated invalid range response")
+                    if (restarted) return TransferResult.Permanent(DownloadFailureReason.InvalidResponse, "Repeated invalid range response")
                     restarted = true
                     checkpoint = TransferCheckpoint()
                     persist(checkpoint)

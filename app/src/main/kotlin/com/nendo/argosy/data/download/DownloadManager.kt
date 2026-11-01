@@ -257,7 +257,8 @@ class DownloadManager internal constructor(
     private val admissionMutex = Mutex()
     private val enqueueMutex = Mutex()
     private val stagingClaims = java.util.concurrent.ConcurrentHashMap.newKeySet<Long>()
-    private val stagingBlocked = mutableSetOf<Long>()
+    private val stagingBlocked = java.util.concurrent.ConcurrentHashMap.newKeySet<Long>()
+    private val stagingLock = Any()
 
     init {
         scope.launch {
@@ -347,10 +348,25 @@ class DownloadManager internal constructor(
             reconciled
         }
 
-    private fun acquireStaging(id: Long): Boolean {
-        if (!romStagingManager.claim(id)) return false
-        stagingClaims.add(id)
-        return true
+    private fun acquireStaging(id: Long, blockOnFailure: Boolean = false): Boolean = synchronized(stagingLock) {
+        if (!romStagingManager.claim(id)) {
+            if (blockOnFailure) stagingBlocked.add(id)
+            false
+        } else {
+            stagingClaims.add(id)
+            true
+        }
+    }
+
+    private fun releaseStaging(id: Long): Boolean {
+        val released = synchronized(stagingLock) {
+            if (!stagingClaims.remove(id)) return@synchronized false
+            romStagingManager.release(id)
+            stagingBlocked.clear()
+            true
+        }
+        if (released) notifySlotFreed()
+        return released
     }
 
     /**
@@ -391,7 +407,9 @@ class DownloadManager internal constructor(
             }
 
             if (area != null) {
-                if (claimStaging && !acquireStaging(progress.id)) return@withContext StoragePlan.StagingBusy
+                if (claimStaging && !acquireStaging(progress.id, blockOnFailure = true)) {
+                    return@withContext StoragePlan.StagingBusy
+                }
                 if (area.manifest.phase == StagingPhase.MOVING || remainingArchive == 0L) {
                     return@withContext StoragePlan.Staged(destinationDir)
                 }
@@ -444,8 +462,7 @@ class DownloadManager internal constructor(
                 "internalFree=$internalFree need=$internalRequirement destFree=$destinationFree"
         )
         if (claimStaging) {
-            stagingClaims.remove(progress.id)
-            romStagingManager.release(progress.id)
+            releaseStaging(progress.id)
         }
         return null
     }
@@ -491,7 +508,6 @@ class DownloadManager internal constructor(
                 }
                 val plan = planStorage(progress, claimStaging = true)
                 if (plan is StoragePlan.StagingBusy) {
-                    stagingBlocked.add(progress.id)
                     _state.update { current -> current.copy(
                         activeDownloads = current.activeDownloads.filter { it.id != progress.id },
                         queue = (current.queue.filter { it.id != progress.id } + progress.copy(state = DownloadState.QUEUED))
@@ -515,11 +531,7 @@ class DownloadManager internal constructor(
             } finally {
                 if (downloadJobs[progress.id] === coroutineContext[Job]) {
                     downloadJobs.remove(progress.id)
-                    if (stagingClaims.remove(progress.id)) {
-                        romStagingManager.release(progress.id)
-                        stagingBlocked.clear()
-                    }
-                    notifySlotFreed()
+                    if (!releaseStaging(progress.id)) notifySlotFreed()
                 }
             }
         }
@@ -1299,8 +1311,9 @@ class DownloadManager internal constructor(
                     transferUntilComplete(progress, tempFile, checkpoint, retryRow.retryAttempt, retryRow.nextRetryAt, requestKey)
                 }
                 if (result !is TransferResult.Verified) {
-                    Logger.warn(TAG, "Transfer rejected | id=${progress.id} reason=${(result as TransferResult.Permanent).message}")
-                    return@withContext DownloadResult.Failure(DownloadFailureReason.Unexpected(null))
+                    val failure = result as TransferResult.Permanent
+                    Logger.warn(TAG, "Transfer rejected | id=${progress.id} reason=${failure.message}")
+                    return@withContext DownloadResult.Failure(failure.reason)
                 }
                 if (result.bytes < MIN_ROM_SIZE_BYTES && !isSmallCompanionFile(progress.fileName)) {
                     return@withContext DownloadResult.Failure(DownloadFailureReason.FileTooSmall)
@@ -1684,6 +1697,7 @@ class DownloadManager internal constructor(
         }
 
         romStagingManager.discard(area)
+        releaseStaging(progress.id)
         attributionRepository.markDirty(StorageCategory.ROM_STAGING)
         Logger.info(
             TAG,
@@ -2345,7 +2359,10 @@ class DownloadManager internal constructor(
         val discarded = withContext(Dispatchers.IO) {
             romStagingManager.list()
                 .firstOrNull { it.manifest.downloadId == downloadId }
-                ?.also { romStagingManager.discard(it) }
+                ?.also {
+                    romStagingManager.discard(it)
+                    releaseStaging(downloadId)
+                }
         }
         if (discarded != null) attributionRepository.markDirty(StorageCategory.ROM_STAGING)
     }

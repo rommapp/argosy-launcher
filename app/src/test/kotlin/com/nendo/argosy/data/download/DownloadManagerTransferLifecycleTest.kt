@@ -17,6 +17,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.spyk
+import io.mockk.verify
 import java.io.File
 import java.io.ByteArrayOutputStream
 import java.util.zip.ZipEntry
@@ -163,12 +164,16 @@ class DownloadManagerTransferLifecycleTest {
         server.shutdown()
     }
 
-    private fun manager(existingOwner: GameEntity? = null): DownloadManager {
+    private fun manager(
+        existingOwner: GameEntity? = null,
+        maxConcurrentDownloads: Int = 1,
+        stageDownloadsInternally: Boolean = false
+    ): DownloadManager {
         val job = SupervisorJob().also { jobs += it }
         val preferences = mockk<UserPreferencesRepository>()
         every { preferences.userPreferences } returns flowOf(UserPreferences(
-            romStoragePath = destination.absolutePath, maxConcurrentDownloads = 1,
-            stageDownloadsInternally = false
+            romStoragePath = destination.absolutePath, maxConcurrentDownloads = maxConcurrentDownloads,
+            stageDownloadsInternally = stageDownloadsInternally
         ))
         val folders = mockk<PlatformFolderResolver>()
         coEvery { folders.storageBase() } returns destination
@@ -680,6 +685,86 @@ class DownloadManagerTransferLifecycleTest {
             assertArrayEquals(bytes.copyOf(8192), part.readBytes())
             assertEquals(server.url("/fixture").toString(), rows.getValue(1).requestKey)
         } finally { other.shutdown() }
+    }
+
+    @Test fun `direct fallback wakes retained staging before direct download finishes`() = runBlocking {
+        val original = rows.getValue(1)
+        rows[1] = original.copy(
+            gameFileId = null, fileCategory = null, selectedFileIds = null,
+            fileName = "new.zip", tempFilePath = null, requestKey = null
+        )
+        val area = staging.open(StagingManifest(2, 11, "Retained fixture", "retained.bin",
+            destination.absolutePath, StagingPhase.DOWNLOADING))
+        val stagedPart = File(area.archiveDir, "retained.bin.tmp").apply { writeBytes(bytes.copyOf(8192)) }
+        rows[2] = original.copy(
+            id = 2, gameId = 11, rommId = 101, gameFileId = 21, fileName = "retained.bin",
+            gameTitle = "Retained fixture", createdAt = original.createdAt.plusSeconds(1),
+            tempFilePath = stagedPart.absolutePath, bytesDownloaded = 8192,
+            resumeValidator = "\"v1\"", responseTotalBytes = bytes.size.toLong()
+        )
+        val checkingSpace = CompletableDeferred<Unit>()
+        val finishSpaceCheck = CompletableDeferred<Unit>()
+        val retainedBlocked = CompletableDeferred<Unit>()
+        val directRunning = CompletableDeferred<Unit>()
+        val retainedRunning = CompletableDeferred<Unit>()
+        val finishRetained = CompletableDeferred<Unit>()
+        every { staging.claim(2) } answers {
+            (callOriginal() as Boolean).also { claimed ->
+                if (!claimed) retainedBlocked.complete(Unit)
+            }
+        }
+        every { staging.internalAvailableBytes() } answers {
+            checkingSpace.complete(Unit)
+            runBlocking { withTimeout(10000) { finishSpaceCheck.await() } }
+            0L
+        }
+        coEvery { dao.getById(2) } coAnswers {
+            withTimeout(10000) { checkingSpace.await() }
+            rows[2]
+        }
+        coEvery { dao.updateState(any(), DownloadState.DOWNLOADING.name, any()) } coAnswers {
+            val id = firstArg<Long>()
+            rows.computeIfPresent(id) { _, row -> row.copy(state = DownloadState.DOWNLOADING.name) }
+            if (id == 1L) {
+                directRunning.complete(Unit)
+                awaitCancellation()
+            } else {
+                retainedRunning.complete(Unit)
+                finishRetained.await()
+            }
+        }
+        server.enqueue(partial(8192))
+        val manager = manager(maxConcurrentDownloads = 2, stageDownloadsInternally = true)
+        try {
+            withTimeout(10000) {
+                checkingSpace.await()
+                retainedBlocked.await()
+                manager.state.first { it.queue.any { row -> row.id == 2L } && it.activeDownloads.any { row -> row.id == 1L } }
+            }
+            verify(exactly = 1) { staging.claim(2) }
+            assertFalse(staging.claim(999))
+            assertEquals(0, server.requestCount)
+            finishSpaceCheck.complete(Unit)
+            withTimeout(10000) {
+                directRunning.await()
+                retainedRunning.await()
+            }
+            verify(exactly = 2) { staging.claim(2) }
+            assertTrue(staging.claim(2))
+            assertFalse(staging.claim(999))
+            assertEquals(0, server.requestCount)
+            finishRetained.complete(Unit)
+            withTimeout(10000) { manager.state.first { it.completed.any { row -> row.id == 2L } } }
+            assertEquals(DownloadState.COMPLETED.name, rows.getValue(2).state)
+            assertTrue(manager.state.value.activeDownloads.any { it.id == 1L })
+            assertEquals(DownloadState.DOWNLOADING.name, rows.getValue(1).state)
+            assertArrayEquals(bytes, File(destination, "retained.bin").readBytes())
+            assertEquals(1, server.requestCount)
+            assertEquals("bytes=8192-", server.takeRequest().getHeader("Range"))
+        } finally {
+            finishSpaceCheck.complete(Unit)
+            finishRetained.complete(Unit)
+        }
     }
 
     @Test fun `busy retained staging does not starve a direct download`() = runBlocking {

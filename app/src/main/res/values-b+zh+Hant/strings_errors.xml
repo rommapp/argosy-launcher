@@ -55,4 +55,12 @@
     <string name="error_filepicker_already_downloaded">遊戲已下載</string>
     <string name="error_download_request_conflict">未完成的下載與此選擇衝突。請先在下載清單中取消或移除該下載，再變更選擇。</string>
     <string name="error_download_game_request_conflict">未完成的下載與此選擇衝突。請先在下載清單中取消或移除該下載，再變更選擇。</string>
+    <string name="error_download_http">下載失敗（HTTP %1$d）</string>
+    <string name="error_download_http_unauthorized">RomM 登入已過期或需要登入（HTTP %1$d）</string>
+    <string name="error_download_http_forbidden">RomM 拒絕存取此下載（HTTP %1$d）</string>
+    <string name="error_download_http_not_found">在 RomM 上找不到下載（HTTP %1$d）</string>
+    <string name="error_download_integrity_check_failed">下載完整性檢查失敗。請重新下載。</string>
+    <string name="error_download_invalid_response">RomM 傳回了無效的下載回應。</string>
+    <string name="error_download_storage_access_failed">無法存取下載儲存空間。請檢查可用空間和權限。</string>
+    <string name="error_download_tls_verification_failed">無法驗證伺服器憑證。請檢查伺服器和憑證設定。</string>
 </resources>

@@ -1,8 +1,12 @@
 package com.nendo.argosy.data.download.transfer
 
+import com.nendo.argosy.data.download.DownloadFailureReason
 import okhttp3.Headers
 
-internal class InvalidTransferHeaders(message: String) : Exception(message)
+internal class InvalidTransferHeaders(
+    message: String,
+    val reason: DownloadFailureReason = DownloadFailureReason.InvalidResponse
+) : Exception(message)
 
 internal data class TransferHeaders(
     val validator: String?,
@@ -28,7 +32,7 @@ internal data class TransferHeaders(
             val mime = single("Content-Type")?.substringBefore(';')?.trim()?.lowercase()
             val allowedPng = mime == "image/png" && expectedContent == ExpectedTransferContent.PICO8_PNG
             if (mime == "text/html" || (mime?.startsWith("image/") == true && !allowedPng)) {
-                throw InvalidTransferHeaders("Invalid download content type")
+                throw InvalidTransferHeaders("Invalid download content type", DownloadFailureReason.InvalidContentType(requireNotNull(mime)))
             }
             if (encoding != null && !encoding.equals("identity", true)) {
                 throw InvalidTransferHeaders("Encoded response")
@@ -55,7 +59,7 @@ internal data class TransferHeaders(
             val range = single("Content-Range")
             if (!partial) {
                 if (range != null) throw InvalidTransferHeaders("Unexpected Content-Range")
-                if (length == 0L) throw InvalidTransferHeaders("Empty response")
+                if (length == 0L) throw InvalidTransferHeaders("Empty response", DownloadFailureReason.FileTooSmall)
                 if (length == null && transferEncoding == null && !framedStream) {
                     throw InvalidTransferHeaders("Unbounded response")
                 }

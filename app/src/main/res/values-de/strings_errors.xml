@@ -55,4 +55,12 @@
     <string name="error_filepicker_already_downloaded">Spiel bereits heruntergeladen</string>
     <string name="error_download_request_conflict">Ein nicht abgeschlossener Download steht im Konflikt mit dieser Auswahl. Brich ihn unter Downloads ab oder entferne ihn dort, bevor du die Auswahl änderst.</string>
     <string name="error_download_game_request_conflict">Ein nicht abgeschlossener Download steht im Konflikt mit dieser Auswahl. Brich ihn unter Downloads ab oder entferne ihn dort, bevor du die Auswahl änderst.</string>
+    <string name="error_download_http">Download fehlgeschlagen (HTTP %1$d)</string>
+    <string name="error_download_http_unauthorized">RomM-Anmeldung abgelaufen oder erforderlich (HTTP %1$d)</string>
+    <string name="error_download_http_forbidden">RomM hat den Zugriff auf diesen Download verweigert (HTTP %1$d)</string>
+    <string name="error_download_http_not_found">Download auf RomM nicht gefunden (HTTP %1$d)</string>
+    <string name="error_download_integrity_check_failed">Integritätsprüfung des Downloads fehlgeschlagen. Wiederhole den Download.</string>
+    <string name="error_download_invalid_response">RomM hat eine ungültige Download-Antwort zurückgegeben.</string>
+    <string name="error_download_storage_access_failed">Zugriff auf den Download-Speicher nicht möglich. Prüfe freien Speicherplatz und Berechtigungen.</string>
+    <string name="error_download_tls_verification_failed">Das Serverzertifikat konnte nicht überprüft werden. Prüfe die Server- und Zertifikatseinstellungen.</string>
 </resources>

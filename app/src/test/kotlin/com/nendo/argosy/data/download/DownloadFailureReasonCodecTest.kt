@@ -11,12 +11,27 @@ import org.junit.Test
  */
 class DownloadFailureReasonCodecTest {
 
+    @Test fun malformedHttpTokensRemainLegacyRows() {
+        for (raw in listOf("HTTP_ERROR", "HTTP_ERROR:", "HTTP_ERROR:no", "HTTP_ERROR:401:extra", "HTTP_ERROR:99", "HTTP_ERROR:600")) {
+            assertEquals(DownloadFailureReason.LegacyRaw(raw), DownloadFailureReasonCodec.decode(raw))
+        }
+        assertEquals("HTTP_ERROR:404", DownloadFailureReasonCodec.encode(DownloadFailureReason.HttpError(404)))
+    }
+
     private fun roundTrip(reason: DownloadFailureReason): DownloadFailureReason? =
         DownloadFailureReasonCodec.decode(DownloadFailureReasonCodec.encode(reason))
 
     @Test
     fun `every reason survives a round trip`() {
         val reasons = listOf(
+            DownloadFailureReason.HttpError(401),
+            DownloadFailureReason.HttpError(403),
+            DownloadFailureReason.HttpError(404),
+            DownloadFailureReason.HttpError(501),
+            DownloadFailureReason.IntegrityCheckFailed,
+            DownloadFailureReason.InvalidResponse,
+            DownloadFailureReason.StorageAccessFailed,
+            DownloadFailureReason.TlsVerificationFailed,
             DownloadFailureReason.RequestConflict,
             DownloadFailureReason.FileTooSmall,
             DownloadFailureReason.InvalidContentType("image/png"),

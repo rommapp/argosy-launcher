@@ -275,16 +275,17 @@ class DownloadManagerTransferLifecycleTest {
             tempFilePath = File(destination, "other.bin.tmp").absolutePath,
             resumeValidator = null, responseTotalBytes = null
         )
+        server.enqueue(full())
+        val manager = manager()
+        withTimeout(15000) { manager.state.first { it.completed.size == 2 } }
+        val failed = rows.getValue(1)
+
         val cleared = CompletableDeferred<Unit>()
         coEvery { dao.clearCompleted() } answers {
             rows.entries.removeIf { it.value.state == DownloadState.COMPLETED.name }
             cleared.complete(Unit)
             Unit
         }
-        server.enqueue(full())
-        val manager = manager()
-        withTimeout(15000) { manager.state.first { it.completed.size == 2 } }
-        val failed = rows.getValue(1)
 
         manager.clearCompleted()
         withTimeout(5000) { cleared.await() }

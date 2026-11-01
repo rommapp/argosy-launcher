@@ -1005,8 +1005,6 @@
     <string name="gamedetail_action_buttons_no_space">SPEICHER VOLL</string>
     <string name="gamedetail_action_buttons_downloading_percent">%1$d%%</string>
     <string name="gamedetail_action_buttons_waiting_for_server">Warten auf Server…</string>
-    <string name="gamedetail_action_buttons_retrying">Erneuter Versuch…</string>
-    <string name="gamedetail_action_buttons_waiting_for_network">Warten auf Netzwerk…</string>
     <string name="gamedetail_action_buttons_extracting">WIRD ENTPACKT...</string>
     <string name="gamedetail_action_buttons_resume_percent">FORTSETZEN %1$d%%</string>
     <string name="gamedetail_action_buttons_retry">WIEDERHOLEN</string>

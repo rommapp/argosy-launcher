@@ -6,20 +6,16 @@ import com.nendo.argosy.data.download.DownloadProgress
 import com.nendo.argosy.data.download.DownloadState
 
 enum class DownloadWaitStatus(
-    @get:StringRes val menuLabelRes: Int,
-    @get:StringRes val actionLabelRes: Int
+    @get:StringRes val menuLabelRes: Int
 ) {
     RETRYING(
-        R.string.gamedetail_menu_play_button_retrying,
-        R.string.gamedetail_action_buttons_retrying
+        R.string.gamedetail_menu_play_button_retrying
     ),
     WAITING_FOR_NETWORK(
-        R.string.gamedetail_menu_play_button_waiting_for_network,
-        R.string.gamedetail_action_buttons_waiting_for_network
+        R.string.gamedetail_menu_play_button_waiting_for_network
     ),
     WAITING_FOR_SERVER(
-        R.string.gamedetail_menu_play_button_waiting_for_server,
-        R.string.gamedetail_action_buttons_waiting_for_server
+        R.string.gamedetail_menu_play_button_waiting_for_server
     )
 }
 

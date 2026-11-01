@@ -6,6 +6,7 @@ import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.local.entity.DownloadQueueEntity
+import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.platform.PlatformFolderResolver
 import com.nendo.argosy.data.preferences.UserPreferences
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -162,7 +163,7 @@ class DownloadManagerTransferLifecycleTest {
         server.shutdown()
     }
 
-    private fun manager(): DownloadManager {
+    private fun manager(existingOwner: GameEntity? = null): DownloadManager {
         val job = SupervisorJob().also { jobs += it }
         val preferences = mockk<UserPreferencesRepository>()
         every { preferences.userPreferences } returns flowOf(UserPreferences(
@@ -173,7 +174,9 @@ class DownloadManagerTransferLifecycleTest {
         coEvery { folders.storageBase() } returns destination
         coEvery { folders.downloadDirForGame(any(), any()) } returns destination
         coEvery { gameDao.getById(any()) } returns null
-        coEvery { gameDao.getByPath(any()) } returns null
+        coEvery { gameDao.getByPath(any()) } answers {
+            existingOwner?.takeIf { firstArg<String>() == File(destination, "fixture.bin").absolutePath }
+        }
         coEvery { gameDao.updateLocalPath(any(), any(), any(), any(), any()) } answers {
             linkedPath = arg(1)
             Unit
@@ -203,6 +206,35 @@ class DownloadManagerTransferLifecycleTest {
         part.writeBytes(bytes.copyOf(offset))
         rows[1] = rows.getValue(1).copy(state = state.name, bytesDownloaded = 17,
             resumeValidator = "\"v1\"", responseTotalBytes = bytes.size.toLong())
+    }
+
+    @Test fun `unbound download preserves other owner target and orphan shared partial`() = runBlocking {
+        val sharedTarget = File(destination, "fixture.bin")
+        val originalBytes = "other game target".toByteArray()
+        val orphanBytes = "unidentified foreign prefix".toByteArray()
+        sharedTarget.writeBytes(originalBytes)
+        part.writeBytes(orphanBytes)
+        rows[1] = rows.getValue(1).copy(
+            gameFileId = null, fileCategory = null, selectedFileIds = null, requestKey = null
+        )
+        val owner = mockk<GameEntity>()
+        every { owner.id } returns 99L
+        server.enqueue(full())
+
+        manager(existingOwner = owner).awaitState(DownloadState.COMPLETED)
+
+        val installed = File(destination, "Synthetic fixture/fixture.bin")
+        assertEquals(installed.absolutePath, linkedPath)
+        assertArrayEquals(bytes, installed.readBytes())
+        assertArrayEquals(originalBytes, sharedTarget.readBytes())
+        assertArrayEquals(orphanBytes, part.readBytes())
+        assertEquals(File(installed.parentFile, "fixture.bin.tmp").absolutePath, rows.getValue(1).tempFilePath)
+        assertEquals(server.url("/fixture").toString(), rows.getValue(1).requestKey)
+        coVerify(exactly = 1) { gameDao.updateLocalPath(10, installed.absolutePath, any(), any(), any()) }
+        assertEquals(1, server.requestCount)
+        val request = server.takeRequest()
+        assertNull(request.getHeader("Range"))
+        assertNull(request.getHeader("If-Range"))
     }
 
     @Test fun `ordinary ROM PNG error fails without promotion or linking`() = runBlocking {

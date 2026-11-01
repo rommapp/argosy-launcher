@@ -253,7 +253,7 @@ class DownloadManager internal constructor(
     private val _completionEvents = MutableSharedFlow<DownloadCompletionEvent>()
     val completionEvents: SharedFlow<DownloadCompletionEvent> = _completionEvents.asSharedFlow()
 
-    private val downloadJobs = mutableMapOf<Long, Job>()
+    private val downloadJobs = java.util.concurrent.ConcurrentHashMap<Long, Job>()
     private val admissionMutex = Mutex()
     private val enqueueMutex = Mutex()
     private val stagingClaims = java.util.concurrent.ConcurrentHashMap.newKeySet<Long>()
@@ -1191,7 +1191,7 @@ class DownloadManager internal constructor(
             val maxConcurrent = preferencesRepository.userPreferences.first().maxConcurrentDownloads
             val slotsAvailable = (maxConcurrent - totalActiveDownloads()).coerceAtLeast(0)
             val nextItems = _state.value.queue
-                .filter { it.state == DownloadState.QUEUED && it.id !in stagingBlocked && it.id !in downloadJobs }
+                .filter { it.state == DownloadState.QUEUED && it.id !in stagingBlocked && !downloadJobs.containsKey(it.id) }
                 .take(slotsAvailable)
             for (next in nextItems) {
                 startDownloadJob(next)
@@ -1249,7 +1249,7 @@ class DownloadManager internal constructor(
 
                 val fileDir = separateFromOtherOwner(downloadDir, platformDir, stagingArea == null, progress)
                 val tempFile = stagingArea?.let { File(it.archiveDir, "${progress.fileName}.tmp") }
-                    ?: persistedPart?.takeIf { it.exists() || row.requestKey != null }
+                    ?: persistedPart?.takeIf { row.requestKey != null || (it.exists() && fileDir == downloadDir) }
                     ?: File(fileDir, "${progress.fileName}.tmp")
                 val targetFile = File(tempFile.parentFile, progress.fileName)
                 val reserved = enqueueMutex.withLock {

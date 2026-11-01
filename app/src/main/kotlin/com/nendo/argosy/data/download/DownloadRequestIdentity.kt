@@ -46,12 +46,3 @@ internal fun DownloadQueueEntity.transferFiles(intendedPart: File): Set<File> =
     listOfNotNull(tempFilePath?.let(::File), intendedPart).flatMap { part ->
         listOf(part.canonicalFile, File(part.parentFile, fileName).canonicalFile)
     }.toSet()
-
-internal fun DownloadProgress.reservationRow(): DownloadQueueEntity = DownloadQueueEntity(
-    id = id, gameId = gameId, rommId = rommId, discId = discId, discNumber = discNumber,
-    gameFileId = gameFileId, fileCategory = fileCategory, fileName = fileName,
-    gameTitle = gameTitle, gameFolderName = gameFolderName, platformSlug = platformSlug,
-    coverPath = coverPath, bytesDownloaded = bytesDownloaded, totalBytes = totalBytes,
-    state = state.name, errorReason = null, tempFilePath = null,
-    isMultiFileRom = isMultiFileRom, selectedFileIds = selectedFileIds?.joinToString(",")
-)

@@ -52,21 +52,19 @@ class DownloadDelegateWaitStatusTest {
     )
 
     @Test
-    fun `retry and network waits preserve progress and select usage-specific labels`() = runTest {
+    fun `retry and network waits preserve progress and select menu labels`() = runTest {
         delegate.observeDownloads(backgroundScope, { 10 }) {}
         val cases = listOf(
-            Triple(
+            Pair(
                 DownloadState.RETRYING,
-                R.string.gamedetail_menu_play_button_retrying,
-                R.string.gamedetail_action_buttons_retrying
+                R.string.gamedetail_menu_play_button_retrying
             ),
-            Triple(
+            Pair(
                 DownloadState.WAITING_FOR_NETWORK,
-                R.string.gamedetail_menu_play_button_waiting_for_network,
-                R.string.gamedetail_action_buttons_waiting_for_network
+                R.string.gamedetail_menu_play_button_waiting_for_network
             )
         )
-        for ((state, menuLabel, actionLabel) in cases) {
+        for ((state, menuLabel) in cases) {
             queue.value = DownloadQueueState(activeDownloads = listOf(progress.copy(state = state)))
             runCurrent()
 
@@ -74,7 +72,6 @@ class DownloadDelegateWaitStatusTest {
             assertEquals(GameDownloadStatus.DOWNLOADING, actual.downloadStatus)
             assertEquals(0.25f, actual.downloadProgress, 0f)
             assertEquals(menuLabel, actual.downloadWaitStatus?.menuLabelRes)
-            assertEquals(actionLabel, actual.downloadWaitStatus?.actionLabelRes)
         }
     }
 
@@ -90,10 +87,6 @@ class DownloadDelegateWaitStatusTest {
         assertEquals(
             R.string.gamedetail_menu_play_button_waiting_for_server,
             delegate.state.value.downloadWaitStatus?.menuLabelRes
-        )
-        assertEquals(
-            R.string.gamedetail_action_buttons_waiting_for_server,
-            delegate.state.value.downloadWaitStatus?.actionLabelRes
         )
 
         queue.value = DownloadQueueState(activeDownloads = listOf(progress.copy(bytesDownloaded = 50)))

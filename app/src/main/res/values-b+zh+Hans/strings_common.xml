@@ -438,6 +438,7 @@
     <string name="ui_netplay_join_heading">正在加入%1$s</string>
     <string name="ui_netplay_join_unknown_host">联机</string>
     <string name="ui_netplay_join_status_joining">正在加入会话</string>
+    <string name="ui_netplay_join_error_download_conflict">此 ROM 下载与现有下载冲突。</string>
     <string name="ui_netplay_join_status_matching_core">正在匹配核心</string>
     <string name="ui_netplay_join_status_downloading_core">正在下载核心</string>
     <string name="ui_netplay_join_status_core_ready">核心已就绪</string>

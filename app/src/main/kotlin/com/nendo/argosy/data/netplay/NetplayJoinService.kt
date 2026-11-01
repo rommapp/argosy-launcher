@@ -244,7 +244,7 @@ class NetplayJoinService @Inject constructor(
         val downloadId = when (enqueueResult) {
             is DownloadEnqueueResult.Accepted -> enqueueResult.downloadId
             is DownloadEnqueueResult.Conflict -> {
-                _state.update { NetplayJoinState.Failed("Failed to download ROM") }
+                _state.update { NetplayJoinState.Failed(NetplayJoinFailure.DownloadConflict) }
                 return
             }
         }

@@ -14,6 +14,8 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,9 +25,13 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -38,6 +44,7 @@ class DownloadRequestAdmissionTest {
     @get:Rule val storage = TemporaryFolder()
     private val dispatcher = StandardTestDispatcher()
     private val rows = linkedMapOf<Long, DownloadQueueEntity>()
+    private var nextId = 1L
     private val dao = mockk<DownloadQueueDao>(relaxed = true)
     private val repository = mockk<RomMRepository>(relaxed = true)
 
@@ -45,17 +52,24 @@ class DownloadRequestAdmissionTest {
         Dispatchers.setMain(dispatcher)
         every { repository.isConnected() } returns false
         every { repository.connectionState } returns MutableStateFlow(ConnectionState.Disconnected)
-        coEvery { dao.getRecoverableDownloads() } answers { rows.values.toList() }
+        coEvery { dao.getRecoverableDownloads() } answers {
+            rows.values.filter { it.state in recoverableStates }.sortedBy { it.createdAt }
+        }
+        coEvery { dao.clearCompleted() } answers {
+            rows.entries.removeAll { it.value.state == DownloadState.COMPLETED.name }
+            Unit
+        }
         coEvery { dao.getById(any()) } answers { rows[firstArg()] }
         coEvery { dao.insert(any()) } answers {
             val row = firstArg<DownloadQueueEntity>()
-            val id = (rows.keys.maxOrNull() ?: 0L) + 1
+            val id = maxOf(nextId, (rows.keys.maxOrNull() ?: 0L) + 1)
+            nextId = id + 1
             rows[id] = row.copy(id = id)
             id
         }
         coEvery { dao.update(any()) } answers {
             val row = firstArg<DownloadQueueEntity>()
-            rows[row.id] = row
+            if (rows.containsKey(row.id)) rows[row.id] = row
         }
         coEvery { dao.updateState(any(), any(), any()) } answers {
             val id = firstArg<Long>()
@@ -94,6 +108,7 @@ class DownloadRequestAdmissionTest {
     }
 
     private fun row(id: Long = 7, state: DownloadState = DownloadState.FAILED): DownloadQueueEntity {
+        nextId = maxOf(nextId, id + 1)
         val part = File(storage.root, "retained/$id/game.zip.tmp")
         part.parentFile!!.mkdirs()
         part.writeBytes(ByteArray(2048) { 17 })
@@ -109,6 +124,199 @@ class DownloadRequestAdmissionTest {
     private suspend fun DownloadManager.enqueue(
         selection: List<Long>? = listOf(3, 9), gameId: Long = 1, fileName: String = "game.zip"
     ) = enqueueDownload(gameId, 10, fileName, "New title", "nes", null, selectedFileIds = selection)
+
+    private val recoverableStates = setOf(
+        "QUEUED", "PAUSED", "DOWNLOADING", "EXTRACTING", "MOVING", "WAITING_FOR_STORAGE",
+        "RETRYING", "WAITING_FOR_NETWORK", "FAILED"
+    )
+
+    private suspend fun awaitGate(gate: CompletableDeferred<Unit>) = withContext(Dispatchers.Default) {
+        withTimeout(5_000) { gate.await() }
+    }
+
+    private suspend fun DownloadManager.enqueueExact(retained: DownloadQueueEntity): DownloadEnqueueResult =
+        when {
+            retained.discId != null -> enqueueDiscDownload(
+                retained.gameId, retained.discId, retained.discNumber!!, retained.rommId,
+                retained.fileName, retained.gameTitle, platformSlug = retained.platformSlug,
+                coverPath = null, startNow = true
+            )
+            retained.gameFileId != null -> enqueueGameFileDownload(
+                retained.gameId, retained.gameFileId, retained.rommId, retained.fileName,
+                retained.fileCategory!!, retained.gameTitle, retained.platformSlug, null, startNow = true
+            )
+            else -> enqueueDownload(
+                retained.gameId, retained.rommId, retained.fileName, retained.gameTitle,
+                retained.platformSlug, null, selectedFileIds = listOf(3, 9), startNow = true
+            )
+        }
+
+    private suspend fun TestScope.cancelBeforeReadmission(retained: DownloadQueueEntity) {
+        rows[retained.id] = retained
+        nextId = retained.id + 1
+        val manager = manager()
+        manager.state.first { it.queue.any { item -> item.id == retained.id } }
+        val cleanupEntered = CompletableDeferred<Unit>()
+        val releaseCleanup = CompletableDeferred<Unit>()
+        coEvery { dao.deleteById(retained.id) } coAnswers {
+            cleanupEntered.complete(Unit)
+            awaitGate(releaseCleanup)
+            rows.remove(retained.id)
+            Unit
+        }
+        manager.cancelDownload(retained.rommId)
+        awaitGate(cleanupEntered)
+        val admission = async(start = CoroutineStart.UNDISPATCHED) { manager.enqueueExact(retained) }
+        runCurrent()
+        assertFalse(admission.isCompleted)
+        releaseCleanup.complete(Unit)
+        val accepted = admission.await() as DownloadEnqueueResult.Accepted
+        assertTrue(accepted.downloadId > retained.id)
+        assertEquals(DownloadState.QUEUED.name, rows[accepted.downloadId]?.state)
+        assertFalse(rows.containsKey(retained.id))
+        assertEquals(listOf(accepted.downloadId), manager.state.value.queue.map { it.id })
+        assertTrue(manager.state.value.activeDownloads.none { it.id == retained.id })
+        coVerify(exactly = 1) { dao.deleteById(retained.id) }
+    }
+
+    @Test fun `base admission waits for paused cancellation cleanup`() = runTest {
+        cancelBeforeReadmission(row(state = DownloadState.PAUSED))
+    }
+
+    @Test fun `disc admission waits for paused cancellation cleanup`() = runTest {
+        cancelBeforeReadmission(row(state = DownloadState.PAUSED).copy(
+            discId = 80, discNumber = 1, selectedFileIds = null, isMultiFileRom = false
+        ))
+    }
+
+    @Test fun `game file admission waits for paused cancellation cleanup`() = runTest {
+        cancelBeforeReadmission(row(state = DownloadState.PAUSED).copy(
+            gameFileId = 90, fileCategory = "dlc", selectedFileIds = null, isMultiFileRom = false
+        ))
+    }
+
+    @Test fun `recoverable snapshot disappearing before reuse creates a persisted replacement`() = runTest {
+        val retained = row(state = DownloadState.PAUSED)
+        rows[retained.id] = retained
+        nextId = retained.id + 1
+        val manager = manager()
+        manager.state.first { it.queue.size == 1 }
+        var snapshots = 0
+        coEvery { dao.getRecoverableDownloads() } answers {
+            snapshots++
+            check(snapshots <= 4)
+            val snapshot = rows.values.toList()
+            rows.remove(retained.id)
+            snapshot
+        }
+        val result = manager.enqueueExact(retained) as DownloadEnqueueResult.Accepted
+        assertTrue(result.downloadId > retained.id)
+        assertEquals(DownloadState.QUEUED.name, rows[result.downloadId]?.state)
+        assertEquals(listOf(result.downloadId), manager.state.value.queue.map { it.id })
+        coVerify(exactly = 1) { dao.insert(any()) }
+    }
+
+    @Test fun `memory only paused candidate cannot accept a missing persisted row`() = runTest {
+        val retained = row(state = DownloadState.PAUSED)
+        rows[retained.id] = retained
+        nextId = retained.id + 1
+        val manager = manager()
+        manager.state.first { it.queue.size == 1 }
+        rows.remove(retained.id)
+        val result = manager.enqueueExact(retained) as DownloadEnqueueResult.Accepted
+        assertTrue(result.downloadId > retained.id)
+        assertEquals(DownloadState.QUEUED.name, rows[result.downloadId]?.state)
+        assertEquals(listOf(result.downloadId), manager.state.value.queue.map { it.id })
+    }
+
+    private fun DownloadManager.removeHistory(id: Long, clear: Boolean) {
+        if (clear) clearFinished() else removeFromCompleted(id)
+    }
+
+    private suspend fun TestScope.historyRemovalBeforeAdmission(clear: Boolean) {
+        val retained = row()
+        rows[retained.id] = retained
+        nextId = retained.id + 1
+        val manager = manager()
+        manager.state.first { it.completed.size == 1 }
+        val deletionEntered = CompletableDeferred<Unit>()
+        val releaseDeletion = CompletableDeferred<Unit>()
+        coEvery { dao.deleteById(retained.id) } coAnswers {
+            deletionEntered.complete(Unit)
+            awaitGate(releaseDeletion)
+            rows.remove(retained.id)
+            Unit
+        }
+        manager.removeHistory(retained.id, clear)
+        awaitGate(deletionEntered)
+        val admission = async(start = CoroutineStart.UNDISPATCHED) { manager.enqueueExact(retained) }
+        runCurrent()
+        assertFalse(admission.isCompleted)
+        releaseDeletion.complete(Unit)
+        val result = admission.await() as DownloadEnqueueResult.Accepted
+        assertTrue(result.downloadId > retained.id)
+        assertEquals(DownloadState.QUEUED.name, rows[result.downloadId]?.state)
+        assertEquals(listOf(result.downloadId), manager.state.value.queue.map { it.id })
+        assertTrue(manager.state.value.completed.isEmpty())
+    }
+
+    @Test fun `finished removal owns cleanup before identical admission`() = runTest {
+        historyRemovalBeforeAdmission(clear = false)
+    }
+
+    @Test fun `finished clear owns cleanup before identical admission`() = runTest {
+        historyRemovalBeforeAdmission(clear = true)
+    }
+
+    private suspend fun TestScope.reuseBeforeHistoryRemoval(clear: Boolean) {
+        val retained = row()
+        rows[retained.id] = retained
+        val manager = manager()
+        manager.state.first { it.completed.size == 1 }
+        val updateEntered = CompletableDeferred<Unit>()
+        val releaseUpdate = CompletableDeferred<Unit>()
+        coEvery { dao.updateState(retained.id, DownloadState.QUEUED.name, any()) } coAnswers {
+            updateEntered.complete(Unit)
+            awaitGate(releaseUpdate)
+            rows[retained.id] = retained.copy(state = DownloadState.QUEUED.name)
+        }
+        val admission = async { manager.enqueueExact(retained) }
+        awaitGate(updateEntered)
+        manager.removeHistory(retained.id, clear)
+        runCurrent()
+        assertFalse(admission.isCompleted)
+        releaseUpdate.complete(Unit)
+        assertEquals(DownloadEnqueueResult.Accepted(retained.id), admission.await())
+        runCurrent()
+        manager.enqueue(gameId = 2, fileName = "barrier.zip")
+        assertEquals(DownloadState.QUEUED.name, rows[retained.id]?.state)
+        assertTrue(manager.state.value.queue.any { it.id == retained.id })
+        coVerify(exactly = 0) { dao.deleteById(retained.id) }
+    }
+
+    @Test fun `stale finished removal cannot delete reused queued row`() = runTest {
+        reuseBeforeHistoryRemoval(clear = false)
+    }
+
+    @Test fun `stale finished clear cannot delete reused queued row`() = runTest {
+        reuseBeforeHistoryRemoval(clear = true)
+    }
+
+    @Test fun `completed clear retains failures and finished clear removes them`() = runTest {
+        val failed = row()
+        rows[failed.id] = failed
+        val manager = manager()
+        manager.state.first { it.completed.size == 1 }
+        manager.clearCompleted()
+        runCurrent()
+        assertEquals(listOf(failed.id), manager.state.value.completed.map { it.id })
+        assertEquals(setOf(failed.id), rows.keys)
+        manager.clearFinished()
+        manager.state.first { it.completed.isEmpty() }
+        assertTrue(rows.isEmpty())
+        coVerify(exactly = 1) { dao.clearCompleted() }
+        coVerify(exactly = 0) { dao.clearFinished() }
+    }
 
     @Test fun `reordered selection reuses failed row without changing serialization owner or checkpoint`() = runTest {
         val retained = row()

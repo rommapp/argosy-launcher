@@ -468,6 +468,7 @@
     <string name="ui_netplay_join_heading">Uniéndote a %1$s</string>
     <string name="ui_netplay_join_unknown_host">netplay</string>
     <string name="ui_netplay_join_status_joining">Uniéndote a la sesión</string>
+    <string name="ui_netplay_join_error_download_conflict">Esta descarga de ROM entra en conflicto con una descarga existente.</string>
     <string name="ui_netplay_join_status_matching_core">Buscando núcleo compatible</string>
     <string name="ui_netplay_join_status_downloading_core">Descargando núcleo</string>
     <string name="ui_netplay_join_status_core_ready">Núcleo listo</string>

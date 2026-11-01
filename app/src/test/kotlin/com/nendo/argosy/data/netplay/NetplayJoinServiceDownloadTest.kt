@@ -1,5 +1,6 @@
 package com.nendo.argosy.data.netplay
 
+import com.nendo.argosy.R
 import com.nendo.argosy.data.download.DownloadEnqueueResult
 import com.nendo.argosy.data.download.DownloadManager
 import com.nendo.argosy.data.download.DownloadProgress
@@ -9,6 +10,7 @@ import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.domain.usecase.game.LaunchGameUseCase
+import com.nendo.argosy.ui.common.labelRes
 import io.mockk.Called
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -55,7 +57,7 @@ class NetplayJoinServiceDownloadTest {
             service.selectCandidate(game.id)
             runCurrent()
 
-            assertEquals(NetplayJoinState.Failed("Failed to download ROM"), service.state.value)
+            assertEquals(NetplayJoinState.Failed(NetplayJoinFailure.DownloadConflict), service.state.value)
             verify(exactly = 0) { downloads.state }
             verify { preflight wasNot Called; launcher wasNot Called }
             verifyEnqueue()
@@ -116,6 +118,17 @@ class NetplayJoinServiceDownloadTest {
                 expectedSizeBytes = 0L, isMultiFileRom = false, startNow = true
             )
         } returns result
+    }
+
+    @Test
+    fun downloadConflictMapsToJoinModalResource() {
+        assertEquals(R.string.ui_netplay_join_error_download_conflict, NetplayJoinFailure.DownloadConflict.labelRes)
+    }
+
+    @Test
+    fun legacyFailurePreservesRawMessage() {
+        val detail = "Failed to download core: upstream detail"
+        assertEquals(NetplayJoinFailure.RawMessage(detail), NetplayJoinState.Failed(detail).reason)
     }
 
     private fun verifyEnqueue() {

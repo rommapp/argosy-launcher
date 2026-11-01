@@ -23,17 +23,22 @@ import java.util.zip.ZipOutputStream
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicLong
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.OkHttpClient
 import okhttp3.ResponseBody
 import okhttp3.mockwebserver.MockResponse
@@ -61,6 +66,7 @@ class DownloadManagerTransferLifecycleTest {
     @get:Rule val storage = TemporaryFolder()
     private val server = MockWebServer()
     private val rows = ConcurrentHashMap<Long, DownloadQueueEntity>()
+    private val nextId = AtomicLong(1)
     private val dispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
     private val jobs = mutableListOf<kotlinx.coroutines.Job>()
     private val dao = mockk<DownloadQueueDao>(relaxed = true)
@@ -108,6 +114,11 @@ class DownloadManagerTransferLifecycleTest {
             rows.values.filter { it.state != DownloadState.COMPLETED.name }.sortedBy { it.createdAt }
         }
         coEvery { dao.getById(any()) } answers { rows[firstArg()] }
+        coEvery { dao.insert(any()) } answers {
+            val id = nextId.updateAndGet { previous -> maxOf(previous, rows.keys.maxOrNull() ?: 0L) + 1 }
+            rows[id] = firstArg<DownloadQueueEntity>().copy(id = id)
+            id
+        }
         coEvery { dao.getByGameId(any()) } answers { rows.values.firstOrNull { it.gameId == firstArg<Long>() } }
         coEvery { dao.update(any()) } answers { firstArg<DownloadQueueEntity>().let { rows[it.id] = it }; Unit }
         coEvery { dao.updateState(any(), any(), any()) } coAnswers {
@@ -381,16 +392,13 @@ class DownloadManagerTransferLifecycleTest {
         withTimeout(15000) { manager.state.first { it.completed.size == 2 } }
         val failed = rows.getValue(1)
 
-        val cleared = CompletableDeferred<Unit>()
-        coEvery { dao.clearCompleted() } answers {
-            rows.entries.removeIf { it.value.state == DownloadState.COMPLETED.name }
-            cleared.complete(Unit)
-            Unit
+        manager.clearCompleted()
+        withTimeout(5000) {
+            manager.state.first { snapshot -> snapshot.completed.none { it.id == 2L } }
         }
 
-        manager.clearCompleted()
-        withTimeout(5000) { cleared.await() }
-
+        coVerify(exactly = 1) { dao.deleteById(2L) }
+        coVerify(exactly = 0) { dao.deleteById(1L) }
         assertEquals(listOf(1L), manager.state.value.completed.map { it.id })
         assertEquals(DownloadState.FAILED, manager.state.value.completed.single().state)
         assertEquals(failed, rows.getValue(1))
@@ -406,18 +414,27 @@ class DownloadManagerTransferLifecycleTest {
 
     @Test fun `explicit clear finished still removes restored failed entries and rows`() = runBlocking {
         retained(8192, DownloadState.FAILED)
-        val cleared = CompletableDeferred<Unit>()
-        coEvery { dao.clearFinished() } answers {
-            rows.entries.removeIf { it.value.state in listOf("COMPLETED", "FAILED") }
-            cleared.complete(Unit)
-            Unit
-        }
         val manager = manager()
         manager.awaitState(DownloadState.FAILED)
+        val failed = rows.getValue(1)
+
+        manager.clearCompleted()
+        val barrier = withTimeout(5000) {
+            withContext(dispatcher) {
+                manager.enqueueDownload(10, 100, "fixture.bin", "Synthetic fixture", "nes", null)
+            }
+        }
+        assertTrue(barrier is DownloadEnqueueResult.Conflict)
+        coVerify(exactly = 0) { dao.deleteById(1L) }
+        coVerify(exactly = 0) { dao.insert(any()) }
+        assertEquals(failed, rows.getValue(1))
+        assertEquals(DownloadState.FAILED, manager.state.value.completed.single().state)
+        assertArrayEquals(bytes.copyOf(8192), part.readBytes())
 
         manager.clearFinished()
-        withTimeout(5000) { cleared.await() }
+        withTimeout(5000) { manager.state.first { it.completed.isEmpty() } }
 
+        coVerify(exactly = 1) { dao.deleteById(1L) }
         assertTrue(manager.state.value.completed.isEmpty())
         assertTrue(rows.isEmpty())
         assertEquals(0, server.requestCount)
@@ -478,6 +495,147 @@ class DownloadManagerTransferLifecycleTest {
         assertFalse(part.exists())
         assertFalse(rows.containsKey(1))
         assertEquals(1, server.requestCount)
+    }
+
+    @Test fun `streaming cancel owns deletion before identical enqueue can run replacement`() = runBlocking {
+        cancelAndReplace(retrying = false, gateCheckpoint = false)
+    }
+
+    @Test fun `backoff cancel owns deletion without retry stealing replacement slot`() = runBlocking {
+        cancelAndReplace(retrying = true, gateCheckpoint = false)
+    }
+
+    @Test fun `cancel and identical enqueue wait for noncancellable segment checkpoint without deadlock`() = runBlocking {
+        cancelAndReplace(retrying = false, gateCheckpoint = true)
+    }
+
+    private suspend fun cancelAndReplace(retrying: Boolean, gateCheckpoint: Boolean) = kotlinx.coroutines.coroutineScope {
+        rows[1] = rows.getValue(1).copy(
+            gameFileId = null, fileCategory = null, selectedFileIds = null, ownerUserId = null
+        )
+        val prefix = if (gateCheckpoint || retrying) 8192 else 0
+        if (prefix > 0) retained(prefix)
+        val streaming = CompletableDeferred<Unit>()
+        val checkpointEntered = CompletableDeferred<Unit>()
+        val allowCheckpoint = CompletableDeferred<Unit>()
+        val checkpointReturned = CompletableDeferred<Unit>()
+        val cleanupEntered = CompletableDeferred<Unit>()
+        val allowDeletion = CompletableDeferred<Unit>()
+        val firstCall = CompletableDeferred<Call<ResponseBody>>()
+        every { repository.newDownloadCall(any(), any(), any(), any(), any(), any()) } answers {
+            api.content(arg(2), arg(4)).also { firstCall.complete(it) }
+        }
+        if (!retrying) {
+            coEvery { dao.updateProgress(1L, any()) } coAnswers {
+                val received = secondArg<Long>()
+                rows.computeIfPresent(1L) { _, row -> row.copy(bytesDownloaded = received) }
+                if (received > prefix) {
+                    streaming.complete(Unit)
+                    awaitCancellation()
+                }
+                Unit
+            }
+        }
+        if (gateCheckpoint) {
+            coEvery { dao.updateTransferCheckpoint(1L, any(), any(), any(), any()) } coAnswers {
+                val validator = arg<String?>(1)
+                if (validator != null) {
+                    checkpointEntered.complete(Unit)
+                    allowCheckpoint.await()
+                }
+                rows.computeIfPresent(1L) { _, row -> row.copy(
+                    resumeValidator = validator, responseTotalBytes = arg(2), validatedBytes = arg(3),
+                    representationChecksum = arg(4)
+                ) }
+                if (validator != null) checkpointReturned.complete(Unit)
+                Unit
+            }
+        }
+        coEvery { dao.deleteById(1L) } coAnswers {
+            cleanupEntered.complete(Unit)
+            allowDeletion.await()
+            rows.remove(1L)
+            Unit
+        }
+        val response = when {
+            retrying -> MockResponse().setResponseCode(524).setHeader("Retry-After", "30")
+            gateCheckpoint -> partial(prefix).setHeader(
+                "Content-MD5", java.util.Base64.getEncoder().encodeToString(
+                    java.security.MessageDigest.getInstance("MD5").digest(bytes.copyOfRange(prefix, bytes.size))
+                )
+            )
+            else -> full()
+        }
+        server.enqueue(response)
+        server.enqueue(full())
+        completionGate = CompletableDeferred()
+        val manager = manager()
+        try {
+            if (retrying) manager.awaitState(DownloadState.RETRYING)
+            else withTimeout(5000) { streaming.await() }
+            assertEquals(1, manager.totalActiveDownloads())
+            assertEquals(1, server.requestCount)
+
+            manager.cancelDownload(100)
+            if (gateCheckpoint) {
+                withTimeout(5000) { checkpointEntered.await() }
+                assertFalse(cleanupEntered.isCompleted)
+                assertEquals(prefix.toLong(), part.length())
+            } else {
+                withTimeout(5000) { cleanupEntered.await() }
+            }
+            val replacement = async(start = CoroutineStart.UNDISPATCHED) {
+                manager.enqueueDownload(
+                    gameId = 10, rommId = 100, fileName = "fixture.bin", gameTitle = "Synthetic fixture",
+                    platformSlug = "nes", coverPath = null, expectedSizeBytes = bytes.size.toLong(), startNow = true
+                )
+            }
+            assertNull(withTimeoutOrNull(250) { replacement.await() })
+            assertTrue(rows.containsKey(1L))
+            coVerify(exactly = 0) { dao.insert(any()) }
+            if (gateCheckpoint) {
+                assertFalse(cleanupEntered.isCompleted)
+                allowCheckpoint.complete(Unit)
+                withTimeout(5000) { cleanupEntered.await() }
+                assertTrue(checkpointReturned.isCompleted)
+                assertNull(withTimeoutOrNull(250) { replacement.await() })
+            }
+            if (!retrying) assertTrue(withTimeout(5000) { firstCall.await() }.isCanceled)
+            assertFalse(part.exists())
+            assertEquals(1, server.requestCount)
+            allowDeletion.complete(Unit)
+
+            val accepted = withTimeout(5000) { replacement.await() }
+            assertTrue(accepted is DownloadEnqueueResult.Accepted)
+            val replacementId = (accepted as DownloadEnqueueResult.Accepted).downloadId
+            assertTrue(replacementId > 1L)
+            assertFalse(rows.containsKey(1L))
+            assertEquals(replacementId, rows.getValue(replacementId).id)
+            withTimeout(10000) { completing.await() }
+            repeat(8) { manager.onExternalSlotFreed() }
+            assertEquals(1, manager.totalActiveDownloads())
+            assertEquals(2, server.requestCount)
+            completionGate!!.complete(Unit)
+            withTimeout(10000) {
+                manager.state.first { snapshot ->
+                    snapshot.completed.any { it.id == replacementId && it.state == DownloadState.COMPLETED }
+                }
+            }
+            assertEquals(DownloadState.COMPLETED.name, rows.getValue(replacementId).state)
+            assertArrayEquals(bytes, File(destination, "fixture.bin").readBytes())
+            assertFalse(part.exists())
+            assertFalse(rows.containsKey(1L))
+            assertEquals(2, server.requestCount)
+            coVerify(exactly = 1) { dao.deleteById(1L) }
+            coVerify(exactly = 1) { dao.insert(any()) }
+            assertEquals(if (prefix > 0) "bytes=$prefix-" else null,
+                server.takeRequest(5, TimeUnit.SECONDS)!!.getHeader("Range"))
+            assertNull(server.takeRequest(5, TimeUnit.SECONDS)!!.getHeader("Range"))
+        } finally {
+            allowCheckpoint.complete(Unit)
+            allowDeletion.complete(Unit)
+            completionGate!!.complete(Unit)
+        }
     }
 
     @Test fun `initial changed server leaves pinned work untouched`() = runBlocking {

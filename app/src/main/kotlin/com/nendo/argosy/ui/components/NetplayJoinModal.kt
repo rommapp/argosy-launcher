@@ -37,8 +37,10 @@ import coil.compose.AsyncImage
 import com.nendo.argosy.data.netplay.CoreSubState
 import com.nendo.argosy.data.netplay.JoinCandidate
 import com.nendo.argosy.data.netplay.JoinVariant
+import com.nendo.argosy.data.netplay.NetplayJoinFailure
 import com.nendo.argosy.data.netplay.NetplayJoinState
 import com.nendo.argosy.data.netplay.VerifySubState
+import com.nendo.argosy.ui.common.labelRes
 import com.nendo.argosy.ui.primitives.ArgosyProgressBar
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
@@ -103,7 +105,10 @@ private fun CurrentStateContent(state: NetplayJoinState) {
         is NetplayJoinState.JoiningSession ->
             StatusLine(stringResource(R.string.ui_netplay_join_status_joining))
         is NetplayJoinState.Failed -> Text(
-            text = state.message,
+            text = when (val reason = state.reason) {
+                is NetplayJoinFailure.RawMessage -> reason.message
+                is NetplayJoinFailure.DownloadConflict -> stringResource(reason.labelRes)
+            },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.error
         )

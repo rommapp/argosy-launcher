@@ -477,7 +477,10 @@ class DownloadManager internal constructor(
         val job = scope.launch(start = CoroutineStart.LAZY) {
             try {
                 val conflict = enqueueMutex.withLock {
-                    val row = downloadQueueDao.getById(progress.id) ?: progress.reservationRow()
+                    val row = downloadQueueDao.getById(progress.id) ?: run {
+                        removeProgress(progress.id)
+                        return@launch
+                    }
                     admissionResult(row, reuseExact = false)
                 }
                 if (conflict != null) {
@@ -548,6 +551,10 @@ class DownloadManager internal constructor(
     }
 
     private suspend fun settleDownload(progress: DownloadProgress, result: DownloadResult) {
+        if (downloadQueueDao.getById(progress.id) == null) {
+            removeProgress(progress.id)
+            return
+        }
         val finalProgress = when (result) {
             is DownloadResult.Success -> {
                 downloadQueueDao.updateState(progress.id, DownloadState.COMPLETED.name)
@@ -663,7 +670,7 @@ class DownloadManager internal constructor(
                 ownerUserId = syncPreferencesRepository.getRommUserId()
             )
 
-            admissionResult(entity)?.let { return@withLock reuseAdmission(it) }
+            resolveAdmission(entity)?.let { return@withLock it }
             val id = downloadQueueDao.insert(entity)
             Logger.info(
                 TAG,
@@ -691,29 +698,53 @@ class DownloadManager internal constructor(
         }
     }
 
-    private suspend fun reuseAdmission(result: DownloadEnqueueResult): DownloadEnqueueResult {
+    private suspend fun resolveAdmission(request: DownloadQueueEntity): DownloadEnqueueResult? {
+        while (true) {
+            val candidate = admissionResult(request) ?: return null
+            reuseAdmission(candidate)?.let { return it }
+        }
+    }
+
+    private fun DownloadQueueEntity.isRecoverable(): Boolean = state in setOf(
+        DownloadState.QUEUED.name, DownloadState.DOWNLOADING.name, DownloadState.EXTRACTING.name,
+        DownloadState.MOVING.name, DownloadState.PAUSED.name, DownloadState.WAITING_FOR_STORAGE.name,
+        DownloadState.RETRYING.name, DownloadState.WAITING_FOR_NETWORK.name, DownloadState.FAILED.name
+    )
+
+    private suspend fun reuseAdmission(result: DownloadEnqueueResult): DownloadEnqueueResult? {
+        if (result is DownloadEnqueueResult.Conflict) {
+            val row = downloadQueueDao.getById(result.downloadId) ?: return null
+            return result.takeIf { row.isRecoverable() || downloadJobs.containsKey(row.id) }
+        }
         if (result !is DownloadEnqueueResult.Accepted) return result
-        val row = downloadQueueDao.getById(result.downloadId) ?: return result
+        val row = downloadQueueDao.getById(result.downloadId) ?: return null
+        if (!row.isRecoverable()) return null
         if (row.state != DownloadState.FAILED.name) return result
         admissionResult(row, reuseExact = false)?.let { return it }
-        val finishing = downloadJobs[row.id]
-        if (finishing != null) {
-            scope.launch {
-                finishing.join()
-                enqueueMutex.withLock { reuseAdmission(result) }
+        return admissionMutex.withLock {
+            downloadJobs[row.id]?.cancelAndJoin()
+            val currentRow = downloadQueueDao.getById(row.id) ?: run {
+                removeProgress(row.id)
+                return@withLock null
             }
-            return result
+            if (!currentRow.isRecoverable()) return@withLock null
+            val retained = reconcileRetained(currentRow)
+            if (downloadQueueDao.getById(row.id) == null) {
+                removeProgress(row.id)
+                return@withLock null
+            }
+            downloadQueueDao.updateState(row.id, DownloadState.QUEUED.name)
+            val progress = retained.toDownloadProgress().copy(state = DownloadState.QUEUED, errorReason = null)
+            _state.update { current ->
+                current.copy(
+                    activeDownloads = current.activeDownloads.filter { it.id != row.id },
+                    completed = current.completed.filter { it.id != row.id },
+                    queue = (current.queue.filter { it.id != row.id } + progress).sortedBy { it.id }
+                )
+            }
+            scope.launch { processQueue() }
+            result
         }
-        downloadQueueDao.updateState(row.id, DownloadState.QUEUED.name)
-        val progress = row.toDownloadProgress().copy(state = DownloadState.QUEUED, errorReason = null)
-        _state.update { current ->
-            current.copy(
-                completed = current.completed.filter { it.id != row.id },
-                queue = (current.queue.filter { it.id != row.id } + progress).sortedBy { it.id }
-            )
-        }
-        scope.launch { processQueue() }
-        return result
     }
 
     private suspend fun admissionResult(
@@ -721,12 +752,22 @@ class DownloadManager internal constructor(
         reuseExact: Boolean = true
     ): DownloadEnqueueResult? = withContext(Dispatchers.IO) {
         val memory = _state.value.let { it.activeDownloads + it.queue + it.completed }
-        val candidates = (downloadQueueDao.getRecoverableDownloads() + memory.map { it.reservationRow() })
-            .distinctBy { it.id }
-            .filter { it.id != request.id && it.state != DownloadState.COMPLETED.name &&
-                it.state != DownloadState.CANCELLED.name }
+        val persisted = downloadQueueDao.getRecoverableDownloads().associateBy { it.id }.toMutableMap()
+        for (item in memory.distinctBy { it.id }) {
+            if (item.id == request.id || item.id in persisted) continue
+            val row = downloadQueueDao.getById(item.id)
+            if (row != null) {
+                if (row.isRecoverable() || downloadJobs.containsKey(row.id)) persisted[row.id] = row
+            } else {
+                admissionMutex.withLock {
+                    downloadJobs[item.id]?.cancelAndJoin()
+                    removeProgress(item.id)
+                }
+            }
+        }
+        val candidates = persisted.values.filter { it.id != request.id }
         val identity = DownloadRequestIdentity.from(request)
-        val exact = candidates.firstOrNull { DownloadRequestIdentity.from(it) == identity }
+        val exact = candidates.firstOrNull { it.isRecoverable() && DownloadRequestIdentity.from(it) == identity }
         val files = knownTransferFiles(request)
         for (candidate in candidates) {
             if (reuseExact && candidate.id == exact?.id) continue
@@ -820,7 +861,7 @@ class DownloadManager internal constructor(
                 ownerUserId = syncPreferencesRepository.getRommUserId()
             )
 
-            admissionResult(entity)?.let { return@withLock reuseAdmission(it) }
+            resolveAdmission(entity)?.let { return@withLock it }
             val id = downloadQueueDao.insert(entity)
 
             val progress = DownloadProgress(
@@ -893,7 +934,7 @@ class DownloadManager internal constructor(
                 ownerUserId = syncPreferencesRepository.getRommUserId()
             )
 
-            admissionResult(entity)?.let { return@withLock reuseAdmission(it) }
+            resolveAdmission(entity)?.let { return@withLock it }
             val id = downloadQueueDao.insert(entity)
 
             val progress = DownloadProgress(
@@ -1212,7 +1253,11 @@ class DownloadManager internal constructor(
                     ?: File(fileDir, "${progress.fileName}.tmp")
                 val targetFile = File(tempFile.parentFile, progress.fileName)
                 val reserved = enqueueMutex.withLock {
-                    val actual = row.copy(tempFilePath = tempFile.absolutePath)
+                    val currentRow = downloadQueueDao.getById(progress.id) ?: run {
+                        removeProgress(progress.id)
+                        return@withContext DownloadResult.Cancelled
+                    }
+                    val actual = currentRow.copy(tempFilePath = tempFile.absolutePath)
                     if (admissionResult(actual, reuseExact = false) != null) false else {
                         downloadQueueDao.update(actual)
                         true
@@ -1989,32 +2034,32 @@ class DownloadManager internal constructor(
     }
 
     private fun stopDownload(item: DownloadProgress, remove: Boolean) {
-        val job = downloadJobs[item.id]
-        job?.cancel()
-        scope.launch {
-            admissionMutex.withLock {
-                downloadJobs[item.id]?.cancelAndJoin()
-                job?.join()
-                val row = downloadQueueDao.getById(item.id)
-                val bytes = withContext(Dispatchers.IO) {
-                    row?.tempFilePath?.let(::File)?.length() ?: item.bytesDownloaded
-                }
-                if (remove) {
-                    withContext(Dispatchers.IO) { row?.tempFilePath?.let(::File)?.delete() }
-                    discardStagingFor(item.id)
-                    downloadQueueDao.deleteById(item.id)
-                } else {
-                    downloadQueueDao.updateState(item.id, DownloadState.PAUSED.name)
-                    downloadQueueDao.updateProgress(item.id, bytes)
-                }
-                _state.update { current ->
-                    current.copy(
-                        activeDownloads = current.activeDownloads.filter { it.id != item.id },
-                        queue = current.queue.filter { it.id != item.id } +
-                            if (remove) emptyList() else listOf(item.copy(
-                                state = DownloadState.PAUSED, bytesDownloaded = bytes
-                            ))
-                    )
+        scope.launch(start = CoroutineStart.UNDISPATCHED) {
+            enqueueMutex.withLock {
+                admissionMutex.withLock {
+                    downloadJobs[item.id]?.cancelAndJoin()
+                    val row = downloadQueueDao.getById(item.id)
+                    val bytes = withContext(Dispatchers.IO) {
+                        row?.tempFilePath?.let(::File)?.length() ?: item.bytesDownloaded
+                    }
+                    if (remove) {
+                        withContext(Dispatchers.IO) { row?.tempFilePath?.let(::File)?.delete() }
+                        discardStagingFor(item.id)
+                        downloadQueueDao.deleteById(item.id)
+                    } else if (row != null) {
+                        downloadQueueDao.updateState(item.id, DownloadState.PAUSED.name)
+                        downloadQueueDao.updateProgress(item.id, bytes)
+                    }
+                    _state.update { current ->
+                        current.copy(
+                            activeDownloads = current.activeDownloads.filter { it.id != item.id },
+                            completed = current.completed.filter { it.id != item.id },
+                            queue = current.queue.filter { it.id != item.id } +
+                                if (remove || row == null) emptyList() else listOf(row.toDownloadProgress().copy(
+                                    state = DownloadState.PAUSED, bytesDownloaded = bytes
+                                ))
+                        )
+                    }
                 }
             }
             notifySlotFreed()
@@ -2022,25 +2067,42 @@ class DownloadManager internal constructor(
     }
 
     fun clearCompleted() {
-        scope.launch {
-            downloadQueueDao.clearCompleted()
-        }
-        _state.update { it.copy(completed = it.completed.filter { item -> item.state != DownloadState.COMPLETED }) }
+        clearFinishedIds(_state.value.completed.filter { it.state == DownloadState.COMPLETED }.map { it.id }, false)
     }
 
     fun clearFinished() {
-        scope.launch {
-            downloadQueueDao.clearFinished()
-        }
-        _state.update { it.copy(completed = emptyList()) }
+        clearFinishedIds(_state.value.completed.map { it.id }, true)
     }
 
     fun removeFromCompleted(downloadId: Long) {
+        if (_state.value.completed.none { it.id == downloadId }) return
+        clearFinishedIds(listOf(downloadId), true)
+    }
+
+    private fun clearFinishedIds(ids: List<Long>, includeFailed: Boolean) {
         scope.launch {
-            downloadQueueDao.deleteById(downloadId)
+            enqueueMutex.withLock {
+                admissionMutex.withLock {
+                    for (id in ids) {
+                        val row = downloadQueueDao.getById(id)
+                        if (row != null && row.state != DownloadState.COMPLETED.name &&
+                            !(includeFailed && row.state == DownloadState.FAILED.name)
+                        ) continue
+                        if (row != null) downloadQueueDao.deleteById(id)
+                        _state.update { current ->
+                            current.copy(completed = current.completed.filter { it.id != id })
+                        }
+                    }
+                }
+            }
         }
+    }
+
+    private fun removeProgress(downloadId: Long) {
         _state.update { current ->
             current.copy(
+                activeDownloads = current.activeDownloads.filter { it.id != downloadId },
+                queue = current.queue.filter { it.id != downloadId },
                 completed = current.completed.filter { it.id != downloadId }
             )
         }
@@ -2055,26 +2117,10 @@ class DownloadManager internal constructor(
     }
 
     internal suspend fun requeueFailed(item: DownloadProgress) {
-        val existing = downloadQueueDao.getById(item.id)
-        if (existing != null) {
-            admissionMutex.withLock {
-                downloadJobs[item.id]?.cancelAndJoin()
-                downloadQueueDao.updateState(item.id, DownloadState.QUEUED.name)
-                val retained = reconcileRetained(existing.copy(state = DownloadState.QUEUED.name))
-                val restored = retained.toDownloadProgress().copy(
-                    state = DownloadState.QUEUED, errorReason = null
-                )
-                _state.update { current ->
-                    current.copy(
-                        activeDownloads = current.activeDownloads.filter { it.id != item.id },
-                        completed = current.completed.filter { it.id != item.id },
-                        queue = (current.queue.filter { it.id != item.id } + restored).sortedBy { it.id }
-                    )
-                }
-            }
-            processQueue()
-            return
+        val reused = enqueueMutex.withLock {
+            reuseAdmission(DownloadEnqueueResult.Accepted(item.id))
         }
+        if (reused != null) return
         when {
             item.isDiscDownload -> enqueueDiscDownload(
                 gameId = item.gameId,
@@ -2225,9 +2271,14 @@ class DownloadManager internal constructor(
                     gameDao.updateLocalPath(gameId, finalPath, GameSource.ROMM_SYNCED, FileOrigin.ROMM_DOWNLOAD)
                 }
             }
-            downloadQueueDao.deleteById(queueEntry.id)
-            _state.update { current ->
-                current.copy(completed = current.completed.filter { it.id != queueEntry.id })
+            enqueueMutex.withLock {
+                val currentRow = downloadQueueDao.getById(queueEntry.id)
+                if (currentRow == null || (!downloadJobs.containsKey(queueEntry.id) &&
+                    currentRow.state in setOf(DownloadState.FAILED.name, DownloadState.EXTRACTING.name))
+                ) {
+                    if (currentRow != null) downloadQueueDao.deleteById(queueEntry.id)
+                    removeProgress(queueEntry.id)
+                }
             }
             attributionRepository.markDirty(StorageCategory.GAMES)
 
@@ -2265,25 +2316,26 @@ class DownloadManager internal constructor(
         val queueEntry = failedBaseRecoveryEntry(gameId)
         if (queueEntry != null) {
             if (admissionResult(queueEntry, reuseExact = false) != null) return@withLock
-            downloadJobs[queueEntry.id]?.cancelAndJoin()
-            val platformDir = getDownloadDir(queueEntry.gameId, queueEntry.platformSlug)
-            val tempFile = queueEntry.tempFilePath?.let(::File)
-                ?: File(platformDir, "${queueEntry.fileName}.tmp")
-            val targetFile = File(tempFile.parentFile, queueEntry.fileName)
+            admissionMutex.withLock cleanup@{
+                downloadJobs[queueEntry.id]?.cancelAndJoin()
+                val retained = downloadQueueDao.getById(queueEntry.id)
+                if (retained == null) {
+                    removeProgress(queueEntry.id)
+                    return@cleanup
+                }
+                val platformDir = getDownloadDir(retained.gameId, retained.platformSlug)
+                val tempFile = retained.tempFilePath?.let(::File)
+                    ?: File(platformDir, "${retained.fileName}.tmp")
+                val targetFile = File(tempFile.parentFile, retained.fileName)
 
-            withContext(Dispatchers.IO) {
-                if (targetFile.exists()) targetFile.delete()
-                if (tempFile.exists()) tempFile.delete()
-            }
+                withContext(Dispatchers.IO) {
+                    if (targetFile.exists()) targetFile.delete()
+                    if (tempFile.exists()) tempFile.delete()
+                }
 
-            discardStagingFor(queueEntry.id)
-            downloadQueueDao.deleteById(queueEntry.id)
-            _state.update { current ->
-                current.copy(
-                    activeDownloads = current.activeDownloads.filter { it.id != queueEntry.id },
-                    queue = current.queue.filter { it.id != queueEntry.id },
-                    completed = current.completed.filter { it.id != queueEntry.id }
-                )
+                discardStagingFor(queueEntry.id)
+                downloadQueueDao.deleteById(queueEntry.id)
+                removeProgress(queueEntry.id)
             }
             notifySlotFreed()
         }

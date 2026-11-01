@@ -442,6 +442,7 @@
     <string name="ui_netplay_join_heading">正在加入%1$s</string>
     <string name="ui_netplay_join_unknown_host">連線對戰</string>
     <string name="ui_netplay_join_status_joining">正在加入連線</string>
+    <string name="ui_netplay_join_error_download_conflict">此 ROM 下載與現有下載衝突。</string>
     <string name="ui_netplay_join_status_matching_core">正在比對核心</string>
     <string name="ui_netplay_join_status_downloading_core">正在下載核心</string>
     <string name="ui_netplay_join_status_core_ready">核心已就緒</string>

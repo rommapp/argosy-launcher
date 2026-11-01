@@ -39,6 +39,13 @@ private val DECODER_CEILING_CODECS = listOf("h264", "hevc")
 private val DEMUXABLE_VIDEO_CONTAINERS = listOf("mp4", "m4v", "mov", "mkv", "webm", "3gp", "ts")
 private val DEMUXABLE_AUDIO_CONTAINERS = listOf("mp3", "aac", "flac", "ogg", "wav", "m4a")
 
+private const val DOLBY_VISION_MIME = "video/dolby-vision"
+private const val ENHANCEMENT_LAYER_CODEC = "hevc"
+private const val PROPERTY_VIDEO_RANGE_TYPE = "VideoRangeType"
+
+private const val NON_ENHANCEMENT_LAYER_RANGE_TYPES =
+    "Unknown|SDR|HDR10|HLG|DOVI|DOVIWithHDR10|DOVIWithHLG|DOVIWithSDR|DOVIWithHDR10Plus|DOVIInvalid|HDR10Plus"
+
 /**
  * Android decoder mime types mapped to the codec tokens the server matches against.
  *
@@ -233,7 +240,8 @@ class JellyfinDeviceProfileBuilder @Inject constructor() {
         }
         return codecs.mapNotNull { codec ->
             val decoderMax = decoders.maxVideoSize[codec]?.takeIf { codec in DECODER_CEILING_CODECS }
-            val conditions = videoSizeConditions(decoderMax, maxHeight, maxFramerate)
+            val conditions = videoSizeConditions(decoderMax, maxHeight, maxFramerate) +
+                enhancementLayerConditions(codec, decoders.dolbyVision)
             if (conditions.isEmpty()) {
                 null
             } else {
@@ -258,6 +266,22 @@ class JellyfinDeviceProfileBuilder @Inject constructor() {
             maxFramerate?.let { add(sizeCondition("VideoFramerate", it)) }
         }
     }
+
+    private fun enhancementLayerConditions(
+        codec: String,
+        dolbyVision: Boolean
+    ): List<JellyfinProfileCondition> =
+        if (codec != ENHANCEMENT_LAYER_CODEC || dolbyVision) {
+            emptyList()
+        } else {
+            listOf(
+                JellyfinProfileCondition(
+                    condition = CONDITION_EQUALS_ANY,
+                    property = PROPERTY_VIDEO_RANGE_TYPE,
+                    value = NON_ENHANCEMENT_LAYER_RANGE_TYPES
+                )
+            )
+        }
 
     private fun sizeCondition(property: String, value: Int): JellyfinProfileCondition =
         JellyfinProfileCondition(
@@ -294,13 +318,15 @@ class JellyfinDeviceProfileBuilder @Inject constructor() {
     private data class DecoderSupport(
         val videoCodecs: Set<String>,
         val audioCodecs: Set<String>,
-        val maxVideoSize: Map<String, VideoSize>
+        val maxVideoSize: Map<String, VideoSize>,
+        val dolbyVision: Boolean
     )
 
     private fun readDecoders(): DecoderSupport {
         val videoCodecs = linkedSetOf<String>()
         val audioCodecs = linkedSetOf<String>()
         val maxVideoSize = mutableMapOf<String, VideoSize>()
+        var dolbyVision = false
 
         val infos = runCatching {
             MediaCodecList(MediaCodecList.REGULAR_CODECS).codecInfos
@@ -313,6 +339,7 @@ class JellyfinDeviceProfileBuilder @Inject constructor() {
             if (info.isEncoder) continue
             for (mime in info.supportedTypes) {
                 val normalized = mime.lowercase()
+                if (normalized == DOLBY_VISION_MIME) dolbyVision = true
                 VIDEO_MIME_TO_CODEC[normalized]?.let { codec ->
                     videoCodecs += codec
                     recordMaxVideoSize(info, mime, codec, maxVideoSize)
@@ -322,7 +349,7 @@ class JellyfinDeviceProfileBuilder @Inject constructor() {
         }
 
         Logger.info(TAG, "decoders: video=$videoCodecs audio=$audioCodecs")
-        return DecoderSupport(videoCodecs, audioCodecs, maxVideoSize)
+        return DecoderSupport(videoCodecs, audioCodecs, maxVideoSize, dolbyVision)
     }
 
     private fun recordMaxVideoSize(

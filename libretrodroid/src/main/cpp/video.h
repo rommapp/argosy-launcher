@@ -92,7 +92,7 @@ public:
     void updateScreenSize(unsigned screenWidth, unsigned screenHeight);
     void updateViewportSize(Rect viewportRect);
     void updateRendererSize(unsigned width, unsigned height);
-    void updateRotation(float rotation);
+    void updateRotation(float rotation, bool swapsAspect);
     void updateShaderType(ShaderManager::Config shaderConfig);
     void setFilterMode(int mode);
     void setIntegerScaling(bool enabled);

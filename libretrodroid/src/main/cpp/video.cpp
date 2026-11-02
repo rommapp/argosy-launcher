@@ -523,8 +523,8 @@ void Video::updateRendererSize(unsigned int width, unsigned int height) {
     renderer->updateRenderedResolution(width, height);
 }
 
-void Video::updateRotation(float rotation) {
-    videoLayout.updateRotation(rotation);
+void Video::updateRotation(float rotation, bool swapsAspect) {
+    videoLayout.updateRotation(rotation, swapsAspect);
 }
 
 Video::Video(

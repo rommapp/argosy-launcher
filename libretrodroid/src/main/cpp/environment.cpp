@@ -61,6 +61,8 @@ void Environment::deinitialize() {
     useStencil = false;
     bottomLeftOrigin = false;
     screenRotation = 0;
+    coreRotationIndex = 0;
+    manualRotationDegrees = -1;
 
     gameGeometryUpdated = false;
     gameGeometryWidth = 0;
@@ -382,6 +384,7 @@ bool Environment::handle_callback_environment(unsigned cmd, void *data) {
         case RETRO_ENVIRONMENT_SET_ROTATION: {
             LOGD("Called RETRO_ENVIRONMENT_SET_ROTATION");
             unsigned screenRotationIndex = (*static_cast<unsigned*>(data));
+            coreRotationIndex = screenRotationIndex % 4;
             screenRotation = screenRotationIndex * (float) (-M_PI / 2.0);
             screenRotationUpdated = true;
             return true;
@@ -539,19 +542,27 @@ bool Environment::isBottomLeftOrigin() const {
 }
 
 float Environment::getScreenRotation() const {
-    if (manualRotation >= 0) {
-        return manualRotation;
+    if (manualRotationDegrees >= 0) {
+        return manualRotationDegrees * (float) (-M_PI / 180.0);
     }
     return screenRotation;
 }
 
 void Environment::setManualRotation(int degrees) {
-    if (degrees < 0) {
-        manualRotation = -1;
-    } else {
-        manualRotation = degrees * (float) (-M_PI / 180.0);
-    }
+    manualRotationDegrees = degrees < 0 ? -1 : degrees % 360;
     screenRotationUpdated = true;
+}
+
+/**
+ * Whether a manual rotation sits an odd number of quarter turns away from the core's own rotation,
+ * the orientation the core's reported aspect ratio describes.
+ */
+bool Environment::rotationSwapsAspect() const {
+    if (manualRotationDegrees < 0) {
+        return false;
+    }
+    unsigned manualTurns = (manualRotationDegrees / 90) % 4;
+    return ((manualTurns + 4 - coreRotationIndex) % 2) == 1;
 }
 
 bool Environment::isGameGeometryUpdated() const {

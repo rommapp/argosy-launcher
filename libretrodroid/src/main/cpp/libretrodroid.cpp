@@ -383,6 +383,10 @@ void LibretroDroid::onSurfaceCreated() {
     );
 
     video = std::unique_ptr<Video>(newVideo);
+    video->updateRotation(
+        Environment::getInstance().getScreenRotation(),
+        Environment::getInstance().rotationSwapsAspect()
+    );
 
     // Apply stored settings
     if (filterMode != -1) {
@@ -847,7 +851,10 @@ void LibretroDroid::step() {
     if (video && Environment::getInstance().isScreenRotationUpdated()) {
         Environment::getInstance().clearScreenRotationUpdated();
 
-        video->updateRotation(Environment::getInstance().getScreenRotation());
+        video->updateRotation(
+            Environment::getInstance().getScreenRotation(),
+            Environment::getInstance().rotationSwapsAspect()
+        );
     }
 
     if (audio && fpsSync && Environment::getInstance().isGameTimingUpdated()) {
@@ -929,7 +936,10 @@ void LibretroDroid::stepForNetplay() {
     if (video && Environment::getInstance().isScreenRotationUpdated()) {
         Environment::getInstance().clearScreenRotationUpdated();
 
-        video->updateRotation(Environment::getInstance().getScreenRotation());
+        video->updateRotation(
+            Environment::getInstance().getScreenRotation(),
+            Environment::getInstance().rotationSwapsAspect()
+        );
     }
 
     if (audio && fpsSync && Environment::getInstance().isGameTimingUpdated()) {

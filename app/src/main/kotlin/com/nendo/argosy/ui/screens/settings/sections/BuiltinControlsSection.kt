@@ -67,6 +67,9 @@ internal sealed class BuiltinControlsItem(
     )
     data object Rumble : BuiltinControlsItem("rumble", "controllers", { it.showRumble })
     data object Motion : BuiltinControlsItem("motion", "controllers", { it.showMotion })
+    data object GyroAimSensitivity : BuiltinControlsItem("gyroAimSensitivity", "controllers", { it.showMotion })
+    data object GyroAimInvertX : BuiltinControlsItem("gyroAimInvertX", "controllers", { it.showMotion })
+    data object GyroAimInvertY : BuiltinControlsItem("gyroAimInvertY", "controllers", { it.showMotion })
     data object SelectAsBack : BuiltinControlsItem("selectAsBack", "controllers")
     data object AnalogAsDpad : BuiltinControlsItem("analogAsDpad", "sticks", { it.showStickMappings })
     data object DpadAsAnalog : BuiltinControlsItem("dpadAsAnalog", "sticks", { it.showStickMappings && it.showDpadAsAnalog })
@@ -122,6 +125,9 @@ internal sealed class BuiltinControlsItem(
                 ControllerType(3),
                 Rumble,
                 Motion,
+                GyroAimSensitivity,
+                GyroAimInvertX,
+                GyroAimInvertY,
                 SelectAsBack,
                 SticksHeader,
                 AnalogAsDpad,
@@ -275,6 +281,34 @@ fun BuiltinControlsSection(
                         if (isGlobal) viewModel.setBuiltinMotionEnabled(it)
                         else viewModel.updatePlatformControlSetting("motionEnabled", it)
                     }
+                )
+
+                BuiltinControlsItem.GyroAimSensitivity -> CyclePreference(
+                    title = stringResource(R.string.settings_builtin_controls_gyro_sensitivity_title),
+                    subtitle = stringResource(R.string.settings_builtin_controls_gyro_sensitivity_subtitle),
+                    value = stringResource(
+                        R.string.settings_builtin_controls_percent_value,
+                        controlsState.gyroAimSensitivity
+                    ),
+                    isFocused = isFocused(item),
+                    onClick = { viewModel.stepBuiltinGyroAimSensitivity(1) },
+                    onPrev = { viewModel.stepBuiltinGyroAimSensitivity(-1) }
+                )
+
+                BuiltinControlsItem.GyroAimInvertX -> SwitchPreference(
+                    title = stringResource(R.string.settings_builtin_controls_gyro_invert_x_title),
+                    subtitle = stringResource(R.string.settings_builtin_controls_gyro_invert_x_subtitle),
+                    isEnabled = controlsState.gyroAimInvertX,
+                    isFocused = isFocused(item),
+                    onToggle = { viewModel.setBuiltinGyroAimInvertX(it) }
+                )
+
+                BuiltinControlsItem.GyroAimInvertY -> SwitchPreference(
+                    title = stringResource(R.string.settings_builtin_controls_gyro_invert_y_title),
+                    subtitle = stringResource(R.string.settings_builtin_controls_gyro_invert_y_subtitle),
+                    isEnabled = controlsState.gyroAimInvertY,
+                    isFocused = isFocused(item),
+                    onToggle = { viewModel.setBuiltinGyroAimInvertY(it) }
                 )
 
                 BuiltinControlsItem.ControllerOrder -> NavigationPreference(

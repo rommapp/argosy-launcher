@@ -20,7 +20,8 @@ class HotkeyDispatcherTest {
         toastSink: MutableList<String> = mutableListOf(),
         saveStateManager: SaveStateManager = mockk(relaxed = true),
         retroView: GLRetroView = mockk(relaxed = true),
-        sunSteps: MutableList<Int> = mutableListOf()
+        sunSteps: MutableList<Int> = mutableListOf(),
+        recenters: MutableList<Unit> = mutableListOf()
     ): HotkeyDispatcher {
         every { saveStateManager.performQuickSave(any(), any()) } returns true
         every { saveStateManager.performQuickLoad(any()) } returns quickLoadSucceeds
@@ -49,6 +50,7 @@ class HotkeyDispatcherTest {
             onSpeedrunToggleTimer = {},
             onSpeedrunResetTimer = {},
             onStepSunLevel = { sunSteps.add(it) },
+            onRecenterGyroAim = { recenters.add(Unit) },
             onQuit = {}
         )
     }
@@ -60,6 +62,14 @@ class HotkeyDispatcherTest {
         dispatcher.dispatch(config(HotkeyAction.SUN_BRIGHTER))
         dispatcher.dispatch(config(HotkeyAction.SUN_DIMMER))
         assertEquals(listOf(1, -1), steps)
+    }
+
+    @Test
+    fun recenterHotkeyRecentersGyroAim() {
+        val recenters = mutableListOf<Unit>()
+        val dispatcher = build(false, null, recenters = recenters)
+        dispatcher.dispatch(config(HotkeyAction.RECENTER_GYRO_AIM))
+        assertEquals(1, recenters.size)
     }
 
     private fun config(action: HotkeyAction) = HotkeyManager.HotkeyConfig(

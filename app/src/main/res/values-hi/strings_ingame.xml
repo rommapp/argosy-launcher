@@ -171,6 +171,13 @@
     <string name="ingame_settings_rumble_subtitle">कंट्रोलर वाइब्रेशन फीडबैक सक्षम करें</string>
     <string name="ingame_settings_motion_title">मोशन कंट्रोल</string>
     <string name="ingame_settings_motion_subtitle">गेम को डिवाइस का झुकाव और घुमाव पढ़ने दें</string>
+    <string name="ingame_settings_gyro_sensitivity_title">जायरो निशाने की संवेदनशीलता</string>
+    <string name="ingame_settings_gyro_sensitivity_subtitle">डिवाइस घुमाने पर निशाना कितना हिलता है</string>
+    <string name="ingame_settings_percent_value">%1$d%%</string>
+    <string name="ingame_settings_gyro_invert_x_title">जायरो निशाना क्षैतिज रूप से उलटें</string>
+    <string name="ingame_settings_gyro_invert_x_subtitle">बाएँ घुमाने पर निशाना दाएँ जाता है</string>
+    <string name="ingame_settings_gyro_invert_y_title">जायरो निशाना लंबवत रूप से उलटें</string>
+    <string name="ingame_settings_gyro_invert_y_subtitle">ऊपर झुकाने पर निशाना नीचे जाता है</string>
     <string name="ingame_settings_controller_order_title">कंट्रोलर ऑर्डर</string>
     <plurals name="ingame_settings_controller_order_assigned">
         <item quantity="one">%d कंट्रोलर असाइन किया गया</item>

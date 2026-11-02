@@ -1524,6 +1524,12 @@
     <string name="settings_builtin_controls_rumble_subtitle">Activer le retour par vibration de la manette</string>
     <string name="settings_builtin_controls_motion_title">Commandes de mouvement</string>
     <string name="settings_builtin_controls_motion_subtitle">Permet aux jeux de lire l\'inclinaison et la rotation de l\'appareil</string>
+    <string name="settings_builtin_controls_gyro_sensitivity_title">Sensibilité de la visée gyroscopique</string>
+    <string name="settings_builtin_controls_gyro_sensitivity_subtitle">Distance parcourue par le viseur quand vous tournez l\'appareil</string>
+    <string name="settings_builtin_controls_gyro_invert_x_title">Inverser la visée gyroscopique horizontalement</string>
+    <string name="settings_builtin_controls_gyro_invert_x_subtitle">Tourner à gauche déplace le viseur à droite</string>
+    <string name="settings_builtin_controls_gyro_invert_y_title">Inverser la visée gyroscopique verticalement</string>
+    <string name="settings_builtin_controls_gyro_invert_y_subtitle">Incliner vers le haut déplace le viseur vers le bas</string>
     <string name="settings_builtin_controls_order_title">Ordre des manettes</string>
     <string name="settings_builtin_controls_order_subtitle">Définir l\'ordre des joueurs en appuyant sur un bouton de chaque manette</string>
     <plurals name="settings_builtin_controls_order_assigned">
@@ -1979,6 +1985,7 @@
     <string name="settings_hotkeys_action_reset_timer">Réinitialiser le chrono</string>
     <string name="settings_hotkeys_action_sun_brighter">Ensoleillement +</string>
     <string name="settings_hotkeys_action_sun_dimmer">Ensoleillement -</string>
+    <string name="settings_hotkeys_action_recenter_gyro_aim">Recentrer la visée gyroscopique</string>
 
     <!-- ===== Fenetre de mappage des entrees ===== -->
 

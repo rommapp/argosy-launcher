@@ -1480,6 +1480,12 @@
     <string name="settings_builtin_controls_rumble_subtitle">कंट्रोलर वाइब्रेशन फ़ीडबैक चालू करें</string>
     <string name="settings_builtin_controls_motion_title">मोशन कंट्रोल</string>
     <string name="settings_builtin_controls_motion_subtitle">गेम को डिवाइस का झुकाव और घुमाव पढ़ने दें</string>
+    <string name="settings_builtin_controls_gyro_sensitivity_title">जायरो निशाने की संवेदनशीलता</string>
+    <string name="settings_builtin_controls_gyro_sensitivity_subtitle">डिवाइस घुमाने पर निशाना कितना हिलता है</string>
+    <string name="settings_builtin_controls_gyro_invert_x_title">जायरो निशाना क्षैतिज रूप से उलटें</string>
+    <string name="settings_builtin_controls_gyro_invert_x_subtitle">बाएँ घुमाने पर निशाना दाएँ जाता है</string>
+    <string name="settings_builtin_controls_gyro_invert_y_title">जायरो निशाना लंबवत रूप से उलटें</string>
+    <string name="settings_builtin_controls_gyro_invert_y_subtitle">ऊपर झुकाने पर निशाना नीचे जाता है</string>
     <string name="settings_builtin_controls_order_title">कंट्रोलर क्रम</string>
     <string name="settings_builtin_controls_order_subtitle">हर कंट्रोलर पर बटन दबाकर प्लेयर क्रम सेट करें</string>
     <plurals name="settings_builtin_controls_order_assigned">
@@ -1926,6 +1932,7 @@
     <string name="settings_hotkeys_action_reset_timer">टाइमर रीसेट करें</string>
     <string name="settings_hotkeys_action_sun_brighter">धूप बढ़ाएँ</string>
     <string name="settings_hotkeys_action_sun_dimmer">धूप घटाएँ</string>
+    <string name="settings_hotkeys_action_recenter_gyro_aim">जायरो निशाना बीच में करें</string>
 
     <!-- ===== Input mapping modal (Settings > components > InputMappingModal) ===== -->
 

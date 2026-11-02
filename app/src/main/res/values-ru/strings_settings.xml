@@ -1565,6 +1565,12 @@
     <string name="settings_builtin_controls_rumble_subtitle">Включить вибрацию контроллера</string>
     <string name="settings_builtin_controls_motion_title">Управление движением</string>
     <string name="settings_builtin_controls_motion_subtitle">Разрешить играм считывать наклон и поворот устройства</string>
+    <string name="settings_builtin_controls_gyro_sensitivity_title">Чувствительность прицеливания гироскопом</string>
+    <string name="settings_builtin_controls_gyro_sensitivity_subtitle">Насколько смещается прицел при повороте устройства</string>
+    <string name="settings_builtin_controls_gyro_invert_x_title">Инвертировать прицеливание гироскопом по горизонтали</string>
+    <string name="settings_builtin_controls_gyro_invert_x_subtitle">Поворот влево смещает прицел вправо</string>
+    <string name="settings_builtin_controls_gyro_invert_y_title">Инвертировать прицеливание гироскопом по вертикали</string>
+    <string name="settings_builtin_controls_gyro_invert_y_subtitle">Наклон вверх смещает прицел вниз</string>
     <string name="settings_builtin_controls_order_title">Порядок контроллеров</string>
     <string name="settings_builtin_controls_order_subtitle">Задайте порядок игроков, нажав кнопку на каждом контроллере</string>
     <plurals name="settings_builtin_controls_order_assigned">
@@ -2029,6 +2035,7 @@
     <string name="settings_hotkeys_action_reset_timer">Сбросить таймер</string>
     <string name="settings_hotkeys_action_sun_brighter">Больше солнца</string>
     <string name="settings_hotkeys_action_sun_dimmer">Меньше солнца</string>
+    <string name="settings_hotkeys_action_recenter_gyro_aim">Центрировать прицел гироскопа</string>
 
     <!-- ===== Input mapping modal (Settings > components > InputMappingModal) ===== -->
 

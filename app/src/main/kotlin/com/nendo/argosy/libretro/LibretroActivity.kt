@@ -280,6 +280,18 @@ class LibretroActivity : ComponentActivity() {
     private var variantFileId: Long = -1L
     private var platformId: Long = -1L
     private var platformSlug: String = ""
+    private val gyroAim by lazy { GyroAim(this, { retroView }) }
+
+    private fun gyroAimWanted(): Boolean =
+        videoSettings.currentMotionEnabled &&
+            com.nendo.argosy.data.platform.PlatformDefinitions.getCanonicalSlug(platformSlug) == "wii"
+
+    private fun syncGyroAim() {
+        if (!::retroView.isInitialized) return
+        val wanted = gyroAimWanted()
+        retroView.holdCoreMotionLevel = wanted
+        if (wanted) gyroAim.start() else gyroAim.stop()
+    }
     private var coreName: String? = null
     private var activeSaveChannel: String? = null
     private var menuVisible by mutableStateOf(false)
@@ -536,6 +548,7 @@ class LibretroActivity : ComponentActivity() {
         lifecycleScope.launch {
             preferencesRepository.getBuiltinEmulatorSettings().collect {
                 touchSettingsState = it
+                gyroAim.configure(it.gyroAimInvertX, it.gyroAimInvertY, it.gyroAimSensitivity)
                 if (it.touchControlsLockOrientation != lastLockOrientation) {
                     lastLockOrientation = it.touchControlsLockOrientation
                     applyOrientationLock(it.touchControlsLockOrientation)
@@ -630,7 +643,8 @@ class LibretroActivity : ComponentActivity() {
             videoSettings = videoSettings,
             getRetroView = { retroView },
             rightStickDeadzone = rightStickDeadzoneForPlatform(),
-            admitsAnalogKey = keyPressGate::admitsAnalog
+            admitsAnalogKey = keyPressGate::admitsAnalog,
+            gyroAim = gyroAim
         )
 
         buildContentView()
@@ -1146,6 +1160,7 @@ class LibretroActivity : ComponentActivity() {
             onSpeedrunToggleTimer = { speedrunTimer.togglePause() },
             onSpeedrunResetTimer = { speedrunTimer.resetRun() },
             onStepSunLevel = ::stepSunLevel,
+            onRecenterGyroAim = { gyroAim.recenter() },
             onHotkeyFired = { deferredCoreKeys.clear() }
         )
     }
@@ -2408,6 +2423,10 @@ class LibretroActivity : ComponentActivity() {
                 controllerPorts = buildControllerPortOptions(),
                 rumbleEnabled = videoSettings.currentRumbleEnabled,
                 motionEnabled = videoSettings.currentMotionEnabled,
+                gyroAimAvailable = gyroAimWanted(),
+                gyroAimSensitivity = touchSettingsState.gyroAimSensitivity,
+                gyroAimInvertX = touchSettingsState.gyroAimInvertX,
+                gyroAimInvertY = touchSettingsState.gyroAimInvertY,
                 analogAsDpad = videoSettings.currentAnalogAsDpad,
                 dpadAsAnalog = videoSettings.currentDpadAsAnalog,
                 limitHotkeysToPlayer1 = limitHotkeysToPlayer1,
@@ -3096,7 +3115,21 @@ class LibretroActivity : ComponentActivity() {
             is InGameControlsAction.SetMotion -> {
                 videoSettings.currentMotionEnabled = action.enabled
                 retroView.motionSensorsEnabled = action.enabled
+                syncGyroAim()
                 videoSettings.persistControlSetting("motionEnabled", action.enabled)
+            }
+            is InGameControlsAction.StepGyroAimSensitivity -> {
+                val next = com.nendo.argosy.data.preferences.GyroAimSensitivity.step(
+                    touchSettingsState.gyroAimSensitivity,
+                    action.direction
+                )
+                lifecycleScope.launch { preferencesRepository.setBuiltinGyroAimSensitivity(next) }
+            }
+            is InGameControlsAction.SetGyroAimInvertX -> {
+                lifecycleScope.launch { preferencesRepository.setBuiltinGyroAimInvertX(action.enabled) }
+            }
+            is InGameControlsAction.SetGyroAimInvertY -> {
+                lifecycleScope.launch { preferencesRepository.setBuiltinGyroAimInvertY(action.enabled) }
             }
             is InGameControlsAction.SetAnalogAsDpad -> {
                 videoSettings.currentAnalogAsDpad = action.enabled
@@ -3499,6 +3532,7 @@ class LibretroActivity : ComponentActivity() {
         autoSaveStateCaptured = false
         window.hideSystemBars()
         retroView.onResume()
+        syncGyroAim()
         setUpSecondScreen()
         showSecondScreen()
         startRollingSave()
@@ -3662,6 +3696,7 @@ class LibretroActivity : ComponentActivity() {
     }
 
     override fun onPause() {
+        gyroAim.stop()
         releaseCoreHeldKeys()
         hideSecondScreen()
         stopRollingSave()

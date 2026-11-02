@@ -20,7 +20,8 @@ enum class HotkeyAction {
     SPEEDRUN_TOGGLE_TIMER,
     SPEEDRUN_RESET_TIMER,
     SUN_BRIGHTER,
-    SUN_DIMMER
+    SUN_DIMMER,
+    RECENTER_GYRO_AIM
 }
 
 enum class HotkeyScopeType { GLOBAL, PLATFORM, CORE }

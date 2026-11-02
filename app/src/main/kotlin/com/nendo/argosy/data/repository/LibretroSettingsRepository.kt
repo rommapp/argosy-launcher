@@ -155,6 +155,15 @@ class LibretroSettingsRepository @Inject constructor(
     suspend fun setBuiltinMotionEnabled(enabled: Boolean) =
         builtinPrefs.setBuiltinMotionEnabled(enabled)
 
+    suspend fun setBuiltinGyroAimInvertX(enabled: Boolean) =
+        builtinPrefs.setBuiltinGyroAimInvertX(enabled)
+
+    suspend fun setBuiltinGyroAimInvertY(enabled: Boolean) =
+        builtinPrefs.setBuiltinGyroAimInvertY(enabled)
+
+    suspend fun setBuiltinGyroAimSensitivity(percent: Int) =
+        builtinPrefs.setBuiltinGyroAimSensitivity(percent)
+
     suspend fun setBuiltinLimitHotkeysToPlayer1(enabled: Boolean) =
         builtinPrefs.setBuiltinLimitHotkeysToPlayer1(enabled)
 

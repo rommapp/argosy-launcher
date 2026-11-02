@@ -612,6 +612,9 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setBuiltinForceSoftwareTiming(enabled: Boolean) = builtinPrefs.setBuiltinForceSoftwareTiming(enabled)
     suspend fun setBuiltinRumbleEnabled(enabled: Boolean) = builtinPrefs.setBuiltinRumbleEnabled(enabled)
     suspend fun setBuiltinMotionEnabled(enabled: Boolean) = builtinPrefs.setBuiltinMotionEnabled(enabled)
+    suspend fun setBuiltinGyroAimInvertX(enabled: Boolean) = builtinPrefs.setBuiltinGyroAimInvertX(enabled)
+    suspend fun setBuiltinGyroAimInvertY(enabled: Boolean) = builtinPrefs.setBuiltinGyroAimInvertY(enabled)
+    suspend fun setBuiltinGyroAimSensitivity(percent: Int) = builtinPrefs.setBuiltinGyroAimSensitivity(percent)
     suspend fun setBuiltinBlackFrameInsertion(enabled: Boolean) = builtinPrefs.setBuiltinBlackFrameInsertion(enabled)
     suspend fun setBuiltinLimitHotkeysToPlayer1(enabled: Boolean) = builtinPrefs.setBuiltinLimitHotkeysToPlayer1(enabled)
     suspend fun setBuiltinAnalogAsDpad(enabled: Boolean) = builtinPrefs.setBuiltinAnalogAsDpad(enabled)
@@ -695,6 +698,28 @@ class UserPreferencesRepository @Inject constructor(
         sessionPrefs.keepSessionForRetry(maxAttempts, startedAt)
 }
 
+/**
+ * Gyro aim sensitivity as a percentage: 100 reaches the right stick's full range at the default
+ * turn, 200 at half that turn.
+ */
+object GyroAimSensitivity {
+    const val DEFAULT = 100
+    const val MIN = 25
+    const val MAX = 300
+    const val STEP = 25
+
+    fun clamp(percent: Int): Int = percent.coerceIn(MIN, MAX)
+
+    fun step(percent: Int, direction: Int): Int {
+        val next = percent + direction * STEP
+        return when {
+            next > MAX -> MIN
+            next < MIN -> MAX
+            else -> next
+        }
+    }
+}
+
 data class BuiltinEmulatorSettings(
     val shader: String = "None",
     val shaderChainJson: String = "",
@@ -707,6 +732,9 @@ data class BuiltinEmulatorSettings(
     val forceSoftwareTiming: Boolean = false,
     val rumbleEnabled: Boolean = true,
     val motionEnabled: Boolean = true,
+    val gyroAimInvertX: Boolean = false,
+    val gyroAimInvertY: Boolean = false,
+    val gyroAimSensitivity: Int = GyroAimSensitivity.DEFAULT,
     val blackFrameInsertion: Boolean = false,
     val framesEnabled: Boolean = false,
     val frame: String? = null,

@@ -173,6 +173,13 @@
     <string name="ingame_settings_rumble_subtitle">Activar la vibración del mando</string>
     <string name="ingame_settings_motion_title">Controles de movimiento</string>
     <string name="ingame_settings_motion_subtitle">Permite que los juegos lean la inclinación y la rotación del dispositivo</string>
+    <string name="ingame_settings_gyro_sensitivity_title">Sensibilidad de la puntería con giroscopio</string>
+    <string name="ingame_settings_gyro_sensitivity_subtitle">Cuánto se mueve la mira al girar el dispositivo</string>
+    <string name="ingame_settings_percent_value">%1$d %%</string>
+    <string name="ingame_settings_gyro_invert_x_title">Invertir la puntería con giroscopio en horizontal</string>
+    <string name="ingame_settings_gyro_invert_x_subtitle">Girar a la izquierda mueve la mira a la derecha</string>
+    <string name="ingame_settings_gyro_invert_y_title">Invertir la puntería con giroscopio en vertical</string>
+    <string name="ingame_settings_gyro_invert_y_subtitle">Inclinar hacia arriba mueve la mira hacia abajo</string>
     <string name="ingame_settings_controller_order_title">Orden de mandos</string>
     <plurals name="ingame_settings_controller_order_assigned">
         <item quantity="one">%d mando asignado</item>

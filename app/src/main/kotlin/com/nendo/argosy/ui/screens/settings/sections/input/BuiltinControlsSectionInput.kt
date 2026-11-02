@@ -110,6 +110,18 @@ internal class BuiltinControlsSectionInput(
                 viewModel.adjustSpeedrunPanelWidth(5)
                 InputResult.handled(SoundType.TOGGLE)
             }
+            BuiltinControlsItem.GyroAimSensitivity -> {
+                viewModel.stepBuiltinGyroAimSensitivity(1)
+                InputResult.handled(SoundType.TOGGLE)
+            }
+            BuiltinControlsItem.GyroAimInvertX -> {
+                viewModel.setBuiltinGyroAimInvertX(!state.builtinControls.gyroAimInvertX)
+                InputResult.handled(SoundType.TOGGLE)
+            }
+            BuiltinControlsItem.GyroAimInvertY -> {
+                viewModel.setBuiltinGyroAimInvertY(!state.builtinControls.gyroAimInvertY)
+                InputResult.handled(SoundType.TOGGLE)
+            }
             is BuiltinControlsItem.ControllerType -> InputResult.handled(SoundType.SILENT)
             else -> InputResult.UNHANDLED
         }
@@ -124,6 +136,10 @@ internal class BuiltinControlsSectionInput(
                 viewModel.adjustSpeedrunPanelWidth(-5)
                 InputResult.handled(SoundType.TOGGLE)
             }
+            BuiltinControlsItem.GyroAimSensitivity -> {
+                viewModel.stepBuiltinGyroAimSensitivity(-1)
+                InputResult.handled(SoundType.TOGGLE)
+            }
             else -> InputResult.UNHANDLED
         }
     }
@@ -135,6 +151,10 @@ internal class BuiltinControlsSectionInput(
             BuiltinControlsItem.SelectAsBack -> stepSelectAsBack(1)
             BuiltinControlsItem.SpeedrunPanelWidth -> {
                 viewModel.adjustSpeedrunPanelWidth(5)
+                InputResult.handled(SoundType.TOGGLE)
+            }
+            BuiltinControlsItem.GyroAimSensitivity -> {
+                viewModel.stepBuiltinGyroAimSensitivity(1)
                 InputResult.handled(SoundType.TOGGLE)
             }
             else -> InputResult.UNHANDLED

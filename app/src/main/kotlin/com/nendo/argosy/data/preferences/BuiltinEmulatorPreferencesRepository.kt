@@ -34,6 +34,9 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
         val BUILTIN_FORCE_SOFTWARE_TIMING = booleanPreferencesKey("builtin_force_software_timing")
         val BUILTIN_RUMBLE_ENABLED = booleanPreferencesKey("builtin_rumble_enabled")
         val BUILTIN_MOTION_ENABLED = booleanPreferencesKey("builtin_motion_enabled")
+        val BUILTIN_GYRO_AIM_INVERT_X = booleanPreferencesKey("builtin_gyro_aim_invert_x")
+        val BUILTIN_GYRO_AIM_INVERT_Y = booleanPreferencesKey("builtin_gyro_aim_invert_y")
+        val BUILTIN_GYRO_AIM_SENSITIVITY = intPreferencesKey("builtin_gyro_aim_sensitivity")
         val BUILTIN_BLACK_FRAME_INSERTION = booleanPreferencesKey("builtin_black_frame_insertion")
         val BUILTIN_LIMIT_HOTKEYS_TO_PLAYER1 = booleanPreferencesKey("builtin_limit_hotkeys_to_player1")
         val BUILTIN_ANALOG_AS_DPAD = booleanPreferencesKey("builtin_analog_as_dpad")
@@ -105,6 +108,9 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
             forceSoftwareTiming = prefs[Keys.BUILTIN_FORCE_SOFTWARE_TIMING] ?: false,
             rumbleEnabled = prefs[Keys.BUILTIN_RUMBLE_ENABLED] ?: true,
             motionEnabled = prefs[Keys.BUILTIN_MOTION_ENABLED] ?: true,
+            gyroAimInvertX = prefs[Keys.BUILTIN_GYRO_AIM_INVERT_X] ?: false,
+            gyroAimInvertY = prefs[Keys.BUILTIN_GYRO_AIM_INVERT_Y] ?: false,
+            gyroAimSensitivity = prefs[Keys.BUILTIN_GYRO_AIM_SENSITIVITY] ?: GyroAimSensitivity.DEFAULT,
             blackFrameInsertion = prefs[Keys.BUILTIN_BLACK_FRAME_INSERTION] ?: false,
             framesEnabled = prefs[Keys.BUILTIN_FRAMES_ENABLED] ?: false,
             limitHotkeysToPlayer1 = prefs[Keys.BUILTIN_LIMIT_HOTKEYS_TO_PLAYER1] ?: true,
@@ -231,6 +237,18 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
 
     suspend fun setBuiltinMotionEnabled(enabled: Boolean) {
         dataStore.edit { it[Keys.BUILTIN_MOTION_ENABLED] = enabled }
+    }
+
+    suspend fun setBuiltinGyroAimInvertX(enabled: Boolean) {
+        dataStore.edit { it[Keys.BUILTIN_GYRO_AIM_INVERT_X] = enabled }
+    }
+
+    suspend fun setBuiltinGyroAimInvertY(enabled: Boolean) {
+        dataStore.edit { it[Keys.BUILTIN_GYRO_AIM_INVERT_Y] = enabled }
+    }
+
+    suspend fun setBuiltinGyroAimSensitivity(percent: Int) {
+        dataStore.edit { it[Keys.BUILTIN_GYRO_AIM_SENSITIVITY] = GyroAimSensitivity.clamp(percent) }
     }
 
     suspend fun setBuiltinBlackFrameInsertion(enabled: Boolean) {

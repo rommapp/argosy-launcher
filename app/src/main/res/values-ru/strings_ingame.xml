@@ -175,6 +175,13 @@
     <string name="ingame_settings_rumble_subtitle">Включить вибрационную отдачу контроллера</string>
     <string name="ingame_settings_motion_title">Управление движением</string>
     <string name="ingame_settings_motion_subtitle">Разрешить играм считывать наклон и поворот устройства</string>
+    <string name="ingame_settings_gyro_sensitivity_title">Чувствительность прицеливания гироскопом</string>
+    <string name="ingame_settings_gyro_sensitivity_subtitle">Насколько смещается прицел при повороте устройства</string>
+    <string name="ingame_settings_percent_value">%1$d%%</string>
+    <string name="ingame_settings_gyro_invert_x_title">Инвертировать прицеливание гироскопом по горизонтали</string>
+    <string name="ingame_settings_gyro_invert_x_subtitle">Поворот влево смещает прицел вправо</string>
+    <string name="ingame_settings_gyro_invert_y_title">Инвертировать прицеливание гироскопом по вертикали</string>
+    <string name="ingame_settings_gyro_invert_y_subtitle">Наклон вверх смещает прицел вниз</string>
     <string name="ingame_settings_controller_order_title">Порядок контроллеров</string>
     <plurals name="ingame_settings_controller_order_assigned">
         <item quantity="one">%d контроллер назначен</item>

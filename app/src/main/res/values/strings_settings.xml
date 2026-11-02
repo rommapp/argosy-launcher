@@ -2839,6 +2839,16 @@
     <string name="settings_builtin_controls_motion_title">Motion controls</string>
     <!-- Second line of that row. -->
     <string name="settings_builtin_controls_motion_subtitle">Let games read the device\'s tilt and rotation</string>
+    <!-- Row title. How far the on-screen aim moves for a turn of the device, when the device's
+         gyroscope steers a game's pointer through the right stick. -->
+    <string name="settings_builtin_controls_gyro_sensitivity_title">Gyro aim sensitivity</string>
+    <string name="settings_builtin_controls_gyro_sensitivity_subtitle">How far the aim moves when you turn the device</string>
+    <!-- Row title. Reverses left and right for gyro aiming. -->
+    <string name="settings_builtin_controls_gyro_invert_x_title">Invert gyro aim horizontally</string>
+    <string name="settings_builtin_controls_gyro_invert_x_subtitle">Turning left moves the aim right</string>
+    <!-- Row title. Reverses up and down for gyro aiming. -->
+    <string name="settings_builtin_controls_gyro_invert_y_title">Invert gyro aim vertically</string>
+    <string name="settings_builtin_controls_gyro_invert_y_subtitle">Tilting up moves the aim down</string>
     <!-- Row opening the tool that decides which pad is player one. Noun phrase. -->
     <string name="settings_builtin_controls_order_title">Controller Order</string>
     <!-- Second line of that row before any pad is assigned. -->
@@ -3708,6 +3718,9 @@
     <string name="settings_hotkeys_action_sun_brighter">Sunlight Up</string>
     <!-- Hotkey that lowers the simulated sunlight solar-sensor cartridges (Boktai) read. -->
     <string name="settings_hotkeys_action_sun_dimmer">Sunlight Down</string>
+    <!-- Hotkey that puts gyro aiming back in the middle, so the way the device points now becomes
+         straight ahead. Verb phrase. -->
+    <string name="settings_hotkeys_action_recenter_gyro_aim">Recenter Gyro Aim</string>
 
     <!-- ===== Input mapping modal (Settings > components > InputMappingModal) ===== -->
 

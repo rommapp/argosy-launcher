@@ -171,6 +171,13 @@
     <string name="ingame_settings_rumble_subtitle">Vibrationsfeedback des Controllers aktivieren</string>
     <string name="ingame_settings_motion_title">Bewegungssteuerung</string>
     <string name="ingame_settings_motion_subtitle">Spiele dürfen Neigung und Drehung des Geräts auslesen</string>
+    <string name="ingame_settings_gyro_sensitivity_title">Gyro-Zielempfindlichkeit</string>
+    <string name="ingame_settings_gyro_sensitivity_subtitle">Wie weit sich das Ziel bewegt, wenn du das Gerät drehst</string>
+    <string name="ingame_settings_percent_value">%1$d %%</string>
+    <string name="ingame_settings_gyro_invert_x_title">Gyro-Zielen horizontal umkehren</string>
+    <string name="ingame_settings_gyro_invert_x_subtitle">Nach links drehen bewegt das Ziel nach rechts</string>
+    <string name="ingame_settings_gyro_invert_y_title">Gyro-Zielen vertikal umkehren</string>
+    <string name="ingame_settings_gyro_invert_y_subtitle">Nach oben neigen bewegt das Ziel nach unten</string>
     <string name="ingame_settings_controller_order_title">Controller-Reihenfolge</string>
     <plurals name="ingame_settings_controller_order_assigned">
         <item quantity="one">%d Controller zugewiesen</item>

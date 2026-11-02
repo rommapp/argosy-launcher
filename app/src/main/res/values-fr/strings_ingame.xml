@@ -173,6 +173,13 @@
     <string name="ingame_settings_rumble_subtitle">Activer les retours de vibration de la manette</string>
     <string name="ingame_settings_motion_title">Commandes de mouvement</string>
     <string name="ingame_settings_motion_subtitle">Permet aux jeux de lire l\'inclinaison et la rotation de l\'appareil</string>
+    <string name="ingame_settings_gyro_sensitivity_title">Sensibilité de la visée gyroscopique</string>
+    <string name="ingame_settings_gyro_sensitivity_subtitle">Distance parcourue par le viseur quand vous tournez l\'appareil</string>
+    <string name="ingame_settings_percent_value">%1$d %%</string>
+    <string name="ingame_settings_gyro_invert_x_title">Inverser la visée gyroscopique horizontalement</string>
+    <string name="ingame_settings_gyro_invert_x_subtitle">Tourner à gauche déplace le viseur à droite</string>
+    <string name="ingame_settings_gyro_invert_y_title">Inverser la visée gyroscopique verticalement</string>
+    <string name="ingame_settings_gyro_invert_y_subtitle">Incliner vers le haut déplace le viseur vers le bas</string>
     <string name="ingame_settings_controller_order_title">Ordre des manettes</string>
     <plurals name="ingame_settings_controller_order_assigned">
         <item quantity="one">%d manette assignée</item>

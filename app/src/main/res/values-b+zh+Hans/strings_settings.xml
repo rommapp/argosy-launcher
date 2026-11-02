@@ -1440,6 +1440,12 @@
     <string name="settings_builtin_controls_rumble_subtitle">启用手柄震动反馈</string>
     <string name="settings_builtin_controls_motion_title">体感操控</string>
     <string name="settings_builtin_controls_motion_subtitle">允许游戏读取设备的倾斜和旋转</string>
+    <string name="settings_builtin_controls_gyro_sensitivity_title">陀螺仪瞄准灵敏度</string>
+    <string name="settings_builtin_controls_gyro_sensitivity_subtitle">转动设备时准星移动的幅度</string>
+    <string name="settings_builtin_controls_gyro_invert_x_title">反转陀螺仪水平瞄准</string>
+    <string name="settings_builtin_controls_gyro_invert_x_subtitle">向左转动时准星向右移动</string>
+    <string name="settings_builtin_controls_gyro_invert_y_title">反转陀螺仪垂直瞄准</string>
+    <string name="settings_builtin_controls_gyro_invert_y_subtitle">向上倾斜时准星向下移动</string>
     <string name="settings_builtin_controls_order_title">手柄顺序</string>
     <string name="settings_builtin_controls_order_subtitle">在每个手柄上按一个按钮以设置玩家顺序</string>
     <plurals name="settings_builtin_controls_order_assigned">
@@ -1879,6 +1885,7 @@
     <string name="settings_hotkeys_action_reset_timer">重置计时器</string>
     <string name="settings_hotkeys_action_sun_brighter">增强阳光</string>
     <string name="settings_hotkeys_action_sun_dimmer">减弱阳光</string>
+    <string name="settings_hotkeys_action_recenter_gyro_aim">陀螺仪瞄准回中</string>
 
     <!-- ===== Input mapping modal ===== -->
 

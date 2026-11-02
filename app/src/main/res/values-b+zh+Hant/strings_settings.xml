@@ -1372,6 +1372,12 @@
     <string name="settings_builtin_controls_rumble_subtitle">啟用控制器震動回饋</string>
     <string name="settings_builtin_controls_motion_title">體感操控</string>
     <string name="settings_builtin_controls_motion_subtitle">允許遊戲讀取裝置的傾斜與旋轉</string>
+    <string name="settings_builtin_controls_gyro_sensitivity_title">陀螺儀瞄準靈敏度</string>
+    <string name="settings_builtin_controls_gyro_sensitivity_subtitle">轉動裝置時準星移動的幅度</string>
+    <string name="settings_builtin_controls_gyro_invert_x_title">反轉陀螺儀水平瞄準</string>
+    <string name="settings_builtin_controls_gyro_invert_x_subtitle">向左轉動時準星向右移動</string>
+    <string name="settings_builtin_controls_gyro_invert_y_title">反轉陀螺儀垂直瞄準</string>
+    <string name="settings_builtin_controls_gyro_invert_y_subtitle">向上傾斜時準星向下移動</string>
     <string name="settings_builtin_controls_order_title">控制器順序</string>
     <string name="settings_builtin_controls_order_subtitle">在各控制器上按下按鍵以設定玩家順序</string>
     <plurals name="settings_builtin_controls_order_assigned">
@@ -1795,6 +1801,7 @@
     <string name="settings_hotkeys_action_reset_timer">重設計時器</string>
     <string name="settings_hotkeys_action_sun_brighter">增強陽光</string>
     <string name="settings_hotkeys_action_sun_dimmer">減弱陽光</string>
+    <string name="settings_hotkeys_action_recenter_gyro_aim">陀螺儀瞄準回中</string>
 
     <string name="settings_input_mapping_title">按鍵對應</string>
     <string name="settings_input_mapping_subtitle">選擇要設定的控制器</string>

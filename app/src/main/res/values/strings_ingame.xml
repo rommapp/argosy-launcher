@@ -382,6 +382,18 @@
     <string name="ingame_settings_motion_title">Motion controls</string>
     <!-- Second line under that row. -->
     <string name="ingame_settings_motion_subtitle">Let games read the device\'s tilt and rotation</string>
+    <!-- Row on the controls tab. How far the on-screen aim moves for a turn of the device, when
+         the device's gyroscope steers a game's pointer. -->
+    <string name="ingame_settings_gyro_sensitivity_title">Gyro aim sensitivity</string>
+    <string name="ingame_settings_gyro_sensitivity_subtitle">How far the aim moves when you turn the device</string>
+    <!-- Value of that row. A percentage, e.g. "150%". -->
+    <string name="ingame_settings_percent_value">%1$d%%</string>
+    <!-- Row on the controls tab. Reverses left and right for gyro aiming. -->
+    <string name="ingame_settings_gyro_invert_x_title">Invert gyro aim horizontally</string>
+    <string name="ingame_settings_gyro_invert_x_subtitle">Turning left moves the aim right</string>
+    <!-- Row on the controls tab. Reverses up and down for gyro aiming. -->
+    <string name="ingame_settings_gyro_invert_y_title">Invert gyro aim vertically</string>
+    <string name="ingame_settings_gyro_invert_y_subtitle">Tilting up moves the aim down</string>
     <!-- Row on the controls tab. Noun phrase: which physical controller is which player. -->
     <string name="ingame_settings_controller_order_title">Controller Order</string>
     <!-- Second line under that row when ports have been given out, counting them. -->

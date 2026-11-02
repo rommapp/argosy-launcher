@@ -169,6 +169,13 @@
     <string name="ingame_settings_rumble_subtitle">啟用控制器震動回饋</string>
     <string name="ingame_settings_motion_title">體感操控</string>
     <string name="ingame_settings_motion_subtitle">允許遊戲讀取裝置的傾斜與旋轉</string>
+    <string name="ingame_settings_gyro_sensitivity_title">陀螺儀瞄準靈敏度</string>
+    <string name="ingame_settings_gyro_sensitivity_subtitle">轉動裝置時準星移動的幅度</string>
+    <string name="ingame_settings_percent_value">%1$d%%</string>
+    <string name="ingame_settings_gyro_invert_x_title">反轉陀螺儀水平瞄準</string>
+    <string name="ingame_settings_gyro_invert_x_subtitle">向左轉動時準星向右移動</string>
+    <string name="ingame_settings_gyro_invert_y_title">反轉陀螺儀垂直瞄準</string>
+    <string name="ingame_settings_gyro_invert_y_subtitle">向上傾斜時準星向下移動</string>
     <string name="ingame_settings_controller_order_title">控制器順序</string>
     <plurals name="ingame_settings_controller_order_assigned">
         <item quantity="other">已指派%d個控制器</item>

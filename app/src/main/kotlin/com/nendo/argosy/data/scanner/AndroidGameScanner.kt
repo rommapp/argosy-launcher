@@ -55,6 +55,7 @@ class AndroidGameScanner @Inject constructor(
      */
     suspend fun scanInstalledGames(): AndroidScanResult = withContext(Dispatchers.IO) {
         ensureAndroidPlatformExists()
+        unlinkUninstalledApps()
         relinkInstalledRommAndroidApps()
 
         val unclaimed = gameDao
@@ -200,6 +201,30 @@ class AndroidGameScanner @Inject constructor(
         }
         if (relinked > 0) refreshGameCount()
         relinked
+    }
+
+    suspend fun unlinkUninstalledApps(packageName: String? = null): Int = withContext(Dispatchers.IO) {
+        val stale = gameDao.getBySource(GameSource.ANDROID_APP).filter { game ->
+            val linked = game.packageName ?: return@filter false
+            (packageName == null || linked == packageName) && appsRepository.isPackageMissing(linked)
+        }
+        for (game in stale) {
+            val serverBacked = (game.rommId ?: 0L) > 0L
+            if (serverBacked) {
+                gameDao.update(
+                    game.copy(
+                        packageName = null,
+                        source = if (game.localPath != null) GameSource.ROMM_SYNCED else GameSource.ROMM_REMOTE
+                    )
+                )
+            } else {
+                gameDao.delete(game.id)
+            }
+            Log.d(TAG, "Unlinked uninstalled app ${game.packageName} from '${game.title}'" +
+                if (serverBacked) "" else " (removed local row)")
+        }
+        if (stale.isNotEmpty()) refreshGameCount()
+        stale.size
     }
 
     private fun matchKey(title: String): String =

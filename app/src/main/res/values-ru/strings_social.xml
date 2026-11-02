@@ -182,6 +182,7 @@
 
     <string name="social_friendcard_hosting">Хостит %1$s</string>
     <string name="social_friendcard_playing">Играет в %1$s</string>
+    <string name="social_friendcard_playing_online">Играет в %1$s по сети</string>
     <string name="social_friendcard_watching">Смотрит %1$s</string>
     <string name="social_friendcard_favorite_remove_desc">Убрать из избранного</string>
     <string name="social_friendcard_favorite_add_desc">Добавить в избранное</string>

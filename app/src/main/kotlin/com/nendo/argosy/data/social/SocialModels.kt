@@ -1,5 +1,6 @@
 package com.nendo.argosy.data.social
 
+import com.nendo.argosy.data.netplay.external.ExternalNetplay
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
@@ -126,7 +127,8 @@ data class PresenceGameInfo(
     val title: String,
     @Json(name = "cover_thumb") val coverThumb: String? = null,
     @Json(name = "netplay_session") val netplaySession: NetplaySession? = null,
-    @Json(name = "game_igdb_id") val igdbId: Int? = null
+    @Json(name = "game_igdb_id") val igdbId: Int? = null,
+    @Transient val externalNetplay: ExternalNetplay? = null
 )
 
 /**

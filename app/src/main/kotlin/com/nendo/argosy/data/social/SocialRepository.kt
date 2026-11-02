@@ -8,6 +8,7 @@ import android.util.Log
 import com.nendo.argosy.data.cache.ImageCacheManager
 import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.local.dao.AchievementDao
+import com.nendo.argosy.data.netplay.external.ExternalNetplay
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PendingSocialSyncDao
 import com.nendo.argosy.data.local.dao.PlayRecordDeletionDao
@@ -755,10 +756,11 @@ class SocialRepository @Inject constructor(
         status: PresenceStatus,
         gameIgdbId: Int? = null,
         gameTitle: String? = null,
-        media: MediaPresence? = null
+        media: MediaPresence? = null,
+        externalNetplay: ExternalNetplay? = null
     ): Boolean {
         if (!socialService.isConnected()) return false
-        return socialService.sendPresence(status, gameIgdbId, gameTitle, android.os.Build.MODEL, media)
+        return socialService.sendPresence(status, gameIgdbId, gameTitle, android.os.Build.MODEL, media, externalNetplay)
     }
 
     fun isConnected(): Boolean = socialService.isConnected()

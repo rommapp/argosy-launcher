@@ -174,6 +174,7 @@
 
     <string name="social_friendcard_hosting">Hostet %1$s</string>
     <string name="social_friendcard_playing">Spielt %1$s</string>
+    <string name="social_friendcard_playing_online">Spielt %1$s online</string>
     <string name="social_friendcard_watching">Schaut %1$s</string>
     <string name="social_friendcard_favorite_remove_desc">Favorit entfernen</string>
     <string name="social_friendcard_favorite_add_desc">Favorit hinzufügen</string>

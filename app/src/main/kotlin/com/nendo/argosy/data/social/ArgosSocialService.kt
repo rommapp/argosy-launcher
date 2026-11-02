@@ -5,6 +5,7 @@ import android.os.Build
 import android.provider.Settings
 import android.util.Log
 import com.nendo.argosy.BuildConfig
+import com.nendo.argosy.data.netplay.external.ExternalNetplay
 import com.squareup.moshi.Moshi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -320,13 +321,15 @@ class ArgosSocialService @Inject constructor(
                         val netplayJson = payload.optJSONObject("netplay_session")
                         Log.d(TAG, "PRESENCE_UPDATE: user=${payload.optString("user_id")} hasNetplay=${netplayJson != null} keys=${payload.names()}")
                         val netplay = parseNetplaySession(netplayJson)
+                        val externalNetplay = parseExternalNetplay(payload.optJSONObject("external_netplay"))
                         val igdbId = parseGameIgdbId(payload)
                         val gameFromPayload = payload.optJSONObject("game")?.let { gameJson ->
                             PresenceGameInfo(
                                 title = gameJson.getString("title"),
                                 coverThumb = gameJson.optString("cover_thumb", null),
                                 netplaySession = netplay,
-                                igdbId = igdbId
+                                igdbId = igdbId,
+                                externalNetplay = externalNetplay
                             )
                         }
                         val gameTitle = payload.optString("game_title", "").takeIf { it.isNotEmpty() }
@@ -335,9 +338,14 @@ class ArgosSocialService @Inject constructor(
                                 title = netplay.gameTitle,
                                 coverThumb = null,
                                 netplaySession = netplay,
-                                igdbId = igdbId
+                                igdbId = igdbId,
+                                externalNetplay = externalNetplay
                             )
-                            gameTitle != null -> PresenceGameInfo(title = gameTitle, igdbId = igdbId)
+                            gameTitle != null -> PresenceGameInfo(
+                                title = gameTitle,
+                                igdbId = igdbId,
+                                externalNetplay = externalNetplay
+                            )
                             else -> null
                         }
                         val update = PresenceUpdate(
@@ -1078,13 +1086,15 @@ class ArgosSocialService @Inject constructor(
         gameIgdbId: Int? = null,
         gameTitle: String? = null,
         deviceName: String? = null,
-        media: MediaPresence? = null
+        media: MediaPresence? = null,
+        externalNetplay: ExternalNetplay? = null
     ): Boolean {
         return send(MessageTypes.SET_PRESENCE, mapOf(
             "status" to status.value,
             "game_igdb_id" to gameIgdbId,
             "game_title" to gameTitle,
             "device_name" to deviceName,
+            "external_netplay" to externalNetplay?.toWire(),
             "media_kind" to media?.kind?.value,
             "media_title" to media?.title,
             "media_year" to media?.year,
@@ -1555,7 +1565,8 @@ class ArgosSocialService @Inject constructor(
                         title = gameTitle ?: netplay?.gameTitle ?: "",
                         coverThumb = null,
                         netplaySession = netplay,
-                        igdbId = presenceObj?.let(::parseGameIgdbId)
+                        igdbId = presenceObj?.let(::parseGameIgdbId),
+                        externalNetplay = parseExternalNetplay(presenceObj?.optJSONObject("external_netplay"))
                     )
                 } else null
 
@@ -1828,6 +1839,14 @@ class ArgosSocialService @Inject constructor(
             Log.w(TAG, "Failed to parse community follow", e)
             null
         }
+    }
+
+    private fun parseExternalNetplay(obj: JSONObject?): ExternalNetplay? = obj?.let {
+        ExternalNetplay.fromWire(
+            emulator = it.optString("emulator", null),
+            role = it.optString("role", null),
+            source = it.optString("source", null)
+        )
     }
 
     private fun parseNetplaySession(obj: JSONObject?): NetplaySession? {

@@ -182,7 +182,9 @@ Presence is handled AUTOMATICALLY by `PresenceManager`. You don't need to manual
 3. `socialRepository.serviceConnectionState` - Is the socket connected (service layer)?
 4. `_screenOn` - screen on/off broadcast receiver
 
-Netplay is NOT observed here. Netplay reaches presence only via server payloads handled in `ArgosSocialService` - do not wire netplay presence into `PresenceManager`.
+Argosy-hosted netplay is NOT observed here. `netplay_session` is server-owned and reaches presence only via server payloads handled in `ArgosSocialService` - do not wire it into `PresenceManager`.
+
+External-emulator netplay is the exception: only the playing device can see it, so `ExternalNetplayDetector` (`data/netplay/external/`) feeds `PresenceManager`, which sends it as `external_netplay` on `set_presence` with in-game presence. Detection only; it carries no join data.
 
 When any of these change, it automatically sends the appropriate presence:
 - `ONLINE` - Connected, not playing (or playing with now-playing hidden)

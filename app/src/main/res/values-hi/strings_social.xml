@@ -185,6 +185,7 @@
 
     <string name="social_friendcard_hosting">%1$s होस्ट कर रहे हैं</string>
     <string name="social_friendcard_playing">%1$s खेल रहे हैं</string>
+    <string name="social_friendcard_playing_online">%1$s ऑनलाइन खेल रहे हैं</string>
     <string name="social_friendcard_watching">%1$s देख रहे हैं</string>
     <string name="social_friendcard_favorite_remove_desc">पसंदीदा हटाएं</string>
     <string name="social_friendcard_favorite_add_desc">पसंदीदा जोड़ें</string>

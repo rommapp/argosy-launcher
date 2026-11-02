@@ -96,7 +96,7 @@ class SaveSyncOrchestratorTest {
             saveCacheDao = saveCacheDao,
             saveCacheManager = dagger.Lazy { saveCacheManager },
             activeSaveRepository = activeSaveRepository,
-            serverSaveGate = ServerSaveGate(activeSaveRepository),
+            serverSaveGate = ServerSaveGate(activeSaveRepository, saveSyncDao, syncPreferencesRepository),
             pendingSyncQueueDao = pendingSyncQueueDao,
             gameDao = gameDao,
             emulatorResolver = emulatorResolver,

@@ -360,12 +360,18 @@ class SaveSyncRepository @Inject constructor(
         contentHash: String? = null
     ) = entityManager.markRestored(gameId, rommId, emulatorId, channelName, localPath, rommSaveId, serverTimestamp, contentHash)
 
+    /**
+     * Decides how a launch treats the save. With [liveProcess] the emulator still holds the save
+     * open: the decision reads the disk and the server and writes nothing, so the disk check,
+     * snapshot apply and queued uploads are left out.
+     */
     suspend fun preLaunchSyncForGame(
         gameId: Long,
         rommId: Long,
         emulatorId: String,
         channelName: String?,
-        secureSaves: Boolean
+        secureSaves: Boolean,
+        liveProcess: Boolean = false
     ): PreLaunchSyncResult = withContext(Dispatchers.IO) {
         val syncChannel = snapshotRouter.get().launchChannel(gameId, channelName)
         val myDeviceId = apiClient.getDeviceId() ?: run {
@@ -376,7 +382,17 @@ class SaveSyncRepository @Inject constructor(
 
         val ownerUserId = syncPreferencesRepository.getRommUserId()
         saveRecoveryGate.awaitSettled()
-        val disk = orchestrator.checkDiskAgainstActive(gameId, emulatorId, syncChannel, secureSaves, ownerUserId)
+        if (liveProcess) {
+            snapshotRouter.get().liveCheck(gameId, emulatorId, syncChannel)?.let { decision ->
+                Logger.debug(PRE_LAUNCH_TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | live process, snapshot check | decision=${decision::class.simpleName}")
+                return@withContext decision
+            }
+        }
+        val disk = if (liveProcess) {
+            SaveSyncOrchestrator.DiskCheck.Untouched
+        } else {
+            orchestrator.checkDiskAgainstActive(gameId, emulatorId, syncChannel, secureSaves, ownerUserId)
+        }
         Logger.debug(PRE_LAUNCH_TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId channel=$effectiveChannel | disk=${disk::class.simpleName}")
         if (disk is SaveSyncOrchestrator.DiskCheck.Unreadable) {
             Logger.debug(PRE_LAUNCH_TAG, "[SaveSync] PRE_LAUNCH gameId=$gameId | save folder unreadable; skipping sync decision | decision=LocalIsNewer")
@@ -418,7 +434,7 @@ class SaveSyncRepository @Inject constructor(
 
         val negotiator = strategySelector.current() as? NegotiatorSaveSyncStrategy
         if (negotiator != null) {
-            return@withContext negotiatePreLaunch(negotiator, gameId, rommId, emulatorId, effectiveChannel, secureSaves, existing)
+            return@withContext negotiatePreLaunch(negotiator, gameId, rommId, emulatorId, effectiveChannel, secureSaves, existing, queueUpload = !liveProcess)
         }
 
         val serverSaves = try {
@@ -474,7 +490,8 @@ class SaveSyncRepository @Inject constructor(
         emulatorId: String,
         slot: String,
         secureSaves: Boolean,
-        existing: SaveSyncEntity?
+        existing: SaveSyncEntity?,
+        queueUpload: Boolean
     ): PreLaunchSyncResult {
         val inventory = negotiateInventory.build(secureSaves, gameId)
         val plan = negotiator.planForGame(inventory, rommId) ?: run {
@@ -502,7 +519,9 @@ class SaveSyncRepository @Inject constructor(
                 serverSaveId = op.saveId
             )
             ReconcileAction.UPLOAD -> {
-                existing?.localSavePath?.let { orchestrator.queueUpload(gameId, emulatorId, it, slot) }
+                if (queueUpload) {
+                    existing?.localSavePath?.let { orchestrator.queueUpload(gameId, emulatorId, it, slot) }
+                }
                 PreLaunchSyncResult.LocalIsNewer
             }
             ReconcileAction.NO_OP, null -> PreLaunchSyncResult.LocalIsNewer

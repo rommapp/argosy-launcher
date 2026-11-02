@@ -262,16 +262,6 @@ sealed class HomeRow(
         HomeRow(HomeSectionKind.PINNED_VIRTUAL)
 }
 
-/**
- * The screens a focused app-bar app can be opened on, while that menu is open.
- */
-data class AppDrawerState(
-    val apps: List<com.nendo.argosy.ui.components.AppDrawerEntry> = emptyList(),
-    val focusIndex: Int = 0
-) {
-    val focusedPackage: String? get() = apps.getOrNull(focusIndex)?.packageName
-}
-
 data class AppBarLaunchMenu(
     val packageName: String,
     val label: String,
@@ -288,7 +278,6 @@ data class HomeUiState(
     val appBarToolsOpen: Boolean = false,
     val appBarToolIndex: Int = 1,
     val appBarMenu: AppBarLaunchMenu? = null,
-    val appDrawer: AppDrawerState? = null,
     val platforms: List<HomePlatformUi> = emptyList(),
     val platformItems: List<HomeRowItem> = emptyList(),
     val platformItemsFor: Long? = null,
@@ -826,6 +815,7 @@ data class BreadcrumbItem(val label: String, val isCurrent: Boolean)
 sealed class HomeEvent {
     data class LaunchIntent(val intent: Intent, val options: android.os.Bundle? = null) : HomeEvent()
     data class NavigateToCollections(val collectionId: Long) : HomeEvent()
+    data object NavigateToApps : HomeEvent()
     data class NavigateToLibrary(
         val platformId: Long? = null,
         val sourceFilter: String? = null,

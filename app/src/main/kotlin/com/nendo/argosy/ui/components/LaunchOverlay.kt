@@ -38,6 +38,7 @@ import com.nendo.argosy.data.launcher.SteamLaunchers
 import com.nendo.argosy.domain.model.LaunchProgress
 import com.nendo.argosy.domain.model.LaunchPromptOption
 import com.nendo.argosy.domain.model.LaunchStep
+import com.nendo.argosy.domain.model.RunningGameQuestion
 import com.nendo.argosy.domain.model.SnapshotConflictChoice
 import com.nendo.argosy.domain.model.SyncProgress
 import com.nendo.argosy.ui.components.launch.CalmLaunchContent
@@ -266,6 +267,13 @@ private fun LaunchOverlayContent(
                     onAnswer = onAnswer,
                     onCancel = onCancel
                 )
+                is LaunchStep.RunningGame -> RunningGameContent(
+                    gameTitle = shown.gameTitle ?: stringResource(R.string.ui_sync_overlay_unknown_game),
+                    question = step,
+                    focusIndex = promptFocus,
+                    onAnswer = onAnswer,
+                    onCancel = onCancel
+                )
                 is LaunchStep.Recap -> if (rememberRecapFullCardSurface() == surface) {
                     LaunchRecapCard(
                         recap = step.recap,
@@ -353,6 +361,51 @@ private fun PromptContent(
         )
         else -> Unit
     }
+}
+
+@Composable
+private fun RunningGameContent(
+    gameTitle: String,
+    question: LaunchStep.RunningGame,
+    focusIndex: Int,
+    onAnswer: (LaunchPromptOption) -> Unit,
+    onCancel: () -> Unit
+) {
+    val runningTitle = question.runningGameTitle
+    val (title, message) = when (question.kind) {
+        RunningGameQuestion.NEWER_SAVE ->
+            stringResource(R.string.ui_launch_overlay_running_newer_save_title) to
+                stringResource(R.string.ui_launch_overlay_running_newer_save_message, gameTitle)
+        RunningGameQuestion.EMULATOR_BUSY ->
+            stringResource(R.string.ui_launch_overlay_running_busy_title, question.emulatorName) to
+                if (runningTitle != null) {
+                    stringResource(R.string.ui_launch_overlay_running_busy_message_game, question.emulatorName, runningTitle)
+                } else {
+                    stringResource(R.string.ui_launch_overlay_running_busy_message, question.emulatorName)
+                }
+    }
+    LaunchQuestionCard(
+        title = title,
+        message = message,
+        choices = question.options.mapNotNull { option ->
+            val (label, description) = when (option) {
+                LaunchPromptOption.LOAD_NEWER_SAVE ->
+                    R.string.ui_launch_overlay_running_load_newer_label to R.string.ui_launch_overlay_running_load_newer_subtitle
+                LaunchPromptOption.KEEP_PLAYING ->
+                    R.string.ui_launch_overlay_running_keep_playing_label to R.string.ui_launch_overlay_running_keep_playing_subtitle
+                LaunchPromptOption.CLOSE_AND_LAUNCH ->
+                    R.string.ui_launch_overlay_running_close_label to R.string.ui_launch_overlay_running_close_subtitle
+                else -> return@mapNotNull null
+            }
+            LaunchQuestionChoice(
+                label = stringResource(label),
+                description = stringResource(description),
+                onClick = { onAnswer(option) }
+            )
+        },
+        focusIndex = focusIndex,
+        onCancel = onCancel
+    )
 }
 
 @Composable

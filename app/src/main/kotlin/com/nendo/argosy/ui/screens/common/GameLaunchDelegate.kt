@@ -123,7 +123,8 @@ class GameLaunchDelegate @Inject constructor(
     private val launchHandoff: LaunchHandoff,
     private val resolveSnapshotConflict: com.nendo.argosy.domain.usecase.savechannel.ResolveSnapshotConflictUseCase,
     private val connectedControllerTracker: com.nendo.argosy.core.input.ConnectedControllerTracker,
-    private val preLaunchRecapStep: PreLaunchRecapStep
+    private val preLaunchRecapStep: PreLaunchRecapStep,
+    private val backgroundGameLaunch: BackgroundGameLaunch
 ) {
     companion object {
         private const val EMULATOR_KILL_DELAY_MS = 500L
@@ -198,15 +199,42 @@ class GameLaunchDelegate @Inject constructor(
 
     private var _onLaunchFailed: (() -> Unit)? = null
 
-    private suspend fun stopEmulatorBeforeLaunch(emulatorPackage: String?, alreadyStopped: String?, noTrackedSession: Boolean) {
-        if (emulatorPackage == null || emulatorPackage == alreadyStopped) return
-        if (emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE || emulatorPackage == application.packageName) return
+    private suspend fun emulatorClearedForLaunch(
+        ticket: LaunchProgressTracker.Ticket,
+        emulatorPackage: String?,
+        alreadyStopped: String?,
+        noTrackedSession: Boolean
+    ): Boolean {
+        if (emulatorPackage == null || emulatorPackage == alreadyStopped) return true
+        if (emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE || emulatorPackage == application.packageName) return true
         val requiresKill = noTrackedSession && emulatorResolver.resolveEmulatorId(emulatorPackage)
             ?.let { EmulatorRegistry.getById(it) }?.launchConfig?.requiresEmulatorKill == true
-        if (!requiresKill && !withContext(Dispatchers.IO) { RootShell.isAvailable }) return
+        if (!requiresKill && !withContext(Dispatchers.IO) { RootShell.isAvailable }) return true
+        if (!requiresKill) {
+            when (backgroundGameLaunch.clearForLaunch(ticket, emulatorPackage)) {
+                BackgroundGameLaunch.Clear.CANCELLED -> return false
+                BackgroundGameLaunch.Clear.CLOSED -> {
+                    delay(EMULATOR_KILL_DELAY_MS)
+                    return true
+                }
+                BackgroundGameLaunch.Clear.NOT_RUNNING -> Unit
+            }
+        }
         android.util.Log.d("GameLaunchDelegate", "Force-stopping $emulatorPackage before launch (requiresKill=$requiresKill)")
         gameLauncher.forceStopEmulator(emulatorPackage)
         delay(EMULATOR_KILL_DELAY_MS)
+        return true
+    }
+
+    private suspend fun evictSessionReturningStopped(session: com.nendo.argosy.data.emulator.ActiveSession): String? {
+        endSessionAndAwaitConflictAnswer()
+        if (backgroundGameLaunch.keepsAlive(session.emulatorPackage)) {
+            backgroundGameLaunch.remember(session)
+            return null
+        }
+        gameLauncher.forceStopEmulator(session.emulatorPackage)
+        delay(EMULATOR_KILL_DELAY_MS)
+        return session.emulatorPackage
     }
 
     private suspend fun endSessionAndAwaitConflictAnswer(): SessionEndResult {
@@ -255,8 +283,16 @@ class GameLaunchDelegate @Inject constructor(
                 val resolvedVariantId = variantResolver.resolveVariant(game)?.id
 
                 val canResume = !sessionRequiresKill && playSessionTracker.canResumeSession(gameId, resolvedVariantId)
+                val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(gameId, game.platformId, game.platformSlug)
+                val evictsOwnSessionAlive = !canResume && !sessionRequiresKill && activeSession != null &&
+                    activeSession.gameId == gameId && activeSession.emulatorPackage == emulatorPackage &&
+                    backgroundGameLaunch.keepsAlive(activeSession.emulatorPackage)
+                var liveInBackground = if (canResume || evictsOwnSessionAlive) null
+                else backgroundGameLaunch.findLive(gameId, resolvedVariantId, emulatorPackage)
 
-                if (!canResume && !preLaunchRecapStep.run(ticket, gameId, game.title)) {
+                if (!canResume && !evictsOwnSessionAlive && liveInBackground == null &&
+                    !preLaunchRecapStep.run(ticket, gameId, game.title)
+                ) {
                     onLaunchFailed()
                     return@launch
                 }
@@ -269,11 +305,11 @@ class GameLaunchDelegate @Inject constructor(
 
                 var stoppedPackage: String? = null
                 if (!canResume && activeSession != null && !sessionRequiresKill) {
-                    android.util.Log.d("GameLaunchDelegate", "Evicting stale session for game ${activeSession.gameId}, killing ${activeSession.emulatorPackage}")
-                    endSessionAndAwaitConflictAnswer()
-                    gameLauncher.forceStopEmulator(activeSession.emulatorPackage)
-                    stoppedPackage = activeSession.emulatorPackage
-                    delay(EMULATOR_KILL_DELAY_MS)
+                    android.util.Log.d("GameLaunchDelegate", "Evicting stale session for game ${activeSession.gameId} in ${activeSession.emulatorPackage}")
+                    stoppedPackage = evictSessionReturningStopped(activeSession)
+                }
+                if (evictsOwnSessionAlive) {
+                    liveInBackground = backgroundGameLaunch.findLive(gameId, resolvedVariantId, emulatorPackage)
                 }
 
                 if (canResume) {
@@ -282,9 +318,22 @@ class GameLaunchDelegate @Inject constructor(
                     return@launch
                 }
 
-                val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(gameId, game.platformId, game.platformSlug)
+                if (liveInBackground != null) {
+                    when (backgroundGameLaunch.resume(ticket, game, liveInBackground, channelName, origin)) {
+                        BackgroundGameLaunch.Resume.RESUMED -> return@launch
+                        BackgroundGameLaunch.Resume.CANCELLED -> {
+                            onLaunchFailed()
+                            return@launch
+                        }
+                        BackgroundGameLaunch.Resume.FRESH_LAUNCH -> delay(EMULATOR_KILL_DELAY_MS)
+                    }
+                }
+
                 val emulatorId = emulatorPackage?.let { emulatorResolver.resolveEmulatorId(it) }
-                stopEmulatorBeforeLaunch(emulatorPackage, stoppedPackage, noTrackedSession = activeSession == null)
+                if (!emulatorClearedForLaunch(ticket, emulatorPackage, stoppedPackage, noTrackedSession = activeSession == null)) {
+                    onLaunchFailed()
+                    return@launch
+                }
                 val prefs = preferencesRepository.preferences.first()
                 val canSync = resolvedVariantId == null && emulatorId != null && SavePathRegistry.canSyncWithSettings(
                     emulatorId,
@@ -693,18 +742,19 @@ class GameLaunchDelegate @Inject constructor(
                     return@launch
                 }
                 val activeSession = playSessionTracker.activeSession.value
-                if (activeSession != null) {
-                    android.util.Log.d("GameLaunchDelegate", "launchSimple: ending session for game ${activeSession.gameId} before fresh launch")
-                    endSessionAndAwaitConflictAnswer()
-                    gameLauncher.forceStopEmulator(activeSession.emulatorPackage)
-                    delay(EMULATOR_KILL_DELAY_MS)
+                val stoppedPackage = activeSession?.let {
+                    android.util.Log.d("GameLaunchDelegate", "launchSimple: ending session for game ${it.gameId} before fresh launch")
+                    evictSessionReturningStopped(it)
                 }
-                game?.let {
-                    stopEmulatorBeforeLaunch(
-                        emulatorResolver.getEmulatorPackageForGame(it.id, it.platformId, it.platformSlug),
-                        activeSession?.emulatorPackage,
-                        noTrackedSession = activeSession == null
-                    )
+                val cleared = game == null || emulatorClearedForLaunch(
+                    ticket,
+                    emulatorResolver.getEmulatorPackageForGame(game.id, game.platformId, game.platformSlug),
+                    stoppedPackage,
+                    noTrackedSession = activeSession == null
+                )
+                if (!cleared) {
+                    callbacks.onLaunchFailed()
+                    return@launch
                 }
                 val rememberedVariantId = if (variantFileId == null && !allowVariantPrompt) {
                     game?.let { variantResolver.resolveVariant(it)?.id }

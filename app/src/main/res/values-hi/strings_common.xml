@@ -658,6 +658,7 @@
     <string name="ui_quick_friends_appear_online">ऑनलाइन दिखें</string>
     <string name="ui_drawer_friend_hosting">%1$s होस्ट कर रहे हैं</string>
     <string name="ui_drawer_friend_playing">%1$s खेल रहे हैं</string>
+    <string name="ui_drawer_friend_playing_online">%1$s ऑनलाइन खेल रहे हैं</string>
     <string name="ui_drawer_friend_in_game">गेम में</string>
     <string name="ui_drawer_friend_favorite">पसंदीदा</string>
     <string name="ui_drawer_account_none">कोई खाता नहीं</string>

@@ -30,7 +30,7 @@ fun Modifier.clickableNoFocus(onClick: () -> Unit): Modifier = composed {
 }
 
 fun Modifier.clickableNoFocus(enabled: Boolean, onClick: () -> Unit): Modifier = composed {
-    focusProperties { canFocus = false }.clickable(
+    (if (enabled) focusProperties { canFocus = false } else Modifier).clickable(
         enabled = enabled,
         interactionSource = remember { MutableInteractionSource() },
         indication = null,

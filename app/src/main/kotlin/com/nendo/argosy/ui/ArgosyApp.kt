@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.MaterialTheme
@@ -39,11 +38,13 @@ import androidx.compose.foundation.focusable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import android.content.Intent
 import com.nendo.argosy.ui.util.doubleTapNoFocus
+import com.nendo.argosy.ui.util.launcherContent
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -1149,7 +1150,8 @@ fun ArgosyApp(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(MaterialTheme.colorScheme.background)
-                    .windowInsetsPadding(WindowInsets.systemBars)
+                    .windowInsetsPadding(WindowInsets.launcherContent)
+                    .clipToBounds()
                     .padding(bottom = bottomReserved)
                     .revealOnBottomEdgeTouch(edgeHeight = Dimens.footerHeight) { windowPosition ->
                         val ringAtPress = viewModel.navRingState.value

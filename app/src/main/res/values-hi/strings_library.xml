@@ -66,6 +66,7 @@
     <string name="library_filter_category_series">सीरीज़</string>
 
     <string name="library_filter_hint_clear">साफ़ करें</string>
+    <string name="library_filter_hint_type">टाइप करें</string>
     <string name="library_filter_hint_close_search">बंद करें</string>
     <string name="library_filter_hint_reset">रीसेट</string>
     <string name="library_filter_hint_toggle">टॉगल</string>

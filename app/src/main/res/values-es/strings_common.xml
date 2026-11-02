@@ -672,6 +672,7 @@
     <string name="ui_quick_friends_appear_online">Aparecer en línea</string>
     <string name="ui_drawer_friend_hosting">Organizando %1$s</string>
     <string name="ui_drawer_friend_playing">Jugando %1$s</string>
+    <string name="ui_drawer_friend_playing_online">Jugando %1$s en línea</string>
     <string name="ui_drawer_friend_in_game">En el juego</string>
     <string name="ui_drawer_friend_favorite">Favorito</string>
     <string name="ui_drawer_account_none">Sin cuenta</string>

@@ -104,6 +104,7 @@ class SettingsViewModel @Inject constructor(
     internal val libretroSettingsRepo: LibretroSettingsRepository,
     internal val touchLayoutRepository: com.nendo.argosy.data.repository.TouchLayoutRepository,
     internal val launchArgsRepo: com.nendo.argosy.data.repository.LaunchArgsRepository,
+    internal val keepAlivePolicy: com.nendo.argosy.data.emulator.background.KeepAlivePolicy,
     internal val installedAppResolver: com.nendo.argosy.data.platform.InstalledAppResolver,
     internal val iconPackRepository: com.nendo.argosy.data.iconpack.IconPackRepository,
     internal val emulatorConfigRepo: EmulatorConfigRepository,

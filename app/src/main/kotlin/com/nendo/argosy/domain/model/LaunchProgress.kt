@@ -18,6 +18,12 @@ sealed interface LaunchStep {
     }
     data class Prompt(val conflict: SyncProgress, override val options: List<LaunchPromptOption>) : Question
     data class ChooseLauncher(override val options: List<LaunchPromptOption>) : Question
+    data class RunningGame(
+        val kind: RunningGameQuestion,
+        val emulatorName: String,
+        val runningGameTitle: String?,
+        override val options: List<LaunchPromptOption>
+    ) : Question
     data class DownloadingCore(val fraction: Float?, val totalBytes: Long? = null) : LaunchStep
     data object Starting : LaunchStep
     data object PreparingSystemFiles : LaunchStep
@@ -68,6 +74,13 @@ private val SyncProgress.launchFailure: LaunchFailure?
         else -> null
     }
 
+/**
+ * Why a launch stops on a game an emulator is keeping in the background. NEWER_SAVE: the server
+ * holds a newer save than the running game. EMULATOR_BUSY: the emulator the launch needs is
+ * running another game.
+ */
+enum class RunningGameQuestion { NEWER_SAVE, EMULATOR_BUSY }
+
 enum class LaunchPromptOption {
     KEEP_HARDCORE,
     DOWNGRADE_TO_CASUAL,
@@ -81,5 +94,8 @@ enum class LaunchPromptOption {
     REVERT_LOCAL,
     START_GAME,
     LAUNCH_WITH_GAMENATIVE,
-    LAUNCH_WITH_DROIDDECK
+    LAUNCH_WITH_DROIDDECK,
+    LOAD_NEWER_SAVE,
+    KEEP_PLAYING,
+    CLOSE_AND_LAUNCH
 }

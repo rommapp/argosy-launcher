@@ -102,7 +102,12 @@ class GameLaunchDelegateTest {
         launchHandoff = LaunchHandoff(tracker, mockk(relaxed = true), router, playSessionTracker, holdMs),
         resolveSnapshotConflict = mockk(relaxed = true),
         connectedControllerTracker = mockk(relaxed = true),
-        preLaunchRecapStep = preLaunchRecapStep
+        preLaunchRecapStep = preLaunchRecapStep,
+        backgroundGameLaunch = mockk {
+            coEvery { findLive(any(), any(), any()) } returns null
+            coEvery { keepsAlive(any()) } returns false
+            coEvery { clearForLaunch(any(), any()) } returns BackgroundGameLaunch.Clear.NOT_RUNNING
+        }
     )
 
     private fun callbacks(onFailure: (Throwable) -> Unit = {}, onLaunchFailed: () -> Unit = {}) =

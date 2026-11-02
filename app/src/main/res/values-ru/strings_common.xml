@@ -678,6 +678,7 @@
     <string name="ui_quick_friends_appear_online">Показывать в сети</string>
     <string name="ui_drawer_friend_hosting">Хостит %1$s</string>
     <string name="ui_drawer_friend_playing">Играет в %1$s</string>
+    <string name="ui_drawer_friend_playing_online">Играет в %1$s по сети</string>
     <string name="ui_drawer_friend_in_game">В игре</string>
     <string name="ui_drawer_friend_favorite">Избранное</string>
     <string name="ui_drawer_account_none">Нет аккаунта</string>

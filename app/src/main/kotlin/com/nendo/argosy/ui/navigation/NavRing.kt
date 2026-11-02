@@ -22,6 +22,7 @@ object NavRing {
         DrawerItem(Screen.SyncMonitor.route, R.string.syncmonitor_drawer_title),
         DrawerItem(Screen.SaveSync.route, R.string.ui_drawer_nav_save_sync),
         DrawerItem(Screen.Apps.route, R.string.ui_drawer_nav_apps),
+        DrawerItem(Screen.Running.route, R.string.running_drawer_title),
         DrawerItem(Screen.Settings.route, R.string.ui_drawer_nav_settings)
     )
 

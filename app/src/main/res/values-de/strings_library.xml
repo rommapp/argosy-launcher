@@ -66,6 +66,7 @@
     <string name="library_filter_category_series">Reihen</string>
 
     <string name="library_filter_hint_clear">Leeren</string>
+    <string name="library_filter_hint_type">Tippen</string>
     <string name="library_filter_hint_close_search">Schließen</string>
     <string name="library_filter_hint_reset">Zurücksetzen</string>
     <string name="library_filter_hint_toggle">Umschalten</string>

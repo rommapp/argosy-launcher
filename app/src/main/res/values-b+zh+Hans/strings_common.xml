@@ -630,6 +630,7 @@
     <string name="ui_quick_friends_appear_online">显示为在线</string>
     <string name="ui_drawer_friend_hosting">正在主持%1$s</string>
     <string name="ui_drawer_friend_playing">正在玩%1$s</string>
+    <string name="ui_drawer_friend_playing_online">正在联机玩%1$s</string>
     <string name="ui_drawer_friend_in_game">游戏中</string>
     <string name="ui_drawer_friend_favorite">收藏</string>
     <string name="ui_drawer_account_none">无账号</string>

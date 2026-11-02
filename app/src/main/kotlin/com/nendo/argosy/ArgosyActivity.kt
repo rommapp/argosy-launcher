@@ -15,7 +15,7 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.systemBars
+import com.nendo.argosy.ui.util.launcherContent
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
@@ -402,7 +402,7 @@ class ArgosyActivity : ComponentActivity() {
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .windowInsetsPadding(WindowInsets.systemBars)
+                                .windowInsetsPadding(WindowInsets.launcherContent)
                                 .focusRequester(presentationSink)
                                 .focusable()
                         ) {

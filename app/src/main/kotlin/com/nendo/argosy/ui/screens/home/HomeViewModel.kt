@@ -954,7 +954,7 @@ class HomeViewModel @Inject constructor(
         }
         val state = _uiState.value
         when (val index = state.appBarIndex) {
-            APP_BAR_DRAWER_INDEX -> openAppDrawer()
+            APP_BAR_DRAWER_INDEX -> openAppsScreen()
             in state.homeApps.indices -> launchTileApp(state.homeApps[index])
             else -> toggleAppBarTools()
         }
@@ -1631,12 +1631,6 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    override fun openAppBarAppMenu(): Boolean {
-        val state = _uiState.value
-        val packageName = state.appDrawer?.focusedPackage ?: return false
-        return openAppMenuFor(packageName)
-    }
-
     override fun openDockAppMenu(): Boolean {
         if (dockDelegate.isReordering()) return false
         val state = _uiState.value
@@ -1751,37 +1745,9 @@ class HomeViewModel @Inject constructor(
         _uiState.update { it.copy(appBarMenu = null) }
     }
 
-    override fun openAppDrawer() {
-        if (_uiState.value.appDrawer != null) return
-        _uiState.update { it.copy(appDrawer = AppDrawerState(), appBarToolsOpen = false) }
-        viewModelScope.launch {
-            val apps = appsRepository.getInstalledApps()
-                .map { com.nendo.argosy.ui.components.AppDrawerEntry(it.packageName, it.label) }
-                .sortedBy { it.label.lowercase() }
-            _uiState.update { state ->
-                state.appDrawer?.let { drawer ->
-                    state.copy(appDrawer = drawer.copy(apps = apps))
-                } ?: state
-            }
-        }
-    }
-
-    override fun moveAppDrawer(delta: Int) {
-        val drawer = _uiState.value.appDrawer ?: return
-        if (drawer.apps.isEmpty()) return
-        val next = (drawer.focusIndex + delta).mod(drawer.apps.size)
-        _uiState.update { it.copy(appDrawer = drawer.copy(focusIndex = next)) }
-    }
-
-    override fun confirmAppDrawer() {
-        val packageName = _uiState.value.appDrawer?.focusedPackage ?: return
-        dismissAppDrawer()
-        launchTileApp(packageName)
-    }
-
-    override fun dismissAppDrawer() {
-        if (_uiState.value.appDrawer == null) return
-        _uiState.update { it.copy(appDrawer = null) }
+    override fun openAppsScreen() {
+        _uiState.update { it.copy(appBarToolsOpen = false) }
+        viewModelScope.launch { _events.emit(HomeEvent.NavigateToApps) }
     }
 
     override fun openTileCollection(collectionId: Long) {

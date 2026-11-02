@@ -118,7 +118,6 @@ class HomeDockInputTest {
 
         assertTrue(handler.onLongConfirm().handled)
         verify(exactly = 1) { actions.openDockAppMenu() }
-        verify(exactly = 0) { actions.openAppBarAppMenu() }
         verify(exactly = 0) { actions.activateAppBarSlot() }
     }
 

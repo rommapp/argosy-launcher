@@ -73,6 +73,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.zIndex
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
@@ -152,6 +153,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.layout.onSizeChanged
 import com.nendo.argosy.data.preferences.LibraryListStyle
 import androidx.compose.ui.text.TextStyle
@@ -274,6 +276,8 @@ fun LibraryScreen(
 
 
     val context = LocalContext.current
+    val searchFieldFocus = remember { FocusRequester() }
+    val keyboardController = LocalSoftwareKeyboardController.current
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
@@ -283,6 +287,11 @@ fun LibraryScreen(
                     } catch (e: Exception) {
                         android.util.Log.e("LibraryScreen", "Failed to start activity", e)
                     }
+                }
+                LibraryEvent.OpenSearchKeyboard -> {
+                    searchFieldFocus.requestFocus()
+                    withFrameNanos { }
+                    keyboardController?.show()
                 }
             }
         }
@@ -620,6 +629,7 @@ fun LibraryScreen(
         ) {
             FilterMenuOverlay(
                 uiState = uiState,
+                searchFieldFocus = searchFieldFocus,
                 onDismiss = { viewModel.toggleFilterMenu() },
                 onCategorySelect = { viewModel.setFilterCategory(it) },
                 onOptionSelect = { index ->
@@ -1422,6 +1432,7 @@ private fun EmptyLibrary(platformName: String?, activeFilters: ActiveFilters) {
 @Composable
 private fun FilterMenuOverlay(
     uiState: LibraryUiState,
+    searchFieldFocus: FocusRequester,
     onDismiss: () -> Unit,
     onCategorySelect: (FilterCategory) -> Unit,
     onOptionSelect: (Int) -> Unit,
@@ -1435,7 +1446,6 @@ private fun FilterMenuOverlay(
     val selectedIndices = uiState.selectedIndicesInCurrentCategory
     val isSearchCategory = uiState.currentFilterCategory == FilterCategory.SEARCH
     val searchQuery = uiState.activeFilters.searchQuery
-    val focusRequester = remember { FocusRequester() }
 
     LaunchedEffect(uiState.filterOptionIndex) {
         if (!isSearchCategory && options.isNotEmpty() && uiState.filterOptionIndex in options.indices) {
@@ -1458,7 +1468,7 @@ private fun FilterMenuOverlay(
 
     LaunchedEffect(isSearchCategory) {
         if (isSearchCategory && uiState.screenWidthDp > 900) {
-            focusRequester.requestFocus()
+            searchFieldFocus.requestFocus()
         }
     }
 
@@ -1569,7 +1579,7 @@ private fun FilterMenuOverlay(
                         onValueChange = onSearchQueryChange,
                         modifier = Modifier
                             .weight(1f)
-                            .focusRequester(focusRequester),
+                            .focusRequester(searchFieldFocus),
                         textStyle = TextStyle(
                             color = MaterialTheme.colorScheme.onSurface,
                             fontSize = MaterialTheme.typography.bodyMedium.fontSize
@@ -1662,6 +1672,7 @@ private fun FilterMenuOverlay(
             FooterHints(
                 hints = if (isSearchCategory) {
                     listOf(
+                        InputButton.Y to stringResource(R.string.library_filter_hint_type),
                         InputButton.X to stringResource(R.string.library_filter_hint_clear),
                         InputButton.B to stringResource(R.string.library_filter_hint_close_search)
                     )

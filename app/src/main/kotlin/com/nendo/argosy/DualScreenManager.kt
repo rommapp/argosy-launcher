@@ -1865,7 +1865,8 @@ class DualScreenManager(
     /**
      * Ends the session whose emulator [emulatorLeftScreen] reported gone. On a dual-screen device it
      * also force-stops the emulator [EMULATOR_RELEASE_ATTEMPTS] times beside the save sync, ending
-     * early if a new session starts. Elsewhere [SessionEndCoordinator] stops it after the sync.
+     * early if a new session starts, unless [SessionEndCoordinator.stopsAfterLeavingScreen] keeps it
+     * running. Elsewhere [SessionEndCoordinator] stops it after the sync.
      */
     fun endSessionAfterEmulatorLeft() {
         val emulatorPackage = sessionStateStore.getEmulatorPackage()
@@ -1878,6 +1879,7 @@ class DualScreenManager(
         if (emulatorPackage == null || !_isDualScreenDevice.value) return
         if (emulatorPackage == com.nendo.argosy.data.emulator.EmulatorRegistry.BUILTIN_PACKAGE) return
         activityIndependentScope.launch {
+            if (!sessionEndCoordinator.stopsAfterLeavingScreen(emulatorPackage)) return@launch
             releaseStoppedEmulator(
                 emulatorPackage = emulatorPackage,
                 endedSession = endedSession,
@@ -1928,10 +1930,15 @@ class DualScreenManager(
     fun cancelDockReorder(token: Long) = dockCoordinator.cancel(token)
     fun saveDockReorder(token: Long) = dockCoordinator.save(token)
 
-    suspend fun installedAppLabels(): List<Pair<String, String>> =
-        appsRepository.getInstalledApps()
-            .map { it.packageName to it.label }
-            .sortedBy { it.second.lowercase() }
+    suspend fun installedAppLabels(): List<Pair<String, String>> {
+        val prefs = preferencesRepository.preferences.first()
+        return com.nendo.argosy.data.repository.AppListFilter.visibleThenHidden(
+            appsRepository.getInstalledApps(includeSystemApps = true),
+            prefs.hiddenApps,
+            prefs.visibleSystemApps,
+            prefs.appOrder
+        ).map { it.packageName to it.label }
+    }
 
     fun appLabel(packageName: String): String =
         appsRepository.getAppLabel(packageName) ?: packageName

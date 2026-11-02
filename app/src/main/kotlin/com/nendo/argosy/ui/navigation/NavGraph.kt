@@ -23,6 +23,7 @@ import com.nendo.argosy.ui.screens.firstrun.FirstRunScreen
 import com.nendo.argosy.ui.screens.gamedetail.GameDetailScreen
 import com.nendo.argosy.ui.screens.home.HomeScreen
 import com.nendo.argosy.ui.screens.quaypass.QuayPassCheckInScreen
+import com.nendo.argosy.ui.screens.running.RunningAppsScreen
 import com.nendo.argosy.ui.screens.library.LibraryScreen
 import com.nendo.argosy.ui.screens.media.MediaDetailScreen
 import com.nendo.argosy.ui.screens.media.MediaLibraryScreen
@@ -101,6 +102,9 @@ fun NavGraph(
                 },
                 onNavigateToSettings = { section ->
                     navController.navigate(Screen.Settings.createRoute(section))
+                },
+                onNavigateToApps = {
+                    navController.navigate(Screen.Apps.route) { launchSingleTop = true }
                 },
                 onPlayMedia = onPlayMedia,
                 onMediaSelect = { itemId ->
@@ -231,6 +235,13 @@ fun NavGraph(
             AppsScreen(
                 onBack = navigateToDefault,
                 onDrawerToggle = onDrawerToggle
+            )
+        }
+
+        composable(route = Screen.Running.route) {
+            RunningAppsScreen(
+                onBack = navigateToDefault,
+                onOpenGame = { gameId -> navController.navigate(Screen.GameDetail.createRoute(gameId)) }
             )
         }
 

@@ -173,6 +173,19 @@ class SnapshotSyncEngine @Inject constructor(
         }
 
     /**
+     * The action [sync] would take for the save on disk, with nothing pushed, applied or
+     * recorded. Null when the game is not eligible, the server is unreachable, or the save
+     * cannot be read.
+     */
+    suspend fun peek(gameId: Long, emulatorId: String, channelName: String?): SnapshotAction? =
+        locked(gameId) {
+            val ctx = load(gameId, channelName) ?: return@locked null
+            val local = localSave(ctx.game, emulatorId)
+            if (local is LocalSave.Unreadable) return@locked null
+            SnapshotDecision.decide(held(ctx), currentPoint(ctx.current), local.hashes)
+        }
+
+    /**
      * Resolves a conflict for the local save: pushed on top of the channel's current, which
      * rewrites no history.
      */

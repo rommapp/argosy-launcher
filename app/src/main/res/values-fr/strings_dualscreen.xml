@@ -57,7 +57,7 @@
     <string name="dual_companion_saves_dirty">Nouvelles données de sauvegarde</string>
     <string name="dual_companion_saves_synced">Sauvegardes synchronisées</string>
 
-    <string name="dual_companion_app_drawer_title">Toutes les applications</string>
+    <string name="dual_companion_app_drawer_title">Applis</string>
     <string name="dual_companion_app_bar_keyboard_description">Clavier</string>
     <string name="dual_companion_app_bar_swap_description">Permuter les écrans</string>
     <string name="dual_companion_app_bar_focus_description">Envoyer les commandes vers un écran</string>
@@ -110,7 +110,7 @@
 
     <string name="dual_home_hint_app_bar_select">Sélectionner</string>
     <string name="dual_home_hint_app_bar_open_top">Ouvrir en haut</string>
-    <string name="dual_home_hint_app_bar_all_apps">Toutes les applications</string>
+    <string name="dual_home_hint_app_bar_all_apps">Applis</string>
 
     <string name="dual_home_hint_carousel_platform">Plateforme</string>
     <string name="dual_home_hint_carousel_details">Détails</string>

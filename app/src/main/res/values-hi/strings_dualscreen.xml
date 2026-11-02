@@ -57,7 +57,7 @@
     <string name="dual_companion_saves_dirty">नया सेव डेटा</string>
     <string name="dual_companion_saves_synced">सेव सिंक हुए</string>
 
-    <string name="dual_companion_app_drawer_title">सभी ऐप</string>
+    <string name="dual_companion_app_drawer_title">ऐप्स</string>
     <string name="dual_companion_app_bar_keyboard_description">कीबोर्ड</string>
     <string name="dual_companion_app_bar_swap_description">स्क्रीन अदला-बदली करें</string>
     <string name="dual_companion_app_bar_focus_description">इनपुट किसी स्क्रीन पर भेजें</string>
@@ -110,7 +110,7 @@
 
     <string name="dual_home_hint_app_bar_select">चुनें</string>
     <string name="dual_home_hint_app_bar_open_top">टॉप खोलें</string>
-    <string name="dual_home_hint_app_bar_all_apps">सभी ऐप्स</string>
+    <string name="dual_home_hint_app_bar_all_apps">ऐप्स</string>
 
     <string name="dual_home_hint_carousel_platform">प्लेटफ़ॉर्म</string>
     <string name="dual_home_hint_carousel_details">विवरण</string>

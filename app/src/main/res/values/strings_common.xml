@@ -1448,6 +1448,7 @@
     <string name="ui_drawer_friend_hosting">Hosting %1$s</string>
     <!-- Second line under a friend in a game on their own. %1$s is the game's title. -->
     <string name="ui_drawer_friend_playing">Playing %1$s</string>
+    <string name="ui_drawer_friend_playing_online">Playing %1$s online</string>
     <!-- Second line under a friend in a game Argosy cannot name. -->
     <string name="ui_drawer_friend_in_game">In Game</string>
     <!-- Icon description on the star beside a friend marked as a favourite. Noun. -->
@@ -1566,6 +1567,28 @@
     <string name="ui_launch_overlay_launcher_choice_message">%1$s is installed in more than one launcher. Pin one with Change Launcher on the game\'s page to stop this question.</string>
     <!-- Second line under each launcher choice. %1$s is the launcher's product name (GameNative, DroidDeck); leave it untranslated. -->
     <string name="ui_launch_overlay_launcher_choice_option_subtitle">Start the game in %1$s</string>
+    <!-- Title of the question shown when resuming a game still running in the background and the server holds a newer save. -->
+    <string name="ui_launch_overlay_running_newer_save_title">Newer Save on Server</string>
+    <!-- Body of that question. %1$s is the game title. -->
+    <string name="ui_launch_overlay_running_newer_save_message">%1$s is still running, but another device has saved a newer copy. Load it, or keep playing where you left off.</string>
+    <!-- Choice that closes the running game and starts it again from the newer server save. -->
+    <string name="ui_launch_overlay_running_load_newer_label">Load Newer Save</string>
+    <!-- Second line under that choice. -->
+    <string name="ui_launch_overlay_running_load_newer_subtitle">Closes the running game. Unsaved progress is lost.</string>
+    <!-- Choice that returns to the game still running in the background. -->
+    <string name="ui_launch_overlay_running_keep_playing_label">Keep Playing</string>
+    <!-- Second line under that choice. -->
+    <string name="ui_launch_overlay_running_keep_playing_subtitle">Your next save conflicts with the server copy</string>
+    <!-- Title of the question shown when the emulator a game needs is running another game in the background. %1$s is the emulator's name; leave it untranslated. -->
+    <string name="ui_launch_overlay_running_busy_title">%1$s Is Running</string>
+    <!-- Body of that question. %1$s is the emulator's name, %2$s the title of the game it is running. -->
+    <string name="ui_launch_overlay_running_busy_message_game">%1$s is still running %2$s in the background.</string>
+    <!-- Body of that question when the running game is not known. %1$s is the emulator's name. -->
+    <string name="ui_launch_overlay_running_busy_message">%1$s is still open in the background.</string>
+    <!-- Choice that closes the running emulator and starts the chosen game. -->
+    <string name="ui_launch_overlay_running_close_label">Close and Launch</string>
+    <!-- Second line under that choice. -->
+    <string name="ui_launch_overlay_running_close_subtitle">Unsaved progress in the running game is lost</string>
     <!-- Line under the game title in the summary shown before a game starts. %1$s is when the
          player's last session of this game ended, such as "Yesterday" or "2 weeks ago". -->
     <string name="ui_launch_recap_meta">Last session &#183; %1$s</string>

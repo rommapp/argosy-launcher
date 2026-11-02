@@ -11,6 +11,7 @@ import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.emulator.SavePathValidator
 import com.nendo.argosy.data.emulator.SessionEndResult
+import com.nendo.argosy.data.emulator.background.KeepAlivePolicy
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.domain.model.SyncProgress
@@ -41,7 +42,8 @@ class SessionEndCoordinator @Inject constructor(
     private val gameRepository: GameRepository,
     private val savePathValidator: SavePathValidator,
     private val gameLauncher: GameLauncher,
-    private val launchProgressTracker: LaunchProgressTracker
+    private val launchProgressTracker: LaunchProgressTracker,
+    private val keepAlivePolicy: KeepAlivePolicy
 ) {
     private val scope = SafeCoroutineScope(Dispatchers.Main.immediate, "SessionEnd")
 
@@ -59,6 +61,15 @@ class SessionEndCoordinator @Inject constructor(
     }
 
     suspend fun stopBackgroundEmulator(packageName: String) = gameLauncher.forceStopEmulator(packageName)
+
+    /**
+     * Whether an emulator that left its screen on a dual-screen device is stopped, releasing any
+     * window it leaves on the other screen. One kept alive between sessions stays running unless
+     * it draws on both screens.
+     */
+    suspend fun stopsAfterLeavingScreen(emulatorPackage: String): Boolean =
+        !keepAlivePolicy.keepsAlive(emulatorPackage) ||
+            EmulatorLaunchTargetResolver.bothScreensHostOf(emulatorPackage) != null
 
     /**
      * Whether an external emulator is stopped when its session ends: the emulator requires it, or

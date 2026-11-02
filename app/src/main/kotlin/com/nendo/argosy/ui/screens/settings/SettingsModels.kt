@@ -567,7 +567,7 @@ data class EmulatorState(
     val totalCoreCount: Int = 0,
     val coreUpdatesAvailable: Int = 0,
     val builtinLibretroEnabled: Boolean = true,
-    val closeEmulatorOnSessionEnd: Boolean = true,
+    val closeEmulatorOnSessionEnd: Boolean = false,
     val architectureDisplay: String = "",
     val ingameMenuTwoColumn: Boolean = false,
     val hudEnabled: Boolean = false,

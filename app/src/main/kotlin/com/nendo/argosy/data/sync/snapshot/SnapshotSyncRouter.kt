@@ -37,6 +37,25 @@ class SnapshotSyncRouter @Inject constructor(
         if (requested != null || !engine.isEligible(gameId)) requested
         else activeSaveRepository.getActiveChannel(gameId)
 
+    /**
+     * The pre-launch decision for a save an emulator still holds open, made without touching the
+     * save or the channel. Null when the snapshot API does not take the game.
+     */
+    suspend fun liveCheck(gameId: Long, emulatorId: String, channelName: String?): PreLaunchSyncResult? {
+        if (!engine.isEligible(gameId)) return null
+        return when (engine.peek(gameId, emulatorId, channelName)) {
+            null -> PreLaunchSyncResult.NoConnection
+            is SnapshotAction.Download -> PreLaunchSyncResult.ServerIsNewer(Instant.now(), channelName)
+            is SnapshotAction.Conflict -> PreLaunchSyncResult.LocalModified(
+                localSavePath = "",
+                serverTimestamp = Instant.now(),
+                channelName = channelName,
+                snapshotConflict = true
+            )
+            SnapshotAction.Nothing, is SnapshotAction.Push, is SnapshotAction.Adopt -> PreLaunchSyncResult.LocalIsNewer
+        }
+    }
+
     suspend fun preLaunch(gameId: Long, emulatorId: String, channelName: String?): PreLaunchSyncResult? {
         if (!engine.isEligible(gameId)) return null
         return when (val result = engine.sync(gameId, emulatorId, channelName)) {

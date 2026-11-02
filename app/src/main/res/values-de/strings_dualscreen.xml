@@ -57,7 +57,7 @@
     <string name="dual_companion_saves_dirty">Neue Spielstanddaten</string>
     <string name="dual_companion_saves_synced">Spielstände synchronisiert</string>
 
-    <string name="dual_companion_app_drawer_title">Alle Apps</string>
+    <string name="dual_companion_app_drawer_title">Apps</string>
     <string name="dual_companion_app_bar_keyboard_description">Tastatur</string>
     <string name="dual_companion_app_bar_swap_description">Bildschirme tauschen</string>
     <string name="dual_companion_app_bar_focus_description">Eingabe an einen Bildschirm senden</string>
@@ -110,7 +110,7 @@
 
     <string name="dual_home_hint_app_bar_select">Auswählen</string>
     <string name="dual_home_hint_app_bar_open_top">Oben öffnen</string>
-    <string name="dual_home_hint_app_bar_all_apps">Alle Apps</string>
+    <string name="dual_home_hint_app_bar_all_apps">Apps</string>
 
     <string name="dual_home_hint_carousel_platform">Plattform</string>
     <string name="dual_home_hint_carousel_details">Details</string>

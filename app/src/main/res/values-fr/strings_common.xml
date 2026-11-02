@@ -683,6 +683,7 @@
     <string name="ui_quick_friends_appear_online">Apparaître en ligne</string>
     <string name="ui_drawer_friend_hosting">Héberge %1$s</string>
     <string name="ui_drawer_friend_playing">Joue à %1$s</string>
+    <string name="ui_drawer_friend_playing_online">Joue à %1$s en ligne</string>
     <string name="ui_drawer_friend_in_game">En jeu</string>
     <string name="ui_drawer_friend_favorite">Favori</string>
     <string name="ui_drawer_account_none">Aucun compte</string>

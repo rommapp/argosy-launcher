@@ -95,6 +95,13 @@ class LaunchProgressTracker internal constructor(
             awaitAnswer(LaunchStep.ChooseLauncher(options))
 
         /**
+         * Asks [question] about a game an emulator keeps in the background and returns the chosen
+         * option, or null when the launch is cancelled instead.
+         */
+        suspend fun askAboutRunningGame(question: LaunchStep.RunningGame): LaunchPromptOption? =
+            awaitAnswer(question)
+
+        /**
          * Shows [recap] until the player starts the game or cancels the launch. True when they
          * start it.
          */

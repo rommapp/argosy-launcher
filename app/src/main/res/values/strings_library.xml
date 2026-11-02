@@ -142,6 +142,8 @@
     <!-- Button hint in the filter modal while the search tab is open. Verb, empties the text
          field. -->
     <string name="library_filter_hint_clear">Clear</string>
+    <!-- Footer hint that opens the on-screen keyboard for the library search field. -->
+    <string name="library_filter_hint_type">Type</string>
     <!-- Button hint in the filter modal while the search tab is open. Verb, dismisses the
          modal. -->
     <string name="library_filter_hint_close_search">Close</string>

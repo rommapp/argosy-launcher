@@ -455,6 +455,7 @@ private const val FILTER_OPTION_PAGE = 5
 
 sealed class LibraryEvent {
     data class LaunchIntent(val intent: Intent) : LibraryEvent()
+    data object OpenSearchKeyboard : LibraryEvent()
 }
 
 @HiltViewModel
@@ -2505,6 +2506,10 @@ class LibraryViewModel @Inject constructor(
                 return if (liftPlatformCell()) InputResult.handled(SoundType.SELECT) else InputResult.HANDLED
             }
             if (_uiState.value.isSectionRailFocused) return InputResult.HANDLED
+            if (_uiState.value.showFilterMenu && _uiState.value.currentFilterCategory == FilterCategory.SEARCH) {
+                viewModelScope.launch { _events.emit(LibraryEvent.OpenSearchKeyboard) }
+                return InputResult.HANDLED
+            }
             val game = _uiState.value.focusedGame ?: return InputResult.UNHANDLED
             if (_uiState.value.showAddToCollectionModal || _uiState.value.showQuickMenu || _uiState.value.showFilterMenu) return InputResult.HANDLED
             if (_uiState.value.activeFilters.source == SourceFilter.HIDDEN) {

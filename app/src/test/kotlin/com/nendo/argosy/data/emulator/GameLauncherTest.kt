@@ -177,7 +177,10 @@ class GameLauncherTest {
                 userPreferencesRepository = userPreferencesRepository,
                 libretroCoreMgr = libretroCoreMgr,
                 installedAppResolver = installedAppResolver
-            )
+            ),
+            keepAlivePolicy = mockk {
+                coEvery { launchFlags(any(), any()) } answers { secondArg() }
+            }
         )
     }
 

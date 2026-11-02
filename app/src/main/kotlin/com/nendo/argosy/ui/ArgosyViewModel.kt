@@ -143,10 +143,16 @@ data class NavRingState(
     val footerYieldsToBar: Boolean get() = isBarVisible && !isAlwaysVisible
 }
 
-private fun isNavRouteAvailable(route: String, socialConnected: Boolean, mediaSignedIn: Boolean): Boolean =
+private fun isNavRouteAvailable(
+    route: String,
+    socialConnected: Boolean,
+    mediaSignedIn: Boolean,
+    runningSupported: Boolean
+): Boolean =
     when (route) {
         Screen.Social.route -> socialConnected
         Screen.MediaLibrary.route -> mediaSignedIn
+        Screen.Running.route -> runningSupported
         else -> true
     }
 
@@ -192,7 +198,8 @@ class ArgosyViewModel @Inject constructor(
     private val deepLinkLaunchCoordinator: com.nendo.argosy.ui.deeplink.DeepLinkLaunchCoordinator,
     private val gameStartRouter: com.nendo.argosy.ui.screens.common.GameStartRouter,
     private val connectedControllerTracker: com.nendo.argosy.core.input.ConnectedControllerTracker,
-    val apkInstallManager: com.nendo.argosy.data.update.ApkInstallManager
+    val apkInstallManager: com.nendo.argosy.data.update.ApkInstallManager,
+    private val backgroundGames: com.nendo.argosy.data.emulator.background.BackgroundGames
 ) : ViewModel() {
 
     suspend fun resolveDeepLinkLaunch(
@@ -207,6 +214,8 @@ class ArgosyViewModel @Inject constructor(
     fun netplayJoinService(): com.nendo.argosy.data.netplay.NetplayJoinService = netplayJoinService
 
     private val contentResolver get() = application.contentResolver
+
+    private val runningSupported = MutableStateFlow(false)
 
     val sessionEndOverlay: StateFlow<com.nendo.argosy.ui.screens.common.SyncOverlayState?> =
         sessionEndCoordinator.syncOverlayState
@@ -230,6 +239,13 @@ class ArgosyViewModel @Inject constructor(
         observeNetplayInvites()
         observeNetplayJoinLaunch()
         registerSettingsObserver()
+        resolveRunningSupport()
+    }
+
+    private fun resolveRunningSupport() {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            runningSupported.value = backgroundGames.isSupported
+        }
     }
 
     override fun onCleared() {
@@ -405,7 +421,9 @@ class ArgosyViewModel @Inject constructor(
     val drawerItems: List<DrawerItem>
         get() {
             val socialConnected = socialRepository.connectionState.value is SocialConnectionState.Connected
-            return allDrawerItems.filter { isNavRouteAvailable(it.route, socialConnected, _isMediaSignedIn) }
+            return allDrawerItems.filter {
+                isNavRouteAvailable(it.route, socialConnected, _isMediaSignedIn, runningSupported.value)
+            }
         }
 
     private val navBarVisibility = NavBarVisibility(viewModelScope)
@@ -414,11 +432,12 @@ class ArgosyViewModel @Inject constructor(
         socialRepository.connectionState,
         preferencesRepository.userPreferences,
         quickNavigationSource.enabled,
-        navBarVisibility.raised
-    ) { social, prefs, quickNavigation, raised ->
+        navBarVisibility.raised,
+        runningSupported
+    ) { social, prefs, quickNavigation, raised, running ->
         val socialConnected = social is SocialConnectionState.Connected
         val pages = allDrawerItems.filter {
-            isNavRouteAvailable(it.route, socialConnected, prefs.isJellyfinSignedIn)
+            isNavRouteAvailable(it.route, socialConnected, prefs.isJellyfinSignedIn, running)
         }
         val ring = if (quickNavigation) {
             NavRing.resolve(prefs.navRingRoutes).mapNotNull { token ->

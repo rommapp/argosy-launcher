@@ -128,7 +128,7 @@ private fun maxUsefulBitrateKbps(height: Int): Int? =
 
 /**
  * The bitrate ceiling a negotiation sends: the chosen one, else the most worth streaming at the
- * chosen height. Null only when neither axis is capped.
+ * chosen height. Null when neither is set, whatever the frame rate ceiling.
  */
 fun PlayerQualityCeilings.streamingBitrateKbps(): Int? =
     maxBitrateKbps ?: maxHeight?.let(::maxUsefulBitrateKbps)

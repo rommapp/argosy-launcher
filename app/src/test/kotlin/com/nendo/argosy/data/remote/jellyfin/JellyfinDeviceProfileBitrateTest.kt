@@ -34,19 +34,19 @@ class JellyfinDeviceProfileBitrateTest {
         val profile = builder.build(maxStreamingBitrateKbps = MediaStreamingQuality.AUTO.maxBitrateKbps)
 
         assertEquals(
-            JellyfinDeviceProfileBuilder.UNCAPPED_STREAMING_BITRATE_BPS,
+            JellyfinDeviceProfileBuilder.AUTO_STREAMING_BITRATE_BPS,
             profile.maxStreamingBitrate
         )
         assertTrue(adapter.toJson(profile).contains("\"MaxStreamingBitrate\":120000000"))
     }
 
     @Test
-    fun `the uncapped ceiling sits above every capped tier`() {
+    fun `the auto ceiling sits above every capped tier`() {
         val capped = MediaStreamingQuality.entries.mapNotNull { it.maxBitrateKbps }
 
         assertTrue(capped.isNotEmpty())
         capped.forEach { kbps ->
-            assertTrue(kbps * 1000 < JellyfinDeviceProfileBuilder.UNCAPPED_STREAMING_BITRATE_BPS)
+            assertTrue(kbps * 1000 < JellyfinDeviceProfileBuilder.AUTO_STREAMING_BITRATE_BPS)
         }
     }
 

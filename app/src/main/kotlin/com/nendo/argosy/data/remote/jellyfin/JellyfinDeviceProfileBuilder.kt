@@ -40,10 +40,10 @@ private val DEMUXABLE_VIDEO_CONTAINERS = listOf("mp4", "m4v", "mov", "mkv", "web
 private val DEMUXABLE_AUDIO_CONTAINERS = listOf("mp3", "aac", "flac", "ogg", "wav", "m4a")
 
 private const val DOLBY_VISION_MIME = "video/dolby-vision"
-private const val DOLBY_VISION_BASE_CODEC = "hevc"
+private val DOLBY_VISION_BASE_CODECS = setOf("hevc", "av1")
 private const val PROPERTY_VIDEO_RANGE_TYPE = "VideoRangeType"
 
-private const val PLAIN_HEVC_RANGE_TYPES =
+private const val PLAIN_DECODER_RANGE_TYPES =
     "Unknown|SDR|HDR10|HLG|DOVIWithHDR10|DOVIWithHLG|DOVIWithSDR|DOVIWithHDR10Plus|DOVIInvalid|HDR10Plus"
 
 /**
@@ -117,7 +117,7 @@ class JellyfinDeviceProfileBuilder @Inject constructor() {
         val videoCodecs = decoders.videoCodecs.toList()
         val audioCodecs = decoders.audioCodecs.toList()
         val maxBitrateBps = maxStreamingBitrateKbps?.let { it * KBPS_TO_BPS }
-            ?: UNCAPPED_STREAMING_BITRATE_BPS
+            ?: AUTO_STREAMING_BITRATE_BPS
 
         return JellyfinDeviceProfile(
             name = "Argosy",
@@ -234,7 +234,7 @@ class JellyfinDeviceProfileBuilder @Inject constructor() {
         maxFramerate: Int?
     ): List<JellyfinCodecProfile> {
         val codecs = if (maxHeight == null && maxFramerate == null) {
-            DECODER_CEILING_CODECS.toSet()
+            DECODER_CEILING_CODECS.toSet() + DOLBY_VISION_BASE_CODECS
         } else {
             decoders.videoCodecs + TRANSCODE_TARGET_VIDEO_CODEC
         }
@@ -271,14 +271,14 @@ class JellyfinDeviceProfileBuilder @Inject constructor() {
         codec: String,
         dolbyVision: Boolean
     ): List<JellyfinProfileCondition> =
-        if (codec != DOLBY_VISION_BASE_CODEC || dolbyVision) {
+        if (codec !in DOLBY_VISION_BASE_CODECS || dolbyVision) {
             emptyList()
         } else {
             listOf(
                 JellyfinProfileCondition(
                     condition = CONDITION_EQUALS_ANY,
                     property = PROPERTY_VIDEO_RANGE_TYPE,
-                    value = PLAIN_HEVC_RANGE_TYPES
+                    value = PLAIN_DECODER_RANGE_TYPES
                 )
             )
         }
@@ -382,6 +382,6 @@ class JellyfinDeviceProfileBuilder @Inject constructor() {
         /**
          * Streaming ceiling, in bits per second, declared for a tier that sets none.
          */
-        const val UNCAPPED_STREAMING_BITRATE_BPS = 120_000_000
+        const val AUTO_STREAMING_BITRATE_BPS = 120_000_000
     }
 }

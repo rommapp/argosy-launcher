@@ -25,11 +25,14 @@ class JellyfinDeviceProfileEnhancementLayerTest {
         every { getCapabilitiesForType(any()) } throws IllegalArgumentException()
     }
 
-    private fun allowedRangeTypes(vararg decoders: MediaCodecInfo): List<List<String>> {
+    private fun allowedRangeTypes(
+        vararg decoders: MediaCodecInfo,
+        codec: String = "hevc"
+    ): List<List<String>> {
         mockkConstructor(MediaCodecList::class)
         every { anyConstructed<MediaCodecList>().codecInfos } returns arrayOf(*decoders)
         return JellyfinDeviceProfileBuilder().build().codecProfiles
-            .filter { it.codec == "hevc" }
+            .filter { it.codec == codec }
             .flatMap { it.conditions }
             .filter { it.property == "VideoRangeType" }
             .onEach { assertEquals(CONDITION_EQUALS_ANY, it.condition) }
@@ -42,6 +45,14 @@ class JellyfinDeviceProfileEnhancementLayerTest {
 
         assertFalse("DOVIWithEL" in allowed)
         assertFalse("DOVIWithELHDR10Plus" in allowed)
+        assertFalse("DOVI" in allowed)
+        assertTrue(allowed.containsAll(listOf("SDR", "HDR10", "HDR10Plus", "DOVIWithHDR10")))
+    }
+
+    @Test
+    fun `an av1 device without a dolby vision decoder refuses bare dolby vision`() {
+        val allowed = allowedRangeTypes(decoder("video/av01", "audio/mp4a-latm"), codec = "av1").single()
+
         assertFalse("DOVI" in allowed)
         assertTrue(allowed.containsAll(listOf("SDR", "HDR10", "HDR10Plus", "DOVIWithHDR10")))
     }

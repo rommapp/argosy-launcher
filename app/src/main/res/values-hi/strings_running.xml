@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="running_drawer_title">चल रहे</string>
+    <string name="running_header_title">चल रहे</string>
+    <string name="running_empty_title">और कुछ नहीं चल रहा</string>
+    <string name="running_row_memory">%1$d MB</string>
+    <string name="running_row_screen">स्क्रीन %1$d</string>
+    <string name="running_menu_switch_to">इस पर जाएं</string>
+    <string name="running_menu_close">बंद करें</string>
+    <string name="running_hint_close">बंद करें</string>
+    <string name="running_hint_close_all">सभी बंद करें</string>
+    <string name="running_confirm_close_title">%1$s बंद करें?</string>
+    <string name="running_confirm_close_message">बिना सेव की गई प्रगति खो जाएगी।</string>
+    <string name="running_confirm_close_confirm">बंद करें</string>
+    <string name="running_confirm_close_all_title">सब कुछ बंद करें?</string>
+    <string name="running_confirm_close_all_message">इस सूची के सभी ऐप बंद हो जाएंगे। किसी भी गेम में बिना सेव की गई प्रगति खो जाएगी।</string>
+    <string name="running_confirm_close_all_confirm">सभी बंद करें</string>
+    <string name="running_notice_switch_failed">%1$s पर नहीं जा सके</string>
+</resources>

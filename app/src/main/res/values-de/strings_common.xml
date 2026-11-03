@@ -1087,4 +1087,15 @@
     <string name="common_game_confirm_hide_title">%1$s ausblenden?</string>
     <string name="common_game_confirm_hide_message">Ausgeblendete Spiele lassen sich in der Bibliothek wieder anzeigen, indem du Quelle auf Ausgeblendet filterst.</string>
     <string name="common_game_confirm_hide_confirm">Ausblenden</string>
+    <string name="ui_launch_overlay_running_newer_save_title">Neuerer Spielstand auf dem Server</string>
+    <string name="ui_launch_overlay_running_newer_save_message">%1$s läuft noch, aber ein anderes Gerät hat einen neueren Spielstand gespeichert. Lade ihn oder spiel dort weiter, wo du aufgehört hast.</string>
+    <string name="ui_launch_overlay_running_load_newer_label">Neueren Spielstand laden</string>
+    <string name="ui_launch_overlay_running_load_newer_subtitle">Schließt das laufende Spiel. Nicht gespeicherter Fortschritt geht verloren.</string>
+    <string name="ui_launch_overlay_running_keep_playing_label">Weiterspielen</string>
+    <string name="ui_launch_overlay_running_keep_playing_subtitle">Dein nächster Spielstand steht im Konflikt mit der Serverkopie</string>
+    <string name="ui_launch_overlay_running_busy_title">%1$s läuft</string>
+    <string name="ui_launch_overlay_running_busy_message_game">%1$s führt %2$s noch im Hintergrund aus.</string>
+    <string name="ui_launch_overlay_running_busy_message">%1$s ist noch im Hintergrund geöffnet.</string>
+    <string name="ui_launch_overlay_running_close_label">Schließen und starten</string>
+    <string name="ui_launch_overlay_running_close_subtitle">Nicht gespeicherter Fortschritt im laufenden Spiel geht verloren</string>
 </resources>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="running_drawer_title">En cours</string>
+    <string name="running_header_title">En cours</string>
+    <string name="running_empty_title">Rien d\'autre n\'est en cours</string>
+    <string name="running_row_memory">%1$d Mo</string>
+    <string name="running_row_screen">Écran %1$d</string>
+    <string name="running_menu_switch_to">Basculer vers</string>
+    <string name="running_menu_close">Fermer</string>
+    <string name="running_hint_close">Fermer</string>
+    <string name="running_hint_close_all">Tout fermer</string>
+    <string name="running_confirm_close_title">Fermer %1$s ?</string>
+    <string name="running_confirm_close_message">La progression non sauvegardée sera perdue.</string>
+    <string name="running_confirm_close_confirm">Fermer</string>
+    <string name="running_confirm_close_all_title">Tout fermer ?</string>
+    <string name="running_confirm_close_all_message">Toutes les applis de cette liste seront arrêtées. La progression non sauvegardée de chaque jeu sera perdue.</string>
+    <string name="running_confirm_close_all_confirm">Tout fermer</string>
+    <string name="running_notice_switch_failed">Impossible de basculer vers %1$s</string>
+</resources>

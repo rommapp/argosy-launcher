@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="running_drawer_title">Запущено</string>
+    <string name="running_header_title">Запущено</string>
+    <string name="running_empty_title">Больше ничего не запущено</string>
+    <string name="running_row_memory">%1$d МБ</string>
+    <string name="running_row_screen">Экран %1$d</string>
+    <string name="running_menu_switch_to">Перейти</string>
+    <string name="running_menu_close">Закрыть</string>
+    <string name="running_hint_close">Закрыть</string>
+    <string name="running_hint_close_all">Закрыть все</string>
+    <string name="running_confirm_close_title">Закрыть %1$s?</string>
+    <string name="running_confirm_close_message">Несохранённый прогресс будет потерян.</string>
+    <string name="running_confirm_close_confirm">Закрыть</string>
+    <string name="running_confirm_close_all_title">Закрыть всё?</string>
+    <string name="running_confirm_close_all_message">Все приложения из этого списка будут остановлены. Несохранённый прогресс в любой игре будет потерян.</string>
+    <string name="running_confirm_close_all_confirm">Закрыть все</string>
+    <string name="running_notice_switch_failed">Не удалось перейти к %1$s</string>
+</resources>

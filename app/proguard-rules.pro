@@ -49,6 +49,15 @@
 # zstd-jni - native code accesses Java fields by name via JNI
 -keep class com.github.luben.zstd.** { *; }
 
+# JNA - native code reads Pointer.peer and Structure fields by name; lazysodium binds through JNA proxies
+-keep class com.sun.jna.** { *; }
+-keepclassmembers class * extends com.sun.jna.** { *; }
+-keep class * implements com.sun.jna.Library { *; }
+-keep class * implements com.sun.jna.Callback { *; }
+-dontwarn java.awt.**
+-dontwarn com.sun.jna.**
+-keep class com.goterl.lazysodium.** { *; }
+
 # SpongyCastle - loaded via reflection by JavaSteam's CryptoHelper for AES/ECB depot decryption
 -keep class org.spongycastle.** { *; }
 -dontwarn org.spongycastle.**

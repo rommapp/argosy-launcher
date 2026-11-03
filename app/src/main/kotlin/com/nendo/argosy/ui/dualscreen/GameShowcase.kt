@@ -61,6 +61,7 @@ import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
@@ -836,6 +837,7 @@ private fun ShowcaseTitleCover(title: String, modifier: Modifier) {
             .clip(RoundedCornerShape(Dimens.radiusLg))
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .padding(Dimens.spacingSm)
+            .clearAndSetSemantics {}
     ) {
         Text(
             text = title,

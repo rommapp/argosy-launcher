@@ -86,6 +86,7 @@ import com.nendo.argosy.ui.screens.home.HomePlatformUi
 import com.nendo.argosy.ui.screens.home.toHomePlatformUi
 import com.nendo.argosy.ui.util.GridUtils
 import com.nendo.argosy.ui.util.heldWhile
+import com.nendo.argosy.ui.util.settlingNulls
 import com.nendo.argosy.DualScreenManagerHolder
 import com.nendo.argosy.ui.ModalResetSignal
 import com.nendo.argosy.ui.dualscreen.CompanionFact
@@ -452,6 +453,7 @@ data class LibraryUiState(
 private const val TAG = "LibraryVM"
 private const val MIN_SECTION_RAIL_LABELS = 3
 private const val FILTER_OPTION_PAGE = 5
+private const val COMPANION_EMPTY_FOCUS_SETTLE_MS = 150L
 
 sealed class LibraryEvent {
     data class LaunchIntent(val intent: Intent) : LibraryEvent()
@@ -864,7 +866,7 @@ class LibraryViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState
                 .map { if (it.view == LibraryView.PLATFORM_GRID) null else it.focusedGame?.id }
-                .distinctUntilChanged()
+                .settlingNulls(COMPANION_EMPTY_FOCUS_SETTLE_MS)
                 .collectLatest { publishCompanionDetail(it) }
         }
 

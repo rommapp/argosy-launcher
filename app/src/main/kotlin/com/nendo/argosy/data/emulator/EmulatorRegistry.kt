@@ -470,6 +470,18 @@ object EmulatorRegistry {
             ),
             downloadUrl = "https://play.google.com/store/apps/details?id=com.sa_moo_rai.picpic"
         ),
+        EmulatorDef(
+            id = "pico8_android",
+            packageName = "io.wip.pico8",
+            displayName = "PICO-8 for Android",
+            supportedPlatforms = setOf("pico8"),
+            launchAction = Intent.ACTION_VIEW,
+            launchConfig = LaunchConfig.Custom(
+                activityClass = "com.godot.game.GodotAppLauncher"
+            ),
+            downloadUrl = "https://github.com/Macs75/pico8-android/releases",
+            releaseSource = ReleaseSource.GitHub("Macs75/pico8-android")
+        ),
 
         EmulatorDef(
             id = "dolphin",
@@ -1309,7 +1321,7 @@ object EmulatorRegistry {
         "vic20" to listOf("retroarch", "retroarch_64", "retroarch_32"),
         "amiga" to listOf(BUILTIN_ID, "retroarch", "retroarch_64", "retroarch_32"),
         "pc9800" to listOf("retroarch", "retroarch_64", "retroarch_32"),
-        "pico8" to listOf(BUILTIN_ID, "picpic", "retroarch", "retroarch_64", "retroarch_32")
+        "pico8" to listOf(BUILTIN_ID, "picpic", "pico8_android", "retroarch", "retroarch_64", "retroarch_32")
     )
 
     fun getPreferredCore(platformId: String): String? {

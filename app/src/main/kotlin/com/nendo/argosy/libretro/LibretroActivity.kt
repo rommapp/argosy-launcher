@@ -3675,8 +3675,9 @@ class LibretroActivity : ComponentActivity() {
 
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
-        com.nendo.argosy.DualScreenManagerHolder.instance
-            ?.onSessionChanged(-1L)
+        val dsm = com.nendo.argosy.DualScreenManagerHolder.instance
+        if (dsm?.isDualScreenDevice?.value == false) return
+        dsm?.onSessionChanged(-1L)
         finish()
     }
 

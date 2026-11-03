@@ -1864,6 +1864,19 @@ class DualScreenManager(
         )
     }
 
+    private suspend fun closeBackgroundedBuiltInGame(activity: android.app.Activity) {
+        if (_isDualScreenDevice.value) return
+        if (sessionStateStore.getEmulatorPackage() != com.nendo.argosy.data.emulator.EmulatorRegistry.BUILTIN_PACKAGE) return
+        if (isSessionSettling()) {
+            delay(EMULATOR_SETTLE_MS)
+            if (!activity.hasWindowFocus() || launchProgressTracker.launchLive.value) return
+        }
+        val activityManager = activity.getSystemService(android.app.ActivityManager::class.java) ?: return
+        val gameTask = com.nendo.argosy.hardware.builtInGameAppTask(activityManager) ?: return
+        Log.d(TAG, "Launcher focused while the built-in game is in the background, closing it")
+        runCatching { gameTask.finishAndRemoveTask() }
+    }
+
     private fun isSessionSettling(): Boolean {
         val startedAt = playSessionTracker.activeSession.value?.startTime ?: return false
         return java.time.Duration.between(startedAt, java.time.Instant.now()).toMillis() < EMULATOR_SETTLE_MS
@@ -1904,7 +1917,8 @@ class DualScreenManager(
     /**
      * A launcher window gaining focus on the display its game ran on is the launcher's signal that
      * the game closed. The session ends once [emulatorLeftScreen] confirms it; a game on another
-     * display keeps running. While a launch is live the focus gain is a launcher surface returning
+     * display keeps running. On a single-screen device a built-in game left paused in the background
+     * is closed first, and its own teardown ends the session. While a launch is live the focus gain is a launcher surface returning
      * before its game window exists, not the game closing; the check waits for the launch to clear.
      * A launch that goes live while the check is settling stops it the same way.
      */
@@ -1919,6 +1933,7 @@ class DualScreenManager(
             if (playSessionTracker.activeSession.value == null &&
                 preferencesRepository.getPersistedSession() == null
             ) return@launch
+            closeBackgroundedBuiltInGame(activity)
             if (!emulatorLeftScreen(activity, onGameDisplay = gameDisplay == ownDisplay) { activity.hasWindowFocus() }) {
                 return@launch
             }

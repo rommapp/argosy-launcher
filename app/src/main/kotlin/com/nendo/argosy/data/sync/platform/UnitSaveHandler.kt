@@ -41,7 +41,7 @@ class UnitSaveHandler @Inject constructor(
     private suspend fun resolveUnit(localPath: String, context: SaveContext): ResolvedSaveUnit? {
         val layout = context.coreName ?: return null
         val contentName = context.romPath
-            ?.let { ArchiveRomNaming.syncContentName(File(it), context.platformSlug, context.emulatorId) }
+            ?.let { ArchiveRomNaming.syncContentName(it, context.platformSlug, context.emulatorId) }
             ?: return null
         val game = gameDao.getById(context.gameId)
         return saveUnitResolver.resolveForMember(localPath, layout, context.platformSlug, contentName, game, hash = false)
@@ -88,7 +88,7 @@ class UnitSaveHandler @Inject constructor(
     private suspend fun bundleDestinations(tempFile: File, context: SaveContext): Map<String, String>? {
         val layout = context.coreName ?: return null
         val contentName = context.romPath
-            ?.let { ArchiveRomNaming.syncContentName(File(it), context.platformSlug, context.emulatorId) }
+            ?.let { ArchiveRomNaming.syncContentName(it, context.platformSlug, context.emulatorId) }
             ?: return null
         if (!saveArchiver.isZipArchive(tempFile)) return null
         val isRetroArch = context.emulatorId in PlatformSaveHandlerRegistry.RETROARCH_EMULATOR_IDS

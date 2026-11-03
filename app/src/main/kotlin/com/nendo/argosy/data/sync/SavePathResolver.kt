@@ -213,7 +213,7 @@ class SavePathResolver @Inject constructor(
     ): String? {
         if (layout == null) return null
         val game = gameId?.let { gameDao.getById(it) }
-        val contentName = ArchiveRomNaming.syncContentName(File(romPath), platformSlug, emulatorId)
+        val contentName = ArchiveRomNaming.syncContentName(romPath, platformSlug, emulatorId)
         val resolved = saveUnitResolver.resolve(baseDir, layout, platformSlug, contentName, game, hash = false)
             ?: return null
         val primary = resolved.primaryPath ?: return null
@@ -926,7 +926,7 @@ class SavePathResolver @Inject constructor(
 
         val saveIdNames = saveIdFileNames(config, platformSlug, romPath, cachedSaveId, null, gameId)
         val romBaseName = romPath?.let {
-            File(ArchiveRomNaming.syncContentName(File(it), platformSlug, emulatorId)).nameWithoutExtension
+            File(ArchiveRomNaming.syncContentName(it, platformSlug, emulatorId)).nameWithoutExtension
         }
 
         if (config.usesGciFormat && romPath != null) {

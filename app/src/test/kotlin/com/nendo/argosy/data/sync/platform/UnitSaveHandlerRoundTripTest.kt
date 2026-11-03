@@ -1,6 +1,7 @@
 package com.nendo.argosy.data.sync.platform
 
 import android.content.Context
+import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.SavePathConfig
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.storage.AndroidDataAccessor
@@ -13,6 +14,8 @@ import com.nendo.sigil.SigilSaveUnit
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -102,6 +105,43 @@ class UnitSaveHandlerRoundTripTest {
         val result = handler.extractDownload(prepared.file, saveContext(target, "fbneo", "arcade", "mslug.zip"))
         assertTrue("extract failed: ${result.error}", result.success)
         assertEquals(listOf<Byte>(9, 9), File(other, "fbneo/mslug.nv").readBytes().toList())
+    }
+
+    @Test
+    fun `built-in bundle resolves against the extracted entry, not the archive`() = runTest {
+        val roms = File(tempDir, "roms").apply { mkdirs() }
+        val archive = File(roms, "Crystal.zip")
+        ZipOutputStream(archive.outputStream()).use { out ->
+            out.putNextEntry(ZipEntry("Crystal (USA).gbc"))
+            out.write(byteArrayOf(1, 2, 3))
+            out.closeEntry()
+        }
+        val root = File(tempDir, "saves").apply { mkdirs() }
+        val srm = File(root, "Crystal (USA).srm").apply { writeBytes(ByteArray(64) { it.toByte() }) }
+        File(root, "Crystal (USA).rtc").writeBytes(byteArrayOf(4, 2))
+        File(root, "Crystal.srm").writeBytes(byteArrayOf(9))
+        val unit = unitOf(root, listOf("Crystal (USA).srm" to "Crystal (USA).srm", "Crystal (USA).rtc" to "Crystal (USA).rtc"))
+        coEvery {
+            resolver.resolveForMember(srm.absolutePath, "mgba", "gbc", "Crystal (USA).gbc", any(), false)
+        } returns unit
+        val builtin = { path: String -> saveContext(path, rom = "Crystal.zip").copy(romPath = archive.absolutePath, emulatorId = EmulatorRegistry.BUILTIN_ID) }
+
+        val prepared = handler.prepareForUpload(srm.absolutePath, builtin(srm.absolutePath))
+            ?: error("prepareForUpload returned null")
+        ZipFile(prepared.file).use { zf ->
+            assertEquals(listOf("Crystal (USA).srm", "Crystal (USA).rtc"), zf.entries().toList().map { it.name })
+        }
+
+        val other = File(tempDir, "other").apply { mkdirs() }
+        val target = File(other, "Crystal (USA).srm").absolutePath
+        coEvery {
+            resolver.placeBundle(listOf("Crystal (USA).srm", "Crystal (USA).rtc"), target, "mgba", "gbc", "Crystal (USA).gbc", any())
+        } returns mapOf("Crystal (USA).srm" to target, "Crystal (USA).rtc" to File(other, "Crystal (USA).rtc").absolutePath)
+
+        val result = handler.extractDownload(prepared.file, builtin(target))
+        assertTrue("extract failed: ${result.error}", result.success)
+        assertEquals(srm.readBytes().toList(), File(target).readBytes().toList())
+        assertEquals(listOf<Byte>(4, 2), File(other, "Crystal (USA).rtc").readBytes().toList())
     }
 
     @Test

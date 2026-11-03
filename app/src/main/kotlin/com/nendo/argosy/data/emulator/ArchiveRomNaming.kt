@@ -4,6 +4,8 @@ import com.nendo.argosy.data.download.ZipExtractor
 import java.io.File
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.apache.commons.compress.archivers.sevenz.SevenZFile
 
 /**
@@ -63,6 +65,9 @@ object ArchiveRomNaming {
         }
         return launchEntryFileName(rom) ?: rom.name
     }
+
+    suspend fun syncContentName(romPath: String, platformSlug: String, emulatorId: String): String =
+        withContext(Dispatchers.IO) { syncContentName(File(romPath), platformSlug, emulatorId) }
 
     /**
      * Every base name a state for [rom] may already sit under: the live name first, then the

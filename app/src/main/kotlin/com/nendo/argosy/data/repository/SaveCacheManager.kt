@@ -2,6 +2,7 @@ package com.nendo.argosy.data.repository
 
 import android.content.Context
 import android.util.Log
+import com.nendo.argosy.data.emulator.ArchiveRomNaming
 import com.nendo.argosy.util.Logger
 import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.local.dao.GameDao
@@ -382,7 +383,9 @@ class SaveCacheManager @Inject constructor(
         val config = SavePathRegistry.getConfigForPlatform(emulatorId, game.platformSlug) ?: return false
         if (config.usesFolderBasedSaves || config.usesGciFormat) return false
         val layout = saveUnitResolver.layoutFor(game, emulatorId, null) ?: return false
-        val contentName = game.localPath?.let { File(it).name } ?: return false
+        val contentName = game.localPath
+            ?.let { ArchiveRomNaming.syncContentName(it, game.platformSlug, emulatorId) }
+            ?: return false
         val entries = saveArchiver.listFileEntries(zip)
         if (entries.isEmpty()) return false
         val placed = saveUnitResolver.placeEntries(
@@ -508,7 +511,9 @@ class SaveCacheManager @Inject constructor(
     private suspend fun restoreUnit(entity: SaveCacheEntity, cacheFile: File, targetPath: String): Boolean {
         val game = gameDao.getById(entity.gameId) ?: return false
         val layout = saveUnitResolver.layoutFor(game, entity.emulatorId, null) ?: return false
-        val contentName = game.localPath?.let { File(it).name } ?: return false
+        val contentName = game.localPath
+            ?.let { ArchiveRomNaming.syncContentName(it, game.platformSlug, entity.emulatorId) }
+            ?: return false
         val destinations = saveUnitResolver.placeBundle(
             saveArchiver.listFileEntries(cacheFile), targetPath, layout, game.platformSlug, contentName, game
         )

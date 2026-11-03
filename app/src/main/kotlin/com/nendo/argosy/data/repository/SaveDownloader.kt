@@ -75,7 +75,7 @@ class SaveDownloader @Inject constructor(
         if (emulatorId !in PlatformSaveHandlerRegistry.UNIT_EMULATOR_IDS) return null
         val layout = saveUnitResolver.layoutFor(game, emulatorId, coreName)?.takeIf { it.isNotBlank() } ?: return null
         val contentName = game.localPath
-            ?.let { ArchiveRomNaming.syncContentName(File(it), game.platformSlug, emulatorId) }
+            ?.let { ArchiveRomNaming.syncContentName(it, game.platformSlug, emulatorId) }
             ?: return null
         return saveUnitResolver.expectedPrimaryPath(anchorPath, layout, game.platformSlug, contentName, game)
             ?.takeIf { it.isNotBlank() }

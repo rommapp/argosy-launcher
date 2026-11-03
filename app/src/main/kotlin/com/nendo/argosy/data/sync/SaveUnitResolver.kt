@@ -79,7 +79,7 @@ class SaveUnitResolver @Inject constructor(
     ): ResolvedSaveUnit? {
         val layout = layoutFor(game, emulatorId, coreName) ?: return null
         val contentName = game.localPath
-            ?.let { ArchiveRomNaming.syncContentName(File(it), game.platformSlug, emulatorId) }
+            ?.let { ArchiveRomNaming.syncContentName(it, game.platformSlug, emulatorId) }
             ?: return null
         return resolveForMember(savePath, layout, game.platformSlug, contentName, game, hash)
     }

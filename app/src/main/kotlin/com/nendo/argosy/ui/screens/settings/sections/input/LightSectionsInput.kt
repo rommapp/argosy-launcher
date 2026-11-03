@@ -261,6 +261,7 @@ internal class LightSectionsInput(
                 return toggleLeftRight(direction, display.videoWallpaperMuted) { viewModel.setVideoWallpaperMuted(it) }
             HomeScreenItem.InstalledOnly ->
                 return toggleLeftRight(direction, display.installedOnlyHome) { viewModel.setInstalledOnlyHome(it) }
+            HomeScreenItem.RecentNewGames -> { viewModel.cycleRecentNewGamesLimit(direction); return InputResult.HANDLED }
             HomeScreenItem.BoxArt ->
                 return stepOption(listOf(false, true), display.homeLayout.boxArt3d, direction, viewModel::setHomeBoxArt3d)
             HomeScreenItem.LayoutSelector -> return stepOption(

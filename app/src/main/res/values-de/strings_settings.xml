@@ -423,6 +423,14 @@
     <string name="settings_home_screen_box_art_option_2d">2D-Cover</string>
     <string name="settings_home_screen_box_art_option_3d">3D-Box</string>
     <string name="settings_home_screen_installed_only_subtitle">Nur heruntergeladene Spiele auf dem Startbildschirm anzeigen</string>
+    <string name="settings_home_screen_recent_new_games_title">Neue Spiele in Zuletzt</string>
+    <string name="settings_home_screen_recent_new_games_subtitle">Ungespielte Spiele, die am letzten Tag hinzugefügt wurden</string>
+    <string name="settings_home_screen_recent_new_games_none">Keine</string>
+    <string name="settings_home_screen_recent_new_games_all">Alle</string>
+    <plurals name="settings_home_screen_recent_new_games_up_to">
+        <item quantity="one">Bis zu %d</item>
+        <item quantity="other">Bis zu %d</item>
+    </plurals>
 
     <!-- ===== Saves section ===== -->
 

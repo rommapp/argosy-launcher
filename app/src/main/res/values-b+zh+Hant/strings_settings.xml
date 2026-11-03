@@ -389,6 +389,13 @@
     <string name="settings_home_screen_box_art_option_2d">2D 封面</string>
     <string name="settings_home_screen_box_art_option_3d">3D 盒裝</string>
     <string name="settings_home_screen_installed_only_subtitle">主畫面僅顯示已下載的遊戲</string>
+    <string name="settings_home_screen_recent_new_games_title">最近中的新遊戲</string>
+    <string name="settings_home_screen_recent_new_games_subtitle">過去一天內加入且尚未遊玩的遊戲</string>
+    <string name="settings_home_screen_recent_new_games_none">無</string>
+    <string name="settings_home_screen_recent_new_games_all">全部</string>
+    <plurals name="settings_home_screen_recent_new_games_up_to">
+        <item quantity="other">最多 %d 個</item>
+    </plurals>
 
     <string name="settings_saves_section_sync">同步</string>
     <string name="settings_saves_section_manage">管理</string>

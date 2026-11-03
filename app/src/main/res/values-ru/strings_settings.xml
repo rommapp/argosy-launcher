@@ -426,6 +426,16 @@
     <string name="settings_home_screen_box_art_option_2d">2D-обложка</string>
     <string name="settings_home_screen_box_art_option_3d">3D-коробка</string>
     <string name="settings_home_screen_installed_only_subtitle">Показывать на главном экране только скачанные игры</string>
+    <string name="settings_home_screen_recent_new_games_title">Новые игры в «Недавних»</string>
+    <string name="settings_home_screen_recent_new_games_subtitle">Ещё не запущенные игры, добавленные за последние сутки</string>
+    <string name="settings_home_screen_recent_new_games_none">Нет</string>
+    <string name="settings_home_screen_recent_new_games_all">Все</string>
+    <plurals name="settings_home_screen_recent_new_games_up_to">
+        <item quantity="one">До %d</item>
+        <item quantity="few">До %d</item>
+        <item quantity="many">До %d</item>
+        <item quantity="other">До %d</item>
+    </plurals>
 
     <!-- ===== Saves section ===== -->
 

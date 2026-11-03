@@ -845,6 +845,20 @@
     <string name="settings_home_screen_box_art_option_3d">3D Box</string>
     <!-- Second line of that row. -->
     <string name="settings_home_screen_installed_only_subtitle">Only show downloaded games on home screen</string>
+    <!-- Row title. Noun phrase: games just added to the library that appear in the home
+         screen's Recent row. -->
+    <string name="settings_home_screen_recent_new_games_title">New Games in Recent</string>
+    <!-- Second line of that row. -->
+    <string name="settings_home_screen_recent_new_games_subtitle">Unplayed games added in the last day</string>
+    <!-- Value of that row: no new games are added. -->
+    <string name="settings_home_screen_recent_new_games_none">None</string>
+    <!-- Value of that row: every new game is added. -->
+    <string name="settings_home_screen_recent_new_games_all">All</string>
+    <!-- Value of that row: a maximum number of games. -->
+    <plurals name="settings_home_screen_recent_new_games_up_to">
+        <item quantity="one">Up to %d</item>
+        <item quantity="other">Up to %d</item>
+    </plurals>
 
     <!-- ===== Saves section ===== -->
 

@@ -3,6 +3,7 @@ package com.nendo.argosy.ui.screens.settings.delegates
 import androidx.core.graphics.ColorUtils
 import com.nendo.argosy.data.cache.GradientPreset
 import com.nendo.argosy.data.preferences.GripReserveMode
+import com.nendo.argosy.data.preferences.RecentNewGamesLimit
 import com.nendo.argosy.domain.model.GripAutoControllers
 import com.nendo.argosy.data.preferences.BackdropEdgeStyle
 import com.nendo.argosy.data.preferences.BackdropMotion
@@ -1056,6 +1057,14 @@ class DisplaySettingsDelegate @Inject constructor(
         scope.launch {
             preferencesRepository.setInstalledOnlyHome(enabled)
             _state.update { it.copy(installedOnlyHome = enabled) }
+        }
+    }
+
+    fun cycleRecentNewGamesLimit(scope: CoroutineScope, direction: Int = 1) {
+        val next = cycleInList(_state.value.recentNewGamesLimit, RecentNewGamesLimit.STEPS, direction)
+        scope.launch {
+            preferencesRepository.setRecentNewGamesLimit(next)
+            _state.update { it.copy(recentNewGamesLimit = next) }
         }
     }
 

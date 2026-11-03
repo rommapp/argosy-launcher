@@ -241,6 +241,7 @@ class UserPreferencesRepository @Inject constructor(
             dualScreenInputFocus = display.dualScreenInputFocus,
             screenLayouts = display.screenLayouts,
             installedOnlyHome = display.installedOnlyHome,
+            recentNewGamesLimit = display.recentNewGamesLimit,
             socialSessionToken = sync.socialSessionToken,
             socialUserId = sync.socialUserId,
             socialUsername = sync.socialUsername,
@@ -413,6 +414,7 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setScreenLayouts(layouts: ScreenLayouts) = displayPrefs.setScreenLayouts(layouts)
     suspend fun setDualScreenInputFocus(focus: DualScreenInputFocus) = displayPrefs.setDualScreenInputFocus(focus)
     suspend fun setInstalledOnlyHome(enabled: Boolean) = displayPrefs.setInstalledOnlyHome(enabled)
+    suspend fun setRecentNewGamesLimit(limit: Int) = displayPrefs.setRecentNewGamesLimit(limit)
 
     suspend fun setShowStatusClock(show: Boolean) = displayPrefs.setShowStatusClock(show)
 
@@ -1032,6 +1034,7 @@ data class UserPreferences(
     val dualScreenInputFocus: DualScreenInputFocus = DualScreenInputFocus.AUTO,
     val screenLayouts: ScreenLayouts = ScreenLayouts(),
     val installedOnlyHome: Boolean = false,
+    val recentNewGamesLimit: Int = RecentNewGamesLimit.DEFAULT,
     val socialSessionToken: String? = null,
     val socialUserId: String? = null,
     val socialUsername: String? = null,

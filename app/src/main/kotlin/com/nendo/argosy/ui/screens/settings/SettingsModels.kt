@@ -21,6 +21,7 @@ import com.nendo.argosy.data.local.entity.GameListItem
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.local.entity.PlatformLibretroSettingsEntity
 import com.nendo.argosy.data.preferences.AppLanguage
+import com.nendo.argosy.data.preferences.RecentNewGamesLimit
 import com.nendo.argosy.data.preferences.ControlsPreferences
 import com.nendo.argosy.data.repository.HardResetPreview
 import com.nendo.argosy.data.preferences.BoxArtBorderStyle
@@ -350,6 +351,7 @@ data class DisplayState(
     val screenRoleModalOpen: Boolean = false,
     val screenRoleModalFocus: Int = 0,
     val installedOnlyHome: Boolean = false,
+    val recentNewGamesLimit: Int = RecentNewGamesLimit.DEFAULT,
     val showStatusClock: Boolean = true,
     val showStatusBattery: Boolean = true,
     val showStatusNetwork: Boolean = false

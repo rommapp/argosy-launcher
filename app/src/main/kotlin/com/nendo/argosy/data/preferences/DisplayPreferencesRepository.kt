@@ -126,8 +126,22 @@ data class DisplayPreferences(
     val appsDisplayTarget: EmulatorDisplayTarget = EmulatorDisplayTarget.DEFAULT,
     val dualScreenInputFocus: DualScreenInputFocus = DualScreenInputFocus.AUTO,
     val screenLayouts: ScreenLayouts = ScreenLayouts(),
-    val installedOnlyHome: Boolean = false
+    val installedOnlyHome: Boolean = false,
+    val recentNewGamesLimit: Int = RecentNewGamesLimit.DEFAULT
 )
+
+/**
+ * How many never-played, newly added games the home Recent row may hold. [ALL] lifts the cap.
+ */
+object RecentNewGamesLimit {
+    const val ALL = -1
+    const val DEFAULT = 5
+    val STEPS = listOf(0, 3, 5, 10, ALL)
+
+    fun normalize(value: Int): Int = if (value in STEPS) value else DEFAULT
+
+    fun capTo(limit: Int, pool: Int): Int = if (limit == ALL) pool else minOf(limit, pool)
+}
 
 @Singleton
 class DisplayPreferencesRepository @Inject constructor(
@@ -241,6 +255,7 @@ class DisplayPreferencesRepository @Inject constructor(
         val SCREEN_LAYOUTS = stringPreferencesKey("screen_layouts")
         val SCREEN_LAYOUTS_UNREADABLE = stringPreferencesKey("screen_layouts_unreadable")
         val INSTALLED_ONLY_HOME = booleanPreferencesKey("installed_only_home")
+        val RECENT_NEW_GAMES_LIMIT = intPreferencesKey("recent_new_games_limit")
     }
 
     val preferences: Flow<DisplayPreferences> = dataStore.data.map { prefs ->
@@ -355,7 +370,10 @@ class DisplayPreferencesRepository @Inject constructor(
             appsDisplayTarget = EmulatorDisplayTarget.appsDefaultFrom(prefs[Keys.APPS_DISPLAY_TARGET]),
             dualScreenInputFocus = DualScreenInputFocus.fromString(prefs[Keys.DUAL_SCREEN_INPUT_FOCUS]),
             screenLayouts = ScreenLayouts.fromJson(prefs[Keys.SCREEN_LAYOUTS]),
-            installedOnlyHome = prefs[Keys.INSTALLED_ONLY_HOME] ?: false
+            installedOnlyHome = prefs[Keys.INSTALLED_ONLY_HOME] ?: false,
+            recentNewGamesLimit = RecentNewGamesLimit.normalize(
+                prefs[Keys.RECENT_NEW_GAMES_LIMIT] ?: RecentNewGamesLimit.DEFAULT
+            )
         )
     }
 
@@ -849,6 +867,10 @@ class DisplayPreferencesRepository @Inject constructor(
 
     suspend fun setInstalledOnlyHome(enabled: Boolean) {
         dataStore.edit { it[Keys.INSTALLED_ONLY_HOME] = enabled }
+    }
+
+    suspend fun setRecentNewGamesLimit(limit: Int) {
+        dataStore.edit { it[Keys.RECENT_NEW_GAMES_LIMIT] = RecentNewGamesLimit.normalize(limit) }
     }
 
     /**

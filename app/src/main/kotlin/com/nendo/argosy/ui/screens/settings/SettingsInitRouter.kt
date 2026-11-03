@@ -664,6 +664,7 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             gamesLaunchTarget = prefs.gamesDisplayTarget,
             appsLaunchTarget = prefs.appsDisplayTarget,
             installedOnlyHome = prefs.installedOnlyHome,
+            recentNewGamesLimit = prefs.recentNewGamesLimit,
             showStatusClock = prefs.showStatusClock,
             showStatusBattery = prefs.showStatusBattery,
             showStatusNetwork = prefs.showStatusNetwork

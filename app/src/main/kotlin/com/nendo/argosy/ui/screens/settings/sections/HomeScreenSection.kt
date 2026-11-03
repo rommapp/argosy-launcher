@@ -37,6 +37,7 @@ import com.nendo.argosy.ui.components.SegmentedPreference
 import com.nendo.argosy.ui.components.SliderPreference
 import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.screens.settings.DisplayState
+import com.nendo.argosy.data.preferences.RecentNewGamesLimit
 import com.nendo.argosy.ui.screens.settings.SettingsInputHandler
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
@@ -123,6 +124,12 @@ internal sealed class HomeScreenItem(
         visibleWhen = { it.homeLayout.selected != HomeLayoutKind.CUSTOM_GRID }
     )
 
+    data object RecentNewGames : HomeScreenItem(
+        key = "recentNewGames",
+        section = "content",
+        visibleWhen = { it.homeLayout.selected != HomeLayoutKind.CUSTOM_GRID }
+    )
+
     companion object {
         /**
          * Mirrors the home screen's own `showArtLayer`: with the theme backdrop off the art layer
@@ -157,6 +164,7 @@ internal sealed class HomeScreenItem(
                     .toTypedArray(),
                 ContentHeader,
                 InstalledOnly,
+                RecentNewGames,
                 *homeRailFields().map { LayoutField(it) }.toTypedArray(),
                 BackgroundHeader,
                 Background, GameArtwork, CustomImage, Blur, Saturation, Opacity,
@@ -409,6 +417,24 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     isFocused = isFocused(item),
                     onToggle = { viewModel.setInstalledOnlyHome(it) }
                 )
+
+                HomeScreenItem.RecentNewGames -> CyclePreference(
+                    title = stringResource(R.string.settings_home_screen_recent_new_games_title),
+                    subtitle = stringResource(R.string.settings_home_screen_recent_new_games_subtitle),
+                    value = recentNewGamesLabel(context, display.recentNewGamesLimit),
+                    isFocused = isFocused(item),
+                    onClick = { viewModel.cycleRecentNewGamesLimit() },
+                    onPrev = { viewModel.cycleRecentNewGamesLimit(-1) },
+                    options = remember(context) {
+                        RecentNewGamesLimit.STEPS.map { recentNewGamesLabel(context, it) }
+                    },
+                    onSelect = { index ->
+                        val currentIndex = RecentNewGamesLimit.STEPS
+                            .indexOf(display.recentNewGamesLimit).coerceAtLeast(0)
+                        viewModel.cycleRecentNewGamesLimit(index - currentIndex)
+                    },
+                    pickerRequestToken = pickerToken(item)
+                )
             }
     }
 }
@@ -423,6 +449,16 @@ private fun videoDelayLabel(context: android.content.Context, seconds: Int): Str
             seconds
         )
     }
+
+private fun recentNewGamesLabel(context: android.content.Context, limit: Int): String = when (limit) {
+    RecentNewGamesLimit.ALL -> context.getString(R.string.settings_home_screen_recent_new_games_all)
+    0 -> context.getString(R.string.settings_home_screen_recent_new_games_none)
+    else -> context.resources.getQuantityString(
+        R.plurals.settings_home_screen_recent_new_games_up_to,
+        limit,
+        limit
+    )
+}
 
 @Composable
 private fun HomeScreenSectionHeader(title: String) {

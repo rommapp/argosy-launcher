@@ -430,6 +430,15 @@
     <string name="settings_home_screen_box_art_option_2d">Portada 2D</string>
     <string name="settings_home_screen_box_art_option_3d">Caja 3D</string>
     <string name="settings_home_screen_installed_only_subtitle">Mostrar solo los juegos descargados en la pantalla de inicio</string>
+    <string name="settings_home_screen_recent_new_games_title">Juegos nuevos en Recientes</string>
+    <string name="settings_home_screen_recent_new_games_subtitle">Juegos sin jugar añadidos en el último día</string>
+    <string name="settings_home_screen_recent_new_games_none">Ninguno</string>
+    <string name="settings_home_screen_recent_new_games_all">Todos</string>
+    <plurals name="settings_home_screen_recent_new_games_up_to">
+        <item quantity="one">Hasta %d</item>
+        <item quantity="many">Hasta %d</item>
+        <item quantity="other">Hasta %d</item>
+    </plurals>
 
     <!-- ===== Saves section ===== -->
 

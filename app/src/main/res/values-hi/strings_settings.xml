@@ -413,6 +413,14 @@
     <string name="settings_home_screen_box_art_option_2d">2D कवर</string>
     <string name="settings_home_screen_box_art_option_3d">3D बॉक्स</string>
     <string name="settings_home_screen_installed_only_subtitle">होम स्क्रीन पर केवल डाउनलोड किए गए गेम दिखाएँ</string>
+    <string name="settings_home_screen_recent_new_games_title">हाल के गेम में नए गेम</string>
+    <string name="settings_home_screen_recent_new_games_subtitle">पिछले एक दिन में जोड़े गए बिना खेले गेम</string>
+    <string name="settings_home_screen_recent_new_games_none">कोई नहीं</string>
+    <string name="settings_home_screen_recent_new_games_all">सभी</string>
+    <plurals name="settings_home_screen_recent_new_games_up_to">
+        <item quantity="one">अधिकतम %d</item>
+        <item quantity="other">अधिकतम %d</item>
+    </plurals>
 
     <!-- ===== Saves section ===== -->
 

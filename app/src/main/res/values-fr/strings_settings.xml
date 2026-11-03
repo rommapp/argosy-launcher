@@ -420,6 +420,15 @@
     <string name="settings_home_screen_box_art_option_2d">Jaquette 2D</string>
     <string name="settings_home_screen_box_art_option_3d">Boîtier 3D</string>
     <string name="settings_home_screen_installed_only_subtitle">N\'afficher que les jeux téléchargés sur l\'écran d\'accueil</string>
+    <string name="settings_home_screen_recent_new_games_title">Nouveaux jeux dans Récents</string>
+    <string name="settings_home_screen_recent_new_games_subtitle">Jeux jamais lancés ajoutés depuis moins d\'un jour</string>
+    <string name="settings_home_screen_recent_new_games_none">Aucun</string>
+    <string name="settings_home_screen_recent_new_games_all">Tous</string>
+    <plurals name="settings_home_screen_recent_new_games_up_to">
+        <item quantity="one">Jusqu\'à %d</item>
+        <item quantity="many">Jusqu\'à %d</item>
+        <item quantity="other">Jusqu\'à %d</item>
+    </plurals>
 
     <!-- ===== Section Sauvegardes ===== -->
 

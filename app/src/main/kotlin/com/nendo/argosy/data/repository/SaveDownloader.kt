@@ -1,6 +1,7 @@
 package com.nendo.argosy.data.repository
 
 import android.content.Context
+import com.nendo.argosy.data.emulator.ArchiveRomNaming
 import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.emulator.GameCubeHeaderParser
 import com.nendo.argosy.data.emulator.SavePathConfig
@@ -73,7 +74,9 @@ class SaveDownloader @Inject constructor(
     ): String? {
         if (emulatorId !in PlatformSaveHandlerRegistry.UNIT_EMULATOR_IDS) return null
         val layout = saveUnitResolver.layoutFor(game, emulatorId, coreName)?.takeIf { it.isNotBlank() } ?: return null
-        val contentName = game.localPath?.let { File(it).name } ?: return null
+        val contentName = game.localPath
+            ?.let { ArchiveRomNaming.syncContentName(File(it), game.platformSlug, emulatorId) }
+            ?: return null
         return saveUnitResolver.expectedPrimaryPath(anchorPath, layout, game.platformSlug, contentName, game)
             ?.takeIf { it.isNotBlank() }
     }

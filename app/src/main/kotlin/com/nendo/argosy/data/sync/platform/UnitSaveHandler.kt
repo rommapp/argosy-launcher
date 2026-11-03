@@ -1,6 +1,7 @@
 package com.nendo.argosy.data.sync.platform
 
 import android.content.Context
+import com.nendo.argosy.data.emulator.ArchiveRomNaming
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.data.sync.ResolvedSaveUnit
@@ -39,7 +40,9 @@ class UnitSaveHandler @Inject constructor(
 
     private suspend fun resolveUnit(localPath: String, context: SaveContext): ResolvedSaveUnit? {
         val layout = context.coreName ?: return null
-        val contentName = context.romPath?.let { File(it).name } ?: return null
+        val contentName = context.romPath
+            ?.let { ArchiveRomNaming.syncContentName(File(it), context.platformSlug, context.emulatorId) }
+            ?: return null
         val game = gameDao.getById(context.gameId)
         return saveUnitResolver.resolveForMember(localPath, layout, context.platformSlug, contentName, game, hash = false)
     }
@@ -84,7 +87,9 @@ class UnitSaveHandler @Inject constructor(
 
     private suspend fun bundleDestinations(tempFile: File, context: SaveContext): Map<String, String>? {
         val layout = context.coreName ?: return null
-        val contentName = context.romPath?.let { File(it).name } ?: return null
+        val contentName = context.romPath
+            ?.let { ArchiveRomNaming.syncContentName(File(it), context.platformSlug, context.emulatorId) }
+            ?: return null
         if (!saveArchiver.isZipArchive(tempFile)) return null
         val isRetroArch = context.emulatorId in PlatformSaveHandlerRegistry.RETROARCH_EMULATOR_IDS
         val anchor = context.localSavePath

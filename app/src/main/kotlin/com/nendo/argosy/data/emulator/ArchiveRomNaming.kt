@@ -25,14 +25,17 @@ object ArchiveRomNaming {
 
     fun launchFileName(entryName: String): String = File(entryName).name
 
-    fun launchBaseName(archive: File): String? {
+    fun launchBaseName(archive: File): String? =
+        launchEntryFileName(archive)?.let { File(it).nameWithoutExtension }
+
+    private fun launchEntryFileName(archive: File): String? {
         if (!archive.isFile) return null
         val entryName = when {
             ZipExtractor.isZipFile(archive) -> firstZipEntryName(archive)
             ZipExtractor.isSevenZFile(archive) -> firstSevenZEntryName(archive)
             else -> null
         } ?: return null
-        return File(launchFileName(entryName)).nameWithoutExtension
+        return launchFileName(entryName)
     }
 
     /**
@@ -46,6 +49,19 @@ object ArchiveRomNaming {
             return archiveBase
         }
         return launchBaseName(rom) ?: archiveBase
+    }
+
+    /**
+     * The content file name save sync resolves a save unit against: the extracted entry for the
+     * built-in emulator, which names its save after the file it launched, and the rom itself for
+     * every emulator that loads the archive directly.
+     */
+    fun syncContentName(rom: File, platformSlug: String, emulatorId: String): String {
+        val builtin = emulatorId == EmulatorRegistry.BUILTIN_ID || emulatorId == EmulatorRegistry.LEGACY_BUILTIN_ID
+        if (!builtin || !ZipExtractor.isArchiveFile(rom) || ZipExtractor.usesZipAsRomFormat(platformSlug)) {
+            return rom.name
+        }
+        return launchEntryFileName(rom) ?: rom.name
     }
 
     /**

@@ -43,6 +43,53 @@ class ArchiveRomNamingTest {
     }
 
     @Test
+    fun `sync content name is the extracted entry for the built-in emulator`() {
+        val zip = zipWith("Super Mario World (U) [!].smc.zip", "Super Mario World (U) [!].smc")
+
+        assertEquals(
+            "Super Mario World (U) [!].smc",
+            ArchiveRomNaming.syncContentName(zip, "snes", EmulatorRegistry.BUILTIN_ID)
+        )
+        assertEquals(
+            "Super Mario World (U) [!].smc",
+            ArchiveRomNaming.syncContentName(zip, "snes", EmulatorRegistry.LEGACY_BUILTIN_ID)
+        )
+    }
+
+    @Test
+    fun `sync content name agrees with the name the built-in core saves under`() {
+        listOf(
+            zipWith("Metroid II - Return of Samus.zip", "Metroid II - Return of Samus (USA).gb") to "gb",
+            sevenZWith("Game.7z", "Game (Europe).sfc") to "snes",
+            zipWith("Plain.zip", "Plain.gba") to "gba"
+        ).forEach { (archive, platform) ->
+            val synced = ArchiveRomNaming.syncContentName(archive, platform, EmulatorRegistry.BUILTIN_ID)
+            assertEquals(ArchiveRomNaming.liveBaseName(archive, platform), File(synced).nameWithoutExtension)
+        }
+    }
+
+    @Test
+    fun `sync content name stays the archive for emulators that load it directly`() {
+        val zip = zipWith("Game.zip", "Game (USA).gba")
+
+        assertEquals("Game.zip", ArchiveRomNaming.syncContentName(zip, "gba", "retroarch"))
+    }
+
+    @Test
+    fun `sync content name stays the archive where the zip is the rom`() {
+        val zip = zipWith("sf2.zip", "sf2.01")
+
+        assertEquals("sf2.zip", ArchiveRomNaming.syncContentName(zip, "arcade", EmulatorRegistry.BUILTIN_ID))
+    }
+
+    @Test
+    fun `sync content name is the file itself when it is not an archive`() {
+        val rom = temp.newFile("Game (USA).gba").apply { writeBytes(byteArrayOf(1, 2, 3)) }
+
+        assertEquals("Game (USA).gba", ArchiveRomNaming.syncContentName(rom, "gba", EmulatorRegistry.BUILTIN_ID))
+    }
+
+    @Test
     fun `live base name is the extracted entry on a platform that unpacks archives`() {
         val zip = zipWith("Game.zip", "Game (USA).gba")
 

@@ -1,6 +1,7 @@
 package com.nendo.argosy.data.sync
 
 import android.content.Context
+import com.nendo.argosy.data.emulator.ArchiveRomNaming
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.RetroArchConfigParser
 import com.nendo.argosy.data.emulator.SavePathConfig
@@ -207,11 +208,13 @@ class SavePathResolver @Inject constructor(
         layout: String?,
         platformSlug: String,
         romPath: String,
-        gameId: Long?
+        gameId: Long?,
+        emulatorId: String
     ): String? {
         if (layout == null) return null
         val game = gameId?.let { gameDao.getById(it) }
-        val resolved = saveUnitResolver.resolve(baseDir, layout, platformSlug, File(romPath).name, game, hash = false)
+        val contentName = ArchiveRomNaming.syncContentName(File(romPath), platformSlug, emulatorId)
+        val resolved = saveUnitResolver.resolve(baseDir, layout, platformSlug, contentName, game, hash = false)
             ?: return null
         val primary = resolved.primaryPath ?: return null
         Logger.debug(TAG, "discoverSavePath: unit primary | path=$primary, members=${resolved.members.size}, shape=${resolved.unit.shape}")
@@ -270,7 +273,7 @@ class SavePathResolver @Inject constructor(
         val perGameDir = perGameSaveDir(gameId, config, platformSlug)
         if (perGameDir != null) {
             if (romPath != null) {
-                unitPrimaryIn(perGameDir, unitLayout, platformSlug, romPath, gameId)?.let {
+                unitPrimaryIn(perGameDir, unitLayout, platformSlug, romPath, gameId, config.emulatorId)?.let {
                     onDecision("perGame+unit", null, perGameDir)
                     return@withContext it
                 }
@@ -323,7 +326,7 @@ class SavePathResolver @Inject constructor(
                 }
             }
             if (romPath != null) {
-                unitPrimaryIn(overrideBaseDir, unitLayout, platformSlug, romPath, gameId)?.let {
+                unitPrimaryIn(overrideBaseDir, unitLayout, platformSlug, romPath, gameId, config.emulatorId)?.let {
                     onDecision("override+unit", selectedMemcardForLog, savePathOverrideForLog)
                     return@withContext it
                 }
@@ -393,7 +396,7 @@ class SavePathResolver @Inject constructor(
         if (romPath != null) {
             val unitRoots = (listOfNotNull(builtinUnitRoot(config, unitLayout, gameId)) + paths).distinct()
             for (basePath in unitRoots) {
-                unitPrimaryIn(basePath, unitLayout, platformSlug, romPath, gameId)?.let {
+                unitPrimaryIn(basePath, unitLayout, platformSlug, romPath, gameId, config.emulatorId)?.let {
                     onDecision("unit", selectedMemcardForLog, savePathOverrideForLog)
                     return@withContext it
                 }
@@ -922,6 +925,9 @@ class SavePathResolver @Inject constructor(
         }
 
         val saveIdNames = saveIdFileNames(config, platformSlug, romPath, cachedSaveId, null, gameId)
+        val romBaseName = romPath?.let {
+            File(ArchiveRomNaming.syncContentName(File(it), platformSlug, emulatorId)).nameWithoutExtension
+        }
 
         if (config.usesGciFormat && romPath != null) {
             return constructGciSavePath(config, romPath, gameId, platformSlug)
@@ -931,7 +937,7 @@ class SavePathResolver @Inject constructor(
         if (perGameDir != null && (directoryExists(perGameDir) || saveArchiver.getFileForPath(perGameDir).mkdirs())) {
             val extension = config.saveExtensions.firstOrNull { it != "*" } ?: "sav"
             val baseName = saveIdNames.firstOrNull()
-                ?: if (romPath != null) File(romPath).nameWithoutExtension else sanitizeFileName(gameTitle)
+                ?: romBaseName ?: sanitizeFileName(gameTitle)
             return "$perGameDir/$baseName.$extension"
         }
 
@@ -965,7 +971,7 @@ class SavePathResolver @Inject constructor(
 
         if (besideRomDir != null && romPath != null && !config.usesFolderBasedSaves) {
             val extension = config.saveExtensions.firstOrNull { it != "*" } ?: "sav"
-            val baseName = saveIdNames.firstOrNull() ?: File(romPath).nameWithoutExtension
+            val baseName = saveIdNames.firstOrNull() ?: romBaseName ?: File(romPath).nameWithoutExtension
             return "$baseDir/$baseName.$extension"
         }
 
@@ -982,8 +988,7 @@ class SavePathResolver @Inject constructor(
         }
 
         val extension = config.saveExtensions.firstOrNull { it != "*" } ?: "sav"
-        val baseName = saveIdNames.firstOrNull()
-            ?: if (romPath != null) File(romPath).nameWithoutExtension else sanitizeFileName(gameTitle)
+        val baseName = saveIdNames.firstOrNull() ?: romBaseName ?: sanitizeFileName(gameTitle)
         val fileName = "$baseName.$extension"
 
         return "$baseDir/$fileName"

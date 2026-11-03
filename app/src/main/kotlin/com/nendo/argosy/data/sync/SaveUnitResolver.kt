@@ -1,5 +1,6 @@
 package com.nendo.argosy.data.sync
 
+import com.nendo.argosy.data.emulator.ArchiveRomNaming
 import com.nendo.argosy.data.emulator.BuiltinCoreResolver
 import com.nendo.argosy.data.emulator.CartFeatureScanner
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
@@ -77,7 +78,9 @@ class SaveUnitResolver @Inject constructor(
         hash: Boolean
     ): ResolvedSaveUnit? {
         val layout = layoutFor(game, emulatorId, coreName) ?: return null
-        val contentName = game.localPath?.let { File(it).name } ?: return null
+        val contentName = game.localPath
+            ?.let { ArchiveRomNaming.syncContentName(File(it), game.platformSlug, emulatorId) }
+            ?: return null
         return resolveForMember(savePath, layout, game.platformSlug, contentName, game, hash)
     }
 

@@ -76,6 +76,99 @@ class DualScreenManagerRoleSwapTest {
     }
 
     @Test
+    fun `screen numbers keep mirrored HDMI free of independent badge windows`() {
+        io.mockk.mockkConstructor(com.nendo.argosy.hardware.DisplayBadgeOverlay::class)
+        val overlayNumbers = slot<Map<Int, Int>>()
+        every {
+            anyConstructed<com.nendo.argosy.hardware.DisplayBadgeOverlay>().show(
+                capture(overlayNumbers), any()
+            )
+        } returns Unit
+        val screens = listOf(TOP_SCREEN, LOWER_SCREEN.copy(key = "tv", builtIn = false))
+        manager = newManager(attachedScreens = { screens })
+
+        manager.showScreenNumbers()
+
+        assertEquals(mapOf(TOP_SCREEN.displayId to 1), overlayNumbers.captured)
+        assertEquals(screens.associate { it.displayId to it.number }, manager.screenNumbers.value)
+    }
+
+    @Test
+    fun `screen numbers retain separate display badges in dual-screen mode`() {
+        io.mockk.mockkConstructor(com.nendo.argosy.hardware.DisplayBadgeOverlay::class)
+        val overlayNumbers = slot<Map<Int, Int>>()
+        every {
+            anyConstructed<com.nendo.argosy.hardware.DisplayBadgeOverlay>().show(
+                capture(overlayNumbers), any()
+            )
+        } returns Unit
+        val screens = listOf(TOP_SCREEN, LOWER_SCREEN.copy(key = "tv", builtIn = false))
+        val helper = mockk<com.nendo.argosy.util.DisplayAffinityHelper>(relaxed = true) {
+            every { hasSecondaryDisplay } returns true
+        }
+        manager = newManager(displayAffinityHelper = helper, attachedScreens = { screens })
+
+        manager.showScreenNumbers(com.nendo.argosy.hardware.DisplayBadgeSize.SMALL)
+
+        assertEquals(screens.associate { it.displayId to it.number }, overlayNumbers.captured)
+    }
+
+    @Test
+    fun `screen numbers retain separate display badges in desktop mode`() {
+        io.mockk.mockkConstructor(com.nendo.argosy.hardware.DisplayBadgeOverlay::class)
+        val overlayNumbers = slot<Map<Int, Int>>()
+        every {
+            anyConstructed<com.nendo.argosy.hardware.DisplayBadgeOverlay>().show(
+                capture(overlayNumbers), any()
+            )
+        } returns Unit
+        val screens = listOf(TOP_SCREEN, LOWER_SCREEN.copy(key = "tv", builtIn = false))
+        val helper = mockk<com.nendo.argosy.util.DisplayAffinityHelper>(relaxed = true) {
+            every { isDesktopMode } returns true
+        }
+        manager = newManager(displayAffinityHelper = helper, attachedScreens = { screens })
+
+        manager.showScreenNumbers()
+
+        assertEquals(screens.associate { it.displayId to it.number }, overlayNumbers.captured)
+    }
+
+    @Test
+    fun `screen numbers keep all built-in badges when dual-screen mode is off`() {
+        io.mockk.mockkConstructor(com.nendo.argosy.hardware.DisplayBadgeOverlay::class)
+        val overlayNumbers = slot<Map<Int, Int>>()
+        every {
+            anyConstructed<com.nendo.argosy.hardware.DisplayBadgeOverlay>().show(
+                capture(overlayNumbers), any()
+            )
+        } returns Unit
+        val screens = listOf(TOP_SCREEN, LOWER_SCREEN)
+        manager = newManager(attachedScreens = { screens })
+
+        manager.showScreenNumbers()
+
+        assertEquals(screens.associate { it.displayId to it.number }, overlayNumbers.captured)
+    }
+
+    @Test
+    fun `setup host rendered in content has no duplicate overlay while other built-in badges remain`() {
+        io.mockk.mockkConstructor(com.nendo.argosy.hardware.DisplayBadgeOverlay::class)
+        val overlayNumbers = slot<Map<Int, Int>>()
+        every {
+            anyConstructed<com.nendo.argosy.hardware.DisplayBadgeOverlay>().show(
+                capture(overlayNumbers), any()
+            )
+        } returns Unit
+        val screens = listOf(TOP_SCREEN, LOWER_SCREEN)
+        manager = newManager(attachedScreens = { screens })
+
+        manager.showScreenNumbers(inContentDisplayId = TOP_SCREEN.displayId)
+
+        assertEquals(mapOf(LOWER_SCREEN.displayId to LOWER_SCREEN.number), overlayNumbers.captured)
+        assertEquals(screens.associate { it.displayId to it.number }, manager.screenNumbers.value)
+    }
+
+    @Test
     fun `rebinding after activity destruction resumes presentation preference updates`() {
         val preferences = MutableStateFlow(UserPreferences())
         every { preferencesRepository.userPreferences } returns preferences

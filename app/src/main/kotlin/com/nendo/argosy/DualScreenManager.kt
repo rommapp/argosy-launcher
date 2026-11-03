@@ -255,11 +255,18 @@ class DualScreenManager(
 
     fun showScreenNumbers(
         size: com.nendo.argosy.hardware.DisplayBadgeSize =
-            com.nendo.argosy.hardware.DisplayBadgeSize.LARGE
+            com.nendo.argosy.hardware.DisplayBadgeSize.LARGE,
+        inContentDisplayId: Int? = null
     ) {
-        val numbers = attachedScreens().associate { it.displayId to it.number }
+        val screens = attachedScreens()
+        val numbers = screens.associate { it.displayId to it.number }
         _screenNumbers.value = numbers
-        displayBadges.show(numbers, size)
+        val overlayNumbers = if (displayAffinityHelper.hasSecondaryDisplay || displayAffinityHelper.isDesktopMode) {
+            numbers
+        } else {
+            screens.filter { it.builtIn }.associate { it.displayId to it.number }
+        }
+        displayBadges.show(overlayNumbers.filterKeys { it != inContentDisplayId }, size)
     }
 
     fun hideScreenNumbers() {

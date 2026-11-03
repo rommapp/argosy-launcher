@@ -37,12 +37,13 @@ class JellyfinDeviceProfileEnhancementLayerTest {
     }
 
     @Test
-    fun `an hevc-only device allows every range type except an enhancement layer`() {
+    fun `an hevc-only device refuses the range types that need a dolby vision decoder`() {
         val allowed = allowedRangeTypes(decoder("video/hevc", "audio/mp4a-latm")).single()
 
         assertFalse("DOVIWithEL" in allowed)
         assertFalse("DOVIWithELHDR10Plus" in allowed)
-        assertTrue(allowed.containsAll(listOf("SDR", "HDR10", "HDR10Plus", "DOVI", "DOVIWithHDR10")))
+        assertFalse("DOVI" in allowed)
+        assertTrue(allowed.containsAll(listOf("SDR", "HDR10", "HDR10Plus", "DOVIWithHDR10")))
     }
 
     @Test

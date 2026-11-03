@@ -40,11 +40,11 @@ private val DEMUXABLE_VIDEO_CONTAINERS = listOf("mp4", "m4v", "mov", "mkv", "web
 private val DEMUXABLE_AUDIO_CONTAINERS = listOf("mp3", "aac", "flac", "ogg", "wav", "m4a")
 
 private const val DOLBY_VISION_MIME = "video/dolby-vision"
-private const val ENHANCEMENT_LAYER_CODEC = "hevc"
+private const val DOLBY_VISION_BASE_CODEC = "hevc"
 private const val PROPERTY_VIDEO_RANGE_TYPE = "VideoRangeType"
 
-private const val NON_ENHANCEMENT_LAYER_RANGE_TYPES =
-    "Unknown|SDR|HDR10|HLG|DOVI|DOVIWithHDR10|DOVIWithHLG|DOVIWithSDR|DOVIWithHDR10Plus|DOVIInvalid|HDR10Plus"
+private const val PLAIN_HEVC_RANGE_TYPES =
+    "Unknown|SDR|HDR10|HLG|DOVIWithHDR10|DOVIWithHLG|DOVIWithSDR|DOVIWithHDR10Plus|DOVIInvalid|HDR10Plus"
 
 /**
  * Android decoder mime types mapped to the codec tokens the server matches against.
@@ -241,7 +241,7 @@ class JellyfinDeviceProfileBuilder @Inject constructor() {
         return codecs.mapNotNull { codec ->
             val decoderMax = decoders.maxVideoSize[codec]?.takeIf { codec in DECODER_CEILING_CODECS }
             val conditions = videoSizeConditions(decoderMax, maxHeight, maxFramerate) +
-                enhancementLayerConditions(codec, decoders.dolbyVision)
+                dolbyVisionDecoderConditions(codec, decoders.dolbyVision)
             if (conditions.isEmpty()) {
                 null
             } else {
@@ -267,18 +267,18 @@ class JellyfinDeviceProfileBuilder @Inject constructor() {
         }
     }
 
-    private fun enhancementLayerConditions(
+    private fun dolbyVisionDecoderConditions(
         codec: String,
         dolbyVision: Boolean
     ): List<JellyfinProfileCondition> =
-        if (codec != ENHANCEMENT_LAYER_CODEC || dolbyVision) {
+        if (codec != DOLBY_VISION_BASE_CODEC || dolbyVision) {
             emptyList()
         } else {
             listOf(
                 JellyfinProfileCondition(
                     condition = CONDITION_EQUALS_ANY,
                     property = PROPERTY_VIDEO_RANGE_TYPE,
-                    value = NON_ENHANCEMENT_LAYER_RANGE_TYPES
+                    value = PLAIN_HEVC_RANGE_TYPES
                 )
             )
         }

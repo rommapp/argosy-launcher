@@ -5,7 +5,8 @@
 
     <string name="firstrun_romm_url_title">Connexion Rom Manager</string>
     <string name="firstrun_romm_url_field_label">URL du serveur</string>
-    <string name="firstrun_romm_url_hint">Entrez l\'adresse de votre serveur RomM et nous détecterons comment vous connecter.</string>
+    <string name="firstrun_romm_url_field_placeholder">romm.local:8080 ou https://...</string>
+    <string name="firstrun_romm_url_hint">Entrez l\'adresse de votre serveur RomM, avec ou sans https://, et nous détecterons comment vous connecter.</string>
     <string name="firstrun_romm_url_button_continue">Continuer</string>
     <string name="firstrun_romm_url_button_checking">Vérification...</string>
     <string name="firstrun_romm_url_button_back">Retour</string>

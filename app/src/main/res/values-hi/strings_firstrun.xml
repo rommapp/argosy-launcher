@@ -9,7 +9,8 @@
 
     <string name="firstrun_romm_url_title">Rom Manager लॉगिन</string>
     <string name="firstrun_romm_url_field_label">सर्वर URL</string>
-    <string name="firstrun_romm_url_hint">अपना RomM सर्वर पता दर्ज करें, हम साइन इन करने का तरीका पता कर लेंगे।</string>
+    <string name="firstrun_romm_url_field_placeholder">romm.local:8080 या https://...</string>
+    <string name="firstrun_romm_url_hint">अपना RomM सर्वर पता दर्ज करें, https:// के साथ या उसके बिना, हम साइन इन करने का तरीका पता कर लेंगे।</string>
     <string name="firstrun_romm_url_button_continue">जारी रखें</string>
     <string name="firstrun_romm_url_button_checking">जांच हो रही है...</string>
     <string name="firstrun_romm_url_button_back">वापस</string>

@@ -5,7 +5,8 @@
 
     <string name="firstrun_romm_url_title">Inicio de sesión en Rom Manager</string>
     <string name="firstrun_romm_url_field_label">URL del servidor</string>
-    <string name="firstrun_romm_url_hint">Escribe la dirección de tu servidor RomM y detectaremos cómo iniciar sesión.</string>
+    <string name="firstrun_romm_url_field_placeholder">romm.local:8080 o https://...</string>
+    <string name="firstrun_romm_url_hint">Escribe la dirección de tu servidor RomM, con o sin https://, y detectaremos cómo iniciar sesión.</string>
     <string name="firstrun_romm_url_button_continue">Continuar</string>
     <string name="firstrun_romm_url_button_checking">Comprobando...</string>
     <string name="firstrun_romm_url_button_back">Atrás</string>

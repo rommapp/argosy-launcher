@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.screens.settings.sections
 
+import android.content.Context
+import android.os.ParcelFileDescriptor
 import android.provider.Settings
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.MaterialTheme
@@ -19,8 +21,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.nendo.argosy.domain.model.ScreenRole
 import com.nendo.argosy.ui.screens.settings.ScreenAssignment
-import org.junit.Assert.assertTrue
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -90,15 +93,53 @@ class ScreenCardLayoutTest {
     @Test
     fun setupHostIdentityWorksWithoutOverlayPermissionAndHidesUnknownHosts() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        assertFalse("This test requires the debug app's overlay permission to be denied", Settings.canDrawOverlays(context))
-        val number = mutableStateOf<Int?>(1)
-        compose.setContent {
-            MaterialTheme {
-                ScreenSetupIdentity(number.value)
+        withOverlayPermissionDenied(context) {
+            val number = mutableStateOf<Int?>(1)
+            compose.setContent {
+                MaterialTheme {
+                    ScreenSetupIdentity(number.value)
+                }
             }
+            compose.onNodeWithText("1").assertIsDisplayed()
+            compose.runOnIdle { number.value = null }
+            compose.onNodeWithText("1").assertDoesNotExist()
         }
-        compose.onNodeWithText("1").assertIsDisplayed()
-        compose.runOnIdle { number.value = null }
-        compose.onNodeWithText("1").assertDoesNotExist()
+    }
+
+    private fun withOverlayPermissionDenied(context: Context, testBody: () -> Unit) {
+        val wasAllowed = Settings.canDrawOverlays(context)
+        val previousMode = overlayPermissionMode(context)
+            ?: if (wasAllowed) "allow" else "default"
+        try {
+            setOverlayPermissionMode(context, "deny")
+            assertFalse(
+                "The test setup must deny the debug app's overlay permission",
+                Settings.canDrawOverlays(context)
+            )
+            testBody()
+        } finally {
+            setOverlayPermissionMode(context, previousMode)
+            assertEquals(wasAllowed, Settings.canDrawOverlays(context))
+        }
+    }
+
+    private fun overlayPermissionMode(context: Context): String? {
+        val output = runShellCommand("appops get ${context.packageName} SYSTEM_ALERT_WINDOW")
+        return output.lineSequence()
+            .map(String::trim)
+            .firstOrNull { it.startsWith("SYSTEM_ALERT_WINDOW:") }
+            ?.substringAfter(':')
+            ?.substringBefore(';')
+            ?.trim()
+            ?.takeIf { it.matches(Regex("[a-z_]+")) }
+    }
+
+    private fun setOverlayPermissionMode(context: Context, mode: String) {
+        runShellCommand("appops set ${context.packageName} SYSTEM_ALERT_WINDOW $mode")
+    }
+
+    private fun runShellCommand(command: String): String {
+        val output = InstrumentationRegistry.getInstrumentation().uiAutomation.executeShellCommand(command)
+        return ParcelFileDescriptor.AutoCloseInputStream(output).bufferedReader().use { it.readText() }
     }
 }

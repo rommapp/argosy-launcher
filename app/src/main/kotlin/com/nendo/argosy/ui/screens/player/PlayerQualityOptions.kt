@@ -115,15 +115,23 @@ fun framerateWheelOptions(source: PlayerSourceVideo?): List<QualityWheelOption> 
 
 fun bitrateWheelOptions(source: PlayerSourceVideo?, selectedMaxHeight: Int?): List<QualityWheelOption> {
     val effectiveHeight = selectedMaxHeight ?: source?.height
-    val usefulCeiling = effectiveHeight?.let { height ->
-        MAX_USEFUL_BITRATE_BY_HEIGHT.firstOrNull { height >= it.first }?.second
-    }
+    val usefulCeiling = effectiveHeight?.let(::maxUsefulBitrateKbps)
     return listOf(ORIGINAL_OPTION) +
         BITRATE_LADDER_KBPS
             .filter { usefulCeiling == null || it <= usefulCeiling }
             .filter { source?.bitrateKbps == null || it < source.bitrateKbps }
             .map { QualityWheelOption(bitrateLabel(it), it) }
 }
+
+private fun maxUsefulBitrateKbps(height: Int): Int? =
+    MAX_USEFUL_BITRATE_BY_HEIGHT.firstOrNull { height >= it.first }?.second
+
+/**
+ * The bitrate ceiling a negotiation sends: the chosen one, else the most worth streaming at the
+ * chosen height. Null only when neither axis is capped.
+ */
+fun PlayerQualityCeilings.streamingBitrateKbps(): Int? =
+    maxBitrateKbps ?: maxHeight?.let(::maxUsefulBitrateKbps)
 
 fun bitrateLabel(kbps: Int): String = when {
     kbps >= KBPS_PER_MBPS && kbps % KBPS_PER_MBPS == 0 -> "${kbps / KBPS_PER_MBPS} Mbps"

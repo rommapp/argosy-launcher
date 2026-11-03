@@ -104,7 +104,7 @@ class PlaybackNegotiator @Inject constructor(
             maxBitrateKbps = tier.maxBitrateKbps
         )
         val profile = profileBuilder.build(
-            maxStreamingBitrateKbps = ceilings.maxBitrateKbps,
+            maxStreamingBitrateKbps = ceilings.streamingBitrateKbps(),
             maxHeight = ceilings.maxHeight,
             maxFramerate = ceilings.maxFramerate,
             burnInImageSubtitles = burnInImageSubtitles

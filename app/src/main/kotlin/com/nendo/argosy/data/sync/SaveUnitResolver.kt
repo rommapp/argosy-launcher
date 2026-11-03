@@ -194,7 +194,7 @@ class SaveUnitResolver @Inject constructor(
         val primary = resolved.unit.members.firstOrNull { it.role == SigilSaveMember.Role.Primary }
             ?: resolved.unit.expected.firstOrNull { it.role == SigilSaveMember.Role.Primary }
             ?: return null
-        return "$root/${primary.path}"
+        return primaryUnderAnchor(anchorPath, root, primary.path)
     }
 
     fun rootForAnchor(anchor: String, memberPaths: List<String>): String {
@@ -226,3 +226,11 @@ class SaveUnitResolver @Inject constructor(
         }
     }
 }
+
+/**
+ * The primary path a layout expects next to an anchor: the anchor itself when it already sits at
+ * the layout's relative primary path, so a subfolder layout such as `fbneo/{romset}.fs` is never
+ * nested a second time; otherwise the primary under the anchor's folder.
+ */
+internal fun primaryUnderAnchor(anchorPath: String, root: String, primary: String): String =
+    if (anchorPath.endsWith("/$primary")) anchorPath else "$root/$primary"

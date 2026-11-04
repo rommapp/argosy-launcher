@@ -1,7 +1,6 @@
 package com.nendo.argosy.data.emulator
 
 import android.app.Application
-import com.nendo.argosy.R
 import com.nendo.argosy.core.notification.NotificationDuration
 import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.core.notification.NotificationText
@@ -25,7 +24,8 @@ class SessionEndNotices @Inject constructor(
     private val application: Application,
     private val gameDao: GameDao,
     private val gameArtDao: GameArtDao,
-    private val notificationManager: NotificationManager
+    private val notificationManager: NotificationManager,
+    private val copy: SessionEndNoticeCopy
 ) {
     companion object {
         private const val TAG = "SessionEndNotices"
@@ -38,7 +38,7 @@ class SessionEndNotices @Inject constructor(
             is SyncSaveOnSessionEndUseCase.Result.Uploaded -> {
                 Logger.debug(TAG, "[SaveSync] SESSION gameId=$gameId | Sync result: UPLOADED")
                 notificationManager.show(
-                    title = NotificationText.Res(R.string.sync_session_save_uploaded),
+                    title = NotificationText.Res(copy.uploaded),
                     subtitle = game?.title?.let { NotificationText.Raw(it) },
                     type = NotificationType.SUCCESS,
                     imagePath = coverPathFor(gameId),
@@ -50,7 +50,7 @@ class SessionEndNotices @Inject constructor(
             is SyncSaveOnSessionEndUseCase.Result.NoChange -> {
                 Logger.debug(TAG, "[SaveSync] SESSION gameId=$gameId | Sync result: NO_CHANGE")
                 notificationManager.show(
-                    title = NotificationText.Res(R.string.sync_session_save_unchanged),
+                    title = NotificationText.Res(copy.unchanged),
                     subtitle = game?.title?.let { NotificationText.Raw(it) },
                     type = NotificationType.INFO,
                     imagePath = coverPathFor(gameId),
@@ -62,7 +62,7 @@ class SessionEndNotices @Inject constructor(
             is SyncSaveOnSessionEndUseCase.Result.Queued -> {
                 Logger.info(TAG, "[SaveSync] SESSION gameId=$gameId | Sync result: QUEUED")
                 notificationManager.show(
-                    title = NotificationText.Res(R.string.sync_session_save_queued),
+                    title = NotificationText.Res(copy.queued),
                     subtitle = game?.title?.let { NotificationText.Raw(it) },
                     type = NotificationType.INFO,
                     imagePath = coverPathFor(gameId),
@@ -80,12 +80,12 @@ class SessionEndNotices @Inject constructor(
             is SyncSaveOnSessionEndUseCase.Result.Error -> {
                 Logger.error(TAG, "[SaveSync] SESSION gameId=$gameId | Sync result: ERROR | ${result.message}")
                 notificationManager.show(
-                    title = NotificationText.Res(R.string.sync_session_save_upload_failed),
+                    title = NotificationText.Res(copy.uploadFailed),
                     subtitle = NotificationText.Res(
-                        R.string.sync_session_save_upload_failed_subtitle,
+                        copy.uploadFailedSubtitle,
                         listOf(
                             game?.title
-                                ?: application.getString(R.string.sync_session_save_upload_failed_name_fallback),
+                                ?: application.getString(copy.uploadFailedNameFallback),
                             result.message
                         )
                     ),
@@ -102,7 +102,7 @@ class SessionEndNotices @Inject constructor(
     suspend fun sessionSaveNotKept(gameId: Long) = guarded(gameId) {
         val game = gameDao.getById(gameId)
         notificationManager.show(
-            title = NotificationText.Res(R.string.sync_session_save_not_kept),
+            title = NotificationText.Res(copy.notKept),
             subtitle = game?.title?.let { NotificationText.Raw(it) },
             type = NotificationType.ERROR,
             imagePath = coverPathFor(gameId),
@@ -115,9 +115,9 @@ class SessionEndNotices @Inject constructor(
     suspend fun orphanSaveRecovered(gameId: Long, outcome: SessionSaveOutcome) = guarded(gameId) {
         val (title, type) = when ((outcome as? SessionSaveOutcome.Synced)?.sync) {
             is SyncSaveOnSessionEndUseCase.Result.Uploaded ->
-                R.string.sync_session_save_uploaded_orphan to NotificationType.SUCCESS
+                copy.uploadedOrphan to NotificationType.SUCCESS
             is SyncSaveOnSessionEndUseCase.Result.Queued ->
-                R.string.sync_session_save_queued_orphan to NotificationType.INFO
+                copy.queuedOrphan to NotificationType.INFO
             else -> return@guarded
         }
         val game = gameDao.getById(gameId)

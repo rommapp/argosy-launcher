@@ -14,6 +14,7 @@ import com.nendo.argosy.data.model.ArtSlot
 import com.nendo.argosy.data.repository.SaveCacheManager
 import com.nendo.argosy.data.repository.SaveSyncResult
 import com.nendo.argosy.domain.usecase.save.SyncSaveOnSessionEndUseCase
+import com.nendo.argosy.ui.common.SessionEndNoticeCopyResources
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -42,7 +43,8 @@ class SessionEndNoticesTest {
         application = application,
         gameDao = gameDao,
         gameArtDao = gameArtDao,
-        notificationManager = notificationManager
+        notificationManager = notificationManager,
+        copy = SessionEndNoticeCopyResources()
     )
 
     @Before

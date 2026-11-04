@@ -51,11 +51,10 @@ class SessionEndCoordinator @Inject constructor(
     private val _sessionEndRunning = MutableStateFlow(false)
 
     /**
-     * True while a session end this coordinator started is capturing and syncing its save: from
-     * the call into [PlaySessionTracker.endSession] until that call has returned and its result is
-     * handled, whether it returned or threw. False on the short-session, unresolved-emulator and
-     * sync-off paths, while a blocked prompt is up, and for the session end that answering the
-     * prompt starts. A launch pressed while this is true waits for it to turn false.
+     * True while a session end this coordinator started is capturing and syncing its save, until
+     * [PlaySessionTracker.endSession] has returned or thrown and its result is handled. False on the
+     * short-session, unresolved-emulator and sync-off paths, while a blocked prompt is up, and for
+     * the session end that answering the prompt starts.
      */
     val sessionEndRunning: StateFlow<Boolean> = _sessionEndRunning.asStateFlow()
 

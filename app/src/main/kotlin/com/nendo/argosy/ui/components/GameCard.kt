@@ -641,7 +641,11 @@ fun GameCardWithNewBadge(
                 NewBadge(
                     width = badgeWidthDp,
                     height = badgeHeightDp,
-                    rotation = ComponentDefaults.Carousel.newBadgeRotationDegrees.toFloat()
+                    rotation = if (newBadgePlacement == NewBadgePlacement.LEFT) {
+                        -ComponentDefaults.Carousel.newBadgeRotationDegrees.toFloat()
+                    } else {
+                        ComponentDefaults.Carousel.newBadgeRotationDegrees.toFloat()
+                    }
                 )
             }
         },

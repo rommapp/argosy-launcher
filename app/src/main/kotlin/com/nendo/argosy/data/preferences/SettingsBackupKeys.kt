@@ -85,6 +85,7 @@ object SettingsBackupKeys {
         SettingsBackupKey("default_view", SettingsBackupType.STRING),
         SettingsBackupKey("installed_only_home", SettingsBackupType.BOOLEAN),
         SettingsBackupKey("recent_new_games_limit", SettingsBackupType.INT),
+        SettingsBackupKey("new_badge_placement", SettingsBackupType.STRING),
         SettingsBackupKey("show_status_clock", SettingsBackupType.BOOLEAN),
         SettingsBackupKey("show_status_battery", SettingsBackupType.BOOLEAN),
         SettingsBackupKey("show_status_network", SettingsBackupType.BOOLEAN),

@@ -94,7 +94,8 @@ class SessionEndCoordinatorTest {
         gameRepository = mockk(relaxed = true) { coEvery { getById(any()) } returns null },
         savePathValidator = savePathValidator,
         gameLauncher = gameLauncher,
-        launchProgressTracker = launchProgressTracker
+        launchProgressTracker = launchProgressTracker,
+        keepAlivePolicy = mockk(relaxed = true)
     )
 
     private fun TestScope.recordRunning(coordinator: SessionEndCoordinator): List<Boolean> {

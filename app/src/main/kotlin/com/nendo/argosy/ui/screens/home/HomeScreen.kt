@@ -905,7 +905,8 @@ fun HomeScreen(
                                 onCoverLoaded = viewModel::extractGradientForGame,
                                 onPosterLoaded = viewModel::extractGradientForMedia,
                                 useBoxArt = uiState.boxArt3d,
-                                showDownloadedIndicator = !uiState.installedOnlyHome,
+                                // Custom-grid tiles are user-pinned and never filtered by installed
+                                // state, so a non-downloaded pinned tile must keep its indicator.
                                 modifier = Modifier.fillMaxSize()
                             )
                         }

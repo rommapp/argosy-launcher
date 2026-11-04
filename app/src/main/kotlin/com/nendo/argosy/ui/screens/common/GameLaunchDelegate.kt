@@ -40,6 +40,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -186,7 +187,10 @@ class GameLaunchDelegate @Inject constructor(
 
     val syncOverlayState: StateFlow<SyncOverlayState?> = sessionEndCoordinator.syncOverlayState
 
-    val sessionEndRunning: StateFlow<Boolean> = sessionEndCoordinator.sessionEndRunning
+    val sessionEndRunning: Flow<Boolean> = combine(
+        sessionEndCoordinator.sessionEndRunning,
+        playSessionTracker.sessionEnding
+    ) { coordinating, ending -> coordinating || ending }
 
     private val _discPickerState = MutableStateFlow<DiscPickerState?>(null)
     val discPickerState: StateFlow<DiscPickerState?> = _discPickerState.asStateFlow()
@@ -200,7 +204,10 @@ class GameLaunchDelegate @Inject constructor(
 
     val isSyncing: Boolean get() = syncOverlayState.value != null
 
-    val isSessionEndBusy: Boolean get() = isSyncing || sessionEndRunning.value
+    private val isSessionEnding: Boolean
+        get() = sessionEndCoordinator.sessionEndRunning.value || playSessionTracker.sessionEnding.value
+
+    val isSessionEndBusy: Boolean get() = isSyncing || isSessionEnding
 
     private var _onLaunchFailed: (() -> Unit)? = null
 
@@ -279,10 +286,10 @@ class GameLaunchDelegate @Inject constructor(
                 return@launch
             }
             try {
-                if (sessionEndCoordinator.sessionEndRunning.value) {
+                if (isSessionEnding || playSessionTracker.pendingSessionConflict.value != null) {
                     ticket.step(LaunchStep.Save(SyncProgress.PreLaunch.CheckingSave(channelName)))
                     combine(
-                        sessionEndCoordinator.sessionEndRunning,
+                        sessionEndRunning,
                         playSessionTracker.pendingSessionConflict,
                         launchProgressTracker.progress
                     ) { running, conflict, shown ->

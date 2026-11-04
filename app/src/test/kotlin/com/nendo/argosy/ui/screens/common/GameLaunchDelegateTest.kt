@@ -26,6 +26,7 @@ import io.mockk.spyk
 import io.mockk.verify
 import io.mockk.verifyOrder
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
@@ -60,6 +61,7 @@ class GameLaunchDelegateTest {
     private val manager: DualScreenManager = mockk()
     private val syncOverlayState = MutableStateFlow<SyncOverlayState?>(null)
     private val sessionEndRunning = MutableStateFlow(false)
+    private val trackerSessionEnding = MutableStateFlow(false)
     private val sessionConflict = MutableStateFlow<SaveConflictEvent?>(null)
     private val sessionEndCoordinator: SessionEndCoordinator = mockk(relaxed = true)
 
@@ -70,6 +72,7 @@ class GameLaunchDelegateTest {
         every { game.title } returns "Game"
         coEvery { gameRepository.getById(gameId) } returns game
         every { playSessionTracker.activeSession } returns MutableStateFlow(null)
+        every { playSessionTracker.sessionEnding } returns trackerSessionEnding
         every { playSessionTracker.pendingSessionConflict } returns sessionConflict
         coEvery { emulatorResolver.getEmulatorPackageForGame(any(), any(), any()) } returns null
         coEvery { preLaunchRecapStep.run(any(), any(), any()) } returns true
@@ -313,6 +316,63 @@ class GameLaunchDelegateTest {
     }
 
     @Test
+    fun `a launch pressed while the tracker ends the session waits for it`() = runTest {
+        coEvery { preLaunchRecapStep.run(any(), any(), any()) } returns false
+        trackerSessionEnding.value = true
+        val tracker = tracker()
+
+        launchGame(delegate(tracker, router()))
+        runCurrent()
+
+        assertEquals(sessionEndWaitStep, tracker.progress.value?.step)
+        coVerify(exactly = 0) { preLaunchRecapStep.run(any(), any(), any()) }
+
+        trackerSessionEnding.value = false
+        runCurrent()
+
+        coVerify(exactly = 1) { preLaunchRecapStep.run(any(), gameId, "Game") }
+    }
+
+    @Test
+    fun `a conflict from the tracker's session end holds the launch until it is answered`() = runTest {
+        coEvery { preLaunchRecapStep.run(any(), any(), any()) } returns false
+        trackerSessionEnding.value = true
+        val tracker = tracker()
+
+        launchGame(delegate(tracker, router()))
+        runCurrent()
+        sessionConflict.value = conflict
+        trackerSessionEnding.value = false
+        runCurrent()
+
+        coVerify(exactly = 0) { preLaunchRecapStep.run(any(), any(), any()) }
+        assertEquals(sessionEndWaitStep, tracker.progress.value?.step)
+
+        sessionConflict.value = null
+        runCurrent()
+
+        coVerify(exactly = 1) { preLaunchRecapStep.run(any(), gameId, "Game") }
+    }
+
+    @Test
+    fun `a launch pressed with a session-end conflict unanswered waits for the answer`() = runTest {
+        coEvery { preLaunchRecapStep.run(any(), any(), any()) } returns false
+        sessionConflict.value = conflict
+        val tracker = tracker()
+
+        launchGame(delegate(tracker, router()))
+        runCurrent()
+
+        coVerify(exactly = 0) { preLaunchRecapStep.run(any(), any(), any()) }
+        assertEquals(sessionEndWaitStep, tracker.progress.value?.step)
+
+        sessionConflict.value = null
+        runCurrent()
+
+        coVerify(exactly = 1) { preLaunchRecapStep.run(any(), gameId, "Game") }
+    }
+
+    @Test
     fun `cancel while a session-end conflict is unanswered stops the waiting launch`() = runTest {
         sessionEndRunning.value = true
         val tracker = tracker()
@@ -381,12 +441,23 @@ class GameLaunchDelegateTest {
     fun `a running session end makes the delegate busy, which GameDetail Play refuses on`() = runTest {
         val delegate = delegate(tracker(), router())
         assertFalse(delegate.isSessionEndBusy)
-        assertFalse(delegate.sessionEndRunning.value)
+        assertFalse(delegate.sessionEndRunning.first())
 
         sessionEndRunning.value = true
 
         assertTrue(delegate.isSessionEndBusy)
-        assertTrue(delegate.sessionEndRunning.value)
+        assertTrue(delegate.sessionEndRunning.first())
+        assertFalse(delegate.isSyncing)
+    }
+
+    @Test
+    fun `a session end the tracker started makes the delegate busy`() = runTest {
+        val delegate = delegate(tracker(), router())
+
+        trackerSessionEnding.value = true
+
+        assertTrue(delegate.isSessionEndBusy)
+        assertTrue(delegate.sessionEndRunning.first())
         assertFalse(delegate.isSyncing)
     }
 
@@ -397,7 +468,7 @@ class GameLaunchDelegateTest {
         syncOverlayState.value = SyncOverlayState("Game", SyncProgress.BlockedReason.PermissionRequired())
 
         assertTrue(delegate.isSessionEndBusy)
-        assertFalse(delegate.sessionEndRunning.value)
+        assertFalse(delegate.sessionEndRunning.first())
     }
 
     @Test

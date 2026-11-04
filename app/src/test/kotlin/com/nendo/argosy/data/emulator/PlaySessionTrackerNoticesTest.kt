@@ -5,6 +5,7 @@ import com.nendo.argosy.data.preferences.PersistedSession
 import com.nendo.argosy.data.preferences.UserPreferences
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.SaveCacheManager
+import com.nendo.argosy.data.repository.SaveSyncResult
 import com.nendo.argosy.data.sync.SaveRecoveryGate
 import com.nendo.argosy.domain.usecase.save.SyncSaveOnSessionEndUseCase
 import com.nendo.argosy.util.PermissionHelper
@@ -13,13 +14,21 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import java.io.IOException
 import java.time.Instant
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class PlaySessionTrackerNoticesTest {
     private val gameId = 7L
     private val emulatorPackage = "test.emulator"
@@ -116,6 +125,33 @@ class PlaySessionTrackerNoticesTest {
         coVerify(exactly = 0) { notices.sessionSaveNotKept(any()) }
         coVerify(exactly = 0) { notices.sessionSaveSynced(any(), any()) }
         coVerify(exactly = 0) { notices.orphanSaveRecovered(any(), any()) }
+    }
+
+    @Test
+    fun `sessionEnding holds through the save work and its conflict is pending when it clears`() = runTest {
+        val tracker = trackerWithLiveSession()
+        val conflict = SyncSaveOnSessionEndUseCase.Result.Conflict(
+            gameId = gameId,
+            emulatorId = "test-emulator",
+            channelName = null,
+            upload = SaveSyncResult.Conflict(gameId, Instant.EPOCH, Instant.EPOCH)
+        )
+        var endingDuringSave = false
+        coEvery { sessionSaveFinalizer.finalize(any()) } coAnswers {
+            endingDuringSave = tracker.sessionEnding.value
+            SessionSaveOutcome.Synced(SaveCacheManager.CacheResult.Created(timestamp = 1L), conflict, conflictId = 1L)
+        }
+        val pendingWhenCleared = mutableListOf<SaveConflictEvent?>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            tracker.sessionEnding.drop(1).filter { !it }.collect {
+                pendingWhenCleared += tracker.pendingSessionConflict.value
+            }
+        }
+
+        tracker.endSession(stopService = false)
+
+        assertTrue(endingDuringSave)
+        assertEquals(gameId, pendingWhenCleared.single()?.gameId)
     }
 
     @Test

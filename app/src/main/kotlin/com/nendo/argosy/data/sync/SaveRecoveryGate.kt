@@ -2,6 +2,8 @@ package com.nendo.argosy.data.sync
 
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -17,7 +19,8 @@ import javax.inject.Singleton
 @Singleton
 class SaveRecoveryGate @Inject constructor() {
     private val recovered = CompletableDeferred<Unit>()
-    private val sessionEnding = MutableStateFlow(false)
+    private val sessionEndClaim = MutableStateFlow(false)
+    val sessionEnding: StateFlow<Boolean> = sessionEndClaim.asStateFlow()
 
     fun markComplete() {
         recovered.complete(Unit)
@@ -27,14 +30,14 @@ class SaveRecoveryGate @Inject constructor() {
         recovered.await()
     }
 
-    fun tryClaimSessionEnd(): Boolean = sessionEnding.compareAndSet(expect = false, update = true)
+    fun tryClaimSessionEnd(): Boolean = sessionEndClaim.compareAndSet(expect = false, update = true)
 
     fun releaseSessionEnd() {
-        sessionEnding.value = false
+        sessionEndClaim.value = false
     }
 
     suspend fun awaitSettled() {
         recovered.await()
-        sessionEnding.first { !it }
+        sessionEndClaim.first { !it }
     }
 }

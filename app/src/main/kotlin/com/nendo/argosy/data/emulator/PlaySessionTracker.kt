@@ -166,6 +166,12 @@ class PlaySessionTracker @Inject constructor(
         .map { it != null }
         .stateIn(scope, kotlinx.coroutines.flow.SharingStarted.Eagerly, false)
 
+    /**
+     * True while a session end, live or recovered, holds the save recovery claim, whichever caller
+     * started it. Its conflict, if any, is already in [pendingSessionConflict] when this turns false.
+     */
+    val sessionEnding: StateFlow<Boolean> = saveRecoveryGate.sessionEnding
+
     private val _pendingSessionConflict = MutableStateFlow<SaveConflictEvent?>(null)
 
     /**

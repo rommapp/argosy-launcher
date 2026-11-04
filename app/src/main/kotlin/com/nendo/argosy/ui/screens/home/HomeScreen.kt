@@ -207,6 +207,10 @@ fun HomeScreen(
     val gridState = rememberLazyGridState()
     val isAutoGrid = uiState.layoutKind == HomeLayoutKind.AUTO_GRID
     val isCustomGrid = uiState.layoutKind == HomeLayoutKind.CUSTOM_GRID
+    // The Recommendations row is never filtered by installed state (HomeLibraryDelegate), so its
+    // downloaded dot must stay visible in installed-only mode; every other game row is filtered
+    // there, where the dot is redundant.
+    val showDownloadedDot = !uiState.installedOnlyHome || uiState.currentRow == HomeRow.Recommendations
     val quickNavigation by viewModel.quickNavigationEnabled.collectAsState()
     val dockReorder by viewModel.dockReorder.collectAsState()
     val dockIsRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
@@ -945,7 +949,7 @@ fun HomeScreen(
                                 config = uiState.autoGridConfig,
                                 showFocusVisuals = !uiState.appBarFocused,
                                 useBoxArt = uiState.boxArt3d,
-                                showDownloadedIndicator = !uiState.installedOnlyHome,
+                                showDownloadedIndicator = showDownloadedDot,
                                 gridState = gridState,
                                 entryAnimationKey = (uiState.currentPlatform?.id ?: uiState.currentRow)
                                     .takeIf { uiState.autoGridConfig.showAllGames },
@@ -1006,7 +1010,7 @@ fun HomeScreen(
                                     uiState.currentRow != HomeRow.Steam && uiState.currentRow != HomeRow.Android,
                                 useBoxArt = uiState.boxArt3d,
                                 newBadgePlacement = uiState.newBadgePlacement,
-                                showDownloadedIndicator = !uiState.installedOnlyHome,
+                                showDownloadedIndicator = showDownloadedDot,
                                 onCoverLoadFailed = viewModel::repairCoverImage,
                                 onCoverLoaded = viewModel::extractGradientForGame,
                                 onPosterLoaded = viewModel::extractGradientForMedia,

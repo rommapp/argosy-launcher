@@ -675,7 +675,7 @@ fun GameCardWithNewBadge(
 
         layout(cardPlaceable.width, layoutHeight) {
             cardPlaceable.placeRelative(0, topOverflow)
-            badgePlaceable?.placeRelative(
+            badgePlaceable?.place(
                 x = if (newBadgePlacement == NewBadgePlacement.LEFT) {
                     0
                 } else {

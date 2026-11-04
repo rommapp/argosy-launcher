@@ -376,11 +376,21 @@ fun CarouselRail(
         else -> 0.dp
     }
 
+    /**
+     * Every card reserves this much on each side so a corner-anchored badge fits inside its node;
+     * taking it out of the gap keeps the box art rhythm exactly what the metrics describe.
+     */
+    val badgeSideReserveDp = if (newBadgePlacement == NewBadgePlacement.HIDDEN) {
+        0.dp
+    } else {
+        ComponentDefaults.Carousel.newBadgeCornerShiftDp.dp
+    }
+
     LazyRow(
         state = listState,
         reverseLayout = metrics.reversed,
         contentPadding = contentPadding,
-        horizontalArrangement = Arrangement.spacedBy(metrics.itemGap),
+        horizontalArrangement = Arrangement.spacedBy(metrics.itemGap - badgeSideReserveDp * 2),
         verticalAlignment = metrics.verticalAlignment,
         modifier = modifier
             .fillMaxWidth()
@@ -438,7 +448,8 @@ fun CarouselRail(
                         overrides = overrides,
                         onPosterLoaded = onPosterLoaded,
                         modifier = placementModifier
-                            .padding(top = NEW_BADGE_TOP_OVERFLOW),
+                            .padding(top = NEW_BADGE_TOP_OVERFLOW)
+                            .padding(horizontal = badgeSideReserveDp),
                         interactionModifier = tapModifier
                     )
                 }
@@ -462,6 +473,7 @@ fun CarouselRail(
                                 this.translationX = translationX
                                 alpha = viewAllAlpha
                             }
+                            .padding(horizontal = badgeSideReserveDp)
                             .padding(top = NEW_BADGE_TOP_OVERFLOW)
                             .size(metrics.cardWidth, metrics.cardHeight)
                     )

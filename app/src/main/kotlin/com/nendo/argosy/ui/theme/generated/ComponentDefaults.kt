@@ -252,6 +252,8 @@ object ComponentDefaults {
         const val newBadgeWidthDp = 44
         const val newBadgeHeightDp = 30
         const val newBadgeRotationDegrees = 15
+        const val newBadgeCornerShiftDp = 8
+        const val newBadgeCornerDropDp = 3
         const val companionCardWidth = 140
         const val companionCardWidthFocused = 200
         const val companionCardGap = 16

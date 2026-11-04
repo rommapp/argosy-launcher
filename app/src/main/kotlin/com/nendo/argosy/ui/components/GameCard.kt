@@ -573,9 +573,11 @@ fun GameCardWithBadge(
 }
 
 /**
- * How far the new-game badge rises above the card it belongs to. The badge is laid out inside the
- * card's own bounds so nothing clips it, which makes a badged card this much taller than a plain
- * one; a caller that lines cards up has to take the difference back out.
+ * How far the new-game badge rises above the card it belongs to, making a badged card this much
+ * taller than a plain one; a caller that lines cards up has to take the difference back out. When
+ * a corner placement is active the wrapper reserves the same shift on each side as well, so the
+ * badge sits inside the node's bounds and nothing can cut it off; spacing between cards stays
+ * derived from the box art metrics alone.
  */
 val NEW_BADGE_TOP_OVERFLOW = ComponentDefaults.Carousel.newBadgeOverflowDp.dp
 
@@ -663,6 +665,7 @@ fun GameCardWithNewBadge(
                 }
             )
             this.alpha = alpha
+            this.clip = false
         }.then(interactionModifier)
     ) { measurables, constraints ->
         val cardWidthPx = cardWidth.toPx().toInt()
@@ -676,16 +679,23 @@ fun GameCardWithNewBadge(
 
         val topOverflow = NEW_BADGE_TOP_OVERFLOW.roundToPx()
         val layoutHeight = cardPlaceable.height + topOverflow
+        val sideReservePx = if (newBadgePlacement == NewBadgePlacement.HIDDEN) {
+            0
+        } else {
+            ComponentDefaults.Carousel.newBadgeCornerShiftDp.dp.roundToPx()
+        }
 
-        layout(cardPlaceable.width, layoutHeight) {
-            cardPlaceable.placeRelative(0, topOverflow)
+        layout(cardPlaceable.width + 2 * sideReservePx, layoutHeight) {
+            cardPlaceable.placeRelative(sideReservePx, topOverflow)
+            val leftShifted = newBadgePlacement == NewBadgePlacement.LEFT
             badgePlaceable?.place(
-                x = if (newBadgePlacement == NewBadgePlacement.LEFT) {
+                x = if (leftShifted) {
                     0
                 } else {
-                    cardPlaceable.width - badgePlaceable.width
+                    cardPlaceable.width + 2 * sideReservePx - badgePlaceable.width
                 },
-                y = topOverflow - (badgePlaceable.height / 2)
+                y = topOverflow - (badgePlaceable.height / 2) +
+                    ComponentDefaults.Carousel.newBadgeCornerDropDp.dp.roundToPx()
             )
         }
     }

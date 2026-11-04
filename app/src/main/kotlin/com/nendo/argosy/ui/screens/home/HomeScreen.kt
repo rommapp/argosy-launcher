@@ -207,9 +207,6 @@ fun HomeScreen(
     val gridState = rememberLazyGridState()
     val isAutoGrid = uiState.layoutKind == HomeLayoutKind.AUTO_GRID
     val isCustomGrid = uiState.layoutKind == HomeLayoutKind.CUSTOM_GRID
-    // The Recommendations row is never filtered by installed state (HomeLibraryDelegate), so its
-    // downloaded dot must stay visible in installed-only mode; every other game row is filtered
-    // there, where the dot is redundant.
     val showDownloadedDot = !uiState.installedOnlyHome || uiState.currentRow == HomeRow.Recommendations
     val quickNavigation by viewModel.quickNavigationEnabled.collectAsState()
     val dockReorder by viewModel.dockReorder.collectAsState()
@@ -909,8 +906,6 @@ fun HomeScreen(
                                 onCoverLoaded = viewModel::extractGradientForGame,
                                 onPosterLoaded = viewModel::extractGradientForMedia,
                                 useBoxArt = uiState.boxArt3d,
-                                // Custom-grid tiles are user-pinned and never filtered by installed
-                                // state, so a non-downloaded pinned tile must keep its indicator.
                                 modifier = Modifier.fillMaxSize()
                             )
                         }

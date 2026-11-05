@@ -235,6 +235,13 @@ class RetroAchievementsSessionManager(
             }
         }
         overlayWriter.updateAchievementCount(gameId, totalAchievements, earnedAchievements)
+        achievementUpdateBus.emit(
+            AchievementUpdateBus.AchievementUpdate(
+                gameId = gameId,
+                totalCount = totalAchievements,
+                earnedCount = earnedAchievements
+            )
+        )
 
         if (announceConnection) {
             raConnectionInfo = RAConnectionInfo(

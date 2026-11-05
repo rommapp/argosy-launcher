@@ -97,6 +97,10 @@ void Environment::updateVariable(const std::string& key, const std::string& valu
     }
 }
 
+void Environment::markVariablesApplied() {
+    dirtyVariables = false;
+}
+
 bool Environment::environment_handle_set_variables(const struct retro_variable* received) {
     unsigned count = 0;
     while (received[count].key != nullptr) {

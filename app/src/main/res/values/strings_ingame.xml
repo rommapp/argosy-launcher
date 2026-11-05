@@ -1304,6 +1304,18 @@
     <string name="ingame_touch_cdi_face_b" translatable="false">2</string>
     <string name="ingame_touch_cdi_face_x" translatable="false">3</string>
 
+    <!-- ScummVM buttons, labelled with the key or mouse action the core sends by default.
+         "Esc", "Enter" and "Space" are keyboard keys; "Click" and "Right Click" are mouse
+         buttons; "Keyboard" opens the on-screen keyboard and "Menu" opens ScummVM's own menu. -->
+    <string name="ingame_touch_scummvm_face_y">Esc</string>
+    <string name="ingame_touch_scummvm_face_x" translatable="false">F5</string>
+    <string name="ingame_touch_scummvm_face_b">Enter</string>
+    <string name="ingame_touch_scummvm_face_a">Space</string>
+    <string name="ingame_touch_scummvm_shoulder_l">Click</string>
+    <string name="ingame_touch_scummvm_shoulder_r">Right Click</string>
+    <string name="ingame_touch_scummvm_sys_select">Keyboard</string>
+    <string name="ingame_touch_scummvm_sys_start">Menu</string>
+
     <!-- Generic fallback layout, used both for keyboard-only platforms (DOS, PC-98) and for any
          platform this registry does not otherwise recognise. -->
     <string name="ingame_touch_generic_face_y" translatable="false">Y</string>

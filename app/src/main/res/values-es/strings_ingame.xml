@@ -581,6 +581,14 @@
     <string name="ingame_touch_threedo_sys_select">Stop</string>
     <string name="ingame_touch_threedo_sys_start">Play/Pause</string>
 
+    <string name="ingame_touch_scummvm_face_y">Esc</string>
+    <string name="ingame_touch_scummvm_face_b">Intro</string>
+    <string name="ingame_touch_scummvm_face_a">Espacio</string>
+    <string name="ingame_touch_scummvm_shoulder_l">Clic</string>
+    <string name="ingame_touch_scummvm_shoulder_r">Clic derecho</string>
+    <string name="ingame_touch_scummvm_sys_select">Teclado</string>
+    <string name="ingame_touch_scummvm_sys_start">Menú</string>
+
     <string name="ingame_touch_generic_sys_select">Select</string>
     <string name="ingame_touch_generic_sys_start">Start</string>
 </resources>

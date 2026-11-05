@@ -572,6 +572,14 @@
     <string name="ingame_touch_threedo_sys_select">स्टॉप</string>
     <string name="ingame_touch_threedo_sys_start">प्ले/पॉज़</string>
 
+    <string name="ingame_touch_scummvm_face_y">Esc</string>
+    <string name="ingame_touch_scummvm_face_b">एंटर</string>
+    <string name="ingame_touch_scummvm_face_a">स्पेस</string>
+    <string name="ingame_touch_scummvm_shoulder_l">क्लिक</string>
+    <string name="ingame_touch_scummvm_shoulder_r">राइट क्लिक</string>
+    <string name="ingame_touch_scummvm_sys_select">कीबोर्ड</string>
+    <string name="ingame_touch_scummvm_sys_start">मेनू</string>
+
     <string name="ingame_touch_generic_sys_select">सेलेक्ट</string>
     <string name="ingame_touch_generic_sys_start">स्टार्ट</string>
 </resources>

@@ -77,11 +77,8 @@ int16_t Input::getInputState(unsigned port, unsigned device, unsigned index, uns
             }
 
             switch (id) {
-                case RETRO_DEVICE_ID_POINTER_PRESSED: {
-                    bool isXActive = pads[port].pointerScreenXAxis >= 0;
-                    bool isYActive = pads[port].pointerScreenYAxis >= 0;
-                    return (int16_t) (isXActive && isYActive ? 1 : 0);
-                }
+                case RETRO_DEVICE_ID_POINTER_PRESSED:
+                    return (int16_t) (pads[port].pointerPressed ? 1 : 0);
 
                 case RETRO_DEVICE_ID_POINTER_X:
                     return (int16_t) (2.0 * (pads[port].pointerScreenXAxis - 0.5f) * MAX_RANGE_MOTION);
@@ -300,8 +297,11 @@ void Input::onMotionEvent(int port, int motionSource, float xAxis, float yAxis) 
             break;
 
         case Input::MOTION_SOURCE_POINTER:
-            target.pointerScreenXAxis = xAxis;
-            target.pointerScreenYAxis = yAxis;
+            target.pointerPressed = xAxis >= 0 && yAxis >= 0;
+            if (target.pointerPressed) {
+                target.pointerScreenXAxis = xAxis;
+                target.pointerScreenYAxis = yAxis;
+            }
             break;
     }
 }

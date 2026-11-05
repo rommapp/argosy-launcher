@@ -44,6 +44,7 @@ import com.nendo.argosy.libretro.coreoptions.manifests.MednafenPceManifest
 import com.nendo.argosy.libretro.coreoptions.manifests.MednafenPcfxManifest
 import com.nendo.argosy.libretro.coreoptions.manifests.MednafenSupergrafxManifest
 import com.nendo.argosy.libretro.coreoptions.manifests.SameCdiManifest
+import com.nendo.argosy.libretro.coreoptions.manifests.ScummvmManifest
 import com.nendo.argosy.libretro.coreoptions.manifests.VirtualjaguarManifest
 import com.nendo.argosy.libretro.coreoptions.manifests.Np2kaiManifest
 import com.nendo.argosy.libretro.coreoptions.manifests.O2emManifest
@@ -112,6 +113,7 @@ object CoreOptionManifestRegistry {
         put(FreeintvManifest.coreId, FreeintvManifest)
         put(FbneoManifest.coreId, FbneoManifest)
         put(Mame2003PlusManifest.coreId, Mame2003PlusManifest)
+        put(ScummvmManifest.coreId, ScummvmManifest)
     }
 
     fun getManifest(coreId: String): CoreOptionManifest? = manifests[coreId]

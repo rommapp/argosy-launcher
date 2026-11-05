@@ -565,6 +565,14 @@
     <string name="ingame_touch_threedo_sys_select">停止</string>
     <string name="ingame_touch_threedo_sys_start">播放/暂停</string>
 
+    <string name="ingame_touch_scummvm_face_y">Esc</string>
+    <string name="ingame_touch_scummvm_face_b">回车</string>
+    <string name="ingame_touch_scummvm_face_a">空格</string>
+    <string name="ingame_touch_scummvm_shoulder_l">点击</string>
+    <string name="ingame_touch_scummvm_shoulder_r">右键</string>
+    <string name="ingame_touch_scummvm_sys_select">键盘</string>
+    <string name="ingame_touch_scummvm_sys_start">菜单</string>
+
     <string name="ingame_touch_generic_sys_select">Select</string>
     <string name="ingame_touch_generic_sys_start">Start</string>
 </resources>

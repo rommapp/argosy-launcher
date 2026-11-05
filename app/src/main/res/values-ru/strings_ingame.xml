@@ -590,6 +590,14 @@
     <string name="ingame_touch_threedo_sys_select">Стоп</string>
     <string name="ingame_touch_threedo_sys_start">Воспр./Пауза</string>
 
+    <string name="ingame_touch_scummvm_face_y">Esc</string>
+    <string name="ingame_touch_scummvm_face_b">Enter</string>
+    <string name="ingame_touch_scummvm_face_a">Пробел</string>
+    <string name="ingame_touch_scummvm_shoulder_l">Клик</string>
+    <string name="ingame_touch_scummvm_shoulder_r">Правый клик</string>
+    <string name="ingame_touch_scummvm_sys_select">Клавиатура</string>
+    <string name="ingame_touch_scummvm_sys_start">Меню</string>
+
     <string name="ingame_touch_generic_sys_select">Select</string>
     <string name="ingame_touch_generic_sys_start">Start</string>
 </resources>

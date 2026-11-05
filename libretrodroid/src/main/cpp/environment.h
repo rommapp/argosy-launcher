@@ -68,6 +68,8 @@ public:
 
     void updateVariable(const std::string &key, const std::string &value);
 
+    void markVariablesApplied();
+
     void setLanguage(const std::string &androidLanguage);
 
     float retrieveGameSpecificAspectRatio();

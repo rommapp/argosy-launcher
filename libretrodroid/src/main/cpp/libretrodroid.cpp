@@ -519,6 +519,7 @@ void LibretroDroid::create(
     std::for_each(variables.begin(), variables.end(), [&](const Variable& v) {
         updateVariable(v);
     });
+    Environment::getInstance().markVariablesApplied();
 
     core->retro_init();
 

@@ -3384,13 +3384,6 @@ class LibretroActivity : ComponentActivity() {
         }
     }
 
-    /**
-     * Every key that reaches core input passes through here, whether it arrived as a KeyEvent or
-     * was generated from trigger axes in onGenericMotionEvent. Keys assigned as Home or Back
-     * shortcuts act as those system keys before any core binding: Home backgrounds this task so the
-     * game stays resumable from home, and Back plays through every existing Back path (menu on a
-     * short press, Quick Settings on a hold).
-     */
     @SuppressLint("RestrictedApi")
     private fun dispatchKeyFrom(event: KeyEvent, source: KeyPressGate.Source, coreBound: Boolean): Boolean {
         if (event.keyCode == homeShortcutKey) {

@@ -941,10 +941,16 @@
 
     <string name="settings_storage_games_integrity_title">每周ROM完整性检查</string>
     <string name="settings_storage_games_integrity_subtitle">每周启动时校验已下载的游戏文件</string>
-    <string name="settings_storage_games_not_from_romm_title">非来自RomM</string>
-    <plurals name="settings_storage_games_not_from_romm_subtitle">
-        <item quantity="other">%1$d个游戏文件为手动添加，硬重置时会保留</item>
+    <string name="settings_storage_games_local_only_title">仅本地</string>
+    <plurals name="settings_storage_games_local_only_subtitle">
+        <item quantity="other">本设备上有%1$d个游戏RomM中没有</item>
     </plurals>
+    <string name="settings_storage_local_only_empty_message">本设备上RomM中没有的游戏会在此显示大小和位置。</string>
+    <string name="settings_storage_game_source_local_only">仅本地</string>
+    <string name="settings_storage_location_internal">内部存储</string>
+    <string name="settings_storage_location_removable">SD卡</string>
+    <string name="settings_storage_location_mixed">内部存储 + SD卡</string>
+    <string name="settings_storage_location_unknown">位置未知</string>
 
     <plurals name="settings_storage_games_totals_count">
         <item quantity="other">已下载%d个</item>

@@ -34,7 +34,7 @@ import com.nendo.argosy.R
 import com.nendo.argosy.data.storage.PlatformUsage
 import com.nendo.argosy.data.storage.StorageCategory
 import com.nendo.argosy.data.storage.WalkState
-import com.nendo.argosy.ui.components.InfoPreference
+import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.SegmentedMeterBar
 import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.components.storageVolumeColors
@@ -63,7 +63,7 @@ internal sealed class StorageGamesItem(
 
     data object IntegrityToggle : StorageGamesItem("integrityToggle", "overview")
 
-    data object NotFromRomm : StorageGamesItem("notFromRomm", "overview")
+    data object LocalOnly : StorageGamesItem("localOnly", "overview")
 
     data object PlatformsSpacer : StorageGamesItem("platformsSpacer", "platforms") {
         override val isFocusable = false
@@ -86,7 +86,7 @@ internal sealed class StorageGamesItem(
         fun buildItems(platforms: List<PlatformUsage>): List<StorageGamesItem> = buildList {
             add(TotalsHeader)
             add(IntegrityToggle)
-            add(NotFromRomm)
+            add(LocalOnly)
             add(PlatformsSpacer)
             add(PlatformsHeader)
             if (platforms.isEmpty()) {
@@ -137,6 +137,9 @@ internal fun storageGamesFocusIndexOfPlatform(platformId: Long?, info: StorageGa
     info.layout.focusableItems(Unit)
         .indexOfFirst { it is StorageGamesItem.PlatformRow && it.usage.platformId == platformId }
         .coerceAtLeast(0)
+
+internal fun storageGamesFocusIndexOfLocalOnly(info: StorageGamesLayoutInfo): Int =
+    info.layout.focusIndexOf(StorageGamesItem.LocalOnly, Unit).coerceAtLeast(0)
 
 internal fun storageGamesSections(info: StorageGamesLayoutInfo) = info.layout.buildSections(Unit)
 
@@ -212,15 +215,16 @@ fun StorageGamesSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
                 onToggle = { viewModel.toggleWeeklyIntegrityCheck(it) }
             )
 
-            StorageGamesItem.NotFromRomm -> InfoPreference(
-                title = stringResource(R.string.settings_storage_games_not_from_romm_title),
-                value = uiState.storage.adoptedGamesCount.toString(),
+            StorageGamesItem.LocalOnly -> ActionPreference(
+                title = stringResource(R.string.settings_storage_games_local_only_title),
                 subtitle = pluralStringResource(
-                    R.plurals.settings_storage_games_not_from_romm_subtitle,
-                    uiState.storage.adoptedGamesCount,
-                    uiState.storage.adoptedGamesCount
+                    R.plurals.settings_storage_games_local_only_subtitle,
+                    uiState.storage.localOnlyGamesCount,
+                    uiState.storage.localOnlyGamesCount
                 ),
-                isFocused = isFocused(item)
+                trailingText = uiState.storage.localOnlyGamesCount.toString(),
+                isFocused = isFocused(item),
+                onClick = { openFrom(item) { viewModel.openStorageLocalOnlyGames() } }
             )
 
             StorageGamesItem.PlatformsSpacer -> Spacer(modifier = Modifier.height(Dimens.spacingMd))

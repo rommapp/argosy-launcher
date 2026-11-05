@@ -958,11 +958,17 @@
 
     <string name="settings_storage_games_integrity_title">साप्ताहिक ROM इंटीग्रिटी जाँच</string>
     <string name="settings_storage_games_integrity_subtitle">स्टार्टअप पर हफ़्ते में एक बार डाउनलोड की गई गेम फ़ाइलों को सत्यापित करता है</string>
-    <string name="settings_storage_games_not_from_romm_title">RomM से नहीं</string>
-    <plurals name="settings_storage_games_not_from_romm_subtitle">
-        <item quantity="one">%1$d गेम फ़ाइल हाथ से जोड़ी गई थी और हार्ड रीसेट में बनी रहती है</item>
-        <item quantity="other">%1$d गेम फ़ाइलें हाथ से जोड़ी गई थीं और हार्ड रीसेट में बनी रहती हैं</item>
+    <string name="settings_storage_games_local_only_title">सिर्फ़ लोकल</string>
+    <plurals name="settings_storage_games_local_only_subtitle">
+        <item quantity="one">इस डिवाइस पर %1$d गेम जो RomM में नहीं है</item>
+        <item quantity="other">इस डिवाइस पर %1$d गेम जो RomM में नहीं हैं</item>
     </plurals>
+    <string name="settings_storage_local_only_empty_message">इस डिवाइस के वे गेम जो RomM में नहीं हैं, अपने साइज़ और जगह के साथ यहां दिखते हैं।</string>
+    <string name="settings_storage_game_source_local_only">सिर्फ़ लोकल</string>
+    <string name="settings_storage_location_internal">इंटरनल</string>
+    <string name="settings_storage_location_removable">SD कार्ड</string>
+    <string name="settings_storage_location_mixed">इंटरनल + SD कार्ड</string>
+    <string name="settings_storage_location_unknown">अज्ञात जगह</string>
 
     <plurals name="settings_storage_games_totals_count">
         <item quantity="one">%d डाउनलोड किया गया</item>

@@ -36,11 +36,20 @@ class StoragePlatformGamesDelegate @Inject constructor(
         reload(scope)
     }
 
+    fun openLocalOnly(scope: CoroutineScope) {
+        _state.update { StoragePlatformGamesState(localOnly = true, isLoading = true) }
+        reload(scope)
+    }
+
     fun reload(scope: CoroutineScope, onPlatformEmpty: (() -> Unit)? = null) {
-        val platformId = _state.value.selectedPlatformId
-        if (platformId < 0) return
+        val current = _state.value
+        if (!current.localOnly && current.selectedPlatformId < 0) return
         scope.launch {
-            val games = breakdownUseCase.loadPlatform(platformId)
+            val games = if (current.localOnly) {
+                breakdownUseCase.loadLocalOnly()
+            } else {
+                breakdownUseCase.loadPlatform(current.selectedPlatformId)
+            }
             val covers = gameRepository.getArt(games.map { it.gameId }).mapValues { (_, art) -> art.coverPath }
             _state.update {
                 it.copy(

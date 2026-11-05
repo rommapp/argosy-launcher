@@ -503,6 +503,7 @@
     <!-- Storage meter, preference rows, home layout rows (ui/components) -->
 
     <string name="ui_volume_meter_other">Andere Apps &amp; Dateien</string>
+    <string name="ui_volume_meter_unknown_location">%1$s an Spielen liegen an einem unbekannten Ort</string>
     <string name="ui_volume_meter_free">%1$s frei</string>
 
     <string name="ui_cycle_preference_reset_to_global">Auf global zurücksetzen</string>

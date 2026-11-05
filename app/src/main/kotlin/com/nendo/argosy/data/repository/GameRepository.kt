@@ -582,8 +582,8 @@ class GameRepository @Inject constructor(
         gameDao.getGamesWithLocalPathIds().size
     }
 
-    suspend fun getAdoptedGamesCount(): Int = withContext(Dispatchers.IO) {
-        gameDao.countWithLocalPathByOrigin(FileOrigin.ADOPTED)
+    suspend fun getLocalOnlyGamesCount(): Int = withContext(Dispatchers.IO) {
+        gameDao.countWithLocalPathBySource(GameSource.LOCAL_ONLY)
     }
 
     suspend fun countBox3dCapableGames(): Int = withContext(Dispatchers.IO) {

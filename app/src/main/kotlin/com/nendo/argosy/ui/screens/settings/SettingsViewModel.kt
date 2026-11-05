@@ -1337,6 +1337,11 @@ class SettingsViewModel @Inject constructor(
         storagePlatformGamesDelegate.open(platformId, name, viewModelScope)
     }
 
+    fun openStorageLocalOnlyGames() {
+        routePushSection(this, SettingsSection.STORAGE_PLATFORM_GAMES)
+        storagePlatformGamesDelegate.openLocalOnly(viewModelScope)
+    }
+
     fun resetStoragePlatformHighlightedCategory() =
         storagePlatformGamesDelegate.setHighlightedCategory(0)
 

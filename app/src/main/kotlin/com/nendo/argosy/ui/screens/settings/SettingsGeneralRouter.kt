@@ -28,6 +28,7 @@ import com.nendo.argosy.ui.screens.settings.sections.SteamItem
 import com.nendo.argosy.ui.screens.settings.sections.StorageItem
 import com.nendo.argosy.ui.screens.settings.sections.createStorageGamesLayoutInfo
 import com.nendo.argosy.ui.screens.settings.sections.createStorageLayoutInfo
+import com.nendo.argosy.ui.screens.settings.sections.storageGamesFocusIndexOfLocalOnly
 import com.nendo.argosy.ui.screens.settings.sections.storageGamesFocusIndexOfPlatform
 import com.nendo.argosy.ui.screens.settings.sections.steamItemAtFocusIndex
 import com.nendo.argosy.ui.screens.settings.sections.storageFocusIndexOf
@@ -92,10 +93,14 @@ private fun routeReresolveParentFocus(
     }
     state.currentSection == SettingsSection.STORAGE_PLATFORM_GAMES &&
         parent.section == SettingsSection.STORAGE_GAMES ->
-        storageGamesFocusIndexOfPlatform(
-            state.storagePlatformGames.selectedPlatformId,
-            createStorageGamesLayoutInfo(state)
-        ).coerceAtLeast(0)
+        if (state.storagePlatformGames.localOnly) {
+            storageGamesFocusIndexOfLocalOnly(createStorageGamesLayoutInfo(state))
+        } else {
+            storageGamesFocusIndexOfPlatform(
+                state.storagePlatformGames.selectedPlatformId,
+                createStorageGamesLayoutInfo(state)
+            ).coerceAtLeast(0)
+        }
     else -> null
 }
 

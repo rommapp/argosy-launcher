@@ -105,6 +105,7 @@
     <string name="settings_shell_header_storage_games">SPIELE-SPEICHER</string>
     <string name="settings_shell_header_storage_media">MEDIEN-SPEICHER</string>
     <string name="settings_shell_header_storage_platform_games_fallback">PLATTFORM-SPIELE</string>
+    <string name="settings_shell_header_storage_local_only">NUR LOKALE SPIELE</string>
     <string name="settings_shell_header_storage_caches">CACHES &amp; SYSTEM</string>
     <string name="settings_shell_header_theme">DESIGN</string>
     <string name="settings_shell_header_audio">AUDIO</string>

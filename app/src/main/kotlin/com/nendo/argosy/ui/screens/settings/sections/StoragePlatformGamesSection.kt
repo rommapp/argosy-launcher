@@ -39,7 +39,12 @@ import com.nendo.argosy.R
 import com.nendo.argosy.domain.usecase.storage.GameStorageBreakdown
 import com.nendo.argosy.domain.usecase.storage.GameStorageBucket
 import com.nendo.argosy.domain.usecase.storage.GameStorageBucketRow
+import com.nendo.argosy.domain.usecase.storage.GameStorageFile
+import com.nendo.argosy.domain.usecase.storage.GameStorageLocation
+import com.nendo.argosy.ui.common.labelRes
 import com.nendo.argosy.ui.common.rememberFileImageModel
+import com.nendo.argosy.ui.common.storageSourceLabelRes
+import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
@@ -186,10 +191,11 @@ private fun PlatformGamesEmptyState(state: StoragePlatformGamesState) {
             color = theme.textPrimary
         )
         Text(
-            text = stringResource(
-                R.string.settings_storage_platform_games_empty_message,
-                state.platformName
-            ),
+            text = if (state.localOnly) {
+                stringResource(R.string.settings_storage_local_only_empty_message)
+            } else {
+                stringResource(R.string.settings_storage_platform_games_empty_message, state.platformName)
+            },
             style = MaterialTheme.typography.bodySmall,
             color = theme.textDim
         )
@@ -247,6 +253,13 @@ private fun GameStorageCard(
                     color = theme.textDim
                 )
             }
+            game.platformName?.let { platform ->
+                Text(
+                    text = platform,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = theme.textDim
+                )
+            }
             val bucketColors = rememberBucketColors()
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
@@ -261,6 +274,61 @@ private fun GameStorageCard(
                         onClick = { onCategoryClick(index) }
                     )
                 }
+                game.source.storageSourceLabelRes?.let { InfoTag(text = stringResource(it), color = theme.textDim) }
+                InfoTag(
+                    text = stringResource(game.location.labelRes),
+                    color = if (game.location == GameStorageLocation.UNKNOWN) {
+                        LocalLauncherTheme.current.semanticColors.warning
+                    } else {
+                        theme.textDim
+                    }
+                )
+            }
+            if (isActive && game.files.isNotEmpty()) {
+                GameFileList(game.files)
+            }
+        }
+    }
+}
+
+@Composable
+private fun InfoTag(text: String, color: Color) {
+    val shape = RoundedCornerShape(Dimens.radiusControl)
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelMedium,
+        color = color,
+        modifier = Modifier
+            .clip(shape)
+            .border(width = Dimens.borderThin, color = color.copy(alpha = 0.5f), shape = shape)
+            .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingXs)
+    )
+}
+
+@Composable
+private fun GameFileList(files: List<GameStorageFile>) {
+    val theme = LocalArgosyTheme.current
+    Column(verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)) {
+        files.forEach { file ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingMd)
+            ) {
+                Text(
+                    text = file.path,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (file.location == GameStorageLocation.UNKNOWN) {
+                        LocalLauncherTheme.current.semanticColors.warning
+                    } else {
+                        theme.textDim
+                    },
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = formatBytes(file.bytes),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = theme.textDim
+                )
             }
         }
     }

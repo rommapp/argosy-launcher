@@ -1,9 +1,16 @@
 package com.nendo.argosy.domain.usecase.storage
 
+import com.nendo.argosy.core.storage.StorageVolumeType
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.GameFileDao
+import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.dao.SaveCacheDao
+import com.nendo.argosy.data.storage.StoragePathUtils
+import com.nendo.argosy.data.storage.StorageVolumeInfo
+import com.nendo.argosy.data.storage.StorageVolumeLocator
+import com.nendo.argosy.data.storage.UNKNOWN_LOCATION_KEY
+import com.nendo.argosy.data.storage.gameFileVolumeKey
 import com.nendo.argosy.data.local.entity.GameFileEntity
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.model.VariantCategory
@@ -60,15 +67,39 @@ data class GameStorageBucketRow(
     val selectable: Boolean get() = bucket != GameStorageBucket.BASE && rommFileIds.isNotEmpty()
 }
 
+enum class GameStorageLocation { INTERNAL, REMOVABLE, MIXED, UNKNOWN }
+
+data class GameStorageFile(
+    val path: String,
+    val bytes: Long,
+    val location: GameStorageLocation
+)
+
 data class GameStorageBreakdown(
     val gameId: Long,
     val title: String,
     val source: GameSource,
     val buckets: List<GameStorageBucketRow>,
     val totalBytes: Long,
-    val unsyncedSaves: Int
+    val unsyncedSaves: Int,
+    val files: List<GameStorageFile> = emptyList(),
+    val platformName: String? = null
 ) {
     val hasSoundtrack: Boolean get() = buckets.any { it.bucket == GameStorageBucket.SOUNDTRACK }
+    val isLocalOnly: Boolean get() = source == GameSource.LOCAL_ONLY
+
+    /**
+     * Where the game's files are: UNKNOWN when any file sits on no detected volume, MIXED when
+     * they span internal and removable storage.
+     */
+    val location: GameStorageLocation get() {
+        val locations = files.map { it.location }.toSet()
+        return when {
+            GameStorageLocation.UNKNOWN in locations -> GameStorageLocation.UNKNOWN
+            locations.size > 1 -> GameStorageLocation.MIXED
+            else -> locations.firstOrNull() ?: GameStorageLocation.UNKNOWN
+        }
+    }
 }
 
 data class GameDeleteSummary(
@@ -87,18 +118,36 @@ class GameStorageBreakdownUseCase @Inject constructor(
     private val gameFileDao: GameFileDao,
     private val gameDiscDao: GameDiscDao,
     private val saveCacheDao: SaveCacheDao,
+    private val platformDao: PlatformDao,
+    private val volumeLocator: StorageVolumeLocator,
     private val syncPreferencesRepository: com.nendo.argosy.data.preferences.SyncPreferencesRepository
 ) {
     suspend fun loadPlatform(platformId: Long): List<GameStorageBreakdown> = withContext(Dispatchers.IO) {
         val ownerUserId = syncPreferencesRepository.getRommUserId()
+        val volumes = volumeLocator.detectVolumes()
         gameDao.getDownloadedGamesByPlatform(platformId, ownerUserId).mapNotNull { game ->
-            buildBreakdown(game.id, game.title, game.source, game.localPath, game.fileSizeBytes)
+            buildBreakdown(game.id, game.title, game.source, game.localPath, game.fileSizeBytes, volumes)
         }
+    }
+
+    /**
+     * Every downloaded game RomM does not have, across platforms, largest first.
+     */
+    suspend fun loadLocalOnly(): List<GameStorageBreakdown> = withContext(Dispatchers.IO) {
+        val ownerUserId = syncPreferencesRepository.getRommUserId()
+        val volumes = volumeLocator.detectVolumes()
+        val platformNames = platformDao.getAllPlatformsOrdered().associate { it.id to it.name }
+        gameDao.getDownloadedGamesBySource(GameSource.LOCAL_ONLY, ownerUserId).mapNotNull { game ->
+            buildBreakdown(game.id, game.title, game.source, game.localPath, game.fileSizeBytes, volumes)
+                ?.copy(platformName = platformNames[game.platformId])
+        }.sortedByDescending { it.totalBytes }
     }
 
     suspend fun deleteSummary(gameId: Long): GameDeleteSummary? = withContext(Dispatchers.IO) {
         val game = gameDao.getById(gameId) ?: return@withContext null
-        val breakdown = buildBreakdown(game.id, game.title, game.source, game.localPath, game.fileSizeBytes)
+        val breakdown = buildBreakdown(
+            game.id, game.title, game.source, game.localPath, game.fileSizeBytes, volumeLocator.detectVolumes()
+        )
         GameDeleteSummary(
             title = game.title,
             hasSoundtrack = breakdown?.hasSoundtrack == true,
@@ -111,7 +160,8 @@ class GameStorageBreakdownUseCase @Inject constructor(
         title: String,
         source: GameSource,
         localPath: String?,
-        fileSizeBytes: Long?
+        fileSizeBytes: Long?,
+        volumes: List<StorageVolumeInfo>
     ): GameStorageBreakdown? {
         val files = gameFileDao.getFilesForGame(gameId).filter { it.isLocallyPresent() }
         val discs = gameDiscDao.getDiscsForGame(gameId)
@@ -121,6 +171,13 @@ class GameStorageBreakdownUseCase @Inject constructor(
         val counts = mutableMapOf<GameStorageBucket, Int>()
         val bytes = mutableMapOf<GameStorageBucket, Long>()
         val ids = mutableMapOf<GameStorageBucket, MutableList<Long>>()
+        val entries = mutableListOf<GameStorageFile>()
+        val internalKey = volumes.firstOrNull { it.type == StorageVolumeType.INTERNAL }?.key
+
+        fun record(path: String, size: Long) {
+            val canonical = StoragePathUtils.canonicalize(path)
+            entries += GameStorageFile(canonical, size, locationOf(canonical, volumes, internalKey))
+        }
 
         fun add(bucket: GameStorageBucket, size: Long, rommFileId: Long?) {
             counts[bucket] = (counts[bucket] ?: 0) + 1
@@ -131,6 +188,7 @@ class GameStorageBreakdownUseCase @Inject constructor(
         files.forEach { f: GameFileEntity ->
             val bucket = bucketForFile(f.category, f.filePath.count { c -> c == '/' } > rootDepth)
             add(bucket, f.fileSize, f.rommFileId)
+            f.localPath?.let { record(it, f.fileSize) }
         }
 
         val countedPaths = files.mapNotNull { it.localPath }
@@ -138,7 +196,10 @@ class GameStorageBreakdownUseCase @Inject constructor(
             .toSet()
         val baseCoveredByFile = localPath != null && files.any { it.localPath == localPath }
         when {
-            discs.isNotEmpty() -> addBase(counts, bytes, discs.size, discs.sumOf { it.fileSize })
+            discs.isNotEmpty() -> {
+                addBase(counts, bytes, discs.size, discs.sumOf { it.fileSize })
+                discs.forEach { disc -> disc.localPath?.let { record(it, disc.fileSize) } }
+            }
             localPath != null && !baseCoveredByFile -> {
                 val root = File(localPath)
                 when {
@@ -153,9 +214,16 @@ class GameStorageBreakdownUseCase @Inject constructor(
                                 total += entry.length()
                             }
                         }
-                        if (count > 0) addBase(counts, bytes, count, total)
+                        if (count > 0) {
+                            addBase(counts, bytes, count, total)
+                            record(localPath, total)
+                        }
                     }
-                    root.isFile -> addBase(counts, bytes, 1, fileSizeBytes ?: root.length())
+                    root.isFile -> {
+                        val size = fileSizeBytes ?: root.length()
+                        addBase(counts, bytes, 1, size)
+                        record(localPath, size)
+                    }
                 }
             }
         }
@@ -177,7 +245,19 @@ class GameStorageBreakdownUseCase @Inject constructor(
             source = source,
             buckets = rows,
             totalBytes = rows.sumOf { it.totalBytes },
-            unsyncedSaves = saveCacheDao.countNeedingRemoteSyncForGame(gameId)
+            unsyncedSaves = saveCacheDao.countNeedingRemoteSyncForGame(gameId),
+            files = entries
         )
+    }
+
+    private fun locationOf(
+        canonicalPath: String,
+        volumes: List<StorageVolumeInfo>,
+        internalKey: String?
+    ): GameStorageLocation {
+        val key = gameFileVolumeKey(canonicalPath, volumes, internalKey)
+        if (key == null || key == UNKNOWN_LOCATION_KEY) return GameStorageLocation.UNKNOWN
+        val type = volumes.firstOrNull { it.key == key }?.type ?: StorageVolumeType.INTERNAL
+        return if (type == StorageVolumeType.INTERNAL) GameStorageLocation.INTERNAL else GameStorageLocation.REMOVABLE
     }
 }

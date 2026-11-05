@@ -1007,6 +1007,9 @@
 
     <!-- Legend entry for everything on the volume that is not Argosy's. -->
     <string name="ui_volume_meter_other">Other apps &amp; files</string>
+    <!-- Line under the storage meters when game files sit on no storage volume the device
+         reports. %1$s is a formatted size such as "12.4 GB". -->
+    <string name="ui_volume_meter_unknown_location">%1$s of games are in an unknown location</string>
     <!-- Space left on a storage volume. %1$s is a formatted size such as "12.4 GB". Adjective
          describing that space. -->
     <string name="ui_volume_meter_free">%1$s free</string>

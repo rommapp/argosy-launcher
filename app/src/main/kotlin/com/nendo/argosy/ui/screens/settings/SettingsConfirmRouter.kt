@@ -637,6 +637,7 @@ private fun routeStorageGamesConfirm(vm: SettingsViewModel, state: SettingsUiSta
             return InputResult.handled(SoundType.TOGGLE)
         }
         is StorageGamesItem.PlatformRow -> vm.openStoragePlatformGames(item.usage.platformId)
+        StorageGamesItem.LocalOnly -> vm.openStorageLocalOnlyGames()
         else -> {}
     }
     return InputResult.HANDLED

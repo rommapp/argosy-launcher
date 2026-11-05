@@ -148,6 +148,8 @@
     <string name="settings_shell_header_storage_media">MEDIA STORAGE</string>
     <!-- Fallback heading for the per-platform storage screen when the platform name is blank. -->
     <string name="settings_shell_header_storage_platform_games_fallback">PLATFORM GAMES</string>
+    <!-- Header of the list of games RomM does not have. Shown in capitals. -->
+    <string name="settings_shell_header_storage_local_only">LOCAL-ONLY GAMES</string>
     <string name="settings_shell_header_storage_caches">CACHES &amp; SYSTEM</string>
     <!-- Heading of the play-time hub. "Play" is the noun: time spent playing. -->
     <string name="settings_shell_header_play_time">PLAY TIME</string>

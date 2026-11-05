@@ -978,12 +978,18 @@
 
     <string name="settings_storage_games_integrity_title">Vérification hebdomadaire d\'intégrité ROM</string>
     <string name="settings_storage_games_integrity_subtitle">Vérifie les fichiers de jeu téléchargés au démarrage une fois par semaine</string>
-    <string name="settings_storage_games_not_from_romm_title">Pas issus de RomM</string>
-    <plurals name="settings_storage_games_not_from_romm_subtitle">
-        <item quantity="one">%1$d fichier de jeu a été ajouté à la main et est conservé lors d\'une réinitialisation complète</item>
-        <item quantity="many">%1$d fichiers de jeu ont été ajoutés à la main et sont conservés lors d\'une réinitialisation complète</item>
-        <item quantity="other">%1$d fichiers de jeu ont été ajoutés à la main et sont conservés lors d\'une réinitialisation complète</item>
+    <string name="settings_storage_games_local_only_title">Local uniquement</string>
+    <plurals name="settings_storage_games_local_only_subtitle">
+        <item quantity="one">%1$d jeu sur cet appareil que RomM n\'a pas</item>
+        <item quantity="many">%1$d jeux sur cet appareil que RomM n\'a pas</item>
+        <item quantity="other">%1$d jeux sur cet appareil que RomM n\'a pas</item>
     </plurals>
+    <string name="settings_storage_local_only_empty_message">Les jeux de cet appareil que RomM n\'a pas apparaissent ici avec leur taille et leur emplacement.</string>
+    <string name="settings_storage_game_source_local_only">Local uniquement</string>
+    <string name="settings_storage_location_internal">Interne</string>
+    <string name="settings_storage_location_removable">Carte SD</string>
+    <string name="settings_storage_location_mixed">Interne + carte SD</string>
+    <string name="settings_storage_location_unknown">Emplacement inconnu</string>
 
     <plurals name="settings_storage_games_totals_count">
         <item quantity="one">%d téléchargé</item>

@@ -1504,10 +1504,13 @@ private fun settingsSectionTitle(uiState: SettingsUiState): String = when (uiSta
     SettingsSection.STORAGE -> stringResource(R.string.settings_shell_header_storage)
     SettingsSection.STORAGE_GAMES -> stringResource(R.string.settings_shell_header_storage_games)
     SettingsSection.STORAGE_MEDIA -> stringResource(R.string.settings_shell_header_storage_media)
-    SettingsSection.STORAGE_PLATFORM_GAMES ->
+    SettingsSection.STORAGE_PLATFORM_GAMES -> if (uiState.storagePlatformGames.localOnly) {
+        stringResource(R.string.settings_shell_header_storage_local_only)
+    } else {
         uiState.storagePlatformGames.platformName.uppercase().ifBlank {
             stringResource(R.string.settings_shell_header_storage_platform_games_fallback)
         }
+    }
     SettingsSection.STORAGE_CACHES -> stringResource(R.string.settings_shell_header_storage_caches)
     SettingsSection.PLAY_TIME -> stringResource(R.string.settings_shell_header_play_time)
     SettingsSection.PLAY_TIME_PLATFORMS -> stringResource(R.string.settings_shell_header_play_time_platforms)

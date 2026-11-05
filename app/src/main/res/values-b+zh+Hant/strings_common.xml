@@ -488,6 +488,7 @@
     <!-- Storage meter, preference rows, home layout rows (ui/components) -->
 
     <string name="ui_volume_meter_other">其他應用程式與檔案</string>
+    <string name="ui_volume_meter_unknown_location">%1$s 的遊戲位於未知位置</string>
     <string name="ui_volume_meter_free">剩餘%1$s</string>
 
     <string name="ui_cycle_preference_reset_to_global">重設為全域設定</string>

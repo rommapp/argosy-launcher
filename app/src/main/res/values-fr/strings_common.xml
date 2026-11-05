@@ -527,6 +527,7 @@
     <!-- Storage meter, preference rows, home layout rows (ui/components) -->
 
     <string name="ui_volume_meter_other">Autres applis et fichiers</string>
+    <string name="ui_volume_meter_unknown_location">%1$s de jeux se trouvent à un emplacement inconnu</string>
     <string name="ui_volume_meter_free">%1$s libres</string>
 
     <string name="ui_cycle_preference_reset_to_global">Réinitialiser au réglage global</string>

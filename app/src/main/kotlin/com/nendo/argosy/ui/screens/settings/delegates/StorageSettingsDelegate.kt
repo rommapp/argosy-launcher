@@ -319,12 +319,12 @@ class StorageSettingsDelegate @Inject constructor(
         scope.launch {
             val downloadedSize = gameRepository.getDownloadedGamesSize()
             val downloadedCount = gameRepository.getDownloadedGamesCount()
-            val adoptedCount = gameRepository.getAdoptedGamesCount()
+            val localOnlyCount = gameRepository.getLocalOnlyGamesCount()
             _state.update {
                 it.copy(
                     downloadedGamesSize = downloadedSize,
                     downloadedGamesCount = downloadedCount,
-                    adoptedGamesCount = adoptedCount
+                    localOnlyGamesCount = localOnlyCount
                 )
             }
         }

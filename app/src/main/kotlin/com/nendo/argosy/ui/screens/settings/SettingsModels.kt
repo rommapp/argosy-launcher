@@ -1016,7 +1016,7 @@ data class StorageState(
     val romStoragePath: String = "",
     val downloadedGamesSize: Long = 0,
     val downloadedGamesCount: Int = 0,
-    val adoptedGamesCount: Int = 0,
+    val localOnlyGamesCount: Int = 0,
     val maxConcurrentDownloads: Int = 1,
     val allowRemoteInstalls: Boolean = true,
     val autoStartDownloads: Boolean = true,
@@ -1072,6 +1072,7 @@ data class GameStorageCategoryDeleteConfirm(
 data class StoragePlatformGamesState(
     val selectedPlatformId: Long = -1L,
     val platformName: String = "",
+    val localOnly: Boolean = false,
     val isLoading: Boolean = false,
     val games: List<com.nendo.argosy.domain.usecase.storage.GameStorageBreakdown> = emptyList(),
     val coverPaths: Map<Long, String?> = emptyMap(),

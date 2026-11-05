@@ -103,6 +103,7 @@
     <string name="settings_shell_header_storage_games">遊戲儲存空間</string>
     <string name="settings_shell_header_storage_media">媒體儲存空間</string>
     <string name="settings_shell_header_storage_platform_games_fallback">平台遊戲</string>
+    <string name="settings_shell_header_storage_local_only">僅本機遊戲</string>
     <string name="settings_shell_header_storage_caches">快取與系統</string>
     <string name="settings_shell_header_theme">主題</string>
     <string name="settings_shell_header_audio">音訊</string>

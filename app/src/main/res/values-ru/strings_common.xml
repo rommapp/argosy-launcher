@@ -525,6 +525,7 @@
     <string name="ui_platform_filter_hint_list_close">Закрыть</string>
 
     <string name="ui_volume_meter_other">Другие приложения и файлы</string>
+    <string name="ui_volume_meter_unknown_location">%1$s игр находятся в неизвестном месте</string>
     <string name="ui_volume_meter_free">%1$s свободно</string>
 
     <string name="ui_cycle_preference_reset_to_global">Сбросить к общему</string>

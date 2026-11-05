@@ -894,10 +894,16 @@
 
     <string name="settings_storage_games_integrity_title">每週ROM完整性檢查</string>
     <string name="settings_storage_games_integrity_subtitle">每週啟動時驗證已下載的遊戲檔案</string>
-    <string name="settings_storage_games_not_from_romm_title">非來自RomM</string>
-    <plurals name="settings_storage_games_not_from_romm_subtitle">
-        <item quantity="other">%1$d個遊戲檔案為手動加入，重設時會保留</item>
+    <string name="settings_storage_games_local_only_title">僅本機</string>
+    <plurals name="settings_storage_games_local_only_subtitle">
+        <item quantity="other">本裝置上有%1$d個遊戲RomM中沒有</item>
     </plurals>
+    <string name="settings_storage_local_only_empty_message">本裝置上RomM中沒有的遊戲會在此顯示大小與位置。</string>
+    <string name="settings_storage_game_source_local_only">僅本機</string>
+    <string name="settings_storage_location_internal">內部儲存空間</string>
+    <string name="settings_storage_location_removable">SD卡</string>
+    <string name="settings_storage_location_mixed">內部儲存空間 + SD卡</string>
+    <string name="settings_storage_location_unknown">位置不明</string>
 
     <plurals name="settings_storage_games_totals_count">
         <item quantity="other">已下載%d個</item>

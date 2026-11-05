@@ -995,13 +995,19 @@
 
     <string name="settings_storage_games_integrity_title">Еженедельная проверка целостности ROM</string>
     <string name="settings_storage_games_integrity_subtitle">Проверяет скачанные файлы игр при запуске раз в неделю</string>
-    <string name="settings_storage_games_not_from_romm_title">Не из RomM</string>
-    <plurals name="settings_storage_games_not_from_romm_subtitle">
-        <item quantity="one">%1$d файл игры добавлен вручную и сохраняется при полном сбросе</item>
-        <item quantity="few">%1$d файла игр добавлены вручную и сохраняются при полном сбросе</item>
-        <item quantity="many">%1$d файлов игр добавлены вручную и сохраняются при полном сбросе</item>
-        <item quantity="other">%1$d файла игр добавлены вручную и сохраняются при полном сбросе</item>
+    <string name="settings_storage_games_local_only_title">Только локально</string>
+    <plurals name="settings_storage_games_local_only_subtitle">
+        <item quantity="one">%1$d игра на этом устройстве, которой нет в RomM</item>
+        <item quantity="few">%1$d игры на этом устройстве, которых нет в RomM</item>
+        <item quantity="many">%1$d игр на этом устройстве, которых нет в RomM</item>
+        <item quantity="other">%1$d игры на этом устройстве, которых нет в RomM</item>
     </plurals>
+    <string name="settings_storage_local_only_empty_message">Игры на этом устройстве, которых нет в RomM, появятся здесь с размером и расположением.</string>
+    <string name="settings_storage_game_source_local_only">Только локально</string>
+    <string name="settings_storage_location_internal">Внутренняя память</string>
+    <string name="settings_storage_location_removable">SD-карта</string>
+    <string name="settings_storage_location_mixed">Внутренняя + SD-карта</string>
+    <string name="settings_storage_location_unknown">Неизвестное место</string>
 
     <plurals name="settings_storage_games_totals_count">
         <item quantity="one">%d скачано</item>

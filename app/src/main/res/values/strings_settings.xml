@@ -1887,14 +1887,33 @@
     <!-- Second line of that row. -->
     <string name="settings_storage_games_integrity_subtitle">Verifies downloaded game files at startup once a week</string>
 
-    <!-- Row title. Games whose file was copied to the device by hand rather than downloaded
-         through the app. "RomM" is a service name, never translated. -->
-    <string name="settings_storage_games_not_from_romm_title">Not from RomM</string>
-    <!-- Second line of that row. %1$d is the number of such games. -->
-    <plurals name="settings_storage_games_not_from_romm_subtitle">
-        <item quantity="one">%1$d game file was added by hand and is kept through a hard reset</item>
-        <item quantity="other">%1$d game files were added by hand and are kept through a hard reset</item>
+    <!-- Row title that opens the list of games on the device that the RomM server does not
+         have. "Local-only" is the app's term for content that is not synced. -->
+    <string name="settings_storage_games_local_only_title">Local-only</string>
+    <!-- Second line of that row. %1$d is the number of such games. "RomM" is a service name,
+         never translated. -->
+    <plurals name="settings_storage_games_local_only_subtitle">
+        <item quantity="one">%1$d game on this device that RomM does not have</item>
+        <item quantity="other">%1$d games on this device that RomM does not have</item>
     </plurals>
+    <!-- Shown in the local-only game list when it is empty. -->
+    <string name="settings_storage_local_only_empty_message">Games on this device that RomM does not have appear here with their size and location.</string>
+    <!-- Label on a game's storage card naming where its game data came from. Service name,
+         never translated. -->
+    <string name="settings_storage_game_source_romm" translatable="false">RomM</string>
+    <!-- Label on a game's storage card for a game the RomM server does not have. Same term as
+         the Local-only row. -->
+    <string name="settings_storage_game_source_local_only">Local-only</string>
+    <!-- Label on a game's storage card: its files are on the device's built-in storage. -->
+    <string name="settings_storage_location_internal">Internal</string>
+    <!-- Label on a game's storage card: its files are on a removable SD card or USB drive. -->
+    <string name="settings_storage_location_removable">SD card</string>
+    <!-- Label on a game's storage card: its files are split between built-in storage and an
+         SD card. -->
+    <string name="settings_storage_location_mixed">Internal + SD card</string>
+    <!-- Label on a game's storage card: a file sits on no storage the device reports, so its
+         location cannot be shown. -->
+    <string name="settings_storage_location_unknown">Unknown location</string>
 
     <!-- Total at the top, counting the games on the device. Adjective describing them. -->
     <plurals name="settings_storage_games_totals_count">

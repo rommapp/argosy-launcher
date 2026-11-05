@@ -551,7 +551,7 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
 
         val downloadedSize = vm.gameRepository.getDownloadedGamesSize()
         val downloadedCount = vm.gameRepository.getDownloadedGamesCount()
-        val adoptedCount = vm.gameRepository.getAdoptedGamesCount()
+        val localOnlyCount = vm.gameRepository.getLocalOnlyGamesCount()
         val availableSpace = vm.gameRepository.getAvailableStorageBytes()
         val box3dCapableGames = vm.gameRepository.countBox3dCapableGames()
         val libraryRegionOptions = vm.gameRepository.getDistinctRegions()
@@ -813,7 +813,7 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             romStoragePath = prefs.romStoragePath ?: "",
             downloadedGamesSize = downloadedSize,
             downloadedGamesCount = downloadedCount,
-            adoptedGamesCount = adoptedCount,
+            localOnlyGamesCount = localOnlyCount,
             maxConcurrentDownloads = prefs.maxConcurrentDownloads,
             allowRemoteInstalls = prefs.allowRemoteInstalls,
             autoStartDownloads = prefs.autoStartDownloads,

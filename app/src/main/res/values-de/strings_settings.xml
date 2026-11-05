@@ -968,11 +968,17 @@
 
     <string name="settings_storage_games_integrity_title">Wöchentliche ROM-Integritätsprüfung</string>
     <string name="settings_storage_games_integrity_subtitle">Prüft heruntergeladene Spieldateien einmal pro Woche beim Start</string>
-    <string name="settings_storage_games_not_from_romm_title">Nicht von RomM</string>
-    <plurals name="settings_storage_games_not_from_romm_subtitle">
-        <item quantity="one">%1$d Spieldatei wurde manuell hinzugefügt und bleibt bei einem vollständigen Zurücksetzen erhalten</item>
-        <item quantity="other">%1$d Spieldateien wurden manuell hinzugefügt und bleiben bei einem vollständigen Zurücksetzen erhalten</item>
+    <string name="settings_storage_games_local_only_title">Nur lokal</string>
+    <plurals name="settings_storage_games_local_only_subtitle">
+        <item quantity="one">%1$d Spiel auf diesem Gerät, das RomM nicht hat</item>
+        <item quantity="other">%1$d Spiele auf diesem Gerät, die RomM nicht hat</item>
     </plurals>
+    <string name="settings_storage_local_only_empty_message">Spiele auf diesem Gerät, die RomM nicht hat, erscheinen hier mit Größe und Speicherort.</string>
+    <string name="settings_storage_game_source_local_only">Nur lokal</string>
+    <string name="settings_storage_location_internal">Intern</string>
+    <string name="settings_storage_location_removable">SD-Karte</string>
+    <string name="settings_storage_location_mixed">Intern + SD-Karte</string>
+    <string name="settings_storage_location_unknown">Unbekannter Ort</string>
 
     <plurals name="settings_storage_games_totals_count">
         <item quantity="one">%d heruntergeladen</item>

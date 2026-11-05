@@ -87,7 +87,7 @@ private val NIO_CATEGORIES = setOf(
 @Singleton
 class StorageAttributionRepository @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val volumeDetector: StorageVolumeDetector,
+    private val volumeLocator: StorageVolumeLocator,
     private val snapshotStore: StorageSnapshotStore,
     private val storagePreferences: StoragePreferencesRepository,
     private val musicDirectoryManager: MusicDirectoryManager,
@@ -370,47 +370,13 @@ class StorageAttributionRepository @Inject constructor(
         _walkProgress.update { it + (category to state) }
     }
 
-    private fun detectVolumes(): List<StorageVolumeInfo> {
-        val seenPaths = HashSet<String>()
-        val seenFingerprints = HashSet<String>()
-        val result = mutableListOf<StorageVolumeInfo>()
-        for (volume in volumeDetector.detectStorageVolumes()) {
-            if (volume.totalBytes <= 0L) continue
-            val canonical = StoragePathUtils.canonicalize(volume.path).trimEnd('/')
-            if (canonical.isEmpty()) continue
-            if (!seenPaths.add(canonical)) continue
-            val fingerprint = statFingerprint(canonical) ?: canonical
-            if (!seenFingerprints.add(fingerprint)) continue
-            result.add(
-                StorageVolumeInfo(
-                    key = canonical,
-                    displayName = volume.displayName,
-                    type = volume.type,
-                    totalBytes = volume.totalBytes,
-                    availableBytes = volume.availableBytes
-                )
-            )
-        }
-        return result
-    }
-
-    private fun statFingerprint(path: String): String? = try {
-        val stat = StatFs(path)
-        "${stat.blockSizeLong}:${stat.blockCountLong}:${stat.availableBlocksLong}"
-    } catch (_: Exception) {
-        null
-    }
+    private fun detectVolumes(): List<StorageVolumeInfo> = volumeLocator.detectVolumes()
 
     private fun volumeKeyFor(
         canonicalPath: String,
         volumes: List<StorageVolumeInfo>,
         internalKey: String?
-    ): String? {
-        val match = volumes
-            .filter { canonicalPath == it.key || canonicalPath.startsWith("${it.key}/") }
-            .maxByOrNull { it.key.length }
-        return match?.key ?: internalKey
-    }
+    ): String? = matchVolumeKey(canonicalPath, volumes) ?: internalKey
 
     private class UsageAccumulator {
         var bytes = 0L
@@ -464,7 +430,7 @@ class StorageAttributionRepository @Inject constructor(
             when {
                 entry.isDirectory -> directoryRows.add(platformId to canonical)
                 entry.isFile -> {
-                    val volumeKey = volumeKeyFor(canonical, volumes, internalKey)
+                    val volumeKey = gameFileVolumeKey(canonical, volumes, internalKey)
                     total.add(entry.length(), 1, volumeKey)
                     perPlatform.getOrPut(platformId) { UsageAccumulator() }
                         .add(entry.length(), 1, volumeKey)
@@ -485,7 +451,7 @@ class StorageAttributionRepository @Inject constructor(
                     WalkState.Walking(total.bytes + walkBytes, total.files + walkFiles)
                 )
             }
-            val volumeKey = volumeKeyFor(canonical, volumes, internalKey)
+            val volumeKey = gameFileVolumeKey(canonical, volumes, internalKey)
             total.add(measured.first, measured.second, volumeKey)
             perPlatform.getOrPut(platformId) { UsageAccumulator() }
                 .add(measured.first, measured.second, volumeKey)

@@ -96,6 +96,7 @@
     <string name="settings_shell_header_storage_games">游戏存储</string>
     <string name="settings_shell_header_storage_media">媒体存储</string>
     <string name="settings_shell_header_storage_platform_games_fallback">平台游戏</string>
+    <string name="settings_shell_header_storage_local_only">仅本地游戏</string>
     <string name="settings_shell_header_storage_caches">缓存与系统</string>
     <string name="settings_shell_header_theme">主题</string>
     <string name="settings_shell_header_audio">音频</string>

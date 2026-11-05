@@ -107,6 +107,7 @@
     <string name="settings_shell_header_storage_games">ALMACENAMIENTO DE JUEGOS</string>
     <string name="settings_shell_header_storage_media">ALMACENAMIENTO MULTIMEDIA</string>
     <string name="settings_shell_header_storage_platform_games_fallback">JUEGOS DE LA PLATAFORMA</string>
+    <string name="settings_shell_header_storage_local_only">JUEGOS SOLO LOCALES</string>
     <string name="settings_shell_header_storage_caches">CACHÉ Y SISTEMA</string>
     <string name="settings_shell_header_theme">TEMA</string>
     <string name="settings_shell_header_audio">AUDIO</string>

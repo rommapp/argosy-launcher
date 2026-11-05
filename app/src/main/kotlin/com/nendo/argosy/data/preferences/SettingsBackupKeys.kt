@@ -136,6 +136,8 @@ object SettingsBackupKeys {
         SettingsBackupKey("select_swap_mode", SettingsBackupType.STRING),
         SettingsBackupKey("open_navigation_key", SettingsBackupType.INT),
         SettingsBackupKey("open_quick_panel_key", SettingsBackupType.INT),
+        SettingsBackupKey("home_shortcut_key", SettingsBackupType.INT),
+        SettingsBackupKey("back_shortcut_key", SettingsBackupType.INT),
         SettingsBackupKey("quick_panel_in_emulators", SettingsBackupType.BOOLEAN),
         SettingsBackupKey("nav_ring_routes", SettingsBackupType.STRING),
         SettingsBackupKey("quick_navigation", SettingsBackupType.BOOLEAN),

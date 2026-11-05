@@ -3,7 +3,7 @@ package com.nendo.argosy.ui.input
 import android.view.KeyEvent
 import com.nendo.argosy.libretro.HotkeyManager
 
-enum class UiShortcut { OPEN_NAVIGATION, OPEN_QUICK_PANEL }
+enum class UiShortcut { OPEN_NAVIGATION, OPEN_QUICK_PANEL, HOME, BACK }
 
 /**
  * Decides, at the moment a press begins, whether Argosy's own screens may take a UI shortcut.

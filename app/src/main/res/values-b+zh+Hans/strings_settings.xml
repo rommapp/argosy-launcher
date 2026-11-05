@@ -224,6 +224,10 @@
     <string name="settings_navigation_open_navigation_subtitle">用于打开导航抽屉的按键</string>
     <string name="settings_navigation_open_quick_panel_title">打开快捷面板</string>
     <string name="settings_navigation_open_quick_panel_subtitle">用于打开快捷设置的按键。长按返回也可打开</string>
+    <string name="settings_navigation_home_shortcut_title">主页</string>
+    <string name="settings_navigation_home_shortcut_subtitle">返回主屏幕的按键，游戏运行时同样有效</string>
+    <string name="settings_navigation_back_shortcut_title">返回</string>
+    <string name="settings_navigation_back_shortcut_subtitle">充当返回键；游戏中打开游戏菜单，长按打开快捷设置</string>
     <string name="settings_navigation_shortcut_unassigned">未分配</string>
     <string name="settings_navigation_shortcut_capture_title">分配按键</string>
     <string name="settings_navigation_shortcut_capture_prompt">请按下一个按键</string>

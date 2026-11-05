@@ -511,6 +511,14 @@
     <string name="settings_navigation_open_quick_panel_title">Open Quick Panel</string>
     <!-- Second line of that row. "Back" is the back action, whichever button performs it. -->
     <string name="settings_navigation_open_quick_panel_subtitle">Button that opens Quick Settings. Holding Back opens it too</string>
+    <!-- Row title: the button that acts as Home, returning to the home screen. Noun. -->
+    <string name="settings_navigation_home_shortcut_title">Home</string>
+    <!-- Second line of that row. -->
+    <string name="settings_navigation_home_shortcut_subtitle">Button that returns to the home screen, even while a game is running</string>
+    <!-- Row title: the button that acts as Back. Noun. -->
+    <string name="settings_navigation_back_shortcut_title">Back</string>
+    <!-- Second line of that row. "Back" is the back action, whichever button performs it. -->
+    <string name="settings_navigation_back_shortcut_subtitle">Button that acts as Back; in a game it opens the game menu, holding it opens Quick Settings</string>
     <!-- Value of those two rows when no button is assigned. Adjective. -->
     <string name="settings_navigation_shortcut_unassigned">Unassigned</string>
     <!-- Title of the dialog that waits for a button press to assign. Verb phrase. -->

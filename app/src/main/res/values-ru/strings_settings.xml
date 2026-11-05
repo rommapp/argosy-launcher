@@ -229,6 +229,10 @@
     <string name="settings_navigation_open_navigation_subtitle">Кнопка, открывающая панель навигации</string>
     <string name="settings_navigation_open_quick_panel_title">Открыть быструю панель</string>
     <string name="settings_navigation_open_quick_panel_subtitle">Кнопка, открывающая быстрые настройки. Удержание кнопки Назад тоже их открывает</string>
+    <string name="settings_navigation_home_shortcut_title">Главный экран</string>
+    <string name="settings_navigation_home_shortcut_subtitle">Кнопка, возвращающая на главный экран, даже во время игры</string>
+    <string name="settings_navigation_back_shortcut_title">Назад</string>
+    <string name="settings_navigation_back_shortcut_subtitle">Кнопка, работающая как Назад; в игре открывает меню игры, удержание открывает быстрые настройки</string>
     <string name="settings_navigation_shortcut_unassigned">Не назначено</string>
     <string name="settings_navigation_shortcut_capture_title">Назначить кнопку</string>
     <string name="settings_navigation_shortcut_capture_prompt">Нажмите кнопку</string>

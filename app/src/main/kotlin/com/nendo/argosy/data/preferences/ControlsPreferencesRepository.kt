@@ -40,6 +40,8 @@ data class ControlsPreferences(
     val selectSwapMode: SelectSwapMode = SelectSwapMode.HOLD,
     val openNavigationKey: Int = DEFAULT_OPEN_NAVIGATION_KEY,
     val openQuickPanelKey: Int = DEFAULT_OPEN_QUICK_PANEL_KEY,
+    val homeShortcutKey: Int = UNASSIGNED_KEY,
+    val backShortcutKey: Int = UNASSIGNED_KEY,
     val quickPanelInEmulators: Boolean = false,
     val navRingRoutes: List<String>? = null,
     val quickNavigation: Boolean = true,
@@ -82,6 +84,8 @@ class ControlsPreferencesRepository @Inject constructor(
         val SELECT_SWAP_MODE = stringPreferencesKey("select_swap_mode")
         val OPEN_NAVIGATION_KEY = intPreferencesKey("open_navigation_key")
         val OPEN_QUICK_PANEL_KEY = intPreferencesKey("open_quick_panel_key")
+        val HOME_SHORTCUT_KEY = intPreferencesKey("home_shortcut_key")
+        val BACK_SHORTCUT_KEY = intPreferencesKey("back_shortcut_key")
         val QUICK_PANEL_IN_EMULATORS = booleanPreferencesKey("quick_panel_in_emulators")
         val NAV_RING_ROUTES = stringPreferencesKey("nav_ring_routes")
         val QUICK_NAVIGATION = booleanPreferencesKey("quick_navigation")
@@ -114,6 +118,10 @@ class ControlsPreferencesRepository @Inject constructor(
                 ?: ControlsPreferences.DEFAULT_OPEN_NAVIGATION_KEY,
             openQuickPanelKey = prefs[Keys.OPEN_QUICK_PANEL_KEY]
                 ?: ControlsPreferences.DEFAULT_OPEN_QUICK_PANEL_KEY,
+            homeShortcutKey = prefs[Keys.HOME_SHORTCUT_KEY]
+                ?: ControlsPreferences.UNASSIGNED_KEY,
+            backShortcutKey = prefs[Keys.BACK_SHORTCUT_KEY]
+                ?: ControlsPreferences.UNASSIGNED_KEY,
             quickPanelInEmulators = prefs[Keys.QUICK_PANEL_IN_EMULATORS] ?: false,
             navRingRoutes = prefs[Keys.NAV_RING_ROUTES]
                 ?.split(',')
@@ -268,6 +276,14 @@ class ControlsPreferencesRepository @Inject constructor(
 
     suspend fun setOpenQuickPanelKey(keyCode: Int) {
         dataStore.edit { it[Keys.OPEN_QUICK_PANEL_KEY] = keyCode }
+    }
+
+    suspend fun setHomeShortcutKey(keyCode: Int) {
+        dataStore.edit { it[Keys.HOME_SHORTCUT_KEY] = keyCode }
+    }
+
+    suspend fun setBackShortcutKey(keyCode: Int) {
+        dataStore.edit { it[Keys.BACK_SHORTCUT_KEY] = keyCode }
     }
 
     suspend fun setQuickPanelInEmulators(enabled: Boolean) {

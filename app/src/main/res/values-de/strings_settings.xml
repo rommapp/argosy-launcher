@@ -236,6 +236,10 @@
     <string name="settings_navigation_open_navigation_subtitle">Taste, die die Navigationsleiste öffnet</string>
     <string name="settings_navigation_open_quick_panel_title">Schnellleiste öffnen</string>
     <string name="settings_navigation_open_quick_panel_subtitle">Taste, die die Schnelleinstellungen öffnet. Zurück gedrückt halten öffnet sie ebenfalls</string>
+    <string name="settings_navigation_home_shortcut_title">Startseite</string>
+    <string name="settings_navigation_home_shortcut_subtitle">Taste, die zur Startseite zurückkehrt, auch während ein Spiel läuft</string>
+    <string name="settings_navigation_back_shortcut_title">Zurück</string>
+    <string name="settings_navigation_back_shortcut_subtitle">Taste, die wie Zurück wirkt; im Spiel öffnet sie das Spielmennü, gedrückt halten öffnet die Schnelleinstellungen</string>
     <string name="settings_navigation_shortcut_unassigned">Nicht belegt</string>
     <string name="settings_navigation_shortcut_capture_title">Taste belegen</string>
     <string name="settings_navigation_shortcut_capture_prompt">Drücke eine Taste</string>

@@ -213,6 +213,10 @@
     <string name="settings_navigation_open_navigation_subtitle">用來開啟導覽抽屜的按鍵</string>
     <string name="settings_navigation_open_quick_panel_title">開啟快速面板</string>
     <string name="settings_navigation_open_quick_panel_subtitle">用來開啟快速設定的按鍵。長按返回也能開啟</string>
+    <string name="settings_navigation_home_shortcut_title">主頁</string>
+    <string name="settings_navigation_home_shortcut_subtitle">返回主螢幕的按鍵，遊戲運行時同樣有效</string>
+    <string name="settings_navigation_back_shortcut_title">返回</string>
+    <string name="settings_navigation_back_shortcut_subtitle">充當返回鍵；遊戲中打開遊戲選單，長按打開快速設定</string>
     <string name="settings_navigation_shortcut_unassigned">未指派</string>
     <string name="settings_navigation_shortcut_capture_title">指派按鍵</string>
     <string name="settings_navigation_shortcut_capture_prompt">請按下一個按鍵</string>

@@ -92,10 +92,14 @@ internal sealed class NavigationItem(
 
     data object OpenNavigationShortcut : NavigationItem("openNavigationKey", "shortcuts")
     data object OpenQuickPanelShortcut : NavigationItem("openQuickPanelKey", "shortcuts")
+    data object HomeShortcut : NavigationItem("homeShortcutKey", "shortcuts")
+    data object BackShortcut : NavigationItem("backShortcutKey", "shortcuts")
 
     val shortcut: UiShortcut? get() = when (this) {
         OpenNavigationShortcut -> UiShortcut.OPEN_NAVIGATION
         OpenQuickPanelShortcut -> UiShortcut.OPEN_QUICK_PANEL
+        HomeShortcut -> UiShortcut.HOME
+        BackShortcut -> UiShortcut.BACK
         else -> null
     }
 
@@ -124,7 +128,7 @@ internal sealed class NavigationItem(
                 NavBarSpacer, NavBarHeader,
                 QuickNavigation, NavBarAutoHide, NavBarPages,
                 ShortcutsSpacer, ShortcutsHeader,
-                OpenNavigationShortcut, OpenQuickPanelShortcut
+                OpenNavigationShortcut, OpenQuickPanelShortcut, HomeShortcut, BackShortcut
             )
     }
 }
@@ -347,6 +351,22 @@ fun NavigationSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 isFocused = isFocused(item),
                 onClick = { viewModel.startShortcutCapture(UiShortcut.OPEN_QUICK_PANEL) }
             )
+
+            NavigationItem.HomeShortcut -> ShortcutKeyPreference(
+                title = stringResource(R.string.settings_navigation_home_shortcut_title),
+                subtitle = stringResource(R.string.settings_navigation_home_shortcut_subtitle),
+                keyCode = controls.homeShortcutKey,
+                isFocused = isFocused(item),
+                onClick = { viewModel.startShortcutCapture(UiShortcut.HOME) }
+            )
+
+            NavigationItem.BackShortcut -> ShortcutKeyPreference(
+                title = stringResource(R.string.settings_navigation_back_shortcut_title),
+                subtitle = stringResource(R.string.settings_navigation_back_shortcut_subtitle),
+                keyCode = controls.backShortcutKey,
+                isFocused = isFocused(item),
+                onClick = { viewModel.startShortcutCapture(UiShortcut.BACK) }
+            )
         }
     }
 
@@ -377,6 +397,8 @@ fun NavigationSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
 private fun shortcutTitleRes(shortcut: UiShortcut): Int = when (shortcut) {
     UiShortcut.OPEN_NAVIGATION -> R.string.settings_navigation_open_navigation_title
     UiShortcut.OPEN_QUICK_PANEL -> R.string.settings_navigation_open_quick_panel_title
+    UiShortcut.HOME -> R.string.settings_navigation_home_shortcut_title
+    UiShortcut.BACK -> R.string.settings_navigation_back_shortcut_title
 }
 
 @Composable

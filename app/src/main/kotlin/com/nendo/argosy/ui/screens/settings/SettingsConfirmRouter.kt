@@ -1075,6 +1075,14 @@ private fun routeNavigationConfirm(vm: SettingsViewModel, state: SettingsUiState
             vm.startShortcutCapture(UiShortcut.OPEN_QUICK_PANEL)
             return InputResult.handled(SoundType.OPEN_MODAL)
         }
+        NavigationItem.HomeShortcut -> {
+            vm.startShortcutCapture(UiShortcut.HOME)
+            return InputResult.handled(SoundType.OPEN_MODAL)
+        }
+        NavigationItem.BackShortcut -> {
+            vm.startShortcutCapture(UiShortcut.BACK)
+            return InputResult.handled(SoundType.OPEN_MODAL)
+        }
         else -> {}
     }
     return InputResult.HANDLED

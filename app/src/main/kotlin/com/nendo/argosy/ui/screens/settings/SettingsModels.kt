@@ -428,6 +428,8 @@ data class ControlsState(
     val selectSwapMode: com.nendo.argosy.data.preferences.SelectSwapMode = com.nendo.argosy.data.preferences.SelectSwapMode.HOLD,
     val openNavigationKey: Int = com.nendo.argosy.data.preferences.ControlsPreferences.DEFAULT_OPEN_NAVIGATION_KEY,
     val openQuickPanelKey: Int = com.nendo.argosy.data.preferences.ControlsPreferences.DEFAULT_OPEN_QUICK_PANEL_KEY,
+    val homeShortcutKey: Int = com.nendo.argosy.data.preferences.ControlsPreferences.UNASSIGNED_KEY,
+    val backShortcutKey: Int = com.nendo.argosy.data.preferences.ControlsPreferences.UNASSIGNED_KEY,
     val shortcutCaptureTarget: com.nendo.argosy.ui.input.UiShortcut? = null,
     val navRingRoutes: List<String> = com.nendo.argosy.ui.navigation.NavRing.DEFAULT_TOKENS,
     val quickNavigation: Boolean = true,
@@ -444,6 +446,8 @@ data class ControlsState(
 fun ControlsState.shortcutKey(shortcut: com.nendo.argosy.ui.input.UiShortcut): Int = when (shortcut) {
     com.nendo.argosy.ui.input.UiShortcut.OPEN_NAVIGATION -> openNavigationKey
     com.nendo.argosy.ui.input.UiShortcut.OPEN_QUICK_PANEL -> openQuickPanelKey
+    com.nendo.argosy.ui.input.UiShortcut.HOME -> homeShortcutKey
+    com.nendo.argosy.ui.input.UiShortcut.BACK -> backShortcutKey
 }
 
 data class ManagedInstallerRow(

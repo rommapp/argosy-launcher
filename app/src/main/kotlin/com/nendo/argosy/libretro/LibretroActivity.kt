@@ -315,6 +315,8 @@ class LibretroActivity : ComponentActivity() {
     private var limitHotkeysToPlayer1 by mutableStateOf(true)
     private var selectAsBack by mutableStateOf(com.nendo.argosy.data.local.entity.SelectAsBackMode.AUTO)
     private val backAsSelect = BackAsSelectTranslator { selectAsBack }
+    private var homeShortcutKey: Int? = null
+    private var backShortcutKey: Int? = null
     private var dualScreenMatchSize = false
     private var matchedScreens: MatchedScreens? = null
     private var firstFrameRendered = false
@@ -723,6 +725,8 @@ class LibretroActivity : ComponentActivity() {
             preferencesRepository.preferences.first()
         }
         secureSavesEnabled = launchPreferences.secureSaves
+        homeShortcutKey = launchPreferences.homeShortcutKey.takeIf(com.nendo.argosy.ui.input.UiShortcutKeys::isBindable)
+        backShortcutKey = launchPreferences.backShortcutKey.takeIf(com.nendo.argosy.ui.input.UiShortcutKeys::isBindable)
         if (!secureSavesEnabled && launchMode.isHardcore) {
             launchMode = if (launchMode == LaunchMode.RESUME_HARDCORE) LaunchMode.RESUME else LaunchMode.NEW_CASUAL
         }
@@ -3358,12 +3362,30 @@ class LibretroActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Keys assigned as Home or Back shortcuts in Settings act as those system keys here, before any
+     * core binding: Home backgrounds this task so the game stays resumable from home, and Back plays
+     * through every existing Back path (menu on a short press, Quick Settings on a hold).
+     */
     @SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         observeVirtualPad(event)
         connectedControllerTracker.noteInput(event)
-        return dispatchKeyFrom(backAsSelect.translate(event), KeyPressGate.Source.Key, coreBound = true)
+        if (event.keyCode == homeShortcutKey) {
+            if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+                @Suppress("DEPRECATION")
+                moveTaskToBack(true)
+            }
+            return true
+        }
+        val translated = if (event.keyCode == backShortcutKey) synthesizeBackEvent(event) else backAsSelect.translate(event)
+        return dispatchKeyFrom(translated, KeyPressGate.Source.Key, coreBound = true)
     }
+
+    private fun synthesizeBackEvent(event: KeyEvent): KeyEvent = KeyEvent(
+        event.downTime, event.eventTime, event.action, KeyEvent.KEYCODE_BACK,
+        event.repeatCount, event.metaState, event.deviceId, event.scanCode, event.flags, event.source
+    )
 
     private fun observeVirtualPad(event: android.view.InputEvent) {
         if (VirtualPad.observe(event) && ::inputConfig.isInitialized) {

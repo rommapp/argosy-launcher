@@ -228,6 +228,10 @@
     <string name="settings_navigation_open_navigation_subtitle">Bouton qui ouvre le panneau de navigation</string>
     <string name="settings_navigation_open_quick_panel_title">Ouvrir le panneau rapide</string>
     <string name="settings_navigation_open_quick_panel_subtitle">Bouton qui ouvre les paramètres rapides. Maintenir Retour les ouvre aussi</string>
+    <string name="settings_navigation_home_shortcut_title">Accueil</string>
+    <string name="settings_navigation_home_shortcut_subtitle">Bouton qui retourne à l\'écran d\'accueil, même pendant une partie</string>
+    <string name="settings_navigation_back_shortcut_title">Retour</string>
+    <string name="settings_navigation_back_shortcut_subtitle">Bouton qui agit comme Retour ; dans un jeu il ouvre le menu du jeu, maintenu il ouvre les paramètres rapides</string>
     <string name="settings_navigation_shortcut_unassigned">Non attribué</string>
     <string name="settings_navigation_shortcut_capture_title">Attribuer un bouton</string>
     <string name="settings_navigation_shortcut_capture_prompt">Appuyez sur un bouton</string>

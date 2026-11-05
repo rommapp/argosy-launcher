@@ -694,6 +694,8 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             selectSwapMode = prefs.selectSwapMode,
             openNavigationKey = prefs.openNavigationKey,
             openQuickPanelKey = prefs.openQuickPanelKey,
+            homeShortcutKey = prefs.homeShortcutKey,
+            backShortcutKey = prefs.backShortcutKey,
             navRingRoutes = com.nendo.argosy.ui.navigation.NavRing.resolve(prefs.navRingRoutes),
             quickNavigation = prefs.quickNavigation,
             navBarAutoHide = prefs.navBarAutoHide,

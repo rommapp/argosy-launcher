@@ -226,6 +226,10 @@
     <string name="settings_navigation_open_navigation_subtitle">वह बटन जो नेविगेशन ड्रॉअर खोलता है</string>
     <string name="settings_navigation_open_quick_panel_title">क्विक पैनल खोलें</string>
     <string name="settings_navigation_open_quick_panel_subtitle">वह बटन जो क्विक सेटिंग्स खोलता है। वापस को दबाए रखने से भी यह खुलता है</string>
+    <string name="settings_navigation_home_shortcut_title">होम</string>
+    <string name="settings_navigation_home_shortcut_subtitle">बटन जो होम स्क्रीन पर वापस ले जाता है, खेल चलते हुए भी</string>
+    <string name="settings_navigation_back_shortcut_title">वापस</string>
+    <string name="settings_navigation_back_shortcut_subtitle">बटन जो Back की तरह काम करता है; गेम में यह गेम मेनू खोलता है, दबाए रखने से क्विक सेटिंग्स खुलती हैं</string>
     <string name="settings_navigation_shortcut_unassigned">असाइन नहीं</string>
     <string name="settings_navigation_shortcut_capture_title">बटन असाइन करें</string>
     <string name="settings_navigation_shortcut_capture_prompt">कोई बटन दबाएँ</string>

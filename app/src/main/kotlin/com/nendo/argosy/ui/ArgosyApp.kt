@@ -1036,6 +1036,8 @@ fun ArgosyApp(
                         openQuickSettings()
                     }
                 }
+                UiShortcut.HOME -> viewModel.gamepadInputHandler.emitHomeEvent()
+                UiShortcut.BACK -> viewModel.gamepadInputHandler.injectEvent(GamepadEvent.Back, isRepeat = false)
             }
         }
     }

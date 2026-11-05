@@ -238,6 +238,10 @@
     <string name="settings_navigation_open_navigation_subtitle">Botón que abre el panel de navegación</string>
     <string name="settings_navigation_open_quick_panel_title">Abrir panel rápido</string>
     <string name="settings_navigation_open_quick_panel_subtitle">Botón que abre los ajustes rápidos. Mantener Atrás también los abre</string>
+    <string name="settings_navigation_home_shortcut_title">Inicio</string>
+    <string name="settings_navigation_home_shortcut_subtitle">Botón que vuelve a la pantalla de inicio, incluso mientras se juega un juego</string>
+    <string name="settings_navigation_back_shortcut_title">Atrás</string>
+    <string name="settings_navigation_back_shortcut_subtitle">Botón que actúa como Atrás; en un juego abre el menú del juego, mantenerlo abre los ajustes rápidos</string>
     <string name="settings_navigation_shortcut_unassigned">Sin asignar</string>
     <string name="settings_navigation_shortcut_capture_title">Asignar botón</string>
     <string name="settings_navigation_shortcut_capture_prompt">Pulsa un botón</string>

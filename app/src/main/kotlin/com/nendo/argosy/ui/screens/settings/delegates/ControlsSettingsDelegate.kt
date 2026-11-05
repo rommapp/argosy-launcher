@@ -317,14 +317,10 @@ class ControlsSettingsDelegate @Inject constructor(
     fun assignShortcutKey(scope: CoroutineScope, shortcut: UiShortcut, keyCode: Int) {
         if (!UiShortcutKeys.isBindable(keyCode)) return
         val current = _state.value
-        val otherShortcut = when (shortcut) {
-            UiShortcut.OPEN_NAVIGATION -> UiShortcut.OPEN_QUICK_PANEL
-            UiShortcut.OPEN_QUICK_PANEL -> UiShortcut.OPEN_NAVIGATION
-        }
-        val otherHoldsKey = current.shortcutKey(otherShortcut) == keyCode
+        val holdersOfKey = UiShortcut.entries.filter { it != shortcut && current.shortcutKey(it) == keyCode }
         _state.update { it.copy(shortcutCaptureTarget = null) }
         scope.launch {
-            if (otherHoldsKey) writeShortcutKey(otherShortcut, ControlsPreferences.UNASSIGNED_KEY)
+            holdersOfKey.forEach { writeShortcutKey(it, ControlsPreferences.UNASSIGNED_KEY) }
             writeShortcutKey(shortcut, keyCode)
         }
     }
@@ -342,6 +338,14 @@ class ControlsSettingsDelegate @Inject constructor(
             UiShortcut.OPEN_QUICK_PANEL -> {
                 preferencesRepository.setOpenQuickPanelKey(keyCode)
                 _state.update { it.copy(openQuickPanelKey = keyCode) }
+            }
+            UiShortcut.HOME -> {
+                preferencesRepository.setHomeShortcutKey(keyCode)
+                _state.update { it.copy(homeShortcutKey = keyCode) }
+            }
+            UiShortcut.BACK -> {
+                preferencesRepository.setBackShortcutKey(keyCode)
+                _state.update { it.copy(backShortcutKey = keyCode) }
             }
         }
     }

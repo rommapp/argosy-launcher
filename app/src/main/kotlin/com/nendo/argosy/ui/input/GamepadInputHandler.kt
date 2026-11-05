@@ -77,6 +77,8 @@ class GamepadInputHandler @Inject constructor(
     private var swapStartSelect = false
     private var openNavigationKey: Int? = null
     private var openQuickPanelKey: Int? = null
+    private var homeShortcutKey: Int? = null
+    private var backShortcutKey: Int? = null
 
     private var shortcutGate: UiShortcutGate? = null
     private var claimedShortcutKey: Int? = null
@@ -95,6 +97,8 @@ class GamepadInputHandler @Inject constructor(
                 selectModifier.comboMap = SelectModifier.comboMapFrom(prefs.selectLCombo, prefs.selectRCombo)
                 openNavigationKey = prefs.openNavigationKey.takeIf(UiShortcutKeys::isBindable)
                 openQuickPanelKey = prefs.openQuickPanelKey.takeIf(UiShortcutKeys::isBindable)
+                homeShortcutKey = prefs.homeShortcutKey.takeIf(UiShortcutKeys::isBindable)
+                backShortcutKey = prefs.backShortcutKey.takeIf(UiShortcutKeys::isBindable)
             }
         }
     }
@@ -331,6 +335,8 @@ class GamepadInputHandler @Inject constructor(
     private fun shortcutFor(keyCode: Int): UiShortcut? = when (keyCode) {
         openNavigationKey -> UiShortcut.OPEN_NAVIGATION
         openQuickPanelKey -> UiShortcut.OPEN_QUICK_PANEL
+        homeShortcutKey -> UiShortcut.HOME
+        backShortcutKey -> UiShortcut.BACK
         else -> null
     }
 

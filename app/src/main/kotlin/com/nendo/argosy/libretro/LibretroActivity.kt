@@ -3363,23 +3363,14 @@ class LibretroActivity : ComponentActivity() {
     }
 
     /**
-     * Keys assigned as Home or Back shortcuts in Settings act as those system keys here, before any
-     * core binding: Home backgrounds this task so the game stays resumable from home, and Back plays
-     * through every existing Back path (menu on a short press, Quick Settings on a hold).
+     * Shortcut interception for keys assigned as Home or Back lives in dispatchKeyFrom, the door
+     * every key reaches core input through - including trigger axes that report as motion events.
      */
     @SuppressLint("RestrictedApi")
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         observeVirtualPad(event)
         connectedControllerTracker.noteInput(event)
-        if (event.keyCode == homeShortcutKey) {
-            if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
-                @Suppress("DEPRECATION")
-                moveTaskToBack(true)
-            }
-            return true
-        }
-        val translated = if (event.keyCode == backShortcutKey) synthesizeBackEvent(event) else backAsSelect.translate(event)
-        return dispatchKeyFrom(translated, KeyPressGate.Source.Key, coreBound = true)
+        return dispatchKeyFrom(backAsSelect.translate(event), KeyPressGate.Source.Key, coreBound = true)
     }
 
     private fun synthesizeBackEvent(event: KeyEvent): KeyEvent = KeyEvent(
@@ -3393,30 +3384,45 @@ class LibretroActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Every key that reaches core input passes through here, whether it arrived as a KeyEvent or
+     * was generated from trigger axes in onGenericMotionEvent. Keys assigned as Home or Back
+     * shortcuts act as those system keys before any core binding: Home backgrounds this task so the
+     * game stays resumable from home, and Back plays through every existing Back path (menu on a
+     * short press, Quick Settings on a hold).
+     */
     @SuppressLint("RestrictedApi")
     private fun dispatchKeyFrom(event: KeyEvent, source: KeyPressGate.Source, coreBound: Boolean): Boolean {
-        if (event.action == KeyEvent.ACTION_UP) {
-            val release = keyPressGate.onUp(event.deviceId, event.keyCode, source)
-            if (release.toHotkeys && ::hotkeyDispatcher.isInitialized) hotkeyDispatcher.onKeyUp(event.keyCode)
+        if (event.keyCode == homeShortcutKey) {
+            if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0) {
+                @Suppress("DEPRECATION")
+                moveTaskToBack(true)
+            }
+            return true
+        }
+        val translated = if (event.keyCode == backShortcutKey) synthesizeBackEvent(event) else event
+        if (translated.action == KeyEvent.ACTION_UP) {
+            val release = keyPressGate.onUp(translated.deviceId, translated.keyCode, source)
+            if (release.toHotkeys && ::hotkeyDispatcher.isInitialized) hotkeyDispatcher.onKeyUp(translated.keyCode)
             if (!release.toCore && !isAnyMenuOpen) return true
-        } else if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0 &&
+        } else if (translated.action == KeyEvent.ACTION_DOWN && translated.repeatCount == 0 &&
             !isAnyMenuOpen && ::hotkeyDispatcher.isInitialized
         ) {
-            val controllerId = event.device?.let { controllerIdOf(it) }
-            val forward = keyPressGate.onDown(event.deviceId, event.keyCode, source, coreBound) {
-                hotkeyDispatcher.onKeyDown(event.keyCode, controllerId)
+            val controllerId = translated.device?.let { controllerIdOf(it) }
+            val forward = keyPressGate.onDown(translated.deviceId, translated.keyCode, source, coreBound) {
+                hotkeyDispatcher.onKeyDown(translated.keyCode, controllerId)
             }
             if (!forward) return true
         }
         if (isAnyMenuOpen) {
-            if (isMenuHotkeyEvent(event)) {
-                if (event.action == KeyEvent.ACTION_DOWN && event.repeatCount == 0 && menuVisible) hideMenu()
+            if (isMenuHotkeyEvent(translated)) {
+                if (translated.action == KeyEvent.ACTION_DOWN && translated.repeatCount == 0 && menuVisible) hideMenu()
                 return true
             }
-            if (gamepadInputBridge.handleKeyEvent(event)) return true
-            if (menuInputHandler.mapKeyToEvent(event.keyCode) != null) return true
+            if (gamepadInputBridge.handleKeyEvent(translated)) return true
+            if (menuInputHandler.mapKeyToEvent(translated.keyCode) != null) return true
         }
-        return super.dispatchKeyEvent(event)
+        return super.dispatchKeyEvent(translated)
     }
 
     private fun isMenuHotkeyEvent(event: KeyEvent): Boolean {
@@ -3426,6 +3432,17 @@ class LibretroActivity : ComponentActivity() {
     }
 
     fun dispatchTouchKey(action: Int, keyCode: Int) {
+        if (keyCode == homeShortcutKey) {
+            if (action == KeyEvent.ACTION_DOWN) {
+                @Suppress("DEPRECATION")
+                moveTaskToBack(true)
+            }
+            return
+        }
+        if (keyCode == backShortcutKey) {
+            dispatchKeyFrom(KeyEvent(action, KeyEvent.KEYCODE_BACK), KeyPressGate.Source.Touch, coreBound = true)
+            return
+        }
         if (isAnyMenuOpen) return
         val event = KeyEvent(action, keyCode)
         if (action == KeyEvent.ACTION_DOWN) {

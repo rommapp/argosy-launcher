@@ -335,8 +335,6 @@ class GamepadInputHandler @Inject constructor(
     private fun shortcutFor(keyCode: Int): UiShortcut? = when (keyCode) {
         openNavigationKey -> UiShortcut.OPEN_NAVIGATION
         openQuickPanelKey -> UiShortcut.OPEN_QUICK_PANEL
-        homeShortcutKey -> UiShortcut.HOME
-        backShortcutKey -> UiShortcut.BACK
         else -> null
     }
 
@@ -439,8 +437,17 @@ class GamepadInputHandler @Inject constructor(
         _events.tryEmit(GamepadInput(event, isRepeat, signature))
     }
 
-    override fun mapKeyToEvent(keyCode: Int): GamepadEvent? =
-        mapKeycodeToGamepadEvent(keyCode, swapAB, swapXY, swapStartSelect)
+    /**
+     * Keys assigned as Home or Back shortcuts act as those system keys on every launcher surface.
+     * They flow through the same mapping and event paths as physical HOME and BACK - including
+     * inside modals where shortcut claims stand down - so a short Back press dismisses popups and a
+     * hold opens Quick Settings exactly like the real key.
+     */
+    override fun mapKeyToEvent(keyCode: Int): GamepadEvent? = when (keyCode) {
+        homeShortcutKey -> GamepadEvent.Home
+        backShortcutKey -> GamepadEvent.Back
+        else -> mapKeycodeToGamepadEvent(keyCode, swapAB, swapXY, swapStartSelect)
+    }
 }
 
 fun mapKeycodeToGamepadEvent(

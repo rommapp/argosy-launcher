@@ -1585,6 +1585,10 @@
     <string name="ui_launch_overlay_running_busy_message_game">%1$s is still running %2$s in the background.</string>
     <!-- Body of that question when the running game is not known. %1$s is the emulator's name. -->
     <string name="ui_launch_overlay_running_busy_message">%1$s is still open in the background.</string>
+    <!-- Title of the question shown when another game is still open in Argosy's built-in emulator. %1$s is the title of that game. -->
+    <string name="ui_launch_overlay_running_open_title">%1$s Is Still Open</string>
+    <!-- Body of that question. "It" is the open game. -->
+    <string name="ui_launch_overlay_running_open_message">Starting another game closes it.</string>
     <!-- Choice that closes the running emulator and starts the chosen game. -->
     <string name="ui_launch_overlay_running_close_label">Close and Launch</string>
     <!-- Second line under that choice. -->

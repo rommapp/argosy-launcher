@@ -1131,6 +1131,8 @@
     <string name="ui_launch_overlay_running_busy_title">%1$s est en cours</string>
     <string name="ui_launch_overlay_running_busy_message_game">%1$s exécute toujours %2$s en arrière-plan.</string>
     <string name="ui_launch_overlay_running_busy_message">%1$s est toujours ouvert en arrière-plan.</string>
+    <string name="ui_launch_overlay_running_open_title">%1$s est toujours ouvert</string>
+    <string name="ui_launch_overlay_running_open_message">Lancer un autre jeu le ferme.</string>
     <string name="ui_launch_overlay_running_close_label">Fermer et lancer</string>
     <string name="ui_launch_overlay_running_close_subtitle">La progression non sauvegardée du jeu en cours sera perdue</string>
 </resources>

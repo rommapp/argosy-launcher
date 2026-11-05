@@ -110,7 +110,11 @@ class BackgroundGameLaunch @Inject constructor(
         if (!backgroundGames.keepsAlive(emulatorPackage)) return Clear.NOT_RUNNING
         val running = backgroundGames.liveApp(emulatorPackage) ?: return Clear.NOT_RUNNING
         val question = LaunchStep.RunningGame(
-            kind = RunningGameQuestion.EMULATOR_BUSY,
+            kind = if (emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE) {
+                RunningGameQuestion.GAME_OPEN
+            } else {
+                RunningGameQuestion.EMULATOR_BUSY
+            },
             emulatorName = emulatorName(emulatorPackage),
             runningGameTitle = running.game?.let { gameRepository.getById(it.gameId)?.title },
             options = listOf(LaunchPromptOption.CLOSE_AND_LAUNCH)

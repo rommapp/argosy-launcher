@@ -377,6 +377,9 @@ private fun RunningGameContent(
         RunningGameQuestion.NEWER_SAVE ->
             stringResource(R.string.ui_launch_overlay_running_newer_save_title) to
                 stringResource(R.string.ui_launch_overlay_running_newer_save_message, gameTitle)
+        RunningGameQuestion.GAME_OPEN ->
+            stringResource(R.string.ui_launch_overlay_running_open_title, runningTitle ?: question.emulatorName) to
+                stringResource(R.string.ui_launch_overlay_running_open_message)
         RunningGameQuestion.EMULATOR_BUSY ->
             stringResource(R.string.ui_launch_overlay_running_busy_title, question.emulatorName) to
                 if (runningTitle != null) {

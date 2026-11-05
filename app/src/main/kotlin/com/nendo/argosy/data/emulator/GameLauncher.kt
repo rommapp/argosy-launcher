@@ -1731,7 +1731,7 @@ class GameLauncher @Inject constructor(
             action = Intent.ACTION_MAIN,
             packageName = emulator.packageName,
             activityClass = "org.scummvm.scummvm.SplashActivity",
-            categories = listOf(Intent.CATEGORY_LAUNCHER),
+            categories = emptyList(),
             dataUri = Uri.fromParts("scummvm", gameId, null),
             intentFlags = if (forResume) {
                 Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP

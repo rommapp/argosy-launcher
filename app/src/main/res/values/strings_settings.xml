@@ -860,6 +860,17 @@
         <item quantity="other">Up to %d</item>
     </plurals>
 
+    <!-- Row title. Noun: the badge marking a game as new on home cards. -->
+    <string name="settings_home_screen_new_badge_title">NEW Badge</string>
+    <!-- Second line of that row. -->
+    <string name="settings_home_screen_new_badge_subtitle">Where the NEW badge sits on home cards, or hide it</string>
+    <!-- Home new badge option: top-right corner (historical default). Keep short; shown in a segmented control. -->
+    <string name="settings_home_screen_new_badge_option_right">Right</string>
+    <!-- Home new badge option: top-left corner. Keep short; shown in a segmented control. -->
+    <string name="settings_home_screen_new_badge_option_left">Left</string>
+    <!-- Home new badge option: not drawn at all. Keep short; shown in a segmented control. -->
+    <string name="settings_home_screen_new_badge_option_hidden">Hidden</string>
+
     <!-- ===== Saves section ===== -->
 
     <!-- Heading over the rows about copying saves to and from the server. Noun, short for

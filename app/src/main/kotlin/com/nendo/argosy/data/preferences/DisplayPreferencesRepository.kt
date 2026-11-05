@@ -127,7 +127,8 @@ data class DisplayPreferences(
     val dualScreenInputFocus: DualScreenInputFocus = DualScreenInputFocus.AUTO,
     val screenLayouts: ScreenLayouts = ScreenLayouts(),
     val installedOnlyHome: Boolean = false,
-    val recentNewGamesLimit: Int = RecentNewGamesLimit.DEFAULT
+    val recentNewGamesLimit: Int = RecentNewGamesLimit.DEFAULT,
+    val newBadgePlacement: NewBadgePlacement = NewBadgePlacement.RIGHT
 )
 
 /**
@@ -256,6 +257,7 @@ class DisplayPreferencesRepository @Inject constructor(
         val SCREEN_LAYOUTS_UNREADABLE = stringPreferencesKey("screen_layouts_unreadable")
         val INSTALLED_ONLY_HOME = booleanPreferencesKey("installed_only_home")
         val RECENT_NEW_GAMES_LIMIT = intPreferencesKey("recent_new_games_limit")
+        val NEW_BADGE_PLACEMENT = stringPreferencesKey("new_badge_placement")
     }
 
     val preferences: Flow<DisplayPreferences> = dataStore.data.map { prefs ->
@@ -373,7 +375,8 @@ class DisplayPreferencesRepository @Inject constructor(
             installedOnlyHome = prefs[Keys.INSTALLED_ONLY_HOME] ?: false,
             recentNewGamesLimit = RecentNewGamesLimit.normalize(
                 prefs[Keys.RECENT_NEW_GAMES_LIMIT] ?: RecentNewGamesLimit.DEFAULT
-            )
+            ),
+            newBadgePlacement = NewBadgePlacement.fromString(prefs[Keys.NEW_BADGE_PLACEMENT])
         )
     }
 
@@ -871,6 +874,10 @@ class DisplayPreferencesRepository @Inject constructor(
 
     suspend fun setRecentNewGamesLimit(limit: Int) {
         dataStore.edit { it[Keys.RECENT_NEW_GAMES_LIMIT] = RecentNewGamesLimit.normalize(limit) }
+    }
+
+    suspend fun setNewBadgePlacement(placement: NewBadgePlacement) {
+        dataStore.edit { it[Keys.NEW_BADGE_PLACEMENT] = placement.name }
     }
 
     /**

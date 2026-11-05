@@ -485,6 +485,8 @@ class HomeViewModel @Inject constructor(
         carouselConfig = prefs.homeLayout.carousel,
         autoGridConfig = prefs.homeLayout.autoGrid,
         boxArt3d = prefs.homeLayout.boxArt3d,
+        installedOnlyHome = prefs.installedOnlyHome,
+        newBadgePlacement = prefs.newBadgePlacement,
         customGridConfig = prefs.homeLayout.customGrid,
         layoutKind = prefs.homeLayout.selected
     )

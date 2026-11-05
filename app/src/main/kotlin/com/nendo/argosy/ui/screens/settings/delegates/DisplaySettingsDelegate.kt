@@ -22,6 +22,7 @@ import com.nendo.argosy.data.preferences.BoxArtBorderThickness
 import com.nendo.argosy.data.preferences.BoxArtCornerRadius
 import com.nendo.argosy.data.preferences.BoxArtGlowStrength
 import com.nendo.argosy.data.preferences.BoxArtShape
+import com.nendo.argosy.data.preferences.NewBadgePlacement
 import com.nendo.argosy.data.preferences.BoxArtInnerEffect
 import com.nendo.argosy.data.preferences.GlassBorderTint
 import com.nendo.argosy.data.preferences.BoxArtInnerEffectThickness
@@ -1065,6 +1066,13 @@ class DisplaySettingsDelegate @Inject constructor(
         scope.launch {
             preferencesRepository.setRecentNewGamesLimit(next)
             _state.update { it.copy(recentNewGamesLimit = next) }
+        }
+    }
+
+    fun setNewBadgePlacement(scope: CoroutineScope, placement: NewBadgePlacement) {
+        scope.launch {
+            preferencesRepository.setNewBadgePlacement(placement)
+            _state.update { it.copy(newBadgePlacement = placement) }
         }
     }
 

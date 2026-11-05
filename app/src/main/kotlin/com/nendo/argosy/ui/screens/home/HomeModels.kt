@@ -310,6 +310,9 @@ data class HomeUiState(
     val autoGridConfig: com.nendo.argosy.domain.model.AutoGridConfig =
         com.nendo.argosy.domain.model.AutoGridConfig(),
     val boxArt3d: Boolean = false,
+    val installedOnlyHome: Boolean = false,
+    val newBadgePlacement: com.nendo.argosy.data.preferences.NewBadgePlacement =
+        com.nendo.argosy.data.preferences.NewBadgePlacement.RIGHT,
     val layoutKind: com.nendo.argosy.domain.model.HomeLayoutKind =
         com.nendo.argosy.domain.model.HomeLayoutKind.CAROUSEL,
     val customGridConfig: com.nendo.argosy.domain.model.CustomGridConfig =

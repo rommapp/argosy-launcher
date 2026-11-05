@@ -24,6 +24,7 @@ import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.preferences.FontSlot
 import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.preferences.HomeBackgroundMode
+import com.nendo.argosy.data.preferences.NewBadgePlacement
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.github.UpdateRepository
 import com.nendo.argosy.data.remote.jellyfin.JellyfinConnectionManager
@@ -1475,6 +1476,7 @@ class SettingsViewModel @Inject constructor(
     fun setAmbientLedAchievementFlash(enabled: Boolean) = displayDelegate.setAmbientLedAchievementFlash(viewModelScope, enabled)
     fun setInstalledOnlyHome(enabled: Boolean) = displayDelegate.setInstalledOnlyHome(viewModelScope, enabled)
     fun cycleRecentNewGamesLimit(direction: Int = 1) = displayDelegate.cycleRecentNewGamesLimit(viewModelScope, direction)
+    fun setNewBadgePlacement(placement: NewBadgePlacement) = displayDelegate.setNewBadgePlacement(viewModelScope, placement)
 
     fun setShowStatusClock(show: Boolean) = displayDelegate.setShowStatusClock(viewModelScope, show)
 

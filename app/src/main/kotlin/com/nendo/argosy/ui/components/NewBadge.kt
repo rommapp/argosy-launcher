@@ -85,6 +85,7 @@ fun NewBadge(
         modifier = modifier
             .graphicsLayer {
                 rotationZ = rotation
+                this.clip = false
             }
             .width(width)
             .height(height)

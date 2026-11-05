@@ -440,6 +440,12 @@
         <item quantity="other">Hasta %d</item>
     </plurals>
 
+    <string name="settings_home_screen_new_badge_title">Insignia NUEVO</string>
+    <string name="settings_home_screen_new_badge_subtitle">Dónde se sitúa la insignia NUEVO en las tarjetas del inicio, o ocultarla</string>
+    <string name="settings_home_screen_new_badge_option_right">Derecha</string>
+    <string name="settings_home_screen_new_badge_option_left">Izquierda</string>
+    <string name="settings_home_screen_new_badge_option_hidden">Oculto</string>
+
     <!-- ===== Saves section ===== -->
 
     <string name="settings_saves_section_sync">SINCRONIZACIÓN</string>

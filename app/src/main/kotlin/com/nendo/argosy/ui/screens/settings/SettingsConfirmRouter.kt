@@ -960,7 +960,8 @@ private fun routeHomeScreenConfirm(vm: SettingsViewModel, state: SettingsUiState
             vm.requestEnumPicker(HomeScreenItem.RecentNewGames.key)
             return InputResult.handled(SoundType.OPEN_MODAL)
         }
-        HomeScreenItem.LayoutSelector, HomeScreenItem.BoxArt -> return InputResult.handled(SoundType.SILENT)
+        HomeScreenItem.NewBadge, HomeScreenItem.LayoutSelector, HomeScreenItem.BoxArt ->
+            return InputResult.handled(SoundType.SILENT)
         is HomeScreenItem.LayoutField -> {
             val updated = toggleHomeLayoutField(state.display.homeLayout, focused.field)
             if (updated == state.display.homeLayout) return InputResult.handled(SoundType.SILENT)

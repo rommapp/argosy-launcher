@@ -242,6 +242,7 @@ class UserPreferencesRepository @Inject constructor(
             screenLayouts = display.screenLayouts,
             installedOnlyHome = display.installedOnlyHome,
             recentNewGamesLimit = display.recentNewGamesLimit,
+            newBadgePlacement = display.newBadgePlacement,
             socialSessionToken = sync.socialSessionToken,
             socialUserId = sync.socialUserId,
             socialUsername = sync.socialUsername,
@@ -415,6 +416,7 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setDualScreenInputFocus(focus: DualScreenInputFocus) = displayPrefs.setDualScreenInputFocus(focus)
     suspend fun setInstalledOnlyHome(enabled: Boolean) = displayPrefs.setInstalledOnlyHome(enabled)
     suspend fun setRecentNewGamesLimit(limit: Int) = displayPrefs.setRecentNewGamesLimit(limit)
+    suspend fun setNewBadgePlacement(placement: NewBadgePlacement) = displayPrefs.setNewBadgePlacement(placement)
 
     suspend fun setShowStatusClock(show: Boolean) = displayPrefs.setShowStatusClock(show)
 
@@ -1035,6 +1037,7 @@ data class UserPreferences(
     val screenLayouts: ScreenLayouts = ScreenLayouts(),
     val installedOnlyHome: Boolean = false,
     val recentNewGamesLimit: Int = RecentNewGamesLimit.DEFAULT,
+    val newBadgePlacement: NewBadgePlacement = NewBadgePlacement.RIGHT,
     val socialSessionToken: String? = null,
     val socialUserId: String? = null,
     val socialUsername: String? = null,
@@ -1173,6 +1176,19 @@ enum class BoxArtGlowStrength(val alpha: Float, val isShadow: Boolean = false) {
     companion object {
         fun fromString(value: String?): BoxArtGlowStrength =
             entries.find { it.name == value } ?: MEDIUM
+    }
+}
+
+/**
+ * Where the NEW badge sits on home game cards. RIGHT is the historical default; HIDDEN
+ * suppresses it entirely (e.g. when every visible card is already installed).
+ */
+enum class NewBadgePlacement {
+    RIGHT, LEFT, HIDDEN;
+
+    companion object {
+        fun fromString(value: String?): NewBadgePlacement =
+            entries.find { it.name == value } ?: RIGHT
     }
 }
 

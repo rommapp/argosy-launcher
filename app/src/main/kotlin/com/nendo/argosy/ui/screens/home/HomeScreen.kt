@@ -207,6 +207,7 @@ fun HomeScreen(
     val gridState = rememberLazyGridState()
     val isAutoGrid = uiState.layoutKind == HomeLayoutKind.AUTO_GRID
     val isCustomGrid = uiState.layoutKind == HomeLayoutKind.CUSTOM_GRID
+    val showDownloadedDot = !uiState.installedOnlyHome || uiState.currentRow == HomeRow.Recommendations
     val quickNavigation by viewModel.quickNavigationEnabled.collectAsState()
     val dockReorder by viewModel.dockReorder.collectAsState()
     val dockIsRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
@@ -943,6 +944,7 @@ fun HomeScreen(
                                 config = uiState.autoGridConfig,
                                 showFocusVisuals = !uiState.appBarFocused,
                                 useBoxArt = uiState.boxArt3d,
+                                showDownloadedIndicator = showDownloadedDot,
                                 gridState = gridState,
                                 entryAnimationKey = (uiState.currentPlatform?.id ?: uiState.currentRow)
                                     .takeIf { uiState.autoGridConfig.showAllGames },
@@ -1002,6 +1004,8 @@ fun HomeScreen(
                                     uiState.currentRow !is HomeRow.Platform &&
                                     uiState.currentRow != HomeRow.Steam && uiState.currentRow != HomeRow.Android,
                                 useBoxArt = uiState.boxArt3d,
+                                newBadgePlacement = uiState.newBadgePlacement,
+                                showDownloadedIndicator = showDownloadedDot,
                                 onCoverLoadFailed = viewModel::repairCoverImage,
                                 onCoverLoaded = viewModel::extractGradientForGame,
                                 onPosterLoaded = viewModel::extractGradientForMedia,

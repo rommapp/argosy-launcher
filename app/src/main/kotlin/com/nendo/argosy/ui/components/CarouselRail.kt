@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import com.nendo.argosy.data.preferences.NewBadgePlacement
 import com.nendo.argosy.ui.common.coverSizeWithin
 import com.nendo.argosy.ui.common.rememberGameArtAspectRatio
 import com.nendo.argosy.ui.screens.home.GameDownloadIndicator
@@ -323,7 +324,8 @@ fun CarouselRail(
     overrides: CarouselOverrides = CarouselOverrides(),
     showFocusVisuals: Boolean = true,
     showPlatformBadge: Boolean = true,
-    showNewBadge: Boolean = true,
+    newBadgePlacement: NewBadgePlacement = NewBadgePlacement.RIGHT,
+    showDownloadedIndicator: Boolean = true,
     useBoxArt: Boolean = false,
     viewAllStyle: ViewAllCardStyle = ViewAllCardStyle.OUTLINE_GRID,
     downloadIndicatorFor: (CarouselItem) -> GameDownloadIndicator = { item ->
@@ -374,11 +376,21 @@ fun CarouselRail(
         else -> 0.dp
     }
 
+    /**
+     * Every card reserves this much on each side so a corner-anchored badge fits inside its node;
+     * taking it out of the gap keeps the box art rhythm exactly what the metrics describe.
+     */
+    val badgeSideReserveDp = if (newBadgePlacement == NewBadgePlacement.HIDDEN) {
+        0.dp
+    } else {
+        ComponentDefaults.Carousel.newBadgeCornerShiftDp.dp
+    }
+
     LazyRow(
         state = listState,
         reverseLayout = metrics.reversed,
         contentPadding = contentPadding,
-        horizontalArrangement = Arrangement.spacedBy(metrics.itemGap),
+        horizontalArrangement = Arrangement.spacedBy(metrics.itemGap - badgeSideReserveDp * 2),
         verticalAlignment = metrics.verticalAlignment,
         modifier = modifier
             .fillMaxWidth()
@@ -417,7 +429,8 @@ fun CarouselRail(
                         nativeAspectRatio = boxArtStyle.nativeAspectRatio,
                         fallbackAspectRatio = boxArtStyle.aspectRatio,
                         showPlatformBadge = showPlatformBadge,
-                        showNewBadge = showNewBadge,
+                        newBadgePlacement = newBadgePlacement,
+                        showDownloadedIndicator = showDownloadedIndicator,
                         useBoxArt = useBoxArt,
                         onCoverLoadFailed = onCoverLoadFailed,
                         onCoverLoaded = onCoverLoaded,
@@ -435,7 +448,8 @@ fun CarouselRail(
                         overrides = overrides,
                         onPosterLoaded = onPosterLoaded,
                         modifier = placementModifier
-                            .padding(top = NEW_BADGE_TOP_OVERFLOW),
+                            .padding(top = NEW_BADGE_TOP_OVERFLOW)
+                            .padding(horizontal = badgeSideReserveDp),
                         interactionModifier = tapModifier
                     )
                 }
@@ -459,6 +473,7 @@ fun CarouselRail(
                                 this.translationX = translationX
                                 alpha = viewAllAlpha
                             }
+                            .padding(horizontal = badgeSideReserveDp)
                             .padding(top = NEW_BADGE_TOP_OVERFLOW)
                             .size(metrics.cardWidth, metrics.cardHeight)
                     )
@@ -531,7 +546,8 @@ private fun CarouselGameCard(
     nativeAspectRatio: Boolean,
     fallbackAspectRatio: Float,
     showPlatformBadge: Boolean,
-    showNewBadge: Boolean,
+    newBadgePlacement: NewBadgePlacement,
+    showDownloadedIndicator: Boolean,
     useBoxArt: Boolean,
     onCoverLoadFailed: ((Long, String) -> Unit)?,
     onCoverLoaded: ((Long, Bitmap) -> Unit)?,
@@ -563,6 +579,8 @@ private fun CarouselGameCard(
         scalePivotY = metrics.scalePivotY,
         downloadIndicator = downloadIndicator,
         showPlatformBadge = showPlatformBadge,
+        newBadgePlacement = newBadgePlacement,
+        showDownloadedIndicator = showDownloadedIndicator,
         useBoxArt = useBoxArt,
         coverPathOverride = item.coverPathOverride,
         onCoverLoadFailed = onCoverLoadFailed,

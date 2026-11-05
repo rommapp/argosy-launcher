@@ -253,6 +253,7 @@ fun HomeCustomGridPage(
     onCoverLoaded: ((Long, android.graphics.Bitmap) -> Unit)? = null,
     onPosterLoaded: ((String, android.graphics.Bitmap) -> Unit)? = null,
     useBoxArt: Boolean = false,
+    showDownloadedIndicator: Boolean = true,
     overlappedTileIds: Set<Long> = emptySet(),
     editingTileId: Long? = null,
     onTileDrag: ((GridCell) -> Unit)? = null,
@@ -317,6 +318,7 @@ fun HomeCustomGridPage(
             onCoverLoaded = onCoverLoaded,
             onPosterLoaded = onPosterLoaded,
             useBoxArt = useBoxArt,
+            showDownloadedIndicator = showDownloadedIndicator,
             overlappedTileIds = overlappedTileIds,
             editingTileId = editingTileId,
             dragOffset = dragOffset,
@@ -370,6 +372,7 @@ internal fun CustomGridCells(
     onCoverLoaded: ((Long, android.graphics.Bitmap) -> Unit)?,
     onPosterLoaded: ((String, android.graphics.Bitmap) -> Unit)?,
     useBoxArt: Boolean,
+    showDownloadedIndicator: Boolean,
     overlappedTileIds: Set<Long>,
     editingTileId: Long?,
     dragOffset: androidx.compose.ui.geometry.Offset,
@@ -416,7 +419,8 @@ internal fun CustomGridCells(
                 onCoverLoadFailed = null,
                 onCoverLoaded = null,
                 onPosterLoaded = null,
-                useBoxArt = false
+                useBoxArt = false,
+                showDownloadedIndicator = showDownloadedIndicator
             )
         }
     }
@@ -453,6 +457,7 @@ internal fun CustomGridCells(
                 onCoverLoaded = onCoverLoaded,
                 onPosterLoaded = onPosterLoaded,
                 useBoxArt = useBoxArt,
+                showDownloadedIndicator = showDownloadedIndicator,
                 playbackPath = tilePlayback[tile.id],
                 isEngaged = tile.id == engagedTileId,
                 isPaused = tile.id == engagedTileId && engagedPaused,
@@ -497,6 +502,7 @@ private fun CustomGridCellBox(
     onCoverLoaded: ((Long, android.graphics.Bitmap) -> Unit)?,
     onPosterLoaded: ((String, android.graphics.Bitmap) -> Unit)?,
     useBoxArt: Boolean,
+    showDownloadedIndicator: Boolean = true,
     playbackPath: String? = null,
     isEngaged: Boolean = false,
     isPaused: Boolean = false,
@@ -682,6 +688,7 @@ private fun CustomGridCellBox(
                     onCoverLoadFailed = onCoverLoadFailed,
                     onCoverLoaded = onCoverLoaded,
                     useBoxArt = useBoxArt,
+                    showDownloadedIndicator = showDownloadedIndicator,
                     modifier = Modifier
                         .fillMaxSize()
                         .then(

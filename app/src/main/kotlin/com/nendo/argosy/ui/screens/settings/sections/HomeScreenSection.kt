@@ -22,6 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.R
 import com.nendo.argosy.data.preferences.HomeBackgroundMode
+import com.nendo.argosy.data.preferences.NewBadgePlacement
 import com.nendo.argosy.domain.model.HomeLayoutKind
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.CyclePreference
@@ -130,6 +131,16 @@ internal sealed class HomeScreenItem(
         visibleWhen = { it.homeLayout.selected != HomeLayoutKind.CUSTOM_GRID }
     )
 
+    /**
+     * The NEW badge only draws on carousel rails, so the placement setting is only meaningful
+     * while that layout is selected.
+     */
+    data object NewBadge : HomeScreenItem(
+        key = "newBadge",
+        section = "content",
+        visibleWhen = { it.homeLayout.selected == HomeLayoutKind.CAROUSEL }
+    )
+
     companion object {
         /**
          * Mirrors the home screen's own `showArtLayer`: with the theme backdrop off the art layer
@@ -165,6 +176,7 @@ internal sealed class HomeScreenItem(
                 ContentHeader,
                 InstalledOnly,
                 RecentNewGames,
+                NewBadge,
                 *homeRailFields().map { LayoutField(it) }.toTypedArray(),
                 BackgroundHeader,
                 Background, GameArtwork, CustomImage, Blur, Saturation, Opacity,
@@ -193,6 +205,12 @@ private val homeScreenLayout = SettingsLayout<HomeScreenItem, DisplayState>(
 private fun homeBackgroundModeLabelRes(mode: HomeBackgroundMode): Int = when (mode) {
     HomeBackgroundMode.GAME_ART -> R.string.settings_home_screen_background_mode_game_art
     HomeBackgroundMode.PATTERN -> R.string.settings_home_screen_background_mode_pattern
+}
+
+private fun newBadgePlacementLabelRes(placement: NewBadgePlacement): Int = when (placement) {
+    NewBadgePlacement.RIGHT -> R.string.settings_home_screen_new_badge_option_right
+    NewBadgePlacement.LEFT -> R.string.settings_home_screen_new_badge_option_left
+    NewBadgePlacement.HIDDEN -> R.string.settings_home_screen_new_badge_option_hidden
 }
 
 internal fun homeScreenMaxFocusIndex(display: DisplayState): Int = homeScreenLayout.maxFocusIndex(display)
@@ -434,6 +452,15 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                         viewModel.cycleRecentNewGamesLimit(index - currentIndex)
                     },
                     pickerRequestToken = pickerToken(item)
+                )
+
+                HomeScreenItem.NewBadge -> SegmentedPreference(
+                    title = stringResource(R.string.settings_home_screen_new_badge_title),
+                    subtitle = stringResource(R.string.settings_home_screen_new_badge_subtitle),
+                    options = NewBadgePlacement.entries.map { stringResource(newBadgePlacementLabelRes(it)) },
+                    selectedIndex = NewBadgePlacement.entries.indexOf(display.newBadgePlacement),
+                    isFocused = isFocused(item),
+                    onSelect = { index -> viewModel.setNewBadgePlacement(NewBadgePlacement.entries[index]) }
                 )
             }
     }

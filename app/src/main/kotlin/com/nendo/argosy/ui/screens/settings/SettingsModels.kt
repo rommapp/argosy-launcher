@@ -42,6 +42,7 @@ import com.nendo.argosy.data.preferences.MediaStreamingQuality
 import com.nendo.argosy.data.preferences.MediaAudioLanguage
 import com.nendo.argosy.data.preferences.MediaSubtitleLanguage
 import com.nendo.argosy.data.preferences.MediaSubtitleMode
+import com.nendo.argosy.data.preferences.NewBadgePlacement
 import com.nendo.argosy.data.preferences.HomeBackgroundMode
 import com.nendo.argosy.data.preferences.SyncFilterPreferences
 import com.nendo.argosy.data.preferences.PlatformIndicatorContent
@@ -352,6 +353,7 @@ data class DisplayState(
     val screenRoleModalFocus: Int = 0,
     val installedOnlyHome: Boolean = false,
     val recentNewGamesLimit: Int = RecentNewGamesLimit.DEFAULT,
+    val newBadgePlacement: NewBadgePlacement = NewBadgePlacement.RIGHT,
     val showStatusClock: Boolean = true,
     val showStatusBattery: Boolean = true,
     val showStatusNetwork: Boolean = false

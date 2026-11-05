@@ -84,6 +84,7 @@ import android.graphics.drawable.BitmapDrawable
 import coil.compose.AsyncImage
 import com.nendo.argosy.data.preferences.BoxArtBorderStyle
 import com.nendo.argosy.data.preferences.BoxArtInnerEffect
+import com.nendo.argosy.data.preferences.NewBadgePlacement
 import com.nendo.argosy.data.preferences.SystemIconPosition
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.screens.home.GameDownloadIndicator
@@ -104,6 +105,7 @@ fun GameCard(
     downloadIndicator: GameDownloadIndicator = GameDownloadIndicator.NONE,
     showPlatformBadge: Boolean = true,
     showStatusOverlays: Boolean = true,
+    showDownloadedIndicator: Boolean = true,
     coverPathOverride: String? = null,
     onCoverLoadFailed: ((gameId: Long, failedPath: String) -> Unit)? = null,
     onCoverLoaded: ((gameId: Long, bitmap: Bitmap) -> Unit)? = null,
@@ -350,7 +352,7 @@ fun GameCard(
                     if (showStatusOverlays) {
                         StatusIndicators(
                             isFavorite = game.isFavorite,
-                            isDownloaded = game.isDownloaded
+                            isDownloaded = game.isDownloaded && showDownloadedIndicator
                         )
                     }
                 }
@@ -394,7 +396,7 @@ fun GameCard(
                  boxArtStyle.systemIconPosition == SystemIconPosition.BOTTOM_RIGHT)
             StatusIndicators(
                 isFavorite = game.isFavorite,
-                isDownloaded = game.isDownloaded,
+                isDownloaded = game.isDownloaded && showDownloadedIndicator,
                 tabAtBottom = tabAtBottom
             )
         }
@@ -571,9 +573,11 @@ fun GameCardWithBadge(
 }
 
 /**
- * How far the new-game badge rises above the card it belongs to. The badge is laid out inside the
- * card's own bounds so nothing clips it, which makes a badged card this much taller than a plain
- * one; a caller that lines cards up has to take the difference back out.
+ * How far the new-game badge rises above the card it belongs to, making a badged card this much
+ * taller than a plain one; a caller that lines cards up has to take the difference back out. When
+ * a corner placement is active the wrapper reserves the same shift on each side as well, so the
+ * badge sits inside the node's bounds and nothing can cut it off; spacing between cards stays
+ * derived from the box art metrics alone.
  */
 val NEW_BADGE_TOP_OVERFLOW = ComponentDefaults.Carousel.newBadgeOverflowDp.dp
 
@@ -594,9 +598,12 @@ fun GameCardWithNewBadge(
     scaleOverride: Float? = null,
     alphaOverride: Float? = null,
     useBoxArt: Boolean = false,
+    newBadgePlacement: NewBadgePlacement = NewBadgePlacement.RIGHT,
+    showDownloadedIndicator: Boolean = true,
     interactionModifier: Modifier = Modifier
 ) {
-    val showNewBadge = game.isNew && !downloadIndicator.isActive
+    val showNewBadge = game.isNew && !downloadIndicator.isActive &&
+        newBadgePlacement != NewBadgePlacement.HIDDEN
     val badgeWidthDp = ComponentDefaults.Carousel.newBadgeWidthDp.dp
     val badgeHeightDp = ComponentDefaults.Carousel.newBadgeHeightDp.dp
 
@@ -623,6 +630,7 @@ fun GameCardWithNewBadge(
                 scalePivotY = scalePivotY,
                 downloadIndicator = downloadIndicator,
                 showPlatformBadge = showPlatformBadge,
+                showDownloadedIndicator = showDownloadedIndicator,
                 useBoxArt = useBoxArt,
                 coverPathOverride = coverPathOverride,
                 onCoverLoadFailed = onCoverLoadFailed,
@@ -635,7 +643,11 @@ fun GameCardWithNewBadge(
                 NewBadge(
                     width = badgeWidthDp,
                     height = badgeHeightDp,
-                    rotation = ComponentDefaults.Carousel.newBadgeRotationDegrees.toFloat()
+                    rotation = if (newBadgePlacement == NewBadgePlacement.LEFT) {
+                        -ComponentDefaults.Carousel.newBadgeRotationDegrees.toFloat()
+                    } else {
+                        ComponentDefaults.Carousel.newBadgeRotationDegrees.toFloat()
+                    }
                 )
             }
         },
@@ -653,6 +665,7 @@ fun GameCardWithNewBadge(
                 }
             )
             this.alpha = alpha
+            this.clip = false
         }.then(interactionModifier)
     ) { measurables, constraints ->
         val cardWidthPx = cardWidth.toPx().toInt()
@@ -666,12 +679,23 @@ fun GameCardWithNewBadge(
 
         val topOverflow = NEW_BADGE_TOP_OVERFLOW.roundToPx()
         val layoutHeight = cardPlaceable.height + topOverflow
+        val sideReservePx = if (newBadgePlacement == NewBadgePlacement.HIDDEN) {
+            0
+        } else {
+            ComponentDefaults.Carousel.newBadgeCornerShiftDp.dp.roundToPx()
+        }
 
-        layout(cardPlaceable.width, layoutHeight) {
-            cardPlaceable.placeRelative(0, topOverflow)
-            badgePlaceable?.placeRelative(
-                x = cardPlaceable.width - badgePlaceable.width,
-                y = topOverflow - (badgePlaceable.height / 2)
+        layout(cardPlaceable.width + 2 * sideReservePx, layoutHeight) {
+            cardPlaceable.placeRelative(sideReservePx, topOverflow)
+            val leftShifted = newBadgePlacement == NewBadgePlacement.LEFT
+            badgePlaceable?.place(
+                x = if (leftShifted) {
+                    0
+                } else {
+                    cardPlaceable.width + 2 * sideReservePx - badgePlaceable.width
+                },
+                y = topOverflow - (badgePlaceable.height / 2) +
+                    ComponentDefaults.Carousel.newBadgeCornerDropDp.dp.roundToPx()
             )
         }
     }

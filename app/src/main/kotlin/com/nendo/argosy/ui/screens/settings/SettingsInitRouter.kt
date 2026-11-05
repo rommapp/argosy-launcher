@@ -727,13 +727,16 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             .getOrNull(vm._uiState.value.platformDetail.platformIndex)?.platform?.id
         val archOverride = vm.libretroSettingsRepo.getArchitectureOverride().first()
         val builtinSettings = vm.libretroSettingsRepo.getBuiltinEmulatorSettings().first()
+        val externalGamesStayOpen = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            vm.keepAlivePolicy.isSupported
+        }
         vm.emulatorDelegate.updateState(EmulatorState(
             platforms = filteredPlatformConfigs,
             installedEmulators = installedEmulators,
             platformSubFocusIndex = currentEmulatorState.platformSubFocusIndex,
             builtinLibretroEnabled = prefs.builtinLibretroEnabled,
             closeEmulatorOnSessionEnd = prefs.closeEmulatorOnSessionEnd,
-            externalGamesStayOpen = com.nendo.argosy.util.RootShell.isAvailable,
+            externalGamesStayOpen = externalGamesStayOpen,
             architectureDisplay = architectureAbiToDisplay(archOverride),
             ingameMenuTwoColumn = builtinSettings.ingameMenuTwoColumn,
             hudEnabled = builtinSettings.hudEnabled,

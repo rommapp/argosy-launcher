@@ -39,6 +39,7 @@ import kotlin.math.roundToInt
 
 private const val METER_SCALE = 1000L
 private const val SPARKLINE_MIN_RANGE_C = 10f
+private const val SPARKLINE_MIN_RANGE_RPM = 2000f
 
 @Composable
 internal fun HardwareStatsBlock(stats: HardwareStatsUi) {
@@ -56,7 +57,7 @@ internal fun HardwareStatsBlock(stats: HardwareStatsUi) {
                 label = stringResource(R.string.ui_quick_settings_stats_cpu),
                 tempC = stats.cpuTempC,
                 load = stats.cpuLoad,
-                history = stats.cpuTempHistory,
+                history = stats.cpuTempHistory.takeIf { stats.cpuTempC != null },
                 modifier = tile
             )
         }
@@ -66,7 +67,7 @@ internal fun HardwareStatsBlock(stats: HardwareStatsUi) {
                 label = stringResource(R.string.ui_quick_settings_stats_gpu),
                 tempC = stats.gpuTempC,
                 load = stats.gpuLoad,
-                history = stats.gpuTempHistory,
+                history = stats.gpuTempHistory.takeIf { stats.gpuTempC != null },
                 modifier = tile
             )
         }
@@ -85,8 +86,9 @@ private fun CoolingTile(stats: HardwareStatsUi, modifier: Modifier) {
             label = stringResource(R.string.ui_quick_settings_stats_battery),
             tempC = null,
             load = null,
-            history = null,
+            history = stats.batteryTempHistory,
             modifier = modifier,
+            historyColor = heatColor(stats.batteryTempC),
             valueColor = heatColor(stats.batteryTempC)
         )
         return
@@ -96,8 +98,10 @@ private fun CoolingTile(stats: HardwareStatsUi, modifier: Modifier) {
         label = stringResource(R.string.ui_quick_settings_stats_fan),
         tempC = stats.batteryTempC,
         load = stats.fanLoad,
-        history = null,
+        history = stats.fanRpmHistory,
         modifier = modifier,
+        historyColor = MaterialTheme.colorScheme.primary,
+        historyMinRange = SPARKLINE_MIN_RANGE_RPM,
         tempIsBattery = true
     )
 }
@@ -110,6 +114,8 @@ private fun StatTile(
     load: Float?,
     history: List<Float>?,
     modifier: Modifier,
+    historyColor: Color = heatColor(tempC),
+    historyMinRange: Float = SPARKLINE_MIN_RANGE_C,
     valueColor: Color = LocalArgosyTheme.current.textPrimary,
     tempIsBattery: Boolean = false
 ) {
@@ -160,14 +166,14 @@ private fun StatTile(
                 trackColor = theme.hairlineLow
             )
         }
-        if (history != null && tempC != null) {
-            TempSparkline(history = history, color = heatColor(tempC))
+        if (history != null) {
+            Sparkline(history = history, color = historyColor, minRange = historyMinRange)
         }
     }
 }
 
 @Composable
-private fun TempSparkline(history: List<Float>, color: Color) {
+private fun Sparkline(history: List<Float>, color: Color, minRange: Float) {
     val scale = LocalUiScale.current.scale
     val height = (ComponentDefaults.QuickPanel.statsSparklineHeightDp * scale).dp
     val strokeWidth = (ComponentDefaults.QuickPanel.statsSparklineStrokeDp * scale).dp
@@ -175,15 +181,15 @@ private fun TempSparkline(history: List<Float>, color: Color) {
     Canvas(modifier = Modifier.fillMaxWidth().height(height)) {
         if (history.size < 2) return@Canvas
         val low = history.min()
-        val range = maxOf(history.max() - low, SPARKLINE_MIN_RANGE_C)
+        val range = maxOf(history.max() - low, minRange)
         val stroke = strokeWidth.toPx()
         val usable = size.height - stroke
         val step = size.width / (HardwareStatsUi.HISTORY_SIZE - 1)
         val start = size.width - step * (history.size - 1)
         val path = Path()
-        history.forEachIndexed { index, temp ->
+        history.forEachIndexed { index, point ->
             val x = start + step * index
-            val y = stroke / 2 + usable * (1f - (temp - low) / range)
+            val y = stroke / 2 + usable * (1f - (point - low) / range)
             if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
         }
         drawPath(

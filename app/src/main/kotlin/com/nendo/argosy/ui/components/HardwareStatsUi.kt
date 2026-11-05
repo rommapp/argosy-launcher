@@ -12,8 +12,10 @@ data class HardwareStatsUi(
     val gpuTempC: Float? = null,
     val gpuTempHistory: List<Float> = emptyList(),
     val fanRpm: Int? = null,
+    val fanRpmHistory: List<Float> = emptyList(),
     val fanLoad: Float? = null,
-    val batteryTempC: Float? = null
+    val batteryTempC: Float? = null,
+    val batteryTempHistory: List<Float> = emptyList()
 ) {
     val hasCpu: Boolean get() = cpuMhz != null || cpuTempC != null
     val hasGpu: Boolean get() = gpuMhz != null || gpuTempC != null
@@ -38,8 +40,10 @@ data class HardwareStatsUi(
             gpuTempC = sample.gpuTempC,
             gpuTempHistory = appended(previous?.gpuTempHistory, sample.gpuTempC),
             fanRpm = sample.fanRpm,
+            fanRpmHistory = appended(previous?.fanRpmHistory, sample.fanRpm?.toFloat()),
             fanLoad = sample.fanFraction,
-            batteryTempC = sample.batteryTempC
+            batteryTempC = sample.batteryTempC,
+            batteryTempHistory = appended(previous?.batteryTempHistory, sample.batteryTempC)
         )
 
         private fun fraction(current: Long?, max: Long?): Float? {

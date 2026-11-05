@@ -35,6 +35,7 @@
     <string name="dual_dashboard_state_just_now">Gerade eben</string>
     <string name="dual_dashboard_state_latest">Neuester</string>
     <string name="dual_dashboard_total_play">%1$s gesamt</string>
+    <string name="dual_dashboard_session_play">%1$s in dieser Sitzung</string>
     <string name="dual_dashboard_manual_resume">Weiter auf Seite %1$d</string>
     <string name="dual_dashboard_guide_progress">%1$d%% gelesen</string>
     <string name="dual_dashboard_document_open">Öffnen</string>

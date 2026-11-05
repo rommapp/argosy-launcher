@@ -240,15 +240,23 @@ private fun SessionHeader(content: DashboardContent, showsCover: Boolean) {
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            Text(
-                text = formatClock(content.sessionMillis),
-                style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.Bold,
-                color = theme.textPrimary,
-                maxLines = 1,
-                softWrap = false
-            )
             SessionStatusLine(content)
+            val sessionMinutes = (content.sessionMillis / 60_000).toInt()
+            Text(
+                text = stringResource(
+                    R.string.dual_dashboard_total_play,
+                    playTimeLabel(state.playTimeMinutes + sessionMinutes)
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = theme.textDim
+            )
+            if (sessionMinutes > 0) {
+                Text(
+                    text = stringResource(R.string.dual_dashboard_session_play, playTimeLabel(sessionMinutes)),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = theme.textDim
+                )
+            }
         }
         HeaderActions(content, Modifier.weight(HEADER_ACTIONS_WEIGHT))
     }
@@ -292,14 +300,6 @@ private fun SessionStatusLine(content: DashboardContent) {
             } else {
                 stringResource(R.string.dual_companion_saves_synced)
             },
-            style = MaterialTheme.typography.bodySmall,
-            color = theme.textDim
-        )
-        Text(
-            text = stringResource(
-                R.string.dual_dashboard_total_play,
-                playTimeLabel(state.playTimeMinutes + (content.sessionMillis / 60_000).toInt())
-            ),
             style = MaterialTheme.typography.bodySmall,
             color = theme.textDim
         )
@@ -676,10 +676,5 @@ private data class ArmedState(val slotNumber: Int = -1, val until: Long = 0L) {
 
 private fun DashboardContent.achievementFraction(): Float =
     if (achievementTotal > 0) achievementEarned.toFloat() / achievementTotal else 0f
-
-private fun formatClock(millis: Long): String {
-    val totalSeconds = millis / 1000
-    return "%d:%02d:%02d".format(totalSeconds / 3600, (totalSeconds % 3600) / 60, totalSeconds % 60)
-}
 
 private fun now(): Long = android.os.SystemClock.elapsedRealtime()

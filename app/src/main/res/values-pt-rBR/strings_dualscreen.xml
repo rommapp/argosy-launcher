@@ -85,6 +85,7 @@
     <string name="dual_dashboard_state_latest">Mais recente</string>
     <!-- Total play time beside the save status. %1$s is a duration such as "12h 4m". -->
     <string name="dual_dashboard_total_play">%1$s no total</string>
+    <string name="dual_dashboard_session_play">%1$s nesta sessão</string>
     <!-- Detail on the manual card: reopening resumes at this page. %1$d is the page number. -->
     <string name="dual_dashboard_manual_resume">Continuar na página %1$d</string>
     <!-- Detail on the walkthrough card. %1$d is a percentage of the text read. -->

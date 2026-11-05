@@ -1195,7 +1195,6 @@ class GameDetailViewModel @Inject constructor(
     }
 
     fun playGame(discId: Long? = null, origin: LaunchOrigin = LaunchOrigin.INTERNAL) {
-        if (gameLaunchDelegate.isSessionEndBusy) return
         if (origin != LaunchOrigin.INTERNAL) pendingLaunchOrigin = origin
 
         viewModelScope.launch {

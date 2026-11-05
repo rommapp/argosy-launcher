@@ -820,7 +820,7 @@ private fun GameDetailContent(
                         }
                         when (focusedItem) {
                             MenuItem.Play -> add(InputButton.A to when {
-                                isAnySyncing || uiState.sessionEndRunning -> playSyncingHint
+                                isAnySyncing -> playSyncingHint
                                 uiState.downloadStatus == GameDownloadStatus.DOWNLOADED -> playDownloadedHint
                                 uiState.downloadStatus == GameDownloadStatus.NEEDS_INSTALL -> playInstallHint
                                 uiState.downloadStatus == GameDownloadStatus.NOT_DOWNLOADED -> playDownloadHint

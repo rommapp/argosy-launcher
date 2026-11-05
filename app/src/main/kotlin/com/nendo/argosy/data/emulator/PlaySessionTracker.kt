@@ -8,7 +8,6 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
 import android.os.Bundle
-import android.os.SystemClock
 import android.provider.Settings
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PlaySessionDao
@@ -189,10 +188,7 @@ class PlaySessionTracker @Inject constructor(
 
     /**
      * Emits the emulator package once a session with [LaunchOrigin.EXTERNAL] has closed and its
-     * session-end save work has returned. No replay: a close nobody is listening to at that moment
-     * is not owed later, so a launcher opened by hand afterwards never reacts to it. A save
-     * conflict raised by that close may still be waiting in [pendingSessionConflict] when this
-     * fires.
+     * save work has returned. No replay.
      */
     val externalSessionClosed: SharedFlow<String> = _externalSessionClosed.asSharedFlow()
 
@@ -211,27 +207,11 @@ class PlaySessionTracker @Inject constructor(
     private var marathonSegmentDuration: Duration = Duration.ZERO
     private var longestMarathonSegment: Duration = Duration.ZERO
 
-    private val builtInClockLock = Any()
-    private var builtInForegroundMs = 0L
-    private var builtInResumedAt: Long? = null
+    private val builtInClock = ForegroundClock()
 
-    fun onBuiltInGameResumed() = synchronized(builtInClockLock) {
-        if (builtInResumedAt == null) builtInResumedAt = SystemClock.elapsedRealtime()
-    }
+    fun onBuiltInGameResumed() = builtInClock.resume()
 
-    fun onBuiltInGamePaused() = synchronized(builtInClockLock) {
-        builtInResumedAt?.let { builtInForegroundMs += SystemClock.elapsedRealtime() - it }
-        builtInResumedAt = null
-    }
-
-    private fun resetBuiltInClock(running: Boolean) = synchronized(builtInClockLock) {
-        builtInForegroundMs = 0L
-        builtInResumedAt = if (running) SystemClock.elapsedRealtime() else null
-    }
-
-    private fun builtInForegroundSoFar(): Long = synchronized(builtInClockLock) {
-        builtInForegroundMs + (builtInResumedAt?.let { SystemClock.elapsedRealtime() - it } ?: 0L)
-    }
+    fun onBuiltInGamePaused() = builtInClock.pause()
 
     private val screenReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -450,12 +430,7 @@ class PlaySessionTracker @Inject constructor(
             startTime.toEpochMilli(),
             endTime.toEpochMilli()
         )
-        val foregroundMs = builtInForegroundMs
-            ?: if (durations.foregroundMs >= 0) durations.foregroundMs else totalMs
-        val screenOnMs = if (durations.screenOnMs >= 0) durations.screenOnMs else totalMs
-        val active = minOf(foregroundMs, screenOnMs).coerceAtMost(totalMs)
-        val standby = (totalMs - active).coerceAtLeast(0)
-        return active to standby
+        return splitActivePlayTime(totalMs, builtInForegroundMs ?: durations.foregroundMs, durations.screenOnMs)
     }
 
     private fun registerScreenReceiver() {
@@ -529,7 +504,7 @@ class PlaySessionTracker @Inject constructor(
         lastScreenOffTime = null
         marathonSegmentDuration = Duration.ZERO
         longestMarathonSegment = Duration.ZERO
-        resetBuiltInClock(running = emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE)
+        builtInClock.reset(running = emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE)
 
         val startTime = Instant.now()
         sessionRecapFactsRecorder.onSessionStarted(scope, gameId, emulatorPackage, startTime)
@@ -733,7 +708,7 @@ class PlaySessionTracker @Inject constructor(
             val endTime = Instant.now()
             val sessionDuration = Duration.between(session.startTime, endTime)
             val totalMs = sessionDuration.toMillis()
-            val builtInForeground = builtInForegroundSoFar()
+            val builtInForeground = builtInClock.elapsedMs()
                 .takeIf { session.emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE }
             val (activePlayMs, standbyMs) = resolveActivePlayTime(
                 session.emulatorPackage, session.startTime, endTime, totalMs, builtInForeground

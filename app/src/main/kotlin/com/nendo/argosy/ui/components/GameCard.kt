@@ -573,11 +573,8 @@ fun GameCardWithBadge(
 }
 
 /**
- * How far the new-game badge rises above the card it belongs to, making a badged card this much
- * taller than a plain one; a caller that lines cards up has to take the difference back out. When
- * a corner placement is active the wrapper reserves the same shift on each side as well, so the
- * badge sits inside the node's bounds and nothing can cut it off; spacing between cards stays
- * derived from the box art metrics alone.
+ * How far the new-game badge rises above its card; a badged card is this much taller than a
+ * plain one.
  */
 val NEW_BADGE_TOP_OVERFLOW = ComponentDefaults.Carousel.newBadgeOverflowDp.dp
 

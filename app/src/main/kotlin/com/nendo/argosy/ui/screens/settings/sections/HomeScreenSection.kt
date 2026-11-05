@@ -131,10 +131,6 @@ internal sealed class HomeScreenItem(
         visibleWhen = { it.homeLayout.selected != HomeLayoutKind.CUSTOM_GRID }
     )
 
-    /**
-     * The NEW badge only draws on carousel rails, so the placement setting is only meaningful
-     * while that layout is selected.
-     */
     data object NewBadge : HomeScreenItem(
         key = "newBadge",
         section = "content",

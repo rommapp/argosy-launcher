@@ -665,7 +665,6 @@ fun GameCardWithNewBadge(
                 }
             )
             this.alpha = alpha
-            this.clip = false
         }.then(interactionModifier)
     ) { measurables, constraints ->
         val cardWidthPx = cardWidth.toPx().toInt()

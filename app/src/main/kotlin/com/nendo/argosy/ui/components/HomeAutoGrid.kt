@@ -404,7 +404,7 @@ private fun AutoGridCell(
     showFocusVisuals: Boolean,
     showTitle: Boolean,
     showPlatformBadge: Boolean,
-    showDownloadedIndicator: Boolean = true,
+    showDownloadedIndicator: Boolean,
     useBoxArt: Boolean,
     downloadIndicator: GameDownloadIndicator,
     cellWidth: Dp?,

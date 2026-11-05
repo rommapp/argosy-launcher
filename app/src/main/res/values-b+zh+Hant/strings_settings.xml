@@ -397,8 +397,8 @@
         <item quantity="other">最多 %d 個</item>
     </plurals>
 
-    <string name="settings_home_screen_new_badge_title">NEW 徽章</string>
-    <string name="settings_home_screen_new_badge_subtitle">主頁卡片上 NEW 徽章的位置，或將其隱藏</string>
+    <string name="settings_home_screen_new_badge_title">「新」徽章</string>
+    <string name="settings_home_screen_new_badge_subtitle">主頁卡片上「新」徽章的位置，或將其隱藏</string>
     <string name="settings_home_screen_new_badge_option_right">右側</string>
     <string name="settings_home_screen_new_badge_option_left">左側</string>
     <string name="settings_home_screen_new_badge_option_hidden">隱藏</string>

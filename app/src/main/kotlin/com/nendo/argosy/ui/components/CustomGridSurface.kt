@@ -78,8 +78,7 @@ fun CustomGridSurface(
     onCoverLoadFailed: ((Long, String) -> Unit)? = null,
     onCoverLoaded: ((Long, android.graphics.Bitmap) -> Unit)? = null,
     onPosterLoaded: ((String, android.graphics.Bitmap) -> Unit)? = null,
-    useBoxArt: Boolean = false,
-    showDownloadedIndicator: Boolean = true
+    useBoxArt: Boolean = false
 ) {
     if (state.isScrolling) {
         Column(modifier = modifier) {
@@ -107,7 +106,6 @@ fun CustomGridSurface(
                 onCoverLoaded = onCoverLoaded,
                 onPosterLoaded = onPosterLoaded,
                 useBoxArt = useBoxArt,
-                showDownloadedIndicator = showDownloadedIndicator,
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
@@ -193,7 +191,6 @@ fun CustomGridSurface(
                     onCoverLoaded = onCoverLoaded,
                     onPosterLoaded = onPosterLoaded,
                     useBoxArt = useBoxArt,
-                    showDownloadedIndicator = showDownloadedIndicator,
                     modifier = Modifier.fillMaxSize()
                 )
             }

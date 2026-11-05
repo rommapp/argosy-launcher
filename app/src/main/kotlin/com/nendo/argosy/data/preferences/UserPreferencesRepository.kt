@@ -1179,10 +1179,6 @@ enum class BoxArtGlowStrength(val alpha: Float, val isShadow: Boolean = false) {
     }
 }
 
-/**
- * Where the NEW badge sits on home game cards. RIGHT is the historical default; HIDDEN
- * suppresses it entirely (e.g. when every visible card is already installed).
- */
 enum class NewBadgePlacement {
     RIGHT, LEFT, HIDDEN;
 

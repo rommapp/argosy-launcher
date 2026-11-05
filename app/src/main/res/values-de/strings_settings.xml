@@ -432,8 +432,8 @@
         <item quantity="other">Bis zu %d</item>
     </plurals>
 
-    <string name="settings_home_screen_new_badge_title">NEW-Badge</string>
-    <string name="settings_home_screen_new_badge_subtitle">Position des NEW-Badges auf Startbildschirm-Karten oder ausblenden</string>
+    <string name="settings_home_screen_new_badge_title">NEU-Badge</string>
+    <string name="settings_home_screen_new_badge_subtitle">Position des NEU-Badges auf Startbildschirm-Karten oder ausblenden</string>
     <string name="settings_home_screen_new_badge_option_right">Rechts</string>
     <string name="settings_home_screen_new_badge_option_left">Links</string>
     <string name="settings_home_screen_new_badge_option_hidden">Ausgeblendet</string>

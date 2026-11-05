@@ -65,8 +65,7 @@ fun CustomGridScrollCanvas(
     onCoverLoadFailed: ((Long, String) -> Unit)? = null,
     onCoverLoaded: ((Long, android.graphics.Bitmap) -> Unit)? = null,
     onPosterLoaded: ((String, android.graphics.Bitmap) -> Unit)? = null,
-    useBoxArt: Boolean = false,
-    showDownloadedIndicator: Boolean = true
+    useBoxArt: Boolean = false
 ) {
     val axis = state.scrollAxis ?: return
     val vertical = axis == HomeScrollAxis.VERTICAL
@@ -150,7 +149,6 @@ fun CustomGridScrollCanvas(
                     onCoverLoaded = onCoverLoaded,
                     onPosterLoaded = onPosterLoaded,
                     useBoxArt = useBoxArt,
-                    showDownloadedIndicator = showDownloadedIndicator,
                     overlappedTileIds = state.overlappedTileIds,
                     editingTileId = state.editingTileId,
                     dragOffset = dragOffset,

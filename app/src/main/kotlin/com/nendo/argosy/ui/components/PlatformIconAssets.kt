@@ -30,33 +30,37 @@ object PlatformIconAssets {
         "mac" to "apple"
     )
 
-    @Volatile private var cached: Set<String>? = null
+    private val extensions = listOf("svg", "png")
+
+    @Volatile private var cached: Map<String, String>? = null
 
     fun resolveAssetUri(context: Context, platformSlug: String): String? {
         if (platformSlug.isBlank()) return null
         val available = available(context)
         if (available.isEmpty()) return null
         for (candidate in PlatformDefinitions.getSlugsForCanonical(platformSlug)) {
-            if (candidate in available) return "file:///android_asset/$ASSET_DIR/$candidate.svg"
+            available[candidate]?.let { return "file:///android_asset/$ASSET_DIR/$it" }
         }
         iconFallbacks[PlatformDefinitions.getCanonicalSlug(platformSlug)]?.let { fallback ->
-            if (fallback in available) return "file:///android_asset/$ASSET_DIR/$fallback.svg"
+            available[fallback]?.let { return "file:///android_asset/$ASSET_DIR/$it" }
         }
         return null
     }
 
-    private fun available(context: Context): Set<String> {
+    private fun available(context: Context): Map<String, String> {
         cached?.let { return it }
         synchronized(this) {
             cached?.let { return it }
-            val list = context.assets.list(ASSET_DIR)
-                ?.asSequence()
-                ?.filter { it.endsWith(".svg") }
-                ?.map { it.removeSuffix(".svg") }
-                ?.toSet()
-                ?: emptySet()
-            cached = list
-            return list
+            val files = context.assets.list(ASSET_DIR)?.toSet() ?: emptySet()
+            val byName = files
+                .mapNotNull { file -> file.substringBeforeLast('.', "").takeIf { it.isNotEmpty() } }
+                .distinct()
+                .mapNotNull { name ->
+                    extensions.firstOrNull { "$name.$it" in files }?.let { name to "$name.$it" }
+                }
+                .toMap()
+            cached = byName
+            return byName
         }
     }
 }

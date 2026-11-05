@@ -607,6 +607,8 @@
     <string name="ui_quick_settings_group_performance">Leistung</string>
     <string name="ui_quick_settings_group_fan">Lüfter</string>
     <string name="ui_quick_settings_group_overlay">Overlay</string>
+    <string name="ui_quick_settings_stats_fan">Lüfter</string>
+    <string name="ui_quick_settings_stats_battery">Akku</string>
     <string name="ui_quick_settings_music_nothing_playing">Keine Wiedergabe</string>
     <string name="ui_quick_settings_music_source_launcher">Launcher-Musik</string>
     <string name="ui_quick_settings_music_track_position">%1$d von %2$d</string>

@@ -34,6 +34,8 @@ object AppPaths {
 
     const val FAN_DUTY_PATH = "$FAN_BASE_PATH/duty"
 
+    const val FAN_PERIOD_PATH = "$FAN_BASE_PATH/period"
+
     fun retiredSteamDownloadDirs(filesDir: File): List<File> =
         listOf(File(filesDir, STEAM_STAGING_DIR), File(filesDir, STEAM_DOWNLOADS_DIR))
 

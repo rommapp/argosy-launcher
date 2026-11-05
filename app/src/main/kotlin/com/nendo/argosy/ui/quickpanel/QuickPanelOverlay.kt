@@ -53,6 +53,7 @@ import com.nendo.argosy.hardware.AmbientLedManager
 import com.nendo.argosy.hardware.BrightnessController
 import com.nendo.argosy.hardware.DevicePerformanceResolver
 import com.nendo.argosy.hardware.DisplayRefreshController
+import com.nendo.argosy.hardware.HardwareStatsReader
 import com.nendo.argosy.hardware.RadioController
 import com.nendo.argosy.hardware.VolumeController
 import com.nendo.argosy.ui.audio.AmbientAudioManager
@@ -132,6 +133,7 @@ class QuickPanelOverlay @Inject constructor(
     private val volumeController: VolumeController,
     private val performanceResolver: DevicePerformanceResolver,
     private val refreshController: DisplayRefreshController,
+    private val hardwareStatsReader: HardwareStatsReader,
     private val socialRepository: SocialRepository,
     private val radioController: RadioController,
     private val hapticManager: HapticFeedbackManager,
@@ -222,6 +224,7 @@ class QuickPanelOverlay @Inject constructor(
             volumeController = volumeController,
             performanceResolver = performanceResolver,
             refreshController = refreshController,
+            hardwareStatsReader = hardwareStatsReader,
             socialRepository = socialRepository,
             hapticManager = hapticManager,
             soundManager = soundManager,

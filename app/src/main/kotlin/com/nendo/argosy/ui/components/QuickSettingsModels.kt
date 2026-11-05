@@ -72,7 +72,8 @@ data class QuickSettingsState(
     val hudEnabled: Boolean = false,
     val isSocialLinked: Boolean = false,
     val isSocialConnected: Boolean = false,
-    val quayPassEnabled: Boolean = false
+    val quayPassEnabled: Boolean = false,
+    val hardwareStats: HardwareStatsUi? = null
 ) {
     val deviceControlsLocked: Boolean get() = deviceSettingsSupported && !deviceSettingsEnabled
 }
@@ -131,6 +132,13 @@ sealed class QuickSettingsItem(
     data object SwapXY : QuickSettingsItem("swapXY", QuickSettingsPage.QUICK, QuickSettingsGroup.CONTROLS)
     data object SwapStartSelect : QuickSettingsItem("swapStartSelect", QuickSettingsPage.QUICK, QuickSettingsGroup.CONTROLS)
 
+    data object HardwareStats : QuickSettingsItem(
+        "hardwareStats", QuickSettingsPage.PERFORMANCE,
+        visibleWhen = { it.hardwareStats != null }
+    ) {
+        override fun isFocusable(state: QuickSettingsState): Boolean = false
+    }
+
     data object DeviceAccess : QuickSettingsItem(
         "deviceAccess", QuickSettingsPage.PERFORMANCE,
         visibleWhen = { it.deviceControlsLocked }
@@ -183,6 +191,7 @@ sealed class QuickSettingsItem(
                 DisplayHeader, Theme, Accent, ScreenBrightness, SecondScreenBrightness, SwapDisplays,
                 SoundHeader, SystemVolume, UISounds,
                 ControlsHeader, Haptic, SwapAB, SwapXY, SwapStartSelect,
+                HardwareStats,
                 DeviceAccess,
                 PerformanceHeader, Performance, Refresh,
                 FanHeader, Fan, FanSpeed,

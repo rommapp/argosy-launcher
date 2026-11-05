@@ -1339,6 +1339,18 @@
     <!-- Section heading on the Performance page over the stats overlay row. Noun. Shown in
          capitals. -->
     <string name="ui_quick_settings_group_overlay">Overlay</string>
+    <string name="ui_quick_settings_stats_cpu" translatable="false">CPU</string>
+    <string name="ui_quick_settings_stats_gpu" translatable="false">GPU</string>
+    <!-- Label under the live fan speed reading at the top of the Performance page. Noun. -->
+    <string name="ui_quick_settings_stats_fan">Fan</string>
+    <!-- Label under the live battery temperature reading at the top of the Performance page.
+         Noun. -->
+    <string name="ui_quick_settings_stats_battery">Battery</string>
+    <string name="ui_quick_settings_stats_ghz" translatable="false">%1$.1f GHz</string>
+    <string name="ui_quick_settings_stats_mhz" translatable="false">%1$d MHz</string>
+    <string name="ui_quick_settings_stats_rpm" translatable="false">%1$d RPM</string>
+    <string name="ui_quick_settings_stats_krpm" translatable="false">%1$.1fk RPM</string>
+    <string name="ui_quick_settings_stats_celsius" translatable="false">%1$d°C</string>
     <!-- Music page of that panel: shown in place of a song title when nothing is queued. -->
     <string name="ui_quick_settings_music_nothing_playing">Nothing playing</string>
     <!-- Music page: name of the playlist the reader builds in Argosy's own music settings. Noun

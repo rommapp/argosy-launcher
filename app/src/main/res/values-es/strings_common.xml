@@ -620,6 +620,8 @@
     <string name="ui_quick_settings_group_performance">Rendimiento</string>
     <string name="ui_quick_settings_group_fan">Ventilador</string>
     <string name="ui_quick_settings_group_overlay">Superposición</string>
+    <string name="ui_quick_settings_stats_fan">Ventilador</string>
+    <string name="ui_quick_settings_stats_battery">Batería</string>
     <string name="ui_quick_settings_music_nothing_playing">Nada en reproducción</string>
     <string name="ui_quick_settings_music_source_launcher">Música del launcher</string>
     <string name="ui_quick_settings_music_track_position">%1$d de %2$d</string>

@@ -461,6 +461,12 @@ object ComponentDefaults {
         const val offlineAvatarAlpha = 0.6f
         const val disabledContentAlpha = 0.38f
         const val sectionLabelTrackingSp = 1.5f
+        const val statsSparklineHeightDp = 20
+        const val statsSparklineStrokeDp = 1.5f
+        const val statsSparklineAlpha = 0.55f
+        const val statsTileFillAlpha = 0.5f
+        const val statsTempWarmC = 70
+        const val statsTempHotC = 85
     }
 
     object QuickMenuRandom {

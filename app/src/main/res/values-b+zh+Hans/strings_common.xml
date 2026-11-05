@@ -582,6 +582,8 @@
     <string name="ui_quick_settings_group_performance">性能</string>
     <string name="ui_quick_settings_group_fan">风扇</string>
     <string name="ui_quick_settings_group_overlay">叠加层</string>
+    <string name="ui_quick_settings_stats_fan">风扇</string>
+    <string name="ui_quick_settings_stats_battery">电池</string>
     <string name="ui_quick_settings_music_nothing_playing">未在播放</string>
     <string name="ui_quick_settings_music_source_launcher">启动器音乐</string>
     <string name="ui_quick_settings_music_track_position">第 %1$d 首，共 %2$d 首</string>

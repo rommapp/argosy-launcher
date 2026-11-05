@@ -607,6 +607,8 @@
     <string name="ui_quick_settings_group_performance">परफ़ॉर्मेंस</string>
     <string name="ui_quick_settings_group_fan">फैन</string>
     <string name="ui_quick_settings_group_overlay">ओवरले</string>
+    <string name="ui_quick_settings_stats_fan">फैन</string>
+    <string name="ui_quick_settings_stats_battery">बैटरी</string>
     <string name="ui_quick_settings_music_nothing_playing">कुछ नहीं चल रहा</string>
     <string name="ui_quick_settings_music_source_launcher">लॉन्चर संगीत</string>
     <string name="ui_quick_settings_music_track_position">%2$d में से %1$d</string>

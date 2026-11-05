@@ -592,6 +592,8 @@
     <string name="ui_quick_settings_group_performance">效能</string>
     <string name="ui_quick_settings_group_fan">風扇</string>
     <string name="ui_quick_settings_group_overlay">疊加層</string>
+    <string name="ui_quick_settings_stats_fan">風扇</string>
+    <string name="ui_quick_settings_stats_battery">電池</string>
     <string name="ui_quick_settings_music_nothing_playing">未在播放</string>
     <string name="ui_quick_settings_music_source_launcher">啟動器音樂</string>
     <string name="ui_quick_settings_music_track_position">第 %1$d 首，共 %2$d 首</string>

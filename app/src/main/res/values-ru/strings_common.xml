@@ -627,6 +627,8 @@
     <string name="ui_quick_settings_group_performance">Производительность</string>
     <string name="ui_quick_settings_group_fan">Вентилятор</string>
     <string name="ui_quick_settings_group_overlay">Оверлей</string>
+    <string name="ui_quick_settings_stats_fan">Вентилятор</string>
+    <string name="ui_quick_settings_stats_battery">Батарея</string>
     <string name="ui_quick_settings_music_nothing_playing">Ничего не играет</string>
     <string name="ui_quick_settings_music_source_launcher">Музыка лаунчера</string>
     <string name="ui_quick_settings_music_track_position">%1$d из %2$d</string>

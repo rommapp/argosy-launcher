@@ -461,6 +461,8 @@ private fun QuickSettingsItemRow(
             onToggle = controller::setSwapStartSelect
         )
 
+        QuickSettingsItem.HardwareStats -> state.hardwareStats?.let { HardwareStatsBlock(it) }
+
         QuickSettingsItem.DeviceAccess -> QuickNoticeRow(
             message = stringResource(R.string.ui_quick_settings_device_access_notice),
             actionLabel = stringResource(R.string.ui_quick_settings_device_access_allow),

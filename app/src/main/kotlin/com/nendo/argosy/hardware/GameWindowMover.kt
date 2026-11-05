@@ -39,6 +39,7 @@ internal fun builtInGameTask(activityManager: ActivityManager): ActivityManager.
     builtInGameAppTask(activityManager)?.let { runCatching { it.taskInfo }.getOrNull() }
 
 internal fun builtInGameAppTask(activityManager: ActivityManager): ActivityManager.AppTask? {
+    if (!LibretroActivity.isGameAlive) return null
     val gameActivity = LibretroActivity::class.java.name
     return activityManager.appTasks.firstOrNull { task ->
         val info = runCatching { task.taskInfo }.getOrNull() ?: return@firstOrNull false

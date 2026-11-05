@@ -444,6 +444,7 @@ class LibretroActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        liveInstances.incrementAndGet()
         Log.d(TAG, "onCreate: savedInstanceState=${savedInstanceState != null}")
         allowContentIntoDisplayCutout()
         installImmersiveMode()
@@ -3998,6 +3999,7 @@ class LibretroActivity : ComponentActivity() {
 
     override fun onDestroy() {
         Log.d(TAG, "onDestroy: isFinishing=$isFinishing, isChangingConfigurations=$isChangingConfigurations")
+        liveInstances.decrementAndGet()
         quickPanelOverlay.hideNow()
         hideSecondScreen()
         if (!coreDestroyed && ::retroView.isInitialized) retroView.destroyNative()
@@ -4095,6 +4097,14 @@ class LibretroActivity : ComponentActivity() {
 
     companion object {
         private const val TAG = "LibretroActivity"
+
+        private val liveInstances = java.util.concurrent.atomic.AtomicInteger(0)
+
+        /**
+         * Whether a game screen exists in this process. A task left in recents after the process
+         * died still names this activity but holds no game.
+         */
+        val isGameAlive: Boolean get() = liveInstances.get() > 0
 
         private const val CORE_INPUT_PULSE_MS = 50L
 

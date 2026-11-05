@@ -168,6 +168,7 @@ class ArgosyActivity : ComponentActivity() {
     @Inject lateinit var saveHandlerRegistry: com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry
     @Inject lateinit var steamRepository: com.nendo.argosy.data.repository.SteamRepository
     @Inject lateinit var playSessionTracker: com.nendo.argosy.data.emulator.PlaySessionTracker
+    @Inject lateinit var keepAlivePolicy: com.nendo.argosy.data.emulator.background.KeepAlivePolicy
     @Inject lateinit var repairImageCacheUseCase: com.nendo.argosy.domain.usecase.cache.RepairImageCacheUseCase
     @Inject lateinit var downloadFileStatusRepository: com.nendo.argosy.data.repository.DownloadFileStatusRepository
     @Inject lateinit var presenceManager: com.nendo.argosy.data.social.PresenceManager
@@ -789,9 +790,10 @@ class ArgosyActivity : ComponentActivity() {
     private fun revealCallerWhenExternalSessionCloses() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                playSessionTracker.externalSessionClosed.collect {
+                playSessionTracker.externalSessionClosed.collect { emulatorPackage ->
                     playSessionTracker.pendingSessionConflict.first { it == null }
                     if (!lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) return@collect
+                    if (keepAlivePolicy.keepsAlive(emulatorPackage)) return@collect
                     Log.d(TAG, "External session closed, moving task to back")
                     moveTaskToBack(true)
                 }

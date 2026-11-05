@@ -8,6 +8,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
 import android.os.Bundle
+import android.os.SystemClock
 import android.provider.Settings
 import com.nendo.argosy.R
 import com.nendo.argosy.data.local.dao.GameDao
@@ -185,20 +186,21 @@ class PlaySessionTracker @Inject constructor(
         _pendingSessionConflict.value = null
     }
 
-    private val _externalSessionClosed = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    private val _externalSessionClosed = MutableSharedFlow<String>(extraBufferCapacity = 1)
 
     /**
-     * Fires once a session with [LaunchOrigin.EXTERNAL] has closed and its session-end save work
-     * has returned. No replay: a close nobody is listening to at that moment is not owed later,
-     * so a launcher opened by hand afterwards never reacts to it. A save conflict raised by that
-     * close may still be waiting in [pendingSessionConflict] when this fires.
+     * Emits the emulator package once a session with [LaunchOrigin.EXTERNAL] has closed and its
+     * session-end save work has returned. No replay: a close nobody is listening to at that moment
+     * is not owed later, so a launcher opened by hand afterwards never reacts to it. A save
+     * conflict raised by that close may still be waiting in [pendingSessionConflict] when this
+     * fires.
      */
-    val externalSessionClosed: SharedFlow<Unit> = _externalSessionClosed.asSharedFlow()
+    val externalSessionClosed: SharedFlow<String> = _externalSessionClosed.asSharedFlow()
 
     private fun signalSessionClosed(session: ActiveSession) {
         if (session.origin != LaunchOrigin.EXTERNAL) return
         Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | External session closed, releasing the launcher")
-        _externalSessionClosed.tryEmit(Unit)
+        _externalSessionClosed.tryEmit(session.emulatorPackage)
     }
 
     private var wasInBackground = false
@@ -209,6 +211,28 @@ class PlaySessionTracker @Inject constructor(
     private var lastScreenOffTime: Instant? = null
     private var marathonSegmentDuration: Duration = Duration.ZERO
     private var longestMarathonSegment: Duration = Duration.ZERO
+
+    private val builtInClockLock = Any()
+    private var builtInForegroundMs = 0L
+    private var builtInResumedAt: Long? = null
+
+    fun onBuiltInGameResumed() = synchronized(builtInClockLock) {
+        if (builtInResumedAt == null) builtInResumedAt = SystemClock.elapsedRealtime()
+    }
+
+    fun onBuiltInGamePaused() = synchronized(builtInClockLock) {
+        builtInResumedAt?.let { builtInForegroundMs += SystemClock.elapsedRealtime() - it }
+        builtInResumedAt = null
+    }
+
+    private fun resetBuiltInClock(running: Boolean) = synchronized(builtInClockLock) {
+        builtInForegroundMs = 0L
+        builtInResumedAt = if (running) SystemClock.elapsedRealtime() else null
+    }
+
+    private fun builtInForegroundSoFar(): Long = synchronized(builtInClockLock) {
+        builtInForegroundMs + (builtInResumedAt?.let { SystemClock.elapsedRealtime() - it } ?: 0L)
+    }
 
     private val screenReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -425,7 +449,8 @@ class PlaySessionTracker @Inject constructor(
         emulatorPackage: String,
         startTime: Instant,
         endTime: Instant,
-        totalMs: Long
+        totalMs: Long,
+        builtInForegroundMs: Long? = null
     ): Pair<Long, Long> {
         val statsPackage = if (emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE) {
             application.packageName
@@ -438,7 +463,8 @@ class PlaySessionTracker @Inject constructor(
             startTime.toEpochMilli(),
             endTime.toEpochMilli()
         )
-        val foregroundMs = if (durations.foregroundMs >= 0) durations.foregroundMs else totalMs
+        val foregroundMs = builtInForegroundMs
+            ?: if (durations.foregroundMs >= 0) durations.foregroundMs else totalMs
         val screenOnMs = if (durations.screenOnMs >= 0) durations.screenOnMs else totalMs
         val active = minOf(foregroundMs, screenOnMs).coerceAtMost(totalMs)
         val standby = (totalMs - active).coerceAtLeast(0)
@@ -516,6 +542,7 @@ class PlaySessionTracker @Inject constructor(
         lastScreenOffTime = null
         marathonSegmentDuration = Duration.ZERO
         longestMarathonSegment = Duration.ZERO
+        resetBuiltInClock(running = emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE)
 
         val startTime = Instant.now()
         sessionRecapFactsRecorder.onSessionStarted(scope, gameId, emulatorPackage, startTime)
@@ -719,8 +746,10 @@ class PlaySessionTracker @Inject constructor(
             val endTime = Instant.now()
             val sessionDuration = Duration.between(session.startTime, endTime)
             val totalMs = sessionDuration.toMillis()
+            val builtInForeground = builtInForegroundSoFar()
+                .takeIf { session.emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE }
             val (activePlayMs, standbyMs) = resolveActivePlayTime(
-                session.emulatorPackage, session.startTime, endTime, totalMs
+                session.emulatorPackage, session.startTime, endTime, totalMs, builtInForeground
             )
             Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Session ended | duration=${sessionDuration.seconds}s, activePlayMs=$activePlayMs, standbyMs=$standbyMs, emulator=${session.emulatorPackage}")
             try {

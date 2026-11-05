@@ -50,7 +50,8 @@ class BackgroundGameLaunch @Inject constructor(
     /**
      * Resumes [game] in the task [live] holds, after checking the server for a newer save without
      * touching the one the emulator has open. A newer save asks whether to load it, which closes
-     * the emulator and hands back to a fresh launch.
+     * the emulator and hands back to a fresh launch. A built-in game opens its own session when its
+     * screen returns.
      */
     suspend fun resume(
         ticket: LaunchProgressTracker.Ticket,
@@ -77,12 +78,17 @@ class BackgroundGameLaunch @Inject constructor(
             }
         }
         if (ticket.isCancelled) return Resume.CANCELLED
-        DualScreenManagerHolder.instance?.setEmulatorDisplay(live.displayId)
+        val builtIn = live.packageName == EmulatorRegistry.BUILTIN_PACKAGE
+        if (!builtIn) DualScreenManagerHolder.instance?.setEmulatorDisplay(live.displayId)
         if (!backgroundGames.bringToFront(live.taskId)) {
-            DualScreenManagerHolder.instance?.setEmulatorDisplay(null)
+            if (!builtIn) DualScreenManagerHolder.instance?.setEmulatorDisplay(null)
             return Resume.FRESH_LAUNCH
         }
         launchProgressTracker.finish(ticket, launched = true)
+        if (builtIn) {
+            Logger.debug(TAG, "resumed gameId=${game.id} in the built-in game's task ${live.taskId}")
+            return Resume.RESUMED
+        }
         playSessionTracker.startExternal(
             ExternalSessionStart(
                 gameId = game.id,

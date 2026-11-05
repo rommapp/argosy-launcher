@@ -1865,8 +1865,9 @@ class DualScreenManager(
     }
 
     private suspend fun closeBackgroundedBuiltInGame(activity: android.app.Activity) {
-        if (_isDualScreenDevice.value) return
-        if (sessionStateStore.getEmulatorPackage() != com.nendo.argosy.data.emulator.EmulatorRegistry.BUILTIN_PACKAGE) return
+        val builtIn = com.nendo.argosy.data.emulator.EmulatorRegistry.BUILTIN_PACKAGE
+        if (sessionStateStore.getEmulatorPackage() != builtIn) return
+        if (!sessionEndCoordinator.stopsAfterLeavingScreen(builtIn)) return
         if (isSessionSettling()) {
             delay(EMULATOR_SETTLE_MS)
             if (!activity.hasWindowFocus() || launchProgressTracker.launchLive.value) return
@@ -1917,8 +1918,9 @@ class DualScreenManager(
     /**
      * A launcher window gaining focus on the display its game ran on is the launcher's signal that
      * the game closed. The session ends once [emulatorLeftScreen] confirms it; a game on another
-     * display keeps running. On a single-screen device a built-in game left paused in the background
-     * is closed first, and its own teardown ends the session. While a launch is live the focus gain is a launcher surface returning
+     * display keeps running. A built-in game left paused in the background is closed first when games
+     * do not stay open, and its own teardown ends the session; one that stays open keeps running and
+     * only its session ends. While a launch is live the focus gain is a launcher surface returning
      * before its game window exists, not the game closing; the check waits for the launch to clear.
      * A launch that goes live while the check is settling stops it the same way.
      */

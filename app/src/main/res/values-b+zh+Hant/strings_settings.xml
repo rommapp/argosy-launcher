@@ -1552,9 +1552,10 @@
     <string name="settings_emulators_section_disabled">已停用的平台</string>
     <string name="settings_emulators_rail_platforms">平台</string>
 
-    <string name="settings_emulators_close_on_session_end_title">返回 Argosy 時關閉模擬器</string>
-    <string name="settings_emulators_close_on_session_end_subtitle_on">存檔同步完成後關閉模擬器。未儲存的進度會遺失。</string>
-    <string name="settings_emulators_close_on_session_end_subtitle_off">模擬器應用程式將繼續在背景執行</string>
+    <string name="settings_emulators_close_on_session_end_title">返回 Argosy 時關閉遊戲</string>
+    <string name="settings_emulators_close_on_session_end_subtitle_on">存檔同步完成後關閉遊戲。未儲存的進度會遺失。</string>
+    <string name="settings_emulators_close_on_session_end_subtitle_off">遊戲將繼續在背景執行</string>
+    <string name="settings_emulators_close_on_session_end_subtitle_needs_usage">內建遊戲保持開啟。在「權限」中授予使用狀況存取權之前，其他模擬器仍會關閉。</string>
     <string name="settings_emulators_check_updates_title">檢查更新</string>
     <string name="settings_emulators_check_updates_subtitle">檢查模擬器更新</string>
     <plurals name="settings_emulators_check_updates_available">

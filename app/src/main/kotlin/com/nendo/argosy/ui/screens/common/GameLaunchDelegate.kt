@@ -206,7 +206,17 @@ class GameLaunchDelegate @Inject constructor(
         noTrackedSession: Boolean
     ): Boolean {
         if (emulatorPackage == null || emulatorPackage == alreadyStopped) return true
-        if (emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE || emulatorPackage == application.packageName) return true
+        if (emulatorPackage == application.packageName) return true
+        if (emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE) {
+            return when (backgroundGameLaunch.clearForLaunch(ticket, emulatorPackage)) {
+                BackgroundGameLaunch.Clear.CANCELLED -> false
+                BackgroundGameLaunch.Clear.CLOSED -> {
+                    delay(EMULATOR_KILL_DELAY_MS)
+                    true
+                }
+                BackgroundGameLaunch.Clear.NOT_RUNNING -> true
+            }
+        }
         val requiresKill = noTrackedSession && emulatorResolver.resolveEmulatorId(emulatorPackage)
             ?.let { EmulatorRegistry.getById(it) }?.launchConfig?.requiresEmulatorKill == true
         if (!requiresKill && !withContext(Dispatchers.IO) { RootShell.isAvailable }) return true

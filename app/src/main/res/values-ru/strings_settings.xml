@@ -1755,9 +1755,10 @@
     <string name="settings_emulators_section_disabled">Отключённые платформы</string>
     <string name="settings_emulators_rail_platforms">Платформы</string>
 
-    <string name="settings_emulators_close_on_session_end_title">Закрывать эмулятор при возврате в Argosy</string>
-    <string name="settings_emulators_close_on_session_end_subtitle_on">Закрывает эмулятор после синхронизации сохранения. Несохранённый прогресс теряется.</string>
-    <string name="settings_emulators_close_on_session_end_subtitle_off">Приложение эмулятора остаётся открытым в фоне</string>
+    <string name="settings_emulators_close_on_session_end_title">Закрывать игры при возврате в Argosy</string>
+    <string name="settings_emulators_close_on_session_end_subtitle_on">Закрывает игру после синхронизации сохранения. Несохранённый прогресс теряется.</string>
+    <string name="settings_emulators_close_on_session_end_subtitle_off">Игры остаются открытыми в фоне</string>
+    <string name="settings_emulators_close_on_session_end_subtitle_needs_usage">Встроенные игры остаются открытыми. Другие эмуляторы закрываются, пока в разделе «Разрешения» не выдан доступ к статистике использования.</string>
     <string name="settings_emulators_check_updates_title">Проверить обновления</string>
     <string name="settings_emulators_check_updates_subtitle">Проверить обновления эмуляторов</string>
     <plurals name="settings_emulators_check_updates_available">

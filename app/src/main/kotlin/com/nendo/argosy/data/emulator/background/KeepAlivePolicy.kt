@@ -5,36 +5,47 @@ import android.content.Intent
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.EmulatorResolver
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.util.Logger
+import com.nendo.argosy.util.PermissionHelper
 import com.nendo.argosy.util.RootShell
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Whether external emulators stay alive between sessions: on a device with a root shell, unless
- * the player closes emulators when a session ends.
+ * Whether a game stays open in the background once the player leaves it. Play time counts only the
+ * time a game is on screen, so a game may stay open only where that time can be measured: always
+ * for the built-in emulator, and for an external emulator on root or with Usage Access. Elsewhere,
+ * and whenever the player closes emulators on returning to Argosy, games are closed.
  */
 @Singleton
 class KeepAlivePolicy @Inject constructor(
     private val application: Application,
     private val preferencesRepository: UserPreferencesRepository,
-    private val emulatorResolver: EmulatorResolver
+    private val emulatorResolver: EmulatorResolver,
+    private val permissionHelper: PermissionHelper
 ) {
     val isSupported: Boolean get() = RootShell.isAvailable
 
+    /**
+     * Whether an external emulator's time on screen can be measured, so it may stay open between
+     * sessions.
+     */
+    fun measuresExternalForeground(): Boolean =
+        RootShell.isAvailable || permissionHelper.hasUsageStatsPermission(application)
+
     suspend fun keepsGamesAlive(): Boolean =
-        isSupported && !preferencesRepository.preferences.first().closeEmulatorOnSessionEnd
+        !preferencesRepository.preferences.first().closeEmulatorOnSessionEnd
 
     /**
-     * Never true for the built-in emulator, Argosy itself, or an emulator that has to be stopped
-     * before every launch.
+     * Never true for Argosy itself or an emulator that has to be stopped before every launch.
      */
     suspend fun keepsAlive(emulatorPackage: String): Boolean {
-        if (emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE) return false
         if (emulatorPackage == application.packageName) return false
+        if (emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE) return keepsGamesAlive()
         val emulator = emulatorResolver.resolveEmulatorId(emulatorPackage)?.let { EmulatorRegistry.getById(it) }
         if (emulator?.launchConfig?.requiresEmulatorKill == true) return false
-        return keepsGamesAlive()
+        return measuresExternalForeground() && keepsGamesAlive()
     }
 
     /**
@@ -43,4 +54,18 @@ class KeepAlivePolicy @Inject constructor(
      */
     suspend fun launchFlags(emulatorPackage: String, flags: Int): Int =
         if (keepsAlive(emulatorPackage)) flags and Intent.FLAG_ACTIVITY_NO_HISTORY.inv() else flags
+
+    /**
+     * Grants Argosy Usage Access through the root shell, so play time on root is measured the same
+     * way as on a device where the player granted it.
+     */
+    fun grantUsageAccessOnRoot() {
+        if (!RootShell.isAvailable || permissionHelper.hasUsageStatsPermission(application)) return
+        RootShell.execute("appops set ${application.packageName} GET_USAGE_STATS allow")
+            .onFailure { Logger.warn(TAG, "Usage Access grant through root failed", it) }
+    }
+
+    private companion object {
+        const val TAG = "KeepAlivePolicy"
+    }
 }

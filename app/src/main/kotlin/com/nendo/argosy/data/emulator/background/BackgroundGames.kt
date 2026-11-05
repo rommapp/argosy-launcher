@@ -3,9 +3,13 @@ package com.nendo.argosy.data.emulator.background
 import android.app.ActivityManager
 import android.app.Application
 import android.content.Context
+import android.os.Process
+import android.view.Display
 import com.nendo.argosy.data.emulator.ActiveSession
+import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.GameLauncher
 import com.nendo.argosy.data.emulator.PlaySessionTracker
+import com.nendo.argosy.hardware.builtInGameAppTask
 import com.nendo.argosy.util.Logger
 import com.nendo.argosy.util.RootShell
 import com.nendo.argosy.util.SafeCoroutineScope
@@ -28,9 +32,9 @@ data class RunningApp(
 )
 
 /**
- * The apps and games left running on a device with a root shell, where the task list and process
- * table can be read. Off root every query answers empty; [KeepAlivePolicy] decides which
- * emulators stay alive.
+ * The apps and games left running. External apps are listed only on a device with a root shell,
+ * where the task list and process table can be read; the built-in game left open in Argosy's own
+ * task is listed everywhere. [KeepAlivePolicy] decides which games stay alive.
  */
 @Singleton
 class BackgroundGames @Inject constructor(
@@ -50,6 +54,7 @@ class BackgroundGames @Inject constructor(
     fun start() {
         if (started) return
         started = true
+        scope.launch { keepAlivePolicy.grantUsageAccessOnRoot() }
         scope.launch {
             var previous: ActiveSession? = null
             playSessionTracker.activeSession.collect { current ->
@@ -68,24 +73,32 @@ class BackgroundGames @Inject constructor(
      */
     suspend fun remember(session: ActiveSession) {
         if (!keepsAlive(session.emulatorPackage)) return
-        val process = read()?.processes?.get(session.emulatorPackage) ?: return
+        val pid = if (session.emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE) {
+            builtInTask() ?: return
+            Process.myPid()
+        } else {
+            read()?.processes?.get(session.emulatorPackage)?.pid ?: return
+        }
         store.put(
             BackgroundGame(
                 emulatorPackage = session.emulatorPackage,
                 gameId = session.gameId,
                 variantFileId = session.variantFileId,
-                pid = process.pid,
+                pid = pid,
                 endedAtMillis = System.currentTimeMillis()
             )
         )
-        Logger.debug(TAG, "kept ${session.emulatorPackage} pid=${process.pid} for gameId=${session.gameId}")
+        Logger.debug(TAG, "kept ${session.emulatorPackage} pid=$pid for gameId=${session.gameId}")
     }
 
     /**
-     * Every app with a task, Argosy excluded, joined to the game its emulator holds. Records whose
-     * emulator process is gone or was restarted are dropped from the store here.
+     * Every app with a task, Argosy excluded, joined to the game its emulator holds, then the
+     * built-in game left open in Argosy's own task. Off root only the built-in game is listed.
+     * Records whose emulator process is gone or was restarted are dropped from the store here.
      */
-    suspend fun refresh(): List<RunningApp> {
+    suspend fun refresh(): List<RunningApp> = externalApps() + listOfNotNull(builtInApp())
+
+    private suspend fun externalApps(): List<RunningApp> {
         if (!isSupported) return emptyList()
         val snapshot = read() ?: return emptyList()
         val games = liveRecords(snapshot)
@@ -103,6 +116,28 @@ class BackgroundGames @Inject constructor(
             }
     }
 
+    private fun builtInApp(): RunningApp? {
+        val record = store.all().firstOrNull { it.emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE } ?: return null
+        val task = builtInTask()
+        if (task == null || record.pid != Process.myPid()) {
+            store.remove(EmulatorRegistry.BUILTIN_PACKAGE)
+            return null
+        }
+        val taskId = runCatching { task.taskInfo.taskId }.getOrNull() ?: return null
+        return RunningApp(
+            taskId = taskId,
+            packageName = EmulatorRegistry.BUILTIN_PACKAGE,
+            displayId = Display.INVALID_DISPLAY,
+            rssKb = null,
+            game = record
+        )
+    }
+
+    private fun builtInTask(): ActivityManager.AppTask? {
+        val activityManager = application.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        return builtInGameAppTask(activityManager)
+    }
+
     /**
      * The running app holding [gameId] (and [variantFileId]) in [emulatorPackage], or null when
      * that emulator is not running it.
@@ -111,7 +146,9 @@ class BackgroundGames @Inject constructor(
         liveApp(emulatorPackage)?.takeIf { it.game?.gameId == gameId && it.game.variantFileId == variantFileId }
 
     suspend fun liveApp(packageName: String): RunningApp? =
-        if (!isSupported) null else refresh().firstOrNull { it.packageName == packageName }
+        if (packageName == EmulatorRegistry.BUILTIN_PACKAGE) builtInApp()
+        else if (!isSupported) null
+        else externalApps().firstOrNull { it.packageName == packageName }
 
     /**
      * Brings [taskId] to the front without sending its app an intent, so the app resumes where it
@@ -128,12 +165,17 @@ class BackgroundGames @Inject constructor(
 
     suspend fun close(packageName: String) {
         store.remove(packageName)
+        if (packageName == EmulatorRegistry.BUILTIN_PACKAGE) {
+            withContext(Dispatchers.Main) { builtInTask()?.let { runCatching { it.finishAndRemoveTask() } } }
+            return
+        }
         gameLauncher.forceStopEmulator(packageName)
     }
 
     private fun liveRecords(snapshot: Snapshot): Map<String, BackgroundGame> {
         val live = mutableMapOf<String, BackgroundGame>()
         for (record in store.all()) {
+            if (record.emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE) continue
             if (snapshot.processes[record.emulatorPackage]?.pid == record.pid) {
                 live[record.emulatorPackage] = record
             } else {

@@ -160,10 +160,13 @@ fun EmulatorsSection(
 
                     EmulatorsItem.CloseOnSessionEnd -> SwitchPreference(
                         title = stringResource(R.string.settings_emulators_close_on_session_end_title),
-                        subtitle = if (emulators.closeEmulatorOnSessionEnd) {
-                            stringResource(R.string.settings_emulators_close_on_session_end_subtitle_on)
-                        } else {
-                            stringResource(R.string.settings_emulators_close_on_session_end_subtitle_off)
+                        subtitle = when {
+                            emulators.closeEmulatorOnSessionEnd ->
+                                stringResource(R.string.settings_emulators_close_on_session_end_subtitle_on)
+                            uiState.controls.hasUsageStatsPermission ->
+                                stringResource(R.string.settings_emulators_close_on_session_end_subtitle_off)
+                            else ->
+                                stringResource(R.string.settings_emulators_close_on_session_end_subtitle_needs_usage)
                         },
                         isEnabled = emulators.closeEmulatorOnSessionEnd,
                         isFocused = isFocused(item),

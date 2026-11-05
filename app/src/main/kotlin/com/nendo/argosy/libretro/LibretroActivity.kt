@@ -190,6 +190,7 @@ class LibretroActivity : ComponentActivity() {
 
     @Inject lateinit var triggerAxisKeyEmitter: com.nendo.argosy.ui.input.TriggerAxisKeyEmitter
     @Inject lateinit var playSessionTracker: PlaySessionTracker
+    @Inject lateinit var keepAlivePolicy: com.nendo.argosy.data.emulator.background.KeepAlivePolicy
     @Inject lateinit var quickPanelOverlay: com.nendo.argosy.ui.quickpanel.QuickPanelOverlay
     @Inject lateinit var preferencesRepository: UserPreferencesRepository
     @Inject lateinit var touchLayoutRepository: com.nendo.argosy.data.repository.TouchLayoutRepository
@@ -345,6 +346,8 @@ class LibretroActivity : ComponentActivity() {
     private lateinit var launchPreferences: UserPreferences
     private var launchMode = LaunchMode.RESUME
     private var launchOrigin = LaunchOrigin.INTERNAL
+    private var playSessionOpened = false
+    private var keepsGameOpen = false
     private var statesSupported = true
     private val stateSupportChecked = kotlinx.coroutines.CompletableDeferred<Unit>()
     private var autoSaveEnabled = true
@@ -651,17 +654,7 @@ class LibretroActivity : ComponentActivity() {
         setUpSecondScreen()
 
         if (gameId != -1L) {
-            val isNewGame = launchMode == LaunchMode.NEW_CASUAL || launchMode == LaunchMode.NEW_HARDCORE
-            playSessionTracker.startSession(
-                gameId,
-                EmulatorRegistry.BUILTIN_PACKAGE,
-                coreName,
-                hardcoreConfirmed,
-                isNewGame,
-                isNetplayGuest = isGuestJoinedSession,
-                variantFileId = variantFileId.takeIf { it >= 0 },
-                origin = launchOrigin
-            )
+            openPlaySession(isNewGame = launchMode == LaunchMode.NEW_CASUAL || launchMode == LaunchMode.NEW_HARDCORE)
             cheatManager.loadCheats(hardcoreMode)
             achievementBridge.start(gameId, romPath, hardcoreMode, retroView)
             observeRaSessionMode()
@@ -3527,8 +3520,39 @@ class LibretroActivity : ComponentActivity() {
         return retroView.onGenericMotionEvent(event) || super.onGenericMotionEvent(event)
     }
 
+    private fun openPlaySession(isNewGame: Boolean) {
+        playSessionOpened = true
+        playSessionTracker.startSession(
+            gameId,
+            EmulatorRegistry.BUILTIN_PACKAGE,
+            coreName,
+            hardcoreConfirmed,
+            isNewGame,
+            isNetplayGuest = isGuestJoinedSession,
+            variantFileId = variantFileId.takeIf { it >= 0 },
+            origin = launchOrigin
+        )
+    }
+
+    private fun reopenPlaySessionIfEnded() {
+        if (!playSessionOpened || gameId == -1L || isFinishing) return
+        if (playSessionTracker.activeSession.value != null) return
+        Log.d(TAG, "Game returned after its session ended, opening a new session")
+        com.nendo.argosy.DualScreenManagerHolder.instance?.setEmulatorDisplay(currentDisplayId())
+        openPlaySession(isNewGame = false)
+    }
+
+    private fun refreshKeepsGameOpen() {
+        lifecycleScope.launch {
+            keepsGameOpen = keepAlivePolicy.keepsAlive(EmulatorRegistry.BUILTIN_PACKAGE)
+        }
+    }
+
     override fun onResume() {
         super.onResume()
+        reopenPlaySessionIfEnded()
+        playSessionTracker.onBuiltInGameResumed()
+        refreshKeepsGameOpen()
         autoSaveStateCaptured = false
         window.hideSystemBars()
         retroView.onResume()
@@ -3675,9 +3699,8 @@ class LibretroActivity : ComponentActivity() {
 
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
-        val dsm = com.nendo.argosy.DualScreenManagerHolder.instance
-        if (dsm?.isDualScreenDevice?.value == false) return
-        dsm?.onSessionChanged(-1L)
+        if (keepsGameOpen) return
+        com.nendo.argosy.DualScreenManagerHolder.instance?.onSessionChanged(-1L)
         finish()
     }
 
@@ -3697,6 +3720,7 @@ class LibretroActivity : ComponentActivity() {
     }
 
     override fun onPause() {
+        playSessionTracker.onBuiltInGamePaused()
         gyroAim.stop()
         releaseCoreHeldKeys()
         hideSecondScreen()
@@ -3991,7 +4015,10 @@ class LibretroActivity : ComponentActivity() {
         }
         if (::netplay.isInitialized) netplay.shutdown()
         if (::achievementBridge.isInitialized) achievementBridge.destroy()
-        if (isFinishing && gameId != -1L) {
+        val ownsActiveSession = playSessionTracker.activeSession.value?.let {
+            it.gameId == gameId && it.emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE
+        } ?: false
+        if (isFinishing && gameId != -1L && ownsActiveSession) {
             com.nendo.argosy.DualScreenManagerHolder.instance
                 ?.onSessionChanged(-1L)
             playSessionTracker.endSessionInBackground(skipSaveSync = isGuestJoinedSession)

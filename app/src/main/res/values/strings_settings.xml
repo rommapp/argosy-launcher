@@ -3200,13 +3200,18 @@
     <!-- Entry for the active group in the list beside the pane. Noun, plural. -->
     <string name="settings_emulators_rail_platforms">Platforms</string>
 
-    <!-- Toggle row. "Session" is one play session of a game; the emulator is the external emulator app, not Argosy's built-in one. -->
-    <string name="settings_emulators_close_on_session_end_title">Close Emulator When Returning to Argosy</string>
+    <!-- Toggle row. Covers games in external emulator apps and in Argosy's built-in emulator. Off,
+         a game left for another app stays open and resumes where it was. -->
+    <string name="settings_emulators_close_on_session_end_title">Close Games When Returning to Argosy</string>
     <!-- Second line of that row while it is on. "Synced" is save sync to the server; the second
          sentence warns that progress not saved inside the game is lost. -->
-    <string name="settings_emulators_close_on_session_end_subtitle_on">Closes the emulator once its save has synced. Unsaved progress is lost.</string>
+    <string name="settings_emulators_close_on_session_end_subtitle_on">Closes the game once its save has synced. Unsaved progress is lost.</string>
     <!-- Second line of that row while it is off. -->
-    <string name="settings_emulators_close_on_session_end_subtitle_off">The emulator app stays open in the background</string>
+    <string name="settings_emulators_close_on_session_end_subtitle_off">Games stay open in the background</string>
+    <!-- Second line of that row while it is off on a device where play time in external emulator
+         apps cannot be measured. "Usage Stats Access" is the name of the row in Argosy's
+         Permissions settings; keep it matching that row's translation. -->
+    <string name="settings_emulators_close_on_session_end_subtitle_needs_usage">Built-in games stay open. Other emulators close until Usage Stats Access is granted in Permissions.</string>
     <!-- Row that asks whether newer emulator apps exist. Verb phrase. -->
     <string name="settings_emulators_check_updates_title">Check for Updates</string>
     <!-- Second line of that row before it runs. -->

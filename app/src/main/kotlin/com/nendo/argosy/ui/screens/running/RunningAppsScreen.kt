@@ -236,7 +236,7 @@ private fun RunningAppRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         AsyncImage(
-            model = AppIconData(app.packageName),
+            model = AppIconData(app.iconPackageName),
             contentDescription = null,
             modifier = Modifier
                 .size(Dimens.iconXl)

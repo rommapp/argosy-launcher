@@ -8,6 +8,7 @@ import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.showError
+import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.background.BackgroundGames
 import com.nendo.argosy.data.emulator.background.RunningApp
 import com.nendo.argosy.data.repository.AppsRepository
@@ -43,6 +44,7 @@ import javax.inject.Inject
 data class RunningAppUi(
     val taskId: Int,
     val packageName: String,
+    val iconPackageName: String,
     val label: String,
     val gameId: Long?,
     val gameTitle: String?,
@@ -147,7 +149,16 @@ class RunningAppsViewModel @Inject constructor(
         return RunningAppUi(
             taskId = taskId,
             packageName = packageName,
-            label = labels.getOrPut(packageName) { appsRepository.getAppLabel(packageName) ?: packageName },
+            iconPackageName = if (packageName == EmulatorRegistry.BUILTIN_PACKAGE) {
+                com.nendo.argosy.BuildConfig.APPLICATION_ID
+            } else {
+                packageName
+            },
+            label = labels.getOrPut(packageName) {
+                appsRepository.getAppLabel(packageName)
+                    ?: EmulatorRegistry.getByPackage(packageName)?.displayName
+                    ?: packageName
+            },
             gameId = gameId,
             gameTitle = gameId?.let { gameTitle(it) },
             memoryMb = rssKb?.let { it / KB_PER_MB },

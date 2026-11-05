@@ -816,17 +816,6 @@
     <string name="ui_sync_overlay_snapshot_conflict_branch_subtitle">Déplacer la sauvegarde de cet appareil vers un nouveau canal</string>
     <string name="ui_sync_overlay_snapshot_conflict_revert">Revenir en arrière</string>
     <string name="ui_sync_overlay_snapshot_conflict_revert_subtitle">Revenir à la dernière sauvegarde synchronisée par cet appareil (une copie de sauvegarde est créée)</string>
-    <string name="ui_sync_overlay_post_session_title">Conflit de sauvegarde</string>
-    <string name="ui_sync_overlay_post_session_subject">\"%1$s\" -- %2$s</string>
-    <string name="ui_sync_overlay_post_session_default_slot">Sauvegarde par défaut</string>
-    <string name="ui_sync_overlay_post_session_message">Le serveur possède une sauvegarde plus récente. L\'envoi fait de votre sauvegarde locale la plus récente, et la copie du serveur est conservée.</string>
-    <string name="ui_sync_overlay_post_session_local">Locale</string>
-    <string name="ui_sync_overlay_post_session_server">Serveur</string>
-    <string name="ui_sync_overlay_post_session_server_named">Serveur (%1$s)</string>
-    <string name="ui_sync_overlay_post_session_skip">Ignorer la synchro</string>
-    <string name="ui_sync_overlay_post_session_skip_subtitle">Conserver votre sauvegarde locale, ne pas envoyer</string>
-    <string name="ui_sync_overlay_post_session_overwrite">Envoyer la sauvegarde locale</string>
-    <string name="ui_sync_overlay_post_session_overwrite_subtitle">Votre sauvegarde locale devient la plus récente. La copie du serveur est conservée.</string>
     <string name="ui_sync_overlay_legacy_status">Synchronisation...</string>
 
     <!-- Quick menu (ui/quickmenu) -->

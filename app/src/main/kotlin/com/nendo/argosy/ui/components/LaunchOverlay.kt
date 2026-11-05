@@ -49,6 +49,7 @@ import com.nendo.argosy.ui.components.launch.LaunchVeil
 import com.nendo.argosy.ui.components.launch.darkensForLaunch
 import com.nendo.argosy.ui.components.launch.mirrorsToPresentation
 import com.nendo.argosy.ui.components.launch.opensOnSurface
+import com.nendo.argosy.ui.components.launch.showsCancelHint
 import com.nendo.argosy.ui.components.launch.veilsDisplay
 import com.nendo.argosy.ui.components.recap.LaunchRecapCard
 import com.nendo.argosy.ui.components.recap.LaunchRecapCompactCard
@@ -88,6 +89,7 @@ private fun launchProgressEntryPoint(context: Context): LaunchProgressEntryPoint
 @Composable
 fun LaunchOverlay(
     modifier: Modifier = Modifier,
+    appPromptShowing: Boolean = false,
     viewModel: LaunchOverlayViewModel = hiltViewModel()
 ) {
     val progress by viewModel.progress.collectAsState()
@@ -119,9 +121,8 @@ fun LaunchOverlay(
     ModalInputEffect(active = progress != null, handler = viewModel.inputHandler)
     progress?.step?.let { step ->
         val cancelHint = stringResource(R.string.ui_launch_overlay_hint_cancel)
-        val showsCancelHint = step !is LaunchStep.Recap && step != LaunchStep.Launching
         FooterHints(
-            hints = if (showsCancelHint) listOf(InputButton.B to cancelHint) else emptyList(),
+            hints = if (step.showsCancelHint(appPromptShowing)) listOf(InputButton.B to cancelHint) else emptyList(),
             reservesSpace = false
         )
     }

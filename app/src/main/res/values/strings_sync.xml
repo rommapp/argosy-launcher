@@ -44,33 +44,6 @@
     <!-- Last step: handing off to the emulator. Present participle. -->
     <string name="sync_prelaunch_launching">Launching game...</string>
 
-    <!-- Save sync overlay, after a play session ends. Same shape as the pre-launch
-         steps above and deliberately not sharing their keys: the two halves of the
-         sync can be worded differently. -->
-
-    <!-- Step in progress: looking for the save the session just wrote. -->
-    <string name="sync_postsession_checking_save">Checking save file...</string>
-    <!-- Outcome: a save from the session exists on this device. -->
-    <string name="sync_postsession_save_found">Save found</string>
-    <!-- Outcome: the session left no save to upload. Adjective phrase describing the
-         save, not a command to find one. -->
-    <string name="sync_postsession_save_absent">Save not found</string>
-    <!-- Step in progress: opening the connection to the game server. -->
-    <string name="sync_postsession_connecting">Connecting...</string>
-    <!-- Outcome: the connection is open. -->
-    <string name="sync_postsession_connected">Connected</string>
-    <!-- Outcome: the connection could not be opened. -->
-    <string name="sync_postsession_connect_failed">Connection failed</string>
-    <!-- Step in progress: sending the save to the server. Present participle. -->
-    <string name="sync_postsession_uploading">Uploading...</string>
-    <!-- Outcome: the save reached the server. Adjective phrase describing the upload. -->
-    <string name="sync_postsession_upload_complete">Upload complete</string>
-    <!-- Outcome: the save could not be sent now and is held for the next attempt.
-         Adjective describing the upload, not a command. -->
-    <string name="sync_postsession_upload_queued">Upload queued</string>
-    <!-- The whole post-session sync finished. Adjective phrase describing the sync. -->
-    <string name="sync_postsession_complete">Sync complete</string>
-
     <!-- The user chose not to sync this time. Adjective describing the sync. -->
     <string name="sync_progress_skipped">Sync skipped</string>
     <!-- Heading when the server's save would break RetroAchievements hardcore rules for
@@ -80,9 +53,6 @@
     <!-- Heading when the save on this device changed since it was last synced. Past
          participle describing the local save. -->
     <string name="sync_progress_local_modified">Local save modified</string>
-    <!-- Heading when the device and the server each hold a different save. Noun
-         phrase. -->
-    <string name="sync_progress_save_conflict">Save conflict</string>
 
     <!-- Save sync overlay, blocked. Each blocked reason has a short heading and a
          longer explanation underneath it. -->
@@ -97,15 +67,6 @@
     <!-- Stands in for the emulator's name in the explanation above when Argosy does not
          know which emulator it is. -->
     <string name="sync_blocked_permission_emulator_fallback">this emulator</string>
-
-    <!-- Heading: the folder the emulator keeps its saves in is not where Argosy looked.
-         Adjective phrase describing the folder. -->
-    <string name="sync_blocked_path_not_found_title">Save folder not found</string>
-    <!-- Explanation under that heading. %1$s is the emulator's name. -->
-    <string name="sync_blocked_path_not_found_detail">The save folder for %1$s was not found. The emulator may use a non-standard save location.</string>
-    <!-- Stands in for the emulator's name in the explanation above when Argosy does not
-         know which emulator it is. -->
-    <string name="sync_blocked_path_not_found_emulator_fallback">this emulator</string>
 
     <!-- Heading: the device itself refuses to let Argosy read the save folder, even
          with permission granted. Past participle describing the access. -->
@@ -239,6 +200,19 @@
     <!-- Stands in for the game's title on that second line when Argosy cannot name the
          game. Noun, singular: the save file itself. -->
     <string name="sync_session_save_upload_failed_name_fallback">Save</string>
+    <!-- Notice after a session ends while the server cannot take the save yet. The save is
+         kept on this device and has not reached the server. The game's title is shown
+         underneath. Two short sentences; promise no upload, since a refused upload may never
+         go up. -->
+    <string name="sync_session_save_queued">Saved on this device. It hasn\'t uploaded yet.</string>
+    <!-- Notice after a save left over from an earlier session was kept on this device but
+         could not reach the server yet. The game's title is shown underneath. Same wording
+         as the notice above, kept as its own key. -->
+    <string name="sync_session_save_queued_orphan">Saved on this device. It hasn\'t uploaded yet.</string>
+    <!-- Notice after the save from the session that just ended could not be copied into
+         Argosy's local backup. The game's title is shown underneath. One short sentence;
+         promise no retry. -->
+    <string name="sync_session_save_not_kept">Couldn\'t back up this save.</string>
 
     <!-- Notice before a launch when the game's save, last played under another emulator,
          could not be moved into the emulator about to start. The game still starts and the

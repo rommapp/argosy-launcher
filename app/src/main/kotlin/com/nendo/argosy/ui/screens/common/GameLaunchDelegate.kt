@@ -40,9 +40,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -185,6 +187,11 @@ class GameLaunchDelegate @Inject constructor(
 
     val syncOverlayState: StateFlow<SyncOverlayState?> = sessionEndCoordinator.syncOverlayState
 
+    val sessionEndRunning: Flow<Boolean> = combine(
+        sessionEndCoordinator.sessionEndRunning,
+        playSessionTracker.sessionEnding
+    ) { coordinating, ending -> coordinating || ending }
+
     private val _discPickerState = MutableStateFlow<DiscPickerState?>(null)
     val discPickerState: StateFlow<DiscPickerState?> = _discPickerState.asStateFlow()
 
@@ -196,6 +203,11 @@ class GameLaunchDelegate @Inject constructor(
     val memcardPickerState: StateFlow<MemcardPickerState?> = _memcardPickerState.asStateFlow()
 
     val isSyncing: Boolean get() = syncOverlayState.value != null
+
+    private val isSessionEnding: Boolean
+        get() = sessionEndCoordinator.sessionEndRunning.value || playSessionTracker.sessionEnding.value
+
+    val isSessionEndBusy: Boolean get() = isSyncing || isSessionEnding
 
     private var _onLaunchFailed: (() -> Unit)? = null
 
@@ -284,6 +296,21 @@ class GameLaunchDelegate @Inject constructor(
                 return@launch
             }
             try {
+                if (isSessionEnding || playSessionTracker.pendingSessionConflict.value != null) {
+                    ticket.step(LaunchStep.Save(SyncProgress.PreLaunch.CheckingSave(channelName)))
+                    combine(
+                        sessionEndRunning,
+                        playSessionTracker.pendingSessionConflict,
+                        launchProgressTracker.progress
+                    ) { running, conflict, shown ->
+                        (!running && conflict == null) || shown == null
+                    }.first { it }
+                    if (ticket.isCancelled || isSyncing) {
+                        onLaunchFailed()
+                        return@launch
+                    }
+                }
+
                 val activeSession = playSessionTracker.activeSession.value
                 val sessionRequiresKill = activeSession?.let { session ->
                     val emuId = emulatorResolver.resolveEmulatorId(session.emulatorPackage)

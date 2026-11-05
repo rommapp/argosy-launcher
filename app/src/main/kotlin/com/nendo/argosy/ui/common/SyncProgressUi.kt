@@ -42,31 +42,12 @@ fun SyncProgress.statusMessage(): String = when (this) {
     }
     is SyncProgress.PreLaunch.Launching -> stringResource(R.string.sync_prelaunch_launching)
     is SyncProgress.PreLaunch.TimedOut -> stringResource(R.string.sync_prelaunch_timed_out)
-    is SyncProgress.PostSession.CheckingSave -> when (found) {
-        null -> stringResource(R.string.sync_postsession_checking_save)
-        true -> stringResource(R.string.sync_postsession_save_found)
-        false -> stringResource(R.string.sync_postsession_save_absent)
-    }
-    is SyncProgress.PostSession.Connecting -> when (success) {
-        null -> stringResource(R.string.sync_postsession_connecting)
-        true -> stringResource(R.string.sync_postsession_connected)
-        false -> stringResource(R.string.sync_postsession_connect_failed)
-    }
-    is SyncProgress.PostSession.Uploading -> when (success) {
-        null -> stringResource(R.string.sync_postsession_uploading)
-        true -> stringResource(R.string.sync_postsession_upload_complete)
-        false -> stringResource(R.string.sync_postsession_upload_queued)
-    }
-    is SyncProgress.PostSession.Complete -> stringResource(R.string.sync_postsession_complete)
     is SyncProgress.Error -> message
     is SyncProgress.Skipped -> stringResource(R.string.sync_progress_skipped)
     is SyncProgress.HardcoreConflict -> stringResource(R.string.sync_progress_hardcore_conflict)
     is SyncProgress.LocalModified -> stringResource(R.string.sync_progress_local_modified)
-    is SyncProgress.PostSessionConflict -> stringResource(R.string.sync_progress_save_conflict)
     is SyncProgress.BlockedReason.PermissionRequired ->
         stringResource(R.string.sync_blocked_permission_title)
-    is SyncProgress.BlockedReason.SavePathNotFound ->
-        stringResource(R.string.sync_blocked_path_not_found_title)
     is SyncProgress.BlockedReason.AccessDenied ->
         stringResource(R.string.sync_blocked_access_denied_title)
 }
@@ -79,10 +60,6 @@ fun SyncProgress.detailMessage(): String? = when (this) {
     is SyncProgress.BlockedReason.PermissionRequired -> stringResource(
         R.string.sync_blocked_permission_detail,
         emulatorName ?: stringResource(R.string.sync_blocked_permission_emulator_fallback)
-    )
-    is SyncProgress.BlockedReason.SavePathNotFound -> stringResource(
-        R.string.sync_blocked_path_not_found_detail,
-        emulatorName ?: stringResource(R.string.sync_blocked_path_not_found_emulator_fallback)
     )
     is SyncProgress.BlockedReason.AccessDenied -> accessDeniedDetail()
     else -> null

@@ -15,29 +15,13 @@
     <string name="sync_prelaunch_write_failed">写入失败</string>
     <string name="sync_prelaunch_launching">正在启动游戏...</string>
 
-    <string name="sync_postsession_checking_save">正在检查存档...</string>
-    <string name="sync_postsession_save_found">已找到存档</string>
-    <string name="sync_postsession_save_absent">未找到存档</string>
-    <string name="sync_postsession_connecting">正在连接...</string>
-    <string name="sync_postsession_connected">已连接</string>
-    <string name="sync_postsession_connect_failed">连接失败</string>
-    <string name="sync_postsession_uploading">正在上传...</string>
-    <string name="sync_postsession_upload_complete">上传完成</string>
-    <string name="sync_postsession_upload_queued">上传已排队</string>
-    <string name="sync_postsession_complete">同步完成</string>
-
     <string name="sync_progress_skipped">已跳过同步</string>
     <string name="sync_progress_hardcore_conflict">硬核存档冲突</string>
     <string name="sync_progress_local_modified">本地存档已修改</string>
-    <string name="sync_progress_save_conflict">存档冲突</string>
 
     <string name="sync_blocked_permission_title">需要文件访问权限</string>
     <string name="sync_blocked_permission_detail">请授予“所有文件访问权限”以同步%1$s的存档。</string>
     <string name="sync_blocked_permission_emulator_fallback">此模拟器</string>
-
-    <string name="sync_blocked_path_not_found_title">未找到存档文件夹</string>
-    <string name="sync_blocked_path_not_found_detail">未找到%1$s的存档文件夹。该模拟器可能使用了非标准的存档位置。</string>
-    <string name="sync_blocked_path_not_found_emulator_fallback">此模拟器</string>
 
     <string name="sync_blocked_access_denied_title">存档文件夹访问被阻止</string>
     <string name="sync_blocked_access_denied_detail">你的设备阻止了对%1$s存档数据的访问。这可能是由于厂商限制（三星、小米等）或安全策略所致。</string>
@@ -79,6 +63,9 @@
     <string name="sync_session_save_upload_failed">上传失败</string>
     <string name="sync_session_save_upload_failed_subtitle">%1$s：%2$s</string>
     <string name="sync_session_save_upload_failed_name_fallback">存档</string>
+    <string name="sync_session_save_queued">已保存在此设备上，尚未上传。</string>
+    <string name="sync_session_save_queued_orphan">已保存在此设备上，尚未上传。</string>
+    <string name="sync_session_save_not_kept">无法备份此存档。</string>
     <string name="sync_migration_refused_title">无法迁移 %1$s 的存档</string>
     <string name="sync_migration_refused_no_route">Argosy 无法在这两个模拟器之间转换存档</string>
     <string name="sync_migration_refused_unreadable">无法读取模拟器的存档文件夹</string>

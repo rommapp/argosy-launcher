@@ -15,29 +15,13 @@
     <string name="sync_prelaunch_write_failed">Error al escribir</string>
     <string name="sync_prelaunch_launching">Iniciando juego...</string>
 
-    <string name="sync_postsession_checking_save">Comprobando partida guardada...</string>
-    <string name="sync_postsession_save_found">Partida guardada encontrada</string>
-    <string name="sync_postsession_save_absent">Partida guardada no encontrada</string>
-    <string name="sync_postsession_connecting">Conectando...</string>
-    <string name="sync_postsession_connected">Conectado</string>
-    <string name="sync_postsession_connect_failed">Error de conexión</string>
-    <string name="sync_postsession_uploading">Subiendo...</string>
-    <string name="sync_postsession_upload_complete">Subida completa</string>
-    <string name="sync_postsession_upload_queued">Subida en cola</string>
-    <string name="sync_postsession_complete">Sincronización completa</string>
-
     <string name="sync_progress_skipped">Sincronización omitida</string>
     <string name="sync_progress_hardcore_conflict">Conflicto de guardado en modo hardcore</string>
     <string name="sync_progress_local_modified">Partida guardada local modificada</string>
-    <string name="sync_progress_save_conflict">Conflicto de partida guardada</string>
 
     <string name="sync_blocked_permission_title">Se requiere permiso de acceso a archivos</string>
     <string name="sync_blocked_permission_detail">Concede el permiso \"Acceso a todos los archivos\" para sincronizar las partidas guardadas de %1$s.</string>
     <string name="sync_blocked_permission_emulator_fallback">este emulador</string>
-
-    <string name="sync_blocked_path_not_found_title">Carpeta de guardado no encontrada</string>
-    <string name="sync_blocked_path_not_found_detail">No se encontró la carpeta de guardado de %1$s. El emulador podría usar una ubicación de guardado no estándar.</string>
-    <string name="sync_blocked_path_not_found_emulator_fallback">este emulador</string>
 
     <string name="sync_blocked_access_denied_title">Acceso a la carpeta de guardado bloqueado</string>
     <string name="sync_blocked_access_denied_detail">Tu dispositivo está bloqueando el acceso a los datos de guardado de %1$s. Esto puede deberse a restricciones del fabricante (Samsung, Xiaomi, etc.) o a políticas de seguridad.</string>
@@ -79,6 +63,9 @@
     <string name="sync_session_save_upload_failed">Error al subir</string>
     <string name="sync_session_save_upload_failed_subtitle">%1$s: %2$s</string>
     <string name="sync_session_save_upload_failed_name_fallback">Partida guardada</string>
+    <string name="sync_session_save_queued">Guardada en este dispositivo. Aún no se ha subido.</string>
+    <string name="sync_session_save_queued_orphan">Guardada en este dispositivo. Aún no se ha subido.</string>
+    <string name="sync_session_save_not_kept">No se pudo respaldar esta partida guardada.</string>
     <string name="sync_migration_refused_title">No se pudo mover la partida guardada de %1$s</string>
     <string name="sync_migration_refused_no_route">Argosy no puede convertir partidas entre estos dos emuladores</string>
     <string name="sync_migration_refused_unreadable">No se puede leer la carpeta de guardado del emulador</string>

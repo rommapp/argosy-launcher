@@ -786,17 +786,6 @@
     <string name="ui_sync_overlay_snapshot_conflict_branch_subtitle">इस डिवाइस के सेव को नए चैनल में ले जाएं</string>
     <string name="ui_sync_overlay_snapshot_conflict_revert">पहले जैसा करें</string>
     <string name="ui_sync_overlay_snapshot_conflict_revert_subtitle">इस डिवाइस के आखिरी सिंक किए गए सेव पर लौटें (बैकअप बनेगा)</string>
-    <string name="ui_sync_overlay_post_session_title">सेव कॉन्फ्लिक्ट</string>
-    <string name="ui_sync_overlay_post_session_subject">\"%1$s\" -- %2$s</string>
-    <string name="ui_sync_overlay_post_session_default_slot">डिफ़ॉल्ट सेव</string>
-    <string name="ui_sync_overlay_post_session_message">सर्वर पर एक नई सेव मौजूद है। अपलोड करने पर आपकी लोकल सेव सबसे नई बन जाएगी, और सर्वर की कॉपी बनी रहेगी।</string>
-    <string name="ui_sync_overlay_post_session_local">लोकल</string>
-    <string name="ui_sync_overlay_post_session_server">सर्वर</string>
-    <string name="ui_sync_overlay_post_session_server_named">सर्वर (%1$s)</string>
-    <string name="ui_sync_overlay_post_session_skip">सिंक छोड़ें</string>
-    <string name="ui_sync_overlay_post_session_skip_subtitle">अपनी लोकल सेव रखें, अपलोड न करें</string>
-    <string name="ui_sync_overlay_post_session_overwrite">लोकल सेव अपलोड करें</string>
-    <string name="ui_sync_overlay_post_session_overwrite_subtitle">आपकी लोकल सेव सबसे नई बन जाएगी। सर्वर की कॉपी बनी रहेगी।</string>
     <string name="ui_sync_overlay_legacy_status">सिंक हो रहा है...</string>
 
     <!-- Quick menu (ui/quickmenu) -->

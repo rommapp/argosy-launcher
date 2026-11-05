@@ -163,10 +163,10 @@ fun EmulatorsSection(
                         subtitle = when {
                             emulators.closeEmulatorOnSessionEnd ->
                                 stringResource(R.string.settings_emulators_close_on_session_end_subtitle_on)
-                            uiState.controls.hasUsageStatsPermission ->
+                            emulators.externalGamesStayOpen ->
                                 stringResource(R.string.settings_emulators_close_on_session_end_subtitle_off)
                             else ->
-                                stringResource(R.string.settings_emulators_close_on_session_end_subtitle_needs_usage)
+                                stringResource(R.string.settings_emulators_close_on_session_end_subtitle_built_in_only)
                         },
                         isEnabled = emulators.closeEmulatorOnSessionEnd,
                         isFocused = isFocused(item),

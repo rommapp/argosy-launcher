@@ -1721,7 +1721,7 @@
     <string name="settings_emulators_close_on_session_end_title">Fermer les jeux au retour dans Argosy</string>
     <string name="settings_emulators_close_on_session_end_subtitle_on">Ferme le jeu une fois sa sauvegarde synchronisée. La progression non sauvegardée est perdue.</string>
     <string name="settings_emulators_close_on_session_end_subtitle_off">Les jeux restent ouverts en arrière-plan</string>
-    <string name="settings_emulators_close_on_session_end_subtitle_needs_usage">Les jeux intégrés restent ouverts. Les autres émulateurs se ferment tant que l\'Accès aux statistiques d\'utilisation n\'est pas accordé dans Autorisations.</string>
+    <string name="settings_emulators_close_on_session_end_subtitle_built_in_only">Les jeux intégrés restent ouverts. Les autres émulateurs ne restent ouverts que sur les appareils rootés.</string>
     <string name="settings_emulators_check_updates_title">Vérifier les mises à jour</string>
     <string name="settings_emulators_check_updates_subtitle">Vérifier les mises à jour des émulateurs</string>
     <plurals name="settings_emulators_check_updates_available">

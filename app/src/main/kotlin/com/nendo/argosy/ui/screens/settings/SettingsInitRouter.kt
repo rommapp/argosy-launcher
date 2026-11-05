@@ -733,6 +733,7 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             platformSubFocusIndex = currentEmulatorState.platformSubFocusIndex,
             builtinLibretroEnabled = prefs.builtinLibretroEnabled,
             closeEmulatorOnSessionEnd = prefs.closeEmulatorOnSessionEnd,
+            externalGamesStayOpen = com.nendo.argosy.util.RootShell.isAvailable,
             architectureDisplay = architectureAbiToDisplay(archOverride),
             ingameMenuTwoColumn = builtinSettings.ingameMenuTwoColumn,
             hudEnabled = builtinSettings.hudEnabled,

@@ -1675,7 +1675,7 @@
     <string name="settings_emulators_close_on_session_end_title">Argosy पर लौटने पर गेम बंद करें</string>
     <string name="settings_emulators_close_on_session_end_subtitle_on">सेव सिंक होने के बाद गेम बंद कर देता है। बिना सेव की गई प्रगति खो जाती है।</string>
     <string name="settings_emulators_close_on_session_end_subtitle_off">गेम बैकग्राउंड में खुले रहते हैं</string>
-    <string name="settings_emulators_close_on_session_end_subtitle_needs_usage">बिल्ट-इन गेम खुले रहते हैं। अनुमतियाँ में यूसेज स्टैट्स एक्सेस मिलने तक दूसरे एमुलेटर बंद होते हैं।</string>
+    <string name="settings_emulators_close_on_session_end_subtitle_built_in_only">बिल्ट-इन गेम खुले रहते हैं। दूसरे एमुलेटर सिर्फ़ रूटेड डिवाइस पर खुले रहते हैं।</string>
     <string name="settings_emulators_check_updates_title">अपडेट जाँचें</string>
     <string name="settings_emulators_check_updates_subtitle">एमुलेटर अपडेट जाँचें</string>
     <plurals name="settings_emulators_check_updates_available">

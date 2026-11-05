@@ -13,10 +13,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Whether a game stays open in the background once the player leaves it. Play time counts only the
- * time a game is on screen, so a game may stay open only where that time can be measured: always
- * for the built-in emulator, and for an external emulator on root or with Usage Access. Elsewhere,
- * and whenever the player closes emulators on returning to Argosy, games are closed.
+ * Whether a game stays open in the background once the player leaves it: always for the built-in
+ * emulator, and for an external emulator only on root, where Argosy can find, resume and stop it.
+ * Whenever the player closes emulators on returning to Argosy, games are closed.
  */
 @Singleton
 class KeepAlivePolicy @Inject constructor(
@@ -27,14 +26,7 @@ class KeepAlivePolicy @Inject constructor(
 ) {
     val isSupported: Boolean get() = RootShell.isAvailable
 
-    /**
-     * Whether an external emulator's time on screen can be measured, so it may stay open between
-     * sessions.
-     */
-    fun measuresExternalForeground(): Boolean =
-        RootShell.isAvailable || permissionHelper.hasUsageStatsPermission(application)
-
-    suspend fun keepsGamesAlive(): Boolean =
+    private suspend fun keepsGamesAlive(): Boolean =
         !preferencesRepository.preferences.first().closeEmulatorOnSessionEnd
 
     /**
@@ -45,7 +37,7 @@ class KeepAlivePolicy @Inject constructor(
         if (emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE) return keepsGamesAlive()
         val emulator = emulatorResolver.resolveEmulatorId(emulatorPackage)?.let { EmulatorRegistry.getById(it) }
         if (emulator?.launchConfig?.requiresEmulatorKill == true) return false
-        return measuresExternalForeground() && keepsGamesAlive()
+        return isSupported && keepsGamesAlive()
     }
 
     /**

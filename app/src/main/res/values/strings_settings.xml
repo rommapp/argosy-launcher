@@ -3219,10 +3219,9 @@
     <string name="settings_emulators_close_on_session_end_subtitle_on">Closes the game once its save has synced. Unsaved progress is lost.</string>
     <!-- Second line of that row while it is off. -->
     <string name="settings_emulators_close_on_session_end_subtitle_off">Games stay open in the background</string>
-    <!-- Second line of that row while it is off on a device where play time in external emulator
-         apps cannot be measured. "Usage Stats Access" is the name of the row in Argosy's
-         Permissions settings; keep it matching that row's translation. -->
-    <string name="settings_emulators_close_on_session_end_subtitle_needs_usage">Built-in games stay open. Other emulators close until Usage Stats Access is granted in Permissions.</string>
+    <!-- Second line of that row while it is off on a device without root access. "Root" is the
+         Android superuser access some handhelds ship with; keep the common term. -->
+    <string name="settings_emulators_close_on_session_end_subtitle_built_in_only">Built-in games stay open. Other emulators stay open only on rooted devices.</string>
     <!-- Row that asks whether newer emulator apps exist. Verb phrase. -->
     <string name="settings_emulators_check_updates_title">Check for Updates</string>
     <!-- Second line of that row before it runs. -->

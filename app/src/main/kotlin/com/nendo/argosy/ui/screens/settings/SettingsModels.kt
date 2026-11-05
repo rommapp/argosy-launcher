@@ -572,6 +572,7 @@ data class EmulatorState(
     val coreUpdatesAvailable: Int = 0,
     val builtinLibretroEnabled: Boolean = true,
     val closeEmulatorOnSessionEnd: Boolean = false,
+    val externalGamesStayOpen: Boolean = false,
     val architectureDisplay: String = "",
     val ingameMenuTwoColumn: Boolean = false,
     val hudEnabled: Boolean = false,

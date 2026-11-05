@@ -3,6 +3,7 @@ package com.nendo.argosy.data.emulator.background
 import android.app.ActivityManager
 import android.app.Application
 import android.content.Context
+import android.os.Build
 import android.os.Process
 import android.view.Display
 import com.nendo.argosy.data.emulator.ActiveSession
@@ -116,7 +117,7 @@ class BackgroundGames @Inject constructor(
     private fun builtInApp(): RunningApp? {
         val live = LibretroActivity.liveGame ?: return null
         val task = builtInTask() ?: return null
-        val taskId = runCatching { task.taskInfo.taskId }.getOrNull() ?: return null
+        val taskId = runCatching { task.taskInfo.idCompat() }.getOrNull() ?: return null
         return RunningApp(
             taskId = taskId,
             packageName = EmulatorRegistry.BUILTIN_PACKAGE,
@@ -131,6 +132,10 @@ class BackgroundGames @Inject constructor(
             )
         )
     }
+
+    @Suppress("DEPRECATION")
+    private fun ActivityManager.RecentTaskInfo.idCompat(): Int =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) taskId else persistentId
 
     private fun builtInTask(): ActivityManager.AppTask? {
         val activityManager = application.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager

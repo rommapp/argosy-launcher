@@ -10,6 +10,7 @@ import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.GameLauncher
 import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.hardware.builtInGameAppTask
+import com.nendo.argosy.libretro.LibretroActivity
 import com.nendo.argosy.util.Logger
 import com.nendo.argosy.util.RootShell
 import com.nendo.argosy.util.SafeCoroutineScope
@@ -72,13 +73,9 @@ class BackgroundGames @Inject constructor(
      * this directly.
      */
     suspend fun remember(session: ActiveSession) {
+        if (session.emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE) return
         if (!keepsAlive(session.emulatorPackage)) return
-        val pid = if (session.emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE) {
-            builtInTask() ?: return
-            Process.myPid()
-        } else {
-            read()?.processes?.get(session.emulatorPackage)?.pid ?: return
-        }
+        val pid = read()?.processes?.get(session.emulatorPackage)?.pid ?: return
         store.put(
             BackgroundGame(
                 emulatorPackage = session.emulatorPackage,
@@ -117,19 +114,21 @@ class BackgroundGames @Inject constructor(
     }
 
     private fun builtInApp(): RunningApp? {
-        val record = store.all().firstOrNull { it.emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE } ?: return null
-        val task = builtInTask()
-        if (task == null || record.pid != Process.myPid()) {
-            store.remove(EmulatorRegistry.BUILTIN_PACKAGE)
-            return null
-        }
+        val live = LibretroActivity.liveGame ?: return null
+        val task = builtInTask() ?: return null
         val taskId = runCatching { task.taskInfo.taskId }.getOrNull() ?: return null
         return RunningApp(
             taskId = taskId,
             packageName = EmulatorRegistry.BUILTIN_PACKAGE,
             displayId = Display.INVALID_DISPLAY,
             rssKb = null,
-            game = record
+            game = BackgroundGame(
+                emulatorPackage = EmulatorRegistry.BUILTIN_PACKAGE,
+                gameId = live.gameId,
+                variantFileId = live.variantFileId,
+                pid = Process.myPid(),
+                endedAtMillis = 0L
+            )
         )
     }
 
@@ -175,7 +174,6 @@ class BackgroundGames @Inject constructor(
     private fun liveRecords(snapshot: Snapshot): Map<String, BackgroundGame> {
         val live = mutableMapOf<String, BackgroundGame>()
         for (record in store.all()) {
-            if (record.emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE) continue
             if (snapshot.processes[record.emulatorPackage]?.pid == record.pid) {
                 live[record.emulatorPackage] = record
             } else {

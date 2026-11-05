@@ -347,6 +347,7 @@ class LibretroActivity : ComponentActivity() {
     private var launchMode = LaunchMode.RESUME
     private var launchOrigin = LaunchOrigin.INTERNAL
     private var playSessionOpened = false
+    private var ownLiveGame: LiveGame? = null
     private var keepsGameOpen = false
     private var statesSupported = true
     private val stateSupportChecked = kotlinx.coroutines.CompletableDeferred<Unit>()
@@ -710,7 +711,10 @@ class LibretroActivity : ComponentActivity() {
         gameId = intent.getLongExtra(EXTRA_GAME_ID, -1L)
         inGameDocuments.load(gameId)
         variantFileId = intent.getLongExtra(EXTRA_VARIANT_FILE_ID, -1L)
-        discPaths = intent.getStringExtra(EXTRA_DISC_M3U_PATH)
+        if (gameId != -1L) {
+            ownLiveGame = LiveGame(gameId, variantFileId.takeIf { it >= 0 }).also { liveGame = it }
+        }
+        discPaths =intent.getStringExtra(EXTRA_DISC_M3U_PATH)
             ?.let { M3uManager.parseAllDiscs(File(it)) } ?: emptyList()
         coreName = intent.getStringExtra(EXTRA_CORE_NAME)
         launchMode = LaunchMode.fromString(intent.getStringExtra(LaunchMode.EXTRA_LAUNCH_MODE))
@@ -4000,6 +4004,7 @@ class LibretroActivity : ComponentActivity() {
     override fun onDestroy() {
         Log.d(TAG, "onDestroy: isFinishing=$isFinishing, isChangingConfigurations=$isChangingConfigurations")
         liveInstances.decrementAndGet()
+        if (liveGame === ownLiveGame) liveGame = null
         quickPanelOverlay.hideNow()
         hideSecondScreen()
         if (!coreDestroyed && ::retroView.isInitialized) retroView.destroyNative()
@@ -4100,11 +4105,20 @@ class LibretroActivity : ComponentActivity() {
 
         private val liveInstances = java.util.concurrent.atomic.AtomicInteger(0)
 
+        data class LiveGame(val gameId: Long, val variantFileId: Long?)
+
         /**
          * Whether a game screen exists in this process. A task left in recents after the process
          * died still names this activity but holds no game.
          */
         val isGameAlive: Boolean get() = liveInstances.get() > 0
+
+        /**
+         * The game the newest game screen in this process holds, until that screen is destroyed.
+         */
+        @Volatile
+        var liveGame: LiveGame? = null
+            private set
 
         private const val CORE_INPUT_PULSE_MS = 50L
 

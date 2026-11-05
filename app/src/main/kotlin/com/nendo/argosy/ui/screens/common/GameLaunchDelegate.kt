@@ -356,7 +356,7 @@ class GameLaunchDelegate @Inject constructor(
                 }
 
                 if (liveInBackground != null) {
-                    when (backgroundGameLaunch.resume(ticket, game, liveInBackground, channelName, origin)) {
+                    when (backgroundGameLaunch.resume(ticket, game, liveInBackground, origin)) {
                         BackgroundGameLaunch.Resume.RESUMED -> return@launch
                         BackgroundGameLaunch.Resume.CANCELLED -> {
                             onLaunchFailed()

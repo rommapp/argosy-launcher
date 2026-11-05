@@ -75,11 +75,11 @@ private val SyncProgress.launchFailure: LaunchFailure?
     }
 
 /**
- * Why a launch stops on a game an emulator is keeping in the background. NEWER_SAVE: the server
- * holds a newer save than the running game. EMULATOR_BUSY: the emulator the launch needs is
- * running another game. GAME_OPEN: another game is still open in the built-in emulator.
+ * Why a launch stops on a game an emulator is keeping in the background. EMULATOR_BUSY: the
+ * emulator the launch needs is running another game. GAME_OPEN: another game is still open in the
+ * built-in emulator.
  */
-enum class RunningGameQuestion { NEWER_SAVE, EMULATOR_BUSY, GAME_OPEN }
+enum class RunningGameQuestion { EMULATOR_BUSY, GAME_OPEN }
 
 enum class LaunchPromptOption {
     KEEP_HARDCORE,
@@ -95,7 +95,5 @@ enum class LaunchPromptOption {
     START_GAME,
     LAUNCH_WITH_GAMENATIVE,
     LAUNCH_WITH_DROIDDECK,
-    LOAD_NEWER_SAVE,
-    KEEP_PLAYING,
     CLOSE_AND_LAUNCH
 }

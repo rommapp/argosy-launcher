@@ -1124,12 +1124,6 @@
     <string name="common_game_confirm_hide_title">Masquer %1$s ?</string>
     <string name="common_game_confirm_hide_message">Les jeux masqués peuvent être réaffichés dans la Bibliothèque en filtrant Source sur Masqués.</string>
     <string name="common_game_confirm_hide_confirm">Masquer</string>
-    <string name="ui_launch_overlay_running_newer_save_title">Sauvegarde plus récente sur le serveur</string>
-    <string name="ui_launch_overlay_running_newer_save_message">%1$s est toujours en cours, mais un autre appareil a enregistré une copie plus récente. Chargez-la ou continuez là où vous en étiez.</string>
-    <string name="ui_launch_overlay_running_load_newer_label">Charger la sauvegarde plus récente</string>
-    <string name="ui_launch_overlay_running_load_newer_subtitle">Ferme le jeu en cours. La progression non sauvegardée sera perdue.</string>
-    <string name="ui_launch_overlay_running_keep_playing_label">Continuer à jouer</string>
-    <string name="ui_launch_overlay_running_keep_playing_subtitle">Votre prochaine sauvegarde entrera en conflit avec la copie du serveur</string>
     <string name="ui_launch_overlay_running_busy_title">%1$s est en cours</string>
     <string name="ui_launch_overlay_running_busy_message_game">%1$s exécute toujours %2$s en arrière-plan.</string>
     <string name="ui_launch_overlay_running_busy_message">%1$s est toujours ouvert en arrière-plan.</string>

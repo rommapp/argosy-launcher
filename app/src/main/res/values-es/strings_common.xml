@@ -1113,12 +1113,6 @@
     <string name="common_game_confirm_hide_title">¿Ocultar %1$s?</string>
     <string name="common_game_confirm_hide_message">Los juegos ocultos se pueden volver a mostrar en la Biblioteca filtrando Origen por Ocultos.</string>
     <string name="common_game_confirm_hide_confirm">Ocultar</string>
-    <string name="ui_launch_overlay_running_newer_save_title">Partida más reciente en el servidor</string>
-    <string name="ui_launch_overlay_running_newer_save_message">%1$s sigue en ejecución, pero otro dispositivo guardó una copia más reciente. Cárgala o sigue jugando donde lo dejaste.</string>
-    <string name="ui_launch_overlay_running_load_newer_label">Cargar partida más reciente</string>
-    <string name="ui_launch_overlay_running_load_newer_subtitle">Cierra el juego en ejecución. Se perderá el progreso no guardado.</string>
-    <string name="ui_launch_overlay_running_keep_playing_label">Seguir jugando</string>
-    <string name="ui_launch_overlay_running_keep_playing_subtitle">Tu próximo guardado entrará en conflicto con la copia del servidor</string>
     <string name="ui_launch_overlay_running_busy_title">%1$s está en ejecución</string>
     <string name="ui_launch_overlay_running_busy_message_game">%1$s sigue ejecutando %2$s en segundo plano.</string>
     <string name="ui_launch_overlay_running_busy_message">%1$s sigue abierto en segundo plano.</string>

@@ -269,7 +269,6 @@ private fun LaunchOverlayContent(
                     onCancel = onCancel
                 )
                 is LaunchStep.RunningGame -> RunningGameContent(
-                    gameTitle = shown.gameTitle ?: stringResource(R.string.ui_sync_overlay_unknown_game),
                     question = step,
                     focusIndex = promptFocus,
                     onAnswer = onAnswer,
@@ -366,7 +365,6 @@ private fun PromptContent(
 
 @Composable
 private fun RunningGameContent(
-    gameTitle: String,
     question: LaunchStep.RunningGame,
     focusIndex: Int,
     onAnswer: (LaunchPromptOption) -> Unit,
@@ -374,9 +372,6 @@ private fun RunningGameContent(
 ) {
     val runningTitle = question.runningGameTitle
     val (title, message) = when (question.kind) {
-        RunningGameQuestion.NEWER_SAVE ->
-            stringResource(R.string.ui_launch_overlay_running_newer_save_title) to
-                stringResource(R.string.ui_launch_overlay_running_newer_save_message, gameTitle)
         RunningGameQuestion.GAME_OPEN ->
             stringResource(R.string.ui_launch_overlay_running_open_title, runningTitle ?: question.emulatorName) to
                 stringResource(R.string.ui_launch_overlay_running_open_message)
@@ -393,10 +388,6 @@ private fun RunningGameContent(
         message = message,
         choices = question.options.mapNotNull { option ->
             val (label, description) = when (option) {
-                LaunchPromptOption.LOAD_NEWER_SAVE ->
-                    R.string.ui_launch_overlay_running_load_newer_label to R.string.ui_launch_overlay_running_load_newer_subtitle
-                LaunchPromptOption.KEEP_PLAYING ->
-                    R.string.ui_launch_overlay_running_keep_playing_label to R.string.ui_launch_overlay_running_keep_playing_subtitle
                 LaunchPromptOption.CLOSE_AND_LAUNCH ->
                     R.string.ui_launch_overlay_running_close_label to R.string.ui_launch_overlay_running_close_subtitle
                 else -> return@mapNotNull null

@@ -1041,12 +1041,6 @@
     <string name="common_game_confirm_hide_title">隱藏%1$s？</string>
     <string name="common_game_confirm_hide_message">在遊戲庫中將來源篩選為隱藏，即可再次顯示隱藏的遊戲。</string>
     <string name="common_game_confirm_hide_confirm">隱藏</string>
-    <string name="ui_launch_overlay_running_newer_save_title">伺服器上有較新的存檔</string>
-    <string name="ui_launch_overlay_running_newer_save_message">%1$s仍在執行，但另一部裝置儲存了較新的副本。可以載入它，或從上次離開的地方繼續遊玩。</string>
-    <string name="ui_launch_overlay_running_load_newer_label">載入較新的存檔</string>
-    <string name="ui_launch_overlay_running_load_newer_subtitle">將關閉執行中的遊戲。未儲存的進度將會遺失。</string>
-    <string name="ui_launch_overlay_running_keep_playing_label">繼續遊玩</string>
-    <string name="ui_launch_overlay_running_keep_playing_subtitle">下次存檔將與伺服器副本衝突</string>
     <string name="ui_launch_overlay_running_busy_title">%1$s正在執行</string>
     <string name="ui_launch_overlay_running_busy_message_game">%1$s仍在背景執行%2$s。</string>
     <string name="ui_launch_overlay_running_busy_message">%1$s仍在背景開啟。</string>

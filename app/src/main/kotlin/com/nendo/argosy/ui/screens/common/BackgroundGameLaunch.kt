@@ -8,21 +8,15 @@ import com.nendo.argosy.data.emulator.ExternalSessionStart
 import com.nendo.argosy.data.emulator.LaunchOrigin
 import com.nendo.argosy.data.emulator.LaunchProgressTracker
 import com.nendo.argosy.data.emulator.PlaySessionTracker
-import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.emulator.background.BackgroundGames
 import com.nendo.argosy.data.emulator.background.RunningApp
 import com.nendo.argosy.data.emulator.startExternal
 import com.nendo.argosy.data.local.entity.GameEntity
-import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.GameRepository
-import com.nendo.argosy.data.repository.PreLaunchSyncResult
-import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.domain.model.LaunchPromptOption
 import com.nendo.argosy.domain.model.LaunchStep
 import com.nendo.argosy.domain.model.RunningGameQuestion
-import com.nendo.argosy.domain.model.SyncProgress
 import com.nendo.argosy.util.Logger
-import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
 /**
@@ -32,8 +26,6 @@ import javax.inject.Inject
 class BackgroundGameLaunch @Inject constructor(
     private val backgroundGames: BackgroundGames,
     private val emulatorResolver: EmulatorResolver,
-    private val saveSyncRepository: SaveSyncRepository,
-    private val preferencesRepository: UserPreferencesRepository,
     private val playSessionTracker: PlaySessionTracker,
     private val launchProgressTracker: LaunchProgressTracker,
     private val gameRepository: GameRepository
@@ -48,35 +40,15 @@ class BackgroundGameLaunch @Inject constructor(
     }
 
     /**
-     * Resumes [game] in the task [live] holds, after checking the server for a newer save without
-     * touching the one the emulator has open. A newer save asks whether to load it, which closes
-     * the emulator and hands back to a fresh launch. A built-in game opens its own session when its
-     * screen returns.
+     * Brings [game] back in the task [live] holds, with no save check: the emulator still has the
+     * save open. A built-in game opens its own session when its screen returns.
      */
     suspend fun resume(
         ticket: LaunchProgressTracker.Ticket,
         game: GameEntity,
         live: RunningApp,
-        channelName: String?,
         origin: LaunchOrigin
     ): Resume {
-        val decision = liveSaveDecision(ticket, game, live, channelName)
-        if (decision is PreLaunchSyncResult.ServerIsNewer || decision is PreLaunchSyncResult.LocalModified) {
-            val question = LaunchStep.RunningGame(
-                kind = RunningGameQuestion.NEWER_SAVE,
-                emulatorName = emulatorName(live.packageName),
-                runningGameTitle = game.title,
-                options = listOf(LaunchPromptOption.LOAD_NEWER_SAVE, LaunchPromptOption.KEEP_PLAYING)
-            )
-            when (ticket.askAboutRunningGame(question)) {
-                LaunchPromptOption.LOAD_NEWER_SAVE -> {
-                    backgroundGames.close(live.packageName)
-                    return Resume.FRESH_LAUNCH
-                }
-                LaunchPromptOption.KEEP_PLAYING -> Unit
-                else -> return Resume.CANCELLED
-            }
-        }
         if (ticket.isCancelled) return Resume.CANCELLED
         val builtIn = live.packageName == EmulatorRegistry.BUILTIN_PACKAGE
         if (!builtIn) DualScreenManagerHolder.instance?.setEmulatorDisplay(live.displayId)
@@ -127,28 +99,6 @@ class BackgroundGameLaunch @Inject constructor(
     suspend fun keepsAlive(emulatorPackage: String): Boolean = backgroundGames.keepsAlive(emulatorPackage)
 
     suspend fun remember(session: ActiveSession) = backgroundGames.remember(session)
-
-    private suspend fun liveSaveDecision(
-        ticket: LaunchProgressTracker.Ticket,
-        game: GameEntity,
-        live: RunningApp,
-        channelName: String?
-    ): PreLaunchSyncResult? {
-        val rommId = game.rommId ?: return null
-        if (live.game?.variantFileId != null) return null
-        val emulatorId = emulatorResolver.resolveEmulatorId(live.packageName) ?: return null
-        val prefs = preferencesRepository.preferences.first()
-        if (!SavePathRegistry.canSyncWithSettings(emulatorId, prefs.saveSyncEnabled)) return null
-        ticket.step(LaunchStep.Save(SyncProgress.PreLaunch.CheckingSave(channelName)))
-        return saveSyncRepository.preLaunchSyncForGame(
-            gameId = game.id,
-            rommId = rommId,
-            emulatorId = emulatorId,
-            channelName = channelName,
-            secureSaves = prefs.secureSaves,
-            liveProcess = true
-        )
-    }
 
     private fun emulatorName(packageName: String): String =
         emulatorResolver.resolveEmulatorId(packageName)?.let { EmulatorRegistry.getById(it)?.displayName } ?: packageName

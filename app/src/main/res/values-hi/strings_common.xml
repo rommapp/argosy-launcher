@@ -1078,12 +1078,6 @@
     <string name="common_game_confirm_hide_title">%1$s छिपाएं?</string>
     <string name="common_game_confirm_hide_message">छिपे हुए गेम लाइब्रेरी में सोर्स को छिपे हुए पर फ़िल्टर करके फिर से दिखाए जा सकते हैं।</string>
     <string name="common_game_confirm_hide_confirm">छिपाएं</string>
-    <string name="ui_launch_overlay_running_newer_save_title">सर्वर पर नया सेव</string>
-    <string name="ui_launch_overlay_running_newer_save_message">%1$s अभी भी चल रहा है, लेकिन किसी दूसरे डिवाइस ने नई कॉपी सेव की है। उसे लोड करें, या जहां छोड़ा था वहीं से खेलते रहें।</string>
-    <string name="ui_launch_overlay_running_load_newer_label">नया सेव लोड करें</string>
-    <string name="ui_launch_overlay_running_load_newer_subtitle">चल रहा गेम बंद हो जाएगा। बिना सेव की गई प्रगति खो जाएगी।</string>
-    <string name="ui_launch_overlay_running_keep_playing_label">खेलते रहें</string>
-    <string name="ui_launch_overlay_running_keep_playing_subtitle">आपका अगला सेव सर्वर की कॉपी से टकराएगा</string>
     <string name="ui_launch_overlay_running_busy_title">%1$s चल रहा है</string>
     <string name="ui_launch_overlay_running_busy_message_game">%1$s अभी भी बैकग्राउंड में %2$s चला रहा है।</string>
     <string name="ui_launch_overlay_running_busy_message">%1$s अभी भी बैकग्राउंड में खुला है।</string>

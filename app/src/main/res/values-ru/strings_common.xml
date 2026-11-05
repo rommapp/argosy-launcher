@@ -1128,12 +1128,6 @@
     <string name="common_game_confirm_hide_title">Скрыть %1$s?</string>
     <string name="common_game_confirm_hide_message">Скрытые игры можно снова показать в Библиотеке, выбрав в фильтре Источник значение Скрытые.</string>
     <string name="common_game_confirm_hide_confirm">Скрыть</string>
-    <string name="ui_launch_overlay_running_newer_save_title">На сервере есть более новое сохранение</string>
-    <string name="ui_launch_overlay_running_newer_save_message">Игра %1$s всё ещё запущена, но другое устройство сохранило более новую копию. Загрузите её или продолжайте играть с того места, где остановились.</string>
-    <string name="ui_launch_overlay_running_load_newer_label">Загрузить новое сохранение</string>
-    <string name="ui_launch_overlay_running_load_newer_subtitle">Закрывает запущенную игру. Несохранённый прогресс будет потерян.</string>
-    <string name="ui_launch_overlay_running_keep_playing_label">Продолжить игру</string>
-    <string name="ui_launch_overlay_running_keep_playing_subtitle">Следующее сохранение будет конфликтовать с копией на сервере</string>
     <string name="ui_launch_overlay_running_busy_title">%1$s работает</string>
     <string name="ui_launch_overlay_running_busy_message_game">%1$s всё ещё выполняет %2$s в фоне.</string>
     <string name="ui_launch_overlay_running_busy_message">%1$s всё ещё работает в фоне.</string>

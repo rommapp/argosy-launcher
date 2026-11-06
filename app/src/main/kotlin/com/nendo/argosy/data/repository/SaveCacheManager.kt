@@ -708,9 +708,16 @@ class SaveCacheManager @Inject constructor(
         fal.prepareSaveAccess(targetPath)
         var placedGciMembers: List<String>? = null
         try {
-            when (val sigilRestore = restoreUnlessNative(entity, cacheFile, targetEmulatorId)) {
+            val sigilRestore = restoreUnlessNative(entity, cacheFile, targetEmulatorId).let { routed ->
+                if (routed == SigilRestore.NotRouted && isSigilRouteRoot(entity.gameId, targetEmulatorId, targetPath)) {
+                    sigilSaveHandler.restore(entity.gameId, cacheFile, targetEmulatorId)
+                } else {
+                    routed
+                }
+            }
+            when (sigilRestore) {
                 SigilRestore.NotRouted -> if (isSigilRouteRoot(entity.gameId, targetEmulatorId, targetPath)) {
-                    Logger.warn(TAG, "Restore of cache $cacheId refused: $targetPath is the Sigil save root of $targetEmulatorId and the cache holds native files")
+                    Logger.warn(TAG, "Restore of cache $cacheId refused: $targetPath is the Sigil save root of $targetEmulatorId and no Sigil layout takes the cached files")
                     return@withContext false
                 }
                 is SigilRestore.Refused -> {

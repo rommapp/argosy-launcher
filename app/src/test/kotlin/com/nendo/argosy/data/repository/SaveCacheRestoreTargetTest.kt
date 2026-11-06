@@ -172,6 +172,20 @@ class SaveCacheRestoreTargetTest {
         assertFalse(root.exists())
     }
 
+    @Test
+    fun `a native cache bound for a Sigil save root is placed through Sigil, as a download is`() = runTest {
+        cachedRow(SaveCacheEntity.FORMAT_NATIVE)
+        val root = File(tempDir, "builtin/memcards")
+        coEvery { sigil.localRoute(GAME_ID, TARGET) } returns
+            SigilRoute("pcsx2", root.absolutePath, null, null, libretro = true)
+        coEvery { sigil.restore(GAME_ID, any(), TARGET) } returns SigilRestore.Restored(hardcoreMarker = false)
+
+        assertTrue(manager.restoreSave(ROW_ID, root.absolutePath, TARGET))
+
+        coVerify(exactly = 1) { sigil.restore(GAME_ID, File(tempDir, "save_cache/$CACHE_PATH"), TARGET) }
+        assertFalse(root.exists())
+    }
+
     private companion object {
         const val GAME_ID = 4L
         const val ROW_ID = 31L

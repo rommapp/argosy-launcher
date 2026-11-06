@@ -109,21 +109,21 @@ class DownloadManagerPlatformFolderTest {
     fun `a game on the overridden platform downloads into the override`() = runTest {
         enqueue(PACKAGE_GAME)
 
-        assertEquals(File(packagesFolder, "game.pkg.tmp").absolutePath, inserted.captured.tempFilePath)
+        assertEquals(packagesFolder, File(inserted.captured.tempFilePath!!).parentFile)
     }
 
     @Test
     fun `a game on the same-slug platform without an override downloads into the slug folder`() = runTest {
         enqueue(DISC_GAME)
 
-        assertEquals(File(File(storageRoot, "ps3"), "game.pkg.tmp").absolutePath, inserted.captured.tempFilePath)
+        assertEquals(File(storageRoot, "ps3"), File(inserted.captured.tempFilePath!!).parentFile)
     }
 
     @Test
     fun `a game with no platform row downloads into the slug folder`() = runTest {
         enqueue(ORPHAN_GAME)
 
-        assertEquals(File(File(storageRoot, "ps3"), "game.pkg.tmp").absolutePath, inserted.captured.tempFilePath)
+        assertEquals(File(storageRoot, "ps3"), File(inserted.captured.tempFilePath!!).parentFile)
     }
 
     private suspend fun enqueue(gameId: Long) = manager.enqueueDownload(

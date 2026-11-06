@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -30,6 +31,7 @@ import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -70,10 +72,10 @@ class DownloadRequestAdmissionTest {
 
     @After fun teardown() = Dispatchers.resetMain()
 
-    private fun TestScope.manager(ownerUserId: Long? = null): DownloadManager {
+    private fun TestScope.manager(ownerUserId: Long? = null, autoStart: Boolean = false): DownloadManager {
         val preferences = mockk<UserPreferencesRepository>()
         every { preferences.userPreferences } returns flowOf(UserPreferences(
-            autoStartDownloads = false, romStoragePath = storage.root.absolutePath
+            autoStartDownloads = autoStart, romStoragePath = storage.root.absolutePath
         ))
         val games = mockk<GameDao>(relaxed = true)
         coEvery { games.getById(any()) } returns null
@@ -149,7 +151,7 @@ class DownloadRequestAdmissionTest {
         val manager = manager()
         manager.state.first { it.completed.size == 1 }
         manager.enqueue()
-        assertEquals(retained.copy(state = DownloadState.QUEUED.name), rows[retained.id])
+        assertEquals(retained.copy(state = DownloadState.PAUSED.name), rows[retained.id])
         assertEquals(2048L, File(retained.tempFilePath!!).length())
         assertEquals(retained.id, manager.state.value.queue.single().id)
         coVerify(exactly = 0) { dao.insert(any()) }
@@ -175,6 +177,98 @@ class DownloadRequestAdmissionTest {
         assertNull(replacement.resumeValidator)
         coVerify(exactly = 0) { dao.deleteById(any()) }
         coVerify(exactly = 1) { dao.insert(any()) }
+    }
+
+    @Test fun `cancelling second owner preserves first owners allocated partial`() = runTest {
+        cancelSecondOwner { it.enqueueDownload(1, 10, "game.bin", "Game", "nes", null) }
+    }
+
+    @Test fun `cancelling second owner disc preserves first owners allocated partial`() = runTest {
+        cancelSecondOwner {
+            it.enqueueDiscDownload(1, 80, 1, 10, "disc.chd", "Game", platformSlug = "psx", coverPath = null)
+        }
+    }
+
+    @Test fun `cancelling second owner game file preserves first owners allocated partial`() = runTest {
+        cancelSecondOwner { it.enqueueGameFileDownload(1, 90, 10, "addon.bin", "dlc", "Game", "nes", null) }
+    }
+
+    private suspend fun TestScope.cancelSecondOwner(enqueue: suspend (DownloadManager) -> Unit) {
+        val firstOwner = manager(ownerUserId = 42)
+        enqueue(firstOwner)
+        firstOwner.state.first { it.queue.size == 1 }
+        val allocated = rows.values.single()
+        val part = File(allocated.tempFilePath!!)
+        part.parentFile!!.mkdirs()
+        val originalBytes = ByteArray(2048) { 17 }
+        part.writeBytes(originalBytes)
+        val retained = allocated.copy(
+            state = DownloadState.FAILED.name, bytesDownloaded = part.length(), totalBytes = 8192,
+            resumeValidator = "etag", validatedBytes = part.length(), requestKey = "original/${allocated.fileName}"
+        )
+        rows[retained.id] = retained
+        val secondOwner = manager(ownerUserId = 84)
+        secondOwner.state.first { it.completed.any { item -> item.id == retained.id } }
+
+        enqueue(secondOwner)
+        val replacement = rows.values.single { it.ownerUserId == 84L }
+        assertTrue(replacement.id != retained.id)
+        assertTrue(replacement.tempFilePath != retained.tempFilePath)
+        secondOwner.cancelDownload(10)
+        runCurrent()
+        secondOwner.state.first { it.queue.none { item -> item.id == replacement.id } }
+
+        assertEquals(retained, rows[retained.id])
+        assertTrue("Cancelling another owner's request must preserve the retained partial", part.isFile)
+        assertArrayEquals(originalBytes, part.readBytes())
+    }
+
+    @Test fun `identical failed enqueue stays paused when auto start is disabled`() = runTest {
+        val retained = retained()
+        val manager = manager()
+        manager.state.first { it.completed.size == 1 }
+
+        manager.enqueue()
+
+        assertEquals(DownloadState.PAUSED.name, rows.getValue(retained.id).state)
+        assertEquals(DownloadState.PAUSED, manager.state.value.queue.single().state)
+    }
+
+    @Test fun `identical failed enqueue queues when auto start is enabled`() = runTest {
+        val retained = retained()
+        val manager = manager(autoStart = true)
+        manager.state.first { it.completed.size == 1 }
+
+        manager.enqueue()
+
+        assertEquals(DownloadState.QUEUED.name, rows.getValue(retained.id).state)
+        assertEquals(DownloadState.QUEUED, manager.state.value.queue.single().state)
+    }
+
+    @Test fun `start now queues identical failed request with auto start disabled`() = runTest {
+        val retained = retained()
+        val manager = manager()
+        manager.state.first { it.completed.size == 1 }
+
+        manager.enqueueDownload(1, 10, "game.zip", "Game", "nes", null,
+            selectedFileIds = listOf(3, 9), startNow = true)
+
+        assertEquals(DownloadState.QUEUED.name, rows.getValue(retained.id).state)
+        assertEquals(DownloadState.QUEUED, manager.state.value.queue.single().state)
+    }
+
+    @Test fun `explicit retry queues identical failed request with auto start disabled`() = runTest {
+        val retained = retained()
+        val manager = manager()
+        manager.state.first { it.completed.size == 1 }
+
+        manager.retryDownload(retained.id)
+        val retried = manager.state.first { it.queue.any { item -> item.id == retained.id } }.queue.single()
+
+        assertEquals(DownloadState.QUEUED.name, rows.getValue(retained.id).state)
+        assertEquals(DownloadState.QUEUED, retried.state)
+        assertEquals(retained.requestKey, rows.getValue(retained.id).requestKey)
+        coVerify(exactly = 0) { dao.insert(any()) }
     }
 
     @Test fun `changed selection starts without old bytes or checkpoint`() = runTest {

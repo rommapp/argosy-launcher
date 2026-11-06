@@ -10,6 +10,7 @@ import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.platform.PlatformFolderResolver
 import com.nendo.argosy.data.preferences.UserPreferences
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.remote.romm.ConnectionState
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import io.mockk.coEvery
@@ -167,7 +168,8 @@ class DownloadManagerTransferLifecycleTest {
     private fun manager(
         existingOwner: GameEntity? = null,
         maxConcurrentDownloads: Int = 1,
-        stageDownloadsInternally: Boolean = false
+        stageDownloadsInternally: Boolean = false,
+        ownerUserId: Long? = null
     ): DownloadManager {
         val job = SupervisorJob().also { jobs += it }
         val preferences = mockk<UserPreferencesRepository>()
@@ -188,11 +190,13 @@ class DownloadManagerTransferLifecycleTest {
         }
         val thermal = mockk<DownloadThermalManager>()
         every { thermal.thermalStatus } returns MutableStateFlow(ThermalStatus())
+        val syncPreferences = mockk<SyncPreferencesRepository>(relaxed = true)
+        coEvery { syncPreferences.getRommUserId() } returns ownerUserId
         return DownloadManager(
             gameDao, gameDiscDao, gameFileDao, dao, mockk(relaxed = true),
             repository, preferences, mockk(relaxed = true), mockk(relaxed = true), dagger.Lazy { thermal },
             dagger.Lazy { mockk<MediaDownloadManager>(relaxed = true) }, mockk(relaxed = true),
-            mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true),
+            mockk(relaxed = true), syncPreferences, mockk(relaxed = true), mockk(relaxed = true),
             mockk(relaxed = true), mockk(relaxed = true), staging, folders,
             CoroutineScope(job + dispatcher), DownloadConnectivity.AlwaysAvailable
         )
@@ -219,8 +223,10 @@ class DownloadManagerTransferLifecycleTest {
         val orphanBytes = "unidentified foreign prefix".toByteArray()
         sharedTarget.writeBytes(originalBytes)
         part.writeBytes(orphanBytes)
+        val allocatedPart = File(destination, "fixture.bin.new-request.tmp")
         rows[1] = rows.getValue(1).copy(
-            gameFileId = null, fileCategory = null, selectedFileIds = null, requestKey = null
+            gameFileId = null, fileCategory = null, selectedFileIds = null, requestKey = null,
+            tempFilePath = allocatedPart.absolutePath
         )
         val owner = mockk<GameEntity>()
         every { owner.id } returns 99L
@@ -233,13 +239,42 @@ class DownloadManagerTransferLifecycleTest {
         assertArrayEquals(bytes, installed.readBytes())
         assertArrayEquals(originalBytes, sharedTarget.readBytes())
         assertArrayEquals(orphanBytes, part.readBytes())
-        assertEquals(File(installed.parentFile, "fixture.bin.tmp").absolutePath, rows.getValue(1).tempFilePath)
+        assertEquals(File(installed.parentFile, allocatedPart.name).absolutePath, rows.getValue(1).tempFilePath)
         assertEquals(server.url("/fixture").toString(), rows.getValue(1).requestKey)
         coVerify(exactly = 1) { gameDao.updateLocalPath(10, installed.absolutePath, any(), any(), any()) }
         assertEquals(1, server.requestCount)
         val request = server.takeRequest()
         assertNull(request.getHeader("Range"))
         assertNull(request.getHeader("If-Range"))
+    }
+
+    @Test fun `second owner transfer preserves first owners legacy partial and checkpoint`() = runBlocking {
+        retained(8192, DownloadState.FAILED)
+        val retained = rows.getValue(1).copy(
+            gameFileId = null, fileCategory = null, selectedFileIds = null, bytesDownloaded = 8192
+        )
+        rows[1] = retained
+        val originalBytes = part.readBytes()
+        val manager = manager(ownerUserId = 84)
+        manager.awaitState(DownloadState.FAILED)
+        server.enqueue(full())
+
+        manager.enqueueDownload(10, 100, "fixture.bin", "Synthetic fixture", "nes", null,
+            expectedSizeBytes = bytes.size.toLong())
+        val replacement = rows.values.single { it.ownerUserId == 84L }
+        withTimeout(15000) {
+            manager.state.first { snapshot ->
+                snapshot.completed.any { it.id == replacement.id && it.state == DownloadState.COMPLETED }
+            }
+        }
+
+        assertEquals(retained, rows.getValue(1))
+        assertTrue(part.isFile)
+        assertArrayEquals(originalBytes, part.readBytes())
+        assertArrayEquals(bytes, File(destination, "fixture.bin").readBytes())
+        assertTrue(rows.getValue(replacement.id).tempFilePath != retained.tempFilePath)
+        assertEquals(1, server.requestCount)
+        assertNull(server.takeRequest().getHeader("Range"))
     }
 
     @Test fun `automatic retry resumes exact eighty percent prefix`() = runBlocking {

@@ -51,6 +51,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.time.Instant
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -652,7 +653,7 @@ class DownloadManager internal constructor(
             val initialState = initialQueueState(startNow)
             val platformDir = platformFolderResolver.downloadDirForGame(gameId, platformSlug)
             val diskFileName = FileNames.sanitize(fileName)
-            val tempFilePath = File(platformDir, "${diskFileName}.tmp").absolutePath
+            val tempFilePath = newTempFile(platformDir).absolutePath
 
             val entity = DownloadQueueEntity(
                 gameId = gameId,
@@ -724,8 +725,10 @@ class DownloadManager internal constructor(
                 return@withLock false
             }
             val retained = reconcileRetained(currentRow)
-            downloadQueueDao.updateState(row.id, DownloadState.QUEUED.name)
-            val progress = retained.toDownloadProgress().copy(state = DownloadState.QUEUED, errorReason = null)
+            downloadQueueDao.updateState(row.id, request.state)
+            val progress = retained.toDownloadProgress().copy(
+                state = DownloadState.valueOf(request.state), errorReason = null
+            )
             _state.update { current ->
                 current.copy(
                     activeDownloads = current.activeDownloads.filter { it.id != row.id },
@@ -733,10 +736,13 @@ class DownloadManager internal constructor(
                     queue = (current.queue.filter { it.id != row.id } + progress).sortedBy { it.id }
                 )
             }
-            scope.launch { processQueue() }
+            if (progress.state == DownloadState.QUEUED) scope.launch { processQueue() }
             true
         }
     }
+
+    private fun newTempFile(directory: File): File =
+        File(directory, "${UUID.randomUUID()}.tmp")
 
     private suspend fun initialQueueState(startNow: Boolean): DownloadState =
         if (startNow || preferencesRepository.userPreferences.first().autoStartDownloads) {
@@ -784,7 +790,7 @@ class DownloadManager internal constructor(
 
             val platformDir = platformFolderResolver.downloadDirForGame(gameId, platformSlug)
             val diskFileName = FileNames.sanitize(fileName)
-            val tempFilePath = File(platformDir, "${diskFileName}.tmp").absolutePath
+            val tempFilePath = newTempFile(platformDir).absolutePath
 
             val entity = DownloadQueueEntity(
                 gameId = gameId,
@@ -852,7 +858,7 @@ class DownloadManager internal constructor(
                 folder to resolveGameFileDir(gameId, gameFileId, platformSlug, category, folder)
             }
             val diskFileName = FileNames.sanitize(fileName)
-            val tempFilePath = File(categoryFolder, "${diskFileName}.tmp").absolutePath
+            val tempFilePath = newTempFile(categoryFolder).absolutePath
             Logger.info(
                 TAG,
                 "Enqueue $category | game=$gameTitle gameId=$gameId rommFileId=$rommFileId " +
@@ -1187,8 +1193,10 @@ class DownloadManager internal constructor(
 
                 val fileDir = separateFromOtherOwner(downloadDir, platformDir, stagingArea == null, progress)
                 val tempFile = stagingArea?.let { File(it.archiveDir, "${progress.fileName}.tmp") }
-                    ?: persistedPart?.takeIf { row.requestKey != null || (it.exists() && fileDir == downloadDir) }
-                    ?: File(fileDir, "${progress.fileName}.tmp")
+                    ?: persistedPart?.let {
+                        if (row.requestKey != null || fileDir == downloadDir) it else File(fileDir, it.name)
+                    }
+                    ?: newTempFile(fileDir)
                 val targetFile = File(tempFile.parentFile, progress.fileName)
                 tempFile.parentFile?.mkdirs()
                 val requestKey = DownloadTransferRunner(connectivity).resolveRequestKey(
@@ -2043,7 +2051,9 @@ class DownloadManager internal constructor(
 
     internal suspend fun requeueFailed(item: DownloadProgress) {
         val reused = enqueueMutex.withLock {
-            downloadQueueDao.getById(item.id)?.let { reuseFailedDownload(it) } ?: false
+            downloadQueueDao.getById(item.id)?.let {
+                reuseFailedDownload(it.copy(state = DownloadState.QUEUED.name))
+            } ?: false
         }
         if (reused) return
         when {

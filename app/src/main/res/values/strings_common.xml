@@ -1556,6 +1556,8 @@
     <string name="ui_launch_overlay_wait_core">Still downloading the emulator core</string>
     <!-- Same line with the download size. %1$s is a size such as "12.3 MB". -->
     <string name="ui_launch_overlay_wait_core_sized">Still downloading the emulator core &#183; %1$s</string>
+    <!-- Line under the game title when custom textures are being installed from mods. -->
+    <string name="ui_launch_overlay_wait_textures">Still installing textures</string>
     <!-- Line under the game title when the emulator setup runs long. -->
     <string name="ui_launch_overlay_wait_prepare">Still preparing the emulator</string>
     <!-- Shown when the RomM server did not answer; the game still starts. "RomM" is a product name; leave it untranslated. -->

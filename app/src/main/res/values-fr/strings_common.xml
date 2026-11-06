@@ -730,6 +730,7 @@
     <string name="ui_launch_overlay_wait_save">Synchronisation de votre sauvegarde en cours</string>
     <string name="ui_launch_overlay_wait_core">Téléchargement du cœur de l\'émulateur en cours</string>
     <string name="ui_launch_overlay_wait_core_sized">Téléchargement du cœur de l\'émulateur en cours &#183; %1$s</string>
+    <string name="ui_launch_overlay_wait_textures">Installation des textures toujours en cours</string>
     <string name="ui_launch_overlay_wait_prepare">Préparation de l\'émulateur en cours</string>
     <string name="ui_launch_overlay_failed_connect">RomM n\'a pas répondu. Démarrage avec la sauvegarde de cet appareil.</string>
     <string name="ui_launch_overlay_failed_timeout">RomM a mis trop de temps à répondre. Démarrage avec la sauvegarde de cet appareil.</string>

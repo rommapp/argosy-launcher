@@ -53,6 +53,8 @@ class LaunchPhaseTest {
         LaunchStep.DownloadingCore(0.5f),
         LaunchStep.DownloadingCore(0.5f, totalBytes = 4_000_000L),
         LaunchStep.DownloadingCore(null, totalBytes = 4_000_000L),
+        LaunchStep.InstallingTextures(null),
+        LaunchStep.InstallingTextures(0.5f),
         LaunchStep.Starting,
         LaunchStep.PreparingSystemFiles,
         LaunchStep.PreparingUi,
@@ -95,6 +97,12 @@ class LaunchPhaseTest {
     fun `a core download is the core phase with or without a fraction`() {
         assertEquals(LaunchPhase.CORE, LaunchStep.DownloadingCore(null).phase)
         assertEquals(LaunchPhase.CORE, LaunchStep.DownloadingCore(0.25f).phase)
+    }
+
+    @Test
+    fun `installing textures is the textures phase with or without a fraction`() {
+        assertEquals(LaunchPhase.TEXTURES, LaunchStep.InstallingTextures(null).phase)
+        assertEquals(LaunchPhase.TEXTURES, LaunchStep.InstallingTextures(0.25f).phase)
     }
 
     @Test
@@ -162,12 +170,14 @@ class LaunchPhaseTest {
     }
 
     @Test
-    fun `only a core download with a known fraction is sized`() {
+    fun `only steps with a known fraction are sized`() {
         val sized = LaunchStep.DownloadingCore(0.5f)
         val sizedWithBytes = LaunchStep.DownloadingCore(0.5f, totalBytes = 4_000_000L)
+        val sizedTextures = LaunchStep.InstallingTextures(0.5f)
         assertEquals(0.5f, sized.fraction)
         assertEquals(0.5f, sizedWithBytes.fraction)
-        everyStep().filterNot { it == sized || it == sizedWithBytes }.forEach { step ->
+        assertEquals(0.5f, sizedTextures.fraction)
+        everyStep().filterNot { it == sized || it == sizedWithBytes || it == sizedTextures }.forEach { step ->
             assertNull(step.toString(), step.fraction)
         }
     }

@@ -705,6 +705,7 @@
     <string name="ui_launch_overlay_wait_save">Dein Spielstand wird noch synchronisiert</string>
     <string name="ui_launch_overlay_wait_core">Der Emulator-Core wird noch heruntergeladen</string>
     <string name="ui_launch_overlay_wait_core_sized">Der Emulator-Core wird noch heruntergeladen &#183; %1$s</string>
+    <string name="ui_launch_overlay_wait_textures">Texturen werden noch installiert</string>
     <string name="ui_launch_overlay_wait_prepare">Der Emulator wird noch vorbereitet</string>
     <string name="ui_launch_overlay_failed_connect">RomM hat nicht geantwortet. Gestartet wird mit dem Spielstand auf diesem Gerät.</string>
     <string name="ui_launch_overlay_failed_timeout">RomM hat zu lange für eine Antwort gebraucht. Gestartet wird mit dem Spielstand auf diesem Gerät.</string>

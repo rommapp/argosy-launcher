@@ -705,6 +705,7 @@
     <string name="ui_launch_overlay_wait_save">आपकी सेव अभी भी सिंक हो रही है</string>
     <string name="ui_launch_overlay_wait_core">एमुलेटर कोर अभी भी डाउनलोड हो रहा है</string>
     <string name="ui_launch_overlay_wait_core_sized">एमुलेटर कोर अभी भी डाउनलोड हो रहा है &#183; %1$s</string>
+    <string name="ui_launch_overlay_wait_textures">टेक्सचर अभी भी इंस्टॉल हो रहे हैं</string>
     <string name="ui_launch_overlay_wait_prepare">एमुलेटर अभी भी तैयार हो रहा है</string>
     <string name="ui_launch_overlay_failed_connect">RomM ने जवाब नहीं दिया। इस डिवाइस की सेव के साथ शुरू हो रहा है।</string>
     <string name="ui_launch_overlay_failed_timeout">RomM ने जवाब देने में बहुत देर लगाई। इस डिवाइस की सेव के साथ शुरू हो रहा है।</string>

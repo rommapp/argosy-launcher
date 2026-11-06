@@ -31,9 +31,12 @@ import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.libretro.coreoptions.CoreOptionResolver
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.coroutineContext
 import com.nendo.argosy.data.local.entity.GameDiscEntity
 import com.nendo.argosy.data.platform.PlatformFolderResolver
 import com.nendo.argosy.data.local.entity.GameEntity
@@ -174,16 +177,21 @@ class GameLauncher @Inject constructor(
         allowVariantPrompt: Boolean = true,
         prefetchedGame: GameEntity? = null
     ): LaunchResult = withContext(Dispatchers.IO) {
-        launchInternal(
-            gameId = gameId,
-            discId = discId,
-            forResume = forResume,
-            selectedDiscPath = selectedDiscPath,
-            variantFileId = variantFileId,
-            skipVariantPrompt = skipVariantPrompt,
-            allowVariantPrompt = allowVariantPrompt,
-            prefetchedGame = prefetchedGame
-        )
+        try {
+            launchInternal(
+                gameId = gameId,
+                discId = discId,
+                forResume = forResume,
+                selectedDiscPath = selectedDiscPath,
+                variantFileId = variantFileId,
+                skipVariantPrompt = skipVariantPrompt,
+                allowVariantPrompt = allowVariantPrompt,
+                prefetchedGame = prefetchedGame
+            )
+        } catch (e: CancellationException) {
+            Logger.info(TAG, "Launch cancelled: ${e.message}")
+            LaunchResult.Cancelled
+        }
     }
 
     private suspend fun launchInternal(
@@ -410,7 +418,11 @@ class GameLauncher @Inject constructor(
         )
     }
 
-    private suspend fun launchVariantFile(game: GameEntity, variant: com.nendo.argosy.data.local.entity.GameFileEntity, forResume: Boolean): LaunchResult {
+    private suspend fun launchVariantFile(
+        game: GameEntity,
+        variant: com.nendo.argosy.data.local.entity.GameFileEntity,
+        forResume: Boolean
+    ): LaunchResult {
         val variantPath = variant.localPath
             ?: return LaunchResult.NoRomFile(null)
         val variantFile = File(variantPath)
@@ -420,7 +432,8 @@ class GameLauncher @Inject constructor(
             val m3u = variant.m3uPath?.let { File(it) }
             if (m3u != null && m3u.exists()) {
                 val emulator = resolveEmulator(game) ?: return LaunchResult.NoEmulator(game.platformSlug)
-                val intent = buildIntent(emulator, m3u, game, forResume, variant.id) ?: return LaunchResult.NoCore(game.platformSlug, lastCoreDownloadError)
+                val intent = buildIntent(emulator, m3u, game, forResume, variant.id)
+                    ?: return LaunchResult.NoCore(game.platformSlug, lastCoreDownloadError)
                 overlayWriter.recordPlayStart(game.id, java.time.Instant.now())
                 val alreadyLaunched = intent.getBooleanExtra(EXTRA_ALREADY_LAUNCHED, false)
                 return LaunchResult.Success(
@@ -513,7 +526,11 @@ class GameLauncher @Inject constructor(
     private fun discNumberOf(fileName: String): Int? =
         DISC_TAG_REGEX.find(fileName)?.let { DISC_NUMBER_REGEX.find(it.value)?.value?.toIntOrNull() }
 
-    private suspend fun launchMultiDiscGame(game: GameEntity, requestedDiscId: Long?, forResume: Boolean): LaunchResult {
+    private suspend fun launchMultiDiscGame(
+        game: GameEntity,
+        requestedDiscId: Long?,
+        forResume: Boolean
+    ): LaunchResult {
         Logger.debug(TAG, "launchMultiDiscGame(): discCount query for gameId=${game.id}, forResume=$forResume")
 
         val discs = gameDiscDao.getDiscsForGame(game.id)
@@ -590,7 +607,7 @@ class GameLauncher @Inject constructor(
         }
 
         val intent = buildIntent(emulator, launchFile, game, forResume, discM3uPath = discM3u)
-            ?: return if (emulator.launchConfig is LaunchConfig.RetroArch) {
+            ?: return if (emulator.launchConfig is LaunchConfig.RetroArch || emulator.launchConfig is LaunchConfig.BuiltIn) {
                 LaunchResult.NoCore(game.platformSlug, lastCoreDownloadError).also {
                     Logger.warn(TAG, "launchMultiDiscGame() failed: no core for platform=${game.platformSlug}")
                 }
@@ -711,7 +728,12 @@ class GameLauncher @Inject constructor(
         return LaunchResult.Success(intent)
     }
 
-    private suspend fun buildBuiltInIntent(romFile: File, game: GameEntity, variantFileId: Long? = null, discM3uPath: String? = null): Intent? {
+    private suspend fun buildBuiltInIntent(
+        romFile: File,
+        game: GameEntity,
+        variantFileId: Long? = null,
+        discM3uPath: String? = null
+    ): Intent? {
         Logger.debug(TAG, "[BuiltIn] Preparing launch: rom=${romFile.name}, platform=${game.platformSlug}")
         lastCoreDownloadError = null
 
@@ -754,7 +776,24 @@ class GameLauncher @Inject constructor(
             return null
         }
 
-        texturePackInstaller.installPendingModFilesForGame(game.id)
+        val ticket = launchProgressTracker.current
+        val callerContext = coroutineContext
+        var texturesInstalled = false
+        texturePackInstaller.installPendingModFilesForGame(
+            gameId = game.id,
+            isCancelled = { ticket?.isCancelled == true || launchProgressTracker.current?.isCancelled == true || !callerContext.isActive },
+            onProgress = { fraction ->
+                texturesInstalled = true
+                launchProgressTracker.report(LaunchStep.InstallingTextures(fraction))
+            }
+        )
+        if (ticket?.isCancelled == true || launchProgressTracker.current?.isCancelled == true || !coroutineContext.isActive) {
+            Logger.info(TAG, "[BuiltIn] Launch was cancelled during texture installation")
+            throw CancellationException("Launch was cancelled during texture installation")
+        }
+        if (texturesInstalled) {
+            launchProgressTracker.report(LaunchStep.PreparingSystemFiles)
+        }
         val textureCoreOptions = texturePackInstaller.resolveAutoCoreOptionsForGame(
             gameId = game.id,
             coreId = coreName,
@@ -953,7 +992,14 @@ class GameLauncher @Inject constructor(
     private suspend fun resolveEmulator(game: GameEntity): EmulatorDef? =
         emulatorResolver.resolveEmulatorForGame(game.id, game.platformId, game.platformSlug)
 
-    private suspend fun buildIntent(emulator: EmulatorDef, romFile: File, game: GameEntity, forResume: Boolean, variantFileId: Long? = null, discM3uPath: String? = null): Intent? {
+    private suspend fun buildIntent(
+        emulator: EmulatorDef,
+        romFile: File,
+        game: GameEntity,
+        forResume: Boolean,
+        variantFileId: Long? = null,
+        discM3uPath: String? = null
+    ): Intent? {
         val configType = emulator.launchConfig::class.simpleName
         Logger.debug(TAG, "buildIntent: emulator=${emulator.displayName}, config=$configType, rom=${romFile.name}, forResume=$forResume")
 

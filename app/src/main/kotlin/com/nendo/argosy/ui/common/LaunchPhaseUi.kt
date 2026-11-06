@@ -12,6 +12,7 @@ val LaunchPhase.waitLabelRes: Int?
         LaunchPhase.RECAP_LOADING -> R.string.ui_launch_overlay_wait_recap
         LaunchPhase.SAVE -> R.string.ui_launch_overlay_wait_save
         LaunchPhase.CORE -> R.string.ui_launch_overlay_wait_core
+        LaunchPhase.TEXTURES -> R.string.ui_launch_overlay_wait_textures
         LaunchPhase.PREPARE -> R.string.ui_launch_overlay_wait_prepare
         LaunchPhase.LAUNCHING -> null
         LaunchPhase.QUESTION -> null

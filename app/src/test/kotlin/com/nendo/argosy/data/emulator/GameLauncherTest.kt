@@ -17,6 +17,8 @@ import com.nendo.argosy.data.platform.PlatformFolderResolver
 import com.nendo.argosy.data.preferences.UserPreferences
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.repository.BiosRepository
+import com.nendo.argosy.domain.model.LaunchStep
+import com.nendo.argosy.domain.model.fraction
 import com.nendo.argosy.libretro.LibretroCoreManager
 import com.nendo.argosy.libretro.coreoptions.CoreOptionResolver
 import android.net.Uri
@@ -70,6 +72,7 @@ class GameLauncherTest {
     private val launchProgressTracker = mockk<LaunchProgressTracker>(relaxed = true)
     private val steamInstallReports = mockk<com.nendo.argosy.data.launcher.SteamInstallReports>(relaxed = true)
     private val appsRepository = mockk<com.nendo.argosy.data.repository.AppsRepository>(relaxed = true)
+    private val texturePackInstaller = mockk<TexturePackInstaller>(relaxed = true)
 
     @Before
     fun setup() {
@@ -169,7 +172,7 @@ class GameLauncherTest {
             volumeHealth = mockk(relaxed = true),
             dreamcastVmuMigrator = mockk(relaxed = true),
             launchProgressTracker = launchProgressTracker,
-            texturePackInstaller = mockk(relaxed = true),
+            texturePackInstaller = texturePackInstaller,
             steamInstallReports = steamInstallReports,
             appsRepository = appsRepository,
             emulatorResolver = EmulatorResolver(
@@ -1105,6 +1108,77 @@ class GameLauncherTest {
 
         assertTrue("got ${result?.let { it::class.simpleName }}", result !is LaunchResult.MissingBios)
         coVerify { coreSystemDataManager.ensureCoreSystemData(any(), any()) }
+    }
+
+    @Test
+    fun `launching with pending textures reports InstallingTextures step then resumes preparing`() = runTest {
+        bindPs2ToBuiltin(coreSupportsPs2 = true)
+        val systemDir = tempFolder.newFolder("system-textures")
+        java.io.File(systemDir, "pcsx2/bios").mkdirs()
+        java.io.File(systemDir, "pcsx2/bios/dump.bin").writeBytes(byteArrayOf(1))
+        every { biosRepository.getLibretroSystemDir() } returns systemDir
+        every { libretroCoreMgr.getCorePathForPlatform(any(), any()) } returns "/fake/pcsx2_libretro_android.so"
+        coEvery { coreSystemDataManager.ensureCoreSystemData(any(), any()) } returns true
+        every { userPreferencesRepository.getBuiltinEmulatorSettings() } returns flowOf(
+            com.nendo.argosy.data.preferences.BuiltinEmulatorSettings()
+        )
+
+        val reportedSteps = mutableListOf<LaunchStep>()
+        every { launchProgressTracker.report(capture(reportedSteps)) } returns Unit
+
+        val progressCallbacks = mutableListOf<(Float?) -> Unit>()
+        coEvery {
+            texturePackInstaller.installPendingModFilesForGame(
+                gameId = 1L,
+                extractedTitleId = any(),
+                isCancelled = any(),
+                onProgress = capture(progressCallbacks)
+            )
+        } coAnswers {
+            progressCallbacks.lastOrNull()?.invoke(0.5f)
+            1
+        }
+
+        runCatching { launcher.launch(1L) }
+
+        assertTrue(reportedSteps.any { it is LaunchStep.InstallingTextures && it.fraction == 0.5f })
+        assertEquals(LaunchStep.PreparingSystemFiles, reportedSteps.last())
+    }
+
+    @Test
+    fun `launching cancelled during texture installation returns LaunchResult Cancelled`() = runTest {
+        bindPs2ToBuiltin(coreSupportsPs2 = true)
+        val systemDir = tempFolder.newFolder("system-cancel")
+        java.io.File(systemDir, "pcsx2/bios").mkdirs()
+        java.io.File(systemDir, "pcsx2/bios/dump.bin").writeBytes(byteArrayOf(1))
+        every { biosRepository.getLibretroSystemDir() } returns systemDir
+        every { libretroCoreMgr.getCorePathForPlatform(any(), any()) } returns "/fake/pcsx2_libretro_android.so"
+        coEvery { coreSystemDataManager.ensureCoreSystemData(any(), any()) } returns true
+        every { userPreferencesRepository.getBuiltinEmulatorSettings() } returns flowOf(
+            com.nendo.argosy.data.preferences.BuiltinEmulatorSettings()
+        )
+
+        val ticket = mockk<LaunchProgressTracker.Ticket>(relaxed = true)
+        every { ticket.isCancelled } returns false
+        var liveTicket: LaunchProgressTracker.Ticket? = ticket
+        every { launchProgressTracker.current } answers { liveTicket }
+
+        coEvery {
+            texturePackInstaller.installPendingModFilesForGame(
+                gameId = 1L,
+                extractedTitleId = any(),
+                isCancelled = any(),
+                onProgress = any()
+            )
+        } coAnswers {
+            every { ticket.isCancelled } returns true
+            liveTicket = null // Models real LaunchProgressTracker.cancel(): clears live ticket
+            throw kotlinx.coroutines.CancellationException("User cancelled launch")
+        }
+
+        val result = launcher.launch(1L)
+
+        assertEquals(LaunchResult.Cancelled, result)
     }
 
     @Test

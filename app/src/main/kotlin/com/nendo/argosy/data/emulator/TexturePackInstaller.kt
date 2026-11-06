@@ -9,18 +9,15 @@ import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.GameFileEntity
 import com.nendo.argosy.data.platform.PlatformFolderResolver
 import com.nendo.argosy.util.AppPaths
-import com.nendo.argosy.util.FileNames
 import com.nendo.argosy.util.Logger
-import com.nendo.argosy.data.model.VariantCategory
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.FileOutputStream
 import java.time.Instant
-import java.util.Locale
-import java.util.zip.ZipEntry
-import java.util.zip.ZipFile
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -35,7 +32,8 @@ class TexturePackInstaller(
     private val gameDao: GameDao,
     private val gameDiscDao: GameDiscDao,
     private val gameFileDao: GameFileDao,
-    private val systemDir: File
+    private val systemDir: File,
+    private val extractor: TexturePackExtractor = TexturePackExtractor()
 ) {
     @Inject
     constructor(
@@ -48,7 +46,8 @@ class TexturePackInstaller(
         gameDao: GameDao,
         gameDiscDao: GameDiscDao,
         gameFileDao: GameFileDao,
-        @ApplicationContext context: Context
+        @ApplicationContext context: Context,
+        extractor: TexturePackExtractor
     ) : this(
         builtinSaveBase = builtinSaveBase,
         builtinCoreResolver = builtinCoreResolver,
@@ -59,12 +58,15 @@ class TexturePackInstaller(
         gameDao = gameDao,
         gameDiscDao = gameDiscDao,
         gameFileDao = gameFileDao,
-        systemDir = AppPaths.libretroSystemDir(context.filesDir)
+        systemDir = AppPaths.libretroSystemDir(context.filesDir),
+        extractor = extractor
     )
 
     suspend fun installPendingModFilesForGame(
         gameId: Long,
-        extractedTitleId: TitleIdResult? = null
+        extractedTitleId: TitleIdResult? = null,
+        isCancelled: (() -> Boolean)? = null,
+        onProgress: ((fraction: Float?) -> Unit)? = null
     ): Int = withContext(Dispatchers.IO) {
         val game = gameDao.getById(gameId) ?: return@withContext 0
         if (BuiltinTexturePathRegistry.resolveRuleForPlatform(game.platformSlug) == null) {
@@ -78,18 +80,11 @@ class TexturePackInstaller(
         if (emulatorPackage != EmulatorRegistry.BUILTIN_PACKAGE) {
             return@withContext 0
         }
-
-        val romFile = resolveRomFile(game)
-        if (romFile == null || !romFile.isFile) {
-            Logger.debug(TAG, "Deferring texture pack install for ${game.title} until base ROM is on disk")
-            return@withContext 0
-        }
         val modFiles = gameFileDao.getModFilesForGame(gameId)
         if (modFiles.isEmpty()) return@withContext 0
 
         val gameFolder = gameFolderOf(game)
-        var installedCount = 0
-
+        val candidates = mutableListOf<Pair<GameFileEntity, File>>()
         for (modFile in modFiles) {
             val recordedPath = modFile.localPath
             if (recordedPath != null && isManifestPath(recordedPath) && File(recordedPath).isFile) {
@@ -108,23 +103,58 @@ class TexturePackInstaller(
             ) {
                 continue
             }
-            val manifest = runCatching {
-                installForModFile(
+            candidates.add(modFile to sourceFile)
+        }
+        if (candidates.isEmpty()) return@withContext 0
+
+        onProgress?.invoke(0f)
+        var installedCount = 0
+        val totalCount = candidates.size
+
+        for ((index, pair) in candidates.withIndex()) {
+            currentCoroutineContext().ensureActive()
+            if (isCancelled?.invoke() == true) {
+                Logger.info(TAG, "Texture pack install cancelled for ${game.title}")
+                throw CancellationException("Texture pack install cancelled for ${game.title}")
+            }
+            val (modFile, sourceFile) = pair
+            val packProgress: (Float?) -> Unit = { packFraction ->
+                if (packFraction != null) {
+                    val overall = (index + packFraction) / totalCount
+                    onProgress?.invoke(overall.coerceIn(0f, 1f))
+                }
+            }
+            try {
+                val outcome = installForModFileOutcome(
                     game = game,
                     gameFile = modFile,
                     sourceFile = sourceFile,
                     extractedTitleId = extractedTitleId,
-                    preValidatedZip = true
+                    preValidatedZip = true,
+                    isCancelled = isCancelled,
+                    onProgress = packProgress
                 )
-            }.onFailure { e ->
+                when (outcome) {
+                    is ModInstallOutcome.Success -> {
+                        installedCount++
+                    }
+                    is ModInstallOutcome.Deferred -> {
+                        Logger.debug(TAG, "Texture mod ${modFile.fileName} deferred: ${outcome.reason}")
+                    }
+                    is ModInstallOutcome.Failed -> {
+                        failedInstalls[modFile.id] = System.currentTimeMillis()
+                        Logger.warn(TAG, "Failed to install texture pack ${modFile.fileName}: ${outcome.reason}")
+                    }
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
                 failedInstalls[modFile.id] = System.currentTimeMillis()
                 Logger.warn(TAG, "Failed to install texture pack ${modFile.fileName}: ${e.message}")
-            }.getOrNull()
-            if (manifest != null) {
-                installedCount++
-            } else {
-                failedInstalls[modFile.id] = System.currentTimeMillis()
             }
+        }
+        if (installedCount > 0) {
+            onProgress?.invoke(1f)
         }
         installedCount
     }
@@ -218,14 +248,22 @@ class TexturePackInstaller(
         }
     }
 
-    suspend fun installForModFile(
+    sealed interface ModInstallOutcome {
+        data class Success(val manifest: File) : ModInstallOutcome
+        data class Deferred(val reason: String) : ModInstallOutcome
+        data class Failed(val reason: String) : ModInstallOutcome
+    }
+
+    suspend fun installForModFileOutcome(
         game: GameEntity,
         gameFile: GameFileEntity,
         sourceFile: File,
         extractedTitleId: TitleIdResult? = null,
-        preValidatedZip: Boolean = false
-    ): File? = withContext(Dispatchers.IO) {
-        if (!sourceFile.isFile) return@withContext null
+        preValidatedZip: Boolean = false,
+        isCancelled: (() -> Boolean)? = null,
+        onProgress: ((fraction: Float?) -> Unit)? = null
+    ): ModInstallOutcome = withContext(Dispatchers.IO) {
+        if (!sourceFile.isFile) return@withContext ModInstallOutcome.Failed("Source file does not exist")
 
         val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(
             game.id,
@@ -233,7 +271,7 @@ class TexturePackInstaller(
             game.platformSlug
         )
         if (emulatorPackage != EmulatorRegistry.BUILTIN_PACKAGE) {
-            return@withContext null
+            return@withContext ModInstallOutcome.Deferred("Emulator $emulatorPackage is not built-in")
         }
 
         val resolvedCoreId = builtinCoreResolver.resolveCoreId(
@@ -242,13 +280,12 @@ class TexturePackInstaller(
             platformSlug = game.platformSlug
         )
         val rule = BuiltinTexturePathRegistry.resolveRule(resolvedCoreId, game.platformSlug)
-            ?: return@withContext null
-
+            ?: return@withContext ModInstallOutcome.Deferred("No texture path rule for core $resolvedCoreId")
 
         val romFile = resolveRomFile(game)
         if (romFile == null || !romFile.isFile) {
             Logger.debug(TAG, "Deferring texture pack install for ${game.title} until base ROM is on disk")
-            return@withContext null
+            return@withContext ModInstallOutcome.Deferred("Base ROM not yet on disk")
         }
 
         val baseRomPath = romFile.absolutePath
@@ -264,20 +301,29 @@ class TexturePackInstaller(
             val isHtc = BuiltinTexturePathRegistry.isHtcFileName(sourceFile.name)
             if ((isHts && !rule.supportsHts) || (isHtc && !rule.supportsHtc)) {
                 Logger.warn(TAG, "Core for ${game.platformSlug} does not support ${sourceFile.extension} texture packs")
-                return@withContext null
+                return@withContext ModInstallOutcome.Failed("Unsupported HTC/HTS format")
             }
-            val targetCacheDir = cacheDir ?: return@withContext null
-            val manifest = installHtcOrHtsFile(sourceFile, targetCacheDir, gameFile.id)
-            gameFileDao.updateLocalPath(gameFile.id, manifest.absolutePath, Instant.now())
-            return@withContext manifest
+            val targetCacheDir = cacheDir ?: return@withContext ModInstallOutcome.Failed("Cache directory unresolvable")
+            val manifest = extractor.installHtcOrHtsFile(sourceFile, targetCacheDir, gameFile.id, isCancelled, onProgress)
+                ?: return@withContext ModInstallOutcome.Failed("Failed to install HTC/HTS file")
+            try {
+                gameFileDao.updateLocalPath(gameFile.id, manifest.absolutePath, Instant.now())
+            } catch (e: Throwable) {
+                TexturePackExtractor.uninstallFromManifestFile(manifest)
+                throw e
+            }
+            if (sourceFile.exists() && sourceFile.canonicalPath != manifest.canonicalPath) {
+                TexturePackExtractor.deleteSourceAndPruneEmptyModParent(sourceFile)
+            }
+            return@withContext ModInstallOutcome.Success(manifest)
         }
 
         if (!preValidatedZip && !looksLikeTextureZip(sourceFile)) {
-            return@withContext null
+            return@withContext ModInstallOutcome.Deferred("Not a texture zip")
         }
 
         val htcHtsZipSummary = if (rule.supportsHtc || rule.supportsHts) {
-            inspectHtcHtsOnlyZip(sourceFile)
+            extractor.inspectHtcHtsOnlyZip(sourceFile)
         } else {
             null
         }
@@ -287,22 +333,30 @@ class TexturePackInstaller(
                 (htcHtsZipSummary.hasHtc && !rule.supportsHtc)
             ) {
                 Logger.warn(TAG, "Core for ${game.platformSlug} does not support cache texture archive ${sourceFile.name}")
-                return@withContext null
+                return@withContext ModInstallOutcome.Failed("Unsupported cache archive")
             }
-            val manifest = extractHtcOrHtsZip(
+            val manifest = extractor.extractHtcOrHtsZip(
                 zipFile = sourceFile,
                 cacheDir = cacheDir,
                 gameFileId = gameFile.id,
-                deleteSourceZip = true
-            )
-            gameFileDao.updateLocalPath(gameFile.id, manifest.absolutePath, Instant.now())
+                isCancelled = isCancelled,
+                onProgress = onProgress
+            ) ?: return@withContext ModInstallOutcome.Failed("Failed to extract HTC/HTS archive")
+            try {
+                gameFileDao.updateLocalPath(gameFile.id, manifest.absolutePath, Instant.now())
+            } catch (e: Throwable) {
+                TexturePackExtractor.uninstallFromManifestFile(manifest)
+                throw e
+            }
+            if (sourceFile.exists() && sourceFile.canonicalPath != manifest.canonicalPath) {
+                TexturePackExtractor.deleteSourceAndPruneEmptyModParent(sourceFile)
+            }
             Logger.info(
                 TAG,
                 "Installed N64 cache texture pack ${gameFile.fileName} for ${game.title} into ${cacheDir.absolutePath}"
             )
-            return@withContext manifest
+            return@withContext ModInstallOutcome.Success(manifest)
         }
-
 
         val folderKey = titleIdExtractor.resolveTextureFolderKey(
             strategy = rule.folderKeyStrategy,
@@ -311,7 +365,7 @@ class TexturePackInstaller(
             romFile = romFile,
             zipArchive = sourceFile,
             extractedResult = extractedTitleId
-        ) ?: return@withContext null
+        ) ?: return@withContext ModInstallOutcome.Failed("Could not resolve folder key")
 
         val targetDir = BuiltinTexturePathRegistry.resolveTargetDir(
             rule = rule,
@@ -320,200 +374,49 @@ class TexturePackInstaller(
             folderKey = folderKey
         )
 
-        val manifest = extractTextureZip(
+        val manifest = extractor.extractTextureZip(
             zipFile = sourceFile,
             targetDir = targetDir,
             folderKey = folderKey,
             gameFileId = gameFile.id,
-            deleteSourceZip = true
-        )
-        gameFileDao.updateLocalPath(gameFile.id, manifest.absolutePath, Instant.now())
+            isCancelled = isCancelled,
+            onProgress = onProgress
+        ) ?: return@withContext ModInstallOutcome.Failed("Failed to extract texture zip")
+        try {
+            gameFileDao.updateLocalPath(gameFile.id, manifest.absolutePath, Instant.now())
+        } catch (e: Throwable) {
+            TexturePackExtractor.uninstallFromManifestFile(manifest)
+            throw e
+        }
+        if (sourceFile.exists() && sourceFile.canonicalPath != manifest.canonicalPath) {
+            TexturePackExtractor.deleteSourceAndPruneEmptyModParent(sourceFile)
+        }
         Logger.info(
             TAG,
             "Installed texture pack ${gameFile.fileName} for ${game.title} into ${targetDir.absolutePath}"
         )
-        manifest
+        ModInstallOutcome.Success(manifest)
     }
 
-    private fun installHtcOrHtsFile(sourceFile: File, cacheDir: File, gameFileId: Long): File {
-        cacheDir.mkdirs()
-        val destFile = File(cacheDir, sourceFile.name)
-        if (!FileNames.isWithin(destFile, cacheDir)) {
-            throw SecurityException("Target file outside cache dir: ${sourceFile.name}")
-        }
-        if (sourceFile.canonicalPath != destFile.canonicalPath) {
-            sourceFile.copyTo(destFile, overwrite = true)
-            deleteSourceAndPruneEmptyModParent(sourceFile)
-        }
-        val manifestFile = manifestFileFor(cacheDir, gameFileId)
-        manifestFile.writeText(destFile.name)
-        return manifestFile
-    }
-
-    private data class HtcHtsZipSummary(
-        val hasHtc: Boolean,
-        val hasHts: Boolean
-    )
-
-    private fun inspectHtcHtsOnlyZip(zipFile: File): HtcHtsZipSummary? {
-        if (!zipFile.isFile || !BuiltinTexturePathRegistry.isTexturePackFileName(zipFile.name)) return null
-        return try {
-            ZipFile(zipFile).use { zf ->
-                var hasHtc = false
-                var hasHts = false
-                val entries = zf.entries()
-                while (entries.hasMoreElements()) {
-                    val entry = entries.nextElement()
-                    val cleanPath = entry.name.replace('\\', '/').trim('/')
-                    if (cleanPath.isEmpty() || cleanPath.startsWith("__MACOSX/") || cleanPath == "__MACOSX") {
-                        continue
-                    }
-                    if (!entry.isDirectory) {
-                        val name = cleanPath.substringAfterLast('/')
-                        when {
-                            BuiltinTexturePathRegistry.isHtcFileName(name) -> hasHtc = true
-                            BuiltinTexturePathRegistry.isHtsFileName(name) -> hasHts = true
-                            else -> return@use null
-                        }
-                    }
-                }
-                if (hasHtc || hasHts) HtcHtsZipSummary(hasHtc = hasHtc, hasHts = hasHts) else null
-            }
-        } catch (_: Exception) {
-            null
-        }
-    }
-
-    private fun extractHtcOrHtsZip(
-        zipFile: File,
-        cacheDir: File,
-        gameFileId: Long,
-        deleteSourceZip: Boolean
-    ): File {
-        cacheDir.mkdirs()
-        val extractedNames = mutableListOf<String>()
-
-        ZipFile(zipFile).use { zf ->
-            val fileEntries = collectValidatedZipEntries(zf, cacheDir)
-            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-            for ((entry, cleanPath) in fileEntries) {
-                val fileName = cleanPath.substringAfterLast('/')
-                if (fileName.isEmpty()) continue
-                val destFile = File(cacheDir, fileName)
-                if (!FileNames.isWithin(destFile, cacheDir)) {
-                    throw SecurityException("Zip entry outside cache dir: ${entry.name}")
-                }
-                zf.getInputStream(entry).use { input ->
-                    FileOutputStream(destFile).use { output ->
-                        var read: Int
-                        while (input.read(buffer).also { read = it } != -1) {
-                            output.write(buffer, 0, read)
-                        }
-                    }
-                }
-                extractedNames.add(fileName)
-            }
-        }
-
-        val manifestFile = manifestFileFor(cacheDir, gameFileId)
-        manifestFile.writeText(extractedNames.joinToString("\n"))
-
-        if (deleteSourceZip && zipFile.exists() && zipFile.canonicalPath != manifestFile.canonicalPath) {
-            deleteSourceAndPruneEmptyModParent(zipFile)
-        }
-        return manifestFile
-    }
-
-    fun extractTextureZip(
-        zipFile: File,
-        targetDir: File,
-        folderKey: String,
-        gameFileId: Long,
-        deleteSourceZip: Boolean = true
-    ): File {
-        targetDir.mkdirs()
-        val extractedRelativePaths = mutableListOf<String>()
-
-        ZipFile(zipFile).use { zf ->
-            val fileEntries = collectValidatedZipEntries(zf, targetDir)
-
-            val stripPrefix = computeRedundantPrefix(
-                entryPaths = fileEntries.map { it.second },
-                folderKey = folderKey
-            )
-
-            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-            for ((entry, cleanPath) in fileEntries) {
-                val relativePath = if (stripPrefix.isNotEmpty() && cleanPath.startsWith(stripPrefix)) {
-                    cleanPath.removePrefix(stripPrefix).trimStart('/')
-                } else {
-                    cleanPath
-                }
-                if (relativePath.isEmpty()) continue
-
-                val destFile = File(targetDir, relativePath)
-                if (!FileNames.isWithin(destFile, targetDir)) {
-                    throw SecurityException("Zip entry outside target dir: ${entry.name}")
-                }
-                destFile.parentFile?.mkdirs()
-                zf.getInputStream(entry).use { input ->
-                    FileOutputStream(destFile).use { output ->
-                        var read: Int
-                        while (input.read(buffer).also { read = it } != -1) {
-                            output.write(buffer, 0, read)
-                        }
-                    }
-                }
-                extractedRelativePaths.add(relativePath)
-            }
-        }
-
-        val manifestFile = manifestFileFor(targetDir, gameFileId)
-        manifestFile.writeText(extractedRelativePaths.joinToString("\n"))
-
-        if (deleteSourceZip && zipFile.exists() && zipFile.canonicalPath != manifestFile.canonicalPath) {
-            deleteSourceAndPruneEmptyModParent(zipFile)
-        }
-        return manifestFile
-    }
-
-    private fun collectValidatedZipEntries(
-        zf: ZipFile,
-        baseDir: File
-    ): List<Pair<ZipEntry, String>> {
-        val fileEntries = mutableListOf<Pair<ZipEntry, String>>()
-        val entriesEnum = zf.entries()
-        while (entriesEnum.hasMoreElements()) {
-            val entry = entriesEnum.nextElement()
-            val rawNormalized = entry.name.replace('\\', '/')
-            val rawSegments = rawNormalized.split('/')
-            if (rawSegments.any { it == ".." }) {
-                throw SecurityException("Zip-Slip traversal entry rejected: ${entry.name}")
-            }
-            val cleanPath = rawNormalized.trim('/')
-            if (cleanPath.isEmpty() || cleanPath.startsWith("__MACOSX/") || cleanPath == "__MACOSX") {
-                continue
-            }
-            val probeTarget = File(baseDir, cleanPath)
-            if (!FileNames.isWithin(probeTarget, baseDir)) {
-                throw SecurityException("Zip entry outside target dir: ${entry.name}")
-            }
-            if (!entry.isDirectory) {
-                fileEntries.add(entry to cleanPath)
-            }
-        }
-        return fileEntries
-    }
-
-    private fun deleteSourceAndPruneEmptyModParent(sourceFile: File) {
-        val parent = sourceFile.parentFile
-        sourceFile.delete()
-        if (parent != null &&
-            parent.name.lowercase(Locale.ROOT) in setOf("mods", "mod", ZipExtractor.EXTCONTENT_FOLDER) &&
-            parent.listFiles().isNullOrEmpty()
-        ) {
-            parent.delete()
-        }
+    suspend fun installForModFile(
+        game: GameEntity,
+        gameFile: GameFileEntity,
+        sourceFile: File,
+        extractedTitleId: TitleIdResult? = null,
+        preValidatedZip: Boolean = false,
+        isCancelled: (() -> Boolean)? = null,
+        onProgress: ((fraction: Float?) -> Unit)? = null
+    ): File? {
+        val outcome = installForModFileOutcome(
+            game = game,
+            gameFile = gameFile,
+            sourceFile = sourceFile,
+            extractedTitleId = extractedTitleId,
+            preValidatedZip = preValidatedZip,
+            isCancelled = isCancelled,
+            onProgress = onProgress
+        )
+        return (outcome as? ModInstallOutcome.Success)?.manifest
     }
 
     suspend fun uninstallModFile(gameFile: GameFileEntity): Boolean = withContext(Dispatchers.IO) {
@@ -544,10 +447,24 @@ class TexturePackInstaller(
         }
     }
 
+    suspend fun extractTextureZip(
+        zipFile: File,
+        targetDir: File,
+        folderKey: String,
+        gameFileId: Long,
+        isCancelled: (() -> Boolean)? = null,
+        onProgress: ((fraction: Float?) -> Unit)? = null
+    ): File? = extractor.extractTextureZip(
+        zipFile = zipFile,
+        targetDir = targetDir,
+        folderKey = folderKey,
+        gameFileId = gameFileId,
+        isCancelled = isCancelled,
+        onProgress = onProgress
+    )
+
     companion object {
         private const val TAG = "TexturePackInstaller"
-        private const val MANIFEST_PREFIX = ".argosy_mod_"
-        private const val MANIFEST_SUFFIX = ".manifest"
 
         private val failedInstalls = java.util.concurrent.ConcurrentHashMap<Long, Long>()
 
@@ -561,224 +478,49 @@ class TexturePackInstaller(
             failedInstalls.remove(gameFileId)
         }
 
-        private val REDUNDANT_CONTAINER_NAMES = setOf("textures", "hires_texture", "load", "user")
-
-        private val TEXTURE_ASSET_EXTENSIONS = setOf(
-            "png", "dds", "bmp", "tga", "ktx", "htc", "hts"
-        )
-        private val TEXTURE_METADATA_FILENAMES = setOf(
-            "textures.ini", "hires.txt"
-        )
-        private val ROM_OR_PATCH_EXTENSIONS = setOf(
-            "z64", "n64", "v64", "ndd",
-            "iso", "gcm", "rvz", "wbfs", "ciso", "gcz", "wia", "dol", "elf", "wad",
-            "cso", "pbp", "prx",
-            "chd", "cdi", "gdi", "cue",
-            "3ds", "cci", "cia", "3dsx", "app",
-            "bps", "ips", "ups", "xdelta", "ppf"
-        )
-
         fun manifestFileName(gameFileId: Long): String =
-            "$MANIFEST_PREFIX$gameFileId$MANIFEST_SUFFIX"
+            TexturePackExtractor.manifestFileName(gameFileId)
 
         fun manifestFileFor(targetDir: File, gameFileId: Long): File =
-            File(targetDir, manifestFileName(gameFileId))
+            TexturePackExtractor.manifestFileFor(targetDir, gameFileId)
 
-        fun isManifestPath(path: String?): Boolean {
-            if (path == null) return false
-            val name = path.substringAfterLast('/').substringAfterLast('\\')
-            return name.startsWith(MANIFEST_PREFIX) && name.endsWith(MANIFEST_SUFFIX)
-        }
+        fun isManifestPath(path: String?): Boolean =
+            TexturePackExtractor.isManifestPath(path)
 
-        fun isManifestFile(file: File): Boolean = isManifestPath(file.name)
+        fun isManifestFile(file: File): Boolean =
+            TexturePackExtractor.isManifestFile(file)
 
         fun isSupplementalTexturePack(
             fileName: String,
             category: String?,
             platformSlug: String,
             localPath: String? = null
-        ): Boolean {
-            if (VariantCategory.fromKey(category) != VariantCategory.MOD) return false
-            if (BuiltinTexturePathRegistry.resolveRuleForPlatform(platformSlug) == null) return false
-            if (isManifestPath(localPath)) return true
-            if (BuiltinTexturePathRegistry.isHtcOrHtsFileName(fileName)) return true
-            if (!BuiltinTexturePathRegistry.isTexturePackFileName(fileName)) return false
-            val localFile = localPath?.let(::File)?.takeIf { it.isFile }
-            if (localFile != null) {
-                return looksLikeTextureZip(localFile)
-            }
-            return true
-        }
+        ): Boolean = TexturePackExtractor.isSupplementalTexturePack(
+            fileName = fileName,
+            category = category,
+            platformSlug = platformSlug,
+            localPath = localPath
+        )
 
-        fun looksLikeTextureZip(zipFile: File): Boolean {
-            if (!zipFile.isFile) return false
-            return try {
-                ZipFile(zipFile).use { zf ->
-                    var hasTextureAsset = false
-                    var hasRomOrPatch = false
-                    val entries = zf.entries()
-                    while (entries.hasMoreElements()) {
-                        val entry = entries.nextElement()
-                        if (entry.isDirectory) continue
-                        val cleanPath = entry.name.replace('\\', '/').trim('/')
-                        if (cleanPath.isEmpty() || cleanPath.startsWith("__MACOSX/") || cleanPath == "__MACOSX") {
-                            continue
-                        }
-                        val fileName = cleanPath.substringAfterLast('/').lowercase(Locale.ROOT)
-                        val ext = fileName.substringAfterLast('.', "")
-                        if (ext in ROM_OR_PATCH_EXTENSIONS) {
-                            hasRomOrPatch = true
-                        }
-                        if (ext in TEXTURE_ASSET_EXTENSIONS || fileName in TEXTURE_METADATA_FILENAMES) {
-                            hasTextureAsset = true
-                        }
-                    }
-                    hasTextureAsset && !hasRomOrPatch
-                }
-            } catch (_: Exception) {
-                false
-            }
-        }
+        fun looksLikeTextureZip(zipFile: File): Boolean =
+            TexturePackExtractor.looksLikeTextureZip(zipFile)
 
         fun measureManifestUsage(
             manifestFile: File,
             seenCanonicalPaths: MutableSet<String>? = null
-        ): Pair<Long, Int> {
-            if (!manifestFile.isFile) return 0L to 0
-            val targetDir = manifestFile.parentFile ?: return 0L to 0
-            val lines = runCatching { manifestFile.readLines() }.getOrDefault(emptyList())
-            var totalBytes = 0L
-            var fileCount = 0
-            for (rawLine in lines) {
-                val rel = rawLine.trim()
-                if (rel.isEmpty()) continue
-                val targetFile = File(targetDir, rel)
-                if (!FileNames.isWithin(targetFile, targetDir) || !targetFile.isFile) continue
-                if (seenCanonicalPaths != null) {
-                    val canonical = runCatching { targetFile.canonicalPath }.getOrNull() ?: targetFile.absolutePath
-                    if (!seenCanonicalPaths.add(canonical)) continue
-                }
-                totalBytes += targetFile.length()
-                fileCount += 1
-            }
-            return totalBytes to fileCount
-        }
+        ): Pair<Long, Int> = TexturePackExtractor.measureManifestUsage(manifestFile, seenCanonicalPaths)
 
         fun measureManifestBytes(
             manifestFile: File,
             seenCanonicalPaths: MutableSet<String>? = null
-        ): Long = measureManifestUsage(manifestFile, seenCanonicalPaths).first
+        ): Long = TexturePackExtractor.measureManifestBytes(manifestFile, seenCanonicalPaths)
 
-        fun uninstallFromManifestFile(manifestFile: File): Boolean {
-            if (!manifestFile.isFile) return false
-            val targetDir = manifestFile.parentFile ?: return false
-            val lines = try {
-                manifestFile.readLines()
-            } catch (e: Exception) {
-                Logger.warn(TAG, "Failed to read texture pack manifest ${manifestFile.name}: ${e.message}")
-                return false
-            }
-
-            val siblingClaimedPaths = targetDir.listFiles()
-                .orEmpty()
-                .filter { it.isFile && isManifestFile(it) && it.name != manifestFile.name }
-                .flatMap { sibling ->
-                    runCatching { sibling.readLines() }
-                        .getOrDefault(emptyList())
-                        .map { it.trim() }
-                        .filter { it.isNotEmpty() }
-                }
-                .toSet()
-
-            val touchedParents = mutableSetOf<File>()
-            for (rawLine in lines) {
-                val rel = rawLine.trim()
-                if (rel.isEmpty() || rel in siblingClaimedPaths) continue
-                val targetFile = File(targetDir, rel)
-                if (!FileNames.isWithin(targetFile, targetDir)) continue
-                if (targetFile.isFile) {
-                    targetFile.delete()
-                    var p = targetFile.parentFile
-                    while (p != null && p.canonicalPath != targetDir.canonicalPath && FileNames.isWithin(p, targetDir)) {
-                        touchedParents.add(p)
-                        p = p.parentFile
-                    }
-                }
-            }
-            if (!manifestFile.delete() && manifestFile.exists()) {
-                return false
-            }
-            touchedParents
-                .sortedByDescending { it.absolutePath.length }
-                .forEach { dir ->
-                    if (dir.isDirectory && dir.listFiles().isNullOrEmpty()) {
-                        dir.delete()
-                    }
-                }
-            if (targetDir.isDirectory && targetDir.listFiles().isNullOrEmpty()) {
-                targetDir.delete()
-            }
-            return true
-        }
+        fun uninstallFromManifestFile(manifestFile: File): Boolean =
+            TexturePackExtractor.uninstallFromManifestFile(manifestFile)
 
         internal fun computeRedundantPrefix(
             entryPaths: List<String>,
             folderKey: String
-        ): String {
-            if (entryPaths.isEmpty()) return ""
-            val cleanKey = folderKey.trim().trim('/', '\\')
-            if (cleanKey.isEmpty()) return ""
-
-            val cleanLower = cleanKey.lowercase(Locale.ROOT)
-            val keyVariants = mutableSetOf(cleanLower)
-            if (cleanKey.length == 6 && cleanKey.all { it.isLetterOrDigit() }) {
-                keyVariants.add(cleanKey.substring(0, 3).lowercase(Locale.ROOT))
-                keyVariants.add(cleanKey.substring(0, 4).lowercase(Locale.ROOT))
-            } else if (cleanKey.length in 3..4 && cleanKey.all { it.isLetterOrDigit() }) {
-                keyVariants.add(cleanKey.substring(0, 3).lowercase(Locale.ROOT))
-            }
-
-            val splitEntries = entryPaths.map { it.split('/') }
-            if (splitEntries.any { it.size < 2 }) return ""
-
-            val maxCommonDepth = splitEntries.minOf { it.size - 1 }
-            var commonDepth = 0
-            while (commonDepth < maxCommonDepth) {
-                val firstSeg = splitEntries[0][commonDepth]
-                if (splitEntries.all { it[commonDepth] == firstSeg }) {
-                    commonDepth++
-                } else {
-                    break
-                }
-            }
-            if (commonDepth == 0) return ""
-
-            val commonSegments = splitEntries[0].subList(0, commonDepth)
-            for (i in commonSegments.indices.reversed()) {
-                val segLower = commonSegments[i].lowercase(Locale.ROOT)
-                val matchesKey = segLower in keyVariants ||
-                    (cleanLower.length in 3..6 && segLower.length in 3..6 &&
-                        (segLower.startsWith(cleanLower) || cleanLower.startsWith(segLower))) ||
-                    (cleanLower.length > 6 && (segLower.startsWith(cleanLower) || cleanLower.startsWith(segLower)))
-                if (matchesKey) {
-                    return commonSegments.subList(0, i + 1).joinToString("/") + "/"
-                }
-            }
-
-            var lastContainerIdx = -1
-            for (i in commonSegments.indices) {
-                val segLower = commonSegments[i].lowercase(Locale.ROOT)
-                if (segLower in REDUNDANT_CONTAINER_NAMES) {
-                    lastContainerIdx = i
-                } else {
-                    break
-                }
-            }
-            if (lastContainerIdx >= 0) {
-                return commonSegments.subList(0, lastContainerIdx + 1).joinToString("/") + "/"
-            }
-
-            return ""
-        }
+        ): String = TexturePackExtractor.computeRedundantPrefix(entryPaths, folderKey)
     }
 }

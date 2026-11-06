@@ -351,6 +351,122 @@ class TexturePackInstallerTest {
     }
 
     @Test
+    fun `installPendingModFilesForGame reports progress starting at 0 and finishing at 1`() = runTest {
+        TexturePackInstaller.clearFailedInstalls()
+        val textureZip = createZip(
+            "progress_pack.zip",
+            mapOf("tex.png" to "png_bytes")
+        )
+        val game = testGame(titleId = "GZLE01")
+        val modFile = testModFile(id = 555L, gameId = game.id, fileName = textureZip.name, localPath = textureZip.absolutePath)
+        coEvery { gameDao.getById(game.id) } returns game
+        coEvery { gameFileDao.getModFilesForGame(game.id) } returns listOf(modFile)
+
+        val progressReports = mutableListOf<Float?>()
+        val installedCount = installer.installPendingModFilesForGame(game.id) { fraction ->
+            progressReports.add(fraction)
+        }
+
+        assertEquals(1, installedCount)
+        assertTrue("Expected progress reports", progressReports.isNotEmpty())
+        assertEquals(0f, progressReports.first() ?: -1f, 0.001f)
+        assertEquals(1f, progressReports.last() ?: -1f, 0.001f)
+        TexturePackInstaller.clearFailedInstalls()
+    }
+
+    @Test
+    fun `installPendingModFilesForGame with no textures does not report progress`() = runTest {
+        TexturePackInstaller.clearFailedInstalls()
+        val game = testGame(titleId = "GZLE01")
+        coEvery { gameDao.getById(game.id) } returns game
+        coEvery { gameFileDao.getModFilesForGame(game.id) } returns emptyList()
+
+        var progressReported = false
+        val installedCount = installer.installPendingModFilesForGame(game.id) {
+            progressReported = true
+        }
+
+        assertEquals(0, installedCount)
+        assertFalse("Progress should not be reported when there are no textures", progressReported)
+        TexturePackInstaller.clearFailedInstalls()
+    }
+
+    @Test
+    fun `installPendingModFilesForGame stops when isCancelled is true`() = runTest {
+        TexturePackInstaller.clearFailedInstalls()
+        val textureZip = createZip(
+            "cancel_pack.zip",
+            mapOf("tex.png" to "png_bytes")
+        )
+        val game = testGame(titleId = "GZLE01")
+        val modFile = testModFile(id = 556L, gameId = game.id, fileName = textureZip.name, localPath = textureZip.absolutePath)
+        coEvery { gameDao.getById(game.id) } returns game
+        coEvery { gameFileDao.getModFilesForGame(game.id) } returns listOf(modFile)
+
+        var threwCancellation = false
+        try {
+            installer.installPendingModFilesForGame(
+                gameId = game.id,
+                isCancelled = { true }
+            )
+        } catch (_: kotlinx.coroutines.CancellationException) {
+            threwCancellation = true
+        }
+
+        assertTrue("Expected CancellationException when cancelled", threwCancellation)
+        assertFalse("Cancelled install should not be marked failed", TexturePackInstaller.hasFailedInstall(556L))
+        TexturePackInstaller.clearFailedInstalls()
+    }
+
+    @Test
+    fun `installPendingModFilesForGame cancelled mid-extraction cleans up staging and leaves destination untouched`() = runTest {
+        TexturePackInstaller.clearFailedInstalls()
+        val textureZip = createZip(
+            "cancel_mid_pack.zip",
+            mapOf(
+                "tex1.png" to "png_bytes_1",
+                "tex2.png" to "png_bytes_2",
+                "tex3.png" to "png_bytes_3"
+            )
+        )
+        val game = testGame(titleId = "GZLE01")
+        val modFile = testModFile(id = 557L, gameId = game.id, fileName = textureZip.name, localPath = textureZip.absolutePath)
+        coEvery { gameDao.getById(game.id) } returns game
+        coEvery { gameFileDao.getModFilesForGame(game.id) } returns listOf(modFile)
+
+        var cancelled = false
+        var progressCount = 0
+        var threwCancellation = false
+        try {
+            installer.installPendingModFilesForGame(
+                gameId = game.id,
+                isCancelled = { cancelled },
+                onProgress = { fraction ->
+                    if (fraction != null && fraction > 0f) {
+                        progressCount++
+                        cancelled = true
+                    }
+                }
+            )
+        } catch (_: kotlinx.coroutines.CancellationException) {
+            threwCancellation = true
+        }
+
+        assertTrue("Expected CancellationException on mid-extraction cancel", threwCancellation)
+        val targetDir = File(saveDir, "User/Load/Textures/GZLE01")
+        val targetFiles = targetDir.listFiles() ?: emptyArray()
+        assertTrue(
+            "Destination directory should contain zero files, got: ${targetFiles.map { it.name }}",
+            targetFiles.isEmpty()
+        )
+        val manifest = File(targetDir, ".argosy_mod_${modFile.id}.manifest")
+        assertFalse("Manifest file must not be created", manifest.exists())
+        coVerify(exactly = 0) { gameFileDao.updateLocalPath(modFile.id, any(), any()) }
+        assertFalse("Cancelled install should not be marked failed", TexturePackInstaller.hasFailedInstall(557L))
+        TexturePackInstaller.clearFailedInstalls()
+    }
+
+    @Test
     fun `extractZipRootSerialFallback normalizes PSP serials by stripping hyphens and underscores`() {
         val zipWithHyphen = createZip(
             "psp_pack_hyphen.zip",
@@ -497,7 +613,7 @@ class TexturePackInstallerTest {
     }
 
     @Test
-    fun `rejects zip-slip path traversal entries`() {
+    fun `rejects zip-slip path traversal entries`() = runTest {
         val zipFile = createZip(
             "evil.zip",
             mapOf(
@@ -561,6 +677,116 @@ class TexturePackInstallerTest {
         assertFalse(File(targetDir, "shared.png").exists())
         assertFalse(File(targetDir, "only2.png").exists())
         assertFalse(manifest2.exists())
+    }
+
+    @Test
+    fun `missing base ROM defers texture install without poisoning failedInstalls`() = runTest {
+        TexturePackInstaller.clearFailedInstalls()
+        val zipFile = createZip(
+            "defer_pack.zip",
+            mapOf("tex1.png" to "data")
+        )
+        val game = testGame(titleId = "GZLE01").copy(localPath = null)
+        val modFile = testModFile(id = 77L, gameId = game.id, fileName = zipFile.name, localPath = zipFile.absolutePath)
+        coEvery { gameDao.getById(game.id) } returns game
+        coEvery { gameFileDao.getModFilesForGame(game.id) } returns listOf(modFile)
+
+        val outcome = installer.installForModFileOutcome(
+            game = game,
+            gameFile = modFile,
+            sourceFile = zipFile
+        )
+
+        assertTrue(outcome is TexturePackInstaller.ModInstallOutcome.Deferred)
+        assertFalse("Deferred install must NOT be marked in failedInstalls", TexturePackInstaller.hasFailedInstall(77L))
+        assertTrue("Source zip must be preserved", zipFile.exists())
+    }
+
+    @Test
+    fun `database update failure rolls back extracted files and preserves source zip`() = runTest {
+        val zipFile = createZip(
+            "pack_db_fail.zip",
+            mapOf(
+                "tex1.png" to "data1",
+                "tex2.png" to "data2"
+            )
+        )
+        val game = testGame(titleId = "GZLE01")
+        val modFile = testModFile(id = 88L, gameId = game.id, fileName = zipFile.name, localPath = zipFile.absolutePath)
+
+        coEvery { gameFileDao.updateLocalPath(88L, any(), any()) } throws RuntimeException("SQLite disk error")
+
+        var threw = false
+        try {
+            installer.installForModFileOutcome(
+                game = game,
+                gameFile = modFile,
+                sourceFile = zipFile
+            )
+        } catch (_: RuntimeException) {
+            threw = true
+        }
+
+        assertTrue("Expected exception to propagate", threw)
+        assertTrue("Source zip must NOT be deleted when database update fails", zipFile.exists())
+        val targetDir = File(saveDir, "User/Load/Textures/GZLE01")
+        assertFalse("Extracted files must be rolled back", File(targetDir, "tex1.png").exists())
+        assertFalse("Extracted files must be rolled back", File(targetDir, "tex2.png").exists())
+        assertFalse("Manifest must be deleted", TexturePackInstaller.manifestFileFor(targetDir, 88L).exists())
+    }
+
+    @Test
+    fun `cancellation during zip extraction leaves no partial files in target dir`() = runTest {
+        val zipFile = createZip(
+            "cancel_pack.zip",
+            mapOf(
+                "tex1.png" to "data1",
+                "tex2.png" to "data2"
+            )
+        )
+        val game = testGame(titleId = "GZLE01")
+        val modFile = testModFile(id = 99L, gameId = game.id, fileName = zipFile.name, localPath = zipFile.absolutePath)
+
+        var threwCancellation = false
+        try {
+            installer.installForModFileOutcome(
+                game = game,
+                gameFile = modFile,
+                sourceFile = zipFile,
+                isCancelled = { true }
+            )
+        } catch (_: kotlinx.coroutines.CancellationException) {
+            threwCancellation = true
+        }
+
+        assertTrue("Expected CancellationException", threwCancellation)
+        assertTrue("Source zip must remain intact", zipFile.exists())
+        val targetDir = File(saveDir, "User/Load/Textures/GZLE01")
+        assertFalse("Target file should not exist", File(targetDir, "tex1.png").exists())
+        assertFalse("Target staging dir should not exist", File(targetDir, ".staging_99").exists())
+    }
+
+    @Test
+    fun `archive with colliding relative paths extracts without NoSuchFileException`() = runTest {
+        val zipFile = createZip(
+            "collide_cache.zip",
+            mapOf(
+                "main/game.htc" to "content_main",
+                "backup/game.htc" to "content_backup"
+            )
+        )
+        val game = testGame(titleId = "CZLE", platformSlug = "n64")
+        val modFile = testModFile(id = 101L, gameId = game.id, fileName = zipFile.name, localPath = zipFile.absolutePath)
+
+        val outcome = installer.installForModFileOutcome(
+            game = game,
+            gameFile = modFile,
+            sourceFile = zipFile
+        )
+
+        assertTrue("Expected successful install despite duplicate entry names, got $outcome", outcome is TexturePackInstaller.ModInstallOutcome.Success)
+        val cacheDir = File(systemDir, "Mupen64plus/cache")
+        assertTrue("Destination file should exist", File(cacheDir, "game.htc").exists())
     }
 
     private fun createZip(name: String, entries: Map<String, String>): File {

@@ -188,7 +188,7 @@
     <string name="ui_pushed_apk_install">Instalar</string>
     <string name="ui_pushed_apk_not_now">Agora não</string>
 
-    <string name="ui_modal_search_placeholder">Pesquisar...</string>
+    <string name="ui_modal_search_placeholder">Buscar...</string>
 
     <string name="ui_disc_picker_title">SELECIONAR DISCO</string>
     <string name="ui_disc_picker_subtitle">Escolha qual disco iniciar</string>
@@ -387,7 +387,7 @@
     <string name="ui_feature_setup_done">Concluído</string>
     <string name="ui_feature_setup_any">Qualquer</string>
     <string name="ui_feature_setup_selected_count">%1$d selecionados</string>
-    <string name="ui_tile_picker_empty_search">Nada corresponde a essa pesquisa</string>
+    <string name="ui_tile_picker_empty_search">Nada corresponde a essa busca</string>
     <string name="ui_tile_picker_delete_page">Excluir página</string>
 
     <string name="ui_page_chooser_title_focus_game">Jogar a seguir</string>
@@ -400,7 +400,7 @@
     <string name="ui_page_chooser_footer_navigate">Navegar</string>
     <string name="ui_page_chooser_footer_choose">Escolher</string>
     <string name="ui_page_chooser_footer_back">Voltar</string>
-    <string name="ui_page_chooser_search_placeholder">Pesquisar jogos...</string>
+    <string name="ui_page_chooser_search_placeholder">Buscar jogos...</string>
     <string name="ui_page_chooser_loading">Carregando...</string>
     <string name="ui_page_chooser_empty">Nada aqui para escolher.</string>
     <string name="ui_page_chooser_focus_game_current">Jogando agora</string>
@@ -473,14 +473,14 @@
     <string name="ui_platform_filter_sort_name_desc">Nome (Z-A)</string>
     <string name="ui_platform_filter_sort_most_games">Mais jogos</string>
     <string name="ui_platform_filter_sort_least_games">Menos jogos</string>
-    <string name="ui_platform_filter_search_placeholder">Pesquisar plataformas...</string>
+    <string name="ui_platform_filter_search_placeholder">Buscar plataformas...</string>
     <string name="ui_platform_filter_search_clear">Limpar</string>
     <plurals name="ui_platform_filter_count">
         <item quantity="one">%d plataforma</item>
         <item quantity="many">%d plataformas</item>
         <item quantity="other">%d plataformas</item>
     </plurals>
-    <string name="ui_platform_filter_open_search">Pesquisar</string>
+    <string name="ui_platform_filter_open_search">Buscar</string>
     <string name="ui_platform_filter_open_sort">Ordenar</string>
     <string name="ui_platform_filter_open_filter">Filtrar plataformas</string>
     <string name="ui_platform_filter_mode_has_games">Com jogos</string>
@@ -653,8 +653,8 @@
     <string name="ui_quick_settings_music_soundtracks">Trilhas de jogos</string>
     <string name="ui_quick_settings_music_button_playlists">Playlists</string>
     <string name="ui_quick_settings_music_button_soundtracks">Trilhas</string>
-    <string name="ui_quick_settings_music_search_playlists">Pesquisar playlists</string>
-    <string name="ui_quick_settings_music_search_soundtracks">Pesquisar trilhas</string>
+    <string name="ui_quick_settings_music_search_playlists">Buscar playlists</string>
+    <string name="ui_quick_settings_music_search_soundtracks">Buscar trilhas</string>
     <string name="ui_quick_settings_music_load_failed">Não foi possível carregar esta lista</string>
     <string name="ui_quick_settings_music_retry">Tentar novamente</string>
     <string name="ui_quick_settings_music_empty_playlists">Nenhuma playlist corresponde</string>
@@ -827,7 +827,7 @@
     <string name="ui_sync_overlay_snapshot_conflict_revert_subtitle">Voltar ao save que este dispositivo sincronizou pela última vez (backup criado)</string>
     <string name="ui_sync_overlay_legacy_status">Sincronizando...</string>
 
-    <string name="ui_quick_menu_orb_search">Pesquisar</string>
+    <string name="ui_quick_menu_orb_search">Buscar</string>
     <string name="ui_quick_menu_orb_random">Aleatório</string>
     <string name="ui_quick_menu_orb_most_played">Mais jogados</string>
     <string name="ui_quick_menu_orb_top_unplayed">Destaques novos</string>
@@ -838,10 +838,10 @@
     <string name="ui_quick_menu_empty_recent">Nenhum jogo recente</string>
     <string name="ui_quick_menu_empty_favorites">Nenhum favorito ainda</string>
     <string name="ui_quick_menu_empty_random">Nenhum jogo disponível</string>
-    <string name="ui_quick_menu_search_placeholder">Pesquisar jogos...</string>
-    <string name="ui_quick_menu_search_prompt">Digite pelo menos 2 caracteres para pesquisar</string>
+    <string name="ui_quick_menu_search_placeholder">Buscar jogos...</string>
+    <string name="ui_quick_menu_search_prompt">Digite pelo menos 2 caracteres para buscar</string>
     <string name="ui_quick_menu_search_no_results">Nenhum jogo encontrado para \"%1$s\"</string>
-    <string name="ui_quick_menu_recent_searches_heading">Pesquisas recentes</string>
+    <string name="ui_quick_menu_recent_searches_heading">Buscas recentes</string>
     <string name="ui_quick_menu_row_platform_unknown">Desconhecida</string>
     <string name="ui_quick_menu_row_downloaded">Baixado</string>
     <string name="ui_quick_menu_random_platform_unknown">Desconhecida</string>

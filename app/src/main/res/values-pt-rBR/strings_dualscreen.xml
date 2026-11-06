@@ -519,7 +519,7 @@
     <!-- Tab in the filter panel. Noun naming what the list is ordered by. -->
     <string name="dual_filter_category_sort">Ordenar</string>
     <!-- Tab in the filter panel. Verb: opens the text field for filtering by title. -->
-    <string name="dual_filter_category_search">Pesquisar</string>
+    <string name="dual_filter_category_search">Buscar</string>
     <!-- Tab in the filter panel. Noun naming which slice of the library to show. -->
     <string name="dual_filter_category_source">Origem</string>
     <!-- Tab in the filter panel. Noun, the kind of game. -->
@@ -536,7 +536,7 @@
     <string name="dual_filter_category_franchise">Franquia</string>
 
     <!-- Placeholder inside the filter panel's text field. Instruction addressed to the user. -->
-    <string name="dual_filter_search_placeholder">Pesquisar jogos…</string>
+    <string name="dual_filter_search_placeholder">Buscar jogos…</string>
     <!-- Line under that field once something is typed. %1$s is what the user typed; the quotation
          marks set it apart from the sentence. -->
     <string name="dual_filter_search_active">Filtrando por: \"%1$s\"</string>

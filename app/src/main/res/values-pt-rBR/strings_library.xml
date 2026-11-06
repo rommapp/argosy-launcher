@@ -55,11 +55,11 @@
 
     <string name="library_filter_title">FILTRAR JOGOS</string>
     <string name="library_filter_active_summary">Ativos: %1$s</string>
-    <string name="library_filter_search_placeholder">Digite para pesquisar...</string>
-    <string name="library_filter_recent_searches">Pesquisas recentes</string>
+    <string name="library_filter_search_placeholder">Digite para buscar...</string>
+    <string name="library_filter_recent_searches">Buscas recentes</string>
 
     <string name="library_filter_category_sort">Ordenar</string>
-    <string name="library_filter_category_search">Pesquisar</string>
+    <string name="library_filter_category_search">Buscar</string>
     <string name="library_filter_category_source">Origem</string>
     <string name="library_filter_category_platform">Plataforma</string>
     <string name="library_filter_category_genre">Gênero</string>
@@ -162,12 +162,12 @@
     <string name="library_apps_menu_reorder">Reordenar apps</string>
     <string name="library_apps_menu_uninstall">Desinstalar</string>
 
-    <string name="library_search_placeholder_games_and_media">Pesquisar jogos e mídia...</string>
-    <string name="library_search_placeholder_games">Pesquisar jogos...</string>
+    <string name="library_search_placeholder_games_and_media">Buscar jogos e mídia...</string>
+    <string name="library_search_placeholder_games">Buscar jogos...</string>
     <plurals name="library_search_min_query_hint">
-        <item quantity="one">Digite pelo menos %d caractere para pesquisar</item>
-        <item quantity="many">Digite pelo menos %d caracteres para pesquisar</item>
-        <item quantity="other">Digite pelo menos %d caracteres para pesquisar</item>
+        <item quantity="one">Digite pelo menos %d caractere para buscar</item>
+        <item quantity="many">Digite pelo menos %d caracteres para buscar</item>
+        <item quantity="other">Digite pelo menos %d caracteres para buscar</item>
     </plurals>
     <string name="library_search_no_results">Nenhum resultado para \"%1$s\"</string>
     <string name="library_search_heading_games">Jogos</string>

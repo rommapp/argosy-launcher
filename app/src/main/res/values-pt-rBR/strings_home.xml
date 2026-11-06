@@ -22,7 +22,7 @@
 
     <string name="home_footer_tile_picker_tab">Aba</string>
     <string name="home_footer_tile_picker_jump">Saltar</string>
-    <string name="home_footer_tile_picker_search">Pesquisar</string>
+    <string name="home_footer_tile_picker_search">Buscar</string>
 
     <string name="home_footer_grid_edit_resize">Redimensionar</string>
     <string name="home_footer_grid_edit_move">Mover</string>

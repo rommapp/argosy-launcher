@@ -210,7 +210,7 @@
     <!-- Footer hint in that modal. Verb: closes it without changing the link. -->
     <string name="doodle_game_picker_footer_cancel">Cancelar</string>
     <!-- Grey text inside the empty search field. Verb phrase addressed to the user. -->
-    <string name="doodle_game_picker_search_placeholder">Pesquisar jogos...</string>
+    <string name="doodle_game_picker_search_placeholder">Buscar jogos...</string>
     <!-- First row of the results list, standing for "no game linked". Noun phrase. -->
     <string name="doodle_game_picker_no_game">Nenhum jogo</string>
 

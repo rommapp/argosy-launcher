@@ -61,11 +61,11 @@
 
     <string name="collections_detail_loading">Carregando&#8230;</string>
     <string name="collections_detail_hint_search_open">Abrir</string>
-    <string name="collections_detail_hint_search_close">Fechar pesquisa</string>
+    <string name="collections_detail_hint_search_close">Fechar busca</string>
     <string name="collections_detail_hint_navigate">Navegar</string>
     <string name="collections_detail_hint_open">Abrir</string>
     <string name="collections_detail_hint_back">Voltar</string>
-    <string name="collections_detail_hint_search">Pesquisar</string>
+    <string name="collections_detail_hint_search">Buscar</string>
     <string name="collections_detail_hint_unpin">Desfixar</string>
     <string name="collections_detail_hint_pin">Fixar</string>
     <string name="collections_detail_hint_jump">Saltar</string>
@@ -77,9 +77,9 @@
     <string name="collections_detail_hint_refreshing">Atualizando&#8230;</string>
     <string name="collections_detail_hint_refresh">Atualizar</string>
     <string name="collections_detail_back_description">Voltar</string>
-    <string name="collections_detail_search_placeholder">Pesquisar em %1$s</string>
-    <string name="collections_detail_close_search_description">Fechar pesquisa</string>
-    <string name="collections_detail_search_description">Pesquisar</string>
+    <string name="collections_detail_search_placeholder">Buscar em %1$s</string>
+    <string name="collections_detail_close_search_description">Fechar busca</string>
+    <string name="collections_detail_search_description">Buscar</string>
     <string name="collections_detail_empty_title">Nenhum jogo nesta coleção</string>
     <string name="collections_detail_empty_subtitle">Adicione jogos da biblioteca ou dos detalhes do jogo</string>
     <plurals name="collections_detail_header_game_count">
@@ -90,20 +90,20 @@
 
     <string name="collections_browser_loading">Carregando&#8230;</string>
     <string name="collections_browser_hint_search_select">Selecionar</string>
-    <string name="collections_browser_hint_search_close">Fechar pesquisa</string>
+    <string name="collections_browser_hint_search_close">Fechar busca</string>
     <string name="collections_browser_hint_navigate">Navegar</string>
     <string name="collections_browser_hint_select">Selecionar</string>
     <string name="collections_browser_hint_back">Voltar</string>
-    <string name="collections_browser_hint_search">Pesquisar</string>
+    <string name="collections_browser_hint_search">Buscar</string>
     <string name="collections_browser_hint_unpin">Desfixar</string>
     <string name="collections_browser_hint_pin">Fixar</string>
     <string name="collections_browser_hint_jump">Saltar</string>
     <string name="collections_browser_hint_refreshing">Atualizando&#8230;</string>
     <string name="collections_browser_hint_refresh">Atualizar</string>
     <string name="collections_browser_back_description">Voltar</string>
-    <string name="collections_browser_search_placeholder">Pesquisar em %1$s</string>
-    <string name="collections_browser_close_search_description">Fechar pesquisa</string>
-    <string name="collections_browser_search_description">Pesquisar</string>
+    <string name="collections_browser_search_placeholder">Buscar em %1$s</string>
+    <string name="collections_browser_close_search_description">Fechar busca</string>
+    <string name="collections_browser_search_description">Buscar</string>
     <string name="collections_browser_category_pinned_description">Fixada</string>
     <string name="collections_browser_title_fallback">Explorar</string>
     <string name="collections_browser_empty">Não há %1$s</string>
@@ -120,11 +120,11 @@
 
     <string name="collections_category_loading">Carregando&#8230;</string>
     <string name="collections_category_hint_search_open">Abrir</string>
-    <string name="collections_category_hint_search_close">Fechar pesquisa</string>
+    <string name="collections_category_hint_search_close">Fechar busca</string>
     <string name="collections_category_hint_navigate">Navegar</string>
     <string name="collections_category_hint_open">Abrir</string>
     <string name="collections_category_hint_back">Voltar</string>
-    <string name="collections_category_hint_search">Pesquisar</string>
+    <string name="collections_category_hint_search">Buscar</string>
     <string name="collections_category_hint_unpin">Desfixar</string>
     <string name="collections_category_hint_pin">Fixar</string>
     <string name="collections_category_hint_jump">Saltar</string>
@@ -149,9 +149,9 @@
         <item quantity="other">%1$d de %2$d jogos</item>
     </plurals>
     <string name="collections_category_back_description">Voltar</string>
-    <string name="collections_category_search_placeholder">Pesquisar em %1$s</string>
-    <string name="collections_category_close_search_description">Fechar pesquisa</string>
-    <string name="collections_category_search_description">Pesquisar</string>
+    <string name="collections_category_search_placeholder">Buscar em %1$s</string>
+    <string name="collections_category_close_search_description">Fechar busca</string>
+    <string name="collections_category_search_description">Buscar</string>
     <string name="collections_category_empty_title">Nenhum jogo nesta categoria</string>
     <plurals name="collections_category_header_game_count">
         <item quantity="one">%d jogo</item>

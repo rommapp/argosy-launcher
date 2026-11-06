@@ -29,6 +29,7 @@ import com.nendo.argosy.ui.screens.gamedetail.components.SaveStatusEvent
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -479,17 +480,17 @@ class SaveChannelSavesDelegate @Inject constructor(
                 coreId = state.currentCoreId
             )
 
-            _state.update {
+            val restored = _state.updateAndGet {
                 it.copy(
                     showRestoreConfirmation = false,
-                    activeChannel = targetChannel,
+                    activeChannel = targetChannel ?: it.activeChannel,
                     activeSaveTimestamp = targetTimestamp,
                     activeSaveCacheId = entry.localCacheId,
                     activeSaveServerId = entry.serverSaveId
                 )
             }
             onSaveStatusChanged(
-                SaveStatusEvent(channelName = targetChannel, timestamp = targetTimestamp)
+                SaveStatusEvent(channelName = restored.activeChannel, timestamp = targetTimestamp)
             )
 
             titleIdDownloadObserver.extractTitleIdForGame(currentGameId)

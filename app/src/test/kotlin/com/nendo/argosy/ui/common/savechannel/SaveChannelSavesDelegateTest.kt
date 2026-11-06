@@ -5,10 +5,13 @@ import com.nendo.argosy.R
 import com.nendo.argosy.data.repository.SaveCacheManager
 import com.nendo.argosy.data.repository.SaveSyncApiClient
 import com.nendo.argosy.domain.model.UnifiedSaveEntry
+import com.nendo.argosy.domain.usecase.save.RestoreCachedSaveUseCase
+import com.nendo.argosy.ui.screens.gamedetail.components.SaveStatusEvent
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -22,11 +25,14 @@ class SaveChannelSavesDelegateTest {
     private lateinit var holder: SaveChannelStateHolder
     private lateinit var saveCacheManager: SaveCacheManager
     private lateinit var delegate: SaveChannelSavesDelegate
+    private lateinit var restoreCachedSaveUseCase: RestoreCachedSaveUseCase
 
     @Before
     fun setup() {
         holder = SaveChannelStateHolder()
         saveCacheManager = mockk(relaxed = true)
+        restoreCachedSaveUseCase = mockk()
+        coEvery { restoreCachedSaveUseCase(any(), any(), any(), any()) } returns RestoreCachedSaveUseCase.Result.Restored
         val context = mockk<Context>(relaxed = true)
         every { context.getString(R.string.ui_save_channel_slot_autosave) } returns "Autosave"
         every { context.getString(R.string.ui_save_channel_slot_archived) } returns "Archived"
@@ -34,7 +40,7 @@ class SaveChannelSavesDelegateTest {
             context = context,
             holder = holder,
             getUnifiedSavesUseCase = mockk(relaxed = true),
-            restoreCachedSaveUseCase = mockk(relaxed = true),
+            restoreCachedSaveUseCase = restoreCachedSaveUseCase,
             activateSaveChannelUseCase = mockk(relaxed = true),
             restoreSaveChannelPointUseCase = mockk(relaxed = true),
             createSaveChannelUseCase = mockk(relaxed = true),
@@ -271,6 +277,36 @@ class SaveChannelSavesDelegateTest {
             selectedSlotIndex = slots.indexOfFirst(pick)
         )
         delegate.updateHistoryForFocusedSlot()
+    }
+
+    private fun TestScope.restoreFrom(
+        restored: UnifiedSaveEntry,
+        activeChannel: String?
+    ): SaveStatusEvent? {
+        holder.state.value = holder.state.value.copy(
+            activeChannel = activeChannel,
+            restoreSelectedEntry = restored
+        )
+        var event: SaveStatusEvent? = null
+        delegate.restoreSave(this, "argosy", syncToServer = false, onSaveStatusChanged = { event = it })
+        advanceUntilIdle()
+        return event
+    }
+
+    @Test
+    fun `restoring an archived save keeps the active slot`() = runTest {
+        val event = restoreFrom(cached(105, 1000, archival = true), activeChannel = SaveSyncApiClient.AUTOSAVE_SLOT_NAME)
+
+        assertEquals(SaveSyncApiClient.AUTOSAVE_SLOT_NAME, holder.state.value.activeChannel)
+        assertEquals(SaveSyncApiClient.AUTOSAVE_SLOT_NAME, event?.channelName)
+    }
+
+    @Test
+    fun `restoring a save from a named slot makes that slot active`() = runTest {
+        val event = restoreFrom(cached(7, 1000, "flip", locked = true), activeChannel = SaveSyncApiClient.AUTOSAVE_SLOT_NAME)
+
+        assertEquals("flip", holder.state.value.activeChannel)
+        assertEquals("flip", event?.channelName)
     }
 
     @Test

@@ -3313,7 +3313,7 @@
     <string name="settings_platform_memcard_title">Cartão de memória</string>
     <string name="settings_platform_memcard_from_save_path_value">Definido pelo caminho de salvamento</string>
     <string name="settings_platform_memcard_none_value">Nenhuma pasta de cartão</string>
-    <string name="settings_platform_memcard_none_subtitle">A sincronização de saves precisa de uma pasta para cartão de memória. Crie uma nas configurações de cartão de memória do %1$s&apos;s</string>
+    <string name="settings_platform_memcard_none_subtitle">A sincronização de saves precisa de uma pasta para cartão de memória. Crie uma nas configurações de cartão de memória do %1$s.</string>
     <string name="settings_platform_memcard_this_emulator">este emulador</string>
     <string name="settings_platform_memcard_auto_value">Automático</string>
     <string name="settings_platform_memcard_unselected_value">Escolher um cartão</string>

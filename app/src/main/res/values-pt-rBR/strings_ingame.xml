@@ -226,7 +226,7 @@
     <string name="ingame_cheats_error_ram_unavailable">RAM não disponível para este núcleo</string>
     <string name="ingame_cheats_error_no_changes">Nenhuma alteração detectada – jogue mais primeiro</string>
     <string name="ingame_cheats_error_changed_not_ready">Jogue mais para refinar os resultados</string>
-    <string name="ingame_cheats_error_no_unchanged">Nenhum valor inalterado – tente &apos;Alterados&apos;</string>
+    <string name="ingame_cheats_error_no_unchanged">Nenhum valor inalterado - tente \'Alterados\'</string>
     <string name="ingame_cheats_error_same_not_ready">Jogue mais para refinar os resultados</string>
     <string name="ingame_cheats_error_address_saved">Endereço já salvo como trapaça</string>
     <string name="ingame_cheats_footer_variant_select">Selecionar</string>

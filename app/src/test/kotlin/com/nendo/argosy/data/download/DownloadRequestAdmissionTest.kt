@@ -271,6 +271,60 @@ class DownloadRequestAdmissionTest {
         coVerify(exactly = 0) { dao.insert(any()) }
     }
 
+    @Test fun `base retry preserves failure when matching paused or queued work exists`() = runTest {
+        retryWithDuplicate()
+    }
+
+    @Test fun `disc retry preserves failure when matching paused or queued work exists`() = runTest {
+        retryWithDuplicate(discId = 80)
+    }
+
+    @Test fun `game file retry preserves failure when matching paused or queued work exists`() = runTest {
+        retryWithDuplicate(gameFileId = 90)
+    }
+
+    private suspend fun TestScope.retryWithDuplicate(discId: Long? = null, gameFileId: Long? = null) {
+        for (state in listOf(DownloadState.PAUSED, DownloadState.QUEUED)) {
+            rows.clear()
+            val base = discId == null && gameFileId == null
+            val retained = retained().copy(
+                ownerUserId = 42, discId = discId, discNumber = discId?.let { 1 },
+                gameFileId = gameFileId, fileCategory = gameFileId?.let { "dlc" },
+                selectedFileIds = if (base) "3,9" else null, isMultiFileRom = base
+            )
+            rows[retained.id] = retained
+            val originalBytes = File(retained.tempFilePath!!).readBytes()
+            val manager = manager(ownerUserId = 84)
+            manager.state.first { it.completed.any { item -> item.id == retained.id } }
+            val startNow = state == DownloadState.QUEUED
+            when {
+                discId != null -> manager.enqueueDiscDownload(
+                    1, discId, 1, 10, "game.zip", "Game", platformSlug = "nes", coverPath = null,
+                    startNow = startNow
+                )
+                gameFileId != null -> manager.enqueueGameFileDownload(
+                    1, gameFileId, 10, "game.zip", "dlc", "Game", "nes", null, startNow = startNow
+                )
+                else -> manager.enqueueDownload(
+                    1, 10, "game.zip", "Game", "nes", null,
+                    selectedFileIds = listOf(3, 9), startNow = startNow
+                )
+            }
+            val duplicate = manager.state.value.queue.single()
+
+            manager.requeueFailed(manager.state.value.completed.single())
+
+            assertEquals(DownloadState.FAILED.name, rows.getValue(retained.id).state)
+            assertEquals(retained, rows.getValue(retained.id))
+            assertArrayEquals(originalBytes, File(retained.tempFilePath).readBytes())
+            assertEquals(retained.id, manager.state.value.completed.single().id)
+            assertEquals(listOf(duplicate.id), manager.state.value.queue.map { it.id })
+            assertEquals(state, manager.state.value.queue.single().state)
+            assertTrue(manager.state.value.activeDownloads.isEmpty())
+            assertEquals(2, rows.size)
+        }
+    }
+
     @Test fun `changed selection starts without old bytes or checkpoint`() = runTest {
         val retained = retained()
         val manager = manager()

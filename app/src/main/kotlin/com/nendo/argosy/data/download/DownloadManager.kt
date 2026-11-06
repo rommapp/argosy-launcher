@@ -637,6 +637,17 @@ class DownloadManager internal constructor(
         }
     }
 
+    private fun hasDuplicateDownload(gameId: Long, discId: Long? = null, gameFileId: Long? = null): Boolean {
+        val current = _state.value
+        return (current.activeDownloads + current.queue).any {
+            when {
+                discId != null -> it.discId == discId
+                gameFileId != null -> it.gameFileId == gameFileId
+                else -> it.gameId == gameId
+            }
+        }
+    }
+
     suspend fun enqueueDownload(
         gameId: Long,
         rommId: Long,
@@ -651,7 +662,7 @@ class DownloadManager internal constructor(
     ) {
         val effectiveMultiFile = isMultiFileRom || (selectedFileIds?.size ?: 0) > 1
         enqueueMutex.withLock {
-            if ((_state.value.activeDownloads + _state.value.queue).any { it.gameId == gameId }) return@withLock
+            if (hasDuplicateDownload(gameId)) return@withLock
             val initialState = initialQueueState(startNow)
             val platformDir = platformFolderResolver.downloadDirForGame(gameId, platformSlug)
             val diskFileName = FileNames.sanitize(fileName)
@@ -787,7 +798,7 @@ class DownloadManager internal constructor(
         startNow: Boolean = false
     ) {
         enqueueMutex.withLock {
-            if ((_state.value.activeDownloads + _state.value.queue).any { it.discId == discId }) return@withLock
+            if (hasDuplicateDownload(gameId, discId = discId)) return@withLock
             val initialState = initialQueueState(startNow)
 
             val platformDir = platformFolderResolver.downloadDirForGame(gameId, platformSlug)
@@ -850,7 +861,7 @@ class DownloadManager internal constructor(
         startNow: Boolean = false
     ) {
         enqueueMutex.withLock {
-            if ((_state.value.activeDownloads + _state.value.queue).any { it.gameFileId == gameFileId }) return@withLock
+            if (hasDuplicateDownload(gameId, gameFileId = gameFileId)) return@withLock
             val initialState = initialQueueState(startNow)
 
             val (gameFolder, categoryFolder) = withContext(Dispatchers.IO) {
@@ -2076,6 +2087,7 @@ class DownloadManager internal constructor(
 
     internal suspend fun requeueFailed(item: DownloadProgress) {
         val reused = enqueueMutex.withLock {
+            if (hasDuplicateDownload(item.gameId, item.discId, item.gameFileId)) return
             downloadQueueDao.getById(item.id)?.let {
                 reuseFailedDownload(it.copy(state = DownloadState.QUEUED.name))
             } ?: false

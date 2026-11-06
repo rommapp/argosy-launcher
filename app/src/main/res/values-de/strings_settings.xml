@@ -121,6 +121,11 @@
     <string name="settings_interface_hide_system_nav_bar_subtitle">Blendet die Android-Tasten für Zurück, Startbildschirm und Übersicht oder die Gestenleiste aus. Vom Rand wischen, um sie anzuzeigen</string>
     <string name="settings_interface_hide_system_status_bar_title">System-Statusleiste ausblenden</string>
     <string name="settings_interface_hide_system_status_bar_subtitle">Blendet die Android-Statusleiste und Benachrichtigungssymbole aus. Von oben nach unten wischen, um sie anzuzeigen</string>
+    <string name="settings_interface_screen_orientation_title">Bildschirmausrichtung</string>
+    <string name="settings_interface_screen_orientation_subtitle">Hält Argosy und integrierte Spiele in einer Ausrichtung, unabhängig von der Drehsperre des Geräts</string>
+    <string name="settings_interface_screen_orientation_auto">Auto</string>
+    <string name="settings_interface_screen_orientation_landscape">Querformat</string>
+    <string name="settings_interface_screen_orientation_portrait">Hochformat</string>
     <string name="settings_interface_quick_panel_in_emulators_title">Schnellleiste in anderen Emulatoren</string>
     <string name="settings_interface_quick_panel_in_emulators_subtitle">Zurück in einem von Argosy gestarteten Emulator gedrückt halten, um die Schnellleiste zu öffnen. Benötigt den Bedienungshilfendienst von Argosy</string>
     <string name="settings_interface_quick_panel_in_emulators_service_off">Bedienungshilfendienst ist aus. Unter Berechtigungen einschalten</string>

@@ -318,6 +318,11 @@
     <string name="settings_interface_hide_system_status_bar_title">Hide System Status Bar</string>
     <!-- Second line of that row. Says what is hidden and how to bring it back for a moment. -->
     <string name="settings_interface_hide_system_status_bar_subtitle">Hide Android\'s status bar and notification icons. Swipe down from the top to show it</string>
+    <string name="settings_interface_screen_orientation_title">Screen orientation</string>
+    <string name="settings_interface_screen_orientation_subtitle">Keeps Argosy and built-in games in one orientation, whatever the device\'s rotation lock says</string>
+    <string name="settings_interface_screen_orientation_auto">Auto</string>
+    <string name="settings_interface_screen_orientation_landscape">Landscape</string>
+    <string name="settings_interface_screen_orientation_portrait">Portrait</string>
     <!-- Toggle row title. "Quick Panel" is Argosy's side panel of game settings; "Other Emulators"
          means standalone emulator apps, as opposed to the emulators built into Argosy. -->
     <string name="settings_interface_quick_panel_in_emulators_title">Quick Panel in Other Emulators</string>

@@ -598,6 +598,7 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             compactFooter = prefs.compactFooter,
             hideSystemNavigationBar = prefs.hideSystemNavigationBar,
             hideSystemStatusBar = prefs.hideSystemStatusBar,
+            screenOrientation = prefs.screenOrientation,
             quickPanelInEmulators = prefs.quickPanelInEmulators,
             lockScreenArt = prefs.lockScreenArt,
             homeAppAvailable = prefs.homeAppAvailable,

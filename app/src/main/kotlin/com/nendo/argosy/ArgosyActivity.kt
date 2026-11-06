@@ -57,6 +57,7 @@ import com.nendo.argosy.util.DesktopMode
 import com.nendo.argosy.util.DisplayAffinityHelper
 import com.nendo.argosy.util.Logger
 import com.nendo.argosy.util.LauncherSystemBars
+import com.nendo.argosy.util.followScreenOrientation
 import com.nendo.argosy.util.installImmersiveMode
 import dagger.hilt.android.AndroidEntryPoint
 import com.nendo.argosy.util.SafeCoroutineScope
@@ -260,6 +261,7 @@ class ArgosyActivity : ComponentActivity() {
 
         installImmersiveMode { systemBars.visibility }
         systemBars.follow(activityScope, preferencesRepository.userPreferences)
+        followScreenOrientation(activityScope, preferencesRepository.userPreferences)
         keepAwakeWhileUserActive()
         dimWhileMediaIdle()
 

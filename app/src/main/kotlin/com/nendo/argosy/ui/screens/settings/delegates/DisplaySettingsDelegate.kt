@@ -36,6 +36,7 @@ import com.nendo.argosy.data.preferences.PlatformIndicatorContent
 import com.nendo.argosy.data.preferences.PlatformIndicatorStyle
 import com.nendo.argosy.data.preferences.SystemIconPadding
 import com.nendo.argosy.data.preferences.SystemIconPosition
+import com.nendo.argosy.data.preferences.ScreenOrientationMode
 import com.nendo.argosy.data.preferences.ThemeMode
 import com.nendo.argosy.data.preferences.AmbientLedColorMode
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -585,6 +586,17 @@ class DisplaySettingsDelegate @Inject constructor(
             preferencesRepository.setHideSystemStatusBar(hide)
             _state.update { it.copy(hideSystemStatusBar = hide) }
         }
+    }
+
+    fun setScreenOrientation(scope: CoroutineScope, mode: ScreenOrientationMode) {
+        _state.update { it.copy(screenOrientation = mode) }
+        scope.launch { preferencesRepository.setScreenOrientation(mode) }
+    }
+
+    fun cycleScreenOrientation(scope: CoroutineScope, direction: Int) {
+        val modes = ScreenOrientationMode.entries
+        val next = modes[(modes.indexOf(_state.value.screenOrientation) + direction).mod(modes.size)]
+        setScreenOrientation(scope, next)
     }
 
     fun setQuickPanelInEmulators(scope: CoroutineScope, enabled: Boolean, serviceEnabled: Boolean) {

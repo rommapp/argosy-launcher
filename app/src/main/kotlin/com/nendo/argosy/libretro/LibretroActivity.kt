@@ -139,8 +139,10 @@ import com.nendo.argosy.ui.theme.GRIP_RESERVE_MIN_PERCENT
 import com.nendo.argosy.ui.theme.resolveGripReserveFraction
 import com.nendo.argosy.data.preferences.BuiltinEmulatorSettings
 import com.nendo.argosy.util.AppPaths
+import com.nendo.argosy.util.fixedRequest
 import com.nendo.argosy.util.hideSystemBars
 import com.nendo.argosy.util.installImmersiveMode
+import com.nendo.argosy.util.isOnMainDisplay
 import com.swordfish.libretrodroid.GLRetroView
 import com.swordfish.libretrodroid.GLRetroViewData
 import com.swordfish.libretrodroid.LibretroDroid
@@ -157,7 +159,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -389,6 +393,7 @@ class LibretroActivity : ComponentActivity() {
     private var currentOrientationState by mutableStateOf(android.content.res.Configuration.ORIENTATION_LANDSCAPE)
     private var currentRotationState by mutableStateOf(0)
     private var touchSettingsState by mutableStateOf(com.nendo.argosy.data.preferences.BuiltinEmulatorSettings())
+    private var screenOrientationMode = com.nendo.argosy.data.preferences.ScreenOrientationMode.AUTO
     private var portraitPositionState by mutableStateOf("Auto")
     private var gripReserveModeState by mutableStateOf(com.nendo.argosy.data.preferences.GripReserveMode.OFF)
     private var gripReservePercentState by mutableStateOf(GRIP_RESERVE_DEFAULT_PERCENT)
@@ -574,6 +579,15 @@ class LibretroActivity : ComponentActivity() {
             }
         }
         applyOrientationLock(globalSettings.touchControlsLockOrientation)
+        lifecycleScope.launch {
+            preferencesRepository.userPreferences
+                .map { it.screenOrientation }
+                .distinctUntilChanged()
+                .collect { mode ->
+                    screenOrientationMode = mode
+                    applyOrientationLock(touchSettingsState.touchControlsLockOrientation)
+                }
+        }
         val settings = kotlinx.coroutines.runBlocking {
             effectiveLibretroSettingsResolver.getEffectiveSettings(platformId, platformSlug)
         }
@@ -3772,7 +3786,10 @@ class LibretroActivity : ComponentActivity() {
     }
 
     private fun applyOrientationLock(locked: Boolean) {
-        requestedOrientation = if (!locked) {
+        val fixed = screenOrientationMode.fixedRequest()?.takeIf { isOnMainDisplay }
+        requestedOrientation = if (fixed != null) {
+            fixed
+        } else if (!locked) {
             android.content.pm.ActivityInfo.SCREEN_ORIENTATION_FULL_USER
         } else if (currentOrientationState == android.content.res.Configuration.ORIENTATION_PORTRAIT) {
             android.content.pm.ActivityInfo.SCREEN_ORIENTATION_USER_PORTRAIT

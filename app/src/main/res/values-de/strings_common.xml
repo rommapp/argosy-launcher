@@ -587,6 +587,10 @@
     <string name="ui_quick_settings_theme_light">Hell</string>
     <string name="ui_quick_settings_theme_dark">Dunkel</string>
     <string name="ui_quick_settings_theme_system">Auto</string>
+    <string name="ui_quick_settings_orientation">Ausrichtung</string>
+    <string name="ui_quick_settings_orientation_auto">Auto</string>
+    <string name="ui_quick_settings_orientation_landscape">Quer</string>
+    <string name="ui_quick_settings_orientation_portrait">Hoch</string>
     <string name="ui_quick_settings_haptics">Vibration</string>
     <string name="ui_quick_settings_ui_sounds">UI-Sounds</string>
     <string name="ui_quick_settings_swap_ab">A/B tauschen</string>

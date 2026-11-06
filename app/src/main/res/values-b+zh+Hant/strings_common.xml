@@ -572,6 +572,10 @@
     <string name="ui_quick_settings_theme_light">淺色</string>
     <string name="ui_quick_settings_theme_dark">深色</string>
     <string name="ui_quick_settings_theme_system">自動</string>
+    <string name="ui_quick_settings_orientation">方向</string>
+    <string name="ui_quick_settings_orientation_auto">自動</string>
+    <string name="ui_quick_settings_orientation_landscape">橫向</string>
+    <string name="ui_quick_settings_orientation_portrait">直向</string>
     <string name="ui_quick_settings_haptics">震動回饋</string>
     <string name="ui_quick_settings_ui_sounds">介面音效</string>
     <string name="ui_quick_settings_swap_ab">交換 A/B</string>

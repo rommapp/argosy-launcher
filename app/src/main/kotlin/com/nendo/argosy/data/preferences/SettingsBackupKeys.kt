@@ -30,6 +30,7 @@ object SettingsBackupKeys {
         SettingsBackupKey("compact_footer", SettingsBackupType.BOOLEAN),
         SettingsBackupKey("hide_system_navigation_bar", SettingsBackupType.BOOLEAN),
         SettingsBackupKey("hide_system_status_bar", SettingsBackupType.BOOLEAN),
+        SettingsBackupKey("screen_orientation", SettingsBackupType.STRING),
         SettingsBackupKey("lock_screen_art", SettingsBackupType.BOOLEAN),
         SettingsBackupKey("icon_pack", SettingsBackupType.STRING),
         SettingsBackupKey("system_icon_position", SettingsBackupType.STRING),

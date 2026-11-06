@@ -135,6 +135,7 @@ class UserPreferencesRepository @Inject constructor(
             compactFooter = display.compactFooter,
             hideSystemNavigationBar = display.hideSystemNavigationBar,
             hideSystemStatusBar = display.hideSystemStatusBar,
+            screenOrientation = display.screenOrientation,
             lockScreenArt = display.lockScreenArt,
             homeAppAvailable = display.homeAppAvailable,
             iconPack = display.iconPack,
@@ -366,6 +367,7 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setCompactFooter(enabled: Boolean) = displayPrefs.setCompactFooter(enabled)
     suspend fun setHideSystemNavigationBar(hide: Boolean) = displayPrefs.setHideSystemNavigationBar(hide)
     suspend fun setHideSystemStatusBar(hide: Boolean) = displayPrefs.setHideSystemStatusBar(hide)
+    suspend fun setScreenOrientation(mode: ScreenOrientationMode) = displayPrefs.setScreenOrientation(mode)
     suspend fun setLockScreenArt(enabled: Boolean) = displayPrefs.setLockScreenArt(enabled)
     suspend fun setIconPack(packageName: String?) = displayPrefs.setIconPack(packageName)
     suspend fun setGripAutoControllers(
@@ -967,6 +969,7 @@ data class UserPreferences(
     val compactFooter: Boolean = false,
     val hideSystemNavigationBar: Boolean = true,
     val hideSystemStatusBar: Boolean = true,
+    val screenOrientation: ScreenOrientationMode = ScreenOrientationMode.AUTO,
     val lockScreenArt: Boolean = true,
     val homeAppAvailable: Boolean = true,
     val iconPack: String? = null,
@@ -1101,6 +1104,15 @@ enum class ThemeMode(val displayName: String) {
     companion object {
         fun fromString(value: String?): ThemeMode =
             entries.find { it.name == value } ?: SYSTEM
+    }
+}
+
+enum class ScreenOrientationMode {
+    AUTO, LANDSCAPE, PORTRAIT;
+
+    companion object {
+        fun fromString(value: String?): ScreenOrientationMode =
+            entries.find { it.name == value } ?: AUTO
     }
 }
 

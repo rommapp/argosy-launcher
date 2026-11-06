@@ -1189,6 +1189,10 @@ class SettingsViewModel @Inject constructor(
     fun setHideSystemNavigationBar(hide: Boolean) =
         displayDelegate.setHideSystemNavigationBar(viewModelScope, hide)
     fun setHideSystemStatusBar(hide: Boolean) = displayDelegate.setHideSystemStatusBar(viewModelScope, hide)
+    fun setScreenOrientation(mode: com.nendo.argosy.data.preferences.ScreenOrientationMode) =
+        displayDelegate.setScreenOrientation(viewModelScope, mode)
+    fun cycleScreenOrientation(direction: Int = 1) =
+        displayDelegate.cycleScreenOrientation(viewModelScope, direction)
     fun setQuickPanelInEmulators(enabled: Boolean) {
         permissionsDelegate.refreshPermissions()
         displayDelegate.setQuickPanelInEmulators(

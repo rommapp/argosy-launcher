@@ -587,6 +587,10 @@
     <string name="ui_quick_settings_theme_light">लाइट</string>
     <string name="ui_quick_settings_theme_dark">डार्क</string>
     <string name="ui_quick_settings_theme_system">ऑटो</string>
+    <string name="ui_quick_settings_orientation">ओरिएंटेशन</string>
+    <string name="ui_quick_settings_orientation_auto">ऑटो</string>
+    <string name="ui_quick_settings_orientation_landscape">लैंडस्केप</string>
+    <string name="ui_quick_settings_orientation_portrait">पोर्ट्रेट</string>
     <string name="ui_quick_settings_haptics">हैप्टिक्स</string>
     <string name="ui_quick_settings_ui_sounds">UI साउंड</string>
     <string name="ui_quick_settings_swap_ab">A/B बदलें</string>

@@ -611,6 +611,10 @@
     <string name="ui_quick_settings_theme_light">Clair</string>
     <string name="ui_quick_settings_theme_dark">Sombre</string>
     <string name="ui_quick_settings_theme_system">Auto</string>
+    <string name="ui_quick_settings_orientation">Orientation</string>
+    <string name="ui_quick_settings_orientation_auto">Auto</string>
+    <string name="ui_quick_settings_orientation_landscape">Paysage</string>
+    <string name="ui_quick_settings_orientation_portrait">Portrait</string>
     <string name="ui_quick_settings_haptics">Vibrations</string>
     <string name="ui_quick_settings_ui_sounds">Sons de l\'interface</string>
     <string name="ui_quick_settings_swap_ab">Inverser A/B</string>

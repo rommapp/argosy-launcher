@@ -123,6 +123,11 @@
     <string name="settings_interface_hide_system_nav_bar_subtitle">Oculta los botones de atrás, inicio y recientes de Android o la barra de gestos. Desliza desde el borde para mostrarlos</string>
     <string name="settings_interface_hide_system_status_bar_title">Ocultar barra de estado del sistema</string>
     <string name="settings_interface_hide_system_status_bar_subtitle">Oculta la barra de estado de Android y los iconos de notificación. Desliza hacia abajo desde arriba para mostrarla</string>
+    <string name="settings_interface_screen_orientation_title">Orientación de pantalla</string>
+    <string name="settings_interface_screen_orientation_subtitle">Mantiene Argosy y los juegos integrados en una orientación, sin importar el bloqueo de rotación del dispositivo</string>
+    <string name="settings_interface_screen_orientation_auto">Automática</string>
+    <string name="settings_interface_screen_orientation_landscape">Horizontal</string>
+    <string name="settings_interface_screen_orientation_portrait">Vertical</string>
     <string name="settings_interface_quick_panel_in_emulators_title">Panel rápido en otros emuladores</string>
     <string name="settings_interface_quick_panel_in_emulators_subtitle">Mantén Atrás en un emulador que Argosy abrió para mostrar el panel rápido. Requiere el servicio de accesibilidad de Argosy</string>
     <string name="settings_interface_quick_panel_in_emulators_service_off">El servicio de accesibilidad está desactivado. Actívalo en Permisos</string>

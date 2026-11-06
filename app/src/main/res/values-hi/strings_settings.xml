@@ -111,6 +111,11 @@
     <string name="settings_interface_hide_system_nav_bar_subtitle">Android के बैक, होम और हाल के ऐप्स बटन या जेस्चर बार छिपाता है। दिखाने के लिए किनारे से स्वाइप करें</string>
     <string name="settings_interface_hide_system_status_bar_title">सिस्टम स्टेटस बार छिपाएँ</string>
     <string name="settings_interface_hide_system_status_bar_subtitle">Android का स्टेटस बार और सूचना आइकन छिपाता है। दिखाने के लिए ऊपर से नीचे स्वाइप करें</string>
+    <string name="settings_interface_screen_orientation_title">स्क्रीन ओरिएंटेशन</string>
+    <string name="settings_interface_screen_orientation_subtitle">डिवाइस के रोटेशन लॉक से अलग, Argosy और बिल्ट-इन गेम को एक ही ओरिएंटेशन में रखता है</string>
+    <string name="settings_interface_screen_orientation_auto">ऑटो</string>
+    <string name="settings_interface_screen_orientation_landscape">लैंडस्केप</string>
+    <string name="settings_interface_screen_orientation_portrait">पोर्ट्रेट</string>
     <string name="settings_interface_quick_panel_in_emulators_title">अन्य एमुलेटर में क्विक पैनल</string>
     <string name="settings_interface_quick_panel_in_emulators_subtitle">क्विक पैनल खोलने के लिए Argosy से खोले गए एमुलेटर में वापस को दबाए रखें। Argosy की एक्सेसिबिलिटी सेवा ज़रूरी है</string>
     <string name="settings_interface_quick_panel_in_emulators_service_off">एक्सेसिबिलिटी सेवा बंद है। इसे अनुमतियों में चालू करें</string>

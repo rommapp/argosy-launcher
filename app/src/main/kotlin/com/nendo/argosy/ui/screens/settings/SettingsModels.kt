@@ -279,6 +279,8 @@ data class DisplayState(
     val compactFooter: Boolean = false,
     val hideSystemNavigationBar: Boolean = true,
     val hideSystemStatusBar: Boolean = true,
+    val screenOrientation: com.nendo.argosy.data.preferences.ScreenOrientationMode =
+        com.nendo.argosy.data.preferences.ScreenOrientationMode.AUTO,
     val quickPanelInEmulators: Boolean = false,
     val showAccessibilityPrompt: Boolean = false,
     val lockScreenArt: Boolean = true,

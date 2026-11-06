@@ -607,6 +607,10 @@
     <string name="ui_quick_settings_theme_light">Светлая</string>
     <string name="ui_quick_settings_theme_dark">Тёмная</string>
     <string name="ui_quick_settings_theme_system">Авто</string>
+    <string name="ui_quick_settings_orientation">Ориентация</string>
+    <string name="ui_quick_settings_orientation_auto">Авто</string>
+    <string name="ui_quick_settings_orientation_landscape">Альбомная</string>
+    <string name="ui_quick_settings_orientation_portrait">Книжная</string>
     <string name="ui_quick_settings_haptics">Вибрация</string>
     <string name="ui_quick_settings_ui_sounds">Звуки интерфейса</string>
     <string name="ui_quick_settings_swap_ab">Поменять A/B</string>

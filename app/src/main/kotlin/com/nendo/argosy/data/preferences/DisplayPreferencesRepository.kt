@@ -81,6 +81,7 @@ data class DisplayPreferences(
     val compactFooter: Boolean = false,
     val hideSystemNavigationBar: Boolean = true,
     val hideSystemStatusBar: Boolean = true,
+    val screenOrientation: ScreenOrientationMode = ScreenOrientationMode.AUTO,
     val lockScreenArt: Boolean = true,
     val homeAppAvailable: Boolean = true,
     val iconPack: String? = null,
@@ -204,6 +205,7 @@ class DisplayPreferencesRepository @Inject constructor(
         val COMPACT_FOOTER = booleanPreferencesKey("compact_footer")
         val HIDE_SYSTEM_NAVIGATION_BAR = booleanPreferencesKey("hide_system_navigation_bar")
         val HIDE_SYSTEM_STATUS_BAR = booleanPreferencesKey("hide_system_status_bar")
+        val SCREEN_ORIENTATION = stringPreferencesKey("screen_orientation")
         val LOCK_SCREEN_ART = booleanPreferencesKey("lock_screen_art")
         val LOCK_SCREEN_ART_APPLIED = booleanPreferencesKey("lock_screen_art_applied")
         val LIVE_WALLPAPER_OFFERED = booleanPreferencesKey("live_wallpaper_offered")
@@ -323,6 +325,7 @@ class DisplayPreferencesRepository @Inject constructor(
             compactFooter = prefs[Keys.COMPACT_FOOTER] ?: false,
             hideSystemNavigationBar = prefs[Keys.HIDE_SYSTEM_NAVIGATION_BAR] ?: true,
             hideSystemStatusBar = prefs[Keys.HIDE_SYSTEM_STATUS_BAR] ?: true,
+            screenOrientation = ScreenOrientationMode.fromString(prefs[Keys.SCREEN_ORIENTATION]),
             lockScreenArt = prefs[Keys.LOCK_SCREEN_ART] ?: true,
             homeAppAvailable = prefs[Keys.HOME_APP_AVAILABLE] ?: true,
             iconPack = prefs[Keys.ICON_PACK],
@@ -641,6 +644,10 @@ class DisplayPreferencesRepository @Inject constructor(
 
     suspend fun setHideSystemStatusBar(hide: Boolean) {
         dataStore.edit { it[Keys.HIDE_SYSTEM_STATUS_BAR] = hide }
+    }
+
+    suspend fun setScreenOrientation(mode: ScreenOrientationMode) {
+        dataStore.edit { it[Keys.SCREEN_ORIENTATION] = mode.name }
     }
 
     suspend fun setLockScreenArt(enabled: Boolean) {

@@ -114,6 +114,11 @@
     <string name="settings_interface_hide_system_nav_bar_subtitle">Скрывает кнопки Android «Назад», «Домой» и «Недавние» или панель жестов. Проведите от края экрана, чтобы показать их</string>
     <string name="settings_interface_hide_system_status_bar_title">Скрывать системную строку состояния</string>
     <string name="settings_interface_hide_system_status_bar_subtitle">Скрывает строку состояния Android и значки уведомлений. Проведите сверху вниз, чтобы показать её</string>
+    <string name="settings_interface_screen_orientation_title">Ориентация экрана</string>
+    <string name="settings_interface_screen_orientation_subtitle">Держит Argosy и встроенные игры в одной ориентации независимо от блокировки поворота устройства</string>
+    <string name="settings_interface_screen_orientation_auto">Авто</string>
+    <string name="settings_interface_screen_orientation_landscape">Альбомная</string>
+    <string name="settings_interface_screen_orientation_portrait">Книжная</string>
     <string name="settings_interface_quick_panel_in_emulators_title">Быстрая панель в других эмуляторах</string>
     <string name="settings_interface_quick_panel_in_emulators_subtitle">Удерживайте Назад в эмуляторе, запущенном из Argosy, чтобы открыть быструю панель. Нужна служба специальных возможностей Argosy</string>
     <string name="settings_interface_quick_panel_in_emulators_service_off">Служба специальных возможностей выключена. Включите её в разделе «Разрешения»</string>

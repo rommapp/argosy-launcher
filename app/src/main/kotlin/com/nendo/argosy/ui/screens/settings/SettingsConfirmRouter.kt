@@ -728,6 +728,10 @@ private fun routeInterfaceConfirm(vm: SettingsViewModel, state: SettingsUiState)
             vm.requestEnumPicker(InterfaceItem.Language.key)
             return InputResult.handled(SoundType.OPEN_MODAL)
         }
+        InterfaceItem.ScreenOrientation -> {
+            vm.requestEnumPicker(InterfaceItem.ScreenOrientation.key)
+            return InputResult.handled(SoundType.OPEN_MODAL)
+        }
         InterfaceItem.CompactFooter -> vm.setCompactFooter(!state.display.compactFooter)
         InterfaceItem.HideSystemNavigationBar ->
             vm.setHideSystemNavigationBar(!state.display.hideSystemNavigationBar)

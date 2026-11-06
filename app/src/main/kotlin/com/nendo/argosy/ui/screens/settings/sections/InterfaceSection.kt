@@ -19,6 +19,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.nendo.argosy.R
 import com.nendo.argosy.data.preferences.AppLanguage
+import com.nendo.argosy.data.preferences.ScreenOrientationMode
 import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.InfoPreference
 import androidx.lifecycle.Lifecycle
@@ -57,6 +58,7 @@ internal sealed class InterfaceItem(
 
     data object Language : InterfaceItem("language", SECTION_GENERAL)
     data object UiScale : InterfaceItem("uiScale", SECTION_GENERAL)
+    data object ScreenOrientation : InterfaceItem("screenOrientation", SECTION_GENERAL)
     data object CompactFooter : InterfaceItem("compactFooter", SECTION_GENERAL)
     data object HideSystemNavigationBar : InterfaceItem("hideSystemNavigationBar", SECTION_GENERAL)
     data object HideSystemStatusBar : InterfaceItem("hideSystemStatusBar", SECTION_GENERAL)
@@ -101,7 +103,7 @@ internal sealed class InterfaceItem(
             get() = listOf(
                 Header("generalHeader", SECTION_GENERAL, R.string.settings_interface_section_general),
                 Language, UiScale, CompactFooter, HideSystemNavigationBar, HideSystemStatusBar,
-                QuickPanelInEmulators, ControllerGrip,
+                QuickPanelInEmulators, ControllerGrip, ScreenOrientation,
                 Header("screensHeader", SECTION_SCREENS, R.string.settings_interface_section_screens),
                 HomeScreen, LibraryView, BoxArt, Presentation, LockScreenArt,
                 HomeApp, HomeAppLocked,
@@ -136,6 +138,12 @@ internal fun languageLabelRes(language: AppLanguage): Int = when (language) {
     AppLanguage.CHINESE_TRADITIONAL -> R.string.settings_main_language_name_zh_hant
     AppLanguage.RUSSIAN -> R.string.settings_main_language_name_ru
     AppLanguage.HINDI -> R.string.settings_main_language_name_hi
+}
+
+internal fun screenOrientationLabelRes(mode: ScreenOrientationMode): Int = when (mode) {
+    ScreenOrientationMode.AUTO -> R.string.settings_interface_screen_orientation_auto
+    ScreenOrientationMode.LANDSCAPE -> R.string.settings_interface_screen_orientation_landscape
+    ScreenOrientationMode.PORTRAIT -> R.string.settings_interface_screen_orientation_portrait
 }
 
 private val interfaceLayout = SettingsLayout<InterfaceItem, InterfaceLayoutState>(
@@ -227,6 +235,20 @@ fun InterfaceSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     step = 5,
                     suffix = "%",
                     onAdjust = { viewModel.adjustUiScale(it) }
+                )
+
+                InterfaceItem.ScreenOrientation -> CyclePreference(
+                    title = stringResource(R.string.settings_interface_screen_orientation_title),
+                    value = stringResource(screenOrientationLabelRes(display.screenOrientation)),
+                    subtitle = stringResource(R.string.settings_interface_screen_orientation_subtitle),
+                    isFocused = isFocused(item),
+                    onClick = { viewModel.cycleScreenOrientation() },
+                    onPrev = { viewModel.cycleScreenOrientation(-1) },
+                    options = remember(context) {
+                        ScreenOrientationMode.entries.map { context.getString(screenOrientationLabelRes(it)) }
+                    },
+                    onSelect = { index -> viewModel.setScreenOrientation(ScreenOrientationMode.entries[index]) },
+                    pickerRequestToken = pickerToken(item)
                 )
 
                 InterfaceItem.CompactFooter -> SwitchPreference(

@@ -113,6 +113,11 @@
     <string name="settings_interface_hide_system_nav_bar_subtitle">Masque les boutons Retour, Accueil et Récents d\'Android ou la barre de gestes. Balayez depuis le bord pour les afficher</string>
     <string name="settings_interface_hide_system_status_bar_title">Masquer la barre d\'état système</string>
     <string name="settings_interface_hide_system_status_bar_subtitle">Masque la barre d\'état d\'Android et les icônes de notification. Balayez vers le bas depuis le haut pour l\'afficher</string>
+    <string name="settings_interface_screen_orientation_title">Orientation de l\'écran</string>
+    <string name="settings_interface_screen_orientation_subtitle">Garde Argosy et les jeux intégrés dans une seule orientation, quel que soit le verrouillage de rotation de l\'appareil</string>
+    <string name="settings_interface_screen_orientation_auto">Auto</string>
+    <string name="settings_interface_screen_orientation_landscape">Paysage</string>
+    <string name="settings_interface_screen_orientation_portrait">Portrait</string>
     <string name="settings_interface_quick_panel_in_emulators_title">Panneau rapide dans les autres émulateurs</string>
     <string name="settings_interface_quick_panel_in_emulators_subtitle">Maintenez Retour dans un émulateur lancé par Argosy pour ouvrir le panneau rapide. Nécessite le service d\'accessibilité d\'Argosy</string>
     <string name="settings_interface_quick_panel_in_emulators_service_off">Le service d\'accessibilité est désactivé. Activez-le dans Autorisations</string>

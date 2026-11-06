@@ -4,6 +4,7 @@ import com.nendo.argosy.DualScreenManagerHolder
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.data.preferences.ControlsPreferences
 import com.nendo.argosy.data.preferences.MenuWrapMode
+import com.nendo.argosy.data.preferences.ScreenOrientationMode
 import com.nendo.argosy.data.preferences.ThemeMode
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.social.SocialConnectionState
@@ -162,6 +163,7 @@ class QuickSettingsController(
     ) { prefs, hud, social, (deviceSettings, displayLevels, screens, hardwareStats) ->
         QuickSettingsState(
             themeMode = prefs.themeMode,
+            screenOrientation = prefs.screenOrientation,
             primaryColor = prefs.primaryColor,
             soundEnabled = prefs.soundEnabled,
             hapticEnabled = prefs.hapticEnabled,
@@ -263,6 +265,10 @@ class QuickSettingsController(
 
     fun setThemeMode(mode: ThemeMode) {
         scope.launch { preferencesRepository.setThemeMode(mode) }
+    }
+
+    fun setScreenOrientation(mode: ScreenOrientationMode) {
+        scope.launch { preferencesRepository.setScreenOrientation(mode) }
     }
 
     fun setSoundEnabled(enabled: Boolean) {
@@ -509,6 +515,12 @@ class QuickSettingsController(
                 stepLevel(snapshot.secondaryBrightness ?: 0f, delta, ::setSecondaryBrightness)
             QuickSettingsItem.SwapDisplays ->
                 toggleLeftRight(delta, snapshot.isRolesSwapped) { swapDisplays() }
+            QuickSettingsItem.ScreenOrientation -> stepOption(
+                ScreenOrientationMode.entries,
+                snapshot.screenOrientation,
+                delta,
+                ::setScreenOrientation
+            )
             QuickSettingsItem.SystemVolume ->
                 stepVolume(snapshot.systemVolume, delta)
             QuickSettingsItem.UISounds ->

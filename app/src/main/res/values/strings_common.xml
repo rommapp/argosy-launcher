@@ -1202,6 +1202,10 @@
     <!-- Theme option on a narrow segment: follow the device's light or dark setting
          automatically. Keep very short. -->
     <string name="ui_quick_settings_theme_system">Auto</string>
+    <string name="ui_quick_settings_orientation">Orientation</string>
+    <string name="ui_quick_settings_orientation_auto">Auto</string>
+    <string name="ui_quick_settings_orientation_landscape">Landscape</string>
+    <string name="ui_quick_settings_orientation_portrait">Portrait</string>
     <!-- Row of that panel: whether the device buzzes on a press, and how hard. Noun,
          plural. -->
     <string name="ui_quick_settings_haptics">Haptics</string>

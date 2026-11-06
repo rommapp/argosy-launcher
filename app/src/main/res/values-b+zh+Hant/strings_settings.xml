@@ -100,6 +100,11 @@
     <string name="settings_interface_hide_system_nav_bar_subtitle">隱藏 Android 的返回、主畫面和最近使用按鈕或手勢列。從邊緣滑動即可顯示</string>
     <string name="settings_interface_hide_system_status_bar_title">隱藏系統狀態列</string>
     <string name="settings_interface_hide_system_status_bar_subtitle">隱藏 Android 狀態列和通知圖示。從頂部向下滑動即可顯示</string>
+    <string name="settings_interface_screen_orientation_title">螢幕方向</string>
+    <string name="settings_interface_screen_orientation_subtitle">無論裝置是否鎖定旋轉，都讓 Argosy 和內建遊戲保持同一方向</string>
+    <string name="settings_interface_screen_orientation_auto">自動</string>
+    <string name="settings_interface_screen_orientation_landscape">橫向</string>
+    <string name="settings_interface_screen_orientation_portrait">直向</string>
     <string name="settings_interface_quick_panel_in_emulators_title">在其他模擬器中使用快速面板</string>
     <string name="settings_interface_quick_panel_in_emulators_subtitle">在 Argosy 啟動的模擬器中長按返回即可開啟快速面板。需要 Argosy 的無障礙服務</string>
     <string name="settings_interface_quick_panel_in_emulators_service_off">無障礙服務已關閉。請在權限中開啟</string>

@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="save_channels_section_mine_title">Minhas</string>
+    <string name="save_channels_section_backups_title">Backups</string>
+    <string name="save_channels_section_community_title">Comunidade</string>
+    <string name="save_channels_section_mine_new">Novo canal</string>
+    <string name="save_channels_section_mine_empty">Nenhum canal ainda</string>
+    <string name="save_channels_load_failed">Não foi possível carregar os canais</string>
+
+    <string name="save_channels_tile_chip_hardcore">Hardcore</string>
+    <string name="save_channels_tile_chip_shared">Compartilhado</string>
+    <string name="save_channels_tile_chip_by_owner">por %1$s</string>
+    <string name="save_channels_tile_chip_no_snapshots">Só legado</string>
+    <string name="save_channels_tile_chip_this_device">Este dispositivo</string>
+    <string name="save_channels_tile_subtitle_empty">Vazio</string>
+    <string name="save_channels_footer_channel_actions">Opções</string>
+    <string name="save_channels_footer_timeline">Linha do tempo</string>
+    <string name="save_channels_section_timeline_button">Linha do tempo</string>
+
+    <string name="save_channels_device_unknown">Desconhecido</string>
+    <string name="save_channels_device_other_user">Outro usuário</string>
+
+    <string name="save_channels_card_badge_current">Atual</string>
+    <string name="save_channels_card_badge_branch">Ramo</string>
+    <string name="save_channels_card_badge_pinned">Fixado</string>
+    <string name="save_channels_card_badge_hardcore">Hardcore</string>
+    <string name="save_channels_card_badge_older_client">Legado</string>
+    <string name="save_channels_card_caption_id">#%1$d</string>
+    <string name="save_channels_cards_empty">Vazio</string>
+    <string name="save_channels_card_load_more">Mais</string>
+
+    <string name="save_channels_backup_action_copy_to">Copiar para…</string>
+
+    <string name="save_channels_detail_title">%1$s · #%2$d</string>
+    <string name="save_channels_detail_row_channel">Canal</string>
+    <string name="save_channels_detail_row_device">Dispositivo</string>
+    <string name="save_channels_detail_row_parent">Pai</string>
+    <string name="save_channels_detail_row_saved">Salvo</string>
+    <string name="save_channels_detail_row_file">Arquivo</string>
+    <string name="save_channels_detail_parent_id">#%1$d</string>
+    <string name="save_channels_detail_parent_none">-</string>
+    <string name="save_channels_detail_states_title">Estados</string>
+    <string name="save_channels_detail_states_hardcore">Nenhum em hardcore</string>
+    <string name="save_channels_detail_states_none">Nenhum</string>
+    <string name="save_channels_detail_state_slot_auto">Auto</string>
+    <string name="save_channels_detail_state_slot_numbered">Slot %1$s</string>
+    <string name="save_channels_detail_action_activate">Ativar</string>
+    <string name="save_channels_detail_action_fork">Fork</string>
+    <string name="save_channels_detail_action_copy_over">Copiar para…</string>
+    <string name="save_channels_detail_action_pin">Fixar</string>
+    <string name="save_channels_detail_action_unpin">Desfixar</string>
+    <string name="save_channels_detail_action_share">Compartilhar</string>
+    <string name="save_channels_detail_action_unshare">Parar de compartilhar</string>
+    <string name="save_channels_detail_action_make_snapshot">Criar snapshot</string>
+    <string name="save_channels_copy_picker_title">Copiar para</string>
+    <string name="save_channels_copy_picker_new_channel">Novo canal</string>
+
+    <string name="save_channels_menu_action_use_on_device">Ativar</string>
+    <string name="save_channels_menu_action_rename">Renomear</string>
+    <string name="save_channels_menu_action_share">Compartilhar</string>
+    <string name="save_channels_menu_action_stop_sharing">Descompartilhar</string>
+    <string name="save_channels_menu_action_delete">Excluir</string>
+
+    <string name="save_channels_label_title_new">Novo canal</string>
+    <string name="save_channels_label_title_rename">Renomear</string>
+    <string name="save_channels_label_title_fork">Fork</string>
+    <string name="save_channels_label_field_placeholder">Nome</string>
+    <string name="save_channels_label_cancel">Cancelar</string>
+    <string name="save_channels_label_confirm_new">Criar</string>
+    <string name="save_channels_label_confirm_rename">Renomear</string>
+    <string name="save_channels_label_confirm_fork">Fork</string>
+    <string name="save_channels_label_error_reserved">Nome em uso</string>
+
+    <string name="save_channels_share_confirm_title">Compartilhar o canal?</string>
+    <string name="save_channels_share_confirm_body">Todos neste servidor podem ver e salvar nele.</string>
+    <string name="save_channels_share_confirm_action">Compartilhar</string>
+    <string name="save_channels_hardcore_confirm_title">Substituir save hardcore?</string>
+    <string name="save_channels_hardcore_confirm_body">O save hardcore fica no histórico.</string>
+    <string name="save_channels_hardcore_confirm_action">Substituir</string>
+    <string name="save_channels_delete_confirm_title">Excluir %1$s?</string>
+    <string name="save_channels_delete_confirm_body">O atual, %1$d snapshots fixados e %2$d saves legados viram backups. O restante é excluído.</string>
+    <string name="save_channels_delete_confirm_hold">Excluir</string>
+
+    <string name="save_channels_timeline_header_device">Este dispositivo: %1$s</string>
+    <string name="save_channels_timeline_lane_empty">Vazio</string>
+    <string name="save_channels_timeline_lane_failed">Não foi possível carregar</string>
+    <string name="save_channels_timeline_load_failed">Não foi possível carregar os canais</string>
+    <string name="save_channels_timeline_no_channels">Nenhum canal ainda</string>
+    <string name="save_channels_timeline_floater_id">#%1$d</string>
+    <string name="save_channels_timeline_footer_jump">Saltar</string>
+    <string name="save_channels_timeline_footer_channel">Canal</string>
+    <string name="save_channels_timeline_notice_history_failed">Não foi possível carregar saves antigos</string>
+
+    <string name="save_channels_notice_forked">Forkado</string>
+    <string name="save_channels_notice_copied">Copiado</string>
+    <string name="save_channels_notice_made_snapshot">Snapshot criado</string>
+    <string name="save_channels_notice_created">Canal criado</string>
+    <string name="save_channels_notice_renamed">Renomeado</string>
+    <string name="save_channels_notice_shared">Compartilhado</string>
+    <string name="save_channels_notice_unshared">Descompartilhado</string>
+    <string name="save_channels_notice_deleted">Excluído</string>
+    <string name="save_channels_notice_used_on_device">Ativado %1$s</string>
+    <string name="save_channels_notice_stale">Alterado em outro lugar, atualizado</string>
+    <string name="save_channels_notice_failed_offline">Servidor inacessível</string>
+    <string name="save_channels_notice_failed_refused">O servidor recusou a alteração</string>
+    <string name="save_channels_notice_failed_not_found">Não está mais no servidor</string>
+    <string name="save_channels_notice_failed_conflict">Alterado em outro lugar, tente novamente</string>
+    <string name="save_channels_notice_failed_unknown">Não foi possível concluir isso</string>
+    <string name="save_channels_notice_hardcore_kept">Save hardcore mantido</string>
+    <string name="save_channels_notice_offline">Servidor inacessível</string>
+    <string name="save_channels_notice_history_failed">Não foi possível carregar o histórico</string>
+</resources>

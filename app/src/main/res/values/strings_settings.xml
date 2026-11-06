@@ -5019,6 +5019,7 @@
     <string name="settings_main_language_name_zh_hant" translatable="false">&#32321;&#39636;&#20013;&#25991;</string>
     <string name="settings_main_language_name_ru" translatable="false">&#1056;&#1091;&#1089;&#1089;&#1082;&#1080;&#1081;</string>
     <string name="settings_main_language_name_hi" translatable="false">&#2361;&#2367;&#2344;&#2381;&#2342;&#2368;</string>
+    <string name="settings_main_language_name_pt_br" translatable="false">Portugu&#233;s (Brasil)</string>
 
     <!-- ===== Play Time hub ===== -->
     <!-- Throughout this block "play" and "session" are nouns: a session is one sitting with a

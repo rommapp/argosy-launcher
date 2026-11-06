@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_breadcrumb_continue">Recentes</string>
+    <string name="home_breadcrumb_recommendations">Sugestões</string>
+    <string name="home_breadcrumb_favorites">Favoritos</string>
+    <string name="home_breadcrumb_continue_watching">Assistir</string>
+    <string name="home_breadcrumb_next_up">A seguir</string>
+
+    <string name="home_footer_grid_engaged_play">Tocar</string>
+    <string name="home_footer_grid_engaged_pause">Pausar</string>
+    <string name="home_footer_grid_engaged_seek">Avançar</string>
+    <string name="home_footer_grid_engaged_fullscreen">Tela cheia</string>
+    <string name="home_footer_grid_engaged_browse">Explorar</string>
+    <string name="home_footer_grid_engaged_details">Detalhes</string>
+    <string name="home_footer_grid_engaged_back">Voltar à grade</string>
+
+    <string name="home_footer_media_notice_choose">Escolher</string>
+
+    <string name="home_footer_media_setup_episode_tick">Marcar</string>
+    <string name="home_footer_media_setup_episode_back">Voltar</string>
+    <string name="home_footer_media_setup_back">Voltar</string>
+
+    <string name="home_footer_tile_picker_tab">Aba</string>
+    <string name="home_footer_tile_picker_jump">Saltar</string>
+    <string name="home_footer_tile_picker_search">Pesquisar</string>
+
+    <string name="home_footer_grid_edit_resize">Redimensionar</string>
+    <string name="home_footer_grid_edit_move">Mover</string>
+    <string name="home_footer_grid_edit_place">Posicionar</string>
+    <string name="home_footer_grid_edit_cancel">Cancelar</string>
+
+    <string name="home_footer_grid_page">Página</string>
+    <string name="home_footer_grid_finished">Concluído</string>
+    <string name="home_footer_grid_reroll">Sortear novamente</string>
+    <string name="home_footer_grid_swap_screens">Trocar telas</string>
+    <string name="home_footer_grid_hold_swap_screens">Segure para trocar telas</string>
+
+    <string name="home_footer_media_section">Seção</string>
+    <string name="home_footer_media_refresh">Atualizar</string>
+    <string name="home_footer_media_resume">Retomar</string>
+    <string name="home_footer_media_play">Tocar</string>
+    <string name="home_footer_media_unfavorite">Desfavorecer</string>
+    <string name="home_footer_media_details">Detalhes</string>
+
+    <string name="home_footer_game_section">Seção</string>
+    <string name="home_footer_game_install">Instalar</string>
+    <string name="home_footer_game_play">Jogar</string>
+    <string name="home_footer_game_download">Download</string>
+    <string name="home_footer_game_resume_download">Retomar</string>
+    <string name="home_footer_game_favorite">Favoritar</string>
+    <string name="home_footer_game_unfavorite">Desfavoritar</string>
+    <string name="home_footer_game_details">Detalhes</string>
+
+    <string name="home_footer_viewall_item">Jogo</string>
+    <string name="home_footer_viewall_section">Seção</string>
+    <string name="home_footer_viewall_platform">Plataforma</string>
+    <string name="home_footer_viewall_library">Biblioteca</string>
+
+    <string name="home_tile_add_title">Adicionar à grade inicial?</string>
+    <string name="home_tile_add_message">O download de %1$s foi concluído.</string>
+    <string name="home_tile_add_confirm">Adicionar</string>
+    <string name="home_tile_add_cancel">Agora não</string>
+
+    <string name="home_media_tile_notice_local_title">Toca deste dispositivo</string>
+    <string name="home_media_tile_notice_download_title">Faça download para tocar aqui</string>
+
+    <string name="home_tile_file_browser_backdrop_title">Escolher um fundo</string>
+    <string name="home_tile_file_browser_video_title">Escolher um vídeo</string>
+
+    <string name="home_empty_pinned_row">Nenhum jogo em %1$s</string>
+    <string name="home_empty_title">Ainda não há jogos</string>
+    <string name="home_empty_message_configured">Sincronize sua biblioteca para começar</string>
+    <string name="home_empty_message_unconfigured">Conecte-se a um servidor Rom Manager nas configurações para começar</string>
+    <string name="home_empty_sync_hint">Sincronizar biblioteca</string>
+
+    <string name="home_quick_actions_heading">AÇÕES RÁPIDAS</string>
+    <string name="home_quick_actions_install">Instalar</string>
+    <string name="home_quick_actions_play">Jogar</string>
+    <string name="home_quick_actions_play_on_screen">Jogar na tela %1$d</string>
+    <string name="home_quick_actions_download">Download</string>
+    <string name="home_quick_actions_resume_download">Retomar</string>
+    <string name="home_quick_actions_favorite">Favoritar</string>
+    <string name="home_quick_actions_unfavorite">Desfavoritar</string>
+    <string name="home_quick_actions_details">Detalhes</string>
+    <string name="home_quick_actions_add_to_collection">Adicionar à coleção</string>
+    <string name="home_quick_actions_active_variant">Variante ativa</string>
+    <string name="home_quick_actions_refresh_data">Atualizar dados</string>
+    <string name="home_quick_actions_resync_platform">Re-sincronizar plataforma</string>
+    <string name="home_quick_actions_delete_download">Excluir download</string>
+    <string name="home_quick_actions_remove_from_home">Remover do início</string>
+    <string name="home_quick_actions_remove_from_library">Remover da biblioteca</string>
+    <string name="home_quick_actions_hide">Ocultar</string>
+
+    <string name="home_media_empty_next_up_title">Nada a seguir</string>
+    <string name="home_media_empty_next_up_message">Conclua um episódio e o próximo aparecerá aqui.</string>
+    <string name="home_media_empty_continue_watching_title">Nada para continuar</string>
+    <string name="home_media_empty_continue_watching_message">Tudo o que você parar no meio aparecerá aqui.</string>
+    <string name="home_media_empty_library_title">Nada nesta biblioteca</string>
+    <string name="home_media_empty_library_message">Atualize para buscar esta biblioteca do seu servidor de mídia.</string>
+
+    <string name="home_grid_tile_missing_game">Jogo ausente</string>
+    <string name="home_grid_tile_missing_collection">Coleção ausente</string>
+    <string name="home_grid_tile_collection_subtitle">Coleção</string>
+    <string name="home_grid_tile_collection_games_stat">Jogos</string>
+    <string name="home_grid_tile_missing_app">App ausente</string>
+    <string name="home_grid_tile_app_subtitle">App</string>
+    <string name="home_grid_tile_missing_media">Título ausente</string>
+    <string name="home_grid_tile_local_media_subtitle">Neste dispositivo</string>
+    <string name="home_grid_tile_unresolvable">Indisponível</string>
+    <string name="tile_picker_feature_random_title">Jogo aleatório</string>
+    <string name="tile_picker_feature_random_subtitle">Sorteia um jogo da sua biblioteca</string>
+    <string name="tile_picker_feature_continue_title">Continuar</string>
+    <string name="tile_picker_feature_continue_subtitle">Retome seu último jogo</string>
+    <string name="tile_picker_feature_ra_title">RetroAchievements</string>
+    <string name="tile_picker_feature_ra_subtitle">Seus pontos e desbloqueios recentes</string>
+    <string name="tile_picker_feature_library_link_title">Link da biblioteca</string>
+    <string name="tile_picker_feature_library_link_subtitle">Uma visão salva da sua biblioteca</string>
+    <string name="home_grid_tile_feature_random_label">Jogo aleatório</string>
+    <string name="home_grid_tile_feature_random_empty">Nenhum jogo corresponde aos filtros</string>
+    <string name="home_grid_tile_feature_continue_label">Continuar jogando</string>
+    <string name="home_grid_tile_feature_continue_empty">Nada jogado ainda</string>
+    <string name="home_grid_tile_feature_ra_label">RetroAchievements</string>
+    <string name="home_grid_tile_feature_ra_signed_out">Faça login para ver seus desbloqueios</string>
+    <string name="home_grid_tile_feature_ra_no_unlocks">Nenhum desbloqueio ainda</string>
+    <string name="home_grid_tile_feature_library_link_label">Biblioteca</string>
+    <string name="home_grid_tile_feature_library_link_all">Todos os jogos</string>
+    <string name="home_grid_tile_feature_library_link_count">Jogos</string>
+    <string name="home_grid_tile_ra_latest_heading">Mais recente</string>
+    <string name="home_grid_tile_ra_next_heading">A seguir</string>
+    <string name="home_grid_tile_ra_mastered">Dominado</string>
+    <string name="home_grid_tile_ra_locked">Ainda não desbloqueado</string>
+    <plurals name="home_grid_tile_ra_points">
+        <item quantity="one">%d ponto</item>
+        <item quantity="many">%d pontos</item>
+        <item quantity="other">%d pontos</item>
+    </plurals>
+    <plurals name="home_grid_tile_ra_unlocks">
+        <item quantity="one">%d desbloqueio</item>
+        <item quantity="many">%d desbloqueios</item>
+        <item quantity="other">%d desbloqueios</item>
+    </plurals>
+    <string name="home_grid_tile_ra_unlock_meta">%1$s, %2$s</string>
+    <string name="home_grid_tile_ra_account_tally">%1$s, %2$s</string>
+    <string name="home_grid_tile_ra_progress">%1$d/%2$d</string>
+    <string name="home_grid_tile_ra_game_progress">%1$s %2$d/%3$d</string>
+
+    <string name="home_notice_game_data_refreshed">Dados do jogo atualizados</string>
+    <string name="home_notice_android_data_refreshed">Dados do jogo atualizados</string>
+    <string name="home_notice_removed_from_library">Removido da biblioteca</string>
+    <string name="home_notice_remove_failed">Não foi possível remover este jogo</string>
+
+    <string name="home_notice_already_downloaded">Download já concluído</string>
+    <plurals name="home_notice_discs_queued">
+        <item quantity="one">Fazendo download de %d disco</item>
+        <item quantity="many">Fazendo download de %d discos</item>
+        <item quantity="other">Fazendo download de %d discos</item>
+    </plurals>
+    <string name="home_notice_extraction_failed">Falha na extração. Abra os detalhes do jogo para tentar novamente.</string>
+    <string name="home_notice_apk_install_failed">Não foi possível instalar o APK</string>
+    <string name="home_notice_download_deleted">Download excluído</string>
+
+    <string name="home_notice_recommendations_updated">Sugestões atualizadas</string>
+    <string name="home_notice_recommendations_insufficient">Jogos insuficientes para gerar sugestões</string>
+
+    <string name="home_notice_playing_next">Jogando em seguida</string>
+
+    <plurals name="home_tile_picker_collection_game_count">
+        <item quantity="one">%d jogo</item>
+        <item quantity="many">%d jogos</item>
+        <item quantity="other">%d jogos</item>
+    </plurals>
+    <string name="home_tile_picker_ra_progress">%1$s (%2$d/%3$d conquistas)</string>
+    <string name="home_tile_picker_app_emulator">Emulador</string>
+    <string name="home_tile_picker_app_other">App</string>
+
+    <string name="home_tile_picker_media_series">Série</string>
+    <string name="home_tile_picker_media_movie">Filme</string>
+
+    <string name="home_media_picker_series">Série</string>
+    <string name="home_media_picker_library">Biblioteca</string>
+    <string name="home_media_picker_movie">Filme</string>
+
+    <string name="home_media_season_specials">Especiais</string>
+    <string name="home_media_season_number">Temporada %1$d</string>
+    <string name="home_media_season_none_synced">Nada sincronizado ainda</string>
+    <string name="home_media_season_local_all">Todos os %1$d neste dispositivo</string>
+    <string name="home_media_season_local_partial">%1$d de %2$d neste dispositivo</string>
+    <string name="home_media_download_size_gigabytes">%1$.1f GB</string>
+
+    <string name="home_grid_tile_ra_points_label">Pontos</string>
+    <string name="home_grid_tile_ra_unlocks_label">Desbloqueios</string>
+    <string name="home_grid_tile_feature_library_link_more" translatable="false">+%1$d</string>
+</resources>

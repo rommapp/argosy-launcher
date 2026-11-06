@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="savesync_section_attention">Precisa da sua atenção</string>
+    <string name="savesync_section_in_progress">Em andamento</string>
+    <string name="savesync_section_games">Jogos com saves</string>
+
+    <string name="savesync_footer_navigate">Navegar</string>
+    <string name="savesync_footer_choose">Escolher</string>
+    <string name="savesync_footer_confirm_keep_local">Manter o local</string>
+    <string name="savesync_footer_confirm_keep_server">Manter o servidor</string>
+    <string name="savesync_footer_confirm_skip">Pular</string>
+    <string name="savesync_footer_open_game">Abrir o jogo</string>
+    <string name="savesync_footer_scan_server">Escanear RomM</string>
+    <string name="savesync_footer_back">Voltar</string>
+
+    <string name="savesync_device_this_label">Este dispositivo</string>
+    <string name="savesync_device_not_connected">Não conectado ao RomM</string>
+    <string name="savesync_device_id_pill">&#8230;%1$s</string>
+    <string name="savesync_device_client_versioned">%1$s v%2$s</string>
+    <string name="savesync_device_server_versioned">RomM v%1$s</string>
+    <string name="savesync_device_server_connected">Conectado</string>
+    <string name="savesync_device_server_offline">Offline</string>
+    <plurals name="savesync_device_save_count_unit">
+        <item quantity="one">save</item>
+        <item quantity="many">saves</item>
+        <item quantity="other">saves</item>
+    </plurals>
+
+    <string name="savesync_other_devices_heading">Outros dispositivos</string>
+    <string name="savesync_other_device_meta">%1$s &#183; %2$s</string>
+    <string name="savesync_footer_show_devices">Mostrar dispositivos</string>
+    <string name="savesync_footer_hide_devices">Ocultar dispositivos</string>
+
+    <plurals name="savesync_access_notice_title">
+        <item quantity="one">%d local de save inacessível</item>
+        <item quantity="many">%d locais de save inacessíveis</item>
+        <item quantity="other">%d locais de save inacessíveis</item>
+    </plurals>
+
+    <string name="savesync_empty_title_connected">Nenhum save de jogo sincronizado ainda</string>
+    <string name="savesync_empty_message_connected">Os saves aparecerão aqui conforme você joga</string>
+    <string name="savesync_empty_title_disconnected">Conecte-se ao RomM para sincronizar saves</string>
+    <string name="savesync_empty_message_disconnected">Abra as Configurações para adicionar seu servidor RomM</string>
+
+    <string name="savesync_conflict_side_local">Local</string>
+    <string name="savesync_conflict_side_server">Servidor</string>
+    <string name="savesync_conflict_device_this">este dispositivo</string>
+    <string name="savesync_conflict_device_other">outro dispositivo</string>
+    <string name="savesync_conflict_side_summary">%1$s - %2$s (%3$s)</string>
+    <string name="savesync_conflict_time_unknown">desconhecido</string>
+    <string name="savesync_conflict_newer_badge">mais recente</string>
+
+    <string name="savesync_attention_button_keep_local">Manter o local</string>
+    <string name="savesync_attention_button_keep_server">Manter o servidor</string>
+    <string name="savesync_attention_button_skip">Pular</string>
+
+    <string name="savesync_progress_status_uploading">Enviando</string>
+    <string name="savesync_progress_status_downloading">Baixando</string>
+    <string name="savesync_progress_status_queued">Na fila</string>
+
+    <string name="savesync_game_pill_just_synced">Sincronizado agora</string>
+    <string name="savesync_game_last_write_this_device">Última gravação - este dispositivo</string>
+    <string name="savesync_game_last_write_device">Última gravação - %1$s</string>
+    <string name="savesync_game_last_write_unknown">Última gravação - dispositivo desconhecido</string>
+    <string name="savesync_game_last_write_time">%1$s &#183; %2$s</string>
+
+    <string name="savesync_force_check_title">Escanear RomM em busca de saves faltando</string>
+    <string name="savesync_force_check_idle">Percorre os jogos locais e busca o save mais recente em cada canal no RomM.</string>
+    <string name="savesync_force_check_running">Escaneando...</string>
+    <plurals name="savesync_force_check_up_to_date">
+        <item quantity="one">Atualizado - inspecionado %d jogo, nada novo.</item>
+        <item quantity="many">Atualizado - inspecionados %d jogos, nada novo.</item>
+        <item quantity="other">Atualizado - inspecionados %d jogos, nada novo.</item>
+    </plurals>
+    <plurals name="savesync_force_check_queued">
+        <item quantity="one">Na fila %1$d save de %2$d jogos; %3$d baixados.</item>
+        <item quantity="many">Na fila %1$d saves de %2$d jogos; %3$d baixados.</item>
+        <item quantity="other">Na fila %1$d saves de %2$d jogos; %3$d baixados.</item>
+    </plurals>
+    <string name="savesync_force_check_failed">Falha: %1$s</string>
+    <string name="savesync_force_check_failed_fallback">Falha na verificação de saves</string>
+
+    <string name="savesync_device_unnamed">Dispositivo sem nome</string>
+    <string name="savesync_device_web">Web</string>
+
+    <string name="savesync_channel_archived">Arquivado</string>
+    <string name="savesync_channel_autosave">Save automático</string>
+
+    <string name="savesync_presentation_calendar_title">Jogos e saves, últimas 12 semanas</string>
+    <string name="savesync_presentation_rhythm_title">Quando você joga</string>
+    <string name="savesync_presentation_devices_title">Dispositivos</string>
+    <string name="savesync_presentation_save_marker">Save mantido naquele dia</string>
+    <string name="savesync_presentation_this_device">Este dispositivo</string>
+    <string name="savesync_presentation_peak">Pico %1$s %2$s</string>
+    <string name="savesync_presentation_average">média %s</string>
+    <string name="savesync_presentation_longest">maior %s</string>
+    <string name="savesync_presentation_last_played">jogado por último %s</string>
+    <string name="savesync_presentation_device_last_played">jogado por último %s</string>
+    <string name="savesync_presentation_share_percent">%d%%</string>
+    <string name="savesync_presentation_joined" translatable="false">%1$s · %2$s</string>
+    <plurals name="savesync_presentation_sessions">
+        <item quantity="one">%d sessão</item>
+        <item quantity="many">%d sessões</item>
+        <item quantity="other">%d sessões</item>
+    </plurals>
+    <plurals name="savesync_presentation_device_sessions">
+        <item quantity="one">%d sessão</item>
+        <item quantity="many">%d sessões</item>
+        <item quantity="other">%d sessões</item>
+    </plurals>
+    <plurals name="savesync_presentation_versions">
+        <item quantity="one">%d versão de save mantida</item>
+        <item quantity="many">%d versões de save mantidas</item>
+        <item quantity="other">%d versões de save mantidas</item>
+    </plurals>
+</resources>

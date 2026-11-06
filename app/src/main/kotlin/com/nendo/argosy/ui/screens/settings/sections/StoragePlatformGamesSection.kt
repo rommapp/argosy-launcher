@@ -70,10 +70,10 @@ internal fun bucketDisplayLabelRes(bucket: GameStorageBucket): Int = when (bucke
 
 internal sealed class StoragePlatformGamesItem(
     val key: String,
-    val section: String,
+    val section: String?,
     open val isFocusable: Boolean = true
 ) {
-    data object EmptyState : StoragePlatformGamesItem("emptyState", "empty") {
+    data object EmptyState : StoragePlatformGamesItem("emptyState", section = null) {
         override val isFocusable = false
     }
 

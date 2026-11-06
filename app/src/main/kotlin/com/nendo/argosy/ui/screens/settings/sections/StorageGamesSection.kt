@@ -222,7 +222,6 @@ fun StorageGamesSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
                     uiState.storage.localOnlyGamesCount,
                     uiState.storage.localOnlyGamesCount
                 ),
-                trailingText = uiState.storage.localOnlyGamesCount.toString(),
                 isFocused = isFocused(item),
                 onClick = { openFrom(item) { viewModel.openStorageLocalOnlyGames() } }
             )

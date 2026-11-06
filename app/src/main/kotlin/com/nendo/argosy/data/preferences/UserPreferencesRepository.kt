@@ -677,6 +677,8 @@ class UserPreferencesRepository @Inject constructor(
     fun isBuiltinMigrationComplete(): Flow<Boolean> = builtinPrefs.isBuiltinMigrationComplete()
     fun isPs2StandalonePinDone(): Flow<Boolean> = builtinPrefs.isPs2StandalonePinDone()
     suspend fun setPs2StandalonePinDone() = builtinPrefs.setPs2StandalonePinDone()
+    fun isBuiltinPriorityPinDone(): Flow<Boolean> = builtinPrefs.isBuiltinPriorityPinDone()
+    suspend fun setBuiltinPriorityPinDone() = builtinPrefs.setBuiltinPriorityPinDone()
 
     // --- Session delegates ---
 

@@ -65,6 +65,7 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
         val BUILTIN_CUSTOM_STATE_PATH = stringPreferencesKey("builtin_custom_state_path")
         val BUILTIN_MIGRATION_V1 = booleanPreferencesKey("builtin_migration_v2")
         val BUILTIN_PS2_STANDALONE_PIN_DONE = booleanPreferencesKey("builtin_ps2_standalone_pin_done")
+        val BUILTIN_PRIORITY_PIN_DONE = booleanPreferencesKey("builtin_priority_pin_done")
         val BUILTIN_ARCHITECTURE_OVERRIDE = stringPreferencesKey("builtin_architecture_override")
         val BUILTIN_GPU_DRIVER = stringPreferencesKey("builtin_gpu_driver")
         val TOUCH_SHOW_WHEN_NO_GAMEPAD = booleanPreferencesKey("builtin_touch_show_when_no_gamepad")
@@ -394,6 +395,14 @@ class BuiltinEmulatorPreferencesRepository @Inject constructor(
 
     suspend fun setPs2StandalonePinDone() {
         dataStore.edit { it[Keys.BUILTIN_PS2_STANDALONE_PIN_DONE] = true }
+    }
+
+    fun isBuiltinPriorityPinDone(): Flow<Boolean> = dataStore.data.map { prefs ->
+        prefs[Keys.BUILTIN_PRIORITY_PIN_DONE] ?: false
+    }
+
+    suspend fun setBuiltinPriorityPinDone() {
+        dataStore.edit { it[Keys.BUILTIN_PRIORITY_PIN_DONE] = true }
     }
 
     suspend fun setTouchControlsShowWhenNoGamepad(enabled: Boolean) {

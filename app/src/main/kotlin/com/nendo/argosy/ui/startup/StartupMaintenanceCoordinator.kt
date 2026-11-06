@@ -88,6 +88,7 @@ class StartupMaintenanceCoordinator @Inject constructor(
             label = R.string.ui_startup_status_checking_emulators
         ) {
             libretroMigrationUseCase.pinExistingPs2Emulator()
+            libretroMigrationUseCase.pinExistingBuiltinPriorityEmulators()
             runBuiltinEmulatorMigration()
             libretroMigrationUseCase.cleanupRemovedCores()
         }

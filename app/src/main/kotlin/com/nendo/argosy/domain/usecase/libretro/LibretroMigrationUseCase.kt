@@ -1,6 +1,7 @@
 package com.nendo.argosy.domain.usecase.libretro
 
 import android.util.Log
+import com.nendo.argosy.data.emulator.EmulatorDef
 import com.nendo.argosy.data.emulator.EmulatorDetector
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
@@ -30,17 +31,48 @@ class LibretroMigrationUseCase @Inject constructor(
      */
     suspend fun pinExistingPs2Emulator() {
         if (preferencesRepository.isPs2StandalonePinDone().first()) return
-        val ps2Platforms = platformDao.getAllPlatforms().filter {
-            it.gameCount > 0 && PlatformDefinitions.getCanonicalSlug(it.slug) == PS2_SLUG
+        val pinned = pinExistingEmulators(setOf(PS2_SLUG)) { slug ->
+            emulatorDetector.getPreferredEmulator(slug, builtinEnabled = false)?.def
         }
-        if (ps2Platforms.isNotEmpty()) {
+        if (pinned) preferencesRepository.setPs2StandalonePinDone()
+    }
+
+    /**
+     * Pins every platform in [BUILTIN_PRIORITY_SLUGS] to the emulator it resolved to before the
+     * built-in core led its recommendations, under the same rules as [pinExistingPs2Emulator].
+     */
+    suspend fun pinExistingBuiltinPriorityEmulators() {
+        if (preferencesRepository.isBuiltinPriorityPinDone().first()) return
+        val pinned = pinExistingEmulators(BUILTIN_PRIORITY_SLUGS, ::emulatorBeforeBuiltinPriority)
+        if (pinned) preferencesRepository.setBuiltinPriorityPinDone()
+    }
+
+    private fun emulatorBeforeBuiltinPriority(slug: String): EmulatorDef? {
+        val recommended = EmulatorRegistry.getRecommendedEmulators()[slug].orEmpty()
+            .filter { it != EmulatorRegistry.BUILTIN_ID }
+        val outrankedBuiltin = if (slug in BUILTIN_ALREADY_AHEAD_OF_RETROARCH) {
+            recommended.filterNot { it in RETROARCH_IDS }
+        } else {
+            recommended
+        }
+        val installed = emulatorDetector.getInstalledForPlatform(slug)
+        return outrankedBuiltin.firstNotNullOfOrNull { id -> installed.find { it.def.id == id }?.def }
+    }
+
+    private suspend fun pinExistingEmulators(
+        slugs: Set<String>,
+        previousFor: (String) -> EmulatorDef?
+    ): Boolean {
+        val platforms = platformDao.getAllPlatforms().filter {
+            it.gameCount > 0 && PlatformDefinitions.getCanonicalSlug(it.slug) in slugs
+        }
+        if (platforms.isNotEmpty()) {
             if (emulatorDetector.detectEmulators().isEmpty()) {
-                Log.w(TAG, "Emulator detection returned nothing; PS2 pin retried next start")
-                return
+                Log.w(TAG, "Emulator detection returned nothing; emulator pin retried next start")
+                return false
             }
-            val previous = emulatorDetector.getPreferredEmulator(PS2_SLUG, builtinEnabled = false)?.def
-            for (platform in ps2Platforms) {
-                if (previous == null) break
+            for (platform in platforms) {
+                val previous = previousFor(PlatformDefinitions.getCanonicalSlug(platform.slug)) ?: continue
                 val existing = emulatorConfigDao.getDefaultForPlatform(platform.id)
                 if (!existing?.packageName.isNullOrEmpty()) continue
                 emulatorConfigDao.insert(
@@ -57,7 +89,7 @@ class LibretroMigrationUseCase @Inject constructor(
                 Log.i(TAG, "Pinned ${platform.slug} (${platform.id}) to ${previous.packageName}")
             }
         }
-        preferencesRepository.setPs2StandalonePinDone()
+        return true
     }
 
     suspend fun runMigrationIfNeeded(): MigrationResult {
@@ -156,6 +188,12 @@ class LibretroMigrationUseCase @Inject constructor(
     private companion object {
         val REMOVED_CORE_IDS = setOf("play")
         const val PS2_SLUG = "ps2"
+        val BUILTIN_PRIORITY_SLUGS = setOf(
+            "3ds", "gc", "wii", "dreamcast", "arcade", "fbneo", "mame", "cps1", "cps2", "cps3",
+            "neogeo", "dos", "scummvm", "lynx", "tgcd", "ngp", "ngpc", "c64", "pc9800"
+        )
+        val BUILTIN_ALREADY_AHEAD_OF_RETROARCH = setOf("3ds")
+        val RETROARCH_IDS = setOf("retroarch", "retroarch_64", "retroarch_32")
     }
 }
 

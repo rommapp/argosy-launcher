@@ -6,6 +6,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import java.io.ByteArrayInputStream
+import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -13,7 +14,6 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
-import java.io.File
 
 class CoreSystemDataManagerTest {
 
@@ -64,6 +64,12 @@ class CoreSystemDataManagerTest {
         assertEquals("$armsx2Base/bin/resources-overlay/armsx2_overrides.yaml", overrides.readText())
         assertTrue(font.exists())
         assertTrue(File(systemDir, "pcsx2/resources/patches.zip").exists())
+        assertTrue(File(systemDir, CoreSystemDataManager.ARMSX2_TEXTURES_PATH).isDirectory)
+        val iniFile = File(systemDir, CoreSystemDataManager.ARMSX2_INI_PATH)
+        assertTrue(iniFile.exists())
+        val iniText = iniFile.readText()
+        assertTrue(iniText.contains("[EmuCore/GS]"))
+        assertTrue(iniText.contains("LoadTextureReplacements = true"))
         assertFalse(manager.needsSystemData("armsx2", systemDir))
     }
 
@@ -110,6 +116,8 @@ class CoreSystemDataManagerTest {
         assertTrue(manager.ensureCoreSystemData("armsx2", systemDir))
 
         assertTrue(requestedUrls.isEmpty())
+        assertTrue(File(systemDir, CoreSystemDataManager.ARMSX2_TEXTURES_PATH).isDirectory)
+        assertTrue(File(systemDir, CoreSystemDataManager.ARMSX2_INI_PATH).exists())
     }
 
     @Test
@@ -166,6 +174,85 @@ class CoreSystemDataManagerTest {
         val marker = File(systemDir, "PPSSPP/.argosy_version")
         assertTrue("Marker must live under PPSSPP/", marker.exists())
         assertEquals(BuildConfig.PPSSPP_SYS_VERSION.toString(), marker.readText().trim())
+    }
+
+    @Test
+    fun `ensureCoreSystemData creates textures directory and configures armsx2-libretro ini for armsx2`() = runTest {
+        serveArmsx2()
+
+        assertTrue(manager.ensureCoreSystemData("armsx2", systemDir))
+
+        val texturesDir = File(systemDir, CoreSystemDataManager.ARMSX2_TEXTURES_PATH)
+        assertTrue("textures directory should exist", texturesDir.isDirectory)
+
+        val iniFile = File(systemDir, CoreSystemDataManager.ARMSX2_INI_PATH)
+        assertTrue("ini file should exist", iniFile.exists())
+        val iniContent = iniFile.readText()
+        assertTrue(iniContent.contains("[EmuCore/GS]"))
+        assertTrue(iniContent.contains("LoadTextureReplacements = true"))
+    }
+
+    @Test
+    fun `configureArmsx2Ini updates existing armsx2-libretro ini preserving other sections and settings`() {
+        val iniFile = File(systemDir, CoreSystemDataManager.ARMSX2_INI_PATH).apply {
+            parentFile?.mkdirs()
+            writeText(
+                """
+                |[EmuCore]
+                |EnableCheats = true
+                |
+                |[EmuCore/GS]
+                |VsyncEnable = 1
+                |LoadTextureReplacements = false
+                |
+                """.trimMargin()
+            )
+        }
+
+        manager.configureArmsx2Ini(systemDir)
+
+        val content = iniFile.readText()
+        assertTrue(content.contains("[EmuCore]"))
+        assertTrue(content.contains("EnableCheats = true"))
+        assertTrue(content.contains("[EmuCore/GS]"))
+        assertTrue(content.contains("VsyncEnable = 1"))
+        assertTrue(content.contains("LoadTextureReplacements = true"))
+        assertFalse(content.contains("LoadTextureReplacements = false"))
+    }
+
+    @Test
+    fun `configureArmsx2Ini appends EmuCore GS section if missing in existing ini`() {
+        val iniFile = File(systemDir, CoreSystemDataManager.ARMSX2_INI_PATH).apply {
+            parentFile?.mkdirs()
+            writeText(
+                """
+                |[EmuCore]
+                |EnableCheats = true
+                |
+                """.trimMargin()
+            )
+        }
+
+        manager.configureArmsx2Ini(systemDir)
+
+        val content = iniFile.readText()
+        assertTrue(content.contains("[EmuCore]"))
+        assertTrue(content.contains("EnableCheats = true"))
+        assertTrue(content.contains("[EmuCore/GS]"))
+        assertTrue(content.contains("LoadTextureReplacements = true"))
+    }
+
+    @Test
+    fun `configureArmsx2Ini does not modify file if LoadTextureReplacements is already true`() {
+        val initialContent = "[EmuCore/GS]\nLoadTextureReplacements = true\n"
+        val iniFile = File(systemDir, CoreSystemDataManager.ARMSX2_INI_PATH).apply {
+            parentFile?.mkdirs()
+            writeText(initialContent)
+        }
+
+        manager.configureArmsx2Ini(systemDir)
+
+        assertEquals(initialContent, iniFile.readText())
     }
 
     private fun writeMarker(subPath: String, contents: String) {

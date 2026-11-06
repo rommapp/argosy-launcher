@@ -128,6 +128,9 @@ class CoreSystemDataManager @Inject constructor(
     }
 
     private suspend fun ensureArmsx2Resources(systemDir: File): Boolean = withContext(Dispatchers.IO) {
+        File(systemDir, ARMSX2_TEXTURES_PATH).mkdirs()
+        configureArmsx2Ini(systemDir)
+
         val targetDir = File(systemDir, ARMSX2_RESOURCES_PATH)
         val versionFile = File(targetDir, VERSION_MARKER)
         val currentVersion = BuildConfig.ARMSX2_SYS_VERSION
@@ -154,6 +157,91 @@ class CoreSystemDataManager @Inject constructor(
             armsx2FetchFailedThisSession = true
         }
         true
+    }
+
+    internal fun configureArmsx2Ini(systemDir: File) {
+        val iniFile = File(systemDir, ARMSX2_INI_PATH)
+        iniFile.parentFile?.mkdirs()
+        if (!iniFile.exists()) {
+            iniFile.writeText("[$ARMSX2_GS_SECTION]\n$ARMSX2_LOAD_TEXTURES_KEY = true\n")
+            return
+        }
+        val text = iniFile.readText()
+        val updated = updateIniSetting(
+            content = text,
+            section = ARMSX2_GS_SECTION,
+            key = ARMSX2_LOAD_TEXTURES_KEY,
+            value = "true"
+        )
+        if (updated != text) {
+            iniFile.writeText(updated)
+        }
+    }
+
+    internal fun updateIniSetting(
+        content: String,
+        section: String,
+        key: String,
+        value: String
+    ): String {
+        val lines = content.lines().toMutableList()
+        val lineSeparator = if (content.contains("\r\n")) "\r\n" else "\n"
+        var targetSectionStartIndex = -1
+        val matchingKeyIndices = mutableListOf<Int>()
+        var inTargetSection = false
+
+        for (i in lines.indices) {
+            val trimmed = lines[i].trim()
+            if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+                val currentSection = trimmed.substring(1, trimmed.length - 1).trim()
+                if (inTargetSection) {
+                    inTargetSection = false
+                }
+                if (currentSection.equals(section, ignoreCase = true)) {
+                    inTargetSection = true
+                    targetSectionStartIndex = i
+                }
+                continue
+            }
+            if (inTargetSection) {
+                if (trimmed.startsWith(";") || trimmed.startsWith("#")) {
+                    continue
+                }
+                val eqIndex = trimmed.indexOf('=')
+                if (eqIndex != -1) {
+                    val currentKey = trimmed.substring(0, eqIndex).trim()
+                    if (currentKey.equals(key, ignoreCase = true)) {
+                        matchingKeyIndices.add(i)
+                    }
+                }
+            }
+        }
+
+        when {
+            matchingKeyIndices.isNotEmpty() -> {
+                lines[matchingKeyIndices.first()] = "$key = $value"
+                for (idx in matchingKeyIndices.drop(1).reversed()) {
+                    lines.removeAt(idx)
+                }
+            }
+            targetSectionStartIndex != -1 -> {
+                lines.add(targetSectionStartIndex + 1, "$key = $value")
+            }
+            else -> {
+                while (lines.isNotEmpty() && lines.last().isBlank()) {
+                    lines.removeAt(lines.lastIndex)
+                }
+                if (lines.isNotEmpty()) {
+                    lines.add("")
+                }
+                lines.add("[$section]")
+                lines.add("$key = $value")
+                lines.add("")
+            }
+        }
+
+        val result = lines.joinToString(lineSeparator)
+        return if (result.endsWith("\n") || result.isEmpty()) result else result + lineSeparator
     }
 
     private fun downloadFile(url: String, target: File) {
@@ -207,6 +295,10 @@ class CoreSystemDataManager @Inject constructor(
         const val ARMSX2_UPSTREAM_COMMIT = "0076b5c389ea7296331ad2d96193c6e8d5d314fa"
         const val ARMSX2_RAW_BASE = "https://raw.githubusercontent.com/ARMSX2/ARMSX2/$ARMSX2_UPSTREAM_COMMIT"
         const val ARMSX2_RESOURCES_PATH = "pcsx2/resources"
+        const val ARMSX2_TEXTURES_PATH = "pcsx2/textures"
+        const val ARMSX2_INI_PATH = "pcsx2/inis/armsx2-libretro.ini"
+        private const val ARMSX2_GS_SECTION = "EmuCore/GS"
+        private const val ARMSX2_LOAD_TEXTURES_KEY = "LoadTextureReplacements"
 
         const val PCSX2_PATCHES_URL = "https://github.com/PCSX2/pcsx2_patches/releases/download/latest/patches.zip"
 

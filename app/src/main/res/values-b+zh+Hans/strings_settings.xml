@@ -956,6 +956,11 @@
     <string name="settings_storage_location_removable">SD卡</string>
     <string name="settings_storage_location_mixed">内部存储 + SD卡</string>
     <string name="settings_storage_location_unknown">位置未知</string>
+    <string name="settings_storage_local_only_tab_all">全部</string>
+    <string name="settings_storage_local_only_tab_internal">内部</string>
+    <string name="settings_storage_local_only_tab_sd_card">SD卡</string>
+    <string name="settings_storage_local_only_tab_unknown">未知</string>
+    <string name="settings_storage_local_only_tab_empty_message">这里没有仅存于本地的游戏。</string>
 
     <plurals name="settings_storage_games_totals_count">
         <item quantity="other">已下载%d个</item>

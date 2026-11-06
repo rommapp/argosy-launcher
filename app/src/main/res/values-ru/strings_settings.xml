@@ -1013,6 +1013,11 @@
     <string name="settings_storage_location_removable">SD-карта</string>
     <string name="settings_storage_location_mixed">Внутренняя + SD-карта</string>
     <string name="settings_storage_location_unknown">Неизвестное место</string>
+    <string name="settings_storage_local_only_tab_all">Все</string>
+    <string name="settings_storage_local_only_tab_internal">Внутренняя</string>
+    <string name="settings_storage_local_only_tab_sd_card">SD-карта</string>
+    <string name="settings_storage_local_only_tab_unknown">Неизвестно</string>
+    <string name="settings_storage_local_only_tab_empty_message">Здесь нет игр, хранящихся только локально.</string>
 
     <plurals name="settings_storage_games_totals_count">
         <item quantity="one">%d скачано</item>

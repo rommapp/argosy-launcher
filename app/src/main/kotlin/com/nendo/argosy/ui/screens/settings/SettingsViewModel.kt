@@ -1346,6 +1346,16 @@ class SettingsViewModel @Inject constructor(
         storagePlatformGamesDelegate.openLocalOnly(viewModelScope)
     }
 
+    fun setStorageLocationFilter(filter: StorageLocationFilter) {
+        storagePlatformGamesDelegate.setLocationFilter(filter)
+        setFocusIndex(0)
+    }
+
+    fun cycleStorageLocationFilter(delta: Int) {
+        storagePlatformGamesDelegate.cycleLocationFilter(delta)
+        setFocusIndex(0)
+    }
+
     fun resetStoragePlatformHighlightedCategory() =
         storagePlatformGamesDelegate.setHighlightedCategory(0)
 

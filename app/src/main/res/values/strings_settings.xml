@@ -1919,6 +1919,17 @@
     <!-- Label on a game's storage card: a file sits on no storage the device reports, so its
          location cannot be shown. -->
     <string name="settings_storage_location_unknown">Unknown location</string>
+    <!-- Tab above the local-only game list that shows every game. -->
+    <string name="settings_storage_local_only_tab_all">All</string>
+    <!-- Tab above the local-only game list: games with files on built-in storage. -->
+    <string name="settings_storage_local_only_tab_internal">Internal</string>
+    <!-- Tab above the local-only game list: games with files on an SD card or USB drive. -->
+    <string name="settings_storage_local_only_tab_sd_card">SD card</string>
+    <!-- Tab above the local-only game list: games with a file on storage the device does not
+         report. Short, it shares the row with three other tabs. -->
+    <string name="settings_storage_local_only_tab_unknown">Unknown</string>
+    <!-- Shown in the local-only game list when the selected location tab has no games. -->
+    <string name="settings_storage_local_only_tab_empty_message">No local-only games are stored here.</string>
 
     <!-- Total at the top, counting the games on the device. Adjective describing them. -->
     <plurals name="settings_storage_games_totals_count">

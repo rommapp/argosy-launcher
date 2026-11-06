@@ -357,6 +357,7 @@
     <string name="settings_shell_footer_reset_builtincontrols_override">रीसेट करें</string>
     <string name="settings_shell_footer_reset_builtinsaves_override">रीसेट करें</string>
     <string name="settings_shell_footer_back">वापस</string>
+    <string name="settings_shell_footer_local_only_location">जगह</string>
     <string name="settings_shell_footer_unassign_shortcut">हटाएँ</string>
 
     <!-- ===== SettingsScreen: cache clear confirm modals ===== -->

@@ -909,6 +909,11 @@
     <string name="settings_storage_location_removable">SD卡</string>
     <string name="settings_storage_location_mixed">內部儲存空間 + SD卡</string>
     <string name="settings_storage_location_unknown">位置不明</string>
+    <string name="settings_storage_local_only_tab_all">全部</string>
+    <string name="settings_storage_local_only_tab_internal">內部</string>
+    <string name="settings_storage_local_only_tab_sd_card">SD卡</string>
+    <string name="settings_storage_local_only_tab_unknown">不明</string>
+    <string name="settings_storage_local_only_tab_empty_message">這裡沒有僅存於本機的遊戲。</string>
 
     <plurals name="settings_storage_games_totals_count">
         <item quantity="other">已下載%d個</item>

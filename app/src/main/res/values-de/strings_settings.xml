@@ -984,6 +984,11 @@
     <string name="settings_storage_location_removable">SD-Karte</string>
     <string name="settings_storage_location_mixed">Intern + SD-Karte</string>
     <string name="settings_storage_location_unknown">Unbekannter Ort</string>
+    <string name="settings_storage_local_only_tab_all">Alle</string>
+    <string name="settings_storage_local_only_tab_internal">Intern</string>
+    <string name="settings_storage_local_only_tab_sd_card">SD-Karte</string>
+    <string name="settings_storage_local_only_tab_unknown">Unbekannt</string>
+    <string name="settings_storage_local_only_tab_empty_message">Hier sind keine nur lokalen Spiele gespeichert.</string>
 
     <plurals name="settings_storage_games_totals_count">
         <item quantity="one">%d heruntergeladen</item>

@@ -1881,6 +1881,7 @@ private fun SettingsFooter(
     val resetBuiltinControlsOverrideHint = stringResource(R.string.settings_shell_footer_reset_builtincontrols_override)
     val resetBuiltinSavesOverrideHint = stringResource(R.string.settings_shell_footer_reset_builtinsaves_override)
     val backHint = stringResource(R.string.settings_shell_footer_back)
+    val localOnlyLocationHint = stringResource(R.string.settings_shell_footer_local_only_location)
     val unassignShortcutHint = stringResource(R.string.settings_shell_footer_unassign_shortcut)
     val launchTargetsScreenHint = stringResource(R.string.settings_shell_footer_launch_targets_screen)
     val launchTargetsResetHint = stringResource(R.string.settings_shell_footer_launch_targets_reset)
@@ -2039,6 +2040,9 @@ private fun SettingsFooter(
                     add(InputButton.DPAD_HORIZONTAL to categoryHint)
                 }
                 add(InputButton.Y to deleteHint)
+            }
+            if (uiState.storagePlatformGames.localOnly) {
+                add(InputButton.LT_RT to localOnlyLocationHint)
             }
         }
         if (uiState.currentSection == SettingsSection.PLATFORM_DETAIL) {

@@ -974,6 +974,11 @@
     <string name="settings_storage_location_removable">SD कार्ड</string>
     <string name="settings_storage_location_mixed">इंटरनल + SD कार्ड</string>
     <string name="settings_storage_location_unknown">अज्ञात जगह</string>
+    <string name="settings_storage_local_only_tab_all">सभी</string>
+    <string name="settings_storage_local_only_tab_internal">इंटरनल</string>
+    <string name="settings_storage_local_only_tab_sd_card">SD कार्ड</string>
+    <string name="settings_storage_local_only_tab_unknown">अज्ञात</string>
+    <string name="settings_storage_local_only_tab_empty_message">यहाँ कोई केवल-लोकल गेम सेव नहीं है।</string>
 
     <plurals name="settings_storage_games_totals_count">
         <item quantity="one">%d डाउनलोड किया गया</item>

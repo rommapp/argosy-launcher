@@ -497,6 +497,8 @@
     <!-- Y-button hint that resets a built-in saves per-platform override. Separate site. -->
     <string name="settings_shell_footer_reset_builtinsaves_override">Reset</string>
     <string name="settings_shell_footer_back">Back</string>
+    <!-- Footer hint for the shoulder triggers that switch the local-only game list's location tab. -->
+    <string name="settings_shell_footer_local_only_location">Location</string>
     <!-- Y-button hint on the Shortcuts rows that removes the assigned button. Verb. -->
     <string name="settings_shell_footer_unassign_shortcut">Unassign</string>
 

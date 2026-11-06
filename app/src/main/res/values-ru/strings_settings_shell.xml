@@ -372,6 +372,7 @@
     <string name="settings_shell_footer_reset_builtincontrols_override">Сбросить</string>
     <string name="settings_shell_footer_reset_builtinsaves_override">Сбросить</string>
     <string name="settings_shell_footer_back">Назад</string>
+    <string name="settings_shell_footer_local_only_location">Место</string>
     <string name="settings_shell_footer_unassign_shortcut">Снять</string>
 
     <!-- ===== SettingsScreen: cache clear confirm modals ===== -->

@@ -139,7 +139,7 @@ internal fun routeObserveDelegateStates(vm: SettingsViewModel) {
                             .createStoragePlatformGamesLayoutInfo(updated)
                     )
                 val clampedFocus = state.focusedIndex.coerceAtMost(maxIndex).coerceAtLeast(0)
-                val focusedBuckets = storagePlatformGames.games.getOrNull(clampedFocus)?.buckets?.size ?: 0
+                val focusedBuckets = storagePlatformGames.visibleGames.getOrNull(clampedFocus)?.buckets?.size ?: 0
                 val clampedCategory = storagePlatformGames.highlightedCategoryIndex
                     .coerceAtMost((focusedBuckets - 1).coerceAtLeast(0))
                     .coerceAtLeast(0)

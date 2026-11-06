@@ -24,6 +24,7 @@ import com.nendo.argosy.data.preferences.AppLanguage
 import com.nendo.argosy.data.preferences.RecentNewGamesLimit
 import com.nendo.argosy.data.preferences.ControlsPreferences
 import com.nendo.argosy.data.repository.HardResetPreview
+import com.nendo.argosy.domain.usecase.storage.GameStorageLocation
 import com.nendo.argosy.data.preferences.BoxArtBorderStyle
 import com.nendo.argosy.data.preferences.GripReserveMode
 import com.nendo.argosy.data.preferences.BoxArtBorderThickness
@@ -1080,8 +1081,25 @@ data class StoragePlatformGamesState(
     val coverPaths: Map<Long, String?> = emptyMap(),
     val highlightedCategoryIndex: Int = 0,
     val deleteConfirm: com.nendo.argosy.ui.common.GameConfirm.DeleteDownload? = null,
-    val categoryDeleteConfirm: GameStorageCategoryDeleteConfirm? = null
-)
+    val categoryDeleteConfirm: GameStorageCategoryDeleteConfirm? = null,
+    val locationFilter: StorageLocationFilter = StorageLocationFilter.ALL
+) {
+    val visibleGames: List<com.nendo.argosy.domain.usecase.storage.GameStorageBreakdown>
+        get() = if (localOnly) games.filter(locationFilter::matches) else games
+}
+
+enum class StorageLocationFilter(private val location: GameStorageLocation?) {
+    ALL(null),
+    INTERNAL(GameStorageLocation.INTERNAL),
+    REMOVABLE(GameStorageLocation.REMOVABLE),
+    UNKNOWN(GameStorageLocation.UNKNOWN);
+
+    fun matches(game: com.nendo.argosy.domain.usecase.storage.GameStorageBreakdown): Boolean {
+        val target = location ?: return true
+        val held = game.files.map { it.location }.toSet().ifEmpty { setOf(GameStorageLocation.UNKNOWN) }
+        return target in held
+    }
+}
 
 enum class CachesClearTarget {
     IMAGE_CACHE,

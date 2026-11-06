@@ -389,6 +389,18 @@ class DisplayAffinityHelper @Inject constructor(
         }
 
         /**
+         * The requested orientation for an activity on [display] while the device is docked dark,
+         * or null when [display] is not the docked external display.
+         */
+        fun dockedOrientationFor(context: Context, display: Display?): Int? {
+            display ?: return null
+            if (dockedExternalDisplayId(context) != display.displayId) return null
+            val mode = display.mode
+            if (mode.physicalWidth < mode.physicalHeight) return null
+            return android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+        }
+
+        /**
          * The system setting a handheld's firmware reads to blank its own panels while video
          * output is connected, as the AYN Thor's "Turn off handheld console's screen" does.
          */

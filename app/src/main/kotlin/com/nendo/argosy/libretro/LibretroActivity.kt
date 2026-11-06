@@ -3787,8 +3787,14 @@ class LibretroActivity : ComponentActivity() {
 
     private fun applyOrientationLock(locked: Boolean) {
         val fixed = screenOrientationMode.fixedRequest()?.takeIf { isOnMainDisplay }
+        val dockedOrientation = com.nendo.argosy.util.DisplayAffinityHelper.dockedOrientationFor(
+            this,
+            try { window.decorView.display ?: windowManager.defaultDisplay } catch (_: Exception) { null }
+        )
         requestedOrientation = if (fixed != null) {
             fixed
+        } else if (dockedOrientation != null) {
+            dockedOrientation
         } else if (!locked) {
             android.content.pm.ActivityInfo.SCREEN_ORIENTATION_FULL_USER
         } else if (currentOrientationState == android.content.res.Configuration.ORIENTATION_PORTRAIT) {

@@ -134,6 +134,7 @@ class SecondaryHomeActivity :
         }
 
         if (releaseUnsupportedDisplay()) return
+        applyDockedOrientation()
 
         val existing = DualScreenManagerHolder.instance
         if (existing != null) {
@@ -292,6 +293,7 @@ class SecondaryHomeActivity :
             pointerGuard.onInFrontChanged(true)
         }
         if (releaseUnsupportedDisplay()) return
+        applyDockedOrientation()
         systemBars.apply()
         if (!::dsm.isInitialized) return
         dsm.notifyUserActivity("companionResume")
@@ -898,6 +900,21 @@ class SecondaryHomeActivity :
             syncFromSessionStore()
             dsm.onCompanionResumed()
         }
+    }
+
+    private fun applyDockedOrientation() {
+        val display = try {
+            window.decorView.display ?: windowManager.defaultDisplay
+        } catch (_: Exception) { return }
+        val orientation = com.nendo.argosy.util.DisplayAffinityHelper.dockedOrientationFor(this, display)
+            ?: return
+        if (requestedOrientation == orientation) return
+        android.util.Log.i(
+            "SecondaryHome",
+            "Docked on display ${display.displayId}, pinning to landscape " +
+                "(rotation=${display.rotation}, mode=${display.mode.physicalWidth}x${display.mode.physicalHeight})"
+        )
+        requestedOrientation = orientation
     }
 
     /**

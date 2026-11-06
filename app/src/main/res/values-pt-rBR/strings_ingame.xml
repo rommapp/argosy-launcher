@@ -198,7 +198,7 @@
     <string name="ingame_frame_previous_description">Anterior</string>
     <string name="ingame_frame_next_description">Próximo</string>
     <string name="ingame_frame_none">Sem moldura</string>
-    <string name="ingame_frame_download_badge">Download</string>
+    <string name="ingame_frame_download_badge">Baixar</string>
     <string name="ingame_frame_footer_change">Alterar</string>
     <string name="ingame_frame_footer_select">Selecionar</string>
     <string name="ingame_frame_footer_download">Baixar</string>

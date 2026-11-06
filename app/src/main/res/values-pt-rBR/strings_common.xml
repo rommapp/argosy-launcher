@@ -130,7 +130,7 @@
     <string name="ui_save_channel_replace_auto_note">O estado automático atual será sobrescrito.</string>
     <string name="ui_save_channel_notice_download_target_auto">estado automático</string>
     <string name="ui_save_channel_notice_download_target_slot">slot de estado %1$d</string>
-    <string name="ui_save_channel_notice_downloaded">Download de %1$s concluído</string>
+    <string name="ui_save_channel_notice_downloaded">Baixado %1$s</string>
     <string name="ui_save_channel_notice_no_local_path">O jogo não tem caminho local</string>
     <string name="ui_save_channel_notice_restore_target_auto">estado automático</string>
     <string name="ui_save_channel_notice_restore_target_slot">slot de estado %1$d</string>
@@ -293,7 +293,7 @@
     <string name="ui_permission_card_granted">Concedido</string>
 
     <string name="ui_game_card_favorite">Favorito</string>
-    <string name="ui_game_card_downloaded">Em download</string>
+    <string name="ui_game_card_downloaded">Baixado</string>
 
     <string name="ui_download_badge_paused">Download pausado</string>
     <string name="ui_download_cover_paused">Pausado</string>
@@ -370,7 +370,7 @@
     <string name="ui_feature_setup_step_filters">De onde pode escolher</string>
     <string name="ui_feature_setup_step_platforms">Plataformas</string>
     <string name="ui_feature_setup_step_genres">Gêneros</string>
-    <string name="ui_feature_setup_downloaded_only">Somente jogos em download</string>
+    <string name="ui_feature_setup_downloaded_only">Somente jogos baixados</string>
     <string name="ui_feature_setup_never_played">Nunca jogado</string>
     <string name="ui_feature_setup_platforms">Plataformas</string>
     <string name="ui_feature_setup_genres">Gêneros</string>
@@ -456,13 +456,13 @@
     <string name="ui_netplay_join_unknown_host">netplay</string>
     <string name="ui_netplay_join_status_joining">Entrando na sessão</string>
     <string name="ui_netplay_join_status_matching_core">Combinando o core</string>
-    <string name="ui_netplay_join_status_downloading_core">Fazendo download do core</string>
+    <string name="ui_netplay_join_status_downloading_core">Baixando o core</string>
     <string name="ui_netplay_join_status_core_ready">Core pronto</string>
     <string name="ui_netplay_join_status_verifying">Verificando o jogo</string>
     <string name="ui_netplay_join_status_verified">Verificado</string>
-    <string name="ui_netplay_join_candidates_single_missing">O ROM não está em download. Selecione para instalar.</string>
+    <string name="ui_netplay_join_candidates_single_missing">O ROM não está baixado. Selecione para instalar.</string>
     <string name="ui_netplay_join_candidates_single_failed">Falha na verificação. Selecione para tentar novamente.</string>
-    <string name="ui_netplay_join_candidates_none_installed">Nenhum ROM instalado corresponde. Escolha um para fazer download.</string>
+    <string name="ui_netplay_join_candidates_none_installed">Nenhum ROM instalado corresponde. Escolha um para baixar.</string>
     <string name="ui_netplay_join_candidates_multiple">Vários correspondentes. Escolha um ROM.</string>
     <string name="ui_netplay_join_candidate_installed">Instalado</string>
     <string name="ui_netplay_join_candidate_not_installed">Não instalado</string>
@@ -660,8 +660,8 @@
     <string name="ui_quick_settings_music_empty_playlists">Nenhuma playlist corresponde</string>
     <string name="ui_quick_settings_music_empty_soundtracks">Nenhuma trilha encontrada</string>
     <string name="ui_quick_settings_music_notice_playlists_offline">Playlists do RomM precisam de conexão</string>
-    <string name="ui_quick_settings_music_notice_soundtracks_offline">Offline. Mostrando trilhas em download.</string>
-    <string name="ui_quick_settings_music_notice_local_only">Mostrando trilhas em download</string>
+    <string name="ui_quick_settings_music_notice_soundtracks_offline">Offline. Mostrando trilhas baixadas.</string>
+    <string name="ui_quick_settings_music_notice_local_only">Mostrando trilhas baixadas</string>
     <string name="ui_quick_settings_music_notice_server_failed">O RomM não respondeu. Alguns itens podem estar faltando.</string>
     <string name="ui_quick_settings_music_notice_no_tracks">Nada nesta seleção pode ser tocado</string>
     <string name="ui_quick_settings_music_notice_sign_in_playlists">Entre novamente no RomM para ver suas playlists do servidor</string>
@@ -729,8 +729,8 @@
     <string name="ui_launch_overlay_wait_previous">Ainda finalizando o lançamento anterior</string>
     <string name="ui_launch_overlay_wait_recap">Ainda carregando sua última sessão</string>
     <string name="ui_launch_overlay_wait_save">Ainda sincronizando seu save</string>
-    <string name="ui_launch_overlay_wait_core">Ainda fazendo download do core do emulador</string>
-    <string name="ui_launch_overlay_wait_core_sized">Ainda fazendo download do core do emulador &#183; %1$s</string>
+    <string name="ui_launch_overlay_wait_core">Ainda baixando o core do emulador</string>
+    <string name="ui_launch_overlay_wait_core_sized">Ainda baixando o core do emulador &#183; %1$s</string>
     <string name="ui_launch_overlay_wait_prepare">Ainda preparando o emulador</string>
     <string name="ui_launch_overlay_failed_connect">O RomM não respondeu. Iniciando com o save neste dispositivo.</string>
     <string name="ui_launch_overlay_failed_timeout">O RomM demorou demais para responder. Iniciando com o save neste dispositivo.</string>
@@ -843,12 +843,12 @@
     <string name="ui_quick_menu_search_no_results">Nenhum jogo encontrado para \"%1$s\"</string>
     <string name="ui_quick_menu_recent_searches_heading">Pesquisas recentes</string>
     <string name="ui_quick_menu_row_platform_unknown">Desconhecida</string>
-    <string name="ui_quick_menu_row_downloaded">Em download</string>
+    <string name="ui_quick_menu_row_downloaded">Baixado</string>
     <string name="ui_quick_menu_random_platform_unknown">Desconhecida</string>
-    <string name="ui_quick_menu_random_downloaded">Em download</string>
+    <string name="ui_quick_menu_random_downloaded">Baixado</string>
     <string name="ui_quick_menu_random_action_reroll">Sortear novamente</string>
     <string name="ui_quick_menu_random_action_play">Jogar</string>
-    <string name="ui_quick_menu_random_action_download">Download</string>
+    <string name="ui_quick_menu_random_action_download">Baixar</string>
     <string name="ui_quick_menu_random_action_install">Instalar</string>
     <string name="ui_quick_menu_random_action_details">Detalhes</string>
     <string name="ui_quick_menu_random_action_favorite">Favoritar</string>
@@ -859,7 +859,7 @@
     <string name="ui_file_browser_title_file">Selecionar arquivo</string>
     <string name="ui_file_browser_title_file_or_folder">Selecionar arquivo ou pasta</string>
     <string name="ui_file_browser_permission_title">Acesso ao armazenamento necessário</string>
-    <string name="ui_file_browser_permission_message">O Argosy precisa do acesso a todos os arquivos para navegar pastas, fazer download de jogos e sincronizar saves. Conceda e volte aqui.</string>
+    <string name="ui_file_browser_permission_message">O Argosy precisa do acesso a todos os arquivos para navegar pastas, baixar jogos e sincronizar saves. Conceda e volte aqui.</string>
     <string name="ui_file_browser_permission_button">Conceder acesso</string>
     <string name="ui_file_browser_permission_footer_grant">Conceder acesso</string>
     <string name="ui_file_browser_permission_footer_back">Voltar</string>
@@ -1027,7 +1027,7 @@
 
     <string name="gamedetail_action_buttons_play">JOGAR</string>
     <string name="gamedetail_action_buttons_autosave">Save automático</string>
-    <string name="gamedetail_action_buttons_download">DOWNLOAD</string>
+    <string name="gamedetail_action_buttons_download">BAIXAR</string>
     <string name="gamedetail_action_buttons_install">INSTALAR</string>
     <string name="gamedetail_action_buttons_queued">NA FILA...</string>
     <string name="gamedetail_action_buttons_no_space">SEM ESPAÇO</string>
@@ -1060,7 +1060,7 @@
     <string name="gamelist_row_difficulty_value">%1$d/10</string>
     <string name="gamelist_row_achievements_value">%1$d/%2$d</string>
     <string name="gamelist_row_playtime_of_hltb">%1$s / %2$s</string>
-    <string name="gamelist_row_cd_downloaded">Em download</string>
+    <string name="gamelist_row_cd_downloaded">Baixado</string>
     <string name="gamelist_row_cd_download_paused">Download pausado</string>
     <string name="gamelist_row_cd_download_queued">Download na fila</string>
     <string name="gamelist_row_cd_needs_install">Pronto para instalar</string>

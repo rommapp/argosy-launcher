@@ -32,7 +32,7 @@
     <string name="error_download_invalid_file_type">Tipo de arquivo inválido: .%1$s</string>
     <string name="error_download_rom_info_fetch_failed">Falha ao obter informações do ROM: %1$s</string>
     <string name="error_download_no_discs_found">Nenhum disco encontrado para jogo de múltiplos discos</string>
-    <string name="error_download_all_discs_downloaded">Todos os discos já em download</string>
+    <string name="error_download_all_discs_downloaded">Todos os discos já baixados</string>
     <string name="error_download_no_discs_queued">Falha ao enfileirar o download de qualquer disco</string>
     <string name="error_download_game_not_found_for_repair">Jogo não encontrado</string>
     <string name="error_download_not_multi_disc">Não é um jogo de múltiplos discos</string>
@@ -52,5 +52,5 @@
     <string name="error_download_no_longer_exists">O arquivo do download não existe mais</string>
     <string name="error_download_extraction_failed">Falha na extração</string>
 
-    <string name="error_filepicker_already_downloaded">Download já concluído</string>
+    <string name="error_filepicker_already_downloaded">Jogo já baixado</string>
 </resources>

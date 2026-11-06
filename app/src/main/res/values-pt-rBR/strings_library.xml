@@ -117,11 +117,11 @@
     <string name="library_notice_download_deleted">Download excluído</string>
     <string name="library_notice_removed_from_library">Removido da biblioteca</string>
     <string name="library_notice_remove_failed">Não foi possível remover este jogo</string>
-    <string name="library_notice_already_downloaded">Download já concluído</string>
+    <string name="library_notice_already_downloaded">Jogo já baixado</string>
     <plurals name="library_notice_downloading_discs">
-        <item quantity="one">Fazendo download de %d disco</item>
-        <item quantity="many">Fazendo download de %d discos</item>
-        <item quantity="other">Fazendo download de %d discos</item>
+        <item quantity="one">Baixando %d disco</item>
+        <item quantity="many">Baixando %d discos</item>
+        <item quantity="other">Baixando %d discos</item>
     </plurals>
     <string name="library_notice_extraction_failed">Falha na extração. Abra os detalhes do jogo para tentar novamente.</string>
     <string name="library_notice_apk_install_failed">Não foi possível instalar o APK</string>
@@ -188,7 +188,7 @@
     <string name="library_showcase_fact_games">Jogos</string>
     <string name="library_showcase_fact_movies">Filmes</string>
     <string name="library_showcase_fact_shows">Séries</string>
-    <string name="library_showcase_fact_downloaded">Em download</string>
+    <string name="library_showcase_fact_downloaded">Baixados</string>
     <string name="library_showcase_fact_watched">Assistidos</string>
     <string name="library_showcase_fact_installed">Instalados</string>
     <string name="library_showcase_fact_achievements">Conquistas</string>

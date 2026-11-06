@@ -165,7 +165,7 @@
     <string name="firstrun_permissions_storage_title">Gerenciar Armazenamento (Obrigatório)</string>
     <!-- Description under that card. "sync saves" means copying game save data between this
          device and the server. -->
-    <string name="firstrun_permissions_storage_description">Necessário para navegar em pastas, fazer download de jogos e sincronizar saves.</string>
+    <string name="firstrun_permissions_storage_description">Necessário para navegar em pastas, baixar jogos e sincronizar saves.</string>
     <!-- Title of the card for the Android notifications permission. Match the Android system
          settings wording in your language. Noun, plural. -->
     <string name="firstrun_permissions_notifications_title">Notificações</string>
@@ -275,7 +275,7 @@
 
     <!-- Heading asking whether to download emulator cores. A "core" is an emulator engine the
          app runs games with, downloaded as a plug-in rather than as a separate app. Question. -->
-    <string name="firstrun_core_prompt_title">Fazer download dos núcleos de emulador?</string>
+    <string name="firstrun_core_prompt_title">Baixar os núcleos de emulador?</string>
     <!-- Line saying how many cores could be downloaded for the platforms the user picked.
          "libretro" is the name of the project those cores come from and is never translated. -->
     <plurals name="firstrun_core_prompt_available_count">
@@ -289,7 +289,7 @@
     <!-- Line replacing the count when every needed core is already on the device. Statement. -->
     <string name="firstrun_core_prompt_all_installed">Todos os núcleos das plataformas selecionadas já estão instalados.</string>
     <!-- Button that starts downloading the missing cores. Verb phrase, imperative. -->
-    <string name="firstrun_core_prompt_button_download">Fazer download dos núcleos</string>
+    <string name="firstrun_core_prompt_button_download">Baixar núcleos</string>
     <!-- Button that declines the download. Verb, imperative. -->
     <string name="firstrun_core_prompt_button_skip">Pular</string>
     <!-- Label that button takes on when there is nothing to download, so it merely moves on.
@@ -297,12 +297,12 @@
     <string name="firstrun_core_prompt_button_continue">Continuar</string>
     <!-- Note under the skip button saying what happens to the cores not downloaded now. "Settings"
          names the Settings screen inside this app, not the Android system settings. -->
-    <string name="firstrun_core_prompt_note_skip">Cada núcleo é baixado na primeira vez que você abre um jogo que o precisa. Você também pode fazer download dos núcleos mais tarde em Configurações.</string>
+    <string name="firstrun_core_prompt_note_skip">Cada núcleo é baixado na primeira vez que você abre um jogo que o precisa. Você também pode baixar os núcleos mais tarde em Configurações.</string>
 
     <!-- ===== Step 9: downloading the cores ===== -->
 
     <!-- Heading of the download progress step. Present-progressive verb phrase. -->
-    <string name="firstrun_core_download_title">Fazendo download dos núcleos de emulador</string>
+    <string name="firstrun_core_download_title">Baixando os núcleos de emulador</string>
     <!-- Line shown when the chosen platforms turned out to need no cores at all. Statement. -->
     <string name="firstrun_core_download_none_needed">Nenhum núcleo necessário para as plataformas selecionadas</string>
     <!-- Button that leaves this step in that nothing-to-download case. Verb, imperative. -->
@@ -310,9 +310,9 @@
     <!-- Progress line while downloads run. %1$d is how many finished, %2$d is how many were
          queued; the plural form follows the queued total. -->
     <plurals name="firstrun_core_download_progress_count">
-        <item quantity="one">Fazendo download de %1$d de %2$d núcleo...</item>
-        <item quantity="many">Fazendo download de %1$d de %2$d núcleos...</item>
-        <item quantity="other">Fazendo download de %1$d de %2$d núcleos...</item>
+        <item quantity="one">Baixando %1$d de %2$d núcleo...</item>
+        <item quantity="many">Baixando %1$d de %2$d núcleos...</item>
+        <item quantity="other">Baixando %1$d de %2$d núcleos...</item>
     </plurals>
     <!-- Result line when the run finished but some downloads failed. %1$d is how many
          succeeded, %2$d is how many were queued; the plural form follows the queued total. -->

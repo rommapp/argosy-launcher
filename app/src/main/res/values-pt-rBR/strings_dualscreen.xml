@@ -174,7 +174,7 @@
     <string name="dual_home_hint_action_play">Jogar</string>
     <!-- Footer hint on the home surface, for a game not on the device. Verb: fetches it from the
          server. -->
-    <string name="dual_home_hint_action_download">Download</string>
+    <string name="dual_home_hint_action_download">Baixar</string>
 
     <!-- Footer hint while browsing the games in one collection. Verb: the directions move between
          them. -->
@@ -813,7 +813,7 @@
     <!-- The action row for a game on the device. Verb: launches it. -->
     <string name="dual_detail_option_play">Jogar</string>
     <!-- The action row for a game not on the device. Verb: fetches it from the server. -->
-    <string name="dual_detail_option_download">Download</string>
+    <string name="dual_detail_option_download">Baixar</string>
     <!-- Second line under the action row, naming the save the game will resume from when it is
          the one the emulator writes by itself. Noun phrase. -->
     <string name="dual_detail_option_auto_save_slot">Salvamento automático</string>

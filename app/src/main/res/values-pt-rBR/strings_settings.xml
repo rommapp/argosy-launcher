@@ -3654,7 +3654,7 @@
     <string name="settings_shader_picker_hint_add">Adicionar</string>
     <string name="settings_shader_picker_hint_cancel">Cancelar</string>
     <string name="settings_shader_picker_custom_badge">Personalizado</string>
-    <string name="settings_shader_picker_download_badge">Download</string>
+    <string name="settings_shader_picker_download_badge">Baixar</string>
     <string name="settings_sound_picker_hint_select">Selecionar</string>
     <string name="settings_sound_picker_hint_close">Fechar</string>
     <string name="settings_app_picker_title">Selecionar Aplicativo - %1$s</string>

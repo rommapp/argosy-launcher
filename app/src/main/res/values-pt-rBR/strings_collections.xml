@@ -131,11 +131,11 @@
     <string name="collections_category_hint_refreshing">Atualizando&#8230;</string>
     <string name="collections_category_hint_refresh">Atualizar</string>
     <string name="collections_category_hint_swap_screens">Trocar telas</string>
-    <string name="collections_category_hint_open_hold_download_all">Abrir, segure para fazer download de todos (%1$d)</string>
+    <string name="collections_category_hint_open_hold_download_all">Abrir, segure para Download todos (%1$d)</string>
     <string name="collections_category_hint_download_all">Download todos (%1$d)</string>
     <string name="collections_category_hint_download_all_hold_swap_screens">Download todos (%1$d), segure para trocar telas</string>
     <string name="collections_category_hint_hold_swap_screens">Segure para trocar telas</string>
-    <string name="collections_category_downloadall_confirm_title">Fazer download de todos os jogos?</string>
+    <string name="collections_category_downloadall_confirm_title">Baixar todos os jogos?</string>
     <plurals name="collections_category_downloadall_confirm_message">
         <item quantity="one">O download de %1$d jogo desta categoria será feito neste dispositivo.</item>
         <item quantity="many">O download de %1$d jogos desta categoria será feito neste dispositivo.</item>

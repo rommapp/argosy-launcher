@@ -10,7 +10,7 @@
     <string name="settings_shell_frame_none_option">Nenhum</string>
     <string name="settings_shell_frame_import_option">Importar frame</string>
     <string name="settings_shell_frame_selected_desc">Selecionado</string>
-    <string name="settings_shell_frame_download_desc">Download</string>
+    <string name="settings_shell_frame_download_desc">Baixar</string>
     <string name="settings_shell_frame_preview_desc">Prévia de frame</string>
     <string name="settings_shell_frame_no_selection">Nenhum frame selecionado</string>
     <string name="settings_shell_frame_unavailable">Frame indisponível</string>

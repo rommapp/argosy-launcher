@@ -45,7 +45,7 @@
     <string name="home_footer_game_section">Seção</string>
     <string name="home_footer_game_install">Instalar</string>
     <string name="home_footer_game_play">Jogar</string>
-    <string name="home_footer_game_download">Download</string>
+    <string name="home_footer_game_download">Baixar</string>
     <string name="home_footer_game_resume_download">Retomar</string>
     <string name="home_footer_game_favorite">Favoritar</string>
     <string name="home_footer_game_unfavorite">Desfavoritar</string>
@@ -57,12 +57,12 @@
     <string name="home_footer_viewall_library">Biblioteca</string>
 
     <string name="home_tile_add_title">Adicionar à grade inicial?</string>
-    <string name="home_tile_add_message">O download de %1$s foi concluído.</string>
+    <string name="home_tile_add_message">%1$s já baixado.</string>
     <string name="home_tile_add_confirm">Adicionar</string>
     <string name="home_tile_add_cancel">Agora não</string>
 
     <string name="home_media_tile_notice_local_title">Toca deste dispositivo</string>
-    <string name="home_media_tile_notice_download_title">Faça download para tocar aqui</string>
+    <string name="home_media_tile_notice_download_title">Baixe para tocar aqui</string>
 
     <string name="home_tile_file_browser_backdrop_title">Escolher um fundo</string>
     <string name="home_tile_file_browser_video_title">Escolher um vídeo</string>
@@ -77,7 +77,7 @@
     <string name="home_quick_actions_install">Instalar</string>
     <string name="home_quick_actions_play">Jogar</string>
     <string name="home_quick_actions_play_on_screen">Jogar na tela %1$d</string>
-    <string name="home_quick_actions_download">Download</string>
+    <string name="home_quick_actions_download">Baixar</string>
     <string name="home_quick_actions_resume_download">Retomar</string>
     <string name="home_quick_actions_favorite">Favoritar</string>
     <string name="home_quick_actions_unfavorite">Desfavoritar</string>
@@ -149,11 +149,11 @@
     <string name="home_notice_removed_from_library">Removido da biblioteca</string>
     <string name="home_notice_remove_failed">Não foi possível remover este jogo</string>
 
-    <string name="home_notice_already_downloaded">Download já concluído</string>
+    <string name="home_notice_already_downloaded">Jogo já baixado</string>
     <plurals name="home_notice_discs_queued">
-        <item quantity="one">Fazendo download de %d disco</item>
-        <item quantity="many">Fazendo download de %d discos</item>
-        <item quantity="other">Fazendo download de %d discos</item>
+        <item quantity="one">Baixando %d disco</item>
+        <item quantity="many">Baixando %d discos</item>
+        <item quantity="other">Baixando %d discos</item>
     </plurals>
     <string name="home_notice_extraction_failed">Falha na extração. Abra os detalhes do jogo para tentar novamente.</string>
     <string name="home_notice_apk_install_failed">Não foi possível instalar o APK</string>

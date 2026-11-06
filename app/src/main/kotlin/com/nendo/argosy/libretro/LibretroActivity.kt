@@ -823,7 +823,7 @@ class LibretroActivity : ComponentActivity() {
             diskJudge = activeSaveDiskJudge,
             secureSaves = secureSavesEnabled,
             ownerUserId = launchPreferences.rommUserId,
-            usesExternalMemcard = com.nendo.argosy.data.platform.PlatformDefinitions.getCanonicalSlug(platformSlug) == "gc",
+            usesExternalMemcard = SaveStateManager.usesExternalMemcard(platformSlug),
             channelName = channelName,
             isVariant = variantFileId >= 0,
             primarySavePath = primarySavePath,

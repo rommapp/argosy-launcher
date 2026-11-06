@@ -79,6 +79,14 @@ class SaveStateManagerTest {
     // RetroAchievements permits SRAM in hardcore, so a hardcore resume must not start
     // fresh just because no save carries the hardcore tag -- it should reuse the active save.
     @Test
+    fun `memory-card platforms skip the flat save file`() {
+        assertTrue(SaveStateManager.usesExternalMemcard("ps2"))
+        assertTrue(SaveStateManager.usesExternalMemcard("ngc"))
+        assertFalse(SaveStateManager.usesExternalMemcard("psx"))
+        assertFalse(SaveStateManager.usesExternalMemcard("snes"))
+    }
+
+    @Test
     fun `RESUME_HARDCORE reuses the casual save when no hardcore save exists`() = runBlocking {
         val activeSaveRepository = mockk<ActiveSaveRepository>()
         val cache = mockk<SaveCacheManager>(relaxed = true)

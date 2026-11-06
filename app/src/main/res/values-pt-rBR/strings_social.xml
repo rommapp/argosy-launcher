@@ -43,7 +43,7 @@
     <string name="social_feed_desc_started_playing">Primeira partida</string>
     <string name="social_feed_desc_marathon_session">fez uma sessão maratona de %1$dh em</string>
     <string name="social_feed_desc_completed">concluído</string>
-    <string name="social_feed_desc_achievement_unlocked">desbloqueou "%1$s" em</string>
+    <string name="social_feed_desc_achievement_unlocked">desbloqueou \"%1$s\" em</string>
     <string name="social_feed_desc_achievement_unlocked_fallback_name">uma conquista</string>
     <string name="social_feed_desc_perfect_game">dominou</string>
     <string name="social_feed_desc_game_added">adicionado à biblioteca</string>
@@ -51,9 +51,9 @@
     <string name="social_feed_desc_game_rated">classificou %1$s</string>
     <string name="social_feed_desc_friend_added">agora é amigo de %1$s</string>
     <string name="social_feed_desc_friend_added_fallback_name">alguém</string>
-    <string name="social_feed_desc_collection_shared">compartilhou a coleção "%1$s"</string>
-    <string name="social_feed_desc_collection_saved">salvou a coleção "%1$s"</string>
-    <string name="social_feed_desc_collection_created">criou a coleção "%1$s"</string>
+    <string name="social_feed_desc_collection_shared">compartilhou a coleção \"%1$s\"</string>
+    <string name="social_feed_desc_collection_saved">salvou a coleção \"%1$s\"</string>
+    <string name="social_feed_desc_collection_created">criou a coleção \"%1$s\"</string>
     <string name="social_feed_desc_collection_fallback_name">uma coleção</string>
     <string name="social_feed_desc_doodle">compartilhou um doodle</string>
     <string name="social_communitysearch_modal_title">Buscar comunidades</string>
@@ -250,9 +250,9 @@
         <item quantity="other">conquistou %1$d conquistas em</item>
     </plurals>
     <plurals name="social_feed_desc_collection_updated">
-        <item quantity="one">adicionou %1$d jogo a "%2$s"</item>
-        <item quantity="many">adicionou %1$d jogos a "%2$s"</item>
-        <item quantity="other">adicionou %1$d jogos a "%2$s"</item>
+        <item quantity="one">adicionou %1$d jogo a \"%2$s\"</item>
+        <item quantity="many">adicionou %1$d jogos a \"%2$s\"</item>
+        <item quantity="other">adicionou %1$d jogos a \"%2$s\"</item>
     </plurals>
     <plurals name="social_accountcard_friend_count_wide">
         <item quantity="one">%1$d amigo</item>
@@ -285,9 +285,9 @@
         <item quantity="other">conquistou %1$d conquistas</item>
     </plurals>
     <plurals name="social_eventdetail_desc_collection_updated">
-        <item quantity="one">adicionou %1$d jogo a "%2$s"</item>
-        <item quantity="many">adicionou %1$d jogos a "%2$s"</item>
-        <item quantity="other">adicionou %1$d jogos a "%2$s"</item>
+        <item quantity="one">adicionou %1$d jogo a \"%2$s\"</item>
+        <item quantity="many">adicionou %1$d jogos a \"%2$s\"</item>
+        <item quantity="other">adicionou %1$d jogos a \"%2$s\"</item>
     </plurals>
     <plurals name="social_friends_activity_playing_more">
         <item quantity="one">%1$s e mais %2$d estão jogando</item>

@@ -4036,8 +4036,8 @@
     <string name="settings_root_script_dialog_output_heading">Saída do script</string>
     <string name="settings_root_script_dialog_reboot_hint">Reinicie para finalizar e defina o Argosy como seu launcher padrão.</string>
     <string name="settings_root_script_dialog_reboot_button">Reiniciar agora</string>
-    <string name="settings_root_script_step_open_generic">Abra a configuração de "executar script como root" do seu dispositivo</string>
-    <string name="settings_root_script_step_select">Selecione "%1$s" no armazenamento interno</string>
+    <string name="settings_root_script_step_open_generic">Abra a configuração de \"executar script como root\" do seu dispositivo</string>
+    <string name="settings_root_script_step_select">Selecione \"%1$s\" no armazenamento interno</string>
     <string name="settings_root_script_step_run_reboot">Execute-o e reinicie quando terminar</string>
     <string name="settings_root_script_step_run">Executar</string>
     <string name="settings_root_script_step_default_launcher">Defina o Argosy como seu launcher padrão</string>

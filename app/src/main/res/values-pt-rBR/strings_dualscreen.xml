@@ -239,7 +239,7 @@
     <string name="dual_home_hint_app_bar_select">Selecionar</string>
     <!-- Footer hint while the cursor is on the app bar. Verb phrase: launches the app on the other
          screen instead of this one. -->
-    <string name="dual_home_hint_app_bar_open_top">Abrir na tela %1$d</string>
+    <string name="dual_home_hint_app_bar_open_top">Abrir barra superior</string>
     <!-- Footer hint while the cursor is on the app bar. Noun phrase: opens the sheet listing every
          installed app. -->
     <string name="dual_home_hint_app_bar_all_apps">Apps</string>
@@ -356,6 +356,7 @@
     <!-- How many episodes the selected season lists, beside the series name. -->
     <plurals name="dual_media_browse_episode_count">
         <item quantity="one">%d episódio</item>
+        <item quantity="many">%d episódios</item>
         <item quantity="other">%d episódios</item>
     </plurals>
 
@@ -394,16 +395,19 @@
     <!-- Last-played value within the past week. -->
     <plurals name="dual_showcase_last_played_days">
         <item quantity="one">%d dia atrás</item>
+        <item quantity="many">%d dias atrás</item>
         <item quantity="other">%d dias atrás</item>
     </plurals>
     <!-- Last-played value within the past month. -->
     <plurals name="dual_showcase_last_played_weeks">
         <item quantity="one">%d semana atrás</item>
+        <item quantity="many">%d semanas atrás</item>
         <item quantity="other">%d semanas atrás</item>
     </plurals>
     <!-- Last-played value older than a month. -->
     <plurals name="dual_showcase_last_played_months">
         <item quantity="one">%d mês atrás</item>
+        <item quantity="many">%d meses atrás</item>
         <item quantity="other">%d meses atrás</item>
     </plurals>
 
@@ -418,6 +422,7 @@
     <!-- How many games the focused collection holds, in the top right of the showcase. -->
     <plurals name="dual_collection_showcase_game_count">
         <item quantity="one">%d jogo</item>
+        <item quantity="many">%d jogos</item>
         <item quantity="other">%d jogos</item>
     </plurals>
     <!-- Label of the figure for how many of the collection's games are on the device. Adjective
@@ -576,6 +581,7 @@
     <!-- Stands in for naming every filter in that body when more than one selection is on. -->
     <plurals name="dual_library_grid_filter_count">
         <item quantity="one">%d filtro</item>
+        <item quantity="many">%d filtros</item>
         <item quantity="other">%d filtros</item>
     </plurals>
     <!-- Line above the home carousel naming the row under the cursor. %1$s is the row's name,
@@ -625,12 +631,14 @@
     <!-- Score of an achievement or of an account on the RetroAchievements tile. -->
     <plurals name="dual_tile_ra_points">
         <item quantity="one">%d ponto</item>
+        <item quantity="many">%d pontos</item>
         <item quantity="other">%d pontos</item>
     </plurals>
     <!-- How many achievements have been earned. "Unlock" is a noun here, one earned
          achievement. -->
     <plurals name="dual_tile_ra_unlocks">
         <item quantity="one">%d desbloqueada</item>
+        <item quantity="many">%d desbloqueadas</item>
         <item quantity="other">%d desbloqueadas</item>
     </plurals>
     <!-- Line under an achievement's title. %1$s is its score, %2$s how long ago it was earned. -->
@@ -648,6 +656,7 @@
     <!-- Second line under a collection in the tile picker, saying how many games it holds. -->
     <plurals name="dual_tile_picker_collection_game_count">
         <item quantity="one">%d jogo</item>
+        <item quantity="many">%d jogos</item>
         <item quantity="other">%d jogos</item>
     </plurals>
     <!-- Second line under an installed app in the tile picker, when Argosy recognises the app as

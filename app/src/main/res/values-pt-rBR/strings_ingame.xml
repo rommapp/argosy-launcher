@@ -622,38 +622,47 @@
     <string name="ingame_touch_generic_shoulder_r" translatable="false">R</string>
     <plurals name="ingame_achievement_points">
         <item quantity="one">+%d ponto</item>
+        <item quantity="many">+%d pontos</item>
         <item quantity="other">+%d pontos</item>
     </plurals>
     <plurals name="ingame_netplay_hud_players">
         <item quantity="one">%d jogador</item>
+        <item quantity="many">%d jogadores</item>
         <item quantity="other">%d jogadores</item>
     </plurals>
     <plurals name="ingame_settings_controller_order_assigned">
         <item quantity="one">%d controle atribuído</item>
+        <item quantity="many">%d controles atribuídos</item>
         <item quantity="other">%d controles atribuídos</item>
     </plurals>
     <plurals name="ingame_cheats_variant_count">
         <item quantity="one">%d trapaça</item>
+        <item quantity="many">%d trapaças</item>
         <item quantity="other">%d trapaças</item>
     </plurals>
     <plurals name="ingame_cheats_available_count">
         <item quantity="one">%d trapaça</item>
+        <item quantity="many">%d trapaças</item>
         <item quantity="other">%d trapaças</item>
     </plurals>
     <plurals name="ingame_cheats_discover_view_results_subtitle">
         <item quantity="one">%d entrada da última busca</item>
+        <item quantity="many">%d entradas da última busca</item>
         <item quantity="other">%d entradas da última busca</item>
     </plurals>
     <plurals name="ingame_cheats_discover_actions_candidates">
         <item quantity="one">%d candidato</item>
+        <item quantity="many">%d candidatos</item>
         <item quantity="other">%d candidatos</item>
     </plurals>
     <plurals name="ingame_cheats_discover_waiting_candidates">
         <item quantity="one">%d candidato</item>
+        <item quantity="many">%d candidatos</item>
         <item quantity="other">%d candidatos</item>
     </plurals>
     <plurals name="ingame_cheats_discover_results_candidates">
         <item quantity="one">%d candidato</item>
+        <item quantity="many">%d candidatos</item>
         <item quantity="other">%d candidatos</item>
     </plurals>
 </resources>

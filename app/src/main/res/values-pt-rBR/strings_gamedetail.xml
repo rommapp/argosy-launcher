@@ -435,6 +435,7 @@
     <string name="gamedetail_missing_disc_footer_cancel">Cancelar</string>
     <plurals name="gamedetail_missing_disc_message">
         <item quantity="one">O disco %1$s não está baixado.\nGostaria de baixá-lo?</item>
+        <item quantity="many">Os discos %1$s não estão baixados.\nGostaria de baixá-los?</item>
         <item quantity="other">Os discos %1$s não estão baixados.\nGostaria de baixá-los?</item>
     </plurals>
 
@@ -511,27 +512,32 @@
          original release. %1$d is how many. -->
     <plurals name="gamedetail_notice_discs_queued">
         <item quantity="one">%1$d disco na fila</item>
+        <item quantity="many">%1$d discos na fila</item>
         <item quantity="other">%1$d discos na fila</item>
     </plurals>
     <!-- Brief message when the discs a multi-disc game was missing start downloading. %1$d is how
          many. -->
     <plurals name="gamedetail_notice_missing_discs_queued">
         <item quantity="one">Baixando %1$d disco em falta</item>
+        <item quantity="many">Baixando %1$d discos em falta</item>
         <item quantity="other">Baixando %1$d discos em falta</item>
     </plurals>
     <!-- Brief message counting downloads queued by the manage-files panel. %1$d is how many. -->
     <plurals name="gamedetail_notice_downloads_queued">
         <item quantity="one">%1$d download na fila</item>
+        <item quantity="many">%1$d downloads na fila</item>
         <item quantity="other">%1$d downloads na fila</item>
     </plurals>
     <!-- Brief message counting files queued by the manage-files panel. %1$d is how many. -->
     <plurals name="gamedetail_notice_files_queued">
         <item quantity="one">%1$d na fila</item>
+        <item quantity="many">%1$d na fila</item>
         <item quantity="other">%1$d na fila</item>
     </plurals>
     <!-- Brief message counting files erased by the manage-files panel. %1$d is how many. -->
     <plurals name="gamedetail_notice_files_removed">
         <item quantity="one">%1$d removido</item>
+        <item quantity="many">%1$d removidos</item>
         <item quantity="other">%1$d removidos</item>
     </plurals>
 
@@ -791,7 +797,7 @@
     <string name="gamedetail_speedrun_empty_suffix">para criar uma ou importar da comunidade.</string>
     <!-- Second line under a category in the list. %1$d is how many timed sections it has, %2$d how
          many times the user has run it. -->
-    <string name="gamedetail_speedrun_category_summary">%1$d segmentos · %1$d tentativas</string>
+    <string name="gamedetail_speedrun_category_summary">%1$d segmentos · %2$d tentativas</string>
     <!-- Row at the end of the category list. Verb phrase: fetches ready-made splits from the
          speedrunning community. -->
     <string name="gamedetail_speedrun_import_row">Importar Divisões...</string>

@@ -236,54 +236,67 @@
     <string name="social_feed_desc_discussion_truncated">%1$s...</string>
     <plurals name="social_feedcontent_event_count">
         <item quantity="one">%1$d evento</item>
+        <item quantity="many">%1$d eventos</item>
         <item quantity="other">%1$d eventos</item>
     </plurals>
     <plurals name="social_feed_desc_play_milestone">
         <item quantity="one">alcançou %1$d hora em</item>
+        <item quantity="many">alcançou %1$d horas em</item>
         <item quantity="other">alcançou %1$d horas em</item>
     </plurals>
     <plurals name="social_feed_desc_achievement_milestone">
         <item quantity="one">conquistou %1$d conquista em</item>
+        <item quantity="many">conquistou %1$d conquistas em</item>
         <item quantity="other">conquistou %1$d conquistas em</item>
     </plurals>
     <plurals name="social_feed_desc_collection_updated">
         <item quantity="one">adicionou %1$d jogo a "%2$s"</item>
+        <item quantity="many">adicionou %1$d jogos a "%2$s"</item>
         <item quantity="other">adicionou %1$d jogos a "%2$s"</item>
     </plurals>
     <plurals name="social_accountcard_friend_count_wide">
         <item quantity="one">%1$d amigo</item>
+        <item quantity="many">%1$d amigos</item>
         <item quantity="other">%1$d amigos</item>
     </plurals>
     <plurals name="social_accountcard_friend_count_compact">
         <item quantity="one">%1$d amigo</item>
+        <item quantity="many">%1$d amigos</item>
         <item quantity="other">%1$d amigos</item>
     </plurals>
     <plurals name="social_mostplayed_sessions">
         <item quantity="one">%1$d sessão</item>
+        <item quantity="many">%1$d sessões</item>
         <item quantity="other">%1$d sessões</item>
     </plurals>
     <plurals name="social_playhours_hours_whole">
         <item quantity="one">%1$d h</item>
+        <item quantity="many">%1$d h</item>
         <item quantity="other">%1$d h</item>
     </plurals>
     <plurals name="social_eventdetail_desc_play_milestone">
         <item quantity="one">alcançou %1$d hora</item>
+        <item quantity="many">alcançou %1$d horas</item>
         <item quantity="other">alcançou %1$d horas</item>
     </plurals>
     <plurals name="social_eventdetail_desc_achievement_milestone">
         <item quantity="one">conquistou %1$d conquista</item>
+        <item quantity="many">conquistou %1$d conquistas</item>
         <item quantity="other">conquistou %1$d conquistas</item>
     </plurals>
     <plurals name="social_eventdetail_desc_collection_updated">
         <item quantity="one">adicionou %1$d jogo a "%2$s"</item>
+        <item quantity="many">adicionou %1$d jogos a "%2$s"</item>
         <item quantity="other">adicionou %1$d jogos a "%2$s"</item>
     </plurals>
     <plurals name="social_friends_activity_playing_more">
         <item quantity="one">%1$s e mais %2$d estão jogando</item>
+        <item quantity="many">%1$s e mais %2$d estão jogando</item>
         <item quantity="other">%1$s e mais %2$d estão jogando</item>
     </plurals>
     <plurals name="social_friends_activity_recent_more">
         <item quantity="one">%1$s e mais %2$d jogaram recentemente</item>
+        <item quantity="many">%1$s e mais %2$d jogaram recentemente</item>
         <item quantity="other">%1$s e mais %2$d jogaram recentemente</item>
     </plurals>
 </resources>

@@ -395,66 +395,82 @@
     <string name="settings_shell_header_retroachievements" translatable="false">RETROACHIEVEMENTS</string>
     <plurals name="settings_shell_coremanagement_update_all_title">
         <item quantity="one">Atualizar %d core</item>
+        <item quantity="many">Atualizar todos os %d cores</item>
         <item quantity="other">Atualizar todos os %d cores</item>
     </plurals>
     <plurals name="settings_shell_coremanagement_update_all_failed">
         <item quantity="one">%d core falhou ao atualizar</item>
+        <item quantity="many">%d cores falharam ao atualizar</item>
         <item quantity="other">%d cores falharam ao atualizar</item>
     </plurals>
     <plurals name="settings_shell_unsynced_saves_warning">
         <item quantity="one">%d save não sincronizado será perdido.</item>
+        <item quantity="many">%d saves não sincronizados serão perdidos.</item>
         <item quantity="other">%d saves não sincronizados serão perdidos.</item>
     </plurals>
     <plurals name="settings_shell_romm_signout_pending_message">
         <item quantity="one">%1$d save será carregado primeiro. Depois que tudo estiver no seu servidor, os saves, os estados e as configurações em cache desta conta serão removidos deste dispositivo. Seus jogos baixados permanecerão.</item>
+        <item quantity="many">%1$d saves serão carregados primeiro. Depois que tudo estiver no seu servidor, os saves, os estados e as configurações em cache desta conta serão removidos deste dispositivo. Seus jogos baixados permanecerão.</item>
         <item quantity="other">%1$d saves serão carregados primeiro. Depois que tudo estiver no seu servidor, os saves, os estados e as configurações em cache desta conta serão removidos deste dispositivo. Seus jogos baixados permanecerão.</item>
     </plurals>
     <plurals name="settings_shell_managepins_row_subtitle">
         <item quantity="one">%1$s - %2$d jogo</item>
+        <item quantity="many">%1$s - %2$d jogos</item>
         <item quantity="other">%1$s - %2$d jogos</item>
     </plurals>
     <plurals name="settings_shell_bgm_track_count">
         <item quantity="one">%1$d faixa</item>
+        <item quantity="many">%1$d faixas</item>
         <item quantity="other">%1$d faixas</item>
     </plurals>
     <plurals name="settings_shell_bgm_disabled_suffix_template">
         <item quantity="one">(%1$d desativado)</item>
+        <item quantity="many">(%1$d desativados)</item>
         <item quantity="other">(%1$d desativados)</item>
     </plurals>
     <plurals name="settings_shell_router_cores_updated_title">
         <item quantity="one">%d core atualizado</item>
+        <item quantity="many">%d cores atualizados</item>
         <item quantity="other">%d cores atualizados</item>
     </plurals>
     <plurals name="settings_shell_router_cores_update_failed_title">
         <item quantity="one">%d core falhou ao atualizar</item>
+        <item quantity="many">%d cores falharam ao atualizar</item>
         <item quantity="other">%d cores falharam ao atualizar</item>
     </plurals>
     <plurals name="settings_shell_vm_scan_found_template">
         <item quantity="one">%1$d encontrado</item>
+        <item quantity="many">%1$d encontrados</item>
         <item quantity="other">%1$d encontrados</item>
     </plurals>
     <plurals name="settings_shell_vm_scan_removed_template">
         <item quantity="one">%1$d removido</item>
+        <item quantity="many">%1$d removidos</item>
         <item quantity="other">%1$d removidos</item>
     </plurals>
     <plurals name="settings_shell_vm_android_added_template">
         <item quantity="one">%1$d adicionado</item>
+        <item quantity="many">%1$d adicionados</item>
         <item quantity="other">%1$d adicionados</item>
     </plurals>
     <plurals name="settings_shell_vm_games_moved_back">
         <item quantity="one">%1$d jogo movido de volta para sua própria pasta</item>
+        <item quantity="many">%1$d jogos movidos de volta para suas próprias pastas</item>
         <item quantity="other">%1$d jogos movidos de volta para suas próprias pastas</item>
     </plurals>
     <plurals name="settings_shell_vm_retroarch_configs_updated">
         <item quantity="one">Configuração %1$d do RetroArch atualizada</item>
+        <item quantity="many">Configurações %1$d do RetroArch atualizadas</item>
         <item quantity="other">Configurações %1$d do RetroArch atualizadas</item>
     </plurals>
     <plurals name="settings_shell_vm_files_removed_subtitle">
         <item quantity="one">%1$d arquivo removido de %2$s</item>
+        <item quantity="many">%1$d arquivos removidos de %2$s</item>
         <item quantity="other">%1$d arquivos removidos de %2$s</item>
     </plurals>
     <plurals name="settings_shell_vm_bios_copied_subtitle">
         <item quantity="one">%1$d arquivo copiado</item>
+        <item quantity="many">%1$d arquivos copiados</item>
         <item quantity="other">%1$d arquivos copiados</item>
     </plurals>
     <string name="settings_shell_coremanagement_update_builds">%1$s: instalado %2$s -> disponível %3$s</string>

@@ -161,6 +161,7 @@
     <!-- Second line of that row, counting the consoles set up. -->
     <plurals name="settings_main_platforms_subtitle">
         <item quantity="one">%d plataforma</item>
+        <item quantity="many">%d plataformas</item>
         <item quantity="other">%d plataformas</item>
     </plurals>
     <!-- Row opening the disk space settings. Noun. -->
@@ -169,6 +170,7 @@
          games, not a command. -->
     <plurals name="settings_main_storage_subtitle_downloaded">
         <item quantity="one">%d baixado</item>
+        <item quantity="many">%d baixados</item>
         <item quantity="other">%d baixados</item>
     </plurals>
     <!-- Second line of that row when nothing is on the device. -->
@@ -543,6 +545,7 @@
     <!-- Value of that row, a length of time. "min" is the short form of "minutes". -->
     <plurals name="settings_displays_dim_after_value">
         <item quantity="one">%d min</item>
+        <item quantity="many">%d min</item>
         <item quantity="other">%d min</item>
     </plurals>
     <!-- Row title. Noun phrase: how dark the screen goes. -->
@@ -605,6 +608,7 @@
     <!-- Second line of that row: how many platforms and apps have their own screen. -->
     <plurals name="settings_displays_by_platform_and_app_count">
         <item quantity="one">%d definido individualmente</item>
+        <item quantity="many">%d definidos individualmente</item>
         <item quantity="other">%d definidos individualmente</item>
     </plurals>
 
@@ -642,6 +646,7 @@
     <!-- Second line of a platform row when some of its games have their own screen. -->
     <plurals name="settings_launch_targets_platform_game_overrides">
         <item quantity="one">%d jogo definido individualmente</item>
+        <item quantity="many">%d jogos definidos individualmente</item>
         <item quantity="other">%d jogos definidos individualmente</item>
     </plurals>
     <!-- Line under a screen heading when nothing opens on that screen. -->
@@ -773,6 +778,7 @@
          single controller shows its own name instead. -->
     <plurals name="settings_grip_controllers_subtitle_count">
         <item quantity="one">%d controlador</item>
+        <item quantity="many">%d controladores</item>
         <item quantity="other">%d controladores</item>
     </plurals>
     <!-- Row title. Noun phrase: how much of the screen bottom is kept clear of the launcher. -->
@@ -827,6 +833,7 @@
     <!-- Value of that row, a length of time. -->
     <plurals name="settings_home_screen_video_delay_seconds">
         <item quantity="one">%d segundo</item>
+        <item quantity="many">%d segundos</item>
         <item quantity="other">%d segundos</item>
     </plurals>
     <!-- Row title. Adjective phrase: the video plays without sound. -->
@@ -859,6 +866,7 @@
     <!-- Value of that row: a maximum number of games. -->
     <plurals name="settings_home_screen_recent_new_games_up_to">
         <item quantity="one">Até %d</item>
+        <item quantity="many">Até %d</item>
         <item quantity="other">Até %d</item>
     </plurals>
 
@@ -896,6 +904,7 @@
     <!-- Value of that row. %d is how many saves are kept for each game. -->
     <plurals name="settings_saves_cache_limit_value">
         <item quantity="one">%d save por jogo</item>
+        <item quantity="many">%d saves por jogo</item>
         <item quantity="other">%d saves por jogo</item>
     </plurals>
 
@@ -907,6 +916,7 @@
           describing them, not a command. -->
     <plurals name="settings_saves_manage_sync_pending">
         <item quantity="one">%d pendente</item>
+        <item quantity="many">%d pendentes</item>
         <item quantity="other">%d pendentes</item>
     </plurals>
     <!-- Row opening the tools for clearing stored copies of saves. Noun phrase, plural. -->
@@ -946,6 +956,7 @@
           the two short words below saying whether they are kept or dropped. -->
     <plurals name="settings_sync_metadata_filters_regions">
         <item quantity="one">%1$d região (%2$s)</item>
+        <item quantity="many">%1$d regiões (%2$s)</item>
         <item quantity="other">%1$d regiões (%2$s)</item>
     </plurals>
     <!-- Short form of "excluding", meaning the listed regions are dropped. Keep it very short. -->
@@ -1022,6 +1033,7 @@
     <!-- That count. %d is how many achievements are waiting. -->
     <plurals name="settings_ra_pending_sync_count">
         <item quantity="one">%d conquista aguardando sincronização</item>
+        <item quantity="many">%d conquistas aguardando sincronização</item>
         <item quantity="other">%d conquistas aguardando sincronização</item>
     </plurals>
 
@@ -1203,6 +1215,7 @@
     <!-- Count beside one console inside that panel. -->
     <plurals name="settings_bios_distribute_result_files">
         <item quantity="one">%d arquivo</item>
+        <item quantity="many">%d arquivos</item>
         <item quantity="other">%d arquivos</item>
     </plurals>
     <!-- Button that closes that panel. The usual short word for agreeing. -->
@@ -1213,6 +1226,7 @@
     <!-- Line under that heading. %d is how many files failed. -->
     <plurals name="settings_bios_download_failed_message">
         <item quantity="one">%d arquivo não pôde ser baixado. Tente novamente para tentar de novo.</item>
+        <item quantity="many">%d arquivos não pôde ser baixados. Tente novamente para tentar de novo.</item>
         <item quantity="other">%d arquivos não pôde ser baixados. Tente novamente para tentar de novo.</item>
     </plurals>
     <string name="settings_bios_download_failed_dismiss">OK</string>
@@ -1253,6 +1267,7 @@
           of the newest one. -->
     <plurals name="settings_drivers_source_releases">
         <item quantity="one">%1$d versão - mais recente %2$s</item>
+        <item quantity="many">%1$d versões - mais recente %2$s</item>
         <item quantity="other">%1$d versões - mais recente %2$s</item>
     </plurals>
 
@@ -1572,6 +1587,7 @@
     <!-- Second line of that row, counting the tracks in the list. -->
     <plurals name="settings_music_playlist_count">
         <item quantity="one">%d faixa</item>
+        <item quantity="many">%d faixas</item>
         <item quantity="other">%d faixas</item>
     </plurals>
 
@@ -1763,6 +1779,7 @@
     <!-- Second figure on that tile, counting the games on the device. -->
     <plurals name="settings_storage_games_tile_count">
         <item quantity="one">%d jogo</item>
+        <item quantity="many">%d jogos</item>
         <item quantity="other">%d jogos</item>
     </plurals>
     <!-- Tile opening the film and episode list. Noun. -->
@@ -1770,6 +1787,7 @@
     <!-- Second figure on that tile. "Title" here is one film or series, not a heading. -->
     <plurals name="settings_storage_media_tile_count">
         <item quantity="one">%d título baixado</item>
+        <item quantity="many">%d títulos baixados</item>
         <item quantity="other">%d títulos baixados</item>
     </plurals>
     <!-- Tile opening the music settings. Noun. -->
@@ -1781,6 +1799,7 @@
     <!-- Second figure on that tile, counting the files held. -->
     <plurals name="settings_storage_caches_tile_count">
         <item quantity="one">%d arquivo</item>
+        <item quantity="many">%d arquivos</item>
         <item quantity="other">%d arquivos</item>
     </plurals>
     <!-- Tile opening the Steam and desktop game tools. Leave the two names as they are. -->
@@ -1884,12 +1903,14 @@
     <!-- Second line of that row. %1$d is the number of such games. -->
     <plurals name="settings_storage_games_not_from_romm_subtitle">
         <item quantity="one">%1$d arquivo de jogo foi adicionado manualmente e é mantido numa redefinição total</item>
+        <item quantity="many">%1$d arquivos de jogo foram adicionados manualmente e são mantidos numa redefinição total</item>
         <item quantity="other">%1$d arquivos de jogo foram adicionados manualmente e são mantidos numa redefinição total</item>
     </plurals>
 
     <!-- Total at the top, counting the games on the device. Adjective describing them. -->
     <plurals name="settings_storage_games_totals_count">
         <item quantity="one">%d baixado</item>
+        <item quantity="many">%d baixados</item>
         <item quantity="other">%d baixados</item>
     </plurals>
     <!-- Line under that total. %1$s is an amount of space, already formatted. -->
@@ -1914,6 +1935,7 @@
     <!-- Figure on one console's row, counting its games on the device. -->
     <plurals name="settings_storage_games_platform_count">
         <item quantity="one">%d baixado</item>
+        <item quantity="many">%d baixados</item>
         <item quantity="other">%d baixados</item>
     </plurals>
 
@@ -1926,6 +1948,7 @@
     <!-- Figure on that row, counting the picture files held. -->
     <plurals name="settings_storage_media_artwork_files">
         <item quantity="one">%d arquivo</item>
+        <item quantity="many">%d arquivos</item>
         <item quantity="other">%d arquivos</item>
     </plurals>
 
@@ -1940,6 +1963,7 @@
          episode, not a heading. -->
     <plurals name="settings_storage_media_totals_count">
         <item quantity="one">%d título baixado</item>
+        <item quantity="many">%d títulos baixados</item>
         <item quantity="other">%d títulos baixados</item>
     </plurals>
     <!-- Line under that total. %1$s is an amount of space, already formatted. -->
@@ -1961,17 +1985,20 @@
          them. -->
     <plurals name="settings_storage_media_library_count">
         <item quantity="one">%d baixado</item>
+        <item quantity="many">%d baixados</item>
         <item quantity="other">%d baixados</item>
     </plurals>
     <!-- Line on one library's row about titles on a memory card that is not in the device.
          %1$d is how many, %2$s an amount of space. -->
     <plurals name="settings_storage_media_library_offline">
         <item quantity="one">%1$d aguardando armazenamento não conectado, %2$s na última medição</item>
+        <item quantity="many">%1$d aguardando armazenamento não conectado, %2$s na última medição</item>
         <item quantity="other">%1$d aguardando armazenamento não conectado, %2$s na última medição</item>
     </plurals>
     <!-- Line on one library's row about titles whose files have gone. -->
     <plurals name="settings_storage_media_library_missing">
         <item quantity="one">%d não está mais no disco</item>
+        <item quantity="many">%d não estão mais no disco</item>
         <item quantity="other">%d não estão mais no disco</item>
     </plurals>
 
@@ -1981,12 +2008,14 @@
     <!-- Second line of the folder new downloads go into. %1$d is how many files are there. -->
     <plurals name="settings_storage_media_location_current">
         <item quantity="one">Novos downloads vão para cá, %d arquivo</item>
+        <item quantity="many">Novos downloads vão para cá, %d arquivos</item>
         <item quantity="other">Novos downloads vão para cá, %d arquivos</item>
     </plurals>
     <!-- Second line of a folder that was used before the current one. %1$d is how many files are
          still there. -->
     <plurals name="settings_storage_media_location_stale">
         <item quantity="one">Restos de uma pasta de download anterior, %d arquivo</item>
+        <item quantity="many">Restos de uma pasta de download anterior, %d arquivos</item>
         <item quantity="other">Restos de uma pasta de download anterior, %d arquivos</item>
     </plurals>
     <!-- Shown in place of a size when the folder cannot be reached. Adjective. -->
@@ -2019,6 +2048,7 @@
          already formatted. -->
     <plurals name="settings_storage_bucket_stats">
         <item quantity="one">%1$d - %2$s</item>
+        <item quantity="many">%1$d - %2$s</item>
         <item quantity="other">%1$d - %2$s</item>
     </plurals>
 
@@ -2028,6 +2058,7 @@
     <!-- Body of that prompt. %1$d is how many files go, %2$s the space they take. -->
     <plurals name="settings_storage_category_delete_message">
         <item quantity="one">Remove %1$d arquivo (%2$s). Re-baixa da sua biblioteca.</item>
+        <item quantity="many">Remove %1$d arquivos (%2$s). Re-baixa da sua biblioteca.</item>
         <item quantity="other">Remove %1$d arquivos (%2$s). Re-baixa da sua biblioteca.</item>
     </plurals>
     <!-- Accepting button on that prompt. Verb. -->
@@ -2047,6 +2078,7 @@
     <!-- Row title, counting saves not yet sent to the server. -->
     <plurals name="settings_caches_pending_uploads_title">
         <item quantity="one">%d save aguardando envio</item>
+        <item quantity="many">%d saves aguardando envio</item>
         <item quantity="other">%d saves aguardando envio</item>
     </plurals>
     <!-- Second line of that row while the server can be reached. -->
@@ -2061,12 +2093,14 @@
     <!-- Second line of that row when saves are still waiting to go up. -->
     <plurals name="settings_caches_save_cache_pending">
         <item quantity="one">%d save aguardando envio</item>
+        <item quantity="many">%d saves aguardando envio</item>
         <item quantity="other">%d saves aguardando envio</item>
     </plurals>
     <!-- Second line of that row, counting the copies held. "States" are snapshots of a running
          game. -->
     <plurals name="settings_caches_save_cache_count">
         <item quantity="one">%d save ou estado em cache</item>
+        <item quantity="many">%d saves e estados em cache</item>
         <item quantity="other">%d saves e estados em cache</item>
     </plurals>
     <!-- Second line of that row when nothing is held. -->
@@ -2079,11 +2113,13 @@
     <!-- Second line of that row when saves are still waiting to go up. -->
     <plurals name="settings_caches_state_cache_pending">
         <item quantity="one">%d save aguardando envio</item>
+        <item quantity="many">%d saves aguardando envio</item>
         <item quantity="other">%d saves aguardando envio</item>
     </plurals>
     <!-- Second line of that row, counting the snapshots held. -->
     <plurals name="settings_caches_state_cache_count">
         <item quantity="one">%d estado em cache</item>
+        <item quantity="many">%d estados em cache</item>
         <item quantity="other">%d estados em cache</item>
     </plurals>
     <!-- Second line of that row when none are. -->
@@ -2096,11 +2132,13 @@
     <!-- Second line of that row when saves are still waiting to go up. -->
     <plurals name="settings_caches_path_cache_pending">
         <item quantity="one">%d save aguardando envio</item>
+        <item quantity="many">%d saves aguardando envio</item>
         <item quantity="other">%d saves aguardando envio</item>
     </plurals>
     <!-- Second line of that row, counting the folder paths remembered. -->
     <plurals name="settings_caches_path_cache_count">
         <item quantity="one">%d caminho em cache</item>
+        <item quantity="many">%d caminhos em cache</item>
         <item quantity="other">%d caminhos em cache</item>
     </plurals>
     <!-- Second line of that row when none are. -->
@@ -2115,6 +2153,7 @@
     <!-- Value of that row. %d is how many saves are kept for each game. -->
     <plurals name="settings_caches_save_limit_value">
         <item quantity="one">%d save por jogo</item>
+        <item quantity="many">%d saves por jogo</item>
         <item quantity="other">%d saves por jogo</item>
     </plurals>
 
@@ -2125,6 +2164,7 @@
     <!-- Second line of that row, counting the pictures held. -->
     <plurals name="settings_caches_image_cache_subtitle">
         <item quantity="one">%d arquivo - capas re-baixadas ao navegar</item>
+        <item quantity="many">%d arquivos - capas re-baixadas ao navegar</item>
         <item quantity="other">%d arquivos - capas re-baixadas ao navegar</item>
     </plurals>
     <!-- Row that checks the stored pictures are intact. Verb phrase. -->
@@ -2218,6 +2258,7 @@
     <!-- Second line of that row, counting the files it takes. -->
     <plurals name="settings_caches_info_database_subtitle">
         <item quantity="one">%d arquivo do banco de dados da biblioteca</item>
+        <item quantity="many">%d arquivos do banco de dados da biblioteca</item>
         <item quantity="other">%d arquivos do banco de dados da biblioteca</item>
     </plurals>
     <!-- Read-only row naming everything Steam takes on this device. Leave the two names as they
@@ -2779,18 +2820,21 @@
     <!-- Small badge on that row when newer engines are available. -->
     <plurals name="settings_builtin_cores_updates_badge">
         <item quantity="one">%d atualização</item>
+        <item quantity="many">%d atualizações</item>
         <item quantity="other">%d atualizações</item>
     </plurals>
     <!-- Chip on the Platforms row of the main settings list: how many of the emulators your
          platforms use have a newer version. "Update" is a noun. -->
     <plurals name="settings_main_platforms_updates_badge">
         <item quantity="one">%d atualização</item>
+        <item quantity="many">%d atualizações</item>
         <item quantity="other">%d atualizações</item>
     </plurals>
     <!-- Chip on the Built-in Emulator row of the main settings list: how many of its downloaded
          cores have a newer version. "Update" is a noun. -->
     <plurals name="settings_main_builtin_updates_badge">
         <item quantity="one">%d atualização</item>
+        <item quantity="many">%d atualizações</item>
         <item quantity="other">%d atualizações</item>
     </plurals>
     <!-- Row opening the per-engine settings. Noun phrase, plural. -->
@@ -2878,6 +2922,7 @@
     <!-- Second line of that row, counting the pads assigned. -->
     <plurals name="settings_builtin_controls_order_assigned">
         <item quantity="one">%d controle atribuído</item>
+        <item quantity="many">%d controles atribuídos</item>
         <item quantity="other">%d controles atribuídos</item>
     </plurals>
     <!-- Row opening the button-remapping tool. Noun phrase. -->
@@ -4008,114 +4053,142 @@
     <string name="settings_drivers_summary_available">Divers Adreno para %1$s</string>
     <plurals name="settings_play_time_platforms_totals_count">
         <item quantity="one">%d plataforma</item>
+        <item quantity="many">%d plataformas</item>
         <item quantity="other">%d plataformas</item>
     </plurals>
     <plurals name="settings_play_time_devices_totals_count">
         <item quantity="one">%d dispositivo</item>
+        <item quantity="many">%d dispositivos</item>
         <item quantity="other">%d dispositivos</item>
     </plurals>
     <plurals name="settings_play_time_games_totals_count">
         <item quantity="one">%d jogo</item>
+        <item quantity="many">%d jogos</item>
         <item quantity="other">%d jogos</item>
     </plurals>
     <plurals name="settings_emulators_check_updates_available">
         <item quantity="one">%d atualização disponível</item>
+        <item quantity="many">%d atualizações disponíveis</item>
         <item quantity="other">%d atualizações disponíveis</item>
     </plurals>
     <plurals name="settings_emulators_platform_games">
         <item quantity="one">%d jogo</item>
+        <item quantity="many">%d jogos</item>
         <item quantity="other">%d jogos</item>
     </plurals>
     <plurals name="settings_platform_download_defaults_overrides">
         <item quantity="one">%d substituição de plataforma</item>
+        <item quantity="many">%d substituições de plataforma</item>
         <item quantity="other">%d substituições de plataforma</item>
     </plurals>
     <plurals name="settings_platform_remove_files_subtitle">
         <item quantity="one">%d arquivo baixado</item>
+        <item quantity="many">%d arquivos baixados</item>
         <item quantity="other">%d arquivos baixados</item>
     </plurals>
     <plurals name="settings_platform_remove_confirm_message">
         <item quantity="one">Excluir %1$d arquivo ROM de %2$s? Os jogos permanecerão na sua biblioteca, mas precisarão ser baixados novamente para jogar.</item>
+        <item quantity="many">Excluir %1$d arquivos ROM de %2$s? Os jogos permanecerão na sua biblioteca, mas precisarão ser baixados novamente para jogar.</item>
         <item quantity="other">Excluir %1$d arquivos ROM de %2$s? Os jogos permanecerão na sua biblioteca, mas precisarão ser baixados novamente para jogar.</item>
     </plurals>
     <plurals name="settings_platform_combine_restore_message">
         <item quantity="one">Combinar Conteúdo está desativado. Mover %d jogo com atualizações ou DLC de volta para suas próprias pastas? Tudo o resto fica onde está.</item>
+        <item quantity="many">Combinar Conteúdo está desativado. Mover %d jogos com atualizações ou DLC de volta para suas próprias pastas? Tudo o resto fica onde está.</item>
         <item quantity="other">Combinar Conteúdo está desativado. Mover %d jogos com atualizações ou DLC de volta para suas próprias pastas? Tudo o resto fica onde está.</item>
     </plurals>
     <plurals name="settings_platform_bios_download_missing">
         <item quantity="one">%d arquivo</item>
+        <item quantity="many">%d arquivos</item>
         <item quantity="other">%d arquivos</item>
     </plurals>
     <plurals name="settings_library_default_region_count">
         <item quantity="one">%d região</item>
+        <item quantity="many">%d regiões</item>
         <item quantity="other">%d regiões</item>
     </plurals>
     <plurals name="settings_platform_filters_rom_count">
         <item quantity="one">%1$d jogo</item>
+        <item quantity="many">%1$d jogos</item>
         <item quantity="other">%1$d jogos</item>
     </plurals>
     <plurals name="settings_romm_config_certificate_subtitle_count">
         <item quantity="one">%d certificado confiável pelo Argosy</item>
+        <item quantity="many">%d certificados confiáveis pelo Argosy</item>
         <item quantity="other">%d certificados confiáveis pelo Argosy</item>
     </plurals>
     <plurals name="settings_driver_picker_assets_count">
         <item quantity="one">%1$s &#183; %2$d ativo</item>
+        <item quantity="many">%1$s &#183; %2$d ativos</item>
         <item quantity="other">%1$s &#183; %2$d ativos</item>
     </plurals>
     <plurals name="settings_hard_reset_games_summary">
         <item quantity="one">%1$d jogo baixado - %2$s em disco</item>
+        <item quantity="many">%1$d jogos baixados - %2$s em disco</item>
         <item quantity="other">%1$d jogos baixados - %2$s em disco</item>
     </plurals>
     <plurals name="settings_hard_reset_kept_summary">
         <item quantity="one">%1$d arquivo de jogo mantido - %2$s não baixado pelo Argosy</item>
+        <item quantity="many">%1$d arquivos de jogo mantidos - %2$s não baixados pelo Argosy</item>
         <item quantity="other">%1$d arquivos de jogo mantidos - %2$s não baixados pelo Argosy</item>
     </plurals>
     <plurals name="settings_hard_reset_pending_uploads">
         <item quantity="one">%1$d save aguardando envio</item>
+        <item quantity="many">%1$d saves aguardando envio</item>
         <item quantity="other">%1$d saves aguardando envio</item>
     </plurals>
     <plurals name="settings_main_bios_summary_complete">
         <item quantity="one">Todo o %1$d arquivo baixado</item>
+        <item quantity="many">Todos os %1$d arquivos baixados</item>
         <item quantity="other">Todos os %1$d arquivos baixados</item>
     </plurals>
     <plurals name="settings_play_time_summary_window">
         <item quantity="one">Ao longo de %d dia</item>
+        <item quantity="many">Ao longo de %d dias</item>
         <item quantity="other">Ao longo de %d dias</item>
     </plurals>
     <plurals name="settings_play_time_streak_days">
         <item quantity="one">%d dia</item>
+        <item quantity="many">%d dias</item>
         <item quantity="other">%d dias</item>
     </plurals>
     <plurals name="settings_play_time_day_game_count">
         <item quantity="one">%d jogo</item>
+        <item quantity="many">%d jogos</item>
         <item quantity="other">%d jogos</item>
     </plurals>
     <plurals name="settings_play_time_day_more">
         <item quantity="one">%d jogo a mais</item>
+        <item quantity="many">%d jogos a mais</item>
         <item quantity="other">%d jogos a mais</item>
     </plurals>
     <plurals name="settings_play_time_platforms_tile_count">
         <item quantity="one">%d plataforma</item>
+        <item quantity="many">%d plataformas</item>
         <item quantity="other">%d plataformas</item>
     </plurals>
     <plurals name="settings_play_time_devices_tile_count">
         <item quantity="one">%d dispositivo</item>
+        <item quantity="many">%d dispositivos</item>
         <item quantity="other">%d dispositivos</item>
     </plurals>
     <plurals name="settings_play_time_games_tile_count">
         <item quantity="one">%d jogo</item>
+        <item quantity="many">%d jogos</item>
         <item quantity="other">%d jogos</item>
     </plurals>
     <plurals name="settings_play_time_mosaic_others_count">
         <item quantity="one">mais %d jogo</item>
+        <item quantity="many">mais %d jogos</item>
         <item quantity="other">mais %d jogos</item>
     </plurals>
     <plurals name="settings_play_time_romm_refresh_result">
         <item quantity="one">Adicionada %d sessão de outros dispositivos</item>
+        <item quantity="many">Adicionadas %d sessões de outros dispositivos</item>
         <item quantity="other">Adicionadas %d sessões de outros dispositivos</item>
     </plurals>
     <plurals name="settings_play_time_list_sessions">
         <item quantity="one">%d sessão</item>
+        <item quantity="many">%d sessões</item>
         <item quantity="other">%d sessões</item>
     </plurals>
     <string name="settings_root_script_step_open_retroid">Abrir Configurações &gt; Avançado &gt; Executar script como root</string>

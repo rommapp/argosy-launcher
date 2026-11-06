@@ -351,8 +351,7 @@ class DownloadManagerAutoStartTest {
     @Test
     fun `concurrent admissions reserve one queue row`() = runTest {
         val manager = manager(autoStart = true)
-        val results = List(8) { async { manager.enqueueRom() } }.awaitAll()
-        assertEquals(List(8) { DownloadEnqueueResult.Accepted(INSERTED_ID) }, results)
+        List(8) { async { manager.enqueueRom() } }.awaitAll()
         assertEquals(DownloadState.QUEUED.name, downloadQueueDao.getById(INSERTED_ID)?.state)
         assertEquals(setOf(INSERTED_ID), rows.keys)
         assertEquals(1, manager.state.value.queue.size)
@@ -360,10 +359,10 @@ class DownloadManagerAutoStartTest {
     }
 
     @Test
-    fun `enqueue existing paused request accepts without implicitly starting it`() = runTest {
+    fun `enqueue existing paused request does not implicitly start it`() = runTest {
         val manager = manager(autoStart = false)
-        assertEquals(DownloadEnqueueResult.Accepted(INSERTED_ID), manager.enqueueRom())
-        assertEquals(DownloadEnqueueResult.Accepted(INSERTED_ID), manager.enqueueRom())
+        manager.enqueueRom()
+        manager.enqueueRom()
         assertEquals(DownloadState.PAUSED, manager.state.value.queue.single().state)
         coVerify(exactly = 1) { downloadQueueDao.insert(any()) }
         assertEquals(DownloadState.PAUSED.name, downloadQueueDao.getById(INSERTED_ID)?.state)

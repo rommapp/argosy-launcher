@@ -20,8 +20,7 @@ internal data class TransferHeaders(
             offset: Long,
             checkpoint: TransferCheckpoint,
             framedStream: Boolean = false,
-            resuming: Boolean = partial,
-            expectedContent: ExpectedTransferContent = ExpectedTransferContent.ROM
+            resuming: Boolean = partial
         ): TransferHeaders {
             fun single(name: String): String? {
                 val values = headers.values(name)
@@ -30,8 +29,7 @@ internal data class TransferHeaders(
             }
             val encoding = single("Content-Encoding")
             val mime = single("Content-Type")?.substringBefore(';')?.trim()?.lowercase()
-            val allowedPng = mime == "image/png" && expectedContent == ExpectedTransferContent.PICO8_PNG
-            if (mime == "text/html" || (mime?.startsWith("image/") == true && !allowedPng)) {
+            if (mime == "text/html") {
                 throw InvalidTransferHeaders("Invalid download content type", DownloadFailureReason.InvalidContentType(requireNotNull(mime)))
             }
             if (encoding != null && !encoding.equals("identity", true)) {

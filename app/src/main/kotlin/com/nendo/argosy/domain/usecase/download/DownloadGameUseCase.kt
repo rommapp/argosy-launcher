@@ -2,7 +2,6 @@ package com.nendo.argosy.domain.usecase.download
 
 import android.util.Log
 import com.nendo.argosy.data.download.DownloadManager
-import com.nendo.argosy.data.download.DownloadEnqueueResult
 import com.nendo.argosy.data.local.dao.DownloadQueueDao
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
@@ -37,7 +36,6 @@ sealed class DownloadResult {
  * [com.nendo.argosy.data.download.DownloadManager] cannot itself become a case here.
  */
 sealed class DownloadGameFailureReason {
-    data object RequestConflict : DownloadGameFailureReason()
     data object GameNotFound : DownloadGameFailureReason()
     data object GameNotSynced : DownloadGameFailureReason()
     data class InvalidFileType(val extension: String) : DownloadGameFailureReason()
@@ -143,7 +141,7 @@ class DownloadGameUseCase @Inject constructor(
 
                 fileName = applyExtensionPreference(fileName, game.platformId, game.platformSlug)
 
-                val enqueueResult = downloadManager.enqueueDownload(
+                downloadManager.enqueueDownload(
                     gameId = gameId,
                     rommId = rommId,
                     fileName = fileName,
@@ -154,10 +152,7 @@ class DownloadGameUseCase @Inject constructor(
                     isMultiFileRom = rom.needsServerBuiltZipExtraction && selection == null,
                     selectedFileIds = selection
                 )
-                when (enqueueResult) {
-                    is DownloadEnqueueResult.Accepted -> DownloadResult.Queued
-                    is DownloadEnqueueResult.Conflict -> DownloadResult.Error(DownloadGameFailureReason.RequestConflict)
-                }
+                DownloadResult.Queued
             }
             is RomMResult.Error -> {
                 DownloadResult.Error(DownloadGameFailureReason.RomInfoFetchFailed(result.message))
@@ -227,7 +222,7 @@ class DownloadGameUseCase @Inject constructor(
             val folderFile = disc.parentRommId?.let { filesByName[disc.fileName] }
             if (folderFile?.rommFileId != null) {
                 if (selectedFileIds != null && folderFile.rommFileId !in selectedFileIds) continue
-                val enqueueResult = downloadManager.enqueueGameFileDownload(
+                downloadManager.enqueueGameFileDownload(
                     gameId = gameId,
                     gameFileId = folderFile.id,
                     rommFileId = folderFile.rommFileId,
@@ -239,10 +234,7 @@ class DownloadGameUseCase @Inject constructor(
                     expectedSizeBytes = folderFile.fileSize,
                     gameFolderName = gameFolderName
                 )
-                when (enqueueResult) {
-                    is DownloadEnqueueResult.Accepted -> queuedCount++
-                    is DownloadEnqueueResult.Conflict -> return DownloadResult.Error(DownloadGameFailureReason.RequestConflict)
-                }
+                queuedCount++
                 continue
             }
             if (selectedFileIds != null) continue
@@ -254,7 +246,7 @@ class DownloadGameUseCase @Inject constructor(
                 val ext = fileName.substringAfterLast('.', "").lowercase()
                 if (ext in INVALID_ROM_EXTENSIONS && !isPico8Cart(fileName, platformSlug)) continue
 
-                val enqueueResult = downloadManager.enqueueDiscDownload(
+                downloadManager.enqueueDiscDownload(
                     gameId = gameId,
                     discId = disc.id,
                     discNumber = disc.discNumber,
@@ -266,10 +258,7 @@ class DownloadGameUseCase @Inject constructor(
                     coverPath = coverPath,
                     expectedSizeBytes = rom.fileSize
                 )
-                when (enqueueResult) {
-                    is DownloadEnqueueResult.Accepted -> queuedCount++
-                    is DownloadEnqueueResult.Conflict -> return DownloadResult.Error(DownloadGameFailureReason.RequestConflict)
-                }
+                queuedCount++
             }
         }
 

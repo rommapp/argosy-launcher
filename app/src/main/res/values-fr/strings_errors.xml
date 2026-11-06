@@ -53,8 +53,6 @@
     <string name="error_download_extraction_failed">Échec de l\'extraction</string>
 
     <string name="error_filepicker_already_downloaded">Jeu déjà téléchargé</string>
-    <string name="error_download_request_conflict">Un téléchargement inachevé est incompatible avec cette sélection. Annulez-le ou retirez-le de Téléchargements avant de modifier la sélection.</string>
-    <string name="error_download_game_request_conflict">Un téléchargement inachevé est incompatible avec cette sélection. Annulez-le ou retirez-le de Téléchargements avant de modifier la sélection.</string>
     <string name="error_download_http">Échec du téléchargement (HTTP %1$d)</string>
     <string name="error_download_http_unauthorized">La connexion à RomM a expiré ou est requise (HTTP %1$d)</string>
     <string name="error_download_http_forbidden">RomM a refusé l’accès à ce téléchargement (HTTP %1$d)</string>

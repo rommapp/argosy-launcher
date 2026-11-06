@@ -548,5 +548,4 @@
     <string name="gamedetail_per_game_gpu_driver_reason_core_unknown">этом ядре</string>
     <string name="gamedetail_per_game_gpu_driver_reason_backend">Действует, когда рендерер Vulkan</string>
     <string name="gamedetail_per_game_gpu_driver_reason_device">Свои драйверы требуют GPU Adreno</string>
-    <string name="gamedetail_notice_variant_request_conflict">Незавершённая загрузка конфликтует с этим выбором. Отмените или удалите её в разделе загрузок, прежде чем менять выбор.</string>
 </resources>

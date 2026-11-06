@@ -32,7 +32,6 @@ class DownloadFailureReasonCodecTest {
             DownloadFailureReason.InvalidResponse,
             DownloadFailureReason.StorageAccessFailed,
             DownloadFailureReason.TlsVerificationFailed,
-            DownloadFailureReason.RequestConflict,
             DownloadFailureReason.FileTooSmall,
             DownloadFailureReason.InvalidContentType("image/png"),
             DownloadFailureReason.ServerError("500 Internal Server Error"),
@@ -73,11 +72,6 @@ class DownloadFailureReasonCodecTest {
             DownloadFailureReason.LegacyRaw(legacy),
             DownloadFailureReasonCodec.decode(legacy)
         )
-    }
-
-    @Test
-    fun `request conflict has a stable token`() {
-        assertEquals("REQUEST_CONFLICT", DownloadFailureReasonCodec.encode(DownloadFailureReason.RequestConflict))
     }
 
     @Test

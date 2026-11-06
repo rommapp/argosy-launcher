@@ -571,5 +571,4 @@
     <string name="gamedetail_per_game_gpu_driver_reason_core_unknown">इस कोर</string>
     <string name="gamedetail_per_game_gpu_driver_reason_backend">बैकएंड Vulkan होने पर लागू होता है</string>
     <string name="gamedetail_per_game_gpu_driver_reason_device">कस्टम ड्राइवर के लिए Adreno GPU चाहिए</string>
-    <string name="gamedetail_notice_variant_request_conflict">एक अधूरा डाउनलोड इस चयन से मेल नहीं खाता। चयन बदलने से पहले उसे रद्द करें या डाउनलोड सूची से हटाएँ।</string>
 </resources>

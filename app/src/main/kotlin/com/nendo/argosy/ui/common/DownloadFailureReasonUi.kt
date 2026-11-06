@@ -30,8 +30,6 @@ fun DownloadFailureReason.toNotificationText(): NotificationText = when (this) {
         NotificationText.Res(R.string.error_download_storage_access_failed)
     DownloadFailureReason.TlsVerificationFailed ->
         NotificationText.Res(R.string.error_download_tls_verification_failed)
-    DownloadFailureReason.RequestConflict ->
-        NotificationText.Res(R.string.error_download_request_conflict)
     is DownloadFailureReason.InvalidContentType ->
         NotificationText.Res(R.string.error_download_invalid_content_type, listOf(contentType))
     DownloadFailureReason.FileTooSmall ->

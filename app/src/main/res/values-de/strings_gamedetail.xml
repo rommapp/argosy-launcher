@@ -572,5 +572,4 @@
     <string name="gamedetail_per_game_gpu_driver_reason_core_unknown">diesem Kern</string>
     <string name="gamedetail_per_game_gpu_driver_reason_backend">Gilt, wenn das Backend Vulkan ist</string>
     <string name="gamedetail_per_game_gpu_driver_reason_device">Eigene Treiber benötigen eine Adreno-GPU</string>
-    <string name="gamedetail_notice_variant_request_conflict">Ein nicht abgeschlossener Download steht im Konflikt mit dieser Auswahl. Brich ihn unter Downloads ab oder entferne ihn dort, bevor du die Auswahl änderst.</string>
 </resources>

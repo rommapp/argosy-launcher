@@ -2,7 +2,6 @@ package com.nendo.argosy.data.netplay
 
 import android.content.Context
 import android.content.Intent
-import com.nendo.argosy.data.download.DownloadEnqueueResult
 import com.nendo.argosy.data.download.DownloadManager
 import com.nendo.argosy.data.download.DownloadState
 import com.nendo.argosy.data.emulator.LaunchResult
@@ -27,7 +26,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -230,7 +228,7 @@ class NetplayJoinService @Inject constructor(
     ) {
         val rommId = candidate.rommId ?: return
         val fileName = game.rommFileName ?: "${game.title}.rom"
-        val enqueueResult = downloadManager.enqueueDownload(
+        downloadManager.enqueueDownload(
             gameId = game.id,
             rommId = rommId,
             fileName = fileName,
@@ -241,56 +239,37 @@ class NetplayJoinService @Inject constructor(
             isMultiFileRom = game.isMultiDisc,
             startNow = true
         )
-        val downloadId = when (enqueueResult) {
-            is DownloadEnqueueResult.Accepted -> enqueueResult.downloadId
-            is DownloadEnqueueResult.Conflict -> {
-                _state.update { NetplayJoinState.Failed(NetplayJoinFailure.DownloadConflict) }
-                return
-            }
-        }
         while (true) {
             val current = _state.value as? NetplayJoinState.VerifyingGame ?: return
-            if (current.sub !is VerifySubState.AmbiguousCandidates) return
-            val progress = downloadManager.state.value.activeDownloads.firstOrNull { it.id == downloadId }
-            val queued = downloadManager.state.value.queue.firstOrNull { it.id == downloadId }
+            val sub = current.sub as? VerifySubState.AmbiguousCandidates ?: return
+            val progress = downloadManager.state.value.activeDownloads.firstOrNull { it.gameId == game.id }
+            val queued = downloadManager.state.value.queue.firstOrNull { it.gameId == game.id }
             if (progress == null && queued == null) {
                 val refreshed = gameDao.getById(game.id)
                 val hasFile = !refreshed?.localPath.isNullOrEmpty() ||
                     gameFileDao.getFilesForGame(game.id).any { !it.localPath.isNullOrEmpty() }
                 if (hasFile) {
-                    _state.update { state ->
-                        val verifying = state as? NetplayJoinState.VerifyingGame ?: return@update state
-                        val sub = verifying.sub as? VerifySubState.AmbiguousCandidates ?: return@update state
-                        verifying.copy(sub = sub.copy(downloadProgress = 1f))
-                    }
+                    _state.value = current.copy(sub = sub.copy(downloadProgress = 1f))
                     verifyAfterInstall(session, friend, corePath, refreshed ?: game)
                 } else {
-                    _state.update { NetplayJoinState.Failed("Failed to download ROM") }
+                    _state.value = NetplayJoinState.Failed("Failed to download ROM")
                 }
                 return
             }
             if (progress != null) {
                 val state = progress.state
                 if (state == DownloadState.FAILED) {
-                    _state.update { NetplayJoinState.Failed("Failed to download ROM") }
+                    _state.value = NetplayJoinState.Failed("Failed to download ROM")
                     return
                 }
                 if (state == DownloadState.COMPLETED) {
-                    _state.update { state ->
-                        val verifying = state as? NetplayJoinState.VerifyingGame ?: return@update state
-                        val sub = verifying.sub as? VerifySubState.AmbiguousCandidates ?: return@update state
-                        verifying.copy(sub = sub.copy(downloadProgress = 1f))
-                    }
+                    _state.value = current.copy(sub = sub.copy(downloadProgress = 1f))
                     val refreshed = gameDao.getById(game.id) ?: game
                     verifyAfterInstall(session, friend, corePath, refreshed)
                     return
                 }
                 val pct = if (progress.totalBytes > 0) progress.bytesDownloaded.toFloat() / progress.totalBytes.toFloat() else 0f
-                _state.update { state ->
-                    val verifying = state as? NetplayJoinState.VerifyingGame ?: return@update state
-                    val sub = verifying.sub as? VerifySubState.AmbiguousCandidates ?: return@update state
-                    verifying.copy(sub = sub.copy(downloadProgress = pct.coerceIn(0f, 1f)))
-                }
+                _state.value = current.copy(sub = sub.copy(downloadProgress = pct.coerceIn(0f, 1f)))
             }
             kotlinx.coroutines.delay(250)
         }

@@ -1,5 +1,6 @@
 package com.nendo.argosy.data.download.transfer
 
+import com.nendo.argosy.data.download.DownloadFailureReason
 import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.security.MessageDigest
@@ -54,55 +55,51 @@ class TransferIntegrityTest {
         )
         val file = temporary.newFile("synthetic.p8.png")
         var checkpoint = TransferCheckpoint()
-        server.enqueue(MockResponse().setBody(Buffer().write(bytes)).setHeader("Content-Type", "image/png"))
-        assertTrue(ResumableTransfer().attempt(file, checkpoint, api::download,
-            { error("Filename alone must not permit PNG") }, { _, _ -> }) is TransferResult.Permanent)
-        assertEquals(0L, file.length())
         server.enqueue(MockResponse().setBody(Buffer().write(bytes)).setHeader("Content-Type", "IMAGE/PNG; charset=binary"))
         assertEquals(TransferResult.Verified(bytes.size.toLong()), ResumableTransfer().attempt(
-            file, checkpoint, api::download, { checkpoint = it }, { _, _ -> },
-            expectedContent = ExpectedTransferContent.PICO8_PNG))
+            file, checkpoint, api::download, { checkpoint = it }, { _, _ -> }))
         assertArrayEquals(bytes, file.readBytes())
         assertEquals(bytes.size.toLong(), checkpoint.validatedBytes)
     }
 
-    @Test fun ordinaryRomRejectsFramedPngBeforeAnyMutation() = runBlocking {
+    @Test fun ordinaryRomAcceptsImageMimeTypes() = runBlocking {
         val bytes = ByteArray(2048) { (it % 251).toByte() }
-        val file = temporary.newFile("game.nes")
-        server.enqueue(MockResponse().setBody(Buffer().write(bytes)).setHeader("Content-Type", "image/png"))
-        val result = ResumableTransfer().attempt(file, TransferCheckpoint(), api::download,
-            { error("Rejected headers must not persist") }, { _, _ -> error("Rejected headers must not progress") })
-        assertTrue(result is TransferResult.Permanent)
-        assertEquals(0L, file.length())
+        for (mime in listOf("image/png", "image/jpeg", "IMAGE/WEBP; charset=binary")) {
+            val file = temporary.newFile()
+            server.enqueue(MockResponse().setBody(Buffer().write(bytes)).setHeader("Content-Type", mime))
+            val result = ResumableTransfer().attempt(file, TransferCheckpoint(), api::download,
+                {}, { _, _ -> })
+            assertEquals(TransferResult.Verified(bytes.size.toLong()), result)
+            assertArrayEquals(bytes, file.readBytes())
+        }
     }
 
-    @Test fun resumedPngRejectionPreservesPrefixAndCheckpointForFullAndPartialResponses() = runBlocking {
+    @Test fun resumedPngAcceptsFullAndPartialResponses() = runBlocking {
         for (partial in listOf(false, true)) {
             val prefix = ByteArray(1024) { 42 }
             val file = temporary.newFile().apply { writeBytes(prefix) }
-            val original = TransferCheckpoint("\"fixture\"", 3072)
-            var checkpoint = original
+            var checkpoint = TransferCheckpoint("\"fixture\"", 3072)
             val response = MockResponse().setBody(Buffer().write(ByteArray(if (partial) 2048 else 3072)))
                 .setHeader("Content-Type", "image/png").setHeader("ETag", "\"fixture\"")
             if (partial) response.setResponseCode(206).setHeader("Content-Range", "bytes 1024-3071/3072")
             server.enqueue(response)
             val result = ResumableTransfer().attempt(file, checkpoint, api::download,
-                { checkpoint = it; error("Rejected headers must not persist") }, { _, _ -> })
-            assertTrue(result is TransferResult.Permanent)
-            assertArrayEquals(prefix, file.readBytes())
-            assertEquals(original, checkpoint)
-            assertNull(checkpoint.validatedBytes)
+                { checkpoint = it }, { _, _ -> })
+            assertEquals(TransferResult.Verified(3072), result)
+            assertArrayEquals(if (partial) prefix + ByteArray(2048) else ByteArray(3072), file.readBytes())
+            assertEquals(3072L, checkpoint.validatedBytes)
         }
     }
 
-    @Test fun requiredZipRejectsPngEvenWithExplicitCartridgeKind() = runBlocking {
+    @Test fun requiredZipRejectsNonZipDespiteImageMime() = runBlocking {
         val file = temporary.newFile("cart.p8.png")
+        var checkpoint = TransferCheckpoint()
         server.enqueue(MockResponse().setBody(Buffer().write(ByteArray(2048))).setHeader("Content-Type", "image/png"))
-        val result = ResumableTransfer().attempt(file, TransferCheckpoint(), api::download,
-            { error("Rejected headers must not persist") }, { _, _ -> }, requireZip = true,
-            expectedContent = ExpectedTransferContent.PICO8_PNG)
-        assertTrue(result is TransferResult.Permanent)
-        assertEquals(0L, file.length())
+        val result = ResumableTransfer().attempt(file, checkpoint, api::download,
+            { checkpoint = it }, { _, _ -> }, requireZip = true)
+        assertEquals(DownloadFailureReason.IntegrityCheckFailed,
+            (result as TransferResult.Permanent).reason)
+        assertNull(checkpoint.validatedBytes)
     }
 
     @Test fun interruptedInitialChecksumsSurviveSerializedRestartAndMissingFinalHeaders() = runBlocking {

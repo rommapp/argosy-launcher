@@ -1258,5 +1258,4 @@
     <!-- Stands in for the platform's name in the game header when the library has no platform row
          for this game. Adjective describing the platform, not a command. -->
     <string name="gamedetail_header_platform_unknown">Unknown</string>
-    <string name="gamedetail_notice_variant_request_conflict">An unfinished download conflicts with this selection. Cancel or remove it from Downloads before changing the selection.</string>
 </resources>

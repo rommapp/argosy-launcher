@@ -1,13 +1,10 @@
 package com.nendo.argosy.ui.screens.settings.delegates
 
-import com.nendo.argosy.core.notification.NotificationManager
-import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.data.repository.GameRepository
 import com.nendo.argosy.domain.usecase.download.FilePickerFlowUseCase
 import com.nendo.argosy.domain.usecase.storage.GameStorageBreakdownUseCase
 import com.nendo.argosy.domain.usecase.storage.GameStorageBucket
 import com.nendo.argosy.ui.common.GameConfirm
-import com.nendo.argosy.ui.common.toNotificationText
 import com.nendo.argosy.ui.screens.common.GameActionsDelegate
 import com.nendo.argosy.ui.screens.settings.GameStorageCategoryDeleteConfirm
 import com.nendo.argosy.ui.screens.settings.StoragePlatformGamesState
@@ -23,8 +20,7 @@ class StoragePlatformGamesDelegate @Inject constructor(
     private val breakdownUseCase: GameStorageBreakdownUseCase,
     private val gameActions: GameActionsDelegate,
     private val filePickerFlowUseCase: FilePickerFlowUseCase,
-    private val gameRepository: GameRepository,
-    private val notificationManager: NotificationManager
+    private val gameRepository: GameRepository
 ) {
     private val _state = MutableStateFlow(StoragePlatformGamesState())
     val state: StateFlow<StoragePlatformGamesState> = _state.asStateFlow()
@@ -113,8 +109,7 @@ class StoragePlatformGamesDelegate @Inject constructor(
             val setup = filePickerFlowUseCase.buildManageRows(gameId)
             if (setup != null) {
                 val keep = setup.preselectedFileIds - targetIds
-                val result = filePickerFlowUseCase.applyManagedSelection(gameId, setup.rows, keep)
-                result.issues.distinct().forEach { notificationManager.showError(it.toNotificationText()) }
+                filePickerFlowUseCase.applyManagedSelection(gameId, setup.rows, keep)
             }
             reload(scope, onPlatformEmpty)
         }

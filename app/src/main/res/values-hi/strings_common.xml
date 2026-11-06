@@ -456,7 +456,6 @@
     <string name="ui_netplay_join_heading">%1$s में जॉइन हो रहे हैं</string>
     <string name="ui_netplay_join_unknown_host">नेटप्ले</string>
     <string name="ui_netplay_join_status_joining">सेशन में जॉइन हो रहे हैं</string>
-    <string name="ui_netplay_join_error_download_conflict">इस ROM का डाउनलोड किसी मौजूदा डाउनलोड से टकरा रहा है।</string>
     <string name="ui_netplay_join_status_matching_core">कोर मैच किया जा रहा है</string>
     <string name="ui_netplay_join_status_downloading_core">कोर डाउनलोड हो रहा है</string>
     <string name="ui_netplay_join_status_core_ready">कोर तैयार है</string>

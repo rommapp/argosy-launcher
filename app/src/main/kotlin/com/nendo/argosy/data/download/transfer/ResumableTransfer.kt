@@ -36,8 +36,7 @@ class ResumableTransfer {
         beforeRead: suspend () -> Unit = {},
         afterWrite: suspend () -> Unit = {},
         requireZip: Boolean = false,
-        initialRange: Boolean = false,
-        expectedContent: ExpectedTransferContent = ExpectedTransferContent.ROM
+        initialRange: Boolean = false
     ): TransferResult = withContext(Dispatchers.IO) {
         coroutineScope {
             val offset = try {
@@ -85,8 +84,7 @@ class ResumableTransfer {
                             val framedStream = response.raw().protocol in setOf(Protocol.HTTP_2, Protocol.H2_PRIOR_KNOWLEDGE)
                             val append = code == 206 && resume
                             val headers = TransferHeaders.parse(
-                                response.headers(), code == 206, requestOffset, checkpoint, framedStream, resume,
-                                if (requireZip) ExpectedTransferContent.ROM else expectedContent
+                                response.headers(), code == 206, requestOffset, checkpoint, framedStream, resume
                             )
                             val complete = code == 200 || headers.segment == headers.total?.minus(requestOffset)
                             val validatorCategory = when {

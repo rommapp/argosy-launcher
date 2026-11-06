@@ -2081,7 +2081,7 @@ class GameDetailViewModel @Inject constructor(
                 return@launch
             }
             pickerModalDelegate.dismissVariantPicker()
-            val enqueueResult = downloadManager.enqueueGameFileDownload(
+            downloadManager.enqueueGameFileDownload(
                 gameId = game.id,
                 gameFileId = file.id,
                 rommFileId = rommFileId,
@@ -2093,14 +2093,9 @@ class GameDetailViewModel @Inject constructor(
                 expectedSizeBytes = file.fileSize,
                 gameFolderName = game.rommFileName
             )
-            when (enqueueResult) {
-                is com.nendo.argosy.data.download.DownloadEnqueueResult.Accepted -> notificationManager.showSuccess(
-                    NotificationText.Res(R.string.gamedetail_notice_downloading_variant, listOf(file.fileName))
-                )
-                is com.nendo.argosy.data.download.DownloadEnqueueResult.Conflict -> notificationManager.showError(
-                    NotificationText.Res(R.string.gamedetail_notice_variant_request_conflict)
-                )
-            }
+            notificationManager.showSuccess(
+                NotificationText.Res(R.string.gamedetail_notice_downloading_variant, listOf(file.fileName))
+            )
         }
     }
     fun dismissDiscPicker() = pickerModalDelegate.dismissDiscPicker()

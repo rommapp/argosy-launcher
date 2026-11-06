@@ -80,7 +80,6 @@ class PushInstallUseCase @Inject constructor(
     }
 
     private fun DownloadGameFailureReason.serverDetail(): String = when (this) {
-        DownloadGameFailureReason.RequestConflict -> "unfinished download conflicts with requested selection"
         DownloadGameFailureReason.GameNotFound -> "game not found"
         DownloadGameFailureReason.GameNotSynced -> "game not synced"
         is DownloadGameFailureReason.InvalidFileType -> "invalid file type .$extension"

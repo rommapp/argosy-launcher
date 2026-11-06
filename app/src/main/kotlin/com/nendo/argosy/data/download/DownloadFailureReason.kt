@@ -16,7 +16,6 @@ sealed class DownloadFailureReason {
     data object InvalidResponse : DownloadFailureReason()
     data object StorageAccessFailed : DownloadFailureReason()
     data object TlsVerificationFailed : DownloadFailureReason()
-    data object RequestConflict : DownloadFailureReason()
     data class InvalidContentType(val contentType: String) : DownloadFailureReason()
     data object FileTooSmall : DownloadFailureReason()
     data class ServerError(val message: String) : DownloadFailureReason()
@@ -60,7 +59,6 @@ object DownloadFailureReasonCodec {
     private const val TOKEN_STORAGE_ACCESS_FAILED = "STORAGE_ACCESS_FAILED"
     private const val TOKEN_TLS_VERIFICATION_FAILED = "TLS_VERIFICATION_FAILED"
     private const val SEP = ":"
-    private const val TOKEN_REQUEST_CONFLICT = "REQUEST_CONFLICT"
 
     private const val TOKEN_INVALID_CONTENT_TYPE = "INVALID_CONTENT_TYPE"
     private const val TOKEN_FILE_TOO_SMALL = "FILE_TOO_SMALL"
@@ -83,7 +81,6 @@ object DownloadFailureReasonCodec {
         DownloadFailureReason.InvalidResponse -> TOKEN_INVALID_RESPONSE
         DownloadFailureReason.StorageAccessFailed -> TOKEN_STORAGE_ACCESS_FAILED
         DownloadFailureReason.TlsVerificationFailed -> TOKEN_TLS_VERIFICATION_FAILED
-        DownloadFailureReason.RequestConflict -> TOKEN_REQUEST_CONFLICT
         is DownloadFailureReason.InvalidContentType ->
             "$TOKEN_INVALID_CONTENT_TYPE$SEP${reason.contentType}"
         DownloadFailureReason.FileTooSmall -> TOKEN_FILE_TOO_SMALL
@@ -119,7 +116,6 @@ object DownloadFailureReasonCodec {
             TOKEN_INVALID_RESPONSE -> DownloadFailureReason.InvalidResponse
             TOKEN_STORAGE_ACCESS_FAILED -> DownloadFailureReason.StorageAccessFailed
             TOKEN_TLS_VERIFICATION_FAILED -> DownloadFailureReason.TlsVerificationFailed
-            TOKEN_REQUEST_CONFLICT -> DownloadFailureReason.RequestConflict
             TOKEN_INVALID_CONTENT_TYPE -> DownloadFailureReason.InvalidContentType(rest(2).getOrElse(1) { "" })
             TOKEN_FILE_TOO_SMALL -> DownloadFailureReason.FileTooSmall
             TOKEN_SERVER_ERROR -> DownloadFailureReason.ServerError(rest(2).getOrElse(1) { "" })

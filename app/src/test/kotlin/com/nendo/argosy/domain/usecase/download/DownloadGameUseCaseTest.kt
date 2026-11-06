@@ -1,7 +1,6 @@
 package com.nendo.argosy.domain.usecase.download
 
 import com.nendo.argosy.data.download.DownloadManager
-import com.nendo.argosy.data.download.DownloadEnqueueResult
 import com.nendo.argosy.data.local.entity.DownloadQueueEntity
 import com.nendo.argosy.data.local.dao.DownloadQueueDao
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
@@ -45,33 +44,11 @@ class DownloadGameUseCaseTest {
         gameDiscDao = mockk(relaxed = true)
         romMRepository = mockk(relaxed = true)
         downloadManager = mockk(relaxed = true)
-        coEvery { downloadManager.enqueueDownload(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns DownloadEnqueueResult.Accepted(1L)
-        coEvery { downloadManager.enqueueDiscDownload(any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns DownloadEnqueueResult.Accepted(1L)
-        coEvery { downloadManager.enqueueGameFileDownload(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns DownloadEnqueueResult.Accepted(1L)
         emulatorConfigDao = mockk(relaxed = true)
         downloadQueueDao = mockk(relaxed = true)
         gameRepository = mockk(relaxed = true)
         gameFileDao = mockk(relaxed = true)
         useCase = DownloadGameUseCase(gameDao, gameDiscDao, gameFileDao, romMRepository, downloadManager, emulatorConfigDao, downloadQueueDao, gameRepository, mockk(relaxed = true))
-    }
-
-    @Test
-    fun `changed selection conflict is returned without queued success or extraction prompt`() = runTest {
-        coEvery { gameDao.getById(123L) } returns createGameEntity()
-        coEvery { romMRepository.getRom(any()) } returns RomMResult.Success(createRom(fileName = "game.nes"))
-        coEvery { downloadManager.enqueueDownload(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns DownloadEnqueueResult.Conflict(9L)
-
-        assertEquals(DownloadResult.Error(DownloadGameFailureReason.RequestConflict), useCase(123L, listOf(77L)))
-        coVerify(exactly = 0) { downloadQueueDao.getRecoverableDownloads() }
-        coVerify(exactly = 0) { downloadManager.getDownloadPath(any(), any(), any()) }
-    }
-
-    @Test
-    fun `folder disc conflict is not counted as queued`() = runTest {
-        givenFolderDiscGame()
-        coEvery { downloadManager.enqueueGameFileDownload(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } returns DownloadEnqueueResult.Conflict(9L)
-
-        assertEquals(DownloadResult.Error(DownloadGameFailureReason.RequestConflict), useCase(123L))
     }
 
     @Test

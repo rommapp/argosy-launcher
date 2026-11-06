@@ -30,15 +30,8 @@ sealed class NetplayJoinState {
         val gameId: Long
     ) : NetplayJoinState()
 
-    data class Failed(val reason: NetplayJoinFailure) : NetplayJoinState() {
-        constructor(message: String) : this(NetplayJoinFailure.RawMessage(message))
-    }
+    data class Failed(val message: String) : NetplayJoinState()
     data object Cancelled : NetplayJoinState()
-}
-
-sealed interface NetplayJoinFailure {
-    data class RawMessage(val message: String) : NetplayJoinFailure
-    data object DownloadConflict : NetplayJoinFailure
 }
 
 sealed class CoreSubState {

@@ -508,5 +508,4 @@
     <string name="gamedetail_per_game_gpu_driver_reason_core_unknown">此核心</string>
     <string name="gamedetail_per_game_gpu_driver_reason_backend">渲染後端為 Vulkan 時生效</string>
     <string name="gamedetail_per_game_gpu_driver_reason_device">自訂驅動程式需要 Adreno GPU</string>
-    <string name="gamedetail_notice_variant_request_conflict">未完成的下載與此選擇衝突。請先在下載清單中取消或移除該下載，再變更選擇。</string>
 </resources>

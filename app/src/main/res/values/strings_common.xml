@@ -912,7 +912,6 @@
     <string name="ui_netplay_join_unknown_host">netplay</string>
     <!-- Progress line while the session is being entered. -->
     <string name="ui_netplay_join_status_joining">Joining session</string>
-    <string name="ui_netplay_join_error_download_conflict">This ROM download conflicts with an existing download.</string>
     <!-- Progress line while the host's emulator core is being matched. -->
     <string name="ui_netplay_join_status_matching_core">Matching core</string>
     <!-- Progress line while that core is being fetched. -->

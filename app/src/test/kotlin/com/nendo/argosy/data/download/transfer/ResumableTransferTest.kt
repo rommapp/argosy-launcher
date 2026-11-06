@@ -434,7 +434,7 @@ class ResumableTransferTest {
     }
 
     @Test fun invalidMimePreservesOldPrefixAndNeverMarksValidated() = runBlocking {
-        for (mime in listOf("image/jpeg", "text/html; charset=utf-8")) {
+        for (mime in listOf("text/html", "TEXT/HTML; charset=utf-8")) {
             val file = temporary.newFile().apply { writeText("old") }
             val checkpoints = mutableListOf<TransferCheckpoint>()
             server.enqueue(response("invalid").setHeader("Content-Type", mime))

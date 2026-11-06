@@ -1,7 +1,6 @@
 package com.nendo.argosy.data.download
 
 import com.nendo.argosy.data.download.transfer.DownloadRetryPolicy
-import com.nendo.argosy.data.download.transfer.ExpectedTransferContent
 import com.nendo.argosy.data.download.transfer.ResumableTransfer
 import com.nendo.argosy.data.download.transfer.TransferCheckpoint
 import com.nendo.argosy.data.download.transfer.TransferResult
@@ -23,15 +22,15 @@ import retrofit2.Call
 internal typealias DownloadAttempt = suspend (
     File, TransferCheckpoint, (String?, String?) -> Call<ResponseBody>,
     suspend (TransferCheckpoint) -> Unit, suspend (Long, Long?) -> Unit,
-    suspend () -> Unit, suspend () -> Unit, Boolean, Boolean, ExpectedTransferContent
+    suspend () -> Unit, suspend () -> Unit, Boolean, Boolean
 ) -> TransferResult
 
 internal class DownloadTransferRunner(
     private val connectivity: DownloadConnectivity,
     private val retryPolicy: DownloadRetryPolicy = DownloadRetryPolicy(),
     private val nowMillis: () -> Long = System::currentTimeMillis,
-    private val transfer: DownloadAttempt = { file, checkpoint, call, persist, progress, before, after, requireZip, initialRange, expected ->
-        ResumableTransfer().attempt(file, checkpoint, call, persist, progress, before, after, requireZip, initialRange, expected)
+    private val transfer: DownloadAttempt = { file, checkpoint, call, persist, progress, before, after, requireZip, initialRange ->
+        ResumableTransfer().attempt(file, checkpoint, call, persist, progress, before, after, requireZip, initialRange)
     }
 ) {
     suspend fun resolveRequestKey(
@@ -86,8 +85,7 @@ internal class DownloadTransferRunner(
         beforeRead: suspend () -> Unit,
         afterWrite: suspend () -> Unit,
         requireZip: Boolean = false,
-        initialRange: Boolean = false,
-        expectedContent: ExpectedTransferContent = ExpectedTransferContent.ROM
+        initialRange: Boolean = false
     ): TransferResult {
         var checkpoint = initialCheckpoint
         var attempt = initialAttempt
@@ -120,8 +118,7 @@ internal class DownloadTransferRunner(
                     beforeRead,
                     afterWrite,
                     requireZip,
-                    initialRange,
-                    expectedContent
+                    initialRange
                 )
             }
             when (result) {

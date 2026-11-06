@@ -379,6 +379,7 @@ class DownloadManagerTransferLifecycleTest {
         assertEquals(DownloadState.FAILED, manager.state.value.completed.single().state)
         assertEquals(failed, rows.getValue(1))
         assertFalse(rows.containsKey(2))
+        assertArrayEquals(bytes, File(destination, "other.bin").readBytes())
         assertArrayEquals(bytes.copyOf(8192), part.readBytes())
         server.takeRequest()
         server.enqueue(partial(8192))
@@ -408,7 +409,64 @@ class DownloadManagerTransferLifecycleTest {
         coVerify(exactly = 1) { dao.deleteById(1L) }
         assertTrue(manager.state.value.completed.isEmpty())
         assertTrue(rows.isEmpty())
+        assertFalse("Clear finished must remove the retained partial file", part.exists())
         assertEquals(0, server.requestCount)
+    }
+
+    @Test fun `individual failed removal reclaims owned staging and preserves other files`() = runBlocking {
+        val original = rows.getValue(1)
+        val area = staging.open(StagingManifest(1, 10, original.gameTitle, original.fileName,
+            destination.absolutePath, StagingPhase.DOWNLOADING))
+        part = File(area.archiveDir, "fixture.bin.tmp")
+        retained(8192, DownloadState.FAILED)
+        val siblingPart = File(destination, "other.bin.tmp").apply { writeBytes(bytes.copyOf(4096)) }
+        rows[2] = original.copy(
+            id = 2, gameId = 11, gameFileId = 21, fileName = "other.bin",
+            state = DownloadState.FAILED.name, bytesDownloaded = siblingPart.length(),
+            tempFilePath = siblingPart.absolutePath
+        )
+        val installed = File(destination, "fixture.bin").apply { writeBytes(bytes) }
+        val manager = manager()
+        withTimeout(5000) { manager.state.first { it.completed.size == 2 } }
+        val sibling = rows.getValue(2)
+
+        manager.removeFromCompleted(1)
+        withTimeout(5000) { manager.state.first { it.completed.none { item -> item.id == 1L } } }
+
+        assertFalse(rows.containsKey(1))
+        assertFalse(part.exists())
+        assertFalse(area.root.exists())
+        assertEquals(sibling, rows.getValue(2))
+        assertArrayEquals(bytes.copyOf(4096), siblingPart.readBytes())
+        assertArrayEquals(bytes, installed.readBytes())
+    }
+
+    @Test fun `failed partial deletion retains recovery row and history`() = runBlocking {
+        part.mkdirs()
+        val child = File(part, "retained.bin").apply { writeBytes(bytes) }
+        rows[1] = rows.getValue(1).copy(state = DownloadState.FAILED.name)
+        val manager = manager()
+        manager.awaitState(DownloadState.FAILED)
+        val retained = rows.getValue(1)
+        val cleanupEntered = CompletableDeferred<Unit>()
+        coEvery { dao.getById(1L) } answers {
+            cleanupEntered.complete(Unit)
+            rows[1]
+        }
+        every { repository.isConnected() } returns false
+
+        manager.removeFromCompleted(1)
+        withTimeout(5000) { cleanupEntered.await() }
+        withTimeout(5000) {
+            withContext(dispatcher) {
+                manager.enqueueDownload(99, 999, "barrier.bin", "Barrier", "nes", null)
+            }
+        }
+
+        assertEquals(retained, rows.getValue(1))
+        assertEquals(DownloadState.FAILED, manager.state.value.completed.single().state)
+        assertArrayEquals(bytes, child.readBytes())
+        coVerify(exactly = 0) { dao.deleteById(1L) }
     }
 
     @Test fun `pause and cancel during backoff retain or delete only after owner exits`() = runBlocking {

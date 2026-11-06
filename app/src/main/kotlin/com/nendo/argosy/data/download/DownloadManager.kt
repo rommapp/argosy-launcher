@@ -50,6 +50,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.IOException
+import java.nio.file.Files
 import java.time.Instant
 import java.util.UUID
 import javax.inject.Inject
@@ -2021,7 +2023,30 @@ class DownloadManager internal constructor(
                         if (row != null && row.state != DownloadState.COMPLETED.name &&
                             !(includeFailed && row.state == DownloadState.FAILED.name)
                         ) continue
-                        if (row != null) downloadQueueDao.deleteById(id)
+                        downloadJobs[id]?.join()
+                        val retained = downloadQueueDao.getById(id)
+                        if (retained?.state != row?.state) continue
+                        if (retained?.state == DownloadState.FAILED.name) {
+                            try {
+                                withContext(Dispatchers.IO) {
+                                    retained.tempFilePath?.let { Files.deleteIfExists(File(it).toPath()) }
+                                    val area = romStagingManager.list()
+                                        .firstOrNull { it.manifest.downloadId == id }
+                                    val stagingRoot = area?.root ?: File(romStagingManager.stagingRoot, id.toString())
+                                    discardStagingFor(id)
+                                    if (area == null) stagingRoot.deleteRecursively()
+                                    if (!Files.notExists(stagingRoot.toPath())) {
+                                        throw IOException("Staging cleanup incomplete for download $id")
+                                    }
+                                }
+                            } catch (e: CancellationException) {
+                                throw e
+                            } catch (e: Exception) {
+                                Logger.warn(TAG, "Failed download cleanup | id=$id reason=${e.message}")
+                                continue
+                            }
+                        }
+                        if (retained != null) downloadQueueDao.deleteById(id)
                         _state.update { current ->
                             current.copy(completed = current.completed.filter { it.id != id })
                         }

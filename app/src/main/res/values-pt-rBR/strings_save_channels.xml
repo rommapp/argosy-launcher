@@ -45,7 +45,7 @@
     <string name="save_channels_detail_state_slot_auto">Auto</string>
     <string name="save_channels_detail_state_slot_numbered">Slot %1$s</string>
     <string name="save_channels_detail_action_activate">Ativar</string>
-    <string name="save_channels_detail_action_fork">Fork</string>
+    <string name="save_channels_detail_action_fork">Derivar</string>
     <string name="save_channels_detail_action_copy_over">Copiar para…</string>
     <string name="save_channels_detail_action_pin">Fixar</string>
     <string name="save_channels_detail_action_unpin">Desfixar</string>
@@ -63,12 +63,12 @@
 
     <string name="save_channels_label_title_new">Novo canal</string>
     <string name="save_channels_label_title_rename">Renomear</string>
-    <string name="save_channels_label_title_fork">Fork</string>
+    <string name="save_channels_label_title_fork">Derivar</string>
     <string name="save_channels_label_field_placeholder">Nome</string>
     <string name="save_channels_label_cancel">Cancelar</string>
     <string name="save_channels_label_confirm_new">Criar</string>
     <string name="save_channels_label_confirm_rename">Renomear</string>
-    <string name="save_channels_label_confirm_fork">Fork</string>
+    <string name="save_channels_label_confirm_fork">Derivar</string>
     <string name="save_channels_label_error_reserved">Nome em uso</string>
 
     <string name="save_channels_share_confirm_title">Compartilhar o canal?</string>

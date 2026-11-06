@@ -254,7 +254,7 @@
     <string name="ingame_cheats_available_search_placeholder">Buscar truques...</string>
     <string name="ingame_cheats_available_search_clear">Limpar</string>
     <string name="ingame_cheats_discover_ram_hint">Este core não expõe a RAM do sistema</string>
-    <string name="ingame_cheats_discover_snapshot_title">Snapshot</string>
+    <string name="ingame_cheats_discover_snapshot_title">Instant&#226;neo</string>
     <string name="ingame_cheats_discover_snapshot_subtitle">Capture o estado atual da RAM</string>
     <string name="ingame_cheats_discover_snapshot_hint">Faça um snapshot para começar</string>
     <string name="ingame_cheats_discover_changed_title">Alterado</string>

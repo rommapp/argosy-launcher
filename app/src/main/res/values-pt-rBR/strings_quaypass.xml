@@ -92,9 +92,9 @@
     <!-- Number of tickets the user has banked from Check-In encounters, shown in a chip on the
          Check-In screen. %1$d is the balance. -->
     <plurals name="quaypass_ticket_balance_chip_count">
-        <item quantity="one">%1$d ticket</item>
-        <item quantity="many">%1$d tickets</item>
-        <item quantity="other">%1$d tickets</item>
+        <item quantity="one">%1$d bilhete</item>
+        <item quantity="many">%1$d bilhetes</item>
+        <item quantity="other">%1$d bilhetes</item>
     </plurals>
 
     <!-- =========================== QuayPass greeting editor =========================== -->

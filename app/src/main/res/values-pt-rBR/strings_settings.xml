@@ -1147,7 +1147,7 @@
     <!-- Label on the secret field. Noun. -->
     <string name="settings_ra_login_password_label">Senha</string>
     <!-- Button that sends the form. Noun used as a button label. -->
-    <string name="settings_ra_login_submit_title">Login</string>
+    <string name="settings_ra_login_submit_title">Entrar</string>
     <!-- The same button while the sign-in is in progress. Verb phrase. -->
     <string name="settings_ra_login_submit_title_busy">Entrando...</string>
     <!-- Second line of that button. -->
@@ -2263,7 +2263,7 @@
     </plurals>
     <!-- Read-only row naming everything Steam takes on this device. Leave the two names as they
          are. -->
-    <string name="settings_caches_info_steam_total_title">Steam &amp; PC Total</string>
+    <string name="settings_caches_info_steam_total_title">Total do Steam e PC</string>
     <!-- Second line of that row. -->
     <string name="settings_caches_info_steam_total_subtitle">Inclui jogos da loja instalados</string>
 
@@ -2885,7 +2885,7 @@
     <!-- Heading over the rows about button shortcuts. Noun, plural. -->
     <string name="settings_builtin_controls_section_hotkeys">Hotkeys</string>
     <!-- Heading over the rows about the timed-run clock. Noun phrase. -->
-    <string name="settings_builtin_controls_section_speedrun">Speedrun Timer</string>
+    <string name="settings_builtin_controls_section_speedrun">Cron&#244;metro de speedrun</string>
     <!-- Heading over the rows about the on-screen buttons. Noun phrase, plural. -->
     <string name="settings_builtin_controls_section_touch">Controles de Toque</string>
 
@@ -2897,7 +2897,7 @@
     <string name="settings_builtin_controls_percent_value">%1$d%%</string>
 
     <!-- Row title. Noun: controller vibration. The emulation community uses this word. -->
-    <string name="settings_builtin_controls_rumble_title">Rumble</string>
+    <string name="settings_builtin_controls_rumble_title">Vibra&#231;&#227;o</string>
     <!-- Second line of that row. -->
     <string name="settings_builtin_controls_rumble_subtitle">Habilitar feedback de vibração do controle</string>
     <!-- Row title. Noun phrase: steering a game by tilting and turning the device through its
@@ -2962,9 +2962,9 @@
     <!-- Option of that row: decide per controller. -->
     <string name="settings_builtin_controls_select_as_back_auto">Auto</string>
     <!-- Option of that row: Back is always Select in game. -->
-    <string name="settings_builtin_controls_select_as_back_on">On</string>
+    <string name="settings_builtin_controls_select_as_back_on">Ativado</string>
     <!-- Option of that row: Back always opens the in-game menu. -->
-    <string name="settings_builtin_controls_select_as_back_off">Off</string>
+    <string name="settings_builtin_controls_select_as_back_off">Desativado</string>
     <!-- Row title. Verb phrase: fast forward switches on and off rather than needing a held
          button. -->
     <string name="settings_builtin_controls_toggle_ff_title">Alternar Avanço Rápido</string>
@@ -3721,7 +3721,7 @@
     <string name="settings_save_path_modal_beside_rom_subtitle_builtin">Armazene os saves na pasta de cada jogo.</string>
     <string name="settings_save_path_modal_beside_rom_subtitle_external">Procure os saves na pasta de cada jogo. Configure o emulador para salvar ao lado da ROM também.</string>
     <string name="settings_save_path_modal_state_path_label">Caminho do estado</string>
-    <string name="settings_save_path_option_custom_badge">(custom)</string>
+    <string name="settings_save_path_option_custom_badge">(personalizado)</string>
     <string name="settings_save_path_option_detected_badge">(detectado)</string>
     <string name="settings_save_path_option_coming_soon">(em breve)</string>
     <string name="settings_save_path_option_reset_button">Redefinir</string>
@@ -3805,7 +3805,7 @@
     <string name="shader_category_scaling">Escala</string>
     <string name="shader_category_scanlines">Scanlines</string>
     <string name="shader_category_sharpening">Nitidez</string>
-    <string name="shader_category_anti_aliasing">Anti-aliasing</string>
+    <string name="shader_category_anti_aliasing">Antialiasing</string>
     <string name="shader_category_other">Outro</string>
     <string name="settings_libretro_def_section_shaders">Shaders</string>
     <string name="settings_libretro_def_section_display">Exibição</string>

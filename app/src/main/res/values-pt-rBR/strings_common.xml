@@ -58,7 +58,7 @@
     <string name="ui_save_channel_footer_restore_state">Restaurar</string>
     <string name="ui_save_channel_footer_preview_state">Pré-visualizar</string>
     <string name="ui_save_channel_footer_delete_state">Excluir</string>
-    <string name="ui_save_channel_footer_download_state">Download</string>
+    <string name="ui_save_channel_footer_download_state">Baixar</string>
     <string name="ui_save_channel_footer_tab_states">Estados</string>
     <string name="ui_save_channel_footer_tab_saves">Saves</string>
     <string name="ui_save_channel_footer_sync">Sincronizar</string>
@@ -580,7 +580,7 @@
     <string name="ui_quick_settings_theme_light">Claro</string>
     <string name="ui_quick_settings_theme_dark">Escuro</string>
     <string name="ui_quick_settings_theme_system">Auto</string>
-    <string name="ui_quick_settings_haptics">Haptics</string>
+    <string name="ui_quick_settings_haptics">Vibra&#231;&#227;o</string>
     <string name="ui_quick_settings_ui_sounds">Sons da interface</string>
     <string name="ui_quick_settings_swap_ab">Trocar A/B</string>
     <string name="ui_quick_settings_swap_xy">Trocar X/Y</string>
@@ -622,7 +622,7 @@
     <string name="ui_quick_connections_device_connected">Conectado</string>
     <string name="ui_quick_connections_device_not_connected">Não conectado</string>
     <string name="ui_quick_connections_battery">%1$d%%</string>
-    <string name="ui_quick_connections_band_2_4">2.4 GHz</string>
+    <string name="ui_quick_connections_band_2_4">2,4 GHz</string>
     <string name="ui_quick_connections_band_5">5 GHz</string>
     <string name="ui_quick_connections_band_6">6 GHz</string>
     <string name="ui_quick_connections_join_title">Conectar a %1$s</string>
@@ -1075,7 +1075,7 @@
     <string name="gamelist_row_genre_point_and_click">Point &amp; click</string>
     <string name="gamelist_row_genre_board_game">Jogo de tabuleiro</string>
     <string name="gamelist_row_genre_quiz">Quiz</string>
-    <string name="gamelist_row_genre_sim">Sim</string>
+    <string name="gamelist_row_genre_sim">Simula&#231;&#227;o</string>
     <string name="common_game_confirm_hide_title">Ocultar %1$s?</string>
     <string name="common_game_confirm_hide_message">Jogos ocultos podem ser mostrados novamente na Biblioteca filtrando Origem para Ocultos.</string>
     <string name="common_game_confirm_hide_confirm">Ocultar</string>

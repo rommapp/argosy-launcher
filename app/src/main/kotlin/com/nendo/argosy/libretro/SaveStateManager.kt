@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.local.entity.SaveCacheEntity
+import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.data.repository.ActiveSaveDiskJudge
 import com.nendo.argosy.data.repository.ActiveSaveRepository
 import com.nendo.argosy.data.repository.DiskVerdict
@@ -272,7 +273,7 @@ class SaveStateManager(
      */
     suspend fun restoreSaveForLaunchMode(launchMode: LaunchMode): RestoreResult {
         if (usesExternalMemcard) {
-            Log.d(TAG, "External memcard (GCI folder) - skipping flat .srm restore")
+            Log.d(TAG, "External memcard - skipping flat .srm restore")
             return RestoreResult(null)
         }
         if (isVariant) {
@@ -721,7 +722,8 @@ class SaveStateManager(
 
     /**
      * Loads the auto slot only when the save memory it carries matches the save on disk. On a
-     * mismatch the freshly booted game comes back and the save on disk stays what the game plays.
+     * mismatch the save on disk is written into the core and the game boots fresh from it; the
+     * booted game is restored only when the core refuses the save.
      */
     fun loadAutoSlotMatchingSave(retroView: GLRetroView): AutoLoadOutcome {
         val saveHash = lastSramHash
@@ -738,10 +740,13 @@ class SaveStateManager(
         if (stateSram.isEmpty() || hashBytes(stateSram) == saveHash) return AutoLoadOutcome.LOADED
 
         Log.i(TAG, "[SRAM] auto state skipped | its save memory ${hashBytes(stateSram)} differs from the save $saveHash")
-        if (!retroView.unserializeState(bootState)) {
-            Log.e(TAG, "[SRAM] booted game did not come back; writing the save on disk into the core")
-            getSramFile().takeIf { it.isFile }?.let { retroView.unserializeSRAM(it.readBytes()) }
+        val disk = coreBytes(getSramFile().takeIf { it.isFile }?.readBytes())
+        if (disk != null && retroView.unserializeSRAM(disk)) {
+            retroView.reset()
+            return AutoLoadOutcome.KEPT_SAVE
         }
+        Log.e(TAG, "[SRAM] the save on disk could not be written into the core; returning to the booted game")
+        retroView.unserializeState(bootState)
         return AutoLoadOutcome.KEPT_SAVE
     }
 
@@ -837,6 +842,10 @@ class SaveStateManager(
 
     companion object {
         private const val TAG = "SaveStateManager"
+        private val EXTERNAL_MEMCARD_PLATFORMS = setOf("gc", "ps2")
+
+        fun usesExternalMemcard(platformSlug: String): Boolean =
+            PlatformDefinitions.getCanonicalSlug(platformSlug) in EXTERNAL_MEMCARD_PLATFORMS
         private const val LEGACY_CARD_SUFFIX = "_1.mcd"
         private val IGNORED_SAVE_EXTENSIONS = setOf("rtc", "tmp", "bak", "png")
         private val SHARED_CART_BRAM = Regex("""^(128Kbit|256Kbit|512Kbit|1Mbit|2Mbit|4Mbit)_cart\.brm$""")

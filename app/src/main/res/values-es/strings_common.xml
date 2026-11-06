@@ -32,15 +32,12 @@
     <string name="ui_save_channel_tab_states">Estados</string>
     <string name="ui_save_channel_states_empty">No hay ranuras de estado disponibles</string>
     <string name="ui_save_channel_states_heading_named">Estados en %1$s</string>
-    <string name="ui_save_channel_states_heading_default">Estados en la ranura predeterminada</string>
     <string name="ui_save_channel_slot_new">Nueva ranura</string>
     <string name="ui_save_channel_slot_legacy_tag">[Antigua]</string>
     <string name="ui_save_channel_history_active_point">Punto de restauración activo</string>
     <string name="ui_save_channel_history_latest">Más reciente</string>
     <string name="ui_save_channel_history_tag_synced">[Sincronizada]</string>
     <string name="ui_save_channel_history_tag_local">[Local]</string>
-    <string name="ui_save_channel_active_default">Más reciente</string>
-    <string name="ui_save_channel_slot_autosave">Guardado automático</string>
     <string name="ui_save_channel_slot_archived">Archivado</string>
 
     <string name="ui_save_channel_footer_migrate">Migrar</string>
@@ -516,6 +513,7 @@
     <!-- Storage meter, preference rows, home layout rows (ui/components) -->
 
     <string name="ui_volume_meter_other">Otras apps y archivos</string>
+    <string name="ui_volume_meter_unknown_location">%1$s de juegos están en una ubicación desconocida</string>
     <string name="ui_volume_meter_free">%1$s libres</string>
 
     <string name="ui_cycle_preference_reset_to_global">Restablecer al global</string>
@@ -599,6 +597,10 @@
     <string name="ui_quick_settings_theme_light">Claro</string>
     <string name="ui_quick_settings_theme_dark">Oscuro</string>
     <string name="ui_quick_settings_theme_system">Auto</string>
+    <string name="ui_quick_settings_orientation">Orientación</string>
+    <string name="ui_quick_settings_orientation_auto">Auto</string>
+    <string name="ui_quick_settings_orientation_landscape">Horizontal</string>
+    <string name="ui_quick_settings_orientation_portrait">Vertical</string>
     <string name="ui_quick_settings_haptics">Vibración</string>
     <string name="ui_quick_settings_ui_sounds">Sonidos de la interfaz</string>
     <string name="ui_quick_settings_swap_ab">Intercambiar A/B</string>
@@ -620,6 +622,8 @@
     <string name="ui_quick_settings_group_performance">Rendimiento</string>
     <string name="ui_quick_settings_group_fan">Ventilador</string>
     <string name="ui_quick_settings_group_overlay">Superposición</string>
+    <string name="ui_quick_settings_stats_fan">Ventilador</string>
+    <string name="ui_quick_settings_stats_battery">Batería</string>
     <string name="ui_quick_settings_music_nothing_playing">Nada en reproducción</string>
     <string name="ui_quick_settings_music_source_launcher">Música del launcher</string>
     <string name="ui_quick_settings_music_track_position">%1$d de %2$d</string>
@@ -672,6 +676,7 @@
     <string name="ui_quick_friends_appear_online">Aparecer en línea</string>
     <string name="ui_drawer_friend_hosting">Organizando %1$s</string>
     <string name="ui_drawer_friend_playing">Jugando %1$s</string>
+    <string name="ui_drawer_friend_playing_online">Jugando %1$s en línea</string>
     <string name="ui_drawer_friend_in_game">En el juego</string>
     <string name="ui_drawer_friend_favorite">Favorito</string>
     <string name="ui_drawer_account_none">Sin cuenta</string>
@@ -693,7 +698,6 @@
 
     <string name="ui_sync_overlay_unknown_game">Juego</string>
     <string name="ui_sync_overlay_slot_prefix">"Ranura: "</string>
-    <string name="ui_sync_overlay_slot_default">Más reciente</string>
     <string name="ui_sync_overlay_blocked_grant">Conceder permiso</string>
     <string name="ui_sync_overlay_blocked_configure_path">Configurar ruta de guardado</string>
     <string name="ui_sync_overlay_blocked_disable">Desactivar sincronización</string>
@@ -804,17 +808,6 @@
     <string name="ui_sync_overlay_snapshot_conflict_branch_subtitle">Mover la partida de este dispositivo a un canal nuevo</string>
     <string name="ui_sync_overlay_snapshot_conflict_revert">Revertir</string>
     <string name="ui_sync_overlay_snapshot_conflict_revert_subtitle">Volver a la última partida que sincronizó este dispositivo (se crea una copia de seguridad)</string>
-    <string name="ui_sync_overlay_post_session_title">Conflicto de partida guardada</string>
-    <string name="ui_sync_overlay_post_session_subject">\"%1$s\" -- %2$s</string>
-    <string name="ui_sync_overlay_post_session_default_slot">Partida guardada predeterminada</string>
-    <string name="ui_sync_overlay_post_session_message">El servidor tiene una partida guardada más reciente. Al subir tu partida guardada local, pasa a ser la más reciente y se conserva la copia del servidor.</string>
-    <string name="ui_sync_overlay_post_session_local">Local</string>
-    <string name="ui_sync_overlay_post_session_server">Servidor</string>
-    <string name="ui_sync_overlay_post_session_server_named">Servidor (%1$s)</string>
-    <string name="ui_sync_overlay_post_session_skip">Omitir sincronización</string>
-    <string name="ui_sync_overlay_post_session_skip_subtitle">Conservar tu partida guardada local, no subirla</string>
-    <string name="ui_sync_overlay_post_session_overwrite">Subir partida local</string>
-    <string name="ui_sync_overlay_post_session_overwrite_subtitle">Tu partida guardada local pasa a ser la más reciente. Se conserva la copia del servidor.</string>
     <string name="ui_sync_overlay_legacy_status">Sincronizando...</string>
 
     <!-- Quick menu (ui/quickmenu) -->
@@ -1032,7 +1025,6 @@
     <string name="media_library_viewmodel_refresh_label">Actualizando</string>
 
     <string name="gamedetail_action_buttons_play">JUGAR</string>
-    <string name="gamedetail_action_buttons_autosave">Guardado automático</string>
     <string name="gamedetail_action_buttons_download">DESCARGAR</string>
     <string name="gamedetail_action_buttons_install">INSTALAR</string>
     <string name="gamedetail_action_buttons_queued">EN COLA...</string>
@@ -1121,4 +1113,11 @@
     <string name="common_game_confirm_hide_title">¿Ocultar %1$s?</string>
     <string name="common_game_confirm_hide_message">Los juegos ocultos se pueden volver a mostrar en la Biblioteca filtrando Origen por Ocultos.</string>
     <string name="common_game_confirm_hide_confirm">Ocultar</string>
+    <string name="ui_launch_overlay_running_busy_title">%1$s está en ejecución</string>
+    <string name="ui_launch_overlay_running_busy_message_game">%1$s sigue ejecutando %2$s en segundo plano.</string>
+    <string name="ui_launch_overlay_running_busy_message">%1$s sigue abierto en segundo plano.</string>
+    <string name="ui_launch_overlay_running_open_title">%1$s sigue abierto</string>
+    <string name="ui_launch_overlay_running_open_message">Iniciar otro juego lo cierra.</string>
+    <string name="ui_launch_overlay_running_close_label">Cerrar e iniciar</string>
+    <string name="ui_launch_overlay_running_close_subtitle">Se perderá el progreso no guardado del juego en ejecución</string>
 </resources>

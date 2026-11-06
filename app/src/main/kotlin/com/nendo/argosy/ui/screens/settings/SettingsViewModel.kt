@@ -24,6 +24,7 @@ import com.nendo.argosy.data.local.dao.SaveCacheDao
 import com.nendo.argosy.data.preferences.FontSlot
 import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.preferences.HomeBackgroundMode
+import com.nendo.argosy.data.preferences.NewBadgePlacement
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.github.UpdateRepository
 import com.nendo.argosy.data.remote.jellyfin.JellyfinConnectionManager
@@ -104,6 +105,7 @@ class SettingsViewModel @Inject constructor(
     internal val libretroSettingsRepo: LibretroSettingsRepository,
     internal val touchLayoutRepository: com.nendo.argosy.data.repository.TouchLayoutRepository,
     internal val launchArgsRepo: com.nendo.argosy.data.repository.LaunchArgsRepository,
+    internal val keepAlivePolicy: com.nendo.argosy.data.emulator.background.KeepAlivePolicy,
     internal val installedAppResolver: com.nendo.argosy.data.platform.InstalledAppResolver,
     internal val iconPackRepository: com.nendo.argosy.data.iconpack.IconPackRepository,
     internal val emulatorConfigRepo: EmulatorConfigRepository,
@@ -739,6 +741,9 @@ class SettingsViewModel @Inject constructor(
     fun confirmAppPickerSelection() = routeConfirmAppPickerSelection(this)
     fun setBuiltinRumbleEnabled(enabled: Boolean) = routeSetBuiltinRumbleEnabled(this, enabled)
     fun setBuiltinMotionEnabled(enabled: Boolean) = routeSetBuiltinMotionEnabled(this, enabled)
+    fun setBuiltinGyroAimInvertX(enabled: Boolean) = routeSetBuiltinGyroAimInvertX(this, enabled)
+    fun setBuiltinGyroAimInvertY(enabled: Boolean) = routeSetBuiltinGyroAimInvertY(this, enabled)
+    fun stepBuiltinGyroAimSensitivity(direction: Int) = routeStepBuiltinGyroAimSensitivity(this, direction)
     fun setBuiltinLimitHotkeysToPlayer1(enabled: Boolean) = routeSetBuiltinLimitHotkeysToPlayer1(this, enabled)
     fun setSpeedrunStartOnReset(enabled: Boolean) = routeSetSpeedrunStartOnReset(this, enabled)
     fun setSpeedrunPanelSide(side: String) = routeSetSpeedrunPanelSide(this, side)
@@ -1184,6 +1189,10 @@ class SettingsViewModel @Inject constructor(
     fun setHideSystemNavigationBar(hide: Boolean) =
         displayDelegate.setHideSystemNavigationBar(viewModelScope, hide)
     fun setHideSystemStatusBar(hide: Boolean) = displayDelegate.setHideSystemStatusBar(viewModelScope, hide)
+    fun setScreenOrientation(mode: com.nendo.argosy.data.preferences.ScreenOrientationMode) =
+        displayDelegate.setScreenOrientation(viewModelScope, mode)
+    fun cycleScreenOrientation(direction: Int = 1) =
+        displayDelegate.cycleScreenOrientation(viewModelScope, direction)
     fun setQuickPanelInEmulators(enabled: Boolean) {
         permissionsDelegate.refreshPermissions()
         displayDelegate.setQuickPanelInEmulators(
@@ -1332,6 +1341,21 @@ class SettingsViewModel @Inject constructor(
         storagePlatformGamesDelegate.open(platformId, name, viewModelScope)
     }
 
+    fun openStorageLocalOnlyGames() {
+        routePushSection(this, SettingsSection.STORAGE_PLATFORM_GAMES)
+        storagePlatformGamesDelegate.openLocalOnly(viewModelScope)
+    }
+
+    fun setStorageLocationFilter(filter: StorageLocationFilter) {
+        storagePlatformGamesDelegate.setLocationFilter(filter)
+        setFocusIndex(0)
+    }
+
+    fun cycleStorageLocationFilter(delta: Int) {
+        storagePlatformGamesDelegate.cycleLocationFilter(delta)
+        setFocusIndex(0)
+    }
+
     fun resetStoragePlatformHighlightedCategory() =
         storagePlatformGamesDelegate.setHighlightedCategory(0)
 
@@ -1470,6 +1494,8 @@ class SettingsViewModel @Inject constructor(
     fun setAmbientLedScreenEnabled(enabled: Boolean) = displayDelegate.setAmbientLedScreenEnabled(viewModelScope, enabled)
     fun setAmbientLedAchievementFlash(enabled: Boolean) = displayDelegate.setAmbientLedAchievementFlash(viewModelScope, enabled)
     fun setInstalledOnlyHome(enabled: Boolean) = displayDelegate.setInstalledOnlyHome(viewModelScope, enabled)
+    fun cycleRecentNewGamesLimit(direction: Int = 1) = displayDelegate.cycleRecentNewGamesLimit(viewModelScope, direction)
+    fun setNewBadgePlacement(placement: NewBadgePlacement) = displayDelegate.setNewBadgePlacement(viewModelScope, placement)
 
     fun setShowStatusClock(show: Boolean) = displayDelegate.setShowStatusClock(viewModelScope, show)
 

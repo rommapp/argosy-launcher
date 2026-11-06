@@ -42,8 +42,9 @@ private:
         float joypadLeftYAxis = 0;
         float joypadRightXAxis = 0;
         float joypadRightYAxis = 0;
-        float pointerScreenXAxis = -1;
-        float pointerScreenYAxis = -1;
+        float pointerScreenXAxis = 0.5f;
+        float pointerScreenYAxis = 0.5f;
+        bool pointerPressed = false;
     };
 
 public:

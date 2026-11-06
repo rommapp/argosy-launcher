@@ -16,6 +16,8 @@ import com.nendo.argosy.data.local.dao.MediaItemDao
 import com.nendo.argosy.data.local.entity.MediaItemType
 import com.nendo.argosy.data.media.ActiveMediaPlayback
 import com.nendo.argosy.data.media.MediaPlaybackTracker
+import com.nendo.argosy.data.netplay.external.ExternalNetplay
+import com.nendo.argosy.data.netplay.external.ExternalNetplayDetector
 import com.nendo.argosy.data.preferences.JellyfinPreferencesRepository
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import kotlinx.coroutines.CoroutineScope
@@ -37,7 +39,8 @@ class PresenceManager @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
     private val jellyfinPreferencesRepository: JellyfinPreferencesRepository,
     private val gameDao: GameDao,
-    private val mediaItemDao: MediaItemDao
+    private val mediaItemDao: MediaItemDao,
+    private val externalNetplayDetector: ExternalNetplayDetector
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -45,6 +48,7 @@ class PresenceManager @Inject constructor(
     private var lastSentGameId: Int? = null
     private var lastSentTitle: String? = null
     private var lastSentMedia: MediaPresence? = null
+    private var lastSentExternalNetplay: ExternalNetplay? = null
     private var lastSentSocialUserId: String? = null
     private var lastReconnectAttempt = 0L
 
@@ -105,16 +109,24 @@ class PresenceManager @Inject constructor(
                 )
             }.distinctUntilChanged()
 
-            combine(
+            val activity = combine(
                 playSessionTracker.activeSession,
                 mediaPlaybackTracker.activePlayback,
+                externalNetplayDetector.current
+            ) { playSession, mediaPlayback, externalNetplay ->
+                PresenceActivity(playSession, mediaPlayback, externalNetplay)
+            }
+
+            combine(
+                activity,
                 flags,
                 socialRepository.serviceConnectionState,
                 _screenOn
-            ) { playSession, mediaPlayback, presenceFlags, serviceState, screenOn ->
+            ) { current, presenceFlags, serviceState, screenOn ->
                 PresenceContext(
-                    playSession = playSession,
-                    mediaPlayback = mediaPlayback,
+                    playSession = current.playSession,
+                    mediaPlayback = current.mediaPlayback,
+                    externalNetplay = current.externalNetplay,
                     onlineStatusEnabled = presenceFlags.onlineStatusEnabled,
                     showNowPlaying = presenceFlags.showNowPlaying,
                     shareMediaPresence = presenceFlags.shareMediaPresence,
@@ -140,6 +152,7 @@ class PresenceManager @Inject constructor(
             lastSentGameId = null
             lastSentTitle = null
             lastSentMedia = null
+            lastSentExternalNetplay = null
             lastSentSocialUserId = null
             if (context.isScreenOn && context.onlineStatusEnabled) {
                 val now = System.currentTimeMillis()
@@ -159,20 +172,23 @@ class PresenceManager @Inject constructor(
             presenceInfo.status != lastSentStatus ||
             presenceInfo.gameIgdbId != lastSentGameId ||
             presenceInfo.gameTitle != lastSentTitle ||
-            presenceInfo.media != lastSentMedia
+            presenceInfo.media != lastSentMedia ||
+            presenceInfo.externalNetplay != lastSentExternalNetplay
         ) {
-            Log.d(TAG, "Sending presence: ${presenceInfo.status}, title=${presenceInfo.gameTitle}, igdbId=${presenceInfo.gameIgdbId}, media=${presenceInfo.media}")
+            Log.d(TAG, "Sending presence: ${presenceInfo.status}, title=${presenceInfo.gameTitle}, igdbId=${presenceInfo.gameIgdbId}, media=${presenceInfo.media}, externalNetplay=${presenceInfo.externalNetplay}")
             val sent = socialRepository.sendPresence(
                 presenceInfo.status,
                 presenceInfo.gameIgdbId,
                 presenceInfo.gameTitle,
-                presenceInfo.media
+                presenceInfo.media,
+                presenceInfo.externalNetplay
             )
             if (sent) {
                 lastSentStatus = presenceInfo.status
                 lastSentGameId = presenceInfo.gameIgdbId
                 lastSentTitle = presenceInfo.gameTitle
                 lastSentMedia = presenceInfo.media
+                lastSentExternalNetplay = presenceInfo.externalNetplay
                 lastSentSocialUserId = context.socialUserId
             } else {
                 Log.w(TAG, "Presence send failed, will retry on next state change")
@@ -180,6 +196,7 @@ class PresenceManager @Inject constructor(
                 lastSentGameId = null
                 lastSentTitle = null
                 lastSentMedia = null
+                lastSentExternalNetplay = null
                 lastSentSocialUserId = null
             }
         } else {
@@ -191,7 +208,8 @@ class PresenceManager @Inject constructor(
         val status: PresenceStatus,
         val gameIgdbId: Int?,
         val gameTitle: String?,
-        val media: MediaPresence? = null
+        val media: MediaPresence? = null,
+        val externalNetplay: ExternalNetplay? = null
     )
 
     /**
@@ -211,7 +229,12 @@ class PresenceManager @Inject constructor(
         if (playSession != null) {
             return if (context.showNowPlaying) {
                 val gameInfo = getGameInfo(playSession.gameId)
-                PresenceInfo(PresenceStatus.IN_GAME, gameInfo?.first, gameInfo?.second)
+                PresenceInfo(
+                    PresenceStatus.IN_GAME,
+                    gameInfo?.first,
+                    gameInfo?.second,
+                    externalNetplay = context.externalNetplay
+                )
             } else {
                 PresenceInfo(PresenceStatus.ONLINE, null, null)
             }
@@ -287,9 +310,16 @@ class PresenceManager @Inject constructor(
      * makes an A-to-B swap invisible -- it never changes -- and the send dedupe then suppresses
      * the first post-swap presence because the status and game are the same as the old account's.
      */
+    private data class PresenceActivity(
+        val playSession: ActiveSession?,
+        val mediaPlayback: ActiveMediaPlayback?,
+        val externalNetplay: ExternalNetplay?
+    )
+
     private data class PresenceContext(
         val playSession: ActiveSession?,
         val mediaPlayback: ActiveMediaPlayback?,
+        val externalNetplay: ExternalNetplay?,
         val onlineStatusEnabled: Boolean,
         val showNowPlaying: Boolean,
         val shareMediaPresence: Boolean,

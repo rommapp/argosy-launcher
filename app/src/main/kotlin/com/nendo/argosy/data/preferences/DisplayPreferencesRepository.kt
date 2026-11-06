@@ -81,6 +81,7 @@ data class DisplayPreferences(
     val compactFooter: Boolean = false,
     val hideSystemNavigationBar: Boolean = true,
     val hideSystemStatusBar: Boolean = true,
+    val screenOrientation: ScreenOrientationMode = ScreenOrientationMode.AUTO,
     val lockScreenArt: Boolean = true,
     val homeAppAvailable: Boolean = true,
     val iconPack: String? = null,
@@ -126,8 +127,23 @@ data class DisplayPreferences(
     val appsDisplayTarget: EmulatorDisplayTarget = EmulatorDisplayTarget.DEFAULT,
     val dualScreenInputFocus: DualScreenInputFocus = DualScreenInputFocus.AUTO,
     val screenLayouts: ScreenLayouts = ScreenLayouts(),
-    val installedOnlyHome: Boolean = false
+    val installedOnlyHome: Boolean = false,
+    val recentNewGamesLimit: Int = RecentNewGamesLimit.DEFAULT,
+    val newBadgePlacement: NewBadgePlacement = NewBadgePlacement.RIGHT
 )
+
+/**
+ * How many never-played, newly added games the home Recent row may hold. [ALL] lifts the cap.
+ */
+object RecentNewGamesLimit {
+    const val ALL = -1
+    const val DEFAULT = 5
+    val STEPS = listOf(0, 3, 5, 10, ALL)
+
+    fun normalize(value: Int): Int = if (value in STEPS) value else DEFAULT
+
+    fun capTo(limit: Int, pool: Int): Int = if (limit == ALL) pool else minOf(limit, pool)
+}
 
 @Singleton
 class DisplayPreferencesRepository @Inject constructor(
@@ -189,6 +205,7 @@ class DisplayPreferencesRepository @Inject constructor(
         val COMPACT_FOOTER = booleanPreferencesKey("compact_footer")
         val HIDE_SYSTEM_NAVIGATION_BAR = booleanPreferencesKey("hide_system_navigation_bar")
         val HIDE_SYSTEM_STATUS_BAR = booleanPreferencesKey("hide_system_status_bar")
+        val SCREEN_ORIENTATION = stringPreferencesKey("screen_orientation")
         val LOCK_SCREEN_ART = booleanPreferencesKey("lock_screen_art")
         val LOCK_SCREEN_ART_APPLIED = booleanPreferencesKey("lock_screen_art_applied")
         val LIVE_WALLPAPER_OFFERED = booleanPreferencesKey("live_wallpaper_offered")
@@ -241,6 +258,8 @@ class DisplayPreferencesRepository @Inject constructor(
         val SCREEN_LAYOUTS = stringPreferencesKey("screen_layouts")
         val SCREEN_LAYOUTS_UNREADABLE = stringPreferencesKey("screen_layouts_unreadable")
         val INSTALLED_ONLY_HOME = booleanPreferencesKey("installed_only_home")
+        val RECENT_NEW_GAMES_LIMIT = intPreferencesKey("recent_new_games_limit")
+        val NEW_BADGE_PLACEMENT = stringPreferencesKey("new_badge_placement")
     }
 
     val preferences: Flow<DisplayPreferences> = dataStore.data.map { prefs ->
@@ -306,6 +325,7 @@ class DisplayPreferencesRepository @Inject constructor(
             compactFooter = prefs[Keys.COMPACT_FOOTER] ?: false,
             hideSystemNavigationBar = prefs[Keys.HIDE_SYSTEM_NAVIGATION_BAR] ?: true,
             hideSystemStatusBar = prefs[Keys.HIDE_SYSTEM_STATUS_BAR] ?: true,
+            screenOrientation = ScreenOrientationMode.fromString(prefs[Keys.SCREEN_ORIENTATION]),
             lockScreenArt = prefs[Keys.LOCK_SCREEN_ART] ?: true,
             homeAppAvailable = prefs[Keys.HOME_APP_AVAILABLE] ?: true,
             iconPack = prefs[Keys.ICON_PACK],
@@ -355,7 +375,11 @@ class DisplayPreferencesRepository @Inject constructor(
             appsDisplayTarget = EmulatorDisplayTarget.appsDefaultFrom(prefs[Keys.APPS_DISPLAY_TARGET]),
             dualScreenInputFocus = DualScreenInputFocus.fromString(prefs[Keys.DUAL_SCREEN_INPUT_FOCUS]),
             screenLayouts = ScreenLayouts.fromJson(prefs[Keys.SCREEN_LAYOUTS]),
-            installedOnlyHome = prefs[Keys.INSTALLED_ONLY_HOME] ?: false
+            installedOnlyHome = prefs[Keys.INSTALLED_ONLY_HOME] ?: false,
+            recentNewGamesLimit = RecentNewGamesLimit.normalize(
+                prefs[Keys.RECENT_NEW_GAMES_LIMIT] ?: RecentNewGamesLimit.DEFAULT
+            ),
+            newBadgePlacement = NewBadgePlacement.fromString(prefs[Keys.NEW_BADGE_PLACEMENT])
         )
     }
 
@@ -622,6 +646,10 @@ class DisplayPreferencesRepository @Inject constructor(
         dataStore.edit { it[Keys.HIDE_SYSTEM_STATUS_BAR] = hide }
     }
 
+    suspend fun setScreenOrientation(mode: ScreenOrientationMode) {
+        dataStore.edit { it[Keys.SCREEN_ORIENTATION] = mode.name }
+    }
+
     suspend fun setLockScreenArt(enabled: Boolean) {
         dataStore.edit { it[Keys.LOCK_SCREEN_ART] = enabled }
     }
@@ -849,6 +877,14 @@ class DisplayPreferencesRepository @Inject constructor(
 
     suspend fun setInstalledOnlyHome(enabled: Boolean) {
         dataStore.edit { it[Keys.INSTALLED_ONLY_HOME] = enabled }
+    }
+
+    suspend fun setRecentNewGamesLimit(limit: Int) {
+        dataStore.edit { it[Keys.RECENT_NEW_GAMES_LIMIT] = RecentNewGamesLimit.normalize(limit) }
+    }
+
+    suspend fun setNewBadgePlacement(placement: NewBadgePlacement) {
+        dataStore.edit { it[Keys.NEW_BADGE_PLACEMENT] = placement.name }
     }
 
     /**

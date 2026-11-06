@@ -15,7 +15,7 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.systemBars
+import com.nendo.argosy.ui.util.launcherContent
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
@@ -57,6 +57,7 @@ import com.nendo.argosy.util.DesktopMode
 import com.nendo.argosy.util.DisplayAffinityHelper
 import com.nendo.argosy.util.Logger
 import com.nendo.argosy.util.LauncherSystemBars
+import com.nendo.argosy.util.followScreenOrientation
 import com.nendo.argosy.util.installImmersiveMode
 import dagger.hilt.android.AndroidEntryPoint
 import com.nendo.argosy.util.SafeCoroutineScope
@@ -168,6 +169,7 @@ class ArgosyActivity : ComponentActivity() {
     @Inject lateinit var saveHandlerRegistry: com.nendo.argosy.data.sync.platform.PlatformSaveHandlerRegistry
     @Inject lateinit var steamRepository: com.nendo.argosy.data.repository.SteamRepository
     @Inject lateinit var playSessionTracker: com.nendo.argosy.data.emulator.PlaySessionTracker
+    @Inject lateinit var keepAlivePolicy: com.nendo.argosy.data.emulator.background.KeepAlivePolicy
     @Inject lateinit var repairImageCacheUseCase: com.nendo.argosy.domain.usecase.cache.RepairImageCacheUseCase
     @Inject lateinit var downloadFileStatusRepository: com.nendo.argosy.data.repository.DownloadFileStatusRepository
     @Inject lateinit var presenceManager: com.nendo.argosy.data.social.PresenceManager
@@ -259,6 +261,7 @@ class ArgosyActivity : ComponentActivity() {
 
         installImmersiveMode { systemBars.visibility }
         systemBars.follow(activityScope, preferencesRepository.userPreferences)
+        followScreenOrientation(activityScope, preferencesRepository.userPreferences)
         keepAwakeWhileUserActive()
         dimWhileMediaIdle()
 
@@ -402,7 +405,7 @@ class ArgosyActivity : ComponentActivity() {
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .windowInsetsPadding(WindowInsets.systemBars)
+                                .windowInsetsPadding(WindowInsets.launcherContent)
                                 .focusRequester(presentationSink)
                                 .focusable()
                         ) {
@@ -789,9 +792,10 @@ class ArgosyActivity : ComponentActivity() {
     private fun revealCallerWhenExternalSessionCloses() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                playSessionTracker.externalSessionClosed.collect {
+                playSessionTracker.externalSessionClosed.collect { emulatorPackage ->
                     playSessionTracker.pendingSessionConflict.first { it == null }
                     if (!lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) return@collect
+                    if (keepAlivePolicy.keepsAlive(emulatorPackage)) return@collect
                     Log.d(TAG, "External session closed, moving task to back")
                     moveTaskToBack(true)
                 }

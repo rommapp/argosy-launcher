@@ -32,15 +32,12 @@
     <string name="ui_save_channel_tab_states">स्टेट</string>
     <string name="ui_save_channel_states_empty">कोई स्टेट स्लॉट उपलब्ध नहीं</string>
     <string name="ui_save_channel_states_heading_named">%1$s में स्टेट</string>
-    <string name="ui_save_channel_states_heading_default">डिफ़ॉल्ट स्लॉट में स्टेट</string>
     <string name="ui_save_channel_slot_new">नया स्लॉट</string>
     <string name="ui_save_channel_slot_legacy_tag">[लीगेसी]</string>
     <string name="ui_save_channel_history_active_point">सक्रिय रीस्टोर पॉइंट</string>
     <string name="ui_save_channel_history_latest">नवीनतम</string>
     <string name="ui_save_channel_history_tag_synced">[सिंक हुआ]</string>
     <string name="ui_save_channel_history_tag_local">[लोकल]</string>
-    <string name="ui_save_channel_active_default">नवीनतम</string>
-    <string name="ui_save_channel_slot_autosave">ऑटोसेव</string>
     <string name="ui_save_channel_slot_archived">आर्काइव्ड</string>
 
     <string name="ui_save_channel_footer_migrate">माइग्रेट</string>
@@ -503,6 +500,7 @@
     <!-- Storage meter, preference rows, home layout rows (ui/components) -->
 
     <string name="ui_volume_meter_other">अन्य ऐप और फ़ाइलें</string>
+    <string name="ui_volume_meter_unknown_location">%1$s गेम अज्ञात जगह पर हैं</string>
     <string name="ui_volume_meter_free">%1$s खाली</string>
 
     <string name="ui_cycle_preference_reset_to_global">ग्लोबल पर रीसेट करें</string>
@@ -586,6 +584,10 @@
     <string name="ui_quick_settings_theme_light">लाइट</string>
     <string name="ui_quick_settings_theme_dark">डार्क</string>
     <string name="ui_quick_settings_theme_system">ऑटो</string>
+    <string name="ui_quick_settings_orientation">ओरिएंटेशन</string>
+    <string name="ui_quick_settings_orientation_auto">ऑटो</string>
+    <string name="ui_quick_settings_orientation_landscape">लैंडस्केप</string>
+    <string name="ui_quick_settings_orientation_portrait">पोर्ट्रेट</string>
     <string name="ui_quick_settings_haptics">हैप्टिक्स</string>
     <string name="ui_quick_settings_ui_sounds">UI साउंड</string>
     <string name="ui_quick_settings_swap_ab">A/B बदलें</string>
@@ -607,6 +609,8 @@
     <string name="ui_quick_settings_group_performance">परफ़ॉर्मेंस</string>
     <string name="ui_quick_settings_group_fan">फैन</string>
     <string name="ui_quick_settings_group_overlay">ओवरले</string>
+    <string name="ui_quick_settings_stats_fan">फैन</string>
+    <string name="ui_quick_settings_stats_battery">बैटरी</string>
     <string name="ui_quick_settings_music_nothing_playing">कुछ नहीं चल रहा</string>
     <string name="ui_quick_settings_music_source_launcher">लॉन्चर संगीत</string>
     <string name="ui_quick_settings_music_track_position">%2$d में से %1$d</string>
@@ -658,6 +662,7 @@
     <string name="ui_quick_friends_appear_online">ऑनलाइन दिखें</string>
     <string name="ui_drawer_friend_hosting">%1$s होस्ट कर रहे हैं</string>
     <string name="ui_drawer_friend_playing">%1$s खेल रहे हैं</string>
+    <string name="ui_drawer_friend_playing_online">%1$s ऑनलाइन खेल रहे हैं</string>
     <string name="ui_drawer_friend_in_game">गेम में</string>
     <string name="ui_drawer_friend_favorite">पसंदीदा</string>
     <string name="ui_drawer_account_none">कोई खाता नहीं</string>
@@ -679,7 +684,6 @@
 
     <string name="ui_sync_overlay_unknown_game">गेम</string>
     <string name="ui_sync_overlay_slot_prefix">"स्लॉट: "</string>
-    <string name="ui_sync_overlay_slot_default">नवीनतम</string>
     <string name="ui_sync_overlay_blocked_grant">अनुमति दें</string>
     <string name="ui_sync_overlay_blocked_configure_path">सेव पाथ कॉन्फ़िगर करें</string>
     <string name="ui_sync_overlay_blocked_disable">सिंक अक्षम करें</string>
@@ -785,17 +789,6 @@
     <string name="ui_sync_overlay_snapshot_conflict_branch_subtitle">इस डिवाइस के सेव को नए चैनल में ले जाएं</string>
     <string name="ui_sync_overlay_snapshot_conflict_revert">पहले जैसा करें</string>
     <string name="ui_sync_overlay_snapshot_conflict_revert_subtitle">इस डिवाइस के आखिरी सिंक किए गए सेव पर लौटें (बैकअप बनेगा)</string>
-    <string name="ui_sync_overlay_post_session_title">सेव कॉन्फ्लिक्ट</string>
-    <string name="ui_sync_overlay_post_session_subject">\"%1$s\" -- %2$s</string>
-    <string name="ui_sync_overlay_post_session_default_slot">डिफ़ॉल्ट सेव</string>
-    <string name="ui_sync_overlay_post_session_message">सर्वर पर एक नई सेव मौजूद है। अपलोड करने पर आपकी लोकल सेव सबसे नई बन जाएगी, और सर्वर की कॉपी बनी रहेगी।</string>
-    <string name="ui_sync_overlay_post_session_local">लोकल</string>
-    <string name="ui_sync_overlay_post_session_server">सर्वर</string>
-    <string name="ui_sync_overlay_post_session_server_named">सर्वर (%1$s)</string>
-    <string name="ui_sync_overlay_post_session_skip">सिंक छोड़ें</string>
-    <string name="ui_sync_overlay_post_session_skip_subtitle">अपनी लोकल सेव रखें, अपलोड न करें</string>
-    <string name="ui_sync_overlay_post_session_overwrite">लोकल सेव अपलोड करें</string>
-    <string name="ui_sync_overlay_post_session_overwrite_subtitle">आपकी लोकल सेव सबसे नई बन जाएगी। सर्वर की कॉपी बनी रहेगी।</string>
     <string name="ui_sync_overlay_legacy_status">सिंक हो रहा है...</string>
 
     <!-- Quick menu (ui/quickmenu) -->
@@ -997,7 +990,6 @@
     <string name="media_library_viewmodel_refresh_label">रीफ्रेश हो रहा है</string>
 
     <string name="gamedetail_action_buttons_play">खेलें</string>
-    <string name="gamedetail_action_buttons_autosave">ऑटो-सेव</string>
     <string name="gamedetail_action_buttons_download">डाउनलोड</string>
     <string name="gamedetail_action_buttons_install">इंस्टॉल</string>
     <string name="gamedetail_action_buttons_queued">कतार में...</string>
@@ -1086,4 +1078,11 @@
     <string name="common_game_confirm_hide_title">%1$s छिपाएं?</string>
     <string name="common_game_confirm_hide_message">छिपे हुए गेम लाइब्रेरी में सोर्स को छिपे हुए पर फ़िल्टर करके फिर से दिखाए जा सकते हैं।</string>
     <string name="common_game_confirm_hide_confirm">छिपाएं</string>
+    <string name="ui_launch_overlay_running_busy_title">%1$s चल रहा है</string>
+    <string name="ui_launch_overlay_running_busy_message_game">%1$s अभी भी बैकग्राउंड में %2$s चला रहा है।</string>
+    <string name="ui_launch_overlay_running_busy_message">%1$s अभी भी बैकग्राउंड में खुला है।</string>
+    <string name="ui_launch_overlay_running_open_title">%1$s अभी भी खुला है</string>
+    <string name="ui_launch_overlay_running_open_message">दूसरा गेम शुरू करने पर यह बंद हो जाएगा।</string>
+    <string name="ui_launch_overlay_running_close_label">बंद करें और लॉन्च करें</string>
+    <string name="ui_launch_overlay_running_close_subtitle">चल रहे गेम में बिना सेव की गई प्रगति खो जाएगी</string>
 </resources>

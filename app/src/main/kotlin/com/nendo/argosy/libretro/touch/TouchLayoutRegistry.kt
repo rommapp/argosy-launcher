@@ -53,6 +53,7 @@ object TouchLayoutRegistry {
             "jaguar" -> jaguar()
             "3do" -> threedo()
             "cdi" -> cdi()
+            "scummvm" -> scummvm()
             "dos", "pc9800" -> generic()
             else -> generic()
         }
@@ -739,6 +740,27 @@ object TouchLayoutRegistry {
             slot(RetroButton.START, R.string.ingame_touch_threedo_sys_start)
         ),
         analog = AnalogConfig.None
+    )
+
+    private fun scummvm(): TouchLayoutSpec = TouchLayoutSpec(
+        dpad = DpadStyle.EightWay,
+        face = FaceShape.Diamond4,
+        faceSlots = listOf(
+            slot(RetroButton.Y, R.string.ingame_touch_scummvm_face_y),
+            slot(RetroButton.X, R.string.ingame_touch_scummvm_face_x),
+            slot(RetroButton.B, R.string.ingame_touch_scummvm_face_b),
+            slot(RetroButton.A, R.string.ingame_touch_scummvm_face_a)
+        ),
+        shoulders = ShoulderShape.TopPair,
+        shoulderSlots = listOf(
+            slot(RetroButton.L, R.string.ingame_touch_scummvm_shoulder_l),
+            slot(RetroButton.R, R.string.ingame_touch_scummvm_shoulder_r)
+        ),
+        system = listOf(
+            slot(RetroButton.SELECT, R.string.ingame_touch_scummvm_sys_select),
+            slot(RetroButton.START, R.string.ingame_touch_scummvm_sys_start)
+        ),
+        analog = AnalogConfig.LeftOnly
     )
 
     private fun generic(): TouchLayoutSpec = TouchLayoutSpec(

@@ -36,7 +36,6 @@
     <string name="gamedetail_menu_play_button_waiting_for_network">Ожидание сети…</string>
 
     <string name="gamedetail_menu_saves_syncing">Синхронизация...</string>
-    <string name="gamedetail_menu_saves_default_channel">Автосохранение</string>
 
     <string name="gamedetail_menu_favorite_label">Избранное</string>
     <string name="gamedetail_menu_favorite_compact_remove_description">Убрать из избранного</string>
@@ -159,7 +158,6 @@
     <string name="gamedetail_option_item_current_description">Текущий</string>
     <string name="gamedetail_option_item_value">[%1$s]</string>
 
-    <string name="gamedetail_save_status_latest_label">Последнее</string>
     <string name="gamedetail_save_status_time">· %1$s</string>
     <string name="gamedetail_save_status_synced">Синхронизировано</string>
     <string name="gamedetail_save_status_local_newer">Локальное новее</string>

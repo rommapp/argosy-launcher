@@ -627,8 +627,6 @@ interface GameDao {
     @Query("SELECT * FROM games WHERE source IN (:sources) AND localPath IS NOT NULL")
     suspend fun getDownloadedBySources(sources: List<GameSource>): List<GameEntity>
 
-    @Query("SELECT COUNT(*) FROM games WHERE localPath IS NOT NULL AND fileOrigin = :origin")
-    suspend fun countWithLocalPathByOrigin(origin: FileOrigin): Int
 
     @Query("""
         SELECT * FROM games
@@ -637,6 +635,17 @@ interface GameDao {
         ORDER BY sortTitle ASC
     """)
     suspend fun getDownloadedGamesByPlatform(platformId: Long, ownerUserId: Long?): List<GameEntity>
+
+    @Query("""
+        SELECT * FROM games
+        WHERE source = :source AND localPath IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM user_roms_hidden h WHERE h.gameId = games.id AND (h.ownerUserId IS NULL OR h.ownerUserId IS :ownerUserId))
+        ORDER BY sortTitle ASC
+    """)
+    suspend fun getDownloadedGamesBySource(source: GameSource, ownerUserId: Long?): List<GameEntity>
+
+    @Query("SELECT COUNT(*) FROM games WHERE localPath IS NOT NULL AND source = :source")
+    suspend fun countWithLocalPathBySource(source: GameSource): Int
 
     @Query("DELETE FROM games WHERE source IN (:sources)")
     suspend fun deleteBySources(sources: List<GameSource>)

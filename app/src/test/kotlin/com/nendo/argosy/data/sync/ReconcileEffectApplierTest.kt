@@ -95,7 +95,7 @@ class ReconcileEffectApplierTest {
             id = 7L, gameId = game.id, emulatorId = "mgba", cachedAt = java.time.Instant.parse(cachedAt),
             saveSize = 1, cachePath = "x/7", channelName = "autosave"
         )
-        return com.nendo.argosy.data.repository.ServerSaveGate(activeSaves)
+        return com.nendo.argosy.data.repository.ServerSaveGate(activeSaves, unpinnedSaveSyncDao(), mockk(relaxed = true))
     }
 
     private fun applierWith(gate: com.nendo.argosy.data.repository.ServerSaveGate) = ReconcileEffectApplier(

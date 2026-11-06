@@ -113,6 +113,8 @@ object AccountScopedPreferenceKeys {
         "use_accent_color_footer",
         "icon_pack",
         "installed_only_home",
+        "recent_new_games_limit",
+        "new_badge_placement",
         "video_wallpaper_enabled",
         "video_wallpaper_muted",
         "video_wallpaper_delay_seconds",

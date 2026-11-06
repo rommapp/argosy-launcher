@@ -97,7 +97,6 @@
     <string name="gamedetail_menu_saves_syncing">Syncing...</string>
     <!-- Row in the left menu naming the save the game will load, when the user has not named one.
          Noun: the save the emulator writes by itself as the game runs. -->
-    <string name="gamedetail_menu_saves_default_channel">Auto-save</string>
 
     <!-- Left menu row. Noun: marking the game as a favourite. Not the verb "to favour". -->
     <string name="gamedetail_menu_favorite_label">Favorite</string>
@@ -481,7 +480,6 @@
 
     <!-- Name of the save the game will load, when the user has not named one and no time is known.
          Adjective used as a noun: the most recent save. -->
-    <string name="gamedetail_save_status_latest_label">Latest</string>
     <!-- Time beside the save status. %1$s is a phrase like "2 hours ago"; the bullet separates it
          from the status word before it. -->
     <string name="gamedetail_save_status_time">· %1$s</string>

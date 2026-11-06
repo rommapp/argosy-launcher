@@ -470,6 +470,18 @@ object EmulatorRegistry {
             ),
             downloadUrl = "https://play.google.com/store/apps/details?id=com.sa_moo_rai.picpic"
         ),
+        EmulatorDef(
+            id = "pico8_android",
+            packageName = "io.wip.pico8",
+            displayName = "PICO-8 for Android",
+            supportedPlatforms = setOf("pico8"),
+            launchAction = Intent.ACTION_VIEW,
+            launchConfig = LaunchConfig.Custom(
+                activityClass = "com.godot.game.GodotAppLauncher"
+            ),
+            downloadUrl = "https://github.com/Macs75/pico8-android/releases",
+            releaseSource = ReleaseSource.GitHub("Macs75/pico8-android")
+        ),
 
         EmulatorDef(
             id = "dolphin",
@@ -1254,11 +1266,11 @@ object EmulatorRegistry {
         ),
         "nds" to listOf(BUILTIN_ID, "drastic", "seedlessds", "melonds", "melondualds", "retroarch", "retroarch_64", "retroarch_32", "pokedaisy"),
         "3ds" to listOf(
-            "azahar", "citra_mmj", "borked3ds", "citra", BUILTIN_ID,
+            BUILTIN_ID, "azahar", "citra_mmj", "borked3ds", "citra",
             "retroarch", "retroarch_64", "retroarch_32"
         ),
-        "gc" to listOf("dolphin", "dolphin_handheld", "dolphin_cs", "retroarch", "retroarch_64", "retroarch_32"),
-        "wii" to listOf("dolphin", "dolphin_handheld", "dolphin_cs", "retroarch", "retroarch_64", "retroarch_32"),
+        "gc" to listOf(BUILTIN_ID, "dolphin", "dolphin_handheld", "dolphin_cs", "retroarch", "retroarch_64", "retroarch_32"),
+        "wii" to listOf(BUILTIN_ID, "dolphin", "dolphin_handheld", "dolphin_cs", "retroarch", "retroarch_64", "retroarch_32"),
         "wiiu" to listOf("cemu", "cemu_dualscreen"),
         "switch" to listOf("eden", "eden_duo", "lemon", "citron", "sudachi", "ryujinx", "yuzu", "strato", "skyline"),
         "gba" to listOf(BUILTIN_ID, "pizza_boy_gba_pro", "pizza_boy_gba", "linkboy", "retroarch", "retroarch_64", "retroarch_32", "pokedaisy"),
@@ -1272,30 +1284,30 @@ object EmulatorRegistry {
         "gg" to listOf(BUILTIN_ID, "md_emu", "retroarch", "retroarch_64", "retroarch_32"),
         "scd" to listOf(BUILTIN_ID, "md_emu", "retroarch", "retroarch_64", "retroarch_32"),
         "32x" to listOf(BUILTIN_ID, "md_emu", "retroarch", "retroarch_64", "retroarch_32"),
-        "dreamcast" to listOf("redream", "flycast"),
+        "dreamcast" to listOf(BUILTIN_ID, "redream", "flycast"),
         "saturn" to listOf(
             BUILTIN_ID, "yabasanshiro", "yabasanshiro_pro", "saturn_emu", "retroarch", "retroarch_64", "retroarch_32"
         ),
-        "arcade" to listOf("flycast", "mame4droid", "fbalpha", "retroarch", "retroarch_64", "retroarch_32"),
-        "fbneo" to listOf("fbalpha", "retroarch", "retroarch_64", "retroarch_32"),
-        "mame" to listOf("mame4droid", "retroarch", "retroarch_64", "retroarch_32"),
-        "cps1" to listOf("fbalpha", "retroarch", "retroarch_64", "retroarch_32"),
-        "cps2" to listOf("fbalpha", "retroarch", "retroarch_64", "retroarch_32"),
-        "cps3" to listOf("fbalpha", "retroarch", "retroarch_64", "retroarch_32"),
-        "neogeo" to listOf("fbalpha", "retroarch", "retroarch_64", "retroarch_32"),
-        "dos" to listOf("magic_dosbox", "dosbox_turbo"),
-        "scummvm" to listOf("scummvm", "retroarch", "retroarch_64", "retroarch_32"),
+        "arcade" to listOf(BUILTIN_ID, "flycast", "mame4droid", "fbalpha", "retroarch", "retroarch_64", "retroarch_32"),
+        "fbneo" to listOf(BUILTIN_ID, "fbalpha", "retroarch", "retroarch_64", "retroarch_32"),
+        "mame" to listOf(BUILTIN_ID, "mame4droid", "retroarch", "retroarch_64", "retroarch_32"),
+        "cps1" to listOf(BUILTIN_ID, "fbalpha", "retroarch", "retroarch_64", "retroarch_32"),
+        "cps2" to listOf(BUILTIN_ID, "fbalpha", "retroarch", "retroarch_64", "retroarch_32"),
+        "cps3" to listOf(BUILTIN_ID, "fbalpha", "retroarch", "retroarch_64", "retroarch_32"),
+        "neogeo" to listOf(BUILTIN_ID, "fbalpha", "retroarch", "retroarch_64", "retroarch_32"),
+        "dos" to listOf(BUILTIN_ID, "magic_dosbox", "dosbox_turbo"),
+        "scummvm" to listOf(BUILTIN_ID, "scummvm", "retroarch", "retroarch_64", "retroarch_32"),
         "ps3" to listOf("armsx3", "armsx3_play", "aps3e"),
         "atari2600" to listOf(BUILTIN_ID, "retroarch", "retroarch_64", "retroarch_32"),
-        "lynx" to listOf("retroarch", "retroarch_64", "retroarch_32"),
+        "lynx" to listOf(BUILTIN_ID, "retroarch", "retroarch_64", "retroarch_32"),
         "tg16" to listOf(BUILTIN_ID, "retroarch", "retroarch_64", "retroarch_32"),
-        "tgcd" to listOf("retroarch", "retroarch_64", "retroarch_32"),
+        "tgcd" to listOf(BUILTIN_ID, "retroarch", "retroarch_64", "retroarch_32"),
         "pcfx" to listOf(BUILTIN_ID, "retroarch", "retroarch_64", "retroarch_32"),
         "cdi" to listOf(BUILTIN_ID, "retroarch", "retroarch_64", "retroarch_32"),
         "jaguar" to listOf(BUILTIN_ID, "retroarch", "retroarch_64", "retroarch_32"),
         "3do" to listOf(BUILTIN_ID, "retroarch", "retroarch_64", "retroarch_32"),
-        "ngp" to listOf("retroarch", "retroarch_64", "retroarch_32"),
-        "ngpc" to listOf("retroarch", "retroarch_64", "retroarch_32"),
+        "ngp" to listOf(BUILTIN_ID, "retroarch", "retroarch_64", "retroarch_32"),
+        "ngpc" to listOf(BUILTIN_ID, "retroarch", "retroarch_64", "retroarch_32"),
         "wonderswan" to listOf(BUILTIN_ID, "retroarch", "retroarch_64", "retroarch_32"),
         "wsc" to listOf(BUILTIN_ID, "retroarch", "retroarch_64", "retroarch_32"),
         "pokemini" to listOf(BUILTIN_ID, "retroarch", "retroarch_64", "retroarch_32"),
@@ -1305,11 +1317,11 @@ object EmulatorRegistry {
         "steam" to listOf("gamehub", "gamehub_lite", "gamenative"),
         "windows" to listOf("gamenative"),
         "pc" to listOf("gamenative"),
-        "c64" to listOf("retroarch", "retroarch_64", "retroarch_32"),
+        "c64" to listOf(BUILTIN_ID, "retroarch", "retroarch_64", "retroarch_32"),
         "vic20" to listOf("retroarch", "retroarch_64", "retroarch_32"),
         "amiga" to listOf(BUILTIN_ID, "retroarch", "retroarch_64", "retroarch_32"),
-        "pc9800" to listOf("retroarch", "retroarch_64", "retroarch_32"),
-        "pico8" to listOf(BUILTIN_ID, "picpic", "retroarch", "retroarch_64", "retroarch_32")
+        "pc9800" to listOf(BUILTIN_ID, "retroarch", "retroarch_64", "retroarch_32"),
+        "pico8" to listOf(BUILTIN_ID, "picpic", "pico8_android", "retroarch", "retroarch_64", "retroarch_32")
     )
 
     fun getPreferredCore(platformId: String): String? {

@@ -76,6 +76,99 @@ class DualScreenManagerRoleSwapTest {
     }
 
     @Test
+    fun `screen numbers keep mirrored HDMI free of independent badge windows`() {
+        io.mockk.mockkConstructor(com.nendo.argosy.hardware.DisplayBadgeOverlay::class)
+        val overlayNumbers = slot<Map<Int, Int>>()
+        every {
+            anyConstructed<com.nendo.argosy.hardware.DisplayBadgeOverlay>().show(
+                capture(overlayNumbers), any()
+            )
+        } returns Unit
+        val screens = listOf(TOP_SCREEN, LOWER_SCREEN.copy(key = "tv", builtIn = false))
+        manager = newManager(attachedScreens = { screens })
+
+        manager.showScreenNumbers()
+
+        assertEquals(mapOf(TOP_SCREEN.displayId to 1), overlayNumbers.captured)
+        assertEquals(screens.associate { it.displayId to it.number }, manager.screenNumbers.value)
+    }
+
+    @Test
+    fun `screen numbers retain separate display badges in dual-screen mode`() {
+        io.mockk.mockkConstructor(com.nendo.argosy.hardware.DisplayBadgeOverlay::class)
+        val overlayNumbers = slot<Map<Int, Int>>()
+        every {
+            anyConstructed<com.nendo.argosy.hardware.DisplayBadgeOverlay>().show(
+                capture(overlayNumbers), any()
+            )
+        } returns Unit
+        val screens = listOf(TOP_SCREEN, LOWER_SCREEN.copy(key = "tv", builtIn = false))
+        val helper = mockk<com.nendo.argosy.util.DisplayAffinityHelper>(relaxed = true) {
+            every { hasSecondaryDisplay } returns true
+        }
+        manager = newManager(displayAffinityHelper = helper, attachedScreens = { screens })
+
+        manager.showScreenNumbers(com.nendo.argosy.hardware.DisplayBadgeSize.SMALL)
+
+        assertEquals(screens.associate { it.displayId to it.number }, overlayNumbers.captured)
+    }
+
+    @Test
+    fun `screen numbers retain separate display badges in desktop mode`() {
+        io.mockk.mockkConstructor(com.nendo.argosy.hardware.DisplayBadgeOverlay::class)
+        val overlayNumbers = slot<Map<Int, Int>>()
+        every {
+            anyConstructed<com.nendo.argosy.hardware.DisplayBadgeOverlay>().show(
+                capture(overlayNumbers), any()
+            )
+        } returns Unit
+        val screens = listOf(TOP_SCREEN, LOWER_SCREEN.copy(key = "tv", builtIn = false))
+        val helper = mockk<com.nendo.argosy.util.DisplayAffinityHelper>(relaxed = true) {
+            every { isDesktopMode } returns true
+        }
+        manager = newManager(displayAffinityHelper = helper, attachedScreens = { screens })
+
+        manager.showScreenNumbers()
+
+        assertEquals(screens.associate { it.displayId to it.number }, overlayNumbers.captured)
+    }
+
+    @Test
+    fun `screen numbers keep all built-in badges when dual-screen mode is off`() {
+        io.mockk.mockkConstructor(com.nendo.argosy.hardware.DisplayBadgeOverlay::class)
+        val overlayNumbers = slot<Map<Int, Int>>()
+        every {
+            anyConstructed<com.nendo.argosy.hardware.DisplayBadgeOverlay>().show(
+                capture(overlayNumbers), any()
+            )
+        } returns Unit
+        val screens = listOf(TOP_SCREEN, LOWER_SCREEN)
+        manager = newManager(attachedScreens = { screens })
+
+        manager.showScreenNumbers()
+
+        assertEquals(screens.associate { it.displayId to it.number }, overlayNumbers.captured)
+    }
+
+    @Test
+    fun `setup host rendered in content has no duplicate overlay while other built-in badges remain`() {
+        io.mockk.mockkConstructor(com.nendo.argosy.hardware.DisplayBadgeOverlay::class)
+        val overlayNumbers = slot<Map<Int, Int>>()
+        every {
+            anyConstructed<com.nendo.argosy.hardware.DisplayBadgeOverlay>().show(
+                capture(overlayNumbers), any()
+            )
+        } returns Unit
+        val screens = listOf(TOP_SCREEN, LOWER_SCREEN)
+        manager = newManager(attachedScreens = { screens })
+
+        manager.showScreenNumbers(inContentDisplayId = TOP_SCREEN.displayId)
+
+        assertEquals(mapOf(LOWER_SCREEN.displayId to LOWER_SCREEN.number), overlayNumbers.captured)
+        assertEquals(screens.associate { it.displayId to it.number }, manager.screenNumbers.value)
+    }
+
+    @Test
     fun `rebinding after activity destruction resumes presentation preference updates`() {
         val preferences = MutableStateFlow(UserPreferences())
         every { preferencesRepository.userPreferences } returns preferences
@@ -588,7 +681,9 @@ class DualScreenManagerRoleSwapTest {
         val sessionTracker = mockk<com.nendo.argosy.data.emulator.PlaySessionTracker>(relaxed = true) {
             every { activeSession } returns MutableStateFlow(endedSession)
         }
-        val sessionEnd = mockk<com.nendo.argosy.ui.screens.common.SessionEndCoordinator>(relaxed = true)
+        val sessionEnd = mockk<com.nendo.argosy.ui.screens.common.SessionEndCoordinator>(relaxed = true) {
+            io.mockk.coEvery { stopsAfterLeavingScreen(EXTERNAL_EMULATOR) } returns true
+        }
         every { sessionStateStore.getEmulatorPackage() } returns EXTERNAL_EMULATOR
         manager = newManager(
             scope = testScope.backgroundScope,
@@ -603,6 +698,31 @@ class DualScreenManagerRoleSwapTest {
         testScope.testScheduler.runCurrent()
 
         io.mockk.coVerify(exactly = 1) { sessionEnd.stopBackgroundEmulator(EXTERNAL_EMULATOR) }
+    }
+
+    @Test
+    fun `an emulator kept alive between sessions is not stopped after leaving its screen`() {
+        val sessionTracker = mockk<com.nendo.argosy.data.emulator.PlaySessionTracker>(relaxed = true) {
+            every { activeSession } returns MutableStateFlow(null)
+        }
+        val sessionEnd = mockk<com.nendo.argosy.ui.screens.common.SessionEndCoordinator>(relaxed = true) {
+            io.mockk.coEvery { stopsAfterLeavingScreen(EXTERNAL_EMULATOR) } returns false
+        }
+        every { sessionStateStore.getEmulatorPackage() } returns EXTERNAL_EMULATOR
+        every { sessionStateStore.hasActiveSession() } returns false
+        manager = newManager(
+            scope = testScope.backgroundScope,
+            playSessionTracker = sessionTracker,
+            sessionEndCoordinator = sessionEnd
+        )
+        manager.setDualScreenDevice(true)
+        val activityScope = bindToActivityScope()
+
+        manager.endSessionAfterEmulatorLeft()
+        testScope.testScheduler.advanceUntilIdle()
+        activityScope.cancel()
+
+        io.mockk.coVerify(exactly = 0) { sessionEnd.stopBackgroundEmulator(any()) }
     }
 
     private fun bindToActivityScope(): kotlinx.coroutines.CoroutineScope {

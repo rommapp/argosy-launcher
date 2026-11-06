@@ -637,6 +637,7 @@ private fun routeStorageGamesConfirm(vm: SettingsViewModel, state: SettingsUiSta
             return InputResult.handled(SoundType.TOGGLE)
         }
         is StorageGamesItem.PlatformRow -> vm.openStoragePlatformGames(item.usage.platformId)
+        StorageGamesItem.LocalOnly -> vm.openStorageLocalOnlyGames()
         else -> {}
     }
     return InputResult.HANDLED
@@ -725,6 +726,10 @@ private fun routeInterfaceConfirm(vm: SettingsViewModel, state: SettingsUiState)
     when (interfaceItemAtFocusIndex(state.focusedIndex, layoutState)) {
         InterfaceItem.Language -> {
             vm.requestEnumPicker(InterfaceItem.Language.key)
+            return InputResult.handled(SoundType.OPEN_MODAL)
+        }
+        InterfaceItem.ScreenOrientation -> {
+            vm.requestEnumPicker(InterfaceItem.ScreenOrientation.key)
             return InputResult.handled(SoundType.OPEN_MODAL)
         }
         InterfaceItem.CompactFooter -> vm.setCompactFooter(!state.display.compactFooter)
@@ -956,7 +961,12 @@ private fun routeHomeScreenConfirm(vm: SettingsViewModel, state: SettingsUiState
             vm.setInstalledOnlyHome(!state.display.installedOnlyHome)
             return InputResult.handled(SoundType.TOGGLE)
         }
-        HomeScreenItem.LayoutSelector, HomeScreenItem.BoxArt -> return InputResult.handled(SoundType.SILENT)
+        HomeScreenItem.RecentNewGames -> {
+            vm.requestEnumPicker(HomeScreenItem.RecentNewGames.key)
+            return InputResult.handled(SoundType.OPEN_MODAL)
+        }
+        HomeScreenItem.NewBadge, HomeScreenItem.LayoutSelector, HomeScreenItem.BoxArt ->
+            return InputResult.handled(SoundType.SILENT)
         is HomeScreenItem.LayoutField -> {
             val updated = toggleHomeLayoutField(state.display.homeLayout, focused.field)
             if (updated == state.display.homeLayout) return InputResult.handled(SoundType.SILENT)

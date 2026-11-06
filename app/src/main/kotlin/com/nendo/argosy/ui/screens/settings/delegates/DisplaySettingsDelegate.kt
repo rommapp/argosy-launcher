@@ -3,6 +3,7 @@ package com.nendo.argosy.ui.screens.settings.delegates
 import androidx.core.graphics.ColorUtils
 import com.nendo.argosy.data.cache.GradientPreset
 import com.nendo.argosy.data.preferences.GripReserveMode
+import com.nendo.argosy.data.preferences.RecentNewGamesLimit
 import com.nendo.argosy.domain.model.GripAutoControllers
 import com.nendo.argosy.data.preferences.BackdropEdgeStyle
 import com.nendo.argosy.data.preferences.BackdropMotion
@@ -21,6 +22,7 @@ import com.nendo.argosy.data.preferences.BoxArtBorderThickness
 import com.nendo.argosy.data.preferences.BoxArtCornerRadius
 import com.nendo.argosy.data.preferences.BoxArtGlowStrength
 import com.nendo.argosy.data.preferences.BoxArtShape
+import com.nendo.argosy.data.preferences.NewBadgePlacement
 import com.nendo.argosy.data.preferences.BoxArtInnerEffect
 import com.nendo.argosy.data.preferences.GlassBorderTint
 import com.nendo.argosy.data.preferences.BoxArtInnerEffectThickness
@@ -34,6 +36,7 @@ import com.nendo.argosy.data.preferences.PlatformIndicatorContent
 import com.nendo.argosy.data.preferences.PlatformIndicatorStyle
 import com.nendo.argosy.data.preferences.SystemIconPadding
 import com.nendo.argosy.data.preferences.SystemIconPosition
+import com.nendo.argosy.data.preferences.ScreenOrientationMode
 import com.nendo.argosy.data.preferences.ThemeMode
 import com.nendo.argosy.data.preferences.AmbientLedColorMode
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
@@ -585,6 +588,17 @@ class DisplaySettingsDelegate @Inject constructor(
         }
     }
 
+    fun setScreenOrientation(scope: CoroutineScope, mode: ScreenOrientationMode) {
+        _state.update { it.copy(screenOrientation = mode) }
+        scope.launch { preferencesRepository.setScreenOrientation(mode) }
+    }
+
+    fun cycleScreenOrientation(scope: CoroutineScope, direction: Int) {
+        val modes = ScreenOrientationMode.entries
+        val next = modes[(modes.indexOf(_state.value.screenOrientation) + direction).mod(modes.size)]
+        setScreenOrientation(scope, next)
+    }
+
     fun setQuickPanelInEmulators(scope: CoroutineScope, enabled: Boolean, serviceEnabled: Boolean) {
         scope.launch {
             preferencesRepository.setQuickPanelInEmulators(enabled)
@@ -1056,6 +1070,21 @@ class DisplaySettingsDelegate @Inject constructor(
         scope.launch {
             preferencesRepository.setInstalledOnlyHome(enabled)
             _state.update { it.copy(installedOnlyHome = enabled) }
+        }
+    }
+
+    fun cycleRecentNewGamesLimit(scope: CoroutineScope, direction: Int = 1) {
+        val next = cycleInList(_state.value.recentNewGamesLimit, RecentNewGamesLimit.STEPS, direction)
+        scope.launch {
+            preferencesRepository.setRecentNewGamesLimit(next)
+            _state.update { it.copy(recentNewGamesLimit = next) }
+        }
+    }
+
+    fun setNewBadgePlacement(scope: CoroutineScope, placement: NewBadgePlacement) {
+        scope.launch {
+            preferencesRepository.setNewBadgePlacement(placement)
+            _state.update { it.copy(newBadgePlacement = placement) }
         }
     }
 

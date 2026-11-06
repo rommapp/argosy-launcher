@@ -16,6 +16,7 @@ import com.nendo.argosy.data.model.PushedApkPrompt
 import com.nendo.argosy.data.platform.LocalPlatformIds
 import com.nendo.argosy.data.remote.romm.RomMConnectionManager
 import com.nendo.argosy.data.repository.AppsRepository
+import com.nendo.argosy.data.scanner.AndroidGameScanner
 import dagger.hilt.android.qualifiers.ApplicationContext
 import com.nendo.argosy.util.SafeCoroutineScope
 import kotlinx.coroutines.CancellationException
@@ -48,7 +49,8 @@ class ApkInstallManager @Inject constructor(
     private val appInstaller: AppInstaller,
     private val imageCacheManager: ImageCacheManager,
     private val appsRepository: AppsRepository,
-    private val connectionManager: RomMConnectionManager
+    private val connectionManager: RomMConnectionManager,
+    private val androidGameScanner: AndroidGameScanner
 ) {
     private val scope = SafeCoroutineScope(Dispatchers.Main, "ApkInstallManager")
 
@@ -65,10 +67,11 @@ class ApkInstallManager @Inject constructor(
             appsRepository.packageChanges.collect { packageName ->
                 try {
                     linkInstalledApks(packageName.ifEmpty { null })
+                    androidGameScanner.unlinkUninstalledApps(packageName.ifEmpty { null })
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    Log.e(TAG, "Failed to link installed APKs: ${e.message}")
+                    Log.e(TAG, "Failed to reconcile installed APKs: ${e.message}")
                 }
             }
         }

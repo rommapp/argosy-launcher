@@ -185,6 +185,7 @@ fun HomeScreen(
     onDrawerToggle: () -> Unit,
     onChangelogAction: (RequiredAction) -> Unit = {},
     onNavigateToSettings: (String) -> Unit = {},
+    onNavigateToApps: () -> Unit = {},
     onPlayMedia: (itemId: String, startOver: Boolean) -> Unit = { _, _ -> },
     onMediaSelect: (String) -> Unit = {},
     videoPreviewBlocked: Boolean = false,
@@ -206,6 +207,7 @@ fun HomeScreen(
     val gridState = rememberLazyGridState()
     val isAutoGrid = uiState.layoutKind == HomeLayoutKind.AUTO_GRID
     val isCustomGrid = uiState.layoutKind == HomeLayoutKind.CUSTOM_GRID
+    val showDownloadedDot = !uiState.installedOnlyHome || uiState.currentRow == HomeRow.Recommendations
     val quickNavigation by viewModel.quickNavigationEnabled.collectAsState()
     val dockReorder by viewModel.dockReorder.collectAsState()
     val dockIsRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
@@ -319,6 +321,7 @@ fun HomeScreen(
                 }
                 is HomeEvent.NavigateToCollections -> onNavigateToCollections(event.collectionId)
                 is HomeEvent.NavigateToSettings -> onNavigateToSettings(event.section)
+                HomeEvent.NavigateToApps -> onNavigateToApps()
                 is HomeEvent.PlayMedia -> onPlayMedia(event.itemId, event.startOver)
                 is HomeEvent.NavigateToMediaDetail -> onMediaSelect(event.itemId)
             }
@@ -458,7 +461,7 @@ fun HomeScreen(
             ?: remember { kotlinx.coroutines.flow.MutableStateFlow(false) }
         ).collectAsState()
     val previewBlocked = videoPreviewBlocked || focusPickerOpen || uiState.showGameMenu ||
-        uiState.appDrawer != null || uiState.appBarMenu != null ||
+        uiState.appBarMenu != null ||
         uiState.showAddToCollectionModal || uiState.showCreateCollectionDialog ||
         uiState.discPickerState != null || uiState.memcardPickerState != null ||
         uiState.syncOverlayState != null || uiState.changelogEntry != null || siblingChoiceOpen ||
@@ -941,6 +944,7 @@ fun HomeScreen(
                                 config = uiState.autoGridConfig,
                                 showFocusVisuals = !uiState.appBarFocused,
                                 useBoxArt = uiState.boxArt3d,
+                                showDownloadedIndicator = showDownloadedDot,
                                 gridState = gridState,
                                 entryAnimationKey = (uiState.currentPlatform?.id ?: uiState.currentRow)
                                     .takeIf { uiState.autoGridConfig.showAllGames },
@@ -1000,6 +1004,8 @@ fun HomeScreen(
                                     uiState.currentRow !is HomeRow.Platform &&
                                     uiState.currentRow != HomeRow.Steam && uiState.currentRow != HomeRow.Android,
                                 useBoxArt = uiState.boxArt3d,
+                                newBadgePlacement = uiState.newBadgePlacement,
+                                showDownloadedIndicator = showDownloadedDot,
                                 onCoverLoadFailed = viewModel::repairCoverImage,
                                 onCoverLoaded = viewModel::extractGradientForGame,
                                 onPosterLoaded = viewModel::extractGradientForMedia,
@@ -1379,7 +1385,7 @@ fun HomeScreen(
                 } else {
                     com.nendo.argosy.ui.components.APP_BAR_NOTHING_FOCUSED
                 },
-                onOpenDrawer = { viewModel.openAppDrawer() },
+                onOpenDrawer = { viewModel.openAppsScreen() },
                 onKeyboardToggle = {
                     com.nendo.argosy.DualScreenManagerHolder.instance?.toggleUpperKeyboard()
                 },
@@ -1414,24 +1420,6 @@ fun HomeScreen(
                         val measured = with(localDensity) { size.height.toDp() }
                         if (measured != dockHeight) dockHeight = measured
                     }
-            )
-        }
-
-        uiState.appDrawer?.let { drawer ->
-            com.nendo.argosy.ui.components.CompanionAppDrawer(
-                apps = drawer.apps,
-                focusIndex = drawer.focusIndex,
-                onLaunch = { packageName ->
-                    val index = drawer.apps.indexOfFirst { it.packageName == packageName }
-                    if (index >= 0) viewModel.moveAppDrawer(index - drawer.focusIndex)
-                    viewModel.confirmAppDrawer()
-                },
-                onLongPress = { packageName ->
-                    val index = drawer.apps.indexOfFirst { it.packageName == packageName }
-                    if (index >= 0) viewModel.moveAppDrawer(index - drawer.focusIndex)
-                    viewModel.openAppBarAppMenu()
-                },
-                onDismiss = { viewModel.dismissAppDrawer() }
             )
         }
 

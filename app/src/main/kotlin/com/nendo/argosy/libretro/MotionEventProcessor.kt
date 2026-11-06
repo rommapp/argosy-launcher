@@ -19,7 +19,8 @@ class MotionEventProcessor(
     private val videoSettings: VideoSettingsManager,
     private val getRetroView: () -> GLRetroView,
     private val rightStickDeadzone: Float = 0f,
-    private val admitsAnalogKey: (deviceId: Int, axis: Int, pressed: Boolean) -> Boolean
+    private val admitsAnalogKey: (deviceId: Int, axis: Int, pressed: Boolean) -> Boolean,
+    private val gyroAim: GyroAim? = null
 ) {
     fun processGamepadMotion(event: MotionEvent): Boolean {
         val retroView = getRetroView()
@@ -62,7 +63,8 @@ class MotionEventProcessor(
         }
         retroView.sendMotionEvent(GLRetroView.MOTION_SOURCE_ANALOG_LEFT, analogX, analogY, port)
 
-        val applied = applyRadialDeadzone(rStickX, rStickY)
+        val deadzoned = applyRadialDeadzone(rStickX, rStickY)
+        val applied = gyroAim?.takeIf { it.active && port == 0 }?.combine(deadzoned.first, deadzoned.second) ?: deadzoned
         retroView.sendMotionEvent(GLRetroView.MOTION_SOURCE_ANALOG_RIGHT, applied.first, applied.second, port)
 
         return true

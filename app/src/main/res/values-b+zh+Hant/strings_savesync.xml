@@ -75,7 +75,6 @@
     <string name="savesync_device_web">網頁</string>
 
     <string name="savesync_channel_archived">已封存</string>
-    <string name="savesync_channel_autosave">自動存檔</string>
 
     <string name="savesync_presentation_calendar_title">遊玩與存檔，最近 12 週</string>
     <string name="savesync_presentation_rhythm_title">遊玩時段</string>

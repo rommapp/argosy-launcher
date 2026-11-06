@@ -98,6 +98,7 @@
     <string name="settings_shell_header_storage_games">गेम्स स्टोरेज</string>
     <string name="settings_shell_header_storage_media">मीडिया स्टोरेज</string>
     <string name="settings_shell_header_storage_platform_games_fallback">प्लेटफ़ॉर्म गेम्स</string>
+    <string name="settings_shell_header_storage_local_only">सिर्फ़ लोकल गेम</string>
     <string name="settings_shell_header_storage_caches">कैश और सिस्टम</string>
     <string name="settings_shell_header_theme">थीम</string>
     <string name="settings_shell_header_audio">ऑडियो</string>
@@ -356,6 +357,7 @@
     <string name="settings_shell_footer_reset_builtincontrols_override">रीसेट करें</string>
     <string name="settings_shell_footer_reset_builtinsaves_override">रीसेट करें</string>
     <string name="settings_shell_footer_back">वापस</string>
+    <string name="settings_shell_footer_local_only_location">जगह</string>
     <string name="settings_shell_footer_unassign_shortcut">हटाएँ</string>
 
     <!-- ===== SettingsScreen: cache clear confirm modals ===== -->

@@ -86,6 +86,7 @@ import com.nendo.argosy.ui.screens.home.HomePlatformUi
 import com.nendo.argosy.ui.screens.home.toHomePlatformUi
 import com.nendo.argosy.ui.util.GridUtils
 import com.nendo.argosy.ui.util.heldWhile
+import com.nendo.argosy.ui.util.settlingNulls
 import com.nendo.argosy.DualScreenManagerHolder
 import com.nendo.argosy.ui.ModalResetSignal
 import com.nendo.argosy.ui.dualscreen.CompanionFact
@@ -452,9 +453,11 @@ data class LibraryUiState(
 private const val TAG = "LibraryVM"
 private const val MIN_SECTION_RAIL_LABELS = 3
 private const val FILTER_OPTION_PAGE = 5
+private const val COMPANION_EMPTY_FOCUS_SETTLE_MS = 150L
 
 sealed class LibraryEvent {
     data class LaunchIntent(val intent: Intent) : LibraryEvent()
+    data object OpenSearchKeyboard : LibraryEvent()
 }
 
 @HiltViewModel
@@ -863,7 +866,7 @@ class LibraryViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState
                 .map { if (it.view == LibraryView.PLATFORM_GRID) null else it.focusedGame?.id }
-                .distinctUntilChanged()
+                .settlingNulls(COMPANION_EMPTY_FOCUS_SETTLE_MS)
                 .collectLatest { publishCompanionDetail(it) }
         }
 
@@ -2505,6 +2508,10 @@ class LibraryViewModel @Inject constructor(
                 return if (liftPlatformCell()) InputResult.handled(SoundType.SELECT) else InputResult.HANDLED
             }
             if (_uiState.value.isSectionRailFocused) return InputResult.HANDLED
+            if (_uiState.value.showFilterMenu && _uiState.value.currentFilterCategory == FilterCategory.SEARCH) {
+                viewModelScope.launch { _events.emit(LibraryEvent.OpenSearchKeyboard) }
+                return InputResult.HANDLED
+            }
             val game = _uiState.value.focusedGame ?: return InputResult.UNHANDLED
             if (_uiState.value.showAddToCollectionModal || _uiState.value.showQuickMenu || _uiState.value.showFilterMenu) return InputResult.HANDLED
             if (_uiState.value.activeFilters.source == SourceFilter.HIDDEN) {

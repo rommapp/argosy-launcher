@@ -121,6 +121,11 @@
     <string name="settings_interface_hide_system_nav_bar_subtitle">Blendet die Android-Tasten für Zurück, Startbildschirm und Übersicht oder die Gestenleiste aus. Vom Rand wischen, um sie anzuzeigen</string>
     <string name="settings_interface_hide_system_status_bar_title">System-Statusleiste ausblenden</string>
     <string name="settings_interface_hide_system_status_bar_subtitle">Blendet die Android-Statusleiste und Benachrichtigungssymbole aus. Von oben nach unten wischen, um sie anzuzeigen</string>
+    <string name="settings_interface_screen_orientation_title">Bildschirmausrichtung</string>
+    <string name="settings_interface_screen_orientation_subtitle">Hält Argosy und integrierte Spiele in einer Ausrichtung, unabhängig von der Drehsperre des Geräts</string>
+    <string name="settings_interface_screen_orientation_auto">Auto</string>
+    <string name="settings_interface_screen_orientation_landscape">Querformat</string>
+    <string name="settings_interface_screen_orientation_portrait">Hochformat</string>
     <string name="settings_interface_quick_panel_in_emulators_title">Schnellleiste in anderen Emulatoren</string>
     <string name="settings_interface_quick_panel_in_emulators_subtitle">Zurück in einem von Argosy gestarteten Emulator gedrückt halten, um die Schnellleiste zu öffnen. Benötigt den Bedienungshilfendienst von Argosy</string>
     <string name="settings_interface_quick_panel_in_emulators_service_off">Bedienungshilfendienst ist aus. Unter Berechtigungen einschalten</string>
@@ -423,6 +428,20 @@
     <string name="settings_home_screen_box_art_option_2d">2D-Cover</string>
     <string name="settings_home_screen_box_art_option_3d">3D-Box</string>
     <string name="settings_home_screen_installed_only_subtitle">Nur heruntergeladene Spiele auf dem Startbildschirm anzeigen</string>
+    <string name="settings_home_screen_recent_new_games_title">Neue Spiele in Zuletzt</string>
+    <string name="settings_home_screen_recent_new_games_subtitle">Ungespielte Spiele, die am letzten Tag hinzugefügt wurden</string>
+    <string name="settings_home_screen_recent_new_games_none">Keine</string>
+    <string name="settings_home_screen_recent_new_games_all">Alle</string>
+    <plurals name="settings_home_screen_recent_new_games_up_to">
+        <item quantity="one">Bis zu %d</item>
+        <item quantity="other">Bis zu %d</item>
+    </plurals>
+
+    <string name="settings_home_screen_new_badge_title">NEU-Badge</string>
+    <string name="settings_home_screen_new_badge_subtitle">Position des NEU-Badges auf Startbildschirm-Karten oder ausblenden</string>
+    <string name="settings_home_screen_new_badge_option_right">Rechts</string>
+    <string name="settings_home_screen_new_badge_option_left">Links</string>
+    <string name="settings_home_screen_new_badge_option_hidden">Ausgeblendet</string>
 
     <!-- ===== Saves section ===== -->
 
@@ -954,11 +973,22 @@
 
     <string name="settings_storage_games_integrity_title">Wöchentliche ROM-Integritätsprüfung</string>
     <string name="settings_storage_games_integrity_subtitle">Prüft heruntergeladene Spieldateien einmal pro Woche beim Start</string>
-    <string name="settings_storage_games_not_from_romm_title">Nicht von RomM</string>
-    <plurals name="settings_storage_games_not_from_romm_subtitle">
-        <item quantity="one">%1$d Spieldatei wurde manuell hinzugefügt und bleibt bei einem vollständigen Zurücksetzen erhalten</item>
-        <item quantity="other">%1$d Spieldateien wurden manuell hinzugefügt und bleiben bei einem vollständigen Zurücksetzen erhalten</item>
+    <string name="settings_storage_games_local_only_title">Nur lokal</string>
+    <plurals name="settings_storage_games_local_only_subtitle">
+        <item quantity="one">%1$d Spiel auf diesem Gerät, das RomM nicht hat</item>
+        <item quantity="other">%1$d Spiele auf diesem Gerät, die RomM nicht hat</item>
     </plurals>
+    <string name="settings_storage_local_only_empty_message">Spiele auf diesem Gerät, die RomM nicht hat, erscheinen hier mit Größe und Speicherort.</string>
+    <string name="settings_storage_game_source_local_only">Nur lokal</string>
+    <string name="settings_storage_location_internal">Intern</string>
+    <string name="settings_storage_location_removable">SD-Karte</string>
+    <string name="settings_storage_location_mixed">Intern + SD-Karte</string>
+    <string name="settings_storage_location_unknown">Unbekannter Ort</string>
+    <string name="settings_storage_local_only_tab_all">Alle</string>
+    <string name="settings_storage_local_only_tab_internal">Intern</string>
+    <string name="settings_storage_local_only_tab_sd_card">SD-Karte</string>
+    <string name="settings_storage_local_only_tab_unknown">Unbekannt</string>
+    <string name="settings_storage_local_only_tab_empty_message">Hier sind keine nur lokalen Spiele gespeichert.</string>
 
     <plurals name="settings_storage_games_totals_count">
         <item quantity="one">%d heruntergeladen</item>
@@ -1490,6 +1520,12 @@
     <string name="settings_builtin_controls_rumble_subtitle">Vibrations-Feedback des Controllers aktivieren</string>
     <string name="settings_builtin_controls_motion_title">Bewegungssteuerung</string>
     <string name="settings_builtin_controls_motion_subtitle">Spiele dürfen Neigung und Drehung des Geräts auslesen</string>
+    <string name="settings_builtin_controls_gyro_sensitivity_title">Gyro-Zielempfindlichkeit</string>
+    <string name="settings_builtin_controls_gyro_sensitivity_subtitle">Wie weit sich das Ziel bewegt, wenn du das Gerät drehst</string>
+    <string name="settings_builtin_controls_gyro_invert_x_title">Gyro-Zielen horizontal umkehren</string>
+    <string name="settings_builtin_controls_gyro_invert_x_subtitle">Nach links drehen bewegt das Ziel nach rechts</string>
+    <string name="settings_builtin_controls_gyro_invert_y_title">Gyro-Zielen vertikal umkehren</string>
+    <string name="settings_builtin_controls_gyro_invert_y_subtitle">Nach oben neigen bewegt das Ziel nach unten</string>
     <string name="settings_builtin_controls_order_title">Controller-Reihenfolge</string>
     <string name="settings_builtin_controls_order_subtitle">Spielerreihenfolge durch Drücken einer Taste an jedem Controller festlegen</string>
     <plurals name="settings_builtin_controls_order_assigned">
@@ -1662,9 +1698,10 @@
     <string name="settings_emulators_section_disabled">Deaktivierte Plattformen</string>
     <string name="settings_emulators_rail_platforms">Plattformen</string>
 
-    <string name="settings_emulators_close_on_session_end_title">Emulator bei Rückkehr zu Argosy schließen</string>
-    <string name="settings_emulators_close_on_session_end_subtitle_on">Schließt den Emulator, sobald sein Spielstand synchronisiert ist. Ungespeicherter Fortschritt geht verloren.</string>
-    <string name="settings_emulators_close_on_session_end_subtitle_off">Die Emulator-App bleibt im Hintergrund geöffnet</string>
+    <string name="settings_emulators_close_on_session_end_title">Spiele bei Rückkehr zu Argosy schließen</string>
+    <string name="settings_emulators_close_on_session_end_subtitle_on">Schließt das Spiel, sobald sein Spielstand synchronisiert ist. Ungespeicherter Fortschritt geht verloren.</string>
+    <string name="settings_emulators_close_on_session_end_subtitle_off">Spiele bleiben im Hintergrund geöffnet</string>
+    <string name="settings_emulators_close_on_session_end_subtitle_built_in_only">Integrierte Spiele bleiben geöffnet. Andere Emulatoren bleiben nur auf gerooteten Geräten geöffnet.</string>
     <string name="settings_emulators_check_updates_title">Nach Updates suchen</string>
     <string name="settings_emulators_check_updates_subtitle">Nach Emulator-Updates suchen</string>
     <plurals name="settings_emulators_check_updates_available">
@@ -1936,6 +1973,7 @@
     <string name="settings_hotkeys_action_reset_timer">Timer zurücksetzen</string>
     <string name="settings_hotkeys_action_sun_brighter">Sonnenlicht heller</string>
     <string name="settings_hotkeys_action_sun_dimmer">Sonnenlicht dunkler</string>
+    <string name="settings_hotkeys_action_recenter_gyro_aim">Gyro-Zielen zentrieren</string>
 
     <!-- ===== Input mapping modal (Settings > components > InputMappingModal) ===== -->
 

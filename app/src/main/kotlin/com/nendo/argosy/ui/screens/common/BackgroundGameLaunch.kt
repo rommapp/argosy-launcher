@@ -1,0 +1,109 @@
+package com.nendo.argosy.ui.screens.common
+
+import com.nendo.argosy.DualScreenManagerHolder
+import com.nendo.argosy.data.emulator.ActiveSession
+import com.nendo.argosy.data.emulator.EmulatorRegistry
+import com.nendo.argosy.data.emulator.EmulatorResolver
+import com.nendo.argosy.data.emulator.ExternalSessionStart
+import com.nendo.argosy.data.emulator.LaunchOrigin
+import com.nendo.argosy.data.emulator.LaunchProgressTracker
+import com.nendo.argosy.data.emulator.PlaySessionTracker
+import com.nendo.argosy.data.emulator.background.BackgroundGames
+import com.nendo.argosy.data.emulator.background.RunningApp
+import com.nendo.argosy.data.emulator.startExternal
+import com.nendo.argosy.data.local.entity.GameEntity
+import com.nendo.argosy.data.repository.GameRepository
+import com.nendo.argosy.domain.model.LaunchPromptOption
+import com.nendo.argosy.domain.model.LaunchStep
+import com.nendo.argosy.domain.model.RunningGameQuestion
+import com.nendo.argosy.util.Logger
+import javax.inject.Inject
+
+/**
+ * The launch steps for an emulator kept alive between sessions: resuming the game it still holds,
+ * and clearing it when a launch needs it for another game.
+ */
+class BackgroundGameLaunch @Inject constructor(
+    private val backgroundGames: BackgroundGames,
+    private val emulatorResolver: EmulatorResolver,
+    private val playSessionTracker: PlaySessionTracker,
+    private val launchProgressTracker: LaunchProgressTracker,
+    private val gameRepository: GameRepository
+) {
+    enum class Resume { RESUMED, FRESH_LAUNCH, CANCELLED }
+
+    enum class Clear { NOT_RUNNING, CLOSED, CANCELLED }
+
+    suspend fun findLive(gameId: Long, variantFileId: Long?, emulatorPackage: String?): RunningApp? {
+        if (emulatorPackage == null || !backgroundGames.keepsAlive(emulatorPackage)) return null
+        return backgroundGames.liveGame(gameId, variantFileId, emulatorPackage)
+    }
+
+    /**
+     * Brings [game] back in the task [live] holds, with no save check: the emulator still has the
+     * save open. A built-in game opens its own session when its screen returns.
+     */
+    suspend fun resume(
+        ticket: LaunchProgressTracker.Ticket,
+        game: GameEntity,
+        live: RunningApp,
+        origin: LaunchOrigin
+    ): Resume {
+        if (ticket.isCancelled) return Resume.CANCELLED
+        val builtIn = live.packageName == EmulatorRegistry.BUILTIN_PACKAGE
+        if (!builtIn) DualScreenManagerHolder.instance?.setEmulatorDisplay(live.displayId)
+        if (!backgroundGames.bringToFront(live.taskId)) {
+            if (!builtIn) DualScreenManagerHolder.instance?.setEmulatorDisplay(null)
+            return Resume.FRESH_LAUNCH
+        }
+        launchProgressTracker.finish(ticket, launched = true)
+        if (builtIn) {
+            Logger.debug(TAG, "resumed gameId=${game.id} in the built-in game's task ${live.taskId}")
+            return Resume.RESUMED
+        }
+        playSessionTracker.startExternal(
+            ExternalSessionStart(
+                gameId = game.id,
+                emulatorPackage = live.packageName,
+                coreName = null,
+                variantFileId = live.game?.variantFileId,
+                origin = origin
+            )
+        )
+        Logger.debug(TAG, "resumed gameId=${game.id} in task ${live.taskId} (${live.packageName})")
+        return Resume.RESUMED
+    }
+
+    /**
+     * Asks before closing [emulatorPackage] when it is kept alive and still running a game.
+     * NOT_RUNNING leaves the caller's own stop to run.
+     */
+    suspend fun clearForLaunch(ticket: LaunchProgressTracker.Ticket, emulatorPackage: String): Clear {
+        if (!backgroundGames.keepsAlive(emulatorPackage)) return Clear.NOT_RUNNING
+        val running = backgroundGames.liveApp(emulatorPackage) ?: return Clear.NOT_RUNNING
+        val question = LaunchStep.RunningGame(
+            kind = if (emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE) {
+                RunningGameQuestion.GAME_OPEN
+            } else {
+                RunningGameQuestion.EMULATOR_BUSY
+            },
+            emulatorName = emulatorName(emulatorPackage),
+            runningGameTitle = running.game?.let { gameRepository.getById(it.gameId)?.title },
+            options = listOf(LaunchPromptOption.CLOSE_AND_LAUNCH)
+        )
+        if (ticket.askAboutRunningGame(question) != LaunchPromptOption.CLOSE_AND_LAUNCH) return Clear.CANCELLED
+        backgroundGames.close(emulatorPackage)
+        return Clear.CLOSED
+    }
+
+    suspend fun keepsAlive(emulatorPackage: String): Boolean = backgroundGames.keepsAlive(emulatorPackage)
+
+    suspend fun remember(session: ActiveSession) = backgroundGames.remember(session)
+
+    private fun emulatorName(packageName: String): String =
+        emulatorResolver.resolveEmulatorId(packageName)?.let { EmulatorRegistry.getById(it)?.displayName } ?: packageName
+
+    private companion object {
+        const val TAG = "BackgroundGameLaunch"
+    }
+}

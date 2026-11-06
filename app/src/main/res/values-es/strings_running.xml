@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="running_drawer_title">En ejecución</string>
+    <string name="running_header_title">En ejecución</string>
+    <string name="running_empty_title">No hay nada más en ejecución</string>
+    <string name="running_row_memory">%1$d MB</string>
+    <string name="running_row_screen">Pantalla %1$d</string>
+    <string name="running_menu_switch_to">Cambiar a</string>
+    <string name="running_menu_close">Cerrar</string>
+    <string name="running_hint_close">Cerrar</string>
+    <string name="running_hint_close_all">Cerrar todo</string>
+    <string name="running_confirm_close_title">¿Cerrar %1$s?</string>
+    <string name="running_confirm_close_message">Se perderá el progreso no guardado.</string>
+    <string name="running_confirm_close_confirm">Cerrar</string>
+    <string name="running_confirm_close_all_title">¿Cerrar todo?</string>
+    <string name="running_confirm_close_all_message">Se detendrán todas las apps de esta lista. Se perderá el progreso no guardado de cualquier juego.</string>
+    <string name="running_confirm_close_all_confirm">Cerrar todo</string>
+    <string name="running_notice_switch_failed">No se pudo cambiar a %1$s</string>
+</resources>

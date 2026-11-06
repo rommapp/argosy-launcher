@@ -241,7 +241,11 @@ private fun FriendRow(
 ) {
     val theme = LocalArgosyTheme.current
     val online = friend.isOnlineNow
-    val presenceColor = presenceOnlineColor()
+    val presenceColor = if (friend.currentGame?.shownExternalNetplay != null) {
+        presenceNetplayColor()
+    } else {
+        presenceOnlineColor()
+    }
     QuickRowFrame(isFocused = isFocused, onClick = onClick, onLongClick = onLongClick) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             SocialAvatar(
@@ -297,9 +301,9 @@ private fun FriendRow(
 @Composable
 private fun friendActivityLabel(friend: Friend): String {
     val game = friend.currentGame ?: return stringResource(R.string.ui_drawer_friend_in_game)
-    return if (game.netplaySession != null) {
-        stringResource(R.string.ui_drawer_friend_hosting, game.title)
-    } else {
-        stringResource(R.string.ui_drawer_friend_playing, game.title)
+    return when {
+        game.netplaySession != null -> stringResource(R.string.ui_drawer_friend_hosting, game.title)
+        game.shownExternalNetplay != null -> stringResource(R.string.ui_drawer_friend_playing_online, game.title)
+        else -> stringResource(R.string.ui_drawer_friend_playing, game.title)
     }
 }

@@ -109,6 +109,11 @@
     <string name="settings_interface_hide_system_nav_bar_subtitle">隐藏 Android 的返回、主屏幕和最近任务按钮或手势条。从边缘滑动即可显示</string>
     <string name="settings_interface_hide_system_status_bar_title">隐藏系统状态栏</string>
     <string name="settings_interface_hide_system_status_bar_subtitle">隐藏 Android 状态栏和通知图标。从顶部向下滑动即可显示</string>
+    <string name="settings_interface_screen_orientation_title">屏幕方向</string>
+    <string name="settings_interface_screen_orientation_subtitle">无论设备是否锁定旋转，都让 Argosy 和内置游戏保持同一方向</string>
+    <string name="settings_interface_screen_orientation_auto">自动</string>
+    <string name="settings_interface_screen_orientation_landscape">横屏</string>
+    <string name="settings_interface_screen_orientation_portrait">竖屏</string>
     <string name="settings_interface_quick_panel_in_emulators_title">在其他模拟器中使用快捷面板</string>
     <string name="settings_interface_quick_panel_in_emulators_subtitle">在 Argosy 启动的模拟器中长按返回即可打开快捷面板。需要 Argosy 的无障碍服务</string>
     <string name="settings_interface_quick_panel_in_emulators_service_off">无障碍服务已关闭。请在权限中开启</string>
@@ -406,6 +411,19 @@
     <string name="settings_home_screen_box_art_option_2d">2D 封面</string>
     <string name="settings_home_screen_box_art_option_3d">3D 盒装</string>
     <string name="settings_home_screen_installed_only_subtitle">主屏幕仅显示已下载的游戏</string>
+    <string name="settings_home_screen_recent_new_games_title">最近中的新游戏</string>
+    <string name="settings_home_screen_recent_new_games_subtitle">过去一天内添加且尚未玩过的游戏</string>
+    <string name="settings_home_screen_recent_new_games_none">无</string>
+    <string name="settings_home_screen_recent_new_games_all">全部</string>
+    <plurals name="settings_home_screen_recent_new_games_up_to">
+        <item quantity="other">最多 %d 个</item>
+    </plurals>
+
+    <string name="settings_home_screen_new_badge_title">“新”徽章</string>
+    <string name="settings_home_screen_new_badge_subtitle">主页卡片上“新”徽章的位置，或将其隐藏</string>
+    <string name="settings_home_screen_new_badge_option_right">右侧</string>
+    <string name="settings_home_screen_new_badge_option_left">左侧</string>
+    <string name="settings_home_screen_new_badge_option_hidden">隐藏</string>
 
     <!-- ===== Saves section ===== -->
 
@@ -928,10 +946,21 @@
 
     <string name="settings_storage_games_integrity_title">每周ROM完整性检查</string>
     <string name="settings_storage_games_integrity_subtitle">每周启动时校验已下载的游戏文件</string>
-    <string name="settings_storage_games_not_from_romm_title">非来自RomM</string>
-    <plurals name="settings_storage_games_not_from_romm_subtitle">
-        <item quantity="other">%1$d个游戏文件为手动添加，硬重置时会保留</item>
+    <string name="settings_storage_games_local_only_title">仅本地</string>
+    <plurals name="settings_storage_games_local_only_subtitle">
+        <item quantity="other">本设备上有%1$d个游戏RomM中没有</item>
     </plurals>
+    <string name="settings_storage_local_only_empty_message">本设备上RomM中没有的游戏会在此显示大小和位置。</string>
+    <string name="settings_storage_game_source_local_only">仅本地</string>
+    <string name="settings_storage_location_internal">内部存储</string>
+    <string name="settings_storage_location_removable">SD卡</string>
+    <string name="settings_storage_location_mixed">内部存储 + SD卡</string>
+    <string name="settings_storage_location_unknown">位置未知</string>
+    <string name="settings_storage_local_only_tab_all">全部</string>
+    <string name="settings_storage_local_only_tab_internal">内部</string>
+    <string name="settings_storage_local_only_tab_sd_card">SD卡</string>
+    <string name="settings_storage_local_only_tab_unknown">未知</string>
+    <string name="settings_storage_local_only_tab_empty_message">这里没有仅存于本地的游戏。</string>
 
     <plurals name="settings_storage_games_totals_count">
         <item quantity="other">已下载%d个</item>
@@ -1440,6 +1469,12 @@
     <string name="settings_builtin_controls_rumble_subtitle">启用手柄震动反馈</string>
     <string name="settings_builtin_controls_motion_title">体感操控</string>
     <string name="settings_builtin_controls_motion_subtitle">允许游戏读取设备的倾斜和旋转</string>
+    <string name="settings_builtin_controls_gyro_sensitivity_title">陀螺仪瞄准灵敏度</string>
+    <string name="settings_builtin_controls_gyro_sensitivity_subtitle">转动设备时准星移动的幅度</string>
+    <string name="settings_builtin_controls_gyro_invert_x_title">反转陀螺仪水平瞄准</string>
+    <string name="settings_builtin_controls_gyro_invert_x_subtitle">向左转动时准星向右移动</string>
+    <string name="settings_builtin_controls_gyro_invert_y_title">反转陀螺仪垂直瞄准</string>
+    <string name="settings_builtin_controls_gyro_invert_y_subtitle">向上倾斜时准星向下移动</string>
     <string name="settings_builtin_controls_order_title">手柄顺序</string>
     <string name="settings_builtin_controls_order_subtitle">在每个手柄上按一个按钮以设置玩家顺序</string>
     <plurals name="settings_builtin_controls_order_assigned">
@@ -1612,9 +1647,10 @@
     <string name="settings_emulators_section_disabled">已禁用的平台</string>
     <string name="settings_emulators_rail_platforms">平台</string>
 
-    <string name="settings_emulators_close_on_session_end_title">返回 Argosy 时关闭模拟器</string>
-    <string name="settings_emulators_close_on_session_end_subtitle_on">存档同步完成后关闭模拟器。未保存的进度会丢失。</string>
-    <string name="settings_emulators_close_on_session_end_subtitle_off">模拟器应用将继续在后台运行</string>
+    <string name="settings_emulators_close_on_session_end_title">返回 Argosy 时关闭游戏</string>
+    <string name="settings_emulators_close_on_session_end_subtitle_on">存档同步完成后关闭游戏。未保存的进度会丢失。</string>
+    <string name="settings_emulators_close_on_session_end_subtitle_off">游戏将继续在后台运行</string>
+    <string name="settings_emulators_close_on_session_end_subtitle_built_in_only">内置游戏保持打开。其他模拟器仅在已 root 的设备上保持打开。</string>
     <string name="settings_emulators_check_updates_title">检查更新</string>
     <string name="settings_emulators_check_updates_subtitle">检查模拟器更新</string>
     <plurals name="settings_emulators_check_updates_available">
@@ -1879,6 +1915,7 @@
     <string name="settings_hotkeys_action_reset_timer">重置计时器</string>
     <string name="settings_hotkeys_action_sun_brighter">增强阳光</string>
     <string name="settings_hotkeys_action_sun_dimmer">减弱阳光</string>
+    <string name="settings_hotkeys_action_recenter_gyro_aim">陀螺仪瞄准回中</string>
 
     <!-- ===== Input mapping modal ===== -->
 

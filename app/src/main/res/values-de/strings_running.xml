@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="running_drawer_title">Aktiv</string>
+    <string name="running_header_title">Aktiv</string>
+    <string name="running_empty_title">Sonst läuft nichts</string>
+    <string name="running_row_memory">%1$d MB</string>
+    <string name="running_row_screen">Bildschirm %1$d</string>
+    <string name="running_menu_switch_to">Wechseln zu</string>
+    <string name="running_menu_close">Schließen</string>
+    <string name="running_hint_close">Schließen</string>
+    <string name="running_hint_close_all">Alle schließen</string>
+    <string name="running_confirm_close_title">%1$s schließen?</string>
+    <string name="running_confirm_close_message">Nicht gespeicherter Fortschritt geht verloren.</string>
+    <string name="running_confirm_close_confirm">Schließen</string>
+    <string name="running_confirm_close_all_title">Alles schließen?</string>
+    <string name="running_confirm_close_all_message">Jede App in dieser Liste wird beendet. Nicht gespeicherter Fortschritt in jedem Spiel geht verloren.</string>
+    <string name="running_confirm_close_all_confirm">Alle schließen</string>
+    <string name="running_notice_switch_failed">Wechsel zu %1$s nicht möglich</string>
+</resources>

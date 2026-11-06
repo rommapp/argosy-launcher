@@ -22,6 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.R
 import com.nendo.argosy.data.preferences.HomeBackgroundMode
+import com.nendo.argosy.data.preferences.NewBadgePlacement
 import com.nendo.argosy.domain.model.HomeLayoutKind
 import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.CyclePreference
@@ -37,6 +38,7 @@ import com.nendo.argosy.ui.components.SegmentedPreference
 import com.nendo.argosy.ui.components.SliderPreference
 import com.nendo.argosy.ui.components.SwitchPreference
 import com.nendo.argosy.ui.screens.settings.DisplayState
+import com.nendo.argosy.data.preferences.RecentNewGamesLimit
 import com.nendo.argosy.ui.screens.settings.SettingsInputHandler
 import com.nendo.argosy.ui.screens.settings.SettingsUiState
 import com.nendo.argosy.ui.screens.settings.SettingsViewModel
@@ -123,6 +125,18 @@ internal sealed class HomeScreenItem(
         visibleWhen = { it.homeLayout.selected != HomeLayoutKind.CUSTOM_GRID }
     )
 
+    data object RecentNewGames : HomeScreenItem(
+        key = "recentNewGames",
+        section = "content",
+        visibleWhen = { it.homeLayout.selected != HomeLayoutKind.CUSTOM_GRID }
+    )
+
+    data object NewBadge : HomeScreenItem(
+        key = "newBadge",
+        section = "content",
+        visibleWhen = { it.homeLayout.selected == HomeLayoutKind.CAROUSEL }
+    )
+
     companion object {
         /**
          * Mirrors the home screen's own `showArtLayer`: with the theme backdrop off the art layer
@@ -157,6 +171,8 @@ internal sealed class HomeScreenItem(
                     .toTypedArray(),
                 ContentHeader,
                 InstalledOnly,
+                RecentNewGames,
+                NewBadge,
                 *homeRailFields().map { LayoutField(it) }.toTypedArray(),
                 BackgroundHeader,
                 Background, GameArtwork, CustomImage, Blur, Saturation, Opacity,
@@ -185,6 +201,12 @@ private val homeScreenLayout = SettingsLayout<HomeScreenItem, DisplayState>(
 private fun homeBackgroundModeLabelRes(mode: HomeBackgroundMode): Int = when (mode) {
     HomeBackgroundMode.GAME_ART -> R.string.settings_home_screen_background_mode_game_art
     HomeBackgroundMode.PATTERN -> R.string.settings_home_screen_background_mode_pattern
+}
+
+private fun newBadgePlacementLabelRes(placement: NewBadgePlacement): Int = when (placement) {
+    NewBadgePlacement.RIGHT -> R.string.settings_home_screen_new_badge_option_right
+    NewBadgePlacement.LEFT -> R.string.settings_home_screen_new_badge_option_left
+    NewBadgePlacement.HIDDEN -> R.string.settings_home_screen_new_badge_option_hidden
 }
 
 internal fun homeScreenMaxFocusIndex(display: DisplayState): Int = homeScreenLayout.maxFocusIndex(display)
@@ -409,6 +431,33 @@ fun HomeScreenSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     isFocused = isFocused(item),
                     onToggle = { viewModel.setInstalledOnlyHome(it) }
                 )
+
+                HomeScreenItem.RecentNewGames -> CyclePreference(
+                    title = stringResource(R.string.settings_home_screen_recent_new_games_title),
+                    subtitle = stringResource(R.string.settings_home_screen_recent_new_games_subtitle),
+                    value = recentNewGamesLabel(context, display.recentNewGamesLimit),
+                    isFocused = isFocused(item),
+                    onClick = { viewModel.cycleRecentNewGamesLimit() },
+                    onPrev = { viewModel.cycleRecentNewGamesLimit(-1) },
+                    options = remember(context) {
+                        RecentNewGamesLimit.STEPS.map { recentNewGamesLabel(context, it) }
+                    },
+                    onSelect = { index ->
+                        val currentIndex = RecentNewGamesLimit.STEPS
+                            .indexOf(display.recentNewGamesLimit).coerceAtLeast(0)
+                        viewModel.cycleRecentNewGamesLimit(index - currentIndex)
+                    },
+                    pickerRequestToken = pickerToken(item)
+                )
+
+                HomeScreenItem.NewBadge -> SegmentedPreference(
+                    title = stringResource(R.string.settings_home_screen_new_badge_title),
+                    subtitle = stringResource(R.string.settings_home_screen_new_badge_subtitle),
+                    options = NewBadgePlacement.entries.map { stringResource(newBadgePlacementLabelRes(it)) },
+                    selectedIndex = NewBadgePlacement.entries.indexOf(display.newBadgePlacement),
+                    isFocused = isFocused(item),
+                    onSelect = { index -> viewModel.setNewBadgePlacement(NewBadgePlacement.entries[index]) }
+                )
             }
     }
 }
@@ -423,6 +472,16 @@ private fun videoDelayLabel(context: android.content.Context, seconds: Int): Str
             seconds
         )
     }
+
+private fun recentNewGamesLabel(context: android.content.Context, limit: Int): String = when (limit) {
+    RecentNewGamesLimit.ALL -> context.getString(R.string.settings_home_screen_recent_new_games_all)
+    0 -> context.getString(R.string.settings_home_screen_recent_new_games_none)
+    else -> context.resources.getQuantityString(
+        R.plurals.settings_home_screen_recent_new_games_up_to,
+        limit,
+        limit
+    )
+}
 
 @Composable
 private fun HomeScreenSectionHeader(title: String) {

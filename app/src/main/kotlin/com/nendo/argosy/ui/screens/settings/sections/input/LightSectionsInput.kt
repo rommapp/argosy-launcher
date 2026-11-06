@@ -5,6 +5,7 @@ import com.nendo.argosy.data.preferences.ControlsPreferences
 import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.preferences.GripReserveMode
 import com.nendo.argosy.data.preferences.HomeBackgroundMode
+import com.nendo.argosy.data.preferences.NewBadgePlacement
 import com.nendo.argosy.data.preferences.MediaStreamingQuality
 import com.nendo.argosy.data.preferences.MenuWrapMode
 import com.nendo.argosy.data.preferences.SelectSwapMode
@@ -261,6 +262,11 @@ internal class LightSectionsInput(
                 return toggleLeftRight(direction, display.videoWallpaperMuted) { viewModel.setVideoWallpaperMuted(it) }
             HomeScreenItem.InstalledOnly ->
                 return toggleLeftRight(direction, display.installedOnlyHome) { viewModel.setInstalledOnlyHome(it) }
+            HomeScreenItem.RecentNewGames -> { viewModel.cycleRecentNewGamesLimit(direction); return InputResult.HANDLED }
+            HomeScreenItem.NewBadge ->
+                return stepOption(NewBadgePlacement.entries, display.newBadgePlacement, direction) {
+                    viewModel.setNewBadgePlacement(it)
+                }
             HomeScreenItem.BoxArt ->
                 return stepOption(listOf(false, true), display.homeLayout.boxArt3d, direction, viewModel::setHomeBoxArt3d)
             HomeScreenItem.LayoutSelector -> return stepOption(

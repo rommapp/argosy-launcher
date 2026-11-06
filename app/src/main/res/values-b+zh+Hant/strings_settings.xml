@@ -100,6 +100,11 @@
     <string name="settings_interface_hide_system_nav_bar_subtitle">隱藏 Android 的返回、主畫面和最近使用按鈕或手勢列。從邊緣滑動即可顯示</string>
     <string name="settings_interface_hide_system_status_bar_title">隱藏系統狀態列</string>
     <string name="settings_interface_hide_system_status_bar_subtitle">隱藏 Android 狀態列和通知圖示。從頂部向下滑動即可顯示</string>
+    <string name="settings_interface_screen_orientation_title">螢幕方向</string>
+    <string name="settings_interface_screen_orientation_subtitle">無論裝置是否鎖定旋轉，都讓 Argosy 和內建遊戲保持同一方向</string>
+    <string name="settings_interface_screen_orientation_auto">自動</string>
+    <string name="settings_interface_screen_orientation_landscape">橫向</string>
+    <string name="settings_interface_screen_orientation_portrait">直向</string>
     <string name="settings_interface_quick_panel_in_emulators_title">在其他模擬器中使用快速面板</string>
     <string name="settings_interface_quick_panel_in_emulators_subtitle">在 Argosy 啟動的模擬器中長按返回即可開啟快速面板。需要 Argosy 的無障礙服務</string>
     <string name="settings_interface_quick_panel_in_emulators_service_off">無障礙服務已關閉。請在權限中開啟</string>
@@ -389,6 +394,19 @@
     <string name="settings_home_screen_box_art_option_2d">2D 封面</string>
     <string name="settings_home_screen_box_art_option_3d">3D 盒裝</string>
     <string name="settings_home_screen_installed_only_subtitle">主畫面僅顯示已下載的遊戲</string>
+    <string name="settings_home_screen_recent_new_games_title">最近中的新遊戲</string>
+    <string name="settings_home_screen_recent_new_games_subtitle">過去一天內加入且尚未遊玩的遊戲</string>
+    <string name="settings_home_screen_recent_new_games_none">無</string>
+    <string name="settings_home_screen_recent_new_games_all">全部</string>
+    <plurals name="settings_home_screen_recent_new_games_up_to">
+        <item quantity="other">最多 %d 個</item>
+    </plurals>
+
+    <string name="settings_home_screen_new_badge_title">「新」徽章</string>
+    <string name="settings_home_screen_new_badge_subtitle">主頁卡片上「新」徽章的位置，或將其隱藏</string>
+    <string name="settings_home_screen_new_badge_option_right">右側</string>
+    <string name="settings_home_screen_new_badge_option_left">左側</string>
+    <string name="settings_home_screen_new_badge_option_hidden">隱藏</string>
 
     <string name="settings_saves_section_sync">同步</string>
     <string name="settings_saves_section_manage">管理</string>
@@ -881,10 +899,21 @@
 
     <string name="settings_storage_games_integrity_title">每週ROM完整性檢查</string>
     <string name="settings_storage_games_integrity_subtitle">每週啟動時驗證已下載的遊戲檔案</string>
-    <string name="settings_storage_games_not_from_romm_title">非來自RomM</string>
-    <plurals name="settings_storage_games_not_from_romm_subtitle">
-        <item quantity="other">%1$d個遊戲檔案為手動加入，重設時會保留</item>
+    <string name="settings_storage_games_local_only_title">僅本機</string>
+    <plurals name="settings_storage_games_local_only_subtitle">
+        <item quantity="other">本裝置上有%1$d個遊戲RomM中沒有</item>
     </plurals>
+    <string name="settings_storage_local_only_empty_message">本裝置上RomM中沒有的遊戲會在此顯示大小與位置。</string>
+    <string name="settings_storage_game_source_local_only">僅本機</string>
+    <string name="settings_storage_location_internal">內部儲存空間</string>
+    <string name="settings_storage_location_removable">SD卡</string>
+    <string name="settings_storage_location_mixed">內部儲存空間 + SD卡</string>
+    <string name="settings_storage_location_unknown">位置不明</string>
+    <string name="settings_storage_local_only_tab_all">全部</string>
+    <string name="settings_storage_local_only_tab_internal">內部</string>
+    <string name="settings_storage_local_only_tab_sd_card">SD卡</string>
+    <string name="settings_storage_local_only_tab_unknown">不明</string>
+    <string name="settings_storage_local_only_tab_empty_message">這裡沒有僅存於本機的遊戲。</string>
 
     <plurals name="settings_storage_games_totals_count">
         <item quantity="other">已下載%d個</item>
@@ -1372,6 +1401,12 @@
     <string name="settings_builtin_controls_rumble_subtitle">啟用控制器震動回饋</string>
     <string name="settings_builtin_controls_motion_title">體感操控</string>
     <string name="settings_builtin_controls_motion_subtitle">允許遊戲讀取裝置的傾斜與旋轉</string>
+    <string name="settings_builtin_controls_gyro_sensitivity_title">陀螺儀瞄準靈敏度</string>
+    <string name="settings_builtin_controls_gyro_sensitivity_subtitle">轉動裝置時準星移動的幅度</string>
+    <string name="settings_builtin_controls_gyro_invert_x_title">反轉陀螺儀水平瞄準</string>
+    <string name="settings_builtin_controls_gyro_invert_x_subtitle">向左轉動時準星向右移動</string>
+    <string name="settings_builtin_controls_gyro_invert_y_title">反轉陀螺儀垂直瞄準</string>
+    <string name="settings_builtin_controls_gyro_invert_y_subtitle">向上傾斜時準星向下移動</string>
     <string name="settings_builtin_controls_order_title">控制器順序</string>
     <string name="settings_builtin_controls_order_subtitle">在各控制器上按下按鍵以設定玩家順序</string>
     <plurals name="settings_builtin_controls_order_assigned">
@@ -1539,9 +1574,10 @@
     <string name="settings_emulators_section_disabled">已停用的平台</string>
     <string name="settings_emulators_rail_platforms">平台</string>
 
-    <string name="settings_emulators_close_on_session_end_title">返回 Argosy 時關閉模擬器</string>
-    <string name="settings_emulators_close_on_session_end_subtitle_on">存檔同步完成後關閉模擬器。未儲存的進度會遺失。</string>
-    <string name="settings_emulators_close_on_session_end_subtitle_off">模擬器應用程式將繼續在背景執行</string>
+    <string name="settings_emulators_close_on_session_end_title">返回 Argosy 時關閉遊戲</string>
+    <string name="settings_emulators_close_on_session_end_subtitle_on">存檔同步完成後關閉遊戲。未儲存的進度會遺失。</string>
+    <string name="settings_emulators_close_on_session_end_subtitle_off">遊戲將繼續在背景執行</string>
+    <string name="settings_emulators_close_on_session_end_subtitle_built_in_only">內建遊戲保持開啟。其他模擬器僅在已 root 的裝置上保持開啟。</string>
     <string name="settings_emulators_check_updates_title">檢查更新</string>
     <string name="settings_emulators_check_updates_subtitle">檢查模擬器更新</string>
     <plurals name="settings_emulators_check_updates_available">
@@ -1795,6 +1831,7 @@
     <string name="settings_hotkeys_action_reset_timer">重設計時器</string>
     <string name="settings_hotkeys_action_sun_brighter">增強陽光</string>
     <string name="settings_hotkeys_action_sun_dimmer">減弱陽光</string>
+    <string name="settings_hotkeys_action_recenter_gyro_aim">陀螺儀瞄準回中</string>
 
     <string name="settings_input_mapping_title">按鍵對應</string>
     <string name="settings_input_mapping_subtitle">選擇要設定的控制器</string>

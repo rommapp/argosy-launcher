@@ -107,6 +107,7 @@
     <string name="settings_shell_header_storage_games">STOCKAGE DES JEUX</string>
     <string name="settings_shell_header_storage_media">STOCKAGE MULTIMÉDIA</string>
     <string name="settings_shell_header_storage_platform_games_fallback">JEUX DE LA PLATEFORME</string>
+    <string name="settings_shell_header_storage_local_only">JEUX LOCAUX UNIQUEMENT</string>
     <string name="settings_shell_header_storage_caches">CACHES ET SYSTÈME</string>
     <string name="settings_shell_header_theme">THÈME</string>
     <string name="settings_shell_header_audio">AUDIO</string>
@@ -367,6 +368,7 @@
     <string name="settings_shell_footer_reset_builtincontrols_override">Réinitialiser</string>
     <string name="settings_shell_footer_reset_builtinsaves_override">Réinitialiser</string>
     <string name="settings_shell_footer_back">Retour</string>
+    <string name="settings_shell_footer_local_only_location">Emplacement</string>
     <string name="settings_shell_footer_unassign_shortcut">Retirer</string>
 
     <!-- ===== SettingsScreen: cache clear confirm modals ===== -->

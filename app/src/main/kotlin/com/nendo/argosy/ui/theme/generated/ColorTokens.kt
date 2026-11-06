@@ -127,6 +127,10 @@ object ColorTokens {
             }
             val away = Color(0xFFFBBF24)
             val offline = Color(0xFF6B7280)
+            object Netplay {
+                val dark = Color(0xFF22D3EE)
+                val light = Color(0xFF0E7490)
+            }
         }
         object Battery {
             val low = Color(0xFFE53935)

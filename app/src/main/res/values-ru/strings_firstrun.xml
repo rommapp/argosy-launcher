@@ -5,7 +5,8 @@
 
     <string name="firstrun_romm_url_title">Вход в Rom Manager</string>
     <string name="firstrun_romm_url_field_label">URL сервера</string>
-    <string name="firstrun_romm_url_hint">Введите адрес вашего сервера RomM, и мы определим способ входа.</string>
+    <string name="firstrun_romm_url_field_placeholder">romm.local:8080 или https://...</string>
+    <string name="firstrun_romm_url_hint">Введите адрес вашего сервера RomM, с https:// или без него, и мы определим способ входа.</string>
     <string name="firstrun_romm_url_button_continue">Продолжить</string>
     <string name="firstrun_romm_url_button_checking">Проверка...</string>
     <string name="firstrun_romm_url_button_back">Назад</string>

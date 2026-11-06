@@ -29,15 +29,11 @@ interface HomeInputActions {
     fun nextRow()
     fun appBarIsDrawn(): Boolean
     fun focusAppBar(): Boolean
-    fun openAppBarAppMenu(): Boolean
     fun openDockAppMenu(): Boolean
     fun moveAppBarAppMenu(delta: Int)
     fun confirmAppBarAppMenu()
     fun dismissAppBarAppMenu()
-    fun openAppDrawer()
-    fun moveAppDrawer(delta: Int)
-    fun confirmAppDrawer()
-    fun dismissAppDrawer()
+    fun openAppsScreen()
     fun releaseAppBar()
     fun moveAppBarFocus(delta: Int)
     fun activateAppBarSlot()
@@ -160,17 +156,13 @@ class HomeInputHandler(
 
     private fun appOverlayOpen(): Boolean {
         val state = actions.uiState.value
-        return state.appBarMenu != null || state.appDrawer != null
+        return state.appBarMenu != null
     }
 
     override fun onUp(): InputResult {
         if (actions.uiState.value.appBarMenu != null) {
             actions.moveAppBarAppMenu(-1)
             return InputResult.HANDLED
-        }
-        if (actions.uiState.value.appDrawer != null) {
-            actions.moveAppDrawer(-1)
-            return InputResult.handled(SoundType.NAVIGATE)
         }
         focusPicker?.let {
             it.moveFocusPicker(-1)
@@ -228,10 +220,6 @@ class HomeInputHandler(
             actions.moveAppBarAppMenu(1)
             return InputResult.HANDLED
         }
-        if (actions.uiState.value.appDrawer != null) {
-            actions.moveAppDrawer(1)
-            return InputResult.handled(SoundType.NAVIGATE)
-        }
         focusPicker?.let {
             it.moveFocusPicker(1)
             return InputResult.HANDLED
@@ -284,7 +272,6 @@ class HomeInputHandler(
 
     override fun onLeft(): InputResult {
         if (actions.uiState.value.appBarMenu != null) return InputResult.handled(SoundType.BOUNDARY)
-        if (actions.uiState.value.appDrawer != null) return InputResult.handled(SoundType.BOUNDARY)
         if (focusPicker != null) return InputResult.handled(SoundType.BOUNDARY)
         if (actions.uiState.value.appBarFocused) {
             actions.moveAppBarFocus(if (dockIsRtl) 1 else -1)
@@ -317,7 +304,6 @@ class HomeInputHandler(
 
     override fun onRight(): InputResult {
         if (actions.uiState.value.appBarMenu != null) return InputResult.handled(SoundType.BOUNDARY)
-        if (actions.uiState.value.appDrawer != null) return InputResult.handled(SoundType.BOUNDARY)
         if (focusPicker != null) return InputResult.handled(SoundType.BOUNDARY)
         if (actions.uiState.value.appBarFocused) {
             actions.moveAppBarFocus(if (dockIsRtl) -1 else 1)
@@ -497,10 +483,6 @@ class HomeInputHandler(
             actions.confirmAppBarAppMenu()
             return InputResult.handled(SoundType.SELECT)
         }
-        if (actions.uiState.value.appDrawer != null) {
-            actions.confirmAppDrawer()
-            return InputResult.handled(SoundType.SELECT)
-        }
         focusPicker?.let {
             it.confirmFocusPicker()
             return InputResult.handled(SoundType.SELECT)
@@ -565,10 +547,6 @@ class HomeInputHandler(
     override fun onBack(): InputResult {
         if (actions.uiState.value.appBarMenu != null) {
             actions.dismissAppBarAppMenu()
-            return InputResult.handled(SoundType.CLOSE_MODAL)
-        }
-        if (actions.uiState.value.appDrawer != null) {
-            actions.dismissAppDrawer()
             return InputResult.handled(SoundType.CLOSE_MODAL)
         }
         focusPicker?.let {
@@ -721,19 +699,12 @@ class HomeInputHandler(
 
     /**
      * Holding confirm opens the menu under the cursor: the tile menu on the grid, the game menu on
-     * a row, the app menu in the app drawer and on the dock, where Reorder is the menu's first entry.
+     * a row, the app menu on the dock, where Reorder is the menu's first entry.
      * A second hold commits an arrange; on a title with something stored it asks to start over.
      */
     override fun onLongConfirm(): InputResult {
         val state = actions.uiState.value
         if (state.appBarMenu != null) return InputResult.HANDLED
-        if (state.appDrawer != null) {
-            return if (actions.openAppBarAppMenu()) {
-                InputResult.handled(SoundType.OPEN_MODAL)
-            } else {
-                InputResult.handled(SoundType.BOUNDARY)
-            }
-        }
         if (state.appBarFocused) {
             return if (actions.openDockAppMenu()) {
                 InputResult.handled(SoundType.OPEN_MODAL)

@@ -453,6 +453,15 @@ object SavePathRegistry {
             saveExtensions = listOf("mcd"),
             requiresRoot = true
         ),
+        "armsx1" to SavePathConfig(
+            emulatorId = "armsx1",
+            defaultPaths = listOf(
+                "{extStorage}/Android/data/com.nanodata.armsx/files/swanstation/cards",
+                "{extStorage}/Android/data/com.nanodata.armsx/files/psxlab/cards"
+            ),
+            saveExtensions = listOf("mcd"),
+            supported = false
+        ),
 
         // PS2 - folder memory card mode (per-game directories)
         "nethersx2" to SavePathConfig(
@@ -473,6 +482,15 @@ object SavePathRegistry {
             saveExtensions = listOf("*"),
             usesFolderBasedSaves = true,
             supported = true
+        ),
+        "psx2" to SavePathConfig(
+            emulatorId = "psx2",
+            defaultPaths = listOf(
+                "{extStorage}/Android/data/com.izzy2lost.psx2/files/memcards"
+            ),
+            saveExtensions = listOf("ps2"),
+            usesSharedMemoryCard = true,
+            supported = false
         ),
         "pcsx2" to SavePathConfig(
             emulatorId = "pcsx2",
@@ -579,9 +597,7 @@ object SavePathRegistry {
 
         /**
          * Xbox 360 - content is keyed by profile before title, so the base stops at `content` and
-         * the XUID level below it is discovered per install. AX360E is deliberately absent: its
-         * layout has not been read from the app, and a guessed path resolves to a directory the
-         * emulator never writes.
+         * the XUID level below it is discovered per install.
          */
         "xendroid" to SavePathConfig(
             emulatorId = "xendroid",
@@ -598,6 +614,24 @@ object SavePathRegistry {
             ),
             saveExtensions = listOf("*"),
             usesFolderBasedSaves = true
+        ),
+        "ax360e" to SavePathConfig(
+            emulatorId = "ax360e",
+            defaultPaths = listOf(
+                "{extStorage}/Android/data/aenu.ax360e/files/ax360e/content"
+            ),
+            saveExtensions = listOf("*"),
+            usesFolderBasedSaves = true,
+            supported = false
+        ),
+        "ax360e_free" to SavePathConfig(
+            emulatorId = "ax360e_free",
+            defaultPaths = listOf(
+                "{extStorage}/Android/data/aenu.ax360e.free/files/ax360e/content"
+            ),
+            saveExtensions = listOf("*"),
+            usesFolderBasedSaves = true,
+            supported = false
         ),
 
         "hakux" to SavePathConfig(
@@ -656,6 +690,26 @@ object SavePathRegistry {
             saveExtensions = listOf("srm", "sav"),
             supported = false
         ),
+        "yabasanshiro" to SavePathConfig(
+            emulatorId = "yabasanshiro",
+            defaultPaths = listOf(
+                "{extStorage}/Android/data/org.devmiyax.yabasanshioro2/files/yabause/memory",
+                "{extStorage}/yabause/memory"
+            ),
+            saveExtensions = listOf("ram"),
+            usesSharedMemoryCard = true,
+            supported = false
+        ),
+        "yabasanshiro_pro" to SavePathConfig(
+            emulatorId = "yabasanshiro_pro",
+            defaultPaths = listOf(
+                "{extStorage}/Android/data/org.devmiyax.yabasanshioro2.pro/files/yabause/memory",
+                "{extStorage}/yabause/memory"
+            ),
+            saveExtensions = listOf("ram"),
+            usesSharedMemoryCard = true,
+            supported = false
+        ),
 
         // Genesis/Mega Drive - simple file-based, supported
         "md_emu" to SavePathConfig(
@@ -683,6 +737,42 @@ object SavePathRegistry {
                 "{extStorage}/Android/data/org.scummvm.scummvm/files/saves"
             ),
             saveExtensions = listOf("*"),
+            supported = false
+        ),
+        "linkboy" to SavePathConfig(
+            emulatorId = "linkboy",
+            defaultPaths = listOf(
+                "{extStorage}/Android/data/com.pixelrespawn.linkboy/files/saves"
+            ),
+            saveExtensions = listOf("sav"),
+            supported = false
+        ),
+        "phobos" to SavePathConfig(
+            emulatorId = "phobos",
+            defaultPaths = listOf(
+                "/data/data/com.phobos.emulator/files/saves"
+            ),
+            saveExtensions = listOf("ram", "srm", "eeprom", "card", "sav", "fla", "flash", "rtc", "pak"),
+            usesFolderBasedSaves = true,
+            requiresRoot = true,
+            supported = false
+        ),
+        "pico8_android" to SavePathConfig(
+            emulatorId = "pico8_android",
+            defaultPaths = listOf(
+                "{extStorage}/Documents/pico8/data/cdata"
+            ),
+            saveExtensions = listOf("p8d.txt"),
+            supported = false
+        ),
+        "picpic" to SavePathConfig(
+            emulatorId = "picpic",
+            defaultPaths = listOf(
+                "/data/data/com.sa_moo_rai.picpic/files/saves"
+            ),
+            saveExtensions = listOf("p8d.txt"),
+            usesFolderBasedSaves = true,
+            requiresRoot = true,
             supported = false
         ),
         "dosbox_turbo" to SavePathConfig(
@@ -818,7 +908,17 @@ object SavePathRegistry {
         "com.armsx3.play" to "armsx3_play",
         "xendroid.compose" to "xendroid",
         "xendroid.compose.fork" to "xendroid-plus",
-        "com.rfandango.haku_x" to "hakux"
+        "com.rfandango.haku_x" to "hakux",
+        "com.nanodata.armsx" to "armsx1",
+        "com.izzy2lost.psx2" to "psx2",
+        "aenu.ax360e" to "ax360e",
+        "aenu.ax360e.free" to "ax360e_free",
+        "org.devmiyax.yabasanshioro2" to "yabasanshiro",
+        "org.devmiyax.yabasanshioro2.pro" to "yabasanshiro_pro",
+        "io.wip.pico8" to "pico8_android",
+        "com.sa_moo_rai.picpic" to "picpic",
+        "com.pixelrespawn.linkboy" to "linkboy",
+        "com.phobos.emulator" to "phobos"
     )
 
     private val packagePrefixToConfigId = mapOf(

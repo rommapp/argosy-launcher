@@ -316,6 +316,7 @@ data class GameDetailUiState(
     val syncState: SyncState = SyncState.Idle,
     val isSyncing: Boolean = false,
     val syncOverlayState: SyncOverlayState? = null,
+    val sessionEndRunning: Boolean = false,
     val memcardPickerState: com.nendo.argosy.ui.screens.common.MemcardPickerState? = null,
     val memcardPickerFocusIndex: Int = 0,
     val launchVariantPickerState: com.nendo.argosy.ui.screens.common.VariantPickerState? = null,

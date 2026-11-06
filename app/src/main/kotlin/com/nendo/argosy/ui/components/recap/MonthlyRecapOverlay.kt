@@ -52,14 +52,15 @@ private fun rememberMonthlyRecapController(): MonthlyRecapController {
 }
 
 /**
- * The monthly recap over the control surface. Holds the input stack while open.
+ * The monthly recap over the control surface. Holds the input stack while open, and closes when a
+ * screen change takes the input from it.
  */
 @Composable
 fun MonthlyRecapOverlay(modifier: Modifier = Modifier) {
     val controller = rememberMonthlyRecapController()
     val state by controller.state.collectAsState()
     val cursor by controller.cursor.collectAsState()
-    ModalInputEffect(active = state != null, handler = controller.inputHandler)
+    ModalInputEffect(active = state != null, handler = controller.inputHandler, onInputLost = controller::close)
     if (state != null) FooterHints(hints = emptyList())
     MonthlyRecapContent(
         state = state,

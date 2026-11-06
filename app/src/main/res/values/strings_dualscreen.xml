@@ -132,7 +132,7 @@
     <string name="dual_companion_saves_synced">Saves synced</string>
 
     <!-- Title of the modal that lists every installed app. Noun phrase. -->
-    <string name="dual_companion_app_drawer_title">All Apps</string>
+    <string name="dual_companion_app_drawer_title">Apps</string>
     <!-- Spoken description of the app bar's keyboard button, which raises or lowers the system
          keyboard for the other screen. Noun. -->
     <string name="dual_companion_app_bar_keyboard_description">Keyboard</string>
@@ -242,7 +242,7 @@
     <string name="dual_home_hint_app_bar_open_top">Open Top</string>
     <!-- Footer hint while the cursor is on the app bar. Noun phrase: opens the sheet listing every
          installed app. -->
-    <string name="dual_home_hint_app_bar_all_apps">All Apps</string>
+    <string name="dual_home_hint_app_bar_all_apps">Apps</string>
 
     <!-- Footer hint on the home carousel. Noun: the shoulder buttons move between the rows, which
          are mostly one platform each. -->

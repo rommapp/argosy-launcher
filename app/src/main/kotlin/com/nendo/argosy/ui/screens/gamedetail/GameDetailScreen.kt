@@ -144,7 +144,7 @@ fun GameDetailScreen(
     }
 
     val pendingLaunch by argosyViewModel.pendingLaunch.collectAsState()
-    val sessionEndSyncing = uiState.syncOverlayState != null
+    val sessionEndSyncing = uiState.syncOverlayState != null || uiState.sessionEndRunning
     LaunchedEffect(pendingLaunch, uiState.game?.id, sessionEndSyncing) {
         val pending = pendingLaunch ?: return@LaunchedEffect
         if (pending.gameId == gameId && uiState.game?.id == gameId && !sessionEndSyncing) {
@@ -846,7 +846,7 @@ private fun GameDetailContent(
                         }
                         add(InputButton.B to backHint)
                         if (canShowPlayOptions && focusedItem == MenuItem.Play) {
-                            add(InputButton.X to newGameHint)
+                            add(InputButton.X to if (isAnySyncing || uiState.sessionEndRunning) playSyncingHint else newGameHint)
                         } else if (uiState.hasSocialAccount && game.igdbId != null) {
                             add(InputButton.X to if (uiState.isPrivate) shortcutMakePublicHint else shortcutMakePrivateHint)
                         }

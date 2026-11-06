@@ -32,6 +32,7 @@ sealed class Screen(val route: String) {
     data object SaveSync : Screen("save_sync")
     data object SyncMonitor : Screen("sync_monitor")
     data object Apps : Screen("apps")
+    data object Running : Screen("running")
     data object Settings : Screen("settings?section={section}&action={action}&platformId={platformId}") {
         fun createRoute(section: String? = null, action: String? = null, platformId: Long? = null): String {
             val params = mutableListOf<String>()
@@ -87,6 +88,7 @@ sealed class Screen(val route: String) {
         const val ROUTE_SAVE_TIMELINE = "save_timeline"
         const val ROUTE_SYNC_MONITOR = "sync_monitor"
         const val ROUTE_APPS = "apps"
+        const val ROUTE_RUNNING = "running"
         const val ROUTE_MEDIA_LIBRARY = "media_library"
         const val ROUTE_MEDIA_DETAIL = "media_item"
         const val ROUTE_SEARCH = "search"

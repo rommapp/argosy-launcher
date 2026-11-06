@@ -34,7 +34,10 @@ import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.ScreenRotation
 import androidx.compose.material.icons.filled.SettingsBrightness
+import androidx.compose.material.icons.filled.StayCurrentLandscape
+import androidx.compose.material.icons.filled.StayCurrentPortrait
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.SportsEsports
 import androidx.compose.material.icons.filled.SwapHoriz
@@ -60,6 +63,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
 import com.nendo.argosy.R
+import com.nendo.argosy.data.preferences.ScreenOrientationMode
 import com.nendo.argosy.data.preferences.ThemeMode
 import com.nendo.argosy.hardware.FanController
 import com.nendo.argosy.ui.primitives.FocusIndicators
@@ -403,6 +407,21 @@ private fun QuickSettingsItemRow(
             onToggle = { controller.swapDisplays() }
         )
 
+        QuickSettingsItem.ScreenOrientation -> QuickSegmentedRow(
+            icon = when (state.screenOrientation) {
+                ScreenOrientationMode.AUTO -> Icons.Default.ScreenRotation
+                ScreenOrientationMode.LANDSCAPE -> Icons.Default.StayCurrentLandscape
+                ScreenOrientationMode.PORTRAIT -> Icons.Default.StayCurrentPortrait
+            },
+            label = stringResource(R.string.ui_quick_settings_orientation),
+            options = ScreenOrientationMode.entries.map { stringResource(it.quickLabelRes()) },
+            selectedIndex = ScreenOrientationMode.entries.indexOf(state.screenOrientation),
+            isFocused = isFocused,
+            onFocus = focus,
+            onSelect = { controller.setScreenOrientation(ScreenOrientationMode.entries[it]) },
+            inline = false
+        )
+
         QuickSettingsItem.SystemVolume -> QuickSliderRow(
             icon = if (state.systemVolume > 0f) Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff,
             label = stringResource(R.string.ui_quick_settings_volume),
@@ -460,6 +479,8 @@ private fun QuickSettingsItemRow(
             onFocus = focus,
             onToggle = controller::setSwapStartSelect
         )
+
+        QuickSettingsItem.HardwareStats -> state.hardwareStats?.let { HardwareStatsBlock(it) }
 
         QuickSettingsItem.DeviceAccess -> QuickNoticeRow(
             message = stringResource(R.string.ui_quick_settings_device_access_notice),

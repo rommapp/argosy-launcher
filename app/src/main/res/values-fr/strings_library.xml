@@ -72,6 +72,7 @@
     <string name="library_filter_category_series">Séries</string>
 
     <string name="library_filter_hint_clear">Effacer</string>
+    <string name="library_filter_hint_type">Saisir</string>
     <string name="library_filter_hint_close_search">Fermer</string>
     <string name="library_filter_hint_reset">Réinitialiser</string>
     <string name="library_filter_hint_toggle">Basculer</string>

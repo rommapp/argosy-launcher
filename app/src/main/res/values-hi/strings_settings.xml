@@ -111,6 +111,11 @@
     <string name="settings_interface_hide_system_nav_bar_subtitle">Android के बैक, होम और हाल के ऐप्स बटन या जेस्चर बार छिपाता है। दिखाने के लिए किनारे से स्वाइप करें</string>
     <string name="settings_interface_hide_system_status_bar_title">सिस्टम स्टेटस बार छिपाएँ</string>
     <string name="settings_interface_hide_system_status_bar_subtitle">Android का स्टेटस बार और सूचना आइकन छिपाता है। दिखाने के लिए ऊपर से नीचे स्वाइप करें</string>
+    <string name="settings_interface_screen_orientation_title">स्क्रीन ओरिएंटेशन</string>
+    <string name="settings_interface_screen_orientation_subtitle">डिवाइस के रोटेशन लॉक से अलग, Argosy और बिल्ट-इन गेम को एक ही ओरिएंटेशन में रखता है</string>
+    <string name="settings_interface_screen_orientation_auto">ऑटो</string>
+    <string name="settings_interface_screen_orientation_landscape">लैंडस्केप</string>
+    <string name="settings_interface_screen_orientation_portrait">पोर्ट्रेट</string>
     <string name="settings_interface_quick_panel_in_emulators_title">अन्य एमुलेटर में क्विक पैनल</string>
     <string name="settings_interface_quick_panel_in_emulators_subtitle">क्विक पैनल खोलने के लिए Argosy से खोले गए एमुलेटर में वापस को दबाए रखें। Argosy की एक्सेसिबिलिटी सेवा ज़रूरी है</string>
     <string name="settings_interface_quick_panel_in_emulators_service_off">एक्सेसिबिलिटी सेवा बंद है। इसे अनुमतियों में चालू करें</string>
@@ -413,6 +418,20 @@
     <string name="settings_home_screen_box_art_option_2d">2D कवर</string>
     <string name="settings_home_screen_box_art_option_3d">3D बॉक्स</string>
     <string name="settings_home_screen_installed_only_subtitle">होम स्क्रीन पर केवल डाउनलोड किए गए गेम दिखाएँ</string>
+    <string name="settings_home_screen_recent_new_games_title">हाल के गेम में नए गेम</string>
+    <string name="settings_home_screen_recent_new_games_subtitle">पिछले एक दिन में जोड़े गए बिना खेले गेम</string>
+    <string name="settings_home_screen_recent_new_games_none">कोई नहीं</string>
+    <string name="settings_home_screen_recent_new_games_all">सभी</string>
+    <plurals name="settings_home_screen_recent_new_games_up_to">
+        <item quantity="one">अधिकतम %d</item>
+        <item quantity="other">अधिकतम %d</item>
+    </plurals>
+
+    <string name="settings_home_screen_new_badge_title">नया बैज</string>
+    <string name="settings_home_screen_new_badge_subtitle">होम कार्ड पर नया बैज कहाँ दिखे, या इसे छिपाएँ</string>
+    <string name="settings_home_screen_new_badge_option_right">दाईं ओर</string>
+    <string name="settings_home_screen_new_badge_option_left">बाईं ओर</string>
+    <string name="settings_home_screen_new_badge_option_hidden">छिपा हुआ</string>
 
     <!-- ===== Saves section ===== -->
 
@@ -944,11 +963,22 @@
 
     <string name="settings_storage_games_integrity_title">साप्ताहिक ROM इंटीग्रिटी जाँच</string>
     <string name="settings_storage_games_integrity_subtitle">स्टार्टअप पर हफ़्ते में एक बार डाउनलोड की गई गेम फ़ाइलों को सत्यापित करता है</string>
-    <string name="settings_storage_games_not_from_romm_title">RomM से नहीं</string>
-    <plurals name="settings_storage_games_not_from_romm_subtitle">
-        <item quantity="one">%1$d गेम फ़ाइल हाथ से जोड़ी गई थी और हार्ड रीसेट में बनी रहती है</item>
-        <item quantity="other">%1$d गेम फ़ाइलें हाथ से जोड़ी गई थीं और हार्ड रीसेट में बनी रहती हैं</item>
+    <string name="settings_storage_games_local_only_title">सिर्फ़ लोकल</string>
+    <plurals name="settings_storage_games_local_only_subtitle">
+        <item quantity="one">इस डिवाइस पर %1$d गेम जो RomM में नहीं है</item>
+        <item quantity="other">इस डिवाइस पर %1$d गेम जो RomM में नहीं हैं</item>
     </plurals>
+    <string name="settings_storage_local_only_empty_message">इस डिवाइस के वे गेम जो RomM में नहीं हैं, अपने साइज़ और जगह के साथ यहां दिखते हैं।</string>
+    <string name="settings_storage_game_source_local_only">सिर्फ़ लोकल</string>
+    <string name="settings_storage_location_internal">इंटरनल</string>
+    <string name="settings_storage_location_removable">SD कार्ड</string>
+    <string name="settings_storage_location_mixed">इंटरनल + SD कार्ड</string>
+    <string name="settings_storage_location_unknown">अज्ञात जगह</string>
+    <string name="settings_storage_local_only_tab_all">सभी</string>
+    <string name="settings_storage_local_only_tab_internal">इंटरनल</string>
+    <string name="settings_storage_local_only_tab_sd_card">SD कार्ड</string>
+    <string name="settings_storage_local_only_tab_unknown">अज्ञात</string>
+    <string name="settings_storage_local_only_tab_empty_message">यहाँ कोई केवल-लोकल गेम सेव नहीं है।</string>
 
     <plurals name="settings_storage_games_totals_count">
         <item quantity="one">%d डाउनलोड किया गया</item>
@@ -1480,6 +1510,12 @@
     <string name="settings_builtin_controls_rumble_subtitle">कंट्रोलर वाइब्रेशन फ़ीडबैक चालू करें</string>
     <string name="settings_builtin_controls_motion_title">मोशन कंट्रोल</string>
     <string name="settings_builtin_controls_motion_subtitle">गेम को डिवाइस का झुकाव और घुमाव पढ़ने दें</string>
+    <string name="settings_builtin_controls_gyro_sensitivity_title">जायरो निशाने की संवेदनशीलता</string>
+    <string name="settings_builtin_controls_gyro_sensitivity_subtitle">डिवाइस घुमाने पर निशाना कितना हिलता है</string>
+    <string name="settings_builtin_controls_gyro_invert_x_title">जायरो निशाना क्षैतिज रूप से उलटें</string>
+    <string name="settings_builtin_controls_gyro_invert_x_subtitle">बाएँ घुमाने पर निशाना दाएँ जाता है</string>
+    <string name="settings_builtin_controls_gyro_invert_y_title">जायरो निशाना लंबवत रूप से उलटें</string>
+    <string name="settings_builtin_controls_gyro_invert_y_subtitle">ऊपर झुकाने पर निशाना नीचे जाता है</string>
     <string name="settings_builtin_controls_order_title">कंट्रोलर क्रम</string>
     <string name="settings_builtin_controls_order_subtitle">हर कंट्रोलर पर बटन दबाकर प्लेयर क्रम सेट करें</string>
     <plurals name="settings_builtin_controls_order_assigned">
@@ -1652,9 +1688,10 @@
     <string name="settings_emulators_section_disabled">बंद किए गए प्लेटफ़ॉर्म</string>
     <string name="settings_emulators_rail_platforms">प्लेटफ़ॉर्म</string>
 
-    <string name="settings_emulators_close_on_session_end_title">Argosy पर लौटने पर एमुलेटर बंद करें</string>
-    <string name="settings_emulators_close_on_session_end_subtitle_on">सेव सिंक होने के बाद एमुलेटर बंद कर देता है। बिना सेव की गई प्रगति खो जाती है।</string>
-    <string name="settings_emulators_close_on_session_end_subtitle_off">एमुलेटर ऐप बैकग्राउंड में खुला रहता है</string>
+    <string name="settings_emulators_close_on_session_end_title">Argosy पर लौटने पर गेम बंद करें</string>
+    <string name="settings_emulators_close_on_session_end_subtitle_on">सेव सिंक होने के बाद गेम बंद कर देता है। बिना सेव की गई प्रगति खो जाती है।</string>
+    <string name="settings_emulators_close_on_session_end_subtitle_off">गेम बैकग्राउंड में खुले रहते हैं</string>
+    <string name="settings_emulators_close_on_session_end_subtitle_built_in_only">बिल्ट-इन गेम खुले रहते हैं। दूसरे एमुलेटर सिर्फ़ रूटेड डिवाइस पर खुले रहते हैं।</string>
     <string name="settings_emulators_check_updates_title">अपडेट जाँचें</string>
     <string name="settings_emulators_check_updates_subtitle">एमुलेटर अपडेट जाँचें</string>
     <plurals name="settings_emulators_check_updates_available">
@@ -1926,6 +1963,7 @@
     <string name="settings_hotkeys_action_reset_timer">टाइमर रीसेट करें</string>
     <string name="settings_hotkeys_action_sun_brighter">धूप बढ़ाएँ</string>
     <string name="settings_hotkeys_action_sun_dimmer">धूप घटाएँ</string>
+    <string name="settings_hotkeys_action_recenter_gyro_aim">जायरो निशाना बीच में करें</string>
 
     <!-- ===== Input mapping modal (Settings > components > InputMappingModal) ===== -->
 

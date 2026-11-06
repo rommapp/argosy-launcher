@@ -143,7 +143,11 @@ data class NavRingState(
     val footerYieldsToBar: Boolean get() = isBarVisible && !isAlwaysVisible
 }
 
-private fun isNavRouteAvailable(route: String, socialConnected: Boolean, mediaSignedIn: Boolean): Boolean =
+private fun isNavRouteAvailable(
+    route: String,
+    socialConnected: Boolean,
+    mediaSignedIn: Boolean
+): Boolean =
     when (route) {
         Screen.Social.route -> socialConnected
         Screen.MediaLibrary.route -> mediaSignedIn
@@ -178,6 +182,7 @@ class ArgosyViewModel @Inject constructor(
     private val volumeController: VolumeController,
     private val performanceResolver: DevicePerformanceResolver,
     private val displayRefreshController: DisplayRefreshController,
+    private val hardwareStatsReader: com.nendo.argosy.hardware.HardwareStatsReader,
     private val radioController: com.nendo.argosy.hardware.RadioController,
     private val platformSyncQueue: com.nendo.argosy.data.sync.PlatformSyncQueue,
     private val socialRepository: SocialRepository,
@@ -343,6 +348,7 @@ class ArgosyViewModel @Inject constructor(
         volumeController = volumeController,
         performanceResolver = performanceResolver,
         refreshController = displayRefreshController,
+        hardwareStatsReader = hardwareStatsReader,
         socialRepository = socialRepository,
         hapticManager = hapticManager,
         soundManager = soundManager,
@@ -405,7 +411,9 @@ class ArgosyViewModel @Inject constructor(
     val drawerItems: List<DrawerItem>
         get() {
             val socialConnected = socialRepository.connectionState.value is SocialConnectionState.Connected
-            return allDrawerItems.filter { isNavRouteAvailable(it.route, socialConnected, _isMediaSignedIn) }
+            return allDrawerItems.filter {
+                isNavRouteAvailable(it.route, socialConnected, _isMediaSignedIn)
+            }
         }
 
     private val navBarVisibility = NavBarVisibility(viewModelScope)

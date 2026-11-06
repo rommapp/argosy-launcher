@@ -25,6 +25,7 @@ class CoreSystemDataManager @Inject constructor(
             "dolphin" -> ensureDolphinSysData(systemDir)
             "ppsspp" -> ensurePpssppSysData(systemDir)
             "armsx2" -> ensureArmsx2Resources(systemDir)
+            "scummvm" -> ensureScummvmSysData(systemDir)
             else -> true
         }
     }
@@ -42,6 +43,10 @@ class CoreSystemDataManager @Inject constructor(
             "armsx2" -> isVersionStale(
                 File(systemDir, "$ARMSX2_RESOURCES_PATH/$VERSION_MARKER"),
                 BuildConfig.ARMSX2_SYS_VERSION
+            )
+            "scummvm" -> isVersionStale(
+                File(systemDir, "$SCUMMVM_SYS_PATH/$VERSION_MARKER"),
+                BuildConfig.SCUMMVM_SYS_VERSION
             )
             else -> false
         }
@@ -100,6 +105,25 @@ class CoreSystemDataManager @Inject constructor(
         versionFile.parentFile?.mkdirs()
         versionFile.writeText(currentVersion.toString())
         Logger.info(TAG, "PPSSPP assets installed successfully")
+        true
+    }
+
+    private suspend fun ensureScummvmSysData(systemDir: File): Boolean = withContext(Dispatchers.IO) {
+        val versionFile = File(systemDir, "$SCUMMVM_SYS_PATH/$VERSION_MARKER")
+        val currentVersion = BuildConfig.SCUMMVM_SYS_VERSION
+        if (!isVersionStale(versionFile, currentVersion)) return@withContext true
+
+        Logger.info(TAG, "Downloading ScummVM data files (version $currentVersion)")
+        try {
+            downloadAndExtract(SCUMMVM_SYS_URL, systemDir)
+        } catch (e: Exception) {
+            Logger.error(TAG, "Failed to download ScummVM data files: ${e.message}")
+            return@withContext false
+        }
+
+        versionFile.parentFile?.mkdirs()
+        versionFile.writeText(currentVersion.toString())
+        Logger.info(TAG, "ScummVM data files installed successfully")
         true
     }
 
@@ -176,6 +200,9 @@ class CoreSystemDataManager @Inject constructor(
         private const val PPSSPP_SYS_URL =
             "https://buildbot.libretro.com/assets/system/PPSSPP.zip"
         private const val PPSSPP_SYS_PATH = "PPSSPP"
+        private const val SCUMMVM_SYS_URL =
+            "https://buildbot.libretro.com/assets/system/ScummVM.zip"
+        private const val SCUMMVM_SYS_PATH = "scummvm"
 
         const val ARMSX2_UPSTREAM_COMMIT = "0076b5c389ea7296331ad2d96193c6e8d5d314fa"
         const val ARMSX2_RAW_BASE = "https://raw.githubusercontent.com/ARMSX2/ARMSX2/$ARMSX2_UPSTREAM_COMMIT"

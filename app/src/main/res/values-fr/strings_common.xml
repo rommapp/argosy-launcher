@@ -43,15 +43,12 @@
     <string name="ui_save_channel_tab_states">États</string>
     <string name="ui_save_channel_states_empty">Aucun emplacement d\'état disponible</string>
     <string name="ui_save_channel_states_heading_named">États dans %1$s</string>
-    <string name="ui_save_channel_states_heading_default">États dans l\'emplacement par défaut</string>
     <string name="ui_save_channel_slot_new">Nouvel emplacement</string>
     <string name="ui_save_channel_slot_legacy_tag">[Ancien]</string>
     <string name="ui_save_channel_history_active_point">Point de restauration actif</string>
     <string name="ui_save_channel_history_latest">Dernière</string>
     <string name="ui_save_channel_history_tag_synced">[Synchronisée]</string>
     <string name="ui_save_channel_history_tag_local">[Locale]</string>
-    <string name="ui_save_channel_active_default">Dernière</string>
-    <string name="ui_save_channel_slot_autosave">Sauvegarde automatique</string>
     <string name="ui_save_channel_slot_archived">Archivé</string>
 
     <string name="ui_save_channel_footer_migrate">Migrer</string>
@@ -527,6 +524,7 @@
     <!-- Storage meter, preference rows, home layout rows (ui/components) -->
 
     <string name="ui_volume_meter_other">Autres applis et fichiers</string>
+    <string name="ui_volume_meter_unknown_location">%1$s de jeux se trouvent à un emplacement inconnu</string>
     <string name="ui_volume_meter_free">%1$s libres</string>
 
     <string name="ui_cycle_preference_reset_to_global">Réinitialiser au réglage global</string>
@@ -610,6 +608,10 @@
     <string name="ui_quick_settings_theme_light">Clair</string>
     <string name="ui_quick_settings_theme_dark">Sombre</string>
     <string name="ui_quick_settings_theme_system">Auto</string>
+    <string name="ui_quick_settings_orientation">Orientation</string>
+    <string name="ui_quick_settings_orientation_auto">Auto</string>
+    <string name="ui_quick_settings_orientation_landscape">Paysage</string>
+    <string name="ui_quick_settings_orientation_portrait">Portrait</string>
     <string name="ui_quick_settings_haptics">Vibrations</string>
     <string name="ui_quick_settings_ui_sounds">Sons de l\'interface</string>
     <string name="ui_quick_settings_swap_ab">Inverser A/B</string>
@@ -631,6 +633,8 @@
     <string name="ui_quick_settings_group_performance">Performances</string>
     <string name="ui_quick_settings_group_fan">Ventilateur</string>
     <string name="ui_quick_settings_group_overlay">Surimpression</string>
+    <string name="ui_quick_settings_stats_fan">Ventilateur</string>
+    <string name="ui_quick_settings_stats_battery">Batterie</string>
     <string name="ui_quick_settings_music_nothing_playing">Aucune lecture</string>
     <string name="ui_quick_settings_music_source_launcher">Musique du launcher</string>
     <string name="ui_quick_settings_music_track_position">%1$d sur %2$d</string>
@@ -683,6 +687,7 @@
     <string name="ui_quick_friends_appear_online">Apparaître en ligne</string>
     <string name="ui_drawer_friend_hosting">Héberge %1$s</string>
     <string name="ui_drawer_friend_playing">Joue à %1$s</string>
+    <string name="ui_drawer_friend_playing_online">Joue à %1$s en ligne</string>
     <string name="ui_drawer_friend_in_game">En jeu</string>
     <string name="ui_drawer_friend_favorite">Favori</string>
     <string name="ui_drawer_account_none">Aucun compte</string>
@@ -704,7 +709,6 @@
 
     <string name="ui_sync_overlay_unknown_game">Jeu</string>
     <string name="ui_sync_overlay_slot_prefix">"Emplacement : "</string>
-    <string name="ui_sync_overlay_slot_default">Dernière</string>
     <string name="ui_sync_overlay_blocked_grant">Autoriser l\'accès</string>
     <string name="ui_sync_overlay_blocked_configure_path">Configurer le chemin de sauvegarde</string>
     <string name="ui_sync_overlay_blocked_disable">Désactiver la synchro</string>
@@ -815,17 +819,6 @@
     <string name="ui_sync_overlay_snapshot_conflict_branch_subtitle">Déplacer la sauvegarde de cet appareil vers un nouveau canal</string>
     <string name="ui_sync_overlay_snapshot_conflict_revert">Revenir en arrière</string>
     <string name="ui_sync_overlay_snapshot_conflict_revert_subtitle">Revenir à la dernière sauvegarde synchronisée par cet appareil (une copie de sauvegarde est créée)</string>
-    <string name="ui_sync_overlay_post_session_title">Conflit de sauvegarde</string>
-    <string name="ui_sync_overlay_post_session_subject">\"%1$s\" -- %2$s</string>
-    <string name="ui_sync_overlay_post_session_default_slot">Sauvegarde par défaut</string>
-    <string name="ui_sync_overlay_post_session_message">Le serveur possède une sauvegarde plus récente. L\'envoi fait de votre sauvegarde locale la plus récente, et la copie du serveur est conservée.</string>
-    <string name="ui_sync_overlay_post_session_local">Locale</string>
-    <string name="ui_sync_overlay_post_session_server">Serveur</string>
-    <string name="ui_sync_overlay_post_session_server_named">Serveur (%1$s)</string>
-    <string name="ui_sync_overlay_post_session_skip">Ignorer la synchro</string>
-    <string name="ui_sync_overlay_post_session_skip_subtitle">Conserver votre sauvegarde locale, ne pas envoyer</string>
-    <string name="ui_sync_overlay_post_session_overwrite">Envoyer la sauvegarde locale</string>
-    <string name="ui_sync_overlay_post_session_overwrite_subtitle">Votre sauvegarde locale devient la plus récente. La copie du serveur est conservée.</string>
     <string name="ui_sync_overlay_legacy_status">Synchronisation...</string>
 
     <!-- Quick menu (ui/quickmenu) -->
@@ -1043,7 +1036,6 @@
     <string name="media_library_viewmodel_refresh_label">Actualisation</string>
 
     <string name="gamedetail_action_buttons_play">JOUER</string>
-    <string name="gamedetail_action_buttons_autosave">Sauvegarde auto</string>
     <string name="gamedetail_action_buttons_download">TÉLÉCHARGER</string>
     <string name="gamedetail_action_buttons_install">INSTALLER</string>
     <string name="gamedetail_action_buttons_queued">EN ATTENTE...</string>
@@ -1132,4 +1124,11 @@
     <string name="common_game_confirm_hide_title">Masquer %1$s ?</string>
     <string name="common_game_confirm_hide_message">Les jeux masqués peuvent être réaffichés dans la Bibliothèque en filtrant Source sur Masqués.</string>
     <string name="common_game_confirm_hide_confirm">Masquer</string>
+    <string name="ui_launch_overlay_running_busy_title">%1$s est en cours</string>
+    <string name="ui_launch_overlay_running_busy_message_game">%1$s exécute toujours %2$s en arrière-plan.</string>
+    <string name="ui_launch_overlay_running_busy_message">%1$s est toujours ouvert en arrière-plan.</string>
+    <string name="ui_launch_overlay_running_open_title">%1$s est toujours ouvert</string>
+    <string name="ui_launch_overlay_running_open_message">Lancer un autre jeu le ferme.</string>
+    <string name="ui_launch_overlay_running_close_label">Fermer et lancer</string>
+    <string name="ui_launch_overlay_running_close_subtitle">La progression non sauvegardée du jeu en cours sera perdue</string>
 </resources>

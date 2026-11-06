@@ -79,6 +79,14 @@ class SaveStateManagerTest {
     // RetroAchievements permits SRAM in hardcore, so a hardcore resume must not start
     // fresh just because no save carries the hardcore tag -- it should reuse the active save.
     @Test
+    fun `memory-card platforms skip the flat save file`() {
+        assertTrue(SaveStateManager.usesExternalMemcard("ps2"))
+        assertTrue(SaveStateManager.usesExternalMemcard("ngc"))
+        assertFalse(SaveStateManager.usesExternalMemcard("psx"))
+        assertFalse(SaveStateManager.usesExternalMemcard("snes"))
+    }
+
+    @Test
     fun `RESUME_HARDCORE reuses the casual save when no hardcore save exists`() = runBlocking {
         val activeSaveRepository = mockk<ActiveSaveRepository>()
         val cache = mockk<SaveCacheManager>(relaxed = true)
@@ -717,6 +725,37 @@ class SaveStateManagerTest {
         val outcome = autoSlotManager(byteArrayOf(1, 2, 3)).loadAutoSlotMatchingSave(view)
 
         assertEquals(SaveStateManager.AutoLoadOutcome.KEPT_SAVE, outcome)
+        verify(exactly = 1) { view.unserializeState(bootState) }
+    }
+
+    @Test
+    fun `a mismatched auto state is replaced by the save on disk and a fresh boot`() {
+        val save = byteArrayOf(1, 2, 3)
+        val mgr = autoSlotManager(save)
+        mgr.getSramFile().apply { parentFile?.mkdirs() }.writeBytes(save)
+        val view = retroView(sramAfterLoad = byteArrayOf(9, 9, 9))
+        every { view.unserializeSRAM(any()) } returns true
+
+        val outcome = mgr.loadAutoSlotMatchingSave(view)
+
+        assertEquals(SaveStateManager.AutoLoadOutcome.KEPT_SAVE, outcome)
+        verify(exactly = 1) { view.unserializeSRAM(match { it.contentEquals(save) }) }
+        verify(exactly = 1) { view.reset() }
+        verify(exactly = 0) { view.unserializeState(any()) }
+    }
+
+    @Test
+    fun `a save the core refuses falls back to the booted game without a reset`() {
+        val bootState = byteArrayOf(8, 8)
+        val save = byteArrayOf(1, 2, 3)
+        val mgr = autoSlotManager(save)
+        mgr.getSramFile().apply { parentFile?.mkdirs() }.writeBytes(save)
+        val view = retroView(sramAfterLoad = byteArrayOf(9, 9, 9), bootState = bootState)
+        every { view.unserializeSRAM(any()) } returns false
+
+        mgr.loadAutoSlotMatchingSave(view)
+
+        verify(exactly = 0) { view.reset() }
         verify(exactly = 1) { view.unserializeState(bootState) }
     }
 

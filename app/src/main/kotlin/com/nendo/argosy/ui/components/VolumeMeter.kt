@@ -36,8 +36,10 @@ import kotlin.math.abs
 import kotlin.math.min
 import com.nendo.argosy.core.storage.StorageVolumeType
 import com.nendo.argosy.data.storage.StorageVolumeInfo
+import com.nendo.argosy.data.storage.UNKNOWN_LOCATION_KEY
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
+import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.theme.LocalUiScale
 import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.util.formatBytes
@@ -202,6 +204,14 @@ fun VolumeMeterHero(
                     bytes = otherBytes
                 )
             }
+        }
+        val unknownBytes = categories.sumOf { it.perVolume[UNKNOWN_LOCATION_KEY] ?: 0L }
+        if (unknownBytes > 0L) {
+            Text(
+                text = stringResource(R.string.ui_volume_meter_unknown_location, formatBytes(unknownBytes)),
+                style = MaterialTheme.typography.bodySmall,
+                color = LocalLauncherTheme.current.semanticColors.warning
+            )
         }
     }
 }

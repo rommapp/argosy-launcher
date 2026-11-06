@@ -56,14 +56,17 @@ void VideoLayout::updateForegroundVertices() {
     float scaleX = viewportRect.getWidth();
     float scaleY = viewportRect.getHeight();
 
-    if (integerScaling && contentWidth > 0 && contentHeight > 0 && screenW > 0 && screenH > 0) {
+    unsigned drawnWidth = rotationSwapsAspect ? contentHeight : contentWidth;
+    unsigned drawnHeight = rotationSwapsAspect ? contentWidth : contentHeight;
+
+    if (integerScaling && drawnWidth > 0 && drawnHeight > 0 && screenW > 0 && screenH > 0) {
         // Integer scaling: find largest integer scale that fits
-        int maxScaleX = static_cast<int>(screenW) / contentWidth;
-        int maxScaleY = static_cast<int>(screenH) / contentHeight;
+        int maxScaleX = static_cast<int>(screenW) / drawnWidth;
+        int maxScaleY = static_cast<int>(screenH) / drawnHeight;
         int scale = std::min(maxScaleX, maxScaleY);
         if (scale >= 1) {
-            float scaledWidth = contentWidth * scale;
-            float scaledHeight = contentHeight * scale;
+            float scaledWidth = drawnWidth * scale;
+            float scaledHeight = drawnHeight * scale;
             scaleX = scaledWidth / screenW * viewportRect.getWidth();
             scaleY = scaledHeight / screenH * viewportRect.getHeight();
             LOGD("Integer scale: %dx (%f x %f)", scale, scaledWidth, scaledHeight);
@@ -71,7 +74,7 @@ void VideoLayout::updateForegroundVertices() {
     } else if (screenW > 0 && screenH > 0 && aspectRatio > 0) {
         // Normal aspect ratio scaling
         float screenAspect = screenW / screenH;
-        float contentAspect = aspectRatio;
+        float contentAspect = rotationSwapsAspect ? 1.0F / aspectRatio : aspectRatio;
 
         if (contentAspect > screenAspect) {
             scaleY *= screenAspect / contentAspect;
@@ -215,10 +218,11 @@ void libretrodroid::VideoLayout::updateViewportSize(Rect viewport) {
     updateBuffers();
 }
 
-void VideoLayout::updateRotation(float rotation) {
-    LOGD("Updated rotation to : %f", rotation);
+void VideoLayout::updateRotation(float rotation, bool swapsAspect) {
+    LOGD("Updated rotation to : %f (aspect swapped: %s)", rotation, swapsAspect ? "true" : "false");
 
     this->rotation = rotation;
+    this->rotationSwapsAspect = swapsAspect;
     updateBuffers();
 }
 

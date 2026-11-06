@@ -78,6 +78,7 @@
     <string name="library_filter_category_series">Серии</string>
 
     <string name="library_filter_hint_clear">Очистить</string>
+    <string name="library_filter_hint_type">Ввод</string>
     <string name="library_filter_hint_close_search">Закрыть</string>
     <string name="library_filter_hint_reset">Сбросить</string>
     <string name="library_filter_hint_toggle">Переключить</string>

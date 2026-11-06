@@ -21,8 +21,10 @@ import com.nendo.argosy.data.local.entity.GameListItem
 import com.nendo.argosy.data.local.entity.PlatformEntity
 import com.nendo.argosy.data.local.entity.PlatformLibretroSettingsEntity
 import com.nendo.argosy.data.preferences.AppLanguage
+import com.nendo.argosy.data.preferences.RecentNewGamesLimit
 import com.nendo.argosy.data.preferences.ControlsPreferences
 import com.nendo.argosy.data.repository.HardResetPreview
+import com.nendo.argosy.domain.usecase.storage.GameStorageLocation
 import com.nendo.argosy.data.preferences.BoxArtBorderStyle
 import com.nendo.argosy.data.preferences.GripReserveMode
 import com.nendo.argosy.data.preferences.BoxArtBorderThickness
@@ -41,6 +43,7 @@ import com.nendo.argosy.data.preferences.MediaStreamingQuality
 import com.nendo.argosy.data.preferences.MediaAudioLanguage
 import com.nendo.argosy.data.preferences.MediaSubtitleLanguage
 import com.nendo.argosy.data.preferences.MediaSubtitleMode
+import com.nendo.argosy.data.preferences.NewBadgePlacement
 import com.nendo.argosy.data.preferences.HomeBackgroundMode
 import com.nendo.argosy.data.preferences.SyncFilterPreferences
 import com.nendo.argosy.data.preferences.PlatformIndicatorContent
@@ -277,6 +280,8 @@ data class DisplayState(
     val compactFooter: Boolean = false,
     val hideSystemNavigationBar: Boolean = true,
     val hideSystemStatusBar: Boolean = true,
+    val screenOrientation: com.nendo.argosy.data.preferences.ScreenOrientationMode =
+        com.nendo.argosy.data.preferences.ScreenOrientationMode.AUTO,
     val quickPanelInEmulators: Boolean = false,
     val showAccessibilityPrompt: Boolean = false,
     val lockScreenArt: Boolean = true,
@@ -350,6 +355,8 @@ data class DisplayState(
     val screenRoleModalOpen: Boolean = false,
     val screenRoleModalFocus: Int = 0,
     val installedOnlyHome: Boolean = false,
+    val recentNewGamesLimit: Int = RecentNewGamesLimit.DEFAULT,
+    val newBadgePlacement: NewBadgePlacement = NewBadgePlacement.RIGHT,
     val showStatusClock: Boolean = true,
     val showStatusBattery: Boolean = true,
     val showStatusNetwork: Boolean = false
@@ -567,7 +574,8 @@ data class EmulatorState(
     val totalCoreCount: Int = 0,
     val coreUpdatesAvailable: Int = 0,
     val builtinLibretroEnabled: Boolean = true,
-    val closeEmulatorOnSessionEnd: Boolean = true,
+    val closeEmulatorOnSessionEnd: Boolean = false,
+    val externalGamesStayOpen: Boolean = false,
     val architectureDisplay: String = "",
     val ingameMenuTwoColumn: Boolean = false,
     val hudEnabled: Boolean = false,
@@ -800,6 +808,9 @@ data class BuiltinControlsState(
     val controllerPorts: List<ControllerPortChoiceUi> = emptyList(),
     val rumbleEnabled: Boolean = true,
     val motionEnabled: Boolean = true,
+    val gyroAimInvertX: Boolean = false,
+    val gyroAimInvertY: Boolean = false,
+    val gyroAimSensitivity: Int = com.nendo.argosy.data.preferences.GyroAimSensitivity.DEFAULT,
     val limitHotkeysToPlayer1: Boolean = true,
     val speedrunStartOnReset: Boolean = true,
     val speedrunPanelSide: String = "Right",
@@ -1008,7 +1019,7 @@ data class StorageState(
     val romStoragePath: String = "",
     val downloadedGamesSize: Long = 0,
     val downloadedGamesCount: Int = 0,
-    val adoptedGamesCount: Int = 0,
+    val localOnlyGamesCount: Int = 0,
     val maxConcurrentDownloads: Int = 1,
     val allowRemoteInstalls: Boolean = true,
     val autoStartDownloads: Boolean = true,
@@ -1064,13 +1075,31 @@ data class GameStorageCategoryDeleteConfirm(
 data class StoragePlatformGamesState(
     val selectedPlatformId: Long = -1L,
     val platformName: String = "",
+    val localOnly: Boolean = false,
     val isLoading: Boolean = false,
     val games: List<com.nendo.argosy.domain.usecase.storage.GameStorageBreakdown> = emptyList(),
     val coverPaths: Map<Long, String?> = emptyMap(),
     val highlightedCategoryIndex: Int = 0,
     val deleteConfirm: com.nendo.argosy.ui.common.GameConfirm.DeleteDownload? = null,
-    val categoryDeleteConfirm: GameStorageCategoryDeleteConfirm? = null
-)
+    val categoryDeleteConfirm: GameStorageCategoryDeleteConfirm? = null,
+    val locationFilter: StorageLocationFilter = StorageLocationFilter.ALL
+) {
+    val visibleGames: List<com.nendo.argosy.domain.usecase.storage.GameStorageBreakdown>
+        get() = if (localOnly) games.filter(locationFilter::matches) else games
+}
+
+enum class StorageLocationFilter(private val location: GameStorageLocation?) {
+    ALL(null),
+    INTERNAL(GameStorageLocation.INTERNAL),
+    REMOVABLE(GameStorageLocation.REMOVABLE),
+    UNKNOWN(GameStorageLocation.UNKNOWN);
+
+    fun matches(game: com.nendo.argosy.domain.usecase.storage.GameStorageBreakdown): Boolean {
+        val target = location ?: return true
+        val held = game.files.map { it.location }.toSet().ifEmpty { setOf(GameStorageLocation.UNKNOWN) }
+        return target in held
+    }
+}
 
 enum class CachesClearTarget {
     IMAGE_CACHE,

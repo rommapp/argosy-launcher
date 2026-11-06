@@ -52,7 +52,7 @@
     <string name="dual_companion_saves_dirty">有新存档数据</string>
     <string name="dual_companion_saves_synced">存档已同步</string>
 
-    <string name="dual_companion_app_drawer_title">全部应用</string>
+    <string name="dual_companion_app_drawer_title">应用</string>
     <string name="dual_companion_app_bar_keyboard_description">键盘</string>
     <string name="dual_companion_app_bar_swap_description">交换屏幕</string>
     <string name="dual_companion_app_bar_focus_description">将输入发送到某个屏幕</string>
@@ -101,7 +101,7 @@
 
     <string name="dual_home_hint_app_bar_select">选择</string>
     <string name="dual_home_hint_app_bar_open_top">在顶屏打开</string>
-    <string name="dual_home_hint_app_bar_all_apps">全部应用</string>
+    <string name="dual_home_hint_app_bar_all_apps">应用</string>
 
     <string name="dual_home_hint_carousel_platform">平台</string>
     <string name="dual_home_hint_carousel_details">详情</string>

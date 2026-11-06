@@ -23,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,7 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -47,8 +48,6 @@ const val PLATFORM_HEADER_SEARCH = 0
 const val PLATFORM_HEADER_SORT = 1
 const val PLATFORM_HEADER_FILTER = 2
 const val PLATFORM_HEADER_COUNT = 3
-
-private const val WIDE_SCREEN_DP = 900
 
 private val SORT_OPTIONS = listOf(
     PlatformFilterLogic.SortMode.DEFAULT to R.string.ui_platform_filter_sort_default,
@@ -78,11 +77,13 @@ fun PlatformFilterHeader(
     modifier: Modifier = Modifier
 ) {
     val searchFocusRequester = remember { FocusRequester() }
-    val screenWidthDp = LocalConfiguration.current.screenWidthDp
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     LaunchedEffect(searchActive) {
-        if (searchActive && screenWidthDp > WIDE_SCREEN_DP) {
+        if (searchActive) {
             searchFocusRequester.requestFocus()
+            withFrameNanos { }
+            keyboardController?.show()
         }
     }
 

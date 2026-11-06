@@ -113,6 +113,11 @@
     <string name="settings_interface_hide_system_nav_bar_subtitle">Masque les boutons Retour, Accueil et Récents d\'Android ou la barre de gestes. Balayez depuis le bord pour les afficher</string>
     <string name="settings_interface_hide_system_status_bar_title">Masquer la barre d\'état système</string>
     <string name="settings_interface_hide_system_status_bar_subtitle">Masque la barre d\'état d\'Android et les icônes de notification. Balayez vers le bas depuis le haut pour l\'afficher</string>
+    <string name="settings_interface_screen_orientation_title">Orientation de l\'écran</string>
+    <string name="settings_interface_screen_orientation_subtitle">Garde Argosy et les jeux intégrés dans une seule orientation, quel que soit le verrouillage de rotation de l\'appareil</string>
+    <string name="settings_interface_screen_orientation_auto">Auto</string>
+    <string name="settings_interface_screen_orientation_landscape">Paysage</string>
+    <string name="settings_interface_screen_orientation_portrait">Portrait</string>
     <string name="settings_interface_quick_panel_in_emulators_title">Panneau rapide dans les autres émulateurs</string>
     <string name="settings_interface_quick_panel_in_emulators_subtitle">Maintenez Retour dans un émulateur lancé par Argosy pour ouvrir le panneau rapide. Nécessite le service d\'accessibilité d\'Argosy</string>
     <string name="settings_interface_quick_panel_in_emulators_service_off">Le service d\'accessibilité est désactivé. Activez-le dans Autorisations</string>
@@ -420,6 +425,21 @@
     <string name="settings_home_screen_box_art_option_2d">Jaquette 2D</string>
     <string name="settings_home_screen_box_art_option_3d">Boîtier 3D</string>
     <string name="settings_home_screen_installed_only_subtitle">N\'afficher que les jeux téléchargés sur l\'écran d\'accueil</string>
+    <string name="settings_home_screen_recent_new_games_title">Nouveaux jeux dans Récents</string>
+    <string name="settings_home_screen_recent_new_games_subtitle">Jeux jamais lancés ajoutés depuis moins d\'un jour</string>
+    <string name="settings_home_screen_recent_new_games_none">Aucun</string>
+    <string name="settings_home_screen_recent_new_games_all">Tous</string>
+    <plurals name="settings_home_screen_recent_new_games_up_to">
+        <item quantity="one">Jusqu\'à %d</item>
+        <item quantity="many">Jusqu\'à %d</item>
+        <item quantity="other">Jusqu\'à %d</item>
+    </plurals>
+
+    <string name="settings_home_screen_new_badge_title">Badge NOUVEAU</string>
+    <string name="settings_home_screen_new_badge_subtitle">Emplacement du badge NOUVEAU sur les cartes d\'accueil, ou le masquer</string>
+    <string name="settings_home_screen_new_badge_option_right">Droite</string>
+    <string name="settings_home_screen_new_badge_option_left">Gauche</string>
+    <string name="settings_home_screen_new_badge_option_hidden">Masqué</string>
 
     <!-- ===== Section Sauvegardes ===== -->
 
@@ -963,12 +983,23 @@
 
     <string name="settings_storage_games_integrity_title">Vérification hebdomadaire d\'intégrité ROM</string>
     <string name="settings_storage_games_integrity_subtitle">Vérifie les fichiers de jeu téléchargés au démarrage une fois par semaine</string>
-    <string name="settings_storage_games_not_from_romm_title">Pas issus de RomM</string>
-    <plurals name="settings_storage_games_not_from_romm_subtitle">
-        <item quantity="one">%1$d fichier de jeu a été ajouté à la main et est conservé lors d\'une réinitialisation complète</item>
-        <item quantity="many">%1$d fichiers de jeu ont été ajoutés à la main et sont conservés lors d\'une réinitialisation complète</item>
-        <item quantity="other">%1$d fichiers de jeu ont été ajoutés à la main et sont conservés lors d\'une réinitialisation complète</item>
+    <string name="settings_storage_games_local_only_title">Local uniquement</string>
+    <plurals name="settings_storage_games_local_only_subtitle">
+        <item quantity="one">%1$d jeu sur cet appareil que RomM n\'a pas</item>
+        <item quantity="many">%1$d jeux sur cet appareil que RomM n\'a pas</item>
+        <item quantity="other">%1$d jeux sur cet appareil que RomM n\'a pas</item>
     </plurals>
+    <string name="settings_storage_local_only_empty_message">Les jeux de cet appareil que RomM n\'a pas apparaissent ici avec leur taille et leur emplacement.</string>
+    <string name="settings_storage_game_source_local_only">Local uniquement</string>
+    <string name="settings_storage_location_internal">Interne</string>
+    <string name="settings_storage_location_removable">Carte SD</string>
+    <string name="settings_storage_location_mixed">Interne + carte SD</string>
+    <string name="settings_storage_location_unknown">Emplacement inconnu</string>
+    <string name="settings_storage_local_only_tab_all">Tous</string>
+    <string name="settings_storage_local_only_tab_internal">Interne</string>
+    <string name="settings_storage_local_only_tab_sd_card">Carte SD</string>
+    <string name="settings_storage_local_only_tab_unknown">Inconnu</string>
+    <string name="settings_storage_local_only_tab_empty_message">Aucun jeu uniquement local n\'est stocké ici.</string>
 
     <plurals name="settings_storage_games_totals_count">
         <item quantity="one">%d téléchargé</item>
@@ -1524,6 +1555,12 @@
     <string name="settings_builtin_controls_rumble_subtitle">Activer le retour par vibration de la manette</string>
     <string name="settings_builtin_controls_motion_title">Commandes de mouvement</string>
     <string name="settings_builtin_controls_motion_subtitle">Permet aux jeux de lire l\'inclinaison et la rotation de l\'appareil</string>
+    <string name="settings_builtin_controls_gyro_sensitivity_title">Sensibilité de la visée gyroscopique</string>
+    <string name="settings_builtin_controls_gyro_sensitivity_subtitle">Distance parcourue par le viseur quand vous tournez l\'appareil</string>
+    <string name="settings_builtin_controls_gyro_invert_x_title">Inverser la visée gyroscopique horizontalement</string>
+    <string name="settings_builtin_controls_gyro_invert_x_subtitle">Tourner à gauche déplace le viseur à droite</string>
+    <string name="settings_builtin_controls_gyro_invert_y_title">Inverser la visée gyroscopique verticalement</string>
+    <string name="settings_builtin_controls_gyro_invert_y_subtitle">Incliner vers le haut déplace le viseur vers le bas</string>
     <string name="settings_builtin_controls_order_title">Ordre des manettes</string>
     <string name="settings_builtin_controls_order_subtitle">Définir l\'ordre des joueurs en appuyant sur un bouton de chaque manette</string>
     <plurals name="settings_builtin_controls_order_assigned">
@@ -1697,9 +1734,10 @@
     <string name="settings_emulators_section_disabled">Plateformes désactivées</string>
     <string name="settings_emulators_rail_platforms">Plateformes</string>
 
-    <string name="settings_emulators_close_on_session_end_title">Fermer l\'émulateur au retour dans Argosy</string>
-    <string name="settings_emulators_close_on_session_end_subtitle_on">Ferme l\'émulateur une fois sa sauvegarde synchronisée. La progression non sauvegardée est perdue.</string>
-    <string name="settings_emulators_close_on_session_end_subtitle_off">L\'application de l\'émulateur reste ouverte en arrière-plan</string>
+    <string name="settings_emulators_close_on_session_end_title">Fermer les jeux au retour dans Argosy</string>
+    <string name="settings_emulators_close_on_session_end_subtitle_on">Ferme le jeu une fois sa sauvegarde synchronisée. La progression non sauvegardée est perdue.</string>
+    <string name="settings_emulators_close_on_session_end_subtitle_off">Les jeux restent ouverts en arrière-plan</string>
+    <string name="settings_emulators_close_on_session_end_subtitle_built_in_only">Les jeux intégrés restent ouverts. Les autres émulateurs ne restent ouverts que sur les appareils rootés.</string>
     <string name="settings_emulators_check_updates_title">Vérifier les mises à jour</string>
     <string name="settings_emulators_check_updates_subtitle">Vérifier les mises à jour des émulateurs</string>
     <plurals name="settings_emulators_check_updates_available">
@@ -1979,6 +2017,7 @@
     <string name="settings_hotkeys_action_reset_timer">Réinitialiser le chrono</string>
     <string name="settings_hotkeys_action_sun_brighter">Ensoleillement +</string>
     <string name="settings_hotkeys_action_sun_dimmer">Ensoleillement -</string>
+    <string name="settings_hotkeys_action_recenter_gyro_aim">Recentrer la visée gyroscopique</string>
 
     <!-- ===== Fenetre de mappage des entrees ===== -->
 

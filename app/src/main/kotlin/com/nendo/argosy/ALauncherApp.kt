@@ -58,6 +58,9 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
     lateinit var lidSleepGuard: com.nendo.argosy.hardware.LidSleepGuard
 
     @Inject
+    lateinit var backgroundGames: com.nendo.argosy.data.emulator.background.BackgroundGames
+
+    @Inject
     lateinit var userCertStore: com.nendo.argosy.data.remote.ssl.UserCertStore
 
     @Inject
@@ -211,6 +214,7 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
         pushInstallCoordinator.start()
         siblingGroupRepository.start()
         lidSleepGuard.start()
+        backgroundGames.start()
         siblingGroupDownloadObserver.start()
         raPatchDownloadObserver.start()
         appScope.launch {

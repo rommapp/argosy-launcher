@@ -32,15 +32,12 @@
     <string name="ui_save_channel_tab_states">Savestates</string>
     <string name="ui_save_channel_states_empty">Keine Savestate-Slots verfügbar</string>
     <string name="ui_save_channel_states_heading_named">Savestates in %1$s</string>
-    <string name="ui_save_channel_states_heading_default">Savestates im Standard-Slot</string>
     <string name="ui_save_channel_slot_new">Neuer Slot</string>
     <string name="ui_save_channel_slot_legacy_tag">[Alt]</string>
     <string name="ui_save_channel_history_active_point">Aktiver Wiederherstellungspunkt</string>
     <string name="ui_save_channel_history_latest">Neueste</string>
     <string name="ui_save_channel_history_tag_synced">[Synchronisiert]</string>
     <string name="ui_save_channel_history_tag_local">[Lokal]</string>
-    <string name="ui_save_channel_active_default">Neueste</string>
-    <string name="ui_save_channel_slot_autosave">Autospeicherung</string>
     <string name="ui_save_channel_slot_archived">Archiviert</string>
 
     <string name="ui_save_channel_footer_migrate">Migrieren</string>
@@ -503,6 +500,7 @@
     <!-- Storage meter, preference rows, home layout rows (ui/components) -->
 
     <string name="ui_volume_meter_other">Andere Apps &amp; Dateien</string>
+    <string name="ui_volume_meter_unknown_location">%1$s an Spielen liegen an einem unbekannten Ort</string>
     <string name="ui_volume_meter_free">%1$s frei</string>
 
     <string name="ui_cycle_preference_reset_to_global">Auf global zurücksetzen</string>
@@ -586,6 +584,10 @@
     <string name="ui_quick_settings_theme_light">Hell</string>
     <string name="ui_quick_settings_theme_dark">Dunkel</string>
     <string name="ui_quick_settings_theme_system">Auto</string>
+    <string name="ui_quick_settings_orientation">Ausrichtung</string>
+    <string name="ui_quick_settings_orientation_auto">Auto</string>
+    <string name="ui_quick_settings_orientation_landscape">Quer</string>
+    <string name="ui_quick_settings_orientation_portrait">Hoch</string>
     <string name="ui_quick_settings_haptics">Vibration</string>
     <string name="ui_quick_settings_ui_sounds">UI-Sounds</string>
     <string name="ui_quick_settings_swap_ab">A/B tauschen</string>
@@ -607,6 +609,8 @@
     <string name="ui_quick_settings_group_performance">Leistung</string>
     <string name="ui_quick_settings_group_fan">Lüfter</string>
     <string name="ui_quick_settings_group_overlay">Overlay</string>
+    <string name="ui_quick_settings_stats_fan">Lüfter</string>
+    <string name="ui_quick_settings_stats_battery">Akku</string>
     <string name="ui_quick_settings_music_nothing_playing">Keine Wiedergabe</string>
     <string name="ui_quick_settings_music_source_launcher">Launcher-Musik</string>
     <string name="ui_quick_settings_music_track_position">%1$d von %2$d</string>
@@ -658,6 +662,7 @@
     <string name="ui_quick_friends_appear_online">Als online anzeigen</string>
     <string name="ui_drawer_friend_hosting">Hostet %1$s</string>
     <string name="ui_drawer_friend_playing">Spielt %1$s</string>
+    <string name="ui_drawer_friend_playing_online">Spielt %1$s online</string>
     <string name="ui_drawer_friend_in_game">Im Spiel</string>
     <string name="ui_drawer_friend_favorite">Favorit</string>
     <string name="ui_drawer_account_none">Kein Konto</string>
@@ -679,7 +684,6 @@
 
     <string name="ui_sync_overlay_unknown_game">Spiel</string>
     <string name="ui_sync_overlay_slot_prefix">"Slot: "</string>
-    <string name="ui_sync_overlay_slot_default">Neueste</string>
     <string name="ui_sync_overlay_blocked_grant">Berechtigung erteilen</string>
     <string name="ui_sync_overlay_blocked_configure_path">Speicherpfad konfigurieren</string>
     <string name="ui_sync_overlay_blocked_disable">Sync deaktivieren</string>
@@ -785,17 +789,6 @@
     <string name="ui_sync_overlay_snapshot_conflict_branch_subtitle">Den Spielstand dieses Geräts in einen neuen Kanal verschieben</string>
     <string name="ui_sync_overlay_snapshot_conflict_revert">Zurücksetzen</string>
     <string name="ui_sync_overlay_snapshot_conflict_revert_subtitle">Zum zuletzt von diesem Gerät synchronisierten Spielstand zurückkehren (Sicherung wird erstellt)</string>
-    <string name="ui_sync_overlay_post_session_title">Spielstandkonflikt</string>
-    <string name="ui_sync_overlay_post_session_subject">\"%1$s\" -- %2$s</string>
-    <string name="ui_sync_overlay_post_session_default_slot">Standard-Spielstand</string>
-    <string name="ui_sync_overlay_post_session_message">Der Server hat einen neueren Spielstand. Beim Hochladen wird Ihr lokaler Spielstand zum neuesten, und die Kopie auf dem Server bleibt erhalten.</string>
-    <string name="ui_sync_overlay_post_session_local">Lokal</string>
-    <string name="ui_sync_overlay_post_session_server">Server</string>
-    <string name="ui_sync_overlay_post_session_server_named">Server (%1$s)</string>
-    <string name="ui_sync_overlay_post_session_skip">Sync überspringen</string>
-    <string name="ui_sync_overlay_post_session_skip_subtitle">Lokalen Spielstand behalten, nicht hochladen</string>
-    <string name="ui_sync_overlay_post_session_overwrite">Lokalen Spielstand hochladen</string>
-    <string name="ui_sync_overlay_post_session_overwrite_subtitle">Ihr lokaler Spielstand wird zum neuesten. Die Kopie auf dem Server bleibt erhalten.</string>
     <string name="ui_sync_overlay_legacy_status">Synchronisierung...</string>
 
     <!-- Quick menu (ui/quickmenu) -->
@@ -997,7 +990,6 @@
     <string name="media_library_viewmodel_refresh_label">Wird aktualisiert</string>
 
     <string name="gamedetail_action_buttons_play">SPIELEN</string>
-    <string name="gamedetail_action_buttons_autosave">Autospeicherung</string>
     <string name="gamedetail_action_buttons_download">HERUNTERLADEN</string>
     <string name="gamedetail_action_buttons_install">INSTALLIEREN</string>
     <string name="gamedetail_action_buttons_queued">WARTET...</string>
@@ -1086,4 +1078,11 @@
     <string name="common_game_confirm_hide_title">%1$s ausblenden?</string>
     <string name="common_game_confirm_hide_message">Ausgeblendete Spiele lassen sich in der Bibliothek wieder anzeigen, indem du Quelle auf Ausgeblendet filterst.</string>
     <string name="common_game_confirm_hide_confirm">Ausblenden</string>
+    <string name="ui_launch_overlay_running_busy_title">%1$s läuft</string>
+    <string name="ui_launch_overlay_running_busy_message_game">%1$s führt %2$s noch im Hintergrund aus.</string>
+    <string name="ui_launch_overlay_running_busy_message">%1$s ist noch im Hintergrund geöffnet.</string>
+    <string name="ui_launch_overlay_running_open_title">%1$s ist noch geöffnet</string>
+    <string name="ui_launch_overlay_running_open_message">Wenn du ein anderes Spiel startest, wird es geschlossen.</string>
+    <string name="ui_launch_overlay_running_close_label">Schließen und starten</string>
+    <string name="ui_launch_overlay_running_close_subtitle">Nicht gespeicherter Fortschritt im laufenden Spiel geht verloren</string>
 </resources>

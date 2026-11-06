@@ -36,7 +36,7 @@ public:
 
     void updateViewportSize(Rect viewportRect);
 
-    void updateRotation(float rotation);
+    void updateRotation(float rotation, bool swapsAspect);
 
     void setIntegerScaling(bool enabled);
 
@@ -182,6 +182,7 @@ private:
 
     bool bottomLeftOrigin = false;
     float rotation = 0.0F;
+    bool rotationSwapsAspect = false;
     float aspectRatio = 1;
     Rect viewportRect = Rect(0.0F, 0.0F, 1.0F, 1.0F);
 

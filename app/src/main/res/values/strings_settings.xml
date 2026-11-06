@@ -318,6 +318,11 @@
     <string name="settings_interface_hide_system_status_bar_title">Hide System Status Bar</string>
     <!-- Second line of that row. Says what is hidden and how to bring it back for a moment. -->
     <string name="settings_interface_hide_system_status_bar_subtitle">Hide Android\'s status bar and notification icons. Swipe down from the top to show it</string>
+    <string name="settings_interface_screen_orientation_title">Screen orientation</string>
+    <string name="settings_interface_screen_orientation_subtitle">Keeps Argosy and built-in games in one orientation, whatever the device\'s rotation lock says</string>
+    <string name="settings_interface_screen_orientation_auto">Auto</string>
+    <string name="settings_interface_screen_orientation_landscape">Landscape</string>
+    <string name="settings_interface_screen_orientation_portrait">Portrait</string>
     <!-- Toggle row title. "Quick Panel" is Argosy's side panel of game settings; "Other Emulators"
          means standalone emulator apps, as opposed to the emulators built into Argosy. -->
     <string name="settings_interface_quick_panel_in_emulators_title">Quick Panel in Other Emulators</string>
@@ -845,6 +850,31 @@
     <string name="settings_home_screen_box_art_option_3d">3D Box</string>
     <!-- Second line of that row. -->
     <string name="settings_home_screen_installed_only_subtitle">Only show downloaded games on home screen</string>
+    <!-- Row title. Noun phrase: games just added to the library that appear in the home
+         screen's Recent row. -->
+    <string name="settings_home_screen_recent_new_games_title">New Games in Recent</string>
+    <!-- Second line of that row. -->
+    <string name="settings_home_screen_recent_new_games_subtitle">Unplayed games added in the last day</string>
+    <!-- Value of that row: no new games are added. -->
+    <string name="settings_home_screen_recent_new_games_none">None</string>
+    <!-- Value of that row: every new game is added. -->
+    <string name="settings_home_screen_recent_new_games_all">All</string>
+    <!-- Value of that row: a maximum number of games. -->
+    <plurals name="settings_home_screen_recent_new_games_up_to">
+        <item quantity="one">Up to %d</item>
+        <item quantity="other">Up to %d</item>
+    </plurals>
+
+    <!-- Row title. Noun: the badge marking a game as new on home cards. -->
+    <string name="settings_home_screen_new_badge_title">NEW Badge</string>
+    <!-- Second line of that row. -->
+    <string name="settings_home_screen_new_badge_subtitle">Where the NEW badge sits on home cards, or hide it</string>
+    <!-- Home new badge option: top-right corner (historical default). Keep short; shown in a segmented control. -->
+    <string name="settings_home_screen_new_badge_option_right">Right</string>
+    <!-- Home new badge option: top-left corner. Keep short; shown in a segmented control. -->
+    <string name="settings_home_screen_new_badge_option_left">Left</string>
+    <!-- Home new badge option: not drawn at all. Keep short; shown in a segmented control. -->
+    <string name="settings_home_screen_new_badge_option_hidden">Hidden</string>
 
     <!-- ===== Saves section ===== -->
 
@@ -1862,14 +1892,44 @@
     <!-- Second line of that row. -->
     <string name="settings_storage_games_integrity_subtitle">Verifies downloaded game files at startup once a week</string>
 
-    <!-- Row title. Games whose file was copied to the device by hand rather than downloaded
-         through the app. "RomM" is a service name, never translated. -->
-    <string name="settings_storage_games_not_from_romm_title">Not from RomM</string>
-    <!-- Second line of that row. %1$d is the number of such games. -->
-    <plurals name="settings_storage_games_not_from_romm_subtitle">
-        <item quantity="one">%1$d game file was added by hand and is kept through a hard reset</item>
-        <item quantity="other">%1$d game files were added by hand and are kept through a hard reset</item>
+    <!-- Row title that opens the list of games on the device that the RomM server does not
+         have. "Local-only" is the app's term for content that is not synced. -->
+    <string name="settings_storage_games_local_only_title">Local-only</string>
+    <!-- Second line of that row. %1$d is the number of such games. "RomM" is a service name,
+         never translated. -->
+    <plurals name="settings_storage_games_local_only_subtitle">
+        <item quantity="one">%1$d game on this device that RomM does not have</item>
+        <item quantity="other">%1$d games on this device that RomM does not have</item>
     </plurals>
+    <!-- Shown in the local-only game list when it is empty. -->
+    <string name="settings_storage_local_only_empty_message">Games on this device that RomM does not have appear here with their size and location.</string>
+    <!-- Label on a game's storage card naming where its game data came from. Service name,
+         never translated. -->
+    <string name="settings_storage_game_source_romm" translatable="false">RomM</string>
+    <!-- Label on a game's storage card for a game the RomM server does not have. Same term as
+         the Local-only row. -->
+    <string name="settings_storage_game_source_local_only">Local-only</string>
+    <!-- Label on a game's storage card: its files are on the device's built-in storage. -->
+    <string name="settings_storage_location_internal">Internal</string>
+    <!-- Label on a game's storage card: its files are on a removable SD card or USB drive. -->
+    <string name="settings_storage_location_removable">SD card</string>
+    <!-- Label on a game's storage card: its files are split between built-in storage and an
+         SD card. -->
+    <string name="settings_storage_location_mixed">Internal + SD card</string>
+    <!-- Label on a game's storage card: a file sits on no storage the device reports, so its
+         location cannot be shown. -->
+    <string name="settings_storage_location_unknown">Unknown location</string>
+    <!-- Tab above the local-only game list that shows every game. -->
+    <string name="settings_storage_local_only_tab_all">All</string>
+    <!-- Tab above the local-only game list: games with files on built-in storage. -->
+    <string name="settings_storage_local_only_tab_internal">Internal</string>
+    <!-- Tab above the local-only game list: games with files on an SD card or USB drive. -->
+    <string name="settings_storage_local_only_tab_sd_card">SD card</string>
+    <!-- Tab above the local-only game list: games with a file on storage the device does not
+         report. Short, it shares the row with three other tabs. -->
+    <string name="settings_storage_local_only_tab_unknown">Unknown</string>
+    <!-- Shown in the local-only game list when the selected location tab has no games. -->
+    <string name="settings_storage_local_only_tab_empty_message">No local-only games are stored here.</string>
 
     <!-- Total at the top, counting the games on the device. Adjective describing them. -->
     <plurals name="settings_storage_games_totals_count">
@@ -2839,6 +2899,16 @@
     <string name="settings_builtin_controls_motion_title">Motion controls</string>
     <!-- Second line of that row. -->
     <string name="settings_builtin_controls_motion_subtitle">Let games read the device\'s tilt and rotation</string>
+    <!-- Row title. How far the on-screen aim moves for a turn of the device, when the device's
+         gyroscope steers a game's pointer through the right stick. -->
+    <string name="settings_builtin_controls_gyro_sensitivity_title">Gyro aim sensitivity</string>
+    <string name="settings_builtin_controls_gyro_sensitivity_subtitle">How far the aim moves when you turn the device</string>
+    <!-- Row title. Reverses left and right for gyro aiming. -->
+    <string name="settings_builtin_controls_gyro_invert_x_title">Invert gyro aim horizontally</string>
+    <string name="settings_builtin_controls_gyro_invert_x_subtitle">Turning left moves the aim right</string>
+    <!-- Row title. Reverses up and down for gyro aiming. -->
+    <string name="settings_builtin_controls_gyro_invert_y_title">Invert gyro aim vertically</string>
+    <string name="settings_builtin_controls_gyro_invert_y_subtitle">Tilting up moves the aim down</string>
     <!-- Row opening the tool that decides which pad is player one. Noun phrase. -->
     <string name="settings_builtin_controls_order_title">Controller Order</string>
     <!-- Second line of that row before any pad is assigned. -->
@@ -3176,13 +3246,17 @@
     <!-- Entry for the active group in the list beside the pane. Noun, plural. -->
     <string name="settings_emulators_rail_platforms">Platforms</string>
 
-    <!-- Toggle row. "Session" is one play session of a game; the emulator is the external emulator app, not Argosy's built-in one. -->
-    <string name="settings_emulators_close_on_session_end_title">Close Emulator When Returning to Argosy</string>
+    <!-- Toggle row. Covers games in external emulator apps and in Argosy's built-in emulator. Off,
+         a game left for another app stays open and resumes where it was. -->
+    <string name="settings_emulators_close_on_session_end_title">Close Games When Returning to Argosy</string>
     <!-- Second line of that row while it is on. "Synced" is save sync to the server; the second
          sentence warns that progress not saved inside the game is lost. -->
-    <string name="settings_emulators_close_on_session_end_subtitle_on">Closes the emulator once its save has synced. Unsaved progress is lost.</string>
+    <string name="settings_emulators_close_on_session_end_subtitle_on">Closes the game once its save has synced. Unsaved progress is lost.</string>
     <!-- Second line of that row while it is off. -->
-    <string name="settings_emulators_close_on_session_end_subtitle_off">The emulator app stays open in the background</string>
+    <string name="settings_emulators_close_on_session_end_subtitle_off">Games stay open in the background</string>
+    <!-- Second line of that row while it is off on a device without root access. "Root" is the
+         Android superuser access some handhelds ship with; keep the common term. -->
+    <string name="settings_emulators_close_on_session_end_subtitle_built_in_only">Built-in games stay open. Other emulators stay open only on rooted devices.</string>
     <!-- Row that asks whether newer emulator apps exist. Verb phrase. -->
     <string name="settings_emulators_check_updates_title">Check for Updates</string>
     <!-- Second line of that row before it runs. -->
@@ -3708,6 +3782,9 @@
     <string name="settings_hotkeys_action_sun_brighter">Sunlight Up</string>
     <!-- Hotkey that lowers the simulated sunlight solar-sensor cartridges (Boktai) read. -->
     <string name="settings_hotkeys_action_sun_dimmer">Sunlight Down</string>
+    <!-- Hotkey that puts gyro aiming back in the middle, so the way the device points now becomes
+         straight ahead. Verb phrase. -->
+    <string name="settings_hotkeys_action_recenter_gyro_aim">Recenter Gyro Aim</string>
 
     <!-- ===== Input mapping modal (Settings > components > InputMappingModal) ===== -->
 

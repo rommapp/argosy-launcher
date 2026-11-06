@@ -137,7 +137,8 @@ class GameLauncher @Inject constructor(
     private val launchProgressTracker: LaunchProgressTracker,
     private val steamInstallReports: SteamInstallReports,
     private val appsRepository: com.nendo.argosy.data.repository.AppsRepository,
-    private val emulatorResolver: EmulatorResolver
+    private val emulatorResolver: EmulatorResolver,
+    private val keepAlivePolicy: com.nendo.argosy.data.emulator.background.KeepAlivePolicy
 ) {
     private val shellAmAvailable: Boolean by lazy {
         try {
@@ -1042,11 +1043,13 @@ class GameLauncher @Inject constructor(
             is LaunchConfig.BuiltIn -> null
         } ?: return null
 
-        val base = if (rawBase.launchMethod == LaunchMethod.INTENT) {
+        val methodBase = if (rawBase.launchMethod == LaunchMethod.INTENT) {
             rawBase.copy(launchMethod = emulator.defaultLaunchMethod)
         } else {
             rawBase
         }
+        val base = if (forResume) methodBase
+        else methodBase.copy(intentFlags = keepAlivePolicy.launchFlags(emulator.packageName, methodBase.intentFlags))
 
         val override = emulatorLaunchArgsDao.getByPlatformAndEmulator(game.platformId, emulator.id)
         if (override != null && override.hasAnyOverride()) {
@@ -1728,7 +1731,7 @@ class GameLauncher @Inject constructor(
             action = Intent.ACTION_MAIN,
             packageName = emulator.packageName,
             activityClass = "org.scummvm.scummvm.SplashActivity",
-            categories = listOf(Intent.CATEGORY_LAUNCHER),
+            categories = emptyList(),
             dataUri = Uri.fromParts("scummvm", gameId, null),
             intentFlags = if (forResume) {
                 Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP

@@ -60,6 +60,7 @@
     <string name="library_filter_category_series">系列</string>
 
     <string name="library_filter_hint_clear">清除</string>
+    <string name="library_filter_hint_type">输入</string>
     <string name="library_filter_hint_close_search">关闭</string>
     <string name="library_filter_hint_reset">重置</string>
     <string name="library_filter_hint_toggle">切换</string>

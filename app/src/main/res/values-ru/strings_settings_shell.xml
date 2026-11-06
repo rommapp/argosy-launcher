@@ -109,6 +109,7 @@
     <string name="settings_shell_header_storage_games">ХРАНИЛИЩЕ ИГР</string>
     <string name="settings_shell_header_storage_media">ХРАНИЛИЩЕ МЕДИА</string>
     <string name="settings_shell_header_storage_platform_games_fallback">ИГРЫ ПЛАТФОРМЫ</string>
+    <string name="settings_shell_header_storage_local_only">ТОЛЬКО ЛОКАЛЬНЫЕ ИГРЫ</string>
     <string name="settings_shell_header_storage_caches">КЭШИ И СИСТЕМА</string>
     <string name="settings_shell_header_theme">ТЕМА</string>
     <string name="settings_shell_header_audio">АУДИО</string>
@@ -371,6 +372,7 @@
     <string name="settings_shell_footer_reset_builtincontrols_override">Сбросить</string>
     <string name="settings_shell_footer_reset_builtinsaves_override">Сбросить</string>
     <string name="settings_shell_footer_back">Назад</string>
+    <string name="settings_shell_footer_local_only_location">Место</string>
     <string name="settings_shell_footer_unassign_shortcut">Снять</string>
 
     <!-- ===== SettingsScreen: cache clear confirm modals ===== -->

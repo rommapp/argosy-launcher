@@ -1,5 +1,6 @@
 package com.nendo.argosy.ui.screens.settings.components
 
+import android.os.SystemClock
 import android.view.InputDevice
 import android.view.KeyEvent
 import android.view.MotionEvent
@@ -95,8 +96,11 @@ private sealed class InputMappingState {
         val platformIndex: Int,
         val targetRetroButton: Int,
         val currentMapping: Map<InputSource, Int>,
-        val replaceMode: Boolean = true
-    ) : InputMappingState()
+        val replaceMode: Boolean = true,
+        val startedAt: Long = SystemClock.uptimeMillis()
+    ) : InputMappingState() {
+        fun pressedAfterStart(event: KeyEvent): Boolean = event.downTime > startedAt
+    }
 }
 
 /**
@@ -345,6 +349,7 @@ fun InputMappingModal(
                                 leaveRecording(currentState, currentState.currentMapping)
                             }
                         }
+                        !currentState.pressedAfterStart(event) -> {}
                         isBackKey -> {
                             if (event.action == KeyEvent.ACTION_DOWN) {
                                 cancelHoldActive = true

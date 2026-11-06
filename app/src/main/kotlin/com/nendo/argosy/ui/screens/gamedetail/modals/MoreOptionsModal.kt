@@ -76,6 +76,7 @@ private fun MoreOptionAction.toMenuEntry(
         action = this
     )
     MoreOptionAction.ChangeSteamLauncher -> MoreMenuEntry.Option(
+        icon = Icons.Default.SwapHoriz,
         label = context.getString(R.string.gamedetail_more_options_change_launcher),
         value = if (game.steamLauncherSetManually) game.steamLauncherName
             else context.getString(R.string.gamedetail_steam_launcher_auto),

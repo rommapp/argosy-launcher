@@ -48,6 +48,7 @@ class QuickSettingsDeviceDispatcherTest {
         volumeController = volumeController,
         performanceResolver = mockk(relaxed = true),
         refreshController = mockk(relaxed = true),
+        hardwareStatsReader = mockk(relaxed = true),
         socialRepository = socialRepository,
         hapticManager = mockk(relaxed = true),
         soundManager = mockk(relaxed = true),

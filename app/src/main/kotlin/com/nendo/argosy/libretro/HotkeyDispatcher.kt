@@ -28,7 +28,8 @@ class HotkeyDispatcher(
     private val onSpeedrunSkipSplit: () -> Unit,
     private val onSpeedrunToggleTimer: () -> Unit,
     private val onSpeedrunResetTimer: () -> Unit,
-    private val onStepSunLevel: (Int) -> Unit
+    private val onStepSunLevel: (Int) -> Unit,
+    private val onRecenterGyroAim: () -> Unit
 ) {
     fun dispatch(config: HotkeyManager.HotkeyConfig): Boolean {
         when (config.action) {
@@ -149,6 +150,11 @@ class HotkeyDispatcher(
             }
             HotkeyAction.SUN_DIMMER -> {
                 onStepSunLevel(-1)
+                hotkeyManager.clearState()
+                return true
+            }
+            HotkeyAction.RECENTER_GYRO_AIM -> {
+                onRecenterGyroAim()
                 hotkeyManager.clearState()
                 return true
             }

@@ -68,6 +68,8 @@ public:
 
     void updateVariable(const std::string &key, const std::string &value);
 
+    void markVariablesApplied();
+
     void setLanguage(const std::string &androidLanguage);
 
     float retrieveGameSpecificAspectRatio();
@@ -96,6 +98,7 @@ public:
 
     float getScreenRotation() const;
     void setManualRotation(int degrees);
+    bool rotationSwapsAspect() const;
     bool isScreenRotationUpdated() const;
     void clearScreenRotationUpdated();
 
@@ -155,7 +158,8 @@ private:
     bool bottomLeftOrigin = false;
 
     float screenRotation = 0;
-    float manualRotation = -1;
+    unsigned coreRotationIndex = 0;
+    int manualRotationDegrees = -1;
     bool screenRotationUpdated = false;
 
     bool gameMaxGeometryUpdated = false;

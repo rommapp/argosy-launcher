@@ -53,7 +53,7 @@
     <string name="dual_companion_saves_dirty">Новые данные сохранения</string>
     <string name="dual_companion_saves_synced">Сохранения синхронизированы</string>
 
-    <string name="dual_companion_app_drawer_title">Все приложения</string>
+    <string name="dual_companion_app_drawer_title">Приложения</string>
     <string name="dual_companion_app_bar_keyboard_description">Клавиатура</string>
     <string name="dual_companion_app_bar_swap_description">Поменять экраны местами</string>
     <string name="dual_companion_app_bar_focus_description">Направить ввод на экран</string>
@@ -102,7 +102,7 @@
 
     <string name="dual_home_hint_app_bar_select">Выбрать</string>
     <string name="dual_home_hint_app_bar_open_top">Открыть сверху</string>
-    <string name="dual_home_hint_app_bar_all_apps">Все приложения</string>
+    <string name="dual_home_hint_app_bar_all_apps">Приложения</string>
 
     <string name="dual_home_hint_carousel_platform">Платформа</string>
     <string name="dual_home_hint_carousel_details">Детали</string>

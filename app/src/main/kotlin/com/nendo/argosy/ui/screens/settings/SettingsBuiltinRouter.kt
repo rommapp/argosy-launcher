@@ -408,6 +408,25 @@ internal fun routeSetBuiltinRumbleEnabled(vm: SettingsViewModel, enabled: Boolea
     }
 }
 
+internal fun routeSetBuiltinGyroAimInvertX(vm: SettingsViewModel, enabled: Boolean) {
+    vm._uiState.update { it.copy(builtinControls = it.builtinControls.copy(gyroAimInvertX = enabled)) }
+    vm.viewModelScope.launch { vm.libretroSettingsRepo.setBuiltinGyroAimInvertX(enabled) }
+}
+
+internal fun routeSetBuiltinGyroAimInvertY(vm: SettingsViewModel, enabled: Boolean) {
+    vm._uiState.update { it.copy(builtinControls = it.builtinControls.copy(gyroAimInvertY = enabled)) }
+    vm.viewModelScope.launch { vm.libretroSettingsRepo.setBuiltinGyroAimInvertY(enabled) }
+}
+
+internal fun routeStepBuiltinGyroAimSensitivity(vm: SettingsViewModel, direction: Int) {
+    val next = com.nendo.argosy.data.preferences.GyroAimSensitivity.step(
+        vm._uiState.value.builtinControls.gyroAimSensitivity,
+        direction
+    )
+    vm._uiState.update { it.copy(builtinControls = it.builtinControls.copy(gyroAimSensitivity = next)) }
+    vm.viewModelScope.launch { vm.libretroSettingsRepo.setBuiltinGyroAimSensitivity(next) }
+}
+
 internal fun routeSetBuiltinMotionEnabled(vm: SettingsViewModel, enabled: Boolean) {
     vm._uiState.update { it.copy(builtinControls = it.builtinControls.copy(motionEnabled = enabled)) }
     vm.viewModelScope.launch {

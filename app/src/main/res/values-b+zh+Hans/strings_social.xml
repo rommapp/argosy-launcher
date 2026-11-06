@@ -170,6 +170,7 @@
 
     <string name="social_friendcard_hosting">正在主持%1$s</string>
     <string name="social_friendcard_playing">正在玩%1$s</string>
+    <string name="social_friendcard_playing_online">正在联机玩%1$s</string>
     <string name="social_friendcard_watching">正在看%1$s</string>
     <string name="social_friendcard_favorite_remove_desc">移除收藏</string>
     <string name="social_friendcard_favorite_add_desc">添加收藏</string>

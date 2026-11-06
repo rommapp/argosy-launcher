@@ -15,6 +15,7 @@ import com.nendo.argosy.data.platform.LocalPlatformIds
 import com.nendo.argosy.data.preferences.GridDensity
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.playstore.PlayStoreService
+import com.nendo.argosy.data.repository.AppListFilter
 import com.nendo.argosy.data.repository.AppsRepository
 import com.nendo.argosy.data.repository.InstalledApp
 import com.nendo.argosy.ui.components.AppContextMenuItem
@@ -165,8 +166,8 @@ class AppsViewModel @Inject constructor(
                 .toSet()
 
             val apps = allApps
-                .filter { app -> shouldShowApp(app, showHidden) }
-                .let { appList -> sortApps(appList) }
+                .filter { app -> AppListFilter.isShown(app, hiddenApps, visibleSystemApps, showHidden) }
+                .let { appList -> AppListFilter.ordered(appList, customOrder) }
 
             _uiState.update { state ->
                 state.copy(
@@ -186,28 +187,6 @@ class AppsViewModel @Inject constructor(
                 )
             }
         }
-    }
-
-    private fun shouldShowApp(app: InstalledApp, showHidden: Boolean): Boolean {
-        val isExplicitlyHidden = app.packageName in hiddenApps
-        val isSystemAppVisible = app.isSystemApp && app.packageName in visibleSystemApps
-        val isSystemAppHidden = app.isSystemApp && app.packageName !in visibleSystemApps
-
-        return if (showHidden) {
-            isExplicitlyHidden || isSystemAppHidden
-        } else {
-            (!isExplicitlyHidden && !app.isSystemApp) || isSystemAppVisible
-        }
-    }
-
-    private fun sortApps(apps: List<InstalledApp>): List<InstalledApp> {
-        if (customOrder.isEmpty()) return apps
-
-        val orderMap = customOrder.withIndex().associate { it.value to it.index }
-        return apps.sortedWith(compareBy(
-            { orderMap[it.packageName] ?: Int.MAX_VALUE },
-            { it.label.lowercase() }
-        ))
     }
 
     fun toggleShowHidden() {

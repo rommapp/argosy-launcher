@@ -178,6 +178,7 @@
 
     <string name="social_friendcard_hosting">Héberge %1$s</string>
     <string name="social_friendcard_playing">Joue à %1$s</string>
+    <string name="social_friendcard_playing_online">Joue à %1$s en ligne</string>
     <string name="social_friendcard_watching">Regarde %1$s</string>
     <string name="social_friendcard_favorite_remove_desc">Retirer des favoris</string>
     <string name="social_friendcard_favorite_add_desc">Ajouter aux favoris</string>

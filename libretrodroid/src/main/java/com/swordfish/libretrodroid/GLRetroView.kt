@@ -69,6 +69,13 @@ class GLRetroView(
     @Volatile
     var illuminance: Float = 0f
 
+    /**
+     * Reports a level, still device to the core in place of the real motion readings: gravity
+     * straight up and no rotation. Shader uniforms keep the real readings.
+     */
+    @Volatile
+    var holdCoreMotionLevel: Boolean = false
+
     private val coreMotionAllowed get() = motionSensorsEnabled && !coreSensorsBlocked
 
     private fun updateCoreSensorAccess() {
@@ -692,20 +699,32 @@ class GLRetroView(
         private var bfiShowBlackNext = false
         private var lastSensorState: MotionSensorState? = null
         private var lastIlluminance = 0f
+        private var lastHoldLevel = false
 
         override fun onDrawFrame(gl: GL10) = catchExceptions {
             if (isDestroyed) return@catchExceptions
             val sensors = motionSensors.state
             val lux = illuminance
-            if (sensors !== lastSensorState || lux != lastIlluminance) {
-                LibretroDroid.setSensorReadings(
-                    sensors.gyroscope.x, sensors.gyroscope.y, sensors.gyroscope.z,
-                    sensors.accelerometer.x, sensors.accelerometer.y, sensors.accelerometer.z,
-                    sensors.accelerometerRest.x, sensors.accelerometerRest.y, sensors.accelerometerRest.z,
-                    lux
-                )
+            val holdLevel = holdCoreMotionLevel
+            if (sensors !== lastSensorState || lux != lastIlluminance || holdLevel != lastHoldLevel) {
+                if (holdLevel) {
+                    LibretroDroid.setSensorReadings(
+                        0f, 0f, 0f,
+                        0f, 0f, 1f,
+                        0f, 0f, 1f,
+                        lux
+                    )
+                } else {
+                    LibretroDroid.setSensorReadings(
+                        sensors.gyroscope.x, sensors.gyroscope.y, sensors.gyroscope.z,
+                        sensors.accelerometer.x, sensors.accelerometer.y, sensors.accelerometer.z,
+                        sensors.accelerometerRest.x, sensors.accelerometerRest.y, sensors.accelerometerRest.z,
+                        lux
+                    )
+                }
                 lastSensorState = sensors
                 lastIlluminance = lux
+                lastHoldLevel = holdLevel
             }
             val tick = netplayTick
             if (tick != null) {

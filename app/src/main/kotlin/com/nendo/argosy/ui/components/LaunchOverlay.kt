@@ -38,6 +38,7 @@ import com.nendo.argosy.data.launcher.SteamLaunchers
 import com.nendo.argosy.domain.model.LaunchProgress
 import com.nendo.argosy.domain.model.LaunchPromptOption
 import com.nendo.argosy.domain.model.LaunchStep
+import com.nendo.argosy.domain.model.RunningGameQuestion
 import com.nendo.argosy.domain.model.SnapshotConflictChoice
 import com.nendo.argosy.domain.model.SyncProgress
 import com.nendo.argosy.ui.components.launch.CalmLaunchContent
@@ -48,6 +49,7 @@ import com.nendo.argosy.ui.components.launch.LaunchVeil
 import com.nendo.argosy.ui.components.launch.darkensForLaunch
 import com.nendo.argosy.ui.components.launch.mirrorsToPresentation
 import com.nendo.argosy.ui.components.launch.opensOnSurface
+import com.nendo.argosy.ui.components.launch.showsCancelHint
 import com.nendo.argosy.ui.components.launch.veilsDisplay
 import com.nendo.argosy.ui.components.recap.LaunchRecapCard
 import com.nendo.argosy.ui.components.recap.LaunchRecapCompactCard
@@ -87,6 +89,7 @@ private fun launchProgressEntryPoint(context: Context): LaunchProgressEntryPoint
 @Composable
 fun LaunchOverlay(
     modifier: Modifier = Modifier,
+    appPromptShowing: Boolean = false,
     viewModel: LaunchOverlayViewModel = hiltViewModel()
 ) {
     val progress by viewModel.progress.collectAsState()
@@ -118,9 +121,8 @@ fun LaunchOverlay(
     ModalInputEffect(active = progress != null, handler = viewModel.inputHandler)
     progress?.step?.let { step ->
         val cancelHint = stringResource(R.string.ui_launch_overlay_hint_cancel)
-        val showsCancelHint = step !is LaunchStep.Recap && step != LaunchStep.Launching
         FooterHints(
-            hints = if (showsCancelHint) listOf(InputButton.B to cancelHint) else emptyList(),
+            hints = if (step.showsCancelHint(appPromptShowing)) listOf(InputButton.B to cancelHint) else emptyList(),
             reservesSpace = false
         )
     }
@@ -266,6 +268,12 @@ private fun LaunchOverlayContent(
                     onAnswer = onAnswer,
                     onCancel = onCancel
                 )
+                is LaunchStep.RunningGame -> RunningGameContent(
+                    question = step,
+                    focusIndex = promptFocus,
+                    onAnswer = onAnswer,
+                    onCancel = onCancel
+                )
                 is LaunchStep.Recap -> if (rememberRecapFullCardSurface() == surface) {
                     LaunchRecapCard(
                         recap = step.recap,
@@ -353,6 +361,46 @@ private fun PromptContent(
         )
         else -> Unit
     }
+}
+
+@Composable
+private fun RunningGameContent(
+    question: LaunchStep.RunningGame,
+    focusIndex: Int,
+    onAnswer: (LaunchPromptOption) -> Unit,
+    onCancel: () -> Unit
+) {
+    val runningTitle = question.runningGameTitle
+    val (title, message) = when (question.kind) {
+        RunningGameQuestion.GAME_OPEN ->
+            stringResource(R.string.ui_launch_overlay_running_open_title, runningTitle ?: question.emulatorName) to
+                stringResource(R.string.ui_launch_overlay_running_open_message)
+        RunningGameQuestion.EMULATOR_BUSY ->
+            stringResource(R.string.ui_launch_overlay_running_busy_title, question.emulatorName) to
+                if (runningTitle != null) {
+                    stringResource(R.string.ui_launch_overlay_running_busy_message_game, question.emulatorName, runningTitle)
+                } else {
+                    stringResource(R.string.ui_launch_overlay_running_busy_message, question.emulatorName)
+                }
+    }
+    LaunchQuestionCard(
+        title = title,
+        message = message,
+        choices = question.options.mapNotNull { option ->
+            val (label, description) = when (option) {
+                LaunchPromptOption.CLOSE_AND_LAUNCH ->
+                    R.string.ui_launch_overlay_running_close_label to R.string.ui_launch_overlay_running_close_subtitle
+                else -> return@mapNotNull null
+            }
+            LaunchQuestionChoice(
+                label = stringResource(label),
+                description = stringResource(description),
+                onClick = { onAnswer(option) }
+            )
+        },
+        focusIndex = focusIndex,
+        onCancel = onCancel
+    )
 }
 
 @Composable

@@ -32,15 +32,12 @@
     <string name="ui_save_channel_tab_states">即時存檔</string>
     <string name="ui_save_channel_states_empty">沒有可用的即時存檔位</string>
     <string name="ui_save_channel_states_heading_named">%1$s中的即時存檔</string>
-    <string name="ui_save_channel_states_heading_default">預設存檔槽中的即時存檔</string>
     <string name="ui_save_channel_slot_new">新增存檔槽</string>
     <string name="ui_save_channel_slot_legacy_tag">[舊版]</string>
     <string name="ui_save_channel_history_active_point">目前使用的還原點</string>
     <string name="ui_save_channel_history_latest">最新</string>
     <string name="ui_save_channel_history_tag_synced">[已同步]</string>
     <string name="ui_save_channel_history_tag_local">[本機]</string>
-    <string name="ui_save_channel_active_default">最新</string>
-    <string name="ui_save_channel_slot_autosave">自動存檔</string>
     <string name="ui_save_channel_slot_archived">已封存</string>
 
     <string name="ui_save_channel_footer_migrate">轉換</string>
@@ -488,6 +485,7 @@
     <!-- Storage meter, preference rows, home layout rows (ui/components) -->
 
     <string name="ui_volume_meter_other">其他應用程式與檔案</string>
+    <string name="ui_volume_meter_unknown_location">%1$s 的遊戲位於未知位置</string>
     <string name="ui_volume_meter_free">剩餘%1$s</string>
 
     <string name="ui_cycle_preference_reset_to_global">重設為全域設定</string>
@@ -571,6 +569,10 @@
     <string name="ui_quick_settings_theme_light">淺色</string>
     <string name="ui_quick_settings_theme_dark">深色</string>
     <string name="ui_quick_settings_theme_system">自動</string>
+    <string name="ui_quick_settings_orientation">方向</string>
+    <string name="ui_quick_settings_orientation_auto">自動</string>
+    <string name="ui_quick_settings_orientation_landscape">橫向</string>
+    <string name="ui_quick_settings_orientation_portrait">直向</string>
     <string name="ui_quick_settings_haptics">震動回饋</string>
     <string name="ui_quick_settings_ui_sounds">介面音效</string>
     <string name="ui_quick_settings_swap_ab">交換 A/B</string>
@@ -592,6 +594,8 @@
     <string name="ui_quick_settings_group_performance">效能</string>
     <string name="ui_quick_settings_group_fan">風扇</string>
     <string name="ui_quick_settings_group_overlay">疊加層</string>
+    <string name="ui_quick_settings_stats_fan">風扇</string>
+    <string name="ui_quick_settings_stats_battery">電池</string>
     <string name="ui_quick_settings_music_nothing_playing">未在播放</string>
     <string name="ui_quick_settings_music_source_launcher">啟動器音樂</string>
     <string name="ui_quick_settings_music_track_position">第 %1$d 首，共 %2$d 首</string>
@@ -642,6 +646,7 @@
     <string name="ui_quick_friends_appear_online">顯示為上線</string>
     <string name="ui_drawer_friend_hosting">正在主持%1$s</string>
     <string name="ui_drawer_friend_playing">正在遊玩%1$s</string>
+    <string name="ui_drawer_friend_playing_online">正在連線遊玩%1$s</string>
     <string name="ui_drawer_friend_in_game">遊戲中</string>
     <string name="ui_drawer_friend_favorite">最愛</string>
     <string name="ui_drawer_account_none">尚未登入帳號</string>
@@ -663,7 +668,6 @@
 
     <string name="ui_sync_overlay_unknown_game">遊戲</string>
     <string name="ui_sync_overlay_slot_prefix">存檔槽：</string>
-    <string name="ui_sync_overlay_slot_default">最新</string>
     <string name="ui_sync_overlay_blocked_grant">授予權限</string>
     <string name="ui_sync_overlay_blocked_configure_path">設定存檔路徑</string>
     <string name="ui_sync_overlay_blocked_disable">停用同步</string>
@@ -764,17 +768,6 @@
     <string name="ui_sync_overlay_snapshot_conflict_branch_subtitle">將本裝置的存檔移到新頻道</string>
     <string name="ui_sync_overlay_snapshot_conflict_revert">還原</string>
     <string name="ui_sync_overlay_snapshot_conflict_revert_subtitle">回到本裝置上次同步的存檔（會建立備份）</string>
-    <string name="ui_sync_overlay_post_session_title">存檔衝突</string>
-    <string name="ui_sync_overlay_post_session_subject">「%1$s」—%2$s</string>
-    <string name="ui_sync_overlay_post_session_default_slot">預設存檔</string>
-    <string name="ui_sync_overlay_post_session_message">伺服器上有較新的存檔，上傳後，本機存檔將成為最新存檔，伺服器上的副本會保留。</string>
-    <string name="ui_sync_overlay_post_session_local">本機</string>
-    <string name="ui_sync_overlay_post_session_server">伺服器</string>
-    <string name="ui_sync_overlay_post_session_server_named">伺服器（%1$s）</string>
-    <string name="ui_sync_overlay_post_session_skip">略過同步</string>
-    <string name="ui_sync_overlay_post_session_skip_subtitle">保留本機存檔，不上傳</string>
-    <string name="ui_sync_overlay_post_session_overwrite">上傳本機存檔</string>
-    <string name="ui_sync_overlay_post_session_overwrite_subtitle">本機存檔將成為最新存檔，伺服器上的副本會保留。</string>
     <string name="ui_sync_overlay_legacy_status">同步中...</string>
 
     <!-- Quick menu (ui/quickmenu) -->
@@ -960,7 +953,6 @@
     <string name="media_library_viewmodel_refresh_label">重新整理中</string>
 
     <string name="gamedetail_action_buttons_play">開始遊戲</string>
-    <string name="gamedetail_action_buttons_autosave">自動存檔</string>
     <string name="gamedetail_action_buttons_download">下載</string>
     <string name="gamedetail_action_buttons_install">安裝</string>
     <string name="gamedetail_action_buttons_queued">排隊中...</string>
@@ -1049,4 +1041,11 @@
     <string name="common_game_confirm_hide_title">隱藏%1$s？</string>
     <string name="common_game_confirm_hide_message">在遊戲庫中將來源篩選為隱藏，即可再次顯示隱藏的遊戲。</string>
     <string name="common_game_confirm_hide_confirm">隱藏</string>
+    <string name="ui_launch_overlay_running_busy_title">%1$s正在執行</string>
+    <string name="ui_launch_overlay_running_busy_message_game">%1$s仍在背景執行%2$s。</string>
+    <string name="ui_launch_overlay_running_busy_message">%1$s仍在背景開啟。</string>
+    <string name="ui_launch_overlay_running_open_title">%1$s仍處於開啟狀態</string>
+    <string name="ui_launch_overlay_running_open_message">啟動其他遊戲會將其關閉。</string>
+    <string name="ui_launch_overlay_running_close_label">關閉並啟動</string>
+    <string name="ui_launch_overlay_running_close_subtitle">執行中遊戲未儲存的進度將會遺失</string>
 </resources>

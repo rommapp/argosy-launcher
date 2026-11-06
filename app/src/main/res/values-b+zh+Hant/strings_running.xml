@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="running_drawer_title">執行中</string>
+    <string name="running_header_title">執行中</string>
+    <string name="running_empty_title">沒有其他執行中的項目</string>
+    <string name="running_row_memory">%1$d MB</string>
+    <string name="running_row_screen">螢幕 %1$d</string>
+    <string name="running_menu_switch_to">切換至</string>
+    <string name="running_menu_close">關閉</string>
+    <string name="running_hint_close">關閉</string>
+    <string name="running_hint_close_all">全部關閉</string>
+    <string name="running_confirm_close_title">關閉%1$s？</string>
+    <string name="running_confirm_close_message">未儲存的進度將會遺失。</string>
+    <string name="running_confirm_close_confirm">關閉</string>
+    <string name="running_confirm_close_all_title">全部關閉？</string>
+    <string name="running_confirm_close_all_message">此清單中的所有應用程式都將停止。所有遊戲中未儲存的進度都將遺失。</string>
+    <string name="running_confirm_close_all_confirm">全部關閉</string>
+    <string name="running_notice_switch_failed">無法切換至%1$s</string>
+</resources>

@@ -261,4 +261,26 @@ class LaunchOverlayStateTest {
         assertNull(ui.line)
         assertEquals(CalmLaunchBar.NONE, ui.bar)
     }
+
+    @Test
+    fun `the cancel hint shows on a waiting step with no app prompt`() {
+        assertTrue(LaunchStep.FinishingPrevious.showsCancelHint(appPromptShowing = false))
+        assertTrue(save.showsCancelHint(appPromptShowing = false))
+    }
+
+    @Test
+    fun `the cancel hint hides on a waiting step while an app prompt shows`() {
+        assertFalse(LaunchStep.FinishingPrevious.showsCancelHint(appPromptShowing = true))
+        assertFalse(save.showsCancelHint(appPromptShowing = true))
+    }
+
+    @Test
+    fun `the cancel hint stays hidden on recap and launching whatever the prompt`() {
+        val recap = LaunchStep.Recap(LaunchRecap(gameTitle = "Game", lastSession = null, unlocks = emptyList()))
+        for (step in listOf(recap, LaunchStep.Launching)) {
+            for (prompt in listOf(false, true)) {
+                assertFalse("$step with prompt $prompt", step.showsCancelHint(appPromptShowing = prompt))
+            }
+        }
+    }
 }

@@ -30,7 +30,7 @@ import com.nendo.argosy.ui.util.clickableNoFocus
  */
 @Composable
 fun CustomTileMenuModal(
-    title: String,
+    title: String?,
     entries: List<String>,
     focusIndex: Int,
     onSelect: (Int) -> Unit,

@@ -139,8 +139,10 @@ import com.nendo.argosy.ui.theme.GRIP_RESERVE_MIN_PERCENT
 import com.nendo.argosy.ui.theme.resolveGripReserveFraction
 import com.nendo.argosy.data.preferences.BuiltinEmulatorSettings
 import com.nendo.argosy.util.AppPaths
+import com.nendo.argosy.util.fixedRequest
 import com.nendo.argosy.util.hideSystemBars
 import com.nendo.argosy.util.installImmersiveMode
+import com.nendo.argosy.util.isOnMainDisplay
 import com.swordfish.libretrodroid.GLRetroView
 import com.swordfish.libretrodroid.GLRetroViewData
 import com.swordfish.libretrodroid.LibretroDroid
@@ -157,7 +159,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -190,6 +194,7 @@ class LibretroActivity : ComponentActivity() {
 
     @Inject lateinit var triggerAxisKeyEmitter: com.nendo.argosy.ui.input.TriggerAxisKeyEmitter
     @Inject lateinit var playSessionTracker: PlaySessionTracker
+    @Inject lateinit var keepAlivePolicy: com.nendo.argosy.data.emulator.background.KeepAlivePolicy
     @Inject lateinit var quickPanelOverlay: com.nendo.argosy.ui.quickpanel.QuickPanelOverlay
     @Inject lateinit var preferencesRepository: UserPreferencesRepository
     @Inject lateinit var touchLayoutRepository: com.nendo.argosy.data.repository.TouchLayoutRepository
@@ -280,6 +285,18 @@ class LibretroActivity : ComponentActivity() {
     private var variantFileId: Long = -1L
     private var platformId: Long = -1L
     private var platformSlug: String = ""
+    private val gyroAim by lazy { GyroAim(this, { retroView }) }
+
+    private fun gyroAimWanted(): Boolean =
+        videoSettings.currentMotionEnabled &&
+            com.nendo.argosy.data.platform.PlatformDefinitions.getCanonicalSlug(platformSlug) == "wii"
+
+    private fun syncGyroAim() {
+        if (!::retroView.isInitialized) return
+        val wanted = gyroAimWanted()
+        retroView.holdCoreMotionLevel = wanted
+        if (wanted) gyroAim.start() else gyroAim.stop()
+    }
     private var coreName: String? = null
     private var activeSaveChannel: String? = null
     private var menuVisible by mutableStateOf(false)
@@ -333,6 +350,9 @@ class LibretroActivity : ComponentActivity() {
     private lateinit var launchPreferences: UserPreferences
     private var launchMode = LaunchMode.RESUME
     private var launchOrigin = LaunchOrigin.INTERNAL
+    private var playSessionOpened = false
+    private var ownLiveGame: LiveGame? = null
+    private var keepsGameOpen = false
     private var statesSupported = true
     private val stateSupportChecked = kotlinx.coroutines.CompletableDeferred<Unit>()
     private var autoSaveEnabled = true
@@ -373,6 +393,7 @@ class LibretroActivity : ComponentActivity() {
     private var currentOrientationState by mutableStateOf(android.content.res.Configuration.ORIENTATION_LANDSCAPE)
     private var currentRotationState by mutableStateOf(0)
     private var touchSettingsState by mutableStateOf(com.nendo.argosy.data.preferences.BuiltinEmulatorSettings())
+    private var screenOrientationMode = com.nendo.argosy.data.preferences.ScreenOrientationMode.AUTO
     private var portraitPositionState by mutableStateOf("Auto")
     private var gripReserveModeState by mutableStateOf(com.nendo.argosy.data.preferences.GripReserveMode.OFF)
     private var gripReservePercentState by mutableStateOf(GRIP_RESERVE_DEFAULT_PERCENT)
@@ -429,6 +450,7 @@ class LibretroActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        liveInstances.incrementAndGet()
         Log.d(TAG, "onCreate: savedInstanceState=${savedInstanceState != null}")
         allowContentIntoDisplayCutout()
         installImmersiveMode()
@@ -536,6 +558,7 @@ class LibretroActivity : ComponentActivity() {
         lifecycleScope.launch {
             preferencesRepository.getBuiltinEmulatorSettings().collect {
                 touchSettingsState = it
+                gyroAim.configure(it.gyroAimInvertX, it.gyroAimInvertY, it.gyroAimSensitivity)
                 if (it.touchControlsLockOrientation != lastLockOrientation) {
                     lastLockOrientation = it.touchControlsLockOrientation
                     applyOrientationLock(it.touchControlsLockOrientation)
@@ -556,6 +579,15 @@ class LibretroActivity : ComponentActivity() {
             }
         }
         applyOrientationLock(globalSettings.touchControlsLockOrientation)
+        lifecycleScope.launch {
+            preferencesRepository.userPreferences
+                .map { it.screenOrientation }
+                .distinctUntilChanged()
+                .collect { mode ->
+                    screenOrientationMode = mode
+                    applyOrientationLock(touchSettingsState.touchControlsLockOrientation)
+                }
+        }
         val settings = kotlinx.coroutines.runBlocking {
             effectiveLibretroSettingsResolver.getEffectiveSettings(platformId, platformSlug)
         }
@@ -630,24 +662,15 @@ class LibretroActivity : ComponentActivity() {
             videoSettings = videoSettings,
             getRetroView = { retroView },
             rightStickDeadzone = rightStickDeadzoneForPlatform(),
-            admitsAnalogKey = keyPressGate::admitsAnalog
+            admitsAnalogKey = keyPressGate::admitsAnalog,
+            gyroAim = gyroAim
         )
 
         buildContentView()
         setUpSecondScreen()
 
         if (gameId != -1L) {
-            val isNewGame = launchMode == LaunchMode.NEW_CASUAL || launchMode == LaunchMode.NEW_HARDCORE
-            playSessionTracker.startSession(
-                gameId,
-                EmulatorRegistry.BUILTIN_PACKAGE,
-                coreName,
-                hardcoreConfirmed,
-                isNewGame,
-                isNetplayGuest = isGuestJoinedSession,
-                variantFileId = variantFileId.takeIf { it >= 0 },
-                origin = launchOrigin
-            )
+            openPlaySession(isNewGame = launchMode == LaunchMode.NEW_CASUAL || launchMode == LaunchMode.NEW_HARDCORE)
             cheatManager.loadCheats(hardcoreMode)
             achievementBridge.start(gameId, romPath, hardcoreMode, retroView)
             observeRaSessionMode()
@@ -702,7 +725,10 @@ class LibretroActivity : ComponentActivity() {
         gameId = intent.getLongExtra(EXTRA_GAME_ID, -1L)
         inGameDocuments.load(gameId)
         variantFileId = intent.getLongExtra(EXTRA_VARIANT_FILE_ID, -1L)
-        discPaths = intent.getStringExtra(EXTRA_DISC_M3U_PATH)
+        if (gameId != -1L) {
+            ownLiveGame = LiveGame(gameId, variantFileId.takeIf { it >= 0 }).also { liveGame = it }
+        }
+        discPaths =intent.getStringExtra(EXTRA_DISC_M3U_PATH)
             ?.let { M3uManager.parseAllDiscs(File(it)) } ?: emptyList()
         coreName = intent.getStringExtra(EXTRA_CORE_NAME)
         launchMode = LaunchMode.fromString(intent.getStringExtra(LaunchMode.EXTRA_LAUNCH_MODE))
@@ -811,7 +837,7 @@ class LibretroActivity : ComponentActivity() {
             diskJudge = activeSaveDiskJudge,
             secureSaves = secureSavesEnabled,
             ownerUserId = launchPreferences.rommUserId,
-            usesExternalMemcard = com.nendo.argosy.data.platform.PlatformDefinitions.getCanonicalSlug(platformSlug) == "gc",
+            usesExternalMemcard = SaveStateManager.usesExternalMemcard(platformSlug),
             channelName = channelName,
             isVariant = variantFileId >= 0,
             primarySavePath = primarySavePath,
@@ -1146,6 +1172,7 @@ class LibretroActivity : ComponentActivity() {
             onSpeedrunToggleTimer = { speedrunTimer.togglePause() },
             onSpeedrunResetTimer = { speedrunTimer.resetRun() },
             onStepSunLevel = ::stepSunLevel,
+            onRecenterGyroAim = { gyroAim.recenter() },
             onHotkeyFired = { deferredCoreKeys.clear() }
         )
     }
@@ -2408,6 +2435,10 @@ class LibretroActivity : ComponentActivity() {
                 controllerPorts = buildControllerPortOptions(),
                 rumbleEnabled = videoSettings.currentRumbleEnabled,
                 motionEnabled = videoSettings.currentMotionEnabled,
+                gyroAimAvailable = gyroAimWanted(),
+                gyroAimSensitivity = touchSettingsState.gyroAimSensitivity,
+                gyroAimInvertX = touchSettingsState.gyroAimInvertX,
+                gyroAimInvertY = touchSettingsState.gyroAimInvertY,
                 analogAsDpad = videoSettings.currentAnalogAsDpad,
                 dpadAsAnalog = videoSettings.currentDpadAsAnalog,
                 limitHotkeysToPlayer1 = limitHotkeysToPlayer1,
@@ -3096,7 +3127,21 @@ class LibretroActivity : ComponentActivity() {
             is InGameControlsAction.SetMotion -> {
                 videoSettings.currentMotionEnabled = action.enabled
                 retroView.motionSensorsEnabled = action.enabled
+                syncGyroAim()
                 videoSettings.persistControlSetting("motionEnabled", action.enabled)
+            }
+            is InGameControlsAction.StepGyroAimSensitivity -> {
+                val next = com.nendo.argosy.data.preferences.GyroAimSensitivity.step(
+                    touchSettingsState.gyroAimSensitivity,
+                    action.direction
+                )
+                lifecycleScope.launch { preferencesRepository.setBuiltinGyroAimSensitivity(next) }
+            }
+            is InGameControlsAction.SetGyroAimInvertX -> {
+                lifecycleScope.launch { preferencesRepository.setBuiltinGyroAimInvertX(action.enabled) }
+            }
+            is InGameControlsAction.SetGyroAimInvertY -> {
+                lifecycleScope.launch { preferencesRepository.setBuiltinGyroAimInvertY(action.enabled) }
             }
             is InGameControlsAction.SetAnalogAsDpad -> {
                 videoSettings.currentAnalogAsDpad = action.enabled
@@ -3494,11 +3539,43 @@ class LibretroActivity : ComponentActivity() {
         return retroView.onGenericMotionEvent(event) || super.onGenericMotionEvent(event)
     }
 
+    private fun openPlaySession(isNewGame: Boolean) {
+        playSessionOpened = true
+        playSessionTracker.startSession(
+            gameId,
+            EmulatorRegistry.BUILTIN_PACKAGE,
+            coreName,
+            hardcoreConfirmed,
+            isNewGame,
+            isNetplayGuest = isGuestJoinedSession,
+            variantFileId = variantFileId.takeIf { it >= 0 },
+            origin = launchOrigin
+        )
+    }
+
+    private fun reopenPlaySessionIfEnded() {
+        if (!playSessionOpened || gameId == -1L || isFinishing) return
+        if (playSessionTracker.activeSession.value != null) return
+        Log.d(TAG, "Game returned after its session ended, opening a new session")
+        com.nendo.argosy.DualScreenManagerHolder.instance?.setEmulatorDisplay(currentDisplayId())
+        openPlaySession(isNewGame = false)
+    }
+
+    private fun refreshKeepsGameOpen() {
+        lifecycleScope.launch {
+            keepsGameOpen = keepAlivePolicy.keepsAlive(EmulatorRegistry.BUILTIN_PACKAGE)
+        }
+    }
+
     override fun onResume() {
         super.onResume()
+        reopenPlaySessionIfEnded()
+        playSessionTracker.onBuiltInGameResumed()
+        refreshKeepsGameOpen()
         autoSaveStateCaptured = false
         window.hideSystemBars()
         retroView.onResume()
+        syncGyroAim()
         setUpSecondScreen()
         showSecondScreen()
         startRollingSave()
@@ -3641,8 +3718,8 @@ class LibretroActivity : ComponentActivity() {
 
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
-        com.nendo.argosy.DualScreenManagerHolder.instance
-            ?.onSessionChanged(-1L)
+        if (keepsGameOpen) return
+        com.nendo.argosy.DualScreenManagerHolder.instance?.onSessionChanged(-1L)
         finish()
     }
 
@@ -3662,6 +3739,8 @@ class LibretroActivity : ComponentActivity() {
     }
 
     override fun onPause() {
+        playSessionTracker.onBuiltInGamePaused()
+        gyroAim.stop()
         releaseCoreHeldKeys()
         hideSecondScreen()
         stopRollingSave()
@@ -3707,7 +3786,10 @@ class LibretroActivity : ComponentActivity() {
     }
 
     private fun applyOrientationLock(locked: Boolean) {
-        requestedOrientation = if (!locked) {
+        val fixed = screenOrientationMode.fixedRequest()?.takeIf { isOnMainDisplay }
+        requestedOrientation = if (fixed != null) {
+            fixed
+        } else if (!locked) {
             android.content.pm.ActivityInfo.SCREEN_ORIENTATION_FULL_USER
         } else if (currentOrientationState == android.content.res.Configuration.ORIENTATION_PORTRAIT) {
             android.content.pm.ActivityInfo.SCREEN_ORIENTATION_USER_PORTRAIT
@@ -3938,6 +4020,8 @@ class LibretroActivity : ComponentActivity() {
 
     override fun onDestroy() {
         Log.d(TAG, "onDestroy: isFinishing=$isFinishing, isChangingConfigurations=$isChangingConfigurations")
+        liveInstances.decrementAndGet()
+        if (liveGame === ownLiveGame) liveGame = null
         quickPanelOverlay.hideNow()
         hideSecondScreen()
         if (!coreDestroyed && ::retroView.isInitialized) retroView.destroyNative()
@@ -3955,7 +4039,10 @@ class LibretroActivity : ComponentActivity() {
         }
         if (::netplay.isInitialized) netplay.shutdown()
         if (::achievementBridge.isInitialized) achievementBridge.destroy()
-        if (isFinishing && gameId != -1L) {
+        val ownsActiveSession = playSessionTracker.activeSession.value?.let {
+            it.gameId == gameId && it.emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE
+        } ?: false
+        if (isFinishing && gameId != -1L && ownsActiveSession) {
             com.nendo.argosy.DualScreenManagerHolder.instance
                 ?.onSessionChanged(-1L)
             playSessionTracker.endSessionInBackground(skipSaveSync = isGuestJoinedSession)
@@ -4032,6 +4119,23 @@ class LibretroActivity : ComponentActivity() {
 
     companion object {
         private const val TAG = "LibretroActivity"
+
+        private val liveInstances = java.util.concurrent.atomic.AtomicInteger(0)
+
+        data class LiveGame(val gameId: Long, val variantFileId: Long?)
+
+        /**
+         * Whether a game screen exists in this process. A task left in recents after the process
+         * died still names this activity but holds no game.
+         */
+        val isGameAlive: Boolean get() = liveInstances.get() > 0
+
+        /**
+         * The game the newest game screen in this process holds, until that screen is destroyed.
+         */
+        @Volatile
+        var liveGame: LiveGame? = null
+            private set
 
         private const val CORE_INPUT_PULSE_MS = 50L
 

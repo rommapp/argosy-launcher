@@ -37,7 +37,6 @@
     <string name="gamedetail_menu_play_button_waiting_for_network">नेटवर्क की प्रतीक्षा है…</string>
 
     <string name="gamedetail_menu_saves_syncing">सिंक हो रहा है...</string>
-    <string name="gamedetail_menu_saves_default_channel">ऑटो-सेव</string>
 
     <string name="gamedetail_menu_favorite_label">पसंदीदा</string>
     <string name="gamedetail_menu_favorite_compact_remove_description">पसंदीदा से हटाएं</string>
@@ -172,7 +171,6 @@
 
     <!-- ================================ Save status =================================== -->
 
-    <string name="gamedetail_save_status_latest_label">नवीनतम</string>
     <string name="gamedetail_save_status_time">· %1$s</string>
     <string name="gamedetail_save_status_synced">सिंक हुआ</string>
     <string name="gamedetail_save_status_local_newer">लोकल नया है</string>

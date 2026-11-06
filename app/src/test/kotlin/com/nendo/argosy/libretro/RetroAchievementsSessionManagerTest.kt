@@ -50,6 +50,7 @@ class RetroAchievementsSessionManagerTest {
         val raRepository: RetroAchievementsRepository,
         val achievementDao: AchievementDao,
         val runtime: AchievementRuntime,
+        val updateBus: AchievementUpdateBus,
         private val armed: CapturingSlot<Array<AchievementDef>>
     ) {
         val armedIds: Set<Long>?
@@ -108,6 +109,7 @@ class RetroAchievementsSessionManagerTest {
         val raRepository = mockk<RetroAchievementsRepository>(relaxed = true)
         val achievementDao = mockk<AchievementDao>(relaxed = true)
         val runtime = mockk<AchievementRuntime>(relaxed = true)
+        val updateBus = mockk<AchievementUpdateBus>(relaxed = true)
         val armed = slot<Array<AchievementDef>>()
         every { runtime.arm(capture(armed), any()) } just Runs
         val verifyRAGameIdUseCase = mockk<VerifyRAGameIdUseCase>()
@@ -134,14 +136,36 @@ class RetroAchievementsSessionManagerTest {
             achievementDao = achievementDao,
             raRepository = raRepository,
             verifyRAGameIdUseCase = verifyRAGameIdUseCase,
-            achievementUpdateBus = mockk<AchievementUpdateBus>(relaxed = true),
+            achievementUpdateBus = updateBus,
             ambientLedManager = mockk<AmbientLedManager>(relaxed = true),
             socialRepository = mockk<SocialRepository>(relaxed = true),
             scope = scope,
             context = mockk<Context>(relaxed = true),
             achievementRuntime = runtime
         )
-        return Harness(manager, raRepository, achievementDao, runtime, armed)
+        return Harness(manager, raRepository, achievementDao, runtime, updateBus, armed)
+    }
+
+    @Test
+    fun armingPublishesTheLoadedCountsForTheOtherScreen() = runTest {
+        val scope = CoroutineScope(StandardTestDispatcher(testScheduler) + Job())
+        val harness = build(
+            scope,
+            requestedHardcore = false,
+            startSucceeds = true,
+            casualUnlocks = setOf(1L, 2L),
+            liveFetch = RAPatchFetchResult.Fetched(patch(achievement(1L), achievement(2L), achievement(3L)))
+        )
+
+        harness.manager.initialize(mockk<GLRetroView>(relaxed = true))
+        runCurrent()
+
+        coVerify {
+            harness.updateBus.emit(
+                AchievementUpdateBus.AchievementUpdate(gameId = 1L, totalCount = 3, earnedCount = 2)
+            )
+        }
+        scope.cancel()
     }
 
     @Test

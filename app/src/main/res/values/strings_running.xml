@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Owner: ui/screens/running
+      Key prefix: running_
+      Keys are named for the usage site, never for the English text, and identical English
+      is never shared between two usage sites.
+    -->
+
+    <!-- Drawer row leading to the list of apps and games still running in the background.
+         Adjective used as a page name: the things that are currently running. -->
+    <string name="running_drawer_title">Running</string>
+    <!-- Heading over the list of apps and games still running in the background. Same meaning
+         as the drawer row: the things that are currently running. -->
+    <string name="running_header_title">Running</string>
+    <!-- Shown in place of the list when no other app has a task open. -->
+    <string name="running_empty_title">Nothing else is running</string>
+    <!-- Memory the app is using, in megabytes. %1$d is a whole number. -->
+    <string name="running_row_memory">%1$d MB</string>
+    <!-- Which display the app is on, on a device with more than one. %1$d is the number drawn
+         on that screen. -->
+    <string name="running_row_screen">Screen %1$d</string>
+
+    <!-- Context menu entry that brings the app back to the front. Verb. -->
+    <string name="running_menu_switch_to">Switch To</string>
+    <!-- Context menu entry that stops the app. Verb: to close an app. -->
+    <string name="running_menu_close">Close</string>
+
+    <!-- Footer hint for the button that stops the focused app. Verb: to close an app. -->
+    <string name="running_hint_close">Close</string>
+    <!-- Footer hint for the button that stops every app in the list. Verb: to close all apps. -->
+    <string name="running_hint_close_all">Close All</string>
+
+    <!-- Title of the prompt before stopping an emulator that still holds a game. %1$s is the
+         game title. Verb: to close the game. -->
+    <string name="running_confirm_close_title">Close %1$s?</string>
+    <!-- Body of the prompt before stopping an emulator that still holds a game. -->
+    <string name="running_confirm_close_message">Unsaved progress is lost.</string>
+    <!-- Confirm button of the prompt before stopping a game. Verb: to close the game. -->
+    <string name="running_confirm_close_confirm">Close</string>
+    <!-- Title of the prompt before stopping every app in the list. -->
+    <string name="running_confirm_close_all_title">Close everything?</string>
+    <!-- Body of the prompt before stopping every app in the list. -->
+    <string name="running_confirm_close_all_message">Every app in this list is stopped. Unsaved progress in any game is lost.</string>
+    <!-- Confirm button of the prompt before stopping every app. Verb: to close all apps. -->
+    <string name="running_confirm_close_all_confirm">Close All</string>
+
+    <!-- Error shown when the system refuses to bring an app forward. %1$s is the app name. -->
+    <string name="running_notice_switch_failed">Could not switch to %1$s</string>
+</resources>

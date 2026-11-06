@@ -35,7 +35,6 @@
     <string name="gamedetail_menu_play_button_waiting_for_network">正在等待网络&#8230;</string>
 
     <string name="gamedetail_menu_saves_syncing">同步中...</string>
-    <string name="gamedetail_menu_saves_default_channel">自动存档</string>
 
     <string name="gamedetail_menu_favorite_label">收藏</string>
     <string name="gamedetail_menu_favorite_compact_remove_description">移出收藏</string>
@@ -149,7 +148,6 @@
     <string name="gamedetail_option_item_current_description">当前</string>
     <string name="gamedetail_option_item_value">[%1$s]</string>
 
-    <string name="gamedetail_save_status_latest_label">最新</string>
     <string name="gamedetail_save_status_time">· %1$s</string>
     <string name="gamedetail_save_status_synced">已同步</string>
     <string name="gamedetail_save_status_local_newer">本地较新</string>

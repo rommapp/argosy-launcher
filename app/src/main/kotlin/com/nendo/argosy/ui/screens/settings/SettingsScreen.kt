@@ -1504,10 +1504,13 @@ private fun settingsSectionTitle(uiState: SettingsUiState): String = when (uiSta
     SettingsSection.STORAGE -> stringResource(R.string.settings_shell_header_storage)
     SettingsSection.STORAGE_GAMES -> stringResource(R.string.settings_shell_header_storage_games)
     SettingsSection.STORAGE_MEDIA -> stringResource(R.string.settings_shell_header_storage_media)
-    SettingsSection.STORAGE_PLATFORM_GAMES ->
+    SettingsSection.STORAGE_PLATFORM_GAMES -> if (uiState.storagePlatformGames.localOnly) {
+        stringResource(R.string.settings_shell_header_storage_local_only)
+    } else {
         uiState.storagePlatformGames.platformName.uppercase().ifBlank {
             stringResource(R.string.settings_shell_header_storage_platform_games_fallback)
         }
+    }
     SettingsSection.STORAGE_CACHES -> stringResource(R.string.settings_shell_header_storage_caches)
     SettingsSection.PLAY_TIME -> stringResource(R.string.settings_shell_header_play_time)
     SettingsSection.PLAY_TIME_PLATFORMS -> stringResource(R.string.settings_shell_header_play_time_platforms)
@@ -1878,6 +1881,7 @@ private fun SettingsFooter(
     val resetBuiltinControlsOverrideHint = stringResource(R.string.settings_shell_footer_reset_builtincontrols_override)
     val resetBuiltinSavesOverrideHint = stringResource(R.string.settings_shell_footer_reset_builtinsaves_override)
     val backHint = stringResource(R.string.settings_shell_footer_back)
+    val localOnlyLocationHint = stringResource(R.string.settings_shell_footer_local_only_location)
     val unassignShortcutHint = stringResource(R.string.settings_shell_footer_unassign_shortcut)
     val launchTargetsScreenHint = stringResource(R.string.settings_shell_footer_launch_targets_screen)
     val launchTargetsResetHint = stringResource(R.string.settings_shell_footer_launch_targets_reset)
@@ -2036,6 +2040,9 @@ private fun SettingsFooter(
                     add(InputButton.DPAD_HORIZONTAL to categoryHint)
                 }
                 add(InputButton.Y to deleteHint)
+            }
+            if (uiState.storagePlatformGames.localOnly) {
+                add(InputButton.LT_RT to localOnlyLocationHint)
             }
         }
         if (uiState.currentSection == SettingsSection.PLATFORM_DETAIL) {

@@ -49,6 +49,11 @@ import com.nendo.argosy.data.social.Friend
 import com.nendo.argosy.data.social.NetplaySession
 import com.nendo.argosy.data.social.PresenceStatus
 import com.nendo.argosy.ui.components.friends.SocialAvatar
+import com.nendo.argosy.ui.components.friends.emulatorName
+import com.nendo.argosy.ui.components.friends.presenceNetplayColor
+import com.nendo.argosy.ui.components.friends.presenceOnlineColor
+import com.nendo.argosy.ui.components.friends.shownExternalNetplay
+import com.nendo.argosy.ui.theme.generated.ColorTokens
 import com.nendo.argosy.ui.primitives.FocusIndicators
 import com.nendo.argosy.ui.primitives.argosyFocusIndicators
 import com.nendo.argosy.ui.theme.Dimens
@@ -377,12 +382,18 @@ private fun FriendCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
+                    val externalNetplay = friend.currentGame
+                        ?.takeIf { friend.presence == PresenceStatus.IN_GAME }
+                        ?.shownExternalNetplay
                     Text(
                         text = if (friend.presence == PresenceStatus.IN_GAME && friend.currentGame != null) {
-                            if (friend.currentGame.netplaySession != null) {
-                                stringResource(R.string.social_friendcard_hosting, friend.currentGame.title)
-                            } else {
-                                stringResource(R.string.social_friendcard_playing, friend.currentGame.title)
+                            when {
+                                friend.currentGame.netplaySession != null ->
+                                    stringResource(R.string.social_friendcard_hosting, friend.currentGame.title)
+                                externalNetplay != null ->
+                                    stringResource(R.string.social_friendcard_playing_online, friend.currentGame.title)
+                                else ->
+                                    stringResource(R.string.social_friendcard_playing, friend.currentGame.title)
                             }
                         } else if (friend.presence == PresenceStatus.WATCHING && friend.currentGame != null) {
                             stringResource(R.string.social_friendcard_watching, friend.currentGame.title)
@@ -390,10 +401,11 @@ private fun FriendCard(
                             presenceLabel(friend.presence)
                         },
                         style = MaterialTheme.typography.bodySmall,
-                        color = if (friend.presence == PresenceStatus.OFFLINE || friend.presence == null) {
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-                        } else {
-                            presenceColor(friend.presence)
+                        color = when {
+                            friend.presence == PresenceStatus.OFFLINE || friend.presence == null ->
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+                            externalNetplay != null -> presenceNetplayColor()
+                            else -> presenceColor(friend.presence)
                         },
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -412,6 +424,10 @@ private fun FriendCard(
                     val netplaySession = friend.currentGame?.netplaySession
                     if (netplaySession != null) {
                         NetplayFriendBadge()
+                    }
+
+                    externalNetplay?.emulatorName?.let { name ->
+                        ExternalNetplayBadge(emulatorName = name)
                     }
                 }
 
@@ -468,6 +484,33 @@ private fun NetplayFriendBadge() {
             style = MaterialTheme.typography.labelSmall,
             color = Color(0xFF6366F1),
             fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+private fun ExternalNetplayBadge(emulatorName: String) {
+    val color = presenceNetplayColor()
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(Dimens.radiusSm))
+            .background(color.copy(alpha = 0.2f))
+            .padding(horizontal = Dimens.spacingSm, vertical = Dimens.spacingXs / 2),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
+    ) {
+        Icon(
+            imageVector = Icons.Filled.SportsEsports,
+            contentDescription = null,
+            tint = color,
+            modifier = Modifier.size(Dimens.iconXs)
+        )
+        Text(
+            text = emulatorName,
+            style = MaterialTheme.typography.labelSmall,
+            color = color,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1
         )
     }
 }
@@ -553,10 +596,10 @@ private fun DisabledLabel(text: String) {
 
 @Composable
 private fun presenceColor(status: PresenceStatus?): Color = when (status) {
-    PresenceStatus.ONLINE -> Color(0xFF22C55E)
-    PresenceStatus.AWAY -> Color(0xFFFBBF24)
-    PresenceStatus.IN_GAME, PresenceStatus.WATCHING -> Color(0xFF6366F1)
-    PresenceStatus.OFFLINE, null -> Color(0xFF6B7280)
+    PresenceStatus.ONLINE -> presenceOnlineColor()
+    PresenceStatus.AWAY -> ColorTokens.Domain.Presence.away
+    PresenceStatus.IN_GAME, PresenceStatus.WATCHING -> ColorTokens.Domain.SocialBrand.accent
+    PresenceStatus.OFFLINE, null -> ColorTokens.Domain.Presence.offline
 }
 
 @Composable

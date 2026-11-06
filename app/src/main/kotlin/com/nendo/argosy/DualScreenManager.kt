@@ -255,11 +255,18 @@ class DualScreenManager(
 
     fun showScreenNumbers(
         size: com.nendo.argosy.hardware.DisplayBadgeSize =
-            com.nendo.argosy.hardware.DisplayBadgeSize.LARGE
+            com.nendo.argosy.hardware.DisplayBadgeSize.LARGE,
+        inContentDisplayId: Int? = null
     ) {
-        val numbers = attachedScreens().associate { it.displayId to it.number }
+        val screens = attachedScreens()
+        val numbers = screens.associate { it.displayId to it.number }
         _screenNumbers.value = numbers
-        displayBadges.show(numbers, size)
+        val overlayNumbers = if (displayAffinityHelper.hasSecondaryDisplay || displayAffinityHelper.isDesktopMode) {
+            numbers
+        } else {
+            screens.filter { it.builtIn }.associate { it.displayId to it.number }
+        }
+        displayBadges.show(overlayNumbers.filterKeys { it != inContentDisplayId }, size)
     }
 
     fun hideScreenNumbers() {
@@ -1857,6 +1864,20 @@ class DualScreenManager(
         )
     }
 
+    private suspend fun closeBackgroundedBuiltInGame(activity: android.app.Activity) {
+        val builtIn = com.nendo.argosy.data.emulator.EmulatorRegistry.BUILTIN_PACKAGE
+        if (sessionStateStore.getEmulatorPackage() != builtIn) return
+        if (!sessionEndCoordinator.stopsAfterLeavingScreen(builtIn)) return
+        if (isSessionSettling()) {
+            delay(EMULATOR_SETTLE_MS)
+            if (!activity.hasWindowFocus() || launchProgressTracker.launchLive.value) return
+        }
+        val activityManager = activity.getSystemService(android.app.ActivityManager::class.java) ?: return
+        val gameTask = com.nendo.argosy.hardware.builtInGameAppTask(activityManager) ?: return
+        Log.d(TAG, "Launcher focused while the built-in game is in the background, closing it")
+        runCatching { gameTask.finishAndRemoveTask() }
+    }
+
     private fun isSessionSettling(): Boolean {
         val startedAt = playSessionTracker.activeSession.value?.startTime ?: return false
         return java.time.Duration.between(startedAt, java.time.Instant.now()).toMillis() < EMULATOR_SETTLE_MS
@@ -1865,7 +1886,8 @@ class DualScreenManager(
     /**
      * Ends the session whose emulator [emulatorLeftScreen] reported gone. On a dual-screen device it
      * also force-stops the emulator [EMULATOR_RELEASE_ATTEMPTS] times beside the save sync, ending
-     * early if a new session starts. Elsewhere [SessionEndCoordinator] stops it after the sync.
+     * early if a new session starts, unless [SessionEndCoordinator.stopsAfterLeavingScreen] keeps it
+     * running. Elsewhere [SessionEndCoordinator] stops it after the sync.
      */
     fun endSessionAfterEmulatorLeft() {
         val emulatorPackage = sessionStateStore.getEmulatorPackage()
@@ -1878,6 +1900,7 @@ class DualScreenManager(
         if (emulatorPackage == null || !_isDualScreenDevice.value) return
         if (emulatorPackage == com.nendo.argosy.data.emulator.EmulatorRegistry.BUILTIN_PACKAGE) return
         activityIndependentScope.launch {
+            if (!sessionEndCoordinator.stopsAfterLeavingScreen(emulatorPackage)) return@launch
             releaseStoppedEmulator(
                 emulatorPackage = emulatorPackage,
                 endedSession = endedSession,
@@ -1895,7 +1918,9 @@ class DualScreenManager(
     /**
      * A launcher window gaining focus on the display its game ran on is the launcher's signal that
      * the game closed. The session ends once [emulatorLeftScreen] confirms it; a game on another
-     * display keeps running. While a launch is live the focus gain is a launcher surface returning
+     * display keeps running. A built-in game left paused in the background is closed first when games
+     * do not stay open, and its own teardown ends the session; one that stays open keeps running and
+     * only its session ends. While a launch is live the focus gain is a launcher surface returning
      * before its game window exists, not the game closing; the check waits for the launch to clear.
      * A launch that goes live while the check is settling stops it the same way.
      */
@@ -1910,6 +1935,7 @@ class DualScreenManager(
             if (playSessionTracker.activeSession.value == null &&
                 preferencesRepository.getPersistedSession() == null
             ) return@launch
+            closeBackgroundedBuiltInGame(activity)
             if (!emulatorLeftScreen(activity, onGameDisplay = gameDisplay == ownDisplay) { activity.hasWindowFocus() }) {
                 return@launch
             }
@@ -1928,10 +1954,15 @@ class DualScreenManager(
     fun cancelDockReorder(token: Long) = dockCoordinator.cancel(token)
     fun saveDockReorder(token: Long) = dockCoordinator.save(token)
 
-    suspend fun installedAppLabels(): List<Pair<String, String>> =
-        appsRepository.getInstalledApps()
-            .map { it.packageName to it.label }
-            .sortedBy { it.second.lowercase() }
+    suspend fun installedAppLabels(): List<Pair<String, String>> {
+        val prefs = preferencesRepository.preferences.first()
+        return com.nendo.argosy.data.repository.AppListFilter.visibleThenHidden(
+            appsRepository.getInstalledApps(includeSystemApps = true),
+            prefs.hiddenApps,
+            prefs.visibleSystemApps,
+            prefs.appOrder
+        ).map { it.packageName to it.label }
+    }
 
     fun appLabel(packageName: String): String =
         appsRepository.getAppLabel(packageName) ?: packageName

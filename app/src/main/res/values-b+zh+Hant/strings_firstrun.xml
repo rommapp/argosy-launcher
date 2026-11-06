@@ -5,7 +5,8 @@
 
     <string name="firstrun_romm_url_title">Rom Manager登入</string>
     <string name="firstrun_romm_url_field_label">伺服器網址</string>
-    <string name="firstrun_romm_url_hint">請輸入您的RomM伺服器位址，我們會自動偵測登入方式。</string>
+    <string name="firstrun_romm_url_field_placeholder">romm.local:8080 或 https://...</string>
+    <string name="firstrun_romm_url_hint">請輸入您的RomM伺服器位址（可省略 https://），我們會自動偵測登入方式。</string>
     <string name="firstrun_romm_url_button_continue">繼續</string>
     <string name="firstrun_romm_url_button_checking">檢查中...</string>
     <string name="firstrun_romm_url_button_back">返回</string>

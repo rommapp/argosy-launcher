@@ -7,6 +7,7 @@ import com.nendo.argosy.domain.usecase.storage.GameStorageBucket
 import com.nendo.argosy.ui.common.GameConfirm
 import com.nendo.argosy.ui.screens.common.GameActionsDelegate
 import com.nendo.argosy.ui.screens.settings.GameStorageCategoryDeleteConfirm
+import com.nendo.argosy.ui.screens.settings.StorageLocationFilter
 import com.nendo.argosy.ui.screens.settings.StoragePlatformGamesState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,11 +37,20 @@ class StoragePlatformGamesDelegate @Inject constructor(
         reload(scope)
     }
 
+    fun openLocalOnly(scope: CoroutineScope) {
+        _state.update { StoragePlatformGamesState(localOnly = true, isLoading = true) }
+        reload(scope)
+    }
+
     fun reload(scope: CoroutineScope, onPlatformEmpty: (() -> Unit)? = null) {
-        val platformId = _state.value.selectedPlatformId
-        if (platformId < 0) return
+        val current = _state.value
+        if (!current.localOnly && current.selectedPlatformId < 0) return
         scope.launch {
-            val games = breakdownUseCase.loadPlatform(platformId)
+            val games = if (current.localOnly) {
+                breakdownUseCase.loadLocalOnly()
+            } else {
+                breakdownUseCase.loadPlatform(current.selectedPlatformId)
+            }
             val covers = gameRepository.getArt(games.map { it.gameId }).mapValues { (_, art) -> art.coverPath }
             _state.update {
                 it.copy(
@@ -54,6 +64,17 @@ class StoragePlatformGamesDelegate @Inject constructor(
     }
 
     fun setHighlightedCategory(index: Int) = _state.update { it.copy(highlightedCategoryIndex = index) }
+
+    fun setLocationFilter(filter: StorageLocationFilter) =
+        _state.update { it.copy(locationFilter = filter, highlightedCategoryIndex = 0) }
+
+    fun cycleLocationFilter(delta: Int) = _state.update {
+        val entries = StorageLocationFilter.entries
+        it.copy(
+            locationFilter = entries[(it.locationFilter.ordinal + delta).mod(entries.size)],
+            highlightedCategoryIndex = 0
+        )
+    }
 
     fun requestDeleteConfirm(gameId: Long) {
         val game = _state.value.games.find { it.gameId == gameId } ?: return

@@ -89,7 +89,6 @@
     <string name="savesync_device_web">Веб</string>
 
     <string name="savesync_channel_archived">В архиве</string>
-    <string name="savesync_channel_autosave">Автосохранение</string>
 
     <string name="savesync_presentation_calendar_title">Игра и сохранения, последние 12 недель</string>
     <string name="savesync_presentation_rhythm_title">Когда вы играете</string>

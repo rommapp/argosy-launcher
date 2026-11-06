@@ -51,6 +51,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import com.nendo.argosy.R
+import com.nendo.argosy.data.repository.SaveSyncApiClient
 import com.nendo.argosy.domain.model.SnapshotConflictChoice
 import com.nendo.argosy.ui.common.labelRes
 import com.nendo.argosy.ui.common.subtitleRes
@@ -183,7 +184,7 @@ private fun ActiveSyncContent(
             text = buildAnnotatedString {
                 append(stringResource(R.string.ui_sync_overlay_slot_prefix))
                 withStyle(SpanStyle(color = LocalLauncherTheme.current.semanticColors.info)) {
-                    append(channelName ?: stringResource(R.string.ui_sync_overlay_slot_default))
+                    append(SaveSyncApiClient.syncKeyOf(channelName))
                 }
             },
             style = MaterialTheme.typography.bodyMedium,

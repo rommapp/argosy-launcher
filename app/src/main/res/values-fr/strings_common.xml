@@ -43,15 +43,12 @@
     <string name="ui_save_channel_tab_states">États</string>
     <string name="ui_save_channel_states_empty">Aucun emplacement d\'état disponible</string>
     <string name="ui_save_channel_states_heading_named">États dans %1$s</string>
-    <string name="ui_save_channel_states_heading_default">États dans l\'emplacement par défaut</string>
     <string name="ui_save_channel_slot_new">Nouvel emplacement</string>
     <string name="ui_save_channel_slot_legacy_tag">[Ancien]</string>
     <string name="ui_save_channel_history_active_point">Point de restauration actif</string>
     <string name="ui_save_channel_history_latest">Dernière</string>
     <string name="ui_save_channel_history_tag_synced">[Synchronisée]</string>
     <string name="ui_save_channel_history_tag_local">[Locale]</string>
-    <string name="ui_save_channel_active_default">Dernière</string>
-    <string name="ui_save_channel_slot_autosave">Sauvegarde automatique</string>
     <string name="ui_save_channel_slot_archived">Archivé</string>
 
     <string name="ui_save_channel_footer_migrate">Migrer</string>
@@ -712,7 +709,6 @@
 
     <string name="ui_sync_overlay_unknown_game">Jeu</string>
     <string name="ui_sync_overlay_slot_prefix">"Emplacement : "</string>
-    <string name="ui_sync_overlay_slot_default">Dernière</string>
     <string name="ui_sync_overlay_blocked_grant">Autoriser l\'accès</string>
     <string name="ui_sync_overlay_blocked_configure_path">Configurer le chemin de sauvegarde</string>
     <string name="ui_sync_overlay_blocked_disable">Désactiver la synchro</string>
@@ -1040,7 +1036,6 @@
     <string name="media_library_viewmodel_refresh_label">Actualisation</string>
 
     <string name="gamedetail_action_buttons_play">JOUER</string>
-    <string name="gamedetail_action_buttons_autosave">Sauvegarde auto</string>
     <string name="gamedetail_action_buttons_download">TÉLÉCHARGER</string>
     <string name="gamedetail_action_buttons_install">INSTALLER</string>
     <string name="gamedetail_action_buttons_queued">EN ATTENTE...</string>

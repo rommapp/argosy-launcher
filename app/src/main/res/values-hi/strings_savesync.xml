@@ -81,7 +81,6 @@
     <string name="savesync_device_web">वेब</string>
 
     <string name="savesync_channel_archived">आर्काइव्ड</string>
-    <string name="savesync_channel_autosave">ऑटोसेव</string>
 
     <string name="savesync_presentation_calendar_title">खेल और सेव, पिछले 12 सप्ताह</string>
     <string name="savesync_presentation_rhythm_title">आप कब खेलते हैं</string>

@@ -34,7 +34,6 @@ class SaveChannelSavesDelegateTest {
         restoreCachedSaveUseCase = mockk()
         coEvery { restoreCachedSaveUseCase(any(), any(), any(), any()) } returns RestoreCachedSaveUseCase.Result.Restored
         val context = mockk<Context>(relaxed = true)
-        every { context.getString(R.string.ui_save_channel_slot_autosave) } returns "Autosave"
         every { context.getString(R.string.ui_save_channel_slot_archived) } returns "Archived"
         delegate = SaveChannelSavesDelegate(
             context = context,
@@ -146,9 +145,9 @@ class SaveChannelSavesDelegateTest {
         assertEquals("slot keys must be unique", keys.size, keys.toSet().size)
         val names = slots.map { it.displayName }
         assertEquals("display names must be unique", names.size, names.toSet().size)
-        assertEquals(1, slots.count { it.displayName == "Autosave" })
+        assertEquals(1, slots.count { it.displayName.equals("Autosave", ignoreCase = true) })
 
-        val autosave = slots.first { it.displayName == "Autosave" }
+        val autosave = slots.first { it.displayName == SaveSyncApiClient.AUTOSAVE_SLOT_NAME }
         assertEquals(SaveSyncApiClient.AUTOSAVE_SLOT_NAME, autosave.channelName)
         assertEquals(1, autosave.saveCount)
     }

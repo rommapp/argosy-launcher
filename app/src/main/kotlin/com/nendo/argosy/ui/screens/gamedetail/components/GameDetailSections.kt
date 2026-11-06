@@ -76,6 +76,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.nendo.argosy.R
+import com.nendo.argosy.data.repository.SaveSyncApiClient
 import com.nendo.argosy.ui.common.ScreenshotImage
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.common.supersedesCommunityRating
@@ -348,8 +349,7 @@ fun ActionButtons(
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(stringResource(R.string.gamedetail_action_buttons_play))
                                 Text(
-                                    text = saveInfo.channelName
-                                        ?: stringResource(R.string.gamedetail_action_buttons_autosave),
+                                    text = SaveSyncApiClient.syncKeyOf(saveInfo.channelName),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.75f)
                                 )

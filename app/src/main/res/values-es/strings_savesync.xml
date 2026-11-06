@@ -85,7 +85,6 @@
     <string name="savesync_device_web">Web</string>
 
     <string name="savesync_channel_archived">Archivada</string>
-    <string name="savesync_channel_autosave">Guardado automático</string>
 
     <string name="savesync_presentation_calendar_title">Juego y partidas guardadas, últimas 12 semanas</string>
     <string name="savesync_presentation_rhythm_title">Cuándo juegas</string>

@@ -32,15 +32,12 @@
     <string name="ui_save_channel_tab_states">स्टेट</string>
     <string name="ui_save_channel_states_empty">कोई स्टेट स्लॉट उपलब्ध नहीं</string>
     <string name="ui_save_channel_states_heading_named">%1$s में स्टेट</string>
-    <string name="ui_save_channel_states_heading_default">डिफ़ॉल्ट स्लॉट में स्टेट</string>
     <string name="ui_save_channel_slot_new">नया स्लॉट</string>
     <string name="ui_save_channel_slot_legacy_tag">[लीगेसी]</string>
     <string name="ui_save_channel_history_active_point">सक्रिय रीस्टोर पॉइंट</string>
     <string name="ui_save_channel_history_latest">नवीनतम</string>
     <string name="ui_save_channel_history_tag_synced">[सिंक हुआ]</string>
     <string name="ui_save_channel_history_tag_local">[लोकल]</string>
-    <string name="ui_save_channel_active_default">नवीनतम</string>
-    <string name="ui_save_channel_slot_autosave">ऑटोसेव</string>
     <string name="ui_save_channel_slot_archived">आर्काइव्ड</string>
 
     <string name="ui_save_channel_footer_migrate">माइग्रेट</string>
@@ -687,7 +684,6 @@
 
     <string name="ui_sync_overlay_unknown_game">गेम</string>
     <string name="ui_sync_overlay_slot_prefix">"स्लॉट: "</string>
-    <string name="ui_sync_overlay_slot_default">नवीनतम</string>
     <string name="ui_sync_overlay_blocked_grant">अनुमति दें</string>
     <string name="ui_sync_overlay_blocked_configure_path">सेव पाथ कॉन्फ़िगर करें</string>
     <string name="ui_sync_overlay_blocked_disable">सिंक अक्षम करें</string>
@@ -994,7 +990,6 @@
     <string name="media_library_viewmodel_refresh_label">रीफ्रेश हो रहा है</string>
 
     <string name="gamedetail_action_buttons_play">खेलें</string>
-    <string name="gamedetail_action_buttons_autosave">ऑटो-सेव</string>
     <string name="gamedetail_action_buttons_download">डाउनलोड</string>
     <string name="gamedetail_action_buttons_install">इंस्टॉल</string>
     <string name="gamedetail_action_buttons_queued">कतार में...</string>

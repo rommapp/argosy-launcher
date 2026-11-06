@@ -204,7 +204,6 @@
     <!-- Shown in place of a save's channel name when the channel is the one the emulator writes
          to on its own as the game runs. Noun, singular: the save the game keeps updating without
          being asked. -->
-    <string name="savesync_channel_autosave">Autosave</string>
 
     <!-- Second-screen panel for the game highlighted on Save Sync. Heading over a calendar of
          the last 12 weeks: each day is shaded by play time and dotted when a save was kept. -->

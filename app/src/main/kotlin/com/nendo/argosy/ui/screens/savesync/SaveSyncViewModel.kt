@@ -12,7 +12,6 @@ import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.data.remote.romm.ConnectionState
 import com.nendo.argosy.data.remote.romm.RomMDevice
 import com.nendo.argosy.data.remote.romm.RomMRepository
-import com.nendo.argosy.data.repository.SaveSyncApiClient
 import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.sync.ConflictResolution
@@ -21,7 +20,6 @@ import com.nendo.argosy.data.sync.SaveAccessNotices
 import com.nendo.argosy.data.sync.SyncDirection
 import com.nendo.argosy.data.sync.SyncQueueManager
 import com.nendo.argosy.data.sync.SyncStatus
-import java.io.File
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
@@ -237,7 +235,7 @@ class SaveSyncViewModel @Inject constructor(
                     platformDisplayName = game.platformSlug,
                     coverPath = artById[gameId]?.coverPath,
                     slots = entities
-                        .map { buildSaveSlotEntry(it, game, prefs.rommDeviceId) }
+                        .map { buildSaveSlotEntry(it, prefs.rommDeviceId) }
                         .sortedByDescending { it.lastSyncedAt ?: Instant.MIN }
                 )
             }
@@ -499,7 +497,7 @@ class SaveSyncViewModel @Inject constructor(
             platformDisplayName = game.platformSlug,
             coverPath = coverPath,
             channelName = conflict.slot,
-            channelDisplay = effectiveChannelLabel(conflict.slot, game),
+            channelDisplay = effectiveChannelLabel(conflict.slot),
             localTime = conflict.localUpdatedAt,
             serverTime = conflict.serverUpdatedAt,
             localDeviceName = thisDeviceName,
@@ -514,7 +512,6 @@ class SaveSyncViewModel @Inject constructor(
 
     private fun buildSaveSlotEntry(
         entity: SaveSyncEntity,
-        game: GameEntity,
         thisDeviceId: String?
     ): SaveSlotEntry {
         val isThisDevice = entity.lastSyncDeviceId != null && entity.lastSyncDeviceId == thisDeviceId
@@ -523,7 +520,7 @@ class SaveSyncViewModel @Inject constructor(
         return SaveSlotEntry(
             saveSyncId = entity.id,
             channelName = entity.channelName,
-            channelDisplay = effectiveChannelLabel(entity.channelName, game),
+            channelDisplay = effectiveChannelLabel(entity.channelName),
             syncStatus = entity.syncStatus,
             lastSyncedAt = entity.lastSyncedAt,
             localUpdatedAt = entity.localUpdatedAt,
@@ -534,15 +531,7 @@ class SaveSyncViewModel @Inject constructor(
         )
     }
 
-    private fun effectiveChannelLabel(channelName: String?, game: GameEntity): String {
-        val autosaveLabel = context.getString(R.string.savesync_channel_autosave)
-        if (channelName.isNullOrBlank()) return context.getString(R.string.savesync_channel_archived)
-        if (channelName.equals(SaveSyncApiClient.AUTOSAVE_SLOT_NAME, ignoreCase = true)) return autosaveLabel
-        if (channelName.equals(SaveSyncApiClient.DEFAULT_SAVE_NAME, ignoreCase = true)) return autosaveLabel
-        if (channelName.equals(game.title, ignoreCase = true)) return autosaveLabel
-        val romBaseName = game.localPath?.let { File(it).nameWithoutExtension }
-        if (romBaseName != null && channelName.equals(romBaseName, ignoreCase = true)) return autosaveLabel
-        return channelName
-    }
+    private fun effectiveChannelLabel(channelName: String?): String =
+        channelName?.takeUnless { it.isBlank() } ?: context.getString(R.string.savesync_channel_archived)
 }
 

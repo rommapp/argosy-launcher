@@ -31,9 +31,9 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.R
+import com.nendo.argosy.data.repository.SaveSyncApiClient
 import com.nendo.argosy.data.local.entity.SaveSyncEntity
 import com.nendo.argosy.ui.theme.Dimens
-import com.nendo.argosy.util.formatClockDateTime
 import com.nendo.argosy.util.formatRelativeTimeVerbose
 import java.time.Instant
 
@@ -69,11 +69,7 @@ data class SaveStatusInfo(
     val activeSaveTimestamp: Long?,
     val lastSyncTime: Instant?
 ) {
-    fun displayLabel(context: Context): String = when {
-        channelName != null -> channelName
-        activeSaveTimestamp != null -> formatClockDateTime(context, activeSaveTimestamp)
-        else -> context.getString(R.string.gamedetail_save_status_latest_label)
-    }
+    val displayLabel: String get() = SaveSyncApiClient.syncKeyOf(channelName)
 
     val effectiveStatus: SaveSyncStatus
         get() = status
@@ -112,7 +108,7 @@ fun SaveStatusRow(
 
         androidx.compose.foundation.layout.Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = status.displayLabel(context),
+                text = status.displayLabel,
                 style = MaterialTheme.typography.bodySmall,
                 color = LocalLauncherTheme.current.semanticColors.warning,
                 maxLines = 1,

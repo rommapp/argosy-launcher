@@ -36,7 +36,6 @@
     <string name="gamedetail_menu_play_button_waiting_for_server">En attente du serveur…</string>
 
     <string name="gamedetail_menu_saves_syncing">Synchronisation...</string>
-    <string name="gamedetail_menu_saves_default_channel">Sauvegarde auto</string>
 
     <string name="gamedetail_menu_favorite_label">Favori</string>
     <string name="gamedetail_menu_favorite_compact_remove_description">Retirer des favoris</string>
@@ -174,7 +173,6 @@
 
     <!-- ================================ Save status =================================== -->
 
-    <string name="gamedetail_save_status_latest_label">Plus récente</string>
     <string name="gamedetail_save_status_time">· %1$s</string>
     <string name="gamedetail_save_status_synced">Synchronisée</string>
     <string name="gamedetail_save_status_local_newer">Locale plus récente</string>

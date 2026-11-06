@@ -66,6 +66,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.R
+import com.nendo.argosy.data.repository.SaveSyncApiClient
 import com.nendo.argosy.ui.screens.gamedetail.GameDownloadStatus
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
@@ -517,7 +518,7 @@ private fun SavesMenuItem(
     val slotName = if (isSyncing) {
         stringResource(R.string.gamedetail_menu_saves_syncing)
     } else {
-        status?.channelName ?: stringResource(R.string.gamedetail_menu_saves_default_channel)
+        SaveSyncApiClient.syncKeyOf(status?.channelName)
     }
     val saveDate = if (!isSyncing) status?.displayTime(LocalContext.current) else null
 

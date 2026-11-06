@@ -30,15 +30,12 @@
     <string name="ui_save_channel_tab_states">Состояния</string>
     <string name="ui_save_channel_states_empty">Нет доступных слотов состояний</string>
     <string name="ui_save_channel_states_heading_named">Состояния в %1$s</string>
-    <string name="ui_save_channel_states_heading_default">Состояния в слоте по умолчанию</string>
     <string name="ui_save_channel_slot_new">Новый слот</string>
     <string name="ui_save_channel_slot_legacy_tag">[Устаревший]</string>
     <string name="ui_save_channel_history_active_point">Активная точка восстановления</string>
     <string name="ui_save_channel_history_latest">Последнее</string>
     <string name="ui_save_channel_history_tag_synced">[Синхронизировано]</string>
     <string name="ui_save_channel_history_tag_local">[Локально]</string>
-    <string name="ui_save_channel_active_default">Последнее</string>
-    <string name="ui_save_channel_slot_autosave">Автосохранение</string>
     <string name="ui_save_channel_slot_archived">В архиве</string>
 
     <string name="ui_save_channel_footer_migrate">Перенести</string>
@@ -705,7 +702,6 @@
 
     <string name="ui_sync_overlay_unknown_game">Игра</string>
     <string name="ui_sync_overlay_slot_prefix">"Слот: "</string>
-    <string name="ui_sync_overlay_slot_default">Последнее</string>
     <string name="ui_sync_overlay_blocked_grant">Предоставить доступ</string>
     <string name="ui_sync_overlay_blocked_configure_path">Настроить путь сохранения</string>
     <string name="ui_sync_overlay_blocked_disable">Отключить синхронизацию</string>
@@ -1044,7 +1040,6 @@
     <string name="media_library_viewmodel_refresh_label">Обновление</string>
 
     <string name="gamedetail_action_buttons_play">ИГРАТЬ</string>
-    <string name="gamedetail_action_buttons_autosave">Автосохранение</string>
     <string name="gamedetail_action_buttons_download">СКАЧАТЬ</string>
     <string name="gamedetail_action_buttons_install">УСТАНОВИТЬ</string>
     <string name="gamedetail_action_buttons_queued">В ОЧЕРЕДИ...</string>

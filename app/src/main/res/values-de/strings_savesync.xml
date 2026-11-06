@@ -79,7 +79,6 @@
     <string name="savesync_device_web">Web</string>
 
     <string name="savesync_channel_archived">Archiviert</string>
-    <string name="savesync_channel_autosave">Autospeicherung</string>
 
     <string name="savesync_presentation_calendar_title">Spielzeit und Spielstände, letzte 12 Wochen</string>
     <string name="savesync_presentation_rhythm_title">Wann du spielst</string>

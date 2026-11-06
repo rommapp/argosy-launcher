@@ -81,7 +81,6 @@
          slot's name. -->
     <string name="ui_save_channel_states_heading_named">States in %1$s</string>
     <!-- The same heading when no named slot is active. -->
-    <string name="ui_save_channel_states_heading_default">States in the default slot</string>
     <!-- Row at the end of the slot list. Verb phrase: creates another named save slot. -->
     <string name="ui_save_channel_slot_new">New Slot</string>
     <!-- Tag beside a save slot from the older save system that has not been migrated yet.
@@ -98,9 +97,7 @@
     <string name="ui_save_channel_history_tag_local">[Local]</string>
     <!-- Shown at the top right of the save manager when no named slot is active, naming the
          save the game is currently using. Adjective describing that save. -->
-    <string name="ui_save_channel_active_default">Latest</string>
     <!-- Name of the slot every game has by default, where the emulator's own save is kept. -->
-    <string name="ui_save_channel_slot_autosave">Autosave</string>
     <!-- Name of the bucket holding saves put aside when a slot was switched. Adjective
          describing the saves. -->
     <string name="ui_save_channel_slot_archived">Archived</string>
@@ -1517,7 +1514,6 @@
     <string name="ui_sync_overlay_slot_prefix">"Slot: "</string>
     <!-- Stands in for that slot's name when the game has no named slot. Adjective describing
          the save. -->
-    <string name="ui_sync_overlay_slot_default">Latest</string>
     <!-- Button on the blocked overlay. Verb phrase: opens the system permission screen. -->
     <string name="ui_sync_overlay_blocked_grant">Grant Permission</string>
     <!-- Button on the blocked overlay. Verb phrase: opens the settings row that names the save
@@ -2098,7 +2094,6 @@
          always launches an emulator session. -->
     <string name="gamedetail_action_buttons_play">PLAY</string>
     <!-- Stands in for a save slot's name when the game plays from the unnamed default slot. -->
-    <string name="gamedetail_action_buttons_autosave">Auto-save</string>
     <string name="gamedetail_action_buttons_download">DOWNLOAD</string>
     <string name="gamedetail_action_buttons_install">INSTALL</string>
     <string name="gamedetail_action_buttons_queued">QUEUED...</string>

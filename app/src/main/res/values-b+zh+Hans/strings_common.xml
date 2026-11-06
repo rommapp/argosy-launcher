@@ -30,15 +30,12 @@
     <string name="ui_save_channel_tab_states">即时存档</string>
     <string name="ui_save_channel_states_empty">没有可用的即时存档槽位</string>
     <string name="ui_save_channel_states_heading_named">%1$s中的即时存档</string>
-    <string name="ui_save_channel_states_heading_default">默认槽位中的即时存档</string>
     <string name="ui_save_channel_slot_new">新建槽位</string>
     <string name="ui_save_channel_slot_legacy_tag">[旧版]</string>
     <string name="ui_save_channel_history_active_point">当前恢复点</string>
     <string name="ui_save_channel_history_latest">最新</string>
     <string name="ui_save_channel_history_tag_synced">[已同步]</string>
     <string name="ui_save_channel_history_tag_local">[本地]</string>
-    <string name="ui_save_channel_active_default">最新</string>
-    <string name="ui_save_channel_slot_autosave">自动存档</string>
     <string name="ui_save_channel_slot_archived">已归档</string>
 
     <string name="ui_save_channel_footer_migrate">迁移</string>
@@ -657,7 +654,6 @@
 
     <string name="ui_sync_overlay_unknown_game">游戏</string>
     <string name="ui_sync_overlay_slot_prefix">"槽位："</string>
-    <string name="ui_sync_overlay_slot_default">最新</string>
     <string name="ui_sync_overlay_blocked_grant">授予权限</string>
     <string name="ui_sync_overlay_blocked_configure_path">配置存档路径</string>
     <string name="ui_sync_overlay_blocked_disable">禁用同步</string>
@@ -933,7 +929,6 @@
     <string name="media_library_viewmodel_refresh_label">正在刷新</string>
 
     <string name="gamedetail_action_buttons_play">开始游戏</string>
-    <string name="gamedetail_action_buttons_autosave">自动存档</string>
     <string name="gamedetail_action_buttons_download">下载</string>
     <string name="gamedetail_action_buttons_install">安装</string>
     <string name="gamedetail_action_buttons_queued">排队中...</string>

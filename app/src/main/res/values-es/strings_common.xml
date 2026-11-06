@@ -32,15 +32,12 @@
     <string name="ui_save_channel_tab_states">Estados</string>
     <string name="ui_save_channel_states_empty">No hay ranuras de estado disponibles</string>
     <string name="ui_save_channel_states_heading_named">Estados en %1$s</string>
-    <string name="ui_save_channel_states_heading_default">Estados en la ranura predeterminada</string>
     <string name="ui_save_channel_slot_new">Nueva ranura</string>
     <string name="ui_save_channel_slot_legacy_tag">[Antigua]</string>
     <string name="ui_save_channel_history_active_point">Punto de restauración activo</string>
     <string name="ui_save_channel_history_latest">Más reciente</string>
     <string name="ui_save_channel_history_tag_synced">[Sincronizada]</string>
     <string name="ui_save_channel_history_tag_local">[Local]</string>
-    <string name="ui_save_channel_active_default">Más reciente</string>
-    <string name="ui_save_channel_slot_autosave">Guardado automático</string>
     <string name="ui_save_channel_slot_archived">Archivado</string>
 
     <string name="ui_save_channel_footer_migrate">Migrar</string>
@@ -701,7 +698,6 @@
 
     <string name="ui_sync_overlay_unknown_game">Juego</string>
     <string name="ui_sync_overlay_slot_prefix">"Ranura: "</string>
-    <string name="ui_sync_overlay_slot_default">Más reciente</string>
     <string name="ui_sync_overlay_blocked_grant">Conceder permiso</string>
     <string name="ui_sync_overlay_blocked_configure_path">Configurar ruta de guardado</string>
     <string name="ui_sync_overlay_blocked_disable">Desactivar sincronización</string>
@@ -1029,7 +1025,6 @@
     <string name="media_library_viewmodel_refresh_label">Actualizando</string>
 
     <string name="gamedetail_action_buttons_play">JUGAR</string>
-    <string name="gamedetail_action_buttons_autosave">Guardado automático</string>
     <string name="gamedetail_action_buttons_download">DESCARGAR</string>
     <string name="gamedetail_action_buttons_install">INSTALAR</string>
     <string name="gamedetail_action_buttons_queued">EN COLA...</string>

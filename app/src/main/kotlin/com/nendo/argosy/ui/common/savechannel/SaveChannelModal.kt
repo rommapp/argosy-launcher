@@ -56,6 +56,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.R
+import com.nendo.argosy.data.repository.SaveSyncApiClient
 import com.nendo.argosy.ui.input.ModalPresenceEffect
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.components.FocusedScroll
@@ -545,9 +546,10 @@ private fun StatesTabContent(
         }
     } else {
         Text(
-            text = state.activeChannel?.let {
-                stringResource(R.string.ui_save_channel_states_heading_named, it)
-            } ?: stringResource(R.string.ui_save_channel_states_heading_default),
+            text = stringResource(
+                R.string.ui_save_channel_states_heading_named,
+                SaveSyncApiClient.syncKeyOf(state.activeChannel)
+            ),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = Dimens.spacingSm, vertical = Dimens.spacingXs)
@@ -783,7 +785,7 @@ private fun ActiveSaveIndicator(activeChannel: String?) {
                 .background(accent)
         )
         Text(
-            text = activeChannel ?: stringResource(R.string.ui_save_channel_active_default),
+            text = SaveSyncApiClient.syncKeyOf(activeChannel),
             style = MaterialTheme.typography.labelMedium,
             color = accent,
             maxLines = 1,

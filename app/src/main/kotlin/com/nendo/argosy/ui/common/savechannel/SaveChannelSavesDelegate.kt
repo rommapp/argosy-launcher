@@ -78,7 +78,7 @@ class SaveChannelSavesDelegate @Inject constructor(
         slotItems.add(
             SaveSlotItem(
                 channelName = SaveSyncApiClient.AUTOSAVE_SLOT_NAME,
-                displayName = context.getString(R.string.ui_save_channel_slot_autosave),
+                displayName = SaveSyncApiClient.AUTOSAVE_SLOT_NAME,
                 isActive = SaveSlotClassifier.isActiveSlot(SaveSyncApiClient.AUTOSAVE_SLOT_NAME, activeChannel),
                 saveCount = autosaveSaves.size,
                 latestTimestamp = autosaveSaves.maxByOrNull { it.timestamp }?.timestamp?.toEpochMilli()

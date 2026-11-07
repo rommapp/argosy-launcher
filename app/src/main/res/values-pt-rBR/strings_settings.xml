@@ -3414,7 +3414,7 @@
     <string name="settings_hotkeys_icon_hold_delay_desc">Atraso de segurar</string>
     <string name="settings_hotkeys_hold_delay_seconds">%1$ds</string>
     <string name="settings_hotkeys_combo_inherited">Herdado</string>
-    <string name="settings_hotkeys_combo_inherited_suffix">%1$s &amp;#183; herdado</string>
+    <string name="settings_hotkeys_combo_inherited_suffix">%1$s &#183; herdado</string>
     <string name="settings_hotkeys_recording_title">Hotkey de gravação</string>
     <string name="settings_hotkeys_hint_cancel">Cancelar</string>
     <string name="settings_hotkeys_recording_saved">Salvo!</string>
@@ -3610,11 +3610,11 @@
     <string name="settings_emulator_picker_update_available_desc">Atualização disponível</string>
     <string name="settings_variant_picker_title">SELECIONAR VERSÃO</string>
     <string name="settings_variant_picker_hint_navigate">Navegar</string>
-    <string name="settings_variant_picker_hint_select">Separar</string>
+    <string name="settings_variant_picker_hint_select">Selecionar</string>
     <string name="settings_variant_picker_hint_cancel">Cancelar</string>
     <string name="settings_emulator_update_title">Atualizar %1$s</string>
     <string name="settings_emulator_update_checking">Verificando atualizações...</string>
-    <string name="settings_emulator_update_select_version">Separar</string>
+    <string name="settings_emulator_update_select_version">Selecionar versão</string>
     <string name="settings_emulator_update_downloading">Baixando... %1$d%%</string>
     <string name="settings_emulator_update_installing">Instalando...</string>
     <string name="settings_emulator_update_installed">Atualização instalada com sucesso</string>

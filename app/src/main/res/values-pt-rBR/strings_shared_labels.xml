@@ -111,7 +111,7 @@
     <string name="media_tile_notice_decline_cancel">Cancelar</string>
     <string name="media_tile_notice_derived_message_none">Ainda não há episódios desta série neste dispositivo. Esta ficha reproduz episódios baixados, então permanece vazia até que alguns cheguem.</string>
     <plurals name="media_tile_notice_derived_message_some">
-        <item quantity="one">Esta ficha reproduz o episódio 1 neste dispositivo e o recomeça quando termina.</item>
+        <item quantity="one">Esta ficha reproduz o único episódio deste dispositivo e o recomeça quando termina.</item>
         <item quantity="many">Esta ficha reproduz os %1$d episódios deste dispositivo, em ordem, e recomeça pelo primeiro ao chegar ao fim.</item>
         <item quantity="other">Esta ficha reproduz os %1$d episódios deste dispositivo, em ordem, e recomeça pelo primeiro ao chegar ao fim.</item>
     </plurals>

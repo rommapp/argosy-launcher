@@ -1,6 +1,7 @@
 package com.nendo.argosy.data.sync
 
 import android.content.Context
+import com.nendo.argosy.data.emulator.BuiltinTexturePathRegistry
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.RetroArchConfigParser
 import com.nendo.argosy.data.emulator.SavePathConfig
@@ -666,15 +667,19 @@ class SavePathResolver @Inject constructor(
             ?.findSaveFolderBySaveId(basePath, titleId)
     }
 
-    fun findNewestFileTime(folderPath: String): Long {
+    fun findNewestFileTime(folderPath: String): Long = findNewestFileTimeInternal(folderPath, "")
+
+    private fun findNewestFileTimeInternal(folderPath: String, relativePrefix: String): Long {
         var newest = 0L
         fal.listFiles(folderPath)?.forEach { child ->
+            val rel = if (relativePrefix.isEmpty()) child.name else "$relativePrefix/${child.name}"
+            if (BuiltinTexturePathRegistry.isExcludedSaveTexturePath(child.path, rel)) return@forEach
             if (child.isFile) {
                 if (child.lastModified > newest) {
                     newest = child.lastModified
                 }
             } else if (child.isDirectory) {
-                val childNewest = findNewestFileTime(child.path)
+                val childNewest = findNewestFileTimeInternal(child.path, rel)
                 if (childNewest > newest) {
                     newest = childNewest
                 }

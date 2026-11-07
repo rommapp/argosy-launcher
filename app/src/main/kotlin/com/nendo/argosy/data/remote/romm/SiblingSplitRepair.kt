@@ -201,7 +201,11 @@ class SiblingSplitRepair @Inject constructor(
 
     private suspend fun ownDownloadedLaunchTarget(gameId: Long, excludedPath: String): String? {
         val downloaded = gameFileDao.getFilesForGame(gameId)
-            .filter { it.isLaunchTarget && it.localPath != null && it.localPath != excludedPath }
+            .filter {
+                it.isLaunchTarget &&
+                    it.localPath != null &&
+                    it.localPath != excludedPath
+            }
         return (downloaded.firstOrNull { VariantCategory.fromKey(it.category) == VariantCategory.GAME }
             ?: downloaded.firstOrNull())?.localPath
     }

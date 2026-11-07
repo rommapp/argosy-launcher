@@ -386,6 +386,7 @@ class LibretroActivity : ComponentActivity() {
         get() = if (::netplay.isInitialized) netplay.isGuestJoinedSession else false
     private var corePath: String = ""
     private var resolvedCoreId: String? = null
+    private var initialIntentCoreVariables: Map<String, String> = emptyMap()
     private var dualScreenOutput: DualScreenOutput? = null
     private var secondScreen: SecondScreenPresentation? = null
 
@@ -741,6 +742,9 @@ class LibretroActivity : ComponentActivity() {
             launchMode = if (launchMode == LaunchMode.RESUME_HARDCORE) LaunchMode.RESUME else LaunchMode.NEW_CASUAL
         }
         hardcoreMode = launchMode.isHardcore
+        val varKeys = intent.getStringArrayExtra(EXTRA_CORE_VAR_KEYS).orEmpty()
+        val varValues = intent.getStringArrayExtra(EXTRA_CORE_VAR_VALUES).orEmpty()
+        initialIntentCoreVariables = varKeys.zip(varValues).toMap()
 
         val joinSessionId = intent.getStringExtra(EXTRA_NETPLAY_JOIN_SESSION_ID)
         val joinHostUserId = intent.getStringExtra(EXTRA_NETPLAY_JOIN_HOST_USER_ID)
@@ -2102,15 +2106,19 @@ class LibretroActivity : ComponentActivity() {
             val gameOverride = if (perGame) gameCoreOptionOverrides[def.key] else null
             val globalOverride = coreOptionOverrides[def.key]
             val heldValue = held[def.key]
+            val intentDefault = initialIntentCoreVariables[def.key]
+            val fallback = intentDefault ?: def.defaultValue
+            val hasIntentOverride = intentDefault != null && intentDefault != def.defaultValue
+            val hasStoredOverride = if (perGame) gameOverride != null else globalOverride != null
+            val isOverridden = heldValue == null && (hasStoredOverride || (hasIntentOverride && gameOverride == null && globalOverride == null))
             CoreOptionViewItem(
                 key = def.key,
                 displayName = def.displayName,
                 description = def.description,
                 values = def.values,
                 currentValue = heldValue ?: (gameOverride ?: globalOverride)
-                    ?.let { def.resolveStored(it) } ?: def.defaultValue,
-                isOverridden = heldValue == null &&
-                    (if (perGame) gameOverride != null else globalOverride != null),
+                    ?.let { def.resolveStored(it) } ?: fallback,
+                isOverridden = isOverridden,
                 valueLabels = def.valueLabels,
                 isHeldByDualScreen = heldValue != null
             )
@@ -2132,7 +2140,8 @@ class LibretroActivity : ComponentActivity() {
         val perGame = perGameSettingsEnabled && gameId != -1L
         val stored = (if (perGame) gameCoreOptionOverrides[optionKey] else null)
             ?: coreOptionOverrides[optionKey]
-        val current = stored?.let { def.resolveStored(it) } ?: def.defaultValue
+        val fallback = initialIntentCoreVariables[optionKey] ?: def.defaultValue
+        val current = stored?.let { def.resolveStored(it) } ?: fallback
         val currentIndex = rotation.indexOf(current).coerceAtLeast(0)
         val newValue = rotation[(currentIndex + direction).mod(rotation.size)]
         if (hardcoreBlocks(optionKey, newValue)) {
@@ -2140,7 +2149,7 @@ class LibretroActivity : ComponentActivity() {
             return
         }
         val inherited = (if (perGame) coreOptionOverrides[optionKey] else null)
-            ?.let { def.resolveStored(it) } ?: def.defaultValue
+            ?.let { def.resolveStored(it) } ?: fallback
         if (newValue == inherited) {
             resetCoreOption(optionKey)
             return
@@ -2178,21 +2187,22 @@ class LibretroActivity : ComponentActivity() {
         val def = CoreOptionManifestRegistry.getManifest(coreId)
             ?.options?.firstOrNull { it.key == optionKey } ?: return
         val perGame = perGameSettingsEnabled && gameId != -1L
-        val target = if (perGame) coreOptionOverrides[optionKey] ?: def.defaultValue else def.defaultValue
+        val fallback = initialIntentCoreVariables[optionKey] ?: def.defaultValue
+        val target = if (perGame) coreOptionOverrides[optionKey] ?: fallback else fallback
         if (hardcoreBlocks(optionKey, target)) {
             inGameMessage = getString(R.string.ingame_libretro_core_option_blocked_hardcore)
             return
         }
         if (perGame) {
             gameCoreOptionOverrides = gameCoreOptionOverrides - optionKey
-            val fallback = coreOptionOverrides[optionKey] ?: def.defaultValue
-            if (::retroView.isInitialized) retroView.updateVariables(Variable(optionKey, fallback))
+            val effectiveFallback = coreOptionOverrides[optionKey] ?: fallback
+            if (::retroView.isInitialized) retroView.updateVariables(Variable(optionKey, effectiveFallback))
             lifecycleScope.launch(Dispatchers.IO) {
                 coreOptionsRepository.deleteForGame(gameId, coreId, optionKey)
             }
         } else {
             coreOptionOverrides = coreOptionOverrides - optionKey
-            if (::retroView.isInitialized) retroView.updateVariables(Variable(optionKey, def.defaultValue))
+            if (::retroView.isInitialized) retroView.updateVariables(Variable(optionKey, fallback))
             lifecycleScope.launch(Dispatchers.IO) {
                 coreOptionsRepository.delete(coreId, optionKey)
             }
@@ -2207,7 +2217,8 @@ class LibretroActivity : ComponentActivity() {
         val effective = manifest?.options?.map { def ->
             val gameOverride = if (enabled) gameCoreOptionOverrides[def.key] else null
             val stored = gameOverride ?: coreOptionOverrides[def.key]
-            Variable(def.key, held[def.key] ?: stored?.let { def.resolveStored(it) } ?: def.defaultValue)
+            val fallback = initialIntentCoreVariables[def.key] ?: def.defaultValue
+            Variable(def.key, held[def.key] ?: stored?.let { def.resolveStored(it) } ?: fallback)
         }.orEmpty()
         if (effective.any { hardcoreBlocks(it.key, it.value) }) {
             inGameMessage = getString(R.string.ingame_libretro_core_option_blocked_hardcore)

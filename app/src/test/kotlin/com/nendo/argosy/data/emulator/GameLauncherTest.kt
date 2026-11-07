@@ -169,6 +169,7 @@ class GameLauncherTest {
             volumeHealth = mockk(relaxed = true),
             dreamcastVmuMigrator = mockk(relaxed = true),
             launchProgressTracker = launchProgressTracker,
+            texturePackInstaller = mockk(relaxed = true),
             steamInstallReports = steamInstallReports,
             appsRepository = appsRepository,
             emulatorResolver = EmulatorResolver(

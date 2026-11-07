@@ -2,6 +2,7 @@ package com.nendo.argosy.domain.usecase.download
 
 import com.nendo.argosy.data.download.ZipExtractor
 import com.nendo.argosy.data.emulator.M3uManager
+import com.nendo.argosy.data.emulator.TexturePackInstaller
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.local.entity.GameEntity
@@ -49,7 +50,8 @@ class FilePickerFlowUseCase @Inject constructor(
     private val attributionRepository: StorageAttributionRepository,
     private val gameRepository: com.nendo.argosy.data.repository.GameRepository,
     private val volumeHealth: StorageVolumeHealth,
-    private val m3uManager: M3uManager
+    private val m3uManager: M3uManager,
+    private val texturePackInstaller: TexturePackInstaller
 ) {
 
     /**
@@ -252,7 +254,12 @@ class FilePickerFlowUseCase @Inject constructor(
                     added++
                 }
                 !wantIt && onDisk != null -> {
-                    if (onDisk.delete()) {
+                    val deleted = if (TexturePackInstaller.isManifestFile(onDisk)) {
+                        texturePackInstaller.uninstallModFile(db.copy(localPath = onDisk.absolutePath))
+                    } else {
+                        onDisk.delete()
+                    }
+                    if (deleted) {
                         gameFileDao.clearLocalPath(db.id)
                         m3uManager.recordDiscFile(gameId, db.fileName, null)
                         pruneMusicReferences(onDisk.absolutePath)

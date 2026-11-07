@@ -138,7 +138,8 @@ class GameLauncher @Inject constructor(
     private val steamInstallReports: SteamInstallReports,
     private val appsRepository: com.nendo.argosy.data.repository.AppsRepository,
     private val emulatorResolver: EmulatorResolver,
-    private val keepAlivePolicy: com.nendo.argosy.data.emulator.background.KeepAlivePolicy
+    private val keepAlivePolicy: com.nendo.argosy.data.emulator.background.KeepAlivePolicy,
+    private val texturePackInstaller: TexturePackInstaller
 ) {
     private val shellAmAvailable: Boolean by lazy {
         try {
@@ -753,9 +754,17 @@ class GameLauncher @Inject constructor(
             return null
         }
 
+        texturePackInstaller.installPendingModFilesForGame(game.id)
+        val textureCoreOptions = texturePackInstaller.resolveAutoCoreOptionsForGame(
+            gameId = game.id,
+            coreId = coreName,
+            platformSlug = game.platformSlug
+        )
+
         val resolvedVariables = coreOptionResolver.resolveVariables(
             coreName,
-            gameId = game.id.takeIf { game.perGameSettingsEnabled }
+            gameId = game.id.takeIf { game.perGameSettingsEnabled },
+            defaultOverrides = textureCoreOptions
         )
 
         Logger.info(TAG, "[BuiltIn] Launching: rom=${romFile.name}, core=$coreName, romSize=${romFile.length()}b, coreVars=${resolvedVariables.size}")

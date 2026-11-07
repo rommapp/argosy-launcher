@@ -1035,7 +1035,10 @@ object SavePathRegistry {
                 val roots = externalStorageRoots?.takeIf { it.isNotEmpty() } ?: listOf(getExternalStoragePath())
                 roots.map { path.replace("{anyStorage}", it) }.distinct()
             }
-            path.contains("{extStorage}") -> listOf(path.replace("{extStorage}", getExternalStoragePath()))
+            path.contains("{extStorage}") -> {
+                val primary = externalStorageRoots?.firstOrNull() ?: getExternalStoragePath()
+                listOf(path.replace("{extStorage}", primary))
+            }
             else -> listOf(path)
         }
         val builtinBase = builtinSavesDir ?: filesDir?.let { "$it/${AppPaths.LIBRETRO_SAVES_SUBDIR}" }

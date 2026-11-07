@@ -1,5 +1,6 @@
 package com.nendo.argosy.data.storage
 
+import com.nendo.argosy.data.emulator.TexturePackInstaller
 import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.music.MusicDirectoryManager
@@ -37,7 +38,12 @@ class GameFileRelocator @Inject constructor(
         val musicDir = musicDirectoryManager.resolveMusicDir()
         val addOns = gameFileDao.getFilesForGame(game.id)
             .mapNotNull { it.localPath?.let(::File) }
-            .filter { it.isFile && !isUnder(it, musicDir) && unit.none { member -> isUnder(it, member) } }
+            .filter {
+                it.isFile &&
+                    (!TexturePackInstaller.isManifestFile(it) || isUnder(it, platformFolder)) &&
+                    !isUnder(it, musicDir) &&
+                    unit.none { member -> isUnder(it, member) }
+            }
             .distinctBy { it.canonicalPath }
         val moves = (unit + addOns)
             .map { it to target(it) }

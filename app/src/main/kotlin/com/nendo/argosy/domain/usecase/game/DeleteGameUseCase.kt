@@ -1,6 +1,8 @@
 package com.nendo.argosy.domain.usecase.game
 
 import com.nendo.argosy.data.download.ZipExtractor
+import com.nendo.argosy.data.emulator.TexturePackInstaller
+import java.util.Locale
 import com.nendo.argosy.data.local.dao.DownloadQueueDao
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
@@ -44,7 +46,8 @@ class DeleteGameUseCase @Inject constructor(
     private val steamRepository: SteamRepository,
     private val payloadCodec: SyncPayloadCodec,
     private val musicDirectoryManager: MusicDirectoryManager,
-    private val attributionRepository: StorageAttributionRepository
+    private val attributionRepository: StorageAttributionRepository,
+    private val texturePackInstaller: TexturePackInstaller
 ) {
     suspend operator fun invoke(gameId: Long): Boolean {
         val game = gameDao.getById(gameId) ?: return false
@@ -56,13 +59,15 @@ class DeleteGameUseCase @Inject constructor(
         val path = game.localPath ?: return false
         val platformFolder = gameRepository.getDownloadDirForPlatformId(game.platformId)
 
+        texturePackInstaller.uninstallForGame(game)
+
         gameRepository.clearLocalPath(gameId)
         downloadQueueDao.deleteByGameId(gameId)
         val musicDirPrefix = musicDirectoryManager.resolveMusicDir().absolutePath + File.separator
         val sharedAddonPaths = gameFileDao.getFilesForGame(gameId)
             .mapNotNull { it.localPath }
             .filterNot { it.startsWith(musicDirPrefix) }
-            .filter { File(it).parentFile?.name?.lowercase() == ZipExtractor.EXTCONTENT_FOLDER }
+            .filter { File(it).parentFile?.name?.lowercase(Locale.ROOT) == ZipExtractor.EXTCONTENT_FOLDER }
         gameFileDao.clearLocalPathsByGameIdExcludingPrefix(gameId, musicDirPrefix)
         val discPaths = gameDiscDao.getDiscsForGame(gameId).mapNotNull { disc ->
             disc.localPath?.also { gameDiscDao.clearLocalPath(disc.id) }

@@ -223,22 +223,19 @@ fun CheatEditDialog(
     var nameValue by remember {
         mutableStateOf(TextFieldValue(currentName, TextRange(currentName.length)))
     }
-    val addressPart = currentCode.substringBefore(':')
-    val valuePart = currentCode.substringAfter(':', "")
-    val currentValueInt = valuePart.toIntOrNull(16) ?: 0
-    var valueText by remember { mutableStateOf(currentValueInt.toString()) }
+    val scannerCode = remember(currentCode) { ScannerCheatCode.parse(currentCode) }
+    var valueText by remember { mutableStateOf((scannerCode?.value ?: 0).toString()) }
 
     return CheatFormDialog(
         title = stringResource(R.string.ingame_cheats_dialog_edit_title),
-        addressLabel = stringResource(R.string.ingame_cheats_dialog_address, addressPart),
+        addressLabel = scannerCode?.let { stringResource(R.string.ingame_cheats_dialog_address, it.address) },
         nameValue = nameValue,
         onNameChange = { nameValue = it },
         valueText = valueText,
         onValueTextChange = { valueText = it },
         confirmLabel = stringResource(R.string.ingame_cheats_dialog_edit_confirm),
         onConfirm = { name, value ->
-            val newCode = "$addressPart:${value.toString(16).uppercase().padStart(2, '0')}"
-            onSave(name, newCode)
+            onSave(name, scannerCode?.withValue(value) ?: currentCode)
         },
         onDismiss = onDismiss,
         deleteHandling = DeleteHandling(cheatName = currentName, onDelete = onDelete)
@@ -247,10 +244,28 @@ fun CheatEditDialog(
 
 private data class DeleteHandling(val cheatName: String, val onDelete: () -> Unit)
 
+/**
+ * The one code form this dialog can edit: `AAAAAA:VV`, as the memory search writes it. Codes from
+ * a cheat database or a server file span several lines and formats, so for those the dialog only
+ * renames and the code is saved back untouched.
+ */
+internal data class ScannerCheatCode(val address: String, val value: Int) {
+    fun withValue(newValue: Int): String = "$address:${newValue.toString(16).uppercase().padStart(2, '0')}"
+
+    companion object {
+        private val PATTERN = Regex("^([0-9A-Fa-f]{1,8}):([0-9A-Fa-f]{1,2})$")
+
+        fun parse(code: String): ScannerCheatCode? {
+            val match = PATTERN.matchEntire(code.trim()) ?: return null
+            return ScannerCheatCode(match.groupValues[1].uppercase(), match.groupValues[2].toInt(16))
+        }
+    }
+}
+
 @Composable
 private fun CheatFormDialog(
     title: String,
-    addressLabel: String,
+    addressLabel: String?,
     nameValue: TextFieldValue,
     onNameChange: (TextFieldValue) -> Unit,
     valueText: String,
@@ -261,6 +276,7 @@ private fun CheatFormDialog(
     deleteHandling: DeleteHandling?
 ): InputHandler {
     val theme = LocalArgosyTheme.current
+    val valueEditable = addressLabel != null
     val hasDelete = deleteHandling != null
     val deleteRow = if (hasDelete) 2 else -1
     val buttonRow = if (hasDelete) 3 else 2
@@ -275,7 +291,7 @@ private fun CheatFormDialog(
 
     val parsedValue = valueText.toIntOrNull()
     val isValueValid = parsedValue != null && parsedValue in VALUE_MIN..VALUE_MAX
-    val canConfirm = nameValue.text.isNotBlank() && isValueValid
+    val canConfirm = nameValue.text.isNotBlank() && (isValueValid || !valueEditable)
 
     val currentName by rememberUpdatedState(nameValue)
     val currentValueText by rememberUpdatedState(valueText)
@@ -296,8 +312,17 @@ private fun CheatFormDialog(
     val inputHandler = remember {
         object : InputHandler {
             private fun submit() {
-                val value = currentValueText.toIntOrNull() ?: return
+                val value = if (valueEditable) currentValueText.toIntOrNull() ?: return else 0
                 if (currentCanConfirm) currentOnConfirm(currentName.text.trim(), value)
+            }
+
+            private fun step(from: Int, delta: Int): Int {
+                val next = (from + delta).coerceIn(CHEAT_ROW_NAME, buttonRow)
+                return if (next == CHEAT_ROW_VALUE && !valueEditable) {
+                    (next + delta).coerceIn(CHEAT_ROW_NAME, buttonRow)
+                } else {
+                    next
+                }
             }
 
             private fun stepValue(delta: Int) {
@@ -307,13 +332,13 @@ private fun CheatFormDialog(
 
             override fun onUp(): InputResult {
                 if (showDeleteConfirm) return InputResult.HANDLED
-                focusRow = (focusRow - 1).coerceAtLeast(CHEAT_ROW_NAME)
+                focusRow = step(focusRow, -1)
                 return InputResult.HANDLED
             }
 
             override fun onDown(): InputResult {
                 if (showDeleteConfirm) return InputResult.HANDLED
-                focusRow = (focusRow + 1).coerceAtMost(buttonRow)
+                focusRow = step(focusRow, 1)
                 return InputResult.HANDLED
             }
 
@@ -341,7 +366,7 @@ private fun CheatFormDialog(
                         if (deleteConfirmFocus == 1) currentDelete?.onDelete?.invoke()
                         showDeleteConfirm = false
                     }
-                    focusRow == CHEAT_ROW_NAME -> focusRow = CHEAT_ROW_VALUE
+                    focusRow == CHEAT_ROW_NAME -> focusRow = step(focusRow, 1)
                     focusRow == CHEAT_ROW_VALUE -> focusRow = buttonRow
                     focusRow == deleteRow -> {
                         deleteConfirmFocus = 0
@@ -367,12 +392,14 @@ private fun CheatFormDialog(
 
     val fieldShape = RoundedCornerShape(Dimens.radiusMd)
     Modal(title = title, onDismiss = onDismiss) {
-        Text(
-            text = addressLabel,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.primary
-        )
-        Spacer(modifier = Modifier.height(Dimens.spacingMd))
+        if (addressLabel != null) {
+            Text(
+                text = addressLabel,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(Dimens.spacingMd))
+        }
         OutlinedTextField(
             value = nameValue,
             onValueChange = onNameChange,
@@ -388,50 +415,52 @@ private fun CheatFormDialog(
                 ),
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next)
         )
-        Spacer(modifier = Modifier.height(Dimens.spacingSm))
-        OutlinedTextField(
-            value = valueText,
-            onValueChange = onValueTextChange,
-            label = {
-                Text(
-                    stringResource(
-                        R.string.ingame_cheats_dialog_value_label,
-                        VALUE_MIN,
-                        VALUE_MAX
-                    )
-                )
-            },
-            singleLine = true,
-            shape = fieldShape,
-            modifier = Modifier
-                .fillMaxWidth()
-                .focusRequester(valueFocusRequester)
-                .then(
-                    if (focusRow == CHEAT_ROW_VALUE) Modifier.background(theme.focusAccent.copy(alpha = 0.15f), fieldShape)
-                    else Modifier
-                ),
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Number,
-                imeAction = ImeAction.Done
-            ),
-            keyboardActions = KeyboardActions(
-                onDone = {
-                    if (canConfirm && parsedValue != null) onConfirm(nameValue.text.trim(), parsedValue)
-                }
-            ),
-            isError = valueText.isNotEmpty() && !isValueValid,
-            supportingText = if (valueText.isNotEmpty() && !isValueValid) {
-                {
+        if (valueEditable) {
+            Spacer(modifier = Modifier.height(Dimens.spacingSm))
+            OutlinedTextField(
+                value = valueText,
+                onValueChange = onValueTextChange,
+                label = {
                     Text(
                         stringResource(
-                            R.string.ingame_cheats_dialog_value_error,
+                            R.string.ingame_cheats_dialog_value_label,
                             VALUE_MIN,
                             VALUE_MAX
                         )
                     )
-                }
-            } else null
-        )
+                },
+                singleLine = true,
+                shape = fieldShape,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(valueFocusRequester)
+                    .then(
+                        if (focusRow == CHEAT_ROW_VALUE) Modifier.background(theme.focusAccent.copy(alpha = 0.15f), fieldShape)
+                        else Modifier
+                    ),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Number,
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        if (canConfirm && parsedValue != null) onConfirm(nameValue.text.trim(), parsedValue)
+                    }
+                ),
+                isError = valueText.isNotEmpty() && !isValueValid,
+                supportingText = if (valueText.isNotEmpty() && !isValueValid) {
+                    {
+                        Text(
+                            stringResource(
+                                R.string.ingame_cheats_dialog_value_error,
+                                VALUE_MIN,
+                                VALUE_MAX
+                            )
+                        )
+                    }
+                } else null
+            )
+        }
         if (deleteHandling != null) {
             Spacer(modifier = Modifier.height(Dimens.spacingMd))
             DestructiveRow(
@@ -460,7 +489,10 @@ private fun CheatFormDialog(
                 tint = theme.focusAccent,
                 restLabelColor = theme.textPrimary,
                 focused = focusRow == buttonRow && buttonIndex == 1,
-                onClick = { if (canConfirm && parsedValue != null) onConfirm(nameValue.text.trim(), parsedValue) },
+                onClick = {
+                    val value = if (valueEditable) parsedValue else 0
+                    if (canConfirm && value != null) onConfirm(nameValue.text.trim(), value)
+                },
                 enabled = canConfirm
             )
         }

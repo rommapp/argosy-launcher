@@ -521,6 +521,16 @@ class SaveSyncOrchestrator @Inject constructor(
                 )
                 return@mapNotNull null
             }
+            if (holdsUntrackedLocalSave(entity, game)) {
+                if (entity.syncStatus != SaveSyncEntity.STATUS_CONFLICT) {
+                    saveSyncDao.upsert(entity.copy(syncStatus = SaveSyncEntity.STATUS_CONFLICT))
+                }
+                Logger.warn(
+                    TAG,
+                    "downloadPendingServerSaves: gameId=${entity.gameId} channel=${entity.channelName} has a save on disk with no sync record proving it older than the server's; leaving it as a conflict rather than overwriting"
+                )
+                return@mapNotNull null
+            }
             entity to game
         }
         if (actionable.isEmpty()) {
@@ -616,6 +626,17 @@ class SaveSyncOrchestrator @Inject constructor(
         if (result is SaveSyncResult.Error) {
             Logger.error(TAG, "syncSavesForNewDownload: failed to place head '${head.fileName}': ${result.message}")
         }
+    }
+
+    private suspend fun holdsUntrackedLocalSave(entity: SaveSyncEntity, game: GameEntity): Boolean {
+        if (entity.lastUploadedHash != null || entity.localContentHash != null) return false
+        if (activeSaveRepository.getActiveRow(entity.gameId) != null) return false
+        val path = when (val lookup = lookupSystemSave(game, entity.emulatorId)) {
+            is SaveLookup.Found -> lookup.path
+            SaveLookup.Absent -> return false
+            is SaveLookup.Unreadable -> return true
+        }
+        return saveCacheManager.get().probeLocalSave(path, entity.gameId, entity.emulatorId) !is SaveCacheManager.LocalSaveProbe.Absent
     }
 
     private suspend fun localMovedSinceUpload(

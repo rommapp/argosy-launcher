@@ -85,6 +85,9 @@ class SaveSyncOrchestratorTest {
         saveOwnershipTracker = mockk(relaxed = true)
         activeSaveRepository = mockk(relaxed = true)
         coEvery { activeSaveRepository.getActiveRow(any()) } returns null
+        coEvery {
+            savePathResolver.discoverSavePathChecked(any(), any(), any(), any(), any(), any(), any(), any())
+        } returns SaveLookup.Absent
 
         val prefs = UserPreferences(saveSyncEnabled = true)
         every { userPreferencesRepository.preferences } returns MutableStateFlow(prefs)
@@ -252,7 +255,62 @@ class SaveSyncOrchestratorTest {
         coVerify(exactly = 0) { mockApiClient.downloadSave(any(), any(), any(), any(), any()) }
     }
 
-    private fun activeAutosave(cachedAt: String) = com.nendo.argosy.data.local.entity.SaveCacheEntity(
+    @Test
+    fun `a save on disk with no sync record is left as a conflict rather than overwritten`() = runTest {
+        val untracked = makeSyncEntity(id = 1L, gameId = 1L)
+        coEvery { saveSyncDao.getPendingDownloads(any()) } returns listOf(untracked)
+        coEvery {
+            savePathResolver.discoverSavePathChecked(any(), any(), any(), any(), any(), any(), any(), any())
+        } returns SaveLookup.Found("/saves/card.ps2")
+        coEvery { saveCacheManager.probeLocalSave("/saves/card.ps2", 1L, "yuzu") } returns
+            SaveCacheManager.LocalSaveProbe.Present("newer-local-progress")
+
+        val result = orchestrator.downloadPendingServerSaves()
+
+        assertEquals(0, result)
+        coVerify(exactly = 0) { mockApiClient.downloadSave(any(), any(), any(), any(), any()) }
+        coVerify { saveSyncDao.upsert(match { it.id == 1L && it.syncStatus == SaveSyncEntity.STATUS_CONFLICT }) }
+    }
+
+    @Test
+    fun `an unreadable save location with no sync record is left as a conflict`() = runTest {
+        coEvery { saveSyncDao.getPendingDownloads(any()) } returns listOf(makeSyncEntity(id = 1L, gameId = 1L))
+        coEvery {
+            savePathResolver.discoverSavePathChecked(any(), any(), any(), any(), any(), any(), any(), any())
+        } returns SaveLookup.Unreadable("/saves")
+
+        assertEquals(0, orchestrator.downloadPendingServerSaves())
+        coVerify(exactly = 0) { mockApiClient.downloadSave(any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `a found save location holding nothing for this game is downloaded into`() = runTest {
+        coEvery { saveSyncDao.getPendingDownloads(any()) } returns listOf(makeSyncEntity(id = 1L, gameId = 1L))
+        coEvery {
+            savePathResolver.discoverSavePathChecked(any(), any(), any(), any(), any(), any(), any(), any())
+        } returns SaveLookup.Found("/saves/card.ps2")
+        coEvery { saveCacheManager.probeLocalSave("/saves/card.ps2", 1L, "yuzu") } returns
+            SaveCacheManager.LocalSaveProbe.Absent
+        coEvery { mockApiClient.downloadSave(any(), any(), any(), any(), any()) } returns SaveSyncResult.Success()
+
+        assertEquals(1, orchestrator.downloadPendingServerSaves())
+    }
+
+    @Test
+    fun `a save with a transferred hash is judged by its hash, not by presence on disk`() = runTest {
+        val synced = makeSyncEntity(id = 1L, gameId = 1L).copy(localContentHash = "local-form")
+        coEvery { saveSyncDao.getPendingDownloads(any()) } returns listOf(synced)
+        coEvery {
+            savePathResolver.discoverSavePathChecked(any(), any(), any(), any(), any(), any(), any(), any())
+        } returns SaveLookup.Found("/saves/card.ps2")
+        coEvery { saveCacheManager.probeLocalSave(any(), any(), any()) } returns
+            SaveCacheManager.LocalSaveProbe.Present("local-form")
+        coEvery { mockApiClient.downloadSave(any(), any(), any(), any(), any()) } returns SaveSyncResult.Success()
+
+        assertEquals(1, orchestrator.downloadPendingServerSaves())
+    }
+
+    private fun activeAutosave(cachedAt: String) =com.nendo.argosy.data.local.entity.SaveCacheEntity(
         id = 50L,
         gameId = 1L,
         emulatorId = "yuzu",

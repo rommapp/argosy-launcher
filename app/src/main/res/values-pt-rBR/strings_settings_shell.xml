@@ -289,7 +289,7 @@
     <string name="settings_shell_accounts_add_title">Adicionar uma conta?</string>
     <string name="settings_shell_accounts_switch_title">Trocar para %1$s?</string>
     <string name="settings_shell_accounts_fallback_name">conta</string>
-    <string name="settings_shell_accounts_exit_message">Ferche completamente qualquer jogo iniciado fora do Argosy primeiro. O Argosy não visualiza essas sessões e um jogo ainda em execução pode sobrescrever os salvamentos que estão sendo transferidos. Os salvamentos são arquivados e verificados antes de qualquer coisa ser removida.</string>
+    <string name="settings_shell_accounts_exit_message">Feche completamente qualquer jogo iniciado fora do Argosy primeiro. O Argosy não visualiza essas sessões e um jogo ainda em execução pode sobrescrever os salvamentos que estão sendo transferidos. Os salvamentos são arquivados e verificados antes de qualquer coisa ser removida.</string>
     <string name="settings_shell_accounts_add_confirm">Jogos fechados, continuar</string>
     <string name="settings_shell_accounts_switch_confirm">Jogos fechados, trocar</string>
     <string name="settings_shell_accounts_remove_title">Remover %1$s?</string>

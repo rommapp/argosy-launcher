@@ -128,7 +128,7 @@
     <string name="settings_main_displays_title">Telas</string>
     <!-- Second line of that row, listing what is inside. "LED" is the light strip on some
          handhelds. -->
-    <string name="settings_main_displays_subtitle">Abaixador, tela dupla, LED</string>
+    <string name="settings_main_displays_subtitle">Escurecedor, tela dupla, LED</string>
 
     <!-- Row opening the settings for the emulator Argosy ships with, as opposed to separate
          emulator apps. Adjective phrase. -->
@@ -1061,7 +1061,7 @@
     <!-- Title of the key entry dialog. -->
     <string name="settings_ra_web_api_key_modal_title">Chave Web API do RetroAchievements</string>
     <!-- Body of the key entry dialog. -->
-    <string name="settings_ra_web_api_key_modal_message">Copie a Chave Web API da seção Chaves do seu painel de controle do RetroAchievements e cole aqui. A Argosy verifica a chave uma vez antes de salvar.</string>
+    <string name="settings_ra_web_api_key_modal_message">Copie a Chave Web API da seção Chaves do seu painel de controle do RetroAchievements e cole aqui. O Argosy verifica a chave uma vez antes de salvar.</string>
     <!-- Label of the key text field. -->
     <string name="settings_ra_web_api_key_field_label">Chave Web API</string>
     <!-- Button. Verb: paste the clipboard text into the key field. -->
@@ -1274,7 +1274,7 @@
     <!-- ===== Permissions section ===== -->
 
     <!-- Paragraph at the top of the permissions list. "Argosy" is this app's name. -->
-    <string name="settings_permissions_intro">A Argosy requer certas permissões para fornecer funcionalidade completa. Toque em cada permissão para conceder acesso.</string>
+    <string name="settings_permissions_intro">O Argosy requer certas permissões para fornecer funcionalidade completa. Toque em cada permissão para conceder acesso.</string>
     <!-- Card title. Noun phrase naming the permission to read and write files. -->
     <string name="settings_permissions_storage_title">Acesso ao Armazenamento</string>
     <!-- Body of that card. "ROM" is the usual term for a game file dumped from a cartridge or
@@ -1307,11 +1307,11 @@
     <!-- Card title. Noun phrase naming Argosy's animated wallpaper, which Android asks the user to apply once. -->
     <string name="settings_permissions_live_wallpaper_title">Tela de Bloqueio Animada</string>
     <!-- Body of that card. -->
-    <string name="settings_permissions_live_wallpaper_description">Permitir que a Argosy aplique uma tela de bloqueio animada.</string>
+    <string name="settings_permissions_live_wallpaper_description">Permitir que o Argosy aplique uma tela de bloqueio animada.</string>
     <!-- Name of Argosy's live wallpaper in Android's wallpaper picker. -->
     <string name="settings_lock_screen_wallpaper_label">Biblioteca Argosy</string>
     <!-- Description of that wallpaper in Android's wallpaper picker, which Argosy opens on startup while Lock Screen Art is on. -->
-    <string name="settings_lock_screen_wallpaper_description">Permitir que a Argosy aplique uma tela de bloqueio animada.</string>
+    <string name="settings_lock_screen_wallpaper_description">Permitir que o Argosy aplique uma tela de bloqueio animada.</string>
     <!-- Line under the list. %1$d is how many permissions were given, %2$d how many there are. -->
     <string name="settings_permissions_status_footer">Status: %1$d/%2$d permissões concedidas</string>
 
@@ -1384,9 +1384,9 @@
     <string name="settings_about_systemize_title">Evitar Travamentos em Emuladores Pesados</string>
     <!-- Second line of that row. "Rooted" describes a device whose owner has full system access.
           "RAM" is the device's working memory. -->
-    <string name="settings_about_systemize_subtitle">A Argosy pode ser forçada a fechar quando um emulador exigente usa a maior parte da RAM. Isso torna a Argosy um app do sistema para que não seja mais encerrada. Precisa de root.</string>
+    <string name="settings_about_systemize_subtitle">O Argosy pode ser forçado a fechar quando um emulador exigente usa a maior parte da RAM. Isso torna o Argosy um app do sistema para que não seja mais encerrado. Precisa de root.</string>
     <!-- Row that closes and reopens the app. Verb. -->
-    <string name="settings_about_restart_title">Reiniciar a Argosy</string>
+    <string name="settings_about_restart_title">Reiniciar o Argosy</string>
     <!-- Second line of that row. -->
     <string name="settings_about_restart_subtitle">Fechar e reabrir o launcher</string>
 
@@ -3762,7 +3762,7 @@
     <string name="settings_accounts_delegate_blocker_media_download">Um filme ou episódio ainda está sendo baixado. Aguarde até concluir ou cancele-o.</string>
     <string name="settings_accounts_delegate_blocker_library_sync">A sincronização da biblioteca está sendo executada. Aguarde até concluir e tente novamente.</string>
     <string name="settings_accounts_delegate_blocker_netplay_session">Uma sessão de netplay está aberta. Saia dela e tente novamente.</string>
-    <string name="settings_accounts_delegate_blocker_exit_confirmation">Conflite se qualquer jogo iniciado fora do Argosy foi totalmente fechado.</string>
+    <string name="settings_accounts_delegate_blocker_exit_confirmation">Confirme que qualquer jogo iniciado fora do Argosy esteja totalmente fechado.</string>
     <string name="settings_accounts_delegate_blocker_unknown_account">Essa conta não está mais neste dispositivo.</string>
     <string name="settings_steam_delegate_invalid_app_id">Insira um ID de aplicativo Steam válido.</string>
     <string name="settings_jellyfin_delegate_config_error_empty">Digite um endereço de servidor</string>
@@ -4112,9 +4112,9 @@
         <item quantity="other">%1$d jogos</item>
     </plurals>
     <plurals name="settings_romm_config_certificate_subtitle_count">
-        <item quantity="one">%d certificado confiável pelo Argosy</item>
-        <item quantity="many">%d certificados confiáveis pelo Argosy</item>
-        <item quantity="other">%d certificados confiáveis pelo Argosy</item>
+        <item quantity="one">%d certificado confiado pelo Argosy</item>
+        <item quantity="many">%d certificados confiados pelo Argosy</item>
+        <item quantity="other">%d certificados confiados pelo Argosy</item>
     </plurals>
     <plurals name="settings_driver_picker_assets_count">
         <item quantity="one">%1$s &#183; %2$d ativo</item>

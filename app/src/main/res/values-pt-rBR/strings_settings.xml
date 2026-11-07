@@ -40,7 +40,7 @@
     <!-- Row title on the settings home. Noun phrase: apps Argosy installs and keeps updated. -->
     <string name="settings_main_installers_title">Instaladores Gerenciados</string>
     <!-- Subtitle of that row. -->
-    <string name="settings_main_installers_subtitle">Instale e atualize aplicativos a partir de releases do GitHub</string>
+    <string name="settings_main_installers_subtitle">Instale e atualize aplicativos a partir de versões do GitHub</string>
 
     <!-- ===== Managed Installers section ===== -->
 
@@ -72,7 +72,7 @@
     <!-- Row title under a user-added repository. Verb phrase: drop it from the list. -->
     <string name="settings_installers_remove_title">Remover Repositório</string>
     <!-- Subtitle of that row. Removing the entry leaves the installed app in place. -->
-    <string name="settings_installers_remove_subtitle">Parar de acompanhar releases deste repositório</string>
+    <string name="settings_installers_remove_subtitle">Parar de acompanhar as versões deste repositório</string>
     <!-- Title of the modal asking to confirm the removal. -->
     <string name="settings_installers_remove_confirm_title">Remover Repositório</string>
     <!-- Body of that modal. %1$s is the name shown on the row being removed. -->
@@ -82,7 +82,7 @@
     <!-- Title of the modal listing the packages in a release when there is more than one. -->
     <string name="settings_installers_variant_title">Escolha um Pacote</string>
     <!-- Subtitle of that modal. -->
-    <string name="settings_installers_variant_subtitle">Este release contém mais de um pacote Android</string>
+    <string name="settings_installers_variant_subtitle">Essa versão contém mais de um pacote Android</string>
     <!-- One row in that modal. %1$s is the package kind (ARM64, Universal), %2$s the file name. -->
     <string name="settings_installers_variant_entry" translatable="false">%1$s - %2$s</string>
     <!-- Package kind for a release asset that names no processor architecture. -->
@@ -94,15 +94,15 @@
     <!-- Short badge on a row with a newer release. Keep it to one word. -->
     <string name="settings_installers_badge_update">Atualizar</string>
     <!-- Progress line while the latest release is being looked up. -->
-    <string name="settings_installers_status_checking">Verificando release</string>
+    <string name="settings_installers_status_checking">Verificando se há uma versão</string>
     <!-- Progress line while the package downloads. %1$d is a percentage from 0 to 100. -->
     <string name="settings_installers_status_downloading">Baixando %1$d%%</string>
     <!-- Progress line while the system installer has the package. -->
     <string name="settings_installers_status_installing">Aguardando o instalador</string>
     <!-- Error line: the repository published no release. -->
-    <string name="settings_installers_error_no_release">Nenhum release encontrado</string>
+    <string name="settings_installers_error_no_release">Nenhuma versão encontrada</string>
     <!-- Error line: the release contains no Android package. -->
-    <string name="settings_installers_error_no_apk">Esse release não tem pacote Android</string>
+    <string name="settings_installers_error_no_apk">Essa versão não tem pacote Android</string>
     <!-- Error line: the download itself failed. -->
     <string name="settings_installers_error_download">Falha no download</string>
     <!-- Error line: GitHub refused further requests until its hourly allowance resets. -->
@@ -856,7 +856,7 @@
     <string name="settings_home_screen_installed_only_subtitle">Mostrar apenas jogos baixados na tela inicial</string>
     <!-- Row title. Noun phrase: games just added to the library that appear in the home
          screen\'s Recent row. -->
-    <string name="settings_home_screen_recent_new_games_title">Jogos Novos em Recent</string>
+    <string name="settings_home_screen_recent_new_games_title">Jogos novos em Recentes</string>
     <!-- Second line of that row. -->
     <string name="settings_home_screen_recent_new_games_subtitle">Jogos não jogados adicionados no último dia</string>
     <!-- Value of that row: no new games are added. -->
@@ -1861,7 +1861,7 @@
     <!-- Second line of that row. -->
     <string name="settings_storage_threshold_subtitle">Arquivos abaixo deste tamanho são baixados imediatamente</string>
     <!-- Row title. Verb phrase: unzip downloads in the device's own storage first. -->
-    <string name="settings_storage_internal_staging_title">Extraír no Armazenamento Interno</string>
+    <string name="settings_storage_internal_staging_title">Extrair no Armazenamento Interno</string>
     <!-- Second line of that row. "ROM folder" is the folder named by the Global ROM Path row. -->
     <string name="settings_storage_internal_staging_subtitle">Baixe e extraia jogos compactados internamente, depois mova o jogo concluído para a pasta de ROMs. Usa a pasta de ROMs como alternativa quando o espaço interno é insuficiente.</string>
 
@@ -2402,7 +2402,7 @@
     <string name="settings_steam_qr_title">Digitalize com o app móvel da Steam</string>
     <!-- Body under that heading. "Guard" is Steam's own name for its security feature and the
           quoted words are its own button; leave both as they are. -->
-    <string name="settings_steam_qr_message">Abra a Steam no seu celular, toque no ícone do guard e depois em \'Confirmar login\'.</string>
+    <string name="settings_steam_qr_message">Abra a Steam no seu celular, toque no ícone do Steam Guard e depois em \'Confirmar login\'.</string>
     <!-- Button that abandons the sign-in. Verb. -->
     <string name="settings_steam_qr_cancel">Cancelar</string>
     <!-- Spoken description of that square code. "QR" is the code format's name. -->
@@ -2780,7 +2780,7 @@
     <!-- Heading beside the square code used to pair another account. Verb phrase. -->
     <string name="settings_accounts_pairing_title">Escaneie para adicionar uma conta</string>
     <!-- Body under that heading. "Argosy" is this app's name. -->
-    <string name="settings_accounts_pairing_message">Entre no RomM no seu celular como o usuário que deseja adicionar, escaneie este código e depois approve este dispositivo. O Argosy entra como ele quando aprovado.</string>
+    <string name="settings_accounts_pairing_message">Entre no RomM no seu celular como o usuário que deseja adicionar, escaneie este código e depois aprove este dispositivo. O Argosy entra como ele quando aprovado.</string>
     <!-- Button that tries the pairing again after a failure. Verb phrase. -->
     <string name="settings_accounts_pairing_retry">Tentar Novamente</string>
     <!-- Button that abandons the pairing. Verb. -->
@@ -4050,7 +4050,7 @@
     <string name="settings_main_bios_summary_partial">%1$d de %2$d baixados</string>
     <string name="settings_drivers_summary_checking">Verificando drivers&#8230;</string>
     <string name="settings_drivers_summary_gpu_not_detected">GPU não detectada</string>
-    <string name="settings_drivers_summary_available">Divers Adreno para %1$s</string>
+    <string name="settings_drivers_summary_available">Drivers Adreno para %1$s</string>
     <plurals name="settings_play_time_platforms_totals_count">
         <item quantity="one">%d plataforma</item>
         <item quantity="many">%d plataformas</item>

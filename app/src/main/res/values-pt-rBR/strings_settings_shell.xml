@@ -176,7 +176,7 @@
     <string name="settings_shell_header_core_options">Opções de núcleos</string>
     <string name="settings_shell_header_bios">Arquivos BIOS</string>
     <string name="settings_shell_header_shader_stack">Pilha de shaders</string>
-    <string name="settings_shell_header_frame_picker">Separ frame</string>
+    <string name="settings_shell_header_frame_picker">SELECIONAR FRAME</string>
     <string name="settings_shell_header_permissions">Permissões</string>
     <string name="settings_shell_header_drivers">Drivers de GPU</string>
     <string name="settings_shell_header_about">Sobre</string>

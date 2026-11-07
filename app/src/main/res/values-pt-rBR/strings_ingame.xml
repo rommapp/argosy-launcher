@@ -400,7 +400,7 @@
     <string name="ingame_libretro_quickaction_screenshot_success">Captura de tela salva</string>
     <string name="ingame_libretro_quickaction_screenshot_failure">Falha na captura de tela</string>
     <string name="ingame_netplay_quality_row_peer_guest">Convidado: %1$s</string>
-    <string name="ingame_netplay_quality_row_peer_host">Host: %1$s</string>
+    <string name="ingame_netplay_quality_row_peer_host">Anfitrião: %1$s</string>
     <string name="ingame_netplay_quality_row_ping_known">%1$dms  %2$s</string>
     <string name="ingame_netplay_quality_row_ping_unknown">--  %1$s</string>
     <string name="ingame_netplay_section_title">Netplay</string>
@@ -408,7 +408,7 @@
     <string name="ingame_netplay_section_role_host">Hospedando uma sessão</string>
     <string name="ingame_netplay_section_role_guest">Conectado como convidado</string>
     <string name="ingame_netplay_section_peer_waiting_guest">Aguardando um amigo entrar</string>
-    <string name="ingame_netplay_section_peer_waiting_host">Conectando ao host</string>
+    <string name="ingame_netplay_section_peer_waiting_host">Conectando ao anfitrião</string>
     <string name="ingame_settings_controller_type_default_fallback">Padrão</string>
     <string name="ingame_netplay_hud_player1_header">P1</string>
     <string name="ingame_netplay_hud_player2_header">P2</string>
@@ -434,18 +434,18 @@
     <string name="ingame_touch_coleco_sys_start">Iniciar</string>
     <string name="ingame_touch_pico8_sys_select">Selecionar</string>
     <string name="ingame_touch_pico8_sys_start">Iniciar</string>
-    <string name="ingame_touch_c64_sys_select">Selcionar</string>
+    <string name="ingame_touch_c64_sys_select">Selecionar</string>
     <string name="ingame_touch_c64_sys_start">Iniciar</string>
     <string name="ingame_touch_lynx_shoulder_l">Opção 1</string>
     <string name="ingame_touch_lynx_shoulder_r">Opção 2</string>
     <string name="ingame_touch_lynx_sys_start">Pausar</string>
-    <string name="ingame_touch_snes_sys_select">Selcionar</string>
+    <string name="ingame_touch_snes_sys_select">Selecionar</string>
     <string name="ingame_touch_atari2600_sys_start">Redefinir</string>
     <string name="ingame_touch_atari5200_shoulder_l">Pausar</string>
     <string name="ingame_touch_atari5200_shoulder_r">Redefinir</string>
-    <string name="ingame_touch_atari5200_sys_select">Selcionar</string>
+    <string name="ingame_touch_atari5200_sys_select">Selecionar</string>
     <string name="ingame_touch_atari5200_sys_start">Iniciar</string>
-    <string name="ingame_touch_atari7800_sys_select">Selcionar</string>
+    <string name="ingame_touch_atari7800_sys_select">Selecionar</string>
     <string name="ingame_touch_atari7800_sys_start">Redefinir</string>
     <string name="ingame_touch_jaguar_sys_select">Pausar</string>
     <string name="ingame_touch_jaguar_sys_start">Opção</string>
@@ -458,7 +458,7 @@
     <string name="ingame_touch_scummvm_shoulder_r">Clique direito</string>
     <string name="ingame_touch_scummvm_sys_select">Teclado</string>
     <string name="ingame_touch_scummvm_sys_start">Menu</string>
-    <string name="ingame_touch_generic_sys_select">Selcionar</string>
+    <string name="ingame_touch_generic_sys_select">Selecionar</string>
     <string name="ingame_touch_generic_sys_start">Início</string>
     <string name="ingame_touch_nes_face_b" translatable="false">B</string>
     <string name="ingame_touch_nes_face_a" translatable="false">A</string>

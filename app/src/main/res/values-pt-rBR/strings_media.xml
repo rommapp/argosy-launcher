@@ -167,7 +167,7 @@
     <string name="media_player_overlay_subtitles_hint_close">Fechar</string>
     <string name="media_player_subtitle_row_off">Desativadas</string>
     <string name="media_player_subtitle_row_burn_in">Incorporar legendas em imagem</string>
-    <string name="media_player_subtitle_burn_in_on">Ativada para esta reprodução - o servidor reencode o vídeo</string>
+    <string name="media_player_subtitle_burn_in_on">Ativada para esta reprodução - o servidor reencoda o vídeo</string>
     <string name="media_player_subtitle_burn_in_off">Desativada - legendas em imagem não podem ser exibidas</string>
     <string name="media_player_subtitle_row_picture">Legenda em imagem</string>
     <string name="media_player_subtitle_picture_notice">%1$s é uma imagem, não texto. Só pode ser exibida com o servidor desenhando-a no vídeo.</string>

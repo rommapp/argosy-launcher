@@ -91,7 +91,7 @@
     <string name="save_channels_timeline_footer_channel">Canal</string>
     <string name="save_channels_timeline_notice_history_failed">Não foi possível carregar saves antigos</string>
 
-    <string name="save_channels_notice_forked">Forkado</string>
+    <string name="save_channels_notice_forked">Bifurcado</string>
     <string name="save_channels_notice_copied">Copiado</string>
     <string name="save_channels_notice_made_snapshot">Snapshot criado</string>
     <string name="save_channels_notice_created">Canal criado</string>

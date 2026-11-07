@@ -474,4 +474,7 @@
         <item quantity="other">%1$d arquivos copiados</item>
     </plurals>
     <string name="settings_shell_coremanagement_update_builds">%1$s: instalado %2$s -> disponível %3$s</string>
+    <string name="settings_shell_footer_local_only_location">Local</string>
+    <string name="settings_shell_header_storage_local_only">JOGOS SOMENTE LOCAIS</string>
+
 </resources>

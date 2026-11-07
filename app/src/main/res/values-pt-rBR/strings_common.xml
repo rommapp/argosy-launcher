@@ -30,15 +30,12 @@
     <string name="ui_save_channel_tab_states">States</string>
     <string name="ui_save_channel_states_empty">Nenhum slot de state disponível</string>
     <string name="ui_save_channel_states_heading_named">States em %1$s</string>
-    <string name="ui_save_channel_states_heading_default">States no slot padrão</string>
     <string name="ui_save_channel_slot_new">Novo slot</string>
     <string name="ui_save_channel_slot_legacy_tag">[Legado]</string>
     <string name="ui_save_channel_history_active_point">Ponto de restauração ativo</string>
     <string name="ui_save_channel_history_latest">Mais recente</string>
     <string name="ui_save_channel_history_tag_synced">[Sincronizado]</string>
     <string name="ui_save_channel_history_tag_local">[Local]</string>
-    <string name="ui_save_channel_active_default">Mais recente</string>
-    <string name="ui_save_channel_slot_autosave">Save automático</string>
     <string name="ui_save_channel_slot_archived">Arquivados</string>
     <string name="ui_save_channel_footer_migrate">Migrar</string>
     <string name="ui_save_channel_footer_delete_legacy_slot">Excluir</string>
@@ -709,7 +706,6 @@
 
     <string name="ui_sync_overlay_unknown_game">Jogo</string>
     <string name="ui_sync_overlay_slot_prefix">"Slot: "</string>
-    <string name="ui_sync_overlay_slot_default">Mais recente</string>
     <string name="ui_sync_overlay_blocked_grant">Conceder permissão</string>
     <string name="ui_sync_overlay_blocked_configure_path">Configurar caminho de save</string>
     <string name="ui_sync_overlay_blocked_disable">Desativar sincronização</string>
@@ -1026,7 +1022,6 @@
     <string name="media_library_viewmodel_refresh_label">Atualizando</string>
 
     <string name="gamedetail_action_buttons_play">JOGAR</string>
-    <string name="gamedetail_action_buttons_autosave">Save automático</string>
     <string name="gamedetail_action_buttons_download">BAIXAR</string>
     <string name="gamedetail_action_buttons_install">INSTALAR</string>
     <string name="gamedetail_action_buttons_queued">NA FILA...</string>
@@ -1094,4 +1089,10 @@
     <string name="ui_quick_settings_stats_krpm" translatable="false">%1$.1fk RPM</string>
     <string name="ui_quick_settings_stats_celsius" translatable="false">%1$d°C</string>
     <string name="argosyapp_splash_title" translatable="false">ARGOSY</string>
+    <string name="ui_quick_settings_orientation">Orientação</string>
+    <string name="ui_quick_settings_orientation_auto">Auto</string>
+    <string name="ui_quick_settings_orientation_landscape">Paisagem</string>
+    <string name="ui_quick_settings_orientation_portrait">Retrato</string>
+    <string name="ui_volume_meter_unknown_location">%1$s dos jogos estão em um local desconhecido</string>
+
 </resources>

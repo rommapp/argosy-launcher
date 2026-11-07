@@ -1899,13 +1899,7 @@
 
     <!-- Row title. Games whose file was copied to the device by hand rather than downloaded
          through the app. "RomM" is a service name, never translated. -->
-    <string name="settings_storage_games_not_from_romm_title">Não vindos do RomM</string>
     <!-- Second line of that row. %1$d is the number of such games. -->
-    <plurals name="settings_storage_games_not_from_romm_subtitle">
-        <item quantity="one">%1$d arquivo de jogo foi adicionado manualmente e é mantido numa redefinição total</item>
-        <item quantity="many">%1$d arquivos de jogo foram adicionados manualmente e são mantidos numa redefinição total</item>
-        <item quantity="other">%1$d arquivos de jogo foram adicionados manualmente e são mantidos numa redefinição total</item>
-    </plurals>
 
     <!-- Total at the top, counting the games on the device. Adjective describing them. -->
     <plurals name="settings_storage_games_totals_count">
@@ -4194,4 +4188,27 @@
     <string name="settings_root_script_step_open_retroid">Abrir Configurações &gt; Avançado &gt; Executar script como root</string>
     <string name="settings_root_script_step_open_ayn">Abrir Configurações &gt; Configurações avançadas &gt; Executar script como root</string>
     <string name="settings_root_script_step_open_ayaneo">Abrir Configurações &gt; Assistente de Otimização &gt; Script de root</string>
+    <string name="settings_interface_screen_orientation_auto">Auto</string>
+    <string name="settings_interface_screen_orientation_landscape">Paisagem</string>
+    <string name="settings_interface_screen_orientation_portrait">Retrato</string>
+    <string name="settings_interface_screen_orientation_subtitle">Mantém o Argosy e os jogos embutidos em uma só orientação, independentemente do bloqueio de rotação do dispositivo</string>
+    <string name="settings_interface_screen_orientation_title">Orientação da tela</string>
+    <string name="settings_storage_game_source_local_only">Somente local</string>
+    <string name="settings_storage_games_local_only_title">Somente local</string>
+    <string name="settings_storage_local_only_empty_message">Jogos neste dispositivo que o RomM não possui aparecem aqui com seu tamanho e local.</string>
+    <string name="settings_storage_local_only_tab_all">Todos</string>
+    <string name="settings_storage_local_only_tab_empty_message">Nenhum jogo somente local está armazenado aqui.</string>
+    <string name="settings_storage_local_only_tab_internal">Interno</string>
+    <string name="settings_storage_local_only_tab_sd_card">Cartão SD</string>
+    <string name="settings_storage_local_only_tab_unknown">Desconhecido</string>
+    <string name="settings_storage_location_internal">Interno</string>
+    <string name="settings_storage_location_mixed">Interno + cartão SD</string>
+    <string name="settings_storage_location_removable">Cartão SD</string>
+    <string name="settings_storage_location_unknown">Local desconhecido</string>
+    <plurals name="settings_storage_games_local_only_subtitle">
+        <item quantity="one">%1$d jogo neste dispositivo que o RomM não possui</item>
+        <item quantity="other">%1$d jogos neste dispositivo que o RomM não possui</item>
+        <item quantity="many">%1$d jogos neste dispositivo que o RomM não possui</item>
+    </plurals>
+
 </resources>

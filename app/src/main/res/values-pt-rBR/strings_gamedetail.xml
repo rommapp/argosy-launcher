@@ -192,7 +192,7 @@
     <string name="gamedetail_achievement_list_subtitle">Conquistas</string>
     <string name="gamedetail_achievement_list_progress">%1$d/%2$d (%3$d%%)</string>
     <string name="gamedetail_achievement_list_unlocked_heading">DESBLOQUEADAS (%1$d)</string>
-    <string name="gamedetail_achievement_list_locked_heading">TRAVADAS (%1$d)</string>
+    <string name="gamedetail_achievement_list_locked_heading">BLOQUEADAS (%1$d)</string>
     <string name="gamedetail_achievement_list_tier_hardcore">Hardcore</string>
     <string name="gamedetail_achievement_list_tier_casual">Casual</string>
     <plurals name="gamedetail_achievement_list_points">
@@ -233,7 +233,7 @@
     <string name="gamedetail_more_options_manage_saves">Gerenciar saves em cache</string>
     <string name="gamedetail_more_options_ratings_status">Avaliações &amp; Status</string>
     <string name="gamedetail_more_options_change_launcher">Alterar launcher</string>
-    <string name="gamedetail_more_options_speedrun_splits">Splits de Speedrun</string>
+    <string name="gamedetail_more_options_speedrun_splits">Splits de speedrun</string>
     <string name="gamedetail_more_options_title_id">ID do título</string>
     <string name="gamedetail_more_options_title_id_missing">Não detectado</string>
     <string name="gamedetail_more_options_select_disc">Selecionar disco</string>
@@ -560,7 +560,7 @@
          renderer's name. -->
     <string name="gamedetail_per_game_backend_inherit">Herdar (%1$s)</string>
     <!-- Row label in per-game settings. Noun phrase: what the game's display should target. -->
-    <string name="gamedetail_per_game_display_target_label">Alvo de exibição</string>
+    <string name="gamedetail_per_game_display_target_label">Destino da tela</string>
     <!-- Value beside that row when the game follows the platform's choice. %1$s is that choice. -->
     <string name="gamedetail_per_game_display_target_inherit">Herdar (%1$s)</string>
     <!-- Row label in per-game settings for the file extension to use when launching. Noun phrase. -->
@@ -598,7 +598,7 @@
          the value. -->
     <string name="gamedetail_per_game_footer_select">Selecionar</string>
     <!-- Value beside that row when the game follows the platform's choice. %1$s is that choice. -->
-    <string name="gamedetail_per_game_gpu_driver_inherit">Herdado (%1$s)</string>
+    <string name="gamedetail_per_game_gpu_driver_inherit">Herdar (%1$s)</string>
     <!-- Entry in the GPU Driver list. %1$s is a downloaded driver package file name, never
          translated. Verb. -->
     <string name="gamedetail_per_game_gpu_driver_install">Instalar %1$s</string>
@@ -615,10 +615,10 @@
     <string name="gamedetail_per_game_gpu_driver_system">Driver do Sistema</string>
     <!-- Value when the chosen custom driver is no longer installed, so the device's own driver
          runs instead. -->
-    <string name="gamedetail_per_game_gpu_driver_missing">Driver Ausente (Usando Driver do Sistema)</string>
+    <string name="gamedetail_per_game_gpu_driver_missing">Driver ausente (sistema em uso)</string>
     <!-- Shown in place of the value when the row cannot be changed. %1$s is the emulator core's
          name, never translated. -->
-    <string name="gamedetail_per_game_gpu_driver_reason_core">Não suportado por %1$s</string>
+    <string name="gamedetail_per_game_gpu_driver_reason_core">Não compatível com %1$s</string>
     <!-- Shown in place of the value for a core that always runs on the device's own Vulkan
          driver. %1$s is the emulator core's name, never translated. -->
     <string name="gamedetail_per_game_gpu_driver_reason_core_system_only">%1$s usa o driver do sistema</string>
@@ -626,9 +626,9 @@
     <string name="gamedetail_per_game_gpu_driver_reason_core_unknown">este núcleo</string>
     <!-- Shown in place of the value while the game's renderer is not Vulkan. "Backend" is the
          renderer setting in the built-in emulator video settings. -->
-    <string name="gamedetail_per_game_gpu_driver_reason_backend">Válido quando o Backend é Vulkan</string>
+    <string name="gamedetail_per_game_gpu_driver_reason_backend">Aplica-se quando o Backend é Vulkan</string>
     <!-- Shown in place of the value on a device that cannot load custom drivers. -->
-    <string name="gamedetail_per_game_gpu_driver_reason_device">Drivers personalizados requerem GPU Adreno</string>
+    <string name="gamedetail_per_game_gpu_driver_reason_device">Drivers personalizados precisam de uma GPU Adreno</string>
     <!-- Tag at the right of a row whose value comes from the platform rather than this game.
          Adjective describing the value. -->
     <string name="gamedetail_per_game_inherited_tag">Herdado</string>
@@ -702,7 +702,7 @@
     <string name="gamedetail_play_options_new_casual">Casual</string>
     <!-- Second line under that row when the emulator can also write save states. "Save states" are
          snapshots of a running game; "cheats" are codes that alter it. -->
-    <string name="gamedetail_play_options_new_casual_subtext_states">Estados de salvamento e trapaças disponíveis</string>
+    <string name="gamedetail_play_options_new_casual_subtext_states">Estados de save e trapaças disponíveis</string>
     <!-- Second line under that row when the emulator cannot write save states. -->
     <string name="gamedetail_play_options_new_casual_subtext_cheats">Trapaças disponíveis</string>
     <!-- Row that starts a fresh game under the strict RetroAchievements rules. Noun naming that
@@ -710,7 +710,7 @@
     <string name="gamedetail_play_options_new_hardcore">Hardcore</string>
     <!-- Second line under that row, listing what strict mode gives up. "Save states" are snapshots
          of a running game. -->
-    <string name="gamedetail_play_options_new_hardcore_subtext_online">Somente online, sem estados de salvamento ou trapaças</string>
+    <string name="gamedetail_play_options_new_hardcore_subtext_online">Somente online, sem estados de save ou trapaças</string>
     <!-- Second line under that row when the device is offline, so strict mode cannot start. Verb
          phrase describing what is missing. -->
     <string name="gamedetail_play_options_new_hardcore_subtext_offline">Requer conexão com a internet</string>
@@ -757,7 +757,7 @@
     <string name="gamedetail_speedrun_segments_title">%1$s - Segmentos</string>
     <!-- Heading of the splits modal at its top level. Noun phrase: the timed sections a speedrunner
          divides a run into. -->
-    <string name="gamedetail_speedrun_title">Divisões de Speedrun</string>
+    <string name="gamedetail_speedrun_title">Splits de speedrun</string>
     <!-- Footer hint while a category's sections are open. Verb phrase: creates another section. -->
     <string name="gamedetail_speedrun_footer_add_segment">Adicionar Segmento</string>
     <!-- Footer hint while a category's sections are open. Verb: removes the section under the

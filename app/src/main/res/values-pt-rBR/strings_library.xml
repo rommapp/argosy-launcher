@@ -104,7 +104,7 @@
     <string name="library_quickmenu_add_to_grid">Adicionar à grade</string>
     <string name="library_quickmenu_active_variant">Variante ativa</string>
     <string name="library_quickmenu_refresh_data">Atualizar dados</string>
-    <string name="library_quickmenu_resync_platform">Re-sincronizar plataforma</string>
+    <string name="library_quickmenu_resync_platform">Ressincronizar plataforma</string>
     <string name="library_quickmenu_uninstall">Desinstalar</string>
     <string name="library_quickmenu_delete_download">Excluir download</string>
     <string name="library_quickmenu_show">Mostrar</string>

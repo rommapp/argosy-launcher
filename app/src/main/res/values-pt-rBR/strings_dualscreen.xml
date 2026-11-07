@@ -103,7 +103,7 @@
     <string name="dual_companion_panel_achievements">Conquistas</string>
     <!-- Heading over the earned half of that panel's list. Adjective describing the achievements
          below it. %1$d is how many. Rendered in caps in English. -->
-    <string name="dual_companion_achievements_unlocked_heading">DESCOTAS (%1$d)</string>
+    <string name="dual_companion_achievements_unlocked_heading">DESBLOQUEADAS (%1$d)</string>
     <!-- Heading over the unearned half of that panel's list. Adjective describing the
          achievements below it. %1$d is how many. Rendered in caps in English. -->
     <string name="dual_companion_achievements_locked_heading">BLOQUEADAS (%1$d)</string>
@@ -215,7 +215,7 @@
 
     <!-- Footer hint on the page describing one film or series. Noun phrase: the shoulder buttons
          move to the title before or after this one. -->
-    <string name="dual_home_hint_media_info_title">Título Anterior/Próximo</string>
+    <string name="dual_home_hint_media_info_title">Título anterior/próximo</string>
     <!-- Footer hint on the page describing one series. Noun: left and right change which season's
          episodes are listed. -->
     <string name="dual_home_hint_media_info_season">Temporada</string>
@@ -239,7 +239,7 @@
     <string name="dual_home_hint_app_bar_select">Selecionar</string>
     <!-- Footer hint while the cursor is on the app bar. Verb phrase: launches the app on the other
          screen instead of this one. -->
-    <string name="dual_home_hint_app_bar_open_top">Abrir barra superior</string>
+    <string name="dual_home_hint_app_bar_open_top">Abrir na tela superior</string>
     <!-- Footer hint while the cursor is on the app bar. Noun phrase: opens the sheet listing every
          installed app. -->
     <string name="dual_home_hint_app_bar_all_apps">Apps</string>
@@ -290,7 +290,7 @@
 
     <!-- Footer hint while the showcase describes one open film or series. Noun phrase: the
          shoulder buttons move to the title before or after this one. -->
-    <string name="dual_detail_hint_media_info_title">Título Anterior/Próximo</string>
+    <string name="dual_detail_hint_media_info_title">Título anterior/próximo</string>
     <!-- Footer hint while the showcase describes one open series. Noun: left and right change
          which season's episodes are listed. -->
     <string name="dual_detail_hint_media_info_season">Temporada</string>
@@ -384,8 +384,8 @@
          value, not the number zero. -->
     <string name="dual_showcase_stat_status_none">Nenhum</string>
     <string name="dual_showcase_stat_main_story_label">História Principal</string>
-    <string name="dual_showcase_stat_main_extras_label">Principal + Extras</string>
-    <string name="dual_showcase_stat_completionist_label">Completionista</string>
+    <string name="dual_showcase_stat_main_extras_label">Principal + extras</string>
+    <string name="dual_showcase_stat_completionist_label">Complecionista</string>
     <string name="dual_detail_estimated_time_label">Tempo Estimado</string>
 
     <!-- Last-played value for a game started earlier the same day. Adverb. -->
@@ -478,17 +478,17 @@
     <string name="dual_library_menu_details">Detalhes</string>
     <!-- Row in that menu. Verb phrase: opens the list of collections so the game can be put in
          one. -->
-    <string name="dual_library_menu_add_to_collection">Adicionar à Coleção</string>
+    <string name="dual_library_menu_add_to_collection">Adicionar à coleção</string>
     <!-- Row in that menu. Verb phrase: gives the game a tile on the curated home grid. -->
     <string name="dual_library_menu_add_to_grid">Adicionar à Grade</string>
     <!-- Row in that menu. Verb phrase: fetches this one game's metadata from the server again. -->
     <string name="dual_library_menu_refresh">Atualizar Dados</string>
     <!-- Row in that menu. Verb phrase: fetches every game of this platform from the server
          again. -->
-    <string name="dual_library_menu_resync_platform">Ressincronizar Plataforma</string>
+    <string name="dual_library_menu_resync_platform">Ressincronizar plataforma</string>
     <!-- Row in that menu. Verb phrase: erases the copy held on this device, keeping the library
          entry. -->
-    <string name="dual_library_menu_delete">Excluir Download</string>
+    <string name="dual_library_menu_delete">Excluir download</string>
     <!-- Row in that menu, for an installed Android app. Verb: removes the app from the device. -->
     <string name="dual_library_menu_uninstall">Desinstalar</string>
     <!-- Row in that menu. Verb: keeps the game in the library but stops showing it. -->
@@ -510,7 +510,7 @@
     <!-- Row in that menu. Verb: fetches the title from the media server onto this device. -->
     <string name="dual_media_menu_download">Baixar</string>
     <!-- Row in that menu. Verb phrase: erases the copy held on this device. -->
-    <string name="dual_media_menu_remove_downloads">Remover Download</string>
+    <string name="dual_media_menu_remove_downloads">Remover downloads</string>
     <!-- Row in that menu. Verb phrase: fetches this media library from the server again. -->
     <string name="dual_media_menu_refresh">Atualizar Biblioteca</string>
 
@@ -570,7 +570,7 @@
     <string name="dual_library_grid_empty_title">Nenhum jogo ainda</string>
     <!-- Body under that heading when no filter is on. "Rom Manager" is the name of the server
          product and stays untranslated; "Settings" names Argosy's own settings screen. -->
-    <string name="dual_library_grid_empty_body">Sincronize sua biblioteca no Rom Manager nas Configurações</string>
+    <string name="dual_library_grid_empty_body">Sincronize sua biblioteca do Rom Manager nas configurações</string>
     <!-- Body under that heading when filters emptied the grid. %1$s names the filters: one
          filter's own value such as "Playable" or a search term in quotes, or a count such as
          "3 filters", assembled elsewhere and not translated here. -->
@@ -615,8 +615,8 @@
     <string name="dual_tile_feature_ra">RetroAchievements</string>
     <string name="dual_tile_feature_random_empty">Nenhum jogo corresponde aos filtros</string>
     <string name="dual_tile_feature_continue_empty">Nada jogado ainda</string>
-    <string name="dual_tile_feature_ra_signed_out">Faça login para ver suas desbloqueadas</string>
-    <string name="dual_tile_feature_ra_no_unlocks">Nenhuma desbloqueada ainda</string>
+    <string name="dual_tile_feature_ra_signed_out">Faça login para ver seus desbloqueios</string>
+    <string name="dual_tile_feature_ra_no_unlocks">Nenhum desbloqueio ainda</string>
     <!-- Heading of the row showing the most recently earned achievement on the
          RetroAchievements tile. Adjective, short for "latest achievement". -->
     <string name="dual_tile_ra_latest_heading">Mais recente</string>
@@ -627,7 +627,7 @@
          earned. RetroAchievements calls this state mastery. -->
     <string name="dual_tile_ra_mastered">Mestria</string>
     <!-- Stands in for the description of an achievement that has not been earned. -->
-    <string name="dual_tile_ra_locked">Não desbloqueada ainda</string>
+    <string name="dual_tile_ra_locked">Ainda não desbloqueado</string>
     <!-- Score of an achievement or of an account on the RetroAchievements tile. -->
     <plurals name="dual_tile_ra_points">
         <item quantity="one">%d ponto</item>
@@ -637,9 +637,9 @@
     <!-- How many achievements have been earned. "Unlock" is a noun here, one earned
          achievement. -->
     <plurals name="dual_tile_ra_unlocks">
-        <item quantity="one">%d desbloqueada</item>
-        <item quantity="many">%d desbloqueadas</item>
-        <item quantity="other">%d desbloqueadas</item>
+        <item quantity="one">%d desbloqueio</item>
+        <item quantity="many">%d desbloqueios</item>
+        <item quantity="other">%d desbloqueios</item>
     </plurals>
     <!-- Line under an achievement's title. %1$s is its score, %2$s how long ago it was earned. -->
     <string name="dual_tile_ra_unlock_meta">%1$s, %2$s</string>
@@ -671,7 +671,7 @@
     <!-- Title of that prompt, asking whether the game should get a tile on the curated grid. -->
     <string name="dual_home_tile_add_title">Adicionar à grade inicial?</string>
     <!-- Body of that prompt. %1$s is the game's title. -->
-    <string name="dual_home_tile_add_message">%1$s terminó de baixar.</string>
+    <string name="dual_home_tile_add_message">%1$s terminou de baixar.</string>
     <!-- Accepting button on that prompt. Verb: puts the tile on the grid. -->
     <string name="dual_home_tile_add_confirm">Adicionar</string>
     <!-- Declining button on that prompt. Adverb phrase: leaves the grid alone this time. -->
@@ -700,12 +700,12 @@
     <!-- Tab listing what players wrote about the game. Noun, plural, drawn in caps in English. -->
     <string name="dual_detail_tab_reviews">AVALIAÇÕES</string>
     <!-- Shown in the reviews tab before any reviews have loaded or when the game has none. -->
-    <string name="dual_detail_reviews_empty">Nenhuma avaliação ainda</string>
+    <string name="dual_detail_reviews_empty">Sem avaliações ainda</string>
     <!-- Row at the top of the reviews tab when this user has not reviewed the game. Selecting it
          opens the editor on the other screen. Verb phrase. -->
     <string name="dual_detail_reviews_write_row">Escrever uma avaliação</string>
     <!-- Row of the options tab. Verb phrase: opens the review editor on the other screen. -->
-    <string name="dual_detail_option_write_review">Escrever Avaliação</string>
+    <string name="dual_detail_option_write_review">Escrever uma avaliação</string>
     <!-- Tab listing what can be done with the game. Noun, plural, drawn in caps in English. -->
     <string name="dual_detail_tab_options">OPÇÕES</string>
 
@@ -841,12 +841,12 @@
     <!-- Row of the options tab. Noun phrase: the folder the game's saves are written to. -->
     <string name="dual_detail_option_save_path">Caminho dos Saves</string>
     <!-- Row of the options tab. Noun phrase: which screen the game opens on. -->
-    <string name="dual_detail_option_display_target">Destino da Exibição</string>
+    <string name="dual_detail_option_display_target">Destino da tela</string>
     <!-- Row of the options tab. Noun phrase: the emulated memory card this game saves onto. -->
     <string name="dual_detail_option_memory_card">Cartão de Memória</string>
     <!-- Row of the options tab. Verb phrase: picks between different releases of the same game,
          for example a translation or a romhack. -->
-    <string name="dual_detail_option_select_variant">Selecionar Variante</string>
+    <string name="dual_detail_option_select_variant">Selecionar variante</string>
     <!-- Row of the options tab. Verb phrase: picks which disc of a multi-disc game to start.
          "Disc" is one physical disc of the original release. -->
     <string name="dual_detail_option_select_disc">Selecionar Disco</string>
@@ -899,7 +899,7 @@
     <string name="dual_detail_steam_install_heading">LOCAL DE INSTALAÇÃO</string>
     <!-- Row in that modal. Verb phrase: the game is already installed by another app and Argosy
          should only record that. -->
-    <string name="dual_detail_steam_install_external">Marcar como Instalado</string>
+    <string name="dual_detail_steam_install_external">Marcar como instalado</string>
     <!-- Second line under that row, naming the app that holds the game. %1$s is that app's name;
          leave it untranslated. -->
     <string name="dual_detail_steam_install_managed_by">Gerenciado por %1$s</string>
@@ -914,13 +914,13 @@
          in English. -->
     <string name="dual_detail_emulator_picker_heading">SELECIONAR EMULADOR</string>
     <!-- Row in that modal. Verb phrase: fall back to whatever the platform is set to. -->
-    <string name="dual_detail_emulator_picker_default">Usar padrão da plataforma</string>
+    <string name="dual_detail_emulator_picker_default">Usar o padrão da plataforma</string>
 
     <!-- Heading of the modal picking which libretro core runs the game. Verb phrase, drawn in caps
          in English. "Core" is the emulation engine. -->
     <string name="dual_detail_core_picker_heading">SELECIONAR NÚCLEO</string>
     <!-- Row in that modal. Verb phrase: fall back to whatever the platform is set to. -->
-    <string name="dual_detail_core_picker_default">Usar padrão da plataforma</string>
+    <string name="dual_detail_core_picker_default">Usar o padrão da plataforma</string>
 
     <!-- Heading of the modal showing where the game's saves are written. Noun phrase, drawn in
          caps in English. -->
@@ -970,7 +970,7 @@
 
     <!-- Spoken description of the picture of a save state on the showcase display, used when the
          state has no name. Noun phrase. -->
-    <string name="dual_detail_state_preview_description">Visualização do estado</string>
+    <string name="dual_detail_state_preview_description">Prévia do estado</string>
     <!-- Spoken description of the cover art drawn when a save state has no picture of its own.
          Noun phrase. -->
     <string name="dual_detail_state_preview_cover_fallback">Arte de capa substituta</string>

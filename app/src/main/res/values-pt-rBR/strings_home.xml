@@ -85,7 +85,7 @@
     <string name="home_quick_actions_add_to_collection">Adicionar à coleção</string>
     <string name="home_quick_actions_active_variant">Variante ativa</string>
     <string name="home_quick_actions_refresh_data">Atualizar dados</string>
-    <string name="home_quick_actions_resync_platform">Re-sincronizar plataforma</string>
+    <string name="home_quick_actions_resync_platform">Ressincronizar plataforma</string>
     <string name="home_quick_actions_delete_download">Excluir download</string>
     <string name="home_quick_actions_remove_from_home">Remover do início</string>
     <string name="home_quick_actions_remove_from_library">Remover da biblioteca</string>

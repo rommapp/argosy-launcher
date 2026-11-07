@@ -199,15 +199,15 @@
     <!-- Second line of that row when the library has never been fetched. -->
     <string name="settings_main_romm_subtitle_never_synced">Nunca sincronizado</string>
     <!-- Second line of the Steam row with no account signed in. -->
-    <string name="settings_main_steam_subtitle_signed_out">Não logado</string>
+    <string name="settings_main_steam_subtitle_signed_out">Não conectado</string>
     <!-- Second line of the Jellyfin row when no media server address has been entered. -->
     <string name="settings_main_jellyfin_subtitle_unconfigured">Servidor não configurado</string>
     <!-- Second line of that row. %1$s is the media server account name. -->
-    <string name="settings_main_jellyfin_subtitle_signed_in_as">Logado como %1$s</string>
+    <string name="settings_main_jellyfin_subtitle_signed_in_as">Conectado como %1$s</string>
     <!-- Second line of that row when signed in but the account name is unknown. -->
     <string name="settings_main_jellyfin_subtitle_signed_in">Logado</string>
     <!-- Second line of that row with no account signed in. -->
-    <string name="settings_main_jellyfin_subtitle_signed_out">Não logado</string>
+    <string name="settings_main_jellyfin_subtitle_signed_out">Não conectado</string>
     <!-- Row opening the friends and presence settings. Adjective used as a noun. -->
     <string name="settings_main_social_title">Social</string>
     <!-- Second line of that row. %1$s is the name the user goes by. "Linked" means the Argosy
@@ -365,9 +365,9 @@
     <!-- Second line of that row. -->
     <string name="settings_interface_monthly_recap_subtitle">No início de cada mês, mostrar um resumo do mês anterior na Tela Inicial</string>
     <!-- Row opening the settings for handhelds with a clip-on grip. Noun phrase. -->
-    <string name="settings_interface_controller_grip_title">Grip do Controle</string>
+    <string name="settings_interface_controller_grip_title">Empunhadura do controle</string>
     <!-- Second line of that row. -->
-    <string name="settings_interface_controller_grip_subtitle">Mover a UI para cima, fora da área coberta pelo grip</string>
+    <string name="settings_interface_controller_grip_subtitle">Mover a interface para cima, fora da área coberta pela empunhadura</string>
     <!-- Row opening the settings for the launcher\'s first screen. Noun phrase. -->
     <string name="settings_interface_home_screen_title">Tela Inicial</string>
     <!-- Second line of that row, listing what is inside. -->
@@ -763,10 +763,10 @@
          "automatic". -->
     <string name="settings_grip_mode_auto">Auto</string>
     <!-- Second line of that row while it is set to never shift. -->
-    <string name="settings_grip_mode_subtitle_off">Nunca desviar a UI para cima</string>
+    <string name="settings_grip_mode_subtitle_off">Nunca deslocar a interface para cima</string>
     <!-- Second line of that row while it is set to always shift. "Portrait" means the screen held
          upright, taller than it is wide. -->
-    <string name="settings_grip_mode_subtitle_on">Sempre desviar a UI para cima em modo retrato</string>
+    <string name="settings_grip_mode_subtitle_on">Sempre deslocar a interface para cima no modo retrato</string>
     <!-- Second line of that row while it shifts only for chosen controllers. -->
     <string name="settings_grip_mode_subtitle_auto">Desviar a UI para cima automaticamente quando um controlador escolhido estiver conectado</string>
 
@@ -981,10 +981,10 @@
     <!-- Row title. Verb phrase: keep copies of the in-game pictures on this device. -->
     <string name="settings_sync_cache_screenshots_title">Cache de Capturas de Tela</string>
     <!-- Second line of that row. "Boxart" is the cover picture. -->
-    <string name="settings_sync_cache_screenshots_subtitle">Capa e fundos são sempre salvos em cache</string>
+    <string name="settings_sync_cache_screenshots_subtitle">Capas e planos de fundo são sempre salvos em cache</string>
     <!-- Row title. Verb phrase: keep the extra scans needed to draw a game box in three
           dimensions. -->
-    <string name="settings_sync_cache_box_art_title">Cache de Arte da Caixa 3D</string>
+    <string name="settings_sync_cache_box_art_title">Cache de capas 3D</string>
     <!-- Second line of that row. "Spine" is the narrow edge of a game box. -->
     <string name="settings_sync_cache_box_art_subtitle">Baixar verso e lombada para exibir caixas 3D</string>
     <!-- Row title. Verb phrase: send pictures taken in game up to the server. -->
@@ -1581,7 +1581,7 @@
     <string name="settings_music_volume_title">Volume</string>
 
     <!-- Row opening the list of tracks. Noun phrase. -->
-    <string name="settings_music_playlist_title">Lista de Músicas</string>
+    <string name="settings_music_playlist_title">Playlist de músicas</string>
     <!-- Second line of that row when the list is empty. -->
     <string name="settings_music_playlist_empty">Nenhuma faixa</string>
     <!-- Second line of that row, counting the tracks in the list. -->
@@ -1600,7 +1600,7 @@
     <!-- Second line of that row. -->
     <string name="settings_music_browse_local_subtitle">Adicionar arquivos ou pastas à lista</string>
     <!-- Row naming the folder the music sits in. Noun phrase. -->
-    <string name="settings_music_location_title">Local da Música</string>
+    <string name="settings_music_location_title">Local da música</string>
 
     <!-- Row title. Verb used as a noun: play the tracks in no fixed order. -->
     <string name="settings_music_shuffle_title">Aleatório</string>
@@ -1820,7 +1820,7 @@
     <!-- Second line of that row when they sit in the app's own storage. -->
     <string name="settings_storage_image_cache_internal">Interno (padrão)</string>
     <!-- Row naming the folder the music sits in. Noun phrase. -->
-    <string name="settings_storage_music_location_title">Local da Música</string>
+    <string name="settings_storage_music_location_title">Local da música</string>
     <!-- Second line of that row when no folder has been chosen. Adjective used as a noun. -->
     <string name="settings_storage_music_location_default">Padrão</string>
     <!-- Row naming the folder the console startup files sit in. -->
@@ -1830,12 +1830,12 @@
     <!-- Second line of that row when they sit in the app's own storage. -->
     <string name="settings_storage_bios_folder_internal">Interno (padrão)</string>
     <!-- Row naming the folder the built-in emulator writes game saves to. -->
-    <string name="settings_storage_builtin_save_path_title">Caminho de Saves do Emulador</string>
+    <string name="settings_storage_builtin_save_path_title">Caminho de saves interno</string>
     <!-- Second line of that row when it sits in the app's own storage. -->
     <string name="settings_storage_builtin_save_path_internal">Interno (padrão)</string>
     <!-- Row naming the folder the built-in emulator writes save states to. "State" is a snapshot
          of a game taken at any moment, unlike a save the game itself writes. -->
-    <string name="settings_storage_builtin_state_path_title">Caminho de Estados do Emulador</string>
+    <string name="settings_storage_builtin_state_path_title">Caminho de estados interno</string>
     <!-- Second line of that row when it sits in the app's own storage. -->
     <string name="settings_storage_builtin_state_path_internal">Interno (padrão)</string>
 
@@ -2179,9 +2179,9 @@
     <!-- Second line of that row. "Boxart" is the cover picture. -->
     <string name="settings_caches_screenshots_subtitle">Capas e planos de fundo são sempre salvos em cache</string>
     <!-- Row title. Verb phrase: keep the extra scans for three-dimensional boxes. -->
-    <string name="settings_caches_box_art_title">Cache de Capas 3D</string>
+    <string name="settings_caches_box_art_title">Cache de capas 3D</string>
     <!-- Second line of that row. "Spine" is the narrow edge of a game box. -->
-    <string name="settings_caches_box_art_subtitle">Baixar costas e lombada de caixas para exibição 3D</string>
+    <string name="settings_caches_box_art_subtitle">Baixar verso e lombada das capas para exibição 3D</string>
 
     <!-- Row that empties the unpacked copies of compressed games. "ROM" is the usual term for a
          game file. -->
@@ -2233,7 +2233,7 @@
     <string name="settings_caches_frames_subtitle">Bezeis baixados - re-baixar sob demanda</string>
 
     <!-- Read-only row naming the stored posters and background pictures. Noun phrase. -->
-    <string name="settings_caches_info_artwork_title">Cache de Arte</string>
+    <string name="settings_caches_info_artwork_title">Cache de capas</string>
     <!-- Second line of that row. -->
     <string name="settings_caches_info_artwork_subtitle">Pôsteres, planos de fundo e outras artes online - re-baixados sob demanda</string>
     <!-- Read-only row naming the console startup files. -->
@@ -2370,7 +2370,7 @@
     <!-- Row that signs the account out. Verb. -->
     <string name="settings_steam_disconnect_title">Desconectar</string>
     <!-- Second line of that row. -->
-    <string name="settings_steam_disconnect_subtitle">Remove a conexão da sua conta Steam</string>
+    <string name="settings_steam_disconnect_subtitle">Sair do Steam</string>
 
     <!-- Row that empties the synced game list. Verb phrase. -->
     <string name="settings_steam_reset_library_title">Redefinir biblioteca Steam</string>
@@ -2655,7 +2655,7 @@
     <string name="settings_jellyfin_download_subtitle_capped">Títulos maiores que isso são transcodificados antes do download. O que já é menor baixa como está</string>
 
     <!-- Row naming the folder downloaded titles go into. Noun phrase. -->
-    <string name="settings_jellyfin_media_location_title">Local da Mídia</string>
+    <string name="settings_jellyfin_media_location_title">Local da mídia</string>
     <!-- Second line of that row when they sit in the device's own storage. -->
     <string name="settings_jellyfin_media_location_internal">Armazenamento interno</string>
 
@@ -2881,7 +2881,7 @@
     <!-- Heading over the rows about gamepads. Noun, plural. -->
     <string name="settings_builtin_controls_section_controllers">Controles</string>
     <!-- Heading over the rows about the thumb sticks. Noun phrase, plural. -->
-    <string name="settings_builtin_controls_section_sticks">Análogos</string>
+    <string name="settings_builtin_controls_section_sticks">Sticks analógicos</string>
     <!-- Heading over the rows about button shortcuts. Noun, plural. -->
     <string name="settings_builtin_controls_section_hotkeys">Hotkeys</string>
     <!-- Heading over the rows about the timed-run clock. Noun phrase. -->
@@ -2890,7 +2890,7 @@
     <string name="settings_builtin_controls_section_touch">Controles de Toque</string>
 
     <!-- Second line shown on any row whose value was set for this console alone. Noun phrase. -->
-    <string name="settings_builtin_controls_platform_override">Override de plataforma</string>
+    <string name="settings_builtin_controls_platform_override">Substituição de plataforma</string>
     <!-- Second line shown on a row following the console's own default. Noun phrase. -->
     <string name="settings_builtin_controls_platform_default">Padrão da plataforma</string>
     <!-- A percentage value shown on a settings row. %1$d is the number. -->
@@ -2899,7 +2899,7 @@
     <!-- Row title. Noun: controller vibration. The emulation community uses this word. -->
     <string name="settings_builtin_controls_rumble_title">Vibra&#231;&#227;o</string>
     <!-- Second line of that row. -->
-    <string name="settings_builtin_controls_rumble_subtitle">Habilitar feedback de vibração do controle</string>
+    <string name="settings_builtin_controls_rumble_subtitle">Ativar feedback de vibração do controle</string>
     <!-- Row title. Noun phrase: steering a game by tilting and turning the device through its
          accelerometer and gyroscope, not on-screen touch controls. -->
     <string name="settings_builtin_controls_motion_title">Controles de movimento</string>
@@ -2907,16 +2907,16 @@
     <string name="settings_builtin_controls_motion_subtitle">Permitir que jogos leiam a inclinação e rotação do dispositivo</string>
     <!-- Row title. How far the on-screen aim moves for a turn of the device, when the device's
          gyroscope steers a game's pointer through the right stick. -->
-    <string name="settings_builtin_controls_gyro_sensitivity_title">Sensibilidade do giroscópio</string>
-    <string name="settings_builtin_controls_gyro_sensitivity_subtitle">Quanto o mira se move ao virar o dispositivo</string>
+    <string name="settings_builtin_controls_gyro_sensitivity_title">Sensibilidade da mira giroscópica</string>
+    <string name="settings_builtin_controls_gyro_sensitivity_subtitle">Quanto a mira se move ao virar o dispositivo</string>
     <!-- Row title. Reverses left and right for gyro aiming. -->
-    <string name="settings_builtin_controls_gyro_invert_x_title">Inverter giro horizontalmente</string>
-    <string name="settings_builtin_controls_gyro_invert_x_subtitle">Virar à esquerda move o mira para a direita</string>
+    <string name="settings_builtin_controls_gyro_invert_x_title">Inverter a mira giroscópica na horizontal</string>
+    <string name="settings_builtin_controls_gyro_invert_x_subtitle">Virar à esquerda move a mira para a direita</string>
     <!-- Row title. Reverses up and down for gyro aiming. -->
-    <string name="settings_builtin_controls_gyro_invert_y_title">Inverter giro verticalmente</string>
-    <string name="settings_builtin_controls_gyro_invert_y_subtitle">Inclinar para cima move o mira para baixo</string>
+    <string name="settings_builtin_controls_gyro_invert_y_title">Inverter a mira giroscópica na vertical</string>
+    <string name="settings_builtin_controls_gyro_invert_y_subtitle">Inclinar para cima move a mira para baixo</string>
     <!-- Row opening the tool that decides which pad is player one. Noun phrase. -->
-    <string name="settings_builtin_controls_order_title">Ordem dos Controles</string>
+    <string name="settings_builtin_controls_order_title">Ordem dos controles</string>
     <!-- Second line of that row before any pad is assigned. -->
     <string name="settings_builtin_controls_order_subtitle">Defina a ordem dos jogadores pressionando um botão em cada controle</string>
     <!-- Second line of that row, counting the pads assigned. -->
@@ -2928,7 +2928,7 @@
     <!-- Row opening the button-remapping tool. Noun phrase. -->
     <string name="settings_builtin_controls_mapping_title">Mapeamento de Entrada</string>
     <!-- Second line of that row. -->
-    <string name="settings_builtin_controls_mapping_subtitle">Remapeie botões para cada controle</string>
+    <string name="settings_builtin_controls_mapping_subtitle">Remapear botões para cada controle</string>
     <!-- Row title. %1$d is the player number (1-4). "Controller" means the device the game sees, such as a Wiimote with a Nunchuk. -->
     <string name="settings_builtin_controls_controller_type_title">Controle do Jogador %1$d</string>
     <!-- Second line under that row. -->
@@ -2938,25 +2938,25 @@
 
     <!-- Row title. Noun phrase: the left stick sends the same inputs as the direction pad.
          "D-Pad" is the cross-shaped direction control; keep the abbreviation. -->
-    <string name="settings_builtin_controls_analog_as_dpad_title">Análogo Esquerdo como D-Pad</string>
+    <string name="settings_builtin_controls_analog_as_dpad_title">Analógico esquerdo como D-Pad</string>
     <!-- Second line of that row. -->
-    <string name="settings_builtin_controls_analog_as_dpad_subtitle">Mapear análogo esquerdo para entradas do D-pad</string>
+    <string name="settings_builtin_controls_analog_as_dpad_subtitle">Mapear o analógico esquerdo para entradas do D-pad</string>
     <!-- Row title. Noun phrase: the direction pad sends the same inputs as the left stick. -->
-    <string name="settings_builtin_controls_dpad_as_analog_title">D-Pad como Análogo Esquerdo</string>
+    <string name="settings_builtin_controls_dpad_as_analog_title">D-Pad como analógico esquerdo</string>
     <!-- Second line of that row. -->
-    <string name="settings_builtin_controls_dpad_as_analog_subtitle">Mapear D-pad para entradas do análogo esquerdo</string>
+    <string name="settings_builtin_controls_dpad_as_analog_subtitle">Mapear D-pad para entradas do analógico esquerdo</string>
 
     <!-- Row opening the button-shortcut editor. Noun, plural. -->
     <string name="settings_builtin_controls_hotkeys_title">Hotkeys</string>
     <!-- Second line of that row. "Rewind" winds the game back a few seconds. -->
-    <string name="settings_builtin_controls_hotkeys_subtitle">Configurar atalhos para menu, avanço rápido, rewind</string>
+    <string name="settings_builtin_controls_hotkeys_subtitle">Configurar atalhos para menu, avanço rápido e retrocesso</string>
     <!-- Row title. Verb phrase: only the first pad may use shortcuts. -->
-    <string name="settings_builtin_controls_limit_hotkeys_title">Limitar Hotkeys ao Jogador 1</string>
+    <string name="settings_builtin_controls_limit_hotkeys_title">Limitar atalhos ao Jogador 1</string>
     <!-- Second line of that row. -->
-    <string name="settings_builtin_controls_limit_hotkeys_subtitle">Somente o controle do jogador 1 pode acionar hotkeys</string>
+    <string name="settings_builtin_controls_limit_hotkeys_subtitle">Somente o controle do jogador 1 pode acionar os atalhos</string>
     <!-- Row title. Noun phrase: the controller's Select button reaching the app as Back. "Select"
          and "Back" are button names. -->
-    <string name="settings_builtin_controls_select_as_back_title">Select como Back</string>
+    <string name="settings_builtin_controls_select_as_back_title">Select como Voltar</string>
     <!-- Second line of that row: what the three options do. -->
     <string name="settings_builtin_controls_select_as_back_subtitle">Para controles cujo Select envia Back. Auto toca Back como Select em controles sem botão Select.</string>
     <!-- Option of that row: decide per controller. -->
@@ -2967,13 +2967,13 @@
     <string name="settings_builtin_controls_select_as_back_off">Desativado</string>
     <!-- Row title. Verb phrase: fast forward switches on and off rather than needing a held
          button. -->
-    <string name="settings_builtin_controls_toggle_ff_title">Alternar Avanço Rápido</string>
+    <string name="settings_builtin_controls_toggle_ff_title">Alternar avanço rápido</string>
     <!-- Second line of that row. -->
-    <string name="settings_builtin_controls_toggle_ff_subtitle">Pressione uma vez para iniciar, novamente para parar (off = segure para avançar rápido)</string>
+    <string name="settings_builtin_controls_toggle_ff_subtitle">Pressione uma vez para iniciar, novamente para parar (desativado = segure para avançar rápido)</string>
     <!-- Row title. Verb phrase: keep voices at their normal pitch while the game runs fast. -->
-    <string name="settings_builtin_controls_ff_pitch_title">Manter Tom do Áudio</string>
+    <string name="settings_builtin_controls_ff_pitch_title">Manter o tom do áudio</string>
     <!-- Second line of that row. "CPU" is the processor. -->
-    <string name="settings_builtin_controls_ff_pitch_subtitle">Manter tom estável durante avanço rápido. Usa mais CPU; desativado por padrão</string>
+    <string name="settings_builtin_controls_ff_pitch_subtitle">Manter o tom estável durante o avanço rápido. Consome mais CPU; desativado por padrão</string>
     <!-- Row that puts every per-console control value back to the shared one. Verb phrase. -->
     <string name="settings_builtin_controls_reset_all">Redefinir Tudo para Global</string>
 
@@ -2992,9 +2992,9 @@
     <string name="settings_speedrun_panel_width_subtitle">Texto do painel escala para caber</string>
 
     <!-- Row title. Verb phrase: draw buttons on the screen when no pad is attached. -->
-    <string name="settings_touch_enabled_title">Mostrar controles de toque quando sem controle</string>
+    <string name="settings_touch_enabled_title">Mostrar controles de toque na ausência de gamepad</string>
     <!-- Second line of that row. -->
-    <string name="settings_touch_enabled_subtitle">Exibir overlay na tela quando nenhum controle estiver conectado</string>
+    <string name="settings_touch_enabled_subtitle">Exibir uma sobreposição na tela quando nenhum controle estiver conectado</string>
     <!-- Second line shown on the rows below, giving the value in force. %1$d is a
          percentage. -->
     <string name="settings_touch_current_percent">Atualmente %1$d%%</string>
@@ -3221,7 +3221,7 @@
     <string name="settings_home_screen_new_badge_option_left">Esquerda</string>
     <string name="settings_home_screen_new_badge_option_hidden">Oculto</string>
     <string name="settings_touch_lock_orientation_title">Bloquear orientação no jogo</string>
-    <string name="settings_touch_lock_orientation_subtitle">Não girar automaticamente durante a partida</string>
+    <string name="settings_touch_lock_orientation_subtitle">Não girar automaticamente durante o jogo</string>
     <string name="settings_touch_mirror_title">Espelhar controles na rotação de 180&#176;</string>
     <string name="settings_touch_mirror_subtitle">Manter os controles no mesmo lado físico quando o celular girar</string>
     <string name="settings_touch_coloured_faces_title">Botões de ação PSX coloridos</string>
@@ -3272,8 +3272,8 @@
     <string name="settings_platform_builtin_video_subtitle">Substituições de exibição e desempenho</string>
     <string name="settings_platform_builtin_controls_title">Controles internos</string>
     <string name="settings_platform_builtin_controls_subtitle">Substituições de mapeamento de stick e vibração</string>
-    <string name="settings_platform_builtin_saves_title">Salvamentos internos</string>
-    <string name="settings_platform_builtin_saves_subtitle">Substituições de estado de carregamento e pasta</string>
+    <string name="settings_platform_builtin_saves_title">Saves internos</string>
+    <string name="settings_platform_builtin_saves_subtitle">Substituições de estado de save e pasta</string>
     <string name="settings_platform_core_options_title">Opções de core</string>
     <string name="settings_platform_core_options_subtitle">Configurações por core para esta plataforma</string>
     <string name="settings_platform_stat_total_games">Jogos na biblioteca</string>
@@ -3304,14 +3304,14 @@
     <string name="settings_platform_path_unconfigured">Não configurado</string>
     <string name="settings_platform_path_custom_tag">(personalizado)</string>
     <string name="settings_platform_rom_path_title">Caminho da ROM</string>
-    <string name="settings_platform_save_path_title">Caminho de salvamento</string>
-    <string name="settings_platform_save_path_blocked">O Android bloqueia esta pasta. Escolha uma pasta de salvamento que o Argosy possa ler.</string>
+    <string name="settings_platform_save_path_title">Caminho de saves</string>
+    <string name="settings_platform_save_path_blocked">O Android bloqueia esta pasta. Escolha uma pasta de saves que o Argosy possa ler.</string>
     <string name="settings_platform_state_path_title">Caminho de estados</string>
     <string name="settings_platform_retroarch_config_loaded">De %1$s</string>
     <string name="settings_platform_retroarch_config_unreadable">%1$s não pôde ser lido -- defina a pasta usada pelo RetroArch</string>
     <string name="settings_platform_retroarch_config_missing">Nenhuma configuração do RetroArch encontrada -- defina a pasta usada pelo RetroArch</string>
     <string name="settings_platform_memcard_title">Cartão de memória</string>
-    <string name="settings_platform_memcard_from_save_path_value">Definido pelo caminho de salvamento</string>
+    <string name="settings_platform_memcard_from_save_path_value">Definido pelo caminho de saves</string>
     <string name="settings_platform_memcard_none_value">Nenhuma pasta de cartão</string>
     <string name="settings_platform_memcard_none_subtitle">A sincronização de saves precisa de uma pasta para cartão de memória. Crie uma nas configurações de cartão de memória do %1$s.</string>
     <string name="settings_platform_memcard_this_emulator">este emulador</string>
@@ -3357,7 +3357,7 @@
     <string name="settings_gamenative_folders_action_change">Alterar</string>
     <string name="settings_gamenative_folders_action_clear">Limpar</string>
     <string name="settings_grip_modal_title">Empunhadura do controle</string>
-    <string name="settings_grip_modal_subtitle">Desloque a interface para cima, fora da área coberta pela empunhadura</string>
+    <string name="settings_grip_modal_subtitle">Mover a interface para cima, fora da área coberta pela empunhadura</string>
     <string name="settings_grip_modal_hint_adjust">Ajustar</string>
     <string name="settings_grip_modal_hint_back">Voltar</string>
     <string name="settings_grip_modal_mode_title">Modo</string>
@@ -3540,7 +3540,7 @@
     <string name="settings_romm_config_scan_subtitle">Escanear o código QR de emparelhamento na interface web do RomM</string>
     <string name="settings_romm_config_certificate_title">Adicionar certificado</string>
     <string name="settings_romm_config_certificate_subtitle">Confiar em um servidor com autoridade de certificação privada</string>
-    <string name="settings_romm_config_certificate_import_failed">Este arquivo não é um certificado legível.</string>
+    <string name="settings_romm_config_certificate_import_failed">Esse arquivo não é um certificado legível.</string>
     <string name="settings_romm_config_error_untrusted_certificate">Este dispositivo não confia no certificado do servidor. Adicione o certificado para conectar.</string>
     <string name="settings_romm_config_cancel_title">Cancelar</string>
     <string name="settings_romm_config_cancel_subtitle">Voltar às configurações do servidor</string>
@@ -3636,7 +3636,7 @@
     <string name="settings_region_priority_hint_close">Fechar</string>
     <string name="settings_region_priority_hint_move">Mover</string>
     <string name="settings_region_priority_hint_cancel">Cancelar</string>
-    <string name="settings_driver_picker_title">SELEÇÃO DE VERSÃO</string>
+    <string name="settings_driver_picker_title">SELECIONAR VERSÃO</string>
     <string name="settings_driver_picker_empty">Nenhuma versão disponível</string>
     <string name="settings_driver_picker_hint_hide">Ocultar</string>
     <string name="settings_driver_picker_hint_close">Fechar</string>
@@ -3660,13 +3660,13 @@
     <string name="settings_app_picker_title">Selecionar Aplicativo - %1$s</string>
     <string name="settings_app_picker_intro">O Argosy não possui nenhum emulador conhecido instalado para esta plataforma. Escolha qualquer aplicativo para iniciar jogos; você pode ajustar os Argumentos de inicialização posteriormente.</string>
     <string name="settings_app_picker_empty">Nenhum aplicativo inicializável encontrado.</string>
-    <string name="settings_controller_order_title">Ordem dos Controles</string>
+    <string name="settings_controller_order_title">Ordem dos controles</string>
     <string name="settings_controller_order_prompt">Pressione %1$s + %2$s ou %3$s no controle que deseja usar</string>
     <string name="settings_controller_order_ready">Pressione %1$s quando estiver pronto</string>
     <string name="settings_controller_order_hint_clear_all">Limpar tudo</string>
     <string name="settings_controller_order_default_name">Controle</string>
     <string name="settings_grip_controller_default_name">Controle</string>
-    <string name="settings_grip_controller_title">Grip do controle</string>
+    <string name="settings_grip_controller_title">Empunhadura do controle</string>
     <string name="settings_grip_controller_subtitle_capturing">Pressione qualquer botão na grip do controle</string>
     <string name="settings_grip_controller_subtitle_list">A interface se desloca automaticamente para cima quando algum desses controles estiver conectado</string>
     <string name="settings_grip_controller_hint_cancel">Cancelar</string>
@@ -3686,7 +3686,7 @@
     <string name="settings_hard_reset_keeps_adopted_files">Arquivos de jogos que você copiou para o dispositivo</string>
     <string name="settings_hard_reset_keeps_sign_ins">Configurações e conexões - RomM e Steam permanecem conectados</string>
     <string name="settings_hard_reset_keeps_synced_saves">Partidas salvas já sincronizadas no servidor</string>
-    <string name="settings_hard_reset_keeps_emulator_apps">Aplicativos de emulador e seus próprios dados de salvamento</string>
+    <string name="settings_hard_reset_keeps_emulator_apps">Aplicativos de emulador e seus próprios dados de save</string>
     <string name="settings_hard_reset_keeps_music">Sua pasta de músicas</string>
     <string name="settings_hard_reset_sync_first_connected">Sincronize-os primeiro; redefini-los agora os descartaria para sempre.</string>
     <string name="settings_hard_reset_sync_first_disconnected">Reconecte ao servidor e sincronize-os primeiro; redefini-los agora os descartaria para sempre.</string>
@@ -3698,7 +3698,7 @@
     <string name="settings_platform_modal_rom_path_label">Caminho da ROM</string>
     <string name="settings_platform_modal_save_path_label">Caminho de saves</string>
     <string name="settings_platform_modal_state_path_label">Caminho de estado</string>
-    <string name="settings_platform_modal_resync_label">Sincronizar novamente a plataforma</string>
+    <string name="settings_platform_modal_resync_label">Ressincronizar plataforma</string>
     <string name="settings_platform_modal_purge_label">Excluir todos os dados</string>
     <string name="settings_path_config_coming_soon">(em breve)</string>
     <string name="settings_path_config_reset_button">Resetar</string>
@@ -3741,15 +3741,15 @@
     <string name="settings_accounts_delegate_fallback_account_label">a conta</string>
     <string name="settings_accounts_delegate_notice_signed_in">Conectado como %1$s.</string>
     <string name="settings_accounts_delegate_notice_account_added">Conta adicionada.</string>
-    <string name="settings_accounts_delegate_pairing_denied">Pareamento negado no servidor.</string>
-    <string name="settings_accounts_delegate_pairing_expired">Código de pareamento expirado, recomece.</string>
+    <string name="settings_accounts_delegate_pairing_denied">O emparelhamento foi negado no servidor</string>
+    <string name="settings_accounts_delegate_pairing_expired">O código de emparelhamento expirou, recomece</string>
     <string name="settings_accounts_delegate_removal_unknown_account">Essa conta não está mais neste dispositivo.</string>
     <string name="settings_accounts_delegate_removal_switch_in_progress">A troca de conta ainda está sendo executada. Aguarde até concluir e tente novamente.</string>
     <string name="settings_accounts_delegate_removal_refused_prefix">O trabalho na fila foi mantido, portanto a conta não foi removida. %1$s</string>
     <string name="settings_accounts_delegate_removal_refused_fallback">Nada pendente.</string>
     <string name="settings_accounts_delegate_removal_removed">Conta removida.</string>
     <string name="settings_accounts_delegate_removal_archived">Arquivados %1$d salvamentos antes de limpá-los.</string>
-    <string name="settings_accounts_delegate_removal_aborted">%1$d salvamentos foram alterados durante o arquivamento e permaneceram no disco.</string>
+    <string name="settings_accounts_delegate_removal_aborted">%1$d saves foram alterados durante o arquivamento e permaneceram no disco.</string>
     <string name="settings_accounts_delegate_removal_registered_note">O dispositivo ainda está registrado no servidor RomM; revogue-o lá.</string>
     <string name="settings_accounts_delegate_completion_switched">Conta trocada.</string>
     <string name="settings_accounts_delegate_completion_aborted">%1$d arquivos foram alterados durante o arquivamento e permaneceram como estavam.</string>
@@ -3810,7 +3810,7 @@
     <string name="settings_libretro_def_section_shaders">Shaders</string>
     <string name="settings_libretro_def_section_display">Exibição</string>
     <string name="settings_libretro_def_section_performance">Desempenho</string>
-    <string name="settings_libretro_def_section_saving">Salvamento</string>
+    <string name="settings_libretro_def_section_saving">Saves</string>
     <string name="settings_libretro_def_shader_title">Shader</string>
     <string name="settings_libretro_def_filter_title">Filtro</string>
     <string name="settings_libretro_def_aspect_ratio_title">Proporção</string>
@@ -3844,7 +3844,7 @@
     <string name="settings_libretro_def_auto_restore_state_subtitle"> Aplica-se apenas a jogos casuais</string>
     <string name="settings_libretro_def_prefer_newer_server_save_title"> Preferir partida mais recente do servidor</string>
     <string name="settings_libretro_def_prefer_newer_server_save_subtitle"> Ignorar a restauração automática da partida quando uma partida mais recente for baixada do servidor</string>
-    <string name="settings_libretro_def_hw_core_save_states_title"> Partidas do Dolphin e Flycast</string>
+    <string name="settings_libretro_def_hw_core_save_states_title">Estados de save do Dolphin e Flycast</string>
     <string name="settings_libretro_def_hw_core_save_states_subtitle"> Experimental; esses cores podem apresentar tela preta ou falhar ao retomar. Aplica-se no próximo início, apenas jogos casuais</string>
     <string name="settings_libretro_def_shader_option_none"> Nenhum</string>
     <string name="settings_libretro_def_shader_option_custom"> Personalizado</string>
@@ -3886,14 +3886,14 @@
     <string name="settings_play_time_summary_peak">Hora de pico</string>
     <string name="settings_play_time_summary_device">Mais utilizado</string>
     <string name="settings_play_time_summary_peak_value">%1$s %2$s</string>
-    <string name="settings_play_time_activity_empty">Sem jogo neste período</string>
+    <string name="settings_play_time_activity_empty">Sem atividade neste período</string>
     <string name="settings_play_time_streak_current">Sequência atual</string>
     <string name="settings_play_time_streak_longest">Maior sequência</string>
     <string name="settings_play_time_day_empty">Nada jogado</string>
     <string name="settings_play_time_day_session_count">Contagem de sessões diárias: %1$dx</string>
     <string name="settings_play_time_wave_header">%1$s às %2$s</string>
     <string name="settings_play_time_wave_peak">Pico %1$s %2$s</string>
-    <string name="settings_play_time_wave_empty">Sem atividade neste intervalo</string>
+    <string name="settings_play_time_wave_empty">Sem atividade neste período</string>
     <string name="settings_play_time_platform_band_title">Plataformas</string>
     <string name="settings_play_time_device_band_title">Dispositivos</string>
     <string name="settings_play_time_platform_others">Outras plataformas</string>
@@ -4177,9 +4177,9 @@
         <item quantity="other">%d jogos</item>
     </plurals>
     <plurals name="settings_play_time_mosaic_others_count">
-        <item quantity="one">mais %d jogo</item>
-        <item quantity="many">mais %d jogos</item>
-        <item quantity="other">mais %d jogos</item>
+        <item quantity="one">%d jogo a mais</item>
+        <item quantity="many">%d jogos a mais</item>
+        <item quantity="other">%d jogos a mais</item>
     </plurals>
     <plurals name="settings_play_time_romm_refresh_result">
         <item quantity="one">Adicionada %d sessão de outros dispositivos</item>

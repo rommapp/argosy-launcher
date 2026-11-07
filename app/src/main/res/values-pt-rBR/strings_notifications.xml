@@ -299,9 +299,9 @@
     <!-- Notification after queuing file downloads from the companion file picker. %1$d is the
           number of downloads queued. -->
     <plurals name="notif_dualscreen_downloads_queued">
-        <item quantity="one">Enfileirado %1$d download</item>
-        <item quantity="many">Enfileirados %1$d downloads</item>
-        <item quantity="other">Enfileirados %1$d downloads</item>
+        <item quantity="one">%1$d download na fila</item>
+        <item quantity="many">%1$d downloads na fila</item>
+        <item quantity="other">%1$d downloads na fila</item>
     </plurals>
 
     <!-- Steam launcher link prompt (SteamLauncherLinkController). -->

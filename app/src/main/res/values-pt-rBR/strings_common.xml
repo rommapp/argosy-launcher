@@ -667,7 +667,7 @@
     <string name="ui_quick_settings_music_notice_sign_in_playlists">Entre novamente no RomM para ver suas playlists do servidor</string>
     <string name="ui_quick_settings_music_hint_sign_in">Entrar novamente</string>
     <string name="ui_quick_friends_options_favorite">Favorito</string>
-    <string name="ui_quick_friends_options_unfavorite">Remover favorito</string>
+    <string name="ui_quick_friends_options_unfavorite">Remover dos favoritos</string>
     <string name="ui_quick_friends_options_profile">Ver perfil</string>
     <string name="ui_quick_friends_options_edit_avatar">Editar avatar</string>
     <string name="ui_quick_settings_music_queue_empty">Escolha uma playlist ou trilha para começar</string>
@@ -895,7 +895,7 @@
     </plurals>
     <string name="ui_netplay_invite_failed_title">Não é possível entrar em %1$s</string>
     <string name="ui_netplay_invite_reason_rom_missing">ROM não encontrado</string>
-    <string name="ui_netplay_invite_reason_rom_version">Versão de ROM diferente</string>
+    <string name="ui_netplay_invite_reason_rom_version">Versão da ROM diferente</string>
     <string name="ui_netplay_invite_reason_core_version">Versão de core diferente</string>
     <string name="ui_netplay_invite_reason_core_unsupported">Core não suportado</string>
     <string name="ui_netplay_invite_reason_missing_game_id">ID de jogo ausente para a sessão</string>

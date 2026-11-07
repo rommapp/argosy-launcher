@@ -585,6 +585,7 @@
     <!-- Shown on the discover tab when the emulation engine will not hand over the game's
          memory, so nothing can be searched. -->
     <string name="ingame_cheats_error_ram_unavailable">RAM not available for this core</string>
+    <string name="ingame_cheats_apply_next_launch">Cheat changes apply the next time this game starts</string>
     <!-- Shown on the discover tab when a search for changed values found none. -->
     <string name="ingame_cheats_error_no_changes">No changes detected - play more first</string>
     <!-- Shown on the discover tab when a search for changed values needs more play before it

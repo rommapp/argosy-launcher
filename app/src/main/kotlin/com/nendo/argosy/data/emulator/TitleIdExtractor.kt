@@ -172,6 +172,17 @@ class TitleIdExtractor @Inject constructor(
         zipArchive: File?,
         extractedResult: TitleIdResult?
     ): String? {
+        if (canonicalSlug == "ps2") {
+            return listOfNotNull(
+                game?.titleId,
+                extractedResult?.titleId,
+                extractedResult?.rawSerial,
+                game?.saveId,
+                romFile?.takeIf { it.isFile }?.let { extractTitleId(it, canonicalSlug) }
+            ).firstNotNullOfOrNull(::normalizePs2Serial)
+                ?: zipArchive?.let { extractZipRootSerialFallback(it, canonicalSlug) }
+        }
+
         if (canonicalSlug == "gc" || canonicalSlug == "ngc" || canonicalSlug == "wii") {
             romFile?.takeIf { it.isFile }?.let { file ->
                 readNintendoDisc6CharGameId(file)?.let { return it }
@@ -200,6 +211,19 @@ class TitleIdExtractor @Inject constructor(
         private val PSP_SERIAL_REGEX = Regex("^[A-Z]{4}[_-]?\\d{5}$")
         private val DC_SERIAL_REGEX = Regex("^(?=.*\\d)[A-Z0-9_-]{4,12}$")
         private val AZAHAR_TITLE_ID_REGEX = Regex("^[0-9A-Fa-f]{16}$")
+        private val PS2_SAVE_PREFIX_REGEX = Regex("^B[A-Z](?=[A-Z]{4}[-_]?\\d)")
+        private val PS2_SERIAL_REGEX = Regex("^([A-Z]{4})[-_]?(\\d{3})\\.?(\\d{2})(?:\\D.*)?$")
+
+        /**
+         * The form PCSX2 derives from a disc's boot ELF and names its per-game folders with:
+         * `SLUS_203.12;1` and the memory card folder name `BASLUS-20312AC04` are both `SLUS-20312`.
+         */
+        fun normalizePs2Serial(raw: String): String? {
+            val cleaned = raw.trim().uppercase(Locale.ROOT).replace(PS2_SAVE_PREFIX_REGEX, "")
+            val match = PS2_SERIAL_REGEX.matchEntire(cleaned) ?: return null
+            val (letters, head, tail) = match.destructured
+            return "$letters-$head$tail"
+        }
 
         fun readNintendoDisc6CharGameId(file: File): String? {
             return runCatching {
@@ -257,6 +281,7 @@ class TitleIdExtractor @Inject constructor(
             val singleRoot = extractZipSingleTopLevelDir(zipArchive) ?: return null
             val canonical = PlatformDefinitions.getCanonicalSlug(platformSlug).lowercase(Locale.ROOT)
             if (!matchesPlatformSerialFormat(singleRoot, canonical)) return null
+            if (canonical == "ps2") return normalizePs2Serial(singleRoot)
             val clean = singleRoot.trim().uppercase(Locale.ROOT)
             return if (canonical == "psp") {
                 clean.replace("-", "").replace("_", "")
@@ -275,6 +300,7 @@ class TitleIdExtractor @Inject constructor(
                 "psp" -> PSP_SERIAL_REGEX.matches(upper)
                 "dc" -> DC_SERIAL_REGEX.matches(upper)
                 "3ds" -> AZAHAR_TITLE_ID_REGEX.matches(upper)
+                "ps2" -> normalizePs2Serial(upper) != null
                 else -> true
             }
         }

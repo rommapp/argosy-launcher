@@ -25,7 +25,8 @@ data class BuiltinTextureRule(
     val htsCoreOptions: Map<String, String> = emptyMap(),
     val htcHtsRelativeCacheDir: String? = null,
     val supportsHtc: Boolean = false,
-    val supportsHts: Boolean = false
+    val supportsHts: Boolean = false,
+    val packSubdir: String? = null
 ) {
     val autoEnableCoreOptions: Map<String, String>
         get() = coreOptions
@@ -166,7 +167,8 @@ object BuiltinTexturePathRegistry {
     ): File {
         val baseDir = resolveBaseDir(rule, saveDir, systemDir)
         val cleanKey = folderKey.trim().trim('/', '\\')
-        return File(baseDir, cleanKey)
+        val gameDir = File(baseDir, cleanKey)
+        return rule.packSubdir?.let { File(gameDir, it) } ?: gameDir
     }
 
     fun resolveHtcHtsCacheDir(rule: BuiltinTextureRule, saveDir: File, systemDir: File): File? {

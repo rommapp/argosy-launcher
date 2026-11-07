@@ -918,6 +918,66 @@ class TexturePackInstallerTest {
     }
 
     @Test
+    fun `a migration that cannot write keeps the source pack and its manifest`() = runTest {
+        val sourceDir = tempFolder.newFolder("builtin_source")
+        val manifest = File(sourceDir, ".argosy_mod_77.manifest").apply { writeText("a.png\nb.png") }
+        val textureA = File(sourceDir, "a.png").apply { writeText("aaa") }
+        val textureB = File(sourceDir, "b.png").apply { writeText("bbb") }
+        val extStorage = tempFolder.newFolder("external_unwritable")
+
+        val fal = mockk<com.nendo.argosy.data.storage.FileAccessLayer>(relaxed = true) {
+            every { externalStorageRoots() } returns listOf(extStorage.absolutePath)
+            every { isRestrictedPath(any()) } answers {
+                firstArg<String>().replace('\\', '/').contains("Android/data")
+            }
+            every { exists(any()) } returns false
+            every { mkdirs(any()) } returns true
+            var opened = 0
+            every { getOutputStream(any()) } answers {
+                opened++
+                if (opened == 1) {
+                    val file = File(firstArg<String>())
+                    file.parentFile?.mkdirs()
+                    FileOutputStream(file)
+                } else {
+                    null
+                }
+            }
+            every { delete(any()) } answers { File(firstArg<String>()).delete() }
+        }
+        val customInstaller = TexturePackInstaller(
+            builtinSaveBase = builtinSaveBase,
+            builtinCoreResolver = builtinCoreResolver,
+            emulatorResolver = emulatorResolver,
+            titleIdExtractor = titleIdExtractor,
+            baseRomFileResolver = baseRomFileResolver,
+            platformFolderResolver = platformFolderResolver,
+            gameDao = gameDao,
+            gameDiscDao = gameDiscDao,
+            gameFileDao = gameFileDao,
+            systemDir = systemDir,
+            fileAccessLayer = fal,
+            cacheDir = tempFolder.newFolder("cache_unwritable")
+        )
+        val game = testGame(titleId = "GZLE01")
+        val modFile = testModFile(id = 77L, gameId = game.id, fileName = "pack.zip", localPath = manifest.absolutePath)
+        coEvery { gameDao.getById(game.id) } returns game
+        coEvery { gameFileDao.getModFilesForGame(game.id) } returns listOf(modFile)
+        coEvery { emulatorResolver.getEmulatorPackageForGame(any(), any(), any()) } returns "org.dolphinemu.dolphinemu"
+
+        val installed = customInstaller.installPendingModFilesForGame(game.id)
+
+        assertEquals(0, installed)
+        assertTrue("Source manifest must survive", manifest.isFile)
+        assertTrue("Source textures must survive", textureA.isFile && textureB.isFile)
+        coVerify(exactly = 0) { gameFileDao.updateLocalPath(77L, any(), any()) }
+        assertEquals(listOf("pack.zip"), customInstaller.failedInstallNames(game.id))
+        val strayCopies = extStorage.walkTopDown().filter { it.isFile }.toList()
+        assertTrue("Partial copies must be rolled back: $strayCopies", strayCopies.isEmpty())
+        TexturePackInstaller.clearFailedInstalls()
+    }
+
+    @Test
     fun `installPendingModFilesForGame migrates textures from restricted Scoped Storage path via FileAccessLayer`() = runTest {
         val extStorage = tempFolder.newFolder("mock_external_restricted")
         val oldRestrictedDir = File(extStorage, "Android/data/org.dolphinemu.dolphinemu/files/Load/Textures/GZLE01").apply { mkdirs() }

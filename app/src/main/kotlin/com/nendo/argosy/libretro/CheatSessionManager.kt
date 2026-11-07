@@ -21,7 +21,8 @@ class CheatSessionManager(
     private val cheatsRepository: CheatsRepository,
     private val canSerialize: () -> Boolean,
     private val isHardcore: () -> Boolean,
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    private val onCheatsEdited: (() -> Unit)? = null
 ) {
     val memoryScanner = MemoryScanner()
 
@@ -91,6 +92,7 @@ class CheatSessionManager(
             cheatDao.setEnabled(cheatId, enabled, System.currentTimeMillis())
             cheats = cheatsRepository.getCheatsForGame(gameId)
             applyCheat(cheatId, enabled)
+            onCheatsEdited?.invoke()
         }
     }
 
@@ -111,6 +113,7 @@ class CheatSessionManager(
             val newId = cheatDao.insert(newCheat)
             cheats = cheatsRepository.getCheatsForGame(gameId)
             applyCheat(newId, true)
+            onCheatsEdited?.invoke()
             Log.d(TAG, "Created custom cheat: $description -> $code")
         }
     }
@@ -127,6 +130,7 @@ class CheatSessionManager(
                     retroView?.setCheat(updatedCheat.cheatIndex, true, updatedCheat.code)
                 }
             }
+            onCheatsEdited?.invoke()
             Log.d(TAG, "Updated cheat $cheatId: $description -> $code")
         }
     }
@@ -139,6 +143,7 @@ class CheatSessionManager(
             }
             cheatDao.deleteById(cheatId)
             cheats = cheatsRepository.getCheatsForGame(gameId)
+            onCheatsEdited?.invoke()
             Log.d(TAG, "Deleted cheat $cheatId")
         }
     }
@@ -166,6 +171,7 @@ class CheatSessionManager(
             cheatDao.setEnabled(cheat.id, false, now)
         }
         cheats = cheatsRepository.getCheatsForGame(gameId)
+        onCheatsEdited?.invoke()
         val view = retroView
         if (view != null) {
             cycleCheatsThroughState(view)

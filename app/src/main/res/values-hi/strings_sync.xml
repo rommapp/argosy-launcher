@@ -159,4 +159,5 @@
     <!-- Emulator core selection. -->
 
     <string name="sync_launch_core_fallback">%1$s लोड करने में विफल, इसके बजाय %2$s इस्तेमाल हो रहा है</string>
+    <string name="launch_texture_pack_failed">कुछ टेक्सचर पैक इंस्टॉल नहीं हो सके</string>
 </resources>

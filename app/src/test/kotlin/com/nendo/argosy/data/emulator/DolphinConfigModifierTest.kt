@@ -22,7 +22,7 @@ class DolphinConfigModifierTest {
         val result = DolphinConfigModifier.injectHiresTexturesSetting(null)
         assertTrue(result.contains("[Settings]"))
         assertTrue(result.contains("HiresTextures = True"))
-        assertTrue(result.contains("CacheHiresTextures = True"))
+        assertFalse(result.contains("CacheHiresTextures = True"))
     }
 
     @Test
@@ -43,8 +43,8 @@ class DolphinConfigModifierTest {
         val result = DolphinConfigModifier.injectHiresTexturesSetting(input)
         assertTrue(result.contains("HiresTextures = True"))
         assertFalse(result.lines().any { it.trim() == "HiresTextures = False" })
-        assertTrue(result.contains("CacheHiresTextures = True"))
-        assertFalse(result.lines().any { it.trim() == "CacheHiresTextures = False" })
+        assertFalse(result.contains("CacheHiresTextures = True"))
+        assertTrue(result.lines().any { it.trim() == "CacheHiresTextures = False" })
         assertTrue(result.contains("[Enhancements]"))
         assertTrue(result.contains("MaxAnisotropy = 2"))
     }
@@ -63,14 +63,11 @@ class DolphinConfigModifierTest {
         val lines = result.lines()
         val settingsIdx = lines.indexOfFirst { it.trim() == "[Settings]" }
         val hiresIdx = lines.indexOfFirst { it.trim() == "HiresTextures = True" }
-        val cacheIdx = lines.indexOfFirst { it.trim() == "CacheHiresTextures = True" }
         val enhancementsIdx = lines.indexOfFirst { it.trim() == "[Enhancements]" }
 
         assertTrue(settingsIdx != -1)
         assertTrue(hiresIdx > settingsIdx)
-        assertTrue(cacheIdx > settingsIdx)
         assertTrue(hiresIdx < enhancementsIdx)
-        assertTrue(cacheIdx < enhancementsIdx)
     }
 
     @Test
@@ -98,7 +95,7 @@ class DolphinConfigModifierTest {
         val text = gfxFile.readText()
         assertTrue(text.contains("[Settings]"))
         assertTrue(text.contains("HiresTextures = True"))
-        assertTrue(text.contains("CacheHiresTextures = True"))
+        assertFalse(text.contains("CacheHiresTextures = True"))
     }
 
     @Test
@@ -130,9 +127,9 @@ class DolphinConfigModifierTest {
 
         val updatedContent = gfxFile.readText()
         assertTrue(updatedContent.contains("HiresTextures = True"))
-        assertTrue(updatedContent.contains("CacheHiresTextures = True"))
+        assertFalse(updatedContent.contains("CacheHiresTextures = True"))
         assertFalse(updatedContent.lines().any { it.trim() == "HiresTextures = False" })
-        assertFalse(updatedContent.lines().any { it.trim() == "CacheHiresTextures = False" })
+        assertTrue(updatedContent.lines().any { it.trim() == "CacheHiresTextures = False" })
         assertTrue(updatedContent.contains("VSync = True"))
         assertTrue(updatedContent.contains("AspectRatio = 1"))
         assertTrue(updatedContent.contains("PostProcessingShader = crt-lottes"))

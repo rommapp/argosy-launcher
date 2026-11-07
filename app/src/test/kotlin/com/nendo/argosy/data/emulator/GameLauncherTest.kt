@@ -175,6 +175,7 @@ class GameLauncherTest {
             dreamcastVmuMigrator = mockk(relaxed = true),
             launchProgressTracker = launchProgressTracker,
             texturePackInstaller = texturePackInstaller,
+            enhancementProvisioners = emptySet(),
             steamInstallReports = steamInstallReports,
             appsRepository = appsRepository,
             emulatorResolver = EmulatorResolver(

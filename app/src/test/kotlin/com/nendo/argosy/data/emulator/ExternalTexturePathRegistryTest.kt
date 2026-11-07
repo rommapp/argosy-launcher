@@ -112,7 +112,7 @@ class ExternalTexturePathRegistryTest {
             folderKey = "SLUS-20002"
         )
         assertEquals(
-            File(extRoot, "Android/data/xyz.aethersx2.android/files/textures/SLUS-20002"),
+            File(extRoot, "Android/data/xyz.aethersx2.android/files/textures/SLUS-20002/replacements"),
             target
         )
     }

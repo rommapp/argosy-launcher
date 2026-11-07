@@ -202,7 +202,8 @@ class TexturePackExtractor @Inject constructor() {
         stagingBaseDir: File? = null,
         fileAccessLayer: FileAccessLayer? = null,
         isCancelled: (() -> Boolean)? = null,
-        onProgress: ((fraction: Float?) -> Unit)? = null
+        onProgress: ((fraction: Float?) -> Unit)? = null,
+        packSubdir: String? = null
     ): File? {
         var stripPrefix: String? = null
         return extractZipEntries(
@@ -211,7 +212,10 @@ class TexturePackExtractor @Inject constructor() {
             gameFileId = gameFileId,
             resolveRelativePath = { cleanPath ->
                 val prefix = stripPrefix ?: ""
-                if (prefix.isNotEmpty() && cleanPath.startsWith(prefix)) {
+                val afterSubdir = packSubdir?.let { pathAfterSegment(cleanPath, it) }
+                if (afterSubdir != null) {
+                    afterSubdir
+                } else if (prefix.isNotEmpty() && cleanPath.startsWith(prefix)) {
                     cleanPath.removePrefix(prefix).trimStart('/')
                 } else {
                     cleanPath
@@ -357,6 +361,7 @@ class TexturePackExtractor @Inject constructor() {
                     return manifestFile
                 } else {
                     fileAccessLayer?.mkdirs(targetDir.absolutePath)
+                    val ensuredDirs = mutableSetOf(targetDir.absolutePath)
                     for (relativePath in extractedRelativePaths) {
                         currentCoroutineContext().ensureActive()
                         if (isCancelled?.invoke() == true) {
@@ -365,7 +370,9 @@ class TexturePackExtractor @Inject constructor() {
                         val stagedFile = File(stagingDir, relativePath)
                         if (!stagedFile.exists()) continue
                         val finalFile = File(targetDir, relativePath)
-                        finalFile.parentFile?.let { fileAccessLayer?.mkdirs(it.absolutePath) }
+                        finalFile.parentFile?.absolutePath
+                            ?.takeIf { ensuredDirs.add(it) }
+                            ?.let { fileAccessLayer?.mkdirs(it) }
                         val output = fileAccessLayer?.getOutputStream(finalFile.absolutePath)
                             ?: FileOutputStream(finalFile)
                         output.use { out ->
@@ -388,7 +395,9 @@ class TexturePackExtractor @Inject constructor() {
                     val manifestFile = manifestFileFor(targetDir, gameFileId)
                     val manifestBytes = extractedRelativePaths.joinToString("\n").toByteArray(Charsets.UTF_8)
                     if (fileAccessLayer != null) {
-                        fileAccessLayer.writeBytes(manifestFile.absolutePath, manifestBytes)
+                        if (!fileAccessLayer.writeBytes(manifestFile.absolutePath, manifestBytes)) {
+                            throw java.io.IOException("Could not write texture manifest ${manifestFile.absolutePath}")
+                        }
                     } else {
                         manifestFile.writeBytes(manifestBytes)
                     }
@@ -454,7 +463,7 @@ class TexturePackExtractor @Inject constructor() {
         private val REDUNDANT_CONTAINER_NAMES = setOf("textures", "hires_texture", "load", "user")
 
         private val TEXTURE_ASSET_EXTENSIONS = setOf(
-            "png", "dds", "bmp", "tga", "ktx", "htc", "hts"
+            "png", "dds", "bmp", "tga", "ktx", "astc", "htc", "hts"
         )
         private val TEXTURE_METADATA_FILENAMES = setOf(
             "textures.ini", "hires.txt"
@@ -694,6 +703,13 @@ class TexturePackExtractor @Inject constructor() {
             }
 
             return true
+        }
+
+        internal fun pathAfterSegment(cleanPath: String, segment: String): String? {
+            val segments = cleanPath.split('/')
+            val index = segments.indexOfLast { it.equals(segment, ignoreCase = true) }
+            if (index < 0 || index == segments.lastIndex) return null
+            return segments.subList(index + 1, segments.size).joinToString("/")
         }
 
         fun computeRedundantPrefix(

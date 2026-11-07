@@ -139,4 +139,5 @@
     <string name="sync_steam_qr_disconnected">Steam no conectado</string>
 
     <string name="sync_launch_core_fallback">Error al cargar %1$s; se usó %2$s en su lugar</string>
+    <string name="launch_texture_pack_failed">No se pudieron instalar algunos paquetes de texturas</string>
 </resources>

@@ -269,6 +269,7 @@
     <string name="ingame_cheats_tab_discover">Поиск</string>
 
     <string name="ingame_cheats_error_ram_unavailable">RAM недоступна для этого ядра</string>
+    <string name="ingame_cheats_apply_next_launch">Изменения читов вступят в силу при следующем запуске этой игры</string>
     <string name="ingame_cheats_error_no_changes">Изменений не обнаружено - сначала поиграйте ещё</string>
     <string name="ingame_cheats_error_changed_not_ready">Поиграйте ещё, чтобы сузить результаты</string>
     <string name="ingame_cheats_error_no_unchanged">Нет неизменных значений - попробуйте \'Изменённые\'</string>

@@ -1,6 +1,7 @@
 package com.nendo.argosy.data.emulator
 
 import android.content.Context
+import com.nendo.argosy.data.emulator.enhancements.GameEnhancementProvisioner
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.GameFileDao
@@ -20,6 +21,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
+import java.io.IOException
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
@@ -39,7 +41,8 @@ class TexturePackInstaller(
     private val systemDir: File,
     private val extractor: TexturePackExtractor = TexturePackExtractor(),
     private val fileAccessLayer: FileAccessLayer? = null,
-    private val cacheDir: File? = null
+    private val cacheDir: File? = null,
+    private val enhancementProvisioners: Set<GameEnhancementProvisioner> = emptySet()
 ) {
     @Inject
     constructor(
@@ -54,7 +57,8 @@ class TexturePackInstaller(
         gameFileDao: GameFileDao,
         @ApplicationContext context: Context,
         extractor: TexturePackExtractor,
-        fileAccessLayer: FileAccessLayer
+        fileAccessLayer: FileAccessLayer,
+        enhancementProvisioners: Set<@JvmSuppressWildcards GameEnhancementProvisioner>
     ) : this(
         builtinSaveBase = builtinSaveBase,
         builtinCoreResolver = builtinCoreResolver,
@@ -68,7 +72,8 @@ class TexturePackInstaller(
         systemDir = AppPaths.libretroSystemDir(context.filesDir),
         extractor = extractor,
         fileAccessLayer = fileAccessLayer,
-        cacheDir = context.cacheDir
+        cacheDir = context.cacheDir,
+        enhancementProvisioners = enhancementProvisioners
     )
 
     sealed class ModInstallOutcome {
@@ -84,7 +89,9 @@ class TexturePackInstaller(
         val isDolphin: Boolean,
         val builtinRule: BuiltinTextureRule? = null,
         val externalRule: ExternalTextureRule? = null
-    )
+    ) {
+        val packSubdir: String? get() = builtinRule?.packSubdir ?: externalRule?.packSubdir
+    }
 
     suspend fun installPendingModFilesForGame(
         gameId: Long,
@@ -143,13 +150,11 @@ class TexturePackInstaller(
 
                     if (isSameTarget) {
                         if (activeTargetResolution.isDolphin) {
-                            DolphinConfigModifier.enableCustomTextures(activeTargetDir, fileAccessLayer)
+                            enableDolphinTextures(activeTargetDir, modFile)
                         }
                         continue
                     }
 
-                    // The texture pack is installed in a different emulator's directory.
-                    // Migrate the files instead of deleting or re-downloading!
                     Logger.info(
                         TAG,
                         "Migrating textures for ${game.title} from ${recordedParent?.absolutePath} to ${activeTargetDir.absolutePath}"
@@ -163,11 +168,13 @@ class TexturePackInstaller(
                     )
                     if (migratedManifest != null) {
                         gameFileDao.updateLocalPath(modFile.id, migratedManifest.absolutePath, Instant.now())
+                        failedInstalls.remove(modFile.id)
                         if (activeTargetResolution.isDolphin) {
-                            DolphinConfigModifier.enableCustomTextures(activeTargetDir, fileAccessLayer)
+                            enableDolphinTextures(activeTargetDir, modFile)
                         }
                         installedCount++
                     } else {
+                        failedInstalls[modFile.id] = System.currentTimeMillis()
                         Logger.warn(TAG, "Failed to migrate textures for ${game.title} from ${recordedParent?.absolutePath}")
                     }
                     continue
@@ -225,6 +232,23 @@ class TexturePackInstaller(
         installedCount
     }
 
+    private fun enableDolphinTextures(targetDir: File, modFile: GameFileEntity) {
+        if (DolphinConfigModifier.enableCustomTextures(targetDir, fileAccessLayer)) {
+            failedInstalls.remove(modFile.id)
+        } else {
+            failedInstalls[modFile.id] = System.currentTimeMillis()
+            Logger.warn(TAG, "Installed ${modFile.fileName} but could not turn on custom textures in Dolphin's GFX.ini")
+        }
+    }
+
+    private class MigratedFile(val source: File, val dest: File, val renamed: Boolean)
+
+    /**
+     * Moves a pack between emulators as one transaction. A pack's archive is gone once it is
+     * installed, so a copy that fails partway has to leave the source pack and its manifest
+     * exactly as they were: nothing on the source side is deleted until every file and the new
+     * manifest have landed.
+     */
     private suspend fun migrateTextures(
         oldManifestFile: File,
         newTargetDir: File,
@@ -257,16 +281,31 @@ class TexturePackInstaller(
         }
         if (lines.isEmpty()) return@withContext null
 
-        if (isDestRestricted) {
-            fal.mkdirs(newTargetDir.absolutePath)
-        } else {
-            newTargetDir.mkdirs()
+        val newManifest = File(newTargetDir, oldManifestFile.name)
+        val migrated = mutableListOf<MigratedFile>()
+        val migratedRelativePaths = LinkedHashSet<String>()
+        val ensuredDirs = mutableSetOf<String>()
+
+        fun ensureDir(dir: File) {
+            if (!ensuredDirs.add(dir.absolutePath)) return
+            if (isDestRestricted) fal.mkdirs(dir.absolutePath) else dir.mkdirs()
         }
 
-        val migratedRelativePaths = LinkedHashSet<String>()
-        val touchedOldDirs = mutableSetOf<String>()
+        fun rollBack() {
+            for (file in migrated) {
+                if (file.renamed) {
+                    file.dest.renameTo(file.source)
+                } else if (isDestRestricted) {
+                    fal.delete(file.dest.absolutePath)
+                } else {
+                    file.dest.delete()
+                }
+            }
+            if (isDestRestricted) fal.delete(newManifest.absolutePath) else newManifest.delete()
+        }
 
         try {
+            ensureDir(newTargetDir)
             for ((index, relPath) in lines.withIndex()) {
                 currentCoroutineContext().ensureActive()
                 if (isCancelled?.invoke() == true) {
@@ -274,109 +313,94 @@ class TexturePackInstaller(
                 }
                 val srcFile = File(oldTargetDir, relPath)
                 val destFile = File(newTargetDir, relPath)
-                val destParent = destFile.parentFile
-
-                if (isDestRestricted) {
-                    if (destParent != null) fal.mkdirs(destParent.absolutePath)
-                } else {
-                    destParent?.mkdirs()
-                }
-
-                var copySucceeded = false
-                if (!isSrcRestricted && !isDestRestricted && srcFile.isFile) {
-                    if (destFile.exists()) destFile.delete()
-                    if (srcFile.renameTo(destFile)) {
-                        copySucceeded = true
-                    } else if (srcFile.copyTo(destFile, overwrite = true).exists()) {
-                        srcFile.delete()
-                        copySucceeded = true
+                val sourceExists = if (isSrcRestricted) fal.exists(srcFile.absolutePath) else srcFile.isFile
+                if (sourceExists) {
+                    destFile.parentFile?.let(::ensureDir)
+                    val renamed = !isSrcRestricted && !isDestRestricted && run {
+                        if (destFile.exists()) destFile.delete()
+                        srcFile.renameTo(destFile)
                     }
-                } else {
-                    val srcStream = if (isSrcRestricted) {
-                        fal.getInputStream(srcFile.absolutePath)
-                    } else if (srcFile.isFile) {
-                        srcFile.inputStream()
-                    } else null
-
-                    if (srcStream != null) {
-                        val destStream = if (isDestRestricted) {
-                            fal.getOutputStream(destFile.absolutePath)
-                        } else {
-                            FileOutputStream(destFile)
-                        }
-                        if (destStream != null) {
-                            srcStream.use { input ->
-                                destStream.use { output ->
-                                    val buf = ByteArray(64 * 1024)
-                                    var r: Int
-                                    while (input.read(buf).also { r = it } != -1) {
-                                        output.write(buf, 0, r)
-                                    }
-                                }
-                            }
-                            if (isSrcRestricted) {
-                                fal.delete(srcFile.absolutePath)
-                            } else {
-                                srcFile.delete()
-                            }
-                            copySucceeded = true
-                        }
+                    if (!renamed) {
+                        copyVerified(srcFile, destFile, fal, isSrcRestricted, isDestRestricted)
                     }
-                }
-
-                if (copySucceeded) {
+                    migrated.add(MigratedFile(srcFile, destFile, renamed))
                     migratedRelativePaths.add(relPath)
-                    var p = srcFile.parentFile
-                    while (p != null && p.canonicalPath != oldTargetDir.canonicalPath && FileNames.isWithin(p, oldTargetDir)) {
-                        touchedOldDirs.add(p.absolutePath)
-                        p = p.parentFile
-                    }
                 }
-
-                val fraction = ((index + 1).toFloat() / lines.size).coerceIn(0f, 1f)
-                onProgress?.invoke(fraction)
+                onProgress?.invoke(((index + 1).toFloat() / lines.size).coerceIn(0f, 1f))
             }
 
-            val newManifest = File(newTargetDir, oldManifestFile.name)
+            if (migrated.isEmpty()) {
+                throw IOException("No files from ${oldManifestFile.name} could be found at ${oldTargetDir.absolutePath}")
+            }
+
             val manifestBytes = migratedRelativePaths.joinToString("\n").toByteArray(Charsets.UTF_8)
             if (isDestRestricted) {
-                fal.writeBytes(newManifest.absolutePath, manifestBytes)
+                if (!fal.writeBytes(newManifest.absolutePath, manifestBytes)) {
+                    throw IOException("Could not write ${newManifest.absolutePath}")
+                }
             } else {
                 newManifest.writeBytes(manifestBytes)
             }
+        } catch (e: CancellationException) {
+            rollBack()
+            throw e
+        } catch (e: Exception) {
+            rollBack()
+            Logger.warn(TAG, "Texture migration failed, source pack left in place: ${e.message}")
+            return@withContext null
+        }
 
-            if (isSrcRestricted) {
-                fal.delete(oldManifestFile.absolutePath)
+        for (file in migrated) {
+            if (file.renamed) continue
+            if (isSrcRestricted) fal.delete(file.source.absolutePath) else file.source.delete()
+        }
+        if (isSrcRestricted) fal.delete(oldManifestFile.absolutePath) else oldManifestFile.delete()
+        pruneEmptyDirs(migrated.map { it.source }, oldTargetDir, fal, isSrcRestricted)
+        newManifest
+    }
+
+    private fun copyVerified(
+        source: File,
+        dest: File,
+        fal: FileAccessLayer?,
+        isSrcRestricted: Boolean,
+        isDestRestricted: Boolean
+    ) {
+        val input = if (isSrcRestricted) fal?.getInputStream(source.absolutePath) else source.inputStream()
+        input ?: throw IOException("Could not read ${source.absolutePath}")
+        val output = if (isDestRestricted) fal?.getOutputStream(dest.absolutePath) else FileOutputStream(dest)
+        output ?: run {
+            input.close()
+            throw IOException("Could not write ${dest.absolutePath}")
+        }
+        val copied = input.use { from -> output.use { to -> from.copyTo(to, 64 * 1024) } }
+        val expected = if (isSrcRestricted) fal?.length(source.absolutePath) ?: 0L else source.length()
+        if (expected > 0L && copied != expected) {
+            throw IOException("Short copy of ${source.absolutePath}: $copied of $expected bytes")
+        }
+    }
+
+    private fun pruneEmptyDirs(
+        removedFiles: List<File>,
+        rootDir: File,
+        fal: FileAccessLayer?,
+        isRestricted: Boolean
+    ) {
+        val touchedDirs = mutableSetOf<String>()
+        for (file in removedFiles) {
+            var parent = file.parentFile
+            while (parent != null && parent.absolutePath != rootDir.absolutePath && FileNames.isWithin(parent, rootDir)) {
+                touchedDirs.add(parent.absolutePath)
+                parent = parent.parentFile
+            }
+        }
+        (touchedDirs.sortedByDescending { it.length } + rootDir.absolutePath).forEach { dirPath ->
+            if (isRestricted) {
+                if (fal?.listFiles(dirPath)?.isEmpty() == true) fal.delete(dirPath)
             } else {
-                oldManifestFile.delete()
+                val dir = File(dirPath)
+                if (dir.isDirectory && dir.listFiles().isNullOrEmpty()) dir.delete()
             }
-
-            touchedOldDirs.sortedByDescending { it.length }.forEach { dirPath ->
-                if (isSrcRestricted) {
-                    val list = fal.listFiles(dirPath)
-                    if (list != null && list.isEmpty()) {
-                        fal.delete(dirPath)
-                    }
-                } else {
-                    val dir = File(dirPath)
-                    if (dir.isDirectory && dir.listFiles().isNullOrEmpty()) {
-                        dir.delete()
-                    }
-                }
-            }
-            if (isSrcRestricted) {
-                val list = fal.listFiles(oldTargetDir.absolutePath)
-                if (list != null && list.isEmpty()) {
-                    fal.delete(oldTargetDir.absolutePath)
-                }
-            } else if (oldTargetDir.isDirectory && oldTargetDir.listFiles().isNullOrEmpty()) {
-                oldTargetDir.delete()
-            }
-
-            newManifest
-        } catch (e: Throwable) {
-            Logger.warn(TAG, "Texture migration interrupted or failed: ${e.message}")
-            null
         }
     }
 
@@ -391,6 +415,12 @@ class TexturePackInstaller(
 
     fun invalidateFailedInstall(gameFileId: Long) {
         failedInstalls.remove(gameFileId)
+    }
+
+    suspend fun failedInstallNames(gameId: Long): List<String> = withContext(Dispatchers.IO) {
+        gameFileDao.getModFilesForGame(gameId)
+            .filter { failedInstalls.containsKey(it.id) }
+            .map { it.fileName }
     }
 
     suspend fun invalidateFailedInstallsForGame(gameId: Long) = withContext(Dispatchers.IO) {
@@ -628,6 +658,8 @@ class TexturePackInstaller(
             return@withContext ModInstallOutcome.Deferred("Not a texture zip")
         }
 
+        importCompanionsFromArchive(game, sourceFile)
+
         val builtinRule = targetResolution.builtinRule
         val htcHtsZipSummary = if (builtinRule != null && (builtinRule.supportsHtc || builtinRule.supportsHts)) {
             extractor.inspectHtcHtsOnlyZip(sourceFile)
@@ -675,7 +707,8 @@ class TexturePackInstaller(
             stagingBaseDir = this@TexturePackInstaller.cacheDir,
             fileAccessLayer = fileAccessLayer,
             isCancelled = isCancelled,
-            onProgress = onProgress
+            onProgress = onProgress,
+            packSubdir = targetResolution.packSubdir
         ) ?: return@withContext ModInstallOutcome.Failed("Failed to extract texture zip")
         try {
             gameFileDao.updateLocalPath(gameFile.id, manifest.absolutePath, Instant.now())
@@ -685,7 +718,7 @@ class TexturePackInstaller(
         }
 
         if (targetResolution.isDolphin) {
-            DolphinConfigModifier.enableCustomTextures(targetDir, fileAccessLayer)
+            enableDolphinTextures(targetDir, gameFile)
         }
 
         if (sourceFile.exists() && sourceFile.canonicalPath != manifest.canonicalPath) {
@@ -696,6 +729,18 @@ class TexturePackInstaller(
             "Installed texture pack ${gameFile.fileName} for ${game.title} into ${targetDir.absolutePath}"
         )
         ModInstallOutcome.Success(manifest)
+    }
+
+    private suspend fun importCompanionsFromArchive(game: GameEntity, archive: File) {
+        for (provisioner in enhancementProvisioners) {
+            try {
+                provisioner.importFromArchive(game, archive)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Logger.warn(TAG, "Could not import companions from ${archive.name}: ${e.message}")
+            }
+        }
     }
 
     suspend fun installForModFile(

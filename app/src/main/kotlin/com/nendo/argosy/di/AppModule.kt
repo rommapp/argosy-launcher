@@ -69,6 +69,9 @@ abstract class AppModule {
     @Multibinds
     abstract fun monthlyRecapOverrides(): Set<MonthlyRecapOverride>
 
+    @Multibinds
+    abstract fun gameEnhancementProvisioners(): Set<com.nendo.argosy.data.emulator.enhancements.GameEnhancementProvisioner>
+
     companion object {
 
         @Provides

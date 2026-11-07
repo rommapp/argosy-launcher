@@ -266,6 +266,7 @@
     <string name="ingame_cheats_tab_discover">Descubrir</string>
 
     <string name="ingame_cheats_error_ram_unavailable">RAM no disponible para este núcleo</string>
+    <string name="ingame_cheats_apply_next_launch">Los cambios de trucos se aplican la próxima vez que inicies este juego</string>
     <string name="ingame_cheats_error_no_changes">No se detectaron cambios; juega más primero</string>
     <string name="ingame_cheats_error_changed_not_ready">Juega más para acotar los resultados</string>
     <string name="ingame_cheats_error_no_unchanged">No hay valores sin cambios; prueba \'Cambiados\' en su lugar</string>

@@ -133,4 +133,5 @@
     <string name="sync_steam_qr_disconnected">Steam未连接</string>
 
     <string name="sync_launch_core_fallback">加载%1$s失败，已改用%2$s</string>
+    <string name="launch_texture_pack_failed">部分纹理包无法安装</string>
 </resources>

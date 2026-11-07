@@ -46,6 +46,8 @@
     <string name="sync_download_service_extracting">Extrayendo: %1$s</string>
     <string name="sync_download_service_moving">Moviendo al almacenamiento de ROM: %1$s</string>
     <string name="sync_download_service_downloading">Descargando: %1$s</string>
+    <string name="sync_download_service_retrying">Reintentando: %1$s</string>
+    <string name="sync_download_service_waiting_for_network">Esperando red: %1$s</string>
     <string name="sync_download_service_queued">En cola: %1$s</string>
     <string name="sync_download_service_pending">Descarga pendiente...</string>
     <string name="sync_download_service_media_preparing">%1$s: %2$s</string>

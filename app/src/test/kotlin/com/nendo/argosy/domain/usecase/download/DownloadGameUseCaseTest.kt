@@ -1,6 +1,7 @@
 package com.nendo.argosy.domain.usecase.download
 
 import com.nendo.argosy.data.download.DownloadManager
+import com.nendo.argosy.data.local.entity.DownloadQueueEntity
 import com.nendo.argosy.data.local.dao.DownloadQueueDao
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
@@ -49,6 +50,36 @@ class DownloadGameUseCaseTest {
         gameFileDao = mockk(relaxed = true)
         useCase = DownloadGameUseCase(gameDao, gameDiscDao, gameFileDao, romMRepository, downloadManager, emulatorConfigDao, downloadQueueDao, gameRepository, mockk(relaxed = true))
     }
+
+    @Test
+    fun `sibling disc and file extraction failures do not prompt base recovery`() = runTest {
+        coEvery { gameDao.getById(123L) } returns createGameEntity()
+        coEvery { romMRepository.getRom(any()) } returns RomMResult.Success(createRom(fileName = "game.nes"))
+        val failed = failedExtractionEntry()
+        coEvery { downloadQueueDao.getRecoverableDownloads() } returns listOf(
+            failed.copy(discId = 1L), failed.copy(id = 2L, gameFileId = 2L)
+        )
+
+        assertEquals(DownloadResult.Queued, useCase(123L))
+        coVerify(exactly = 0) { downloadManager.getDownloadPath(any(), any(), any()) }
+    }
+
+    @Test
+    fun `ambiguous base extraction failures do not prompt recovery`() = runTest {
+        coEvery { gameDao.getById(123L) } returns createGameEntity()
+        coEvery { romMRepository.getRom(any()) } returns RomMResult.Success(createRom(fileName = "game.nes"))
+        val failed = failedExtractionEntry()
+        coEvery { downloadQueueDao.getRecoverableDownloads() } returns listOf(failed, failed.copy(id = 2L))
+
+        assertEquals(DownloadResult.Queued, useCase(123L))
+        coVerify(exactly = 0) { downloadManager.getDownloadPath(any(), any(), any()) }
+    }
+
+    private fun failedExtractionEntry() = DownloadQueueEntity(
+        id = 1L, gameId = 123L, rommId = 456L, fileName = "game.zip", gameTitle = "Game",
+        platformSlug = "nes", coverPath = null, bytesDownloaded = 1L, totalBytes = 1L,
+        state = "FAILED", errorReason = "EXTRACTION_FAILED:bad archive", tempFilePath = null
+    )
 
     @Test
     fun `a folder disc downloads only its own file`() = runTest {

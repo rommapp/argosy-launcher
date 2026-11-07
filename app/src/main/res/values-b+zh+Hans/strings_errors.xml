@@ -53,4 +53,12 @@
     <string name="error_download_extraction_failed">解压失败</string>
 
     <string name="error_filepicker_already_downloaded">游戏已下载</string>
+    <string name="error_download_http">下载失败（HTTP %1$d）</string>
+    <string name="error_download_http_unauthorized">RomM 登录已过期或需要登录（HTTP %1$d）</string>
+    <string name="error_download_http_forbidden">RomM 拒绝访问此下载（HTTP %1$d）</string>
+    <string name="error_download_http_not_found">在 RomM 上找不到下载（HTTP %1$d）</string>
+    <string name="error_download_integrity_check_failed">下载完整性检查失败。请重新下载。</string>
+    <string name="error_download_invalid_response">RomM 返回了无效的下载响应。</string>
+    <string name="error_download_storage_access_failed">无法访问下载存储空间。请检查可用空间和权限。</string>
+    <string name="error_download_tls_verification_failed">无法验证服务器证书。请检查服务器和证书设置。</string>
 </resources>

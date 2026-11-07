@@ -179,6 +179,10 @@
     <string name="downloads_file_state_queued">कतार में</string>
     <string name="downloads_file_state_percent">%1$d%%</string>
     <string name="downloads_file_state_waiting_for_server">सर्वर की प्रतीक्षा है…</string>
+    <string name="downloads_file_state_retrying">फिर से प्रयास जारी है…</string>
+    <string name="downloads_file_state_waiting_for_network">नेटवर्क की प्रतीक्षा है…</string>
+    <string name="downloads_item_status_retrying">फिर से प्रयास जारी है…</string>
+    <string name="downloads_item_status_waiting_for_network">नेटवर्क की प्रतीक्षा है…</string>
     <string name="downloads_item_status_moving">ROM स्टोरेज में ले जाया जा रहा है…</string>
     <string name="downloads_item_status_extracting_fallback">एक्सट्रैक्ट हो रहा है…</string>
     <string name="downloads_item_status_waiting_for_server">सर्वर की प्रतीक्षा है…</string>

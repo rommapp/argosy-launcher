@@ -80,6 +80,7 @@ import com.nendo.argosy.data.repository.SaveSyncApiClient
 import com.nendo.argosy.ui.common.ScreenshotImage
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.common.supersedesCommunityRating
+import com.nendo.argosy.ui.screens.gamedetail.DownloadWaitStatus
 import com.nendo.argosy.ui.screens.gamedetail.GameDetailUi
 import com.nendo.argosy.ui.screens.gamedetail.GameDetailUiState
 import com.nendo.argosy.ui.screens.gamedetail.GameDetailViewModel
@@ -400,7 +401,7 @@ fun ActionButtons(
                     GameDownloadStatus.QUEUED -> Text(stringResource(R.string.gamedetail_action_buttons_queued))
                     GameDownloadStatus.WAITING_FOR_STORAGE -> Text(stringResource(R.string.gamedetail_action_buttons_no_space))
                     GameDownloadStatus.DOWNLOADING -> Text(
-                        if (uiState.isAwaitingServer) {
+                        if (uiState.downloadWaitStatus == DownloadWaitStatus.WAITING_FOR_SERVER) {
                             stringResource(R.string.gamedetail_action_buttons_waiting_for_server)
                         } else {
                             stringResource(
@@ -742,4 +743,3 @@ fun AchievementsSection(
         }
     }
 }
-

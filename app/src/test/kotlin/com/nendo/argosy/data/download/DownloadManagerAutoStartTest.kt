@@ -16,6 +16,10 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,23 +49,71 @@ class DownloadManagerAutoStartTest {
     private lateinit var preferencesRepository: UserPreferencesRepository
     private lateinit var mediaDownloadManager: MediaDownloadManager
     private val inserted = slot<DownloadQueueEntity>()
+    private val rows = linkedMapOf<Long, DownloadQueueEntity>()
+    private var nextId = INSERTED_ID
+    private lateinit var managerScope: CoroutineScope
+    private val recoverableStates = setOf(
+        "QUEUED", "PAUSED", "DOWNLOADING", "EXTRACTING", "MOVING", "WAITING_FOR_STORAGE",
+        "RETRYING", "WAITING_FOR_NETWORK", "FAILED"
+    )
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
+        managerScope = CoroutineScope(testDispatcher + SupervisorJob())
         downloadQueueDao = mockk(relaxed = true)
         romMRepository = mockk(relaxed = true)
         preferencesRepository = mockk(relaxed = true)
         mediaDownloadManager = mockk(relaxed = true)
         every { romMRepository.isConnected() } returns false
         every { romMRepository.connectionState } returns MutableStateFlow(ConnectionState.Disconnected)
-        coEvery { downloadQueueDao.getByGameId(any()) } returns null
-        coEvery { downloadQueueDao.getPendingDownloads() } returns emptyList()
-        coEvery { downloadQueueDao.insert(capture(inserted)) } returns INSERTED_ID
+        coEvery { downloadQueueDao.getByGameId(any()) } answers {
+            rows.values.firstOrNull { it.gameId == firstArg<Long>() }
+        }
+        coEvery { downloadQueueDao.getById(any()) } answers { rows[firstArg()] }
+        coEvery { downloadQueueDao.getRecoverableDownloads() } answers {
+            rows.values.filter { it.state in recoverableStates }.sortedBy { it.createdAt }
+        }
+        coEvery { downloadQueueDao.insert(capture(inserted)) } answers {
+            val row = firstArg<DownloadQueueEntity>()
+            val id = if (row.id != 0L) row.id else maxOf(nextId, (rows.keys.maxOrNull() ?: 0L) + 1)
+            nextId = maxOf(nextId, id + 1)
+            rows[id] = row.copy(id = id)
+            id
+        }
+        coEvery { downloadQueueDao.update(any()) } answers {
+            val row = firstArg<DownloadQueueEntity>()
+            if (rows.containsKey(row.id)) rows[row.id] = row
+            Unit
+        }
+        coEvery { downloadQueueDao.updateState(any(), any(), any()) } answers {
+            val id = firstArg<Long>()
+            rows[id]?.let { rows[id] = it.copy(state = secondArg(), errorReason = thirdArg()) }
+            Unit
+        }
+        coEvery { downloadQueueDao.updateProgress(any(), any()) } answers {
+            val id = firstArg<Long>()
+            rows[id]?.let { rows[id] = it.copy(bytesDownloaded = secondArg()) }
+            Unit
+        }
+        coEvery { downloadQueueDao.deleteById(any()) } answers { rows.remove(firstArg()); Unit }
+        coEvery { downloadQueueDao.clearCompleted() } answers {
+            rows.entries.removeAll { it.value.state == DownloadState.COMPLETED.name }
+            Unit
+        }
+        coEvery { downloadQueueDao.clearFailed() } answers {
+            rows.entries.removeAll { it.value.state == DownloadState.FAILED.name }
+            Unit
+        }
+        coEvery { downloadQueueDao.clearFinished() } answers {
+            rows.entries.removeAll { it.value.state in setOf(DownloadState.COMPLETED.name, DownloadState.FAILED.name) }
+            Unit
+        }
     }
 
     @After
     fun tearDown() {
+        managerScope.cancel()
         Dispatchers.resetMain()
     }
 
@@ -101,7 +153,7 @@ class DownloadManagerAutoStartTest {
                 gameDao = gameDao,
                 preferencesRepository = preferencesRepository
             ),
-            scope = CoroutineScope(testDispatcher)
+            scope = managerScope
         )
     }
 
@@ -195,12 +247,12 @@ class DownloadManagerAutoStartTest {
 
     @Test
     fun `resume all paused resumes only paused downloads`() = runTest {
-        coEvery { downloadQueueDao.getPendingDownloads() } returns listOf(
+        listOf(
             queued(id = 1L, gameId = 11L, state = DownloadState.PAUSED),
             queued(id = 2L, gameId = 12L, state = DownloadState.WAITING_FOR_STORAGE),
             queued(id = 3L, gameId = 13L, state = DownloadState.PAUSED),
             queued(id = 4L, gameId = 14L, state = DownloadState.QUEUED)
-        )
+        ).forEach { rows[it.id] = it }
         val manager = manager(autoStart = false)
         manager.state.first { it.queue.size == 4 }
 
@@ -222,9 +274,7 @@ class DownloadManagerAutoStartTest {
 
     @Test
     fun `resume all paused with nothing paused changes nothing`() = runTest {
-        coEvery { downloadQueueDao.getPendingDownloads() } returns listOf(
-            queued(id = 2L, gameId = 12L, state = DownloadState.WAITING_FOR_STORAGE)
-        )
+        rows[2L] = queued(id = 2L, gameId = 12L, state = DownloadState.WAITING_FOR_STORAGE)
         val manager = manager(autoStart = false)
         manager.state.first { it.queue.size == 1 }
 
@@ -249,6 +299,76 @@ class DownloadManagerAutoStartTest {
         errorReason = null,
         tempFilePath = null
     )
+
+    @Test
+    fun `restart preserves failed staging and retries the same owned row`() = runTest {
+        val part = java.io.File(storage.newFolder("staging"), "game.nes.tmp")
+        part.writeBytes(ByteArray(2300))
+        val row = queued(5L, GAME_ID, DownloadState.FAILED).copy(
+            tempFilePath = part.absolutePath,
+            bytesDownloaded = 17L,
+            totalBytes = 9000L,
+            ownerUserId = 42L,
+            selectedFileIds = "8,9",
+            resumeValidator = "\"version-1\"",
+            responseTotalBytes = 9000L,
+            requestKey = "synthetic"
+        )
+        rows[row.id] = row
+        val manager = manager(autoStart = false)
+        manager.state.first { it.completed.size == 1 }
+        assertEquals(2300L, manager.state.value.completed.single().bytesDownloaded)
+
+        manager.retryDownload(row.id)
+        val retried = manager.state.first { it.queue.size == 1 }.queue.single()
+
+        assertEquals(row.id, retried.id)
+        assertEquals(listOf(8L, 9L), retried.selectedFileIds)
+        assertEquals(2300L, retried.bytesDownloaded)
+        assertEquals(2300L, part.length())
+        coVerify(exactly = 0) { downloadQueueDao.clearFailed() }
+        coVerify(exactly = 0) { downloadQueueDao.deleteById(any()) }
+        coVerify(exactly = 0) { downloadQueueDao.insert(any()) }
+        coVerify(exactly = 0) { downloadQueueDao.updateTransferCheckpoint(any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `restart reconciles paused owner separated path with disk length`() = runTest {
+        val part = java.io.File(storage.newFolder("owner", "addons"), "game.nes.tmp")
+        part.writeBytes(ByteArray(4096))
+        val row = queued(5L, GAME_ID, DownloadState.PAUSED).copy(
+            tempFilePath = part.absolutePath, bytesDownloaded = 9000L,
+            resumeValidator = "\"version-1\"", responseTotalBytes = 12000L
+        )
+        rows[row.id] = row
+        val manager = manager(autoStart = false)
+        val restored = manager.state.first { it.queue.size == 1 }.queue.single()
+        assertEquals(4096L, restored.bytesDownloaded)
+        assertEquals(DownloadState.PAUSED, restored.state)
+        assertEquals(4096L, part.length())
+    }
+
+    @Test
+    fun `concurrent admissions reserve one queue row`() = runTest {
+        val manager = manager(autoStart = true)
+        List(8) { async { manager.enqueueRom() } }.awaitAll()
+        assertEquals(DownloadState.QUEUED.name, downloadQueueDao.getById(INSERTED_ID)?.state)
+        assertEquals(setOf(INSERTED_ID), rows.keys)
+        assertEquals(1, manager.state.value.queue.size)
+        coVerify(exactly = 1) { downloadQueueDao.insert(any()) }
+    }
+
+    @Test
+    fun `enqueue existing paused request does not implicitly start it`() = runTest {
+        val manager = manager(autoStart = false)
+        manager.enqueueRom()
+        manager.enqueueRom()
+        assertEquals(DownloadState.PAUSED, manager.state.value.queue.single().state)
+        coVerify(exactly = 1) { downloadQueueDao.insert(any()) }
+        assertEquals(DownloadState.PAUSED.name, downloadQueueDao.getById(INSERTED_ID)?.state)
+        assertEquals(setOf(INSERTED_ID), rows.keys)
+        coVerify(exactly = 0) { downloadQueueDao.updateState(any(), any(), any()) }
+    }
 
     private companion object {
         const val GAME_ID = 123L

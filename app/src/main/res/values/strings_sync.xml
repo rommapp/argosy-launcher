@@ -145,6 +145,8 @@
     <!-- Notification line while a game is being fetched from the game server. %1$s is
          the game's title. -->
     <string name="sync_download_service_downloading">Downloading: %1$s</string>
+    <string name="sync_download_service_retrying">Retrying: %1$s</string>
+    <string name="sync_download_service_waiting_for_network">Waiting for network: %1$s</string>
     <!-- Notification line naming the next game waiting its turn. %1$s is the game's
          title. Past participle describing the game, not a command. -->
     <string name="sync_download_service_queued">Queued: %1$s</string>

@@ -81,4 +81,12 @@
          in the cherry-pick file list, distinct from the success-notice wording used
          elsewhere for the same underlying case). -->
     <string name="error_filepicker_already_downloaded">Game already downloaded</string>
+    <string name="error_download_http">Download failed (HTTP %1$d)</string>
+    <string name="error_download_http_unauthorized">RomM sign-in expired or is required (HTTP %1$d)</string>
+    <string name="error_download_http_forbidden">RomM denied access to this download (HTTP %1$d)</string>
+    <string name="error_download_http_not_found">Download not found on RomM (HTTP %1$d)</string>
+    <string name="error_download_integrity_check_failed">Download integrity check failed. Retry the download.</string>
+    <string name="error_download_invalid_response">RomM returned an invalid download response.</string>
+    <string name="error_download_storage_access_failed">Could not access download storage. Check free space and permissions.</string>
+    <string name="error_download_tls_verification_failed">Could not verify the server certificate. Check the server and certificate settings.</string>
 </resources>

@@ -74,10 +74,13 @@ class DownloadGameUseCase @Inject constructor(
             return DownloadResult.AlreadyDownloaded
         }
 
-        val failedEntry = downloadQueueDao.getByGameId(gameId)
+        val failedEntry = if (selectedFileIds == null) {
+            downloadQueueDao.getRecoverableDownloads().filter {
+                it.gameId == gameId && it.discId == null && it.gameFileId == null
+            }.singleOrNull()?.takeIf { it.state == DownloadState.FAILED.name }
+        } else null
         val decodedFailure = com.nendo.argosy.data.download.DownloadFailureReasonCodec.decode(failedEntry?.errorReason)
         if (failedEntry != null &&
-            failedEntry.state == DownloadState.FAILED.name &&
             decodedFailure is com.nendo.argosy.data.download.DownloadFailureReason.ExtractionFailed
         ) {
             val targetFile = downloadManager.getDownloadPath(gameId, failedEntry.platformSlug, failedEntry.fileName)

@@ -57,6 +57,8 @@
     <string name="sync_download_service_extracting">एक्सट्रैक्ट हो रहा है: %1$s</string>
     <string name="sync_download_service_moving">ROM स्टोरेज में ले जाया जा रहा है: %1$s</string>
     <string name="sync_download_service_downloading">डाउनलोड हो रहा है: %1$s</string>
+    <string name="sync_download_service_retrying">फिर से प्रयास जारी है: %1$s</string>
+    <string name="sync_download_service_waiting_for_network">नेटवर्क की प्रतीक्षा है: %1$s</string>
     <string name="sync_download_service_queued">कतार में: %1$s</string>
     <string name="sync_download_service_pending">डाउनलोड लंबित...</string>
     <string name="sync_download_service_media_preparing">%1$s: %2$s</string>

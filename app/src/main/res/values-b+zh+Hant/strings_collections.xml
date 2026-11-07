@@ -171,6 +171,10 @@
     <string name="downloads_file_state_queued">排隊中</string>
     <string name="downloads_file_state_percent">%1$d%%</string>
     <string name="downloads_file_state_waiting_for_server">等待伺服器&#8230;</string>
+    <string name="downloads_file_state_retrying">正在重試&#8230;</string>
+    <string name="downloads_file_state_waiting_for_network">正在等待網路&#8230;</string>
+    <string name="downloads_item_status_retrying">正在重試&#8230;</string>
+    <string name="downloads_item_status_waiting_for_network">正在等待網路&#8230;</string>
     <string name="downloads_item_status_moving">正在移至ROM儲存空間&#8230;</string>
     <string name="downloads_item_status_extracting_fallback">解壓縮中&#8230;</string>
     <string name="downloads_item_status_waiting_for_server">等待伺服器&#8230;</string>

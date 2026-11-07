@@ -1,5 +1,7 @@
 package com.nendo.argosy.ui.screens.downloads
 
+import com.nendo.argosy.ui.common.retryStatusLabelRes
+
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -343,6 +345,8 @@ private fun GroupFileRows(group: DownloadGroup) {
                         DownloadState.COMPLETED -> stringResource(R.string.downloads_file_state_done)
                         DownloadState.EXTRACTING -> stringResource(R.string.downloads_file_state_extracting)
                         DownloadState.MOVING -> stringResource(R.string.downloads_file_state_moving)
+                        DownloadState.RETRYING -> stringResource(R.string.downloads_file_state_retrying)
+                        DownloadState.WAITING_FOR_NETWORK -> stringResource(R.string.downloads_file_state_waiting_for_network)
                         DownloadState.DOWNLOADING -> if (file.isAwaitingServer) {
                             stringResource(R.string.downloads_file_state_waiting_for_server)
                         } else {
@@ -593,6 +597,7 @@ private fun DownloadItem(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         val status = download.statusMessage
+                            ?: download.state.retryStatusLabelRes?.let { stringResource(it) }
                             ?: stringResource(R.string.downloads_item_status_waiting_for_server).takeIf { download.isAwaitingServer }
                         Text(
                             text = if (status != null) "$byteText $status" else byteText,
@@ -747,4 +752,3 @@ private fun DownloadCover(download: DownloadProgress, modifier: Modifier) {
 private fun formatSpeed(bytesPerSecond: Long): String {
     return stringResource(R.string.downloads_speed_suffix, formatBytes(bytesPerSecond))
 }
-

@@ -33,6 +33,8 @@
     <string name="gamedetail_menu_play_button_download">डाउनलोड</string>
     <string name="gamedetail_menu_play_button_progress_percent">%1$d%%</string>
     <string name="gamedetail_menu_play_button_waiting_for_server">सर्वर की प्रतीक्षा है…</string>
+    <string name="gamedetail_menu_play_button_retrying">फिर से प्रयास जारी है…</string>
+    <string name="gamedetail_menu_play_button_waiting_for_network">नेटवर्क की प्रतीक्षा है…</string>
 
     <string name="gamedetail_menu_saves_syncing">सिंक हो रहा है...</string>
 

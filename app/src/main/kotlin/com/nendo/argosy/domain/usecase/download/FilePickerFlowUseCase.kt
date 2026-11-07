@@ -217,7 +217,6 @@ class FilePickerFlowUseCase @Inject constructor(
         return FilePickerSetup(rows, preselected)
     }
 
-    /** Checked-but-missing files get queued; unchecked-but-present files get deleted. Returns added to removed. */
     suspend fun applyManagedSelection(
         gameId: Long,
         rows: List<FilePickerRow>,
@@ -308,6 +307,7 @@ class FilePickerFlowUseCase @Inject constructor(
         val explicit = selectedFileIds.toList().takeIf { it.isNotEmpty() }
         when (val r = downloadGameUseCase(gameId, selectedFileIds = explicit)) {
             is DownloadResult.Queued -> queued++
+            is DownloadResult.MultiDiscQueued -> queued += r.discCount
             is DownloadResult.AlreadyDownloaded -> issues += r
             is DownloadResult.Error -> issues += r
             else -> {}

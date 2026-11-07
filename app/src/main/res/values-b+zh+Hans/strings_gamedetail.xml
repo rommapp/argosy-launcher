@@ -31,6 +31,8 @@
     <string name="gamedetail_menu_play_button_download">下载</string>
     <string name="gamedetail_menu_play_button_progress_percent">%1$d%%</string>
     <string name="gamedetail_menu_play_button_waiting_for_server">等待服务器&#8230;</string>
+    <string name="gamedetail_menu_play_button_retrying">正在重试&#8230;</string>
+    <string name="gamedetail_menu_play_button_waiting_for_network">正在等待网络&#8230;</string>
 
     <string name="gamedetail_menu_saves_syncing">同步中...</string>
 

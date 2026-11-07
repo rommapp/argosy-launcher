@@ -23,9 +23,8 @@ data class CompanionText(
 )
 
 /**
- * Cheats a server ships alongside a game, as loose files or inside a pack in its mods or cheats
- * folder. They become ordinary cheat rows, so the in-game cheat screen manages them like any
- * other and a toggle survives the pack being imported again.
+ * Cheat rows imported from the files a server ships in a game's mods or cheats folder, loose or
+ * inside a pack. A cheat already present by name is not added again.
  */
 @Singleton
 class CompanionCheatStore @Inject constructor(

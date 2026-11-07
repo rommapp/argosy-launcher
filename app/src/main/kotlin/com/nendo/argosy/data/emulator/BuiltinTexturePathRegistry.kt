@@ -123,6 +123,14 @@ object BuiltinTexturePathRegistry {
             relativeBaseDir = "Azahar/load/textures",
             folderKeyStrategy = TextureFolderKeyStrategy.GAME_ID,
             coreOptions = mapOf("citra_custom_textures" to "enabled")
+        ),
+        BuiltinTextureRule(
+            coreIds = setOf("armsx2"),
+            platformSlugs = setOf("ps2"),
+            baseRoot = TextureBaseRoot.LIBRETRO_SYSTEM_DIR,
+            relativeBaseDir = "pcsx2/textures",
+            folderKeyStrategy = TextureFolderKeyStrategy.GAME_ID,
+            packSubdir = "replacements"
         )
     )
 
@@ -202,7 +210,8 @@ object BuiltinTexturePathRegistry {
         val segments = normalized.split('/')
         return segments.containsSublist("mupen64plus", "hires_texture") ||
             segments.containsSublist("mupen64plus", "cache") ||
-            segments.containsSublist("dc", "textures")
+            segments.containsSublist("dc", "textures") ||
+            segments.containsSublist("pcsx2", "textures")
     }
 
     private fun List<String>.containsSublist(vararg target: String): Boolean {

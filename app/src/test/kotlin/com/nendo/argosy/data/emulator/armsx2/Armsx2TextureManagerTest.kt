@@ -1,10 +1,14 @@
 package com.nendo.argosy.data.emulator.armsx2
 
+import com.nendo.argosy.data.emulator.BuiltinTexturePathRegistry
+import com.nendo.argosy.data.storage.FileAccessLayer
+import io.mockk.every
+import io.mockk.mockk
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -15,134 +19,64 @@ class Armsx2TextureManagerTest {
     @get:Rule
     val tempFolder = TemporaryFolder()
 
-    private lateinit var systemDir: File
-    private lateinit var manager: Armsx2TextureManager
+    private val manager = Armsx2TextureManager()
 
-    @Before
-    fun setup() {
-        systemDir = tempFolder.newFolder("system")
-        manager = Armsx2TextureManager()
+    private fun iniWith(text: String): File {
+        val systemDir = tempFolder.newFolder("system")
+        manager.getIniFile(systemDir).apply {
+            parentFile?.mkdirs()
+            writeText(text)
+        }
+        return systemDir
     }
 
     @Test
-    fun `normalizeSerial handles all PS2 serial variants into canonical PCSX2 format`() {
-        assertEquals("SLUS-20002", manager.normalizeSerial("SLUS-20002"))
-        assertEquals("SLUS-20002", manager.normalizeSerial("slus-20002"))
-        assertEquals("SLUS-20002", manager.normalizeSerial("SLUS20002"))
-        assertEquals("SLUS-20002", manager.normalizeSerial("SLUS_200.02"))
-        assertEquals("SLUS-20002", manager.normalizeSerial("SLUS_200.02;1"))
-        assertEquals("SLUS-20002", manager.normalizeSerial("BASLUS-20002"))
-        assertEquals("SLUS-20152", manager.normalizeSerial("BASLUS-20152AC04"))
-        assertEquals("SCES-51234", manager.normalizeSerial("SCES-51234"))
-        assertEquals("SLPM-65001", manager.normalizeSerial("slpm65001"))
-        assertEquals("", manager.normalizeSerial(""))
-    }
+    fun `the default the core wrote on its first run is turned on`() {
+        val systemDir = iniWith("[UI]\nSettingsVersion = 1\n\n[EmuCore/GS]\nLoadTextureReplacements = false\nVsyncEnable = false\n")
 
-    @Test
-    fun `resolveSerialFromFileName extracts serial correctly`() {
-        assertEquals("SLUS-20312", manager.resolveSerialFromFileName("Final Fantasy X [SLUS-20312].iso"))
-        assertEquals("SCES-51719", manager.resolveSerialFromFileName("Gran Turismo 4 (SCES-51719).bin"))
-        assertEquals("SLUS-20002", manager.resolveSerialFromFileName("SLUS_200.02.iso"))
-        assertNull(manager.resolveSerialFromFileName("GenericGameWithoutSerial.iso"))
-    }
+        assertTrue(manager.enableForBuiltinCore(systemDir))
 
-    @Test
-    fun `directory structuring strictly follows PCSX2 upstream hierarchy`() {
-        val serial = "SLUS-20002"
-
-        val baseDir = manager.getTexturesBaseDir(systemDir)
-        assertEquals(File(systemDir, "pcsx2/textures"), baseDir)
-
-        val gameDir = manager.getGameTexturesDir(systemDir, serial)
-        assertEquals(File(systemDir, "pcsx2/textures/SLUS-20002"), gameDir)
-
-        val replacementsDir = manager.getReplacementsDir(systemDir, serial)
-        assertEquals(File(systemDir, "pcsx2/textures/SLUS-20002/replacements"), replacementsDir)
-
-        assertFalse(replacementsDir.exists())
-        val created = manager.ensureReplacementsDir(systemDir, serial)
-        assertTrue(created.exists())
-        assertTrue(created.isDirectory)
-    }
-
-    @Test
-    fun `hasReplacements returns true only when texture files are present`() {
-        val serial = "SLUS-20002"
-        assertFalse(manager.hasReplacements(systemDir, serial))
-
-        val replacementsDir = manager.ensureReplacementsDir(systemDir, serial)
-        assertFalse("Empty directory has no replacements", manager.hasReplacements(systemDir, serial))
-
-        val dummyTexture = File(replacementsDir, "0123456789abcdef-00000000.png")
-        dummyTexture.writeBytes(byteArrayOf(1, 2, 3))
-
-        assertTrue("Replacements found after adding texture file", manager.hasReplacements(systemDir, serial))
-    }
-
-    @Test
-    fun `isTextureReplacementEnabled and setTextureReplacementEnabled manage INI safely`() {
-        assertNull(manager.isTextureReplacementEnabled(systemDir))
-
-        manager.setTextureReplacementEnabled(systemDir, true)
         assertEquals(true, manager.isTextureReplacementEnabled(systemDir))
-
-        manager.setTextureReplacementEnabled(systemDir, false)
-        assertEquals(false, manager.isTextureReplacementEnabled(systemDir))
-
-        val iniFile = manager.getIniFile(systemDir)
-        assertTrue(iniFile.exists())
-        val text = iniFile.readText()
-        assertTrue(text.contains("[EmuCore/GS]"))
-        assertTrue(text.contains("LoadTextureReplacements = false"))
+        val text = manager.getIniFile(systemDir).readText()
+        assertTrue(text.contains("SettingsVersion = 1"))
+        assertTrue(text.contains("VsyncEnable = false"))
     }
 
     @Test
-    fun `configureTexturesForGame respects explicit user preference`() {
-        val serial = "SLUS-20002"
+    fun `an INI the core never wrote is not created, because the core would discard it`() {
+        val systemDir = tempFolder.newFolder("fresh")
 
-        // Explicit user preference: true
-        manager.configureTexturesForGame(systemDir, serial, userPreference = true)
-        assertEquals(true, manager.isTextureReplacementEnabled(systemDir))
+        assertFalse(manager.enableForBuiltinCore(systemDir))
 
-        // Explicit user preference: false
-        manager.configureTexturesForGame(systemDir, serial, userPreference = false)
-        assertEquals(false, manager.isTextureReplacementEnabled(systemDir))
-    }
-
-    @Test
-    fun `configureTexturesForGame does NOT overwrite user manual configuration when userPreference is null`() {
-        val serial = "SLUS-20002"
-        val replacementsDir = manager.ensureReplacementsDir(systemDir, serial)
-        File(replacementsDir, "tex.png").writeBytes(byteArrayOf(1))
-
-        // User manually disabled texture replacements in INI
-        manager.setTextureReplacementEnabled(systemDir, false)
-        assertEquals(false, manager.isTextureReplacementEnabled(systemDir))
-
-        // On game launch (userPreference = null), even though textures exist, Argosy must NOT force enable it!
-        manager.configureTexturesForGame(systemDir, serial, userPreference = null)
-        assertEquals("User's manual setting of false must be preserved", false, manager.isTextureReplacementEnabled(systemDir))
-    }
-
-    @Test
-    fun `configureTexturesForGame auto-enables textures when unset in INI and textures exist`() {
-        val serial = "SLUS-20002"
-        val replacementsDir = manager.ensureReplacementsDir(systemDir, serial)
-        File(replacementsDir, "tex.png").writeBytes(byteArrayOf(1))
-
+        assertFalse(manager.getIniFile(systemDir).exists())
         assertNull(manager.isTextureReplacementEnabled(systemDir))
-
-        manager.configureTexturesForGame(systemDir, serial, userPreference = null)
-        assertEquals("Should auto-enable when unset and textures exist", true, manager.isTextureReplacementEnabled(systemDir))
     }
 
     @Test
-    fun `configureTexturesForGame does not enable textures when unset in INI and no textures exist`() {
-        val serial = "SLUS-20002"
+    fun `the built-in rule targets the folder PCSX2 scans`() {
+        val rule = BuiltinTexturePathRegistry.resolveRule("armsx2", "ps2")
+        assertNotNull(rule)
+        val systemDir = File("/system")
+        assertEquals(
+            File(systemDir, "pcsx2/textures/SLUS-20312/replacements"),
+            BuiltinTexturePathRegistry.resolveTargetDir(rule!!, File("/saves"), systemDir, "SLUS-20312")
+        )
+    }
 
-        assertNull(manager.isTextureReplacementEnabled(systemDir))
+    @Test
+    fun `the standalone app's settings are edited in place and never created`() {
+        val root = tempFolder.newFolder("storage")
+        val fal = mockk<FileAccessLayer>(relaxed = true) {
+            every { isRestrictedPath(any()) } returns false
+        }
 
-        manager.configureTexturesForGame(systemDir, serial, userPreference = null)
-        assertNull("Should remain unset when no textures exist", manager.isTextureReplacementEnabled(systemDir))
+        assertFalse(manager.enableForStandaloneApp("com.armsx2", root.absolutePath, fal))
+        val ini = File(root, "Android/data/com.armsx2/files/PCSX2-Android.ini")
+        assertFalse(ini.exists())
+
+        ini.parentFile?.mkdirs()
+        ini.writeText("[EmuCore/GS]\nLoadTextureReplacements = false\n")
+        assertTrue(manager.enableForStandaloneApp("com.armsx2", root.absolutePath, fal))
+        assertTrue(ini.readText().contains("LoadTextureReplacements = true"))
     }
 }

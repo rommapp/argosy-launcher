@@ -4227,11 +4227,6 @@ class LibretroActivity : ComponentActivity() {
             return nativeAllowed(key, value)
         }
 
-        /**
-         * rcheevos knows neither core's cheat option, and both cores load their cheat files at
-         * boot whenever it is on. Hardcore turns it off here, before the core starts, so a game
-         * with cheats set up keeps its hardcore session instead of dropping to casual.
-         */
         internal fun coreVariablesForMode(
             variables: Map<String, String>,
             hardcore: Boolean,

@@ -5,9 +5,8 @@ import com.nendo.argosy.util.Logger
 import java.io.File
 
 /**
- * Edits one setting in an emulator's own INI, which usually sits under Android/data where direct
- * file access is refused. A file that exists but cannot be read is left alone rather than rewritten
- * from nothing, since that would wipe the player's emulator settings.
+ * Single-setting edits to an emulator's INI through the FileAccessLayer. A file that exists but
+ * cannot be read is never written.
  */
 object EmulatorIniFile {
     private const val TAG = "EmulatorIniFile"

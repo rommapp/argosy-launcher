@@ -243,12 +243,6 @@ class TexturePackInstaller(
 
     private class MigratedFile(val source: File, val dest: File, val renamed: Boolean)
 
-    /**
-     * Moves a pack between emulators as one transaction. A pack's archive is gone once it is
-     * installed, so a copy that fails partway has to leave the source pack and its manifest
-     * exactly as they were: nothing on the source side is deleted until every file and the new
-     * manifest have landed.
-     */
     private suspend fun migrateTextures(
         oldManifestFile: File,
         newTargetDir: File,

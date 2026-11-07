@@ -10,12 +10,10 @@ enum class ExternalTextureBaseRoot {
 }
 
 /**
- * @property activeMarker a path under the package's files directory that only exists once the
- * emulator has adopted that directory as its data root. While it exists the legacy
- * [fallbackRelativeDirs] are ignored, because a leftover legacy folder is not the folder the
- * emulator reads.
- * @property packSubdir the folder under the per-game directory the emulator scans for
- * replacements, when it is not the per-game directory itself.
+ * @property activeMarker path under the package's files directory that exists once the emulator
+ * uses that directory as its data root; while it exists, [fallbackRelativeDirs] are skipped.
+ * @property packSubdir folder under the per-game directory that holds the replacements, when the
+ * emulator does not scan the per-game directory itself.
  */
 data class ExternalTextureRule(
     val emulatorPackages: Set<String>,

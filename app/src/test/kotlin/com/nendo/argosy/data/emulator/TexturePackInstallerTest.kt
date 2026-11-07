@@ -885,7 +885,6 @@ class TexturePackInstallerTest {
         coEvery { gameDao.getById(game.id) } returns game
         coEvery { gameFileDao.getModFilesForGame(game.id) } returns listOf(modFile)
 
-        // 1. Switch to External Dolphin: files must migrate to external directory without re-download
         coEvery { emulatorResolver.getEmulatorPackageForGame(any(), any(), any()) } returns "org.dolphinemu.dolphinemu"
 
         val count = customInstaller.installPendingModFilesForGame(game.id)
@@ -904,7 +903,6 @@ class TexturePackInstallerTest {
         assertTrue("Dolphin GFX.ini must be created", gfxFile.isFile)
         assertTrue(gfxFile.readText().contains("HiresTextures = True"))
 
-        // 2. Switch back to Built-in: files must migrate back to saveDir without loss
         coEvery { emulatorResolver.getEmulatorPackageForGame(any(), any(), any()) } returns EmulatorRegistry.BUILTIN_PACKAGE
         val updatedModFile = testModFile(id = 77L, gameId = game.id, fileName = "pack.zip", localPath = newManifest.absolutePath)
         coEvery { gameFileDao.getModFilesForGame(game.id) } returns listOf(updatedModFile)
@@ -1052,7 +1050,6 @@ class TexturePackInstallerTest {
         val count = customInstaller.installPendingModFilesForGame(game.id)
         assertEquals(1, count)
 
-        // Verify FileAccessLayer was utilized for restricted source read and cleanup
         io.mockk.verify { fal.readBytes(oldManifest.absolutePath) }
         io.mockk.verify { fal.getInputStream(oldTex.absolutePath) }
         io.mockk.verify { fal.delete(oldManifest.absolutePath) }

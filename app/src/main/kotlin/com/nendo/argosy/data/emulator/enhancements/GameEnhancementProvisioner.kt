@@ -14,20 +14,17 @@ sealed interface EnhancementTarget {
 }
 
 /**
- * Puts a game's enhancements where its emulator reads them, before the emulator starts. An
- * emulator reads these files once at boot, so the launch path is the only place that can make
- * them take effect on the first run.
+ * Places a game's enhancements where its emulator reads them, before the emulator starts.
  */
 interface GameEnhancementProvisioner {
     /**
-     * True when [coreId] takes cheats from files at boot instead of through retro_cheat_set, so a
-     * change made in game lands on the next launch.
+     * True when [coreId] loads cheats from files at boot, not through retro_cheat_set; in-game edits
+     * then apply on the next launch.
      */
     fun usesCheatFiles(coreId: String?): Boolean = false
 
     /**
-     * Returns core options to apply as defaults for this launch. An option the player set
-     * explicitly still wins over these.
+     * Core options for this launch, applied beneath any option the player set.
      */
     suspend fun prepareForLaunch(
         game: GameEntity,
@@ -36,8 +33,7 @@ interface GameEnhancementProvisioner {
     ): Map<String, String> = emptyMap()
 
     /**
-     * Reads what this provisioner needs out of a pack before the installer extracts it and
-     * deletes the archive.
+     * Reads this provisioner's files out of a pack before the installer extracts and deletes it.
      */
     suspend fun importFromArchive(game: GameEntity, archive: File) = Unit
 

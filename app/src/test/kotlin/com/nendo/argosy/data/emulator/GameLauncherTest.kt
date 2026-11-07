@@ -1175,7 +1175,7 @@ class GameLauncherTest {
             )
         } coAnswers {
             every { ticket.isCancelled } returns true
-            liveTicket = null // Models real LaunchProgressTracker.cancel(): clears live ticket
+            liveTicket = null
             throw kotlinx.coroutines.CancellationException("User cancelled launch")
         }
 
@@ -1438,7 +1438,6 @@ class GameLauncherTest {
         try {
             launcher.launch(1L)
         } catch (_: NullPointerException) {
-            // FileProvider.getUriForFile returns null in JVM unit tests
         }
 
         coVerify(exactly = 1) {

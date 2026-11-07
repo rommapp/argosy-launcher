@@ -244,11 +244,6 @@ fun CheatEditDialog(
 
 private data class DeleteHandling(val cheatName: String, val onDelete: () -> Unit)
 
-/**
- * The one code form this dialog can edit: `AAAAAA:VV`, as the memory search writes it. Codes from
- * a cheat database or a server file span several lines and formats, so for those the dialog only
- * renames and the code is saved back untouched.
- */
 internal data class ScannerCheatCode(val address: String, val value: Int) {
     fun withValue(newValue: Int): String = "$address:${newValue.toString(16).uppercase().padStart(2, '0')}"
 

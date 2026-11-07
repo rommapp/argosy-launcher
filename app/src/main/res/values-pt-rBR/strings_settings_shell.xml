@@ -47,7 +47,7 @@
     <string name="settings_shell_coremanagement_update_all_progress">Atualizando %1$s (%2$d de %3$d)</string>
     <string name="settings_shell_builtinvideo_reset_all_to_global">Redefinir tudo para global</string>
     <string name="settings_shell_builtinvideo_save_path_title">Caminho do Arquivo de Save</string>
-    <string name="settings_shell_builtinvideo_state_path_title">Caminho do Estado</string>
+    <string name="settings_shell_builtinvideo_state_path_title">Caminho de states</string>
     <string name="settings_shell_builtinvideo_save_trailing_custom">(personalizado)</string>
     <string name="settings_shell_builtinvideo_save_trailing_custom_platform">(personalizado para esta plataforma)</string>
     <string name="settings_shell_builtinvideo_save_trailing_from_global">(do global)</string>
@@ -190,11 +190,11 @@
     <string name="settings_shell_filebrowser_gamenative_sync_folder_title">%1$s Pasta de sincronização</string>
     <string name="settings_shell_filebrowser_save_path_title">Caminho de save</string>
     <string name="settings_shell_filebrowser_platform_save_path_title">%1$s Caminho de save</string>
-    <string name="settings_shell_filebrowser_platform_state_path_title">%1$s Caminho de estado</string>
+    <string name="settings_shell_filebrowser_platform_state_path_title">%1$s Caminho de states</string>
     <string name="settings_shell_filebrowser_builtin_save_path_title">Caminho de saves interno</string>
-    <string name="settings_shell_filebrowser_builtin_state_path_title">Caminho de estado interno</string>
+    <string name="settings_shell_filebrowser_builtin_state_path_title">Caminho de states interno</string>
     <string name="settings_shell_filebrowser_platform_builtin_save_path_title">%1$s Caminho de save interno</string>
-    <string name="settings_shell_filebrowser_platform_builtin_state_path_title">%1$s Caminho de estado interno</string>
+    <string name="settings_shell_filebrowser_platform_builtin_state_path_title">%1$s Caminho de states interno</string>
     <string name="settings_shell_filebrowser_settings_backup_title">Selecionar backup de configurações</string>
     <string name="settings_shell_filebrowser_certificate_title">Selecionar certificado</string>
     <string name="settings_shell_filebrowser_custom_frame_title">Selecionar imagem da moldura</string>
@@ -203,9 +203,9 @@
     <string name="settings_shell_filebrowser_media_location_title">Local da mídia</string>
     <string name="settings_shell_filebrowser_custom_sound_title">Som personalizado</string>
     <string name="settings_shell_modal_builtin_migration_save_title">Migrar arquivos de save?</string>
-    <string name="settings_shell_modal_builtin_migration_state_title">Migrar arquivos de estado?</string>
+    <string name="settings_shell_modal_builtin_migration_state_title">Migrar arquivos de state?</string>
     <string name="settings_shell_modal_builtin_migration_save_message">O destino já contém %1$d arquivos de save. Mover os arquivos existentes do local antigo? Isso substituirá os arquivos em conflito.</string>
-    <string name="settings_shell_modal_builtin_migration_state_message">O destino já contém %1$d arquivos de estado. Mover os arquivos existentes do local antigo? Isso substituirá os arquivos em conflito.</string>
+    <string name="settings_shell_modal_builtin_migration_state_message">O destino já contém %1$d arquivos de state. Mover os arquivos existentes do local antigo? Isso substituirá os arquivos em conflito.</string>
     <string name="settings_shell_modal_builtin_migration_confirm">Migrar</string>
     <string name="settings_shell_modal_builtin_migration_skip">Pular</string>
     <string name="settings_shell_modal_music_relocation_title">Mover arquivos de música?</string>
@@ -220,7 +220,7 @@
     <string name="settings_shell_modal_jellyfin_signout_message">Este dispositivo esquece seu login do Jellyfin. A mídia baixada permanece no disco e seu histórico de assistidas permanece no servidor.</string>
     <string name="settings_shell_modal_jellyfin_signout_confirm">Sair</string>
     <string name="settings_shell_modal_import_settings_title">Importar configurações?</string>
-    <string name="settings_shell_modal_import_settings_message">Selecione um arquivo de backup e as configurações listadas nele substituirão as suas. Tudo que não estiver nele permanecerá inalterado; contas, servidores, estado de sincronização e locais de arquivo nunca serão transferidos.</string>
+    <string name="settings_shell_modal_import_settings_message">Selecione um arquivo de backup e as configurações listadas nele substituirão as suas. Tudo que não estiver nele permanecerá inalterado; contas, servidores, state de sincronização e locais de arquivo nunca serão transferidos.</string>
     <string name="settings_shell_modal_import_settings_confirm">Escolher arquivo</string>
     <string name="settings_shell_modal_accessibility_title">Ativar acessibilidade</string>
     <string name="settings_shell_modal_accessibility_message">O Argosy usa o serviço de acessibilidade para detectar o botão Voltar enquanto outro emulador estiver aberto. O Android avisará que pode monitorar o que você digita; o Argosy observa apenas o botão Voltar durante um jogo.</string>
@@ -247,7 +247,7 @@
     <string name="settings_shell_modal_purge_sync_first_message">Sincronizar saves primeiro - %1$d pendentes. Remover esta plataforma agora descarta permanentemente os saves não enviados. O aviso de remoção retornará após o término da sincronização.</string>
     <string name="settings_shell_modal_sync_first_confirm">Sincronizar agora</string>
     <string name="settings_shell_modal_reset_library_title">Redefinir biblioteca?</string>
-    <string name="settings_shell_modal_reset_library_message">Limpa o banco de dados e o cache de imagens. Os arquivos baixados permanecem no disco. Perdidos permanentemente: tempo de jogo, coleções locais, histórico de downloads, estado de sincronização de saves e configurações por jogo. Você precisará sincronizar sua biblioteca novamente.</string>
+    <string name="settings_shell_modal_reset_library_message">Limpa o banco de dados e o cache de imagens. Os arquivos baixados permanecem no disco. Perdidos permanentemente: tempo de jogo, coleções locais, histórico de downloads, state de sincronização de saves e configurações por jogo. Você precisará sincronizar sua biblioteca novamente.</string>
     <string name="settings_shell_modal_reset_library_confirm">Redefinir</string>
     <string name="settings_shell_modal_delete_game_soundtrack_title">Excluir %1$s?</string>
     <string name="settings_shell_modal_delete_game_soundtrack_message">Remove todos os arquivos baixados deste jogo.%1$s Escolha se deseja excluir também sua trilha sonora.</string>
@@ -258,7 +258,7 @@
     <string name="settings_shell_modal_delete_game_plain_message">Remove todos os arquivos baixados deste jogo.%1$s Isso não pode ser desfeito.</string>
     <string name="settings_shell_modal_delete_game_plain_confirm">Excluir jogo</string>
     <string name="settings_shell_modal_romm_signout_title">Sair do RomM?</string>
-    <string name="settings_shell_romm_signout_message">Os saves, estados e configurações em cache desta conta são removidos deste dispositivo, e tudo já enviado permanece no seu servidor. Seus jogos baixados permanecem.</string>
+    <string name="settings_shell_romm_signout_message">Os saves, states e configurações em cache desta conta são removidos deste dispositivo, e tudo já enviado permanece no seu servidor. Seus jogos baixados permanecem.</string>
     <string name="settings_shell_modal_romm_signout_confirm">Sair</string>
     <string name="settings_shell_romm_signout_blocked_title">Itens não enviados</string>
     <string name="settings_shell_romm_signout_blocked_message">Esta conta ainda possui %1$s que não puderam ser enviados. Sair agora descarta esses itens.</string>
@@ -276,8 +276,8 @@
     <string name="settings_shell_modal_secure_saves_off_title">Desativar os Saves Seguros?</string>
     <string name="settings_shell_modal_secure_saves_off_message">Isso desativa o modo Hardcore do RetroAchievements. Os jogos iniciarão no modo casual até que os Saves Seguros sejam reativados.</string>
     <string name="settings_shell_modal_secure_saves_off_confirm">Desativar</string>
-    <string name="settings_shell_modal_clear_state_cache_title">Limpar o cache de estados?</string>
-    <string name="settings_shell_modal_clear_state_cache_message">Isso excluirá todos os instantâneos de estados de save em cache local e suas operações de sincronização pendentes. Os arquivos de save e as cópias no servidor não serão afetados.</string>
+    <string name="settings_shell_modal_clear_state_cache_title">Limpar o cache de states?</string>
+    <string name="settings_shell_modal_clear_state_cache_message">Isso excluirá todos os snapshots de save state em cache local e suas operações de sincronização pendentes. Os arquivos de save e as cópias no servidor não serão afetados.</string>
     <string name="settings_shell_modal_clear_state_cache_confirm">Limpar</string>
     <string name="settings_shell_modal_caches_clear_confirm">Limpar</string>
     <string name="settings_shell_modal_delete_core_title">Excluir core?</string>
@@ -294,7 +294,7 @@
     <string name="settings_shell_accounts_switch_confirm">Jogos fechados, trocar</string>
     <string name="settings_shell_accounts_remove_title">Remover %1$s?</string>
     <string name="settings_shell_accounts_remove_fallback_name">conta</string>
-    <string name="settings_shell_accounts_removal_message_base">Remove os saves, estados, trabalhos na fila, conquistas e a visualização da biblioteca dessa conta deste dispositivo. Os jogos baixados são mantidos.</string>
+    <string name="settings_shell_accounts_removal_message_base">Remove os saves, states, trabalhos na fila, conquistas e a visualização da biblioteca dessa conta deste dispositivo. Os jogos baixados são mantidos.</string>
     <string name="settings_shell_accounts_removal_pending_suffix">Ainda não enviados: %1$s.</string>
     <string name="settings_shell_accounts_removal_last_account_suffix">Esta é a última conta, portanto o dispositivo será desconectado do RomM.</string>
     <string name="settings_shell_accounts_removal_revoke_suffix">O dispositivo permanece registrado no servidor do RomM; revogue o acesso lá.</string>
@@ -409,9 +409,9 @@
         <item quantity="other">%d saves não sincronizados serão perdidos.</item>
     </plurals>
     <plurals name="settings_shell_romm_signout_pending_message">
-        <item quantity="one">%1$d save será carregado primeiro. Depois que tudo estiver no seu servidor, os saves, os estados e as configurações em cache desta conta serão removidos deste dispositivo. Seus jogos baixados permanecerão.</item>
-        <item quantity="many">%1$d saves serão carregados primeiro. Depois que tudo estiver no seu servidor, os saves, os estados e as configurações em cache desta conta serão removidos deste dispositivo. Seus jogos baixados permanecerão.</item>
-        <item quantity="other">%1$d saves serão carregados primeiro. Depois que tudo estiver no seu servidor, os saves, os estados e as configurações em cache desta conta serão removidos deste dispositivo. Seus jogos baixados permanecerão.</item>
+        <item quantity="one">%1$d save será carregado primeiro. Depois que tudo estiver no seu servidor, os saves, os states e as configurações em cache desta conta serão removidos deste dispositivo. Seus jogos baixados permanecerão.</item>
+        <item quantity="many">%1$d saves serão carregados primeiro. Depois que tudo estiver no seu servidor, os saves, os states e as configurações em cache desta conta serão removidos deste dispositivo. Seus jogos baixados permanecerão.</item>
+        <item quantity="other">%1$d saves serão carregados primeiro. Depois que tudo estiver no seu servidor, os saves, os states e as configurações em cache desta conta serão removidos deste dispositivo. Seus jogos baixados permanecerão.</item>
     </plurals>
     <plurals name="settings_shell_managepins_row_subtitle">
         <item quantity="one">%1$s - %2$d jogo</item>

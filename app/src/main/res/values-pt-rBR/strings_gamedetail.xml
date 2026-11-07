@@ -702,7 +702,7 @@
     <string name="gamedetail_play_options_new_casual">Casual</string>
     <!-- Second line under that row when the emulator can also write save states. "Save states" are
          snapshots of a running game; "cheats" are codes that alter it. -->
-    <string name="gamedetail_play_options_new_casual_subtext_states">Estados de save e trapaças disponíveis</string>
+    <string name="gamedetail_play_options_new_casual_subtext_states">Save states e trapaças disponíveis</string>
     <!-- Second line under that row when the emulator cannot write save states. -->
     <string name="gamedetail_play_options_new_casual_subtext_cheats">Trapaças disponíveis</string>
     <!-- Row that starts a fresh game under the strict RetroAchievements rules. Noun naming that
@@ -710,7 +710,7 @@
     <string name="gamedetail_play_options_new_hardcore">Hardcore</string>
     <!-- Second line under that row, listing what strict mode gives up. "Save states" are snapshots
          of a running game. -->
-    <string name="gamedetail_play_options_new_hardcore_subtext_online">Somente online, sem estados de save ou trapaças</string>
+    <string name="gamedetail_play_options_new_hardcore_subtext_online">Somente online, sem save states ou trapaças</string>
     <!-- Second line under that row when the device is offline, so strict mode cannot start. Verb
          phrase describing what is missing. -->
     <string name="gamedetail_play_options_new_hardcore_subtext_offline">Requer conexão com a internet</string>

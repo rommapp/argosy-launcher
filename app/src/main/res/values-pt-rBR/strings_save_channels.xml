@@ -39,7 +39,7 @@
     <string name="save_channels_detail_row_file">Arquivo</string>
     <string name="save_channels_detail_parent_id">#%1$d</string>
     <string name="save_channels_detail_parent_none">-</string>
-    <string name="save_channels_detail_states_title">Estados</string>
+    <string name="save_channels_detail_states_title">States</string>
     <string name="save_channels_detail_states_hardcore">Nenhum em hardcore</string>
     <string name="save_channels_detail_states_none">Nenhum</string>
     <string name="save_channels_detail_state_slot_auto">Auto</string>

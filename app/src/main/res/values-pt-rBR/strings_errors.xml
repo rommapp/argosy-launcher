@@ -10,14 +10,14 @@
 
     <string name="error_restore_cached_states_game_not_found">Jogo não encontrado</string>
     <string name="error_restore_cached_states_no_local_path">O jogo não tem caminho local</string>
-    <string name="error_restore_cached_states_directory_unresolved">Não foi possível determinar onde restaurar os estados</string>
-    <string name="error_restore_cached_states_unexpected">Não foi possível restaurar os estados</string>
+    <string name="error_restore_cached_states_directory_unresolved">Não foi possível determinar onde restaurar os states</string>
+    <string name="error_restore_cached_states_unexpected">Não foi possível restaurar os states</string>
 
     <string name="error_state_sync_game_not_found">Jogo não encontrado</string>
     <string name="error_state_sync_no_local_path">O jogo não tem caminho local</string>
 
-    <string name="error_restore_state_target_path_unresolved">Não foi possível determinar onde restaurar este estado</string>
-    <string name="error_restore_state_write_failed">Falha ao restaurar o arquivo de estado</string>
+    <string name="error_restore_state_target_path_unresolved">Não foi possível determinar onde restaurar este state</string>
+    <string name="error_restore_state_write_failed">Falha ao restaurar o arquivo de state</string>
 
     <string name="error_restore_cached_save_game_not_found">Jogo não encontrado</string>
     <string name="error_restore_cached_save_no_local_copy">O jogo não tem cópia local</string>

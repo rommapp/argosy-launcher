@@ -206,7 +206,7 @@
     <string name="notif_sync_settings_reset_save_cache_blocked">Não é possível redefinir o cache de saves enquanto um jogo está em execução</string>
     <!-- Blocks clearing the save-state cache while a game is running. "State" here is a save
           state (an emulator snapshot), not a completion status. -->
-    <string name="notif_sync_settings_clear_state_cache_blocked">Não é possível limpar o cache de estados enquanto um jogo está em execução</string>
+    <string name="notif_sync_settings_clear_state_cache_blocked">Não é possível limpar o cache de states enquanto um jogo está em execução</string>
 
     <!-- Settings: Steam library management (SteamSettingsDelegate). -->
 

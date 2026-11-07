@@ -35,7 +35,7 @@
     <!-- ===== Companion dashboard, shown on the second screen while a game runs ===== -->
 
     <!-- Button on the in-game dashboard. Verb phrase: writes a save state for the running game. -->
-    <string name="dual_companion_quick_action_save_state">Salvar Estado</string>
+    <string name="dual_companion_quick_action_save_state">Save State</string>
     <!-- Button on the in-game dashboard. Noun: grabs a picture of the running game. -->
     <string name="dual_companion_quick_action_screenshot">Captura de tela</string>
 
@@ -46,7 +46,7 @@
          game. Keep very short; the narrow rail shows it under an icon. -->
     <string name="dual_dashboard_rail_session">Sessão</string>
     <!-- Rail entry for the list of rolling quick save states. Noun, plural. Keep very short. -->
-    <string name="dual_dashboard_rail_states">Estados</string>
+    <string name="dual_dashboard_rail_states">States</string>
     <!-- Rail entry for the running game's achievements. Noun, plural. Keep very short. -->
     <string name="dual_dashboard_rail_trophies">Troféus</string>
     <!-- Rail entry that opens the game's instruction manual. Noun. Keep very short. -->
@@ -70,11 +70,11 @@
     <!-- Achievements earned out of the total. %1$d is earned, %2$d the total. -->
     <string name="dual_dashboard_achievements_progress">%1$d / %2$d</string>
     <!-- Heading of the screen listing every rolling quick save state. Noun phrase. -->
-    <string name="dual_dashboard_states_title">Estados rápidos</string>
+    <string name="dual_dashboard_states_title">States rápidos</string>
     <!-- Body of that screen before any quick state exists. Statement plus instruction. -->
-    <string name="dual_dashboard_states_empty">Nenhum estado rápido ainda. Salvar Estado adiciona um aqui.</string>
+    <string name="dual_dashboard_states_empty">Nenhum state rápido ainda. Save State adiciona um aqui.</string>
     <!-- Label over the row of the newest quick states on the overview. Noun phrase. -->
-    <string name="dual_dashboard_recent_states">Estados recentes</string>
+    <string name="dual_dashboard_recent_states">States recentes</string>
     <!-- Hint beside that row: a state loads on the second tap. Instruction addressed to the user. -->
     <string name="dual_dashboard_states_tap_twice">Toque duas vezes para carregar</string>
     <!-- Shown over a quick state after its first tap, before the second loads it. Instruction. -->
@@ -694,7 +694,7 @@
     <string name="dual_detail_tab_saves">SAVES</string>
     <!-- Tab listing the game's save states, the emulator's own snapshots. Noun, plural, drawn in
          caps in English. -->
-    <string name="dual_detail_tab_states">ESTADOS</string>
+    <string name="dual_detail_tab_states">STATES</string>
     <!-- Tab listing the game's screenshots and artwork. Noun, drawn in caps in English. -->
     <string name="dual_detail_tab_media">MÍDIA</string>
     <!-- Tab listing what players wrote about the game. Noun, plural, drawn in caps in English. -->
@@ -713,23 +713,23 @@
          slot. -->
     <string name="dual_state_menu_copy_to">Copiar para o slot</string>
     <!-- Row in the menu over a save state. Verb phrase: erases it. -->
-    <string name="dual_state_menu_delete">Excluir estado</string>
+    <string name="dual_state_menu_delete">Excluir state</string>
     <!-- Heading over that menu. Noun, singular, drawn in caps in English: one save state. -->
-    <string name="dual_detail_state_menu_header">ESTADO</string>
+    <string name="dual_detail_state_menu_header">STATE</string>
 
     <!-- Names the state the emulator writes by itself, in the sentence of a confirmation prompt.
          Noun phrase, subject of the sentence that follows. -->
-    <string name="dual_detail_state_prompt_auto_slot">O estado automático</string>
+    <string name="dual_detail_state_prompt_auto_slot">O state automático</string>
     <!-- Names a numbered state slot in the same sentence. %1$d is the slot number. -->
     <string name="dual_detail_state_prompt_numbered_slot">Slot %1$d</string>
     <!-- Title of the prompt before erasing a save state. Verb phrase. -->
-    <string name="dual_detail_state_prompt_delete_title">Excluir estado</string>
+    <string name="dual_detail_state_prompt_delete_title">Excluir state</string>
     <!-- Title of the prompt before writing over a slot that already holds one. Verb phrase. -->
-    <string name="dual_detail_state_prompt_overwrite_title">Sobrescrever estado</string>
+    <string name="dual_detail_state_prompt_overwrite_title">Sobrescrever state</string>
     <!-- Body of the delete prompt. %1$s is the slot's name and starts the sentence. -->
     <string name="dual_detail_state_prompt_delete_message">%1$s será removido deste dispositivo e do servidor.</string>
     <!-- Body of the overwrite prompt. %1$s is the slot's name and starts the sentence. -->
-    <string name="dual_detail_state_prompt_overwrite_message">%1$s já contém um estado. Ele será substituído pela cópia.</string>
+    <string name="dual_detail_state_prompt_overwrite_message">%1$s já contém um state. Ele será substituído pela cópia.</string>
     <!-- Accepting button on the delete prompt. Verb. -->
     <string name="dual_detail_state_prompt_delete_confirm">Excluir</string>
     <!-- Accepting button on the overwrite prompt. Verb. -->
@@ -761,7 +761,7 @@
     <string name="dual_detail_saves_sync_local">Local</string>
 
     <!-- Shown in place of the states tab when the game has no save states. -->
-    <string name="dual_detail_states_empty">Nenhum slot de estado</string>
+    <string name="dual_detail_states_empty">Nenhum slot de state</string>
     <!-- Line above the state slots while one is waiting to be copied. Instruction addressed to the
          user. -->
     <string name="dual_detail_states_copy_prompt">Escolha um slot para copiar</string>
@@ -970,7 +970,7 @@
 
     <!-- Spoken description of the picture of a save state on the showcase display, used when the
          state has no name. Noun phrase. -->
-    <string name="dual_detail_state_preview_description">Prévia do estado</string>
+    <string name="dual_detail_state_preview_description">Prévia do state</string>
     <!-- Spoken description of the cover art drawn when a save state has no picture of its own.
          Noun phrase. -->
     <string name="dual_detail_state_preview_cover_fallback">Arte de capa substituta</string>

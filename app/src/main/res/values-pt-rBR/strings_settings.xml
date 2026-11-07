@@ -1373,7 +1373,7 @@
     <!-- Row that writes the settings out to a file. Verb phrase. -->
     <string name="settings_about_export_title">Exportar Configurações</string>
     <!-- Second line of that row. %1$s is the file name it writes; leave it as it comes. -->
-    <string name="settings_about_export_subtitle">Salva suas configurações de aparência e navegação em %1$s. Nenhuma conta, servidor ou estado de sincronização é incluído.</string>
+    <string name="settings_about_export_subtitle">Salva suas configurações de aparência e navegação em %1$s. Nenhuma conta, servidor ou state de sincronização é incluído.</string>
     <!-- Row that reads settings back in from a file. Verb phrase. -->
     <string name="settings_about_import_title">Importar Configurações</string>
     <!-- Second line of that row. -->
@@ -1559,7 +1559,7 @@
          shown in place. Verb phrase. -->
     <string name="settings_fonts_preview_heading">Continuar Jogando</string>
     <!-- Sample paragraph in that preview. Any sentence of about this length will do. -->
-    <string name="settings_fonts_preview_body">Retome de onde parou. Saves, estados e tempo de jogo sincronizados na sua biblioteca.</string>
+    <string name="settings_fonts_preview_body">Retome de onde parou. Saves, states e tempo de jogo sincronizados na sua biblioteca.</string>
     <!-- Sample menu row in that preview, labelling itself. Adjective plus noun. -->
     <string name="settings_fonts_preview_row">Linha de Menu Focada</string>
     <!-- Sample letters and figures in that preview. Replace with characters that show off your
@@ -1835,7 +1835,7 @@
     <string name="settings_storage_builtin_save_path_internal">Interno (padrão)</string>
     <!-- Row naming the folder the built-in emulator writes save states to. "State" is a snapshot
          of a game taken at any moment, unlike a save the game itself writes. -->
-    <string name="settings_storage_builtin_state_path_title">Caminho de estados interno</string>
+    <string name="settings_storage_builtin_state_path_title">Caminho de states interno</string>
     <!-- Second line of that row when it sits in the app's own storage. -->
     <string name="settings_storage_builtin_state_path_internal">Interno (padrão)</string>
 
@@ -2099,15 +2099,15 @@
     <!-- Second line of that row, counting the copies held. "States" are snapshots of a running
          game. -->
     <plurals name="settings_caches_save_cache_count">
-        <item quantity="one">%d save ou estado em cache</item>
-        <item quantity="many">%d saves e estados em cache</item>
-        <item quantity="other">%d saves e estados em cache</item>
+        <item quantity="one">%d save ou state em cache</item>
+        <item quantity="many">%d saves e states em cache</item>
+        <item quantity="other">%d saves e states em cache</item>
     </plurals>
     <!-- Second line of that row when nothing is held. -->
     <string name="settings_caches_save_cache_empty">Nenhum item em cache</string>
 
     <!-- Row that empties the stored state snapshots. Verb phrase. -->
-    <string name="settings_caches_state_cache_title">Limpar Cache de Estados</string>
+    <string name="settings_caches_state_cache_title">Limpar Cache de States</string>
     <!-- Second line of that row while it is running. -->
     <string name="settings_caches_state_cache_busy">Limpando...</string>
     <!-- Second line of that row when saves are still waiting to go up. -->
@@ -2118,12 +2118,12 @@
     </plurals>
     <!-- Second line of that row, counting the snapshots held. -->
     <plurals name="settings_caches_state_cache_count">
-        <item quantity="one">%d estado em cache</item>
-        <item quantity="many">%d estados em cache</item>
-        <item quantity="other">%d estados em cache</item>
+        <item quantity="one">%d save state em cache</item>
+        <item quantity="many">%d save states em cache</item>
+        <item quantity="other">%d save states em cache</item>
     </plurals>
     <!-- Second line of that row when none are. -->
-    <string name="settings_caches_state_cache_empty">Nenhum estado em cache</string>
+    <string name="settings_caches_state_cache_empty">Nenhum state em cache</string>
 
     <!-- Row that forgets where each emulator keeps its saves. Verb phrase. -->
     <string name="settings_caches_path_cache_title">Limpar Cache de Caminhos de Save</string>
@@ -2145,9 +2145,9 @@
     <string name="settings_caches_path_cache_empty">Nenhum caminho em cache</string>
 
     <!-- Row title. Verb phrase: keep snapshots of running games for syncing. -->
-    <string name="settings_caches_state_toggle_title">Cache de Estados de Save</string>
+    <string name="settings_caches_state_toggle_title">Cache de save states</string>
     <!-- Second line of that row. -->
-    <string name="settings_caches_state_toggle_subtitle">Manter snapshots de estado para sincronização em nuvem ao final da sessão</string>
+    <string name="settings_caches_state_toggle_subtitle">Manter snapshots de state para sincronização em nuvem ao final da sessão</string>
     <!-- Row title. Noun phrase: how many old saves are kept on the device. -->
     <string name="settings_caches_save_limit_title">Cache Local de Saves</string>
     <!-- Value of that row. %d is how many saves are kept for each game. -->
@@ -2756,7 +2756,7 @@
     <string name="settings_accounts_needs_sync_saves">JOGOS AGUARDANDO SINCRONIZAÇÃO DE SAVE</string>
     <!-- Heading over the list of games whose save states are still empty. "State" is a snapshot
          of a running game. Rendered in caps in English. -->
-    <string name="settings_accounts_needs_sync_states">ESTADOS DE SAVE AGUARDANDO SINCRONIZAÇÃO</string>
+    <string name="settings_accounts_needs_sync_states">SAVE STATES AGUARDANDO SINCRONIZAÇÃO</string>
     <!-- Body under either of those headings. -->
     <string name="settings_accounts_needs_sync_message">Estes foram deixados vazios porque o arquivo neste dispositivo era mais antigo que o do servidor. Sincronize para preencher.</string>
 
@@ -2811,7 +2811,7 @@
     <string name="settings_builtin_saves_title">Saves</string>
     <!-- Second line of that row, listing what is inside. A "save state" is a snapshot of the
          running game; "folders" are where save files and save states are stored. -->
-    <string name="settings_builtin_saves_subtitle">Estados de save, saves do servidor, pastas</string>
+    <string name="settings_builtin_saves_subtitle">Save states, saves do servidor, pastas</string>
 
     <!-- Row opening the list of emulation engines. Verb phrase. -->
     <string name="settings_builtin_cores_title">Gerenciar Núcleos</string>
@@ -2872,9 +2872,9 @@
     <!-- Second line of that row. "Fast-forwarding" is running the game faster than normal. -->
     <string name="settings_builtin_hud_fps_subtitle">Quadros apresentados por segundo; oculto durante avanço rápido</string>
     <!-- Row title. Verb phrase: put the age of the newest save state on that bar. -->
-    <string name="settings_builtin_hud_last_save_title">Mostrar Último Estado de Save</string>
+    <string name="settings_builtin_hud_last_save_title">Mostrar o último save state</string>
     <!-- Second line of that row. -->
-    <string name="settings_builtin_hud_last_save_subtitle">Há quanto tempo um estado de save foi salvo</string>
+    <string name="settings_builtin_hud_last_save_subtitle">Há quanto tempo um save state foi gravado</string>
 
     <!-- ===== Built-in emulator: controls ===== -->
 
@@ -3273,7 +3273,7 @@
     <string name="settings_platform_builtin_controls_title">Controles internos</string>
     <string name="settings_platform_builtin_controls_subtitle">Substituições de mapeamento de stick e vibração</string>
     <string name="settings_platform_builtin_saves_title">Saves internos</string>
-    <string name="settings_platform_builtin_saves_subtitle">Substituições de estado de save e pasta</string>
+    <string name="settings_platform_builtin_saves_subtitle">Substituições de save state e pasta</string>
     <string name="settings_platform_core_options_title">Opções de core</string>
     <string name="settings_platform_core_options_subtitle">Configurações por core para esta plataforma</string>
     <string name="settings_platform_stat_total_games">Jogos na biblioteca</string>
@@ -3306,7 +3306,7 @@
     <string name="settings_platform_rom_path_title">Caminho da ROM</string>
     <string name="settings_platform_save_path_title">Caminho de saves</string>
     <string name="settings_platform_save_path_blocked">O Android bloqueia esta pasta. Escolha uma pasta de saves que o Argosy possa ler.</string>
-    <string name="settings_platform_state_path_title">Caminho de estados</string>
+    <string name="settings_platform_state_path_title">Caminho de states</string>
     <string name="settings_platform_retroarch_config_loaded">De %1$s</string>
     <string name="settings_platform_retroarch_config_unreadable">%1$s não pôde ser lido -- defina a pasta usada pelo RetroArch</string>
     <string name="settings_platform_retroarch_config_missing">Nenhuma configuração do RetroArch encontrada -- defina a pasta usada pelo RetroArch</string>
@@ -3681,7 +3681,7 @@
     <string name="settings_hard_reset_deletes_header">Exclui</string>
     <string name="settings_hard_reset_deletes_files">Todos os arquivos de jogos baixados no disco</string>
     <string name="settings_hard_reset_deletes_database">Todo o banco de dados da biblioteca - tempo de jogo, coleções, histórico de download, configurações por jogo</string>
-    <string name="settings_hard_reset_deletes_caches">Todo o cache - imagens, partidas salvas e estados, ROMs extraídas, efeitos sonoros, instaladores de emulador, pré-ambiente do Steam, capas de presença</string>
+    <string name="settings_hard_reset_deletes_caches">Todo o cache - imagens, saves e states, ROMs extraídas, efeitos sonoros, instaladores de emulador, pré-ambiente do Steam, capas de presença</string>
     <string name="settings_hard_reset_keeps_header">Mantém</string>
     <string name="settings_hard_reset_keeps_adopted_files">Arquivos de jogos que você copiou para o dispositivo</string>
     <string name="settings_hard_reset_keeps_sign_ins">Configurações e conexões - RomM e Steam permanecem conectados</string>
@@ -3697,7 +3697,7 @@
     <string name="settings_platform_modal_sync_label">Sincronizar com o servidor</string>
     <string name="settings_platform_modal_rom_path_label">Caminho da ROM</string>
     <string name="settings_platform_modal_save_path_label">Caminho de saves</string>
-    <string name="settings_platform_modal_state_path_label">Caminho de estado</string>
+    <string name="settings_platform_modal_state_path_label">Caminho de states</string>
     <string name="settings_platform_modal_resync_label">Ressincronizar plataforma</string>
     <string name="settings_platform_modal_purge_label">Excluir todos os dados</string>
     <string name="settings_path_config_coming_soon">(em breve)</string>
@@ -3720,7 +3720,7 @@
     <string name="settings_save_path_modal_beside_rom_title">Save ao lado da ROM</string>
     <string name="settings_save_path_modal_beside_rom_subtitle_builtin">Armazene os saves na pasta de cada jogo.</string>
     <string name="settings_save_path_modal_beside_rom_subtitle_external">Procure os saves na pasta de cada jogo. Configure o emulador para salvar ao lado da ROM também.</string>
-    <string name="settings_save_path_modal_state_path_label">Caminho do estado</string>
+    <string name="settings_save_path_modal_state_path_label">Caminho de states</string>
     <string name="settings_save_path_option_custom_badge">(personalizado)</string>
     <string name="settings_save_path_option_detected_badge">(detectado)</string>
     <string name="settings_save_path_option_coming_soon">(em breve)</string>
@@ -3838,13 +3838,13 @@
     <string name="settings_libretro_def_vsync_title">VSync</string>
     <string name="settings_libretro_def_vsync_subtitle">Sincroniza com a taxa de atualização da tela</string>
     <string name="settings_libretro_applies_next_launch">Aplica-se na próxima inicialização do jogo</string>
-    <string name="settings_libretro_def_auto_save_state_title">Salvar Estado ao Sair</string>
+    <string name="settings_libretro_def_auto_save_state_title">Save State ao Sair</string>
     <string name="settings_libretro_def_auto_save_state_subtitle">Aplica-se apenas a jogos casuais</string>
-    <string name="settings_libretro_def_auto_restore_state_title"> Restaurar partida ao iniciar</string>
+    <string name="settings_libretro_def_auto_restore_state_title">Restaurar state ao iniciar</string>
     <string name="settings_libretro_def_auto_restore_state_subtitle"> Aplica-se apenas a jogos casuais</string>
     <string name="settings_libretro_def_prefer_newer_server_save_title"> Preferir partida mais recente do servidor</string>
-    <string name="settings_libretro_def_prefer_newer_server_save_subtitle"> Ignorar a restauração automática da partida quando uma partida mais recente for baixada do servidor</string>
-    <string name="settings_libretro_def_hw_core_save_states_title">Estados de save do Dolphin e Flycast</string>
+    <string name="settings_libretro_def_prefer_newer_server_save_subtitle">Ignorar o state de retomada automática quando um save mais recente for baixado do servidor</string>
+    <string name="settings_libretro_def_hw_core_save_states_title">Save states do Dolphin e Flycast</string>
     <string name="settings_libretro_def_hw_core_save_states_subtitle"> Experimental; esses cores podem apresentar tela preta ou falhar ao retomar. Aplica-se no próximo início, apenas jogos casuais</string>
     <string name="settings_libretro_def_shader_option_none"> Nenhum</string>
     <string name="settings_libretro_def_shader_option_custom"> Personalizado</string>

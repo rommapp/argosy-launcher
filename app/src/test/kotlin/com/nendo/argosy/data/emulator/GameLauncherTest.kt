@@ -1,6 +1,7 @@
 package com.nendo.argosy.data.emulator
 
 import android.content.Context
+import java.io.File
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.EmulatorLaunchArgsDao
 import com.nendo.argosy.data.local.dao.GameDao
@@ -9,6 +10,7 @@ import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.local.dao.PlatformLibretroSettingsDao
 import com.nendo.argosy.data.local.entity.EmulatorConfigEntity
+import com.nendo.argosy.data.local.entity.GameDiscEntity
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.GameFileEntity
 import com.nendo.argosy.data.model.GameSource
@@ -1406,5 +1408,70 @@ class GameLauncherTest {
             "Multi-disc routing failed: ${result::class.simpleName}",
             result is LaunchResult.SelectDisc || result is LaunchResult.Error || result is LaunchResult.NoRomFile
         )
+    }
+
+    @Test
+    fun `launching multi-disc game on external emulator triggers texture pack installation exactly once`() = runTest {
+        val disc1 = File(tempFolder.root, "disc1.iso").apply { writeText("disc1") }
+        val disc2 = File(tempFolder.root, "disc2.iso").apply { writeText("disc2") }
+        val game = createGame(localPath = disc1.absolutePath, platformSlug = "ngc").copy(isMultiDisc = true)
+        coEvery { gameDao.getById(1L) } returns game
+        coEvery { variantResolver.getVariantOptions(game) } returns null
+
+        val discs = listOf(
+            GameDiscEntity(id = 11L, gameId = 1L, discNumber = 1, rommId = 101L, fileName = "disc1.iso", localPath = disc1.absolutePath, fileSize = 1024L),
+            GameDiscEntity(id = 12L, gameId = 1L, discNumber = 2, rommId = 102L, fileName = "disc2.iso", localPath = disc2.absolutePath, fileSize = 1024L)
+        )
+        coEvery { gameDiscDao.getDiscsForGame(1L) } returns discs
+
+        val dolphin = EmulatorRegistry.getById("dolphin")!!
+        val gameConfig = createConfig(
+            gameId = 1L,
+            packageName = dolphin.packageName,
+            displayName = "Dolphin"
+        )
+        coEvery { emulatorConfigDao.getByGameId(1L) } returns gameConfig
+        stubDetectorWith(installedEmulator(dolphin))
+        every { emulatorDetector.getByPackage(dolphin.packageName) } returns dolphin
+
+        try {
+            launcher.launch(1L)
+        } catch (_: NullPointerException) {
+            // FileProvider.getUriForFile returns null in JVM unit tests
+        }
+
+        coVerify(exactly = 1) {
+            texturePackInstaller.installPendingModFilesForGame(
+                gameId = 1L,
+                extractedTitleId = any(),
+                isCancelled = any(),
+                onProgress = any()
+            )
+        }
+    }
+
+    @Test
+    fun `launching built-in game triggers texture pack installation exactly once`() = runTest {
+        bindPs2ToBuiltin(coreSupportsPs2 = true)
+        val systemDir = tempFolder.newFolder("system-single-tex")
+        File(systemDir, "pcsx2/bios").mkdirs()
+        File(systemDir, "pcsx2/bios/dump.bin").writeBytes(byteArrayOf(1))
+        every { biosRepository.getLibretroSystemDir() } returns systemDir
+        every { libretroCoreMgr.getCorePathForPlatform(any(), any()) } returns "/fake/pcsx2_libretro_android.so"
+        coEvery { coreSystemDataManager.ensureCoreSystemData(any(), any()) } returns true
+        every { userPreferencesRepository.getBuiltinEmulatorSettings() } returns flowOf(
+            com.nendo.argosy.data.preferences.BuiltinEmulatorSettings()
+        )
+
+        runCatching { launcher.launch(1L) }
+
+        coVerify(exactly = 1) {
+            texturePackInstaller.installPendingModFilesForGame(
+                gameId = 1L,
+                extractedTitleId = any(),
+                isCancelled = any(),
+                onProgress = any()
+            )
+        }
     }
 }

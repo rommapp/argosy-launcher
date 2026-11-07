@@ -2,6 +2,7 @@ package com.nendo.argosy.data.emulator
 
 import com.nendo.argosy.data.download.ZipExtractor
 import com.nendo.argosy.data.model.VariantCategory
+import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.util.FileNames
 import com.nendo.argosy.util.Logger
 import kotlinx.coroutines.CancellationException
@@ -56,10 +57,16 @@ class TexturePackExtractor @Inject constructor() {
         sourceFile: File,
         cacheDir: File,
         gameFileId: Long,
+        fileAccessLayer: FileAccessLayer? = null,
         isCancelled: (() -> Boolean)? = null,
         onProgress: ((fraction: Float?) -> Unit)? = null
     ): File? {
-        cacheDir.mkdirs()
+        val isRestricted = fileAccessLayer?.isRestrictedPath(cacheDir.absolutePath) == true
+        if (isRestricted) {
+            fileAccessLayer?.mkdirs(cacheDir.absolutePath)
+        } else {
+            cacheDir.mkdirs()
+        }
         val destFile = File(cacheDir, sourceFile.name)
         if (!FileNames.isWithin(destFile, cacheDir)) {
             throw SecurityException("Target file outside cache dir: ${sourceFile.name}")
@@ -73,7 +80,12 @@ class TexturePackExtractor @Inject constructor() {
                 if (onProgress != null && total > 0L) {
                     onProgress(0f)
                     sourceFile.inputStream().use { input ->
-                        FileOutputStream(tmpFile).use { output ->
+                        val outputStream = if (isRestricted) {
+                            fileAccessLayer?.getOutputStream(tmpFile.absolutePath) ?: FileOutputStream(tmpFile)
+                        } else {
+                            FileOutputStream(tmpFile)
+                        }
+                        outputStream.use { output ->
                             val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
                             var copied = 0L
                             var lastReported = -1f
@@ -98,16 +110,26 @@ class TexturePackExtractor @Inject constructor() {
                     if (isCancelled?.invoke() == true) {
                         throw CancellationException("Texture pack installation cancelled")
                     }
-                    sourceFile.copyTo(tmpFile, overwrite = true)
+                    if (isRestricted) {
+                        fileAccessLayer?.copyFile(sourceFile.absolutePath, tmpFile.absolutePath)
+                    } else {
+                        sourceFile.copyTo(tmpFile, overwrite = true)
+                    }
                 }
                 currentCoroutineContext().ensureActive()
                 if (isCancelled?.invoke() == true) {
                     throw CancellationException("Texture pack installation cancelled")
                 }
-                if (destFile.exists()) destFile.delete()
-                if (!tmpFile.renameTo(destFile)) {
-                    tmpFile.copyTo(destFile, overwrite = true)
-                    tmpFile.delete()
+                if (isRestricted) {
+                    fileAccessLayer?.delete(destFile.absolutePath)
+                    fileAccessLayer?.copyFile(tmpFile.absolutePath, destFile.absolutePath)
+                    fileAccessLayer?.delete(tmpFile.absolutePath)
+                } else {
+                    if (destFile.exists()) destFile.delete()
+                    if (!tmpFile.renameTo(destFile)) {
+                        tmpFile.copyTo(destFile, overwrite = true)
+                        tmpFile.delete()
+                    }
                 }
                 destCommitted = true
             }
@@ -116,21 +138,36 @@ class TexturePackExtractor @Inject constructor() {
                 throw CancellationException("Texture pack installation cancelled")
             }
             val manifestFile = manifestFileFor(cacheDir, gameFileId)
-            manifestFile.writeText(destFile.name)
+            val manifestBytes = destFile.name.toByteArray(Charsets.UTF_8)
+            if (isRestricted) {
+                fileAccessLayer?.writeBytes(manifestFile.absolutePath, manifestBytes)
+            } else {
+                manifestFile.writeBytes(manifestBytes)
+            }
             manifestCommitted = true
             onProgress?.invoke(1f)
             return manifestFile
         } catch (e: Throwable) {
             if (!manifestCommitted) {
                 val manifestFile = manifestFileFor(cacheDir, gameFileId)
-                runCatching { manifestFile.delete() }
+                if (isRestricted) {
+                    fileAccessLayer?.delete(manifestFile.absolutePath)
+                } else {
+                    runCatching { manifestFile.delete() }
+                }
             }
             if (destCommitted && sourceFile.canonicalPath != destFile.canonicalPath) {
-                destFile.delete()
+                if (isRestricted) {
+                    fileAccessLayer?.delete(destFile.absolutePath)
+                } else {
+                    destFile.delete()
+                }
             }
             throw e
         } finally {
-            if (tmpFile.exists()) {
+            if (isRestricted) {
+                fileAccessLayer?.delete(tmpFile.absolutePath)
+            } else if (tmpFile.exists()) {
                 tmpFile.delete()
             }
         }
@@ -140,6 +177,8 @@ class TexturePackExtractor @Inject constructor() {
         zipFile: File,
         cacheDir: File,
         gameFileId: Long,
+        stagingBaseDir: File? = null,
+        fileAccessLayer: FileAccessLayer? = null,
         isCancelled: (() -> Boolean)? = null,
         onProgress: ((fraction: Float?) -> Unit)? = null
     ): File? {
@@ -148,6 +187,8 @@ class TexturePackExtractor @Inject constructor() {
             targetDir = cacheDir,
             gameFileId = gameFileId,
             resolveRelativePath = { cleanPath -> cleanPath.substringAfterLast('/').takeIf { it.isNotEmpty() } },
+            stagingBaseDir = stagingBaseDir,
+            fileAccessLayer = fileAccessLayer,
             isCancelled = isCancelled,
             onProgress = onProgress
         )
@@ -158,6 +199,8 @@ class TexturePackExtractor @Inject constructor() {
         targetDir: File,
         folderKey: String,
         gameFileId: Long,
+        stagingBaseDir: File? = null,
+        fileAccessLayer: FileAccessLayer? = null,
         isCancelled: (() -> Boolean)? = null,
         onProgress: ((fraction: Float?) -> Unit)? = null
     ): File? {
@@ -180,6 +223,8 @@ class TexturePackExtractor @Inject constructor() {
                     folderKey = folderKey
                 )
             },
+            stagingBaseDir = stagingBaseDir,
+            fileAccessLayer = fileAccessLayer,
             isCancelled = isCancelled,
             onProgress = onProgress
         )
@@ -191,10 +236,21 @@ class TexturePackExtractor @Inject constructor() {
         gameFileId: Long,
         resolveRelativePath: (cleanPath: String) -> String?,
         onEntriesValidated: ((entries: List<Pair<ZipEntry, String>>) -> Unit)? = null,
+        stagingBaseDir: File? = null,
+        fileAccessLayer: FileAccessLayer? = null,
         isCancelled: (() -> Boolean)? = null,
         onProgress: ((fraction: Float?) -> Unit)? = null
     ): File? {
-        val stagingDir = File(targetDir, ".staging_$gameFileId")
+        val isRestricted = fileAccessLayer?.isRestrictedPath(targetDir.absolutePath) == true
+        val isDirectlyWritable = !isRestricted && (targetDir.canWrite() || targetDir.parentFile?.canWrite() == true || targetDir.mkdirs())
+
+        val stagingDir = if (isDirectlyWritable) {
+            File(targetDir, ".staging_$gameFileId")
+        } else {
+            val safeStagingBase = stagingBaseDir
+                ?: File(System.getProperty("java.io.tmpdir") ?: "/data/local/tmp")
+            File(safeStagingBase, "texture_staging_$gameFileId")
+        }
         stagingDir.deleteRecursively()
         stagingDir.mkdirs()
         val extractedRelativePaths = LinkedHashSet<String>()
@@ -270,40 +326,89 @@ class TexturePackExtractor @Inject constructor() {
             val committedFiles = mutableListOf<File>()
             var commitSucceeded = false
             try {
-                targetDir.mkdirs()
-                for (relativePath in extractedRelativePaths) {
+                if (isDirectlyWritable) {
+                    targetDir.mkdirs()
+                    for (relativePath in extractedRelativePaths) {
+                        currentCoroutineContext().ensureActive()
+                        if (isCancelled?.invoke() == true) {
+                            throw CancellationException("Texture pack installation cancelled")
+                        }
+                        val stagedFile = File(stagingDir, relativePath)
+                        if (!stagedFile.exists()) continue
+                        val finalFile = File(targetDir, relativePath)
+                        finalFile.parentFile?.mkdirs()
+                        if (finalFile.exists()) finalFile.delete()
+                        if (!stagedFile.renameTo(finalFile)) {
+                            stagedFile.copyTo(finalFile, overwrite = true)
+                            stagedFile.delete()
+                        }
+                        committedFiles.add(finalFile)
+                    }
+
                     currentCoroutineContext().ensureActive()
                     if (isCancelled?.invoke() == true) {
                         throw CancellationException("Texture pack installation cancelled")
                     }
-                    val stagedFile = File(stagingDir, relativePath)
-                    if (!stagedFile.exists()) continue
-                    val finalFile = File(targetDir, relativePath)
-                    finalFile.parentFile?.mkdirs()
-                    if (finalFile.exists()) finalFile.delete()
-                    if (!stagedFile.renameTo(finalFile)) {
-                        stagedFile.copyTo(finalFile, overwrite = true)
-                        stagedFile.delete()
+
+                    val manifestFile = manifestFileFor(targetDir, gameFileId)
+                    manifestFile.writeText(extractedRelativePaths.joinToString("\n"))
+                    commitSucceeded = true
+                    onProgress?.invoke(1f)
+                    return manifestFile
+                } else {
+                    fileAccessLayer?.mkdirs(targetDir.absolutePath)
+                    for (relativePath in extractedRelativePaths) {
+                        currentCoroutineContext().ensureActive()
+                        if (isCancelled?.invoke() == true) {
+                            throw CancellationException("Texture pack installation cancelled")
+                        }
+                        val stagedFile = File(stagingDir, relativePath)
+                        if (!stagedFile.exists()) continue
+                        val finalFile = File(targetDir, relativePath)
+                        finalFile.parentFile?.let { fileAccessLayer?.mkdirs(it.absolutePath) }
+                        val output = fileAccessLayer?.getOutputStream(finalFile.absolutePath)
+                            ?: FileOutputStream(finalFile)
+                        output.use { out ->
+                            stagedFile.inputStream().use { input ->
+                                val copyBuffer = ByteArray(64 * 1024)
+                                var read: Int
+                                while (input.read(copyBuffer).also { read = it } != -1) {
+                                    out.write(copyBuffer, 0, read)
+                                }
+                            }
+                        }
+                        committedFiles.add(finalFile)
                     }
-                    committedFiles.add(finalFile)
-                }
 
-                currentCoroutineContext().ensureActive()
-                if (isCancelled?.invoke() == true) {
-                    throw CancellationException("Texture pack installation cancelled")
-                }
+                    currentCoroutineContext().ensureActive()
+                    if (isCancelled?.invoke() == true) {
+                        throw CancellationException("Texture pack installation cancelled")
+                    }
 
-                val manifestFile = manifestFileFor(targetDir, gameFileId)
-                manifestFile.writeText(extractedRelativePaths.joinToString("\n"))
-                commitSucceeded = true
-                onProgress?.invoke(1f)
-                return manifestFile
+                    val manifestFile = manifestFileFor(targetDir, gameFileId)
+                    val manifestBytes = extractedRelativePaths.joinToString("\n").toByteArray(Charsets.UTF_8)
+                    if (fileAccessLayer != null) {
+                        fileAccessLayer.writeBytes(manifestFile.absolutePath, manifestBytes)
+                    } else {
+                        manifestFile.writeBytes(manifestBytes)
+                    }
+                    commitSucceeded = true
+                    onProgress?.invoke(1f)
+                    return manifestFile
+                }
             } catch (e: Throwable) {
                 if (!commitSucceeded) {
                     val manifestFile = manifestFileFor(targetDir, gameFileId)
-                    runCatching { manifestFile.delete() }
-                    for (file in committedFiles) {
-                        runCatching { file.delete() }
+                    if (fileAccessLayer != null && fileAccessLayer.isRestrictedPath(manifestFile.absolutePath)) {
+                        fileAccessLayer.delete(manifestFile.absolutePath)
+                        for (file in committedFiles) {
+                            fileAccessLayer.delete(file.absolutePath)
+                        }
+                    } else {
+                        runCatching { manifestFile.delete() }
+                        for (file in committedFiles) {
+                            runCatching { file.delete() }
+                        }
                     }
                 }
                 throw e
@@ -395,7 +500,9 @@ class TexturePackExtractor @Inject constructor() {
             localPath: String? = null
         ): Boolean {
             if (VariantCategory.fromKey(category) != VariantCategory.MOD) return false
-            if (BuiltinTexturePathRegistry.resolveRuleForPlatform(platformSlug) == null) return false
+            val hasRule = BuiltinTexturePathRegistry.resolveRuleForPlatform(platformSlug) != null ||
+                ExternalTexturePathRegistry.resolveRuleForPlatform(platformSlug) != null
+            if (!hasRule) return false
             if (isManifestPath(localPath)) return true
             if (BuiltinTexturePathRegistry.isHtcOrHtsFileName(fileName)) return true
             if (!BuiltinTexturePathRegistry.isTexturePackFileName(fileName)) return false
@@ -438,23 +545,43 @@ class TexturePackExtractor @Inject constructor() {
 
         fun measureManifestUsage(
             manifestFile: File,
-            seenCanonicalPaths: MutableSet<String>? = null
+            seenCanonicalPaths: MutableSet<String>? = null,
+            fileAccessLayer: FileAccessLayer? = null
         ): Pair<Long, Int> {
-            if (!manifestFile.isFile) return 0L to 0
+            val manifestPath = manifestFile.absolutePath
+            val isRestricted = fileAccessLayer?.isRestrictedPath(manifestPath) == true
+            val lines = runCatching {
+                if (isRestricted) {
+                    fileAccessLayer?.readBytes(manifestPath)?.let { String(it, Charsets.UTF_8).lines() } ?: emptyList()
+                } else if (manifestFile.isFile) {
+                    manifestFile.readLines()
+                } else emptyList()
+            }.getOrDefault(emptyList())
+
+            if (lines.isEmpty()) return 0L to 0
             val targetDir = manifestFile.parentFile ?: return 0L to 0
-            val lines = runCatching { manifestFile.readLines() }.getOrDefault(emptyList())
             var totalBytes = 0L
             var fileCount = 0
             for (rawLine in lines) {
                 val rel = rawLine.trim()
                 if (rel.isEmpty()) continue
                 val targetFile = File(targetDir, rel)
-                if (!FileNames.isWithin(targetFile, targetDir) || !targetFile.isFile) continue
+                if (!FileNames.isWithin(targetFile, targetDir)) continue
+                val targetPath = targetFile.absolutePath
+
+                val length = if (isRestricted) {
+                    fileAccessLayer?.length(targetPath)?.takeIf { it > 0 } ?: 0L
+                } else if (targetFile.isFile) {
+                    targetFile.length()
+                } else 0L
+
+                if (length <= 0 && !targetFile.isFile && fileAccessLayer?.exists(targetPath) != true) continue
+
                 if (seenCanonicalPaths != null) {
                     val canonical = runCatching { targetFile.canonicalPath }.getOrNull() ?: targetFile.absolutePath
                     if (!seenCanonicalPaths.add(canonical)) continue
                 }
-                totalBytes += targetFile.length()
+                totalBytes += length
                 fileCount += 1
             }
             return totalBytes to fileCount
@@ -462,58 +589,110 @@ class TexturePackExtractor @Inject constructor() {
 
         fun measureManifestBytes(
             manifestFile: File,
-            seenCanonicalPaths: MutableSet<String>? = null
-        ): Long = measureManifestUsage(manifestFile, seenCanonicalPaths).first
+            seenCanonicalPaths: MutableSet<String>? = null,
+            fileAccessLayer: FileAccessLayer? = null
+        ): Long = measureManifestUsage(manifestFile, seenCanonicalPaths, fileAccessLayer).first
 
-        fun uninstallFromManifestFile(manifestFile: File): Boolean {
-            if (!manifestFile.isFile) return false
-            val targetDir = manifestFile.parentFile ?: return false
+        fun uninstallFromManifestFile(
+            manifestFile: File,
+            fileAccessLayer: FileAccessLayer? = null
+        ): Boolean {
+            val manifestPath = manifestFile.absolutePath
+            val isRestricted = fileAccessLayer?.isRestrictedPath(manifestPath) == true
             val lines = try {
-                manifestFile.readLines()
+                if (isRestricted) {
+                    fileAccessLayer?.readBytes(manifestPath)?.let { String(it, Charsets.UTF_8).lines() } ?: emptyList()
+                } else if (manifestFile.isFile) {
+                    manifestFile.readLines()
+                } else emptyList()
             } catch (e: Exception) {
                 Logger.warn(TAG, "Failed to read texture pack manifest ${manifestFile.name}: ${e.message}")
                 return false
             }
+            if (lines.isEmpty()) return false
 
-            val siblingClaimedPaths = targetDir.listFiles()
-                .orEmpty()
-                .filter { it.isFile && isManifestFile(it) && it.name != manifestFile.name }
-                .flatMap { sibling ->
-                    runCatching { sibling.readLines() }
-                        .getOrDefault(emptyList())
-                        .map { it.trim() }
-                        .filter { it.isNotEmpty() }
-                }
-                .toSet()
+            val targetDir = manifestFile.parentFile ?: return false
+            val targetDirPath = targetDir.absolutePath
 
-            val touchedParents = mutableSetOf<File>()
+            val siblingClaimedPaths = if (isRestricted) {
+                fileAccessLayer?.listFiles(targetDirPath).orEmpty()
+                    .filter { it.isFile && isManifestPath(it.path) && it.name != manifestFile.name }
+                    .flatMap { sibling ->
+                        fileAccessLayer?.readBytes(sibling.path)?.let { String(it, Charsets.UTF_8).lines() }.orEmpty()
+                            .map { it.trim() }
+                            .filter { it.isNotEmpty() }
+                    }
+                    .toSet()
+            } else {
+                targetDir.listFiles().orEmpty()
+                    .filter { it.isFile && isManifestFile(it) && it.name != manifestFile.name }
+                    .flatMap { sibling ->
+                        runCatching { sibling.readLines() }
+                            .getOrDefault(emptyList())
+                            .map { it.trim() }
+                            .filter { it.isNotEmpty() }
+                    }
+                    .toSet()
+            }
+
+            val touchedParents = mutableSetOf<String>()
             for (rawLine in lines) {
                 val rel = rawLine.trim()
                 if (rel.isEmpty() || rel in siblingClaimedPaths) continue
                 val targetFile = File(targetDir, rel)
                 if (!FileNames.isWithin(targetFile, targetDir)) continue
-                if (targetFile.isFile) {
+                val filePath = targetFile.absolutePath
+
+                if (isRestricted) {
+                    fileAccessLayer?.delete(filePath)
+                    var p = targetFile.parentFile
+                    while (p != null && p.canonicalPath != targetDir.canonicalPath && FileNames.isWithin(p, targetDir)) {
+                        touchedParents.add(p.absolutePath)
+                        p = p.parentFile
+                    }
+                } else if (targetFile.isFile) {
                     targetFile.delete()
                     var p = targetFile.parentFile
                     while (p != null && p.canonicalPath != targetDir.canonicalPath && FileNames.isWithin(p, targetDir)) {
-                        touchedParents.add(p)
+                        touchedParents.add(p.canonicalPath)
                         p = p.parentFile
                     }
                 }
             }
-            if (!manifestFile.delete() && manifestFile.exists()) {
-                return false
+
+            if (isRestricted) {
+                fileAccessLayer?.delete(manifestPath)
+            } else {
+                if (!manifestFile.delete() && manifestFile.exists()) {
+                    return false
+                }
             }
+
             touchedParents
-                .sortedByDescending { it.absolutePath.length }
-                .forEach { dir ->
-                    if (dir.isDirectory && dir.listFiles().isNullOrEmpty()) {
-                        dir.delete()
+                .sortedByDescending { it.length }
+                .forEach { parentPath ->
+                    if (isRestricted) {
+                        val list = fileAccessLayer?.listFiles(parentPath)
+                        if (list != null && list.isEmpty()) {
+                            fileAccessLayer?.delete(parentPath)
+                        }
+                    } else {
+                        val dir = File(parentPath)
+                        if (dir.isDirectory && dir.listFiles().isNullOrEmpty()) {
+                            dir.delete()
+                        }
                     }
                 }
-            if (targetDir.isDirectory && targetDir.listFiles().isNullOrEmpty()) {
+
+            if (isRestricted) {
+                val list = fileAccessLayer?.listFiles(targetDirPath)
+                if (list != null && list.isEmpty()) {
+                    fileAccessLayer?.delete(targetDirPath)
+                }
+            } else if (targetDir.isDirectory && targetDir.listFiles().isNullOrEmpty()) {
                 targetDir.delete()
             }
+
             return true
         }
 

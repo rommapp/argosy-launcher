@@ -142,8 +142,13 @@ object BuiltinTexturePathRegistry {
         }
     }
 
-    fun resolveRuleForPlatform(platformSlug: String): BuiltinTextureRule? =
-        resolveRule(coreId = null, platformSlug = platformSlug)
+    fun resolveRuleForPlatform(platformSlug: String): BuiltinTextureRule? {
+        val canonicalSlug = PlatformDefinitions.getCanonicalSlug(platformSlug).lowercase(Locale.ROOT)
+        val rawSlug = platformSlug.lowercase(Locale.ROOT)
+        return rules.firstOrNull { rule ->
+            canonicalSlug in rule.platformSlugs || rawSlug in rule.platformSlugs
+        }
+    }
 
     fun resolveBaseDir(rule: BuiltinTextureRule, saveDir: File, systemDir: File): File {
         val root = when (rule.baseRoot) {

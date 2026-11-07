@@ -97,6 +97,12 @@ class BuiltinTexturePathRegistryTest {
             ),
             n64Rule.optionsForPack(hasHtc = false, hasHts = true)
         )
+    }
+
+    @Test
+    fun `resolves target path and GLideN64 for Parallel N64 without HTS support`() {
+        val saveDir = tempFolder.newFolder("saves")
+        val systemDir = tempFolder.newFolder("system")
 
         val parallelRule = BuiltinTexturePathRegistry.resolveRule("parallel_n64", "n64")
         assertNotNull(parallelRule)
@@ -139,7 +145,7 @@ class BuiltinTexturePathRegistryTest {
         assertNull(BuiltinTexturePathRegistry.resolveRuleForPlatform("snes"))
         assertNull(BuiltinTexturePathRegistry.resolveRuleForPlatform("gb"))
         assertNull(BuiltinTexturePathRegistry.resolveRuleForPlatform("gbc"))
-        assertNull(BuiltinTexturePathRegistry.resolveRuleForPlatform("psx"))
+        assertNull(BuiltinTexturePathRegistry.resolveRuleForPlatform("gba"))
     }
 
     @Test

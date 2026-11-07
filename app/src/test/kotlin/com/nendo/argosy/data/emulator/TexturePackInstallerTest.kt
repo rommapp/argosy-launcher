@@ -594,10 +594,10 @@ class TexturePackInstallerTest {
     }
 
     @Test
-    fun `does not extract or delete mod zip when game resolves to external emulator`() = runTest {
+    fun `does not extract or delete mod zip when game resolves to unsupported external emulator`() = runTest {
         coEvery {
             emulatorResolver.getEmulatorPackageForGame(any(), any(), any())
-        } returns "org.dolphinemu.dolphinemu"
+        } returns "org.unsupported.emulator"
 
         val zipFile = createZip(
             "external_pack.zip",
@@ -609,7 +609,7 @@ class TexturePackInstallerTest {
         val manifest = installer.installForModFile(game = game, gameFile = modFile, sourceFile = zipFile)
 
         assertNull(manifest)
-        assertTrue("External emulator mod zip must not be deleted", zipFile.exists())
+        assertTrue("Unsupported external emulator mod zip must not be deleted", zipFile.exists())
     }
 
     @Test
@@ -787,6 +787,226 @@ class TexturePackInstallerTest {
         assertTrue("Expected successful install despite duplicate entry names, got $outcome", outcome is TexturePackInstaller.ModInstallOutcome.Success)
         val cacheDir = File(systemDir, "Mupen64plus/cache")
         assertTrue("Destination file should exist", File(cacheDir, "game.htc").exists())
+    }
+
+    @Test
+    fun `installs texture pack for external Dolphin and enables GFX ini`() = runTest {
+        val extStorage = tempFolder.newFolder("mock_external")
+        val fal = mockk<com.nendo.argosy.data.storage.FileAccessLayer>(relaxed = true) {
+            every { externalStorageRoots() } returns listOf(extStorage.absolutePath)
+            every { isRestrictedPath(any()) } returns false
+            every { exists(any()) } answers { File(firstArg<String>()).exists() }
+            every { mkdirs(any()) } answers { File(firstArg<String>()).mkdirs() }
+            every { writeBytes(any(), any()) } answers {
+                val f = File(firstArg<String>())
+                f.parentFile?.mkdirs()
+                f.writeBytes(secondArg<ByteArray>())
+                true
+            }
+        }
+
+        val customInstaller = TexturePackInstaller(
+            builtinSaveBase = builtinSaveBase,
+            builtinCoreResolver = builtinCoreResolver,
+            emulatorResolver = emulatorResolver,
+            titleIdExtractor = titleIdExtractor,
+            baseRomFileResolver = baseRomFileResolver,
+            platformFolderResolver = platformFolderResolver,
+            gameDao = gameDao,
+            gameDiscDao = gameDiscDao,
+            gameFileDao = gameFileDao,
+            systemDir = systemDir,
+            fileAccessLayer = fal,
+            cacheDir = tempFolder.newFolder("cache")
+        )
+
+        coEvery { emulatorResolver.getEmulatorPackageForGame(any(), any(), any()) } returns "org.dolphinemu.dolphinemu"
+
+        val zipFile = createZip(
+            "dolphin_pack.zip",
+            mapOf("tex.png" to "tex_data")
+        )
+        val game = testGame(titleId = "GZLE01")
+        val modFile = testModFile(id = 55L, gameId = game.id, fileName = zipFile.name, localPath = zipFile.absolutePath)
+
+        val outcome = customInstaller.installForModFileOutcome(
+            game = game,
+            gameFile = modFile,
+            sourceFile = zipFile
+        )
+
+        assertTrue(outcome is TexturePackInstaller.ModInstallOutcome.Success)
+        val targetDir = File(extStorage, "Android/data/org.dolphinemu.dolphinemu/files/Load/Textures/GZLE01")
+        assertTrue(File(targetDir, "tex.png").isFile)
+        val gfxFile = File(extStorage, "Android/data/org.dolphinemu.dolphinemu/files/Config/GFX.ini")
+        assertTrue(gfxFile.isFile)
+        assertTrue(gfxFile.readText().contains("HiresTextures = True"))
+    }
+
+    @Test
+    fun `installPendingModFilesForGame migrates textures when switching between built-in and external emulator without data loss`() = runTest {
+        val extStorage = tempFolder.newFolder("mock_external_mig")
+        val fal = mockk<com.nendo.argosy.data.storage.FileAccessLayer>(relaxed = true) {
+            every { externalStorageRoots() } returns listOf(extStorage.absolutePath)
+            every { isRestrictedPath(any()) } returns false
+            every { exists(any()) } answers { File(firstArg<String>()).exists() }
+            every { mkdirs(any()) } answers { File(firstArg<String>()).mkdirs() }
+            every { writeBytes(any(), any()) } answers {
+                val f = File(firstArg<String>())
+                f.parentFile?.mkdirs()
+                f.writeBytes(secondArg<ByteArray>())
+                true
+            }
+        }
+
+        val customInstaller = TexturePackInstaller(
+            builtinSaveBase = builtinSaveBase,
+            builtinCoreResolver = builtinCoreResolver,
+            emulatorResolver = emulatorResolver,
+            titleIdExtractor = titleIdExtractor,
+            baseRomFileResolver = baseRomFileResolver,
+            platformFolderResolver = platformFolderResolver,
+            gameDao = gameDao,
+            gameDiscDao = gameDiscDao,
+            gameFileDao = gameFileDao,
+            systemDir = systemDir,
+            fileAccessLayer = fal,
+            cacheDir = tempFolder.newFolder("cache_mig")
+        )
+
+        val game = testGame(titleId = "GZLE01")
+        val builtinTargetDir = File(saveDir, "User/Load/Textures/GZLE01").apply { mkdirs() }
+        val oldManifest = File(builtinTargetDir, ".argosy_mod_77.manifest").apply {
+            writeText("tex_valuable.png")
+        }
+        val texFile = File(builtinTargetDir, "tex_valuable.png").apply { writeText("original_texture_data") }
+
+        val modFile = testModFile(id = 77L, gameId = game.id, fileName = "pack.zip", localPath = oldManifest.absolutePath)
+        coEvery { gameDao.getById(game.id) } returns game
+        coEvery { gameFileDao.getModFilesForGame(game.id) } returns listOf(modFile)
+
+        // 1. Switch to External Dolphin: files must migrate to external directory without re-download
+        coEvery { emulatorResolver.getEmulatorPackageForGame(any(), any(), any()) } returns "org.dolphinemu.dolphinemu"
+
+        val count = customInstaller.installPendingModFilesForGame(game.id)
+        assertEquals(1, count)
+
+        val externalTargetDir = File(extStorage, "Android/data/org.dolphinemu.dolphinemu/files/Load/Textures/GZLE01")
+        val migratedTex = File(externalTargetDir, "tex_valuable.png")
+        assertTrue("Migrated texture file must exist in external directory", migratedTex.isFile)
+        assertEquals("Texture data must remain 100% intact", "original_texture_data", migratedTex.readText())
+
+        val newManifest = File(externalTargetDir, ".argosy_mod_77.manifest")
+        assertTrue("New manifest must exist in external directory", newManifest.isFile)
+        coVerify { gameFileDao.updateLocalPath(77L, newManifest.absolutePath, any()) }
+
+        val gfxFile = File(extStorage, "Android/data/org.dolphinemu.dolphinemu/files/Config/GFX.ini")
+        assertTrue("Dolphin GFX.ini must be created", gfxFile.isFile)
+        assertTrue(gfxFile.readText().contains("HiresTextures = True"))
+
+        // 2. Switch back to Built-in: files must migrate back to saveDir without loss
+        coEvery { emulatorResolver.getEmulatorPackageForGame(any(), any(), any()) } returns EmulatorRegistry.BUILTIN_PACKAGE
+        val updatedModFile = testModFile(id = 77L, gameId = game.id, fileName = "pack.zip", localPath = newManifest.absolutePath)
+        coEvery { gameFileDao.getModFilesForGame(game.id) } returns listOf(updatedModFile)
+
+        val reverseCount = customInstaller.installPendingModFilesForGame(game.id)
+        assertEquals(1, reverseCount)
+
+        val restoredTex = File(builtinTargetDir, "tex_valuable.png")
+        assertTrue("Restored texture file must exist back in builtin directory", restoredTex.isFile)
+        assertEquals("Restored texture data must remain 100% intact", "original_texture_data", restoredTex.readText())
+    }
+
+    @Test
+    fun `installPendingModFilesForGame migrates textures from restricted Scoped Storage path via FileAccessLayer`() = runTest {
+        val extStorage = tempFolder.newFolder("mock_external_restricted")
+        val oldRestrictedDir = File(extStorage, "Android/data/org.dolphinemu.dolphinemu/files/Load/Textures/GZLE01").apply { mkdirs() }
+        val oldManifest = File(oldRestrictedDir, ".argosy_mod_99.manifest").apply {
+            writeText("tex_scoped.png")
+        }
+        val oldTex = File(oldRestrictedDir, "tex_scoped.png").apply {
+            writeText("scoped_texture_data")
+        }
+
+        val fal = mockk<com.nendo.argosy.data.storage.FileAccessLayer>(relaxed = true) {
+            every { externalStorageRoots() } returns listOf(extStorage.absolutePath)
+            every { isRestrictedPath(any()) } answers {
+                firstArg<String>().contains("Android/data") || firstArg<String>().contains("Android\\data")
+            }
+            every { exists(any()) } answers { File(firstArg<String>()).exists() }
+            every { readBytes(any()) } answers { File(firstArg<String>()).readBytes() }
+            every { getInputStream(any()) } answers { File(firstArg<String>()).inputStream() }
+            every { getOutputStream(any()) } answers {
+                val f = File(firstArg<String>())
+                f.parentFile?.mkdirs()
+                FileOutputStream(f)
+            }
+            every { writeBytes(any(), any()) } answers {
+                val f = File(firstArg<String>())
+                f.parentFile?.mkdirs()
+                f.writeBytes(secondArg<ByteArray>())
+                true
+            }
+            every { delete(any()) } answers {
+                File(firstArg<String>()).delete()
+            }
+            every { mkdirs(any()) } answers {
+                File(firstArg<String>()).mkdirs()
+            }
+            every { listFiles(any()) } answers {
+                val dir = File(firstArg<String>())
+                dir.listFiles()?.map { f ->
+                    com.nendo.argosy.data.storage.FileInfo(
+                        path = f.absolutePath,
+                        name = f.name,
+                        isDirectory = f.isDirectory,
+                        isFile = f.isFile,
+                        size = f.length(),
+                        lastModified = f.lastModified()
+                    )
+                } ?: emptyList()
+            }
+        }
+
+        val customInstaller = TexturePackInstaller(
+            builtinSaveBase = builtinSaveBase,
+            builtinCoreResolver = builtinCoreResolver,
+            emulatorResolver = emulatorResolver,
+            titleIdExtractor = titleIdExtractor,
+            baseRomFileResolver = baseRomFileResolver,
+            platformFolderResolver = platformFolderResolver,
+            gameDao = gameDao,
+            gameDiscDao = gameDiscDao,
+            gameFileDao = gameFileDao,
+            systemDir = systemDir,
+            fileAccessLayer = fal,
+            cacheDir = tempFolder.newFolder("cache_restricted_mig")
+        )
+
+        val game = testGame(titleId = "GZLE01")
+        val modFile = testModFile(id = 99L, gameId = game.id, fileName = "scoped_pack.zip", localPath = oldManifest.absolutePath)
+        coEvery { gameDao.getById(game.id) } returns game
+        coEvery { gameFileDao.getModFilesForGame(game.id) } returns listOf(modFile)
+        coEvery { emulatorResolver.getEmulatorPackageForGame(any(), any(), any()) } returns EmulatorRegistry.BUILTIN_PACKAGE
+
+        val count = customInstaller.installPendingModFilesForGame(game.id)
+        assertEquals(1, count)
+
+        // Verify FileAccessLayer was utilized for restricted source read and cleanup
+        io.mockk.verify { fal.readBytes(oldManifest.absolutePath) }
+        io.mockk.verify { fal.getInputStream(oldTex.absolutePath) }
+        io.mockk.verify { fal.delete(oldManifest.absolutePath) }
+        io.mockk.verify { fal.delete(oldTex.absolutePath) }
+        io.mockk.verify { fal.delete(oldRestrictedDir.absolutePath) }
+
+        val builtinTargetDir = File(saveDir, "User/Load/Textures/GZLE01")
+        val restoredTex = File(builtinTargetDir, "tex_scoped.png")
+        assertTrue("Restored texture file must exist in builtin target dir", restoredTex.isFile)
+        assertEquals("scoped_texture_data", restoredTex.readText())
+
+        val restoredManifest = File(builtinTargetDir, ".argosy_mod_99.manifest")
+        assertTrue("Restored manifest must exist in builtin target dir", restoredManifest.isFile)
+        coVerify { gameFileDao.updateLocalPath(99L, restoredManifest.absolutePath, any()) }
     }
 
     private fun createZip(name: String, entries: Map<String, String>): File {

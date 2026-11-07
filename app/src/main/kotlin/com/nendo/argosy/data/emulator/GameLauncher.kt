@@ -776,24 +776,6 @@ class GameLauncher @Inject constructor(
             return null
         }
 
-        val ticket = launchProgressTracker.current
-        val callerContext = coroutineContext
-        var texturesInstalled = false
-        texturePackInstaller.installPendingModFilesForGame(
-            gameId = game.id,
-            isCancelled = { ticket?.isCancelled == true || launchProgressTracker.current?.isCancelled == true || !callerContext.isActive },
-            onProgress = { fraction ->
-                texturesInstalled = true
-                launchProgressTracker.report(LaunchStep.InstallingTextures(fraction))
-            }
-        )
-        if (ticket?.isCancelled == true || launchProgressTracker.current?.isCancelled == true || !coroutineContext.isActive) {
-            Logger.info(TAG, "[BuiltIn] Launch was cancelled during texture installation")
-            throw CancellationException("Launch was cancelled during texture installation")
-        }
-        if (texturesInstalled) {
-            launchProgressTracker.report(LaunchStep.PreparingSystemFiles)
-        }
         val textureCoreOptions = texturePackInstaller.resolveAutoCoreOptionsForGame(
             gameId = game.id,
             coreId = coreName,
@@ -858,6 +840,27 @@ class GameLauncher @Inject constructor(
             effectiveSavePath?.let { putExtra(LibretroActivity.EXTRA_SAVES_DIR, it) }
             putExtra(LibretroActivity.EXTRA_STATES_DIR, effectiveStatePath)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+    }
+
+    private suspend fun installTexturesIfNeeded(game: GameEntity) {
+        val ticket = launchProgressTracker.current
+        val callerContext = coroutineContext
+        var texturesInstalled = false
+        texturePackInstaller.installPendingModFilesForGame(
+            gameId = game.id,
+            isCancelled = { ticket?.isCancelled == true || launchProgressTracker.current?.isCancelled == true || !callerContext.isActive },
+            onProgress = { fraction ->
+                texturesInstalled = true
+                launchProgressTracker.report(LaunchStep.InstallingTextures(fraction))
+            }
+        )
+        if (ticket?.isCancelled == true || launchProgressTracker.current?.isCancelled == true || !callerContext.isActive) {
+            Logger.info(TAG, "Launch was cancelled during texture installation")
+            throw CancellationException("Launch was cancelled during texture installation")
+        }
+        if (texturesInstalled) {
+            launchProgressTracker.report(LaunchStep.PreparingSystemFiles)
         }
     }
 
@@ -1002,6 +1005,8 @@ class GameLauncher @Inject constructor(
     ): Intent? {
         val configType = emulator.launchConfig::class.simpleName
         Logger.debug(TAG, "buildIntent: emulator=${emulator.displayName}, config=$configType, rom=${romFile.name}, forResume=$forResume")
+
+        installTexturesIfNeeded(game)
 
         if (emulator.launchConfig.isInProcess) {
             return buildBuiltInIntent(romFile, game, variantFileId, discM3uPath)

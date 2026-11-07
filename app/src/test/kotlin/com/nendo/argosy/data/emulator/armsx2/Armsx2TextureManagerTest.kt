@@ -7,7 +7,6 @@ import io.mockk.mockk
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -36,10 +35,21 @@ class Armsx2TextureManagerTest {
 
         assertTrue(manager.enableForBuiltinCore(systemDir))
 
-        assertEquals(true, manager.isTextureReplacementEnabled(systemDir))
         val text = manager.getIniFile(systemDir).readText()
+        assertTrue(text.contains("LoadTextureReplacements = true"))
+        assertFalse(text.contains("LoadTextureReplacements = false"))
         assertTrue(text.contains("SettingsVersion = 1"))
         assertTrue(text.contains("VsyncEnable = false"))
+    }
+
+    @Test
+    fun `an INI that already has replacements on is left as it was`() {
+        val original = "[UI]\nSettingsVersion = 1\n\n[EmuCore/GS]\nLoadTextureReplacements = true\n"
+        val systemDir = iniWith(original)
+
+        assertTrue(manager.enableForBuiltinCore(systemDir))
+
+        assertEquals(original, manager.getIniFile(systemDir).readText())
     }
 
     @Test
@@ -49,7 +59,6 @@ class Armsx2TextureManagerTest {
         assertFalse(manager.enableForBuiltinCore(systemDir))
 
         assertFalse(manager.getIniFile(systemDir).exists())
-        assertNull(manager.isTextureReplacementEnabled(systemDir))
     }
 
     @Test

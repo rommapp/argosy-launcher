@@ -263,7 +263,6 @@
     <string name="ingame_cheats_tab_discover">Entdecken</string>
 
     <string name="ingame_cheats_error_ram_unavailable">RAM für diesen Core nicht verfügbar</string>
-    <string name="ingame_cheats_apply_next_launch">Cheat-Änderungen gelten beim nächsten Start dieses Spiels</string>
     <string name="ingame_cheats_error_no_changes">Keine Änderungen erkannt - erst weiterspielen</string>
     <string name="ingame_cheats_error_changed_not_ready">Weiterspielen, um Ergebnisse einzugrenzen</string>
     <string name="ingame_cheats_error_no_unchanged">Keine unveränderten Werte - stattdessen \'Geändert\' versuchen</string>

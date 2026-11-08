@@ -266,7 +266,6 @@
     <string name="ingame_cheats_tab_discover">Découvrir</string>
 
     <string name="ingame_cheats_error_ram_unavailable">RAM non disponible pour ce core</string>
-    <string name="ingame_cheats_apply_next_launch">Les modifications de codes de triche prennent effet au prochain lancement de ce jeu</string>
     <string name="ingame_cheats_error_no_changes">Aucun changement détecté - jouez davantage d\'abord</string>
     <string name="ingame_cheats_error_changed_not_ready">Jouez davantage pour affiner les résultats</string>
     <string name="ingame_cheats_error_no_unchanged">Aucune valeur inchangée - essayez plutôt \'Modifié\'</string>

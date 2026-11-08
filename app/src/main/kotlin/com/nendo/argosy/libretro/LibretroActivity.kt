@@ -205,7 +205,6 @@ class LibretroActivity : ComponentActivity() {
     @Inject lateinit var gameOverlayWriter: com.nendo.argosy.data.repository.GameUserOverlayWriter
     @Inject lateinit var achievementDao: AchievementDao
     @Inject lateinit var cheatsRepository: CheatsRepository
-    @Inject lateinit var enhancementProvisioners: Set<@JvmSuppressWildcards com.nendo.argosy.data.emulator.enhancements.GameEnhancementProvisioner>
     @Inject lateinit var raRepository: RetroAchievementsRepository
     @Inject lateinit var verifyRAGameIdUseCase: com.nendo.argosy.domain.usecase.achievement.VerifyRAGameIdUseCase
     @Inject lateinit var achievementUpdateBus: AchievementUpdateBus
@@ -1141,8 +1140,6 @@ class LibretroActivity : ComponentActivity() {
     }
 
     private fun initializeCheatManager() {
-        val coreId = resolvedCoreId
-        val cheatFilesCore = enhancementProvisioners.any { it.usesCheatFiles(coreId) }
         cheatManager = CheatSessionManager(
             gameId = gameId,
             cheatDao = cheatDao,
@@ -1150,10 +1147,9 @@ class LibretroActivity : ComponentActivity() {
             cheatsRepository = cheatsRepository,
             canSerialize = { canSerialize },
             isHardcore = { hardcoreMode },
-            scope = lifecycleScope,
-            onCheatsEdited = if (cheatFilesCore) ::syncCheatFiles else null
+            scope = lifecycleScope
         )
-        if (!cheatFilesCore) cheatManager.setRetroView(retroView)
+        cheatManager.setRetroView(retroView)
         netplay.attachCheatSessionManager(cheatManager)
     }
 
@@ -4070,32 +4066,15 @@ class LibretroActivity : ComponentActivity() {
         return if (canonical in PLATFORMS_WITH_DIGITAL_RIGHT_STICK) DIGITAL_RIGHT_STICK_DEADZONE else 0f
     }
 
-    private fun syncCheatFiles() {
-        val coreId = resolvedCoreId ?: return
-        val systemDir = intent.getStringExtra(EXTRA_SYSTEM_DIR)?.let { File(it) }
-            ?: AppPaths.libretroSystemDir(filesDir)
-        val saveDir = variantIsolatedDir(
-            intent.getStringExtra(EXTRA_SAVES_DIR)?.let { File(it) } ?: AppPaths.libretroSavesDir(filesDir)
-        )
-        val target = com.nendo.argosy.data.emulator.enhancements.EnhancementTarget.Builtin(coreId, systemDir, saveDir)
-        lifecycleScope.launch(Dispatchers.IO) {
-            val game = gameDao.getById(gameId) ?: return@launch
-            enhancementProvisioners.forEach { it.syncCheats(game, File(romPath), target) }
-            withContext(Dispatchers.Main) {
-                inGameMessage = getString(R.string.ingame_cheats_apply_next_launch)
-            }
-        }
-    }
-
     private fun hardcoreBlocks(key: String?, value: String?): Boolean =
-        hardcoreMode && key != null && value != null && !isCoreSettingAllowed(key, value)
+        hardcoreMode && key != null && value != null && !LibretroDroid.isCoreSettingAllowed(key, value)
 
     private fun enforceHardcoreCoreSettings() {
         if (!hardcoreMode) return
         val blocked = coreVariablesFromIntent().firstOrNull { variable ->
             val key = variable.key ?: return@firstOrNull false
             val value = variable.value ?: return@firstOrNull false
-            !isCoreSettingAllowed(key, value)
+            !LibretroDroid.isCoreSettingAllowed(key, value)
         } ?: return
         achievementBridge.sessionManager?.abandonHardcore("${blocked.key}=${blocked.value}")
         inGameMessage = getString(R.string.ingame_libretro_hardcore_off_core_setting, blocked.key, blocked.value)
@@ -4104,11 +4083,7 @@ class LibretroActivity : ComponentActivity() {
     private fun coreVariablesFromIntent(): Array<Variable> {
         val keys = intent.getStringArrayExtra(EXTRA_CORE_VAR_KEYS) ?: return emptyArray()
         val values = intent.getStringArrayExtra(EXTRA_CORE_VAR_VALUES) ?: return emptyArray()
-        val manifestKeys = CoreOptionManifestRegistry.getManifest(resolvedCoreId.orEmpty())
-            ?.options?.map { it.key }.orEmpty()
-        return coreVariablesForMode(keys.zip(values).toMap(), hardcoreMode, manifestKeys)
-            .map { (k, v) -> Variable(k, v) }
-            .toTypedArray()
+        return keys.zip(values) { k, v -> Variable(k, v) }.toTypedArray()
     }
 
     private fun vulkanDriverFromIntent(): VulkanDriver? {
@@ -4215,27 +4190,5 @@ class LibretroActivity : ComponentActivity() {
 
         private const val DIGITAL_RIGHT_STICK_DEADZONE = 0.5f
         private val PLATFORMS_WITH_DIGITAL_RIGHT_STICK = setOf("n64", "n64dd")
-
-        private val CHEAT_ENGINE_OPTIONS = setOf("armsx2_cheats", "dolphin_cheats_enabled")
-
-        internal fun isCoreSettingAllowed(
-            key: String,
-            value: String,
-            nativeAllowed: (String, String) -> Boolean = { k, v -> LibretroDroid.isCoreSettingAllowed(k, v) }
-        ): Boolean {
-            if (key in CHEAT_ENGINE_OPTIONS && value == "enabled") return false
-            return nativeAllowed(key, value)
-        }
-
-        internal fun coreVariablesForMode(
-            variables: Map<String, String>,
-            hardcore: Boolean,
-            manifestKeys: Collection<String>
-        ): Map<String, String> {
-            if (!hardcore) return variables
-            return variables + CHEAT_ENGINE_OPTIONS
-                .filter { it in variables || it in manifestKeys }
-                .associateWith { "disabled" }
-        }
     }
 }

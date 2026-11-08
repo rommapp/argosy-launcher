@@ -18,12 +18,6 @@ sealed interface EnhancementTarget {
  */
 interface GameEnhancementProvisioner {
     /**
-     * True when [coreId] loads cheats from files at boot, not through retro_cheat_set; in-game edits
-     * then apply on the next launch.
-     */
-    fun usesCheatFiles(coreId: String?): Boolean = false
-
-    /**
      * Core options for this launch, applied beneath any option the player set.
      */
     suspend fun prepareForLaunch(
@@ -31,11 +25,4 @@ interface GameEnhancementProvisioner {
         romFile: File,
         target: EnhancementTarget
     ): Map<String, String> = emptyMap()
-
-    /**
-     * Reads this provisioner's files out of a pack before the installer extracts and deletes it.
-     */
-    suspend fun importFromArchive(game: GameEntity, archive: File) = Unit
-
-    suspend fun syncCheats(game: GameEntity, romFile: File, target: EnhancementTarget.Builtin) = Unit
 }

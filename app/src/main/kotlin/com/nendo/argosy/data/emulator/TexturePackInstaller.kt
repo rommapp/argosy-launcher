@@ -1,7 +1,6 @@
 package com.nendo.argosy.data.emulator
 
 import android.content.Context
-import com.nendo.argosy.data.emulator.enhancements.GameEnhancementProvisioner
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.GameFileDao
@@ -41,8 +40,7 @@ class TexturePackInstaller(
     private val systemDir: File,
     private val extractor: TexturePackExtractor = TexturePackExtractor(),
     private val fileAccessLayer: FileAccessLayer? = null,
-    private val cacheDir: File? = null,
-    private val enhancementProvisioners: Set<GameEnhancementProvisioner> = emptySet()
+    private val cacheDir: File? = null
 ) {
     @Inject
     constructor(
@@ -57,8 +55,7 @@ class TexturePackInstaller(
         gameFileDao: GameFileDao,
         @ApplicationContext context: Context,
         extractor: TexturePackExtractor,
-        fileAccessLayer: FileAccessLayer,
-        enhancementProvisioners: Set<@JvmSuppressWildcards GameEnhancementProvisioner>
+        fileAccessLayer: FileAccessLayer
     ) : this(
         builtinSaveBase = builtinSaveBase,
         builtinCoreResolver = builtinCoreResolver,
@@ -72,8 +69,7 @@ class TexturePackInstaller(
         systemDir = AppPaths.libretroSystemDir(context.filesDir),
         extractor = extractor,
         fileAccessLayer = fileAccessLayer,
-        cacheDir = context.cacheDir,
-        enhancementProvisioners = enhancementProvisioners
+        cacheDir = context.cacheDir
     )
 
     sealed class ModInstallOutcome {
@@ -652,8 +648,6 @@ class TexturePackInstaller(
             return@withContext ModInstallOutcome.Deferred("Not a texture zip")
         }
 
-        importCompanionsFromArchive(game, sourceFile)
-
         val builtinRule = targetResolution.builtinRule
         val htcHtsZipSummary = if (builtinRule != null && (builtinRule.supportsHtc || builtinRule.supportsHts)) {
             extractor.inspectHtcHtsOnlyZip(sourceFile)
@@ -723,18 +717,6 @@ class TexturePackInstaller(
             "Installed texture pack ${gameFile.fileName} for ${game.title} into ${targetDir.absolutePath}"
         )
         ModInstallOutcome.Success(manifest)
-    }
-
-    private suspend fun importCompanionsFromArchive(game: GameEntity, archive: File) {
-        for (provisioner in enhancementProvisioners) {
-            try {
-                provisioner.importFromArchive(game, archive)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Logger.warn(TAG, "Could not import companions from ${archive.name}: ${e.message}")
-            }
-        }
     }
 
     suspend fun installForModFile(

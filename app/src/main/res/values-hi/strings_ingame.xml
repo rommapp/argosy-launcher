@@ -263,7 +263,6 @@
     <string name="ingame_cheats_tab_discover">डिस्कवर</string>
 
     <string name="ingame_cheats_error_ram_unavailable">इस कोर के लिए RAM उपलब्ध नहीं है</string>
-    <string name="ingame_cheats_apply_next_launch">चीट के बदलाव अगली बार यह गेम शुरू होने पर लागू होंगे</string>
     <string name="ingame_cheats_error_no_changes">कोई बदलाव नहीं मिला - पहले थोड़ा और खेलें</string>
     <string name="ingame_cheats_error_changed_not_ready">नतीजे सीमित करने के लिए और खेलें</string>
     <string name="ingame_cheats_error_no_unchanged">कोई अपरिवर्तित वैल्यू नहीं - इसके बजाय \'बदला हुआ\' आज़माएं</string>

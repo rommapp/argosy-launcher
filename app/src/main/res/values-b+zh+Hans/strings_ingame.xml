@@ -261,7 +261,6 @@
     <string name="ingame_cheats_tab_discover">查找</string>
 
     <string name="ingame_cheats_error_ram_unavailable">此核心不支持RAM访问</string>
-    <string name="ingame_cheats_apply_next_launch">金手指更改将在下次启动此游戏时生效</string>
     <string name="ingame_cheats_error_no_changes">未检测到变化，请先多玩一会儿</string>
     <string name="ingame_cheats_error_changed_not_ready">请多玩一会儿以缩小结果范围</string>
     <string name="ingame_cheats_error_no_unchanged">没有未变化的值，请尝试“变化的值”</string>

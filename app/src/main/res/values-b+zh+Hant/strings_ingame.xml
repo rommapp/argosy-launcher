@@ -260,7 +260,6 @@
     <string name="ingame_cheats_tab_discover">搜尋</string>
 
     <string name="ingame_cheats_error_ram_unavailable">此核心無法使用RAM</string>
-    <string name="ingame_cheats_apply_next_launch">金手指變更將在下次啟動此遊戲時生效</string>
     <string name="ingame_cheats_error_no_changes">未偵測到變化，請先繼續遊玩</string>
     <string name="ingame_cheats_error_changed_not_ready">請繼續遊玩以縮小結果範圍</string>
     <string name="ingame_cheats_error_no_unchanged">沒有未變動的數值，請改用「已變動」</string>

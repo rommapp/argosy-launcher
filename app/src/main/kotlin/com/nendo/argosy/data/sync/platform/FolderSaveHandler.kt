@@ -1,7 +1,6 @@
 package com.nendo.argosy.data.sync.platform
 
 import android.content.Context
-import com.nendo.argosy.data.emulator.BuiltinTexturePathRegistry
 import com.nendo.argosy.data.emulator.SavePathConfig
 import com.nendo.argosy.data.emulator.SavePathRegistry
 import com.nendo.argosy.data.storage.FileAccessLayer
@@ -261,15 +260,13 @@ open class FolderSaveHandler(
      * between candidate trees on it, because the directory itself is not touched when a save
      * inside it is written.
      */
-    protected fun newestFileTime(folderPath: String, relativePrefix: String = ""): Long {
+    protected fun newestFileTime(folderPath: String): Long {
         var newest = 0L
         fal.listFiles(folderPath)?.forEach { child ->
-            val rel = if (relativePrefix.isEmpty()) child.name else "$relativePrefix/${child.name}"
-            if (BuiltinTexturePathRegistry.isExcludedSaveTexturePath(child.path, rel)) return@forEach
             if (child.isFile) {
                 if (child.lastModified > newest) newest = child.lastModified
             } else if (child.isDirectory) {
-                val childNewest = newestFileTime(child.path, rel)
+                val childNewest = newestFileTime(child.path)
                 if (childNewest > newest) newest = childNewest
             }
         }

@@ -205,24 +205,6 @@ object BuiltinTexturePathRegistry {
             segments.containsSublist("dc", "textures")
     }
 
-    fun isExcludedSaveTexturePath(path: String, fallbackRelativePath: String? = null): Boolean {
-        if (matchesExcludedTextureSegments(path)) return true
-        if (fallbackRelativePath != null && matchesExcludedTextureSegments(fallbackRelativePath)) return true
-        return false
-    }
-
-    private fun matchesExcludedTextureSegments(rawPath: String): Boolean {
-        val normalized = rawPath
-            .replace('\\', '/')
-            .trim('/')
-            .lowercase(Locale.ROOT)
-        if (normalized.isEmpty()) return false
-        val segments = normalized.split('/')
-        if (segments.containsSublist("load", "textures")) return true
-        if (segments.containsSublist("psp", "textures")) return true
-        return false
-    }
-
     private fun List<String>.containsSublist(vararg target: String): Boolean {
         if (target.isEmpty() || size < target.size) return false
         val maxStart = size - target.size

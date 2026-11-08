@@ -17,7 +17,6 @@ import com.nendo.argosy.data.remote.romm.RomMCapabilities
 import com.nendo.argosy.data.remote.romm.RomMDeleteSavesRequest
 import com.nendo.argosy.data.remote.romm.RomMSave
 import com.nendo.argosy.data.storage.FileAccessLayer
-import com.nendo.argosy.data.sync.SaveArchiver
 import com.nendo.argosy.data.sync.SavePathResolver
 import com.nendo.argosy.data.sync.platform.FolderSaveHandler
 import com.nendo.argosy.data.sync.platform.GciSaveHandler
@@ -50,7 +49,6 @@ class SaveSyncApiClient @Inject constructor(
     private val builtinCoreResolver: BuiltinCoreResolver,
     private val gameDao: GameDao,
     private val savePathResolver: SavePathResolver,
-    private val saveArchiver: SaveArchiver,
     private val userPreferencesRepository: UserPreferencesRepository,
     private val fal: FileAccessLayer,
     private val switchSaveHandler: SwitchSaveHandler,
@@ -400,12 +398,11 @@ class SaveSyncApiClient @Inject constructor(
             return@withContext true
         }
         val deleted = if (fal.isDirectory(targetPath)) {
-            val result = saveArchiver.deleteDirectoryPreservingTextures(targetPath)
-            result.allNonTextureDeleted && (result.preservedTextures || !fal.exists(targetPath))
+            fal.deleteRecursively(targetPath)
         } else {
             fal.delete(targetPath)
         }
-        if (!deleted || (!fal.isDirectory(targetPath) && fal.exists(targetPath))) {
+        if (!deleted || fal.exists(targetPath)) {
             Logger.error(TAG, "clearSaveAtPath: Failed to delete $targetPath")
             return@withContext false
         }

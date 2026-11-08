@@ -220,20 +220,6 @@ class BuiltinTexturePathRegistryTest {
             )
         )
 
-        assertTrue(BuiltinTexturePathRegistry.isExcludedSaveTexturePath("User/Load/Textures/GZLE01/tex.png"))
-        assertTrue(BuiltinTexturePathRegistry.isExcludedSaveTexturePath("Azahar/load/textures/0004000000033500/tex.png"))
-        assertTrue(BuiltinTexturePathRegistry.isExcludedSaveTexturePath("PSP/TEXTURES/ULUS10041/tex.png"))
-        assertTrue(
-            "Child TEXTURES rooted inside <saveDir>/PSP must match psp/textures via full path",
-            BuiltinTexturePathRegistry.isExcludedSaveTexturePath("/storage/emulated/0/PSP/TEXTURES", "TEXTURES")
-        )
-        assertTrue(
-            "Child Textures rooted inside <saveDir>/User/Load must match load/textures via full path",
-            BuiltinTexturePathRegistry.isExcludedSaveTexturePath("/storage/emulated/0/User/Load/Textures", "Textures")
-        )
-        assertFalse(BuiltinTexturePathRegistry.isExcludedSaveTexturePath("User/GC/USA/Card A/01-GZLE-save.gci"))
-        assertFalse(BuiltinTexturePathRegistry.isExcludedSaveTexturePath("PSP/SAVEDATA/ULUS10041DATA00/DATA.BIN"))
-
         assertTrue(BuiltinTexturePathRegistry.isSystemTexturePath("/data/files/libretro/system/Mupen64plus/hires_texture/OOT/tex.png"))
         assertTrue(BuiltinTexturePathRegistry.isSystemTexturePath("/data/files/libretro/system/Mupen64plus/cache/OOT.hts"))
         assertTrue(BuiltinTexturePathRegistry.isSystemTexturePath("/data/files/libretro/system/dc/textures/MK-51000/tex.png"))

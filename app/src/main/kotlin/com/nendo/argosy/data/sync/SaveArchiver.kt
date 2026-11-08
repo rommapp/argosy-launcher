@@ -1,6 +1,5 @@
 package com.nendo.argosy.data.sync
 
-import com.nendo.argosy.data.emulator.BuiltinTexturePathRegistry
 import com.nendo.argosy.data.storage.AndroidDataAccessor
 import com.nendo.argosy.data.storage.FileAccessLayer
 import com.nendo.argosy.data.storage.FileInfo
@@ -217,8 +216,6 @@ class SaveArchiver @Inject constructor(
 
         for (entry in entries) {
             val entryPath = "$parentPath/${entry.name}"
-            if (BuiltinTexturePathRegistry.isExcludedSaveTexturePath(entry.path, entryPath)) continue
-            if (entry.isDirectory && hasOnlyExcludedTextureChildren(entry.path, entryPath)) continue
 
             if (entry.isDirectory) {
                 zos.putArchiveEntry(ZipArchiveEntry("$entryPath/"))
@@ -245,24 +242,12 @@ class SaveArchiver @Inject constructor(
         return filesWritten
     }
 
-    private fun hasOnlyExcludedTextureChildren(folderPath: String, parentPath: String): Boolean {
-        val children = fal.listFilesUnion(folderPath)
-        if (children.isEmpty()) return false
-        return children.all { child ->
-            val childPath = if (parentPath.isEmpty()) child.name else "$parentPath/${child.name}"
-            BuiltinTexturePathRegistry.isExcludedSaveTexturePath(child.path, childPath) ||
-                (child.isDirectory && hasOnlyExcludedTextureChildren(child.path, childPath))
-        }
-    }
-
-    private fun countFilesUnion(folderPath: String, parentPath: String = ""): Pair<Int, Long> {
+    private fun countFilesUnion(folderPath: String): Pair<Int, Long> {
         var count = 0
         var size = 0L
         for (entry in fal.listFilesUnion(folderPath)) {
-            val relPath = if (parentPath.isEmpty()) entry.name else "$parentPath/${entry.name}"
-            if (BuiltinTexturePathRegistry.isExcludedSaveTexturePath(entry.path, relPath)) continue
             if (entry.isDirectory) {
-                val sub = countFilesUnion(entry.path, relPath)
+                val sub = countFilesUnion(entry.path)
                 count += sub.first
                 size += sub.second
             } else {
@@ -272,7 +257,6 @@ class SaveArchiver @Inject constructor(
         }
         return count to size
     }
-
 
     fun unzipToFolder(sourceZip: File, targetFolder: File): Boolean {
         if (!sourceZip.exists() || !sourceZip.isFile) {
@@ -493,7 +477,7 @@ class SaveArchiver @Inject constructor(
                 val staged = writeDirs.getValue(root)
                 staged == destination ||
                     !staged.exists() ||
-                    moveStagedDirectoryPreservingTextures(staged, destination.absolutePath).also { moved ->
+                    androidDataAccessor.moveDirectory(staged.absolutePath, destination.absolutePath).also { moved ->
                         if (!moved) {
                             Logger.error(TAG, "[SaveSync] ARCHIVE | Failed to move a staged root into place | root=$root, target=${destination.absolutePath}")
                         }
@@ -567,7 +551,7 @@ class SaveArchiver @Inject constructor(
                 return false
             }
 
-            val moved = moveStagedDirectoryPreservingTextures(tempDir, targetFolder.absolutePath)
+            val moved = androidDataAccessor.moveDirectory(tempDir.absolutePath, targetFolder.absolutePath)
             if (!moved) {
                 Logger.error(TAG, "[SaveSync] ARCHIVE | Failed to move to target via AltAccess | target=${targetFolder.absolutePath}")
                 tempDir.deleteRecursively()
@@ -739,7 +723,7 @@ class SaveArchiver @Inject constructor(
                 tempDir.deleteRecursively()
                 return false
             }
-            val moved = moveStagedDirectoryPreservingTextures(tempDir, targetFolder.absolutePath)
+            val moved = androidDataAccessor.moveDirectory(tempDir.absolutePath, targetFolder.absolutePath)
             if (!moved) {
                 Logger.error(TAG, "[SaveSync] ARCHIVE | Failed to move to target | target=${targetFolder.absolutePath}")
                 tempDir.deleteRecursively()
@@ -831,7 +815,7 @@ class SaveArchiver @Inject constructor(
                 tempDir.deleteRecursively()
                 return false
             }
-            val moved = moveStagedDirectoryPreservingTextures(tempDir, targetFolder.absolutePath)
+            val moved = androidDataAccessor.moveDirectory(tempDir.absolutePath, targetFolder.absolutePath)
             if (!moved) {
                 Logger.error(TAG, "[SaveSync] ARCHIVE | Failed to move to target | target=${targetFolder.absolutePath}")
                 tempDir.deleteRecursively()
@@ -948,68 +932,6 @@ class SaveArchiver @Inject constructor(
 
     fun copyFileToPath(source: File, targetPath: String): Boolean = fal.copyFile(source.absolutePath, targetPath)
 
-    fun moveStagedDirectoryPreservingTextures(stagedDir: File, targetPath: String): Boolean {
-        val deleteResult = deleteDirectoryPreservingTextures(targetPath)
-        if (!deleteResult.allNonTextureDeleted) {
-            Logger.error(TAG, "[SaveSync] ARCHIVE | Target directory could not be cleaned before move | target=$targetPath")
-            return false
-        }
-        if (deleteResult.preservedTextures) {
-            val copied = androidDataAccessor.copyDirectory(stagedDir.absolutePath, targetPath)
-            stagedDir.deleteRecursively()
-            return copied
-        }
-        return androidDataAccessor.moveDirectory(stagedDir.absolutePath, targetPath)
-    }
-
-    data class TexturePreservingDeleteResult(
-        val allNonTextureDeleted: Boolean,
-        val preservedTextures: Boolean
-    )
-
-    fun deleteDirectoryPreservingTextures(
-        folderPath: String,
-        relativePrefix: String = ""
-    ): TexturePreservingDeleteResult {
-        if (!fal.exists(folderPath)) {
-            return TexturePreservingDeleteResult(allNonTextureDeleted = true, preservedTextures = false)
-        }
-        if (!fal.isDirectory(folderPath)) {
-            return TexturePreservingDeleteResult(
-                allNonTextureDeleted = fal.delete(folderPath),
-                preservedTextures = false
-            )
-        }
-        if (BuiltinTexturePathRegistry.isExcludedSaveTexturePath(folderPath, relativePrefix)) {
-            return TexturePreservingDeleteResult(allNonTextureDeleted = true, preservedTextures = true)
-        }
-        var preservedAny = false
-        var allDeleted = true
-        for (child in fal.listFilesUnion(folderPath)) {
-            val rel = if (relativePrefix.isEmpty()) child.name else "$relativePrefix/${child.name}"
-            if (BuiltinTexturePathRegistry.isExcludedSaveTexturePath(child.path, rel)) {
-                preservedAny = true
-                continue
-            }
-            if (child.isDirectory) {
-                val subResult = deleteDirectoryPreservingTextures(child.path, rel)
-                if (!subResult.allNonTextureDeleted) allDeleted = false
-                if (subResult.preservedTextures || fal.exists(child.path)) preservedAny = true
-            } else {
-                if (!fal.delete(child.path)) allDeleted = false
-            }
-        }
-        if (!preservedAny) {
-            if (!fal.deleteRecursively(folderPath) && fal.exists(folderPath)) {
-                allDeleted = false
-            }
-        }
-        return TexturePreservingDeleteResult(
-            allNonTextureDeleted = allDeleted,
-            preservedTextures = preservedAny
-        )
-    }
-
     fun calculateFileHashAtPath(path: String): String {
         val md = MessageDigest.getInstance("MD5")
         val input = openInputStreamForPath(path)
@@ -1052,7 +974,7 @@ class SaveArchiver @Inject constructor(
         val entries = mutableListOf<Pair<String, String>>()
         var entry = zis.nextEntry
         while (entry != null) {
-            if (!entry.isDirectory && !BuiltinTexturePathRegistry.isExcludedSaveTexturePath(entry.name)) {
+            if (!entry.isDirectory) {
                 val md = MessageDigest.getInstance("MD5")
                 val buffer = ByteArray(BUFFER_SIZE)
                 var bytesRead: Int
@@ -1110,7 +1032,6 @@ class SaveArchiver @Inject constructor(
     ) {
         for (entry in fal.listFilesUnion(folderPath)) {
             val entryName = "$entryPrefix/${entry.name}"
-            if (BuiltinTexturePathRegistry.isExcludedSaveTexturePath(entry.path, entryName)) continue
             if (entry.isDirectory) {
                 collectUnionFileHashes(entry.path, entryName, out)
             } else {

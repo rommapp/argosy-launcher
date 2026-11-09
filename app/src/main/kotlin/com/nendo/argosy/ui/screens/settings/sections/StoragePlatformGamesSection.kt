@@ -309,7 +309,7 @@ private fun PlatformGamesEmptyState(state: StoragePlatformGamesState) {
         Text(
             text = if (state.localOnly && state.locationFilter != StorageLocationFilter.ALL) {
                 stringResource(R.string.settings_storage_local_only_tab_empty_message)
-            } else if (state.locationFilter != StorageLocationFilter.ALL) {
+            } else if (state.showsLocationTabs && state.locationFilter != StorageLocationFilter.ALL) {
                 stringResource(R.string.settings_storage_platform_games_tab_empty_message, state.platformName)
             } else if (state.localOnly) {
                 stringResource(R.string.settings_storage_local_only_empty_message)

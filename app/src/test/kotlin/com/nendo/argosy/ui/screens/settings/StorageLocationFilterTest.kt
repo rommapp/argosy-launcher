@@ -66,6 +66,16 @@ class StorageLocationFilterTest {
     }
 
     @Test
+    fun `a filter left over after the tabs disappear no longer hides the platform's games`() {
+        val afterDeletingSdGames = StoragePlatformGamesState(
+            games = listOf(internal, game(6, GameStorageLocation.INTERNAL)),
+            locationFilter = StorageLocationFilter.REMOVABLE
+        )
+
+        assertEquals(listOf(1L, 6L), afterDeletingSdGames.visibleGames.map { it.gameId }.sorted())
+    }
+
+    @Test
     fun `a platform list shows location tabs only when its games span more than one location`() {
         val split = StoragePlatformGamesState(games = listOf(internal, sdCard))
         val oneDrive = StoragePlatformGamesState(games = listOf(internal, game(6, GameStorageLocation.INTERNAL)))

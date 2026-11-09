@@ -1110,7 +1110,7 @@ data class StoragePlatformGamesState(
         } > 1
 
     val visibleGames: List<com.nendo.argosy.domain.usecase.storage.GameStorageBreakdown>
-        get() = sort.order(games.filter(locationFilter::matches))
+        get() = sort.order(if (showsLocationTabs) games.filter(locationFilter::matches) else games)
 }
 
 enum class StorageGameSort {

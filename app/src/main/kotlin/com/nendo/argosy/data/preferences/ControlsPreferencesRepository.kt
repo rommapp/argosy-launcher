@@ -2,6 +2,7 @@ package com.nendo.argosy.data.preferences
 
 import android.view.KeyEvent
 import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
@@ -44,7 +45,10 @@ data class ControlsPreferences(
     val navRingRoutes: List<String>? = null,
     val quickNavigation: Boolean = true,
     val navBarAutoHide: Boolean = true,
-    val ignoreControllerTouchpad: Boolean = true
+    val ignoreControllerTouchpad: Boolean = true,
+    val systemHotkeysEnabled: Boolean = true,
+    val systemHomeCombo: List<Int>? = null,
+    val systemBackCombo: List<Int>? = null
 ) {
     companion object {
         const val DEFAULT_HAPTIC_STRENGTH = 0.5f
@@ -87,6 +91,9 @@ class ControlsPreferencesRepository @Inject constructor(
         val QUICK_NAVIGATION = booleanPreferencesKey("quick_navigation")
         val NAV_BAR_AUTO_HIDE = booleanPreferencesKey("nav_bar_auto_hide")
         val IGNORE_CONTROLLER_TOUCHPAD = booleanPreferencesKey("ignore_controller_touchpad")
+        val SYSTEM_HOTKEYS_ENABLED = booleanPreferencesKey("system_hotkeys_enabled")
+        val SYSTEM_HOME_COMBO = stringPreferencesKey("system_home_combo")
+        val SYSTEM_BACK_COMBO = stringPreferencesKey("system_back_combo")
     }
 
     val preferences: Flow<ControlsPreferences> = dataStore.data.map { prefs ->
@@ -121,7 +128,10 @@ class ControlsPreferencesRepository @Inject constructor(
                 ?.filter { it.isNotEmpty() },
             quickNavigation = prefs[Keys.QUICK_NAVIGATION] ?: true,
             navBarAutoHide = prefs[Keys.NAV_BAR_AUTO_HIDE] ?: true,
-            ignoreControllerTouchpad = prefs[Keys.IGNORE_CONTROLLER_TOUCHPAD] ?: true
+            ignoreControllerTouchpad = prefs[Keys.IGNORE_CONTROLLER_TOUCHPAD] ?: true,
+            systemHotkeysEnabled = prefs[Keys.SYSTEM_HOTKEYS_ENABLED] ?: true,
+            systemHomeCombo = parseKeyCodes(prefs[Keys.SYSTEM_HOME_COMBO]),
+            systemBackCombo = parseKeyCodes(prefs[Keys.SYSTEM_BACK_COMBO])
         )
     }.flowOn(Dispatchers.Default)
 
@@ -285,6 +295,29 @@ class ControlsPreferencesRepository @Inject constructor(
     suspend fun setNavBarAutoHide(enabled: Boolean) {
         dataStore.edit { it[Keys.NAV_BAR_AUTO_HIDE] = enabled }
     }
+
+    suspend fun setSystemHotkeysEnabled(enabled: Boolean) {
+        dataStore.edit { it[Keys.SYSTEM_HOTKEYS_ENABLED] = enabled }
+    }
+
+    suspend fun setSystemHomeCombo(keyCodes: List<Int>?) {
+        dataStore.edit { prefs -> writeKeyCodes(prefs, Keys.SYSTEM_HOME_COMBO, keyCodes) }
+    }
+
+    suspend fun setSystemBackCombo(keyCodes: List<Int>?) {
+        dataStore.edit { prefs -> writeKeyCodes(prefs, Keys.SYSTEM_BACK_COMBO, keyCodes) }
+    }
+
+    private fun writeKeyCodes(
+        prefs: MutablePreferences,
+        key: Preferences.Key<String>,
+        keyCodes: List<Int>?
+    ) {
+        if (keyCodes.isNullOrEmpty()) prefs.remove(key) else prefs[key] = keyCodes.joinToString(",")
+    }
+
+    private fun parseKeyCodes(raw: String?): List<Int>? =
+        raw?.split(',')?.mapNotNull { it.trim().toIntOrNull() }?.takeIf { it.isNotEmpty() }
 
     suspend fun setNavRingRoutes(routes: List<String>?) {
         dataStore.edit { prefs ->

@@ -99,8 +99,13 @@ internal class LightSectionsInput(
     override fun onSecondaryAction(): InputResult {
         val state = viewModel.uiState.value
         if (state.currentSection != SettingsSection.NAVIGATION) return InputResult.UNHANDLED
-        val shortcut = navigationItemAtFocusIndex(state.focusedIndex, state.controls)?.shortcut
-            ?: return InputResult.UNHANDLED
+        val item = navigationItemAtFocusIndex(state.focusedIndex, state.controls)
+        item?.systemHotkeyAction?.let { action ->
+            if (!state.controls.isSystemComboCustom(action)) return InputResult.UNHANDLED
+            viewModel.resetSystemCombo(action)
+            return InputResult.HANDLED
+        }
+        val shortcut = item?.shortcut ?: return InputResult.UNHANDLED
         viewModel.clearShortcutKey(shortcut)
         return InputResult.HANDLED
     }
@@ -316,6 +321,10 @@ internal class LightSectionsInput(
                 return toggleLeftRight(direction, controls.quickNavigation) { viewModel.setQuickNavigation(it) }
             NavigationItem.NavBarAutoHide ->
                 return toggleLeftRight(direction, controls.navBarAutoHide) { viewModel.setNavBarAutoHide(it) }
+            NavigationItem.SystemHotkeys ->
+                return toggleLeftRight(direction, controls.systemHotkeysEnabled) {
+                    viewModel.setSystemHotkeysEnabled(it)
+                }
             NavigationItem.SelectLCombo -> return stepOption(
                 ControlsSettingsDelegate.COMBO_OPTIONS,
                 controls.selectLCombo,

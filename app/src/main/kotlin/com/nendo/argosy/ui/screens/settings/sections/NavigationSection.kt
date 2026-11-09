@@ -16,6 +16,7 @@ import com.nendo.argosy.R
 import com.nendo.argosy.data.preferences.ControlsPreferences
 import com.nendo.argosy.data.preferences.MenuWrapMode
 import com.nendo.argosy.data.preferences.SelectSwapMode
+import com.nendo.argosy.hardware.SystemHotkeyAction
 import com.nendo.argosy.libretro.HotkeyManager
 import com.nendo.argosy.ui.common.labelRes
 import com.nendo.argosy.ui.components.ActionPreference
@@ -31,6 +32,7 @@ import com.nendo.argosy.ui.screens.settings.SettingsViewModel
 import com.nendo.argosy.ui.screens.settings.components.NavRingPopup
 import com.nendo.argosy.ui.screens.settings.components.SectionPaneLayout
 import com.nendo.argosy.ui.screens.settings.components.ShortcutCaptureModal
+import com.nendo.argosy.ui.screens.settings.components.SystemComboCaptureModal
 import com.nendo.argosy.ui.screens.settings.delegates.ControlsSettingsDelegate
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
 import com.nendo.argosy.ui.theme.Dimens
@@ -93,9 +95,32 @@ internal sealed class NavigationItem(
     data object OpenNavigationShortcut : NavigationItem("openNavigationKey", "shortcuts")
     data object OpenQuickPanelShortcut : NavigationItem("openQuickPanelKey", "shortcuts")
 
+    data object SystemHotkeys : NavigationItem("systemHotkeys", "system")
+    data object SystemHotkeysAccess : NavigationItem(
+        key = "systemHotkeysAccess",
+        section = "system",
+        visibleWhen = { it.systemHotkeysEnabled }
+    )
+    data object SystemHomeCombo : NavigationItem(
+        key = "systemHomeCombo",
+        section = "system",
+        visibleWhen = { it.systemHotkeysEnabled }
+    )
+    data object SystemBackCombo : NavigationItem(
+        key = "systemBackCombo",
+        section = "system",
+        visibleWhen = { it.systemHotkeysEnabled }
+    )
+
     val shortcut: UiShortcut? get() = when (this) {
         OpenNavigationShortcut -> UiShortcut.OPEN_NAVIGATION
         OpenQuickPanelShortcut -> UiShortcut.OPEN_QUICK_PANEL
+        else -> null
+    }
+
+    val systemHotkeyAction: SystemHotkeyAction? get() = when (this) {
+        SystemHomeCombo -> SystemHotkeyAction.HOME
+        SystemBackCombo -> SystemHotkeyAction.BACK
         else -> null
     }
 
@@ -113,6 +138,9 @@ internal sealed class NavigationItem(
         private val ShortcutsSpacer = SectionSpacer("shortcutsSpacer", "shortcuts")
         private val ShortcutsHeader =
             Header("shortcutsHeader", "shortcuts", R.string.settings_navigation_section_shortcuts)
+        private val SystemSpacer = SectionSpacer("systemSpacer", "system")
+        private val SystemHeader =
+            Header("systemHeader", "system", R.string.settings_navigation_section_system_buttons)
         val ALL: List<NavigationItem>
             get() = listOf(
                 ControllerHeader,
@@ -124,7 +152,9 @@ internal sealed class NavigationItem(
                 NavBarSpacer, NavBarHeader,
                 QuickNavigation, NavBarAutoHide, NavBarPages,
                 ShortcutsSpacer, ShortcutsHeader,
-                OpenNavigationShortcut, OpenQuickPanelShortcut
+                OpenNavigationShortcut, OpenQuickPanelShortcut,
+                SystemSpacer, SystemHeader,
+                SystemHotkeys, SystemHotkeysAccess, SystemHomeCombo, SystemBackCombo
             )
     }
 }
@@ -141,6 +171,7 @@ private val navigationLayout = SettingsLayout<NavigationItem, ControlsState>(
             "menus" -> R.string.settings_navigation_section_menus
             "navbar" -> R.string.settings_navigation_section_nav_bar
             "shortcuts" -> R.string.settings_navigation_section_shortcuts
+            "system" -> R.string.settings_navigation_section_system_buttons
             else -> null
         }
     }
@@ -164,10 +195,15 @@ fun NavigationSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val controls = uiState.controls
     val context = LocalContext.current
 
-    val visibleItems = remember(controls.hapticEnabled, controls.hasSecondaryDisplay, controls.quickNavigation) {
+    val visibleItems = remember(
+        controls.hapticEnabled, controls.hasSecondaryDisplay, controls.quickNavigation, controls.systemHotkeysEnabled
+    ) {
         navigationLayout.visibleItems(controls)
     }
-    val sections = remember(controls.hapticEnabled, controls.hasSecondaryDisplay, controls.quickNavigation, context) {
+    val sections = remember(
+        controls.hapticEnabled, controls.hasSecondaryDisplay, controls.quickNavigation, controls.systemHotkeysEnabled,
+        context
+    ) {
         navigationLayout.buildSections(controls, context)
     }
 
@@ -347,6 +383,44 @@ fun NavigationSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                 isFocused = isFocused(item),
                 onClick = { viewModel.startShortcutCapture(UiShortcut.OPEN_QUICK_PANEL) }
             )
+
+            NavigationItem.SystemHotkeys -> SwitchPreference(
+                title = stringResource(R.string.settings_navigation_system_hotkeys_title),
+                subtitle = stringResource(R.string.settings_navigation_system_hotkeys_subtitle),
+                isEnabled = controls.systemHotkeysEnabled,
+                isFocused = isFocused(item),
+                onToggle = { viewModel.setSystemHotkeysEnabled(it) }
+            )
+
+            NavigationItem.SystemHotkeysAccess -> ActionPreference(
+                title = stringResource(R.string.settings_navigation_system_hotkeys_access_title),
+                subtitle = stringResource(R.string.settings_navigation_system_hotkeys_access_subtitle),
+                isFocused = isFocused(item),
+                trailingText = if (uiState.permissions.hasAccessibilityService) {
+                    stringResource(R.string.settings_navigation_system_hotkeys_access_on)
+                } else {
+                    stringResource(R.string.settings_navigation_system_hotkeys_access_needed)
+                },
+                onClick = { viewModel.openAccessibilitySettings() }
+            )
+
+            NavigationItem.SystemHomeCombo -> SystemComboPreference(
+                title = stringResource(R.string.settings_navigation_system_home_title),
+                subtitle = stringResource(R.string.settings_navigation_system_home_subtitle),
+                action = SystemHotkeyAction.HOME,
+                controls = controls,
+                isFocused = isFocused(item),
+                viewModel = viewModel
+            )
+
+            NavigationItem.SystemBackCombo -> SystemComboPreference(
+                title = stringResource(R.string.settings_navigation_system_back_title),
+                subtitle = stringResource(R.string.settings_navigation_system_back_subtitle),
+                action = SystemHotkeyAction.BACK,
+                controls = controls,
+                isFocused = isFocused(item),
+                viewModel = viewModel
+            )
         }
     }
 
@@ -372,11 +446,48 @@ fun NavigationSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
             onDismiss = { viewModel.cancelShortcutCapture() }
         )
     }
+
+    controls.systemComboCaptureTarget?.let { action ->
+        SystemComboCaptureModal(
+            actionTitle = stringResource(systemComboTitleRes(action)),
+            onAssign = { keyCodes -> viewModel.assignSystemCombo(action, keyCodes) },
+            onDismiss = { viewModel.cancelSystemComboCapture() }
+        )
+    }
 }
 
 private fun shortcutTitleRes(shortcut: UiShortcut): Int = when (shortcut) {
     UiShortcut.OPEN_NAVIGATION -> R.string.settings_navigation_open_navigation_title
     UiShortcut.OPEN_QUICK_PANEL -> R.string.settings_navigation_open_quick_panel_title
+}
+
+private fun systemComboTitleRes(action: SystemHotkeyAction): Int = when (action) {
+    SystemHotkeyAction.HOME -> R.string.settings_navigation_system_home_title
+    SystemHotkeyAction.BACK -> R.string.settings_navigation_system_back_title
+}
+
+@Composable
+private fun SystemComboPreference(
+    title: String,
+    subtitle: String,
+    action: SystemHotkeyAction,
+    controls: ControlsState,
+    isFocused: Boolean,
+    viewModel: SettingsViewModel
+) {
+    val combo = controls.systemCombo(action)
+    ActionPreference(
+        title = title,
+        subtitle = subtitle,
+        isFocused = isFocused,
+        trailingText = when (action) {
+            SystemHotkeyAction.HOME -> HotkeyManager.formatCombo(combo)
+            SystemHotkeyAction.BACK -> combo.joinToString(" + ") { HotkeyManager.getKeyName(it) }
+        },
+        showResetButton = controls.isSystemComboCustom(action),
+        onReset = { viewModel.resetSystemCombo(action) },
+        onClick = { viewModel.startSystemComboCapture(action) }
+    )
 }
 
 @Composable

@@ -637,13 +637,14 @@ private fun HotkeyRow(
 }
 
 @Composable
-private fun RecordingContent(
+internal fun RecordingContent(
     title: String,
     heldKeys: Set<Int>,
     isComplete: Boolean,
     onComplete: (Set<Int>) -> Unit,
     onCancel: () -> Unit,
-    onUpdateComplete: (Boolean) -> Unit
+    onUpdateComplete: (Boolean) -> Unit,
+    prompt: String = stringResource(R.string.settings_hotkeys_recording_prompt)
 ) {
     var holdProgress by remember { mutableFloatStateOf(0f) }
     var savedKeys by remember { mutableStateOf<Set<Int>>(emptySet()) }
@@ -737,7 +738,7 @@ private fun RecordingContent(
                         text = if (isComplete) {
                             stringResource(R.string.settings_hotkeys_recording_saved)
                         } else if (heldKeys.isEmpty()) {
-                            stringResource(R.string.settings_hotkeys_recording_prompt)
+                            prompt
                         } else {
                             stringResource(R.string.settings_hotkeys_recording_holding)
                         },

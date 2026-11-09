@@ -852,14 +852,11 @@ class TexturePackInstaller(
         deleted
     }
 
-    suspend fun uninstallForGame(game: GameEntity) = lockFor(game.id).withLock {
+    suspend fun uninstallForGame(game: GameEntity): List<Long> = lockFor(game.id).withLock {
         withContext(Dispatchers.IO) {
-            val modFiles = gameFileDao.getModFilesForGame(game.id)
-            for (modFile in modFiles) {
-                if (modFile.localPath != null) {
-                    uninstallModFileUnlocked(modFile)
-                }
-            }
+            gameFileDao.getModFilesForGame(game.id)
+                .filter { it.localPath != null && !uninstallModFileUnlocked(it) }
+                .map { it.id }
         }
     }
 

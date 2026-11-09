@@ -143,8 +143,9 @@ interface GameFileDao {
     @Query("""
         UPDATE game_files SET localPath = NULL, downloadedAt = NULL
         WHERE gameId = :gameId AND localPath IS NOT NULL AND localPath NOT LIKE :prefix || '%'
+            AND id NOT IN (:keepIds)
     """)
-    suspend fun clearLocalPathsByGameIdExcludingPrefix(gameId: Long, prefix: String)
+    suspend fun clearLocalPathsByGameIdExcludingPrefix(gameId: Long, prefix: String, keepIds: List<Long>)
 
     @Query("DELETE FROM game_files WHERE id = :id")
     suspend fun deleteById(id: Long)

@@ -1372,6 +1372,9 @@ class TexturePackInstallerTest {
         assertEquals(listOf("locked.png"), manifest.readLines())
         assertFalse(File(packDir, "free.png").exists())
         coVerify(exactly = 0) { gameFileDao.clearLocalPath(85L) }
+
+        coEvery { gameFileDao.getModFilesForGame(1L) } returns listOf(modFile)
+        assertEquals(listOf(85L), customInstaller.uninstallForGame(testGame(titleId = "GZLE01")))
     }
 
     @Test

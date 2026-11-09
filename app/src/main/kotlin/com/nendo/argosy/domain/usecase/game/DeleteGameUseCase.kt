@@ -59,7 +59,7 @@ class DeleteGameUseCase @Inject constructor(
         val path = game.localPath ?: return false
         val platformFolder = gameRepository.getDownloadDirForPlatformId(game.platformId)
 
-        texturePackInstaller.uninstallForGame(game)
+        val texturePacksKept = texturePackInstaller.uninstallForGame(game)
 
         gameRepository.clearLocalPath(gameId)
         downloadQueueDao.deleteByGameId(gameId)
@@ -68,7 +68,7 @@ class DeleteGameUseCase @Inject constructor(
             .mapNotNull { it.localPath }
             .filterNot { it.startsWith(musicDirPrefix) }
             .filter { File(it).parentFile?.name?.lowercase(Locale.ROOT) == ZipExtractor.EXTCONTENT_FOLDER }
-        gameFileDao.clearLocalPathsByGameIdExcludingPrefix(gameId, musicDirPrefix)
+        gameFileDao.clearLocalPathsByGameIdExcludingPrefix(gameId, musicDirPrefix, texturePacksKept)
         val discPaths = gameDiscDao.getDiscsForGame(gameId).mapNotNull { disc ->
             disc.localPath?.also { gameDiscDao.clearLocalPath(disc.id) }
         }

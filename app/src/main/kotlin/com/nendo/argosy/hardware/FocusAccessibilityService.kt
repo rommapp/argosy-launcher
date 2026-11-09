@@ -47,8 +47,13 @@ class FocusAccessibilityService : AccessibilityService() {
     private val handler = Handler(Looper.getMainLooper())
     @Volatile private var quickPanelEnabled = false
     @Volatile private var systemHotkeys = SystemHotkeyConfig.DISABLED
-    private var foregroundPackage: String? = null
-    private var otherAppInFront = false
+    private val foreground by lazy {
+        ForegroundAppTracker(
+            ownPackage = packageName,
+            inputSurfaces = ARGOSY_INPUT_SURFACES,
+            imePackage = ::currentImePackage
+        )
+    }
     private val keyFilter = SystemKeyFilter(
         backGate = BackHoldGate(
             filtering = ::filtersBack,
@@ -59,7 +64,7 @@ class FocusAccessibilityService : AccessibilityService() {
         ),
         hotkeys = SystemHotkeyDetector(
             config = { systemHotkeys },
-            foreignAppInFront = { otherAppInFront && !quickPanelOverlay.isOpen.value },
+            foreignAppInFront = { foreground.otherAppInFront && !quickPanelOverlay.isOpen.value },
             scheduleHold = { task, delayMs -> handler.postDelayed(task, delayMs) },
             cancelHold = handler::removeCallbacks,
             perform = ::performSystemHotkey,
@@ -71,13 +76,7 @@ class FocusAccessibilityService : AccessibilityService() {
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event?.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
         val source = event.packageName?.toString() ?: return
-        if (source == SYSTEM_UI_PACKAGE || source == currentImePackage()) return
-        if (source != packageName) {
-            foregroundPackage = source
-            otherAppInFront = true
-        } else if (event.className?.toString()?.let(ARGOSY_INPUT_SURFACES::contains) == true) {
-            otherAppInFront = false
-        }
+        foreground.onWindowStateChanged(source, event.className?.toString())
     }
 
     private fun currentImePackage(): String? =
@@ -135,7 +134,7 @@ class FocusAccessibilityService : AccessibilityService() {
         if (!quickPanelEnabled || quickPanelOverlay.isOpen.value) return false
         val session = playSessionTracker.activeSession.value ?: return false
         if (session.emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE) return false
-        return foregroundPackage == session.emulatorPackage
+        return foreground.foregroundPackage == session.emulatorPackage
     }
 
     private fun gameDisplayId(): Int =
@@ -190,7 +189,6 @@ class FocusAccessibilityService : AccessibilityService() {
     companion object {
         private const val TAG = "FocusA11y"
         private const val BACK_HOLD_MS = 500L
-        private const val SYSTEM_UI_PACKAGE = "com.android.systemui"
 
         private val ARGOSY_INPUT_SURFACES = setOf(
             ArgosyActivity::class.java.name,

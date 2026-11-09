@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="savesync_section_attention">Precisa da sua atenção</string>
     <string name="savesync_section_in_progress">Em andamento</string>
     <string name="savesync_section_games">Jogos com saves</string>
@@ -20,7 +20,7 @@
     <string name="savesync_device_server_versioned">RomM v%1$s</string>
     <string name="savesync_device_server_connected">Conectado</string>
     <string name="savesync_device_server_offline">Offline</string>
-    <plurals name="savesync_device_save_count_unit">
+    <plurals name="savesync_device_save_count_unit" tools:ignore="ImpliedQuantity">
         <item quantity="one">save</item>
         <item quantity="many">saves</item>
         <item quantity="other">saves</item>
@@ -96,7 +96,6 @@
     <string name="savesync_presentation_last_played">jogado por último %s</string>
     <string name="savesync_presentation_device_last_played">jogado por último %s</string>
     <string name="savesync_presentation_share_percent">%d%%</string>
-    <string name="savesync_presentation_joined" translatable="false">%1$s · %2$s</string>
     <plurals name="savesync_presentation_sessions">
         <item quantity="one">%d sessão</item>
         <item quantity="many">%d sessões</item>

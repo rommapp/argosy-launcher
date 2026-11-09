@@ -1080,17 +1080,6 @@
     <string name="ui_quick_settings_stats_battery">Bateria</string>
     <string name="ui_launch_overlay_running_open_title">%1$s Ainda Está Aberto</string>
     <string name="ui_launch_overlay_running_open_message">Iniciar outro jogo irá fechá-lo.</string>
-    <string name="ui_feature_setup_title_ra" translatable="false">RetroAchievements</string>
-    <string name="ui_home_layout_custom_grid_axis_fill" translatable="false">&#8734;</string>
-    <string name="ui_home_layout_custom_grid_axis_scroll" translatable="false">&lt;-&#8734;-&gt;</string>
-    <string name="ui_quick_settings_stats_cpu" translatable="false">CPU</string>
-    <string name="ui_quick_settings_stats_gpu" translatable="false">GPU</string>
-    <string name="ui_quick_settings_stats_ghz" translatable="false">%1$.1f GHz</string>
-    <string name="ui_quick_settings_stats_mhz" translatable="false">%1$d MHz</string>
-    <string name="ui_quick_settings_stats_rpm" translatable="false">%1$d RPM</string>
-    <string name="ui_quick_settings_stats_krpm" translatable="false">%1$.1fk RPM</string>
-    <string name="ui_quick_settings_stats_celsius" translatable="false">%1$d°C</string>
-    <string name="argosyapp_splash_title" translatable="false">ARGOSY</string>
     <string name="ui_quick_settings_orientation">Orientação</string>
     <string name="ui_quick_settings_orientation_auto">Auto</string>
     <string name="ui_quick_settings_orientation_landscape">Paisagem</string>

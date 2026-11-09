@@ -2,5 +2,4 @@
 <resources>
     <string name="secondary_home_label">Companion do Argosy</string>
     <string name="focus_accessibility_description">Mantém o foco do controle na tela do jogo durante a jogabilidade em duas telas e registra uma captura de tela silenciosamente ao salvar. Enquanto um jogo roda em outro emulador, o aplicativo monitora o botão Voltar para que mantê-lo pressionado abra o painel rápido do Argosy.</string>
-    <string name="app_name" translatable="false">Argosy Launcher</string>
 </resources>

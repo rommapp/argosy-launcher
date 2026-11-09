@@ -36,13 +36,10 @@
     <string name="sync_service_preparing">Preparando a sincronização...</string>
     <string name="sync_service_platform">Sincronizando: %1$s</string>
     <string name="sync_service_library">Sincronizando a biblioteca...</string>
-    <string name="sync_service_platform_of" translatable="false">%1$s %2$d/%3$d</string>
-    <string name="sync_service_platform_games" translatable="false">%1$s (%2$d/%3$d)</string>
     <string name="sync_service_uploading">Enviando: %1$s</string>
     <string name="sync_service_downloading">Baixando: %1$s</string>
     <string name="sync_service_saves">Sincronizando saves...</string>
 
-    <string name="steam_service_title" translatable="false">Steam</string>
     <string name="steam_service_connecting">Conectando...</string>
     <string name="steam_service_signing_in">Fazendo login...</string>
 
@@ -54,7 +51,6 @@
     <string name="sync_download_service_downloading">Baixando: %1$s</string>
     <string name="sync_download_service_queued">Na fila: %1$s</string>
     <string name="sync_download_service_pending">Download pendente...</string>
-    <string name="sync_download_service_batch_position" translatable="false">%1$s (%2$d/%3$d)</string>
     <string name="sync_download_service_media_preparing">%1$s: %2$s</string>
     <string name="sync_download_service_media_downloading">Baixando: %1$s</string>
 
@@ -121,12 +117,12 @@
     <string name="sync_media_transcode_unavailable_subtitle">%1$s não pôde ser transcodificado para download</string>
 
     <plurals name="sync_screenshot_uploaded">
-        <item quantity="one">Captura de tela enviada</item>
+        <item quantity="one">%1$d captura de tela enviada</item>
         <item quantity="many">%1$d capturas de tela enviadas</item>
         <item quantity="other">%1$d capturas de tela enviadas</item>
     </plurals>
     <plurals name="sync_screenshot_rejected">
-        <item quantity="one">O RomM não aceitou uma captura de tela</item>
+        <item quantity="one">O RomM não aceitou %1$d captura de tela</item>
         <item quantity="many">O RomM não aceitou %1$d capturas de tela</item>
         <item quantity="other">O RomM não aceitou %1$d capturas de tela</item>
     </plurals>

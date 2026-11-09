@@ -189,5 +189,4 @@
 
     <string name="home_grid_tile_ra_points_label">Pontos</string>
     <string name="home_grid_tile_ra_unlocks_label">Desbloqueios</string>
-    <string name="home_grid_tile_feature_library_link_more" translatable="false">+%1$d</string>
 </resources>

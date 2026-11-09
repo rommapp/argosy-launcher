@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="media_companion_fact_year">Ano</string>
     <string name="media_companion_fact_runtime">Duração</string>
     <string name="media_companion_fact_rated">Classificação</string>
@@ -110,7 +110,7 @@
     <string name="media_tile_notice_decline_use_downloaded">Usar baixados</string>
     <string name="media_tile_notice_decline_cancel">Cancelar</string>
     <string name="media_tile_notice_derived_message_none">Ainda não há episódios desta série neste dispositivo. Esta ficha reproduz episódios baixados, então permanece vazia até que alguns cheguem.</string>
-    <plurals name="media_tile_notice_derived_message_some">
+    <plurals name="media_tile_notice_derived_message_some" tools:ignore="ImpliedQuantity">
         <item quantity="one">Esta ficha reproduz o único episódio deste dispositivo e o recomeça quando termina.</item>
         <item quantity="many">Esta ficha reproduz os %1$d episódios deste dispositivo, em ordem, e recomeça pelo primeiro ao chegar ao fim.</item>
         <item quantity="other">Esta ficha reproduz os %1$d episódios deste dispositivo, em ordem, e recomeça pelo primeiro ao chegar ao fim.</item>
@@ -118,12 +118,12 @@
     <string name="media_tile_notice_warning_unknown_size">É um lote grande, e o tamanho só é conhecido quando cada download começa.</string>
     <string name="media_tile_notice_warning_approximate_size">Aproximadamente %1$s no total, mais ou menos - cada download define seu próprio tamanho quando começa.</string>
     <plurals name="media_tile_notice_missing_episodes">
-        <item quantity="one">1 episódio ainda não está neste dispositivo. Adicionar esta ficha inicia o download dele.</item>
+        <item quantity="one">%1$d episódio ainda não está neste dispositivo. Adicionar esta ficha inicia o download dele.</item>
         <item quantity="many">%1$d episódios ainda não estão neste dispositivo. Adicionar esta ficha inicia o download deles.</item>
         <item quantity="other">%1$d episódios ainda não estão neste dispositivo. Adicionar esta ficha inicia o download deles.</item>
     </plurals>
     <plurals name="media_tile_notice_missing_titles">
-        <item quantity="one">1 título ainda não está neste dispositivo. Adicionar esta ficha inicia o download dele.</item>
+        <item quantity="one">%1$d título ainda não está neste dispositivo. Adicionar esta ficha inicia o download dele.</item>
         <item quantity="many">%1$d títulos ainda não estão neste dispositivo. Adicionar esta ficha inicia o download deles.</item>
         <item quantity="other">%1$d títulos ainda não estão neste dispositivo. Adicionar esta ficha inicia o download deles.</item>
     </plurals>

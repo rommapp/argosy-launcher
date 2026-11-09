@@ -349,13 +349,8 @@
 
     <!-- Caption under an artwork tile naming where the picture came from. Product and service
          names, never translated. -->
-    <string name="gamedetail_art_picker_origin_romm" translatable="false">RomM</string>
-    <string name="gamedetail_art_picker_origin_screenscraper" translatable="false">ScreenScraper</string>
-    <string name="gamedetail_art_picker_origin_launchbox" translatable="false">LaunchBox</string>
-    <string name="gamedetail_art_picker_origin_steamgriddb" translatable="false">SteamGridDB</string>
     <!-- Caption under an artwork tile naming where the picture came from. Product and service
          names, never translated. -->
-    <string name="gamedetail_art_picker_caption" translatable="false">%1$s · %2$s</string>
 
     <!-- Heading of the file list when opened to add and remove files already decided on. Noun,
          plural. -->

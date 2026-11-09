@@ -18,9 +18,7 @@
     <!-- ===== Step 1: welcome ===== -->
 
     <!-- Product wordmark on the welcome step. A brand name, never translated. -->
-    <string name="firstrun_welcome_wordmark" translatable="false">ARGOSY</string>
     <!-- Product wordmark beside the helm above the RomM login steps. A brand name, never translated. -->
-    <string name="firstrun_step_brand_wordmark" translatable="false">ARGOSY</string>
     <!-- Greeting under the app name on the first screen of the setup wizard. Full sentence.
          "Let us begin the setup" in tone, not a literal welcome mat. -->
     <string name="firstrun_welcome_intro">Bem-vindo! Vamos começar a configuração.</string>

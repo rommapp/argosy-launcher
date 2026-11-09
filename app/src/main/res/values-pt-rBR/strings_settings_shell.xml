@@ -390,10 +390,6 @@
     <string name="settings_shell_vm_not_signed_in_subtitle">Faça login no RetroAchievements primeiro</string>
     <string name="settings_shell_vm_files_removed_title">Arquivos Removidos</string>
     <string name="settings_shell_vm_bios_copied_title">BIOS Copiada</string>
-    <string name="settings_shell_header_romm" translatable="false">ROMM</string>
-    <string name="settings_shell_header_steam" translatable="false">STEAM</string>
-    <string name="settings_shell_header_jellyfin" translatable="false">JELLYFIN</string>
-    <string name="settings_shell_header_retroachievements" translatable="false">RETROACHIEVEMENTS</string>
     <plurals name="settings_shell_coremanagement_update_all_title">
         <item quantity="one">Atualizar %d core</item>
         <item quantity="many">Atualizar todos os %d cores</item>

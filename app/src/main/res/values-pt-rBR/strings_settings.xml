@@ -55,7 +55,6 @@
     <!-- Label above the text field in that modal. -->
     <string name="settings_installers_add_modal_label">Link do GitHub</string>
     <!-- Placeholder shown in the empty text field. Not translated: it is an example URL. -->
-    <string name="settings_installers_add_modal_placeholder" translatable="false">https://github.com/owner/repo</string>
     <!-- Button that commits the typed link in that modal. Verb. -->
     <string name="settings_installers_add_modal_confirm">Adicionar</string>
     <!-- Button that closes that modal without adding anything. Verb. -->
@@ -84,7 +83,6 @@
     <!-- Subtitle of that modal. -->
     <string name="settings_installers_variant_subtitle">Essa versão contém mais de um pacote Android</string>
     <!-- One row in that modal. %1$s is the package kind (ARM64, Universal), %2$s the file name. -->
-    <string name="settings_installers_variant_entry" translatable="false">%1$s - %2$s</string>
     <!-- Package kind for a release asset that names no processor architecture. -->
     <string name="settings_installers_variant_default">Padrão</string>
     <!-- Package kind for a release asset that carries every processor architecture. -->
@@ -145,7 +143,6 @@
     <string name="settings_main_saves_subtitle_off">Sincronização desligada</string>
     <!-- Row opening the RetroAchievements settings. Proper name of an outside service, never
          translated. -->
-    <string name="settings_main_retroachievements_title" translatable="false">RetroAchievements</string>
     <!-- Second line of the RetroAchievements row. %1$s is the account name. -->
     <string name="settings_main_retroachievements_subtitle_logged_in">Logado como %1$s</string>
     <!-- Second line of that row with no account signed in. -->
@@ -182,12 +179,9 @@
 
     <!-- Row opening the RomM game server settings. Proper name of the server software Argosy
          talks to, never translated. -->
-    <string name="settings_main_romm_title" translatable="false">RomM</string>
     <!-- Row opening the Steam settings. Proper name of an outside service, never translated. -->
-    <string name="settings_main_steam_title" translatable="false">Steam</string>
     <!-- Row opening the Jellyfin media server settings. Proper name of an outside service, never
          translated. -->
-    <string name="settings_main_jellyfin_title" translatable="false">Jellyfin</string>
     <!-- Second line of the game server row when no server address has been entered. -->
     <string name="settings_main_romm_subtitle_unconfigured">Servidor não configurado</string>
     <!-- Second line of that row while Argosy is testing whether the server answers. -->
@@ -425,9 +419,7 @@
          "automatic". -->
     <string name="settings_navigation_controller_layout_auto">Automático</string>
     <!-- Value of that row. Brand name of a console maker, never translated. -->
-    <string name="settings_navigation_controller_layout_xbox" translatable="false">Xbox</string>
     <!-- Value of that row. Brand name of a console maker, never translated. -->
-    <string name="settings_navigation_controller_layout_nintendo" translatable="false">Nintendo</string>
     <!-- Second line of that row when a pad was recognised and named. %1$s is the layout that was
          recognised, %2$s the name the pad reports for itself. -->
     <string name="settings_navigation_controller_layout_detected_device">Detectado: %1$s (%2$s)</string>
@@ -1061,7 +1053,6 @@
     <string name="settings_ra_web_api_key_subtitle">Encontre-a na seção Chaves do seu painel de controle do RetroAchievements. Torna os resumos mais rápidos e ricos.</string>
     <!-- Trailing value of that row when no key is stored. -->
     <string name="settings_ra_web_api_key_value_not_set">Não definida</string>
-    <string name="settings_ra_web_api_key_value_saved" translatable="false">****%1$s</string>
     <!-- Trailing value when a key is stored but too short to show its end. Adjective. -->
     <string name="settings_ra_web_api_key_value_saved_short">Salva</string>
     <!-- Trailing value when RetroAchievements answered that the stored key is not valid. The key
@@ -1130,7 +1121,6 @@
     <string name="settings_ra_push_retroarch_subtitle">Escrever este login no config do RetroArch</string>
 
     <!-- Heading of the panel shown before signing in. Proper name, never translated. -->
-    <string name="settings_ra_intro_title" translatable="false">RetroAchievements</string>
     <!-- Line under that heading, saying what the service is for. -->
     <string name="settings_ra_intro_subtitle">Ganhe conquistas enquanto joga jogos clássicos</string>
     <!-- Row that opens the sign-in form. Noun used as a button label. -->
@@ -1428,10 +1418,8 @@
     <string name="settings_about_save_debug_subtitle_off">Registrar sincronização, cache e eventos do canal</string>
 
     <!-- Label above this app's version number. This app's own name, never translated. -->
-    <string name="settings_about_version_argosy_label" translatable="false">Argosy</string>
     <!-- Label above the game server's version number. "RomM" is the server software's name and
          "API" the interface Argosy talks to; leave both untranslated. -->
-    <string name="settings_about_version_romm_label" translatable="false">RomM API</string>
     <!-- That version number. %1$s is the number; the v stands for "version". -->
     <string name="settings_about_version_romm_value">v%1$s</string>
     <!-- Link opening the list of open source licences. Noun, plural. -->
@@ -2093,7 +2081,6 @@
     <!-- Heading over files that belong to the app itself. Rendered in caps in English. -->
     <string name="settings_caches_section_system">SISTEMA</string>
     <!-- Heading over Steam's files. A service name, never translated. -->
-    <string name="settings_caches_section_steam" translatable="false">STEAM</string>
 
     <!-- Row title, counting saves not yet sent to the server. -->
     <plurals name="settings_caches_pending_uploads_title">
@@ -2292,7 +2279,6 @@
          Android. Both are proper names and are never translated. -->
 
     <!-- Heading over the rows about that helper app. Proper name, never translated. -->
-    <string name="settings_steam_section_gamenative" translatable="false">GAMENATIVE</string>
     <!-- Heading over the signed-in account row. Noun. Rendered in caps in English. -->
     <string name="settings_steam_section_account">CONTA</string>
     <!-- Heading over the rows about the game list. Noun. Rendered in caps in English. -->
@@ -2302,7 +2288,6 @@
     <string name="settings_steam_section_danger">ZONA DE RISCO</string>
 
     <!-- Read-only row naming the helper app. Proper name, never translated. -->
-    <string name="settings_steam_gn_status_title" translatable="false">GameNative</string>
     <!-- Value of that row when the helper app can write to a memory card. -->
     <string name="settings_steam_gn_status_configured">Armazenamento externo configurado</string>
     <!-- Value of that row when it cannot. -->
@@ -2462,7 +2447,6 @@
     <string name="settings_social_section_notifications">NOTIFICAÇÕES</string>
     <!-- Heading over the rows for Argosy's nearby-player feature. Proper name, never
          translated. -->
-    <string name="settings_social_section_quaypass" translatable="false">QUAYPASS</string>
 
     <!-- The user's own name on the social service, with an at sign in front. %1$s is the
          name. -->
@@ -2522,7 +2506,6 @@
     <string name="settings_social_suppress_subtitle_off">Notificações de amigos sempre exibidas</string>
 
     <!-- Row title. Proper name of Argosy's nearby-player feature, never translated. -->
-    <string name="settings_social_quaypass_title" translatable="false">QuayPass</string>
     <!-- Second line of that row while it is on. "Check-In" is the name of the screen where it
          happens; keep it capitalised as a name. -->
     <string name="settings_social_quaypass_subtitle_on">Receber viajantes próximos no Check-In</string>
@@ -3990,65 +3973,6 @@
     <string name="settings_builtin_gpu_driver_reason_core_system_only">%1$s usa o driver do sistema</string>
     <string name="settings_builtin_gpu_driver_reason_backend">Aplica-se quando o Backend é Vulkan</string>
     <string name="settings_builtin_gpu_driver_reason_device">Drivers personalizados precisam de uma GPU Adreno</string>
-    <string name="settings_emulator_picker_source_play_store" translatable="false">Play Store</string>
-    <string name="settings_emulator_picker_source_github" translatable="false">GitHub</string>
-    <string name="settings_driver_picker_saved_to_path" translatable="false">Downloads/drivers/</string>
-    <string name="settings_libretro_def_shader_option_sharp" translatable="false">Sharp</string>
-    <string name="settings_libretro_def_shader_option_cut" translatable="false">CUT</string>
-    <string name="settings_libretro_def_shader_option_cut2" translatable="false">CUT2</string>
-    <string name="settings_libretro_def_shader_option_cut3" translatable="false">CUT3</string>
-    <string name="settings_libretro_def_shader_option_crt" translatable="false">CRT</string>
-    <string name="settings_libretro_def_shader_option_lcd" translatable="false">LCD</string>
-    <string name="settings_libretro_def_aspect_ratio_option_4_3" translatable="false">4:3</string>
-    <string name="settings_libretro_def_aspect_ratio_option_3_2" translatable="false">3:2</string>
-    <string name="settings_libretro_def_aspect_ratio_option_16_9" translatable="false">16:9</string>
-    <string name="settings_libretro_def_overscan_crop_option_4px" translatable="false">4px</string>
-    <string name="settings_libretro_def_overscan_crop_option_8px" translatable="false">8px</string>
-    <string name="settings_libretro_def_overscan_crop_option_12px" translatable="false">12px</string>
-    <string name="settings_libretro_def_overscan_crop_option_16px" translatable="false">16px</string>
-    <string name="settings_libretro_def_fast_forward_speed_option_2x" translatable="false">2x</string>
-    <string name="settings_libretro_def_fast_forward_speed_option_4x" translatable="false">4x</string>
-    <string name="settings_libretro_def_fast_forward_speed_option_8x" translatable="false">8x</string>
-    <string name="settings_libretro_def_rewind_speed_option_1x" translatable="false">1x</string>
-    <string name="settings_libretro_def_rewind_speed_option_2x" translatable="false">2x</string>
-    <string name="settings_libretro_def_rewind_speed_option_4x" translatable="false">4x</string>
-    <string name="settings_libretro_def_rewind_buffer_duration_option_5s" translatable="false">5s</string>
-    <string name="settings_libretro_def_rewind_buffer_duration_option_15s" translatable="false">15s</string>
-    <string name="settings_libretro_def_rewind_buffer_duration_option_30s" translatable="false">30s</string>
-    <string name="settings_libretro_def_rewind_buffer_duration_option_60s" translatable="false">60s</string>
-    <string name="settings_libretro_def_audio_volume_option_0" translatable="false">0%</string>
-    <string name="settings_libretro_def_audio_volume_option_10" translatable="false">10%</string>
-    <string name="settings_libretro_def_audio_volume_option_20" translatable="false">20%</string>
-    <string name="settings_libretro_def_audio_volume_option_30" translatable="false">30%</string>
-    <string name="settings_libretro_def_audio_volume_option_40" translatable="false">40%</string>
-    <string name="settings_libretro_def_audio_volume_option_50" translatable="false">50%</string>
-    <string name="settings_libretro_def_audio_volume_option_60" translatable="false">60%</string>
-    <string name="settings_libretro_def_audio_volume_option_70" translatable="false">70%</string>
-    <string name="settings_libretro_def_audio_volume_option_80" translatable="false">80%</string>
-    <string name="settings_libretro_def_audio_volume_option_90" translatable="false">90%</string>
-    <string name="settings_libretro_def_audio_volume_option_100" translatable="false">100%</string>
-    <string name="settings_libretro_def_audio_volume_option_110" translatable="false">110%</string>
-    <string name="settings_libretro_def_audio_volume_option_120" translatable="false">120%</string>
-    <string name="settings_libretro_def_audio_volume_option_130" translatable="false">130%</string>
-    <string name="settings_libretro_def_audio_volume_option_140" translatable="false">140%</string>
-    <string name="settings_libretro_def_audio_volume_option_150" translatable="false">150%</string>
-    <string name="settings_libretro_def_audio_volume_option_160" translatable="false">160%</string>
-    <string name="settings_libretro_def_audio_volume_option_170" translatable="false">170%</string>
-    <string name="settings_libretro_def_audio_volume_option_180" translatable="false">180%</string>
-    <string name="settings_libretro_def_audio_volume_option_190" translatable="false">190%</string>
-    <string name="settings_libretro_def_audio_volume_option_200" translatable="false">200%</string>
-    <string name="settings_main_language_name_en" translatable="false">English</string>
-    <string name="settings_main_language_name_fr" translatable="false">Fran&#231;ais</string>
-    <string name="settings_main_language_name_es" translatable="false">Espa&#241;ol</string>
-    <string name="settings_main_language_name_de" translatable="false">Deutsch</string>
-    <string name="settings_main_language_name_zh_hans" translatable="false">&#31616;&#20307;&#20013;&#25991;</string>
-    <string name="settings_main_language_name_zh_hant" translatable="false">&#32321;&#39636;&#20013;&#25991;</string>
-    <string name="settings_main_language_name_ru" translatable="false">&#1056;&#1091;&#1089;&#1089;&#1082;&#1080;&#1081;</string>
-    <string name="settings_main_language_name_hi" translatable="false">&#2361;&#2367;&#2344;&#2381;&#2342;&#2368;</string>
-    <string name="settings_play_time_section_romm" translatable="false">ROMM</string>
-    <string name="settings_builtin_graphics_api_opengl" translatable="false">OpenGL</string>
-    <string name="settings_builtin_graphics_api_vulkan" translatable="false">Vulkan</string>
-    <string name="settings_builtin_gpu_driver_named_version" translatable="false">%1$s (%2$s)</string>
     <string name="settings_root_script_dialog_running">Executando como root...</string>
     <string name="settings_root_script_dialog_ok_title">Concluído</string>
     <string name="settings_root_script_dialog_partial_title">Parcialmente concluído</string>

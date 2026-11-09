@@ -493,6 +493,16 @@ private fun QuickSettingsItemRow(
             enabled = onOpenDeviceAccess != null
         )
 
+        QuickSettingsItem.RootAccess -> QuickNoticeRow(
+            message = stringResource(R.string.ui_quick_settings_root_access_notice),
+            actionLabel = stringResource(R.string.ui_quick_settings_root_access_request),
+            isFocused = isFocused,
+            onAction = {
+                focus()
+                controller.requestRootAccess()
+            }
+        )
+
         QuickSettingsItem.Performance -> QuickSegmentedRow(
             icon = Icons.Default.Speed,
             label = stringResource(R.string.ui_quick_settings_performance_mode),

@@ -52,6 +52,7 @@ import com.nendo.argosy.domain.usecase.music.SearchSoundtrackGamesUseCase
 import com.nendo.argosy.hardware.AmbientLedManager
 import com.nendo.argosy.hardware.BrightnessController
 import com.nendo.argosy.hardware.DevicePerformanceResolver
+import com.nendo.argosy.hardware.PerformanceModeStore
 import com.nendo.argosy.hardware.DisplayRefreshController
 import com.nendo.argosy.hardware.HardwareStatsReader
 import com.nendo.argosy.hardware.RadioController
@@ -132,6 +133,7 @@ class QuickPanelOverlay @Inject constructor(
     private val brightnessController: BrightnessController,
     private val volumeController: VolumeController,
     private val performanceResolver: DevicePerformanceResolver,
+    private val performanceStore: PerformanceModeStore,
     private val refreshController: DisplayRefreshController,
     private val hardwareStatsReader: HardwareStatsReader,
     private val socialRepository: SocialRepository,
@@ -223,6 +225,7 @@ class QuickPanelOverlay @Inject constructor(
             brightnessController = brightnessController,
             volumeController = volumeController,
             performanceResolver = performanceResolver,
+            performanceStore = performanceStore,
             refreshController = refreshController,
             hardwareStatsReader = hardwareStatsReader,
             socialRepository = socialRepository,

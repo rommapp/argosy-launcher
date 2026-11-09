@@ -16,6 +16,7 @@ import com.nendo.argosy.hardware.DisplayRefreshController
 import com.nendo.argosy.hardware.FanController
 import com.nendo.argosy.hardware.HardwareStatsReader
 import com.nendo.argosy.hardware.PerformanceMode
+import com.nendo.argosy.hardware.PerformanceModeStore
 import com.nendo.argosy.hardware.VolumeController
 import com.nendo.argosy.ui.components.friends.QuickFriendsController
 import com.nendo.argosy.ui.input.HapticFeedbackManager
@@ -65,7 +66,8 @@ private data class DeviceSettings(
     val refreshRates: List<Int?> = emptyList(),
     val refreshRateHz: Int? = null,
     val isSupported: Boolean = false,
-    val hasWritePermission: Boolean = false
+    val hasWritePermission: Boolean = false,
+    val needsRootGrant: Boolean = false
 )
 
 private data class DisplayLevels(
@@ -95,6 +97,7 @@ class QuickSettingsController(
     private val brightnessController: BrightnessController,
     private val volumeController: VolumeController,
     private val performanceResolver: DevicePerformanceResolver,
+    private val performanceStore: PerformanceModeStore,
     private val refreshController: DisplayRefreshController,
     private val hardwareStatsReader: HardwareStatsReader,
     socialRepository: SocialRepository,
@@ -180,6 +183,7 @@ class QuickSettingsController(
             refreshRateHz = deviceSettings.refreshRateHz,
             deviceSettingsSupported = deviceSettings.isSupported,
             deviceSettingsEnabled = deviceSettings.hasWritePermission,
+            deviceAccessNeedsRoot = deviceSettings.needsRootGrant,
             systemVolume = displayLevels.volume,
             screenBrightness = displayLevels.brightness,
             secondaryBrightness = displayLevels.secondaryBrightness,
@@ -367,11 +371,21 @@ class QuickSettingsController(
         device.update { it.copy(performanceMode = mode) }
         scope.launch(deviceDispatcher) {
             val backend = performance ?: return@launch
-            if (backend.applyMode(mode) && backend.controlsFan) {
+            val applied = backend.applyMode(mode)
+            if (applied) performanceStore.remember(backend, mode)
+            if (applied && backend.controlsFan) {
                 delay(DEVICE_SETTLE_MS)
                 fanModeFor(mode)?.let { PServerExecutor.setSystemSetting(SETTING_FAN_MODE, it.value) }
                 delay(DEVICE_SETTLE_MS)
             }
+            readDeviceSettings()
+        }
+    }
+
+    fun requestRootAccess() {
+        scope.launch(deviceDispatcher) {
+            val backend = performance ?: return@launch
+            performanceStore.requestAccess(backend)
             readDeviceSettings()
         }
     }
@@ -411,10 +425,12 @@ class QuickSettingsController(
     private fun loadDeviceSettings() {
         scope.launch(deviceDispatcher) {
             if (performance == null) performance = performanceResolver.resolve()
-            if (performance == null) {
+            val backend = performance
+            if (backend == null) {
                 device.update { DeviceSettings(isSupported = false) }
                 return@launch
             }
+            performanceStore.resumeAccess(backend)
             readDeviceSettings()
         }
     }
@@ -437,7 +453,8 @@ class QuickSettingsController(
             refreshRates = if (rates.size > 1) listOf<Int?>(null) + rates else emptyList(),
             refreshRateHz = if (rates.size > 1) refreshController.currentRateHz() else null,
             isSupported = true,
-            hasWritePermission = backend.canWrite
+            hasWritePermission = backend.canWrite,
+            needsRootGrant = backend.needsRootGrant
         )
         device.update { settings }
     }
@@ -594,6 +611,10 @@ class QuickSettingsController(
             QuickSettingsItem.DeviceAccess -> {
                 if (onOpenDeviceAccess == null) return InputResult.handled(SoundType.BOUNDARY)
                 onOpenDeviceAccess()
+                InputResult.HANDLED
+            }
+            QuickSettingsItem.RootAccess -> {
+                requestRootAccess()
                 InputResult.HANDLED
             }
             else -> InputResult.handled(SoundType.SILENT)

@@ -73,6 +73,7 @@ data class QuickSettingsState(
     val refreshRateHz: Int? = null,
     val deviceSettingsSupported: Boolean = false,
     val deviceSettingsEnabled: Boolean = false,
+    val deviceAccessNeedsRoot: Boolean = false,
     val systemVolume: Float = 1f,
     val screenBrightness: Float = 0.5f,
     val secondaryBrightness: Float? = null,
@@ -153,7 +154,11 @@ sealed class QuickSettingsItem(
 
     data object DeviceAccess : QuickSettingsItem(
         "deviceAccess", QuickSettingsPage.PERFORMANCE,
-        visibleWhen = { it.deviceControlsLocked }
+        visibleWhen = { it.deviceControlsLocked && !it.deviceAccessNeedsRoot }
+    )
+    data object RootAccess : QuickSettingsItem(
+        "rootAccess", QuickSettingsPage.PERFORMANCE,
+        visibleWhen = { it.deviceControlsLocked && it.deviceAccessNeedsRoot }
     )
     data object Performance : QuickSettingsItem(
         "performance", QuickSettingsPage.PERFORMANCE, QuickSettingsGroup.PERFORMANCE,
@@ -205,6 +210,7 @@ sealed class QuickSettingsItem(
                 ControlsHeader, Haptic, SwapAB, SwapXY, SwapStartSelect,
                 HardwareStats,
                 DeviceAccess,
+                RootAccess,
                 PerformanceHeader, Performance, Refresh,
                 FanHeader, Fan, FanSpeed,
                 OverlayHeader, HudOverlay,

@@ -20,11 +20,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOn
+import com.nendo.argosy.data.local.entity.MediaItemEntity
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
 import com.nendo.argosy.ui.screens.media.delegates.MediaDownloadPromptOutcome
 import javax.inject.Inject
 
@@ -96,6 +99,7 @@ class MediaLibraryViewModel @Inject constructor(
                 .filterNotNull()
                 .distinctUntilChanged()
                 .flatMapLatest { libraryId -> mediaRepository.observeLibraryItems(libraryId) }
+                .distinctUntilChanged(::sameApartFromGradients)
                 .combine(availabilityVerifier.availability) { entities, verified -> entities to verified }
                 .map { (entities, verified) ->
                     gradientExtractionDelegate.loadPersistedMediaGradients(
@@ -108,6 +112,7 @@ class MediaLibraryViewModel @Inject constructor(
                         it.toMediaItemUi(mediaRepository, userData[it.itemId], verified, gradients)
                     }
                 }
+                .flowOn(Dispatchers.Default)
                 .collect { items ->
                     _uiState.update { state ->
                         state.copy(
@@ -120,13 +125,18 @@ class MediaLibraryViewModel @Inject constructor(
         }
     }
 
+    private fun sameApartFromGradients(old: List<MediaItemEntity>, new: List<MediaItemEntity>): Boolean =
+        old.size == new.size && old.indices.all { i ->
+            old[i] == new[i] || old[i].copy(gradientColors = null) == new[i].copy(gradientColors = null)
+        }
+
     /**
      * Folds newly sampled poster colours into tiles already on screen, rather than rebuilding the
      * grid for each one. A screenful of posters lands one colour pair at a time as each image
      * decodes, and re-running the item query that often would cost a database read per poster.
      */
     private fun observeGradients() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.Default) {
             gradientExtractionDelegate.mediaGradients.collect { gradients ->
                 if (gradients.isEmpty()) return@collect
                 _uiState.update { state ->

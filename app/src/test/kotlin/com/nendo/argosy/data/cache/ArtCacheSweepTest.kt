@@ -52,7 +52,6 @@ class ArtCacheSweepTest {
     fun `local-only art the sweep does not own is never an orphan`() {
         val localOnly = listOf(
             file("icons", "appicon_123.png"),
-            file("screenshots", "uss_42_9_abc.png"),
             file("covers", "box_back_42_abc.jpg"),
             file("covers", "box_spine_42_abc.jpg"),
             file("badges", "badge_9_abc.png")
@@ -89,16 +88,22 @@ class ArtCacheSweepTest {
     }
 
     @Test
-    fun `user screenshots are never swept even with nothing referencing them`() {
-        val userShots = listOf(
-            file("screenshots", "uss_42_9_abc.png"),
-            file("screenshots", "uss_g7_1_abc.png")
-        )
+    fun `a gallery screenshot a gallery row references is kept`() {
+        val kept = file("screenshots", "uss_42_9_abc.webp")
 
-        val plan = planArtSweep(userShots, emptyList(), emptyList(), cutoff)
+        val plan = planArtSweep(listOf(kept), listOf(kept.path), emptyList(), cutoff)
 
         assertTrue(plan.orphanFiles.isEmpty())
-        userShots.forEach { assertFalse(isSweptArtFileName(it.name)) }
+    }
+
+    @Test
+    fun `a gallery screenshot no row references is an orphan`() {
+        val kept = file("screenshots", "uss_42_9_abc.png")
+        val orphan = file("screenshots", "uss_42_8_def.jpg")
+
+        val plan = planArtSweep(listOf(kept, orphan), listOf(kept.path), emptyList(), cutoff)
+
+        assertEquals(listOf(orphan.path), plan.orphanFiles)
     }
 
     @Test
@@ -144,6 +149,6 @@ class ArtCacheSweepTest {
         assertFalse(isSweptArtFileName("cover_override_7_abc.jpg"))
         assertFalse(isSweptArtFileName("logo_12_abc.png"))
         assertTrue(isSweptArtFileName("ss_42_0_abc.jpg"))
-        assertFalse(isSweptArtFileName("uss_42_9_abc.png"))
+        assertTrue(isSweptArtFileName("uss_42_9_abc.png"))
     }
 }

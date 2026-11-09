@@ -31,6 +31,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -136,13 +138,15 @@ class VirtualCategoryViewModel @Inject constructor(
         }
     }
 
-    private val core = combine(
+    private class VisibleGames(val games: List<CollectionGameUi>, val sectionLabelByGame: List<String>) {
+        val sectionLabels: List<String> = sectionLabelByGame.distinct()
+    }
+
+    private val visibleGames = combine(
         getGamesByCategoryUseCase(categoryType, category),
         platformRepository.observeAllPlatforms(),
-        _focusedIndex,
-        combine(_isPinned, _isRefreshing, _downloadAllProgress) { a, b, c -> Triple(a, b, c) },
-        _search
-    ) { games, platforms, focusedIndex, (isPinned, isRefreshing, downloadProgress), search ->
+        _search.map { it.query }.distinctUntilChanged()
+    ) { games, platforms, query ->
         val platformMap = platforms.associate { it.id to it.getDisplayName() }
         val sorted = games
             .map { game ->
@@ -153,12 +157,22 @@ class VirtualCategoryViewModel @Inject constructor(
                 )
             }
             .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.title })
-        val visible = if (search.query.isBlank()) {
+        val visible = if (query.isBlank()) {
             sorted
         } else {
-            val q = com.nendo.argosy.util.SearchNormalizer.normalize(search.query)
+            val q = com.nendo.argosy.util.SearchNormalizer.normalize(query)
             sorted.filter { com.nendo.argosy.util.SearchNormalizer.normalize(it.title).contains(q) }
         }
+        VisibleGames(visible, visible.map { sectionLabelFor(it.title) })
+    }.flowOn(Dispatchers.Default)
+
+    private val core = combine(
+        visibleGames,
+        _focusedIndex,
+        combine(_isPinned, _isRefreshing, _downloadAllProgress) { a, b, c -> Triple(a, b, c) },
+        _search
+    ) { listing, focusedIndex, (isPinned, isRefreshing, downloadProgress), search ->
+        val visible = listing.games
         val clamped = focusedIndex.coerceIn(0, (visible.size - 1).coerceAtLeast(0))
         VirtualCategoryUiState(
             type = type,
@@ -169,8 +183,8 @@ class VirtualCategoryViewModel @Inject constructor(
             focusedIndex = clamped,
             isPinned = isPinned,
             downloadAllProgress = downloadProgress,
-            sectionLabels = if (search.active) emptyList() else visible.map { sectionLabelFor(it.title) }.distinct(),
-            currentSectionLabel = visible.getOrNull(clamped)?.let { sectionLabelFor(it.title) } ?: "",
+            sectionLabels = if (search.active) emptyList() else listing.sectionLabels,
+            currentSectionLabel = listing.sectionLabelByGame.getOrNull(clamped) ?: "",
             isSearchActive = search.active,
             searchQuery = search.query
         )

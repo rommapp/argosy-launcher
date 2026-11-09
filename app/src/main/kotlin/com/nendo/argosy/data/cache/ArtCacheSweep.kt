@@ -1,6 +1,8 @@
 package com.nendo.argosy.data.cache
 
-private val SWEPT_ART_PREFIXES = listOf("cover_", "bg_", "steam_bg_", "game_logo_", "ss_")
+private val SWEPT_ART_PREFIXES = listOf(
+    "cover_", "bg_", "steam_bg_", "game_logo_", "ss_", USER_SCREENSHOT_FILE_PREFIX
+)
 private val KEPT_ART_PREFIXES = listOf(
     "cover_override_", "cover_manual_", "bg_override_", "bg_custom_", "logo_override_"
 )
@@ -15,7 +17,8 @@ data class ArtSweepPlan(
 
 /**
  * Whether [name] is a file the image cache writes for a `game_art` or `game_screenshots` cached
- * path. Override files, box faces, user screenshots, badges and app icons never qualify.
+ * path, RomM gallery screenshots included. Override files, box faces, badges and app icons never
+ * qualify.
  */
 fun isSweptArtFileName(name: String): Boolean =
     SWEPT_ART_PREFIXES.any { name.startsWith(it) } && KEPT_ART_PREFIXES.none { name.startsWith(it) }

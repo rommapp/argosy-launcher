@@ -38,6 +38,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -163,14 +165,22 @@ class CollectionDetailViewModel @Inject constructor(
         }
     }
 
+    private class VisibleGames(
+        val collection: CollectionEntity?,
+        val games: List<CollectionGameUi>,
+        val sectionLabelByGame: List<String>
+    ) {
+        val sectionLabels: List<String> = sectionLabelByGame.distinct()
+    }
+
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    private val core = _refreshTrigger.flatMapLatest {
+    private val visibleGames = _refreshTrigger.flatMapLatest {
         combine(
             collectionRepository.observeCollectionById(collectionId),
             collectionRepository.observeGamesInCollection(collectionId),
             platformRepository.observeAllPlatforms(),
-            _modalState
-        ) { collection, games, platforms, modalState ->
+            _modalState.map { it.searchQuery }.distinctUntilChanged()
+        ) { collection, games, platforms, searchQuery ->
             val platformMap = platforms.associate { it.id to it.getDisplayName() }
             val sorted = games
                 .map { game ->
@@ -181,32 +191,37 @@ class CollectionDetailViewModel @Inject constructor(
                     )
                 }
                 .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.title })
-            val visible = if (modalState.searchQuery.isBlank()) {
+            val visible = if (searchQuery.isBlank()) {
                 sorted
             } else {
-                val q = com.nendo.argosy.util.SearchNormalizer.normalize(modalState.searchQuery)
+                val q = com.nendo.argosy.util.SearchNormalizer.normalize(searchQuery)
                 sorted.filter { com.nendo.argosy.util.SearchNormalizer.normalize(it.title).contains(q) }
             }
-            val clamped = modalState.focusedIndex.coerceIn(0, (visible.size - 1).coerceAtLeast(0))
-            CollectionDetailUiState(
-                collection = collection,
-                games = visible,
-                isLoading = false,
-                isRefreshing = modalState.isRefreshing,
-                focusedIndex = clamped,
-                showOptionsModal = modalState.showOptionsModal,
-                optionsModalFocusIndex = modalState.optionsModalFocusIndex,
-                showEditDialog = modalState.showEditDialog,
-                showDeleteDialog = modalState.showDeleteDialog,
-                showRemoveGameDialog = modalState.showRemoveGameDialog,
-                gameToRemove = modalState.gameToRemove,
-                isPinned = modalState.isPinned,
-                sectionLabels = if (modalState.searchActive) emptyList() else visible.map { sectionLabelFor(it.title) }.distinct(),
-                currentSectionLabel = visible.getOrNull(clamped)?.let { sectionLabelFor(it.title) } ?: "",
-                isSearchActive = modalState.searchActive,
-                searchQuery = modalState.searchQuery
-            )
+            VisibleGames(collection, visible, visible.map { sectionLabelFor(it.title) })
         }
+    }.flowOn(Dispatchers.Default)
+
+    private val core = combine(visibleGames, _modalState) { listing, modalState ->
+        val visible = listing.games
+        val clamped = modalState.focusedIndex.coerceIn(0, (visible.size - 1).coerceAtLeast(0))
+        CollectionDetailUiState(
+            collection = listing.collection,
+            games = visible,
+            isLoading = false,
+            isRefreshing = modalState.isRefreshing,
+            focusedIndex = clamped,
+            showOptionsModal = modalState.showOptionsModal,
+            optionsModalFocusIndex = modalState.optionsModalFocusIndex,
+            showEditDialog = modalState.showEditDialog,
+            showDeleteDialog = modalState.showDeleteDialog,
+            showRemoveGameDialog = modalState.showRemoveGameDialog,
+            gameToRemove = modalState.gameToRemove,
+            isPinned = modalState.isPinned,
+            sectionLabels = if (modalState.searchActive) emptyList() else listing.sectionLabels,
+            currentSectionLabel = listing.sectionLabelByGame.getOrNull(clamped) ?: "",
+            isSearchActive = modalState.searchActive,
+            searchQuery = modalState.searchQuery
+        )
     }
 
     val uiState: StateFlow<CollectionDetailUiState> = combine(core, _overlayLetter) { state, overlay ->

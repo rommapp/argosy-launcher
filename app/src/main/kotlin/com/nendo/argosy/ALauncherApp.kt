@@ -38,7 +38,9 @@ import com.nendo.argosy.util.AppPaths
 import com.nendo.argosy.util.Logger
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Inject
@@ -116,6 +118,9 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
     lateinit var playSessionTracker: PlaySessionTracker
 
     @Inject
+    lateinit var imageCacheManager: com.nendo.argosy.data.cache.ImageCacheManager
+
+    @Inject
     lateinit var coreCrashController: CoreCrashController
 
     @Inject
@@ -183,6 +188,9 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
     @Inject
     lateinit var gameNativeStoreSync: GameNativeStoreSync
 
+    @Inject
+    lateinit var performanceModeStore: com.nendo.argosy.hardware.PerformanceModeStore
+
     private val lastForegroundSteamRefreshAt = AtomicLong(NEVER_REFRESHED)
 
     private val foregroundObserver = object : androidx.lifecycle.DefaultLifecycleObserver {
@@ -199,6 +207,7 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
         appScope.launch { socialSyncCoordinator.discardQueueWithoutSocialAccount() }
         appScope.launch { variantFileCleanup.runOnce() }
         appScope.launch { homeAppAvailability.applyAtStartup() }
+        appScope.launch { performanceModeStore.restoreSavedMode() }
         UpdateCheckWorker.schedule(this)
         SaveSyncWorker.schedule(this)
         SocialSyncWorker.schedule(this)
@@ -239,6 +248,12 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
         appScope.launch {
             coreCrashController.runBootDetection()
             playSessionTracker.checkOrphanedSession()
+        }
+        appScope.launch {
+            playSessionTracker.activeSession
+                .map { it != null }
+                .distinctUntilChanged()
+                .collect(imageCacheManager::holdForPlay)
         }
         appScope.launch { accountSwitchCoordinator.resumeIfInterrupted() }
         appScope.launch { activeSaveRepository.resetAllActiveSaveApplied() }

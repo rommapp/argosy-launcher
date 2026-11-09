@@ -76,6 +76,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
 import javax.inject.Inject
 
 /**
@@ -806,7 +807,7 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun observeGradientChanges() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.Default) {
             gradientExtractionDelegate.gradients.collect { gradients ->
                 _uiState.update { state ->
                     state.copy(
@@ -824,7 +825,7 @@ class HomeViewModel @Inject constructor(
                 }
             }
         }
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.Default) {
             gradientExtractionDelegate.mediaGradients.collect { gradients ->
                 if (gradients.isEmpty()) return@collect
                 _uiState.update { state ->

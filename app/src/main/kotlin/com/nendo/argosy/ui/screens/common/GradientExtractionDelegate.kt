@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -143,13 +144,19 @@ class GradientExtractionDelegate @Inject constructor(
         }
         scope.launch {
             var previous: Map<Long, ResolvedGameArt> = emptyMap()
-            imageCacheManager.gameArt.collect { current ->
+            imageCacheManager.gameArt.collect { snapshot ->
                 val before = previous
+                val current = snapshot.byGame
                 previous = current
                 if (before.isEmpty()) return@collect
-                for ((gameId, art) in current) {
-                    val cover = art.coverPath ?: continue
-                    if (art.gradientColors != null || before[gameId]?.coverPath == cover) continue
+                val changedCovers = withContext(Dispatchers.Default) {
+                    current.mapNotNull { (gameId, art) ->
+                        val cover = art.coverPath ?: return@mapNotNull null
+                        if (art.gradientColors != null || before[gameId]?.coverPath == cover) null
+                        else gameId to cover
+                    }
+                }
+                changedCovers.forEach { (gameId, cover) ->
                     extractForGame(scope, gameId, cover, prioritize = false)
                 }
             }

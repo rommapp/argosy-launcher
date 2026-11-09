@@ -61,16 +61,32 @@ data class EffectiveLaunchCommand(
     val launchMethod: LaunchMethod = LaunchMethod.INTENT
 )
 
-private val SHARED_STORAGE_ROOTS = setOf("storage", "mnt")
-
 /**
- * The shared-storage folder holding the file [uri] names, as a URI of the same provider. Null when
- * the file sits under one of Argosy's private roots or directly under a root.
+ * The shared-storage folder holding the file [uri] names, as a URI of the same provider. Null for
+ * any folder [sharedFolderSegments] refuses.
  */
 fun sharedFolderUriOf(uri: Uri): Uri? {
-    val segments = uri.pathSegments
-    if (segments.size < 3 || segments.first() !in SHARED_STORAGE_ROOTS) return null
-    return uri.buildUpon().path(null).apply { segments.dropLast(1).forEach(::appendPath) }.build()
+    val folder = sharedFolderSegments(uri.pathSegments) ?: return null
+    return uri.buildUpon().path(null).apply { folder.forEach(::appendPath) }.build()
+}
+
+/**
+ * The folder segments holding the file [fileSegments] names under the FileProvider's `storage` or
+ * `mnt` root. Null for a file under one of Argosy's private roots, for a folder that is a storage
+ * volume itself, and for a folder at or under a volume's `Android` directory, where app-specific
+ * storage lives.
+ */
+fun sharedFolderSegments(fileSegments: List<String>): List<String>? {
+    val folder = fileSegments.dropLast(1)
+    val volumeDepth = when {
+        folder.size >= 2 && folder[0] == "storage" && folder[1] in setOf("emulated", "self") -> 3
+        folder.size >= 2 && folder[0] == "mnt" && folder[1] == "media_rw" -> 3
+        folder.firstOrNull() == "storage" -> 2
+        else -> return null
+    }
+    if (folder.size <= volumeDepth) return null
+    if (folder[volumeDepth].equals("Android", ignoreCase = true)) return null
+    return folder
 }
 
 /**

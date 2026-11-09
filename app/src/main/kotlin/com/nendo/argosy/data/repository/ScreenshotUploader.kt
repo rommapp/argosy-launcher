@@ -72,6 +72,6 @@ class ScreenshotUploader @Inject constructor(
             "bmp" to "image/bmp"
         )
 
-        private val PERMANENT_REJECTION_CODES = setOf(400, 403, 404, 413, 415)
+        private val PERMANENT_REJECTION_CODES = setOf(400, 404, 413, 415)
     }
 }

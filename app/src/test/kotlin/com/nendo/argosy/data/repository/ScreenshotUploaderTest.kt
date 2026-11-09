@@ -57,7 +57,7 @@ class ScreenshotUploaderTest {
 
     @Test
     fun `permanent HTTP refusals are rejections`() = runTest {
-        for (code in listOf(400, 403, 404, 413, 415)) {
+        for (code in listOf(400, 404, 413, 415)) {
             coEvery { api.uploadScreenshot(any(), any()) } returns Response.error(code, "".toResponseBody())
 
             val result = uploader.upload(copy("a.png"), ROMM_ID)
@@ -67,8 +67,8 @@ class ScreenshotUploaderTest {
     }
 
     @Test
-    fun `server errors and network failures are transient`() = runTest {
-        for (code in listOf(500, 502, 503, 401, 408, 429)) {
+    fun `server errors, missing scope and network failures are transient`() = runTest {
+        for (code in listOf(500, 502, 503, 401, 403, 408, 429)) {
             coEvery { api.uploadScreenshot(any(), any()) } returns Response.error(code, "".toResponseBody())
 
             val result = uploader.upload(copy("a.png"), ROMM_ID)

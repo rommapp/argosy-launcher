@@ -15,6 +15,7 @@ import com.nendo.argosy.data.storage.FileInfo
 import com.nendo.argosy.data.sync.ScreenshotPayload
 import com.nendo.argosy.data.sync.ScreenshotUploadLedger
 import com.nendo.argosy.data.sync.SyncPayloadCodec
+import com.nendo.argosy.util.PermissionHelper
 import com.squareup.moshi.Moshi
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -40,6 +41,7 @@ class SessionScreenshotScannerTest {
     private val folderRegistry: ScreenshotFolderRegistry = mockk()
     private val ledger: ScreenshotUploadLedger = mockk()
     private val connectionManager: RomMConnectionManager = mockk()
+    private val permissionHelper: PermissionHelper = mockk()
     private val codec = SyncPayloadCodec(Moshi.Builder().build())
     private val prefs = MutableStateFlow(SyncPreferences(uploadScreenshotsEnabled = true, rommUserId = OWNER))
     private val tempFilesDir: File = Files.createTempDirectory("scanner").toFile()
@@ -61,6 +63,8 @@ class SessionScreenshotScannerTest {
     fun setup() {
         coEvery { gameDao.getById(GAME_ID) } returns game
         every { folderRegistry.folders() } returns listOf(SYSTEM_DIR, BUILTIN_DIR)
+        every { folderRegistry.builtinFolder() } returns BUILTIN_DIR
+        every { permissionHelper.foregroundSpans(any(), any(), any(), any()) } returns listOf(START..END)
         every { fileAccessLayer.listFiles(any()) } returns emptyList()
         every { fileAccessLayer.getInputStream(any()) } answers { ByteArrayInputStream(byteArrayOf(1, 2, 3)) }
         every { ledger.contains(any(), any(), any(), any()) } returns false
@@ -90,7 +94,7 @@ class SessionScreenshotScannerTest {
             image(BUILTIN_DIR, "argosy_1.png", END)
         )
 
-        val queued = scanner().queueSessionScreenshots(GAME_ID, Instant.ofEpochMilli(START), Instant.ofEpochMilli(END))
+        val queued = scan()
 
         assertEquals(3, queued)
         val sources = inserted.map { codec.decodeScreenshot(it.payloadJson)!!.sourcePath }
@@ -112,7 +116,7 @@ class SessionScreenshotScannerTest {
             image(SYSTEM_DIR, "Screenshot_20261109-101500.png", START + 1)
         )
 
-        scanner().queueSessionScreenshots(GAME_ID, Instant.ofEpochMilli(START), Instant.ofEpochMilli(END))
+        scan()
 
         val copy = File(codec.decodeScreenshot(inserted.single().payloadJson)!!.localPath)
         assertEquals("Screenshot_20261109-101500.png", copy.name)
@@ -134,7 +138,7 @@ class SessionScreenshotScannerTest {
             )
         )
 
-        val queued = scanner().queueSessionScreenshots(GAME_ID, Instant.ofEpochMilli(START), Instant.ofEpochMilli(END))
+        val queued = scan()
 
         assertEquals(0, queued)
         coVerify(exactly = 0) { pendingSyncQueueDao.insert(any()) }
@@ -145,7 +149,7 @@ class SessionScreenshotScannerTest {
         every { fileAccessLayer.listFiles(SYSTEM_DIR) } returns listOf(image(SYSTEM_DIR, "a.png", START + 1))
         every { ledger.contains(OWNER, ROMM_ID, "$SYSTEM_DIR/a.png", START + 1) } returns true
 
-        val queued = scanner().queueSessionScreenshots(GAME_ID, Instant.ofEpochMilli(START), Instant.ofEpochMilli(END))
+        val queued = scan()
 
         assertEquals(0, queued)
         io.mockk.verify(exactly = 0) { fileAccessLayer.getInputStream(any()) }
@@ -156,7 +160,7 @@ class SessionScreenshotScannerTest {
         every { fileAccessLayer.listFiles(SYSTEM_DIR) } returns listOf(image(SYSTEM_DIR, "a.png", START + 1))
         every { fileAccessLayer.getInputStream(any()) } returns null
 
-        val queued = scanner().queueSessionScreenshots(GAME_ID, Instant.ofEpochMilli(START), Instant.ofEpochMilli(END))
+        val queued = scan()
 
         assertEquals(0, queued)
         coVerify(exactly = 0) { pendingSyncQueueDao.insert(any()) }
@@ -167,11 +171,53 @@ class SessionScreenshotScannerTest {
         prefs.value = prefs.value.copy(uploadScreenshotsEnabled = false)
         every { fileAccessLayer.listFiles(SYSTEM_DIR) } returns listOf(image(SYSTEM_DIR, "a.png", START + 1))
 
-        val queued = scanner().queueSessionScreenshots(GAME_ID, Instant.ofEpochMilli(START), Instant.ofEpochMilli(END))
+        val queued = scan()
 
         assertEquals(0, queued)
         io.mockk.verify(exactly = 0) { fileAccessLayer.listFiles(any()) }
     }
+
+    @Test
+    fun `a screenshot taken while the emulator was in the background is not queued`() = runTest {
+        every { permissionHelper.foregroundSpans(any(), EMULATOR, START, END) } returns
+            listOf(START..START + 10_000, START + 40_000..END)
+        every { fileAccessLayer.listFiles(SYSTEM_DIR) } returns listOf(
+            image(SYSTEM_DIR, "in_game.png", START + 5_000),
+            image(SYSTEM_DIR, "other_app.png", START + 20_000),
+            image(SYSTEM_DIR, "back_in_game.png", START + 50_000)
+        )
+
+        scan()
+
+        assertEquals(
+            listOf("$SYSTEM_DIR/in_game.png", "$SYSTEM_DIR/back_in_game.png"),
+            inserted.map { codec.decodeScreenshot(it.payloadJson)!!.sourcePath }
+        )
+    }
+
+    @Test
+    fun `without usage access an external session queues nothing`() = runTest {
+        every { permissionHelper.foregroundSpans(any(), any(), any(), any()) } returns null
+        every { fileAccessLayer.listFiles(SYSTEM_DIR) } returns listOf(image(SYSTEM_DIR, "a.png", START + 1))
+
+        assertEquals(0, scan())
+    }
+
+    @Test
+    fun `without usage access a built-in session reads only Argosy's folder`() = runTest {
+        every { permissionHelper.foregroundSpans(any(), any(), any(), any()) } returns null
+        every { fileAccessLayer.listFiles(SYSTEM_DIR) } returns listOf(image(SYSTEM_DIR, "a.png", START + 1))
+        every { fileAccessLayer.listFiles(BUILTIN_DIR) } returns listOf(image(BUILTIN_DIR, "argosy_1.png", START + 1))
+
+        assertEquals(1, scan(EmulatorRegistry.BUILTIN_PACKAGE))
+        assertEquals(
+            "$BUILTIN_DIR/argosy_1.png",
+            codec.decodeScreenshot(inserted.single().payloadJson)!!.sourcePath
+        )
+    }
+
+    private suspend fun scan(emulatorPackage: String = EMULATOR) =
+        scanner().queueSessionScreenshots(GAME_ID, emulatorPackage, Instant.ofEpochMilli(START), Instant.ofEpochMilli(END))
 
     private fun image(dir: String, name: String, modifiedAt: Long) = FileInfo(
         path = "$dir/$name",
@@ -191,13 +237,15 @@ class SessionScreenshotScannerTest {
         connectionManager = dagger.Lazy { connectionManager },
         fileAccessLayer = fileAccessLayer,
         folderRegistry = folderRegistry,
-        ledger = ledger
+        ledger = ledger,
+        permissionHelper = permissionHelper
     )
 
     private companion object {
         const val GAME_ID = 4L
         const val ROMM_ID = 400L
         const val OWNER = 9L
+        const val EMULATOR = "com.flycast.emulator"
         const val START = 1_700_000_000_000L
         const val END = START + 60_000L
         const val SYSTEM_DIR = "/storage/emulated/0/DCIM/Screenshots"

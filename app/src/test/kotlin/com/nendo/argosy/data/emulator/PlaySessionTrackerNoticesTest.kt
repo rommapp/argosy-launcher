@@ -187,17 +187,14 @@ class PlaySessionTrackerNoticesTest {
     }
 
     @Test
-    fun `startup recovery of a killed session scans that session's window for screenshots`() = runTest {
+    fun `startup recovery of a killed session scans no screenshots, since its end is unknown`() = runTest {
         coEvery { sessionSaveFinalizer.finalize(any()) } returns SessionSaveOutcome.NothingToSave
         coEvery { preferencesRepository.getPersistedSession() } returns persisted
         every { permissionHelper.isPackageOnScreenOrRecent(any(), any(), any()) } returns false
-        val before = Instant.now()
 
         tracker().checkOrphanedSession()
 
-        coVerify(exactly = 1) {
-            screenshotScanner.queueSessionScreenshots(gameId, persisted.startTime, match { !it.isBefore(before) })
-        }
+        coVerify(exactly = 0) { screenshotScanner.queueSessionScreenshots(any(), any(), any(), any()) }
     }
 
     @Test
@@ -207,7 +204,9 @@ class PlaySessionTrackerNoticesTest {
 
         tracker.endSession(stopService = false)
 
-        coVerify(exactly = 1) { screenshotScanner.queueSessionScreenshots(gameId, persisted.startTime, any()) }
+        coVerify(exactly = 1) {
+            screenshotScanner.queueSessionScreenshots(gameId, persisted.emulatorPackage, persisted.startTime, any())
+        }
     }
 
     @Test
@@ -215,7 +214,7 @@ class PlaySessionTrackerNoticesTest {
         val uploaded = SyncSaveOnSessionEndUseCase.Result.Uploaded()
         coEvery { sessionSaveFinalizer.finalize(any()) } returns
             SessionSaveOutcome.Synced(SaveCacheManager.CacheResult.Created(timestamp = 1L), uploaded, conflictId = null)
-        coEvery { screenshotScanner.queueSessionScreenshots(any(), any(), any()) } throws IOException("disk")
+        coEvery { screenshotScanner.queueSessionScreenshots(any(), any(), any(), any()) } throws IOException("disk")
         val tracker = trackerWithLiveSession()
 
         tracker.endSession(stopService = false)

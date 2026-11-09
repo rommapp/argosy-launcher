@@ -190,6 +190,27 @@ class PermissionHelper @Inject constructor() {
         val hasData: Boolean get() = foregroundMs >= 0 && screenOnMs >= 0
     }
 
+    /**
+     * The spans between [fromMs] and [toMs] when [packageName] was in the foreground, treating it as
+     * in front at [fromMs]. Null without usage access.
+     */
+    fun foregroundSpans(context: Context, packageName: String, fromMs: Long, toMs: Long): List<LongRange>? {
+        if (!hasUsageStatsPermission(context)) return null
+        val usageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+        val events = usageStatsManager.queryEvents(fromMs, toMs)
+        val event = UsageEvents.Event()
+        val transitions = ArrayList<Pair<Long, Boolean>>()
+        while (events.hasNextEvent()) {
+            events.getNextEvent(event)
+            if (event.packageName != packageName) continue
+            when (event.eventType) {
+                UsageEvents.Event.MOVE_TO_FOREGROUND -> transitions += event.timeStamp to true
+                UsageEvents.Event.MOVE_TO_BACKGROUND -> transitions += event.timeStamp to false
+            }
+        }
+        return spansFromTransitions(transitions, fromMs, toMs)
+    }
+
     fun getSessionDurations(context: Context, packageName: String, fromMs: Long, toMs: Long): SessionDurations {
         if (!hasUsageStatsPermission(context)) return SessionDurations(-1, -1)
 
@@ -260,5 +281,24 @@ class PermissionHelper @Inject constructor() {
         private const val SCREEN_INTERACTIVE = 15
         private const val SCREEN_NON_INTERACTIVE = 16
         private val ON_SCREEN_LOOKBACKS_MS = listOf(10 * 60 * 1000L, 12 * 60 * 60 * 1000L)
+
+        /**
+         * Foreground spans from time-ordered (timestamp, cameToForeground) [transitions], treating
+         * the package as in front at [fromMs] and closing an open span at [toMs].
+         */
+        fun spansFromTransitions(transitions: List<Pair<Long, Boolean>>, fromMs: Long, toMs: Long): List<LongRange> {
+            val spans = ArrayList<LongRange>()
+            var openedAt: Long? = fromMs
+            for ((timestamp, foreground) in transitions) {
+                if (foreground) {
+                    if (openedAt == null) openedAt = timestamp
+                } else if (openedAt != null) {
+                    spans += openedAt..timestamp
+                    openedAt = null
+                }
+            }
+            openedAt?.let { spans += it..toMs }
+            return spans
+        }
     }
 }

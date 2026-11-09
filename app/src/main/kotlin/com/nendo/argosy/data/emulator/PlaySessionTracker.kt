@@ -390,9 +390,15 @@ class PlaySessionTracker @Inject constructor(
         }
     }
 
-    private suspend fun queueSessionScreenshots(gameId: Long, startTime: Instant, endTime: Instant, phase: String) {
+    private suspend fun queueSessionScreenshots(
+        gameId: Long,
+        emulatorPackage: String,
+        startTime: Instant,
+        endTime: Instant,
+        phase: String
+    ) {
         try {
-            sessionScreenshotScanner.queueSessionScreenshots(gameId, startTime, endTime)
+            sessionScreenshotScanner.queueSessionScreenshots(gameId, emulatorPackage, startTime, endTime)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -416,7 +422,6 @@ class PlaySessionTracker @Inject constructor(
             Logger.debug(TAG, "[SaveSync] SESSION RECOVER gameId=${orphaned.gameId} | Too short for play session (${Duration.between(orphaned.startTime, endTime).seconds}s)")
         }
 
-        queueSessionScreenshots(orphaned.gameId, orphaned.startTime, endTime, "ORPHAN")
         recoverOrphanedStates(orphaned)
         val saved = recoverOrphanedSave(orphaned)
         releaseSession(keepRecord = !saved.isSettled, startedAt = orphaned.startTime)
@@ -763,7 +768,7 @@ class PlaySessionTracker @Inject constructor(
                 Logger.error(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Failed to create play session entity", e)
             }
             reconcileAchievementsInBackground(session.gameId)
-            queueSessionScreenshots(session.gameId, session.startTime, endTime, "SESSION")
+            queueSessionScreenshots(session.gameId, session.emulatorPackage, session.startTime, endTime, "SESSION")
 
             if (isScreenOn) {
                 marathonSegmentDuration = marathonSegmentDuration.plus(
@@ -975,7 +980,7 @@ class PlaySessionTracker @Inject constructor(
         val endTime = Instant.now()
         scope.launch {
             try {
-                queueSessionScreenshots(session.gameId, session.startTime, endTime, "CANCEL")
+                queueSessionScreenshots(session.gameId, session.emulatorPackage, session.startTime, endTime, "CANCEL")
                 if (session.variantFileId == null && !session.isNetplayGuest) {
                     syncStateDataLogged(session.gameId, session.emulatorPackage, "CANCEL")
                 }

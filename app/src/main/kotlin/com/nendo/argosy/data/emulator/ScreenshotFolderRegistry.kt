@@ -7,10 +7,12 @@ import javax.inject.Singleton
 @Singleton
 class ScreenshotFolderRegistry @Inject constructor() {
 
-    fun folders(): List<String> {
-        val root = Environment.getExternalStorageDirectory().absolutePath
-        return RELATIVE_FOLDERS.map { "$root/$it" }
-    }
+    fun folders(): List<String> = RELATIVE_FOLDERS.map(::absolute)
+
+    fun builtinFolder(): String = absolute(BUILTIN_RELATIVE_FOLDER)
+
+    private fun absolute(relative: String): String =
+        "${Environment.getExternalStorageDirectory().absolutePath}/$relative"
 
     companion object {
         const val BUILTIN_RELATIVE_FOLDER = "Pictures/Argosy"

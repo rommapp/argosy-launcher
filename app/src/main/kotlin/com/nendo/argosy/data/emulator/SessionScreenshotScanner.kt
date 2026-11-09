@@ -16,6 +16,7 @@ import com.nendo.argosy.data.sync.ScreenshotPayload
 import com.nendo.argosy.data.sync.ScreenshotUploadLedger
 import com.nendo.argosy.data.sync.SyncPayloadCodec
 import com.nendo.argosy.util.Logger
+import com.nendo.argosy.util.PermissionHelper
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -27,8 +28,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Queues every image in [ScreenshotFolderRegistry.folders] whose modification time falls inside a
- * play session for upload against that session's game. Returns how many rows it queued.
+ * Queues the images written while a session's emulator was in the foreground for upload against
+ * that session's game, and returns how many rows it queued. Without usage access the foreground is
+ * unknown, so only Argosy's own screenshot folder is read, and only for a built-in session.
  */
 @Singleton
 class SessionScreenshotScanner @Inject constructor(
@@ -40,9 +42,15 @@ class SessionScreenshotScanner @Inject constructor(
     private val connectionManager: dagger.Lazy<RomMConnectionManager>,
     private val fileAccessLayer: FileAccessLayer,
     private val folderRegistry: ScreenshotFolderRegistry,
-    private val ledger: ScreenshotUploadLedger
+    private val ledger: ScreenshotUploadLedger,
+    private val permissionHelper: PermissionHelper
 ) {
-    suspend fun queueSessionScreenshots(gameId: Long, sessionStart: Instant, sessionEnd: Instant): Int =
+    suspend fun queueSessionScreenshots(
+        gameId: Long,
+        emulatorPackage: String,
+        sessionStart: Instant,
+        sessionEnd: Instant
+    ): Int =
         withContext(Dispatchers.IO) {
             val prefs = syncPreferencesRepository.preferences.first()
             if (!prefs.uploadScreenshotsEnabled) return@withContext 0
@@ -53,8 +61,17 @@ class SessionScreenshotScanner @Inject constructor(
             val rommId = gameDao.getById(gameId)?.rommId ?: return@withContext 0
             val ownerUserId = prefs.rommUserId
 
-            val window = sessionStart.toEpochMilli()..sessionEnd.toEpochMilli()
-            val candidates = folderRegistry.folders().flatMap { imagesIn(it, window) }
+            val builtIn = emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE
+            val statsPackage = if (builtIn) context.packageName else emulatorPackage
+            val from = sessionStart.toEpochMilli()
+            val to = sessionEnd.toEpochMilli()
+            val spans = permissionHelper.foregroundSpans(context, statsPackage, from, to)
+            val sources: List<Pair<String, List<LongRange>>> = when {
+                spans != null -> folderRegistry.folders().map { it to spans }
+                builtIn -> listOf(folderRegistry.builtinFolder() to listOf(from..to))
+                else -> emptyList()
+            }
+            val candidates = sources.flatMap { (folder, windows) -> imagesIn(folder, windows) }
             if (candidates.isEmpty()) return@withContext 0
 
             val alreadyQueued = pendingSyncQueueDao.getByGameId(gameId)
@@ -89,12 +106,12 @@ class SessionScreenshotScanner @Inject constructor(
             queued
         }
 
-    private fun imagesIn(folder: String, window: LongRange): List<FileInfo> {
+    private fun imagesIn(folder: String, windows: List<LongRange>): List<FileInfo> {
         val entries = fileAccessLayer.listFiles(folder) ?: return emptyList()
         return entries.filter { entry ->
             entry.isFile &&
                 entry.size > 0 &&
-                entry.lastModified in window &&
+                windows.any { entry.lastModified in it } &&
                 entry.extension.lowercase() in ScreenshotUploader.MIME_BY_EXTENSION
         }
     }

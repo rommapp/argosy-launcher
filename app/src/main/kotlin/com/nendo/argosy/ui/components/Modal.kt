@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.ui.input.ModalPresenceEffect
 import com.nendo.argosy.ui.theme.Dimens
+import com.nendo.argosy.ui.theme.generated.DimensionTokens
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.ui.theme.LocalUiScale
 
@@ -60,7 +61,7 @@ fun Modal(
             .clickableNoFocus(onClick = onDismiss ?: {}),
         contentAlignment = Alignment.Center
     ) {
-        val modalWidth = (baseWidth * scale).coerceIn(280.dp, maxWidth * 0.9f)
+        val modalWidth = modalWidth(baseWidth * scale, maxWidth)
         val modalMaxHeight = maxHeight * 0.85f
 
         Column(
@@ -140,7 +141,7 @@ fun CenteredModal(
             .clickableNoFocus(onClick = onDismiss ?: {}),
         contentAlignment = Alignment.Center
     ) {
-        val modalWidth = (baseWidth * scale).coerceIn(280.dp, maxWidth * 0.9f)
+        val modalWidth = modalWidth(baseWidth * scale, maxWidth)
 
         Column(
             modifier = modifier
@@ -167,6 +168,11 @@ fun CenteredModal(
             }
         }
     }
+}
+
+internal fun modalWidth(scaledWidth: Dp, available: Dp): Dp {
+    val ceiling = available * 0.9f
+    return scaledWidth.coerceIn(minOf(DimensionTokens.Layout.modalWidthMin.dp, ceiling), ceiling)
 }
 
 @Composable
@@ -217,7 +223,7 @@ fun NestedModal(
             .clickableNoFocus(onClick = onDismiss ?: {}),
         contentAlignment = Alignment.Center
     ) {
-        val modalWidth = (baseWidth * scale).coerceIn(280.dp, maxWidth * 0.9f)
+        val modalWidth = modalWidth(baseWidth * scale, maxWidth)
 
         Column(
             modifier = modifier

@@ -121,6 +121,8 @@ class TexturePackInstaller(
 
         val activeTargetResolution = resolveTargetForGame(game, romFile, extractedTitleId, sourceFile = null)
         val activeTargetDir = activeTargetResolution?.targetDir
+        val activeTargetPaths = listOfNotNull(activeTargetDir, activeTargetResolution?.cacheDir)
+            .map { it.canonicalPath }
         val gameFolder = gameFolderOf(game)
         var installedCount = 0
 
@@ -142,7 +144,7 @@ class TexturePackInstaller(
                 if (exists) {
                     val recordedParent = recordedFile.parentFile
                     val isSameTarget = recordedParent != null &&
-                        recordedParent.canonicalPath == activeTargetDir.canonicalPath
+                        recordedParent.canonicalPath in activeTargetPaths
 
                     if (isSameTarget) {
                         if (activeTargetResolution.isDolphin) {

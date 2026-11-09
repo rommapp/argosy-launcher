@@ -188,6 +188,35 @@ class TexturePackInstallerTest {
     }
 
     @Test
+    fun `a second launch leaves an installed N64 cache pack in the cache folder`() = runTest {
+        every {
+            titleIdExtractor.resolveTextureFolderKey(any(), "n64", any(), any(), any(), any())
+        } returns "THE LEGEND OF ZELDA"
+        val zipFile = createZip(
+            "oot_htc.zip",
+            mapOf("THE LEGEND OF ZELDA_HIRESTEXTURES.htc" to "htc_binary_payload")
+        )
+        val game = testGame(titleId = "CZLE", platformSlug = "n64")
+        val modFile = testModFile(id = 46L, gameId = game.id, fileName = zipFile.name, localPath = zipFile.absolutePath)
+        val manifest = installer.installForModFile(game = game, gameFile = modFile, sourceFile = zipFile)
+        assertNotNull(manifest)
+        val cachedPack = File(systemDir, "Mupen64plus/cache/THE LEGEND OF ZELDA_HIRESTEXTURES.htc")
+        assertTrue(cachedPack.isFile)
+
+        coEvery { gameDao.getById(game.id) } returns game
+        coEvery { gameFileDao.getModFilesForGame(game.id) } returns listOf(
+            modFile.copy(localPath = manifest!!.absolutePath)
+        )
+        val installed = installer.installPendingModFilesForGame(game.id)
+
+        assertEquals(0, installed)
+        assertTrue(cachedPack.isFile)
+        assertTrue(manifest.isFile)
+        assertFalse(File(systemDir, "Mupen64plus/hires_texture/THE LEGEND OF ZELDA").exists())
+        coVerify(exactly = 1) { gameFileDao.updateLocalPath(46L, any(), any()) }
+    }
+
+    @Test
     fun `parallel_n64 rejects hts texture packs without deleting source archive`() = runTest {
         coEvery { builtinCoreResolver.resolveCoreId(any(), any(), "n64") } returns "parallel_n64"
         val zipFile = createZip(

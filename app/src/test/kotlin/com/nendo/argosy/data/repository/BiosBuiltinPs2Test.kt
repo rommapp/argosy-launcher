@@ -46,7 +46,8 @@ class BiosBuiltinPs2Test {
             platformDao = mockk(relaxed = true),
             userPreferencesRepository = prefs,
             switchKeyManager = mockk(relaxed = true),
-            attributionRepository = mockk(relaxed = true)
+            attributionRepository = mockk(relaxed = true),
+            fal = mockk(relaxed = true)
         )
         source = File(tempDir, "files/bios/ps2/SCPH-70012.bin").apply {
             parentFile?.mkdirs()

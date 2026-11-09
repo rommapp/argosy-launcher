@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.luminance
 import com.nendo.argosy.ui.components.volumeMeterCategoryColors
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -159,7 +160,7 @@ fun StoragePlatformGamesSection(uiState: SettingsUiState, viewModel: SettingsVie
                 modifier = Modifier.padding(horizontal = Dimens.spacingMd).padding(top = Dimens.spacingMd)
             )
         }
-        SectionPaneLayout(
+        key(state.sort, state.locationFilter) { SectionPaneLayout(
             items = visibleItems,
             sections = sections,
             focusedIndex = uiState.focusedIndex,
@@ -195,7 +196,7 @@ fun StoragePlatformGamesSection(uiState: SettingsUiState, viewModel: SettingsVie
                     }
                 }
             }
-        }
+        } }
     }
 }
 

@@ -149,6 +149,7 @@ import com.swordfish.libretrodroid.LibretroDroid
 import com.swordfish.libretrodroid.Variable
 import com.swordfish.libretrodroid.VulkanDriver
 import com.nendo.argosy.libretro.coreoptions.CoreControlManifestRegistry
+import com.nendo.argosy.libretro.coreoptions.CoreOptionDef
 import com.nendo.argosy.libretro.coreoptions.CoreOptionManifestRegistry
 import com.nendo.argosy.data.local.entity.CoreInputMode
 import com.nendo.argosy.data.local.entity.CoreOptionOverrideEntity
@@ -386,7 +387,7 @@ class LibretroActivity : ComponentActivity() {
         get() = if (::netplay.isInitialized) netplay.isGuestJoinedSession else false
     private var corePath: String = ""
     private var resolvedCoreId: String? = null
-    private var initialIntentCoreVariables: Map<String, String> = emptyMap()
+    private var launchDefaultCoreOptions: Map<String, String> = emptyMap()
     private var dualScreenOutput: DualScreenOutput? = null
     private var secondScreen: SecondScreenPresentation? = null
 
@@ -742,9 +743,9 @@ class LibretroActivity : ComponentActivity() {
             launchMode = if (launchMode == LaunchMode.RESUME_HARDCORE) LaunchMode.RESUME else LaunchMode.NEW_CASUAL
         }
         hardcoreMode = launchMode.isHardcore
-        val varKeys = intent.getStringArrayExtra(EXTRA_CORE_VAR_KEYS).orEmpty()
-        val varValues = intent.getStringArrayExtra(EXTRA_CORE_VAR_VALUES).orEmpty()
-        initialIntentCoreVariables = varKeys.zip(varValues).toMap()
+        val defaultKeys = intent.getStringArrayExtra(EXTRA_LAUNCH_DEFAULT_KEYS).orEmpty()
+        val defaultValues = intent.getStringArrayExtra(EXTRA_LAUNCH_DEFAULT_VALUES).orEmpty()
+        launchDefaultCoreOptions = defaultKeys.zip(defaultValues).toMap()
 
         val joinSessionId = intent.getStringExtra(EXTRA_NETPLAY_JOIN_SESSION_ID)
         val joinHostUserId = intent.getStringExtra(EXTRA_NETPLAY_JOIN_HOST_USER_ID)
@@ -2106,19 +2107,16 @@ class LibretroActivity : ComponentActivity() {
             val gameOverride = if (perGame) gameCoreOptionOverrides[def.key] else null
             val globalOverride = coreOptionOverrides[def.key]
             val heldValue = held[def.key]
-            val intentDefault = initialIntentCoreVariables[def.key]
-            val fallback = intentDefault ?: def.defaultValue
-            val hasIntentOverride = intentDefault != null && intentDefault != def.defaultValue
-            val hasStoredOverride = if (perGame) gameOverride != null else globalOverride != null
-            val isOverridden = heldValue == null && (hasStoredOverride || (hasIntentOverride && gameOverride == null && globalOverride == null))
             CoreOptionViewItem(
                 key = def.key,
                 displayName = def.displayName,
                 description = def.description,
                 values = def.values,
-                currentValue = heldValue ?: (gameOverride ?: globalOverride)
-                    ?.let { def.resolveStored(it) } ?: fallback,
-                isOverridden = isOverridden,
+                currentValue = heldValue ?: effectiveCoreOption(
+                    def, perGame, gameCoreOptionOverrides, coreOptionOverrides, launchDefaultCoreOptions
+                ),
+                isOverridden = heldValue == null &&
+                    (if (perGame) gameOverride != null else globalOverride != null),
                 valueLabels = def.valueLabels,
                 isHeldByDualScreen = heldValue != null
             )
@@ -2138,18 +2136,16 @@ class LibretroActivity : ComponentActivity() {
         val rotation = explicitValues.filter { it in def.values }.takeIf { it.isNotEmpty() } ?: def.values
         if (rotation.isEmpty()) return
         val perGame = perGameSettingsEnabled && gameId != -1L
-        val stored = (if (perGame) gameCoreOptionOverrides[optionKey] else null)
-            ?: coreOptionOverrides[optionKey]
-        val fallback = initialIntentCoreVariables[optionKey] ?: def.defaultValue
-        val current = stored?.let { def.resolveStored(it) } ?: fallback
+        val current = effectiveCoreOption(
+            def, perGame, gameCoreOptionOverrides, coreOptionOverrides, launchDefaultCoreOptions
+        )
         val currentIndex = rotation.indexOf(current).coerceAtLeast(0)
         val newValue = rotation[(currentIndex + direction).mod(rotation.size)]
         if (hardcoreBlocks(optionKey, newValue)) {
             inGameMessage = getString(R.string.ingame_libretro_core_option_blocked_hardcore)
             return
         }
-        val inherited = (if (perGame) coreOptionOverrides[optionKey] else null)
-            ?.let { def.resolveStored(it) } ?: fallback
+        val inherited = inheritedCoreOption(def, perGame, coreOptionOverrides, launchDefaultCoreOptions)
         if (newValue == inherited) {
             resetCoreOption(optionKey)
             return
@@ -2187,22 +2183,20 @@ class LibretroActivity : ComponentActivity() {
         val def = CoreOptionManifestRegistry.getManifest(coreId)
             ?.options?.firstOrNull { it.key == optionKey } ?: return
         val perGame = perGameSettingsEnabled && gameId != -1L
-        val fallback = initialIntentCoreVariables[optionKey] ?: def.defaultValue
-        val target = if (perGame) coreOptionOverrides[optionKey] ?: fallback else fallback
+        val target = inheritedCoreOption(def, perGame, coreOptionOverrides, launchDefaultCoreOptions)
         if (hardcoreBlocks(optionKey, target)) {
             inGameMessage = getString(R.string.ingame_libretro_core_option_blocked_hardcore)
             return
         }
         if (perGame) {
             gameCoreOptionOverrides = gameCoreOptionOverrides - optionKey
-            val effectiveFallback = coreOptionOverrides[optionKey] ?: fallback
-            if (::retroView.isInitialized) retroView.updateVariables(Variable(optionKey, effectiveFallback))
+            if (::retroView.isInitialized) retroView.updateVariables(Variable(optionKey, target))
             lifecycleScope.launch(Dispatchers.IO) {
                 coreOptionsRepository.deleteForGame(gameId, coreId, optionKey)
             }
         } else {
             coreOptionOverrides = coreOptionOverrides - optionKey
-            if (::retroView.isInitialized) retroView.updateVariables(Variable(optionKey, fallback))
+            if (::retroView.isInitialized) retroView.updateVariables(Variable(optionKey, target))
             lifecycleScope.launch(Dispatchers.IO) {
                 coreOptionsRepository.delete(coreId, optionKey)
             }
@@ -2215,10 +2209,12 @@ class LibretroActivity : ComponentActivity() {
         val manifest = coreId?.let { CoreOptionManifestRegistry.getManifest(it) }
         val held = splitHeldCoreOptions()
         val effective = manifest?.options?.map { def ->
-            val gameOverride = if (enabled) gameCoreOptionOverrides[def.key] else null
-            val stored = gameOverride ?: coreOptionOverrides[def.key]
-            val fallback = initialIntentCoreVariables[def.key] ?: def.defaultValue
-            Variable(def.key, held[def.key] ?: stored?.let { def.resolveStored(it) } ?: fallback)
+            Variable(
+                def.key,
+                held[def.key] ?: effectiveCoreOption(
+                    def, enabled, gameCoreOptionOverrides, coreOptionOverrides, launchDefaultCoreOptions
+                )
+            )
         }.orEmpty()
         if (effective.any { hardcoreBlocks(it.key, it.value) }) {
             inGameMessage = getString(R.string.ingame_libretro_core_option_blocked_hardcore)
@@ -4166,6 +4162,26 @@ class LibretroActivity : ComponentActivity() {
         private const val SPEEDRUN_PANEL_FRACTION_DEFAULT = 0.30f
         private val SPEEDRUN_PANEL_FRACTION_RANGE = 0.20f..0.40f
 
+        internal fun inheritedCoreOption(
+            def: CoreOptionDef,
+            perGame: Boolean,
+            globalOverrides: Map<String, String>,
+            launchDefaults: Map<String, String>
+        ): String = (if (perGame) globalOverrides[def.key] else null)?.let { def.resolveStored(it) }
+            ?: launchDefaults[def.key]?.let { def.resolveStored(it) }
+            ?: def.defaultValue
+
+        internal fun effectiveCoreOption(
+            def: CoreOptionDef,
+            perGame: Boolean,
+            gameOverrides: Map<String, String>,
+            globalOverrides: Map<String, String>,
+            launchDefaults: Map<String, String>
+        ): String = (if (perGame) gameOverrides[def.key] else null)?.let { def.resolveStored(it) }
+            ?: globalOverrides[def.key]?.let { def.resolveStored(it) }
+            ?: launchDefaults[def.key]?.let { def.resolveStored(it) }
+            ?: def.defaultValue
+
         const val EXTRA_ROM_PATH = "rom_path"
         const val EXTRA_CORE_PATH = "core_path"
         const val EXTRA_SYSTEM_DIR = "system_dir"
@@ -4177,6 +4193,8 @@ class LibretroActivity : ComponentActivity() {
         const val EXTRA_CORE_NAME = "core_name"
         const val EXTRA_CORE_VAR_KEYS = "core_var_keys"
         const val EXTRA_CORE_VAR_VALUES = "core_var_values"
+        const val EXTRA_LAUNCH_DEFAULT_KEYS = "launch_default_keys"
+        const val EXTRA_LAUNCH_DEFAULT_VALUES = "launch_default_values"
         const val EXTRA_PREFER_VULKAN = "prefer_vulkan"
         const val EXTRA_VULKAN_DRIVER_DIR = "vulkan_driver_dir"
         const val EXTRA_VULKAN_DRIVER_LIBRARY = "vulkan_driver_library"

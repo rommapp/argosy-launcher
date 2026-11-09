@@ -791,10 +791,11 @@ class GameLauncher @Inject constructor(
             EnhancementTarget.Builtin(coreName, systemDir, liveSaveDir(effectiveSavePath, variantFileId))
         )
 
+        val launchDefaults = textureCoreOptions + enhancementCoreOptions
         val resolvedVariables = coreOptionResolver.resolveVariables(
             coreName,
             gameId = game.id.takeIf { game.perGameSettingsEnabled },
-            defaultOverrides = textureCoreOptions + enhancementCoreOptions
+            defaultOverrides = launchDefaults
         )
 
         Logger.info(TAG, "[BuiltIn] Launching: rom=${romFile.name}, core=$coreName, romSize=${romFile.length()}b, coreVars=${resolvedVariables.size}")
@@ -840,6 +841,8 @@ class GameLauncher @Inject constructor(
             putExtra(LibretroActivity.EXTRA_CORE_NAME, coreName)
             putExtra(LibretroActivity.EXTRA_CORE_VAR_KEYS, coreVariables.map { it.key }.toTypedArray())
             putExtra(LibretroActivity.EXTRA_CORE_VAR_VALUES, coreVariables.map { it.value }.toTypedArray())
+            putExtra(LibretroActivity.EXTRA_LAUNCH_DEFAULT_KEYS, launchDefaults.keys.toTypedArray())
+            putExtra(LibretroActivity.EXTRA_LAUNCH_DEFAULT_VALUES, launchDefaults.values.toTypedArray())
             putExtra(LibretroActivity.EXTRA_PREFER_VULKAN, graphics.preferVulkan)
             vulkanDriver?.let {
                 putExtra(LibretroActivity.EXTRA_VULKAN_DRIVER_DIR, it.directory.absolutePath)

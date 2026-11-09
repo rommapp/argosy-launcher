@@ -5,8 +5,10 @@ import com.nendo.argosy.data.local.dao.PlaySessionDao
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.preferences.UserPreferences
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.social.uploader.PlaySessionPullScheduler
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flowOf
@@ -28,6 +30,9 @@ class RecapGateTest {
     private val gameDao: GameDao = mockk()
     private val playSessionDao: PlaySessionDao = mockk()
     private val preferencesRepository: UserPreferencesRepository = mockk()
+    private val playSessionPullScheduler: PlaySessionPullScheduler = mockk {
+        coEvery { pullForRecap() } returns true
+    }
 
     private fun gate(enabled: Boolean, baseline: Instant? = now.minus(Duration.ofDays(365))): RecapGate {
         every { preferencesRepository.userPreferences } returns flowOf(
@@ -39,7 +44,7 @@ class RecapGateTest {
             every { raId } returns 50L
         }
         coEvery { gameDao.getById(1L) } returns game
-        return RecapGate(preferencesRepository, playSessionDao, gameDao)
+        return RecapGate(preferencesRepository, playSessionDao, gameDao, playSessionPullScheduler)
     }
 
     private fun lastSessionEndedAgo(gap: Duration) {
@@ -94,7 +99,40 @@ class RecapGateTest {
         )
         coEvery { preferencesRepository.setLastMonthlyRecapShown(any()) } returns Unit
         coEvery { preferencesRepository.privateIgdbIds() } returns privateIds
-        return RecapGate(preferencesRepository, playSessionDao, gameDao)
+        return RecapGate(preferencesRepository, playSessionDao, gameDao, playSessionPullScheduler)
+    }
+
+    @Test
+    fun `a device with no local sessions is due once the awaited pull stores another device's rows`() = runTest {
+        var stored = false
+        coEvery { playSessionPullScheduler.pullForRecap() } coAnswers {
+            stored = true
+            true
+        }
+        coEvery { playSessionDao.hasSessionsForOwnerInRange(7L, any(), any(), any()) } answers { stored }
+
+        assertEquals(YearMonth.of(2026, 9), monthlyGate().monthlyDigestDue(now, ZoneOffset.UTC))
+        coVerifyOrder {
+            playSessionPullScheduler.pullForRecap()
+            playSessionDao.hasSessionsForOwnerInRange(7L, any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `a pull that fails still decides from the stored sessions`() = runTest {
+        coEvery { playSessionPullScheduler.pullForRecap() } returns false
+        coEvery { playSessionDao.hasSessionsForOwnerInRange(7L, any(), any(), any()) } returns true
+
+        assertEquals(YearMonth.of(2026, 9), monthlyGate().monthlyDigestDue(now, ZoneOffset.UTC))
+    }
+
+    @Test
+    fun `the first check, a month already shown and the setting off never pull`() = runTest {
+        assertNull(monthlyGate(lastShown = null).monthlyDigestDue(now, ZoneOffset.UTC))
+        assertNull(monthlyGate(lastShown = YearMonth.of(2026, 9)).monthlyDigestDue(now, ZoneOffset.UTC))
+        assertNull(monthlyGate(enabled = false).monthlyDigestDue(now, ZoneOffset.UTC))
+
+        coVerify(exactly = 0) { playSessionPullScheduler.pullForRecap() }
     }
 
     @Test

@@ -20,7 +20,9 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.currentTime
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -68,6 +70,35 @@ class RaMetadataSourceTest {
     @Test
     fun `progression never refreshed is refreshed`() {
         assertTrue(RaMetadataSource.needsRefresh(null, end))
+    }
+
+    @Test
+    fun `warming a stale RomM cache refreshes it`() = runTest {
+        every { achievementService.progressionRefreshedAt() } returns end.minusSeconds(60)
+        coEvery { achievementService.refreshRAProgressionIfNeeded(true) } returns RomMResult.Success(Unit)
+
+        source(null).warmRomMProgression(end)
+
+        coVerify(exactly = 1) { achievementService.refreshRAProgressionIfNeeded(force = true) }
+    }
+
+    @Test
+    fun `warming a current RomM cache asks RomM nothing`() = runTest {
+        every { achievementService.progressionRefreshedAt() } returns end.plusSeconds(60)
+
+        source(null).warmRomMProgression(end)
+
+        coVerify(exactly = 0) { achievementService.refreshRAProgressionIfNeeded(any()) }
+    }
+
+    @Test
+    fun `a RomM refresh that never answers releases the warm at its timeout`() = runTest {
+        every { achievementService.progressionRefreshedAt() } returns null
+        coEvery { achievementService.refreshRAProgressionIfNeeded(any()) } coAnswers { awaitCancellation() }
+
+        source(null).warmRomMProgression(end)
+
+        assertEquals(RaMetadataSource.ROMM_WARM_TIMEOUT_MS, currentTime)
     }
 
     @Test

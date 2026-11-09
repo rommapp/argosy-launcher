@@ -3,6 +3,7 @@ package com.nendo.argosy.domain.usecase.recap
 import com.nendo.argosy.data.local.dao.GameDao
 import com.nendo.argosy.data.local.dao.PlaySessionDao
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.data.social.uploader.PlaySessionPullScheduler
 import com.nendo.argosy.domain.model.PreLaunchRecap
 import kotlinx.coroutines.flow.first
 import java.time.Instant
@@ -12,12 +13,15 @@ import javax.inject.Inject
 
 /**
  * Decides whether a recap is due, from the stored session facts and the two recap settings. Reads
- * the settings once per call. Never contacts RetroAchievements.
+ * the settings once per call. A monthly digest still unshown waits for the pull of the other
+ * devices' sessions, bounded by [PlaySessionPullScheduler.RECAP_PULL_TIMEOUT_MS], before the stored
+ * sessions are checked. Never contacts RetroAchievements.
  */
 class RecapGate @Inject constructor(
     private val preferencesRepository: UserPreferencesRepository,
     private val playSessionDao: PlaySessionDao,
-    private val gameDao: GameDao
+    private val gameDao: GameDao,
+    private val playSessionPullScheduler: PlaySessionPullScheduler
 ) {
     suspend fun preLaunchRecap(gameId: Long, now: Instant = Instant.now()): PreLaunchRecap? {
         val prefs = preferencesRepository.userPreferences.first()
@@ -50,6 +54,7 @@ class RecapGate @Inject constructor(
             hadSessionsLastMonth = true,
             enabled = prefs.monthlyRecapEnabled
         ) ?: return null
+        playSessionPullScheduler.pullForRecap()
         val window = RecapEligibility.monthWindow(candidate, zone)
         val hadSessions = playSessionDao.hasSessionsForOwnerInRange(
             prefs.rommUserId,

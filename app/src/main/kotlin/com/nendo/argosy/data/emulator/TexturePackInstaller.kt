@@ -17,6 +17,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
@@ -42,6 +44,8 @@ class TexturePackInstaller(
     private val fileAccessLayer: FileAccessLayer? = null,
     private val cacheDir: File? = null
 ) {
+    private val gameLocks = ConcurrentHashMap<Long, Mutex>()
+
     @Inject
     constructor(
         builtinSaveBase: BuiltinSaveBase,
@@ -94,6 +98,13 @@ class TexturePackInstaller(
         extractedTitleId: TitleIdResult? = null,
         isCancelled: (() -> Boolean)? = null,
         onProgress: ((fraction: Float?) -> Unit)? = null
+    ): Int = lockFor(gameId).withLock { installPendingModFilesForGameUnlocked(gameId, extractedTitleId, isCancelled, onProgress) }
+
+    private suspend fun installPendingModFilesForGameUnlocked(
+        gameId: Long,
+        extractedTitleId: TitleIdResult?,
+        isCancelled: (() -> Boolean)?,
+        onProgress: ((fraction: Float?) -> Unit)?
     ): Int = withContext(Dispatchers.IO) {
         val game = gameDao.getById(gameId) ?: return@withContext 0
         val romFile = resolveRomFile(game)
@@ -190,7 +201,7 @@ class TexturePackInstaller(
             }
 
             try {
-                val outcome = installForModFileOutcome(
+                val outcome = installForModFileOutcomeUnlocked(
                     game = game,
                     gameFile = modFile,
                     sourceFile = sourceFile,
@@ -616,6 +627,18 @@ class TexturePackInstaller(
         preValidatedZip: Boolean = false,
         isCancelled: (() -> Boolean)? = null,
         onProgress: ((fraction: Float?) -> Unit)? = null
+    ): ModInstallOutcome = lockFor(game.id).withLock {
+        installForModFileOutcomeUnlocked(game, gameFile, sourceFile, extractedTitleId, preValidatedZip, isCancelled, onProgress)
+    }
+
+    private suspend fun installForModFileOutcomeUnlocked(
+        game: GameEntity,
+        gameFile: GameFileEntity,
+        sourceFile: File,
+        extractedTitleId: TitleIdResult?,
+        preValidatedZip: Boolean,
+        isCancelled: (() -> Boolean)?,
+        onProgress: ((fraction: Float?) -> Unit)?
     ): ModInstallOutcome = withContext(Dispatchers.IO) {
         val romFile = resolveRomFile(game)
         if (romFile == null || !romFile.isFile) {
@@ -783,7 +806,10 @@ class TexturePackInstaller(
         return (outcome as? ModInstallOutcome.Success)?.manifestFile
     }
 
-    suspend fun uninstallModFile(gameFile: GameFileEntity): Boolean = withContext(Dispatchers.IO) {
+    suspend fun uninstallModFile(gameFile: GameFileEntity): Boolean =
+        lockFor(gameFile.gameId).withLock { uninstallModFileUnlocked(gameFile) }
+
+    private suspend fun uninstallModFileUnlocked(gameFile: GameFileEntity): Boolean = withContext(Dispatchers.IO) {
         val localPath = gameFile.localPath
         var deleted = true
         if (localPath != null) {
@@ -804,14 +830,18 @@ class TexturePackInstaller(
         deleted
     }
 
-    suspend fun uninstallForGame(game: GameEntity) = withContext(Dispatchers.IO) {
-        val modFiles = gameFileDao.getModFilesForGame(game.id)
-        for (modFile in modFiles) {
-            if (modFile.localPath != null) {
-                uninstallModFile(modFile)
+    suspend fun uninstallForGame(game: GameEntity) = lockFor(game.id).withLock {
+        withContext(Dispatchers.IO) {
+            val modFiles = gameFileDao.getModFilesForGame(game.id)
+            for (modFile in modFiles) {
+                if (modFile.localPath != null) {
+                    uninstallModFileUnlocked(modFile)
+                }
             }
         }
     }
+
+    private fun lockFor(gameId: Long): Mutex = gameLocks.getOrPut(gameId) { Mutex() }
 
     suspend fun extractTextureZip(
         zipFile: File,

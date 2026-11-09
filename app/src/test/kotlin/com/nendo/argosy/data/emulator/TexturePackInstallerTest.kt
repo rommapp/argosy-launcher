@@ -12,6 +12,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.async
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -400,6 +401,60 @@ class TexturePackInstallerTest {
         assertTrue("Expected progress reports", progressReports.isNotEmpty())
         assertEquals(0f, progressReports.first() ?: -1f, 0.001f)
         assertEquals(1f, progressReports.last() ?: -1f, 0.001f)
+        TexturePackInstaller.clearFailedInstalls()
+    }
+
+    @Test
+    fun `two installs of one game run one after the other and install the pack once`() = runTest {
+        TexturePackInstaller.clearFailedInstalls()
+        val textureZip = createZip(
+            "concurrent_pack.zip",
+            mapOf("tex1.png" to "one", "tex2.png" to "two", "tex3.png" to "three")
+        )
+        val game = testGame(titleId = "GZLE01")
+        val modFile = testModFile(id = 556L, gameId = game.id, fileName = textureZip.name, localPath = textureZip.absolutePath)
+        var recordedPath: String = textureZip.absolutePath
+        coEvery { gameDao.getById(game.id) } returns game
+        coEvery { gameFileDao.getModFilesForGame(game.id) } answers { listOf(modFile.copy(localPath = recordedPath)) }
+        coEvery { gameFileDao.updateLocalPath(556L, any(), any()) } answers { recordedPath = secondArg() }
+
+        val active = java.util.concurrent.atomic.AtomicInteger()
+        val maxActive = java.util.concurrent.atomic.AtomicInteger()
+        fun tracker(): (Float?) -> Unit {
+            var entered = false
+            var left = false
+            return { fraction ->
+                if (!entered && fraction == 0f) {
+                    entered = true
+                    maxActive.accumulateAndGet(active.incrementAndGet(), ::maxOf)
+                    Thread.sleep(200)
+                } else if (entered && !left && fraction == 1f) {
+                    left = true
+                    active.decrementAndGet()
+                }
+            }
+        }
+
+        val counts = kotlinx.coroutines.coroutineScope {
+            val first = async(kotlinx.coroutines.Dispatchers.IO) {
+                installer.installPendingModFilesForGame(game.id, onProgress = tracker())
+            }
+            val second = async(kotlinx.coroutines.Dispatchers.IO) {
+                installer.installPendingModFilesForGame(game.id, onProgress = tracker())
+            }
+            listOf(first.await(), second.await())
+        }
+
+        assertEquals(1, maxActive.get())
+        assertEquals(1, counts.sum())
+        val targetDir = File(saveDir, "User/Load/Textures/GZLE01")
+        assertEquals("one", File(targetDir, "tex1.png").readText())
+        assertEquals("two", File(targetDir, "tex2.png").readText())
+        assertEquals("three", File(targetDir, "tex3.png").readText())
+        val manifest = TexturePackInstaller.manifestFileFor(targetDir, 556L)
+        assertEquals(manifest.absolutePath, recordedPath)
+        assertEquals(setOf("tex1.png", "tex2.png", "tex3.png"), manifest.readLines().toSet())
+        assertFalse(File(targetDir, ".staging_556").exists())
         TexturePackInstaller.clearFailedInstalls()
     }
 

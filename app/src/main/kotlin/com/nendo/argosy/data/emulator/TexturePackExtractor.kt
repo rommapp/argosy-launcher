@@ -354,7 +354,7 @@ class TexturePackExtractor @Inject constructor() {
                             throw CancellationException("Texture pack installation cancelled")
                         }
                         val stagedFile = File(stagingDir, relativePath)
-                        if (!stagedFile.exists()) continue
+                        if (!stagedFile.exists()) throw java.io.IOException("Staged texture $relativePath is missing")
                         val finalFile = File(targetDir, relativePath)
                         finalFile.parentFile?.mkdirs()
                         if (finalFile.exists()) {
@@ -386,7 +386,7 @@ class TexturePackExtractor @Inject constructor() {
                             throw CancellationException("Texture pack installation cancelled")
                         }
                         val stagedFile = File(stagingDir, relativePath)
-                        if (!stagedFile.exists()) continue
+                        if (!stagedFile.exists()) throw java.io.IOException("Staged texture $relativePath is missing")
                         val finalFile = File(targetDir, relativePath)
                         finalFile.parentFile?.absolutePath
                             ?.takeIf { ensuredDirs.add(it) }

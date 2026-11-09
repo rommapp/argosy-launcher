@@ -68,8 +68,8 @@ class TexturePackExtractor @Inject constructor() {
             cacheDir.mkdirs()
         }
         val destFile = File(cacheDir, sourceFile.name)
-        if (!FileNames.isWithin(destFile, cacheDir)) {
-            throw SecurityException("Target file outside cache dir: ${sourceFile.name}")
+        if (!FileNames.isWithin(destFile, cacheDir) || sourceFile.name.any { it.isISOControl() }) {
+            throw SecurityException("Cache texture name cannot be installed: ${sourceFile.name}")
         }
         val tmpFile = File(cacheDir, "${sourceFile.name}.$gameFileId.tmp")
         val backupFile = File(cacheDir, "${sourceFile.name}.$gameFileId.replaced")
@@ -281,6 +281,11 @@ class TexturePackExtractor @Inject constructor() {
 
                 onEntriesValidated?.invoke(fileEntries)
 
+                val declaredBytes = fileEntries.sumOf { it.first.size.coerceAtLeast(0L) }
+                val stagingFree = usableSpaceOf(stagingDir)
+                requireSpace(zipFile, declaredBytes, stagingFree)
+                if (!isDirectlyWritable) requireSpace(zipFile, declaredBytes, usableSpaceOf(targetDir))
+
                 val allSizesKnown = fileEntries.all { it.first.size >= 0L }
                 val totalBytes = if (allSizesKnown) fileEntries.sumOf { it.first.size }.takeIf { it > 0L } else null
                 var extractedBytes = 0L
@@ -307,13 +312,21 @@ class TexturePackExtractor @Inject constructor() {
                     zf.getInputStream(entry).use { input ->
                         FileOutputStream(stagedDestFile).use { output ->
                             var read: Int
+                            var entryBytes = 0L
                             while (input.read(buffer).also { read = it } != -1) {
                                 currentCoroutineContext().ensureActive()
                                 if (isCancelled?.invoke() == true) {
                                     throw CancellationException("Texture pack installation cancelled")
                                 }
-                                output.write(buffer, 0, read)
+                                entryBytes += read
                                 extractedBytes += read
+                                if (entry.size >= 0L && entryBytes > entry.size) {
+                                    throw java.io.IOException("${entry.name} in ${zipFile.name} expands past its declared size")
+                                }
+                                if (stagingFree > 0L && extractedBytes > stagingFree - SPACE_MARGIN_BYTES) {
+                                    throw java.io.IOException("Not enough free space to unpack ${zipFile.name}")
+                                }
+                                output.write(buffer, 0, read)
                                 if (totalBytes != null) {
                                     val fraction = (extractedBytes.toFloat() / totalBytes).coerceIn(0f, 1f)
                                     if (fraction - lastReported >= 0.01f || extractedBytes == totalBytes) {
@@ -442,6 +455,15 @@ class TexturePackExtractor @Inject constructor() {
         }
     }
 
+    private fun usableSpaceOf(dir: File): Long =
+        generateSequence(dir) { it.parentFile }.firstOrNull { it.exists() }?.usableSpace ?: 0L
+
+    private fun requireSpace(zipFile: File, neededBytes: Long, freeBytes: Long) {
+        if (freeBytes > 0L && neededBytes + SPACE_MARGIN_BYTES > freeBytes) {
+            throw java.io.IOException("Not enough free space to unpack ${zipFile.name}: needs $neededBytes bytes, $freeBytes free")
+        }
+    }
+
     private fun moveFile(source: File, dest: File) {
         if (!source.renameTo(dest)) {
             source.copyTo(dest, overwrite = true)
@@ -477,6 +499,9 @@ class TexturePackExtractor @Inject constructor() {
         val entriesEnum = zf.entries()
         while (entriesEnum.hasMoreElements()) {
             val entry = entriesEnum.nextElement()
+            if (entry.name.any { it.isISOControl() }) {
+                throw SecurityException("Zip entry name holds a control character: ${entry.name.replace(Regex("\\p{Cntrl}"), "?")}")
+            }
             val rawNormalized = entry.name.replace('\\', '/')
             val rawSegments = rawNormalized.split('/')
             if (rawSegments.any { it == ".." }) {
@@ -502,6 +527,7 @@ class TexturePackExtractor @Inject constructor() {
         private const val MANIFEST_PREFIX = ".argosy_mod_"
         private const val MANIFEST_SUFFIX = ".manifest"
         private const val COPY_BUFFER_SIZE = 64 * 1024
+        private const val SPACE_MARGIN_BYTES = 64L * 1024 * 1024
 
         private val REDUNDANT_CONTAINER_NAMES = setOf("textures", "hires_texture", "load", "user")
 
@@ -645,6 +671,23 @@ class TexturePackExtractor @Inject constructor() {
             fileAccessLayer: FileAccessLayer? = null
         ): Long = measureManifestUsage(manifestFile, seenCanonicalPaths, fileAccessLayer).first
 
+        fun siblingClaimedPaths(manifestFile: File, fileAccessLayer: FileAccessLayer? = null): Set<String> {
+            val targetDir = manifestFile.parentFile ?: return emptySet()
+            val isRestricted = fileAccessLayer?.isRestrictedPath(targetDir.absolutePath) == true
+            val siblingLines = if (isRestricted) {
+                fileAccessLayer?.listFiles(targetDir.absolutePath).orEmpty()
+                    .filter { it.isFile && isManifestPath(it.path) && it.name != manifestFile.name }
+                    .flatMap { sibling ->
+                        fileAccessLayer?.readBytes(sibling.path)?.let { String(it, Charsets.UTF_8).lines() }.orEmpty()
+                    }
+            } else {
+                targetDir.listFiles().orEmpty()
+                    .filter { it.isFile && isManifestFile(it) && it.name != manifestFile.name }
+                    .flatMap { sibling -> runCatching { sibling.readLines() }.getOrDefault(emptyList()) }
+            }
+            return siblingLines.map { it.trim() }.filter { it.isNotEmpty() }.toSet()
+        }
+
         fun uninstallFromManifestFile(
             manifestFile: File,
             fileAccessLayer: FileAccessLayer? = null
@@ -665,60 +708,46 @@ class TexturePackExtractor @Inject constructor() {
 
             val targetDir = manifestFile.parentFile ?: return false
             val targetDirPath = targetDir.absolutePath
-
-            val siblingClaimedPaths = if (isRestricted) {
-                fileAccessLayer?.listFiles(targetDirPath).orEmpty()
-                    .filter { it.isFile && isManifestPath(it.path) && it.name != manifestFile.name }
-                    .flatMap { sibling ->
-                        fileAccessLayer?.readBytes(sibling.path)?.let { String(it, Charsets.UTF_8).lines() }.orEmpty()
-                            .map { it.trim() }
-                            .filter { it.isNotEmpty() }
-                    }
-                    .toSet()
-            } else {
-                targetDir.listFiles().orEmpty()
-                    .filter { it.isFile && isManifestFile(it) && it.name != manifestFile.name }
-                    .flatMap { sibling ->
-                        runCatching { sibling.readLines() }
-                            .getOrDefault(emptyList())
-                            .map { it.trim() }
-                            .filter { it.isNotEmpty() }
-                    }
-                    .toSet()
-            }
+            val claimedBySiblings = siblingClaimedPaths(manifestFile, fileAccessLayer)
 
             val touchedParents = mutableSetOf<String>()
+            val remaining = mutableListOf<String>()
             for (rawLine in lines) {
                 val rel = rawLine.trim()
-                if (rel.isEmpty() || rel in siblingClaimedPaths) continue
+                if (rel.isEmpty() || rel in claimedBySiblings) continue
                 val targetFile = File(targetDir, rel)
                 if (!FileNames.isWithin(targetFile, targetDir)) continue
                 val filePath = targetFile.absolutePath
 
-                if (isRestricted) {
-                    fileAccessLayer?.delete(filePath)
-                    var p = targetFile.parentFile
-                    while (p != null && p.canonicalPath != targetDir.canonicalPath && FileNames.isWithin(p, targetDir)) {
-                        touchedParents.add(p.absolutePath)
-                        p = p.parentFile
-                    }
-                } else if (targetFile.isFile) {
-                    targetFile.delete()
-                    var p = targetFile.parentFile
-                    while (p != null && p.canonicalPath != targetDir.canonicalPath && FileNames.isWithin(p, targetDir)) {
-                        touchedParents.add(p.canonicalPath)
-                        p = p.parentFile
-                    }
+                val removed = if (isRestricted) {
+                    fileAccessLayer?.delete(filePath) == true || fileAccessLayer?.exists(filePath) == false
+                } else {
+                    !targetFile.exists() || targetFile.delete() || !targetFile.exists()
+                }
+                if (!removed) {
+                    remaining.add(rel)
+                    continue
+                }
+                var p = targetFile.parentFile
+                while (p != null && p.canonicalPath != targetDir.canonicalPath && FileNames.isWithin(p, targetDir)) {
+                    touchedParents.add(if (isRestricted) p.absolutePath else p.canonicalPath)
+                    p = p.parentFile
                 }
             }
 
-            if (isRestricted) {
-                fileAccessLayer?.delete(manifestPath)
-            } else {
-                if (!manifestFile.delete() && manifestFile.exists()) {
-                    return false
-                }
+            if (remaining.isNotEmpty()) {
+                Logger.warn(TAG, "Could not remove ${remaining.size} file(s) of ${manifestFile.name}; keeping it for a retry")
+                val kept = remaining.joinToString("\n").toByteArray(Charsets.UTF_8)
+                if (isRestricted) fileAccessLayer?.writeBytes(manifestPath, kept) else runCatching { manifestFile.writeBytes(kept) }
+                return false
             }
+
+            val manifestRemoved = if (isRestricted) {
+                fileAccessLayer?.delete(manifestPath) == true || fileAccessLayer?.exists(manifestPath) == false
+            } else {
+                manifestFile.delete() || !manifestFile.exists()
+            }
+            if (!manifestRemoved) return false
 
             touchedParents
                 .sortedByDescending { it.length }

@@ -15,6 +15,7 @@ import com.nendo.argosy.util.Logger
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.sync.Mutex
@@ -82,6 +83,8 @@ class TexturePackInstaller(
         data class Failed(val reason: String) : ModInstallOutcome()
     }
 
+    data class LaunchTarget(val romFile: File, val variantFileId: Long?)
+
     private data class TargetResolution(
         val targetDir: File,
         val folderKey: String,
@@ -97,17 +100,21 @@ class TexturePackInstaller(
         gameId: Long,
         extractedTitleId: TitleIdResult? = null,
         isCancelled: (() -> Boolean)? = null,
+        launch: LaunchTarget? = null,
         onProgress: ((fraction: Float?) -> Unit)? = null
-    ): Int = lockFor(gameId).withLock { installPendingModFilesForGameUnlocked(gameId, extractedTitleId, isCancelled, onProgress) }
+    ): Int = lockFor(gameId).withLock {
+        installPendingModFilesForGameUnlocked(gameId, extractedTitleId, isCancelled, onProgress, launch)
+    }
 
     private suspend fun installPendingModFilesForGameUnlocked(
         gameId: Long,
         extractedTitleId: TitleIdResult?,
         isCancelled: (() -> Boolean)?,
-        onProgress: ((fraction: Float?) -> Unit)?
+        onProgress: ((fraction: Float?) -> Unit)?,
+        launch: LaunchTarget?
     ): Int = withContext(Dispatchers.IO) {
         val game = gameDao.getById(gameId) ?: return@withContext 0
-        val romFile = resolveRomFile(game)
+        val romFile = launchedVariantRom(launch) ?: resolveRomFile(game)
         if (romFile == null || !romFile.isFile) {
             Logger.debug(TAG, "Deferring texture pack install for ${game.title} until base ROM is on disk")
             return@withContext 0
@@ -130,7 +137,7 @@ class TexturePackInstaller(
         val modFiles = gameFileDao.getModFilesForGame(gameId)
         if (modFiles.isEmpty()) return@withContext 0
 
-        val activeTargetResolution = resolveTargetForGame(game, romFile, extractedTitleId, sourceFile = null)
+        val activeTargetResolution = resolveTargetForGame(game, romFile, extractedTitleId, sourceFile = null, launch = launch)
         val activeTargetDir = activeTargetResolution?.targetDir
         val activeTargetPaths = listOfNotNull(activeTargetDir, activeTargetResolution?.cacheDir)
             .map { it.canonicalPath }
@@ -168,10 +175,10 @@ class TexturePackInstaller(
                         newTargetDir = activeTargetDir,
                         fileAccessLayer = fileAccessLayer,
                         isCancelled = isCancelled,
-                        onProgress = onProgress
+                        onProgress = onProgress,
+                        onCommitted = { gameFileDao.updateLocalPath(modFile.id, it.absolutePath, Instant.now()) }
                     )
                     if (migratedManifest != null) {
-                        gameFileDao.updateLocalPath(modFile.id, migratedManifest.absolutePath, Instant.now())
                         failedInstalls.remove(modFile.id)
                         if (activeTargetResolution.isDolphin) {
                             enableDolphinTextures(activeTargetDir, modFile)
@@ -208,7 +215,8 @@ class TexturePackInstaller(
                     extractedTitleId = extractedTitleId,
                     preValidatedZip = true,
                     isCancelled = isCancelled,
-                    onProgress = onProgress
+                    onProgress = onProgress,
+                    launch = launch
                 )
                 when (outcome) {
                     is ModInstallOutcome.Success -> {
@@ -245,14 +253,15 @@ class TexturePackInstaller(
         }
     }
 
-    private class MigratedFile(val source: File, val dest: File, val renamed: Boolean)
+    private class MigratedFile(val source: File, val dest: File, val renamed: Boolean, val shared: Boolean)
 
     private suspend fun migrateTextures(
         oldManifestFile: File,
         newTargetDir: File,
         fileAccessLayer: FileAccessLayer?,
         isCancelled: (() -> Boolean)?,
-        onProgress: ((fraction: Float?) -> Unit)?
+        onProgress: ((fraction: Float?) -> Unit)?,
+        onCommitted: suspend (File) -> Unit
     ): File? = withContext(Dispatchers.IO) {
         val oldTargetDir = oldManifestFile.parentFile ?: return@withContext null
         val fal = fileAccessLayer
@@ -279,6 +288,7 @@ class TexturePackInstaller(
         }
         if (lines.isEmpty()) return@withContext null
 
+        val sharedWithSiblings = TexturePackExtractor.siblingClaimedPaths(oldManifestFile, fal)
         val newManifest = File(newTargetDir, oldManifestFile.name)
         val migrated = mutableListOf<MigratedFile>()
         val migratedRelativePaths = LinkedHashSet<String>()
@@ -355,12 +365,16 @@ class TexturePackInstaller(
                 }
                 val srcFile = File(oldTargetDir, relPath)
                 val destFile = File(newTargetDir, relPath)
+                if (!FileNames.isWithin(srcFile, oldTargetDir) || !FileNames.isWithin(destFile, newTargetDir)) {
+                    throw SecurityException("Manifest entry $relPath leaves its texture folder")
+                }
                 val sourceExists = if (isSrcRestricted) fal.exists(srcFile.absolutePath) else srcFile.isFile
                 if (sourceExists) {
                     destFile.parentFile?.let(::ensureDir)
                     setAside(destFile, relPath)
-                    val renamed = !isSrcRestricted && !isDestRestricted && srcFile.renameTo(destFile)
-                    migrated.add(MigratedFile(srcFile, destFile, renamed))
+                    val shared = relPath in sharedWithSiblings
+                    val renamed = !shared && !isSrcRestricted && !isDestRestricted && srcFile.renameTo(destFile)
+                    migrated.add(MigratedFile(srcFile, destFile, renamed, shared))
                     if (!renamed) {
                         copyVerified(srcFile, destFile, fal, isSrcRestricted, isDestRestricted)
                     }
@@ -381,6 +395,7 @@ class TexturePackInstaller(
             } else {
                 newManifest.writeBytes(manifestBytes)
             }
+            withContext(NonCancellable) { onCommitted(newManifest) }
         } catch (e: CancellationException) {
             rollBack()
             throw e
@@ -393,7 +408,7 @@ class TexturePackInstaller(
         }
 
         for (file in migrated) {
-            if (file.renamed) continue
+            if (file.renamed || file.shared) continue
             if (isSrcRestricted) fal.delete(file.source.absolutePath) else file.source.delete()
         }
         if (isSrcRestricted) fal.delete(oldManifestFile.absolutePath) else oldManifestFile.delete()
@@ -533,11 +548,15 @@ class TexturePackInstaller(
         return baseRomFileResolver.resolve(game, File(path))
     }
 
+    private fun launchedVariantRom(launch: LaunchTarget?): File? =
+        launch?.takeIf { it.variantFileId != null }?.romFile?.takeIf { it.isFile }
+
     private suspend fun resolveTargetForGame(
         game: GameEntity,
         romFile: File,
         extractedTitleId: TitleIdResult?,
-        sourceFile: File? = null
+        sourceFile: File? = null,
+        launch: LaunchTarget? = null
     ): TargetResolution? {
         val emulatorPackage = emulatorResolver.getEmulatorPackageForGame(
             game.id,
@@ -557,8 +576,10 @@ class TexturePackInstaller(
                 platformSlug = game.platformSlug
             ) ?: return null
 
-            val baseRomPath = romFile.absolutePath
-            val effectiveSaveDir = File(builtinSaveBase.forGame(game, baseRomPath))
+            val baseSaveDir = File(builtinSaveBase.forGame(game, (launch?.romFile ?: romFile).absolutePath))
+            val effectiveSaveDir = launch?.variantFileId?.takeIf { it >= 0 }
+                ?.let { File(baseSaveDir, "variants/$it") }
+                ?: baseSaveDir
             val folderKey = titleIdExtractor.resolveTextureFolderKey(
                 strategy = rule.folderKeyStrategy,
                 platformSlug = game.platformSlug,
@@ -628,7 +649,7 @@ class TexturePackInstaller(
         isCancelled: (() -> Boolean)? = null,
         onProgress: ((fraction: Float?) -> Unit)? = null
     ): ModInstallOutcome = lockFor(game.id).withLock {
-        installForModFileOutcomeUnlocked(game, gameFile, sourceFile, extractedTitleId, preValidatedZip, isCancelled, onProgress)
+        installForModFileOutcomeUnlocked(game, gameFile, sourceFile, extractedTitleId, preValidatedZip, isCancelled, onProgress, launch = null)
     }
 
     private suspend fun installForModFileOutcomeUnlocked(
@@ -638,9 +659,10 @@ class TexturePackInstaller(
         extractedTitleId: TitleIdResult?,
         preValidatedZip: Boolean,
         isCancelled: (() -> Boolean)?,
-        onProgress: ((fraction: Float?) -> Unit)?
+        onProgress: ((fraction: Float?) -> Unit)?,
+        launch: LaunchTarget?
     ): ModInstallOutcome = withContext(Dispatchers.IO) {
-        val romFile = resolveRomFile(game)
+        val romFile = launchedVariantRom(launch) ?: resolveRomFile(game)
         if (romFile == null || !romFile.isFile) {
             Logger.debug(TAG, "Deferring texture pack install for ${game.title} until base ROM is on disk")
             return@withContext ModInstallOutcome.Deferred("Base ROM not yet on disk")
@@ -673,7 +695,7 @@ class TexturePackInstaller(
             return@withContext ModInstallOutcome.Deferred("No texture path rule for game")
         }
 
-        val targetResolution = resolveTargetForGame(game, romFile, extractedTitleId, sourceFile)
+        val targetResolution = resolveTargetForGame(game, romFile, extractedTitleId, sourceFile, launch)
             ?: return@withContext ModInstallOutcome.Failed("Could not resolve folder key")
 
         val targetDir = targetResolution.targetDir

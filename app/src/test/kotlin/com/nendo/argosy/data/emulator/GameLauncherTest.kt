@@ -1138,6 +1138,7 @@ class GameLauncherTest {
                 gameId = 1L,
                 extractedTitleId = any(),
                 isCancelled = any(),
+                launch = any(),
                 onProgress = capture(progressCallbacks)
             )
         } coAnswers {
@@ -1174,6 +1175,7 @@ class GameLauncherTest {
                 gameId = 1L,
                 extractedTitleId = any(),
                 isCancelled = any(),
+                launch = any(),
                 onProgress = any()
             )
         } coAnswers {
@@ -1448,6 +1450,7 @@ class GameLauncherTest {
                 gameId = 1L,
                 extractedTitleId = any(),
                 isCancelled = any(),
+                launch = any(),
                 onProgress = any()
             )
         }
@@ -1473,6 +1476,7 @@ class GameLauncherTest {
                 gameId = 1L,
                 extractedTitleId = any(),
                 isCancelled = any(),
+                launch = any(),
                 onProgress = any()
             )
         }

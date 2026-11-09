@@ -1240,6 +1240,191 @@ class TexturePackInstallerTest {
         coVerify { gameFileDao.updateLocalPath(99L, restoredManifest.absolutePath, any()) }
     }
 
+    @Test
+    fun `an archive name holding a newline is refused before anything is written`() = runTest {
+        val zipFile = createZip("newline.zip", mapOf("tex.png" to "png", "safe\n../victim.png" to "x"))
+        val targetDir = File(saveDir, "User/Load/Textures/GZLE01")
+
+        var threwSecurity = false
+        try {
+            installer.extractTextureZip(zipFile = zipFile, targetDir = targetDir, folderKey = "GZLE01", gameFileId = 98L)
+        } catch (_: SecurityException) {
+            threwSecurity = true
+        }
+
+        assertTrue(threwSecurity)
+        assertFalse(File(targetDir, "tex.png").exists())
+        assertFalse(TexturePackInstaller.manifestFileFor(targetDir, 98L).exists())
+    }
+
+    @Test
+    fun `a migration refuses a manifest entry that leaves the texture folder`() = runTest {
+        val (customInstaller, externalTargetDir) = migrationInstaller("escape")
+        val game = testGame(titleId = "GZLE01")
+        val builtinTargetDir = File(saveDir, "User/Load/Textures/GZLE01").apply { mkdirs() }
+        val oldManifest = File(builtinTargetDir, ".argosy_mod_84.manifest").apply { writeText("tex.png\n../victim.png") }
+        File(builtinTargetDir, "tex.png").writeText("pack")
+        val victim = File(builtinTargetDir.parentFile, "victim.png").apply { writeText("not a texture") }
+        val modFile = testModFile(id = 84L, gameId = game.id, fileName = "pack.zip", localPath = oldManifest.absolutePath)
+        coEvery { gameDao.getById(game.id) } returns game
+        coEvery { gameFileDao.getModFilesForGame(game.id) } returns listOf(modFile)
+
+        val installed = customInstaller.installPendingModFilesForGame(game.id)
+
+        assertEquals(0, installed)
+        assertEquals("not a texture", victim.readText())
+        assertFalse(File(externalTargetDir.parentFile, "victim.png").exists())
+        assertEquals("pack", File(builtinTargetDir, "tex.png").readText())
+        assertTrue(oldManifest.isFile)
+        assertFalse(File(externalTargetDir, "tex.png").exists())
+    }
+
+    @Test
+    fun `migrating two packs that share a file keeps the file claimed by both`() = runTest {
+        val (customInstaller, externalTargetDir) = migrationInstaller("shared")
+        val game = testGame(titleId = "GZLE01")
+        val builtinTargetDir = File(saveDir, "User/Load/Textures/GZLE01").apply { mkdirs() }
+        val firstManifest = File(builtinTargetDir, ".argosy_mod_81.manifest").apply { writeText("shared.png\na.png") }
+        val secondManifest = File(builtinTargetDir, ".argosy_mod_82.manifest").apply { writeText("shared.png\nb.png") }
+        File(builtinTargetDir, "shared.png").writeText("shared")
+        File(builtinTargetDir, "a.png").writeText("a")
+        File(builtinTargetDir, "b.png").writeText("b")
+        val first = testModFile(id = 81L, gameId = game.id, fileName = "first.zip", localPath = firstManifest.absolutePath)
+        val second = testModFile(id = 82L, gameId = game.id, fileName = "second.zip", localPath = secondManifest.absolutePath)
+        coEvery { gameDao.getById(game.id) } returns game
+        coEvery { gameFileDao.getModFilesForGame(game.id) } returns listOf(first, second)
+
+        val installed = customInstaller.installPendingModFilesForGame(game.id)
+
+        assertEquals(2, installed)
+        val movedFirst = File(externalTargetDir, ".argosy_mod_81.manifest")
+        val movedSecond = File(externalTargetDir, ".argosy_mod_82.manifest")
+        assertEquals(setOf("shared.png", "a.png"), movedFirst.readLines().toSet())
+        assertEquals(setOf("shared.png", "b.png"), movedSecond.readLines().toSet())
+        assertEquals("shared", File(externalTargetDir, "shared.png").readText())
+        assertFalse(File(builtinTargetDir, "shared.png").exists())
+
+        assertTrue(customInstaller.uninstallModFile(first.copy(localPath = movedFirst.absolutePath)))
+        assertEquals("shared", File(externalTargetDir, "shared.png").readText())
+        assertFalse(File(externalTargetDir, "a.png").exists())
+    }
+
+    @Test
+    fun `a migration whose database update fails leaves the pack where it was`() = runTest {
+        val (customInstaller, externalTargetDir) = migrationInstaller("dbfail")
+        val game = testGame(titleId = "GZLE01")
+        val builtinTargetDir = File(saveDir, "User/Load/Textures/GZLE01").apply { mkdirs() }
+        val oldManifest = File(builtinTargetDir, ".argosy_mod_83.manifest").apply { writeText("tex.png") }
+        File(builtinTargetDir, "tex.png").writeText("pack")
+        val modFile = testModFile(id = 83L, gameId = game.id, fileName = "pack.zip", localPath = oldManifest.absolutePath)
+        coEvery { gameDao.getById(game.id) } returns game
+        coEvery { gameFileDao.getModFilesForGame(game.id) } returns listOf(modFile)
+        coEvery { gameFileDao.updateLocalPath(83L, any(), any()) } throws RuntimeException("SQLite disk error")
+
+        val installed = customInstaller.installPendingModFilesForGame(game.id)
+
+        assertEquals(0, installed)
+        assertTrue(oldManifest.isFile)
+        assertEquals("pack", File(builtinTargetDir, "tex.png").readText())
+        assertFalse(File(externalTargetDir, "tex.png").exists())
+        assertFalse(File(externalTargetDir, ".argosy_mod_83.manifest").exists())
+    }
+
+    @Test
+    fun `an uninstall that cannot delete a texture keeps the manifest and the saved path`() = runTest {
+        val packDir = File(tempFolder.newFolder("ext_undeletable"), "Android/data/org.dolphinemu.dolphinemu/files/Load/Textures/GZLE01")
+            .apply { mkdirs() }
+        val manifest = File(packDir, ".argosy_mod_85.manifest").apply { writeText("locked.png\nfree.png") }
+        File(packDir, "locked.png").writeText("locked")
+        File(packDir, "free.png").writeText("free")
+        val fal = mockk<com.nendo.argosy.data.storage.FileAccessLayer>(relaxed = true) {
+            every { isRestrictedPath(any()) } answers { firstArg<String>().replace('\\', '/').contains("Android/data") }
+            every { exists(any()) } answers { File(firstArg<String>()).exists() }
+            every { readBytes(any()) } answers { File(firstArg<String>()).readBytes() }
+            every { listFiles(any()) } returns emptyList()
+            every { delete(any()) } answers {
+                val f = File(firstArg<String>())
+                if (f.name == "locked.png") false else f.delete()
+            }
+            every { writeBytes(any(), any()) } answers {
+                File(firstArg<String>()).writeBytes(secondArg<ByteArray>())
+                true
+            }
+        }
+        val customInstaller = TexturePackInstaller(
+            builtinSaveBase = builtinSaveBase,
+            builtinCoreResolver = builtinCoreResolver,
+            emulatorResolver = emulatorResolver,
+            titleIdExtractor = titleIdExtractor,
+            baseRomFileResolver = baseRomFileResolver,
+            platformFolderResolver = platformFolderResolver,
+            gameDao = gameDao,
+            gameDiscDao = gameDiscDao,
+            gameFileDao = gameFileDao,
+            systemDir = systemDir,
+            fileAccessLayer = fal
+        )
+        val modFile = testModFile(id = 85L, gameId = 1L, fileName = "pack.zip", localPath = manifest.absolutePath)
+
+        val removed = customInstaller.uninstallModFile(modFile)
+
+        assertFalse(removed)
+        assertEquals(listOf("locked.png"), manifest.readLines())
+        assertFalse(File(packDir, "free.png").exists())
+        coVerify(exactly = 0) { gameFileDao.clearLocalPath(85L) }
+    }
+
+    @Test
+    fun `a variant launch installs into the variant's save folder`() = runTest {
+        TexturePackInstaller.clearFailedInstalls()
+        val textureZip = createZip("variant_pack.zip", mapOf("tex.png" to "png_bytes"))
+        val game = testGame(titleId = "GZLE01")
+        val variantRom = File(tempFolder.root, "variant_rom.iso").apply { writeText("variant") }
+        val modFile = testModFile(id = 557L, gameId = game.id, fileName = textureZip.name, localPath = textureZip.absolutePath)
+        coEvery { gameDao.getById(game.id) } returns game
+        coEvery { gameFileDao.getModFilesForGame(game.id) } returns listOf(modFile)
+
+        val installed = installer.installPendingModFilesForGame(
+            game.id,
+            launch = TexturePackInstaller.LaunchTarget(variantRom, variantFileId = 5L)
+        )
+
+        assertEquals(1, installed)
+        val variantTarget = File(saveDir, "variants/5/User/Load/Textures/GZLE01")
+        assertEquals("png_bytes", File(variantTarget, "tex.png").readText())
+        assertTrue(TexturePackInstaller.manifestFileFor(variantTarget, 557L).isFile)
+        assertFalse(File(saveDir, "User/Load/Textures/GZLE01/tex.png").exists())
+        TexturePackInstaller.clearFailedInstalls()
+    }
+
+    private fun migrationInstaller(tag: String): Pair<TexturePackInstaller, File> {
+        val extStorage = tempFolder.newFolder("mock_external_$tag")
+        val fal = mockk<com.nendo.argosy.data.storage.FileAccessLayer>(relaxed = true) {
+            every { externalStorageRoots() } returns listOf(extStorage.absolutePath)
+            every { isRestrictedPath(any()) } returns false
+            every { exists(any()) } answers { File(firstArg<String>()).exists() }
+            every { mkdirs(any()) } answers { File(firstArg<String>()).mkdirs() }
+        }
+        val externalTargetDir = File(extStorage, "Android/data/org.dolphinemu.dolphinemu/files/Load/Textures/GZLE01")
+            .apply { mkdirs() }
+        coEvery { emulatorResolver.getEmulatorPackageForGame(any(), any(), any()) } returns "org.dolphinemu.dolphinemu"
+        val customInstaller = TexturePackInstaller(
+            builtinSaveBase = builtinSaveBase,
+            builtinCoreResolver = builtinCoreResolver,
+            emulatorResolver = emulatorResolver,
+            titleIdExtractor = titleIdExtractor,
+            baseRomFileResolver = baseRomFileResolver,
+            platformFolderResolver = platformFolderResolver,
+            gameDao = gameDao,
+            gameDiscDao = gameDiscDao,
+            gameFileDao = gameFileDao,
+            systemDir = systemDir,
+            fileAccessLayer = fal,
+            cacheDir = tempFolder.newFolder("cache_$tag")
+        )
+        return customInstaller to externalTargetDir
+    }
+
     private fun createZip(name: String, entries: Map<String, String>): File {
         val file = tempFolder.newFile(name)
         ZipOutputStream(FileOutputStream(file)).use { zos ->

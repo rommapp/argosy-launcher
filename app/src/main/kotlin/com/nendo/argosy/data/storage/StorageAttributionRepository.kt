@@ -429,12 +429,13 @@ class StorageAttributionRepository @Inject constructor(
             if (canonical == musicRoot || canonical.startsWith("$musicRoot/")) continue
             if (isUnderAny(canonical, storeRoots)) continue
             val entry = File(canonical)
+            val isManifest = TexturePackInstaller.isManifestFile(entry)
             when {
-                entry.isDirectory -> directoryRows.add(platformId to canonical)
-                entry.isFile -> {
+                !isManifest && entry.isDirectory -> directoryRows.add(platformId to canonical)
+                isManifest || entry.isFile -> {
                     val volumeKey = gameFileVolumeKey(canonical, volumes, internalKey)
-                    val (entryBytes, entryFiles) = if (TexturePackInstaller.isManifestFile(entry)) {
-                        TexturePackInstaller.measureManifestUsage(entry, seen)
+                    val (entryBytes, entryFiles) = if (isManifest) {
+                        TexturePackInstaller.measureManifestUsage(entry, seen, fileAccessLayer)
                     } else {
                         entry.length() to 1
                     }

@@ -60,7 +60,9 @@ class TitleIdExtractor @Inject constructor(
         val lastModified: Long,
         val length: Long,
         val platformId: String,
-        val prodKeysPath: String?
+        val prodKeysPath: String?,
+        val prodKeysModified: Long,
+        val prodKeysLength: Long
     )
 
     private data class CachedExtraction(
@@ -89,7 +91,9 @@ class TitleIdExtractor @Inject constructor(
             lastModified = romFile.lastModified(),
             length = romFile.length(),
             platformId = platformId,
-            prodKeysPath = prodKeys
+            prodKeysPath = prodKeys,
+            prodKeysModified = prodKeys?.let { File(it).lastModified() } ?: 0L,
+            prodKeysLength = prodKeys?.let { File(it).length() } ?: 0L
         )
         lastExtraction?.let { cached ->
             if (cached.key == cacheKey && cached.key.lastModified > 0L) {

@@ -135,7 +135,8 @@
     <string name="notif_gamelaunch_no_core_base">Kein Core für %1$s verfügbar</string>
     <string name="notif_gamelaunch_no_core_with_reason">Kein Core für %1$s verfügbar: %2$s</string>
     <string name="notif_gamelaunch_missing_discs">Fehlende Discs: %1$s. Öffnen Sie die Spieldetails zur Reparatur.</string>
-    <string name="notif_gamelaunch_missing_bios">Fehlendes BIOS für %1$s. Installieren Sie es vor dem Start in den Einstellungen.</string>
+    <string name="notif_gamelaunch_missing_bios_files">%1$s kann ohne BIOS nicht starten: %2$s. Argosy hat keine dieser Dateien in seinem BIOS-Ordner gefunden. Lade die Firmware für %1$s unter Einstellungen > BIOS-Dateien von deinem RomM-Server herunter und starte erneut.</string>
+    <string name="notif_gamelaunch_missing_bios_folder">%1$s kann ohne BIOS-Dump nicht starten. Argosy hat im BIOS-Ordner %2$s keine Datei gefunden. Lade die Firmware für %1$s unter Einstellungen > BIOS-Dateien von deinem RomM-Server herunter und starte erneut.</string>
     <string name="notif_gamelaunch_no_scummvm_id">Fehlende .scummvm-Datei für %1$s</string>
     <string name="notif_gamelaunch_no_android_app">Android-App nicht installiert: %1$s</string>
     <string name="notif_gamelaunch_disc_launch_failed">Disc-Start fehlgeschlagen</string>

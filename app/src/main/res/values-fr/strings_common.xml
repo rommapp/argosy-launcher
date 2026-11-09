@@ -119,12 +119,14 @@
     <string name="ui_save_channel_delete_archived_title">SUPPRIMER LES SAUVEGARDES ARCHIVÉES</string>
     <plurals name="ui_save_channel_delete_archived_message">
         <item quantity="one">Supprimer %1$d sauvegarde archivée ?</item>
+        <item quantity="many">Supprimer %1$d sauvegardes archivées ?</item>
         <item quantity="other">Supprimer %1$d sauvegardes archivées ?</item>
     </plurals>
     <string name="ui_save_channel_delete_local_note">Cela supprime la copie sur cet appareil. La copie sur le serveur est conservée. Cette action est irréversible.</string>
     <string name="ui_save_channel_delete_only_copy_note">Cet appareil détient la seule copie. Elle sera perdue définitivement.</string>
     <plurals name="ui_save_channel_notice_versions_deleted">
         <item quantity="one">%1$d sauvegarde supprimée</item>
+        <item quantity="many">%1$d sauvegardes supprimées</item>
         <item quantity="other">%1$d sauvegardes supprimées</item>
     </plurals>
 
@@ -602,6 +604,8 @@
     <string name="ui_quick_settings_hud_description">Dans les jeux intégrés</string>
     <string name="ui_quick_settings_device_access_notice">Argosy a besoin d\'une autorisation pour modifier ces réglages.</string>
     <string name="ui_quick_settings_device_access_allow">Autoriser</string>
+    <string name="ui_quick_settings_root_access_notice">Argosy a besoin d\'un accès root pour modifier ces réglages. Autorisez-le dans votre gestionnaire root lorsqu\'il vous le demande.</string>
+    <string name="ui_quick_settings_root_access_request">Demander</string>
     <string name="ui_quick_settings_theme">Thème</string>
     <string name="ui_quick_settings_accent">Couleur d\'accent</string>
     <string name="ui_quick_settings_accent_default">Par défaut</string>

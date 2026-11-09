@@ -15,11 +15,14 @@ import android.util.Log
 import android.view.Display
 import android.view.KeyEvent
 import android.view.accessibility.AccessibilityEvent
+import com.nendo.argosy.ArgosyActivity
 import com.nendo.argosy.DualScreenManagerHolder
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.libretro.LibretroActivity
 import com.nendo.argosy.ui.quickpanel.QuickPanelOverlay
+import com.nendo.argosy.ui.screens.player.PlayerActivity
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -43,20 +46,42 @@ class FocusAccessibilityService : AccessibilityService() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val handler = Handler(Looper.getMainLooper())
     @Volatile private var quickPanelEnabled = false
-    private var foregroundPackage: String? = null
-    private val backGate = BackHoldGate(
-        filtering = ::filtersBack,
-        scheduleHold = { handler.postDelayed(it, BACK_HOLD_MS) },
-        cancelHold = handler::removeCallbacks,
-        onTap = { performGlobalAction(GLOBAL_ACTION_BACK) },
-        onHold = { quickPanelOverlay.show(gameDisplayId(), resultOwner = null) }
+    @Volatile private var systemHotkeys = SystemHotkeyConfig.DISABLED
+    private val foreground by lazy {
+        ForegroundAppTracker(
+            ownPackage = packageName,
+            inputSurfaces = ARGOSY_INPUT_SURFACES,
+            imePackage = ::currentImePackage
+        )
+    }
+    private val keyFilter = SystemKeyFilter(
+        backGate = BackHoldGate(
+            filtering = ::filtersBack,
+            scheduleHold = { handler.postDelayed(it, BACK_HOLD_MS) },
+            cancelHold = handler::removeCallbacks,
+            onTap = { performGlobalAction(GLOBAL_ACTION_BACK) },
+            onHold = { quickPanelOverlay.show(gameDisplayId(), resultOwner = null) }
+        ),
+        hotkeys = SystemHotkeyDetector(
+            config = { systemHotkeys },
+            foreignAppInFront = { foreground.otherAppInFront && !quickPanelOverlay.isOpen.value },
+            scheduleHold = { task, delayMs -> handler.postDelayed(task, delayMs) },
+            cancelHold = handler::removeCallbacks,
+            perform = ::performSystemHotkey,
+            quickPanelAvailable = ::filtersBack,
+            openQuickPanel = { quickPanelOverlay.show(gameDisplayId(), resultOwner = null) }
+        )
     )
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event?.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
         val source = event.packageName?.toString() ?: return
-        if (source != packageName) foregroundPackage = source
+        foreground.onWindowStateChanged(source, event.className?.toString())
     }
+
+    private fun currentImePackage(): String? =
+        Settings.Secure.getString(contentResolver, Settings.Secure.DEFAULT_INPUT_METHOD)
+            ?.substringBefore('/')
 
     override fun onInterrupt() {}
 
@@ -69,31 +94,47 @@ class FocusAccessibilityService : AccessibilityService() {
                 .distinctUntilChanged()
                 .collect { quickPanelEnabled = it }
         }
+        scope.launch {
+            preferencesRepository.userPreferences
+                .map { prefs ->
+                    SystemHotkeyConfig.resolve(
+                        enabled = prefs.systemHotkeysEnabled,
+                        customHome = prefs.systemHomeCombo,
+                        customBack = prefs.systemBackCombo,
+                        swapAB = prefs.swapAB,
+                        swapStartSelect = prefs.swapStartSelect
+                    )
+                }
+                .distinctUntilChanged()
+                .collect { systemHotkeys = it }
+        }
         Log.d(TAG, "Accessibility service connected")
     }
 
     override fun onDestroy() {
         instance = null
-        backGate.reset()
+        keyFilter.reset()
         scope.cancel()
         Log.d(TAG, "Accessibility service destroyed")
         super.onDestroy()
     }
 
-    override fun onKeyEvent(event: KeyEvent): Boolean {
-        if (event.keyCode != KeyEvent.KEYCODE_BACK) return false
-        return when (event.action) {
-            KeyEvent.ACTION_DOWN -> backGate.onDown(isRepeat = event.repeatCount > 0)
-            KeyEvent.ACTION_UP -> backGate.onUp()
-            else -> false
+    override fun onKeyEvent(event: KeyEvent): Boolean =
+        keyFilter.onKey(event.keyCode, event.action, event.repeatCount)
+
+    private fun performSystemHotkey(action: SystemHotkeyAction) {
+        val globalAction = when (action) {
+            SystemHotkeyAction.HOME -> GLOBAL_ACTION_HOME
+            SystemHotkeyAction.BACK -> GLOBAL_ACTION_BACK
         }
+        performGlobalAction(globalAction)
     }
 
     private fun filtersBack(): Boolean {
         if (!quickPanelEnabled || quickPanelOverlay.isOpen.value) return false
         val session = playSessionTracker.activeSession.value ?: return false
         if (session.emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE) return false
-        return foregroundPackage == session.emulatorPackage
+        return foreground.foregroundPackage == session.emulatorPackage
     }
 
     private fun gameDisplayId(): Int =
@@ -148,6 +189,12 @@ class FocusAccessibilityService : AccessibilityService() {
     companion object {
         private const val TAG = "FocusA11y"
         private const val BACK_HOLD_MS = 500L
+
+        private val ARGOSY_INPUT_SURFACES = setOf(
+            ArgosyActivity::class.java.name,
+            LibretroActivity::class.java.name,
+            PlayerActivity::class.java.name
+        )
 
         var instance: FocusAccessibilityService? = null
             private set

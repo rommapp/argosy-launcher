@@ -104,7 +104,6 @@ class SyncCoordinatorApplyPlanTest {
             serverSaveGate = noHoldGate()
         )
         coordinator = SyncCoordinator(
-            context = io.mockk.mockk(relaxed = true) { io.mockk.every { filesDir } returns java.io.File(System.getProperty("java.io.tmpdir")) },
             pendingSyncQueueDao = pendingSyncQueueDao,
             saveCacheDao = mockk(relaxed = true),
             saveSyncDao = saveSyncDao,
@@ -123,7 +122,7 @@ class SyncCoordinatorApplyPlanTest {
             pendingConflictDao = pendingConflictDao,
             reconcileEffectApplier = effectApplier,
             saveRecoveryGate = mockk(relaxed = true),
-            screenshotUploader = mockk(relaxed = true),
+            screenshotUploads = mockk(relaxed = true),
             rommApiProvider = mockk(relaxed = true),
             accountSwitchMarkerStore = mockk(relaxed = true),
             syncStatesOnSessionEndUseCase = mockk(relaxed = true),

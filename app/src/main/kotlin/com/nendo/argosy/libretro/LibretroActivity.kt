@@ -444,6 +444,8 @@ class LibretroActivity : ComponentActivity() {
     private var onSecondaryDisplayState by mutableStateOf(false)
     private var hostDisplayId = android.view.Display.INVALID_DISPLAY
     private var orientationEventListener: android.view.OrientationEventListener? = null
+    private var dockDisplayListener: android.hardware.display.DisplayManager.DisplayListener? = null
+    private var lastDockedOrientation: Int? = null
 
     private val isAnyMenuOpen: Boolean
         get() = menuVisible || shaderChainEditorVisible || frameEditorVisible || autoRestorePromptVisible || discMenuVisible ||
@@ -464,6 +466,7 @@ class LibretroActivity : ComponentActivity() {
         isGamepadConnectedState = com.nendo.argosy.core.input.ControllerDetector.isAnyGamepadConnected()
         registerGamepadDetection()
         registerOrientationListener()
+        registerDockDisplayListener()
 
         onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -1010,6 +1013,7 @@ class LibretroActivity : ComponentActivity() {
         hostDisplayId = displayId
         baselineRotation = currentRotationState
         onSecondaryDisplayState = onSecondaryDisplay()
+        applyOrientationLock(touchSettingsState.touchControlsLockOrientation)
         rebuildSecondScreen()
         com.nendo.argosy.DualScreenManagerHolder.instance?.onGameMovedToDisplay(displayId)
     }
@@ -3794,8 +3798,12 @@ class LibretroActivity : ComponentActivity() {
 
     private fun applyOrientationLock(locked: Boolean) {
         val fixed = screenOrientationMode.fixedRequest()?.takeIf { isOnMainDisplay }
+        val dockedOrientation = com.nendo.argosy.util.DisplayAffinityHelper.dockedOrientationFor(this, hostDisplayOrNull())
+        lastDockedOrientation = dockedOrientation
         requestedOrientation = if (fixed != null) {
             fixed
+        } else if (dockedOrientation != null) {
+            dockedOrientation
         } else if (!locked) {
             android.content.pm.ActivityInfo.SCREEN_ORIENTATION_FULL_USER
         } else if (currentOrientationState == android.content.res.Configuration.ORIENTATION_PORTRAIT) {
@@ -3861,6 +3869,36 @@ class LibretroActivity : ComponentActivity() {
         val l = inputDeviceListener ?: return
         getSystemService(android.hardware.input.InputManager::class.java)?.unregisterInputDeviceListener(l)
         inputDeviceListener = null
+    }
+
+    private fun registerDockDisplayListener() {
+        val displayManager = getSystemService(android.hardware.display.DisplayManager::class.java) ?: return
+        dockDisplayListener = object : android.hardware.display.DisplayManager.DisplayListener {
+            override fun onDisplayAdded(displayId: Int) = refreshDockOrientationLock()
+            override fun onDisplayChanged(displayId: Int) = refreshDockOrientationLock()
+            override fun onDisplayRemoved(displayId: Int) = refreshDockOrientationLock()
+        }
+        displayManager.registerDisplayListener(dockDisplayListener, null)
+    }
+
+    private fun unregisterDockDisplayListener() {
+        val listener = dockDisplayListener ?: return
+        getSystemService(android.hardware.display.DisplayManager::class.java)?.unregisterDisplayListener(listener)
+        dockDisplayListener = null
+    }
+
+    private fun refreshDockOrientationLock() {
+        if (isFinishing || isDestroyed) return
+        val docked = com.nendo.argosy.util.DisplayAffinityHelper.dockedOrientationFor(this, hostDisplayOrNull())
+        if (docked == lastDockedOrientation) return
+        applyOrientationLock(touchSettingsState.touchControlsLockOrientation)
+    }
+
+    private fun hostDisplayOrNull(): android.view.Display? = try {
+        window.decorView.display ?: windowManager.defaultDisplay
+    } catch (e: RuntimeException) {
+        android.util.Log.w(TAG, "Host display unavailable, skipping the docked orientation check", e)
+        null
     }
 
     private fun registerOrientationListener() {
@@ -4010,7 +4048,10 @@ class LibretroActivity : ComponentActivity() {
             val values = android.content.ContentValues().apply {
                 put(android.provider.MediaStore.Images.Media.DISPLAY_NAME, "argosy_${System.currentTimeMillis()}.png")
                 put(android.provider.MediaStore.Images.Media.MIME_TYPE, "image/png")
-                put(android.provider.MediaStore.Images.Media.RELATIVE_PATH, "Pictures/Argosy")
+                put(
+                    android.provider.MediaStore.Images.Media.RELATIVE_PATH,
+                    com.nendo.argosy.data.emulator.ScreenshotFolderRegistry.BUILTIN_RELATIVE_FOLDER
+                )
             }
             val uri = contentResolver.insert(
                 android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values
@@ -4036,6 +4077,7 @@ class LibretroActivity : ComponentActivity() {
         if (isFinishing) speedrunTimer.disarm()
         unregisterGamepadDetection()
         unregisterOrientationListener()
+        unregisterDockDisplayListener()
         if (::audioController.isInitialized) audioController.abandonAudioFocus()
         com.nendo.argosy.DualScreenManagerHolder.instance?.let { dsm ->
             dsm.emulatorKeyDispatcher = null

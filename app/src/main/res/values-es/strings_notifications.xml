@@ -140,7 +140,8 @@
     <string name="notif_gamelaunch_no_core_base">No hay ningún núcleo disponible para %1$s</string>
     <string name="notif_gamelaunch_no_core_with_reason">No hay ningún núcleo disponible para %1$s: %2$s</string>
     <string name="notif_gamelaunch_missing_discs">Discos faltantes: %1$s. Consulta los detalles del juego para reparar.</string>
-    <string name="notif_gamelaunch_missing_bios">Falta el BIOS de %1$s. Instálalo en Ajustes antes de iniciar.</string>
+    <string name="notif_gamelaunch_missing_bios_files">%1$s no puede iniciarse sin su BIOS: %2$s. Argosy no encontró ninguno de estos archivos en su carpeta de BIOS. Descarga el firmware de %1$s desde tu servidor RomM en Ajustes > Archivos BIOS y vuelve a iniciar.</string>
+    <string name="notif_gamelaunch_missing_bios_folder">%1$s no puede iniciarse sin un volcado de BIOS. Argosy no encontró ningún archivo en su carpeta de BIOS %2$s. Descarga el firmware de %1$s desde tu servidor RomM en Ajustes > Archivos BIOS y vuelve a iniciar.</string>
     <string name="notif_gamelaunch_no_scummvm_id">Falta el archivo .scummvm de %1$s</string>
     <string name="notif_gamelaunch_no_android_app">App de Android no instalada: %1$s</string>
     <string name="notif_gamelaunch_disc_launch_failed">Error al iniciar el disco</string>

@@ -1131,6 +1131,9 @@ class GameRepository @Inject constructor(
     suspend fun getScreenshots(gameId: Long): List<GameScreenshotEntity> =
         gameScreenshotDao.getForGame(gameId)
 
+    suspend fun getScreenshotsWithGallery(gameId: Long): List<GameScreenshotEntity> =
+        gameScreenshotDao.getAllForGame(gameId)
+
     suspend fun getScreenshots(gameIds: Collection<Long>): Map<Long, List<GameScreenshotEntity>> =
         gameScreenshotDao.forGames(gameIds)
 

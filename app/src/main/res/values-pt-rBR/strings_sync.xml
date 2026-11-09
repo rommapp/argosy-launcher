@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sync_prelaunch_checking_save">Verificando o save...</string>
+    <string name="sync_prelaunch_save_found">Save encontrado</string>
+    <string name="sync_prelaunch_save_absent">Nenhum save</string>
+    <string name="sync_prelaunch_connecting">Conectando...</string>
+    <string name="sync_prelaunch_connected">Conectado</string>
+    <string name="sync_prelaunch_connect_failed">Falha na conexão</string>
+    <string name="sync_prelaunch_timed_out">O servidor demorou demais</string>
+    <string name="sync_prelaunch_downloading">Baixando...</string>
+    <string name="sync_prelaunch_download_complete">Download concluído</string>
+    <string name="sync_prelaunch_download_failed">Falha no download</string>
+    <string name="sync_prelaunch_writing">Gravando o save...</string>
+    <string name="sync_prelaunch_write_complete">Save gravado</string>
+    <string name="sync_prelaunch_write_failed">Falha na gravação</string>
+    <string name="sync_prelaunch_launching">Iniciando o jogo...</string>
+
+
+    <string name="sync_progress_skipped">Sincronização pulada</string>
+    <string name="sync_progress_hardcore_conflict">Conflito de save hardcore</string>
+    <string name="sync_progress_local_modified">Save local modificado</string>
+
+    <string name="sync_blocked_permission_title">Permissão de acesso a arquivos necessária</string>
+    <string name="sync_blocked_permission_detail">Conceda a permissão \"Acesso a todos os arquivos\" para sincronizar saves de %1$s.</string>
+    <string name="sync_blocked_permission_emulator_fallback">este emulador</string>
+
+
+    <string name="sync_blocked_access_denied_title">Acesso à pasta de saves bloqueado</string>
+    <string name="sync_blocked_access_denied_detail">Seu dispositivo está bloqueando o acesso aos dados de save de %1$s. Isso pode ser devido a restrições do fabricante (Samsung, Xiaomi, etc.) ou a políticas de segurança.</string>
+    <string name="sync_blocked_access_denied_switch_detail">Seu dispositivo está bloqueando o acesso aos dados de save de %1$s. Configure um caminho de saves externo em %2$s (fora de Android/data) e depois defina o mesmo caminho no Argosy.</string>
+    <string name="sync_blocked_access_denied_emulator_fallback">emulador</string>
+    <string name="sync_blocked_access_denied_configure_fallback">o emulador</string>
+
+    <string name="sync_service_channel_name">Sincronização de saves</string>
+    <string name="sync_service_channel_description">Mostra o progresso da sincronização de saves em segundo plano</string>
+    <string name="sync_service_preparing">Preparando a sincronização...</string>
+    <string name="sync_service_platform">Sincronizando: %1$s</string>
+    <string name="sync_service_library">Sincronizando a biblioteca...</string>
+    <string name="sync_service_uploading">Enviando: %1$s</string>
+    <string name="sync_service_downloading">Baixando: %1$s</string>
+    <string name="sync_service_saves">Sincronizando saves...</string>
+
+    <string name="steam_service_connecting">Conectando...</string>
+    <string name="steam_service_signing_in">Fazendo login...</string>
+
+    <string name="sync_download_channel_name">Progresso do download</string>
+    <string name="sync_download_channel_description">Mostra o progresso do download em segundo plano</string>
+    <string name="sync_download_service_preparing">Preparando o download...</string>
+    <string name="sync_download_service_extracting">Extraindo: %1$s</string>
+    <string name="sync_download_service_moving">Movendo para o armazenamento de ROM: %1$s</string>
+    <string name="sync_download_service_downloading">Baixando: %1$s</string>
+    <string name="sync_download_service_queued">Na fila: %1$s</string>
+    <string name="sync_download_service_pending">Download pendente...</string>
+    <string name="sync_download_service_media_preparing">%1$s: %2$s</string>
+    <string name="sync_download_service_media_downloading">Baixando: %1$s</string>
+
+    <string name="sync_session_channel_name">Sessão de jogo</string>
+    <string name="sync_session_channel_description">Monitora saves durante o jogo</string>
+    <string name="sync_session_notification_playing">Jogando</string>
+    <string name="sync_session_notification_save_detected">Save detectado</string>
+    <string name="sync_session_game_fallback">Jogo</string>
+
+    <string name="sync_session_save_uploaded_orphan">Save enviado</string>
+    <string name="sync_session_save_uploaded">Save enviado</string>
+    <string name="sync_session_save_unchanged">Sem alterações no save</string>
+    <string name="sync_session_save_upload_failed">Falha no envio</string>
+    <string name="sync_session_save_upload_failed_subtitle">%1$s: %2$s</string>
+    <string name="sync_session_save_upload_failed_name_fallback">Save</string>
+
+    <string name="sync_migration_refused_title">Não foi possível mover o save de %1$s</string>
+    <string name="sync_migration_refused_no_route">O Argosy não pode converter saves entre esses dois emuladores</string>
+    <string name="sync_migration_refused_unreadable">A pasta de saves do emulador não pode ser lida</string>
+    <string name="sync_migration_refused_backup_failed">Não foi possível fazer backup do save existente antes</string>
+    <string name="sync_migration_refused_conflict">Os arquivos de save mudaram durante a gravação</string>
+    <string name="sync_migration_refused_no_space">O cartão de memória está cheio</string>
+    <string name="sync_migration_refused_no_target">O emulador ainda não tem onde colocar este save</string>
+    <string name="sync_migration_refused_ambiguous">Mais de um cartão de memória ou perfil poderia receber este save</string>
+    <string name="sync_migration_refused_damaged">Um arquivo de save na pasta do emulador está corrompido</string>
+    <string name="sync_migration_refused_unsupported_format">O formato deste save não pode ser convertido</string>
+    <string name="sync_migration_refused_exists">A pasta de saves do emulador não tem um nome livre para este save</string>
+    <string name="sync_migration_refused_io">Os arquivos de save não puderam ser gravados</string>
+
+    <plurals name="sync_conflict_pending_title">
+        <item quantity="one">%1$d save precisa da sua atenção</item>
+        <item quantity="many">%1$d saves precisam da sua atenção</item>
+        <item quantity="other">%1$d saves precisam da sua atenção</item>
+    </plurals>
+    <string name="sync_conflict_pending_subtitle">Abra a Sincronização de saves para resolver. Os saves locais não foram alterados.</string>
+
+    <string name="sync_media_signin_title">Faça login para baixar</string>
+    <string name="sync_media_signin_subtitle">Conecte um servidor de mídia nas Configurações</string>
+
+    <plurals name="sync_media_title_count">
+        <item quantity="one">%1$d título</item>
+        <item quantity="many">%1$d títulos</item>
+        <item quantity="other">%1$d títulos</item>
+    </plurals>
+
+    <string name="sync_media_refusal_downloaded_title">Já baixados</string>
+    <string name="sync_media_refusal_downloaded_subtitle">%1$s neste dispositivo em %2$s</string>
+    <string name="sync_media_refusal_queued_title">Já na fila</string>
+    <string name="sync_media_refusal_queued_subtitle">%1$s aguardando download</string>
+    <string name="sync_media_refusal_mixed_title">Nada novo para baixar</string>
+    <string name="sync_media_refusal_mixed_subtitle">%1$s baixados, %2$s na fila</string>
+    <string name="sync_media_refusal_unavailable_title">Nada para baixar</string>
+    <string name="sync_media_refusal_unavailable_subtitle">Este título não tem arquivo para o servidor fornecer</string>
+
+    <string name="sync_media_unreachable_title">Armazenamento indisponível</string>
+    <string name="sync_media_unreachable_subtitle">%1$s permanecem baixados até que o armazenamento esteja disponível novamente</string>
+
+    <string name="sync_media_storage_title">Armazenamento insuficiente para %1$s</string>
+
+    <string name="sync_media_step_preparing">Preparando</string>
+    <string name="sync_media_step_awaiting_transcode">Aguardando o servidor iniciar a transcodificação</string>
+
+    <string name="sync_media_transcode_unavailable_title">Baixando o arquivo original</string>
+    <string name="sync_media_transcode_unavailable_subtitle">%1$s não pôde ser transcodificado para download</string>
+
+    <string name="launch_texture_pack_failed">Não foi possível instalar alguns pacotes de texturas</string>
+    <plurals name="sync_screenshot_uploaded">
+        <item quantity="one">%1$d captura de tela enviada</item>
+        <item quantity="many">%1$d capturas de tela enviadas</item>
+        <item quantity="other">%1$d capturas de tela enviadas</item>
+    </plurals>
+    <plurals name="sync_screenshot_rejected">
+        <item quantity="one">O RomM não aceitou %1$d captura de tela</item>
+        <item quantity="many">O RomM não aceitou %1$d capturas de tela</item>
+        <item quantity="other">O RomM não aceitou %1$d capturas de tela</item>
+    </plurals>
+
+    <plurals name="sync_media_subtitle_shortfall_title">
+        <item quantity="one">%1$s baixado sem %2$d trilha de legenda</item>
+        <item quantity="many">%1$s baixado sem %2$d trilhas de legenda</item>
+        <item quantity="other">%1$s baixado sem %2$d trilhas de legenda</item>
+    </plurals>
+    <string name="sync_media_subtitle_shortfall_burned_in">%1$s está na imagem; as demais não puderam viajar</string>
+    <string name="sync_media_subtitle_shortfall_refused">O servidor não forneceu todas as trilhas de legenda</string>
+    <string name="sync_media_subtitle_shortfall_transcoded">Legendas na imagem não acompanham um tamanho menor</string>
+    <string name="sync_media_subtitle_shortfall_external">As legendas na imagem ficam separadas do arquivo e não podem acompanhá-lo</string>
+    <string name="sync_media_subtitle_label_fallback">Legendas</string>
+
+    <string name="sync_steam_rate_limited_title">Steam temporariamente indisponível</string>
+    <string name="sync_steam_rate_limited_subtitle">Limite de tentativas de login atingido. Tente novamente em uma hora</string>
+    <string name="sync_steam_auth_expired_title">Sessão do Steam expirada</string>
+    <string name="sync_steam_auth_expired_subtitle">Faça login novamente em Configurações > Steam</string>
+
+    <string name="sync_steam_qr_rate_limited">Limite atingido. Tente novamente mais tarde</string>
+    <string name="sync_steam_qr_login_failed">Falha no login: %1$s</string>
+    <string name="sync_steam_qr_not_connected">Não conectado ao Steam</string>
+    <string name="sync_steam_qr_start_failed">Falha ao iniciar a autenticação QR</string>
+    <string name="sync_steam_qr_polling_failed">Falha na verificação periódica</string>
+    <string name="sync_steam_qr_disconnected">Steam desconectado</string>
+
+    <string name="sync_launch_core_fallback">Falha ao carregar %1$s, usando %2$s no lugar</string>
+    <string name="sync_session_save_queued">Salvo neste dispositivo. Ainda não foi enviado.</string>
+    <string name="sync_session_save_queued_orphan">Salvo neste dispositivo. Ainda não foi enviado.</string>
+    <string name="sync_session_save_not_kept">Não foi possível fazer backup deste save.</string>
+</resources>

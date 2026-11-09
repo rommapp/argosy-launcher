@@ -252,8 +252,9 @@ class DisplayAffinityHelper @Inject constructor(
 
     /**
      * Which physical display holds each role: the one the viewer is driving, then the one
-     * describing what that screen has focused. Null on a single-screen device, where there are no
-     * roles to hold.
+     * describing what that screen has focused. Null whenever the launcher runs on one screen: a
+     * single-screen device, dual screen switched off, or a secondary display the companion cannot
+     * use. There are no roles to hold then, whatever the stored layout names.
      *
      * The interactive display carries Home, Library and Media. A role swap is the only thing that
      * moves them, so a caller asks which display holds its role instead of naming a display id,
@@ -261,7 +262,13 @@ class DisplayAffinityHelper @Inject constructor(
      */
     fun getRoleDisplayIds(rolesSwapped: Boolean): Pair<Int, Int>? =
         singleSurfaceDisplayId?.let { it to it }
-            ?: resolveRoleDisplayIds(roleDisplayIds, attachedIds, secondaryDisplayId, rolesSwapped)
+            ?: resolveRoleDisplayIds(
+                roleDisplayIds,
+                attachedIds,
+                secondaryDisplayId,
+                rolesSwapped,
+                dualScreenActive = hasSecondaryDisplay
+            )
 
     /**
      * Where the video player belongs once a game has claimed [emulatorDisplayId]: the other physical
@@ -389,6 +396,18 @@ class DisplayAffinityHelper @Inject constructor(
         }
 
         /**
+         * The requested orientation for an activity on [display] while the device is docked dark,
+         * or null when [display] is not the docked external display.
+         */
+        fun dockedOrientationFor(context: Context, display: Display?): Int? {
+            display ?: return null
+            if (dockedExternalDisplayId(context) != display.displayId) return null
+            val mode = display.mode
+            if (mode.physicalWidth < mode.physicalHeight) return null
+            return android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+        }
+
+        /**
          * The system setting a handheld's firmware reads to blank its own panels while video
          * output is connected, as the AYN Thor's "Turn off handheld console's screen" does.
          */
@@ -506,8 +525,10 @@ class DisplayAffinityHelper @Inject constructor(
             roleDisplayIds: Pair<Int, Int>?,
             attachedIds: Set<Int>,
             secondaryDisplayId: Int?,
-            rolesSwapped: Boolean
+            rolesSwapped: Boolean,
+            dualScreenActive: Boolean
         ): Pair<Int, Int>? {
+            if (!dualScreenActive) return null
             roleDisplayIds
                 ?.takeIf { it.first in attachedIds && it.second in attachedIds }
                 ?.let { (first, second) ->

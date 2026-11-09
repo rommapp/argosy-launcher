@@ -114,41 +114,65 @@ class PlaySessionPullSchedulerTest {
     }
 
     @Test
-    fun `a bounded wait answers the pull that finishes inside it`() = runTest {
+    fun `a recap pull waits past the old four second window for a long pull to finish`() = runTest {
         coEvery { pull.run() } coAnswers {
-            delay(1_000)
+            delay(12_000)
             pulled
         }
 
-        assertEquals(pulled, schedulerInBackground().pullWithin(4_000))
-    }
-
-    @Test
-    fun `a bounded wait that runs out answers null and leaves the pull running for the next reader`() = runTest {
-        coEvery { pull.run() } coAnswers {
-            delay(10_000)
-            pulled
-        }
-        val scheduler = schedulerInBackground()
-
-        assertNull(scheduler.pullWithin(4_000))
-
-        assertEquals(pulled, scheduler.pullWithin(10_000))
+        assertTrue(schedulerInBackground().pullForRecap())
         coVerify(exactly = 1) { pull.run() }
     }
 
     @Test
-    fun `a pull that throws answers null to the waiting reader`() = runTest {
-        coEvery { pull.run() } throws IllegalStateException("database closed")
+    fun `a recap pull ignores the cadence throttle`() = runTest {
+        coEvery { syncPreferencesRepository.getRommPlaySessionLastPull() } returns now.minus(Duration.ofMinutes(5))
 
-        assertNull(schedulerInBackground().pullWithin(4_000))
+        assertTrue(schedulerInBackground().pullForRecap())
+        coVerify(exactly = 1) { pull.run() }
     }
 
     @Test
-    fun `a bounded wait without capability or connection answers null at once`() = runTest {
+    fun `a recap pull reuses a pull that completed moments ago`() = runTest {
+        coEvery { syncPreferencesRepository.getRommPlaySessionLastPull() } returns now.minusSeconds(30)
+
+        assertTrue(schedulerInBackground().pullForRecap())
+        coVerify(exactly = 0) { pull.run() }
+    }
+
+    @Test
+    fun `a recap pull reports a pull that stopped early as incomplete`() = runTest {
+        coEvery { pull.run() } returns PlaySessionPull.Summary(added = 1, devices = 2, stoppedBy = "Network failure")
+
+        assertFalse(schedulerInBackground().pullForRecap())
+    }
+
+    @Test
+    fun `a recap wait that runs out answers false and leaves the pull running for the next reader`() = runTest {
+        coEvery { pull.run() } coAnswers {
+            delay(PlaySessionPullScheduler.RECAP_PULL_TIMEOUT_MS + 10_000)
+            pulled
+        }
+        val scheduler = schedulerInBackground()
+
+        assertFalse(scheduler.pullForRecap())
+
+        assertTrue(scheduler.pullForRecap())
+        coVerify(exactly = 1) { pull.run() }
+    }
+
+    @Test
+    fun `a pull that throws answers false to the waiting reader`() = runTest {
+        coEvery { pull.run() } throws IllegalStateException("database closed")
+
+        assertFalse(schedulerInBackground().pullForRecap())
+    }
+
+    @Test
+    fun `a recap pull without capability or connection answers false at once`() = runTest {
         every { pull.canPull } returns false
 
-        assertNull(schedulerInBackground().pullWithin(4_000))
+        assertFalse(schedulerInBackground().pullForRecap())
 
         coVerify(exactly = 0) { pull.run() }
     }
@@ -164,7 +188,7 @@ class PlaySessionPullSchedulerTest {
         scheduler.requestIfDue()
         runCurrent()
         advanceTimeBy(500)
-        assertEquals(pulled, scheduler.pullWithin(4_000))
+        assertTrue(scheduler.pullForRecap())
 
         coVerify(exactly = 1) { pull.run() }
     }

@@ -11,12 +11,14 @@ import com.nendo.argosy.data.storage.StorageVolumeInfo
 import com.nendo.argosy.data.storage.StorageVolumeLocator
 import com.nendo.argosy.data.storage.UNKNOWN_LOCATION_KEY
 import com.nendo.argosy.data.storage.gameFileVolumeKey
+import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.GameFileEntity
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.model.VariantCategory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.time.Instant
 import javax.inject.Inject
 
 private const val TMP_SUFFIX = ".tmp"
@@ -83,7 +85,9 @@ data class GameStorageBreakdown(
     val totalBytes: Long,
     val unsyncedSaves: Int,
     val files: List<GameStorageFile> = emptyList(),
-    val platformName: String? = null
+    val platformName: String? = null,
+    val lastPlayed: Instant? = null,
+    val playTimeMinutes: Int = 0
 ) {
     val hasSoundtrack: Boolean get() = buckets.any { it.bucket == GameStorageBucket.SOUNDTRACK }
     val isLocalOnly: Boolean get() = source == GameSource.LOCAL_ONLY
@@ -126,28 +130,25 @@ class GameStorageBreakdownUseCase @Inject constructor(
         val ownerUserId = syncPreferencesRepository.getRommUserId()
         val volumes = volumeLocator.detectVolumes()
         gameDao.getDownloadedGamesByPlatform(platformId, ownerUserId).mapNotNull { game ->
-            buildBreakdown(game.id, game.title, game.source, game.localPath, game.fileSizeBytes, volumes)
+            buildBreakdown(game, volumes)
         }
     }
 
     /**
-     * Every downloaded game RomM does not have, across platforms, largest first.
+     * Every downloaded game RomM does not have, across platforms, in title order.
      */
     suspend fun loadLocalOnly(): List<GameStorageBreakdown> = withContext(Dispatchers.IO) {
         val ownerUserId = syncPreferencesRepository.getRommUserId()
         val volumes = volumeLocator.detectVolumes()
         val platformNames = platformDao.getAllPlatformsOrdered().associate { it.id to it.name }
         gameDao.getDownloadedGamesBySource(GameSource.LOCAL_ONLY, ownerUserId).mapNotNull { game ->
-            buildBreakdown(game.id, game.title, game.source, game.localPath, game.fileSizeBytes, volumes)
-                ?.copy(platformName = platformNames[game.platformId])
-        }.sortedByDescending { it.totalBytes }
+            buildBreakdown(game, volumes)?.copy(platformName = platformNames[game.platformId])
+        }
     }
 
     suspend fun deleteSummary(gameId: Long): GameDeleteSummary? = withContext(Dispatchers.IO) {
         val game = gameDao.getById(gameId) ?: return@withContext null
-        val breakdown = buildBreakdown(
-            game.id, game.title, game.source, game.localPath, game.fileSizeBytes, volumeLocator.detectVolumes()
-        )
+        val breakdown = buildBreakdown(game, volumeLocator.detectVolumes())
         GameDeleteSummary(
             title = game.title,
             hasSoundtrack = breakdown?.hasSoundtrack == true,
@@ -155,14 +156,9 @@ class GameStorageBreakdownUseCase @Inject constructor(
         )
     }
 
-    private suspend fun buildBreakdown(
-        gameId: Long,
-        title: String,
-        source: GameSource,
-        localPath: String?,
-        fileSizeBytes: Long?,
-        volumes: List<StorageVolumeInfo>
-    ): GameStorageBreakdown? {
+    private suspend fun buildBreakdown(game: GameEntity, volumes: List<StorageVolumeInfo>): GameStorageBreakdown? {
+        val gameId = game.id
+        val localPath = game.localPath
         val files = gameFileDao.getFilesForGame(gameId).filter { it.isLocallyPresent() }
         val discs = gameDiscDao.getDiscsForGame(gameId)
             .filter { it.localPath?.let { p -> File(p).exists() } == true }
@@ -224,7 +220,7 @@ class GameStorageBreakdownUseCase @Inject constructor(
                         }
                     }
                     root.isFile -> {
-                        val size = fileSizeBytes ?: root.length()
+                        val size = game.fileSizeBytes ?: root.length()
                         addBase(counts, bytes, 1, size)
                         record(localPath, size)
                     }
@@ -245,12 +241,14 @@ class GameStorageBreakdownUseCase @Inject constructor(
 
         return GameStorageBreakdown(
             gameId = gameId,
-            title = title,
-            source = source,
+            title = game.title,
+            source = game.source,
             buckets = rows,
             totalBytes = rows.sumOf { it.totalBytes },
             unsyncedSaves = saveCacheDao.countNeedingRemoteSyncForGame(gameId),
-            files = entries
+            files = entries,
+            lastPlayed = game.lastPlayed,
+            playTimeMinutes = game.playTimeMinutes
         )
     }
 

@@ -501,6 +501,8 @@
     <string name="settings_shell_footer_local_only_location">Location</string>
     <!-- Y-button hint on the Shortcuts rows that removes the assigned button. Verb. -->
     <string name="settings_shell_footer_unassign_shortcut">Unassign</string>
+    <!-- Y-button hint on the Home and Back combo rows that restores the default combo. Verb. -->
+    <string name="settings_shell_footer_reset_system_combo">Reset</string>
 
     <!-- ===== SettingsScreen: cache clear confirm modals ===== -->
 

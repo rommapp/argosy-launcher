@@ -31,6 +31,9 @@ class RomMApiClient @Inject constructor(
         return if (trimmed.startsWith("http")) trimmed else "$baseUrl/${trimmed.trimStart('/')}"
     }
 
+    fun buildScreenshotContentUrl(screenshotId: Long): String =
+        "$baseUrl/api/screenshots/$screenshotId/content"
+
     /**
      * Absolute URL for a path relative to RomM's resources mount, the form ss_metadata
      * reports. Pre-prefixed cover paths belong in [buildMediaUrl].

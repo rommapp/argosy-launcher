@@ -578,6 +578,8 @@
     <string name="ui_quick_settings_hud_description">In integrierten Spielen</string>
     <string name="ui_quick_settings_device_access_notice">Argosy benötigt eine Berechtigung, um dies zu ändern.</string>
     <string name="ui_quick_settings_device_access_allow">Erlauben</string>
+    <string name="ui_quick_settings_root_access_notice">Argosy benötigt Root-Zugriff, um dies zu ändern. Erlaube ihn in deinem Root-Manager, wenn du gefragt wirst.</string>
+    <string name="ui_quick_settings_root_access_request">Anfordern</string>
     <string name="ui_quick_settings_theme">Design</string>
     <string name="ui_quick_settings_accent">Akzentfarbe</string>
     <string name="ui_quick_settings_accent_default">Standard</string>

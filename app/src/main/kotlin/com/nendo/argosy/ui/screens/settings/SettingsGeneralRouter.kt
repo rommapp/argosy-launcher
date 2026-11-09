@@ -683,12 +683,6 @@ internal fun routeToggleUploadScreenshots(vm: SettingsViewModel) {
     }
 }
 
-internal fun routeOnMediaPermissionResult(vm: SettingsViewModel, granted: Boolean) {
-    vm.syncDelegate.onMediaPermissionResult(vm.viewModelScope, granted) { newValue ->
-        vm.serverDelegate.updateState(vm._uiState.value.server.copy(uploadScreenshotsEnabled = newValue))
-    }
-}
-
 internal fun routeOnStoragePermissionResult(vm: SettingsViewModel, granted: Boolean) {
     vm.syncDelegate.onStoragePermissionResult(vm.viewModelScope, granted, vm._uiState.value.currentSection)
     vm.steamDelegate.loadSteamSettings(vm.context, vm.viewModelScope)

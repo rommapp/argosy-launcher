@@ -31,16 +31,19 @@ class StoragePlatformGamesDelegate @Inject constructor(
             StoragePlatformGamesState(
                 selectedPlatformId = platformId,
                 platformName = platformName,
-                isLoading = true
+                isLoading = true,
+                sort = it.sort
             )
         }
         reload(scope)
     }
 
     fun openLocalOnly(scope: CoroutineScope) {
-        _state.update { StoragePlatformGamesState(localOnly = true, isLoading = true) }
+        _state.update { StoragePlatformGamesState(localOnly = true, isLoading = true, sort = it.sort) }
         reload(scope)
     }
+
+    fun cycleSort() = _state.update { it.copy(sort = it.sort.next(), highlightedCategoryIndex = 0) }
 
     fun reload(scope: CoroutineScope, onPlatformEmpty: (() -> Unit)? = null) {
         val current = _state.value

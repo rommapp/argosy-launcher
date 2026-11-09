@@ -28,7 +28,6 @@ class SyncSettingsDelegateRegionPriorityTest {
         rommRepository = mockk(relaxed = true),
         imageCacheManager = mockk(relaxed = true),
         notificationManager = mockk(relaxed = true),
-        permissionHelper = mockk(relaxed = true),
         attributionRepository = mockk(relaxed = true),
         retroAchievementsRepository = mockk(relaxed = true)
     ).apply {

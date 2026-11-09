@@ -80,8 +80,7 @@ class MonthlyRecapController internal constructor(
                     return@launch
                 }
                 val due = withContext(ioDispatcher) { gate.monthlyDigestDue() } ?: return@launch
-                withContext(ioDispatcher) { gate.markDigestShown(due) }
-                open(due)
+                open(due, markShownWhenReady = true)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -126,7 +125,7 @@ class MonthlyRecapController internal constructor(
 
     private fun unlockCount(): Int? = (_state.value as? MonthlyRecapCardState.Ready)?.digest?.unlocks?.size
 
-    private fun open(month: YearMonth) {
+    private fun open(month: YearMonth, markShownWhenReady: Boolean = false) {
         load?.cancel()
         _cursor.value = RecapCursor()
         _state.value = MonthlyRecapCardState.Loading(month)
@@ -140,7 +139,18 @@ class MonthlyRecapController internal constructor(
                 Logger.error(TAG, "Monthly recap for $month failed to load", e)
                 MonthlyRecapCardState.Failed(month)
             }
+            if (markShownWhenReady && loaded is MonthlyRecapCardState.Ready) markShown(month)
             _state.update { current -> if (current == MonthlyRecapCardState.Loading(month)) loaded else current }
+        }
+    }
+
+    private suspend fun markShown(month: YearMonth) {
+        try {
+            withContext(ioDispatcher) { gate.markDigestShown(month) }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Logger.warn(TAG, "Monthly recap for $month not marked shown: ${e.message}")
         }
     }
 

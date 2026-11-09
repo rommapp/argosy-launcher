@@ -279,6 +279,11 @@ singletons through `dsm.*` for anything DSM owns.
 `hasSecondaryDisplay` is gated by THREE conditions:
 `dualScreenEnabled && secondaryDisplayUsable && hasPhysicalSecondaryDisplay`.
 
+`DisplayAffinityHelper.getRoleDisplayIds` follows the same gate: with `hasSecondaryDisplay` false
+it returns null, whatever the stored layout names as PRIMARY. DS off means one screen with no
+roles, so the interactive/showcase queries, the dashboard decision and the session's recorded game
+display all read single-screen. The stored layout still decides APP_TARGET and OFF screens.
+
 `secondaryDisplayUsable` is a FALLBACK LATCH, not a preference. It is set false by
 `fallbackToSingleScreen(persistent)` once the companion has proven unable to start on the
 secondary display. `reprobeSecondaryDisplay()` clears it. On a device that latched false, every

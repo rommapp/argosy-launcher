@@ -76,7 +76,8 @@ class DisplayRoleResolutionTest {
             roleDisplayIds = LOWER to BUILT_IN,
             attachedIds = attached,
             secondaryDisplayId = LOWER,
-            rolesSwapped = false
+            rolesSwapped = false,
+            dualScreenActive = true
         )
 
         assertEquals(LOWER to BUILT_IN, resolved)
@@ -88,7 +89,8 @@ class DisplayRoleResolutionTest {
             roleDisplayIds = LOWER to BUILT_IN,
             attachedIds = attached,
             secondaryDisplayId = LOWER,
-            rolesSwapped = true
+            rolesSwapped = true,
+            dualScreenActive = true
         )
 
         assertEquals(BUILT_IN to LOWER, resolved)
@@ -100,7 +102,8 @@ class DisplayRoleResolutionTest {
             roleDisplayIds = BUILT_IN to LOWER,
             attachedIds = attached,
             secondaryDisplayId = LOWER,
-            rolesSwapped = true
+            rolesSwapped = true,
+            dualScreenActive = true
         )
 
         assertEquals(BUILT_IN to LOWER, resolved)
@@ -112,7 +115,8 @@ class DisplayRoleResolutionTest {
             roleDisplayIds = BUILT_IN to LOWER,
             attachedIds = attached,
             secondaryDisplayId = LOWER,
-            rolesSwapped = false
+            rolesSwapped = false,
+            dualScreenActive = true
         )
 
         assertEquals(LOWER to BUILT_IN, resolved)
@@ -124,7 +128,8 @@ class DisplayRoleResolutionTest {
             roleDisplayIds = LOWER to BUILT_IN,
             attachedIds = attached,
             secondaryDisplayId = LOWER,
-            rolesSwapped = false
+            rolesSwapped = false,
+            dualScreenActive = true
         )
 
         assertEquals(setOf(LOWER, BUILT_IN), setOf(resolved!!.first, resolved.second))
@@ -136,7 +141,8 @@ class DisplayRoleResolutionTest {
             roleDisplayIds = null,
             attachedIds = attached,
             secondaryDisplayId = LOWER,
-            rolesSwapped = false
+            rolesSwapped = false,
+            dualScreenActive = true
         )
 
         assertEquals(LOWER to BUILT_IN, resolved)
@@ -183,7 +189,38 @@ class DisplayRoleResolutionTest {
             roleDisplayIds = null,
             attachedIds = setOf(BUILT_IN),
             secondaryDisplayId = null,
-            rolesSwapped = false
+            rolesSwapped = false,
+            dualScreenActive = true
+        )
+
+        assertNull(resolved)
+    }
+
+    @Test
+    fun `dual screen off holds no roles whichever screen the layout made primary`() {
+        listOf(LOWER to BUILT_IN, BUILT_IN to LOWER).forEach { layout ->
+            listOf(false, true).forEach { swapped ->
+                val resolved = resolveRoleDisplayIds(
+                    roleDisplayIds = layout,
+                    attachedIds = attached,
+                    secondaryDisplayId = LOWER,
+                    rolesSwapped = swapped,
+                    dualScreenActive = false
+                )
+
+                assertNull(resolved)
+            }
+        }
+    }
+
+    @Test
+    fun `dual screen off holds no roles without a stored layout`() {
+        val resolved = resolveRoleDisplayIds(
+            roleDisplayIds = null,
+            attachedIds = attached,
+            secondaryDisplayId = LOWER,
+            rolesSwapped = false,
+            dualScreenActive = false
         )
 
         assertNull(resolved)

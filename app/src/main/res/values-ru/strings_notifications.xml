@@ -145,7 +145,8 @@
     <string name="notif_gamelaunch_no_core_base">Нет доступного ядра для %1$s</string>
     <string name="notif_gamelaunch_no_core_with_reason">Нет доступного ядра для %1$s: %2$s</string>
     <string name="notif_gamelaunch_missing_discs">Отсутствуют диски: %1$s. Откройте страницу игры, чтобы исправить.</string>
-    <string name="notif_gamelaunch_missing_bios">Отсутствует BIOS для %1$s. Установите его в настройках перед запуском.</string>
+    <string name="notif_gamelaunch_missing_bios_files">%1$s не запустится без BIOS: %2$s. Argosy не нашёл ни одного из этих файлов в своей папке BIOS. Скачайте прошивку для %1$s с сервера RomM в разделе Настройки > Файлы BIOS и запустите снова.</string>
+    <string name="notif_gamelaunch_missing_bios_folder">%1$s не запустится без дампа BIOS. Argosy не нашёл ни одного файла в папке BIOS %2$s. Скачайте прошивку для %1$s с сервера RomM в разделе Настройки > Файлы BIOS и запустите снова.</string>
     <string name="notif_gamelaunch_no_scummvm_id">Отсутствует файл .scummvm для %1$s</string>
     <string name="notif_gamelaunch_no_android_app">Приложение Android не установлено: %1$s</string>
     <string name="notif_gamelaunch_disc_launch_failed">Не удалось запустить диск</string>

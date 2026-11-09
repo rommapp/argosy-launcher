@@ -15,6 +15,7 @@ import com.nendo.argosy.domain.model.RecapAwardKind
 import com.nendo.argosy.domain.model.SnapshotUnlock
 import com.nendo.argosy.util.Logger
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -132,6 +133,15 @@ class RaMetadataSource @Inject constructor(
     }
 
     /**
+     * Refreshes RomM's progression when the cache predates [through], waiting at most
+     * [ROMM_WARM_TIMEOUT_MS]. A refresh cut off by the timeout leaves the cache as it was.
+     */
+    suspend fun warmRomMProgression(through: Instant) {
+        withTimeoutOrNull(ROMM_WARM_TIMEOUT_MS) { refreshRomMIfStale(through) }
+            ?: Logger.debug(TAG, "RomM progression warm through $through ran past ${ROMM_WARM_TIMEOUT_MS}ms")
+    }
+
+    /**
      * Fetches [raGameId]'s web progress, fresh through [through], into the client's cache. Does
      * nothing without a web API key.
      */
@@ -171,6 +181,7 @@ class RaMetadataSource @Inject constructor(
 
     companion object {
         private const val TAG = "RaMetadataSource"
+        const val ROMM_WARM_TIMEOUT_MS = 15_000L
 
         fun needsRefresh(refreshedAt: Instant?, through: Instant): Boolean =
             refreshedAt == null || refreshedAt.isBefore(through)

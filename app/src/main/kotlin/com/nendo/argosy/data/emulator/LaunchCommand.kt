@@ -61,7 +61,40 @@ data class EffectiveLaunchCommand(
     val launchMethod: LaunchMethod = LaunchMethod.INTENT
 )
 
-fun EffectiveLaunchCommand.toIntent(context: Context): Intent {
+/**
+ * The shared-storage folder holding the file [uri] names, as a URI of the same provider. Null for
+ * any folder [sharedFolderSegments] refuses.
+ */
+fun sharedFolderUriOf(uri: Uri): Uri? {
+    val folder = sharedFolderSegments(uri.pathSegments) ?: return null
+    return uri.buildUpon().path(null).apply { folder.forEach(::appendPath) }.build()
+}
+
+/**
+ * The folder segments holding the file [fileSegments] names under the FileProvider's `storage` or
+ * `mnt` root. Null for a file under one of Argosy's private roots, for a folder that is a storage
+ * volume itself, and for a folder at or under a volume's `Android` directory, where app-specific
+ * storage lives.
+ */
+fun sharedFolderSegments(fileSegments: List<String>): List<String>? {
+    val folder = fileSegments.dropLast(1)
+    val volumeDepth = when {
+        folder.size >= 2 && folder[0] == "storage" && folder[1] in setOf("emulated", "self") -> 3
+        folder.size >= 2 && folder[0] == "mnt" && folder[1] == "media_rw" -> 3
+        folder.firstOrNull() == "storage" -> 2
+        else -> return null
+    }
+    if (folder.size <= volumeDepth) return null
+    if (folder[volumeDepth].equals("Android", ignoreCase = true)) return null
+    return folder
+}
+
+/**
+ * Grants [packageName] read access to every own-FileProvider URI in [EffectiveLaunchCommand.grantReadUriTo],
+ * and to everything under the shared-storage folder holding it, so an emulator can open the tracks
+ * a cue, gdi or m3u lists beside it.
+ */
+fun EffectiveLaunchCommand.grantLaunchReads(context: Context) {
     val ownFileProviderAuthority = "${context.packageName}.fileprovider"
     for (uri in grantReadUriTo) {
         if (uri.scheme != "content") {
@@ -74,10 +107,21 @@ fun EffectiveLaunchCommand.toIntent(context: Context): Intent {
         }
         try {
             context.grantUriPermission(packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            sharedFolderUriOf(uri)?.let { folder ->
+                context.grantUriPermission(
+                    packageName,
+                    folder,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PREFIX_URI_PERMISSION
+                )
+            }
         } catch (e: Exception) {
             Logger.warn(TAG, "Failed to grant URI permission to $packageName for $uri", e)
         }
     }
+}
+
+fun EffectiveLaunchCommand.toIntent(context: Context): Intent {
+    grantLaunchReads(context)
 
     val cmdCategories = categories
     val cmdExtras = extras

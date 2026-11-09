@@ -5,8 +5,13 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Upsert
+import com.nendo.argosy.data.emulator.BiosPathRegistry
 import com.nendo.argosy.data.local.entity.FirmwareEntity
+import com.nendo.argosy.data.platform.PlatformDefinitions
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.withContext
+import java.io.File
 import java.time.Instant
 
 @Dao
@@ -109,4 +114,25 @@ interface FirmwareDao {
         ORDER BY f.platformSlug, f.fileName
     """)
     suspend fun getAllFirmware(): List<FirmwareEntity>
+}
+
+/**
+ * Downloaded firmware whose file is still on disk, from every RomM platform that folds to the
+ * same canonical platform as [platformSlug], plus any downloaded file named as one of that
+ * platform's BIOS requirements wherever RomM files it (a neogeo.zip kept under an arcade or FBNeo
+ * platform serves a Neo Geo game). Where two rows hold a file of the same name, the row belonging
+ * to [platformSlug] itself is the one returned.
+ */
+suspend fun FirmwareDao.getDownloadedForPlatformFamily(platformSlug: String): List<FirmwareEntity> {
+    val canonical = PlatformDefinitions.getCanonicalSlug(platformSlug)
+    val requiredNames = BiosPathRegistry.getBiosRequirements(canonical).mapTo(mutableSetOf()) { it.fileName.lowercase() }
+    val family = getDownloaded().filter {
+        PlatformDefinitions.getCanonicalSlug(it.platformSlug) == canonical || it.fileName.lowercase() in requiredNames
+    }
+    return withContext(Dispatchers.IO) {
+        family
+            .filter { row -> row.localPath?.let { File(it).isFile } == true }
+            .sortedByDescending { it.platformSlug.equals(platformSlug, ignoreCase = true) }
+            .distinctBy { it.fileName.lowercase() }
+    }
 }

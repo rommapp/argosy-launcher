@@ -221,9 +221,6 @@ class SettingsViewModel @Inject constructor(
     internal val _requestScreenCapturePermissionEvent = MutableSharedFlow<Unit>()
     val requestScreenCapturePermissionEvent: SharedFlow<Unit> = _requestScreenCapturePermissionEvent.asSharedFlow()
 
-    internal val _requestMediaPermissionEvent = MutableSharedFlow<Unit>()
-    val requestMediaPermissionEvent: SharedFlow<Unit> = _requestMediaPermissionEvent.asSharedFlow()
-
     internal val _navigationEvents = MutableSharedFlow<NavigationEvent>(extraBufferCapacity = 4)
     val navigationEvents: SharedFlow<NavigationEvent> = _navigationEvents.asSharedFlow()
 
@@ -1356,6 +1353,11 @@ class SettingsViewModel @Inject constructor(
         setFocusIndex(0)
     }
 
+    fun cycleStoragePlatformGamesSort() {
+        storagePlatformGamesDelegate.cycleSort()
+        setFocusIndex(0)
+    }
+
     fun resetStoragePlatformHighlightedCategory() =
         storagePlatformGamesDelegate.setHighlightedCategory(0)
 
@@ -1626,6 +1628,15 @@ class SettingsViewModel @Inject constructor(
         controlsDelegate.assignShortcutKey(viewModelScope, shortcut, keyCode)
     fun clearShortcutKey(shortcut: com.nendo.argosy.ui.input.UiShortcut) =
         controlsDelegate.clearShortcutKey(viewModelScope, shortcut)
+    fun setSystemHotkeysEnabled(enabled: Boolean) =
+        controlsDelegate.setSystemHotkeysEnabled(viewModelScope, enabled)
+    fun startSystemComboCapture(action: com.nendo.argosy.hardware.SystemHotkeyAction) =
+        controlsDelegate.startSystemComboCapture(action)
+    fun cancelSystemComboCapture() = controlsDelegate.cancelSystemComboCapture()
+    fun assignSystemCombo(action: com.nendo.argosy.hardware.SystemHotkeyAction, keyCodes: List<Int>) =
+        controlsDelegate.assignSystemCombo(viewModelScope, action, keyCodes)
+    fun resetSystemCombo(action: com.nendo.argosy.hardware.SystemHotkeyAction) =
+        controlsDelegate.resetSystemCombo(viewModelScope, action)
     fun refreshUsageStatsPermission() = controlsDelegate.refreshUsageStatsPermission()
     fun openUsageStatsSettings() = controlsDelegate.openUsageStatsSettings()
     fun openManagedInstallers() = installerDelegate.openScreen(viewModelScope)
@@ -1796,7 +1807,6 @@ class SettingsViewModel @Inject constructor(
     fun onStoragePermissionResult(granted: Boolean) = routeOnStoragePermissionResult(this, granted)
 
     fun onNotificationPermissionResult(granted: Boolean) = syncDelegate.onNotificationPermissionResult(viewModelScope, granted)
-    fun onMediaPermissionResult(granted: Boolean) = routeOnMediaPermissionResult(this, granted)
     fun runSaveSyncNow() = syncDelegate.runSaveSyncNow(viewModelScope)
 
     fun requestResetSaveCache() = syncDelegate.requestResetSaveCache(viewModelScope)

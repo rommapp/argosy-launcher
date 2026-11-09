@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="library_header_title">BIBLIOTECA</string>
+    <string name="library_header_all_platforms">Todas as plataformas</string>
+    <string name="library_header_previous_platform">Plataforma anterior</string>
+    <string name="library_header_next_platform">Próxima plataforma</string>
+    <string name="library_header_back_desc">Voltar</string>
+    <plurals name="library_header_game_count">
+        <item quantity="one">%d jogo</item>
+        <item quantity="many">%d jogos</item>
+        <item quantity="other">%d jogos</item>
+    </plurals>
+    <string name="library_header_active_filters_label">Filtros:</string>
+
+    <string name="library_landing_title">BIBLIOTECA</string>
+    <plurals name="library_landing_platform_count">
+        <item quantity="one">%d plataforma</item>
+        <item quantity="many">%d plataformas</item>
+        <item quantity="other">%d plataformas</item>
+    </plurals>
+    <plurals name="library_landing_media_library_count">
+        <item quantity="one">%d biblioteca</item>
+        <item quantity="many">%d bibliotecas</item>
+        <item quantity="other">%d bibliotecas</item>
+    </plurals>
+
+    <string name="library_cell_all_games">Todos os jogos</string>
+    <plurals name="library_cell_game_count">
+        <item quantity="one">%d jogo</item>
+        <item quantity="many">%d jogos</item>
+        <item quantity="other">%d jogos</item>
+    </plurals>
+    <plurals name="library_cell_movie_count">
+        <item quantity="one">%d filme</item>
+        <item quantity="many">%d filmes</item>
+        <item quantity="other">%d filmes</item>
+    </plurals>
+    <plurals name="library_cell_show_count">
+        <item quantity="one">%d série</item>
+        <item quantity="many">%d séries</item>
+        <item quantity="other">%d séries</item>
+    </plurals>
+
+    <string name="library_landing_empty_title">Ainda não há plataformas</string>
+    <string name="library_landing_empty_body">Sincronize sua biblioteca do Rom Manager nas configurações</string>
+    <string name="library_landing_hint_reorder">Reordenar</string>
+    <string name="library_landing_hint_move">Mover</string>
+    <string name="library_landing_hint_cancel">Cancelar</string>
+
+    <string name="library_empty_title_platform">Nenhum jogo de %1$s encontrado</string>
+    <string name="library_empty_title_all">Ainda não há jogos</string>
+    <string name="library_empty_body">Sincronize sua biblioteca do Rom Manager nas configurações</string>
+    <string name="library_empty_filtered_body">Filtrado por %1$s</string>
+    <string name="library_empty_filtered_hint">Alterar filtros</string>
+
+    <string name="library_filter_title">FILTRAR JOGOS</string>
+    <string name="library_filter_active_summary">Ativos: %1$s</string>
+    <string name="library_filter_search_placeholder">Digite para buscar...</string>
+    <string name="library_filter_recent_searches">Buscas recentes</string>
+
+    <string name="library_filter_category_sort">Ordenar</string>
+    <string name="library_filter_category_search">Buscar</string>
+    <string name="library_filter_category_source">Origem</string>
+    <string name="library_filter_category_platform">Plataforma</string>
+    <string name="library_filter_category_genre">Gênero</string>
+    <string name="library_filter_category_region">Região</string>
+    <string name="library_filter_category_players">Jogadores</string>
+    <string name="library_filter_players_one">1</string>
+    <string name="library_filter_players_two">2</string>
+    <string name="library_filter_players_three">3</string>
+    <string name="library_filter_players_four_plus">4+</string>
+    <string name="library_filter_category_series">Séries</string>
+
+    <string name="library_filter_hint_clear">Limpar</string>
+    <string name="library_filter_hint_type">Digitar</string>
+    <string name="library_filter_hint_close_search">Fechar</string>
+    <string name="library_filter_hint_reset">Redefinir</string>
+    <string name="library_filter_hint_toggle">Alternar</string>
+    <string name="library_filter_hint_select">Selecionar</string>
+    <string name="library_filter_hint_close_options">Fechar</string>
+
+    <string name="library_footer_hint_switch_platform">Alternar plataforma</string>
+    <string name="library_footer_hint_jump_section">Saltar seção</string>
+    <string name="library_footer_hint_rail_jump">Saltar</string>
+    <string name="library_footer_hint_rail_back">Voltar</string>
+    <string name="library_footer_hint_details">Detalhes</string>
+    <string name="library_footer_hint_unhide">Desocultar</string>
+    <string name="library_footer_hint_unfavorite">Desfavoritar</string>
+    <string name="library_footer_hint_favorite">Favoritar</string>
+    <string name="library_footer_hint_filter">Filtrar</string>
+    <string name="library_footer_hint_swap_screens">Trocar telas</string>
+    <string name="library_footer_hint_details_hold_quick_menu">Detalhes, segure para Menu rápido</string>
+    <string name="library_footer_hint_quick_menu">Menu rápido</string>
+    <string name="library_footer_hint_quick_menu_hold_swap_screens">Menu rápido, segure para trocar telas</string>
+
+    <string name="library_quickmenu_title">AÇÕES RÁPIDAS</string>
+    <string name="library_quickmenu_install">Instalar</string>
+    <string name="library_quickmenu_play">Jogar</string>
+    <string name="library_quickmenu_download">Baixar</string>
+    <string name="library_quickmenu_unfavorite">Desfavoritar</string>
+    <string name="library_quickmenu_favorite">Favoritar</string>
+    <string name="library_quickmenu_details">Detalhes</string>
+    <string name="library_quickmenu_add_to_collection">Adicionar à coleção</string>
+    <string name="library_quickmenu_add_to_grid">Adicionar à grade</string>
+    <string name="library_quickmenu_active_variant">Variante ativa</string>
+    <string name="library_quickmenu_refresh_data">Atualizar dados</string>
+    <string name="library_quickmenu_resync_platform">Ressincronizar plataforma</string>
+    <string name="library_quickmenu_uninstall">Desinstalar</string>
+    <string name="library_quickmenu_delete_download">Excluir download</string>
+    <string name="library_quickmenu_show">Mostrar</string>
+    <string name="library_quickmenu_hide">Ocultar</string>
+    <string name="library_quickmenu_remove_from_library">Remover da biblioteca</string>
+
+    <string name="library_notice_added_to_home_grid">Adicionado à grade inicial</string>
+    <string name="library_notice_game_data_refreshed">Dados do jogo atualizados</string>
+    <string name="library_notice_android_data_refreshed">Dados do jogo atualizados</string>
+    <string name="library_notice_download_deleted">Download excluído</string>
+    <string name="library_notice_removed_from_library">Removido da biblioteca</string>
+    <string name="library_notice_remove_failed">Não foi possível remover este jogo</string>
+    <string name="library_notice_already_downloaded">Jogo já baixado</string>
+    <plurals name="library_notice_downloading_discs">
+        <item quantity="one">Baixando %d disco</item>
+        <item quantity="many">Baixando %d discos</item>
+        <item quantity="other">Baixando %d discos</item>
+    </plurals>
+    <string name="library_notice_extraction_failed">Falha na extração. Abra os detalhes do jogo para tentar novamente.</string>
+    <string name="library_notice_apk_install_failed">Não foi possível instalar o APK</string>
+
+    <string name="library_apps_title">Apps</string>
+    <string name="library_apps_title_hidden">Apps ocultos</string>
+    <string name="library_apps_title_reorder">Reordenar apps</string>
+    <string name="library_apps_reorder_hint">para salvar</string>
+
+    <plurals name="library_filter_active_count">
+        <item quantity="one">%d filtro</item>
+        <item quantity="many">%d filtros</item>
+        <item quantity="other">%d filtros</item>
+    </plurals>
+    <string name="library_apps_empty">Nenhum app encontrado</string>
+
+    <string name="library_apps_hint_move">Mover</string>
+    <string name="library_apps_hint_cancel">Cancelar</string>
+    <string name="library_apps_hint_open">Abrir</string>
+    <string name="library_apps_hint_back">Voltar</string>
+    <string name="library_apps_launch_failed">Não foi possível abrir o app</string>
+    <string name="library_apps_hint_reorder">Reordenar</string>
+    <string name="library_apps_hint_swap_screens">Trocar telas</string>
+    <string name="library_apps_hint_open_hold_options">Abrir, segure para Opções</string>
+    <string name="library_apps_hint_options">Opções</string>
+    <string name="library_apps_hint_options_hold_swap_screens">Opções, segure para trocar telas</string>
+    <string name="library_apps_hint_show_apps">Mostrar apps</string>
+    <string name="library_apps_hint_show_hidden">Mostrar ocultos</string>
+
+    <string name="library_apps_menu_app_info">Informações do app</string>
+    <string name="library_apps_menu_open_on_screen">Abrir na tela %1$d</string>
+    <string name="library_apps_menu_remove_from_home">Remover do início</string>
+    <string name="library_apps_menu_add_to_home">Adicionar ao início</string>
+    <string name="library_apps_menu_unpin_from_app_bar">Desfixar da barra de apps</string>
+    <string name="library_apps_menu_pin_to_app_bar">Fixar na barra de apps</string>
+    <string name="library_apps_menu_show">Mostrar</string>
+    <string name="library_apps_menu_hide">Ocultar</string>
+    <string name="library_apps_menu_reorder">Reordenar apps</string>
+    <string name="library_apps_menu_uninstall">Desinstalar</string>
+
+    <string name="library_search_placeholder_games_and_media">Buscar jogos e mídia...</string>
+    <string name="library_search_placeholder_games">Buscar jogos...</string>
+    <plurals name="library_search_min_query_hint">
+        <item quantity="one">Digite pelo menos %d caractere para buscar</item>
+        <item quantity="many">Digite pelo menos %d caracteres para buscar</item>
+        <item quantity="other">Digite pelo menos %d caracteres para buscar</item>
+    </plurals>
+    <string name="library_search_no_results">Nenhum resultado para \"%1$s\"</string>
+    <string name="library_search_heading_games">Jogos</string>
+    <string name="library_search_heading_media">Mídia</string>
+    <string name="library_search_result_platform_unknown">Desconhecida</string>
+    <string name="library_search_result_kind_series">Série</string>
+    <string name="library_search_result_kind_movie">Filme</string>
+    <string name="library_search_hint_group_jump">Jogos / Mídia</string>
+    <string name="library_search_hint_select">Selecionar</string>
+    <string name="library_search_hint_back">Voltar/Limpar</string>
+    <plurals name="library_search_result_count">
+        <item quantity="one">%d resultado</item>
+        <item quantity="many">%d resultados</item>
+        <item quantity="other">%d resultados</item>
+    </plurals>
+
+    <string name="library_showcase_all_games">Todos os jogos</string>
+    <string name="library_showcase_fact_games">Jogos</string>
+    <string name="library_showcase_fact_movies">Filmes</string>
+    <string name="library_showcase_fact_shows">Séries</string>
+    <string name="library_showcase_fact_downloaded">Baixados</string>
+    <string name="library_showcase_fact_watched">Assistidos</string>
+    <string name="library_showcase_fact_installed">Instalados</string>
+    <string name="library_showcase_fact_achievements">Conquistas</string>
+    <string name="library_showcase_fact_play_time">Tempo de jogo</string>
+    <string name="library_showcase_play_time_minutes">%1$dm</string>
+    <string name="library_showcase_play_time_hours">%1$dh</string>
+</resources>

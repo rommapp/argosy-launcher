@@ -190,6 +190,37 @@ class PermissionHelper @Inject constructor() {
         val hasData: Boolean get() = foregroundMs >= 0 && screenOnMs >= 0
     }
 
+    /**
+     * The spans between [fromMs] and [toMs] when at least one activity of [packageName] was resumed,
+     * counting only [activityClass] when it is given. Null without usage access.
+     */
+    fun foregroundSpans(
+        context: Context,
+        packageName: String,
+        activityClass: String?,
+        fromMs: Long,
+        toMs: Long
+    ): List<LongRange>? {
+        if (!hasUsageStatsPermission(context)) return null
+        val usageStatsManager = context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+        val events = usageStatsManager.queryEvents(fromMs - SPAN_SEED_LOOKBACK_MS, toMs)
+        val event = UsageEvents.Event()
+        val transitions = ArrayList<ActivityTransition>()
+        while (events.hasNextEvent()) {
+            events.getNextEvent(event)
+            if (event.packageName != packageName) continue
+            val className = event.className ?: continue
+            if (activityClass != null && className != activityClass) continue
+            when (event.eventType) {
+                UsageEvents.Event.MOVE_TO_FOREGROUND -> transitions += ActivityTransition(event.timeStamp, className, true)
+                UsageEvents.Event.MOVE_TO_BACKGROUND -> transitions += ActivityTransition(event.timeStamp, className, false)
+            }
+        }
+        return spansFromTransitions(transitions, fromMs, toMs)
+    }
+
+    data class ActivityTransition(val timestamp: Long, val className: String, val resumed: Boolean)
+
     fun getSessionDurations(context: Context, packageName: String, fromMs: Long, toMs: Long): SessionDurations {
         if (!hasUsageStatsPermission(context)) return SessionDurations(-1, -1)
 
@@ -260,5 +291,34 @@ class PermissionHelper @Inject constructor() {
         private const val SCREEN_INTERACTIVE = 15
         private const val SCREEN_NON_INTERACTIVE = 16
         private val ON_SCREEN_LOOKBACKS_MS = listOf(10 * 60 * 1000L, 12 * 60 * 60 * 1000L)
+
+        private const val SPAN_SEED_LOOKBACK_MS = 12 * 60 * 60 * 1000L
+
+        /**
+         * Spans within [fromMs]..[toMs] when at least one activity was resumed, from time-ordered
+         * [transitions] that may start before [fromMs] so the resumed set is known at [fromMs].
+         */
+        fun spansFromTransitions(transitions: List<ActivityTransition>, fromMs: Long, toMs: Long): List<LongRange> {
+            val resumed = HashSet<String>()
+            val spans = ArrayList<LongRange>()
+            var openedAt: Long? = null
+            fun close(at: Long) {
+                val start = openedAt ?: return
+                openedAt = null
+                val clippedStart = maxOf(start, fromMs)
+                val clippedEnd = minOf(at, toMs)
+                if (clippedStart <= clippedEnd) spans += clippedStart..clippedEnd
+            }
+            for (transition in transitions) {
+                if (transition.resumed) {
+                    if (resumed.isEmpty()) openedAt = transition.timestamp
+                    resumed += transition.className
+                } else if (resumed.remove(transition.className) && resumed.isEmpty()) {
+                    close(transition.timestamp)
+                }
+            }
+            close(toMs)
+            return spans
+        }
     }
 }

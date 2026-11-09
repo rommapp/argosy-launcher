@@ -56,6 +56,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.yield
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
@@ -190,6 +191,25 @@ class DualScreenManager(
 
     private val _hasPresentationScreen = MutableStateFlow(false)
     val hasPresentationScreen: StateFlow<Boolean> = _hasPresentationScreen
+
+    private val screenEventTick = MutableStateFlow(0)
+
+    /**
+     * True while a lit external display mirrors the built-in panel: one is attached, dual screen
+     * is off and DeX is not running. Launcher surfaces skip the panel's camera cutout inset then
+     * and draw to its edge, the frame the external display shows.
+     */
+    val panelMirroredToExternal: StateFlow<Boolean> =
+        kotlinx.coroutines.flow.combine(
+            preferencesRepository.userPreferences
+                .map { it.dualScreenEnabled }
+                .distinctUntilChanged(),
+            screenEventTick
+        ) { dualScreenEnabled, _ ->
+            !dualScreenEnabled &&
+                !displayAffinityHelper.isDesktopMode &&
+                displayAffinityHelper.hasLitExternalDisplay
+        }.stateIn(activityIndependentScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, false)
 
     private val _controlHints =
         MutableStateFlow<List<com.nendo.argosy.ui.dualscreen.CompanionHint>>(emptyList())
@@ -525,6 +545,7 @@ class DualScreenManager(
     fun onDesktopModeChanged() {
         val active = displayAffinityHelper.isDesktopMode
         Log.i(TAG, "Samsung DeX ${if (active) "active" else "inactive"}")
+        screenEventTick.update { it + 1 }
         if (active) {
             teardownCompanion()
             setSecondaryHomeComponentEnabled(false)
@@ -1151,26 +1172,14 @@ class DualScreenManager(
     val mediaPlayback: StateFlow<com.nendo.argosy.data.media.ActiveMediaPlayback?> =
         mediaPlaybackTracker.activePlayback
 
-    private val _mediaSignedIn = MutableStateFlow(false)
+    private val _mediaPanelItemId = MutableStateFlow<String?>(null)
 
     /**
-     * Whether a media account exists at all. The companion's media button is offered on this rather
-     * than on a live playback, so the panel is reachable to pick something up from where it was left
-     * as well as to look at what is already running.
+     * The item the presentation screen's media panel describes: the open playback's item, held
+     * for [MEDIA_PANEL_SWITCH_GRACE_MS] after the player closes it. The player closes the outgoing
+     * episode before the next one opens, and the hold keeps the panel in place across that gap.
      */
-    val mediaSignedIn: StateFlow<Boolean> = _mediaSignedIn
-
-    private val _companionMediaVisible = MutableStateFlow(false)
-
-    /**
-     * Whether the companion is showing the media panel rather than its home.
-     *
-     * Context decides it: a playback opening turns it on and a playback ending turns it off, so a
-     * film starting on the main screen puts its episode list on the companion without anyone asking.
-     * [toggleCompanionMediaView] is the manual override on top of that, which is why the flag is
-     * held rather than derived - a derived flag could not be overridden.
-     */
-    val companionMediaVisible: StateFlow<Boolean> = _companionMediaVisible
+    val mediaPanelItemId: StateFlow<String?> = _mediaPanelItemId
 
     private val _mediaPlayerDisplay = MutableStateFlow<Int?>(null)
 
@@ -1233,15 +1242,6 @@ class DualScreenManager(
         if (_mediaPlayerControlsLocked.value == locked) return
         _mediaPlayerControlsLocked.value = locked
         if (locked) controlCompanion?.refocusSelf()
-    }
-
-    fun toggleCompanionMediaView() {
-        _companionMediaVisible.value = !_companionMediaVisible.value &&
-            (_mediaSignedIn.value || mediaPlaybackTracker.activePlayback.value != null)
-    }
-
-    fun setCompanionMediaVisible(visible: Boolean) {
-        _companionMediaVisible.value = visible
     }
 
     private val _mediaInfoRequest = MutableStateFlow<String?>(null)
@@ -1424,33 +1424,28 @@ class DualScreenManager(
         observeLaunchLive()
     }
 
-    /**
-     * Turns the companion's media panel on and off with the playback itself.
-     *
-     * This is the whole of "automatic by context": nobody asks for the panel, it is there while
-     * something is being watched and gone afterwards. A manual return to home during a playback
-     * survives, because only the transitions write here - a viewer who went back to their library
-     * mid-film is not sent to the film again on the next transport change.
-     */
     private fun observeMedia() {
         mediaObserverJob?.cancel()
         mediaObserverJob = scope.launch {
-            launch {
-                mediaRepository.isSignedIn.collect { _mediaSignedIn.value = it }
-            }
             var wasOpen = false
-            mediaPlaybackTracker.activePlayback.collect { playback ->
+            mediaPlaybackTracker.activePlayback.collectLatest { playback ->
                 val isOpen = playback != null
-                if (isOpen == wasOpen) return@collect
-                wasOpen = isOpen
-                _companionMediaVisible.value = isOpen
-                if (!isOpen) {
-                    mediaFocusJob?.cancel()
-                    mediaFocusJob = null
-                    mediaPlayerDisplayId = null
-                    mediaPlayerKeyDispatcher = null
-                    mediaPlayerMotionDispatcher = null
-                    _mediaPlayerControlsLocked.value = false
+                if (isOpen != wasOpen) {
+                    wasOpen = isOpen
+                    if (!isOpen) {
+                        mediaFocusJob?.cancel()
+                        mediaFocusJob = null
+                        mediaPlayerDisplayId = null
+                        mediaPlayerKeyDispatcher = null
+                        mediaPlayerMotionDispatcher = null
+                        _mediaPlayerControlsLocked.value = false
+                    }
+                }
+                if (playback != null) {
+                    _mediaPanelItemId.value = playback.itemId
+                } else if (_mediaPanelItemId.value != null) {
+                    delay(MEDIA_PANEL_SWITCH_GRACE_MS)
+                    _mediaPanelItemId.value = null
                 }
             }
         }
@@ -1536,19 +1531,28 @@ class DualScreenManager(
 
     val presentationSlot: StateFlow<com.nendo.argosy.ui.dualscreen.PresentationSlot> =
         kotlinx.coroutines.flow.combine(
-            _presentationSlots,
-            _companionDetails,
-            _swappedIsGameActive,
-            _swappedCompanionState,
-            _companionAchievements
-        ) { slots, details, gameActive, inGame, achievements ->
-            val detail = details.lastOrNull()?.second
-            when {
-                gameActive && inGame.isLoaded ->
-                    com.nendo.argosy.ui.dualscreen.PresentationSlot.InGame(inGame, achievements)
-                slots.isNotEmpty() -> slots.last().second
-                detail != null -> com.nendo.argosy.ui.dualscreen.PresentationSlot.Detail(detail)
-                else -> com.nendo.argosy.ui.dualscreen.PresentationSlot.Fallback
+            kotlinx.coroutines.flow.combine(
+                _presentationSlots,
+                _companionDetails,
+                _swappedIsGameActive,
+                _swappedCompanionState,
+                _companionAchievements
+            ) { slots, details, gameActive, inGame, achievements ->
+                val detail = details.lastOrNull()?.second
+                when {
+                    gameActive && inGame.isLoaded ->
+                        com.nendo.argosy.ui.dualscreen.PresentationSlot.InGame(inGame, achievements)
+                    slots.isNotEmpty() -> slots.last().second
+                    detail != null -> com.nendo.argosy.ui.dualscreen.PresentationSlot.Detail(detail)
+                    else -> com.nendo.argosy.ui.dualscreen.PresentationSlot.Fallback
+                }
+            },
+            _mediaPanelItemId
+        ) { slot, mediaItemId ->
+            if (mediaItemId != null && slot !is com.nendo.argosy.ui.dualscreen.PresentationSlot.InGame) {
+                com.nendo.argosy.ui.dualscreen.PresentationSlot.MediaPlayback(mediaItemId)
+            } else {
+                slot
             }
         }
             .stateIn(
@@ -1716,16 +1720,19 @@ class DualScreenManager(
     private val displayListener: DisplayManager.DisplayListener = object : DisplayManager.DisplayListener {
         override fun onDisplayAdded(displayId: Int) {
             if (!isScreenEvent(displayId)) return
+            screenEventTick.update { it + 1 }
             onScreenAdded(displayId)
         }
 
         override fun onDisplayRemoved(displayId: Int) {
             if (!isScreenEvent(displayId)) return
+            screenEventTick.update { it + 1 }
             onScreenRemoved(displayId)
         }
 
         override fun onDisplayChanged(displayId: Int) {
             if (!isScreenEvent(displayId)) return
+            screenEventTick.update { it + 1 }
             onScreenChanged(displayId)
         }
     }
@@ -2515,6 +2522,7 @@ class DualScreenManager(
          * input.
          */
         private const val MEDIA_DIM_PARTIAL_DELAY_MS = 30_000L
+        private const val MEDIA_PANEL_SWITCH_GRACE_MS = 5_000L
         private const val MEDIA_DIM_OFF_DELAY_MS = 60_000L
         private const val MEDIA_DIM_PARTIAL_BRIGHTNESS = 0.4f
         private const val MEDIA_DIM_OFF_BRIGHTNESS = 0f

@@ -26,5 +26,9 @@ class RomMApiClientMediaUrlTest {
             "http://192.168.1.215:3000/assets/romm/resources/roms/3/852/box2d.png",
             client.buildResourceUrl("roms/3/852/box2d.png")
         )
+        assertEquals(
+            "http://192.168.1.215:3000/api/screenshots/9/content",
+            client.buildScreenshotContentUrl(9L)
+        )
     }
 }

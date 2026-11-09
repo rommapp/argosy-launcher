@@ -113,6 +113,9 @@ class UserPreferencesRepository @Inject constructor(
             quickNavigation = controls.quickNavigation,
             navBarAutoHide = controls.navBarAutoHide,
             ignoreControllerTouchpad = controls.ignoreControllerTouchpad,
+            systemHotkeysEnabled = controls.systemHotkeysEnabled,
+            systemHomeCombo = controls.systemHomeCombo,
+            systemBackCombo = controls.systemBackCombo,
             lastRommSync = sync.lastRommSync,
             rommChangesWatermark = sync.rommChangesWatermark,
             lastFavoritesSync = sync.lastFavoritesSync,
@@ -540,6 +543,9 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun setQuickNavigation(enabled: Boolean) = controlsPrefs.setQuickNavigation(enabled)
     suspend fun setNavBarAutoHide(enabled: Boolean) = controlsPrefs.setNavBarAutoHide(enabled)
     suspend fun setIgnoreControllerTouchpad(enabled: Boolean) = controlsPrefs.setIgnoreControllerTouchpad(enabled)
+    suspend fun setSystemHotkeysEnabled(enabled: Boolean) = controlsPrefs.setSystemHotkeysEnabled(enabled)
+    suspend fun setSystemHomeCombo(keyCodes: List<Int>?) = controlsPrefs.setSystemHomeCombo(keyCodes)
+    suspend fun setSystemBackCombo(keyCodes: List<Int>?) = controlsPrefs.setSystemBackCombo(keyCodes)
 
 
     // --- Storage delegates ---
@@ -911,6 +917,9 @@ data class UserPreferences(
     val quickNavigation: Boolean = true,
     val navBarAutoHide: Boolean = true,
     val ignoreControllerTouchpad: Boolean = true,
+    val systemHotkeysEnabled: Boolean = true,
+    val systemHomeCombo: List<Int>? = null,
+    val systemBackCombo: List<Int>? = null,
     val lastRommSync: Instant? = null,
     val rommChangesWatermark: Instant? = null,
     val lastFavoritesSync: Instant? = null,

@@ -17,6 +17,54 @@ class ArgosSocialServiceParserTest {
         return ArgosSocialService(application)
     }
 
+    private val refusal = """{"type":"error","error":"authentication_failed"}"""
+
+    @Test
+    fun oneAuthRefusalKeepsTheSession() = runBlocking {
+        val service = newService()
+        var revoked = 0
+        service.onSessionRevoked = { revoked++ }
+
+        service.handleMessageForTest(refusal)
+
+        assertEquals(0, revoked)
+    }
+
+    @Test
+    fun repeatedAuthRefusalsEndTheSession() = runBlocking {
+        val service = newService()
+        var revoked = 0
+        service.onSessionRevoked = { revoked++ }
+
+        repeat(ArgosSocialService.AUTH_REFUSALS_BEFORE_LOGOUT) { service.handleMessageForTest(refusal) }
+
+        assertEquals(1, revoked)
+    }
+
+    @Test
+    fun anAcceptedAuthResetsTheRefusalCount() = runBlocking {
+        val service = newService()
+        var revoked = 0
+        service.onSessionRevoked = { revoked++ }
+
+        repeat(ArgosSocialService.AUTH_REFUSALS_BEFORE_LOGOUT - 1) { service.handleMessageForTest(refusal) }
+        service.handleMessageForTest("""{"type":"auth_success"}""")
+        repeat(ArgosSocialService.AUTH_REFUSALS_BEFORE_LOGOUT - 1) { service.handleMessageForTest(refusal) }
+
+        assertEquals(0, revoked)
+    }
+
+    @Test
+    fun aFailedSessionLookupNeverEndsTheSession() = runBlocking {
+        val service = newService()
+        var revoked = 0
+        service.onSessionRevoked = { revoked++ }
+
+        repeat(10) { service.handleMessageForTest("""{"type":"error","error":"session_lookup_failed"}""") }
+
+        assertEquals(0, revoked)
+    }
+
     @Test
     fun parsesNetplayInviteWithIgdbId() = runBlocking {
         val service = newService()

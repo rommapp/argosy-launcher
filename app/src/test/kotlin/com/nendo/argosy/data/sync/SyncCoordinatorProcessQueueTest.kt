@@ -19,6 +19,7 @@ import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.repository.SaveCacheManager
 import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.data.repository.SaveSyncResult
+import com.nendo.argosy.data.repository.ScreenshotUploader
 import com.nendo.argosy.data.repository.StateCacheManager
 import com.nendo.argosy.data.sync.strategy.ConflictAutoResolver
 import com.nendo.argosy.data.sync.strategy.SaveSyncStrategySelector
@@ -31,10 +32,14 @@ import io.mockk.mockk
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.io.File
+import java.nio.file.Files
 import java.time.Instant
 
 class SyncCoordinatorProcessQueueTest {
@@ -53,6 +58,10 @@ class SyncCoordinatorProcessQueueTest {
     private val strategySelector = mockk<SaveSyncStrategySelector>(relaxed = true)
     private val conflictAutoResolver = mockk<ConflictAutoResolver>(relaxed = true)
     private val pendingConflictDao = mockk<PendingConflictDao>(relaxed = true)
+    private val screenshotUploader = mockk<ScreenshotUploader>()
+    private val screenshotLedger = mockk<ScreenshotUploadLedger>(relaxed = true)
+    private val screenshotNotices = mockk<ScreenshotUploadNotices>(relaxed = true)
+    private val tempFilesDir: File = Files.createTempDirectory("process_queue").toFile()
 
     private val payloadCodec = SyncPayloadCodec(Moshi.Builder().build())
     private val connectionState = MutableStateFlow<ConnectionState>(
@@ -93,8 +102,15 @@ class SyncCoordinatorProcessQueueTest {
             syncPreferencesRepository = syncPreferencesRepository,
             serverSaveGate = noHoldGate()
         )
+        val screenshotUploads = ScreenshotUploadQueue(
+            context = mockk(relaxed = true) { every { filesDir } returns tempFilesDir },
+            pendingSyncQueueDao = pendingSyncQueueDao,
+            payloadCodec = payloadCodec,
+            uploader = screenshotUploader,
+            ledger = screenshotLedger,
+            notices = screenshotNotices
+        )
         coordinator = SyncCoordinator(
-            context = io.mockk.mockk(relaxed = true) { io.mockk.every { filesDir } returns java.io.File(System.getProperty("java.io.tmpdir")) },
             pendingSyncQueueDao = pendingSyncQueueDao,
             saveCacheDao = saveCacheDao,
             saveSyncDao = saveSyncDao,
@@ -113,7 +129,7 @@ class SyncCoordinatorProcessQueueTest {
             pendingConflictDao = pendingConflictDao,
             reconcileEffectApplier = effectApplier,
             saveRecoveryGate = mockk(relaxed = true),
-            screenshotUploader = mockk(relaxed = true),
+            screenshotUploads = screenshotUploads,
             rommApiProvider = mockk(relaxed = true),
             accountSwitchMarkerStore = mockk(relaxed = true),
             syncStatesOnSessionEndUseCase = mockk(relaxed = true),
@@ -316,6 +332,83 @@ class SyncCoordinatorProcessQueueTest {
     }
 
     @Test
+    fun `a screenshot upload that fails transiently stays queued past the retry limit`() = runTest {
+        val copy = pendingCopy("Screenshot_1.png")
+        val row = screenshotRow(id = 50L, copy = copy).copy(retryCount = 3, maxRetries = 3)
+        coEvery { pendingSyncQueueDao.getPendingByPriorityTier(SyncPriority.PROPERTY) } returns listOf(row)
+        coEvery { screenshotUploader.upload(any(), any()) } returns ScreenshotUploader.Result.Failed("HTTP 503")
+
+        coordinator.processQueue()
+
+        coVerify(exactly = 1) { pendingSyncQueueDao.recordRetryableFailure(50L, "HTTP 503", any()) }
+        coVerify(exactly = 0) { pendingSyncQueueDao.markFailed(50L, any(), any()) }
+        coVerify(exactly = 0) { pendingSyncQueueDao.deleteById(50L) }
+        assertTrue(copy.exists())
+        coVerify(exactly = 0) { screenshotLedger.record(any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `a screenshot upload the uploader cannot reach the server for stays queued`() = runTest {
+        val copy = pendingCopy("Screenshot_2.png")
+        coEvery { pendingSyncQueueDao.getPendingByPriorityTier(SyncPriority.PROPERTY) } returns
+            listOf(screenshotRow(id = 51L, copy = copy))
+        coEvery { screenshotUploader.upload(any(), any()) } returns ScreenshotUploader.Result.NotConnected
+
+        coordinator.processQueue()
+
+        coVerify(exactly = 1) { pendingSyncQueueDao.recordRetryableFailure(51L, any(), any()) }
+        coVerify(exactly = 0) { pendingSyncQueueDao.markFailed(51L, any(), any()) }
+        assertTrue(copy.exists())
+    }
+
+    @Test
+    fun `a screenshot the server rejects for good is dropped at once and announced`() = runTest {
+        val copy = pendingCopy("Screenshot_3.png")
+        coEvery { pendingSyncQueueDao.getPendingByPriorityTier(SyncPriority.PROPERTY) } returns
+            listOf(screenshotRow(id = 52L, copy = copy))
+        coEvery { screenshotUploader.upload(any(), any()) } returns ScreenshotUploader.Result.Rejected("HTTP 413")
+
+        coordinator.processQueue()
+
+        coVerify(exactly = 1) { pendingSyncQueueDao.deleteById(52L) }
+        coVerify(exactly = 0) { pendingSyncQueueDao.markFailed(52L, any(), any()) }
+        coVerify(exactly = 0) { pendingSyncQueueDao.recordRetryableFailure(52L, any(), any()) }
+        assertFalse(copy.exists())
+        coVerify(exactly = 1) { screenshotNotices.drainFinished(0, 1) }
+    }
+
+    @Test
+    fun `an uploaded screenshot is deleted, remembered and announced`() = runTest {
+        val copy = pendingCopy("Screenshot_4.png")
+        coEvery { pendingSyncQueueDao.getPendingByPriorityTier(SyncPriority.PROPERTY) } returns
+            listOf(screenshotRow(id = 53L, copy = copy))
+        coEvery { screenshotUploader.upload(any(), any()) } returns ScreenshotUploader.Result.Success
+
+        coordinator.processQueue()
+
+        coVerify(exactly = 1) { screenshotUploader.upload(copy, 100L) }
+        coVerify(exactly = 1) { pendingSyncQueueDao.deleteById(53L) }
+        assertFalse(copy.exists())
+        coVerify(exactly = 1) { screenshotLedger.record(null, 100L, "/sdcard/DCIM/Screenshots/Screenshot_4.png", 1_000L, any()) }
+        coVerify(exactly = 1) { screenshotNotices.drainFinished(1, 0) }
+    }
+
+    @Test
+    fun `a failed save upload still spends its retry budget and never takes the screenshot path`() = runTest {
+        val row = saveFileRow(id = 13L, sessionId = null)
+        coEvery { pendingSyncQueueDao.getPendingByPriorityTier(SyncPriority.SAVE_FILE) } returns listOf(row)
+        coEvery {
+            saveSyncRepository.uploadSave(any(), any(), any(), any(), any(), any())
+        } returns SaveSyncResult.Error("HTTP 503")
+
+        coordinator.processQueue()
+
+        coVerify(exactly = 1) { pendingSyncQueueDao.markFailed(13L, any(), any()) }
+        coVerify(exactly = 0) { pendingSyncQueueDao.recordRetryableFailure(any(), any(), any()) }
+        coVerify(exactly = 0) { screenshotUploader.upload(any(), any()) }
+    }
+
+    @Test
     fun `returns NotConnected when RomM is not connected`() = runTest {
         connectionState.value = ConnectionState.Disconnected
 
@@ -324,6 +417,32 @@ class SyncCoordinatorProcessQueueTest {
         assertTrue(result is SyncCoordinator.ProcessResult.NotConnected)
         coVerify(exactly = 0) { pendingSyncQueueDao.promoteEligibleFailedToPending(any()) }
     }
+
+    @After
+    fun tearDown() {
+        tempFilesDir.deleteRecursively()
+    }
+
+    private fun pendingCopy(name: String): File {
+        val slot = File(PendingScreenshotStore.root(mockk(relaxed = true) { every { filesDir } returns tempFilesDir }), "1000_ab")
+        slot.mkdirs()
+        return File(slot, name).apply { writeBytes(byteArrayOf(1, 2, 3)) }
+    }
+
+    private fun screenshotRow(id: Long, copy: File): PendingSyncQueueEntity =
+        PendingSyncQueueEntity(
+            id = id, gameId = 1L, rommId = 100L,
+            syncType = SyncType.SCREENSHOT, priority = SyncPriority.PROPERTY,
+            payloadJson = payloadCodec.encode(
+                ScreenshotPayload(
+                    localPath = copy.absolutePath,
+                    sourcePath = "/sdcard/DCIM/Screenshots/${copy.name}",
+                    sourceModifiedAt = 1_000L
+                )
+            ),
+            status = SyncStatus.PENDING,
+            createdAt = Instant.now(), updatedAt = Instant.now(),
+        )
 
     private fun propertyRow(id: Long, syncType: SyncType, intValue: Int): PendingSyncQueueEntity =
         PendingSyncQueueEntity(

@@ -161,6 +161,7 @@
     <string name="dual_media_episodes_empty_title">Aucun épisode pour l\'instant</string>
 
     <string name="dual_media_cast_header">Distribution</string>
+    <string name="dual_media_related_header">Titres similaires</string>
     <string name="dual_media_browse_back_description">Retour</string>
     <plurals name="dual_media_browse_episode_count">
         <item quantity="one">%d épisode</item>

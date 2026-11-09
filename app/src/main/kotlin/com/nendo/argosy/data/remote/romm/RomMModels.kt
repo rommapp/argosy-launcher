@@ -78,6 +78,7 @@ data class RomMRom(
 
     @Json(name = "merged_screenshots") val screenshotPaths: List<String>? = null,
     @Json(name = "user_screenshots") val userScreenshots: List<RomMUserScreenshot>? = null,
+    @Json(name = "all_user_screenshots") val allUserScreenshots: List<RomMUserScreenshot>? = null,
     @Json(name = "rom_user") val romUser: RomMRomUser? = null,
 
     @Json(name = "tags") val tags: List<String>? = null,
@@ -204,11 +205,13 @@ data class RomMUserScreenshot(
     @Json(name = "rom_id") val romId: Long,
     @Json(name = "user_id") val userId: Long? = null,
     @Json(name = "file_name") val fileName: String? = null,
+    @Json(name = "file_extension") val fileExtension: String? = null,
     @Json(name = "download_path") val downloadPath: String? = null,
     @Json(name = "is_gallery") val isGallery: Boolean = false,
     @Json(name = "is_public") val isPublic: Boolean = false,
     @Json(name = "created_at") val createdAt: String? = null,
-    @Json(name = "updated_at") val updatedAt: String? = null
+    @Json(name = "updated_at") val updatedAt: String? = null,
+    @Json(name = "username") val username: String? = null
 )
 
 @JsonClass(generateAdapter = true)

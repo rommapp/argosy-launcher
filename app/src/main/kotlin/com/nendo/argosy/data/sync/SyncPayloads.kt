@@ -33,9 +33,16 @@ data class AchievementPayload(
     val earnedAt: Long
 )
 
+/**
+ * A screenshot waiting to upload. [localPath] is Argosy's private copy, named exactly as the
+ * source file; [sourcePath] and [sourceModifiedAt] identify the original, and are null on rows
+ * that do not record it.
+ */
 @JsonClass(generateAdapter = true)
 data class ScreenshotPayload(
-    val localPath: String
+    val localPath: String,
+    val sourcePath: String? = null,
+    val sourceModifiedAt: Long? = null
 )
 
 @Singleton

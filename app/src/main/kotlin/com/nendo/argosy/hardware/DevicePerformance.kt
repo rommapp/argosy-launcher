@@ -2,6 +2,7 @@ package com.nendo.argosy.hardware
 
 import android.os.Build
 import com.nendo.argosy.util.PServerExecutor
+import com.nendo.argosy.util.SuExecutor
 import com.nendo.argosy.util.XsuExecutor
 import java.io.File
 import javax.inject.Inject
@@ -14,7 +15,11 @@ enum class PerformanceMode {
     GAMING,
     STANDARD,
     HIGH,
-    MAX
+    MAX;
+
+    companion object {
+        fun fromString(value: String?): PerformanceMode? = entries.firstOrNull { it.name == value }
+    }
 }
 
 /**
@@ -28,6 +33,23 @@ interface DevicePerformance {
     val canWrite: Boolean
 
     /**
+     * True when writing needs a root manager's approval. [requestAccess] asks for it and can raise
+     * the manager's prompt, so it runs only on a user action or once approval is on record.
+     */
+    val needsRootGrant: Boolean get() = false
+
+    /**
+     * True when the hardware loses the mode at reboot and nothing but Argosy sets it again, so the
+     * chosen mode is saved and applied at startup.
+     */
+    val restoresSavedMode: Boolean get() = false
+
+    /**
+     * Asks for write access where the device gates it, and returns [canWrite] afterwards.
+     */
+    fun requestAccess(): Boolean = canWrite
+
+    /**
      * The mode the hardware is running now, or null when its state matches none of [modes].
      */
     fun currentMode(): PerformanceMode?
@@ -36,12 +58,22 @@ interface DevicePerformance {
 }
 
 @Singleton
-class DevicePerformanceResolver @Inject constructor(
-    private val fanController: FanController
+class DevicePerformanceResolver internal constructor(
+    private val fanController: FanController,
+    private val product: String?,
+    private val detectRootedQualcomm: () -> DevicePerformance?
 ) {
+    @Inject
+    constructor(fanController: FanController) : this(
+        fanController,
+        Build.PRODUCT,
+        { RootedQualcommPerformance.detect(File("/"), SuExecutor) }
+    )
+
     fun resolve(): DevicePerformance? {
         if (fanController.isAvailable()) return AynPerformance
-        return AyaneoPerformance.socFor(Build.PRODUCT)?.let(::AyaneoPerformance)
+        AyaneoPerformance.socFor(product)?.let { return AyaneoPerformance(it) }
+        return detectRootedQualcomm()
     }
 }
 

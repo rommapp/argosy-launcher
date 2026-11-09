@@ -46,7 +46,8 @@ class BiosBuiltinPs2Test {
             platformDao = mockk(relaxed = true),
             userPreferencesRepository = prefs,
             switchKeyManager = mockk(relaxed = true),
-            attributionRepository = mockk(relaxed = true)
+            attributionRepository = mockk(relaxed = true),
+            fal = mockk(relaxed = true)
         )
         source = File(tempDir, "files/bios/ps2/SCPH-70012.bin").apply {
             parentFile?.mkdirs()
@@ -76,7 +77,7 @@ class BiosBuiltinPs2Test {
 
     @Test
     fun `ps2 BIOS for the built-in core lands in pcsx2 bios under its own name`() = runBlocking {
-        coEvery { firmwareDao.getByPlatformSlug("ps2") } returns listOf(ps2Bios())
+        coEvery { firmwareDao.getDownloaded() } returns listOf(ps2Bios())
 
         val copied = repository.distributeBiosToEmulator("ps2", EmulatorRegistry.BUILTIN_PACKAGE)
 
@@ -96,6 +97,7 @@ class BiosBuiltinPs2Test {
     @Test
     fun `cleanup removes the copy distribution placed in pcsx2 bios`() = runBlocking {
         coEvery { firmwareDao.getByPlatformSlug("ps2") } returns listOf(ps2Bios())
+        coEvery { firmwareDao.getDownloaded() } returns listOf(ps2Bios())
         repository.distributeBiosToEmulator("ps2", EmulatorRegistry.BUILTIN_PACKAGE)
         val nested = File(repository.getLibretroSystemDir(), "pcsx2/bios/SCPH-70012.bin")
         assertTrue(nested.isFile)

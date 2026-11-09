@@ -72,6 +72,7 @@ object DimensionTokens {
         const val footerHeight = 52
         const val footerHeightCompact = 30
         const val modalWidth = 400
+        const val modalWidthMin = 280
         const val modalWidthLg = 520
         const val quickPanelWidthWide = 456
         const val navDrawerWidth = 252

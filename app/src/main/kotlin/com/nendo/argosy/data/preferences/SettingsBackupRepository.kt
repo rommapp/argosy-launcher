@@ -30,7 +30,8 @@ sealed interface SettingsImportResult {
 }
 
 /**
- * Reads and writes the plain-text settings backup described by [SettingsBackupKeys].
+ * Reads and writes the plain-text settings backup described by [SettingsBackupKeys] and
+ * [PlatformSetupBackup].
  *
  * Import is a merge rather than a replace. Only the keys the file names are written, so a value
  * the file omits keeps whatever the device already had, and a value the file carries under a name
@@ -39,7 +40,8 @@ sealed interface SettingsImportResult {
  */
 @Singleton
 class SettingsBackupRepository @Inject constructor(
-    private val dataStore: DataStore<Preferences>
+    private val dataStore: DataStore<Preferences>,
+    private val platformSetup: PlatformSetupBackup
 ) {
 
     suspend fun exportToFile(): SettingsExportResult = withContext(Dispatchers.IO) {
@@ -50,14 +52,16 @@ class SettingsBackupRepository @Inject constructor(
                 val value = stored[keyFor(entry)] ?: return@forEach
                 if (matches(entry.type, value)) values.put(entry.name, value)
             }
+            val setup = platformSetup.export()
             val document = JSONObject().apply {
                 put(FIELD_VERSION, FORMAT_VERSION)
                 put(FIELD_APP_VERSION, BuildConfig.VERSION_NAME)
                 put(FIELD_SETTINGS, values)
+                put(PlatformSetupBackup.FIELD_SECTION, setup)
             }
             val target = File(targetPath())
             target.writeText(document.toString(2))
-            SettingsExportResult.Success(target.absolutePath, values.length())
+            SettingsExportResult.Success(target.absolutePath, values.length() + platformSetup.count(setup))
         } catch (e: Exception) {
             SettingsExportResult.Error(e.message ?: "Could not write the backup")
         }
@@ -67,7 +71,8 @@ class SettingsBackupRepository @Inject constructor(
         try {
             val file = File(path)
             if (!file.isFile) return@withContext SettingsImportResult.Error("File not found")
-            val settings = JSONObject(file.readText()).optJSONObject(FIELD_SETTINGS)
+            val document = JSONObject(file.readText())
+            val settings = document.optJSONObject(FIELD_SETTINGS)
                 ?: return@withContext SettingsImportResult.Error("Not an Argosy settings backup")
             var applied = 0
             var skipped = 0
@@ -77,6 +82,11 @@ class SettingsBackupRepository @Inject constructor(
                     val wrote = entry != null && write(prefs, entry, settings.opt(name))
                     if (wrote) applied++ else skipped++
                 }
+            }
+            document.optJSONObject(PlatformSetupBackup.FIELD_SECTION)?.let { section ->
+                val setup = platformSetup.import(section)
+                applied += setup.applied
+                skipped += setup.skipped
             }
             SettingsImportResult.Success(applied, skipped)
         } catch (e: Exception) {

@@ -16,6 +16,9 @@ interface EmulatorLaunchArgsDao {
     @Query("SELECT * FROM emulator_launch_args WHERE platformId = :platformId AND emulatorId = :emulatorId LIMIT 1")
     fun observeByPlatformAndEmulator(platformId: Long, emulatorId: String): Flow<EmulatorLaunchArgsEntity?>
 
+    @Query("SELECT * FROM emulator_launch_args")
+    suspend fun getAll(): List<EmulatorLaunchArgsEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: EmulatorLaunchArgsEntity)
 

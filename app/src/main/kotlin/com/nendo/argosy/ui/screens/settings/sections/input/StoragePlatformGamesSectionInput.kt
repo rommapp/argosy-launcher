@@ -56,8 +56,13 @@ internal class StoragePlatformGamesSectionInput(
     override fun onNextTrigger(): InputResult = cycleLocationFilter(1)
 
     private fun cycleLocationFilter(delta: Int): InputResult {
-        if (!viewModel.uiState.value.storagePlatformGames.localOnly) return InputResult.UNHANDLED
+        if (!viewModel.uiState.value.storagePlatformGames.showsLocationTabs) return InputResult.UNHANDLED
         viewModel.cycleStorageLocationFilter(delta)
+        return InputResult.HANDLED
+    }
+
+    override fun onContextMenu(): InputResult {
+        viewModel.cycleStoragePlatformGamesSort()
         return InputResult.HANDLED
     }
 

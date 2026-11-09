@@ -249,12 +249,6 @@ fun SettingsScreen(
         viewModel.onNotificationPermissionResult(granted)
     }
 
-    val mediaPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        viewModel.onMediaPermissionResult(granted)
-    }
-
     val blePermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { results ->
@@ -366,16 +360,6 @@ fun SettingsScreen(
                 notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
             } else {
                 viewModel.onNotificationPermissionResult(true)
-            }
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        viewModel.requestMediaPermissionEvent.collect {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                mediaPermissionLauncher.launch(android.Manifest.permission.READ_MEDIA_IMAGES)
-            } else {
-                viewModel.onMediaPermissionResult(true)
             }
         }
     }
@@ -1804,7 +1788,7 @@ private fun SettingsFooter(
     if (uiState.currentSection == SettingsSection.ACCOUNTS && uiState.accounts.switchInProgress) {
         return
     }
-    if (uiState.controls.shortcutCaptureTarget != null) {
+    if (uiState.controls.shortcutCaptureTarget != null || uiState.controls.systemComboCaptureTarget != null) {
         return
     }
     if (uiState.currentSection == SettingsSection.PLATFORMS && uiState.emulators.isReorderingPlatforms) {
@@ -1883,6 +1867,7 @@ private fun SettingsFooter(
     val backHint = stringResource(R.string.settings_shell_footer_back)
     val localOnlyLocationHint = stringResource(R.string.settings_shell_footer_local_only_location)
     val unassignShortcutHint = stringResource(R.string.settings_shell_footer_unassign_shortcut)
+    val resetSystemComboHint = stringResource(R.string.settings_shell_footer_reset_system_combo)
     val launchTargetsScreenHint = stringResource(R.string.settings_shell_footer_launch_targets_screen)
     val launchTargetsResetHint = stringResource(R.string.settings_shell_footer_launch_targets_reset)
     val launchTargetRows = remember(uiState.launchTargets) { launchTargetsLayout(uiState.launchTargets) }
@@ -1933,11 +1918,16 @@ private fun SettingsFooter(
             add(InputButton.Y to removeFrameHint)
         }
         if (uiState.currentSection == SettingsSection.NAVIGATION) {
-            val focusedShortcut = navigationItemAtFocusIndex(uiState.focusedIndex, uiState.controls)?.shortcut
+            val focusedNavigationItem = navigationItemAtFocusIndex(uiState.focusedIndex, uiState.controls)
+            val focusedShortcut = focusedNavigationItem?.shortcut
+            val focusedSystemCombo = focusedNavigationItem?.systemHotkeyAction
             if (focusedShortcut != null &&
                 UiShortcutKeys.isBindable(uiState.controls.shortcutKey(focusedShortcut))
             ) {
                 add(InputButton.Y to unassignShortcutHint)
+            }
+            if (focusedSystemCombo != null && uiState.controls.isSystemComboCustom(focusedSystemCombo)) {
+                add(InputButton.Y to resetSystemComboHint)
             }
         }
         if (uiState.currentSection == SettingsSection.THEME_SOUNDS && uiState.sounds.enabled) {
@@ -2041,9 +2031,10 @@ private fun SettingsFooter(
                 }
                 add(InputButton.Y to deleteHint)
             }
-            if (uiState.storagePlatformGames.localOnly) {
+            if (uiState.storagePlatformGames.showsLocationTabs) {
                 add(InputButton.LT_RT to localOnlyLocationHint)
             }
+            add(InputButton.X to sortHint)
         }
         if (uiState.currentSection == SettingsSection.PLATFORM_DETAIL) {
             val config = uiState.emulators.platforms.getOrNull(uiState.platformDetail.platformIndex)

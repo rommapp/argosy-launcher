@@ -13,7 +13,9 @@ import com.nendo.argosy.data.social.uploader.PlaySessionPullScheduler
 import com.nendo.argosy.domain.model.MonthlyDigest
 import com.nendo.argosy.domain.model.RecapMonthUnlock
 import com.nendo.argosy.domain.model.SessionUnlock
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import java.time.YearMonth
 import java.time.ZoneId
 import javax.inject.Inject
@@ -21,8 +23,11 @@ import javax.inject.Inject
 /**
  * The monthly recap for [YearMonth] in the device's zone. Unlocks come from the RetroAchievements
  * web API key when it answers, else from RomM's progression resolved against the local
- * achievement rows. Games marked Private stay out of play time, unlocks and awards alike. Waits briefly for the other devices' play sessions before reading, then
- * reads the RomM owner once per call.
+ * achievement rows. Games marked Private stay out of play time, unlocks and awards alike. Before
+ * reading, waits for the pull of the other devices' play sessions to finish, bounded by
+ * [PlaySessionPullScheduler.RECAP_PULL_TIMEOUT_MS], while RomM's RA progression refreshes, bounded
+ * by [RaMetadataSource.ROMM_WARM_TIMEOUT_MS]; the digest is built from whatever is stored once both
+ * end. Reads the RomM owner once per call.
  */
 class GetMonthlyRecapUseCase @Inject constructor(
     private val playSessionDao: PlaySessionDao,
@@ -34,9 +39,12 @@ class GetMonthlyRecapUseCase @Inject constructor(
     private val playSessionPullScheduler: PlaySessionPullScheduler
 ) {
     suspend operator fun invoke(month: YearMonth, zone: ZoneId = ZoneId.systemDefault()): MonthlyDigest {
-        playSessionPullScheduler.pullWithin(PRE_PULL_TIMEOUT_MS)
-        val owner = preferencesRepository.userPreferences.first().rommUserId
         val window = RecapEligibility.monthWindow(month, zone)
+        coroutineScope {
+            launch { metadataSource.warmRomMProgression(window.end) }
+            playSessionPullScheduler.pullForRecap()
+        }
+        val owner = preferencesRepository.userPreferences.first().rommUserId
         val previousStart = RecapEligibility.monthWindow(month.minusMonths(1), zone).start
         val hidden = preferencesRepository.privateIgdbIds()
         val sessions = playSessionDao.getSessionsForOwnerInRange(owner, previousStart, window.end, hidden)
@@ -86,6 +94,5 @@ class GetMonthlyRecapUseCase @Inject constructor(
 
     private companion object {
         const val COVERED_GAMES = 1
-        const val PRE_PULL_TIMEOUT_MS = 4_000L
     }
 }

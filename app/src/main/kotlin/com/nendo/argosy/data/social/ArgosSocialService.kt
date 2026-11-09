@@ -93,6 +93,7 @@ class ArgosSocialService @Inject constructor(
     private var webSocket: WebSocket? = null
     private var sessionToken: String? = null
     private var reconnectAttempts = 0
+    private var consecutiveAuthRefusals = 0
     private var shouldReconnect = false
     private var reconnectJob: kotlinx.coroutines.Job? = null
     private var heartbeatJob: kotlinx.coroutines.Job? = null
@@ -222,6 +223,7 @@ class ArgosSocialService @Inject constructor(
         sessionToken = token
         shouldReconnect = true
         reconnectAttempts = 0
+        consecutiveAuthRefusals = 0
         connectInternal()
     }
 
@@ -310,6 +312,7 @@ class ArgosSocialService @Inject constructor(
                 MessageTypes.AUTH_SUCCESS -> {
                     Log.d(TAG, "Auth successful")
                     reconnectAttempts = 0
+                    consecutiveAuthRefusals = 0
                     _connectionState.value = ConnectionState.Connected
                     startHeartbeat()
                     sendDeviceRegistration()
@@ -564,12 +567,15 @@ class ArgosSocialService @Inject constructor(
                     val errorCode = payload?.optString("code", "error") ?: "error"
                     Log.e(TAG, "Server error: code=$errorCode, message=$errorMsg")
 
-                    if (errorMsg == "authentication_failed" || errorCode == "authentication_failed") {
-                        Log.w(TAG, "Authentication failed - session invalid, triggering logout")
+                    val refused = errorMsg == AUTH_REFUSED || errorCode == AUTH_REFUSED
+                    if (refused) consecutiveAuthRefusals++
+                    if (refused && consecutiveAuthRefusals >= AUTH_REFUSALS_BEFORE_LOGOUT) {
+                        Log.w(TAG, "Authentication refused $consecutiveAuthRefusals times in a row, triggering logout")
                         shouldReconnect = false
                         onSessionRevoked?.invoke()
-                        IncomingMessage.SessionRevoked("authentication_failed")
+                        IncomingMessage.SessionRevoked(AUTH_REFUSED)
                     } else {
+                        if (refused) Log.w(TAG, "Authentication refused, retrying before giving up the session")
                         IncomingMessage.Error(code = errorCode, message = errorMsg)
                     }
                 }
@@ -1996,5 +2002,7 @@ class ArgosSocialService @Inject constructor(
         private const val HEARTBEAT_INTERVAL_MS = 30_000L
         private const val PONG_TIMEOUT_MS = 10_000L
         private const val ACTIVE_GAMES_TIMEOUT_MS = 8_000L
+        private const val AUTH_REFUSED = "authentication_failed"
+        internal const val AUTH_REFUSALS_BEFORE_LOGOUT = 3
     }
 }

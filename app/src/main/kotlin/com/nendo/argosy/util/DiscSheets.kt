@@ -28,15 +28,17 @@ object DiscSheets {
      * sheet or an unreadable file.
      */
     fun trackNames(sheet: File): List<String> {
-        val lines = runCatching { sheet.readLines() }.getOrDefault(emptyList())
-        return when (sheet.extension.lowercase()) {
-            "cue" -> lines.mapNotNull { CUE_FILE_LINE.find(it)?.groupValues?.getOrNull(1) }
-            "gdi" -> lines.drop(1).mapNotNull { line ->
-                GDI_TRACK_LINE.find(line)?.groupValues?.let { it[2].ifEmpty { it[3] } }
+        val parse: (List<String>) -> List<String> = when (sheet.extension.lowercase()) {
+            "cue" -> { lines -> lines.mapNotNull { CUE_FILE_LINE.find(it)?.groupValues?.getOrNull(1) } }
+            "gdi" -> { lines ->
+                lines.drop(1).mapNotNull { line ->
+                    GDI_TRACK_LINE.find(line)?.groupValues?.let { it[2].ifEmpty { it[3] } }
+                }
             }
-            "toc" -> lines.mapNotNull { TOC_FILE_LINE.find(it)?.groupValues?.getOrNull(1) }.distinct()
-            else -> emptyList()
+            "toc" -> { lines -> lines.mapNotNull { TOC_FILE_LINE.find(it)?.groupValues?.getOrNull(1) }.distinct() }
+            else -> return emptyList()
         }
+        return parse(runCatching { sheet.readLines() }.getOrDefault(emptyList()))
     }
 
     /**

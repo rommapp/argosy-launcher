@@ -225,10 +225,6 @@ internal fun routeObserveDelegateEvents(vm: SettingsViewModel) {
         vm._requestNotificationPermissionEvent.emit(Unit)
     }.launchIn(vm.viewModelScope)
 
-    vm.syncDelegate.requestMediaPermissionEvent.onEach {
-        vm._requestMediaPermissionEvent.emit(Unit)
-    }.launchIn(vm.viewModelScope)
-
     vm.emulatorDelegate.openUrlEvent.onEach { url ->
         vm._openUrlEvent.emit(url)
     }.launchIn(vm.viewModelScope)
@@ -698,7 +694,10 @@ internal fun routeLoadSettings(vm: SettingsViewModel) {
             navRingRoutes = com.nendo.argosy.ui.navigation.NavRing.resolve(prefs.navRingRoutes),
             quickNavigation = prefs.quickNavigation,
             navBarAutoHide = prefs.navBarAutoHide,
-            ignoreControllerTouchpad = prefs.ignoreControllerTouchpad
+            ignoreControllerTouchpad = prefs.ignoreControllerTouchpad,
+            systemHotkeysEnabled = prefs.systemHotkeysEnabled,
+            systemHomeCombo = prefs.systemHomeCombo,
+            systemBackCombo = prefs.systemBackCombo
         ))
         vm.controlsDelegate.refreshUsageStatsPermission()
 

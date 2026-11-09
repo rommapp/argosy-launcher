@@ -159,7 +159,8 @@
     <string name="notif_gamelaunch_no_core_base">%1$s के लिए कोई कोर उपलब्ध नहीं है</string>
     <string name="notif_gamelaunch_no_core_with_reason">%1$s के लिए कोई कोर उपलब्ध नहीं है: %2$s</string>
     <string name="notif_gamelaunch_missing_discs">गायब डिस्क: %1$s। ठीक करने के लिए गेम विवरण देखें।</string>
-    <string name="notif_gamelaunch_missing_bios">%1$s के लिए BIOS गायब है। लॉन्च करने से पहले इसे सेटिंग्स में इंस्टॉल करें।</string>
+    <string name="notif_gamelaunch_missing_bios_files">%1$s अपने BIOS के बिना शुरू नहीं हो सकता: %2$s. Argosy को अपने BIOS फ़ोल्डर में इनमें से कोई फ़ाइल नहीं मिली। सेटिंग्स > BIOS फ़ाइलें में अपने RomM सर्वर से %1$s का फ़र्मवेयर डाउनलोड करें, फिर दोबारा शुरू करें।</string>
+    <string name="notif_gamelaunch_missing_bios_folder">%1$s BIOS डंप के बिना शुरू नहीं हो सकता। Argosy को अपने %2$s BIOS फ़ोल्डर में कोई फ़ाइल नहीं मिली। सेटिंग्स > BIOS फ़ाइलें में अपने RomM सर्वर से %1$s का फ़र्मवेयर डाउनलोड करें, फिर दोबारा शुरू करें।</string>
     <string name="notif_gamelaunch_no_scummvm_id">%1$s के लिए .scummvm फ़ाइल गायब है</string>
     <string name="notif_gamelaunch_no_android_app">Android ऐप इंस्टॉल्ड नहीं है: %1$s</string>
     <string name="notif_gamelaunch_disc_launch_failed">डिस्क लॉन्च करने में विफल</string>

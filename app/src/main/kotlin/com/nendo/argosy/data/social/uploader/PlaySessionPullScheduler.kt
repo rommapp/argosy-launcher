@@ -21,8 +21,13 @@ private const val TAG = "PlaySessionPullScheduler"
 
 internal val PLAY_SESSION_PULL_INTERVAL: Duration = Duration.ofMinutes(15)
 
+internal val RECAP_PULL_REUSE: Duration = Duration.ofMinutes(2)
+
 internal fun isPlaySessionPullDue(lastPull: Instant?, now: Instant): Boolean =
     lastPull == null || !lastPull.plus(PLAY_SESSION_PULL_INTERVAL).isAfter(now)
+
+internal fun isRecapPullFresh(lastPull: Instant?, now: Instant): Boolean =
+    lastPull != null && lastPull.plus(RECAP_PULL_REUSE).isAfter(now)
 
 @Singleton
 class PlaySessionPullScheduler internal constructor(
@@ -59,13 +64,15 @@ class PlaySessionPullScheduler internal constructor(
     }
 
     /**
-     * Waits up to [timeoutMs] for a pull to finish and answers its summary, or null when RomM
-     * cannot be pulled from, the pull failed, or the wait ran out. A pull still running at the
-     * timeout carries on in the background.
+     * True when every other device's sessions are stored: a pull completed within
+     * [RECAP_PULL_REUSE], or the shared pull finished inside [RECAP_PULL_TIMEOUT_MS]. Ignores the
+     * cadence throttle. A pull still running at the timeout carries on in the background.
      */
-    suspend fun pullWithin(timeoutMs: Long): PlaySessionPull.Summary? {
-        if (!pull.canPull) return null
-        return withTimeoutOrNull(timeoutMs) { awaitSharedPull() }
+    suspend fun pullForRecap(): Boolean {
+        if (!pull.canPull) return false
+        if (isRecapPullFresh(syncPreferencesRepository.getRommPlaySessionLastPull(), clock())) return true
+        val summary = withTimeoutOrNull(RECAP_PULL_TIMEOUT_MS) { awaitSharedPull() }
+        return summary != null && summary.stoppedBy == null
     }
 
     internal suspend fun pullIfDue(): PlaySessionPull.Summary? {
@@ -87,4 +94,8 @@ class PlaySessionPullScheduler internal constructor(
     @Synchronized
     private fun sharedPull(): Deferred<PlaySessionPull.Summary> =
         inFlight?.takeIf { it.isActive } ?: scope.async { pull.run() }.also { inFlight = it }
+
+    companion object {
+        const val RECAP_PULL_TIMEOUT_MS = 25_000L
+    }
 }

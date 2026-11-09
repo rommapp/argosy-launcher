@@ -99,16 +99,13 @@ override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
 
 ## Detect Connected Controllers
 
+Use `InputDevice.isPhysicalGamepad()` (`core/input/GamepadDevices.kt`); do not test source flags
+yourself. A pad needs `SOURCE_GAMEPAD`. A joystick source alone is not enough: a TV remote's
+consumer-control node reports one with no gamepad buttons.
+
 ```kotlin
-fun getGameControllerIds(): List<Int> {
-    return InputDevice.getDeviceIds().filter { deviceId ->
-        InputDevice.getDevice(deviceId)?.let { device ->
-            val sources = device.sources
-            (sources and InputDevice.SOURCE_GAMEPAD == InputDevice.SOURCE_GAMEPAD) ||
-            (sources and InputDevice.SOURCE_JOYSTICK == InputDevice.SOURCE_JOYSTICK)
-        } ?: false
-    }
-}
+fun getGameControllerIds(): List<Int> =
+    InputDevice.getDeviceIds().filter { InputDevice.getDevice(it)?.isPhysicalGamepad() == true }
 ```
 
 ---

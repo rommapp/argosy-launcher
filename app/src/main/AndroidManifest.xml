@@ -7,7 +7,6 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="29"
         tools:ignore="ScopedStorage" />
@@ -134,6 +133,7 @@
 
         <activity-alias
             android:name=".MainActivity"
+            android:enabled="false"
             android:exported="true"
             android:targetActivity=".ArgosyActivity">
             <intent-filter android:priority="1000">

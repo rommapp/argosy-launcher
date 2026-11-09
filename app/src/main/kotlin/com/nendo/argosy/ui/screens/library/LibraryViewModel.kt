@@ -93,6 +93,10 @@ import com.nendo.argosy.ui.dualscreen.CompanionFact
 import com.nendo.argosy.ui.dualscreen.PresentationSlot
 import com.nendo.argosy.ui.dualscreen.SlotOwner
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -529,6 +533,7 @@ class LibraryViewModel @Inject constructor(
     private var explicitTileFiltersRequested = false
     private var explicitDestinationRequested = false
     private var cachedPlatformDisplayNames: Map<Long, String> = emptyMap()
+    internal var listDispatcher: CoroutineDispatcher = Dispatchers.Default
     private var cachedPlatformEntities: List<PlatformEntity> = emptyList()
     private var platformStatsCache: Map<Long, PlatformShowcaseStats>? = null
     private var cachedMediaLibraries: List<MediaLibraryEntity> = emptyList()
@@ -751,16 +756,18 @@ class LibraryViewModel @Inject constructor(
 
     private fun observeGradientChanges() {
         viewModelScope.launch {
-            gradientExtractionDelegate.gradients.collect { gradients ->
-                _uiState.update { state ->
-                    state.copy(
-                        games = state.games.map { game ->
-                            gradients[game.id]
-                                ?.takeIf { it != game.gradientColors }
-                                ?.let { game.copy(gradientColors = it) }
-                                ?: game
-                        }
-                    )
+            withContext(listDispatcher) {
+                gradientExtractionDelegate.gradients.collect { gradients ->
+                    _uiState.update { state ->
+                        state.copy(
+                            games = state.games.map { game ->
+                                gradients[game.id]
+                                    ?.takeIf { it != game.gradientColors }
+                                    ?.let { game.copy(gradientColors = it) }
+                                    ?: game
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -1187,6 +1194,8 @@ class LibraryViewModel @Inject constructor(
             val source = combine(baseFlow, seriesIdsFlow, regionIdsFlow) { games, seriesIds, regionIds ->
                 Triple(games, seriesIds, regionIds)
             }
+                .distinctUntilChanged()
+                .flowOn(listDispatcher)
 
             source
                 .catch { e ->
@@ -1196,39 +1205,39 @@ class LibraryViewModel @Inject constructor(
                 }
                 .heldWhile(launchProgressTracker.launchLive)
                 .collectLatest { (games, seriesIds, regionIds) ->
-                    val normalizedQuery = com.nendo.argosy.util.SearchNormalizer.normalize(filters.searchQuery)
-                    val platformIds = filters.platforms.map { it.id }.toSet()
-                    val filteredGames = games.filter { game ->
-                        val matchesSearch = filters.searchQuery.isEmpty() ||
-                            com.nendo.argosy.util.SearchNormalizer.normalize(game.title).contains(normalizedQuery)
-                        val matchesPlatform = platformIds.isEmpty() ||
-                            game.platformId in platformIds
-                        val matchesGenre = filters.genres.isEmpty() ||
-                            filters.genres.contains(game.genre)
-                        val matchesRegion = regionIds == null || game.id in regionIds
-                        val matchesPlayers = filters.players?.admits(PlayerCount.parse(game.players)) ?: true
-                        val matchesSeries = seriesIds == null || game.id in seriesIds
-                        matchesSearch && matchesPlatform && matchesGenre && matchesRegion &&
-                            matchesPlayers && matchesSeries
-                    }
-
-                    val sections = computeSections(filteredGames, filters.sort, sortPartition)
-                    val sectionLabels = sections.map { it.sidebarLabel }
-
-                    var gameOffset = 0
-                    val gridItems = sections.flatMap { section ->
-                        val header = LibraryGridItem.Header(section.label, section.sidebarLabel)
-                        val gameItems = section.games.mapIndexed { i, game ->
-                            LibraryGridItem.Game(game.toUi(cachedPlatformDisplayNames), gameIndex = gameOffset + i)
+                    val platformDisplayNames = cachedPlatformDisplayNames
+                    val (sections, gridItems) = withContext(listDispatcher) {
+                        val normalizedQuery = com.nendo.argosy.util.SearchNormalizer.normalize(filters.searchQuery)
+                        val platformIds = filters.platforms.map { it.id }.toSet()
+                        val filteredGames = games.filter { game ->
+                            val matchesSearch = filters.searchQuery.isEmpty() ||
+                                com.nendo.argosy.util.SearchNormalizer.normalize(game.title).contains(normalizedQuery)
+                            val matchesPlatform = platformIds.isEmpty() ||
+                                game.platformId in platformIds
+                            val matchesGenre = filters.genres.isEmpty() ||
+                                filters.genres.contains(game.genre)
+                            val matchesRegion = regionIds == null || game.id in regionIds
+                            val matchesPlayers = filters.players?.admits(PlayerCount.parse(game.players)) ?: true
+                            val matchesSeries = seriesIds == null || game.id in seriesIds
+                            matchesSearch && matchesPlatform && matchesGenre && matchesRegion &&
+                                matchesPlayers && matchesSeries
                         }
-                        gameOffset += section.games.size
-                        listOf(header) + gameItems
+                        val sections = computeSections(filteredGames, filters.sort, sortPartition)
+                        var gameOffset = 0
+                        val gridItems = sections.flatMap { section ->
+                            val header = LibraryGridItem.Header(section.label, section.sidebarLabel)
+                            val gameItems = section.games.mapIndexed { i, game ->
+                                LibraryGridItem.Game(game.toUi(platformDisplayNames), gameIndex = gameOffset + i)
+                            }
+                            gameOffset += section.games.size
+                            listOf(header) + gameItems
+                        }
+                        sections to gridItems
                     }
+                    val sectionLabels = sections.map { it.sidebarLabel }
+                    val gamesList = gridItems.mapNotNull { (it as? LibraryGridItem.Game)?.game }
 
-                    val allGamesSorted = sections.flatMap { it.games }
-                    val gamesList = allGamesSorted.map { it.toUi(cachedPlatformDisplayNames) }
-
-                    Log.d(TAG, "loadGames: ${games.size} total, ${filteredGames.size} after filters, ${sections.size} sections")
+                    Log.d(TAG, "loadGames: ${games.size} total, ${gamesList.size} after filters, ${sections.size} sections")
                     val siblingFocusIndex = settleSiblingFocus(gamesList.map { it.id })
                     _uiState.update { uiState ->
                         val shouldResetFocus = uiState.games.isEmpty()

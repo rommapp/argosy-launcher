@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="media_companion_fact_year">Ano</string>
+    <string name="media_companion_fact_runtime">Duração</string>
+    <string name="media_companion_fact_rated">Classificação</string>
+    <string name="media_companion_fact_rating">Avaliação</string>
+
+    <string name="media_item_episode_label">S%1$d E%2$d</string>
+    <string name="media_item_runtime_hours_minutes">%1$dh %2$dm</string>
+    <string name="media_item_runtime_hours">%1$dh</string>
+    <string name="media_item_runtime_minutes">%1$dm</string>
+
+    <string name="media_pref_download_quality_original">Arquivo original</string>
+    <string name="media_pref_download_quality_high">Alta - 1080p</string>
+    <string name="media_pref_download_quality_medium">Média - 720p</string>
+    <string name="media_pref_download_quality_low">Baixa - 480p</string>
+
+    <string name="media_pref_streaming_quality_auto">Original - Auto</string>
+    <string name="media_pref_streaming_quality_high">Alta - 1080p</string>
+    <string name="media_pref_streaming_quality_medium">Média - 720p</string>
+    <string name="media_pref_streaming_quality_low">Baixa - 480p</string>
+
+    <string name="media_pref_subtitle_mode_off">Desativado</string>
+    <string name="media_pref_subtitle_mode_forced_only">Somente forçadas</string>
+    <string name="media_pref_subtitle_mode_preferred">Idioma preferido</string>
+
+    <string name="media_pref_audio_language_english">Inglês</string>
+    <string name="media_pref_audio_language_japanese">Japonês</string>
+    <string name="media_pref_audio_language_spanish">Espanhol</string>
+    <string name="media_pref_audio_language_french">Francês</string>
+    <string name="media_pref_audio_language_german">Alemão</string>
+    <string name="media_pref_audio_language_italian">Italiano</string>
+    <string name="media_pref_audio_language_portuguese">Português</string>
+    <string name="media_pref_audio_language_russian">Russo</string>
+    <string name="media_pref_audio_language_korean">Coreano</string>
+    <string name="media_pref_audio_language_chinese">Chinês</string>
+
+    <string name="media_pref_subtitle_language_english">Inglês</string>
+    <string name="media_pref_subtitle_language_japanese">Japonês</string>
+    <string name="media_pref_subtitle_language_spanish">Espanhol</string>
+    <string name="media_pref_subtitle_language_french">Francês</string>
+    <string name="media_pref_subtitle_language_german">Alemão</string>
+    <string name="media_pref_subtitle_language_italian">Italiano</string>
+    <string name="media_pref_subtitle_language_portuguese">Português</string>
+    <string name="media_pref_subtitle_language_russian">Russo</string>
+    <string name="media_pref_subtitle_language_korean">Coreano</string>
+    <string name="media_pref_subtitle_language_chinese">Chinês</string>
+
+    <string name="unified_state_entry_display_name_auto">Auto</string>
+    <string name="unified_state_entry_display_name_channel">%1$s (slot %2$d)</string>
+    <string name="unified_state_entry_display_name_slot">slot %1$d</string>
+    <string name="unified_state_entry_slot_label_auto">Auto</string>
+    <string name="unified_state_entry_size_bytes">%1$d B</string>
+    <string name="unified_state_entry_size_kb">%1$d KB</string>
+    <string name="unified_state_entry_size_mb">%1$.1f MB</string>
+
+    <string name="variant_category_game">Jogo</string>
+    <string name="variant_category_patch">Versões / patches</string>
+    <string name="variant_category_translation">Traduções</string>
+    <string name="variant_category_mod">Mods</string>
+    <string name="variant_category_hack">Hacks</string>
+    <string name="variant_category_demo">Demo</string>
+    <string name="variant_category_prototype">Protótipo</string>
+    <string name="variant_category_update">Atualizações</string>
+    <string name="variant_category_dlc">DLC</string>
+    <string name="variant_category_manual">Manuais</string>
+    <string name="variant_category_walkthrough">Guias</string>
+    <string name="variant_category_cheat">Trapaças</string>
+    <string name="variant_category_soundtrack">Trilhas</string>
+    <string name="variant_category_screenshot">Capturas de tela</string>
+    <string name="variant_category_unknown">Outros</string>
+
+    <string name="gradient_preset_vibrant">Vibrante</string>
+    <string name="gradient_preset_balanced">Equilibrado</string>
+    <string name="gradient_preset_subtle">Sutil</string>
+    <string name="gradient_preset_custom">Personalizado</string>
+    <string name="box_art_shape_native">Nativa</string>
+
+    <string name="custom_tile_menu_action_arrange">Mover ou redimensionar</string>
+    <string name="custom_tile_menu_action_recurate">Playlist</string>
+    <string name="custom_tile_menu_action_fit_cover">Encaixar a capa na célula</string>
+    <string name="custom_tile_menu_action_crop_cover">Cortar a capa para preencher a célula</string>
+    <string name="custom_tile_menu_action_edit_filters">Filtros</string>
+    <string name="custom_tile_menu_action_edit_tile">Conta ou jogo</string>
+    <string name="custom_tile_menu_action_browse_achievements">Ver conquistas</string>
+    <string name="custom_tile_menu_action_remove">Remover ficha</string>
+    <string name="custom_tile_menu_action_start_game_queue">Iniciar fila</string>
+    <string name="custom_tile_menu_action_set_focus_game">Escolher próximo jogo</string>
+    <string name="custom_tile_menu_action_advance_focus_game">Marcar como concluído</string>
+    <string name="custom_tile_menu_action_hidden_tiles">Fichas ocultas</string>
+    <string name="custom_tile_menu_action_page_backdrop">Plano de fundo desta página</string>
+    <string name="custom_tile_menu_action_page_music">Música desta página</string>
+    <string name="custom_tile_menu_action_delete_page">Excluir página</string>
+    <string name="custom_tile_menu_action_open_on_screen">Abrir na tela %1$d</string>
+    <string name="custom_tile_menu_action_play_on_screen">Jogar na tela %1$d</string>
+
+    <string name="tile_picker_category_games">Jogos</string>
+    <string name="tile_picker_category_collections">Coleções</string>
+    <string name="tile_picker_category_apps">Apps</string>
+    <string name="tile_picker_category_media">Mídia</string>
+    <string name="tile_picker_category_features">Widgets</string>
+
+    <string name="home_grid_tile_stat_played">Jogado</string>
+    <string name="home_grid_tile_stat_achievements">Conquistas</string>
+    <string name="home_grid_tile_stat_released">Lançado</string>
+
+    <string name="ui_media_tile_notice_confirm_add_download">Adicionar e baixar</string>
+    <string name="ui_media_tile_notice_decline_cancel">Cancelar</string>
+    <string name="media_tile_notice_confirm_download_all">Baixar todos</string>
+    <string name="media_tile_notice_decline_use_downloaded">Usar baixados</string>
+    <string name="media_tile_notice_decline_cancel">Cancelar</string>
+    <string name="media_tile_notice_derived_message_none">Ainda não há episódios desta série neste dispositivo. Esta ficha reproduz episódios baixados, então permanece vazia até que alguns cheguem.</string>
+    <plurals name="media_tile_notice_derived_message_some" tools:ignore="ImpliedQuantity">
+        <item quantity="one">Esta ficha reproduz o único episódio deste dispositivo e o recomeça quando termina.</item>
+        <item quantity="many">Esta ficha reproduz os %1$d episódios deste dispositivo, em ordem, e recomeça pelo primeiro ao chegar ao fim.</item>
+        <item quantity="other">Esta ficha reproduz os %1$d episódios deste dispositivo, em ordem, e recomeça pelo primeiro ao chegar ao fim.</item>
+    </plurals>
+    <string name="media_tile_notice_warning_unknown_size">É um lote grande, e o tamanho só é conhecido quando cada download começa.</string>
+    <string name="media_tile_notice_warning_approximate_size">Aproximadamente %1$s no total, mais ou menos - cada download define seu próprio tamanho quando começa.</string>
+    <plurals name="media_tile_notice_missing_episodes">
+        <item quantity="one">%1$d episódio ainda não está neste dispositivo. Adicionar esta ficha inicia o download dele.</item>
+        <item quantity="many">%1$d episódios ainda não estão neste dispositivo. Adicionar esta ficha inicia o download deles.</item>
+        <item quantity="other">%1$d episódios ainda não estão neste dispositivo. Adicionar esta ficha inicia o download deles.</item>
+    </plurals>
+    <plurals name="media_tile_notice_missing_titles">
+        <item quantity="one">%1$d título ainda não está neste dispositivo. Adicionar esta ficha inicia o download dele.</item>
+        <item quantity="many">%1$d títulos ainda não estão neste dispositivo. Adicionar esta ficha inicia o download deles.</item>
+        <item quantity="other">%1$d títulos ainda não estão neste dispositivo. Adicionar esta ficha inicia o download deles.</item>
+    </plurals>
+
+    <string name="episode_picker_season_label">Temporada %1$d</string>
+    <string name="episode_picker_specials_label">Especiais</string>
+    <string name="episode_picker_season_supporting_none">Nenhum neste dispositivo</string>
+    <string name="episode_picker_season_supporting_all">Todos os %1$d neste dispositivo</string>
+    <string name="episode_picker_season_supporting_partial">%1$d de %2$d neste dispositivo</string>
+
+    <string name="storage_computed_label_computing">Calculando...</string>
+    <string name="storage_computed_label_computed">Calculado em %1$s</string>
+    <string name="storage_computed_label_never">Ainda não calculado</string>
+
+    <string name="title_id_recheck_notice_updated">ID do título atualizado para %1$s</string>
+    <string name="title_id_recheck_notice_confirmed">ID do título confirmado como %1$s</string>
+    <string name="title_id_recheck_notice_not_found">Nenhum ID de título encontrado em %1$s</string>
+    <string name="title_id_recheck_notice_no_file">O arquivo do jogo não está disponível para leitura</string>
+
+    <string name="gamedetail_steam_launcher_auto">Auto</string>
+    <string name="gamedetail_steam_launcher_auto_uses">Usa %1$s</string>
+
+    <string name="ui_memcard_picker_default">Padrão</string>
+    <string name="ui_memcard_picker_default_named">Padrão (%1$s)</string>
+
+    <string name="home_media_episode_subtitle_marker_season_episode">S%1$d E%2$d</string>
+    <string name="home_media_episode_subtitle_marker_episode_only">E%1$d</string>
+    <string name="home_media_episode_subtitle_with_name">%1$s - %2$s</string>
+
+    <string name="reorder_hint_done">Concluído</string>
+</resources>

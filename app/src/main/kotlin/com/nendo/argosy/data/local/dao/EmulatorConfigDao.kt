@@ -26,6 +26,9 @@ interface EmulatorConfigDao {
     @Query("SELECT * FROM emulator_configs WHERE gameId IS NOT NULL")
     suspend fun getGameOverrides(): List<EmulatorConfigEntity>
 
+    @Query("SELECT * FROM emulator_configs WHERE platformId IS NOT NULL AND gameId IS NULL AND isDefault = 1")
+    suspend fun getPlatformDefaults(): List<EmulatorConfigEntity>
+
     @Query("SELECT * FROM emulator_configs WHERE platformId = :platformId AND gameId IS NULL AND isDefault = 1 LIMIT 1")
     suspend fun getDefaultForPlatform(platformId: Long): EmulatorConfigEntity?
 

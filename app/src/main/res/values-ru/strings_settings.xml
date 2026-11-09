@@ -240,6 +240,18 @@
     <string name="settings_navigation_shortcut_capture_subtitle">В меню Argosy кнопка больше не будет делать ничего другого</string>
     <string name="settings_navigation_shortcut_capture_reserved">%1$s нужна для перемещения по меню и не может быть назначена</string>
     <string name="settings_navigation_shortcut_capture_hint_cancel">Отмена</string>
+    <string name="settings_navigation_section_system_buttons">Системные кнопки</string>
+    <string name="settings_navigation_system_hotkeys_title">Комбинации Домой и Назад</string>
+    <string name="settings_navigation_system_hotkeys_subtitle">Комбинации кнопок контроллера, которые работают как Домой и Назад, пока открыто другое приложение</string>
+    <string name="settings_navigation_system_hotkeys_access_title">Служба специальных возможностей</string>
+    <string name="settings_navigation_system_hotkeys_access_subtitle">Комбинации доходят до других приложений через службу специальных возможностей Argosy</string>
+    <string name="settings_navigation_system_hotkeys_access_on">Вкл.</string>
+    <string name="settings_navigation_system_hotkeys_access_needed">Нужны спец. возможности</string>
+    <string name="settings_navigation_system_home_title">Домой</string>
+    <string name="settings_navigation_system_home_subtitle">Удерживайте вместе 2 секунды. Нажатие кнопки Guide тоже ведёт домой</string>
+    <string name="settings_navigation_system_back_title">Назад</string>
+    <string name="settings_navigation_system_back_subtitle">Удерживайте первые кнопки, затем нажмите последнюю. Удержание кнопки Guide 1 секунду тоже работает как Назад. В игре удержание комбинации 3 секунды открывает быструю панель</string>
+    <string name="settings_navigation_system_combo_capture_prompt">Удерживайте 2 или 3 кнопки по порядку...</string>
 
     <!-- ===== Displays section ===== -->
 
@@ -518,7 +530,6 @@
     <string name="settings_sync_upload_screenshots_title">Выгружать скриншоты</string>
     <string name="settings_sync_upload_screenshots_subtitle">Отправлять скриншоты, сделанные во время игры, в RomM</string>
     <string name="settings_sync_upload_screenshots_subtitle_unsupported">Требуется RomM 5.0 или новее</string>
-    <string name="settings_sync_upload_screenshots_subtitle_needs_usage">Предоставьте доступ к статистике использования для точного сопоставления игр</string>
 
     <string name="settings_sync_image_cache_title">Расположение кэша изображений</string>
     <string name="settings_sync_image_cache_path_internal">Внутреннее (по умолчанию)</string>
@@ -1110,6 +1121,25 @@
     <string name="settings_storage_platform_games_loading">Загрузка...</string>
     <string name="settings_storage_platform_games_empty_title">Нет скачанных игр</string>
     <string name="settings_storage_platform_games_empty_message">Скачанные игры для %1$s появятся здесь с разбивкой по категориям.</string>
+    <string name="settings_storage_platform_games_tab_empty_message">Здесь нет игр для %1$s.</string>
+    <plurals name="settings_storage_platform_games_summary">
+        <item quantity="one">%1$d игра, %2$s</item>
+        <item quantity="few">%1$d игры, %2$s</item>
+        <item quantity="many">%1$d игр, %2$s</item>
+        <item quantity="other">%1$d игры, %2$s</item>
+    </plurals>
+    <string name="settings_storage_platform_games_sort_size">Сначала крупные</string>
+    <string name="settings_storage_platform_games_sort_title">От А до Я</string>
+    <string name="settings_storage_platform_games_sort_least_played">Давно не запускались</string>
+    <string name="settings_storage_platform_games_last_played">Последний запуск: %1$s</string>
+    <string name="settings_storage_platform_games_never_played">Ни разу не запускалась</string>
+    <string name="settings_storage_platform_games_play_time">Сыграно %1$s</string>
+    <plurals name="settings_storage_platform_games_unsynced_saves">
+        <item quantity="one">%d несинхронизированное сохранение</item>
+        <item quantity="few">%d несинхронизированных сохранения</item>
+        <item quantity="many">%d несинхронизированных сохранений</item>
+        <item quantity="other">%d несинхронизированного сохранения</item>
+    </plurals>
 
     <string name="settings_storage_bucket_base">Основное</string>
     <string name="settings_storage_bucket_updates">Обновления</string>

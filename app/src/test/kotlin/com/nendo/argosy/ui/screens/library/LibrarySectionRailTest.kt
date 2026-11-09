@@ -313,5 +313,5 @@ class LibrarySectionRailTest {
         reorderPlatforms = mockk(relaxed = true),
         quickNavigation = mockk { every { enabled } returns quickNavigation },
         launchProgressTracker = mockk { io.mockk.every { launchLive } returns MutableStateFlow(false) }
-    )
+    ).also { it.listDispatcher = dispatcher }
 }

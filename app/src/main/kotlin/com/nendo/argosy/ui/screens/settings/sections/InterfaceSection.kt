@@ -138,6 +138,7 @@ internal fun languageLabelRes(language: AppLanguage): Int = when (language) {
     AppLanguage.CHINESE_TRADITIONAL -> R.string.settings_main_language_name_zh_hant
     AppLanguage.RUSSIAN -> R.string.settings_main_language_name_ru
     AppLanguage.HINDI -> R.string.settings_main_language_name_hi
+    AppLanguage.PORTUGUESE_BRAZIL -> R.string.settings_main_language_name_pt_br
 }
 
 internal fun screenOrientationLabelRes(mode: ScreenOrientationMode): Int = when (mode) {

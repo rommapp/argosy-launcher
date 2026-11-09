@@ -12,18 +12,20 @@ import com.nendo.argosy.data.remote.romm.RomMEarnedAchievement
 import com.nendo.argosy.data.remote.romm.RomMRAGameProgression
 import com.nendo.argosy.data.repository.RaGameAward
 import com.nendo.argosy.data.repository.RaMetadataSource
-import com.nendo.argosy.data.social.uploader.PlaySessionPull
 import com.nendo.argosy.data.social.uploader.PlaySessionPullScheduler
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.currentTime
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.Instant
 import java.time.YearMonth
 import java.time.ZoneOffset
 
@@ -36,7 +38,7 @@ class GetMonthlyRecapUseCaseTest {
     private val gameArtDao: GameArtDao = mockk()
     private val achievementDao: AchievementDao = mockk()
     private val playSessionPullScheduler: PlaySessionPullScheduler = mockk {
-        coEvery { pullWithin(any()) } returns PlaySessionPull.Summary(added = 0, devices = 1)
+        coEvery { pullForRecap() } returns true
     }
     private val useCase = GetMonthlyRecapUseCase(
         playSessionDao,
@@ -59,24 +61,51 @@ class GetMonthlyRecapUseCaseTest {
         coEvery { metadataSource.webUnlocksBetween(any(), any()) } returns null
         coEvery { metadataSource.awardProgression(any()) } returns emptyList()
         coEvery { metadataSource.romMProgression(any()) } returns emptyList()
+        coEvery { metadataSource.warmRomMProgression(any()) } returns Unit
     }
 
     @Test
-    fun `the digest waits a bounded time for other devices' sessions before reading local rows`() = runTest {
+    fun `the digest waits for the pull and the RA warm to finish before reading local rows`() = runTest {
         stubEmptyMonth()
 
         useCase(YearMonth.of(2025, 12), ZoneOffset.UTC)
 
         coVerifyOrder {
-            playSessionPullScheduler.pullWithin(4_000L)
+            playSessionPullScheduler.pullForRecap()
             playSessionDao.getSessionsForOwnerInRange(7L, any(), any(), any())
         }
+        coVerifyOrder {
+            metadataSource.warmRomMProgression(Instant.parse("2026-01-01T00:00:00Z"))
+            playSessionDao.getSessionsForOwnerInRange(7L, any(), any(), any())
+            metadataSource.romMProgression(any())
+        }
+    }
+
+    @Test
+    fun `a pull that outlasts four seconds still lands its sessions in the digest`() = runTest {
+        stubEmptyMonth()
+        coEvery { gameArtDao.getForGames(any()) } returns emptyList()
+        var stored = false
+        coEvery { playSessionPullScheduler.pullForRecap() } coAnswers {
+            delay(12_000)
+            stored = true
+            true
+        }
+        coEvery { playSessionDao.getSessionsForOwnerInRange(7L, any(), any(), any()) } answers {
+            if (stored) listOf(session(gameId = 1L, start = Instant.parse("2025-12-10T10:00:00Z"), activeMinutes = 90))
+            else emptyList()
+        }
+
+        val digest = useCase(YearMonth.of(2025, 12), ZoneOffset.UTC)
+
+        assertEquals(1, digest.sessionCount)
+        assertTrue(currentTime >= 12_000)
     }
 
     @Test
     fun `a pull that times out or fails still builds the digest from local rows`() = runTest {
         stubEmptyMonth()
-        coEvery { playSessionPullScheduler.pullWithin(any()) } returns null
+        coEvery { playSessionPullScheduler.pullForRecap() } returns false
 
         val digest = useCase(YearMonth.of(2025, 12), ZoneOffset.UTC)
 

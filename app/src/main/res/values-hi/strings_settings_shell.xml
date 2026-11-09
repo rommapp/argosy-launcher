@@ -359,6 +359,7 @@
     <string name="settings_shell_footer_back">वापस</string>
     <string name="settings_shell_footer_local_only_location">जगह</string>
     <string name="settings_shell_footer_unassign_shortcut">हटाएँ</string>
+    <string name="settings_shell_footer_reset_system_combo">रीसेट करें</string>
 
     <!-- ===== SettingsScreen: cache clear confirm modals ===== -->
 

@@ -239,6 +239,18 @@
     <string name="settings_navigation_shortcut_capture_subtitle">Le bouton ne fera plus rien d\'autre dans les menus d\'Argosy</string>
     <string name="settings_navigation_shortcut_capture_reserved">%1$s sert à naviguer dans les menus et ne peut pas être attribué</string>
     <string name="settings_navigation_shortcut_capture_hint_cancel">Annuler</string>
+    <string name="settings_navigation_section_system_buttons">Boutons système</string>
+    <string name="settings_navigation_system_hotkeys_title">Combinaisons Accueil et Retour</string>
+    <string name="settings_navigation_system_hotkeys_subtitle">Combinaisons de manette qui servent d\'Accueil et de Retour quand une autre application est ouverte</string>
+    <string name="settings_navigation_system_hotkeys_access_title">Service d\'accessibilité</string>
+    <string name="settings_navigation_system_hotkeys_access_subtitle">Les combinaisons atteignent les autres applications via le service d\'accessibilité d\'Argosy</string>
+    <string name="settings_navigation_system_hotkeys_access_on">Activé</string>
+    <string name="settings_navigation_system_hotkeys_access_needed">Accessibilité requise</string>
+    <string name="settings_navigation_system_home_title">Accueil</string>
+    <string name="settings_navigation_system_home_subtitle">Maintenir ensemble 2 secondes. Appuyer sur le bouton guide ramène aussi à l\'accueil</string>
+    <string name="settings_navigation_system_back_title">Retour</string>
+    <string name="settings_navigation_system_back_subtitle">Maintenir les premiers boutons, puis appuyer sur le dernier. Maintenir le bouton guide 1 seconde fait aussi Retour. En jeu, maintenir le combo 3 secondes ouvre plutôt le panneau rapide</string>
+    <string name="settings_navigation_system_combo_capture_prompt">Maintenez 2 ou 3 boutons dans l\'ordre...</string>
 
     <!-- ===== Section Ecrans ===== -->
 
@@ -508,7 +520,6 @@
     <string name="settings_sync_upload_screenshots_title">Envoyer les captures d\'écran</string>
     <string name="settings_sync_upload_screenshots_subtitle">Envoyer à RomM les captures d\'écran prises en jouant</string>
     <string name="settings_sync_upload_screenshots_subtitle_unsupported">Nécessite RomM 5.0 ou plus récent</string>
-    <string name="settings_sync_upload_screenshots_subtitle_needs_usage">Accordez l\'accès à l\'utilisation pour une correspondance exacte des jeux</string>
 
     <string name="settings_sync_image_cache_title">Emplacement du cache d\'images</string>
     <string name="settings_sync_image_cache_path_internal">Interne (par défaut)</string>
@@ -1083,6 +1094,23 @@
     <string name="settings_storage_platform_games_loading">Chargement...</string>
     <string name="settings_storage_platform_games_empty_title">Aucun jeu téléchargé</string>
     <string name="settings_storage_platform_games_empty_message">Les jeux téléchargés pour %1$s apparaissent ici avec une répartition par catégorie.</string>
+    <string name="settings_storage_platform_games_tab_empty_message">Aucun jeu %1$s n\'est stocké ici.</string>
+    <plurals name="settings_storage_platform_games_summary">
+        <item quantity="one">%1$d jeu, %2$s</item>
+        <item quantity="many">%1$d jeux, %2$s</item>
+        <item quantity="other">%1$d jeux, %2$s</item>
+    </plurals>
+    <string name="settings_storage_platform_games_sort_size">Les plus gros d\'abord</string>
+    <string name="settings_storage_platform_games_sort_title">De A à Z</string>
+    <string name="settings_storage_platform_games_sort_least_played">Joués il y a le plus longtemps</string>
+    <string name="settings_storage_platform_games_last_played">Dernière partie : %1$s</string>
+    <string name="settings_storage_platform_games_never_played">Jamais joué</string>
+    <string name="settings_storage_platform_games_play_time">%1$s de jeu</string>
+    <plurals name="settings_storage_platform_games_unsynced_saves">
+        <item quantity="one">%d sauvegarde non synchronisée</item>
+        <item quantity="many">%d sauvegardes non synchronisées</item>
+        <item quantity="other">%d sauvegardes non synchronisées</item>
+    </plurals>
 
     <string name="settings_storage_bucket_base">Base</string>
     <string name="settings_storage_bucket_updates">Mises à jour</string>

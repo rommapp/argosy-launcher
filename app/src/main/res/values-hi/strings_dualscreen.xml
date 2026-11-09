@@ -161,6 +161,7 @@
     <string name="dual_media_episodes_empty_title">अभी यहां कोई एपिसोड नहीं</string>
 
     <string name="dual_media_cast_header">कलाकार</string>
+    <string name="dual_media_related_header">इसी तरह के और</string>
     <string name="dual_media_browse_back_description">वापस</string>
     <plurals name="dual_media_browse_episode_count">
         <item quantity="one">%d एपिसोड</item>

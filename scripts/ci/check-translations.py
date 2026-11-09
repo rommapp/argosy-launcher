@@ -27,6 +27,7 @@ REQUIRED_PLURALS = {
     "de": {"one", "other"},
     "ru": {"one", "few", "many", "other"},
     "hi": {"one", "other"},
+    "pt-rBR": {"one", "many", "other"},
     "zh-rCN": {"other"},
     "zh-rTW": {"other"},
     "b+zh+Hans": {"other"},

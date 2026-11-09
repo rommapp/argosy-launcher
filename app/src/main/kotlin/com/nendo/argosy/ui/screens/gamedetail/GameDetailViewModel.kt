@@ -710,7 +710,7 @@ class GameDetailViewModel @Inject constructor(
 
             val isHiddenForOwner = gameRepository.isGameHidden(gameId)
             val art = gameRepository.getArt(gameId)
-            val screenshotRows = gameRepository.getScreenshots(gameId)
+            val screenshotRows = gameRepository.getScreenshotsWithGallery(gameId)
 
             val isPrivate = game.igdbId != null &&
                 game.igdbId.toInt() in socialRepository.hiddenGameIds.value
@@ -764,7 +764,7 @@ class GameDetailViewModel @Inject constructor(
             if (game.rommId != null) {
                 refreshUserPropsInBackground(gameId)
                 if (romMRepository.isVersionAtLeast(RomMCapabilities.SCREENSHOT_UPLOAD_MIN_VERSION)) {
-                    refreshUserScreenshotsInBackground(game.rommId)
+                    refreshGalleryScreenshotsInBackground(gameId, game.rommId, prefs.syncScreenshotsEnabled)
                 }
                 if (!game.isMultiDisc && (game.fileSizeBytes == null || game.fileSizeBytes == 0L)) {
                     downloadDelegate.refreshDownloadSizeInBackground(viewModelScope, game.rommId, gameId)
@@ -939,16 +939,13 @@ class GameDetailViewModel @Inject constructor(
         }
     }
 
-    private fun refreshUserScreenshotsInBackground(rommId: Long) {
+    private fun refreshGalleryScreenshotsInBackground(gameId: Long, rommId: Long, downloadEnabled: Boolean) {
         viewModelScope.launch {
-            val localPaths = romMRepository.fetchUserScreenshots(rommId)
-            if (localPaths.isEmpty()) return@launch
-            val userShots = localPaths.map { ScreenshotPair(remoteUrl = it, cachedPath = it) }
+            val rows = romMRepository.refreshGalleryScreenshots(gameId, rommId, downloadEnabled) ?: return@launch
+            val screenshots = rows.toScreenshotPairs()
             _uiState.update { state ->
-                val game = state.game ?: return@update state
-                val existing = game.screenshots.map { it.remoteUrl }.toSet()
-                val merged = game.screenshots + userShots.filter { it.remoteUrl !in existing }
-                state.copy(game = game.copy(screenshots = merged))
+                val game = state.game?.takeIf { it.id == gameId } ?: return@update state
+                state.copy(game = game.copy(screenshots = screenshots))
             }
         }
     }

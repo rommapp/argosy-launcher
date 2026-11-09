@@ -16,12 +16,11 @@ data class BiosRequirement(
 /**
  * Where an emulator reads BIOS files from, and which platforms it will accept them for.
  *
- * [acceptsAnyPlatform] belongs to emulators that own a flat system directory and take whatever
- * is put in it: the built-in core host and RetroArch. Every platform a downloaded firmware file
- * names is one they can be handed, so listing platforms would restate what the firmware rows
- * already say, and a platform missing from the list gets no BIOS with nothing on screen to say
- * why. The built-in emulator's [defaultPaths] are empty for a separate reason: its directory is
- * internal and resolved at runtime by BiosRepository.getLibretroSystemDir.
+ * [acceptsAnyPlatform] marks emulators with a flat system directory that take whatever is put in
+ * it: the built-in core host and RetroArch. [supports] is true for every platform on either.
+ * [actsUnprompted] is true for every platform on the built-in host alone, whose [defaultPaths]
+ * are empty and whose directory BiosRepository.getLibretroSystemDir resolves at runtime.
+ * RetroArch declares [defaultPaths], and automatic distribution and cleanup skip it.
  */
 data class BiosPathConfig(
     val emulatorId: String,

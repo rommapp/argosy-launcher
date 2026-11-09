@@ -2,6 +2,7 @@ package com.nendo.argosy.data.repository
 
 import android.util.Log
 import com.nendo.argosy.data.remote.romm.RomMConnectionManager
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -21,10 +22,13 @@ class ScreenshotUploader @Inject constructor(
         data object Success : Result()
         data object NotSupported : Result()
         data object NotConnected : Result()
-        data class Error(val message: String) : Result()
+        data class Rejected(val reason: String) : Result()
+        data class Failed(val reason: String) : Result()
     }
 
     suspend fun upload(file: File, rommId: Long): Result = withContext(Dispatchers.IO) {
+        val mediaType = MIME_BY_EXTENSION[file.extension.lowercase()]
+            ?: return@withContext Result.Rejected("Unsupported image type .${file.extension}")
         val api = connectionManager.getApi() ?: return@withContext Result.NotConnected
         if (!connectionManager.isConnected()) return@withContext Result.NotConnected
         if (!connectionManager.getCapabilities().supportsScreenshotUpload) {
@@ -32,24 +36,42 @@ class ScreenshotUploader @Inject constructor(
         }
 
         try {
-            val mediaType = when (file.extension.lowercase()) {
-                "jpg", "jpeg" -> "image/jpeg"
-                "webp" -> "image/webp"
-                else -> "image/png"
-            }
             val body = file.asRequestBody(mediaType.toMediaType())
             val part = MultipartBody.Part.createFormData("screenshotFile", file.name, body)
             val response = api.uploadScreenshot(rommId, part)
-            if (response.isSuccessful) {
-                Log.i(TAG, "Uploaded screenshot ${file.name} for rommId=$rommId (id=${response.body()?.id})")
-                Result.Success
-            } else {
-                Log.e(TAG, "Screenshot upload failed for rommId=$rommId: ${response.code()}")
-                Result.Error("Upload failed: ${response.code()}")
+            val code = response.code()
+            when {
+                response.isSuccessful -> {
+                    Log.i(TAG, "Uploaded screenshot ${file.name} for rommId=$rommId (id=${response.body()?.id})")
+                    Result.Success
+                }
+                code in PERMANENT_REJECTION_CODES -> {
+                    Log.w(TAG, "Screenshot ${file.name} rejected for rommId=$rommId: HTTP $code")
+                    Result.Rejected("HTTP $code")
+                }
+                else -> {
+                    Log.w(TAG, "Screenshot upload failed for rommId=$rommId: HTTP $code")
+                    Result.Failed("HTTP $code")
+                }
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            Log.e(TAG, "Screenshot upload exception for rommId=$rommId", e)
-            Result.Error(e.message ?: "Upload failed")
+            Log.w(TAG, "Screenshot upload exception for rommId=$rommId", e)
+            Result.Failed(e.message ?: e.javaClass.simpleName)
         }
+    }
+
+    companion object {
+        val MIME_BY_EXTENSION: Map<String, String> = mapOf(
+            "png" to "image/png",
+            "jpg" to "image/jpeg",
+            "jpeg" to "image/jpeg",
+            "webp" to "image/webp",
+            "gif" to "image/gif",
+            "bmp" to "image/bmp"
+        )
+
+        private val PERMANENT_REJECTION_CODES = setOf(400, 404, 413, 415)
     }
 }

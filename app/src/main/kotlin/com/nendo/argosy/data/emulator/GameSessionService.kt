@@ -64,7 +64,6 @@ class GameSessionService : Service() {
     @Inject lateinit var saveCacheManager: SaveCacheManager
     @Inject lateinit var gameDao: GameDao
     @Inject lateinit var activeSaveRepository: com.nendo.argosy.data.repository.ActiveSaveRepository
-    @Inject lateinit var screenshotCaptureMonitor: ScreenshotCaptureMonitor
     @Inject lateinit var saveScreenshotCapture: com.nendo.argosy.hardware.SaveScreenshotCapture
     @Inject lateinit var playSessionTracker: dagger.Lazy<PlaySessionTracker>
     @Inject lateinit var activityReporter:
@@ -179,7 +178,6 @@ class GameSessionService : Service() {
                     startWatching(watchPath)
                 }
 
-                screenshotCaptureMonitor.start(gameId, emulatorPackage, sessionStartTime)
                 startActivityReporting(gameId)
                 startPresenceWatch(emulatorPackage)
             }
@@ -195,7 +193,6 @@ class GameSessionService : Service() {
         stopActivityReporting()
         activityReporter.clearAsync()
         cleanupPresenceKeepalive()
-        screenshotCaptureMonitor.stop()
         stopWatching()
         removeOverlay()
         releaseWakeLock()

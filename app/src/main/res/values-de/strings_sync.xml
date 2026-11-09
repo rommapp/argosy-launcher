@@ -137,4 +137,13 @@
 
     <string name="sync_launch_core_fallback">%1$s konnte nicht geladen werden, %2$s wird stattdessen verwendet</string>
     <string name="launch_texture_pack_failed">Einige Texturpakete konnten nicht installiert werden</string>
+
+    <plurals name="sync_screenshot_uploaded">
+        <item quantity="one">Screenshot hochgeladen</item>
+        <item quantity="other">%1$d Screenshots hochgeladen</item>
+    </plurals>
+    <plurals name="sync_screenshot_rejected">
+        <item quantity="one">RomM hat einen Screenshot nicht angenommen</item>
+        <item quantity="other">RomM hat %1$d Screenshots nicht angenommen</item>
+    </plurals>
 </resources>

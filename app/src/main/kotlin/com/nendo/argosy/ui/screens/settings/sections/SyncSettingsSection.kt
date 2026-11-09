@@ -232,12 +232,10 @@ fun SyncSettingsSection(
                     }
                     SyncSettingsItem.UploadScreenshots -> {
                         val supported = uiState.server.screenshotUploadSupported
-                        val hasUsageAccess = uiState.controls.hasUsageStatsPermission
-                        val subtitle = when {
-                            !supported -> stringResource(R.string.settings_sync_upload_screenshots_subtitle_unsupported)
-                            uiState.server.uploadScreenshotsEnabled && !hasUsageAccess ->
-                                stringResource(R.string.settings_sync_upload_screenshots_subtitle_needs_usage)
-                            else -> stringResource(R.string.settings_sync_upload_screenshots_subtitle)
+                        val subtitle = if (supported) {
+                            stringResource(R.string.settings_sync_upload_screenshots_subtitle)
+                        } else {
+                            stringResource(R.string.settings_sync_upload_screenshots_subtitle_unsupported)
                         }
                         Box(modifier = Modifier.alpha(if (supported) 1f else 0.45f)) {
                             SwitchPreference(

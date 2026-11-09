@@ -17,7 +17,8 @@ internal class ModalInputRouter(private val viewModel: SettingsViewModel) {
             state.builtinControls.showInputMappingModal ||
             state.builtinControls.showHotkeysModal ||
             state.display.showGripControllerModal ||
-            state.controls.shortcutCaptureTarget != null
+            state.controls.shortcutCaptureTarget != null ||
+            state.controls.systemComboCaptureTarget != null
         ) return null
 
         interceptNavRingModal(state, method)?.let { return it }

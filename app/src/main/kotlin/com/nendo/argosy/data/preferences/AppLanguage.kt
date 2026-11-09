@@ -14,7 +14,8 @@ enum class AppLanguage(val tag: String) {
     CHINESE_SIMPLIFIED("zh-Hans"),
     CHINESE_TRADITIONAL("zh-Hant"),
     RUSSIAN("ru"),
-    HINDI("hi");
+    HINDI("hi"),
+    PORTUGUESE_BRAZIL("pt-BR");
 
     companion object {
         fun fromString(value: String?): AppLanguage =

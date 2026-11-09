@@ -885,7 +885,10 @@ class SecondaryHomeActivity :
     private fun applyDockedOrientation() {
         val display = try {
             window.decorView.display ?: windowManager.defaultDisplay
-        } catch (_: Exception) { return }
+        } catch (e: RuntimeException) {
+            android.util.Log.w("SecondaryHome", "Display unavailable, skipping the docked orientation pin", e)
+            return
+        }
         val orientation = com.nendo.argosy.util.DisplayAffinityHelper.dockedOrientationFor(this, display)
             ?: return
         if (requestedOrientation == orientation) return

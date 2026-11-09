@@ -3791,10 +3791,7 @@ class LibretroActivity : ComponentActivity() {
 
     private fun applyOrientationLock(locked: Boolean) {
         val fixed = screenOrientationMode.fixedRequest()?.takeIf { isOnMainDisplay }
-        val dockedOrientation = com.nendo.argosy.util.DisplayAffinityHelper.dockedOrientationFor(
-            this,
-            try { window.decorView.display ?: windowManager.defaultDisplay } catch (_: Exception) { null }
-        )
+        val dockedOrientation = com.nendo.argosy.util.DisplayAffinityHelper.dockedOrientationFor(this, hostDisplayOrNull())
         lastDockedOrientation = dockedOrientation
         requestedOrientation = if (fixed != null) {
             fixed
@@ -3867,11 +3864,6 @@ class LibretroActivity : ComponentActivity() {
         inputDeviceListener = null
     }
 
-    /**
-     * Keeps the dock-only lock honest. The panels coming back on, or the external display going
-     * away, both change what the lock should be, and neither reaches the settings flow that
-     * normally re-applies it.
-     */
     private fun registerDockDisplayListener() {
         val displayManager = getSystemService(android.hardware.display.DisplayManager::class.java) ?: return
         dockDisplayListener = object : android.hardware.display.DisplayManager.DisplayListener {
@@ -3890,12 +3882,16 @@ class LibretroActivity : ComponentActivity() {
 
     private fun refreshDockOrientationLock() {
         if (isFinishing || isDestroyed) return
-        val docked = com.nendo.argosy.util.DisplayAffinityHelper.dockedOrientationFor(
-            this,
-            try { window.decorView.display ?: windowManager.defaultDisplay } catch (_: Exception) { null }
-        )
+        val docked = com.nendo.argosy.util.DisplayAffinityHelper.dockedOrientationFor(this, hostDisplayOrNull())
         if (docked == lastDockedOrientation) return
         applyOrientationLock(touchSettingsState.touchControlsLockOrientation)
+    }
+
+    private fun hostDisplayOrNull(): android.view.Display? = try {
+        window.decorView.display ?: windowManager.defaultDisplay
+    } catch (e: RuntimeException) {
+        android.util.Log.w(TAG, "Host display unavailable, skipping the docked orientation check", e)
+        null
     }
 
     private fun registerOrientationListener() {

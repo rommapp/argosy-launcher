@@ -136,12 +136,7 @@ class TexturePackInstaller(
             val recordedPath = modFile.localPath
             if (recordedPath != null && isManifestPath(recordedPath) && activeTargetDir != null) {
                 val recordedFile = File(recordedPath)
-                val exists = if (fileAccessLayer != null && fileAccessLayer.isRestrictedPath(recordedPath)) {
-                    fileAccessLayer.exists(recordedPath)
-                } else {
-                    recordedFile.isFile
-                }
-                if (exists) {
+                if (manifestExists(recordedPath)) {
                     val recordedParent = recordedFile.parentFile
                     val isSameTarget = recordedParent != null &&
                         recordedParent.canonicalPath in activeTargetPaths
@@ -399,11 +394,13 @@ class TexturePackInstaller(
     suspend fun hasInstalledTexturePack(gameId: Long): Boolean = withContext(Dispatchers.IO) {
         gameFileDao.getModFilesForGame(gameId).any { modFile ->
             val path = modFile.localPath
-            if (path == null || !isManifestPath(path)) false
-            else if (fileAccessLayer != null && fileAccessLayer.isRestrictedPath(path)) fileAccessLayer.exists(path)
-            else File(path).isFile
+            path != null && isManifestPath(path) && manifestExists(path)
         }
     }
+
+    fun manifestExists(path: String): Boolean =
+        if (fileAccessLayer != null && fileAccessLayer.isRestrictedPath(path)) fileAccessLayer.exists(path)
+        else File(path).isFile
 
     fun invalidateFailedInstall(gameFileId: Long) {
         failedInstalls.remove(gameFileId)

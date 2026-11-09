@@ -72,6 +72,8 @@ class TexturePackExtractor @Inject constructor() {
             throw SecurityException("Target file outside cache dir: ${sourceFile.name}")
         }
         val tmpFile = File(cacheDir, "${sourceFile.name}.$gameFileId.tmp")
+        val backupFile = File(cacheDir, "${sourceFile.name}.$gameFileId.replaced")
+        var backedUp = false
         var destCommitted = false
         var manifestCommitted = false
         try {
@@ -120,18 +122,27 @@ class TexturePackExtractor @Inject constructor() {
                 if (isCancelled?.invoke() == true) {
                     throw CancellationException("Texture pack installation cancelled")
                 }
-                if (isRestricted) {
-                    fileAccessLayer?.delete(destFile.absolutePath)
-                    fileAccessLayer?.copyFile(tmpFile.absolutePath, destFile.absolutePath)
-                    fileAccessLayer?.delete(tmpFile.absolutePath)
-                } else {
-                    if (destFile.exists()) destFile.delete()
-                    if (!tmpFile.renameTo(destFile)) {
-                        tmpFile.copyTo(destFile, overwrite = true)
-                        tmpFile.delete()
+                if (isRestricted && fileAccessLayer != null) {
+                    if (fileAccessLayer.exists(destFile.absolutePath)) {
+                        if (!fileAccessLayer.copyFile(destFile.absolutePath, backupFile.absolutePath)) {
+                            throw java.io.IOException("Could not back up ${destFile.absolutePath}")
+                        }
+                        backedUp = true
                     }
+                    destCommitted = true
+                    fileAccessLayer.delete(destFile.absolutePath)
+                    if (!fileAccessLayer.copyFile(tmpFile.absolutePath, destFile.absolutePath)) {
+                        throw java.io.IOException("Could not write ${destFile.absolutePath}")
+                    }
+                    fileAccessLayer.delete(tmpFile.absolutePath)
+                } else {
+                    if (destFile.exists()) {
+                        moveFile(destFile, backupFile)
+                        backedUp = true
+                    }
+                    destCommitted = true
+                    moveFile(tmpFile, destFile)
                 }
-                destCommitted = true
             }
             currentCoroutineContext().ensureActive()
             if (isCancelled?.invoke() == true) {
@@ -157,19 +168,21 @@ class TexturePackExtractor @Inject constructor() {
                 }
             }
             if (destCommitted && sourceFile.canonicalPath != destFile.canonicalPath) {
-                if (isRestricted) {
-                    fileAccessLayer?.delete(destFile.absolutePath)
-                } else {
-                    destFile.delete()
+                deleteTarget(destFile, isRestricted, fileAccessLayer)
+                if (backedUp) {
+                    runCatching {
+                        if (isRestricted && fileAccessLayer != null) {
+                            fileAccessLayer.copyFile(backupFile.absolutePath, destFile.absolutePath)
+                        } else {
+                            moveFile(backupFile, destFile)
+                        }
+                    }.onFailure { Logger.warn(TAG, "Could not restore ${destFile.absolutePath} after a failed texture install", it) }
                 }
             }
             throw e
         } finally {
-            if (isRestricted) {
-                fileAccessLayer?.delete(tmpFile.absolutePath)
-            } else if (tmpFile.exists()) {
-                tmpFile.delete()
-            }
+            deleteTarget(tmpFile, isRestricted, fileAccessLayer)
+            deleteTarget(backupFile, isRestricted, fileAccessLayer)
         }
     }
 
@@ -255,7 +268,9 @@ class TexturePackExtractor @Inject constructor() {
                 ?: File(System.getProperty("java.io.tmpdir") ?: "/data/local/tmp")
             File(safeStagingBase, "texture_staging_$gameFileId")
         }
+        val replacedDir = File(stagingDir.parentFile, "${stagingDir.name}.replaced")
         stagingDir.deleteRecursively()
+        replacedDir.deleteRecursively()
         stagingDir.mkdirs()
         val extractedRelativePaths = LinkedHashSet<String>()
 
@@ -328,6 +343,7 @@ class TexturePackExtractor @Inject constructor() {
             }
 
             val committedFiles = mutableListOf<File>()
+            val replacedOriginals = mutableMapOf<File, File>()
             var commitSucceeded = false
             try {
                 if (isDirectlyWritable) {
@@ -341,12 +357,14 @@ class TexturePackExtractor @Inject constructor() {
                         if (!stagedFile.exists()) continue
                         val finalFile = File(targetDir, relativePath)
                         finalFile.parentFile?.mkdirs()
-                        if (finalFile.exists()) finalFile.delete()
-                        if (!stagedFile.renameTo(finalFile)) {
-                            stagedFile.copyTo(finalFile, overwrite = true)
-                            stagedFile.delete()
+                        if (finalFile.exists()) {
+                            val backup = File(replacedDir, relativePath)
+                            backup.parentFile?.mkdirs()
+                            moveFile(finalFile, backup)
+                            replacedOriginals[finalFile] = backup
                         }
                         committedFiles.add(finalFile)
+                        moveFile(stagedFile, finalFile)
                     }
 
                     currentCoroutineContext().ensureActive()
@@ -373,18 +391,19 @@ class TexturePackExtractor @Inject constructor() {
                         finalFile.parentFile?.absolutePath
                             ?.takeIf { ensuredDirs.add(it) }
                             ?.let { fileAccessLayer?.mkdirs(it) }
-                        val output = fileAccessLayer?.getOutputStream(finalFile.absolutePath)
-                            ?: FileOutputStream(finalFile)
-                        output.use { out ->
-                            stagedFile.inputStream().use { input ->
-                                val copyBuffer = ByteArray(64 * 1024)
-                                var read: Int
-                                while (input.read(copyBuffer).also { read = it } != -1) {
-                                    out.write(copyBuffer, 0, read)
-                                }
-                            }
+                        val existing = fileAccessLayer?.exists(finalFile.absolutePath) ?: finalFile.exists()
+                        if (existing) {
+                            val backup = File(replacedDir, relativePath)
+                            backup.parentFile?.mkdirs()
+                            val original = fileAccessLayer?.getInputStream(finalFile.absolutePath)
+                                ?: finalFile.inputStream()
+                            original.use { input -> FileOutputStream(backup).use { input.copyTo(it) } }
+                            replacedOriginals[finalFile] = backup
                         }
                         committedFiles.add(finalFile)
+                        val output = fileAccessLayer?.getOutputStream(finalFile.absolutePath)
+                            ?: FileOutputStream(finalFile)
+                        output.use { out -> stagedFile.inputStream().use { it.copyTo(out, COPY_BUFFER_SIZE) } }
                     }
 
                     currentCoroutineContext().ensureActive()
@@ -408,23 +427,46 @@ class TexturePackExtractor @Inject constructor() {
             } catch (e: Throwable) {
                 if (!commitSucceeded) {
                     val manifestFile = manifestFileFor(targetDir, gameFileId)
-                    if (fileAccessLayer != null && fileAccessLayer.isRestrictedPath(manifestFile.absolutePath)) {
-                        fileAccessLayer.delete(manifestFile.absolutePath)
-                        for (file in committedFiles) {
-                            fileAccessLayer.delete(file.absolutePath)
-                        }
-                    } else {
-                        runCatching { manifestFile.delete() }
-                        for (file in committedFiles) {
-                            runCatching { file.delete() }
-                        }
+                    val restricted = fileAccessLayer != null && fileAccessLayer.isRestrictedPath(manifestFile.absolutePath)
+                    deleteTarget(manifestFile, restricted, fileAccessLayer)
+                    for (file in committedFiles.asReversed()) {
+                        deleteTarget(file, restricted, fileAccessLayer)
+                        replacedOriginals[file]?.let { restoreTarget(it, file, restricted, fileAccessLayer) }
                     }
                 }
                 throw e
             }
         } finally {
             stagingDir.deleteRecursively()
+            replacedDir.deleteRecursively()
         }
+    }
+
+    private fun moveFile(source: File, dest: File) {
+        if (!source.renameTo(dest)) {
+            source.copyTo(dest, overwrite = true)
+            source.delete()
+        }
+    }
+
+    private fun deleteTarget(file: File, restricted: Boolean, fileAccessLayer: FileAccessLayer?) {
+        if (restricted && fileAccessLayer != null) {
+            fileAccessLayer.delete(file.absolutePath)
+        } else {
+            runCatching { file.delete() }
+        }
+    }
+
+    private fun restoreTarget(backup: File, file: File, restricted: Boolean, fileAccessLayer: FileAccessLayer?) {
+        runCatching {
+            if (restricted && fileAccessLayer != null) {
+                fileAccessLayer.getOutputStream(file.absolutePath)?.use { out ->
+                    backup.inputStream().use { it.copyTo(out, COPY_BUFFER_SIZE) }
+                }
+            } else {
+                moveFile(backup, file)
+            }
+        }.onFailure { Logger.warn(TAG, "Could not restore ${file.absolutePath} after a failed texture install", it) }
     }
 
     private fun collectValidatedZipEntries(
@@ -459,6 +501,7 @@ class TexturePackExtractor @Inject constructor() {
         private const val TAG = "TexturePackExtractor"
         private const val MANIFEST_PREFIX = ".argosy_mod_"
         private const val MANIFEST_SUFFIX = ".manifest"
+        private const val COPY_BUFFER_SIZE = 64 * 1024
 
         private val REDUNDANT_CONTAINER_NAMES = setOf("textures", "hires_texture", "load", "user")
 

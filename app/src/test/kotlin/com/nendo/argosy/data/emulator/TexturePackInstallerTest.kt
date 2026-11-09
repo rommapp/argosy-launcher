@@ -765,6 +765,40 @@ class TexturePackInstallerTest {
     }
 
     @Test
+    fun `a pack cancelled mid-commit restores the files it replaced from an earlier pack`() = runTest {
+        val game = testGame(titleId = "GZLE01")
+        val targetDir = File(saveDir, "User/Load/Textures/GZLE01")
+        val firstZip = createZip("first_pack.zip", mapOf("shared.png" to "first", "own1.png" to "one"))
+        val firstMod = testModFile(id = 61L, gameId = game.id, fileName = firstZip.name, localPath = firstZip.absolutePath)
+        val firstManifest = installer.installForModFile(game = game, gameFile = firstMod, sourceFile = firstZip)
+        assertNotNull(firstManifest)
+
+        val secondZip = createZip("second_pack.zip", mapOf("shared.png" to "second", "own2.png" to "two"))
+        val secondMod = testModFile(id = 62L, gameId = game.id, fileName = secondZip.name, localPath = secondZip.absolutePath)
+        val shared = File(targetDir, "shared.png")
+        var threwCancellation = false
+        try {
+            installer.installForModFileOutcome(
+                game = game,
+                gameFile = secondMod,
+                sourceFile = secondZip,
+                isCancelled = { shared.isFile && shared.readText() == "second" }
+            )
+        } catch (_: kotlinx.coroutines.CancellationException) {
+            threwCancellation = true
+        }
+
+        assertTrue("Expected CancellationException", threwCancellation)
+        assertEquals("first", shared.readText())
+        assertEquals("one", File(targetDir, "own1.png").readText())
+        assertFalse(File(targetDir, "own2.png").exists())
+        assertFalse(TexturePackInstaller.manifestFileFor(targetDir, 62L).exists())
+        assertEquals(setOf("shared.png", "own1.png"), firstManifest!!.readLines().toSet())
+        assertFalse(File(targetDir, ".staging_62.replaced").exists())
+        assertTrue(secondZip.exists())
+    }
+
+    @Test
     fun `cancellation during zip extraction leaves no partial files in target dir`() = runTest {
         val zipFile = createZip(
             "cancel_pack.zip",

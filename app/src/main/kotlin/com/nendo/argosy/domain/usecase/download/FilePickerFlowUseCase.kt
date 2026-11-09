@@ -64,6 +64,7 @@ class FilePickerFlowUseCase @Inject constructor(
         file.localPath?.let { path ->
             val recorded = File(path)
             if (recorded.exists()) return recorded
+            if (TexturePackInstaller.isManifestPath(path) && texturePackInstaller.manifestExists(path)) return recorded
         }
         if (gameFolder == null) return null
         val found = ZipExtractor.findAddonFile(gameFolder, file.fileName, file.category) ?: return null

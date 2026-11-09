@@ -130,7 +130,8 @@
     <string name="notif_gamelaunch_no_core_base">%1$s沒有可用的核心</string>
     <string name="notif_gamelaunch_no_core_with_reason">%1$s沒有可用的核心：%2$s</string>
     <string name="notif_gamelaunch_missing_discs">缺少光碟：%1$s，請至遊戲詳情頁面修復。</string>
-    <string name="notif_gamelaunch_missing_bios">缺少%1$s的BIOS，請先在設定中安裝後再啟動。</string>
+    <string name="notif_gamelaunch_missing_bios_files">%1$s缺少BIOS無法啟動：%2$s。Argosy在其BIOS資料夾中找不到這些檔案。請在「設定 > BIOS檔案」中從RomM伺服器下載%1$s的韌體，然後重新啟動。</string>
+    <string name="notif_gamelaunch_missing_bios_folder">%1$s缺少BIOS傾印檔無法啟動。Argosy在其%2$s BIOS資料夾中找不到任何檔案。請在「設定 > BIOS檔案」中從RomM伺服器下載%1$s的韌體，然後重新啟動。</string>
     <string name="notif_gamelaunch_no_scummvm_id">缺少%1$s的.scummvm檔案</string>
     <string name="notif_gamelaunch_no_android_app">尚未安裝Android應用程式：%1$s</string>
     <string name="notif_gamelaunch_disc_launch_failed">無法啟動光碟</string>

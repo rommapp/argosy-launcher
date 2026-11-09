@@ -3,6 +3,7 @@ package com.nendo.argosy.data.emulator
 import android.content.Context
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.FirmwareDao
+import com.nendo.argosy.data.local.dao.getDownloadedForPlatformFamily
 import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.libretro.LibretroCoreRegistry
@@ -81,13 +82,11 @@ class BuiltinCoreResolver(
     }
 
     private suspend fun hasAnyBios(platformSlug: String, systemFileNames: Set<String>): Boolean {
-        val library = firmwareDao.getByPlatformSlug(platformSlug)
+        val library = firmwareDao.getDownloadedForPlatformFamily(platformSlug)
         val builtinSlug = PlatformDefinitions.getCanonicalSlug(platformSlug)
         return withContext(Dispatchers.IO) {
             systemFileNames.any { File(systemDir, it).isFile } || library.any { firmware ->
-                val source = firmware.localPath?.let { File(it) }
-                source != null && source.isFile &&
-                    BiosPathRegistry.exactSystemFileName(firmware.fileName, builtinSlug) { firmware.md5Hash } in systemFileNames
+                BiosPathRegistry.exactSystemFileName(firmware.fileName, builtinSlug) { firmware.md5Hash } in systemFileNames
             }
         }
     }

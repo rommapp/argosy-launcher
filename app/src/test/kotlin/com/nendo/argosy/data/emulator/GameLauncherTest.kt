@@ -1088,7 +1088,10 @@ class GameLauncherTest {
         val result = launcher.launch(1L)
 
         assertTrue("got ${result::class.simpleName}", result is LaunchResult.MissingBios)
-        assertEquals("ps2", (result as LaunchResult.MissingBios).platformSlug)
+        val missing = result as LaunchResult.MissingBios
+        assertEquals("ps2", missing.platformSlug)
+        assertEquals("pcsx2/bios", missing.missingFolder)
+        assertTrue(missing.missingFileGroups.isEmpty())
         coVerify { biosRepository.distributeBiosToEmulator("ps2", EmulatorRegistry.BUILTIN_PACKAGE) }
     }
 

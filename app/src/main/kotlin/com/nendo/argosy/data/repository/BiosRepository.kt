@@ -1,10 +1,12 @@
 package com.nendo.argosy.data.repository
 
 import android.content.Context
+import com.nendo.argosy.data.emulator.BiosPathConfig
 import com.nendo.argosy.data.emulator.BiosPathRegistry
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.SwitchKeyManager
 import com.nendo.argosy.data.local.dao.FirmwareDao
+import com.nendo.argosy.data.local.dao.getDownloadedForPlatformFamily
 import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.data.local.dao.PlatformDao
 import com.nendo.argosy.data.local.entity.FirmwareEntity
@@ -525,8 +527,9 @@ class BiosRepository @Inject constructor(
             cleaned++
         }
 
+        val heldByEnabledPlatforms = copiesHeldByEnabledPlatforms()
         for (slug in platformSlugs) {
-            cleanupDistributedCopies(slug)
+            cleanupDistributedCopies(slug, heldByEnabledPlatforms)
             val platformDir = File(getInternalBiosDir(), FileNames.sanitize(slug))
             if (platformDir.exists()) platformDir.deleteRecursively()
         }
@@ -553,36 +556,53 @@ class BiosRepository @Inject constructor(
         target.delete()
     }
 
-    private suspend fun cleanupDistributedCopies(platformSlug: String) {
+    private fun distributionDirs(config: BiosPathConfig): List<File> =
+        if (config.emulatorId == EmulatorRegistry.BUILTIN_PACKAGE) {
+            listOf(getLibretroSystemDir())
+        } else {
+            config.defaultPaths.map { File(it) }
+        }
+
+    private fun distributedCopyCandidates(
+        dir: File,
+        config: BiosPathConfig,
+        firmware: FirmwareEntity,
+        canonicalSlug: String
+    ): List<File> = listOfNotNull(
+        File(dir, FileNames.sanitize(firmware.fileName)),
+        File(dir, FileNames.sanitizeRelativePath(config.targetNameFor(firmware.fileName))),
+        BiosPathRegistry.getNestedBiosPath(firmware.fileName)?.let { File(dir, it) },
+        BiosPathRegistry.getBuiltinPlatformBiosPath(canonicalSlug, firmware.fileName)
+            ?.takeIf { config.emulatorId == EmulatorRegistry.BUILTIN_PACKAGE }
+            ?.let { File(dir, FileNames.sanitizeRelativePath(it)) },
+        BiosPathRegistry.getRetroArchBiosName(firmware.md5Hash)?.let { File(dir, it) }
+    )
+
+    private suspend fun copiesHeldByEnabledPlatforms(): Set<File> =
+        firmwareDao.getSyncEnabledAll()
+            .filter { it.localPath != null }
+            .flatMapTo(mutableSetOf()) { firmware ->
+                val canonicalSlug = PlatformDefinitions.getCanonicalSlug(firmware.platformSlug)
+                BiosPathRegistry.getUnpromptedEmulatorsForPlatform(canonicalSlug).flatMap { config ->
+                    distributionDirs(config).flatMap { dir ->
+                        distributedCopyCandidates(dir, config, firmware, canonicalSlug)
+                    }
+                }
+            }
+
+    private suspend fun cleanupDistributedCopies(platformSlug: String, heldByEnabledPlatforms: Set<File>) {
         val firmwareFiles = firmwareDao.getByPlatformSlug(platformSlug)
         val canonicalSlug = PlatformDefinitions.getCanonicalSlug(platformSlug)
         val emulators = BiosPathRegistry.getUnpromptedEmulatorsForPlatform(canonicalSlug)
 
         for (config in emulators) {
-            val isBuiltin = config.emulatorId == EmulatorRegistry.BUILTIN_PACKAGE
-            val dirs = if (isBuiltin) {
-                listOf(getLibretroSystemDir())
-            } else {
-                config.defaultPaths.map { File(it) }
-            }
-
-            for (dir in dirs) {
+            for (dir in distributionDirs(config)) {
                 if (!dir.exists()) continue
                 for (firmware in firmwareFiles) {
                     try {
-                        deleteDistributedCopy(File(dir, FileNames.sanitize(firmware.fileName)), firmware)
-                        deleteDistributedCopy(File(dir, FileNames.sanitizeRelativePath(config.targetNameFor(firmware.fileName))), firmware)
-                        BiosPathRegistry.getNestedBiosPath(firmware.fileName)?.let { nested ->
-                            deleteDistributedCopy(File(dir, nested), firmware)
-                        }
-                        BiosPathRegistry.getBuiltinPlatformBiosPath(canonicalSlug, firmware.fileName)
-                            ?.takeIf { isBuiltin }
-                            ?.let { deleteDistributedCopy(File(dir, FileNames.sanitizeRelativePath(it)), firmware) }
-                        firmware.md5Hash?.let { md5 ->
-                            BiosPathRegistry.getRetroArchBiosName(md5)?.let { raName ->
-                                deleteDistributedCopy(File(dir, raName), firmware)
-                            }
-                        }
+                        distributedCopyCandidates(dir, config, firmware, canonicalSlug)
+                            .filterNot { it in heldByEnabledPlatforms }
+                            .forEach { deleteDistributedCopy(it, firmware) }
                     } catch (e: Exception) {
                         Logger.debug(TAG, "Could not clean distributed BIOS ${firmware.fileName} from $dir: ${e.message}")
                     }
@@ -595,12 +615,25 @@ class BiosRepository @Inject constructor(
         platformSlug: String,
         emulatorId: String
     ): Int = withContext(Dispatchers.IO) {
-        val config = BiosPathRegistry.getEmulatorBiosPaths(emulatorId) ?: return@withContext 0
-        val canonicalSlug = PlatformDefinitions.getCanonicalSlug(platformSlug)
-        if (!config.supports(canonicalSlug)) return@withContext 0
+        copyFirmwareToEmulator(platformSlug, emulatorId, firmwareDao.getDownloadedForPlatformFamily(platformSlug))
+    }
 
-        val downloaded = firmwareDao.getByPlatformSlug(platformSlug).filter { it.localPath != null }
-        if (downloaded.isEmpty()) return@withContext 0
+    private suspend fun distributeOwnFirmware(platformSlug: String, emulatorId: String): Int =
+        copyFirmwareToEmulator(
+            platformSlug,
+            emulatorId,
+            firmwareDao.getByPlatformSlug(platformSlug).filter { it.localPath != null }
+        )
+
+    private fun copyFirmwareToEmulator(
+        platformSlug: String,
+        emulatorId: String,
+        downloaded: List<FirmwareEntity>
+    ): Int {
+        val config = BiosPathRegistry.getEmulatorBiosPaths(emulatorId) ?: return 0
+        val canonicalSlug = PlatformDefinitions.getCanonicalSlug(platformSlug)
+        if (!config.supports(canonicalSlug)) return 0
+        if (downloaded.isEmpty()) return 0
 
         val isBuiltin = emulatorId == EmulatorRegistry.BUILTIN_PACKAGE
         val requiresExactFilenames = emulatorId.startsWith("retroarch") ||
@@ -654,7 +687,7 @@ class BiosRepository @Inject constructor(
             if (copiedCount > 0) break
         }
 
-        copiedCount
+        return copiedCount
     }
 
     suspend fun distributeAllBiosToEmulators(): Map<String, Int> = withContext(Dispatchers.IO) {
@@ -664,7 +697,7 @@ class BiosRepository @Inject constructor(
         for (slug in platformSlugs) {
             val emulators = BiosPathRegistry.getUnpromptedEmulatorsForPlatform(slug)
             for (config in emulators) {
-                val count = distributeBiosToEmulator(slug, config.emulatorId)
+                val count = distributeOwnFirmware(slug, config.emulatorId)
                 if (count > 0) {
                     results[config.emulatorId] = (results[config.emulatorId] ?: 0) + count
                 }
@@ -700,7 +733,7 @@ class BiosRepository @Inject constructor(
             for (slug in regularSlugs) {
                 val emulators = BiosPathRegistry.getUnpromptedEmulatorsForPlatform(slug)
                 for (config in emulators) {
-                    val count = distributeBiosToEmulator(slug, config.emulatorId)
+                    val count = distributeOwnFirmware(slug, config.emulatorId)
                     if (count > 0) {
                         val emulatorResults = results.getOrPut(config.emulatorId) { mutableMapOf() }
                         emulatorResults[slug] = count

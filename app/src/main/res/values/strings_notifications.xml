@@ -323,8 +323,10 @@
     <string name="notif_gamelaunch_no_core_with_reason">No core available for %1$s: %2$s</string>
     <!-- %1$s is a comma-separated list of missing disc numbers. -->
     <string name="notif_gamelaunch_missing_discs">Missing discs: %1$s. View game details to repair.</string>
-    <!-- %1$s is the platform slug (untranslated, upstream identifier). -->
-    <string name="notif_gamelaunch_missing_bios">Missing BIOS for %1$s. Install it in Settings before launching.</string>
+    <!-- %1$s is a platform name, %2$s one or more BIOS file names; files separated by " / " are alternatives, any one of them is enough -->
+    <string name="notif_gamelaunch_missing_bios_files">%1$s can\'t start without its BIOS: %2$s. Argosy found none of these in its BIOS folder. Download the firmware for %1$s from your RomM server in Settings > BIOS Files, then launch again.</string>
+    <!-- %1$s is a platform name, %2$s a folder path inside Argosy\'s BIOS folder, such as pcsx2/bios -->
+    <string name="notif_gamelaunch_missing_bios_folder">%1$s can\'t start without a BIOS dump. Argosy found no file in its %2$s BIOS folder. Download the firmware for %1$s from your RomM server in Settings > BIOS Files, then launch again.</string>
     <!-- %1$s is the game's name (untranslated, user content). -->
     <string name="notif_gamelaunch_no_scummvm_id">Missing .scummvm file for %1$s</string>
     <!-- %1$s is the Android package name (untranslated, upstream identifier). -->

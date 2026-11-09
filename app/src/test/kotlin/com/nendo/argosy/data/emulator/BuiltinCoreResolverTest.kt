@@ -36,18 +36,23 @@ class BuiltinCoreResolverTest {
             EmulatorConfigEntity(platformId = null, gameId = 1L, packageName = null, displayName = null, coreName = it)
         }
         coEvery { emulatorConfigDao.getDefaultForPlatform(platformId) } returns null
-        coEvery { firmwareDao.getByPlatformSlug(any()) } returns library
+        coEvery { firmwareDao.getDownloaded() } returns library
         every { preferences.getBuiltinCoreSelections() } returns flowOf(emptyMap())
         return BuiltinCoreResolver(emulatorConfigDao, preferences, firmwareDao, systemDir)
     }
 
-    private fun libraryFirmware(fileName: String, md5: String?, downloaded: Boolean = true): FirmwareEntity {
+    private fun libraryFirmware(
+        fileName: String,
+        md5: String?,
+        downloaded: Boolean = true,
+        platformSlug: String = "psx"
+    ): FirmwareEntity {
         val localFile = java.io.File(tempFolder.newFolder(), fileName).apply {
             if (downloaded) writeBytes(byteArrayOf(0))
         }
         return FirmwareEntity(
             platformId = platformId,
-            platformSlug = "psx",
+            platformSlug = platformSlug,
             rommId = 1L,
             fileName = fileName,
             filePath = "bios/psx/$fileName",
@@ -67,6 +72,24 @@ class BuiltinCoreResolverTest {
     @Test
     fun `a library BIOS under another name counts when its hash names a required file`() = runTest {
         val library = listOf(libraryFirmware("SCPH-5501 (USA).BIN", md5 = "490f666e1afb15b7362b406ed1cea246"))
+        assertEquals("mednafen_psx_hw", resolver(library = library).resolveCoreId(1L, platformId, "psx"))
+    }
+
+    @Test
+    fun `a library BIOS held under a sibling RomM slug of the platform counts`() = runTest {
+        val library = listOf(libraryFirmware("scph5501.bin", md5 = null, platformSlug = "playstation"))
+        assertEquals("mednafen_psx_hw", resolver(library = library).resolveCoreId(1L, platformId, "psx"))
+    }
+
+    @Test
+    fun `a library BIOS held under an unrelated platform does not count`() = runTest {
+        val library = listOf(libraryFirmware("ps2-bios.bin", md5 = null, platformSlug = "ps2"))
+        assertEquals("pcsx_rearmed", resolver(library = library).resolveCoreId(1L, platformId, "psx"))
+    }
+
+    @Test
+    fun `a file named as one of the platform's BIOS counts wherever RomM keeps it`() = runTest {
+        val library = listOf(libraryFirmware("scph5501.bin", md5 = null, platformSlug = "ps2"))
         assertEquals("mednafen_psx_hw", resolver(library = library).resolveCoreId(1L, platformId, "psx"))
     }
 

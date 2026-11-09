@@ -35,6 +35,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import com.nendo.argosy.data.local.entity.GameDiscEntity
+import com.nendo.argosy.data.platform.PlatformDefinitions
 import com.nendo.argosy.data.platform.PlatformFolderResolver
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.model.GameSource
@@ -94,7 +95,18 @@ sealed class LaunchResult {
     data class NoAndroidApp(val packageName: String) : LaunchResult()
     data class NoCore(val platformSlug: String, val reason: String? = null) : LaunchResult()
     data class MissingDiscs(val missingDiscNumbers: List<Int>) : LaunchResult()
-    data class MissingBios(val platformSlug: String) : LaunchResult()
+    /**
+     * The built-in core cannot start without firmware the system directory lacks. [missingFileGroups]
+     * lists each unmet requirement as the file names that would satisfy it, any one of a group
+     * being enough; [missingFolder] names a folder under the system directory that holds no file
+     * when the core accepts any file name there.
+     */
+    data class MissingBios(
+        val platformSlug: String,
+        val platformName: String,
+        val missingFileGroups: List<List<String>>,
+        val missingFolder: String?
+    ) : LaunchResult()
     data class NoScummVMGameId(val gameName: String) : LaunchResult()
     data class Error(val message: String) : LaunchResult()
     data object Cancelled : LaunchResult()
@@ -914,24 +926,28 @@ class GameLauncher @Inject constructor(
         "tgcd" to listOf(listOf("syscard3.pce")),
         "pcfx" to listOf(listOf("pcfx.rom")),
         "cdi" to listOf(listOf("same_cdi/bios/cdimono1.zip")),
-        "scd" to listOf(listOf("bios_CD_U.bin", "bios_CD_E.bin", "bios_CD_J.bin")),
-        "segacd" to listOf(listOf("bios_CD_U.bin", "bios_CD_E.bin", "bios_CD_J.bin"))
+        "scd" to listOf(listOf("bios_CD_U.bin", "bios_CD_E.bin", "bios_CD_J.bin"))
     )
 
     private suspend fun biosGate(game: GameEntity, emulator: EmulatorDef): LaunchResult? {
         if (!emulator.launchConfig.isInProcess) return null
-        val requirements = mandatoryBios[game.platformSlug.lowercase()]
+        val requirements = mandatoryBios[PlatformDefinitions.getCanonicalSlug(game.platformSlug)]
         val biosDir = BiosPathRegistry.getBuiltinPlatformBiosDir(game.platformSlug)
         if (requirements == null && biosDir == null) return null
         return try {
             biosRepository.distributeBiosToEmulator(game.platformSlug, EmulatorRegistry.BUILTIN_PACKAGE)
             val systemDir = biosRepository.getLibretroSystemDir()
-            val unmetFiles = requirements.orEmpty().any { group -> group.none { File(systemDir, it).exists() } }
-            val unmetDir = biosDir != null && File(systemDir, biosDir).listFiles()?.any { it.isFile } != true
-            val unmet = unmetFiles || unmetDir
-            if (unmet) {
-                Logger.warn(TAG, "[Launch] BIOS gate: ${game.platformSlug} missing required firmware")
-                LaunchResult.MissingBios(game.platformSlug)
+            val unmetGroups = requirements.orEmpty().filter { group -> group.none { File(systemDir, it).exists() } }
+            val unmetDir = biosDir?.takeIf { File(systemDir, it).listFiles()?.any { file -> file.isFile } != true }
+            if (unmetGroups.isNotEmpty() || unmetDir != null) {
+                Logger.warn(
+                    TAG,
+                    "[Launch] BIOS gate: ${game.platformSlug} missing required firmware | " +
+                        "files=$unmetGroups folder=$unmetDir systemDir=${systemDir.absolutePath}"
+                )
+                val platformName = platformDao.getById(game.platformId)?.name?.takeIf { it.isNotBlank() }
+                    ?: game.platformSlug
+                LaunchResult.MissingBios(game.platformSlug, platformName, unmetGroups, unmetDir)
             } else {
                 null
             }
@@ -1599,13 +1615,7 @@ class GameLauncher @Inject constructor(
     }
 
     private fun launchViaShell(command: EffectiveLaunchCommand): ShellLaunchOutcome {
-        command.grantReadUriTo.forEach { uri ->
-            try {
-                context.grantUriPermission(command.packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            } catch (e: Exception) {
-                Logger.warn(TAG, "Failed to grant URI permission to ${command.packageName} for $uri", e)
-            }
-        }
+        command.grantLaunchReads(context)
 
         val argv = command.toShellArgv()
         Logger.debug(TAG, "Shell command: ${argv.last()}")

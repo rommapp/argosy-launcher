@@ -614,7 +614,20 @@ class GameLaunchDelegate @Inject constructor(
                 )
             }
             is LaunchResult.MissingBios -> notificationManager.showError(
-                NotificationText.Res(R.string.notif_gamelaunch_missing_bios, listOf(result.platformSlug))
+                if (result.missingFileGroups.isNotEmpty()) {
+                    NotificationText.Res(
+                        R.string.notif_gamelaunch_missing_bios_files,
+                        listOf(
+                            result.platformName,
+                            result.missingFileGroups.joinToString(", ") { it.joinToString(" / ") }
+                        )
+                    )
+                } else {
+                    NotificationText.Res(
+                        R.string.notif_gamelaunch_missing_bios_folder,
+                        listOf(result.platformName, result.missingFolder.orEmpty())
+                    )
+                }
             )
             is LaunchResult.NoScummVMGameId -> notificationManager.showError(
                 NotificationText.Res(R.string.notif_gamelaunch_no_scummvm_id, listOf(result.gameName))

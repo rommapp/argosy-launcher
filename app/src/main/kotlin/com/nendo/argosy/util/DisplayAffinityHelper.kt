@@ -252,8 +252,9 @@ class DisplayAffinityHelper @Inject constructor(
 
     /**
      * Which physical display holds each role: the one the viewer is driving, then the one
-     * describing what that screen has focused. Null on a single-screen device, where there are no
-     * roles to hold.
+     * describing what that screen has focused. Null whenever the launcher runs on one screen: a
+     * single-screen device, dual screen switched off, or a secondary display the companion cannot
+     * use. There are no roles to hold then, whatever the stored layout names.
      *
      * The interactive display carries Home, Library and Media. A role swap is the only thing that
      * moves them, so a caller asks which display holds its role instead of naming a display id,
@@ -261,7 +262,13 @@ class DisplayAffinityHelper @Inject constructor(
      */
     fun getRoleDisplayIds(rolesSwapped: Boolean): Pair<Int, Int>? =
         singleSurfaceDisplayId?.let { it to it }
-            ?: resolveRoleDisplayIds(roleDisplayIds, attachedIds, secondaryDisplayId, rolesSwapped)
+            ?: resolveRoleDisplayIds(
+                roleDisplayIds,
+                attachedIds,
+                secondaryDisplayId,
+                rolesSwapped,
+                dualScreenActive = hasSecondaryDisplay
+            )
 
     /**
      * Where the video player belongs once a game has claimed [emulatorDisplayId]: the other physical
@@ -506,8 +513,10 @@ class DisplayAffinityHelper @Inject constructor(
             roleDisplayIds: Pair<Int, Int>?,
             attachedIds: Set<Int>,
             secondaryDisplayId: Int?,
-            rolesSwapped: Boolean
+            rolesSwapped: Boolean,
+            dualScreenActive: Boolean
         ): Pair<Int, Int>? {
+            if (!dualScreenActive) return null
             roleDisplayIds
                 ?.takeIf { it.first in attachedIds && it.second in attachedIds }
                 ?.let { (first, second) ->

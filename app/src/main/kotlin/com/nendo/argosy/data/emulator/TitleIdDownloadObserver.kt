@@ -108,11 +108,6 @@ class TitleIdDownloadObserver @Inject constructor(
             return null
         }
 
-        if (!game.titleId.isNullOrBlank() && !game.saveId.isNullOrBlank()) {
-            Logger.debug(TAG, "Title ID and save ID already present for game ${event.gameId}, skipping extraction")
-            return null
-        }
-
         val romFile = resolveGameFile(game)
             ?: File(event.localPath).takeUnless { isAddonDownload }
         if (romFile == null || !romFile.exists()) {

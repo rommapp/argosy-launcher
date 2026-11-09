@@ -28,9 +28,6 @@ data class BuiltinTextureRule(
     val supportsHts: Boolean = false,
     val packSubdir: String? = null
 ) {
-    val autoEnableCoreOptions: Map<String, String>
-        get() = coreOptions
-
     fun optionsForPack(hasHtc: Boolean = false, hasHts: Boolean = false): Map<String, String> = when {
         hasHts && htsCoreOptions.isNotEmpty() -> htsCoreOptions
         hasHtc && htcCoreOptions.isNotEmpty() -> htcCoreOptions

@@ -563,6 +563,8 @@
     <string name="ui_quick_settings_hud_description">於內建模擬器遊戲中</string>
     <string name="ui_quick_settings_device_access_notice">Argosy 需要權限才能變更這些設定。</string>
     <string name="ui_quick_settings_device_access_allow">允許</string>
+    <string name="ui_quick_settings_root_access_notice">Argosy 需要 root 權限才能變更這些設定。出現提示時，請在 root 管理器中允許。</string>
+    <string name="ui_quick_settings_root_access_request">請求</string>
     <string name="ui_quick_settings_theme">主題</string>
     <string name="ui_quick_settings_accent">強調色</string>
     <string name="ui_quick_settings_accent_default">預設</string>

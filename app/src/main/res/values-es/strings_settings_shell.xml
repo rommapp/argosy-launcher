@@ -370,6 +370,7 @@
     <string name="settings_shell_footer_back">Atrás</string>
     <string name="settings_shell_footer_local_only_location">Ubicación</string>
     <string name="settings_shell_footer_unassign_shortcut">Quitar</string>
+    <string name="settings_shell_footer_reset_system_combo">Restablecer</string>
 
     <!-- ===== SettingsScreen: cache clear confirm modals ===== -->
 

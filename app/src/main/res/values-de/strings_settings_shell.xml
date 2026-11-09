@@ -366,6 +366,7 @@
     <string name="settings_shell_footer_back">Zurück</string>
     <string name="settings_shell_footer_local_only_location">Speicherort</string>
     <string name="settings_shell_footer_unassign_shortcut">Entfernen</string>
+    <string name="settings_shell_footer_reset_system_combo">Zurücksetzen</string>
 
     <!-- ===== SettingsScreen: cache clear confirm modals ===== -->
 

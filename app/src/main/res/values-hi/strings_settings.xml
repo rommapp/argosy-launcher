@@ -237,6 +237,18 @@
     <string name="settings_navigation_shortcut_capture_subtitle">Argosy के मेनू में यह बटन कोई और काम नहीं करेगा</string>
     <string name="settings_navigation_shortcut_capture_reserved">%1$s मेनू में चलने के लिए है और असाइन नहीं किया जा सकता</string>
     <string name="settings_navigation_shortcut_capture_hint_cancel">रद्द करें</string>
+    <string name="settings_navigation_section_system_buttons">सिस्टम बटन</string>
+    <string name="settings_navigation_system_hotkeys_title">होम और वापस कॉम्बो</string>
+    <string name="settings_navigation_system_hotkeys_subtitle">कंट्रोलर कॉम्बो जो किसी दूसरे ऐप के खुले रहने पर होम और वापस का काम करते हैं</string>
+    <string name="settings_navigation_system_hotkeys_access_title">एक्सेसिबिलिटी सेवा</string>
+    <string name="settings_navigation_system_hotkeys_access_subtitle">कॉम्बो Argosy की एक्सेसिबिलिटी सेवा के ज़रिए दूसरे ऐप तक पहुँचते हैं</string>
+    <string name="settings_navigation_system_hotkeys_access_on">चालू</string>
+    <string name="settings_navigation_system_hotkeys_access_needed">एक्सेसिबिलिटी चाहिए</string>
+    <string name="settings_navigation_system_home_title">होम</string>
+    <string name="settings_navigation_system_home_subtitle">2 सेकंड तक साथ दबाए रखें। गाइड बटन दबाने से भी होम पर जाते हैं</string>
+    <string name="settings_navigation_system_back_title">वापस</string>
+    <string name="settings_navigation_system_back_subtitle">पहले बटन दबाए रखें, फिर आखिरी दबाएँ। गाइड बटन को 1 सेकंड दबाए रखने से भी वापस जाते हैं। गेम में कॉम्बो को 3 सेकंड दबाए रखने से क्विक पैनल खुलता है</string>
+    <string name="settings_navigation_system_combo_capture_prompt">क्रम से 2 या 3 बटन दबाए रखें...</string>
 
     <!-- ===== Displays section ===== -->
 
@@ -497,7 +509,6 @@
     <string name="settings_sync_upload_screenshots_title">स्क्रीनशॉट अपलोड करें</string>
     <string name="settings_sync_upload_screenshots_subtitle">खेलते समय लिए गए स्क्रीनशॉट RomM पर भेजें</string>
     <string name="settings_sync_upload_screenshots_subtitle_unsupported">RomM 5.0 या नया वर्शन आवश्यक है</string>
-    <string name="settings_sync_upload_screenshots_subtitle_needs_usage">सटीक गेम मिलान के लिए यूसेज एक्सेस दें</string>
 
     <string name="settings_sync_image_cache_title">इमेज कैश लोकेशन</string>
     <string name="settings_sync_image_cache_path_internal">इंटरनल (डिफ़ॉल्ट)</string>
@@ -1053,6 +1064,21 @@
     <string name="settings_storage_platform_games_loading">लोड हो रहा है...</string>
     <string name="settings_storage_platform_games_empty_title">कोई डाउनलोड किया गया गेम नहीं</string>
     <string name="settings_storage_platform_games_empty_message">%1$s के लिए डाउनलोड किए गए गेम यहाँ प्रति-श्रेणी विवरण के साथ दिखेंगे।</string>
+    <string name="settings_storage_platform_games_tab_empty_message">यहाँ %1$s का कोई गेम संग्रहीत नहीं है।</string>
+    <plurals name="settings_storage_platform_games_summary">
+        <item quantity="one">%1$d गेम, %2$s</item>
+        <item quantity="other">%1$d गेम, %2$s</item>
+    </plurals>
+    <string name="settings_storage_platform_games_sort_size">सबसे बड़े पहले</string>
+    <string name="settings_storage_platform_games_sort_title">A से Z</string>
+    <string name="settings_storage_platform_games_sort_least_played">सबसे लंबे समय से न खेले गए</string>
+    <string name="settings_storage_platform_games_last_played">आख़िरी बार खेला: %1$s</string>
+    <string name="settings_storage_platform_games_never_played">कभी नहीं खेला</string>
+    <string name="settings_storage_platform_games_play_time">%1$s खेला</string>
+    <plurals name="settings_storage_platform_games_unsynced_saves">
+        <item quantity="one">%d सेव सिंक नहीं हुआ</item>
+        <item quantity="other">%d सेव सिंक नहीं हुए</item>
+    </plurals>
 
     <string name="settings_storage_bucket_base">बेस</string>
     <string name="settings_storage_bucket_updates">अपडेट</string>

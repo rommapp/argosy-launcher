@@ -235,6 +235,18 @@
     <string name="settings_navigation_shortcut_capture_subtitle">该按键在 Argosy 菜单中将不再执行其他操作</string>
     <string name="settings_navigation_shortcut_capture_reserved">%1$s 用于菜单导航，无法分配</string>
     <string name="settings_navigation_shortcut_capture_hint_cancel">取消</string>
+    <string name="settings_navigation_section_system_buttons">系统按键</string>
+    <string name="settings_navigation_system_hotkeys_title">主页与返回组合键</string>
+    <string name="settings_navigation_system_hotkeys_subtitle">在其他应用打开时用作主页和返回的手柄组合键</string>
+    <string name="settings_navigation_system_hotkeys_access_title">无障碍服务</string>
+    <string name="settings_navigation_system_hotkeys_access_subtitle">组合键通过 Argosy 的无障碍服务作用于其他应用</string>
+    <string name="settings_navigation_system_hotkeys_access_on">已开启</string>
+    <string name="settings_navigation_system_hotkeys_access_needed">需要无障碍权限</string>
+    <string name="settings_navigation_system_home_title">主页</string>
+    <string name="settings_navigation_system_home_subtitle">同时按住 2 秒。按一下 Guide 键也会回到主页</string>
+    <string name="settings_navigation_system_back_title">返回</string>
+    <string name="settings_navigation_system_back_subtitle">先按住前面的按键，再按最后一个。按住 Guide 键 1 秒也会返回。游戏中按住组合键 3 秒会改为打开快速面板</string>
+    <string name="settings_navigation_system_combo_capture_prompt">按顺序按住 2 或 3 个按键...</string>
 
     <!-- ===== Displays section ===== -->
 
@@ -486,7 +498,6 @@
     <string name="settings_sync_upload_screenshots_title">上传截图</string>
     <string name="settings_sync_upload_screenshots_subtitle">将游戏过程中截取的截图发送到RomM</string>
     <string name="settings_sync_upload_screenshots_subtitle_unsupported">需要RomM 5.0或更高版本</string>
-    <string name="settings_sync_upload_screenshots_subtitle_needs_usage">授予使用情况访问权限以精确匹配游戏</string>
 
     <string name="settings_sync_image_cache_title">图片缓存位置</string>
     <string name="settings_sync_image_cache_path_internal">内部存储 (默认)</string>
@@ -1026,6 +1037,19 @@
     <string name="settings_storage_platform_games_loading">正在加载...</string>
     <string name="settings_storage_platform_games_empty_title">没有已下载的游戏</string>
     <string name="settings_storage_platform_games_empty_message">%1$s的已下载游戏会按类别显示在这里。</string>
+    <string name="settings_storage_platform_games_tab_empty_message">此处没有存储%1$s游戏。</string>
+    <plurals name="settings_storage_platform_games_summary">
+        <item quantity="other">%1$d 个游戏，%2$s</item>
+    </plurals>
+    <string name="settings_storage_platform_games_sort_size">从大到小</string>
+    <string name="settings_storage_platform_games_sort_title">按名称 A-Z</string>
+    <string name="settings_storage_platform_games_sort_least_played">最久未玩</string>
+    <string name="settings_storage_platform_games_last_played">上次游玩：%1$s</string>
+    <string name="settings_storage_platform_games_never_played">从未游玩</string>
+    <string name="settings_storage_platform_games_play_time">已玩 %1$s</string>
+    <plurals name="settings_storage_platform_games_unsynced_saves">
+        <item quantity="other">%d 个存档未同步</item>
+    </plurals>
 
     <string name="settings_storage_bucket_base">基础游戏</string>
     <string name="settings_storage_bucket_updates">更新</string>

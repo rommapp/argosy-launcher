@@ -6,6 +6,7 @@ import com.nendo.argosy.ui.input.InputDispatcher.Companion.computeWrappedIndex
 import com.nendo.argosy.data.steam.SteamConnectionState
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.UiShortcut
+import com.nendo.argosy.hardware.SystemHotkeyAction
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.core.emulator.LibretroSettingDef
 import com.nendo.argosy.libretro.frame.FrameRegistry
@@ -1080,6 +1081,20 @@ private fun routeNavigationConfirm(vm: SettingsViewModel, state: SettingsUiState
             vm.startShortcutCapture(UiShortcut.OPEN_QUICK_PANEL)
             return InputResult.handled(SoundType.OPEN_MODAL)
         }
+        NavigationItem.SystemHotkeys -> {
+            val enabled = !state.controls.systemHotkeysEnabled
+            vm.setSystemHotkeysEnabled(enabled)
+            return InputResult.toggled(enabled)
+        }
+        NavigationItem.SystemHotkeysAccess -> vm.openAccessibilitySettings()
+        NavigationItem.SystemHomeCombo -> {
+            vm.startSystemComboCapture(SystemHotkeyAction.HOME)
+            return InputResult.handled(SoundType.OPEN_MODAL)
+        }
+        NavigationItem.SystemBackCombo -> {
+            vm.startSystemComboCapture(SystemHotkeyAction.BACK)
+            return InputResult.handled(SoundType.OPEN_MODAL)
+        }
         else -> {}
     }
     return InputResult.HANDLED
@@ -1269,6 +1284,7 @@ private fun routeDismissTopOverlay(vm: SettingsViewModel): Boolean {
         state.builtinControls.showInputMappingModal -> { vm.hideInputMappingModal(); true }
         state.builtinControls.showHotkeysModal -> { vm.hideHotkeysModal(); true }
         state.controls.shortcutCaptureTarget != null -> { vm.cancelShortcutCapture(); true }
+        state.controls.systemComboCaptureTarget != null -> { vm.cancelSystemComboCapture(); true }
         state.controls.showNavRingModal -> { vm.backNavRing(); true }
         vm.shaderChainManager.shaderStack.isReordering -> { vm.cancelShaderLift(); true }
         state.accounts.pairing.active -> { vm.cancelAddAccount(); true }

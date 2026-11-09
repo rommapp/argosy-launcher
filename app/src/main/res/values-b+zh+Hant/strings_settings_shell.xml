@@ -362,6 +362,7 @@
     <string name="settings_shell_footer_back">返回</string>
     <string name="settings_shell_footer_local_only_location">位置</string>
     <string name="settings_shell_footer_unassign_shortcut">取消指派</string>
+    <string name="settings_shell_footer_reset_system_combo">重設</string>
 
     <!-- ===== SettingsScreen: cache clear confirm modals ===== -->
 

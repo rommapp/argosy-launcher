@@ -61,6 +61,12 @@ import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.util.clickableNoFocus
 import com.nendo.argosy.ui.util.pressScale
 import com.nendo.argosy.util.formatBytes
+import com.nendo.argosy.util.formatPlayTime
+import com.nendo.argosy.util.formatRelativeTime
+import com.nendo.argosy.ui.screens.settings.StorageGameSort
+import androidx.compose.material.icons.filled.SwapVert
+import androidx.compose.ui.platform.LocalContext
+import java.time.Instant
 
 @StringRes
 internal fun bucketDisplayLabelRes(bucket: GameStorageBucket): Int = when (bucket) {
@@ -128,7 +134,8 @@ internal fun storagePlatformGamesSections(info: StoragePlatformGamesLayoutInfo) 
 @Composable
 fun StoragePlatformGamesSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
     val state = uiState.storagePlatformGames
-    val visibleGames = remember(state.games, state.localOnly, state.locationFilter) { state.visibleGames }
+    val visibleGames = remember(state.games, state.locationFilter, state.sort) { state.visibleGames }
+    val showsLocationTabs = remember(state.games, state.localOnly) { state.showsLocationTabs }
     val allItems = remember(visibleGames) {
         StoragePlatformGamesItem.buildItems(visibleGames)
     }
@@ -137,10 +144,18 @@ fun StoragePlatformGamesSection(uiState: SettingsUiState, viewModel: SettingsVie
     val sections = remember(layout) { layout.buildSections(Unit) }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        if (state.localOnly) {
+        if (showsLocationTabs) {
             LocationFilterTabs(
                 selected = state.locationFilter,
                 onSelect = viewModel::setStorageLocationFilter,
+                modifier = Modifier.padding(horizontal = Dimens.spacingMd).padding(top = Dimens.spacingMd)
+            )
+        }
+        if (state.games.isNotEmpty()) {
+            GameListHeader(
+                games = visibleGames,
+                sort = state.sort,
+                onCycleSort = viewModel::cycleStoragePlatformGamesSort,
                 modifier = Modifier.padding(horizontal = Dimens.spacingMd).padding(top = Dimens.spacingMd)
             )
         }
@@ -180,6 +195,60 @@ fun StoragePlatformGamesSection(uiState: SettingsUiState, viewModel: SettingsVie
                     }
                 }
             }
+        }
+    }
+}
+
+@StringRes
+private fun StorageGameSort.labelRes(): Int = when (this) {
+    StorageGameSort.SIZE -> R.string.settings_storage_platform_games_sort_size
+    StorageGameSort.TITLE -> R.string.settings_storage_platform_games_sort_title
+    StorageGameSort.LEAST_RECENTLY_PLAYED -> R.string.settings_storage_platform_games_sort_least_played
+}
+
+@Composable
+private fun GameListHeader(
+    games: List<GameStorageBreakdown>,
+    sort: StorageGameSort,
+    onCycleSort: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val theme = LocalArgosyTheme.current
+    val totalBytes = remember(games) { games.sumOf { it.totalBytes } }
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = pluralStringResource(
+                R.plurals.settings_storage_platform_games_summary,
+                games.size,
+                games.size,
+                formatBytes(totalBytes)
+            ),
+            style = MaterialTheme.typography.bodyMedium,
+            color = theme.textDim,
+            modifier = Modifier.weight(1f)
+        )
+        Row(
+            modifier = Modifier
+                .clip(RoundedCornerShape(Dimens.radiusSm))
+                .clickableNoFocus(onClick = onCycleSort)
+                .padding(horizontal = Dimens.spacingSm, vertical = Dimens.spacingXs),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs)
+        ) {
+            Icon(
+                imageVector = Icons.Default.SwapVert,
+                contentDescription = stringResource(R.string.settings_storage_games_sort_toggle_description),
+                tint = theme.textDim,
+                modifier = Modifier.size(Dimens.iconXs)
+            )
+            Text(
+                text = stringResource(sort.labelRes()),
+                style = MaterialTheme.typography.labelSmall,
+                color = theme.textDim
+            )
         }
     }
 }
@@ -239,6 +308,8 @@ private fun PlatformGamesEmptyState(state: StoragePlatformGamesState) {
         Text(
             text = if (state.localOnly && state.locationFilter != StorageLocationFilter.ALL) {
                 stringResource(R.string.settings_storage_local_only_tab_empty_message)
+            } else if (state.locationFilter != StorageLocationFilter.ALL) {
+                stringResource(R.string.settings_storage_platform_games_tab_empty_message, state.platformName)
             } else if (state.localOnly) {
                 stringResource(R.string.settings_storage_local_only_empty_message)
             } else {
@@ -308,6 +379,7 @@ private fun GameStorageCard(
                     color = theme.textDim
                 )
             }
+            PlayHistoryLine(lastPlayed = game.lastPlayed, playTimeMinutes = game.playTimeMinutes)
             val bucketColors = rememberBucketColors()
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
@@ -331,6 +403,16 @@ private fun GameStorageCard(
                         theme.textDim
                     }
                 )
+                if (game.unsyncedSaves > 0) {
+                    InfoTag(
+                        text = pluralStringResource(
+                            R.plurals.settings_storage_platform_games_unsynced_saves,
+                            game.unsyncedSaves,
+                            game.unsyncedSaves
+                        ),
+                        color = LocalLauncherTheme.current.semanticColors.warning
+                    )
+                }
             }
             if (isActive && game.files.isNotEmpty()) {
                 GameFileList(game.files)
@@ -338,6 +420,35 @@ private fun GameStorageCard(
         }
     }
 }
+
+@Composable
+private fun PlayHistoryLine(lastPlayed: Instant?, playTimeMinutes: Int) {
+    val theme = LocalArgosyTheme.current
+    val context = LocalContext.current
+    val text = if (lastPlayed == null) {
+        stringResource(R.string.settings_storage_platform_games_never_played)
+    } else {
+        val played = stringResource(
+            R.string.settings_storage_platform_games_last_played,
+            formatRelativeTime(context, lastPlayed)
+        )
+        if (playTimeMinutes > 0) {
+            listOf(
+                played,
+                stringResource(R.string.settings_storage_platform_games_play_time, formatPlayTime(context, playTimeMinutes))
+            ).joinToString(PLAY_HISTORY_SEPARATOR)
+        } else {
+            played
+        }
+    }
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        color = theme.textDim
+    )
+}
+
+private const val PLAY_HISTORY_SEPARATOR = " · "
 
 @Composable
 private fun InfoTag(text: String, color: Color) {

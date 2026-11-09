@@ -529,6 +529,30 @@
     <string name="settings_navigation_shortcut_capture_reserved">%1$s moves through the menus and can\'t be assigned</string>
     <!-- Button hint that closes that dialog without assigning. Verb. -->
     <string name="settings_navigation_shortcut_capture_hint_cancel">Cancel</string>
+    <!-- Section header for controller combos that act as the Android Home and Back buttons. Noun phrase. -->
+    <string name="settings_navigation_section_system_buttons">System Buttons</string>
+    <!-- Switch title. On, held button combos act as the Android Home and Back buttons while another app is open. -->
+    <string name="settings_navigation_system_hotkeys_title">Home and Back Combos</string>
+    <!-- Second line of that switch. -->
+    <string name="settings_navigation_system_hotkeys_subtitle">Controller combos that work as Home and Back while another app is open</string>
+    <!-- Row title. Noun phrase: the Android accessibility service Argosy uses to read buttons in other apps. -->
+    <string name="settings_navigation_system_hotkeys_access_title">Accessibility Service</string>
+    <!-- Second line of that row. Selecting the row opens the system accessibility settings. -->
+    <string name="settings_navigation_system_hotkeys_access_subtitle">The combos reach other apps through Argosy\'s accessibility service</string>
+    <!-- Value of that row when the service is switched on. Adjective. -->
+    <string name="settings_navigation_system_hotkeys_access_on">On</string>
+    <!-- Value of that row when the service is off and the combos cannot work. Short phrase. -->
+    <string name="settings_navigation_system_hotkeys_access_needed">Needs accessibility</string>
+    <!-- Row title: the combo that acts as the Android Home button. Noun. -->
+    <string name="settings_navigation_system_home_title">Home</string>
+    <!-- Second line of that row. The guide button is the logo button in the middle of the controller. -->
+    <string name="settings_navigation_system_home_subtitle">Hold together for 2 seconds. Tapping the guide button also goes Home</string>
+    <!-- Row title: the combo that acts as the Android Back button. Noun. -->
+    <string name="settings_navigation_system_back_title">Back</string>
+    <!-- Second line of that row. The guide button is the logo button in the middle of the controller. -->
+    <string name="settings_navigation_system_back_subtitle">Hold the first buttons, then press the last. Holding the guide button for 1 second also goes Back. In a game, holding the combo for 3 seconds opens the quick panel instead</string>
+    <!-- Main line of the dialog that records a new combo, before any button is held. Imperative. -->
+    <string name="settings_navigation_system_combo_capture_prompt">Hold 2 or 3 buttons in order...</string>
 
     <!-- ===== Displays section ===== -->
 
@@ -997,9 +1021,6 @@
     <!-- Second line of that row when the server is too old. "RomM 5.0" is a version of that
          software. -->
     <string name="settings_sync_upload_screenshots_subtitle_unsupported">Requires RomM 5.0 or newer</string>
-    <!-- Second line of that row when Android's usage-access permission is missing. "Usage access"
-         is that permission's name in Android's own settings. -->
-    <string name="settings_sync_upload_screenshots_subtitle_needs_usage">Grant usage access for exact game matching</string>
 
     <!-- Row title. Noun phrase: the folder where downloaded pictures are kept. -->
     <string name="settings_sync_image_cache_title">Image Cache Location</string>
@@ -2044,6 +2065,34 @@
     <string name="settings_storage_platform_games_empty_title">No downloaded games</string>
     <!-- Body under that heading. %1$s is the console's name. -->
     <string name="settings_storage_platform_games_empty_message">Downloaded games for %1$s appear here with a per-category breakdown.</string>
+    <!-- Body shown when the selected location tab holds none of this console's games. %1$s is
+         the console's name. -->
+    <string name="settings_storage_platform_games_tab_empty_message">No %1$s games are stored here.</string>
+    <!-- Line above the game list. %1$d is how many games the list shows, %2$s their combined
+         size, already formatted. -->
+    <plurals name="settings_storage_platform_games_summary">
+        <item quantity="one">%1$d game, %2$s</item>
+        <item quantity="other">%1$d games, %2$s</item>
+    </plurals>
+    <!-- Current order of the game list: the biggest first. Adjective phrase. -->
+    <string name="settings_storage_platform_games_sort_size">Largest first</string>
+    <!-- Current order of the game list: alphabetical by title. -->
+    <string name="settings_storage_platform_games_sort_title">A to Z</string>
+    <!-- Current order of the game list: games not played for the longest time first, never
+         played games at the top. -->
+    <string name="settings_storage_platform_games_sort_least_played">Least recently played</string>
+    <!-- On a game's storage card. %1$s is a relative date such as "Yesterday" or "Mar 4". -->
+    <string name="settings_storage_platform_games_last_played">Last played: %1$s</string>
+    <!-- On a game's storage card for a game that has never been launched. -->
+    <string name="settings_storage_platform_games_never_played">Never played</string>
+    <!-- On a game's storage card. %1$s is a total play time such as "12h 30m". -->
+    <string name="settings_storage_platform_games_play_time">%1$s played</string>
+    <!-- Warning tag on a game's storage card: saves on the device RomM does not have yet, lost
+         if the game is deleted. -->
+    <plurals name="settings_storage_platform_games_unsynced_saves">
+        <item quantity="one">%d unsynced save</item>
+        <item quantity="other">%d unsynced saves</item>
+    </plurals>
 
     <!-- Group of a game's files holding the game itself, before any add-ons. Adjective used as a
          noun. -->

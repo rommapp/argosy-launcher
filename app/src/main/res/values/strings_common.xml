@@ -1184,6 +1184,12 @@
     <string name="ui_quick_settings_device_access_notice">Argosy needs permission to change these.</string>
     <!-- Button beside that notice that opens the permission settings. Verb. -->
     <string name="ui_quick_settings_device_access_allow">Allow</string>
+    <!-- Notice at the top of the Performance page on a rooted device when Argosy has not yet been
+         given root access to change the CPU and GPU clocks. "Root manager" is the app that
+         approves root requests, such as Magisk. Full sentences. -->
+    <string name="ui_quick_settings_root_access_notice">Argosy needs root access to change these. Allow it in your root manager when asked.</string>
+    <!-- Button beside that notice that asks the root manager for access. Verb. -->
+    <string name="ui_quick_settings_root_access_request">Request</string>
     <!-- Row of that panel: light or dark. Noun. -->
     <string name="ui_quick_settings_theme">Theme</string>
     <!-- Row of that panel that picks the interface's highlight colour by sliding along the

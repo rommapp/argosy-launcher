@@ -224,6 +224,18 @@
     <string name="settings_navigation_shortcut_capture_subtitle">此按鍵在 Argosy 選單中將不再執行其他動作</string>
     <string name="settings_navigation_shortcut_capture_reserved">%1$s 用於選單導覽，無法指派</string>
     <string name="settings_navigation_shortcut_capture_hint_cancel">取消</string>
+    <string name="settings_navigation_section_system_buttons">系統按鍵</string>
+    <string name="settings_navigation_system_hotkeys_title">主畫面與返回組合鍵</string>
+    <string name="settings_navigation_system_hotkeys_subtitle">在其他應用程式開啟時用作主畫面和返回的控制器組合鍵</string>
+    <string name="settings_navigation_system_hotkeys_access_title">無障礙服務</string>
+    <string name="settings_navigation_system_hotkeys_access_subtitle">組合鍵透過 Argosy 的無障礙服務作用於其他應用程式</string>
+    <string name="settings_navigation_system_hotkeys_access_on">已開啟</string>
+    <string name="settings_navigation_system_hotkeys_access_needed">需要無障礙權限</string>
+    <string name="settings_navigation_system_home_title">主畫面</string>
+    <string name="settings_navigation_system_home_subtitle">同時按住 2 秒。按一下 Guide 鍵也會回到主畫面</string>
+    <string name="settings_navigation_system_back_title">返回</string>
+    <string name="settings_navigation_system_back_subtitle">先按住前面的按鍵，再按最後一個。按住 Guide 鍵 1 秒也會返回。遊戲中按住組合鍵 3 秒會改為開啟快速面板</string>
+    <string name="settings_navigation_system_combo_capture_prompt">依序按住 2 或 3 個按鍵...</string>
 
     <string name="settings_displays_section_screen_safety">螢幕保護</string>
     <string name="settings_displays_section_displays">顯示器</string>
@@ -465,7 +477,6 @@
     <string name="settings_sync_upload_screenshots_title">上傳螢幕截圖</string>
     <string name="settings_sync_upload_screenshots_subtitle">將遊玩時拍攝的螢幕截圖傳送至RomM</string>
     <string name="settings_sync_upload_screenshots_subtitle_unsupported">需要RomM 5.0以上版本</string>
-    <string name="settings_sync_upload_screenshots_subtitle_needs_usage">授予使用狀況存取權限以精確比對遊戲</string>
 
     <string name="settings_sync_image_cache_title">圖片快取位置</string>
     <string name="settings_sync_image_cache_path_internal">內部儲存空間（預設）</string>
@@ -975,6 +986,19 @@
     <string name="settings_storage_platform_games_loading">載入中&#8230;</string>
     <string name="settings_storage_platform_games_empty_title">沒有已下載的遊戲</string>
     <string name="settings_storage_platform_games_empty_message">%1$s已下載的遊戲會依類別顯示於此。</string>
+    <string name="settings_storage_platform_games_tab_empty_message">此處沒有儲存%1$s遊戲。</string>
+    <plurals name="settings_storage_platform_games_summary">
+        <item quantity="other">%1$d 款遊戲，%2$s</item>
+    </plurals>
+    <string name="settings_storage_platform_games_sort_size">由大到小</string>
+    <string name="settings_storage_platform_games_sort_title">依名稱 A-Z</string>
+    <string name="settings_storage_platform_games_sort_least_played">最久未玩</string>
+    <string name="settings_storage_platform_games_last_played">上次遊玩：%1$s</string>
+    <string name="settings_storage_platform_games_never_played">從未遊玩</string>
+    <string name="settings_storage_platform_games_play_time">已玩 %1$s</string>
+    <plurals name="settings_storage_platform_games_unsynced_saves">
+        <item quantity="other">%d 個存檔未同步</item>
+    </plurals>
 
     <string name="settings_storage_bucket_base">本體</string>
     <string name="settings_storage_bucket_updates">更新</string>

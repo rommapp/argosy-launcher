@@ -436,12 +436,31 @@ data class ControlsState(
     val quickNavigation: Boolean = true,
     val navBarAutoHide: Boolean = true,
     val ignoreControllerTouchpad: Boolean = true,
+    val systemHotkeysEnabled: Boolean = true,
+    val systemHomeCombo: List<Int>? = null,
+    val systemBackCombo: List<Int>? = null,
+    val systemComboCaptureTarget: com.nendo.argosy.hardware.SystemHotkeyAction? = null,
     val showNavRingModal: Boolean = false,
     val navRingFocusIndex: Int = 0,
     val navRingReorder: com.nendo.argosy.ui.components.ListReorder<String>? = null
 ) {
     val navRingHeld: String?
         get() = navRingReorder?.let { navRingRoutes.getOrNull(it.heldIndex) }
+
+    fun systemCombo(action: com.nendo.argosy.hardware.SystemHotkeyAction): List<Int> = when (action) {
+        com.nendo.argosy.hardware.SystemHotkeyAction.HOME ->
+            com.nendo.argosy.hardware.SystemHotkeyCombos.home(systemHomeCombo)
+        com.nendo.argosy.hardware.SystemHotkeyAction.BACK ->
+            com.nendo.argosy.hardware.SystemHotkeyCombos.back(systemBackCombo, swapAB, swapStartSelect)
+    }
+
+    fun isSystemComboCustom(action: com.nendo.argosy.hardware.SystemHotkeyAction): Boolean {
+        val stored = when (action) {
+            com.nendo.argosy.hardware.SystemHotkeyAction.HOME -> systemHomeCombo
+            com.nendo.argosy.hardware.SystemHotkeyAction.BACK -> systemBackCombo
+        }
+        return stored != null && com.nendo.argosy.hardware.SystemHotkeyCombos.isValid(stored)
+    }
 }
 
 fun ControlsState.shortcutKey(shortcut: com.nendo.argosy.ui.input.UiShortcut): Int = when (shortcut) {
@@ -1082,10 +1101,36 @@ data class StoragePlatformGamesState(
     val highlightedCategoryIndex: Int = 0,
     val deleteConfirm: com.nendo.argosy.ui.common.GameConfirm.DeleteDownload? = null,
     val categoryDeleteConfirm: GameStorageCategoryDeleteConfirm? = null,
-    val locationFilter: StorageLocationFilter = StorageLocationFilter.ALL
+    val locationFilter: StorageLocationFilter = StorageLocationFilter.ALL,
+    val sort: StorageGameSort = StorageGameSort.SIZE
 ) {
+    val showsLocationTabs: Boolean
+        get() = localOnly || StorageLocationFilter.entries.count { filter ->
+            filter != StorageLocationFilter.ALL && games.any(filter::matches)
+        } > 1
+
     val visibleGames: List<com.nendo.argosy.domain.usecase.storage.GameStorageBreakdown>
-        get() = if (localOnly) games.filter(locationFilter::matches) else games
+        get() = sort.order(games.filter(locationFilter::matches))
+}
+
+enum class StorageGameSort {
+    SIZE,
+    TITLE,
+    LEAST_RECENTLY_PLAYED;
+
+    fun next(): StorageGameSort = entries[(ordinal + 1).mod(entries.size)]
+
+    fun order(
+        games: List<com.nendo.argosy.domain.usecase.storage.GameStorageBreakdown>
+    ): List<com.nendo.argosy.domain.usecase.storage.GameStorageBreakdown> = when (this) {
+        SIZE -> games.sortedByDescending { it.totalBytes }
+        TITLE -> games
+        LEAST_RECENTLY_PLAYED -> games.sortedWith(
+            compareBy<com.nendo.argosy.domain.usecase.storage.GameStorageBreakdown, java.time.Instant?>(
+                nullsFirst()
+            ) { it.lastPlayed }.thenByDescending { it.totalBytes }
+        )
+    }
 }
 
 enum class StorageLocationFilter(private val location: GameStorageLocation?) {

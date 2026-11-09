@@ -598,6 +598,8 @@
     <string name="ui_quick_settings_hud_description">Во встроенных играх</string>
     <string name="ui_quick_settings_device_access_notice">Argosy нужно разрешение, чтобы менять эти настройки.</string>
     <string name="ui_quick_settings_device_access_allow">Разрешить</string>
+    <string name="ui_quick_settings_root_access_notice">Argosy нужен root-доступ, чтобы менять эти настройки. Разрешите его в root-менеджере, когда появится запрос.</string>
+    <string name="ui_quick_settings_root_access_request">Запросить</string>
     <string name="ui_quick_settings_theme">Тема</string>
     <string name="ui_quick_settings_accent">Цвет акцента</string>
     <string name="ui_quick_settings_accent_default">По умолчанию</string>

@@ -578,6 +578,8 @@
     <string name="ui_quick_settings_hud_description">बिल्ट-इन गेम में</string>
     <string name="ui_quick_settings_device_access_notice">इन्हें बदलने के लिए Argosy को अनुमति चाहिए।</string>
     <string name="ui_quick_settings_device_access_allow">अनुमति दें</string>
+    <string name="ui_quick_settings_root_access_notice">इन्हें बदलने के लिए Argosy को रूट एक्सेस चाहिए। पूछे जाने पर अपने रूट मैनेजर में अनुमति दें।</string>
+    <string name="ui_quick_settings_root_access_request">अनुरोध करें</string>
     <string name="ui_quick_settings_theme">थीम</string>
     <string name="ui_quick_settings_accent">एक्सेंट रंग</string>
     <string name="ui_quick_settings_accent_default">डिफ़ॉल्ट</string>

@@ -370,6 +370,7 @@
     <string name="settings_shell_footer_back">Retour</string>
     <string name="settings_shell_footer_local_only_location">Emplacement</string>
     <string name="settings_shell_footer_unassign_shortcut">Retirer</string>
+    <string name="settings_shell_footer_reset_system_combo">Réinitialiser</string>
 
     <!-- ===== SettingsScreen: cache clear confirm modals ===== -->
 

@@ -247,6 +247,18 @@
     <string name="settings_navigation_shortcut_capture_subtitle">Die Taste hat in den Argosy-Menüs keine andere Funktion mehr</string>
     <string name="settings_navigation_shortcut_capture_reserved">%1$s dient zur Menünavigation und kann nicht belegt werden</string>
     <string name="settings_navigation_shortcut_capture_hint_cancel">Abbrechen</string>
+    <string name="settings_navigation_section_system_buttons">Systemtasten</string>
+    <string name="settings_navigation_system_hotkeys_title">Kombinationen für Home und Zurück</string>
+    <string name="settings_navigation_system_hotkeys_subtitle">Controller-Kombinationen, die als Home und Zurück dienen, während eine andere App geöffnet ist</string>
+    <string name="settings_navigation_system_hotkeys_access_title">Bedienungshilfe-Dienst</string>
+    <string name="settings_navigation_system_hotkeys_access_subtitle">Die Kombinationen erreichen andere Apps über den Bedienungshilfe-Dienst von Argosy</string>
+    <string name="settings_navigation_system_hotkeys_access_on">An</string>
+    <string name="settings_navigation_system_hotkeys_access_needed">Bedienungshilfe nötig</string>
+    <string name="settings_navigation_system_home_title">Home</string>
+    <string name="settings_navigation_system_home_subtitle">2 Sekunden lang gemeinsam halten. Ein Druck auf die Guide-Taste führt ebenfalls zu Home</string>
+    <string name="settings_navigation_system_back_title">Zurück</string>
+    <string name="settings_navigation_system_back_subtitle">Die ersten Tasten halten, dann die letzte drücken. Die Guide-Taste 1 Sekunde halten wirkt ebenfalls als Zurück. Im Spiel öffnet 3 Sekunden Halten der Kombination stattdessen das Schnellmenü</string>
+    <string name="settings_navigation_system_combo_capture_prompt">2 oder 3 Tasten der Reihe nach halten...</string>
 
     <!-- ===== Displays section ===== -->
 
@@ -507,7 +519,6 @@
     <string name="settings_sync_upload_screenshots_title">Screenshots hochladen</string>
     <string name="settings_sync_upload_screenshots_subtitle">Während des Spielens aufgenommene Screenshots an RomM senden</string>
     <string name="settings_sync_upload_screenshots_subtitle_unsupported">Erfordert RomM 5.0 oder neuer</string>
-    <string name="settings_sync_upload_screenshots_subtitle_needs_usage">Nutzungszugriff für genaue Spielzuordnung erteilen</string>
 
     <string name="settings_sync_image_cache_title">Bildercache-Speicherort</string>
     <string name="settings_sync_image_cache_path_internal">Intern (Standard)</string>
@@ -1063,6 +1074,21 @@
     <string name="settings_storage_platform_games_loading">Wird geladen…</string>
     <string name="settings_storage_platform_games_empty_title">Keine heruntergeladenen Spiele</string>
     <string name="settings_storage_platform_games_empty_message">Heruntergeladene Spiele für %1$s erscheinen hier mit einer Aufschlüsselung nach Kategorie.</string>
+    <string name="settings_storage_platform_games_tab_empty_message">Hier sind keine Spiele für %1$s gespeichert.</string>
+    <plurals name="settings_storage_platform_games_summary">
+        <item quantity="one">%1$d Spiel, %2$s</item>
+        <item quantity="other">%1$d Spiele, %2$s</item>
+    </plurals>
+    <string name="settings_storage_platform_games_sort_size">Größte zuerst</string>
+    <string name="settings_storage_platform_games_sort_title">A bis Z</string>
+    <string name="settings_storage_platform_games_sort_least_played">Am längsten nicht gespielt</string>
+    <string name="settings_storage_platform_games_last_played">Zuletzt gespielt: %1$s</string>
+    <string name="settings_storage_platform_games_never_played">Nie gespielt</string>
+    <string name="settings_storage_platform_games_play_time">%1$s gespielt</string>
+    <plurals name="settings_storage_platform_games_unsynced_saves">
+        <item quantity="one">%d nicht synchronisierter Spielstand</item>
+        <item quantity="other">%d nicht synchronisierte Spielstände</item>
+    </plurals>
 
     <string name="settings_storage_bucket_base">Basis</string>
     <string name="settings_storage_bucket_updates">Updates</string>

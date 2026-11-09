@@ -61,7 +61,16 @@ class StorageLocationFilterTest {
     }
 
     @Test
-    fun `a platform list ignores the location filter`() {
-        assertEquals(listOf(1L, 2L, 3L, 4L, 5L), visible(StorageLocationFilter.REMOVABLE, localOnly = false))
+    fun `a platform list honors the location filter`() {
+        assertEquals(listOf(2L, 3L), visible(StorageLocationFilter.REMOVABLE, localOnly = false))
+    }
+
+    @Test
+    fun `a platform list shows location tabs only when its games span more than one location`() {
+        val split = StoragePlatformGamesState(games = listOf(internal, sdCard))
+        val oneDrive = StoragePlatformGamesState(games = listOf(internal, game(6, GameStorageLocation.INTERNAL)))
+        assertEquals(true, split.showsLocationTabs)
+        assertEquals(false, oneDrive.showsLocationTabs)
+        assertEquals(true, oneDrive.copy(localOnly = true).showsLocationTabs)
     }
 }

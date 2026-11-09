@@ -133,6 +133,7 @@
 
         <activity-alias
             android:name=".MainActivity"
+            android:enabled="false"
             android:exported="true"
             android:targetActivity=".ArgosyActivity">
             <intent-filter android:priority="1000">

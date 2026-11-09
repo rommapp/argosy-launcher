@@ -979,6 +979,62 @@ class TexturePackInstallerTest {
     }
 
     @Test
+    fun `a migration cancelled partway restores a file it replaced in the new emulator folder`() = runTest {
+        val extStorage = tempFolder.newFolder("mock_external_overwrite")
+        val fal = mockk<com.nendo.argosy.data.storage.FileAccessLayer>(relaxed = true) {
+            every { externalStorageRoots() } returns listOf(extStorage.absolutePath)
+            every { isRestrictedPath(any()) } returns false
+            every { exists(any()) } answers { File(firstArg<String>()).exists() }
+        }
+        val customInstaller = TexturePackInstaller(
+            builtinSaveBase = builtinSaveBase,
+            builtinCoreResolver = builtinCoreResolver,
+            emulatorResolver = emulatorResolver,
+            titleIdExtractor = titleIdExtractor,
+            baseRomFileResolver = baseRomFileResolver,
+            platformFolderResolver = platformFolderResolver,
+            gameDao = gameDao,
+            gameDiscDao = gameDiscDao,
+            gameFileDao = gameFileDao,
+            systemDir = systemDir,
+            fileAccessLayer = fal,
+            cacheDir = tempFolder.newFolder("cache_overwrite")
+        )
+        val game = testGame(titleId = "GZLE01")
+        val builtinTargetDir = File(saveDir, "User/Load/Textures/GZLE01").apply { mkdirs() }
+        val oldManifest = File(builtinTargetDir, ".argosy_mod_78.manifest").apply { writeText("tex_a.png\ntex_b.png") }
+        File(builtinTargetDir, "tex_a.png").writeText("pack_a")
+        File(builtinTargetDir, "tex_b.png").writeText("pack_b")
+        val externalTargetDir = File(extStorage, "Android/data/org.dolphinemu.dolphinemu/files/Load/Textures/GZLE01")
+            .apply { mkdirs() }
+        val playersOwn = File(externalTargetDir, "tex_a.png").apply { writeText("player_original") }
+
+        val modFile = testModFile(id = 78L, gameId = game.id, fileName = "pack.zip", localPath = oldManifest.absolutePath)
+        coEvery { gameDao.getById(game.id) } returns game
+        coEvery { gameFileDao.getModFilesForGame(game.id) } returns listOf(modFile)
+        coEvery { emulatorResolver.getEmulatorPackageForGame(any(), any(), any()) } returns "org.dolphinemu.dolphinemu"
+
+        var threwCancellation = false
+        try {
+            customInstaller.installPendingModFilesForGame(
+                game.id,
+                isCancelled = { playersOwn.isFile && playersOwn.readText() == "pack_a" }
+            )
+        } catch (_: kotlinx.coroutines.CancellationException) {
+            threwCancellation = true
+        }
+
+        assertTrue("Expected CancellationException", threwCancellation)
+        assertEquals("player_original", playersOwn.readText())
+        assertFalse(File(externalTargetDir, "tex_b.png").exists())
+        assertFalse(File(externalTargetDir, ".argosy_mod_78.manifest").exists())
+        assertFalse(File(externalTargetDir, ".argosy_mod_78.manifest.replaced").exists())
+        assertEquals("pack_a", File(builtinTargetDir, "tex_a.png").readText())
+        assertEquals("pack_b", File(builtinTargetDir, "tex_b.png").readText())
+        assertTrue(oldManifest.isFile)
+    }
+
+    @Test
     fun `a migration that cannot write keeps the source pack and its manifest`() = runTest {
         val sourceDir = tempFolder.newFolder("builtin_source")
         val manifest = File(sourceDir, ".argosy_mod_77.manifest").apply { writeText("a.png\nb.png") }

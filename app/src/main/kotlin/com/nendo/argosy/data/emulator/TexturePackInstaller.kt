@@ -272,14 +272,57 @@ class TexturePackInstaller(
         val migrated = mutableListOf<MigratedFile>()
         val migratedRelativePaths = LinkedHashSet<String>()
         val ensuredDirs = mutableSetOf<String>()
+        val replacedDir = if (isDestRestricted) {
+            File(cacheDir ?: File(System.getProperty("java.io.tmpdir") ?: "/data/local/tmp"), "texture_migration_${oldManifestFile.name}.replaced")
+        } else {
+            File(newTargetDir, "${oldManifestFile.name}.replaced")
+        }
+        val replaced = mutableMapOf<File, File>()
+        var keepReplaced = false
 
         fun ensureDir(dir: File) {
             if (!ensuredDirs.add(dir.absolutePath)) return
             if (isDestRestricted) fal.mkdirs(dir.absolutePath) else dir.mkdirs()
         }
 
+        fun setAside(destFile: File, relPath: String) {
+            val exists = if (isDestRestricted) fal.exists(destFile.absolutePath) else destFile.exists()
+            if (!exists) return
+            val backup = File(replacedDir, relPath)
+            if (backup.exists()) {
+                keepReplaced = true
+                throw IOException("${backup.absolutePath} still holds a file an earlier migration could not restore")
+            }
+            backup.parentFile?.mkdirs()
+            if (isDestRestricted) {
+                val input = fal.getInputStream(destFile.absolutePath)
+                    ?: throw IOException("Could not read ${destFile.absolutePath}")
+                input.use { from -> FileOutputStream(backup).use { from.copyTo(it) } }
+            } else if (!destFile.renameTo(backup)) {
+                destFile.copyTo(backup, overwrite = true)
+                destFile.delete()
+            }
+            replaced[destFile] = backup
+        }
+
+        fun restore(backup: File, destFile: File) {
+            val occupied = if (isDestRestricted) fal.exists(destFile.absolutePath) else destFile.exists()
+            if (occupied) {
+                keepReplaced = true
+                Logger.warn(TAG, "Left ${backup.absolutePath} in place: ${destFile.absolutePath} could not be cleared")
+                return
+            }
+            runCatching {
+                if (isDestRestricted) {
+                    fal.getOutputStream(destFile.absolutePath)?.use { out -> backup.inputStream().use { it.copyTo(out) } }
+                } else if (!backup.renameTo(destFile)) {
+                    backup.copyTo(destFile, overwrite = true)
+                }
+            }.onFailure { Logger.warn(TAG, "Could not restore ${destFile.absolutePath} after a failed texture migration", it) }
+        }
+
         fun rollBack() {
-            for (file in migrated) {
+            for (file in migrated.asReversed()) {
                 if (file.renamed) {
                     file.dest.renameTo(file.source)
                 } else if (isDestRestricted) {
@@ -287,6 +330,7 @@ class TexturePackInstaller(
                 } else {
                     file.dest.delete()
                 }
+                replaced[file.dest]?.let { restore(it, file.dest) }
             }
             if (isDestRestricted) fal.delete(newManifest.absolutePath) else newManifest.delete()
         }
@@ -303,14 +347,12 @@ class TexturePackInstaller(
                 val sourceExists = if (isSrcRestricted) fal.exists(srcFile.absolutePath) else srcFile.isFile
                 if (sourceExists) {
                     destFile.parentFile?.let(::ensureDir)
-                    val renamed = !isSrcRestricted && !isDestRestricted && run {
-                        if (destFile.exists()) destFile.delete()
-                        srcFile.renameTo(destFile)
-                    }
+                    setAside(destFile, relPath)
+                    val renamed = !isSrcRestricted && !isDestRestricted && srcFile.renameTo(destFile)
+                    migrated.add(MigratedFile(srcFile, destFile, renamed))
                     if (!renamed) {
                         copyVerified(srcFile, destFile, fal, isSrcRestricted, isDestRestricted)
                     }
-                    migrated.add(MigratedFile(srcFile, destFile, renamed))
                     migratedRelativePaths.add(relPath)
                 }
                 onProgress?.invoke(((index + 1).toFloat() / lines.size).coerceIn(0f, 1f))
@@ -335,6 +377,8 @@ class TexturePackInstaller(
             rollBack()
             Logger.warn(TAG, "Texture migration failed, source pack left in place: ${e.message}")
             return@withContext null
+        } finally {
+            if (!keepReplaced) replacedDir.deleteRecursively()
         }
 
         for (file in migrated) {

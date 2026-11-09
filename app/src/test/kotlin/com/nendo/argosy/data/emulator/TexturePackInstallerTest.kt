@@ -1378,6 +1378,15 @@ class TexturePackInstallerTest {
     }
 
     @Test
+    fun `uninstalling a pack whose manifest is already gone clears its saved path`() = runTest {
+        val missingManifest = File(saveDir, "User/Load/Textures/GZLE01/.argosy_mod_86.manifest")
+        val modFile = testModFile(id = 86L, gameId = 1L, fileName = "pack.zip", localPath = missingManifest.absolutePath)
+
+        assertTrue(installer.uninstallModFile(modFile))
+        coVerify { gameFileDao.clearLocalPath(86L) }
+    }
+
+    @Test
     fun `a variant launch installs into the variant's save folder`() = runTest {
         TexturePackInstaller.clearFailedInstalls()
         val textureZip = createZip("variant_pack.zip", mapOf("tex.png" to "png_bytes"))

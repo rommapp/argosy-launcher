@@ -694,17 +694,19 @@ class TexturePackExtractor @Inject constructor() {
         ): Boolean {
             val manifestPath = manifestFile.absolutePath
             val isRestricted = fileAccessLayer?.isRestrictedPath(manifestPath) == true
+            val manifestExists = if (isRestricted) fileAccessLayer?.exists(manifestPath) == true else manifestFile.exists()
+            if (!manifestExists) return true
             val lines = try {
                 if (isRestricted) {
-                    fileAccessLayer?.readBytes(manifestPath)?.let { String(it, Charsets.UTF_8).lines() } ?: emptyList()
-                } else if (manifestFile.isFile) {
+                    fileAccessLayer?.readBytes(manifestPath)?.let { String(it, Charsets.UTF_8).lines() }
+                        ?: throw java.io.IOException("unreadable")
+                } else {
                     manifestFile.readLines()
-                } else emptyList()
+                }
             } catch (e: Exception) {
                 Logger.warn(TAG, "Failed to read texture pack manifest ${manifestFile.name}: ${e.message}")
                 return false
             }
-            if (lines.isEmpty()) return false
 
             val targetDir = manifestFile.parentFile ?: return false
             val targetDirPath = targetDir.absolutePath

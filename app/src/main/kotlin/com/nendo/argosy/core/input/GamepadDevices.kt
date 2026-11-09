@@ -38,11 +38,12 @@ fun InputDevice.actsAsGamepad(): Boolean = isPhysicalGamepad() || (isVirtual && 
 /**
  * Whether a device is a pad the launcher should act on. The source flags alone are not enough:
  * HyperOS registers a `uinput-xiaomi` device that advertises a gamepad source with no controller
- * behind it, which hid the on-screen controls and claimed player one on a bare phone.
+ * behind it, which hid the on-screen controls and claimed player one on a bare phone. A joystick
+ * source without gamepad buttons is not a pad either: a TV remote's consumer-control node reports
+ * one, and could never press a button to claim a controller seat.
  */
 fun InputDevice.isPhysicalGamepad(): Boolean {
-    val padSource = sources and InputDevice.SOURCE_GAMEPAD == InputDevice.SOURCE_GAMEPAD ||
-        sources and InputDevice.SOURCE_JOYSTICK == InputDevice.SOURCE_JOYSTICK
+    val padSource = sources and InputDevice.SOURCE_GAMEPAD == InputDevice.SOURCE_GAMEPAD
     if (!padSource || isVirtual) return false
     return !name.orEmpty().startsWith(OEM_VIRTUAL_DEVICE_PREFIX, ignoreCase = true)
 }

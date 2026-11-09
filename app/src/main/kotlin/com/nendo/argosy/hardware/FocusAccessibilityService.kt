@@ -71,6 +71,7 @@ class FocusAccessibilityService : AccessibilityService() {
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event?.eventType != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) return
         val source = event.packageName?.toString() ?: return
+        if (source == SYSTEM_UI_PACKAGE || source == currentImePackage()) return
         if (source != packageName) {
             foregroundPackage = source
             otherAppInFront = true
@@ -78,6 +79,10 @@ class FocusAccessibilityService : AccessibilityService() {
             otherAppInFront = false
         }
     }
+
+    private fun currentImePackage(): String? =
+        Settings.Secure.getString(contentResolver, Settings.Secure.DEFAULT_INPUT_METHOD)
+            ?.substringBefore('/')
 
     override fun onInterrupt() {}
 
@@ -185,6 +190,7 @@ class FocusAccessibilityService : AccessibilityService() {
     companion object {
         private const val TAG = "FocusA11y"
         private const val BACK_HOLD_MS = 500L
+        private const val SYSTEM_UI_PACKAGE = "com.android.systemui"
 
         private val ARGOSY_INPUT_SURFACES = setOf(
             ArgosyActivity::class.java.name,

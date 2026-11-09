@@ -15,6 +15,7 @@ import com.nendo.argosy.data.sync.PendingScreenshotStore
 import com.nendo.argosy.data.sync.ScreenshotPayload
 import com.nendo.argosy.data.sync.ScreenshotUploadLedger
 import com.nendo.argosy.data.sync.SyncPayloadCodec
+import com.nendo.argosy.libretro.LibretroActivity
 import com.nendo.argosy.util.Logger
 import com.nendo.argosy.util.PermissionHelper
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -65,7 +66,8 @@ class SessionScreenshotScanner @Inject constructor(
             val statsPackage = if (builtIn) context.packageName else emulatorPackage
             val from = sessionStart.toEpochMilli()
             val to = sessionEnd.toEpochMilli()
-            val spans = permissionHelper.foregroundSpans(context, statsPackage, from, to)
+            val gameActivity = if (builtIn) LibretroActivity::class.java.name else null
+            val spans = permissionHelper.foregroundSpans(context, statsPackage, gameActivity, from, to)
             val sources: List<Pair<String, List<LongRange>>> = when {
                 spans != null -> folderRegistry.folders().map { it to spans }
                 builtIn -> listOf(folderRegistry.builtinFolder() to listOf(from..to))

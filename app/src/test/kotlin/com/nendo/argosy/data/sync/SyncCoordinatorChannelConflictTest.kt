@@ -107,7 +107,6 @@ class SyncCoordinatorChannelConflictTest {
         } returns conflictInfo
 
         coordinator = SyncCoordinator(
-            context = io.mockk.mockk(relaxed = true) { io.mockk.every { filesDir } returns java.io.File(System.getProperty("java.io.tmpdir")) },
             pendingSyncQueueDao = pendingSyncQueueDao,
             saveCacheDao = saveCacheDao,
             saveSyncDao = mockk(relaxed = true),
@@ -128,7 +127,7 @@ class SyncCoordinatorChannelConflictTest {
             pendingConflictDao = pendingConflictDao,
             reconcileEffectApplier = mockk(relaxed = true),
             saveRecoveryGate = mockk(relaxed = true),
-            screenshotUploader = mockk(relaxed = true),
+            screenshotUploads = mockk(relaxed = true),
             rommApiProvider = mockk(relaxed = true),
             accountSwitchMarkerStore = mockk(relaxed = true),
             syncStatesOnSessionEndUseCase = mockk(relaxed = true),
@@ -169,7 +168,6 @@ class SyncCoordinatorChannelConflictTest {
         } returns SaveSyncResult.Success(rommSaveId = 42L)
 
         coordinator = SyncCoordinator(
-            context = io.mockk.mockk(relaxed = true) { io.mockk.every { filesDir } returns java.io.File(System.getProperty("java.io.tmpdir")) },
             pendingSyncQueueDao = pendingSyncQueueDao,
             saveCacheDao = saveCacheDao,
             saveSyncDao = mockk(relaxed = true),
@@ -190,7 +188,7 @@ class SyncCoordinatorChannelConflictTest {
             pendingConflictDao = pendingConflictDao,
             reconcileEffectApplier = mockk(relaxed = true),
             saveRecoveryGate = mockk(relaxed = true),
-            screenshotUploader = mockk(relaxed = true),
+            screenshotUploads = mockk(relaxed = true),
             rommApiProvider = mockk(relaxed = true),
             accountSwitchMarkerStore = mockk(relaxed = true),
             syncStatesOnSessionEndUseCase = mockk(relaxed = true),
@@ -239,7 +237,6 @@ class SyncCoordinatorChannelConflictTest {
         )
 
         coordinator = SyncCoordinator(
-            context = io.mockk.mockk(relaxed = true) { io.mockk.every { filesDir } returns java.io.File(System.getProperty("java.io.tmpdir")) },
             pendingSyncQueueDao = pendingSyncQueueDao,
             saveCacheDao = saveCacheDao,
             saveSyncDao = mockk(relaxed = true),
@@ -260,7 +257,7 @@ class SyncCoordinatorChannelConflictTest {
             pendingConflictDao = pendingConflictDao,
             reconcileEffectApplier = mockk(relaxed = true),
             saveRecoveryGate = mockk(relaxed = true),
-            screenshotUploader = mockk(relaxed = true),
+            screenshotUploads = mockk(relaxed = true),
             rommApiProvider = mockk(relaxed = true),
             accountSwitchMarkerStore = mockk(relaxed = true),
             syncStatesOnSessionEndUseCase = mockk(relaxed = true),
@@ -292,7 +289,6 @@ class SyncCoordinatorChannelConflictTest {
         every { mockCacheManager.getCacheFile(dirtyCache) } returns cacheFile
 
         coordinator = SyncCoordinator(
-            context = io.mockk.mockk(relaxed = true) { io.mockk.every { filesDir } returns java.io.File(System.getProperty("java.io.tmpdir")) },
             pendingSyncQueueDao = pendingSyncQueueDao,
             saveCacheDao = saveCacheDao,
             saveSyncDao = mockk(relaxed = true),
@@ -313,7 +309,7 @@ class SyncCoordinatorChannelConflictTest {
             pendingConflictDao = pendingConflictDao,
             reconcileEffectApplier = mockk(relaxed = true),
             saveRecoveryGate = mockk(relaxed = true),
-            screenshotUploader = mockk(relaxed = true),
+            screenshotUploads = mockk(relaxed = true),
             rommApiProvider = mockk(relaxed = true),
             accountSwitchMarkerStore = mockk(relaxed = true),
             syncStatesOnSessionEndUseCase = mockk(relaxed = true),
@@ -370,7 +366,6 @@ class SyncCoordinatorChannelConflictTest {
         } returns SaveSyncResult.Success(rommSaveId = 42L)
 
         coordinator = SyncCoordinator(
-            context = io.mockk.mockk(relaxed = true) { io.mockk.every { filesDir } returns java.io.File(System.getProperty("java.io.tmpdir")) },
             pendingSyncQueueDao = pendingSyncQueueDao,
             saveCacheDao = saveCacheDao,
             saveSyncDao = mockk(relaxed = true),
@@ -391,7 +386,7 @@ class SyncCoordinatorChannelConflictTest {
             pendingConflictDao = pendingConflictDao,
             reconcileEffectApplier = mockk(relaxed = true),
             saveRecoveryGate = mockk(relaxed = true),
-            screenshotUploader = mockk(relaxed = true),
+            screenshotUploads = mockk(relaxed = true),
             rommApiProvider = mockk(relaxed = true),
             accountSwitchMarkerStore = mockk(relaxed = true),
             syncStatesOnSessionEndUseCase = mockk(relaxed = true),
@@ -444,7 +439,6 @@ class SyncCoordinatorChannelConflictTest {
             isHashConflict = true
         )
         coordinator = SyncCoordinator(
-            context = io.mockk.mockk(relaxed = true) { io.mockk.every { filesDir } returns java.io.File(System.getProperty("java.io.tmpdir")) },
             pendingSyncQueueDao = pendingSyncQueueDao,
             saveCacheDao = saveCacheDao,
             saveSyncDao = mockk(relaxed = true),
@@ -465,7 +459,7 @@ class SyncCoordinatorChannelConflictTest {
             pendingConflictDao = pendingConflictDao,
             reconcileEffectApplier = mockk(relaxed = true),
             saveRecoveryGate = mockk(relaxed = true),
-            screenshotUploader = mockk(relaxed = true),
+            screenshotUploads = mockk(relaxed = true),
             rommApiProvider = mockk(relaxed = true),
             accountSwitchMarkerStore = mockk(relaxed = true),
             syncStatesOnSessionEndUseCase = mockk(relaxed = true),

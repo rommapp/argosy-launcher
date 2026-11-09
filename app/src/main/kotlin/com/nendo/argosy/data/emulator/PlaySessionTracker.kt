@@ -107,7 +107,8 @@ class PlaySessionTracker @Inject constructor(
     private val sessionSaveFinalizer: SessionSaveFinalizer,
     private val sessionEndNotices: SessionEndNotices,
     private val snapshotRouter: dagger.Lazy<com.nendo.argosy.data.sync.snapshot.SnapshotSyncRouter>,
-    private val sessionRecapFactsRecorder: SessionRecapFactsRecorder
+    private val sessionRecapFactsRecorder: SessionRecapFactsRecorder,
+    private val sessionScreenshotScanner: SessionScreenshotScanner
 ) {
     companion object {
         private const val TAG = "PlaySessionTracker"
@@ -389,6 +390,16 @@ class PlaySessionTracker @Inject constructor(
         }
     }
 
+    private suspend fun queueSessionScreenshots(gameId: Long, startTime: Instant, endTime: Instant, phase: String) {
+        try {
+            sessionScreenshotScanner.queueSessionScreenshots(gameId, startTime, endTime)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            Logger.error(TAG, "[Screenshots] $phase gameId=$gameId | Session screenshot scan failed", e)
+        }
+    }
+
     private suspend fun recoverOrphanedStates(orphaned: PersistedSession) {
         if (orphaned.variantFileId != null || orphaned.isNetplayGuest) return
         syncStateDataLogged(orphaned.gameId, orphaned.emulatorPackage, "ORPHAN")
@@ -405,6 +416,7 @@ class PlaySessionTracker @Inject constructor(
             Logger.debug(TAG, "[SaveSync] SESSION RECOVER gameId=${orphaned.gameId} | Too short for play session (${Duration.between(orphaned.startTime, endTime).seconds}s)")
         }
 
+        queueSessionScreenshots(orphaned.gameId, orphaned.startTime, endTime, "ORPHAN")
         recoverOrphanedStates(orphaned)
         val saved = recoverOrphanedSave(orphaned)
         releaseSession(keepRecord = !saved.isSettled, startedAt = orphaned.startTime)
@@ -751,6 +763,7 @@ class PlaySessionTracker @Inject constructor(
                 Logger.error(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Failed to create play session entity", e)
             }
             reconcileAchievementsInBackground(session.gameId)
+            queueSessionScreenshots(session.gameId, session.startTime, endTime, "SESSION")
 
             if (isScreenOn) {
                 marathonSegmentDuration = marathonSegmentDuration.plus(
@@ -959,8 +972,10 @@ class PlaySessionTracker @Inject constructor(
         _activeSession.value = null
         GameSessionService.stop(application)
         Logger.debug(TAG, "[SaveSync] SESSION gameId=${session.gameId} | Cancelled (no save backup)")
+        val endTime = Instant.now()
         scope.launch {
             try {
+                queueSessionScreenshots(session.gameId, session.startTime, endTime, "CANCEL")
                 if (session.variantFileId == null && !session.isNetplayGuest) {
                     syncStateDataLogged(session.gameId, session.emulatorPackage, "CANCEL")
                 }

@@ -74,6 +74,37 @@ class GameScreenshotRowsTest {
         assertEquals(listOf("a", "b"), rows.map { it.sourceUrl })
     }
 
+    private fun gallery(source: String, position: Int, id: Long) = GameScreenshotEntity(
+        gameId = gameId,
+        position = position,
+        sourceUrl = "https://romm/api/screenshots/$id/content",
+        cachedPath = "/cache/uss_42_${id}_abc.png",
+        source = source,
+        rommScreenshotId = id
+    )
+
+    @Test
+    fun `a gallery row at the same position never stands in for an official row`() {
+        val existing = listOf(cached(0, "a"), gallery(ScreenshotSource.OWN, 0, 9L))
+
+        val rows = planScreenshotRows(gameId, existing, listOf("a"))
+
+        assertEquals(listOf(cached(0, "a")), rows)
+        assertTrue(rows.all { it.isOfficial })
+    }
+
+    @Test
+    fun `display order is own shots, then other users', then official ones`() {
+        val official = cached(0, "a")
+        val ownNewest = gallery(ScreenshotSource.OWN, 0, 9L)
+        val ownOlder = gallery(ScreenshotSource.OWN, 1, 8L)
+        val community = gallery(ScreenshotSource.COMMUNITY, 0, 20L)
+
+        val ordered = listOf(official, community, ownOlder, ownNewest).inDisplayOrder()
+
+        assertEquals(listOf(ownNewest, ownOlder, community, official), ordered)
+    }
+
     @Test
     fun `a row is cached from its source only when the cached file came from that url`() {
         assertTrue(cached(0, "a").isCachedFromSource)

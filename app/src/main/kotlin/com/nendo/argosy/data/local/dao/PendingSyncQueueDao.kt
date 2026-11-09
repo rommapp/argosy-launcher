@@ -90,14 +90,15 @@ interface PendingSyncQueueDao {
     """)
     suspend fun deleteExhaustedRetries()
 
-    @Query("""
-        SELECT * FROM pending_sync_queue
-        WHERE syncType = :syncType AND status = 'FAILED' AND retryCount >= maxRetries
-    """)
-    suspend fun getExhaustedBySyncType(syncType: SyncType): List<PendingSyncQueueEntity>
-
     @Query("SELECT * FROM pending_sync_queue WHERE syncType = :syncType")
     suspend fun getBySyncType(syncType: SyncType): List<PendingSyncQueueEntity>
+
+    @Query("""
+        UPDATE pending_sync_queue
+        SET status = 'PENDING', updatedAt = :now
+        WHERE syncType = :syncType AND status = 'FAILED'
+    """)
+    suspend fun reviveFailedBySyncType(syncType: SyncType, now: Instant = Instant.now()): Int
 
     @Query("""
         SELECT DISTINCT gameId, syncType FROM pending_sync_queue

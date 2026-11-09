@@ -374,4 +374,19 @@
          the default one. %1$s is the core that failed, %2$s the one used instead. Both
          are core names from the libretro project; leave them as they are. -->
     <string name="sync_launch_core_fallback">Failed to load %1$s, using %2$s instead</string>
+
+    <!-- Toasts after queued screenshots were sent to the game server. -->
+
+    <!-- Toast after screenshots taken during play reached the server. "Screenshot" is a noun,
+         a picture of the game screen; "uploaded" is a past participle describing it. -->
+    <plurals name="sync_screenshot_uploaded">
+        <item quantity="one">Screenshot uploaded</item>
+        <item quantity="other">%1$d screenshots uploaded</item>
+    </plurals>
+    <!-- Toast when the server refused screenshots for good, so they will not be sent again.
+         "Screenshot" is a noun. "RomM" is the server software's name; leave it untranslated. -->
+    <plurals name="sync_screenshot_rejected">
+        <item quantity="one">RomM did not accept a screenshot</item>
+        <item quantity="other">RomM did not accept %1$d screenshots</item>
+    </plurals>
 </resources>

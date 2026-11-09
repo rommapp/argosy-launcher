@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import com.nendo.argosy.data.local.entity.GameScreenshotEntity
+import com.nendo.argosy.data.local.entity.ScreenshotSource
 import com.nendo.argosy.data.local.entity.planScreenshotRows
 
 data class PendingScreenshot(
@@ -18,41 +19,64 @@ data class PendingScreenshot(
     val title: String
 )
 
+private const val OFFICIAL = "'${ScreenshotSource.OFFICIAL}'"
+
 @Dao
 interface GameScreenshotDao {
 
-    @Query("SELECT * FROM game_screenshots WHERE gameId = :gameId ORDER BY position")
+    @Query("SELECT * FROM game_screenshots WHERE gameId = :gameId AND source = $OFFICIAL ORDER BY position")
     suspend fun getForGame(gameId: Long): List<GameScreenshotEntity>
 
-    @Query("SELECT * FROM game_screenshots WHERE gameId IN (:gameIds) ORDER BY gameId, position")
+    @Query(
+        "SELECT * FROM game_screenshots WHERE gameId IN (:gameIds) AND source = $OFFICIAL " +
+            "ORDER BY gameId, position"
+    )
     suspend fun getForGames(gameIds: List<Long>): List<GameScreenshotEntity>
+
+    @Query("SELECT * FROM game_screenshots WHERE gameId = :gameId AND source != $OFFICIAL ORDER BY source, position")
+    suspend fun getGalleryForGame(gameId: Long): List<GameScreenshotEntity>
+
+    @Query("SELECT * FROM game_screenshots WHERE gameId = :gameId")
+    suspend fun getAllForGame(gameId: Long): List<GameScreenshotEntity>
 
     @Query("SELECT * FROM game_screenshots WHERE cachedPath IS NOT NULL")
     suspend fun getCached(): List<GameScreenshotEntity>
 
-    @Query("DELETE FROM game_screenshots WHERE gameId = :gameId")
-    suspend fun deleteForGame(gameId: Long)
+    @Query("DELETE FROM game_screenshots WHERE gameId = :gameId AND source = $OFFICIAL")
+    suspend fun deleteOfficialForGame(gameId: Long)
+
+    @Query("DELETE FROM game_screenshots WHERE gameId = :gameId AND source != $OFFICIAL")
+    suspend fun deleteGalleryForGame(gameId: Long)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(rows: List<GameScreenshotEntity>)
 
     @Query(
         "UPDATE game_screenshots SET cachedPath = :path, cachedFromUrl = :fromUrl " +
-            "WHERE gameId = :gameId AND position = :position AND sourceUrl = :fromUrl"
+            "WHERE gameId = :gameId AND source = $OFFICIAL AND position = :position AND sourceUrl = :fromUrl"
     )
     suspend fun setCached(gameId: Long, position: Int, path: String, fromUrl: String)
 
     @Query(
+        "UPDATE game_screenshots SET cachedPath = :path, cachedFromUrl = :fromUrl " +
+            "WHERE gameId = :gameId AND source != $OFFICIAL AND rommScreenshotId = :rommScreenshotId"
+    )
+    suspend fun setGalleryCached(gameId: Long, rommScreenshotId: Long, path: String, fromUrl: String)
+
+    @Query(
         "UPDATE game_screenshots SET cachedFromUrl = :fromUrl " +
-            "WHERE gameId = :gameId AND position = :position AND cachedPath = :path " +
+            "WHERE gameId = :gameId AND source = $OFFICIAL AND position = :position AND cachedPath = :path " +
             "AND sourceUrl = :fromUrl AND cachedFromUrl IS NULL"
     )
     suspend fun backfillCachedFromUrl(gameId: Long, position: Int, path: String, fromUrl: String)
 
-    @Query("UPDATE game_screenshots SET cachedPath = :newPath WHERE gameId = :gameId AND position = :position AND cachedPath = :oldPath")
-    suspend fun relocateCachedPath(gameId: Long, position: Int, oldPath: String, newPath: String)
+    @Query(
+        "UPDATE game_screenshots SET cachedPath = :newPath " +
+            "WHERE gameId = :gameId AND source = :source AND position = :position AND cachedPath = :oldPath"
+    )
+    suspend fun relocateCachedPath(gameId: Long, source: String, position: Int, oldPath: String, newPath: String)
 
-    @Query("UPDATE game_screenshots SET cachedPath = NULL, cachedFromUrl = NULL WHERE gameId = :gameId")
+    @Query("UPDATE game_screenshots SET cachedPath = NULL, cachedFromUrl = NULL WHERE gameId = :gameId AND source = $OFFICIAL")
     suspend fun clearCachedForGame(gameId: Long)
 
     @Query("UPDATE game_screenshots SET cachedPath = NULL, cachedFromUrl = NULL WHERE cachedPath IN (:paths)")
@@ -73,15 +97,16 @@ interface GameScreenshotDao {
                games.rommId, games.title
         FROM game_screenshots ss
         INNER JOIN games ON games.id = ss.gameId
-        WHERE ss.cachedPath IS NULL OR ss.cachedFromUrl IS NOT ss.sourceUrl
+        WHERE ss.source = $OFFICIAL
+          AND (ss.cachedPath IS NULL OR ss.cachedFromUrl IS NOT ss.sourceUrl)
         """
     )
     suspend fun getPending(): List<PendingScreenshot>
 
-    @Query("SELECT COUNT(*) FROM game_screenshots")
+    @Query("SELECT COUNT(*) FROM game_screenshots WHERE source = $OFFICIAL")
     suspend fun countWithSource(): Int
 
-    @Query("SELECT COUNT(*) FROM game_screenshots WHERE cachedPath IS NOT NULL")
+    @Query("SELECT COUNT(*) FROM game_screenshots WHERE source = $OFFICIAL AND cachedPath IS NOT NULL")
     suspend fun countCached(): Int
 
     @Transaction
@@ -89,9 +114,15 @@ interface GameScreenshotDao {
         val existing = getForGame(gameId)
         val rows = planScreenshotRows(gameId, existing, urls)
         if (rows == existing) return rows
-        deleteForGame(gameId)
+        deleteOfficialForGame(gameId)
         if (rows.isNotEmpty()) insertAll(rows)
         return rows
+    }
+
+    @Transaction
+    suspend fun replaceGallery(gameId: Long, rows: List<GameScreenshotEntity>) {
+        deleteGalleryForGame(gameId)
+        if (rows.isNotEmpty()) insertAll(rows)
     }
 
     @Transaction

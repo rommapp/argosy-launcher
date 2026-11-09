@@ -139,4 +139,15 @@
     <string name="sync_steam_qr_disconnected">Steam no conectado</string>
 
     <string name="sync_launch_core_fallback">Error al cargar %1$s; se usó %2$s en su lugar</string>
+
+    <plurals name="sync_screenshot_uploaded">
+        <item quantity="one">Captura de pantalla subida</item>
+        <item quantity="many">%1$d capturas de pantalla subidas</item>
+        <item quantity="other">%1$d capturas de pantalla subidas</item>
+    </plurals>
+    <plurals name="sync_screenshot_rejected">
+        <item quantity="one">RomM no aceptó una captura de pantalla</item>
+        <item quantity="many">RomM no aceptó %1$d capturas de pantalla</item>
+        <item quantity="other">RomM no aceptó %1$d capturas de pantalla</item>
+    </plurals>
 </resources>

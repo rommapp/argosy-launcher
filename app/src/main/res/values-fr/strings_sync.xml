@@ -139,4 +139,15 @@
     <string name="sync_steam_qr_disconnected">Steam non connecté</string>
 
     <string name="sync_launch_core_fallback">Échec du chargement de %1$s, utilisation de %2$s à la place</string>
+
+    <plurals name="sync_screenshot_uploaded">
+        <item quantity="one">%1$d capture d\'écran envoyée</item>
+        <item quantity="many">%1$d captures d\'écran envoyées</item>
+        <item quantity="other">%1$d captures d\'écran envoyées</item>
+    </plurals>
+    <plurals name="sync_screenshot_rejected">
+        <item quantity="one">RomM n\'a pas accepté %1$d capture d\'écran</item>
+        <item quantity="many">RomM n\'a pas accepté %1$d captures d\'écran</item>
+        <item quantity="other">RomM n\'a pas accepté %1$d captures d\'écran</item>
+    </plurals>
 </resources>

@@ -4303,6 +4303,35 @@ object Migration_220_221 : Migration(220, 221) {
     }
 }
 
+/**
+ * Rebuilds `game_screenshots` keyed by (`gameId`, `source`, `position`) with the RomM gallery
+ * columns. Every existing row is carried as an official screenshot.
+ */
+object Migration_221_222 : Migration(221, 222) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `game_screenshots_new` (" +
+                "`gameId` INTEGER NOT NULL, `position` INTEGER NOT NULL, `sourceUrl` TEXT NOT NULL, " +
+                "`cachedPath` TEXT, `cachedFromUrl` TEXT, `source` TEXT NOT NULL DEFAULT 'official', " +
+                "`rommScreenshotId` INTEGER, `ownerUsername` TEXT, " +
+                "PRIMARY KEY(`gameId`, `source`, `position`), " +
+                "FOREIGN KEY(`gameId`) REFERENCES `games`(`id`) " +
+                "ON UPDATE NO ACTION ON DELETE CASCADE )"
+        )
+        db.execSQL(
+            "INSERT INTO `game_screenshots_new` " +
+                "(`gameId`, `position`, `sourceUrl`, `cachedPath`, `cachedFromUrl`, `source`) " +
+                "SELECT `gameId`, `position`, `sourceUrl`, `cachedPath`, `cachedFromUrl`, 'official' " +
+                "FROM `game_screenshots`"
+        )
+        db.execSQL("DROP TABLE `game_screenshots`")
+        db.execSQL("ALTER TABLE `game_screenshots_new` RENAME TO `game_screenshots`")
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_game_screenshots_gameId` ON `game_screenshots` (`gameId`)"
+        )
+    }
+}
+
 object Migration_203_204 : Migration(203, 204) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL(

@@ -224,7 +224,6 @@ class SyncCoordinatorQueueRomTargetTest {
     )
 
     private fun coordinator() = SyncCoordinator(
-        context = mockk(relaxed = true) { every { filesDir } returns File(System.getProperty("java.io.tmpdir")) },
         pendingSyncQueueDao = pendingSyncQueueDao,
         saveCacheDao = saveCacheDao,
         saveSyncDao = mockk(relaxed = true),
@@ -245,7 +244,14 @@ class SyncCoordinatorQueueRomTargetTest {
         pendingConflictDao = mockk(relaxed = true),
         reconcileEffectApplier = mockk(relaxed = true),
         saveRecoveryGate = mockk(relaxed = true),
-        screenshotUploader = screenshotUploader,
+        screenshotUploads = ScreenshotUploadQueue(
+            context = mockk(relaxed = true) { every { filesDir } returns File(System.getProperty("java.io.tmpdir")) },
+            pendingSyncQueueDao = pendingSyncQueueDao,
+            payloadCodec = codec,
+            uploader = screenshotUploader,
+            ledger = mockk(relaxed = true),
+            notices = mockk(relaxed = true)
+        ),
         rommApiProvider = mockk(relaxed = true),
         accountSwitchMarkerStore = mockk(relaxed = true),
         syncStatesOnSessionEndUseCase = mockk(relaxed = true),

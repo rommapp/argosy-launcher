@@ -14,8 +14,6 @@ import com.nendo.argosy.data.local.entity.SyncType
 import com.nendo.argosy.data.sync.SyncCoordinator
 import com.nendo.argosy.data.sync.unsentUserProps
 import com.nendo.argosy.util.Logger
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -126,35 +124,6 @@ class RomMUserPropertyService @Inject constructor(
         } catch (e: Exception) {
             Logger.warn(TAG, "refreshUserProps: exception for game $gameId: ${e.message}")
             RomMResult.Success(Unit)
-        }
-    }
-
-    suspend fun fetchUserScreenshots(rommId: Long): List<String> = withContext(Dispatchers.IO) {
-        val currentApi = api ?: return@withContext emptyList()
-        try {
-            val response = currentApi.getRom(rommId)
-            if (!response.isSuccessful) return@withContext emptyList()
-            val shots = response.body()?.userScreenshots.orEmpty().filter { it.isGallery }
-            shots.mapNotNull { shot ->
-                val target = imageCacheManager.userScreenshotTargetFile(rommId, shot.id, shot.updatedAt ?: "")
-                if (target.exists() && target.length() > 0) return@mapNotNull target.absolutePath
-                val content = currentApi.downloadScreenshotContent(shot.id)
-                val body = content.body()
-                if (!content.isSuccessful || body == null) return@mapNotNull null
-                body.byteStream().use { input ->
-                    target.outputStream().use { output -> input.copyTo(output) }
-                }
-                if (target.length() > 0) {
-                    imageCacheManager.pruneStaleUserScreenshots(rommId, shot.id, target)
-                    target.absolutePath
-                } else {
-                    target.delete()
-                    null
-                }
-            }
-        } catch (e: Exception) {
-            Logger.warn(TAG, "fetchUserScreenshots: exception for rommId $rommId: ${e.message}")
-            emptyList()
         }
     }
 

@@ -15,6 +15,7 @@ class RomMRepositoryMediaAuthHeadersTest {
         collectionSyncService = mockk(relaxed = true),
         userPropertyService = mockk(relaxed = true),
         achievementService = mockk(relaxed = true),
+        galleryService = mockk(relaxed = true),
         userPreferencesRepository = mockk(relaxed = true)
     )
 

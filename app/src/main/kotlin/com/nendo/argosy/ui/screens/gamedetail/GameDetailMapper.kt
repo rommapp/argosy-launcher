@@ -4,6 +4,7 @@ import com.nendo.argosy.core.game.AchievementUi
 import com.nendo.argosy.data.launcher.SteamLaunchers
 import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.GameScreenshotEntity
+import com.nendo.argosy.data.local.entity.inDisplayOrder
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.model.ResolvedGameArt
 import com.nendo.argosy.data.steam.resolveSteamGenres
@@ -33,10 +34,9 @@ fun GameEntity.toGameDetailUi(
     steamLauncherName: String? = null,
     isHidden: Boolean = false
 ): GameDetailUi {
-    val screenshots = screenshotRows.sortedBy { it.position }.map { row ->
-        ScreenshotPair(remoteUrl = row.sourceUrl, cachedPath = row.cachedPath)
-    }
-    val effectiveBackground = art?.backgroundPath ?: screenshots.firstOrNull()?.remoteUrl
+    val screenshots = screenshotRows.toScreenshotPairs()
+    val effectiveBackground = art?.backgroundPath
+        ?: screenshotRows.filter { it.isOfficial }.minByOrNull { it.position }?.sourceUrl
     return GameDetailUi(
         id = id,
         title = title,
@@ -96,6 +96,10 @@ fun GameEntity.toGameDetailUi(
         rommFileName = rommFileName
     )
 }
+
+internal fun List<GameScreenshotEntity>.toScreenshotPairs(): List<ScreenshotPair> =
+    inDisplayOrder()
+        .map { row -> ScreenshotPair(remoteUrl = row.sourceUrl, cachedPath = row.cachedPath) }
 
 internal val GameEntity.hasSteamLauncherPin: Boolean
     get() = launcherSetManually && steamLauncher != null && steamLauncher != GameEntity.LAUNCHER_UNSPECIFIED

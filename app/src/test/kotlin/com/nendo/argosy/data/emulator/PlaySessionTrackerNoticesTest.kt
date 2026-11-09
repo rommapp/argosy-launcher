@@ -38,6 +38,7 @@ class PlaySessionTrackerNoticesTest {
     private val permissionHelper: PermissionHelper = mockk(relaxed = true)
     private val sessionSaveFinalizer: SessionSaveFinalizer = mockk()
     private val notices: SessionEndNotices = mockk(relaxed = true)
+    private val screenshotScanner: SessionScreenshotScanner = mockk(relaxed = true)
 
     private val persisted = PersistedSession(
         gameId = gameId,
@@ -81,7 +82,8 @@ class PlaySessionTrackerNoticesTest {
         sessionSaveFinalizer = sessionSaveFinalizer,
         sessionEndNotices = notices,
         snapshotRouter = lazyMock(),
-        sessionRecapFactsRecorder = mockk(relaxed = true)
+        sessionRecapFactsRecorder = mockk(relaxed = true),
+        sessionScreenshotScanner = screenshotScanner
     )
 
     private suspend fun trackerWithLiveSession(): PlaySessionTracker {
@@ -182,6 +184,43 @@ class PlaySessionTrackerNoticesTest {
         coVerify(exactly = 1) { notices.orphanSaveRecovered(gameId, outcome) }
         coVerify(exactly = 0) { notices.sessionSaveSynced(any(), any()) }
         coVerify(exactly = 0) { notices.sessionSaveNotKept(any()) }
+    }
+
+    @Test
+    fun `startup recovery of a killed session scans that session's window for screenshots`() = runTest {
+        coEvery { sessionSaveFinalizer.finalize(any()) } returns SessionSaveOutcome.NothingToSave
+        coEvery { preferencesRepository.getPersistedSession() } returns persisted
+        every { permissionHelper.isPackageOnScreenOrRecent(any(), any(), any()) } returns false
+        val before = Instant.now()
+
+        tracker().checkOrphanedSession()
+
+        coVerify(exactly = 1) {
+            screenshotScanner.queueSessionScreenshots(gameId, persisted.startTime, match { !it.isBefore(before) })
+        }
+    }
+
+    @Test
+    fun `a live session end scans the session's window for screenshots`() = runTest {
+        coEvery { sessionSaveFinalizer.finalize(any()) } returns SessionSaveOutcome.NothingToSave
+        val tracker = trackerWithLiveSession()
+
+        tracker.endSession(stopService = false)
+
+        coVerify(exactly = 1) { screenshotScanner.queueSessionScreenshots(gameId, persisted.startTime, any()) }
+    }
+
+    @Test
+    fun `a failing screenshot scan does not change how the session end turns out`() = runTest {
+        val uploaded = SyncSaveOnSessionEndUseCase.Result.Uploaded()
+        coEvery { sessionSaveFinalizer.finalize(any()) } returns
+            SessionSaveOutcome.Synced(SaveCacheManager.CacheResult.Created(timestamp = 1L), uploaded, conflictId = null)
+        coEvery { screenshotScanner.queueSessionScreenshots(any(), any(), any()) } throws IOException("disk")
+        val tracker = trackerWithLiveSession()
+
+        tracker.endSession(stopService = false)
+
+        coVerify(exactly = 1) { notices.sessionSaveSynced(gameId, uploaded) }
     }
 
     @Test

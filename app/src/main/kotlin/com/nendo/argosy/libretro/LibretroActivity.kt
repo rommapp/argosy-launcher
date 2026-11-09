@@ -4003,7 +4003,10 @@ class LibretroActivity : ComponentActivity() {
             val values = android.content.ContentValues().apply {
                 put(android.provider.MediaStore.Images.Media.DISPLAY_NAME, "argosy_${System.currentTimeMillis()}.png")
                 put(android.provider.MediaStore.Images.Media.MIME_TYPE, "image/png")
-                put(android.provider.MediaStore.Images.Media.RELATIVE_PATH, "Pictures/Argosy")
+                put(
+                    android.provider.MediaStore.Images.Media.RELATIVE_PATH,
+                    com.nendo.argosy.data.emulator.ScreenshotFolderRegistry.BUILTIN_RELATIVE_FOLDER
+                )
             }
             val uri = contentResolver.insert(
                 android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values

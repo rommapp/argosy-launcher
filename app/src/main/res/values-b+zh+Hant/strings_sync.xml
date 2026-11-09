@@ -133,4 +133,11 @@
     <string name="sync_steam_qr_disconnected">Steam尚未連線</string>
 
     <string name="sync_launch_core_fallback">無法載入%1$s，已改用%2$s</string>
+
+    <plurals name="sync_screenshot_uploaded">
+        <item quantity="other">已上傳%1$d張螢幕截圖</item>
+    </plurals>
+    <plurals name="sync_screenshot_rejected">
+        <item quantity="other">RomM未接受%1$d張螢幕截圖</item>
+    </plurals>
 </resources>

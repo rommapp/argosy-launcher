@@ -142,4 +142,17 @@
     <string name="sync_steam_qr_disconnected">Steam не подключен</string>
 
     <string name="sync_launch_core_fallback">Не удалось загрузить %1$s, используется %2$s</string>
+
+    <plurals name="sync_screenshot_uploaded">
+        <item quantity="one">%1$d скриншот выгружен</item>
+        <item quantity="few">%1$d скриншота выгружены</item>
+        <item quantity="many">%1$d скриншотов выгружено</item>
+        <item quantity="other">%1$d скриншота выгружено</item>
+    </plurals>
+    <plurals name="sync_screenshot_rejected">
+        <item quantity="one">RomM не принял %1$d скриншот</item>
+        <item quantity="few">RomM не принял %1$d скриншота</item>
+        <item quantity="many">RomM не принял %1$d скриншотов</item>
+        <item quantity="other">RomM не принял %1$d скриншота</item>
+    </plurals>
 </resources>

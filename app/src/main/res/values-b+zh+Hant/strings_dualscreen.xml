@@ -148,6 +148,7 @@
     <string name="dual_media_episodes_empty_title">目前沒有集數</string>
 
     <string name="dual_media_cast_header">演出陣容</string>
+    <string name="dual_media_related_header">更多類似內容</string>
     <string name="dual_media_browse_back_description">返回</string>
     <plurals name="dual_media_browse_episode_count">
         <item quantity="other">%d集</item>

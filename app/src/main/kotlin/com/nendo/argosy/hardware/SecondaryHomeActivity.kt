@@ -100,7 +100,6 @@ class SecondaryHomeActivity :
     private var confirmHoldFired = false
     private var mediaDimCollectJob: kotlinx.coroutines.Job? = null
 
-    private var isMediaPanelVisible by mutableStateOf(false)
     private val isShowcaseRole: Boolean
         get() = ::dsm.isInitialized && dsm.isRolesSwapped.value
 
@@ -145,10 +144,10 @@ class SecondaryHomeActivity :
             CompanionGuardService.stop(this)
             finish()
             return
-        } else if (sessionHoldsThisDisplay()) {
+        } else if (sessionHoldsRecoveryDisplays()) {
             android.util.Log.i(
                 "SecondaryHome",
-                "Respawned behind a running session on this display, waiting for it to end"
+                "Respawned during a running session, waiting for it to end"
             )
             awaitSessionEnd()
         } else {
@@ -253,10 +252,11 @@ class SecondaryHomeActivity :
                 .focusable()
         ) {
             val gameDisplay by dsm.emulatorDisplay.collectAsState()
+            val playerDisplay by dsm.mediaPlayerDisplay.collectAsState()
             val ownDisplay = androidx.compose.ui.platform.LocalView.current.display?.displayId
             val rendered = com.nendo.argosy.ui.dualscreen.companionSlotToRender(
                 showsDashboard,
-                slot.onDisplay(ownDisplay, gameDisplay)
+                slot.onDisplay(ownDisplay, gameDisplay, playerDisplay)
             )
             val arrivalMs = com.nendo.argosy.ui.dualscreen.dashboardArrivalMs(
                 showsDashboard = showsDashboard,
@@ -800,9 +800,6 @@ class SecondaryHomeActivity :
             com.nendo.argosy.core.input.controllerTouchpadGuarding(dsm.playSessionTracker, dsm.preferencesRepository)
         )
         lifecycleScope.launch {
-            dsm.companionMediaVisible.collect { visible -> isMediaPanelVisible = visible }
-        }
-        lifecycleScope.launch {
             dsm.preferencesRepository.userPreferences.collect { prefs ->
                 selectModifier.comboMap =
                     SelectModifier.comboMapFrom(prefs.selectLCombo, prefs.selectRCombo)
@@ -827,17 +824,7 @@ class SecondaryHomeActivity :
         isInitialized = true
     }
 
-    /**
-     * Whether the session written to disk is still being played on this display.
-     *
-     * The companion is pinned as this display's home, so the OS recreates it the moment the launcher
-     * process dies - underneath the game, which knows nothing about any of it. Every in-memory signal
-     * that a game is running died with the process; the record on disk and the emulator's own windows
-     * are what is left, and together they say a restart happened rather than a player coming back.
-     * Silence from usage access answers false, which is the old behaviour: recover and let the
-     * launcher come forward.
-     */
-    private fun sessionHoldsThisDisplay(): Boolean {
+    private fun sessionHoldsRecoveryDisplays(): Boolean {
         val store = SessionStateStore(applicationContext)
         if (!store.hasActiveSession()) return false
         val emulatorPackage = store.getEmulatorPackage() ?: return false
@@ -845,21 +832,14 @@ class SecondaryHomeActivity :
         val ownDisplay = try {
             window.decorView.display?.displayId ?: windowManager.defaultDisplay.displayId
         } catch (_: Exception) { null }
-        if (emulatorDisplay != null && ownDisplay != null && emulatorDisplay != ownDisplay) return false
+        val coveredDisplays = setOfNotNull(ownDisplay, android.view.Display.DEFAULT_DISPLAY)
+        if (emulatorDisplay != null && emulatorDisplay !in coveredDisplays) return false
         return PermissionHelper().isPackageOnScreenOrRecent(this, emulatorPackage)
     }
 
-    /**
-     * Holds the companion still until the game on this display is done with it, then recovers.
-     *
-     * Polled rather than driven by this activity's own lifecycle: a companion recreated underneath a
-     * game may never be resumed, and one the OS chose to bring forward is resumed while the game is
-     * still there, so neither event answers on its own. The poll runs only in this one state - no
-     * manager, a session on this display - and ends the moment it recovers.
-     */
     private fun awaitSessionEnd() {
         lifecycleScope.launch {
-            while (sessionHoldsThisDisplay()) {
+            while (sessionHoldsRecoveryDisplays()) {
                 kotlinx.coroutines.delay(SESSION_END_POLL_MS)
             }
             recoverThroughArgosyActivity()

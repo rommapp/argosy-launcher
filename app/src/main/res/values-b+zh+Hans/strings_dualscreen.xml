@@ -148,6 +148,7 @@
     <string name="dual_media_episodes_empty_title">这里还没有剧集</string>
 
     <string name="dual_media_cast_header">演员表</string>
+    <string name="dual_media_related_header">更多类似内容</string>
     <string name="dual_media_browse_back_description">返回</string>
     <plurals name="dual_media_browse_episode_count">
         <item quantity="other">%d集</item>

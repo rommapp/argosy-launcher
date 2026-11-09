@@ -149,6 +149,7 @@
     <string name="dual_media_episodes_empty_title">Здесь пока нет эпизодов</string>
 
     <string name="dual_media_cast_header">В ролях</string>
+    <string name="dual_media_related_header">Похожие</string>
     <string name="dual_media_browse_back_description">Назад</string>
     <plurals name="dual_media_browse_episode_count">
         <item quantity="one">%d эпизод</item>

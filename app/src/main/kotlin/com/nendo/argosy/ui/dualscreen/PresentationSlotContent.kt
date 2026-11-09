@@ -212,6 +212,8 @@ private fun PresentationSlotScene(
             }
             is PresentationSlot.PlatformShowcase -> PlatformShowcaseContent(slot)
             is PresentationSlot.SaveGame -> SaveGameSlot(slot, bottomInset = hintsHeight)
+            is PresentationSlot.MediaPlayback ->
+                com.nendo.argosy.ui.dualscreen.media.CompanionMediaPanel(slot.itemId, bottomInset = hintsHeight)
             is PresentationSlot.InGame -> {
                 val manager = com.nendo.argosy.DualScreenManagerHolder.instance ?: return@Box
                 val bar = rememberInGameAppBarState()

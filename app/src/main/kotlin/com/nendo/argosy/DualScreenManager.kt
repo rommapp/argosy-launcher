@@ -191,6 +191,25 @@ class DualScreenManager(
     private val _hasPresentationScreen = MutableStateFlow(false)
     val hasPresentationScreen: StateFlow<Boolean> = _hasPresentationScreen
 
+    private val screenEventTick = MutableStateFlow(0)
+
+    /**
+     * True while a lit external display mirrors the built-in panel: one is attached, dual screen
+     * is off and DeX is not running. Launcher surfaces skip the panel's camera cutout inset then
+     * and draw to its edge, the frame the external display shows.
+     */
+    val panelMirroredToExternal: StateFlow<Boolean> =
+        kotlinx.coroutines.flow.combine(
+            preferencesRepository.userPreferences
+                .map { it.dualScreenEnabled }
+                .distinctUntilChanged(),
+            screenEventTick
+        ) { dualScreenEnabled, _ ->
+            !dualScreenEnabled &&
+                !displayAffinityHelper.isDesktopMode &&
+                displayAffinityHelper.hasLitExternalDisplay
+        }.stateIn(activityIndependentScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, false)
+
     private val _controlHints =
         MutableStateFlow<List<com.nendo.argosy.ui.dualscreen.CompanionHint>>(emptyList())
 
@@ -525,6 +544,7 @@ class DualScreenManager(
     fun onDesktopModeChanged() {
         val active = displayAffinityHelper.isDesktopMode
         Log.i(TAG, "Samsung DeX ${if (active) "active" else "inactive"}")
+        screenEventTick.update { it + 1 }
         if (active) {
             teardownCompanion()
             setSecondaryHomeComponentEnabled(false)
@@ -1716,16 +1736,19 @@ class DualScreenManager(
     private val displayListener: DisplayManager.DisplayListener = object : DisplayManager.DisplayListener {
         override fun onDisplayAdded(displayId: Int) {
             if (!isScreenEvent(displayId)) return
+            screenEventTick.update { it + 1 }
             onScreenAdded(displayId)
         }
 
         override fun onDisplayRemoved(displayId: Int) {
             if (!isScreenEvent(displayId)) return
+            screenEventTick.update { it + 1 }
             onScreenRemoved(displayId)
         }
 
         override fun onDisplayChanged(displayId: Int) {
             if (!isScreenEvent(displayId)) return
+            screenEventTick.update { it + 1 }
             onScreenChanged(displayId)
         }
     }

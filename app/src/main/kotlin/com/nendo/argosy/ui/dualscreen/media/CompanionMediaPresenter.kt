@@ -115,11 +115,13 @@ internal class CompanionMediaPresenter(private val manager: DualScreenManager) {
         if (seasonId in refreshedSeasonIds || seasonId in fetchingSeasonIds) return
         fetchingSeasonIds.add(seasonId)
         _state.update { it.copy(isFetchingEpisodes = true, episodeFetchError = null) }
-        val failure = seriesDelegate.refreshEpisodes(seriesId, seasonId)
-        fetchingSeasonIds.remove(seasonId)
-        if (failure == null) refreshedSeasonIds.add(seasonId)
-        _state.update {
-            it.copy(isFetchingEpisodes = fetchingSeasonIds.isNotEmpty(), episodeFetchError = failure)
+        try {
+            val failure = seriesDelegate.refreshEpisodes(seriesId, seasonId)
+            if (failure == null) refreshedSeasonIds.add(seasonId)
+            _state.update { it.copy(episodeFetchError = failure) }
+        } finally {
+            fetchingSeasonIds.remove(seasonId)
+            _state.update { it.copy(isFetchingEpisodes = fetchingSeasonIds.isNotEmpty()) }
         }
     }
 

@@ -327,6 +327,7 @@
     <string name="settings_shell_footer_reset_builtinsaves_override">Redefinir</string>
     <string name="settings_shell_footer_back">Voltar</string>
     <string name="settings_shell_footer_unassign_shortcut">Desassociar</string>
+    <string name="settings_shell_footer_reset_system_combo">Redefinir</string>
     <string name="settings_shell_caches_image_title">Limpar cache de imagens?</string>
     <string name="settings_shell_caches_image_message">Isso excluirá todas as capas, planos de fundo e capturas de tela em cache. As imagens serão baixadas do servidor novamente conforme você navega.</string>
     <string name="settings_shell_caches_rom_extraction_title">Limpar ROMs extraídas?</string>

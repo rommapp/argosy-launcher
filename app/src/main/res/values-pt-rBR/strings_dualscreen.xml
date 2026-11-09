@@ -351,6 +351,7 @@
     <!-- Heading above the row of people who appear in the open film or episode. Noun, the whole
          group taken together. -->
     <string name="dual_media_cast_header">Elenco</string>
+    <string name="dual_media_related_header">Títulos semelhantes</string>
     <!-- Spoken description of the arrow that leaves a browsed series on the media panel. Verb. -->
     <string name="dual_media_browse_back_description">Voltar</string>
     <!-- How many episodes the selected season lists, beside the series name. -->

@@ -329,7 +329,8 @@
     <!-- %1$s is a comma-separated list of missing disc numbers. -->
     <string name="notif_gamelaunch_missing_discs">Discos ausentes: %1$s. Veja os detalhes do jogo para reparar.</string>
     <!-- %1$s is the platform slug (untranslated, upstream identifier). -->
-    <string name="notif_gamelaunch_missing_bios">BIOS ausente para %1$s. Instale em Configurações antes de iniciar.</string>
+    <string name="notif_gamelaunch_missing_bios_files">%1$s não inicia sem a BIOS: %2$s. O Argosy não encontrou nenhum desses arquivos na pasta de BIOS. Baixe o firmware de %1$s do seu servidor RomM em Configurações > Arquivos de BIOS e inicie de novo.</string>
+    <string name="notif_gamelaunch_missing_bios_folder">%1$s não inicia sem um dump de BIOS. O Argosy não encontrou nenhum arquivo na pasta de BIOS %2$s. Baixe o firmware de %1$s do seu servidor RomM em Configurações > Arquivos de BIOS e inicie de novo.</string>
     <!-- %1$s is the game's name (untranslated, user content). -->
     <string name="notif_gamelaunch_no_scummvm_id">Arquivo .scummvm ausente para %1$s</string>
     <!-- %1$s is the Android package name (untranslated, upstream identifier). -->

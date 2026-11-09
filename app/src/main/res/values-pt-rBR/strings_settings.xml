@@ -526,6 +526,18 @@
     <string name="settings_navigation_shortcut_capture_reserved">%1$s move pelos menus e não pode ser atribuído</string>
     <!-- Button hint that closes that dialog without assigning. Verb. -->
     <string name="settings_navigation_shortcut_capture_hint_cancel">Cancelar</string>
+    <string name="settings_navigation_section_system_buttons">Botões do sistema</string>
+    <string name="settings_navigation_system_hotkeys_title">Combinações de Início e Voltar</string>
+    <string name="settings_navigation_system_hotkeys_subtitle">Combinações do controle que funcionam como Início e Voltar enquanto outro app está aberto</string>
+    <string name="settings_navigation_system_hotkeys_access_title">Serviço de acessibilidade</string>
+    <string name="settings_navigation_system_hotkeys_access_subtitle">As combinações chegam a outros apps pelo serviço de acessibilidade do Argosy</string>
+    <string name="settings_navigation_system_hotkeys_access_on">Ativado</string>
+    <string name="settings_navigation_system_hotkeys_access_needed">Precisa de acessibilidade</string>
+    <string name="settings_navigation_system_home_title">Início</string>
+    <string name="settings_navigation_system_home_subtitle">Segure juntos por 2 segundos. Tocar no botão guia também vai para o Início</string>
+    <string name="settings_navigation_system_back_title">Voltar</string>
+    <string name="settings_navigation_system_back_subtitle">Segure os primeiros botões e depois aperte o último. Segurar o botão guia por 1 segundo também volta. Em um jogo, segurar a combinação por 3 segundos abre o painel rápido</string>
+    <string name="settings_navigation_system_combo_capture_prompt">Segure 2 ou 3 botões em ordem...</string>
 
     <!-- ===== Displays section ===== -->
 
@@ -994,9 +1006,6 @@
     <!-- Second line of that row when the server is too old. "RomM 5.0" is a version of that
           software. -->
     <string name="settings_sync_upload_screenshots_subtitle_unsupported">Requer RomM 5.0 ou mais recente</string>
-    <!-- Second line of that row when Android's usage-access permission is missing. "Usage access"
-          is that permission's name in Android's own settings. -->
-    <string name="settings_sync_upload_screenshots_subtitle_needs_usage">Conceder acesso ao uso para combinação precisa de jogos</string>
 
     <!-- Row title. Noun phrase: the folder where downloaded pictures are kept. -->
     <string name="settings_sync_image_cache_title">Local do Cache de Imagens</string>
@@ -2023,6 +2032,23 @@
     <string name="settings_storage_platform_games_empty_title">Nenhum jogo baixado</string>
     <!-- Body under that heading. %1$s is the console's name. -->
     <string name="settings_storage_platform_games_empty_message">Jogos baixados para %1$s aparecem aqui com uma divisão por categoria.</string>
+    <string name="settings_storage_platform_games_tab_empty_message">Nenhum jogo de %1$s está armazenado aqui.</string>
+    <plurals name="settings_storage_platform_games_summary">
+        <item quantity="one">%1$d jogo, %2$s</item>
+        <item quantity="many">%1$d jogos, %2$s</item>
+        <item quantity="other">%1$d jogos, %2$s</item>
+    </plurals>
+    <string name="settings_storage_platform_games_sort_size">Maiores primeiro</string>
+    <string name="settings_storage_platform_games_sort_title">De A a Z</string>
+    <string name="settings_storage_platform_games_sort_least_played">Jogados há mais tempo</string>
+    <string name="settings_storage_platform_games_last_played">Última vez jogado: %1$s</string>
+    <string name="settings_storage_platform_games_never_played">Nunca jogado</string>
+    <string name="settings_storage_platform_games_play_time">%1$s jogados</string>
+    <plurals name="settings_storage_platform_games_unsynced_saves">
+        <item quantity="one">%d save não sincronizado</item>
+        <item quantity="many">%d saves não sincronizados</item>
+        <item quantity="other">%d saves não sincronizados</item>
+    </plurals>
 
     <!-- Group of a game's files holding the game itself, before any add-ons. Adjective used as a
          noun. -->

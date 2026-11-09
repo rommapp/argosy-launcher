@@ -572,6 +572,8 @@
     <string name="ui_quick_settings_device_access_notice">O Argosy precisa de permissão para alterar estes.</string>
     <string name="ui_quick_settings_device_access_allow">Permitir</string>
     <string name="ui_quick_settings_theme">Tema</string>
+    <string name="ui_quick_settings_root_access_notice">O Argosy precisa de acesso root para alterar isto. Permita no seu gerenciador de root quando for solicitado.</string>
+    <string name="ui_quick_settings_root_access_request">Solicitar</string>
     <string name="ui_quick_settings_accent">Cor de destaque</string>
     <string name="ui_quick_settings_accent_default">Padrão</string>
     <string name="ui_quick_settings_theme_light">Claro</string>

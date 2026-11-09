@@ -61,7 +61,24 @@ data class EffectiveLaunchCommand(
     val launchMethod: LaunchMethod = LaunchMethod.INTENT
 )
 
-fun EffectiveLaunchCommand.toIntent(context: Context): Intent {
+private val SHARED_STORAGE_ROOTS = setOf("storage", "mnt")
+
+/**
+ * The shared-storage folder holding the file [uri] names, as a URI of the same provider. Null when
+ * the file sits under one of Argosy's private roots or directly under a root.
+ */
+fun sharedFolderUriOf(uri: Uri): Uri? {
+    val segments = uri.pathSegments
+    if (segments.size < 3 || segments.first() !in SHARED_STORAGE_ROOTS) return null
+    return uri.buildUpon().path(null).apply { segments.dropLast(1).forEach(::appendPath) }.build()
+}
+
+/**
+ * Grants [packageName] read access to every own-FileProvider URI in [EffectiveLaunchCommand.grantReadUriTo],
+ * and to everything under the shared-storage folder holding it, so an emulator can open the tracks
+ * a cue, gdi or m3u lists beside it.
+ */
+fun EffectiveLaunchCommand.grantLaunchReads(context: Context) {
     val ownFileProviderAuthority = "${context.packageName}.fileprovider"
     for (uri in grantReadUriTo) {
         if (uri.scheme != "content") {
@@ -74,10 +91,21 @@ fun EffectiveLaunchCommand.toIntent(context: Context): Intent {
         }
         try {
             context.grantUriPermission(packageName, uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            sharedFolderUriOf(uri)?.let { folder ->
+                context.grantUriPermission(
+                    packageName,
+                    folder,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_PREFIX_URI_PERMISSION
+                )
+            }
         } catch (e: Exception) {
             Logger.warn(TAG, "Failed to grant URI permission to $packageName for $uri", e)
         }
     }
+}
+
+fun EffectiveLaunchCommand.toIntent(context: Context): Intent {
+    grantLaunchReads(context)
 
     val cmdCategories = categories
     val cmdExtras = extras

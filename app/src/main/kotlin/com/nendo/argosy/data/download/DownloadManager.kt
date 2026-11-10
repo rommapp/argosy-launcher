@@ -250,6 +250,10 @@ class DownloadManager internal constructor(
     private val downloadJobs = mutableMapOf<Long, Job>()
 
     init {
+        if (!com.nendo.argosy.libretro.slot.GameSlots.isSlotProcess) startMainProcessWork()
+    }
+
+    private fun startMainProcessWork() {
         scope.launch {
             restoreQueueFromDatabase()
         }

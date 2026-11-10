@@ -528,7 +528,7 @@
     <string name="settings_navigation_system_home_title">Início</string>
     <string name="settings_navigation_system_home_subtitle">Segure juntos por 2 segundos. Tocar no botão guia também vai para o Início</string>
     <string name="settings_navigation_system_back_title">Voltar</string>
-    <string name="settings_navigation_system_back_subtitle">Segure os primeiros botões e depois aperte o último. Segurar o botão guia por 1 segundo também volta. Em um jogo, segurar a combinação por 3 segundos abre o painel rápido</string>
+    <string name="settings_navigation_system_back_subtitle">Segure os primeiros botões e depois aperte o último. Em um jogo, segurar a combinação por 3 segundos abre o painel rápido</string>
     <string name="settings_navigation_system_combo_capture_prompt">Segure 2 ou 3 botões em ordem...</string>
 
     <!-- ===== Displays section ===== -->

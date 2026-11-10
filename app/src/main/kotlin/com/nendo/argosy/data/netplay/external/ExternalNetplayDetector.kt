@@ -42,7 +42,7 @@ class ExternalNetplayDetector @Inject constructor(
     val current: StateFlow<ExternalNetplay?> = _current.asStateFlow()
 
     init {
-        observeSessions()
+        if (!com.nendo.argosy.libretro.slot.GameSlots.isSlotProcess) observeSessions()
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)

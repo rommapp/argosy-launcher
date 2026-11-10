@@ -43,10 +43,21 @@ class LaunchPhaseTest {
 
     private fun everySaveStep(): List<LaunchStep.Save> = (preLaunchValues() + otherSyncValues()).map { LaunchStep.Save(it) }
 
+    private fun makeRoom(stage: MakeRoomStage) = LaunchStep.MakeRoom(
+        launchingTitle = "Game",
+        candidates = emptyList(),
+        initialFocus = 0,
+        stage = stage,
+        chosenTaskId = null
+    )
+
     private fun everyStep(): List<LaunchStep> = listOf(
         LaunchStep.FinishingPrevious,
         LaunchStep.RecapLoading,
         LaunchStep.Recap(recap),
+        makeRoom(MakeRoomStage.CHOOSE),
+        makeRoom(MakeRoomStage.SAVING),
+        makeRoom(MakeRoomStage.CLOSED),
         LaunchStep.Prompt(localModified, listOf(LaunchPromptOption.APPLY_LOCAL)),
         LaunchStep.ChooseLauncher(listOf(LaunchPromptOption.LAUNCH_WITH_GAMENATIVE)),
         LaunchStep.DownloadingCore(null),
@@ -75,6 +86,13 @@ class LaunchPhaseTest {
         assertEquals(LaunchPhase.QUESTION, LaunchStep.Prompt(localModified, listOf(LaunchPromptOption.APPLY_LOCAL)).phase)
         assertEquals(LaunchPhase.QUESTION, LaunchStep.Prompt(hardcoreConflict, listOf(LaunchPromptOption.KEEP_HARDCORE)).phase)
         assertEquals(LaunchPhase.QUESTION, LaunchStep.ChooseLauncher(listOf(LaunchPromptOption.LAUNCH_WITH_DROIDDECK)).phase)
+    }
+
+    @Test
+    fun `making room is a question in every stage`() {
+        MakeRoomStage.entries.forEach { stage ->
+            assertEquals(stage.toString(), LaunchPhase.QUESTION, makeRoom(stage).phase)
+        }
     }
 
     @Test

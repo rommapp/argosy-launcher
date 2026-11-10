@@ -369,6 +369,12 @@ object ComponentDefaults {
         const val breathFloorAlpha = 0f
         const val breathSpreadDp = 28
         const val breathBlurDp = 24
+        const val makeRoomCardWidthDp = 240
+        const val makeRoomClosedHoldMs = 600
+        const val makeRoomDeepScrimAlpha = 0.6f
+        const val makeRoomClosedScale = 0.85f
+        const val makeRoomClosedAlpha = 0.55f
+        const val makeRoomClosedSaturation = 0f
     }
 
     object UnlockRecap {

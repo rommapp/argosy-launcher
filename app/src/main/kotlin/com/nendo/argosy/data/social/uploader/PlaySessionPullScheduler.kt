@@ -33,7 +33,7 @@ internal fun isRecapPullFresh(lastPull: Instant?, now: Instant): Boolean =
 class PlaySessionPullScheduler internal constructor(
     private val pull: PlaySessionPull,
     private val syncPreferencesRepository: SyncPreferencesRepository,
-    connectionManager: RomMConnectionManager,
+    private val connectionManager: RomMConnectionManager,
     private val scope: CoroutineScope,
     private val clock: () -> Instant
 ) {
@@ -52,6 +52,10 @@ class PlaySessionPullScheduler internal constructor(
     private var inFlight: Deferred<PlaySessionPull.Summary>? = null
 
     init {
+        if (!com.nendo.argosy.libretro.slot.GameSlots.isSlotProcess) startMainProcessWork()
+    }
+
+    private fun startMainProcessWork() {
         scope.launch {
             connectionManager.connectionState.collect { state ->
                 if (state is ConnectionState.Connected) pullIfDue()

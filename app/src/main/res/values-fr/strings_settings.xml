@@ -249,7 +249,7 @@
     <string name="settings_navigation_system_home_title">Accueil</string>
     <string name="settings_navigation_system_home_subtitle">Maintenir ensemble 2 secondes. Appuyer sur le bouton guide ramène aussi à l\'accueil</string>
     <string name="settings_navigation_system_back_title">Retour</string>
-    <string name="settings_navigation_system_back_subtitle">Maintenir les premiers boutons, puis appuyer sur le dernier. Maintenir le bouton guide 1 seconde fait aussi Retour. En jeu, maintenir le combo 3 secondes ouvre plutôt le panneau rapide</string>
+    <string name="settings_navigation_system_back_subtitle">Maintenir les premiers boutons, puis appuyer sur le dernier. En jeu, maintenir le combo 3 secondes ouvre plutôt le panneau rapide</string>
     <string name="settings_navigation_system_combo_capture_prompt">Maintenez 2 ou 3 boutons dans l\'ordre...</string>
 
     <!-- ===== Section Ecrans ===== -->

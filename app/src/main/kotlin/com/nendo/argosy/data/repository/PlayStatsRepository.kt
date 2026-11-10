@@ -43,6 +43,17 @@ class PlayStatsRepository @Inject constructor(
     suspend fun getSessionsSince(since: Instant): List<PlaySessionEntity> =
         playSessionDao.getSessionsSince(since)
 
+    /**
+     * Active play time this device recorded for [gameId] in sessions that started at or after
+     * [since].
+     */
+    suspend fun activePlayMsSince(gameId: Long, since: Instant): Long = withContext(Dispatchers.IO) {
+        val device = localDeviceId()
+        playSessionDao.getSessionsSince(since)
+            .filter { it.gameId == gameId && it.deviceId == device }
+            .sumOf { it.activePlayMs }
+    }
+
     suspend fun getSessionsInRange(start: Instant, end: Instant): List<PlaySessionEntity> =
         playSessionDao.getSessionsInRange(start, end)
 

@@ -10,8 +10,11 @@ import com.nendo.argosy.data.emulator.ActiveSession
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.GameLauncher
 import com.nendo.argosy.data.emulator.PlaySessionTracker
+import com.nendo.argosy.data.repository.AppsRepository
 import com.nendo.argosy.hardware.builtInGameAppTask
 import com.nendo.argosy.libretro.LibretroActivity
+import com.nendo.argosy.libretro.slot.SlotRegistry
+import java.io.File
 import com.nendo.argosy.util.Logger
 import com.nendo.argosy.util.RootShell
 import com.nendo.argosy.util.SafeCoroutineScope
@@ -23,14 +26,19 @@ import javax.inject.Singleton
 
 /**
  * An app with a task on screen or in the background. [game] is set when the app is an emulator
- * still holding the game a session of ours ended in.
+ * still holding the game a session of ours ended in. [runStartedAtMillis] is when the process
+ * holding it started, the start of the run its play time is counted from; [hardcore] is true
+ * only for a built-in game running under RetroAchievements hardcore rules.
  */
 data class RunningApp(
     val taskId: Int,
     val packageName: String,
     val displayId: Int,
     val rssKb: Long?,
-    val game: BackgroundGame?
+    val game: BackgroundGame?,
+    val runStartedAtMillis: Long?,
+    val hardcore: Boolean,
+    val slotIndex: Int?
 )
 
 /**
@@ -44,7 +52,9 @@ class BackgroundGames @Inject constructor(
     private val store: BackgroundGameStore,
     private val playSessionTracker: PlaySessionTracker,
     private val keepAlivePolicy: KeepAlivePolicy,
-    private val gameLauncher: GameLauncher
+    private val gameLauncher: GameLauncher,
+    private val slotRegistry: SlotRegistry,
+    private val appsRepository: AppsRepository
 ) {
     private val scope = SafeCoroutineScope(Dispatchers.IO, "BackgroundGames")
     private var started = false
@@ -90,48 +100,122 @@ class BackgroundGames @Inject constructor(
     }
 
     /**
-     * Every app with a task, Argosy excluded, joined to the game its emulator holds, then the
-     * built-in game left open in Argosy's own task. Off root only the built-in game is listed.
+     * Every app with a task that the player could open from a launcher, every Argosy install excluded, joined
+     * to the game its emulator holds, then every built-in game left open: the one in Argosy's own
+     * task and one per game slot. Off root only the built-in games are listed.
      * Records whose emulator process is gone or was restarted are dropped from the store here.
      */
-    suspend fun refresh(): List<RunningApp> = externalApps() + listOfNotNull(builtInApp())
+    suspend fun refresh(): List<RunningApp> = externalApps() + builtInApps()
 
     private suspend fun externalApps(): List<RunningApp> {
         if (!isSupported) return emptyList()
         val snapshot = read() ?: return emptyList()
         val games = liveRecords(snapshot)
+        val now = System.currentTimeMillis()
         return snapshot.tasks
-            .filter { it.packageName != application.packageName }
+            .filter { !appsRepository.isArgosy(it.packageName) && isLaunchable(it.packageName) }
             .distinctBy { it.packageName }
             .map { task ->
+                val process = snapshot.processes[task.packageName]
                 RunningApp(
                     taskId = task.taskId,
                     packageName = task.packageName,
                     displayId = task.displayId,
-                    rssKb = snapshot.processes[task.packageName]?.rssKb,
-                    game = games[task.packageName]
+                    rssKb = process?.rssKb,
+                    game = games[task.packageName],
+                    runStartedAtMillis = process?.let { now - it.elapsedMs },
+                    hardcore = false,
+                    slotIndex = null
                 )
             }
     }
 
-    private fun builtInApp(): RunningApp? {
+    private fun isLaunchable(packageName: String): Boolean {
+        val packageManager = application.packageManager
+        return packageManager.getLaunchIntentForPackage(packageName) != null ||
+            packageManager.getLeanbackLaunchIntentForPackage(packageName) != null
+    }
+
+    fun builtInApps(): List<RunningApp> = listOfNotNull(mainProcessGame()) + liveSlots()
+        .sortedBy { it.slotIndex }
+        .map { slot ->
+            builtInRunningApp(
+                taskId = slot.taskId,
+                gameId = slot.gameId,
+                variantFileId = slot.variantFileId,
+                pid = slot.pid,
+                rssKb = residentKb(slot.pid),
+                startedAtMillis = slot.startedAtMillis,
+                hardcore = slot.hardcore,
+                slotIndex = slot.slotIndex
+            )
+        }
+
+    /**
+     * Whether a built-in [platformSlug] game can start without closing another: a slot is free and
+     * the games already open leave room for its weight.
+     */
+    fun hasRoomFor(platformSlug: String?): Boolean = slotRegistry.freeSlotFor(platformSlug) != null
+
+    private fun liveSlots(): List<com.nendo.argosy.libretro.slot.LiveSlot> {
+        val activityManager = application.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val taskIds = activityManager.appTasks.mapNotNull { task -> runCatching { task.taskInfo.idCompat() }.getOrNull() }.toSet()
+        val (live, gone) = slotRegistry.slots.value.values.partition { it.taskId in taskIds }
+        gone.forEach { slot ->
+            Logger.debug(TAG, "slot ${slot.slotIndex} task ${slot.taskId} is gone, dropping it")
+            slotRegistry.remove(slot.slotIndex)
+        }
+        return live
+    }
+
+    private fun mainProcessGame(): RunningApp? {
         val live = LibretroActivity.liveGame ?: return null
         val task = builtInTask() ?: return null
         val taskId = runCatching { task.taskInfo.idCompat() }.getOrNull() ?: return null
-        return RunningApp(
+        return builtInRunningApp(
             taskId = taskId,
-            packageName = EmulatorRegistry.BUILTIN_PACKAGE,
-            displayId = Display.INVALID_DISPLAY,
+            gameId = live.gameId,
+            variantFileId = live.variantFileId,
+            pid = Process.myPid(),
             rssKb = null,
-            game = BackgroundGame(
-                emulatorPackage = EmulatorRegistry.BUILTIN_PACKAGE,
-                gameId = live.gameId,
-                variantFileId = live.variantFileId,
-                pid = Process.myPid(),
-                endedAtMillis = 0L
-            )
+            startedAtMillis = live.startedAtMillis,
+            hardcore = live.hardcore,
+            slotIndex = 0
         )
     }
+
+    private fun builtInRunningApp(
+        taskId: Int,
+        gameId: Long,
+        variantFileId: Long?,
+        pid: Int,
+        rssKb: Long?,
+        startedAtMillis: Long,
+        hardcore: Boolean,
+        slotIndex: Int
+    ) = RunningApp(
+        taskId = taskId,
+        packageName = EmulatorRegistry.BUILTIN_PACKAGE,
+        displayId = Display.INVALID_DISPLAY,
+        rssKb = rssKb,
+        game = BackgroundGame(
+            emulatorPackage = EmulatorRegistry.BUILTIN_PACKAGE,
+            gameId = gameId,
+            variantFileId = variantFileId,
+            pid = pid,
+            endedAtMillis = 0L
+        ),
+        runStartedAtMillis = startedAtMillis,
+        hardcore = hardcore,
+        slotIndex = slotIndex
+    )
+
+    private fun residentKb(pid: Int): Long? = runCatching {
+        File("/proc/$pid/status").useLines { lines ->
+            lines.firstOrNull { it.startsWith(VM_RSS) }
+                ?.removePrefix(VM_RSS)?.trim()?.substringBefore(' ')?.toLongOrNull()
+        }
+    }.getOrNull()
 
     @Suppress("DEPRECATION")
     private fun ActivityManager.RecentTaskInfo.idCompat(): Int =
@@ -146,12 +230,21 @@ class BackgroundGames @Inject constructor(
      * The running app holding [gameId] (and [variantFileId]) in [emulatorPackage], or null when
      * that emulator is not running it.
      */
-    suspend fun liveGame(gameId: Long, variantFileId: Long?, emulatorPackage: String): RunningApp? =
-        liveApp(emulatorPackage)?.takeIf { it.game?.gameId == gameId && it.game.variantFileId == variantFileId }
+    suspend fun liveGame(gameId: Long, variantFileId: Long?, emulatorPackage: String): RunningApp? {
+        val candidates = if (emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE) {
+            builtInApps()
+        } else {
+            listOfNotNull(liveApp(emulatorPackage))
+        }
+        return candidates.firstOrNull { it.game?.gameId == gameId && it.game.variantFileId == variantFileId }
+    }
 
+    /**
+     * The app [packageName] runs, for an external emulator; built-in games are listed by
+     * [builtInApps], one per slot.
+     */
     suspend fun liveApp(packageName: String): RunningApp? =
-        if (packageName == EmulatorRegistry.BUILTIN_PACKAGE) builtInApp()
-        else if (!isSupported) null
+        if (packageName == EmulatorRegistry.BUILTIN_PACKAGE || !isSupported) null
         else externalApps().firstOrNull { it.packageName == packageName }
 
     /**
@@ -167,13 +260,22 @@ class BackgroundGames @Inject constructor(
         false
     }
 
-    suspend fun close(packageName: String) {
-        store.remove(packageName)
-        if (packageName == EmulatorRegistry.BUILTIN_PACKAGE) {
-            withContext(Dispatchers.Main) { builtInTask()?.let { runCatching { it.finishAndRemoveTask() } } }
-            return
+    /**
+     * Closes [app]. A game slot is asked to save and quit on its own; the built-in game in Argosy's
+     * process has its task removed; an external app is force-stopped.
+     */
+    suspend fun close(app: RunningApp) {
+        when (app.slotIndex) {
+            null -> {
+                store.remove(app.packageName)
+                gameLauncher.forceStopEmulator(app.packageName)
+            }
+            0 -> withContext(Dispatchers.Main) { builtInTask()?.let { runCatching { it.finishAndRemoveTask() } } }
+            else -> if (!slotRegistry.requestClose(app.slotIndex)) {
+                app.game?.pid?.let { Process.killProcess(it) }
+                slotRegistry.remove(app.slotIndex)
+            }
         }
-        gameLauncher.forceStopEmulator(packageName)
     }
 
     private fun liveRecords(snapshot: Snapshot): Map<String, BackgroundGame> {
@@ -191,7 +293,7 @@ class BackgroundGames @Inject constructor(
     private data class Snapshot(val tasks: List<RunningTask>, val processes: Map<String, ProcessStat>)
 
     private suspend fun read(): Snapshot? = withContext(Dispatchers.IO) {
-        val result = RootShell.run(application, "am stack list\necho $PS_MARKER\nps -A -o PID,RSS,NAME")
+        val result = RootShell.run(application, "am stack list\necho $PS_MARKER\nps -A -o PID,RSS,ETIME,NAME")
             ?.takeIf { it.succeeded }
             ?: return@withContext null
         val split = result.output.indexOf(PS_MARKER)
@@ -204,6 +306,7 @@ class BackgroundGames @Inject constructor(
 
     private companion object {
         const val TAG = "BackgroundGames"
+        const val VM_RSS = "VmRSS:"
         const val PS_MARKER = "--argosy-ps--"
     }
 }

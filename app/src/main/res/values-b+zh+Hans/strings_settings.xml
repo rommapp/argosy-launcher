@@ -245,7 +245,7 @@
     <string name="settings_navigation_system_home_title">主页</string>
     <string name="settings_navigation_system_home_subtitle">同时按住 2 秒。按一下 Guide 键也会回到主页</string>
     <string name="settings_navigation_system_back_title">返回</string>
-    <string name="settings_navigation_system_back_subtitle">先按住前面的按键，再按最后一个。按住 Guide 键 1 秒也会返回。游戏中按住组合键 3 秒会改为打开快速面板</string>
+    <string name="settings_navigation_system_back_subtitle">先按住前面的按键，再按最后一个。游戏中按住组合键 3 秒会改为打开快速面板</string>
     <string name="settings_navigation_system_combo_capture_prompt">按顺序按住 2 或 3 个按键...</string>
 
     <!-- ===== Displays section ===== -->

@@ -1022,8 +1022,12 @@
     <string name="ui_launch_overlay_running_busy_title">%1$s正在运行</string>
     <string name="ui_launch_overlay_running_busy_message_game">%1$s仍在后台运行%2$s。</string>
     <string name="ui_launch_overlay_running_busy_message">%1$s仍在后台打开。</string>
-    <string name="ui_launch_overlay_running_open_title">%1$s仍处于打开状态</string>
-    <string name="ui_launch_overlay_running_open_message">启动其他游戏会将其关闭。</string>
+    <string name="ui_launch_overlay_makeroom_title">为%1$s腾出空间</string>
+    <string name="ui_launch_overlay_makeroom_subtitle">选择一个要关闭的游戏。它会先保存。</string>
+    <string name="ui_launch_overlay_makeroom_saved">%1$s保存</string>
+    <string name="ui_launch_overlay_makeroom_close">关闭</string>
+    <string name="ui_launch_overlay_makeroom_saving">正在保存</string>
+    <string name="ui_launch_overlay_makeroom_closed">已关闭</string>
     <string name="ui_launch_overlay_running_close_label">关闭并启动</string>
     <string name="ui_launch_overlay_running_close_subtitle">正在运行的游戏中未保存的进度将会丢失</string>
 </resources>

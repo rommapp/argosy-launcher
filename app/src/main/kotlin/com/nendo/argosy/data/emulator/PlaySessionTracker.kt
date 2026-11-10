@@ -225,8 +225,10 @@ class PlaySessionTracker @Inject constructor(
     }
 
     init {
-        registerLifecycleCallbacks()
-        registerScreenReceiver()
+        if (!com.nendo.argosy.libretro.slot.GameSlots.isSlotProcess) {
+            registerLifecycleCallbacks()
+            registerScreenReceiver()
+        }
     }
 
     private suspend fun insertPlaySessionIfAbsent(entity: PlaySessionEntity): Long? {

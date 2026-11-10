@@ -75,6 +75,7 @@ class LaunchProgressTracker internal constructor(
 
         private val finished = CompletableDeferred<Unit>()
         private var pendingAnswer: CompletableDeferred<LaunchPromptOption?>? = null
+        private var pendingRoomChoice: CompletableDeferred<Int?>? = null
 
         val isFinished: Boolean get() = finished.isCompleted
 
@@ -108,6 +109,20 @@ class LaunchProgressTracker internal constructor(
         suspend fun offerRecap(recap: LaunchRecap): Boolean =
             awaitAnswer(LaunchStep.Recap(recap)) == LaunchPromptOption.START_GAME
 
+        /**
+         * Shows [question] and returns the task id of the open game the player chose to close, or
+         * null when the launch is cancelled instead.
+         */
+        suspend fun chooseGameToClose(question: LaunchStep.MakeRoom): Int? {
+            val choice = CompletableDeferred<Int?>()
+            synchronized(lock) {
+                if (isCancelled) return null
+                pendingRoomChoice = choice
+            }
+            publish(this, question)
+            return choice.await().also { synchronized(lock) { pendingRoomChoice = null } }
+        }
+
         private suspend fun awaitAnswer(step: LaunchStep): LaunchPromptOption? {
             val answer = CompletableDeferred<LaunchPromptOption?>()
             synchronized(lock) {
@@ -122,9 +137,14 @@ class LaunchProgressTracker internal constructor(
             pendingAnswer?.complete(option)
         }
 
+        internal fun closeToMakeRoom(taskId: Int) {
+            pendingRoomChoice?.complete(taskId)
+        }
+
         internal fun cancel() {
             isCancelled = true
             pendingAnswer?.complete(null)
+            pendingRoomChoice?.complete(null)
         }
 
         internal fun markFinished() {
@@ -170,6 +190,10 @@ class LaunchProgressTracker internal constructor(
 
     fun answer(option: LaunchPromptOption) {
         synchronized(lock) { live }?.answer(option)
+    }
+
+    fun closeToMakeRoom(taskId: Int) {
+        synchronized(lock) { live }?.closeToMakeRoom(taskId)
     }
 
     /**

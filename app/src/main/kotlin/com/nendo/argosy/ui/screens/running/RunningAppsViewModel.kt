@@ -11,8 +11,18 @@ import com.nendo.argosy.core.notification.showError
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.background.BackgroundGames
 import com.nendo.argosy.data.emulator.background.RunningApp
+import com.nendo.argosy.data.emulator.background.TaskSnapshot
+import com.nendo.argosy.data.emulator.background.TaskSnapshots
 import com.nendo.argosy.data.repository.AppsRepository
+import com.nendo.argosy.data.local.entity.GameEntity
+import com.nendo.argosy.domain.model.MakeRoomStage
+import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 import com.nendo.argosy.data.repository.GameRepository
+import com.nendo.argosy.data.repository.PlatformRepository
+import com.nendo.argosy.data.repository.PlayStatsRepository
+import com.nendo.argosy.data.repository.SaveCacheManager
+import com.nendo.argosy.data.social.SocialRepository
+import java.time.Instant
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.SoundFeedbackManager
@@ -49,7 +59,29 @@ data class RunningAppUi(
     val gameId: Long?,
     val gameTitle: String?,
     val memoryMb: Long?,
-    val screenNumber: Int?
+    val screenNumber: Int?,
+    val snapshotPath: String?,
+    val snapshotTakenAtMillis: Long,
+    val details: RunningGameDetails?,
+    val slotIndex: Int?,
+    val platformSlug: String?
+)
+
+data class RunningGameDetails(
+    val platformName: String?,
+    val playedThisRunMs: Long,
+    val raEarned: Int,
+    val raTotal: Int,
+    val hardcore: Boolean,
+    val lastSavedAtMillis: Long?,
+    val friendsPlaying: List<RunningFriendUi>
+)
+
+data class RunningFriendUi(
+    val userId: String,
+    val displayName: String,
+    val avatarColor: String,
+    val avatarPngBase64: String?
 )
 
 enum class RunningMenuAction(@StringRes val labelRes: Int) {
@@ -57,30 +89,37 @@ enum class RunningMenuAction(@StringRes val labelRes: Int) {
     CLOSE(R.string.running_menu_close)
 }
 
-data class RunningMenu(val packageName: String, val focusIndex: Int = 0)
+data class RunningMenu(val taskId: Int, val focusIndex: Int = 0)
 
 sealed interface RunningConfirm {
-    data class CloseGame(val packageName: String, val title: String) : RunningConfirm
-    data class CloseAll(val packageNames: List<String>) : RunningConfirm
+    data class CloseGame(val taskId: Int, val title: String) : RunningConfirm
+    data class CloseAll(val taskIds: List<Int>) : RunningConfirm
 }
 
 data class RunningAppsUiState(
     val apps: List<RunningAppUi> = emptyList(),
     val isLoading: Boolean = true,
+    val showsSnapshots: Boolean = false,
     val focusedIndex: Int = 0,
     val menu: RunningMenu? = null,
-    val confirm: RunningConfirm? = null
+    val confirm: RunningConfirm? = null,
+    val closing: Map<Int, MakeRoomStage> = emptyMap()
 ) {
     val focusedApp: RunningAppUi? get() = apps.getOrNull(focusedIndex)
 
-    val menuApp: RunningAppUi? get() = menu?.let { open -> apps.firstOrNull { it.packageName == open.packageName } }
+    val menuApp: RunningAppUi? get() = menu?.let { open -> apps.firstOrNull { it.taskId == open.taskId } }
 }
 
 @HiltViewModel
 class RunningAppsViewModel @Inject constructor(
     private val backgroundGames: BackgroundGames,
+    private val taskSnapshots: TaskSnapshots,
     private val appsRepository: AppsRepository,
     private val gameRepository: GameRepository,
+    private val platformRepository: PlatformRepository,
+    private val playStatsRepository: PlayStatsRepository,
+    private val saveCacheManager: SaveCacheManager,
+    private val socialRepository: SocialRepository,
     private val screenCatalog: ScreenCatalog,
     private val gameLaunchDelegate: GameLaunchDelegate,
     private val notificationManager: NotificationManager,
@@ -92,7 +131,7 @@ class RunningAppsViewModel @Inject constructor(
 
     private val refreshLock = Mutex()
     private val labels = mutableMapOf<String, String>()
-    private val gameTitles = mutableMapOf<Long, String>()
+    private val platformNames = mutableMapOf<Long, String>()
     private var pollJob: Job? = null
 
     private val _openGame = MutableSharedFlow<Long>(extraBufferCapacity = 1)
@@ -128,24 +167,34 @@ class RunningAppsViewModel @Inject constructor(
         pollJob = null
     }
 
-    private suspend fun refresh() {
+    private suspend fun refresh(duringClose: Boolean = false) {
+        if (!duringClose && _uiState.value.closing.isNotEmpty()) return
+        val showsSnapshots = backgroundGames.isSupported
         val rows = refreshLock.withLock {
             withContext(Dispatchers.IO) {
                 val screens = screenCatalog.attachedScreens().takeIf { it.size > 1 }
-                backgroundGames.refresh().map { it.toUi(screens) }
+                val apps = backgroundGames.refresh()
+                val snapshots = if (showsSnapshots) taskSnapshots.fetch(apps.map { it.taskId }) else emptyMap()
+                apps.map { it.toUi(screens, snapshots[it.taskId]) }
             }
         }
         _uiState.update { state ->
-            val focusedPackage = state.focusedApp?.packageName
-            val kept = rows.indexOfFirst { it.packageName == focusedPackage }
+            val focusedTask = state.focusedApp?.taskId
+            val kept = rows.indexOfFirst { it.taskId == focusedTask }
             val focusedIndex = if (kept >= 0) kept else state.focusedIndex.coerceIn(0, (rows.size - 1).coerceAtLeast(0))
-            val menu = state.menu?.takeIf { open -> rows.any { it.packageName == open.packageName } }
-            state.copy(apps = rows, isLoading = false, focusedIndex = focusedIndex, menu = menu)
+            val menu = state.menu?.takeIf { open -> rows.any { it.taskId == open.taskId } }
+            state.copy(
+                apps = rows,
+                isLoading = false,
+                showsSnapshots = showsSnapshots,
+                focusedIndex = focusedIndex,
+                menu = menu
+            )
         }
     }
 
-    private suspend fun RunningApp.toUi(screens: List<AttachedScreen>?): RunningAppUi {
-        val gameId = game?.gameId
+    private suspend fun RunningApp.toUi(screens: List<AttachedScreen>?, snapshot: TaskSnapshot?): RunningAppUi {
+        val entity = game?.gameId?.let { gameRepository.getById(it) }
         return RunningAppUi(
             taskId = taskId,
             packageName = packageName,
@@ -159,15 +208,50 @@ class RunningAppsViewModel @Inject constructor(
                     ?: EmulatorRegistry.getByPackage(packageName)?.displayName
                     ?: packageName
             },
-            gameId = gameId,
-            gameTitle = gameId?.let { gameTitle(it) },
+            gameId = entity?.id,
+            gameTitle = entity?.title,
             memoryMb = rssKb?.let { it / KB_PER_MB },
-            screenNumber = screens?.firstOrNull { it.displayId == displayId }?.number
+            screenNumber = screens?.firstOrNull { it.displayId == displayId }?.number,
+            snapshotPath = snapshot?.path,
+            snapshotTakenAtMillis = snapshot?.takenAtMillis ?: 0L,
+            details = entity?.let { gameDetails(it, this) },
+            slotIndex = slotIndex,
+            platformSlug = entity?.platformSlug
         )
     }
 
-    private suspend fun gameTitle(gameId: Long): String? =
-        gameTitles[gameId] ?: gameRepository.getById(gameId)?.title?.also { gameTitles[gameId] = it }
+    private suspend fun gameDetails(game: GameEntity, app: RunningApp): RunningGameDetails {
+        val playedThisRunMs = app.runStartedAtMillis
+            ?.let { playStatsRepository.activePlayMsSince(game.id, Instant.ofEpochMilli(it)) }
+            ?: 0L
+        return RunningGameDetails(
+            platformName = platformName(game.platformId),
+            playedThisRunMs = playedThisRunMs,
+            raEarned = game.earnedAchievementCount,
+            raTotal = game.achievementCount,
+            hardcore = app.hardcore,
+            lastSavedAtMillis = saveCacheManager.getMostRecentSave(game.id)?.cachedAt?.toEpochMilli(),
+            friendsPlaying = friendsPlaying(game.igdbId)
+        )
+    }
+
+    private suspend fun platformName(platformId: Long): String? =
+        platformNames[platformId]
+            ?: platformRepository.getById(platformId)?.name?.also { platformNames[platformId] = it }
+
+    private fun friendsPlaying(igdbId: Long?): List<RunningFriendUi> {
+        if (igdbId == null) return emptyList()
+        return socialRepository.friends.value
+            .filter { it.currentGame?.igdbId?.toLong() == igdbId }
+            .map { friend ->
+                RunningFriendUi(
+                    userId = friend.id,
+                    displayName = friend.displayName,
+                    avatarColor = friend.avatarColor,
+                    avatarPngBase64 = friend.quayPassAvatar
+                )
+            }
+    }
 
     fun moveFocus(delta: Int) {
         _uiState.update { state ->
@@ -208,21 +292,21 @@ class RunningAppsViewModel @Inject constructor(
         val app = _uiState.value.apps.getOrNull(index) ?: return
         if (app.gameId == null) {
             _uiState.update { it.copy(focusedIndex = index) }
-            close(listOf(app.packageName))
+            close(listOf(app.taskId))
             return
         }
         _uiState.update {
             it.copy(
                 focusedIndex = index,
-                confirm = RunningConfirm.CloseGame(app.packageName, app.gameTitle ?: app.label)
+                confirm = RunningConfirm.CloseGame(app.taskId, app.gameTitle ?: app.label)
             )
         }
     }
 
     fun requestCloseAll() {
-        val packages = _uiState.value.apps.map { it.packageName }
-        if (packages.isEmpty()) return
-        _uiState.update { it.copy(confirm = RunningConfirm.CloseAll(packages)) }
+        val taskIds = _uiState.value.apps.map { it.taskId }
+        if (taskIds.isEmpty()) return
+        _uiState.update { it.copy(confirm = RunningConfirm.CloseAll(taskIds)) }
     }
 
     fun dismissConfirm() {
@@ -233,23 +317,37 @@ class RunningAppsViewModel @Inject constructor(
         val confirm = _uiState.value.confirm ?: return
         _uiState.update { it.copy(confirm = null) }
         when (confirm) {
-            is RunningConfirm.CloseGame -> close(listOf(confirm.packageName))
-            is RunningConfirm.CloseAll -> close(confirm.packageNames)
+            is RunningConfirm.CloseGame -> close(listOf(confirm.taskId))
+            is RunningConfirm.CloseAll -> close(confirm.taskIds)
         }
     }
 
-    private fun close(packageNames: List<String>) {
+    private fun close(taskIds: List<Int>) {
         viewModelScope.launch {
+            _uiState.update { state -> state.copy(closing = state.closing + taskIds.associateWith { MakeRoomStage.SAVING }) }
             withContext(Dispatchers.IO) {
-                packageNames.forEach { backgroundGames.close(it) }
+                val running = backgroundGames.refresh().associateBy { it.taskId }
+                taskIds.mapNotNull { running[it] }.forEach { backgroundGames.close(it) }
+                awaitClosed(taskIds.toSet())
             }
-            refresh()
+            _uiState.update { state -> state.copy(closing = state.closing + taskIds.associateWith { MakeRoomStage.CLOSED }) }
+            delay(ComponentDefaults.LaunchOverlay.makeRoomClosedHoldMs.toLong())
+            refresh(duringClose = true)
+            _uiState.update { state -> state.copy(closing = state.closing - taskIds.toSet()) }
+        }
+    }
+
+    private suspend fun awaitClosed(taskIds: Set<Int>) {
+        val deadline = System.currentTimeMillis() + CLOSE_TIMEOUT_MS
+        while (System.currentTimeMillis() < deadline) {
+            if (backgroundGames.refresh().none { it.taskId in taskIds }) return
+            delay(CLOSE_POLL_MS)
         }
     }
 
     fun openMenu(index: Int) {
         val app = _uiState.value.apps.getOrNull(index) ?: return
-        _uiState.update { it.copy(focusedIndex = index, menu = RunningMenu(app.packageName)) }
+        _uiState.update { it.copy(focusedIndex = index, menu = RunningMenu(app.taskId)) }
         soundManager.play(SoundType.OPEN_MODAL)
     }
 
@@ -268,7 +366,7 @@ class RunningAppsViewModel @Inject constructor(
     fun selectMenuAction(actionIndex: Int) {
         val state = _uiState.value
         val menu = state.menu ?: return
-        val appIndex = state.apps.indexOfFirst { it.packageName == menu.packageName }
+        val appIndex = state.apps.indexOfFirst { it.taskId == menu.taskId }
         _uiState.update { it.copy(menu = null) }
         if (appIndex < 0) return
         when (RunningMenuAction.entries.getOrNull(actionIndex)) {
@@ -279,17 +377,20 @@ class RunningAppsViewModel @Inject constructor(
     }
 
     fun createInputHandler(onBack: () -> Unit): InputHandler = object : InputHandler {
-        override fun onUp(): InputResult {
-            if (_uiState.value.apps.isEmpty()) return InputResult.UNHANDLED
-            moveFocus(-1)
+        private fun move(delta: Int, alongCards: Boolean): InputResult {
+            val state = _uiState.value
+            if (state.apps.isEmpty() || state.showsSnapshots != alongCards) return InputResult.UNHANDLED
+            moveFocus(delta)
             return InputResult.HANDLED
         }
 
-        override fun onDown(): InputResult {
-            if (_uiState.value.apps.isEmpty()) return InputResult.UNHANDLED
-            moveFocus(1)
-            return InputResult.HANDLED
-        }
+        override fun onUp(): InputResult = move(-1, alongCards = false)
+
+        override fun onDown(): InputResult = move(1, alongCards = false)
+
+        override fun onLeft(): InputResult = move(-1, alongCards = true)
+
+        override fun onRight(): InputResult = move(1, alongCards = true)
 
         override fun onConfirm(): InputResult {
             val state = _uiState.value
@@ -364,5 +465,7 @@ class RunningAppsViewModel @Inject constructor(
     private companion object {
         const val REFRESH_INTERVAL_MS = 3_000L
         const val KB_PER_MB = 1024L
+        const val CLOSE_TIMEOUT_MS = 20_000L
+        const val CLOSE_POLL_MS = 250L
     }
 }

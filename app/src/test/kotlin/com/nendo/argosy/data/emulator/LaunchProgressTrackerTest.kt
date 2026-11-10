@@ -4,6 +4,8 @@ import com.nendo.argosy.domain.model.LaunchFailure
 import com.nendo.argosy.domain.model.LaunchPromptOption
 import com.nendo.argosy.domain.model.LaunchRecap
 import com.nendo.argosy.domain.model.LaunchStep
+import com.nendo.argosy.domain.model.MakeRoomCandidate
+import com.nendo.argosy.domain.model.MakeRoomStage
 import com.nendo.argosy.domain.model.SyncProgress
 import kotlinx.coroutines.async
 import kotlinx.coroutines.test.TestScope
@@ -81,6 +83,65 @@ class LaunchProgressTrackerTest {
         tracker.answer(LaunchPromptOption.RESTORE_SERVER)
 
         assertEquals(LaunchPromptOption.RESTORE_SERVER, answer.await())
+    }
+
+    private val makeRoom = LaunchStep.MakeRoom(
+        launchingTitle = "Game",
+        candidates = listOf(
+            MakeRoomCandidate(
+                taskId = 7,
+                slotIndex = 1,
+                gameId = 2L,
+                title = "Open",
+                snapshotPath = null,
+                snapshotTakenAtMillis = 0L,
+                lastSavedAtMillis = null
+            )
+        ),
+        initialFocus = 0,
+        stage = MakeRoomStage.CHOOSE,
+        chosenTaskId = null
+    )
+
+    @Test
+    fun `choosing a game to close returns its task`() = runTest {
+        val tracker = tracker()
+        val ticket = tracker.begin(1L, "Game")!!
+        val chosen = async { ticket.chooseGameToClose(makeRoom) }
+        runCurrent()
+
+        assertEquals(makeRoom, tracker.progress.value?.step)
+        tracker.closeToMakeRoom(7)
+
+        assertEquals(7, chosen.await())
+    }
+
+    @Test
+    fun `cancelling the make-room question returns no task`() = runTest {
+        val tracker = tracker()
+        val ticket = tracker.begin(1L, "Game")!!
+        val chosen = async { ticket.chooseGameToClose(makeRoom) }
+        runCurrent()
+
+        tracker.cancel()
+
+        assertNull(chosen.await())
+        assertTrue(ticket.isCancelled)
+    }
+
+    @Test
+    fun `a prompt answer does not answer the make-room question`() = runTest {
+        val tracker = tracker()
+        val ticket = tracker.begin(1L, "Game")!!
+        val chosen = async { ticket.chooseGameToClose(makeRoom) }
+        runCurrent()
+
+        tracker.answer(LaunchPromptOption.CLOSE_AND_LAUNCH)
+        runCurrent()
+
+        assertFalse(chosen.isCompleted)
+        tracker.cancel()
+        assertNull(chosen.await())
     }
 
     @Test

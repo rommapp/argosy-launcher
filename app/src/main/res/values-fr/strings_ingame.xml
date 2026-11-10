@@ -74,6 +74,11 @@
     <string name="ingame_autorestore_title">Reprendre depuis un état de sauvegarde ?</string>
     <string name="ingame_autorestore_confirm">Oui</string>
     <string name="ingame_autorestore_decline">Non</string>
+    <string name="ingame_return_title">Revenir à Argosy ?</string>
+    <string name="ingame_return_message_keeps_open">Le jeu reste ouvert en arrière-plan.</string>
+    <string name="ingame_return_message_closes">Le jeu sera sauvegardé puis fermé.</string>
+    <string name="ingame_return_message_netplay">Votre session netplay prendra fin, et le jeu sera sauvegardé puis fermé.</string>
+    <string name="ingame_return_confirm">Revenir</string>
 
     <string name="ingame_achievement_hardcore_heading">HARDCORE DÉBLOQUÉ</string>
     <string name="ingame_achievement_heading">SUCCÈS DÉBLOQUÉ</string>

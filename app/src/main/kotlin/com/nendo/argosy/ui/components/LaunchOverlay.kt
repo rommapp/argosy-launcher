@@ -46,6 +46,7 @@ import com.nendo.argosy.ui.components.launch.LaunchHostSignal
 import com.nendo.argosy.ui.components.launch.LaunchQuestionCard
 import com.nendo.argosy.ui.components.launch.LaunchQuestionChoice
 import com.nendo.argosy.ui.components.launch.LaunchVeil
+import com.nendo.argosy.ui.components.launch.MakeRoomContent
 import com.nendo.argosy.ui.components.launch.darkensForLaunch
 import com.nendo.argosy.ui.components.launch.mirrorsToPresentation
 import com.nendo.argosy.ui.components.launch.opensOnSurface
@@ -136,6 +137,8 @@ fun LaunchOverlay(
         onAnswer = viewModel::answer,
         onCancel = { viewModel.cancel() },
         onRecapCurrent = viewModel::recapCurrent,
+        onMakeRoomTap = viewModel::tapMakeRoomCard,
+        onMakeRoomClose = viewModel::closeFocusedToMakeRoom,
         modifier = modifier
     )
 }
@@ -160,6 +163,8 @@ fun LaunchOverlayMirror(modifier: Modifier = Modifier) {
             val count = (tracker.progress.value?.step as? LaunchStep.Recap)?.recap?.unlocks?.size
             if (count != null) cursorStore.centered(index, count)
         },
+        onMakeRoomTap = {},
+        onMakeRoomClose = {},
         modifier = modifier
     )
 }
@@ -226,6 +231,8 @@ private fun LaunchOverlayContent(
     onAnswer: (LaunchPromptOption) -> Unit,
     onCancel: () -> Unit,
     onRecapCurrent: (Int) -> Unit,
+    onMakeRoomTap: (Int) -> Unit,
+    onMakeRoomClose: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var lastShown by remember { mutableStateOf<LaunchProgress?>(null) }
@@ -272,6 +279,13 @@ private fun LaunchOverlayContent(
                     question = step,
                     focusIndex = promptFocus,
                     onAnswer = onAnswer,
+                    onCancel = onCancel
+                )
+                is LaunchStep.MakeRoom -> MakeRoomContent(
+                    step = step,
+                    focusIndex = promptFocus,
+                    onTapCard = onMakeRoomTap,
+                    onClose = onMakeRoomClose,
                     onCancel = onCancel
                 )
                 is LaunchStep.Recap -> if (rememberRecapFullCardSurface() == surface) {
@@ -372,9 +386,6 @@ private fun RunningGameContent(
 ) {
     val runningTitle = question.runningGameTitle
     val (title, message) = when (question.kind) {
-        RunningGameQuestion.GAME_OPEN ->
-            stringResource(R.string.ui_launch_overlay_running_open_title, runningTitle ?: question.emulatorName) to
-                stringResource(R.string.ui_launch_overlay_running_open_message)
         RunningGameQuestion.EMULATOR_BUSY ->
             stringResource(R.string.ui_launch_overlay_running_busy_title, question.emulatorName) to
                 if (runningTitle != null) {

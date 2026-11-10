@@ -175,6 +175,18 @@
     <!-- Declining button on that prompt. -->
     <string name="ingame_autorestore_decline">No</string>
 
+    <!-- Heading of the prompt the controller's guide button opens during a game, offering to
+         go back to the launcher. Argosy is the app name. -->
+    <string name="ingame_return_title">Return to Argosy?</string>
+    <!-- Body of that prompt when the game keeps running in the background. -->
+    <string name="ingame_return_message_keeps_open">The game stays open in the background.</string>
+    <!-- Body of that prompt when going back closes the game. -->
+    <string name="ingame_return_message_closes">The game will save and close.</string>
+    <!-- Body of that prompt during a netplay session, which going back always ends. -->
+    <string name="ingame_return_message_netplay">Your netplay session will end and the game will save and close.</string>
+    <!-- Accepting button on that prompt. -->
+    <string name="ingame_return_confirm">Return</string>
+
     <!-- Heading of the pop-up for an achievement earned under the strict RetroAchievements
          mode. Rendered in caps in English. -->
     <string name="ingame_achievement_hardcore_heading">HARDCORE UNLOCKED</string>

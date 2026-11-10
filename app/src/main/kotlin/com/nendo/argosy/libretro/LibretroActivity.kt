@@ -65,6 +65,7 @@ import com.nendo.argosy.data.emulator.LaunchOrigin
 import com.nendo.argosy.data.emulator.PlaySessionTracker
 import com.nendo.argosy.data.repository.SaveCacheManager
 import com.nendo.argosy.hardware.AmbientLedManager
+import com.nendo.argosy.hardware.SystemHotkeyDetector
 import com.nendo.argosy.data.local.dao.AchievementDao
 import com.nendo.argosy.data.local.dao.CheatDao
 import com.nendo.argosy.data.local.dao.GameDao
@@ -139,6 +140,8 @@ import com.nendo.argosy.ui.theme.GRIP_RESERVE_MIN_PERCENT
 import com.nendo.argosy.ui.theme.resolveGripReserveFraction
 import com.nendo.argosy.data.preferences.BuiltinEmulatorSettings
 import com.nendo.argosy.util.AppPaths
+import com.nendo.argosy.util.SafeCoroutineScope
+import com.nendo.argosy.data.emulator.background.TaskSnapshots
 import com.nendo.argosy.util.fixedRequest
 import com.nendo.argosy.util.hideSystemBars
 import com.nendo.argosy.util.installImmersiveMode
@@ -172,7 +175,7 @@ import java.io.File
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class LibretroActivity : ComponentActivity() {
+open class LibretroActivity : ComponentActivity() {
 
     private var languageTag: String = com.nendo.argosy.core.locale.LocaleHelper.SYSTEM_LANGUAGE_TAG
 
@@ -274,6 +277,8 @@ class LibretroActivity : ComponentActivity() {
     private var saveWrittenAt by mutableStateOf(0L)
     private var backHoldJob: Job? = null
     private var backHoldFired = false
+    private var guideHoldJob: Job? = null
+    private var guideHoldFired = false
     private lateinit var romPath: String
 
     private lateinit var saveStateManager: SaveStateManager
@@ -352,6 +357,8 @@ class LibretroActivity : ComponentActivity() {
     private var launchOrigin = LaunchOrigin.INTERNAL
     private var playSessionOpened = false
     private var ownLiveGame: LiveGame? = null
+    private val slotIndex: Int by lazy { com.nendo.argosy.libretro.slot.GameSlots.activities.indexOf(javaClass) + 1 }
+    private lateinit var sessionLink: com.nendo.argosy.libretro.slot.GameSessionLink
     private var keepsGameOpen = false
     private var statesSupported = true
     private val stateSupportChecked = kotlinx.coroutines.CompletableDeferred<Unit>()
@@ -360,6 +367,9 @@ class LibretroActivity : ComponentActivity() {
     private var menuWrapMode = com.nendo.argosy.data.preferences.MenuWrapMode.HARD_STOP
     private var autoRestorePromptVisible by mutableStateOf(false)
     private var autoRestorePromptFocusIndex by mutableStateOf(0)
+    private var returnPromptVisible by mutableStateOf(false)
+    private var returnPromptFocusIndex by mutableStateOf(0)
+    private var leavingForHome by mutableStateOf(false)
 
     private var stateManagerFocusIndex by mutableStateOf(0)
     private var stateManagerViewMode by mutableStateOf(StateManagerViewMode.SPLIT)
@@ -447,11 +457,21 @@ class LibretroActivity : ComponentActivity() {
 
     private val isAnyMenuOpen: Boolean
         get() = menuVisible || shaderChainEditorVisible || frameEditorVisible || autoRestorePromptVisible || discMenuVisible ||
-            seatPromptVisible || quickPanelOpen ||
+            seatPromptVisible || returnPromptVisible || leavingForHome || quickPanelOpen ||
             speedrunPickerVisible || readerKind != null || isClosing || netplay.isAnyDialogVisible
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        sessionLink = if (slotIndex > 0) {
+            com.nendo.argosy.libretro.slot.RemoteGameSessionLink(
+                this,
+                slotIndex,
+                onCloseRequested = ::saveAndCloseForHost,
+                onGuideKey = ::onSystemGuideKey
+            ).also { it.connect() }
+        } else {
+            com.nendo.argosy.libretro.slot.LocalGameSessionLink(playSessionTracker, lifecycleScope, ::onSystemGuideKey)
+        }
         liveInstances.incrementAndGet()
         Log.d(TAG, "onCreate: savedInstanceState=${savedInstanceState != null}")
         allowContentIntoDisplayCutout()
@@ -542,6 +562,16 @@ class LibretroActivity : ComponentActivity() {
         platformId = game?.platformId ?: -1L
         platformSlug = intent.getStringExtra(EXTRA_PLATFORM_SLUG)?.takeIf { it.isNotBlank() }
             ?: game?.platformSlug ?: ""
+        ownLiveGame?.let { live ->
+            (sessionLink as? com.nendo.argosy.libretro.slot.RemoteGameSessionLink)?.register(
+                taskId = taskId,
+                gameId = live.gameId,
+                variantFileId = live.variantFileId,
+                platformSlug = platformSlug,
+                startedAtMillis = live.startedAtMillis,
+                hardcore = live.hardcore
+            )
+        }
         activeSaveChannel = kotlinx.coroutines.runBlocking {
             activeSaveRepository.getActiveChannel(gameId)
         }
@@ -693,7 +723,7 @@ class LibretroActivity : ComponentActivity() {
                 if (confirmed == hardcoreConfirmed) return@collect
                 hardcoreConfirmed = confirmed
                 Log.d(TAG, "[Startup] gameId=$gameId, hardcore confirmed=$confirmed (requested=$hardcoreMode)")
-                playSessionTracker.updateSessionHardcore(gameId, confirmed)
+                sessionLink.updateHardcore(gameId, confirmed)
                 val sramLoaded = ::retroView.isInitialized && !retroView.sramLoadFailed
                 if (confirmed && casualSaveInHardcore && sramLoaded) {
                     inGameMessage = getString(R.string.ingame_libretro_casual_save_in_hardcore)
@@ -729,7 +759,12 @@ class LibretroActivity : ComponentActivity() {
         inGameDocuments.load(gameId)
         variantFileId = intent.getLongExtra(EXTRA_VARIANT_FILE_ID, -1L)
         if (gameId != -1L) {
-            ownLiveGame = LiveGame(gameId, variantFileId.takeIf { it >= 0 }).also { liveGame = it }
+            ownLiveGame = LiveGame(
+                gameId = gameId,
+                variantFileId = variantFileId.takeIf { it >= 0 },
+                startedAtMillis = System.currentTimeMillis(),
+                hardcore = false
+            ).also { liveGame = it }
         }
         discPaths =intent.getStringExtra(EXTRA_DISC_M3U_PATH)
             ?.let { M3uManager.parseAllDiscs(File(it)) } ?: emptyList()
@@ -875,7 +910,7 @@ class LibretroActivity : ComponentActivity() {
             snapshotFlow { isAnyMenuOpen }.collect { open -> if (open) releaseCoreHeldKeys() }
         }
         lifecycleScope.launch {
-            playSessionTracker.saveWrites.collect {
+            sessionLink.saveWrites.collect {
                 val now = System.currentTimeMillis()
                 if (now - saveWrittenAt > SAVE_INDICATOR_MERGE_MS) saveWrittenAt = now
             }
@@ -1282,7 +1317,7 @@ class LibretroActivity : ComponentActivity() {
     private fun rememberHudState(): com.nendo.argosy.ui.components.InGameStatusHudState {
         val settings = touchSettingsState
         val battery = com.nendo.argosy.ui.components.rememberBatteryState().value
-        val sessionStart = playSessionTracker.activeSession.collectAsState().value?.startTime
+        val sessionStart = sessionLink.sessionStart.collectAsState().value
         var nowMs by androidx.compose.runtime.remember { mutableLongStateOf(System.currentTimeMillis()) }
         var nowRealtimeMs by androidx.compose.runtime.remember {
             mutableLongStateOf(android.os.SystemClock.elapsedRealtime())
@@ -1807,6 +1842,24 @@ class LibretroActivity : ComponentActivity() {
                         drawsOwnFooter = true
                     )
                 }
+                if (returnPromptVisible) {
+                    activeMenuHandler = returnPromptInputHandler
+                }
+                com.nendo.argosy.ui.primitives.ArgosyConfirmModal(
+                    visible = returnPromptVisible,
+                    title = stringResource(R.string.ingame_return_title),
+                    message = stringResource(
+                        when {
+                            netplay.inSession -> R.string.ingame_return_message_netplay
+                            keepsGameOpen -> R.string.ingame_return_message_keeps_open
+                            else -> R.string.ingame_return_message_closes
+                        }
+                    ),
+                    confirmLabel = stringResource(R.string.ingame_return_confirm),
+                    onConfirm = ::returnToArgosy,
+                    onDismiss = ::dismissReturnPrompt,
+                    focusedIndex = returnPromptFocusIndex
+                )
                 if (!isAnyMenuOpen) {
                     activeMenuHandler = null
                 }
@@ -2601,7 +2654,7 @@ class LibretroActivity : ComponentActivity() {
     private fun reportNewlyWrittenSaves() {
         if (coreDestroyed || isGuestJoinedSession) return
         if (saveStateManager.takeNewlyWrittenSaves()) {
-            playSessionTracker.reportSaveWritten()
+            sessionLink.reportSaveWritten()
             captureSaveScreenshot()
         }
     }
@@ -2783,16 +2836,7 @@ class LibretroActivity : ComponentActivity() {
                             }
                             coreDestroyed = true
                             retroView.destroyNative()
-                            try {
-                                playSessionTracker.cacheCurrentSessionForQuit()
-                            } catch (e: Exception) {
-                                Log.w(TAG, "Pre-quit save cache failed", e)
-                            }
-                            try {
-                                playSessionTracker.cacheCurrentSessionStatesForQuit()
-                            } catch (e: Exception) {
-                                Log.w(TAG, "Pre-quit state cache failed", e)
-                            }
+                            sessionLink.cacheForQuit()
                         }
                     } finally {
                         finish()
@@ -3469,9 +3513,103 @@ class LibretroActivity : ComponentActivity() {
             if (event.repeatCount == 0) startBackHold()
             return true
         }
-        if (keyCode == KeyEvent.KEYCODE_BUTTON_MODE) return true
+        if (keyCode == KeyEvent.KEYCODE_BUTTON_MODE) {
+            if (event.repeatCount == 0) startGuideHold()
+            return true
+        }
 
         return super.onKeyDown(keyCode, event)
+    }
+
+    private val backgroundsOnReturn: Boolean
+        get() = keepsGameOpen && !netplay.inSession
+
+    private fun onSystemGuideKey(pressed: Boolean) {
+        if (pressed) startGuideHold() else releaseGuideHold()
+    }
+
+    private fun startGuideHold() {
+        guideHoldJob?.cancel()
+        guideHoldFired = false
+        guideHoldJob = lifecycleScope.launch {
+            delay(SystemHotkeyDetector.GUIDE_HOLD_MS)
+            guideHoldFired = true
+            onGuideHeld()
+        }
+    }
+
+    private fun releaseGuideHold(): Boolean {
+        val job = guideHoldJob ?: return false
+        job.cancel()
+        guideHoldJob = null
+        if (!guideHoldFired && !isAnyMenuOpen) showReturnPrompt()
+        return true
+    }
+
+    private fun onGuideHeld() {
+        if (isAnyMenuOpen) return
+        if (backgroundsOnReturn) leaveForArgosy(openRunning = true) else showReturnPrompt()
+    }
+
+    private fun showReturnPrompt() {
+        if (!netplay.inSession) {
+            menuOpenedAtMs = System.currentTimeMillis()
+            pauseForMenu()
+        }
+        returnPromptFocusIndex = 0
+        returnPromptVisible = true
+    }
+
+    private fun dismissReturnPrompt() {
+        returnPromptVisible = false
+    }
+
+    private fun returnToArgosy() {
+        returnPromptVisible = false
+        if (!backgroundsOnReturn) {
+            handleMenuAction(InGameMenuAction.Quit)
+            return
+        }
+        leaveForArgosy(openRunning = false)
+    }
+
+    private fun leaveForArgosy(openRunning: Boolean) {
+        leavingForHome = true
+        lifecycleScope.launch {
+            delay(com.nendo.argosy.ui.theme.Motion.durationDrawer / 2 + PROMPT_CLEAR_MARGIN_MS)
+            if (isFinishing) return@launch
+            val home = com.nendo.argosy.ArgosyHomeIntent.create(this@LibretroActivity, openRunning)
+            runCatching { startActivity(home) }.onFailure {
+                leavingForHome = false
+                Log.w(TAG, "Argosy home could not be shown: ${it.message}")
+            }
+        }
+    }
+
+    private val returnPromptInputHandler = object : InputHandler {
+        override fun onLeft(): InputResult {
+            returnPromptFocusIndex = 0
+            return InputResult.HANDLED
+        }
+
+        override fun onRight(): InputResult {
+            returnPromptFocusIndex = 1
+            return InputResult.HANDLED
+        }
+
+        override fun onConfirm(): InputResult {
+            if (returnPromptFocusIndex == 1) returnToArgosy() else dismissReturnPrompt()
+            return InputResult.HANDLED
+        }
+
+        override fun onBack(): InputResult {
+            dismissReturnPrompt()
+            return InputResult.HANDLED
+        }
+
+        override fun onUp(): InputResult = InputResult.HANDLED
+        override fun onDown(): InputResult = InputResult.HANDLED
+        override fun onMenu(): InputResult = InputResult.HANDLED
     }
 
     private fun startBackHold() {
@@ -3510,6 +3648,7 @@ class LibretroActivity : ComponentActivity() {
 
     override fun onKeyUp(keyCode: Int, event: KeyEvent): Boolean {
         if (keyCode == KeyEvent.KEYCODE_BACK && releaseBackHold()) return true
+        if (keyCode == KeyEvent.KEYCODE_BUTTON_MODE && releaseGuideHold()) return true
         if (isAnyMenuOpen) return super.onKeyUp(keyCode, event)
 
         if (deferredCoreKeys.release(keyCode, event)) return true
@@ -3545,21 +3684,42 @@ class LibretroActivity : ComponentActivity() {
 
     private fun openPlaySession(isNewGame: Boolean) {
         playSessionOpened = true
-        playSessionTracker.startSession(
-            gameId,
-            EmulatorRegistry.BUILTIN_PACKAGE,
-            coreName,
-            hardcoreConfirmed,
-            isNewGame,
-            isNetplayGuest = isGuestJoinedSession,
-            variantFileId = variantFileId.takeIf { it >= 0 },
-            origin = launchOrigin
+        ownLiveGame?.let { own ->
+            val updated = own.copy(hardcore = hardcoreConfirmed)
+            if (liveGame === own) liveGame = updated
+            ownLiveGame = updated
+        }
+        sessionLink.startSession(
+            com.nendo.argosy.libretro.slot.SessionStartRequest(
+                gameId = gameId,
+                coreName = coreName,
+                isHardcore = hardcoreConfirmed,
+                isNewGame = isNewGame,
+                isNetplayGuest = isGuestJoinedSession,
+                variantFileId = variantFileId.takeIf { it >= 0 },
+                origin = launchOrigin
+            )
         )
+    }
+
+    private fun saveAndCloseForHost() {
+        val onScreen = lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)
+        if (!onScreen && slotIndex > 0) {
+            sessionLink.endSessionIfOwned(gameId, skipSaveSync = isGuestJoinedSession)
+            sessionLink.release()
+            android.os.Process.killProcess(android.os.Process.myPid())
+            return
+        }
+        if (coreDestroyed || isClosing || !onScreen) {
+            finish()
+            return
+        }
+        handleMenuAction(InGameMenuAction.Quit)
     }
 
     private fun reopenPlaySessionIfEnded() {
         if (!playSessionOpened || gameId == -1L || isFinishing) return
-        if (playSessionTracker.activeSession.value != null) return
+        if (sessionLink.hasActiveSession()) return
         Log.d(TAG, "Game returned after its session ended, opening a new session")
         com.nendo.argosy.DualScreenManagerHolder.instance?.setEmulatorDisplay(currentDisplayId())
         openPlaySession(isNewGame = false)
@@ -3573,8 +3733,9 @@ class LibretroActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        leavingForHome = false
         reopenPlaySessionIfEnded()
-        playSessionTracker.onBuiltInGameResumed()
+        sessionLink.onResumed()
         refreshKeepsGameOpen()
         autoSaveStateCaptured = false
         window.hideSystemBars()
@@ -3722,7 +3883,7 @@ class LibretroActivity : ComponentActivity() {
 
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
-        if (keepsGameOpen) return
+        if (backgroundsOnReturn) return
         com.nendo.argosy.DualScreenManagerHolder.instance?.onSessionChanged(-1L)
         finish()
     }
@@ -3743,7 +3904,7 @@ class LibretroActivity : ComponentActivity() {
     }
 
     override fun onPause() {
-        playSessionTracker.onBuiltInGamePaused()
+        sessionLink.onPaused()
         gyroAim.stop()
         releaseCoreHeldKeys()
         hideSecondScreen()
@@ -3768,6 +3929,7 @@ class LibretroActivity : ComponentActivity() {
                 !(::netplay.isInitialized && netplay.inSession)
             ) {
                 saveStateManager.saveSram(retroView)
+                captureFrameOrNull()?.let { persistPauseFrame(it, touchBackdrop = false) }
                 retroView.onPause()
                 super.onPause()
                 return
@@ -3778,7 +3940,7 @@ class LibretroActivity : ComponentActivity() {
                 saveStateManager.saveSram(retroView)
             }
             if (pauseFrame != null) {
-                cacheTouchBackdrop(pauseFrame)
+                persistPauseFrame(pauseFrame, touchBackdrop = true)
             }
             if (isFinishing && !coreDestroyed) {
                 coreDestroyed = true
@@ -3808,8 +3970,10 @@ class LibretroActivity : ComponentActivity() {
 
     private fun captureFrameOrNull(): Bitmap? = try { retroView.captureRawFrame() } catch (_: Exception) { null }
 
-    private fun cacheTouchBackdrop(bmp: Bitmap) {
-        if (platformSlug.isBlank()) {
+    private fun persistPauseFrame(bmp: Bitmap, touchBackdrop: Boolean) {
+        val backdropSlug = platformSlug.takeIf { touchBackdrop && it.isNotBlank() }
+        val resumeTaskId = taskId.takeIf { !isFinishing }
+        if (backdropSlug == null && resumeTaskId == null) {
             bmp.recycle()
             return
         }
@@ -3817,7 +3981,8 @@ class LibretroActivity : ComponentActivity() {
         val ctx = applicationContext
         lifecycleScope.launch(Dispatchers.IO) {
             try {
-                com.nendo.argosy.libretro.touch.TouchBackdropCache.save(ctx, platformSlug, orientation, bmp)
+                resumeTaskId?.let { TaskSnapshots.saveGameFrame(ctx, it, bmp) }
+                backdropSlug?.let { com.nendo.argosy.libretro.touch.TouchBackdropCache.save(ctx, it, orientation, bmp) }
             } finally {
                 bmp.recycle()
             }
@@ -4081,14 +4246,13 @@ class LibretroActivity : ComponentActivity() {
         }
         if (::netplay.isInitialized) netplay.shutdown()
         if (::achievementBridge.isInitialized) achievementBridge.destroy()
-        val ownsActiveSession = playSessionTracker.activeSession.value?.let {
-            it.gameId == gameId && it.emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE
-        } ?: false
-        if (isFinishing && gameId != -1L && ownsActiveSession) {
-            com.nendo.argosy.DualScreenManagerHolder.instance
-                ?.onSessionChanged(-1L)
-            playSessionTracker.endSessionInBackground(skipSaveSync = isGuestJoinedSession)
+        if (isFinishing) {
+            sessionLink.endSessionIfOwned(gameId, skipSaveSync = isGuestJoinedSession)
+            val ctx = applicationContext
+            val finishedTaskId = taskId
+            SafeCoroutineScope(Dispatchers.IO, TAG).launch { TaskSnapshots.deleteGameFrame(ctx, finishedTaskId) }
         }
+        sessionLink.release()
         super.onDestroy()
     }
 
@@ -4164,7 +4328,12 @@ class LibretroActivity : ComponentActivity() {
 
         private val liveInstances = java.util.concurrent.atomic.AtomicInteger(0)
 
-        data class LiveGame(val gameId: Long, val variantFileId: Long?)
+        data class LiveGame(
+            val gameId: Long,
+            val variantFileId: Long?,
+            val startedAtMillis: Long,
+            val hardcore: Boolean
+        )
 
         /**
          * Whether a game screen exists in this process. A task left in recents after the process
@@ -4186,6 +4355,7 @@ class LibretroActivity : ComponentActivity() {
         private const val SAVE_WRITE_CHECK_INTERVAL_MS = 5_000L
         private const val SAVE_INDICATOR_MERGE_MS = 5_000L
         private const val BACK_HOLD_MS = 500L
+        private const val PROMPT_CLEAR_MARGIN_MS = 50L
 
         private const val FPS_SAMPLE_INTERVAL_MS = 1_000L
 

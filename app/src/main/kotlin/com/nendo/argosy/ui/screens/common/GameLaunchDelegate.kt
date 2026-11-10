@@ -103,6 +103,7 @@ data class MemcardPickerState(
 )
 
 class GameLaunchDelegate @Inject constructor(
+    private val slotRegistry: com.nendo.argosy.libretro.slot.SlotRegistry,
     private val application: Application,
     private val gameRepository: GameRepository,
     private val emulatorResolver: EmulatorResolver,
@@ -215,19 +216,13 @@ class GameLaunchDelegate @Inject constructor(
         ticket: LaunchProgressTracker.Ticket,
         emulatorPackage: String?,
         alreadyStopped: String?,
-        noTrackedSession: Boolean
+        noTrackedSession: Boolean,
+        platformSlug: String?
     ): Boolean {
         if (emulatorPackage == null || emulatorPackage == alreadyStopped) return true
         if (emulatorPackage == application.packageName) return true
         if (emulatorPackage == EmulatorRegistry.BUILTIN_PACKAGE) {
-            return when (backgroundGameLaunch.clearForLaunch(ticket, emulatorPackage)) {
-                BackgroundGameLaunch.Clear.CANCELLED -> false
-                BackgroundGameLaunch.Clear.CLOSED -> {
-                    delay(EMULATOR_KILL_DELAY_MS)
-                    true
-                }
-                BackgroundGameLaunch.Clear.NOT_RUNNING -> true
-            }
+            return backgroundGameLaunch.makeRoomForBuiltIn(ticket, platformSlug)
         }
         val requiresKill = noTrackedSession && emulatorResolver.resolveEmulatorId(emulatorPackage)
             ?.let { EmulatorRegistry.getById(it) }?.launchConfig?.requiresEmulatorKill == true
@@ -367,7 +362,14 @@ class GameLaunchDelegate @Inject constructor(
                 }
 
                 val emulatorId = emulatorPackage?.let { emulatorResolver.resolveEmulatorId(it) }
-                if (!emulatorClearedForLaunch(ticket, emulatorPackage, stoppedPackage, noTrackedSession = activeSession == null)) {
+                if (!emulatorClearedForLaunch(
+                        ticket,
+                        emulatorPackage,
+                        stoppedPackage,
+                        noTrackedSession = activeSession == null,
+                        platformSlug = game?.platformSlug
+                    )
+                ) {
                     onLaunchFailed()
                     return@launch
                 }
@@ -650,8 +652,17 @@ class GameLaunchDelegate @Inject constructor(
                 ?.let { pad ->
                     intent.putExtra(LibretroActivity.EXTRA_LAUNCH_CONTROLLER_ID, controllerIdOf(pad))
                 }
+            if (launchMode?.isHardcore != true) placeInSlot(intent)
         }
         return intent
+    }
+
+    private fun placeInSlot(intent: Intent) {
+        val platformSlug = intent.getStringExtra(LibretroActivity.EXTRA_PLATFORM_SLUG)
+        val slot = slotRegistry.freeSlotFor(platformSlug) ?: return
+        val activity = com.nendo.argosy.libretro.slot.GameSlots.activities[slot - 1]
+        intent.setClass(application, activity)
+        android.util.Log.d("GameLaunchDelegate", "Built-in game goes to slot $slot (${activity.simpleName})")
     }
 
     fun selectDisc(scope: CoroutineScope, discPath: String) {
@@ -800,7 +811,8 @@ class GameLaunchDelegate @Inject constructor(
                     ticket,
                     emulatorResolver.getEmulatorPackageForGame(game.id, game.platformId, game.platformSlug),
                     stoppedPackage,
-                    noTrackedSession = activeSession == null
+                    noTrackedSession = activeSession == null,
+                    platformSlug = game.platformSlug
                 )
                 if (!cleared) {
                     callbacks.onLaunchFailed()

@@ -1078,8 +1078,12 @@
     <string name="common_game_confirm_hide_confirm">Ocultar</string>
     <string name="ui_quick_settings_stats_fan">Ventilador</string>
     <string name="ui_quick_settings_stats_battery">Bateria</string>
-    <string name="ui_launch_overlay_running_open_title">%1$s Ainda Está Aberto</string>
-    <string name="ui_launch_overlay_running_open_message">Iniciar outro jogo irá fechá-lo.</string>
+    <string name="ui_launch_overlay_makeroom_title">Abra espaço para %1$s</string>
+    <string name="ui_launch_overlay_makeroom_subtitle">Escolha um jogo para fechar. Ele salva antes.</string>
+    <string name="ui_launch_overlay_makeroom_saved">Salvo %1$s</string>
+    <string name="ui_launch_overlay_makeroom_close">Fechar</string>
+    <string name="ui_launch_overlay_makeroom_saving">Salvando</string>
+    <string name="ui_launch_overlay_makeroom_closed">Fechado</string>
     <string name="ui_quick_settings_orientation">Orientação</string>
     <string name="ui_quick_settings_orientation_auto">Auto</string>
     <string name="ui_quick_settings_orientation_landscape">Paisagem</string>

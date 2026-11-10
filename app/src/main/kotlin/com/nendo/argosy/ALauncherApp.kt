@@ -206,6 +206,10 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
     override fun onCreate() {
         super.onCreate()
         appScope.launch { userCertStore.initialize() }
+        if (com.nendo.argosy.libretro.slot.GameSlots.isSlotProcess) {
+            appScope.launch { applyStoredAbiOverride() }
+            return
+        }
         appScope.launch { com.nendo.argosy.util.RootShell.isAvailable }
         appScope.launch { socialSyncCoordinator.discardQueueWithoutSocialAccount() }
         appScope.launch { variantFileCleanup.runOnce() }
@@ -239,15 +243,7 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
         }
         lockScreenArtManager.start()
         appScope.launch {
-            val storedOverride = builtinPrefs.getArchitectureOverride().first()
-            if (storedOverride != null) {
-                if (LibretroBuildbot.isAbiCompatibleWithProcess(storedOverride)) {
-                    LibretroBuildbot.abiOverride = storedOverride
-                } else {
-                    android.util.Log.w("ALauncherApp", "Stored ABI override '$storedOverride' is incompatible with process bitness; clearing")
-                    builtinPrefs.setArchitectureOverride(null)
-                }
-            }
+            applyStoredAbiOverride()
             coreManager.migrateAbiIfNeeded()
             compatCoreCache.evictStale()
         }
@@ -267,6 +263,16 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
         appScope.launch { deleteRetiredSteamDownloadDirs() }
         appScope.launch { biosRepository.purgeRetiredFirmware() }
         syncPlatformSortOrders()
+    }
+
+    private suspend fun applyStoredAbiOverride() {
+        val storedOverride = builtinPrefs.getArchitectureOverride().first() ?: return
+        if (LibretroBuildbot.isAbiCompatibleWithProcess(storedOverride)) {
+            LibretroBuildbot.abiOverride = storedOverride
+        } else {
+            android.util.Log.w("ALauncherApp", "Stored ABI override '$storedOverride' is incompatible with process bitness; clearing")
+            builtinPrefs.setArchitectureOverride(null)
+        }
     }
 
     private fun deleteRetiredSteamDownloadDirs() {
@@ -325,6 +331,7 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
             .setWorkerFactory(workerFactory)
+            .setDefaultProcessName(packageName)
             .build()
 
     override fun newImageLoader(): ImageLoader {

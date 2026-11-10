@@ -27,6 +27,7 @@ class SystemHotkeyDetectorTest {
     private var otherAppInFront = true
     private var quickPanelAvailable = false
     private var quickPanelOpens = 0
+    private var runningOpens = 0
 
     private val detector = SystemHotkeyDetector(
         config = { config },
@@ -35,7 +36,8 @@ class SystemHotkeyDetectorTest {
         cancelHold = { task -> pending.removeAll { it.second === task } },
         perform = { performed += it },
         quickPanelAvailable = { quickPanelAvailable },
-        openQuickPanel = { quickPanelOpens++ }
+        openQuickPanel = { quickPanelOpens++ },
+        openRunning = { runningOpens++ }
     )
 
     private fun advanceTo(time: Long) {
@@ -174,16 +176,29 @@ class SystemHotkeyDetectorTest {
         advanceTo(3000)
 
         assertEquals(listOf(SystemHotkeyAction.HOME), performed)
+        assertEquals(0, runningOpens)
     }
 
     @Test
-    fun `a guide held for one second goes back and its release does nothing more`() {
+    fun `a guide released just short of one second still goes home`() {
+        assertTrue(down(guide, at = 0))
+        assertTrue(up(guide, at = 999))
+        advanceTo(3000)
+
+        assertEquals(listOf(SystemHotkeyAction.HOME), performed)
+        assertEquals(0, runningOpens)
+    }
+
+    @Test
+    fun `a guide held for one second opens running and its release does nothing more`() {
         assertTrue(down(guide, at = 0))
         advanceTo(1000)
+        assertEquals(1, runningOpens)
         assertTrue(detector.onKeyDown(guide, isRepeat = true))
         assertTrue(up(guide, at = 1500))
 
-        assertEquals(listOf(SystemHotkeyAction.BACK), performed)
+        assertTrue(performed.isEmpty())
+        assertEquals(1, runningOpens)
     }
 
     @Test
@@ -201,6 +216,7 @@ class SystemHotkeyDetectorTest {
         assertFalse(up(select, at = 3000))
 
         assertTrue(performed.isEmpty())
+        assertEquals(0, runningOpens)
     }
 
     @Test
@@ -218,6 +234,7 @@ class SystemHotkeyDetectorTest {
         assertFalse(up(select, at = 3100))
 
         assertTrue(performed.isEmpty())
+        assertEquals(0, runningOpens)
     }
 
     @Test

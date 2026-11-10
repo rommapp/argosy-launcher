@@ -72,7 +72,8 @@ object SystemHotkeyCombos {
 /**
  * Global Home, Back and quick panel from controller combos while another app is in front; true
  * marks a consumed event. While [quickPanelAvailable], the Back combo fires Back on release and
- * opens the quick panel once held for [BACK_COMBO_HOLD_MS].
+ * opens the quick panel once held for [BACK_COMBO_HOLD_MS]. A guide tap goes Home and a guide
+ * held for [GUIDE_HOLD_MS] calls [openRunning].
  */
 class SystemHotkeyDetector(
     private val config: () -> SystemHotkeyConfig,
@@ -81,7 +82,8 @@ class SystemHotkeyDetector(
     private val cancelHold: (Runnable) -> Unit,
     private val perform: (SystemHotkeyAction) -> Unit,
     private val quickPanelAvailable: () -> Boolean = { false },
-    private val openQuickPanel: () -> Unit = {}
+    private val openQuickPanel: () -> Unit = {},
+    private val openRunning: () -> Unit = {}
 ) {
     private val held = mutableSetOf<Int>()
     private val consumedUps = mutableSetOf<Int>()
@@ -106,7 +108,7 @@ class SystemHotkeyDetector(
 
     private val guideHold = Runnable {
         guideHoldFired = true
-        perform(SystemHotkeyAction.BACK)
+        openRunning()
     }
 
     fun onKeyDown(keyCode: Int, isRepeat: Boolean): Boolean {

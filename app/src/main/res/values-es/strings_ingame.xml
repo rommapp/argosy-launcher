@@ -74,6 +74,11 @@
     <string name="ingame_autorestore_title">¿Reanudar desde el estado guardado?</string>
     <string name="ingame_autorestore_confirm">Sí</string>
     <string name="ingame_autorestore_decline">No</string>
+    <string name="ingame_return_title">¿Volver a Argosy?</string>
+    <string name="ingame_return_message_keeps_open">El juego sigue abierto en segundo plano.</string>
+    <string name="ingame_return_message_closes">El juego se guardará y se cerrará.</string>
+    <string name="ingame_return_message_netplay">Tu sesión de netplay terminará y el juego se guardará y se cerrará.</string>
+    <string name="ingame_return_confirm">Volver</string>
 
     <string name="ingame_achievement_hardcore_heading">LOGRO HARDCORE DESBLOQUEADO</string>
     <string name="ingame_achievement_heading">LOGRO DESBLOQUEADO</string>

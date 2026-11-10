@@ -250,7 +250,7 @@
     <string name="settings_navigation_system_home_title">Домой</string>
     <string name="settings_navigation_system_home_subtitle">Удерживайте вместе 2 секунды. Нажатие кнопки Guide тоже ведёт домой</string>
     <string name="settings_navigation_system_back_title">Назад</string>
-    <string name="settings_navigation_system_back_subtitle">Удерживайте первые кнопки, затем нажмите последнюю. Удержание кнопки Guide 1 секунду тоже работает как Назад. В игре удержание комбинации 3 секунды открывает быструю панель</string>
+    <string name="settings_navigation_system_back_subtitle">Удерживайте первые кнопки, затем нажмите последнюю. В игре удержание комбинации 3 секунды открывает быструю панель</string>
     <string name="settings_navigation_system_combo_capture_prompt">Удерживайте 2 или 3 кнопки по порядку...</string>
 
     <!-- ===== Displays section ===== -->

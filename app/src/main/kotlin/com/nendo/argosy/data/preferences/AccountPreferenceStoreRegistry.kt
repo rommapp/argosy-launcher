@@ -2,7 +2,6 @@ package com.nendo.argosy.data.preferences
 
 import android.content.Context
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
@@ -37,12 +36,10 @@ class AccountPreferenceStoreRegistry(
         if (cached != null) {
             cached
         } else {
-            val store = PreferenceDataStoreFactory.create(
-                corruptionHandler = preferencesCorruptionHandler(),
+            val store = multiProcessPreferencesStore(
+                file = context.preferencesDataStoreFile(fileNameFor(rommUserId)),
                 scope = scope
-            ) {
-                context.preferencesDataStoreFile(fileNameFor(rommUserId))
-            }
+            )
             adoptLegacyValues(rommUserId, store)
             stores[rommUserId] = store
             store

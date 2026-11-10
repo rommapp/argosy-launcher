@@ -16,9 +16,11 @@ import android.view.Display
 import android.view.KeyEvent
 import android.view.accessibility.AccessibilityEvent
 import com.nendo.argosy.ArgosyActivity
+import com.nendo.argosy.ArgosyHomeIntent
 import com.nendo.argosy.DualScreenManagerHolder
 import com.nendo.argosy.data.emulator.EmulatorRegistry
 import com.nendo.argosy.data.emulator.PlaySessionTracker
+import com.nendo.argosy.libretro.slot.GuideKeyRouter
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
 import com.nendo.argosy.libretro.LibretroActivity
 import com.nendo.argosy.ui.quickpanel.QuickPanelOverlay
@@ -47,6 +49,7 @@ class FocusAccessibilityService : AccessibilityService() {
     private val handler = Handler(Looper.getMainLooper())
     @Volatile private var quickPanelEnabled = false
     @Volatile private var systemHotkeys = SystemHotkeyConfig.DISABLED
+    private var homeRoutedToGame = false
     private val foreground by lazy {
         ForegroundAppTracker(
             ownPackage = packageName,
@@ -69,7 +72,8 @@ class FocusAccessibilityService : AccessibilityService() {
             cancelHold = handler::removeCallbacks,
             perform = ::performSystemHotkey,
             quickPanelAvailable = ::filtersBack,
-            openQuickPanel = { quickPanelOverlay.show(gameDisplayId(), resultOwner = null) }
+            openQuickPanel = { quickPanelOverlay.show(gameDisplayId(), resultOwner = null) },
+            openRunning = ::openRunningScreen
         )
     )
 
@@ -119,8 +123,22 @@ class FocusAccessibilityService : AccessibilityService() {
         super.onDestroy()
     }
 
-    override fun onKeyEvent(event: KeyEvent): Boolean =
-        keyFilter.onKey(event.keyCode, event.action, event.repeatCount)
+    override fun onKeyEvent(event: KeyEvent): Boolean {
+        if (event.keyCode in HOME_KEYS && routesHomeToGame(event)) return true
+        return keyFilter.onKey(event.keyCode, event.action, event.repeatCount)
+    }
+
+    private fun routesHomeToGame(event: KeyEvent): Boolean = when (event.action) {
+        KeyEvent.ACTION_DOWN -> {
+            if (event.repeatCount == 0) homeRoutedToGame = GuideKeyRouter.deliver(pressed = true)
+            homeRoutedToGame
+        }
+        KeyEvent.ACTION_UP -> homeRoutedToGame.also { routed ->
+            homeRoutedToGame = false
+            if (routed) GuideKeyRouter.deliver(pressed = false)
+        }
+        else -> false
+    }
 
     private fun performSystemHotkey(action: SystemHotkeyAction) {
         val globalAction = when (action) {
@@ -128,6 +146,11 @@ class FocusAccessibilityService : AccessibilityService() {
             SystemHotkeyAction.BACK -> GLOBAL_ACTION_BACK
         }
         performGlobalAction(globalAction)
+    }
+
+    private fun openRunningScreen() {
+        runCatching { startActivity(ArgosyHomeIntent.create(this, openRunning = true)) }
+            .onFailure { Log.w(TAG, "Argosy running screen could not be shown: ${it.message}") }
     }
 
     private fun filtersBack(): Boolean {
@@ -189,6 +212,7 @@ class FocusAccessibilityService : AccessibilityService() {
     companion object {
         private const val TAG = "FocusA11y"
         private const val BACK_HOLD_MS = 500L
+        private val HOME_KEYS = setOf(KeyEvent.KEYCODE_HOME, KeyEvent.KEYCODE_MOVE_HOME)
 
         private val ARGOSY_INPUT_SURFACES = setOf(
             ArgosyActivity::class.java.name,

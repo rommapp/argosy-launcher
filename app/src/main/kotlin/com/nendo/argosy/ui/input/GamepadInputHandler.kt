@@ -7,6 +7,7 @@ import android.view.MotionEvent
 import com.nendo.argosy.core.input.ConnectedControllerTracker
 import com.nendo.argosy.core.input.VirtualPad
 import com.nendo.argosy.data.preferences.UserPreferencesRepository
+import com.nendo.argosy.hardware.SystemHotkeyDetector
 import com.nendo.argosy.util.SafeCoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -55,6 +56,7 @@ sealed interface GamepadEvent {
     data object RightStickLeft : GamepadEvent
     data object RightStickRight : GamepadEvent
     data object Home : GamepadEvent
+    data object LongHome : GamepadEvent
     data object LongConfirm : GamepadEvent
     data object LongSelect : GamepadEvent
 }
@@ -144,6 +146,7 @@ class GamepadInputHandler @Inject constructor(
             selectHoldJob?.cancel()
             selectModifier.reset()
             releaseBackPress()
+            releaseGuidePress()
             claimedShortcutKey = null
         }
     }
@@ -161,6 +164,8 @@ class GamepadInputHandler @Inject constructor(
     private var backPressClaimed = false
     private var backDeferred = false
     private var backDeferJob: Job? = null
+    private var guideDeferred = false
+    private var guideDeferJob: Job? = null
     private val longPressThresholdMs = 500L
 
     private val padDirections = mutableMapOf<Int, AxisDirectionTracker>()
@@ -278,6 +283,7 @@ class GamepadInputHandler @Inject constructor(
         val gamepadEvent = mapKeyToEvent(event.keyCode) ?: return false
 
         if (gamepadEvent == GamepadEvent.Back && handleBackPress(event)) return true
+        if (event.keyCode == KeyEvent.KEYCODE_BUTTON_MODE) return handleGuidePress(event)
 
         if (gamepadEvent == GamepadEvent.Confirm && event.action == KeyEvent.ACTION_DOWN) {
             if (event.repeatCount == 0) {
@@ -404,6 +410,35 @@ class GamepadInputHandler @Inject constructor(
         backDeferJob = null
         backPressClaimed = false
         backDeferred = false
+    }
+
+    private fun handleGuidePress(event: KeyEvent): Boolean {
+        when (event.action) {
+            KeyEvent.ACTION_DOWN -> if (event.repeatCount == 0) deferGuidePress()
+            KeyEvent.ACTION_UP -> {
+                val shortPress = guideDeferred
+                releaseGuidePress()
+                if (shortPress) emitWithDebounce(GamepadEvent.Home)
+            }
+        }
+        return true
+    }
+
+    private fun deferGuidePress() {
+        guideDeferJob?.cancel()
+        guideDeferred = true
+        guideDeferJob = scope.launch {
+            delay(SystemHotkeyDetector.GUIDE_HOLD_MS)
+            if (!guideDeferred) return@launch
+            guideDeferred = false
+            emitWithDebounce(GamepadEvent.LongHome)
+        }
+    }
+
+    private fun releaseGuidePress() {
+        guideDeferJob?.cancel()
+        guideDeferJob = null
+        guideDeferred = false
     }
 
     private fun trackSelectHold(action: Int, isRepeat: Boolean, holdArmed: Boolean) {

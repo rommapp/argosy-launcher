@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="running_drawer_title">正在运行</string>
-    <string name="running_header_title">正在运行</string>
+    <string name="running_drawer_title">继续游戏</string>
+    <string name="running_header_title">继续游戏</string>
     <string name="running_empty_title">没有其他正在运行的内容</string>
     <string name="running_row_memory">%1$d MB</string>
     <string name="running_row_screen">屏幕 %1$d</string>
@@ -16,4 +16,15 @@
     <string name="running_confirm_close_all_message">此列表中的所有应用都将停止。所有游戏中未保存的进度都将丢失。</string>
     <string name="running_confirm_close_all_confirm">全部关闭</string>
     <string name="running_notice_switch_failed">无法切换到%1$s</string>
+    <string name="running_card_time_hours_minutes">%1$dh %2$dm</string>
+    <string name="running_card_time_minutes_seconds">%1$dm %2$ds</string>
+    <string name="running_card_time_seconds">%1$ds</string>
+    <string name="running_card_saved">%1$s保存</string>
+    <string name="running_card_ra_hardcore">硬核</string>
+    <string name="running_card_saving">正在保存</string>
+    <string name="running_card_closed">已关闭</string>
+    <string name="running_friends_one">%1$s 正在玩</string>
+    <string name="running_friends_two">%1$s 和 %2$s 正在玩</string>
+    <string name="running_friends_three">%1$s、%2$s 和 %3$s 正在玩</string>
+    <string name="running_friends_many">%1$s、%2$s、%3$s 等人正在玩</string>
 </resources>

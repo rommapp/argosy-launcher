@@ -59,6 +59,7 @@ import com.nendo.argosy.core.notification.DownloadNotificationObserver
 import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.core.notification.SyncNotificationObserver
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -107,10 +108,12 @@ data class DrawerState(
     val downloadCount: Int = 0,
     val saveSyncAttentionCount: Int = 0,
     val pendingUpdateCount: Int = 0,
+    val runningCount: Int = 0,
     val navFocusIndex: Int = 0
 ) {
     fun badgeCountFor(route: String): Int? = when (route) {
         Screen.Downloads.route -> downloadCount
+        Screen.Running.route -> runningCount
         Screen.SaveSync.route -> saveSyncAttentionCount
         Screen.Settings.route -> pendingUpdateCount
         else -> 0
@@ -199,8 +202,11 @@ class ArgosyViewModel @Inject constructor(
     private val gameStartRouter: com.nendo.argosy.ui.screens.common.GameStartRouter,
     private val connectedControllerTracker: com.nendo.argosy.core.input.ConnectedControllerTracker,
     val apkInstallManager: com.nendo.argosy.data.update.ApkInstallManager,
-    val privilegedAccess: com.nendo.argosy.data.access.PrivilegedAccess
+    val privilegedAccess: com.nendo.argosy.data.access.PrivilegedAccess,
+    private val backgroundGames: com.nendo.argosy.data.emulator.background.BackgroundGames
 ) : ViewModel() {
+
+    private val runningCount = MutableStateFlow(0)
 
     suspend fun resolveDeepLinkLaunch(
         request: com.nendo.argosy.domain.model.DeepLinkRequest
@@ -373,7 +379,8 @@ class ArgosyViewModel @Inject constructor(
             ownedConflictCount(),
             preferencesRepository.userPreferences,
             mediaDownloadManager.activeDownload,
-            mediaDownloadManager.downloadQueue
+            mediaDownloadManager.downloadQueue,
+            runningCount
         )
     ) { values ->
         val connection = values[0] as ConnectionState
@@ -399,6 +406,7 @@ class ArgosyViewModel @Inject constructor(
             downloadCount = downloadCount,
             saveSyncAttentionCount = saveSyncAttentionCount,
             pendingUpdateCount = pendingUpdateCount,
+            runningCount = values[9] as Int,
             navFocusIndex = navIndex
         )
     }.stateIn(
@@ -558,6 +566,9 @@ class ArgosyViewModel @Inject constructor(
             romMRepository.checkConnection()
             syncCoordinator.processQueue()
             downloadManager.recheckStorageAndResume()
+        }
+        viewModelScope.launch(Dispatchers.IO) {
+            runningCount.value = backgroundGames.refresh().size
         }
     }
 

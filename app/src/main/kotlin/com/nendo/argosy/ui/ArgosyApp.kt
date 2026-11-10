@@ -233,6 +233,19 @@ fun ArgosyApp(
         navBackStackEntry?.let { dsm?.setPrimaryRoute(it.concreteRoute()) }
     }
 
+    val navigateFromDrawer: (String) -> Unit = remember {
+        { route ->
+            val current = navController.currentDestination?.route
+            if (route != current) {
+                navController.navigate(route) {
+                    popUpTo(Screen.Home.route) { saveState = true }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }
+        }
+    }
+
     val handleDeepLink: suspend (android.net.Uri) -> Unit = { uri ->
         android.util.Log.d("ArgosyApp", "Handling deep link: $uri")
         val showDeepLinkNotice: (Int) -> Unit = { messageRes ->
@@ -272,6 +285,11 @@ fun ArgosyApp(
                         navController.navigate(Screen.Apps.route) {
                             launchSingleTop = true
                         }
+                    }
+                }
+                com.nendo.argosy.ArgosyHomeIntent.RUNNING_DEEP_LINK_HOST -> {
+                    if (!uiState.isFirstRun && awaitNavGraph()) {
+                        navigateFromDrawer(Screen.Running.route)
                     }
                 }
                 "launch" -> {
@@ -400,19 +418,6 @@ fun ArgosyApp(
         when {
             uiState.isFirstRun -> Screen.FirstRun.route
             else -> Screen.Home.route
-        }
-    }
-
-    val navigateFromDrawer: (String) -> Unit = remember {
-        { route ->
-            val current = navController.currentDestination?.route
-            if (route != current) {
-                navController.navigate(route) {
-                    popUpTo(Screen.Home.route) { saveState = true }
-                    launchSingleTop = true
-                    restoreState = true
-                }
-            }
         }
     }
 
@@ -987,6 +992,14 @@ fun ArgosyApp(
                                 popUpTo(homeRoute) { inclusive = true }
                                 launchSingleTop = true
                             }
+                        }
+                    }
+                    GamepadEvent.LongHome -> {
+                        if (!uiState.isFirstRun) {
+                            if (isDrawerOpen) closeDrawer()
+                            if (isQuickSettingsOpen) closeQuickSettings()
+                            if (quickMenuState.isVisible) closeQuickMenu()
+                            navigateFromDrawer(Screen.Running.route)
                         }
                     }
                     else -> {}

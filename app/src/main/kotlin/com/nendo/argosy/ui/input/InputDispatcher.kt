@@ -264,7 +264,7 @@ class InputDispatcher(
             GamepadEvent.RightStickDown -> handler.onRightStickDown()
             GamepadEvent.RightStickLeft -> handler.onRightStickLeft()
             GamepadEvent.RightStickRight -> handler.onRightStickRight()
-            GamepadEvent.Home -> InputResult.UNHANDLED
+            GamepadEvent.Home, GamepadEvent.LongHome -> InputResult.UNHANDLED
             GamepadEvent.LongConfirm -> handler.onLongConfirm()
             GamepadEvent.LongSelect -> handler.onLongSelect()
         }

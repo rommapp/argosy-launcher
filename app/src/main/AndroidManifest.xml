@@ -278,6 +278,51 @@
             android:exported="false" />
 
         <activity
+            android:name=".libretro.slot.LibretroSlot1Activity"
+            android:process=":game1"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|density|uiMode|colorMode|keyboard|keyboardHidden|navigation|touchscreen|fontScale|fontWeightAdjustment|layoutDirection|locale|mcc|mnc"
+            android:screenOrientation="fullUser"
+            android:theme="@style/Theme.Argosy.Game"
+            android:taskAffinity=""
+            android:exported="false" />
+        <activity
+            android:name=".libretro.slot.LibretroSlot2Activity"
+            android:process=":game2"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|density|uiMode|colorMode|keyboard|keyboardHidden|navigation|touchscreen|fontScale|fontWeightAdjustment|layoutDirection|locale|mcc|mnc"
+            android:screenOrientation="fullUser"
+            android:theme="@style/Theme.Argosy.Game"
+            android:taskAffinity=""
+            android:exported="false" />
+        <activity
+            android:name=".libretro.slot.LibretroSlot3Activity"
+            android:process=":game3"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|density|uiMode|colorMode|keyboard|keyboardHidden|navigation|touchscreen|fontScale|fontWeightAdjustment|layoutDirection|locale|mcc|mnc"
+            android:screenOrientation="fullUser"
+            android:theme="@style/Theme.Argosy.Game"
+            android:taskAffinity=""
+            android:exported="false" />
+        <activity
+            android:name=".libretro.slot.LibretroSlot4Activity"
+            android:process=":game4"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|density|uiMode|colorMode|keyboard|keyboardHidden|navigation|touchscreen|fontScale|fontWeightAdjustment|layoutDirection|locale|mcc|mnc"
+            android:screenOrientation="fullUser"
+            android:theme="@style/Theme.Argosy.Game"
+            android:taskAffinity=""
+            android:exported="false" />
+        <activity
+            android:name=".libretro.slot.LibretroSlot5Activity"
+            android:process=":game5"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|density|uiMode|colorMode|keyboard|keyboardHidden|navigation|touchscreen|fontScale|fontWeightAdjustment|layoutDirection|locale|mcc|mnc"
+            android:screenOrientation="fullUser"
+            android:theme="@style/Theme.Argosy.Game"
+            android:taskAffinity=""
+            android:exported="false" />
+
+        <service
+            android:name=".libretro.slot.SlotHostService"
+            android:exported="false" />
+
+        <activity
             android:name=".ui.screens.player.PlayerActivity"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|density|uiMode|colorMode|keyboard|keyboardHidden|navigation|touchscreen|fontScale|fontWeightAdjustment"
             android:launchMode="singleTop"

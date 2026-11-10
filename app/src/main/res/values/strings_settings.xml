@@ -550,7 +550,7 @@
     <!-- Row title: the combo that acts as the Android Back button. Noun. -->
     <string name="settings_navigation_system_back_title">Back</string>
     <!-- Second line of that row. The guide button is the logo button in the middle of the controller. -->
-    <string name="settings_navigation_system_back_subtitle">Hold the first buttons, then press the last. Holding the guide button for 1 second also goes Back. In a game, holding the combo for 3 seconds opens the quick panel instead</string>
+    <string name="settings_navigation_system_back_subtitle">Hold the first buttons, then press the last. In a game, holding the combo for 3 seconds opens the quick panel instead</string>
     <!-- Main line of the dialog that records a new combo, before any button is held. Imperative. -->
     <string name="settings_navigation_system_combo_capture_prompt">Hold 2 or 3 buttons in order...</string>
 

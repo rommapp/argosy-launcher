@@ -5,6 +5,7 @@ import com.nendo.argosy.R
 import com.nendo.argosy.domain.model.LaunchPhase
 import com.nendo.argosy.domain.model.LaunchProgress
 import com.nendo.argosy.domain.model.LaunchStep
+import com.nendo.argosy.domain.model.MakeRoomStage
 import com.nendo.argosy.domain.model.failure
 import com.nendo.argosy.domain.model.fraction
 import com.nendo.argosy.domain.model.phase
@@ -23,8 +24,13 @@ enum class CalmLaunchBar { NONE, INDETERMINATE, DETERMINATE }
 val LaunchStep.mirrorsToPresentation: Boolean
     get() = this is LaunchStep.Recap
 
+/**
+ * Whether the footer carries the B cancel hint. Steps that draw their own cancel button, the
+ * recap and a make-room choice, leave it off.
+ */
 fun LaunchStep.showsCancelHint(appPromptShowing: Boolean): Boolean =
-    !appPromptShowing && this !is LaunchStep.Recap && this != LaunchStep.Launching
+    !appPromptShowing && this !is LaunchStep.Recap && this != LaunchStep.Launching &&
+        (this as? LaunchStep.MakeRoom)?.stage != MakeRoomStage.CHOOSE
 
 data class CalmLaunchUi(
     @StringRes val line: Int?,

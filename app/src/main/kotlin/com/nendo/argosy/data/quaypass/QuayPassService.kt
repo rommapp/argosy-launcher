@@ -97,6 +97,10 @@ class QuayPassService @Inject constructor(
     }
 
     init {
+        if (!com.nendo.argosy.libretro.slot.GameSlots.isSlotProcess) startMainProcessWork()
+    }
+
+    private fun startMainProcessWork() {
         instance = this
         registerBluetoothStateReceiver()
 

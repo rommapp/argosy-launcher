@@ -46,6 +46,10 @@ class PlaySessionBackfill @Inject constructor(
     private val runMutex = Mutex()
 
     init {
+        if (!com.nendo.argosy.libretro.slot.GameSlots.isSlotProcess) startMainProcessWork()
+    }
+
+    private fun startMainProcessWork() {
         scope.launch {
             connectionManager.connectionState.collect { state ->
                 if (state is ConnectionState.Connected) runOnceAfterConnect()

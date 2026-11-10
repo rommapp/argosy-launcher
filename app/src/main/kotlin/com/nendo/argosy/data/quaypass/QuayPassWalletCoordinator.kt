@@ -23,6 +23,10 @@ class QuayPassWalletCoordinator @Inject constructor(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     init {
+        if (!com.nendo.argosy.libretro.slot.GameSlots.isSlotProcess) startMainProcessWork()
+    }
+
+    private fun startMainProcessWork() {
         scope.launch {
             socialService.connectionState.collect { state ->
                 if (state is ArgosSocialService.ConnectionState.Connected && isLinked()) {

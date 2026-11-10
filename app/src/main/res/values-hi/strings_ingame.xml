@@ -74,6 +74,11 @@
     <string name="ingame_autorestore_title">सेव स्टेट से जारी रखें?</string>
     <string name="ingame_autorestore_confirm">हां</string>
     <string name="ingame_autorestore_decline">नहीं</string>
+    <string name="ingame_return_title">Argosy पर लौटें?</string>
+    <string name="ingame_return_message_keeps_open">गेम बैकग्राउंड में खुला रहेगा।</string>
+    <string name="ingame_return_message_closes">गेम सेव होकर बंद हो जाएगा।</string>
+    <string name="ingame_return_message_netplay">आपका नेटप्ले सेशन खत्म हो जाएगा और गेम सेव होकर बंद हो जाएगा।</string>
+    <string name="ingame_return_confirm">लौटें</string>
 
     <string name="ingame_achievement_hardcore_heading">हार्डकोर अनलॉक्ड</string>
     <string name="ingame_achievement_heading">अचीवमेंट अनलॉक्ड</string>

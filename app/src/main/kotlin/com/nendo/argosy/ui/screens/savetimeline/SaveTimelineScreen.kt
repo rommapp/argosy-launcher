@@ -32,11 +32,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import coil.compose.AsyncImage
-import androidx.compose.ui.draw.blur
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
+import com.nendo.argosy.ui.common.GameArtBackdrop
 import com.nendo.argosy.ui.common.rememberResolvedBackgroundPath
-import com.nendo.argosy.ui.theme.LocalLauncherTheme
 import com.nendo.argosy.R
 import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.common.rememberResolvedCoverPath
@@ -88,7 +85,7 @@ fun SaveTimelineScreen(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        TimelineBackdrop(rememberResolvedBackgroundPath(state.gameId, null) ?: coverPath)
+        GameArtBackdrop(rememberResolvedBackgroundPath(state.gameId, null) ?: coverPath)
         Column(modifier = Modifier.fillMaxSize()) {
             SaveTimelineTopBar(
                 header = state.header,
@@ -138,39 +135,6 @@ fun SaveTimelineScreen(
         }
     )
 }
-
-@Composable
-private fun TimelineBackdrop(imagePath: String?) {
-    val isDark = LocalLauncherTheme.current.isDarkTheme
-    val scrim = if (isDark) Color.Black else Color.White
-    Box(modifier = Modifier.fillMaxSize()) {
-        if (imagePath != null) {
-            AsyncImage(
-                model = rememberFileImageModel(imagePath),
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize().blur(Dimens.saveTimelineBackdropBlur)
-            )
-        }
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        listOf(
-                            scrim.copy(alpha = if (isDark) BACKDROP_TOP_DARK else BACKDROP_TOP_LIGHT),
-                            scrim.copy(alpha = if (isDark) BACKDROP_BOTTOM_DARK else BACKDROP_BOTTOM_LIGHT)
-                        )
-                    )
-                )
-        )
-    }
-}
-
-private const val BACKDROP_TOP_DARK = 0.55f
-private const val BACKDROP_BOTTOM_DARK = 0.85f
-private const val BACKDROP_TOP_LIGHT = 0.35f
-private const val BACKDROP_BOTTOM_LIGHT = 0.7f
 
 @Composable
 private fun SaveTimelineTopBar(

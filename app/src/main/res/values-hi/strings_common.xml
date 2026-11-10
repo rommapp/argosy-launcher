@@ -1083,8 +1083,12 @@
     <string name="ui_launch_overlay_running_busy_title">%1$s चल रहा है</string>
     <string name="ui_launch_overlay_running_busy_message_game">%1$s अभी भी बैकग्राउंड में %2$s चला रहा है।</string>
     <string name="ui_launch_overlay_running_busy_message">%1$s अभी भी बैकग्राउंड में खुला है।</string>
-    <string name="ui_launch_overlay_running_open_title">%1$s अभी भी खुला है</string>
-    <string name="ui_launch_overlay_running_open_message">दूसरा गेम शुरू करने पर यह बंद हो जाएगा।</string>
+    <string name="ui_launch_overlay_makeroom_title">%1$s के लिए जगह बनाएं</string>
+    <string name="ui_launch_overlay_makeroom_subtitle">बंद करने के लिए एक गेम चुनें। यह पहले सेव होगा।</string>
+    <string name="ui_launch_overlay_makeroom_saved">सेव किया गया %1$s</string>
+    <string name="ui_launch_overlay_makeroom_close">बंद करें</string>
+    <string name="ui_launch_overlay_makeroom_saving">सेव हो रहा है</string>
+    <string name="ui_launch_overlay_makeroom_closed">बंद हो गया</string>
     <string name="ui_launch_overlay_running_close_label">बंद करें और लॉन्च करें</string>
     <string name="ui_launch_overlay_running_close_subtitle">चल रहे गेम में बिना सेव की गई प्रगति खो जाएगी</string>
 </resources>

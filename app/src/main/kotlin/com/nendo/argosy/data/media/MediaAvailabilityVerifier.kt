@@ -68,6 +68,10 @@ class MediaAvailabilityVerifier @Inject constructor(
     private var verifiedFingerprint: String? = null
 
     init {
+        if (!com.nendo.argosy.libretro.slot.GameSlots.isSlotProcess) startMainProcessWork()
+    }
+
+    private fun startMainProcessWork() {
         scope.launch {
             mediaRepository.observeDownloaded().collectLatest { items -> runPass(items, full = false) }
         }

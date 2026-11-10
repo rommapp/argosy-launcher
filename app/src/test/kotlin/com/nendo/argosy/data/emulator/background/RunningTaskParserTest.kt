@@ -54,16 +54,16 @@ class RunningTaskParserTest {
     @Test
     fun `sums memory over a package's processes and keeps the main process pid`() {
         val ps = listOf(
-            "  PID    RSS NAME                       ",
-            "    2      0 [kthreadd]",
-            "  578 124988 com.android.launcher3",
-            "  900  20000 org.ppsspp.ppsspp:remote",
-            "  901 300000 org.ppsspp.ppsspp"
+            "  PID    RSS     ELAPSED NAME                       ",
+            "    2      0       30:44 [kthreadd]",
+            "  578 124988       30:18 com.android.launcher3",
+            "  900  20000     1:02:03 org.ppsspp.ppsspp:remote",
+            "  901 300000       12:05 org.ppsspp.ppsspp"
         )
         assertEquals(
             mapOf(
-                "com.android.launcher3" to ProcessStat(578, 124988),
-                "org.ppsspp.ppsspp" to ProcessStat(901, 320000)
+                "com.android.launcher3" to ProcessStat(578, 124988, (30 * 60 + 18) * 1000L),
+                "org.ppsspp.ppsspp" to ProcessStat(901, 320000, (12 * 60 + 5) * 1000L)
             ),
             RunningTaskParser.parseProcesses(ps)
         )
@@ -71,7 +71,14 @@ class RunningTaskParserTest {
 
     @Test
     fun `a package with only secondary processes has no entry`() {
-        val ps = listOf("  900  20000 org.ppsspp.ppsspp:remote")
+        val ps = listOf("  900  20000       00:09 org.ppsspp.ppsspp:remote")
         assertEquals(emptyMap<String, ProcessStat>(), RunningTaskParser.parseProcesses(ps))
+    }
+
+    @Test
+    fun `elapsed time reads minutes, hours and days`() {
+        assertEquals(65_000L, RunningTaskParser.parseElapsedMs("01:05"))
+        assertEquals((2 * 3600 + 3 * 60 + 4) * 1000L, RunningTaskParser.parseElapsedMs("02:03:04"))
+        assertEquals((86_400 + 3600 + 60 + 1) * 1000L, RunningTaskParser.parseElapsedMs("1-01:01:01"))
     }
 }

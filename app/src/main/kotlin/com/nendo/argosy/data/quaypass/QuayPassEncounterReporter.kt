@@ -35,6 +35,10 @@ class QuayPassEncounterReporter @Inject constructor(
     private val drainMutex = Mutex()
 
     init {
+        if (!com.nendo.argosy.libretro.slot.GameSlots.isSlotProcess) startMainProcessWork()
+    }
+
+    private fun startMainProcessWork() {
         scope.launch {
             orchestrator.newEncounters.collect { drainQueue() }
         }

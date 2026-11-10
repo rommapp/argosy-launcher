@@ -7,18 +7,20 @@ data class RunningTask(
     val visible: Boolean
 )
 
-data class ProcessStat(val pid: Int, val rssKb: Long)
+data class ProcessStat(val pid: Int, val rssKb: Long, val elapsedMs: Long)
 
 /**
- * Reads the output of `am stack list` and `ps -A -o PID,RSS,NAME`. Only tasks of the standard
- * activity type are kept, so home screens, recents and system overlays never appear.
+ * Reads the output of `am stack list` and `ps -A -o PID,RSS,ETIME,NAME`. Only tasks of the
+ * standard activity type are kept, so home screens, recents and system overlays never appear.
  */
 object RunningTaskParser {
 
     private val ROOT_TASK = Regex("""^\s*(?:RootTask|Stack) id=\d+.*?displayId=(\d+)""")
     private val ACTIVITY_TYPE = Regex("""mActivityType=(\w+)""")
     private val TASK = Regex("""^\s*taskId=(\d+): ([\w.]+)/\S+.*?visible=(true|false)""")
-    private val PROCESS = Regex("""^\s*(\d+)\s+(\d+)\s+([a-zA-Z]\w*(?:\.\w+)+(?::[\w.]+)?)\s*$""")
+    private val PROCESS = Regex(
+        """^\s*(\d+)\s+(\d+)\s+((?:\d+-)?(?:\d+:)?\d+:\d+)\s+([a-zA-Z]\w*(?:\.\w+)+(?::[\w.]+)?)\s*$"""
+    )
 
     fun parseTasks(lines: List<String>): List<RunningTask> {
         val tasks = mutableListOf<RunningTask>()
@@ -46,19 +48,35 @@ object RunningTaskParser {
     }
 
     /**
-     * One entry per package: the main process's pid and the resident memory of the main process
-     * plus every `package:name` process it started.
+     * One entry per package: the main process's pid and running time, and the resident memory of
+     * the main process plus every `package:name` process it started.
      */
     fun parseProcesses(lines: List<String>): Map<String, ProcessStat> {
-        val pids = mutableMapOf<String, Int>()
+        val main = mutableMapOf<String, Pair<Int, Long>>()
         val rss = mutableMapOf<String, Long>()
         for (line in lines) {
             val match = PROCESS.find(line) ?: continue
-            val name = match.groupValues[3]
+            val name = match.groupValues[4]
             val packageName = name.substringBefore(':')
             rss[packageName] = (rss[packageName] ?: 0L) + match.groupValues[2].toLong()
-            if (name == packageName) pids[packageName] = match.groupValues[1].toInt()
+            if (name == packageName) {
+                main[packageName] = match.groupValues[1].toInt() to parseElapsedMs(match.groupValues[3])
+            }
         }
-        return pids.mapValues { (packageName, pid) -> ProcessStat(pid, rss[packageName] ?: 0L) }
+        return main.mapValues { (packageName, process) ->
+            ProcessStat(pid = process.first, rssKb = rss[packageName] ?: 0L, elapsedMs = process.second)
+        }
     }
+
+    /**
+     * `ps` ETIME, written `[[dd-]hh:]mm:ss`, in milliseconds.
+     */
+    fun parseElapsedMs(etime: String): Long {
+        val days = etime.substringBefore('-', "0").toLong()
+        val clock = etime.substringAfter('-').split(':').map { it.toLong() }
+        val seconds = clock.fold(0L) { total, part -> total * 60 + part }
+        return (days * SECONDS_PER_DAY + seconds) * 1000
+    }
+
+    private const val SECONDS_PER_DAY = 86_400L
 }

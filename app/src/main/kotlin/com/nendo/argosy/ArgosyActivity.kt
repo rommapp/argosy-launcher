@@ -715,7 +715,7 @@ class ArgosyActivity : ComponentActivity() {
     }
 
     private fun forwardDeepLinkToDefaultDisplay() {
-        if (intent?.data?.scheme != "argosy") return
+        if (deepLinkOf(intent) == null) return
         val forwarded = Intent(intent).setClass(this, ArgosyActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         val options = android.app.ActivityOptions.makeBasic()
@@ -878,14 +878,17 @@ class ArgosyActivity : ComponentActivity() {
 
 
     private fun handleDeepLink(intent: Intent): Boolean {
-        val uri = intent.data ?: return false
-        if (uri.scheme == "argosy") {
-            val resolved = mergeLaunchExtras(uri, intent)
-            Log.d(TAG, "Received deep link: $resolved")
-            dualScreenManager.publishDeepLink(resolved)
-            return true
-        }
-        return false
+        val resolved = deepLinkOf(intent) ?: return false
+        Log.d(TAG, "Received deep link: $resolved")
+        dualScreenManager.publishDeepLink(resolved)
+        return true
+    }
+
+    private fun deepLinkOf(intent: Intent?): android.net.Uri? {
+        if (intent == null) return null
+        ArgosyHomeIntent.runningDeepLinkOf(intent)?.let { return it }
+        val uri = intent.data?.takeIf { it.scheme == "argosy" } ?: return null
+        return mergeLaunchExtras(uri, intent)
     }
 
     private fun mergeLaunchExtras(uri: android.net.Uri, intent: Intent): android.net.Uri {

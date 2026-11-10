@@ -74,6 +74,11 @@
     <string name="ingame_autorestore_title">Vom Savestate fortsetzen?</string>
     <string name="ingame_autorestore_confirm">Ja</string>
     <string name="ingame_autorestore_decline">Nein</string>
+    <string name="ingame_return_title">Zurück zu Argosy?</string>
+    <string name="ingame_return_message_keeps_open">Das Spiel bleibt im Hintergrund geöffnet.</string>
+    <string name="ingame_return_message_closes">Das Spiel wird gespeichert und geschlossen.</string>
+    <string name="ingame_return_message_netplay">Deine Netplay-Sitzung endet, und das Spiel wird gespeichert und geschlossen.</string>
+    <string name="ingame_return_confirm">Zurück</string>
 
     <string name="ingame_achievement_hardcore_heading">HARDCORE FREIGESCHALTET</string>
     <string name="ingame_achievement_heading">ERFOLG FREIGESCHALTET</string>

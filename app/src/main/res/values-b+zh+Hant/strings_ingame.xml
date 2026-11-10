@@ -74,6 +74,11 @@
     <string name="ingame_autorestore_title">要從即時存檔繼續嗎？</string>
     <string name="ingame_autorestore_confirm">是</string>
     <string name="ingame_autorestore_decline">否</string>
+    <string name="ingame_return_title">返回 Argosy？</string>
+    <string name="ingame_return_message_keeps_open">遊戲會在背景保持執行。</string>
+    <string name="ingame_return_message_closes">遊戲將儲存並關閉。</string>
+    <string name="ingame_return_message_netplay">你的連線對戰將結束，遊戲將儲存並關閉。</string>
+    <string name="ingame_return_confirm">返回</string>
 
     <string name="ingame_achievement_hardcore_heading">硬核解鎖</string>
     <string name="ingame_achievement_heading">成就解鎖</string>

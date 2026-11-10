@@ -417,13 +417,15 @@ fun FooterBarWithState(
     modifier: Modifier = Modifier,
     onHintClick: ((InputButton) -> Unit)? = null,
     trailingContent: @Composable (() -> Unit)? = null,
+    leadingContent: @Composable (() -> Unit)? = null,
     forceVisible: Boolean = false
 ) {
     val backgroundColor = footerSurfaceColor()
     var measuredWidth by remember { mutableIntStateOf(0) }
     var trailingWidth by remember { mutableIntStateOf(0) }
+    var leadingWidth by remember { mutableIntStateOf(0) }
 
-    val quiet = !forceVisible && hints.all { isObviousHint(it.button) }
+    val quiet = !forceVisible && leadingContent == null && hints.all { isObviousHint(it.button) }
     var displayHints by remember { mutableStateOf(hints) }
     if (!quiet) displayHints = hints
     val collapseProgress = footerCollapseProgress(quiet)
@@ -431,7 +433,8 @@ fun FooterBarWithState(
     val filteredHints = filterHintsByWidth(
         displayHints,
         measuredWidth = measuredWidth,
-        trailingWidth = if (trailingContent != null) trailingWidth else 0,
+        trailingWidth = (if (trailingContent != null) trailingWidth else 0) +
+            (if (leadingContent != null) leadingWidth else 0),
         tappable = onHintClick != null,
         buttonOf = { it.button },
         labelOf = { it.action },
@@ -457,7 +460,13 @@ fun FooterBarWithState(
             .padding(horizontal = Dimens.spacingMd),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(Dimens.spacingLg)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingLg),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (leadingContent != null) {
+                Box(Modifier.onSizeChanged { leadingWidth = it.width }) { leadingContent() }
+            }
             dpadHints.forEach { hint ->
                 TappableFooterHint(hint.button, hint.action, onHintClick, hint.enabled)
             }

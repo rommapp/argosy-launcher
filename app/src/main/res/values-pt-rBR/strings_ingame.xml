@@ -68,6 +68,11 @@
     <string name="ingame_autorestore_title">Retomar do save state?</string>
     <string name="ingame_autorestore_confirm">Sim</string>
     <string name="ingame_autorestore_decline">Não</string>
+    <string name="ingame_return_title">Voltar ao Argosy?</string>
+    <string name="ingame_return_message_keeps_open">O jogo continua aberto em segundo plano.</string>
+    <string name="ingame_return_message_closes">O jogo será salvo e fechado.</string>
+    <string name="ingame_return_message_netplay">Sua sessão netplay será encerrada e o jogo será salvo e fechado.</string>
+    <string name="ingame_return_confirm">Voltar</string>
     <string name="ingame_achievement_hardcore_heading">HARDCORE DESBLOQUEADO</string>
     <string name="ingame_achievement_heading">CONQUISTA DESBLOQUEADA</string>
     <string name="ingame_raconnect_title">RetroAchievements Conectado</string>

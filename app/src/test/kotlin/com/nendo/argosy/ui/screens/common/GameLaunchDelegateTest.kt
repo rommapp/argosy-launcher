@@ -99,6 +99,7 @@ class GameLaunchDelegateTest {
     }
 
     private fun delegate(tracker: LaunchProgressTracker, router: GameStartRouter) = GameLaunchDelegate(
+        slotRegistry = com.nendo.argosy.libretro.slot.SlotRegistry(),
         application = mockk(relaxed = true),
         gameRepository = gameRepository,
         emulatorResolver = emulatorResolver,

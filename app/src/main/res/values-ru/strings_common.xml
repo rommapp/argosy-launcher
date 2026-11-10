@@ -1133,8 +1133,12 @@
     <string name="ui_launch_overlay_running_busy_title">%1$s работает</string>
     <string name="ui_launch_overlay_running_busy_message_game">%1$s всё ещё выполняет %2$s в фоне.</string>
     <string name="ui_launch_overlay_running_busy_message">%1$s всё ещё работает в фоне.</string>
-    <string name="ui_launch_overlay_running_open_title">Игра «%1$s» ещё открыта</string>
-    <string name="ui_launch_overlay_running_open_message">Запуск другой игры закроет её.</string>
+    <string name="ui_launch_overlay_makeroom_title">Освободите место для «%1$s»</string>
+    <string name="ui_launch_overlay_makeroom_subtitle">Выберите игру, которую нужно закрыть. Сначала она сохранится.</string>
+    <string name="ui_launch_overlay_makeroom_saved">Сохранено: %1$s</string>
+    <string name="ui_launch_overlay_makeroom_close">Закрыть</string>
+    <string name="ui_launch_overlay_makeroom_saving">Сохранение</string>
+    <string name="ui_launch_overlay_makeroom_closed">Закрыто</string>
     <string name="ui_launch_overlay_running_close_label">Закрыть и запустить</string>
     <string name="ui_launch_overlay_running_close_subtitle">Несохранённый прогресс в запущенной игре будет потерян</string>
 </resources>

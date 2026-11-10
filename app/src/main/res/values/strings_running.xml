@@ -7,12 +7,12 @@
       is never shared between two usage sites.
     -->
 
-    <!-- Drawer row leading to the list of apps and games still running in the background.
-         Adjective used as a page name: the things that are currently running. -->
-    <string name="running_drawer_title">Running</string>
-    <!-- Heading over the list of apps and games still running in the background. Same meaning
-         as the drawer row: the things that are currently running. -->
-    <string name="running_header_title">Running</string>
+    <!-- Drawer row leading to the games and apps left open in the background, where the player
+         picks one to go back to. Verb used as a page name: to resume play. -->
+    <string name="running_drawer_title">Resume</string>
+    <!-- Heading over the games and apps left open in the background. Same meaning as the
+         drawer row: to resume play. -->
+    <string name="running_header_title">Resume</string>
     <!-- Shown in place of the list when no other app has a task open. -->
     <string name="running_empty_title">Nothing else is running</string>
     <!-- Memory the app is using, in megabytes. %1$d is a whole number. -->
@@ -47,4 +47,35 @@
 
     <!-- Error shown when the system refuses to bring an app forward. %1$s is the app name. -->
     <string name="running_notice_switch_failed">Could not switch to %1$s</string>
+
+    <!-- Play time of a game since it was started, shown beside a clock icon on its card. Hours
+         and minutes, h and m being the unit abbreviations. -->
+    <string name="running_card_time_hours_minutes">%1$dh %2$dm</string>
+    <!-- Play time of a game since it was started, shown beside a clock icon on its card. Minutes
+         and seconds, m and s being the unit abbreviations. -->
+    <string name="running_card_time_minutes_seconds">%1$dm %2$ds</string>
+    <!-- Play time of a game since it was started, shown beside a clock icon on its card. Seconds,
+         s being the unit abbreviation. -->
+    <string name="running_card_time_seconds">%1$ds</string>
+    <!-- When the focused game last saved. %1$s is a relative time such as "4m ago". -->
+    <string name="running_card_saved">Saved %1$s</string>
+    <!-- Achievements earned out of the game's total. -->
+    <string name="running_card_ra_progress" translatable="false">%1$d/%2$d</string>
+    <!-- Tag beside the achievement count when the game runs under RetroAchievements hardcore
+         rules. Hardcore is the RetroAchievements mode name. -->
+    <string name="running_card_ra_hardcore">Hardcore</string>
+    <!-- Shown over a card while its game saves before closing. Verb in progress. -->
+    <string name="running_card_saving">Saving</string>
+    <!-- Shown over a card once its game has closed. -->
+    <string name="running_card_closed">Closed</string>
+    <!-- Count of friends beyond the avatars shown. -->
+    <string name="running_friends_more" translatable="false">+%1$d</string>
+    <!-- Line under the focused game naming the one friend playing the same game now. -->
+    <string name="running_friends_one">%1$s is playing this</string>
+    <!-- Same line for two friends. -->
+    <string name="running_friends_two">%1$s and %2$s are playing this</string>
+    <!-- Same line for three friends. -->
+    <string name="running_friends_three">%1$s, %2$s and %3$s are playing this</string>
+    <!-- Same line for four or more friends: three named, the rest summarised. -->
+    <string name="running_friends_many">%1$s, %2$s, %3$s and others are playing this</string>
 </resources>

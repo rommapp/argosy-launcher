@@ -259,7 +259,7 @@
     <string name="settings_navigation_system_home_title">Inicio</string>
     <string name="settings_navigation_system_home_subtitle">Mantenlos juntos 2 segundos. Pulsar el botón guía también va a Inicio</string>
     <string name="settings_navigation_system_back_title">Atrás</string>
-    <string name="settings_navigation_system_back_subtitle">Mantén los primeros botones y pulsa el último. Mantener el botón guía 1 segundo también va Atrás. En un juego, mantener la combinación 3 segundos abre el panel rápido</string>
+    <string name="settings_navigation_system_back_subtitle">Mantén los primeros botones y pulsa el último. En un juego, mantener la combinación 3 segundos abre el panel rápido</string>
     <string name="settings_navigation_system_combo_capture_prompt">Mantén 2 o 3 botones en orden...</string>
 
     <!-- ===== Displays section ===== -->

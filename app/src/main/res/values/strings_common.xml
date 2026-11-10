@@ -1594,10 +1594,18 @@
     <string name="ui_launch_overlay_running_busy_message_game">%1$s is still running %2$s in the background.</string>
     <!-- Body of that question when the running game is not known. %1$s is the emulator's name. -->
     <string name="ui_launch_overlay_running_busy_message">%1$s is still open in the background.</string>
-    <!-- Title of the question shown when another game is still open in Argosy's built-in emulator. %1$s is the title of that game. -->
-    <string name="ui_launch_overlay_running_open_title">%1$s Is Still Open</string>
-    <!-- Body of that question. "It" is the open game. -->
-    <string name="ui_launch_overlay_running_open_message">Starting another game closes it.</string>
+    <!-- Title of the question shown when too many games are open in Argosy's built-in emulator to start another. %1$s is the title of the game being started. -->
+    <string name="ui_launch_overlay_makeroom_title">Make room for %1$s</string>
+    <!-- Line under that title. The player picks one open game; it saves its progress before it closes. -->
+    <string name="ui_launch_overlay_makeroom_subtitle">Pick a game to close. It saves first.</string>
+    <!-- Line under the focused open game. %1$s is when its progress was last saved, such as "5 minutes ago" or "Yesterday". "Saved" is a past-tense verb. -->
+    <string name="ui_launch_overlay_makeroom_saved">Saved %1$s</string>
+    <!-- Button that closes the chosen open game to make room. Verb. -->
+    <string name="ui_launch_overlay_makeroom_close">Close</string>
+    <!-- Status while the chosen game writes its progress before it closes. Verb in progress, not the noun "a save". -->
+    <string name="ui_launch_overlay_makeroom_saving">Saving</string>
+    <!-- Status once the chosen game has closed. Past tense: the game is now closed. -->
+    <string name="ui_launch_overlay_makeroom_closed">Closed</string>
     <!-- Choice that closes the running emulator and starts the chosen game. -->
     <string name="ui_launch_overlay_running_close_label">Close and Launch</string>
     <!-- Second line under that choice. -->

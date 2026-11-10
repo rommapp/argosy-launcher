@@ -71,6 +71,10 @@ class PresenceManager @Inject constructor(
     }
 
     init {
+        if (!com.nendo.argosy.libretro.slot.GameSlots.isSlotProcess) startMainProcessWork()
+    }
+
+    private fun startMainProcessWork() {
         registerScreenReceiver()
         registerProcessLifecycle()
         observePresenceChanges()

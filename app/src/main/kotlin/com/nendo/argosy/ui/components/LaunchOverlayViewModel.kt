@@ -9,6 +9,7 @@ import com.nendo.argosy.domain.model.LaunchProgress
 import com.nendo.argosy.domain.model.LaunchPromptOption
 import com.nendo.argosy.domain.model.LaunchRecap
 import com.nendo.argosy.domain.model.LaunchStep
+import com.nendo.argosy.domain.model.MakeRoomStage
 import com.nendo.argosy.ui.components.launch.LaunchHostSignal
 import com.nendo.argosy.ui.components.launch.recordsHostStop
 import com.nendo.argosy.ui.components.launch.shouldReportHostStopped
@@ -32,6 +33,14 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 private const val STOP_TIMEOUT_MS = 5_000L
+
+private data class PromptFocusSeed(val anchor: Any, val initialFocus: Int)
+
+private fun focusSeed(step: LaunchStep): PromptFocusSeed? = when (step) {
+    is LaunchStep.Question -> PromptFocusSeed(step, 0)
+    is LaunchStep.MakeRoom -> PromptFocusSeed(step.candidates, step.initialFocus)
+    else -> null
+}
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
@@ -73,9 +82,9 @@ class LaunchOverlayViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             tracker.progress
-                .map { it?.step as? LaunchStep.Question }
+                .map { it?.step?.let(::focusSeed) }
                 .distinctUntilChanged()
-                .collect { _promptFocus.value = 0 }
+                .collect { seed -> _promptFocus.value = seed?.initialFocus ?: 0 }
         }
         viewModelScope.launch {
             tracker.progress
@@ -88,6 +97,24 @@ class LaunchOverlayViewModel @Inject constructor(
     fun answer(option: LaunchPromptOption) = tracker.answer(option)
 
     fun cancel(): Boolean = tracker.cancel()
+
+    /**
+     * A tap on the make-room card at [index]: the focused card closes, any other takes focus.
+     */
+    fun tapMakeRoomCard(index: Int) {
+        val step = choosingRoom ?: return
+        val candidate = step.candidates.getOrNull(index) ?: return
+        if (index == _promptFocus.value) {
+            tracker.closeToMakeRoom(candidate.taskId)
+        } else {
+            _promptFocus.update { index }
+        }
+    }
+
+    fun closeFocusedToMakeRoom() {
+        val candidate = choosingRoom?.candidates?.getOrNull(_promptFocus.value) ?: return
+        tracker.closeToMakeRoom(candidate.taskId)
+    }
 
     private var hostStopRecorded = false
 
@@ -109,6 +136,21 @@ class LaunchOverlayViewModel @Inject constructor(
     private val prompt: LaunchStep.Question? get() = progress.value?.step as? LaunchStep.Question
 
     private val recap: LaunchRecap? get() = (progress.value?.step as? LaunchStep.Recap)?.recap
+
+    private val makeRoom: LaunchStep.MakeRoom? get() = progress.value?.step as? LaunchStep.MakeRoom
+
+    private val choosingRoom: LaunchStep.MakeRoom?
+        get() = makeRoom?.takeIf { it.stage == MakeRoomStage.CHOOSE && it.candidates.isNotEmpty() }
+
+    private fun moveRoomFocus(delta: Int): InputResult {
+        val step = choosingRoom ?: return InputResult.HANDLED
+        if (step.candidates.size < 2) return InputResult.handled(SoundType.BOUNDARY)
+        _promptFocus.update { (it + delta).mod(step.candidates.size) }
+        return InputResult.handled(SoundType.NAVIGATE)
+    }
+
+    private fun moveSideways(delta: Int): InputResult =
+        if (makeRoom != null) moveRoomFocus(delta) else scrubRecap(delta)
 
     private fun movePromptFocus(delta: Int): InputResult {
         val step = prompt ?: return InputResult.HANDLED
@@ -140,6 +182,11 @@ class LaunchOverlayViewModel @Inject constructor(
                 answer(LaunchPromptOption.START_GAME)
                 return InputResult.handled(SoundType.SELECT)
             }
+            if (makeRoom != null) {
+                if (choosingRoom == null) return InputResult.HANDLED
+                closeFocusedToMakeRoom()
+                return InputResult.handled(SoundType.SELECT)
+            }
             val step = prompt ?: return InputResult.HANDLED
             val option = step.options.getOrNull(_promptFocus.value)
             if (option != null) answer(option) else cancel()
@@ -149,8 +196,8 @@ class LaunchOverlayViewModel @Inject constructor(
         override fun onBack(): InputResult =
             if (cancel()) InputResult.handled(SoundType.CLOSE_MODAL) else InputResult.HANDLED
 
-        override fun onLeft(): InputResult = scrubRecap(-1)
-        override fun onRight(): InputResult = scrubRecap(1)
+        override fun onLeft(): InputResult = moveSideways(-1)
+        override fun onRight(): InputResult = moveSideways(1)
         override fun onRightStickLeft(): InputResult = scrubRecap(-1)
         override fun onRightStickRight(): InputResult = scrubRecap(1)
         override fun onMenu(): InputResult = InputResult.HANDLED

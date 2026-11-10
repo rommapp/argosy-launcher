@@ -31,7 +31,8 @@ data class FooterEntry(
     val onHintClick: ((InputButton) -> Unit)?,
     val trailingContent: (@Composable () -> Unit)?,
     val forced: Boolean = false,
-    val reservesSpace: Boolean = true
+    val reservesSpace: Boolean = true,
+    val leadingContent: (@Composable () -> Unit)? = null
 )
 
 /** Singleton hint stack backing the app-root guide bar; the most recently registered active surface wins. */
@@ -88,7 +89,8 @@ fun FooterHints(
     onHintClick: ((InputButton) -> Unit)? = null,
     trailingContent: (@Composable () -> Unit)? = null,
     forced: Boolean = false,
-    reservesSpace: Boolean = true
+    reservesSpace: Boolean = true,
+    leadingContent: (@Composable () -> Unit)? = null
 ) {
     FooterHintsWithState(
         hints = remember(hints) { hints.map { FooterHintItem(it.first, it.second) } },
@@ -96,7 +98,8 @@ fun FooterHints(
         onHintClick = onHintClick,
         trailingContent = trailingContent,
         forced = forced,
-        reservesSpace = reservesSpace
+        reservesSpace = reservesSpace,
+        leadingContent = leadingContent
     )
 }
 
@@ -108,12 +111,13 @@ fun FooterHintsWithState(
     onHintClick: ((InputButton) -> Unit)? = null,
     trailingContent: (@Composable () -> Unit)? = null,
     forced: Boolean = false,
-    reservesSpace: Boolean = true
+    reservesSpace: Boolean = true,
+    leadingContent: (@Composable () -> Unit)? = null
 ) {
     val controller = LocalFooterHost.current
     val style = LocalFooterStyle.current
     val id = remember(controller) { controller.allocateId() }
-    val entry = FooterEntry(hints, style, variant, onHintClick, trailingContent, forced, reservesSpace)
+    val entry = FooterEntry(hints, style, variant, onHintClick, trailingContent, forced, reservesSpace, leadingContent)
     SideEffect { controller.set(id, entry) }
     DisposableEffect(controller, id) {
         onDispose { controller.remove(id) }
@@ -142,6 +146,7 @@ fun FooterHost(
                 modifier = modifier,
                 onHintClick = entry?.onHintClick,
                 trailingContent = entry?.trailingContent,
+                leadingContent = entry?.leadingContent,
                 forceVisible = entry?.forced == true
             )
         }
@@ -150,7 +155,7 @@ fun FooterHost(
 
 val FooterHostController.isBarVisible: Boolean
     get() = spaceEntry?.let { entry ->
-        entry.forced || entry.hints.any { !isObviousHint(it.button) }
+        entry.forced || entry.leadingContent != null || entry.hints.any { !isObviousHint(it.button) }
     } == true
 
 @Composable

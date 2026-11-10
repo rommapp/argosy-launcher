@@ -74,6 +74,11 @@
     <string name="ingame_autorestore_title">Продолжить с сохранённого состояния?</string>
     <string name="ingame_autorestore_confirm">Да</string>
     <string name="ingame_autorestore_decline">Нет</string>
+    <string name="ingame_return_title">Вернуться в Argosy?</string>
+    <string name="ingame_return_message_keeps_open">Игра останется открытой в фоне.</string>
+    <string name="ingame_return_message_closes">Игра сохранится и закроется.</string>
+    <string name="ingame_return_message_netplay">Сетевая сессия завершится, а игра сохранится и закроется.</string>
+    <string name="ingame_return_confirm">Вернуться</string>
 
     <string name="ingame_achievement_hardcore_heading">РАЗБЛОКИРОВАНО В ХАРДКОРЕ</string>
     <string name="ingame_achievement_heading">ДОСТИЖЕНИЕ РАЗБЛОКИРОВАНО</string>

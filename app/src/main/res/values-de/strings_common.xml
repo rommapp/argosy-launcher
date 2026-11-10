@@ -1083,8 +1083,12 @@
     <string name="ui_launch_overlay_running_busy_title">%1$s läuft</string>
     <string name="ui_launch_overlay_running_busy_message_game">%1$s führt %2$s noch im Hintergrund aus.</string>
     <string name="ui_launch_overlay_running_busy_message">%1$s ist noch im Hintergrund geöffnet.</string>
-    <string name="ui_launch_overlay_running_open_title">%1$s ist noch geöffnet</string>
-    <string name="ui_launch_overlay_running_open_message">Wenn du ein anderes Spiel startest, wird es geschlossen.</string>
+    <string name="ui_launch_overlay_makeroom_title">Platz schaffen für %1$s</string>
+    <string name="ui_launch_overlay_makeroom_subtitle">Wähle ein Spiel zum Schließen. Es speichert vorher.</string>
+    <string name="ui_launch_overlay_makeroom_saved">Gespeichert %1$s</string>
+    <string name="ui_launch_overlay_makeroom_close">Schließen</string>
+    <string name="ui_launch_overlay_makeroom_saving">Speichert</string>
+    <string name="ui_launch_overlay_makeroom_closed">Geschlossen</string>
     <string name="ui_launch_overlay_running_close_label">Schließen und starten</string>
     <string name="ui_launch_overlay_running_close_subtitle">Nicht gespeicherter Fortschritt im laufenden Spiel geht verloren</string>
 </resources>

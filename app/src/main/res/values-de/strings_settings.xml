@@ -257,7 +257,7 @@
     <string name="settings_navigation_system_home_title">Home</string>
     <string name="settings_navigation_system_home_subtitle">2 Sekunden lang gemeinsam halten. Ein Druck auf die Guide-Taste führt ebenfalls zu Home</string>
     <string name="settings_navigation_system_back_title">Zurück</string>
-    <string name="settings_navigation_system_back_subtitle">Die ersten Tasten halten, dann die letzte drücken. Die Guide-Taste 1 Sekunde halten wirkt ebenfalls als Zurück. Im Spiel öffnet 3 Sekunden Halten der Kombination stattdessen das Schnellmenü</string>
+    <string name="settings_navigation_system_back_subtitle">Die ersten Tasten halten, dann die letzte drücken. Im Spiel öffnet 3 Sekunden Halten der Kombination stattdessen das Schnellmenü</string>
     <string name="settings_navigation_system_combo_capture_prompt">2 oder 3 Tasten der Reihe nach halten...</string>
 
     <!-- ===== Displays section ===== -->

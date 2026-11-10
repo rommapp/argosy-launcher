@@ -247,7 +247,7 @@
     <string name="settings_navigation_system_home_title">होम</string>
     <string name="settings_navigation_system_home_subtitle">2 सेकंड तक साथ दबाए रखें। गाइड बटन दबाने से भी होम पर जाते हैं</string>
     <string name="settings_navigation_system_back_title">वापस</string>
-    <string name="settings_navigation_system_back_subtitle">पहले बटन दबाए रखें, फिर आखिरी दबाएँ। गाइड बटन को 1 सेकंड दबाए रखने से भी वापस जाते हैं। गेम में कॉम्बो को 3 सेकंड दबाए रखने से क्विक पैनल खुलता है</string>
+    <string name="settings_navigation_system_back_subtitle">पहले बटन दबाए रखें, फिर आखिरी दबाएँ। गेम में कॉम्बो को 3 सेकंड दबाए रखने से क्विक पैनल खुलता है</string>
     <string name="settings_navigation_system_combo_capture_prompt">क्रम से 2 या 3 बटन दबाए रखें...</string>
 
     <!-- ===== Displays section ===== -->

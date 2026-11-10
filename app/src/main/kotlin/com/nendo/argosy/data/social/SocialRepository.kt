@@ -236,6 +236,10 @@ class SocialRepository @Inject constructor(
     val serviceConnectionState: StateFlow<ArgosSocialService.ConnectionState> = socialService.connectionState
 
     init {
+        if (!com.nendo.argosy.libretro.slot.GameSlots.isSlotProcess) startMainProcessWork()
+    }
+
+    private fun startMainProcessWork() {
         observeAuthState()
         observeServiceState()
         observeIncomingMessages()

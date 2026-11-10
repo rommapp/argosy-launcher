@@ -216,7 +216,7 @@ class MediaDownloadManager @Inject constructor(
     private val dispatching = AtomicBoolean(false)
 
     init {
-        scope.launch { restoreQueueFromDatabase() }
+        if (!com.nendo.argosy.libretro.slot.GameSlots.isSlotProcess) scope.launch { restoreQueueFromDatabase() }
     }
 
     fun hasActiveMediaDownload(): Boolean {

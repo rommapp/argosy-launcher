@@ -234,7 +234,7 @@
     <string name="settings_navigation_system_home_title">主畫面</string>
     <string name="settings_navigation_system_home_subtitle">同時按住 2 秒。按一下 Guide 鍵也會回到主畫面</string>
     <string name="settings_navigation_system_back_title">返回</string>
-    <string name="settings_navigation_system_back_subtitle">先按住前面的按鍵，再按最後一個。按住 Guide 鍵 1 秒也會返回。遊戲中按住組合鍵 3 秒會改為開啟快速面板</string>
+    <string name="settings_navigation_system_back_subtitle">先按住前面的按鍵，再按最後一個。遊戲中按住組合鍵 3 秒會改為開啟快速面板</string>
     <string name="settings_navigation_system_combo_capture_prompt">依序按住 2 或 3 個按鍵...</string>
 
     <string name="settings_displays_section_screen_safety">螢幕保護</string>

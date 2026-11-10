@@ -142,7 +142,12 @@ object DimensionTokens {
         const val saveTimelineFloaterWidth = 360
         const val saveTimelineFloaterThumb = 152
         const val saveTimelineHeaderCover = 56
-        const val saveTimelineBackdropBlur = 48
+        const val gameArtBackdropBlur = 48
+        const val runningCardCaptionHeight = 44
+        const val runningRaBarWidth = 56
+        const val runningFriendAvatar = 30
+        const val runningCartridgeWidth = 30
+        const val runningCartridgeHeight = 34
     }
 
     object Elevation {

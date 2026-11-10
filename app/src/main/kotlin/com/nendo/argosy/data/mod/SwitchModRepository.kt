@@ -103,31 +103,11 @@ class SwitchModRepository @Inject constructor(
             }
             output.toString(Charsets.UTF_8.name())
         }
-        if (config != null) requireDefaultStorage(config, root)
+        if (config != null) EdenModStorage.requireDefaults(config, root)
         else if (!fal.isListable(root) || fal.listFilesUnion(root).any { it.name == "config" }) {
             throw ModInstallException(ModInstallFailure.ACCESS_DENIED)
         }
         EdenModTarget(title, root, emulator.displayName)
-    }
-
-    private fun requireDefaultStorage(config: String, root: String) {
-        var storage = false
-        config.lineSequence().forEach { line ->
-            val trimmed = line.trim()
-            if (trimmed.startsWith('[') && trimmed.endsWith(']')) storage = trimmed in setOf("[DataStorage]", "[Data%20Storage]")
-            if (storage && '=' in trimmed) {
-                val key = trimmed.substringBefore('=').trim()
-                val expected = when (key) {
-                    "load_directory" -> "$root/load"
-                    "sdmc_directory" -> "$root/sdmc"
-                    else -> null
-                }
-                val value = trimmed.substringAfter('=').trim().trim('"').trimEnd('/')
-                if (expected != null && value.isNotEmpty() && value != expected) {
-                    throw ModInstallException(ModInstallFailure.UNSUPPORTED_PATH)
-                }
-            }
-        }
     }
 
     private data class EdenModTarget(val titleId: String, val root: String, val emulatorName: String)

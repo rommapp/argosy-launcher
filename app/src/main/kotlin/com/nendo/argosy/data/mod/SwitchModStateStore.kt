@@ -6,6 +6,7 @@ import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.security.MessageDigest
 import java.util.Properties
+import java.util.UUID
 
 internal data class ModOwnedFile(val path: String, val sha256: String, val owned: Boolean)
 
@@ -103,7 +104,16 @@ internal class SwitchModStateStore(val root: File, dataRoot: String, titleId: St
     fun after(): ModReceipt? = readReceipt(File(transaction, "after.properties"))
 
     fun clearTransaction() {
-        if (transaction.exists() && !transaction.deleteRecursively()) throw ModInstallException(ModInstallFailure.ACCESS_DENIED)
+        retireTransaction()
+        directory.listFiles().orEmpty().filter { it.name.startsWith("retired-") && it.isDirectory }
+            .forEach { it.deleteRecursively() }
+    }
+
+    internal fun retireTransaction(): File? {
+        if (!transaction.exists()) return null
+        val retired = File(directory, "retired-${UUID.randomUUID()}")
+        Files.move(transaction.toPath(), retired.toPath(), StandardCopyOption.ATOMIC_MOVE)
+        return retired
     }
 
     private fun readReceipt(file: File): ModReceipt? {

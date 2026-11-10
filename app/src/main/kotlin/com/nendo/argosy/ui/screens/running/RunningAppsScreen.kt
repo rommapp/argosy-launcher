@@ -1,7 +1,23 @@
 package com.nendo.argosy.ui.screens.running
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.offset
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.lerp
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.IntOffset
+import kotlin.math.roundToInt
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -128,7 +144,14 @@ fun RunningAppsScreen(
 
     ModalInputEffect(active = uiState.menu != null, handler = menuInputHandler)
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    val cardBounds = remember { mutableStateMapOf<Int, Rect>() }
+    var screenOrigin by remember { mutableStateOf(Offset.Zero) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .onGloballyPositioned { screenOrigin = it.boundsInRoot().topLeft }
+    ) {
         FocusedGameBackdrop(gameId = uiState.focusedApp?.gameId)
         Column(modifier = Modifier.fillMaxSize()) {
             Text(
@@ -156,6 +179,7 @@ fun RunningAppsScreen(
                     uiState = uiState,
                     onTap = viewModel::switchTo,
                     onLongPress = viewModel::openMenu,
+                    onSnapshotPlaced = { taskId, bounds -> cardBounds[taskId] = bounds },
                     modifier = Modifier.weight(1f)
                 )
                 else -> RunningAppsList(
@@ -195,6 +219,18 @@ fun RunningAppsScreen(
                 )
             }
             FooterSpacer()
+        }
+
+        uiState.resumingTaskId?.let { taskId ->
+            val app = uiState.apps.firstOrNull { it.taskId == taskId }
+            val from = cardBounds[taskId]
+            if (app != null && from != null) {
+                ResumeZoom(app = app, from = from.translate(-screenOrigin)) {
+                    viewModel.onResumeZoomFinished(taskId)
+                }
+            } else {
+                LaunchedEffect(taskId) { viewModel.onResumeZoomFinished(taskId) }
+            }
         }
 
         val menu = uiState.menu
@@ -358,6 +394,7 @@ private fun RunningAppsCarousel(
     uiState: RunningAppsUiState,
     onTap: (Int) -> Unit,
     onLongPress: (Int) -> Unit,
+    onSnapshotPlaced: (taskId: Int, boundsInRoot: Rect) -> Unit,
     modifier: Modifier = Modifier
 ) {
     BoxWithConstraints(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -380,6 +417,7 @@ private fun RunningAppsCarousel(
                     onClick = { onTap(index) },
                     onLongClick = { onLongPress(index) },
                     closeStage = uiState.closing[app.taskId],
+                    onSnapshotPlaced = { bounds -> onSnapshotPlaced(app.taskId, bounds) },
                     modifier = Modifier
                         .width(cardWidth)
                         .animateItem(
@@ -400,6 +438,7 @@ private fun RunningAppCard(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     closeStage: MakeRoomStage?,
+    onSnapshotPlaced: (boundsInRoot: Rect) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val theme = LocalArgosyTheme.current
@@ -437,6 +476,7 @@ private fun RunningAppCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(CARD_ASPECT)
+                .onGloballyPositioned { onSnapshotPlaced(it.boundsInRoot()) }
                 .argosyFocusIndicators(focused = isFocused && closeStage == null, indicators = CARD_FOCUS, shape = shape)
                 .clip(shape)
                 .background(theme.surfaceRaised),
@@ -480,6 +520,53 @@ private fun RunningAppCard(
             if (isFocused) {
                 Spacer(modifier = Modifier.width(Dimens.spacingMd))
                 RunningAppStats(app)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ResumeZoom(app: RunningAppUi, from: Rect, onFilled: () -> Unit) {
+    val request = rememberTaskSnapshotRequest(app.snapshotPath, app.snapshotTakenAtMillis)
+    val screenRequest = rememberTaskSnapshotRequest(app.screenSnapshotPath, app.screenSnapshotTakenAtMillis)
+    val reduced = LocalMotionTier.current == MotionTier.Reduced
+    val progress = remember { Animatable(if (reduced) 1f else 0f) }
+    val currentOnFilled by rememberUpdatedState(onFilled)
+    LaunchedEffect(Unit) {
+        progress.animateTo(1f, tween(Motion.durationSlide, easing = Motion.argosyEase))
+        currentOnFilled()
+    }
+    val density = LocalDensity.current
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val full = with(density) { Rect(0f, 0f, maxWidth.toPx(), maxHeight.toPx()) }
+        val fraction = progress.value
+        val rect = lerp(from, full, fraction)
+        Box(
+            modifier = Modifier
+                .offset { IntOffset(rect.left.roundToInt(), rect.top.roundToInt()) }
+                .size(with(density) { DpSize(rect.width.toDp(), rect.height.toDp()) })
+                .clip(RoundedCornerShape(Dimens.radiusLg * (1f - fraction)))
+                .background(Color.Black)
+        ) {
+            if (request != null) {
+                AsyncImage(
+                    model = request,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer { alpha = 1f - fraction }
+                )
+            }
+            if (screenRequest != null || request != null) {
+                AsyncImage(
+                    model = screenRequest ?: request,
+                    contentDescription = null,
+                    contentScale = if (screenRequest != null) ContentScale.FillBounds else ContentScale.Fit,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .graphicsLayer { alpha = fraction }
+                )
             }
         }
     }

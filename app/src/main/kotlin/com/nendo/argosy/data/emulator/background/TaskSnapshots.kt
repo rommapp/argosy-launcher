@@ -12,12 +12,20 @@ import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
-data class TaskSnapshot(val path: String, val takenAtMillis: Long)
+/**
+ * A task's last frame at [path]. [screen] is the system's picture of the whole window as it was
+ * composited, the same shape as the screen, when one could be read; for an external app it is the
+ * same file as [path].
+ */
+data class TaskSnapshot(val path: String, val takenAtMillis: Long, val screen: ScreenSnapshot?)
+
+data class ScreenSnapshot(val path: String, val takenAtMillis: Long)
 
 /**
  * The last frame of each task as it left the screen. A built-in game writes its own frame through
  * [saveGameFrame]; any other task's frame is copied through the root shell from the system's
- * snapshot store into Argosy's cache, so without root only built-in games have one.
+ * snapshot store into Argosy's cache, so without root only built-in games have one. With root a
+ * built-in game also gets the system's copy as its [TaskSnapshot.screenPath].
  */
 @Singleton
 class TaskSnapshots @Inject constructor(
@@ -26,15 +34,19 @@ class TaskSnapshots @Inject constructor(
     private val dir: File get() = File(application.cacheDir, DIR).apply { mkdirs() }
 
     suspend fun fetch(taskIds: Collection<Int>): Map<Int, TaskSnapshot> = withContext(Dispatchers.IO) {
-        val own = taskIds.mapNotNull { taskId ->
-            gameFrameFile(application, taskId).takeIf { it.canRead() }?.let { file ->
-                taskId to TaskSnapshot(file.absolutePath, file.lastModified())
+        val system = copySystemSnapshots(taskIds)
+        taskIds.mapNotNull { taskId ->
+            val screen = system[taskId]?.let { ScreenSnapshot(it.absolutePath, it.lastModified()) }
+            val own = gameFrameFile(application, taskId).takeIf { it.canRead() }
+            when {
+                own != null -> taskId to TaskSnapshot(own.absolutePath, own.lastModified(), screen)
+                screen != null -> taskId to TaskSnapshot(screen.path, screen.takenAtMillis, screen)
+                else -> null
             }
         }.toMap()
-        own + copySystemSnapshots(taskIds - own.keys)
     }
 
-    private fun copySystemSnapshots(taskIds: Collection<Int>): Map<Int, TaskSnapshot> {
+    private fun copySystemSnapshots(taskIds: Collection<Int>): Map<Int, File> {
         if (!RootShell.isAvailable || taskIds.isEmpty()) return emptyMap()
         val target = dir
         val result = RootShell.run(application, copyScript(target, taskIds))
@@ -47,9 +59,7 @@ class TaskSnapshots @Inject constructor(
             if (file.nameWithoutExtension.toIntOrNull() !in copied) file.delete()
         }
         return copied.mapNotNull { taskId ->
-            File(target, "$taskId$EXTENSION").takeIf { it.canRead() }?.let { file ->
-                taskId to TaskSnapshot(file.absolutePath, file.lastModified())
-            }
+            File(target, "$taskId$EXTENSION").takeIf { it.canRead() }?.let { taskId to it }
         }.toMap()
     }
 

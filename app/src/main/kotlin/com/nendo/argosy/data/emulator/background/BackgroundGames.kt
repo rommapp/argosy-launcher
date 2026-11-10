@@ -3,6 +3,7 @@ package com.nendo.argosy.data.emulator.background
 import android.app.ActivityManager
 import android.app.Application
 import android.content.Context
+import android.content.Intent
 import android.os.Build
 import android.os.Process
 import android.view.Display
@@ -19,6 +20,7 @@ import com.nendo.argosy.util.Logger
 import com.nendo.argosy.util.RootShell
 import com.nendo.argosy.util.SafeCoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -67,6 +69,7 @@ class BackgroundGames @Inject constructor(
         if (started) return
         started = true
         scope.launch { keepAlivePolicy.grantUsageAccessOnRoot() }
+        scope.launch { restoreTransitionScale() }
         scope.launch {
             var previous: ActiveSession? = null
             playSessionTracker.activeSession.collect { current ->
@@ -248,15 +251,64 @@ class BackgroundGames @Inject constructor(
         else externalApps().firstOrNull { it.packageName == packageName }
 
     /**
-     * Brings [taskId] to the front without sending its app an intent, so the app resumes where it
-     * was. False when the system refused.
+     * Brings [taskId] to the front so the app resumes where it was, with no transition: it replaces
+     * whatever Argosy last drew. Another app's task falls back to the system's transition when the
+     * root shell cannot switch transitions off. False when the system refused.
      */
-    fun bringToFront(taskId: Int): Boolean = try {
+    suspend fun bringToFront(taskId: Int): Boolean = withContext(Dispatchers.IO) {
         val activityManager = application.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val own = ownTask(activityManager, taskId)
+        if (own != null && startWithoutTransition(own)) return@withContext true
+        if (own == null && RootShell.isAvailable) return@withContext moveWithTransitionsOff(activityManager, taskId)
+        moveTaskToFront(activityManager, taskId)
+    }
+
+    private fun moveTaskToFront(activityManager: ActivityManager, taskId: Int): Boolean = try {
         activityManager.moveTaskToFront(taskId, 0)
         true
     } catch (e: SecurityException) {
         Logger.warn(TAG, "moveTaskToFront refused for task $taskId", e)
+        false
+    }
+
+    private fun moveWithTransitionsOff(activityManager: ActivityManager, taskId: Int): Boolean {
+        val previous = RootShell.run(application, "settings get global $TRANSITION_SCALE")
+            ?.takeIf { it.succeeded }?.output?.lastOrNull()?.trim()?.toFloatOrNull()
+        if (previous == null || previous == 0f || transitionScaleRestore.exists()) {
+            return moveTaskToFront(activityManager, taskId)
+        }
+        transitionScaleRestore.writeText(previous.toString())
+        if (RootShell.run(application, "settings put global $TRANSITION_SCALE 0")?.succeeded != true) {
+            transitionScaleRestore.delete()
+            return moveTaskToFront(activityManager, taskId)
+        }
+        val moved = moveTaskToFront(activityManager, taskId)
+        scope.launch {
+            delay(TRANSITION_RESTORE_DELAY_MS)
+            restoreTransitionScale()
+        }
+        return moved
+    }
+
+    private val transitionScaleRestore: File get() = File(application.filesDir, TRANSITION_RESTORE_FILE)
+
+    private fun restoreTransitionScale() {
+        val previous = transitionScaleRestore.takeIf { it.exists() }?.readText()?.trim()?.toFloatOrNull() ?: return
+        if (RootShell.run(application, "settings put global $TRANSITION_SCALE $previous")?.succeeded == true) {
+            transitionScaleRestore.delete()
+        }
+    }
+
+    private fun ownTask(activityManager: ActivityManager, taskId: Int): ActivityManager.AppTask? =
+        activityManager.appTasks.firstOrNull { task -> runCatching { task.taskInfo.taskId }.getOrNull() == taskId }
+
+    private fun startWithoutTransition(task: ActivityManager.AppTask): Boolean = try {
+        val root = Intent(task.taskInfo.baseIntent)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_ANIMATION)
+        application.startActivity(root)
+        true
+    } catch (e: RuntimeException) {
+        Logger.warn(TAG, "task ${runCatching { task.taskInfo.taskId }.getOrNull()} would not restart in place", e)
         false
     }
 
@@ -306,6 +358,9 @@ class BackgroundGames @Inject constructor(
 
     private companion object {
         const val TAG = "BackgroundGames"
+        const val TRANSITION_SCALE = "transition_animation_scale"
+        const val TRANSITION_RESTORE_FILE = "transition_scale_restore"
+        const val TRANSITION_RESTORE_DELAY_MS = 1_000L
         const val VM_RSS = "VmRSS:"
         const val PS_MARKER = "--argosy-ps--"
     }

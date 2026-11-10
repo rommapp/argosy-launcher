@@ -62,6 +62,8 @@ data class RunningAppUi(
     val screenNumber: Int?,
     val snapshotPath: String?,
     val snapshotTakenAtMillis: Long,
+    val screenSnapshotPath: String?,
+    val screenSnapshotTakenAtMillis: Long,
     val details: RunningGameDetails?,
     val slotIndex: Int?,
     val platformSlug: String?
@@ -103,7 +105,8 @@ data class RunningAppsUiState(
     val focusedIndex: Int = 0,
     val menu: RunningMenu? = null,
     val confirm: RunningConfirm? = null,
-    val closing: Map<Int, MakeRoomStage> = emptyMap()
+    val closing: Map<Int, MakeRoomStage> = emptyMap(),
+    val resumingTaskId: Int? = null
 ) {
     val focusedApp: RunningAppUi? get() = apps.getOrNull(focusedIndex)
 
@@ -153,6 +156,7 @@ class RunningAppsViewModel @Inject constructor(
     }
 
     fun onVisible() {
+        _uiState.update { it.copy(resumingTaskId = null) }
         if (pollJob?.isActive == true) return
         pollJob = viewModelScope.launch {
             while (isActive) {
@@ -214,6 +218,8 @@ class RunningAppsViewModel @Inject constructor(
             screenNumber = screens?.firstOrNull { it.displayId == displayId }?.number,
             snapshotPath = snapshot?.path,
             snapshotTakenAtMillis = snapshot?.takenAtMillis ?: 0L,
+            screenSnapshotPath = snapshot?.screen?.path,
+            screenSnapshotTakenAtMillis = snapshot?.screen?.takenAtMillis ?: 0L,
             details = entity?.let { gameDetails(it, this) },
             slotIndex = slotIndex,
             platformSlug = entity?.platformSlug
@@ -261,8 +267,34 @@ class RunningAppsViewModel @Inject constructor(
     }
 
     fun switchTo(index: Int) {
-        val app = _uiState.value.apps.getOrNull(index) ?: return
+        val state = _uiState.value
+        if (state.resumingTaskId != null) return
+        val app = state.apps.getOrNull(index) ?: return
+        if (state.showsSnapshots && app.snapshotPath != null) {
+            _uiState.update { it.copy(focusedIndex = index, resumingTaskId = app.taskId) }
+            return
+        }
         _uiState.update { it.copy(focusedIndex = index) }
+        bringForward(app)
+    }
+
+    /**
+     * Brings the game the Resume zoom grew out of to the front, once the zoom has filled the screen.
+     */
+    fun onResumeZoomFinished(taskId: Int) {
+        val app = _uiState.value.apps.firstOrNull { it.taskId == taskId }
+        if (app == null) {
+            _uiState.update { it.copy(resumingTaskId = null) }
+            return
+        }
+        bringForward(app)
+        viewModelScope.launch {
+            delay(RESUME_SETTLE_MS)
+            if (pollJob?.isActive == true) _uiState.update { it.copy(resumingTaskId = null) }
+        }
+    }
+
+    private fun bringForward(app: RunningAppUi) {
         val gameId = app.gameId
         if (gameId != null) {
             gameLaunchDelegate.launchGame(
@@ -274,8 +306,9 @@ class RunningAppsViewModel @Inject constructor(
             return
         }
         viewModelScope.launch {
-            val moved = withContext(Dispatchers.IO) { backgroundGames.bringToFront(app.taskId) }
+            val moved = backgroundGames.bringToFront(app.taskId)
             if (!moved) {
+                _uiState.update { it.copy(resumingTaskId = null) }
                 notificationManager.showError(
                     NotificationText.Res(R.string.running_notice_switch_failed, listOf(app.label))
                 )
@@ -285,6 +318,7 @@ class RunningAppsViewModel @Inject constructor(
     }
 
     private fun showGameLaunchFailed() {
+        _uiState.update { it.copy(resumingTaskId = null) }
         notificationManager.showError(NotificationText.Res(R.string.notif_gamelaunch_launch_failed))
     }
 
@@ -464,6 +498,7 @@ class RunningAppsViewModel @Inject constructor(
 
     private companion object {
         const val REFRESH_INTERVAL_MS = 3_000L
+        const val RESUME_SETTLE_MS = 1_500L
         const val KB_PER_MB = 1024L
         const val CLOSE_TIMEOUT_MS = 20_000L
         const val CLOSE_POLL_MS = 250L

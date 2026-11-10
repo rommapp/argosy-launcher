@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
+    <string name="privileged_access_prompt_title">%1$s का उपयोग करें?</string>
+    <string name="privileged_access_prompt_message_root">Argosy को इस डिवाइस पर %1$s मिला। क्या Argosy को एमुलेटर सेव फ़ोल्डरों तक पहुँचने और रूट सुविधाएँ चलाने के लिए इसका उपयोग करने दें?</string>
+    <string name="privileged_access_prompt_message_shizuku">Argosy को इस डिवाइस पर %1$s चलता हुआ मिला। क्या Argosy को एमुलेटर सेव फ़ोल्डरों तक पहुँचने के लिए इसका उपयोग करने दें?</string>
+    <string name="privileged_access_prompt_enable">चालू करें</string>
+    <string name="privileged_access_prompt_not_now">अभी नहीं</string>
+
+    <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
+    <string name="privileged_access_result_enabled_title">%1$s चालू किया गया</string>
+    <string name="privileged_access_result_root_subtitle">सेव फ़ोल्डर और रूट सुविधाएँ तैयार हैं</string>
+    <string name="privileged_access_result_app_data_subtitle">सेव फ़ोल्डर तैयार हैं। गेम चालू रखने के लिए रूट चाहिए।</string>
+    <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
+    <string name="privileged_access_result_unreachable_title">%1$s सेव फ़ोल्डरों तक नहीं पहुँच सकता</string>
+    <string name="privileged_access_result_unreachable_subtitle">Argosy अपनी मौजूदा फ़ाइल एक्सेस का उपयोग जारी रखता है</string>
+    <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
+    <string name="privileged_access_result_refused_title">%1$s एक्सेस नहीं दिया गया</string>
+</resources>

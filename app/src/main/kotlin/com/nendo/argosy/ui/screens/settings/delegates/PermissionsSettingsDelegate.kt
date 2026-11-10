@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Build
 import android.provider.Settings
 import androidx.core.content.ContextCompat
+import com.nendo.argosy.data.access.PrivilegedAccess
 import com.nendo.argosy.data.wallpaper.LockScreenScenes
 import com.nendo.argosy.hardware.FanController
 import com.nendo.argosy.hardware.FocusAccessibilityService
@@ -33,7 +34,8 @@ class PermissionsSettingsDelegate @Inject constructor(
     private val screenCaptureManager: ScreenCaptureManager,
     private val ledController: LEDController,
     private val fanController: FanController,
-    private val displayPreferences: DisplayPreferencesRepository
+    private val displayPreferences: DisplayPreferencesRepository,
+    private val privilegedAccess: PrivilegedAccess
 ) {
     private val _state = MutableStateFlow(PermissionsState())
     val state: StateFlow<PermissionsState> = _state.asStateFlow()
@@ -83,6 +85,16 @@ class PermissionsSettingsDelegate @Inject constructor(
             )
         }
     }
+
+    fun observePrivilegedAccess(scope: CoroutineScope) {
+        scope.launch {
+            privilegedAccess.state.collect { access ->
+                _state.update { it.copy(privilegedRoute = access.route, privilegedReach = access.reach) }
+            }
+        }
+    }
+
+    fun enablePrivilegedAccess() = privilegedAccess.enableOffered()
 
     fun openLiveWallpaperPicker() {
         application.startActivity(LockScreenScenes.pickerIntent(application).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))

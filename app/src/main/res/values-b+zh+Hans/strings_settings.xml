@@ -609,6 +609,10 @@
         <item quantity="other">%d个文件</item>
     </plurals>
     <string name="settings_bios_distribute_result_dismiss">确定</string>
+    <string name="settings_bios_distribute_failure_files_missing">密钥或固件未下载</string>
+    <string name="settings_bios_distribute_failure_keys_mismatch">密钥与此固件不匹配</string>
+    <string name="settings_bios_distribute_failure_emulator_missing">模拟器未安装</string>
+    <string name="settings_bios_distribute_failure_install_failed">无法安装</string>
 
     <string name="settings_bios_download_failed_title">部分文件未下载</string>
     <plurals name="settings_bios_download_failed_message">
@@ -620,7 +624,7 @@
     <string name="settings_bios_gpu_prompt_detected">已检测到：%1$s</string>
     <string name="settings_bios_gpu_prompt_message">自定义GPU驱动可以提升Snapdragon 8设备上Switch模拟的性能。</string>
     <string name="settings_bios_gpu_prompt_installing">正在安装驱动...</string>
-    <string name="settings_bios_gpu_prompt_install_versioned">安装推荐版本 (%1$s)</string>
+    <string name="settings_bios_gpu_prompt_recommended">推荐驱动：%1$s</string>
     <string name="settings_bios_gpu_prompt_install">安装推荐版本</string>
     <string name="settings_bios_gpu_prompt_install_from_file">从文件安装</string>
     <string name="settings_bios_gpu_prompt_skip">跳过</string>
@@ -655,6 +659,14 @@
     <string name="settings_permissions_accessibility_description">让快捷面板可在其他模拟器上方打开，并可静默截取存档截图</string>
     <string name="settings_permissions_live_wallpaper_title">动态锁屏</string>
     <string name="settings_permissions_live_wallpaper_description">允许 Argosy 应用动态锁屏。</string>
+    <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
+    <string name="settings_permissions_privileged_title">%1$s 访问权限</string>
+    <string name="settings_permissions_privileged_description_off">允许 Argosy 访问 Android/data 中的模拟器存档文件夹。</string>
+    <string name="settings_permissions_privileged_description_checking">正在检查访问权限...</string>
+    <string name="settings_permissions_privileged_description_root">存档文件夹和 root 功能可用。</string>
+    <string name="settings_permissions_privileged_description_app_data">存档文件夹可用。保持游戏在后台运行需要 root。</string>
+    <string name="settings_permissions_privileged_description_unreachable">无法访问此设备上的存档文件夹。</string>
+    <string name="settings_permissions_privileged_description_refused">未获得访问权限。选择以重新请求。</string>
     <string name="settings_lock_screen_wallpaper_label">Argosy 游戏库</string>
     <string name="settings_lock_screen_wallpaper_description">允许 Argosy 应用动态锁屏。</string>
     <string name="settings_permissions_status_footer">状态：已授予%1$d/%2$d项权限</string>

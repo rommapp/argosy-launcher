@@ -72,6 +72,9 @@
 -keepnames class com.nendo.argosy.data.emulator.LaunchResult$*
 -keepnames class com.nendo.argosy.data.steam.SteamDownloadState$*
 
+# Shizuku instantiates the user service by name in its own process
+-keep class com.nendo.argosy.util.ShizukuShellService { <init>(...); }
+
 # Discord Social SDK (optional, may not be present)
 -keep class com.discord.socialsdk.** { *; }
 -keep class discordpp.** { *; }

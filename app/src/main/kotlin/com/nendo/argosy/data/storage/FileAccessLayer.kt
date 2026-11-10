@@ -97,6 +97,14 @@ interface FileAccessLayer {
     fun normalizeForDisplay(path: String): String
     fun externalStorageRoots(): List<String>
 
+    /**
+     * Names and sizes of the regular files directly inside [path]. Where Android/data is
+     * mirrored, reads the real folder's listing without copying the files. Null when the folder
+     * cannot be listed.
+     */
+    fun fileSizes(path: String): Map<String, Long>? =
+        listFiles(path)?.filter { it.isFile }?.associate { it.name to it.size }
+
     // Escape hatch for third-party APIs requiring File
     fun getTransformedFile(path: String): File
 
@@ -108,10 +116,10 @@ interface FileAccessLayer {
     fun prepareSaveAccess(vararg paths: String?): Boolean
 
     /**
-     * Carries what a save operation wrote under [paths] out to the real folders, where the device
+     * Carries what an operation wrote under [paths] out to the real folders, where the device
      * keeps a mirrored copy of Android/data, and reports whether every write landed. True and a
-     * no-op everywhere else. Every save operation that writes calls this once it has finished
-     * writing, with the same paths it prepared, and fails the operation on false.
+     * no-op everywhere else. Every save operation, and anything else that writes into another
+     * app's Android/data, calls this once it has finished writing and fails the operation on false.
      */
     fun commitSaveAccess(vararg paths: String?): Boolean
 }

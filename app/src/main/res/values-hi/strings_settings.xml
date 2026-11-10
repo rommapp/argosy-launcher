@@ -622,6 +622,10 @@
         <item quantity="other">%d फ़ाइलें</item>
     </plurals>
     <string name="settings_bios_distribute_result_dismiss">ठीक है</string>
+    <string name="settings_bios_distribute_failure_files_missing">कीज़ या फ़र्मवेयर डाउनलोड नहीं हुए</string>
+    <string name="settings_bios_distribute_failure_keys_mismatch">कीज़ इस फ़र्मवेयर से मेल नहीं खातीं</string>
+    <string name="settings_bios_distribute_failure_emulator_missing">एमुलेटर इंस्टॉल नहीं है</string>
+    <string name="settings_bios_distribute_failure_install_failed">इंस्टॉल नहीं हो सका</string>
 
     <string name="settings_bios_download_failed_title">कुछ फ़ाइलें डाउनलोड नहीं हुईं</string>
     <plurals name="settings_bios_download_failed_message">
@@ -634,7 +638,7 @@
     <string name="settings_bios_gpu_prompt_detected">पहचाना गया: %1$s</string>
     <string name="settings_bios_gpu_prompt_message">Snapdragon 8 डिवाइस पर कस्टम GPU ड्राइवर Switch एमुलेशन का परफ़ॉर्मेंस बेहतर कर सकता है।</string>
     <string name="settings_bios_gpu_prompt_installing">ड्राइवर इंस्टॉल हो रहा है...</string>
-    <string name="settings_bios_gpu_prompt_install_versioned">सुझाया गया इंस्टॉल करें (%1$s)</string>
+    <string name="settings_bios_gpu_prompt_recommended">सुझाया गया ड्राइवर: %1$s</string>
     <string name="settings_bios_gpu_prompt_install">सुझाया गया इंस्टॉल करें</string>
     <string name="settings_bios_gpu_prompt_install_from_file">फ़ाइल से इंस्टॉल करें</string>
     <string name="settings_bios_gpu_prompt_skip">छोड़ें</string>
@@ -670,6 +674,14 @@
     <string name="settings_permissions_accessibility_description">क्विक पैनल को अन्य एमुलेटर के ऊपर खोलने देता है, और बिना आवाज़ के सेव स्क्रीनशॉट लेता है</string>
     <string name="settings_permissions_live_wallpaper_title">एनिमेटेड लॉक स्क्रीन</string>
     <string name="settings_permissions_live_wallpaper_description">Argosy को एनिमेटेड लॉक स्क्रीन लागू करने की अनुमति दें।</string>
+    <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
+    <string name="settings_permissions_privileged_title">%1$s एक्सेस</string>
+    <string name="settings_permissions_privileged_description_off">Argosy को Android/data में एमुलेटर सेव फ़ोल्डरों तक पहुँचने दें।</string>
+    <string name="settings_permissions_privileged_description_checking">एक्सेस की जाँच हो रही है...</string>
+    <string name="settings_permissions_privileged_description_root">सेव फ़ोल्डर और रूट सुविधाएँ उपलब्ध हैं।</string>
+    <string name="settings_permissions_privileged_description_app_data">सेव फ़ोल्डर उपलब्ध हैं। गेम चालू रखने के लिए रूट चाहिए।</string>
+    <string name="settings_permissions_privileged_description_unreachable">इस डिवाइस पर सेव फ़ोल्डरों तक नहीं पहुँचा जा सकता।</string>
+    <string name="settings_permissions_privileged_description_refused">एक्सेस नहीं दिया गया। फिर से पूछने के लिए चुनें।</string>
     <string name="settings_lock_screen_wallpaper_label">Argosy लाइब्रेरी</string>
     <string name="settings_lock_screen_wallpaper_description">Argosy को एनिमेटेड लॉक स्क्रीन लागू करने की अनुमति दें।</string>
     <string name="settings_permissions_status_footer">स्थिति: %1$d/%2$d अनुमतियाँ दी गईं</string>

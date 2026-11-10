@@ -1,5 +1,6 @@
 package com.nendo.argosy.hardware
 
+import com.nendo.argosy.data.access.PrivilegedAccess
 import com.nendo.argosy.data.preferences.PerformancePreferencesRepository
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -38,20 +39,31 @@ class PerformanceModeStoreTest {
         }
     }
 
-    private fun preferences(saved: PerformanceMode?, approved: Boolean) =
+    private fun preferences(saved: PerformanceMode?) =
         mockk<PerformancePreferencesRepository>(relaxed = true) {
             coEvery { getPerformanceMode() } returns saved?.name
-            coEvery { isRootGranted() } returns approved
         }
 
-    private fun store(backend: DevicePerformance, preferences: PerformancePreferencesRepository) =
-        PerformanceModeStore(mockk<DevicePerformanceResolver> { every { resolve() } returns backend }, preferences)
+    private fun approval(approved: Boolean) =
+        mockk<PrivilegedAccess>(relaxed = true) {
+            coEvery { isMagiskApproved() } returns approved
+        }
+
+    private fun store(
+        backend: DevicePerformance,
+        preferences: PerformancePreferencesRepository,
+        approval: PrivilegedAccess
+    ) = PerformanceModeStore(
+        mockk<DevicePerformanceResolver> { every { resolve() } returns backend },
+        preferences,
+        approval
+    )
 
     @Test
     fun `startup leaves a device never approved untouched`() = runTest {
         val backend = RootBackend(granted = false)
 
-        store(backend, preferences(PerformanceMode.GAMING, approved = false)).restoreSavedMode()
+        store(backend, preferences(PerformanceMode.GAMING), approval(approved = false)).restoreSavedMode()
 
         assertEquals(0, backend.accessRequests)
         assertTrue(backend.applied.isEmpty())
@@ -61,7 +73,7 @@ class PerformanceModeStoreTest {
     fun `startup reapplies the saved mode once approval is on record`() = runTest {
         val backend = RootBackend(granted = false)
 
-        store(backend, preferences(PerformanceMode.GAMING, approved = true)).restoreSavedMode()
+        store(backend, preferences(PerformanceMode.GAMING), approval(approved = true)).restoreSavedMode()
 
         assertEquals(1, backend.accessRequests)
         assertEquals(listOf(PerformanceMode.GAMING), backend.applied)
@@ -70,35 +82,36 @@ class PerformanceModeStoreTest {
     @Test
     fun `startup clears the approval record when root is refused`() = runTest {
         val backend = RootBackend(granted = false, grantOnRequest = false)
-        val preferences = preferences(PerformanceMode.GAMING, approved = true)
+        val approval = approval(approved = true)
 
-        store(backend, preferences).restoreSavedMode()
+        store(backend, preferences(PerformanceMode.GAMING), approval).restoreSavedMode()
 
         assertTrue(backend.applied.isEmpty())
-        coVerify { preferences.setRootGranted(false) }
+        coVerify { approval.recordMagiskApproval(false) }
     }
 
     @Test
     fun `a granted request is recorded and a chosen mode is saved by its token`() = runTest {
         val backend = RootBackend(granted = false)
-        val preferences = preferences(saved = null, approved = false)
-        val store = store(backend, preferences)
+        val preferences = preferences(saved = null)
+        val approval = approval(approved = false)
+        val store = store(backend, preferences, approval)
 
         assertTrue(store.requestAccess(backend))
         store.remember(backend, PerformanceMode.GAMING)
 
-        coVerify { preferences.setRootGranted(true) }
+        coVerify { approval.recordMagiskApproval(true) }
         coVerify { preferences.setPerformanceMode("GAMING") }
     }
 
     @Test
     fun `a new process re-acquires access only when approval is on record`() = runTest {
         val unapproved = RootBackend(granted = false)
-        store(unapproved, preferences(saved = null, approved = false)).resumeAccess(unapproved)
+        store(unapproved, preferences(saved = null), approval(approved = false)).resumeAccess(unapproved)
         assertEquals(0, unapproved.accessRequests)
 
         val approved = RootBackend(granted = false)
-        store(approved, preferences(saved = null, approved = true)).resumeAccess(approved)
+        store(approved, preferences(saved = null), approval(approved = true)).resumeAccess(approved)
         assertEquals(1, approved.accessRequests)
     }
 }

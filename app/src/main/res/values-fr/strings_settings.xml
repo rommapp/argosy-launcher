@@ -635,6 +635,10 @@
         <item quantity="other">%d fichiers</item>
     </plurals>
     <string name="settings_bios_distribute_result_dismiss">OK</string>
+    <string name="settings_bios_distribute_failure_files_missing">Clés ou firmware non téléchargés</string>
+    <string name="settings_bios_distribute_failure_keys_mismatch">Les clés ne correspondent pas à ce firmware</string>
+    <string name="settings_bios_distribute_failure_emulator_missing">Émulateur non installé</string>
+    <string name="settings_bios_distribute_failure_install_failed">Installation impossible</string>
 
     <string name="settings_bios_download_failed_title">Certains fichiers n\'ont pas été téléchargés</string>
     <plurals name="settings_bios_download_failed_message">
@@ -648,7 +652,7 @@
     <string name="settings_bios_gpu_prompt_detected">Détecté : %1$s</string>
     <string name="settings_bios_gpu_prompt_message">Un pilote GPU personnalisé peut améliorer les performances d\'émulation de la Switch sur les appareils Snapdragon 8.</string>
     <string name="settings_bios_gpu_prompt_installing">Installation du pilote...</string>
-    <string name="settings_bios_gpu_prompt_install_versioned">Installer la version recommandée (%1$s)</string>
+    <string name="settings_bios_gpu_prompt_recommended">Pilote recommandé : %1$s</string>
     <string name="settings_bios_gpu_prompt_install">Installer la version recommandée</string>
     <string name="settings_bios_gpu_prompt_install_from_file">Installer depuis un fichier</string>
     <string name="settings_bios_gpu_prompt_skip">Ignorer</string>
@@ -685,6 +689,14 @@
     <string name="settings_permissions_accessibility_description">Permet d\'ouvrir le panneau rapide par-dessus les autres émulateurs et de prendre des captures de sauvegarde en silence</string>
     <string name="settings_permissions_live_wallpaper_title">Écran de verrouillage animé</string>
     <string name="settings_permissions_live_wallpaper_description">Autorisez Argosy à appliquer un écran de verrouillage animé.</string>
+    <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
+    <string name="settings_permissions_privileged_title">Accès %1$s</string>
+    <string name="settings_permissions_privileged_description_off">Autorisez Argosy à accéder aux dossiers de sauvegarde des émulateurs dans Android/data.</string>
+    <string name="settings_permissions_privileged_description_checking">Vérification de l\'accès...</string>
+    <string name="settings_permissions_privileged_description_root">Les dossiers de sauvegarde et les fonctions root sont disponibles.</string>
+    <string name="settings_permissions_privileged_description_app_data">Les dossiers de sauvegarde sont disponibles. Garder les jeux en cours d\'exécution nécessite le root.</string>
+    <string name="settings_permissions_privileged_description_unreachable">Impossible d\'accéder aux dossiers de sauvegarde sur cet appareil.</string>
+    <string name="settings_permissions_privileged_description_refused">L\'accès n\'a pas été accordé. Sélectionnez pour redemander.</string>
     <string name="settings_lock_screen_wallpaper_label">Bibliothèque Argosy</string>
     <string name="settings_lock_screen_wallpaper_description">Autorisez Argosy à appliquer un écran de verrouillage animé.</string>
     <string name="settings_permissions_status_footer">État : %1$d/%2$d autorisations accordées</string>

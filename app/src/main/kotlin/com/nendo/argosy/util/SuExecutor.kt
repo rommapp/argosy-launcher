@@ -16,19 +16,27 @@ interface RootCommandRunner {
     fun requestGrant(): Boolean
 
     /**
-     * The command's output. Fails when `su` is refused, times out, or the command exits non-zero.
+     * The command's output. Fails when the route is refused, times out, or the command exits
+     * non-zero.
      */
     fun execute(command: String): Result<String>
+
+    /**
+     * Runs a multi-line [script] and reports its exit code and every output line. Null when the
+     * route refuses it or it outlives the route's limit.
+     */
+    fun runScript(script: String): RootShell.Result?
 }
 
 /**
- * The `su` route behind performance modes on rooted devices without a vendor root daemon.
- * [RootShell] never consults it.
+ * The `su` route behind performance modes and, once the user enables it, [RootShell] on rooted
+ * devices without a vendor root daemon.
  */
 object SuExecutor : RootCommandRunner {
 
     private const val SU = "su"
     private const val TIMEOUT_SECONDS = 30L
+    private const val SCRIPT_TIMEOUT_SECONDS = 600L
     private const val ROOT_UID_MARKER = "uid=0("
     private val knownDirs = listOf("/system/bin", "/system_ext/bin", "/system/xbin", "/sbin", "/debug_ramdisk")
 
@@ -61,5 +69,10 @@ object SuExecutor : RootCommandRunner {
         val output = process.inputStream.bufferedReader().use { it.readText() }
         check(process.exitValue() == 0) { "su exited ${process.exitValue()}: ${output.trim()}" }
         output
+    }
+
+    override fun runScript(script: String): RootShell.Result? {
+        val su = binary ?: return null
+        return ShellProcess.run(listOf(su.path), script, SCRIPT_TIMEOUT_SECONDS)
     }
 }

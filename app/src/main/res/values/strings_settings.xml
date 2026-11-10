@@ -1242,6 +1242,15 @@
     </plurals>
     <!-- Button that closes that panel. The usual short word for agreeing. -->
     <string name="settings_bios_distribute_result_dismiss">OK</string>
+    <!-- Shown in that panel in place of a file count when a console's files could not be
+         installed, because the keys or firmware are not downloaded yet. -->
+    <string name="settings_bios_distribute_failure_files_missing">Keys or firmware not downloaded</string>
+    <!-- Same place. The console keys do not work with the downloaded system firmware version. -->
+    <string name="settings_bios_distribute_failure_keys_mismatch">Keys don\'t match this firmware</string>
+    <!-- Same place. The emulator that needs these files is not installed. -->
+    <string name="settings_bios_distribute_failure_emulator_missing">Emulator not installed</string>
+    <!-- Same place. Copying the files into the emulator's folder failed. -->
+    <string name="settings_bios_distribute_failure_install_failed">Couldn\'t install</string>
 
     <!-- Heading shown when a BIOS download run finished with some files missing. -->
     <string name="settings_bios_download_failed_title">Some Files Did Not Download</string>
@@ -1261,9 +1270,9 @@
     <string name="settings_bios_gpu_prompt_message">A custom GPU driver can improve Switch emulation performance on Snapdragon 8 devices.</string>
     <!-- Line shown while the driver is being put in place. -->
     <string name="settings_bios_gpu_prompt_installing">Installing driver...</string>
-    <!-- Button taking the suggested driver. Verb phrase. %1$s is the driver's version. -->
-    <string name="settings_bios_gpu_prompt_install_versioned">Install Recommended (%1$s)</string>
-    <!-- The same button when the version is unknown. Verb phrase. -->
+    <!-- Line naming the suggested driver. %1$s is the driver package's name, left untranslated. -->
+    <string name="settings_bios_gpu_prompt_recommended">Recommended driver: %1$s</string>
+    <!-- Button taking the suggested driver. Verb phrase. -->
     <string name="settings_bios_gpu_prompt_install">Install Recommended</string>
     <!-- Button that takes a driver the user supplies. Verb phrase. -->
     <string name="settings_bios_gpu_prompt_install_from_file">Install from File</string>
@@ -1328,6 +1337,14 @@
     <string name="settings_permissions_live_wallpaper_title">Animated Lock Screen</string>
     <!-- Body of that card. -->
     <string name="settings_permissions_live_wallpaper_description">Allow Argosy to apply an animated lock screen.</string>
+    <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
+    <string name="settings_permissions_privileged_title">%1$s access</string>
+    <string name="settings_permissions_privileged_description_off">Let Argosy reach emulator save folders in Android/data.</string>
+    <string name="settings_permissions_privileged_description_checking">Checking access...</string>
+    <string name="settings_permissions_privileged_description_root">Save folders and root features are available.</string>
+    <string name="settings_permissions_privileged_description_app_data">Save folders are available. Keeping games running needs root.</string>
+    <string name="settings_permissions_privileged_description_unreachable">Can\'t reach save folders on this device.</string>
+    <string name="settings_permissions_privileged_description_refused">Access was not granted. Select to ask again.</string>
     <!-- Name of Argosy's live wallpaper in Android's wallpaper picker. -->
     <string name="settings_lock_screen_wallpaper_label">Argosy Library</string>
     <!-- Description of that wallpaper in Android's wallpaper picker, which Argosy opens on startup while Lock Screen Art is on. -->

@@ -28,6 +28,8 @@ class BiosSwitchInstallTest {
     private lateinit var tempDir: File
     private lateinit var fal: FileAccessLayer
     private lateinit var repository: BiosRepository
+    private lateinit var firmwareDao: FirmwareDao
+    private lateinit var firmwareZip: File
     private val written = mutableMapOf<String, ByteArrayOutputStream>()
 
     @Before
@@ -38,7 +40,7 @@ class BiosSwitchInstallTest {
         every { context.packageManager.getPackageInfo(any<String>(), any<Int>()) } returns PackageInfo()
 
         val prodKeys = File(tempDir, "prod.keys").apply { writeText("header_key = 00") }
-        val firmwareZip = File(tempDir, "Firmware.zip").apply {
+        firmwareZip = File(tempDir, "Firmware.zip").apply {
             ZipOutputStream(outputStream()).use { zip ->
                 listOf("a.nca", "b.cnmt.nca").forEach { name ->
                     zip.putNextEntry(ZipEntry(name))
@@ -47,7 +49,7 @@ class BiosSwitchInstallTest {
                 }
             }
         }
-        val firmwareDao = mockk<FirmwareDao>(relaxed = true)
+        firmwareDao = mockk(relaxed = true)
         coEvery { firmwareDao.getByPlatformSlug("switch") } returns listOf(
             firmware(1, "prod.keys", prodKeys),
             firmware(2, "Firmware.zip", firmwareZip)
@@ -61,6 +63,9 @@ class BiosSwitchInstallTest {
         every { fal.getOutputStream(any()) } answers {
             ByteArrayOutputStream().also { written[firstArg()] = it }
         }
+        every { fal.readBytes(any()) } returns null
+        every { fal.fileSizes(any()) } returns null
+        every { fal.commitSaveAccess(*anyVararg()) } returns true
 
         repository = BiosRepository(
             context = context,
@@ -117,6 +122,94 @@ class BiosSwitchInstallTest {
     @Test
     fun `a refused firmware write is an error, not a success`() = runBlocking {
         every { fal.getOutputStream(any()) } returns null
+
+        val result = repository.installSwitchFirmware()
+
+        assertTrue(result is BiosRepository.SwitchInstallResult.Error)
+    }
+
+    @Test
+    fun `keys downloaded into the internal fallback folder survive the install`() = runBlocking {
+        val stored = File(tempDir, "files/bios/switch/prod.keys").apply {
+            parentFile?.mkdirs()
+            writeText("header_key = 00")
+        }
+        coEvery { firmwareDao.getByPlatformSlug("switch") } returns listOf(
+            firmware(1, "prod.keys", stored),
+            firmware(2, "Firmware.zip", firmwareZip)
+        )
+
+        val result = repository.installSwitchFirmware()
+
+        assertEquals(BiosRepository.SwitchInstallResult.Success, result)
+        assertEquals("header_key = 00", stored.readText())
+    }
+
+    @Test
+    fun `a Switch install that fails is reported as a failed platform`() = runBlocking {
+        every { fal.writeBytes(match { it.endsWith("/keys/prod.keys") }, any()) } returns false
+
+        val results = repository.distributeAllBiosToEmulatorsDetailed()
+
+        assertEquals(
+            listOf(
+                BiosRepository.DetailedDistributeResult(
+                    emulatorId = "eden",
+                    platformResults = emptyMap(),
+                    failedPlatforms = mapOf("switch" to BiosRepository.DistributeFailure.INSTALL_FAILED)
+                )
+            ),
+            results
+        )
+    }
+
+    @Test
+    fun `a Switch install that succeeds is reported as copied files`() = runBlocking {
+        val results = repository.distributeAllBiosToEmulatorsDetailed()
+
+        assertEquals(
+            listOf(BiosRepository.DetailedDistributeResult("eden", mapOf("switch" to 2))),
+            results
+        )
+    }
+
+    @Test
+    fun `firmware Eden already holds is not written again`() = runBlocking {
+        every { fal.fileSizes(match { it.endsWith("/registered") }) } returns
+            mapOf("a.nca" to 5L, "b.cnmt.nca" to 10L, "older.nca" to 3L)
+
+        val result = repository.installSwitchFirmware()
+
+        assertEquals(BiosRepository.SwitchInstallResult.Success, result)
+        assertEquals(emptyList<String>(), written.keys.filter { "/registered/" in it })
+        verify(exactly = 0) { fal.mkdirs(match { it.endsWith("/registered") }) }
+    }
+
+    @Test
+    fun `a firmware file of another size is written again`() = runBlocking {
+        every { fal.fileSizes(match { it.endsWith("/registered") }) } returns
+            mapOf("a.nca" to 5L, "b.cnmt.nca" to 11L)
+
+        val result = repository.installSwitchFirmware()
+
+        assertEquals(BiosRepository.SwitchInstallResult.Success, result)
+        assertEquals(2, written.keys.count { "/registered/" in it })
+        verify { fal.commitSaveAccess(*varargAny { it?.endsWith("/registered") == true }) }
+    }
+
+    @Test
+    fun `keys Eden already holds are not written again`() = runBlocking {
+        every { fal.readBytes(match { it.endsWith("/keys/prod.keys") }) } returns "header_key = 00".toByteArray()
+
+        val result = repository.installSwitchFirmware()
+
+        assertEquals(BiosRepository.SwitchInstallResult.Success, result)
+        verify(exactly = 0) { fal.writeBytes(match { it.endsWith("/keys/prod.keys") }, any()) }
+    }
+
+    @Test
+    fun `firmware that cannot reach Eden's real folder is an error`() = runBlocking {
+        every { fal.commitSaveAccess(*varargAny { it?.endsWith("/registered") == true }) } returns false
 
         val result = repository.installSwitchFirmware()
 

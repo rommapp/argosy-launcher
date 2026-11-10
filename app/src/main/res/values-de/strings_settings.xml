@@ -632,6 +632,10 @@
         <item quantity="other">%d Dateien</item>
     </plurals>
     <string name="settings_bios_distribute_result_dismiss">OK</string>
+    <string name="settings_bios_distribute_failure_files_missing">Keys oder Firmware nicht heruntergeladen</string>
+    <string name="settings_bios_distribute_failure_keys_mismatch">Keys passen nicht zu dieser Firmware</string>
+    <string name="settings_bios_distribute_failure_emulator_missing">Emulator nicht installiert</string>
+    <string name="settings_bios_distribute_failure_install_failed">Installation fehlgeschlagen</string>
 
     <string name="settings_bios_download_failed_title">Einige Dateien wurden nicht heruntergeladen</string>
     <plurals name="settings_bios_download_failed_message">
@@ -644,7 +648,7 @@
     <string name="settings_bios_gpu_prompt_detected">Erkannt: %1$s</string>
     <string name="settings_bios_gpu_prompt_message">Ein benutzerdefinierter GPU-Treiber kann die Switch-Emulationsleistung auf Snapdragon-8-Geräten verbessern.</string>
     <string name="settings_bios_gpu_prompt_installing">Treiber wird installiert…</string>
-    <string name="settings_bios_gpu_prompt_install_versioned">Empfohlenen installieren (%1$s)</string>
+    <string name="settings_bios_gpu_prompt_recommended">Empfohlener Treiber: %1$s</string>
     <string name="settings_bios_gpu_prompt_install">Empfohlenen installieren</string>
     <string name="settings_bios_gpu_prompt_install_from_file">Aus Datei installieren</string>
     <string name="settings_bios_gpu_prompt_skip">Überspringen</string>
@@ -680,6 +684,14 @@
     <string name="settings_permissions_accessibility_description">Lässt die Schnellleiste über anderen Emulatoren öffnen und ermöglicht stille Spielstand-Screenshots</string>
     <string name="settings_permissions_live_wallpaper_title">Animierter Sperrbildschirm</string>
     <string name="settings_permissions_live_wallpaper_description">Erlaube Argosy, einen animierten Sperrbildschirm einzurichten.</string>
+    <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
+    <string name="settings_permissions_privileged_title">%1$s-Zugriff</string>
+    <string name="settings_permissions_privileged_description_off">Argosy den Zugriff auf Spielstandordner von Emulatoren in Android/data erlauben.</string>
+    <string name="settings_permissions_privileged_description_checking">Zugriff wird geprüft...</string>
+    <string name="settings_permissions_privileged_description_root">Spielstandordner und Root-Funktionen sind verfügbar.</string>
+    <string name="settings_permissions_privileged_description_app_data">Spielstandordner sind verfügbar. Damit Spiele weiterlaufen, ist Root erforderlich.</string>
+    <string name="settings_permissions_privileged_description_unreachable">Spielstandordner sind auf diesem Gerät nicht erreichbar.</string>
+    <string name="settings_permissions_privileged_description_refused">Zugriff wurde nicht gewährt. Auswählen, um erneut zu fragen.</string>
     <string name="settings_lock_screen_wallpaper_label">Argosy-Bibliothek</string>
     <string name="settings_lock_screen_wallpaper_description">Erlaube Argosy, einen animierten Sperrbildschirm einzurichten.</string>
     <string name="settings_permissions_status_footer">Status: %1$d/%2$d Berechtigungen erteilt</string>

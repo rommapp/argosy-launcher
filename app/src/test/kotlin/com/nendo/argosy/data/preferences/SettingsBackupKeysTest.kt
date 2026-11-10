@@ -78,7 +78,7 @@ class SettingsBackupKeysTest {
         "builtin_architecture_override", "builtin_gpu_driver", "grip_auto_controllers",
         "screen_layouts", "screen_layouts_unreadable", "lock_screen_art_applied", "live_wallpaper_offered", "home_app_available",
         "games_display_target", "apps_display_target", "performance_saved_mode",
-        "performance_root_granted"
+        "performance_root_granted", "shizuku_access_enabled", "privileged_access_prompt_answered"
     )
 
     private val perDeviceScreenChoices = setOf(

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
+    <string name="privileged_access_prompt_title">要使用 %1$s 嗎？</string>
+    <string name="privileged_access_prompt_message_root">Argosy 在此裝置上找到 %1$s。要允許 Argosy 使用它存取模擬器存檔資料夾並執行 root 功能嗎？</string>
+    <string name="privileged_access_prompt_message_shizuku">Argosy 偵測到 %1$s 正在此裝置上執行。要允許 Argosy 使用它存取模擬器存檔資料夾嗎？</string>
+    <string name="privileged_access_prompt_enable">啟用</string>
+    <string name="privileged_access_prompt_not_now">暫時不要</string>
+
+    <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
+    <string name="privileged_access_result_enabled_title">%1$s 已啟用</string>
+    <string name="privileged_access_result_root_subtitle">存檔資料夾和 root 功能已就緒</string>
+    <string name="privileged_access_result_app_data_subtitle">存檔資料夾已就緒。讓遊戲在背景持續執行需要 root。</string>
+    <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
+    <string name="privileged_access_result_unreachable_title">%1$s 無法存取存檔資料夾</string>
+    <string name="privileged_access_result_unreachable_subtitle">Argosy 將繼續使用目前的檔案存取方式</string>
+    <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
+    <string name="privileged_access_result_refused_title">未取得 %1$s 存取權</string>
+</resources>

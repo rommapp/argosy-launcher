@@ -647,6 +647,10 @@
         <item quantity="other">%d файла</item>
     </plurals>
     <string name="settings_bios_distribute_result_dismiss">ОК</string>
+    <string name="settings_bios_distribute_failure_files_missing">Ключи или прошивка не загружены</string>
+    <string name="settings_bios_distribute_failure_keys_mismatch">Ключи не подходят к этой прошивке</string>
+    <string name="settings_bios_distribute_failure_emulator_missing">Эмулятор не установлен</string>
+    <string name="settings_bios_distribute_failure_install_failed">Не удалось установить</string>
 
     <string name="settings_bios_download_failed_title">Некоторые файлы не загрузились</string>
     <plurals name="settings_bios_download_failed_message">
@@ -661,7 +665,7 @@
     <string name="settings_bios_gpu_prompt_detected">Обнаружено: %1$s</string>
     <string name="settings_bios_gpu_prompt_message">Свой драйвер GPU может улучшить производительность эмуляции Switch на устройствах со Snapdragon 8.</string>
     <string name="settings_bios_gpu_prompt_installing">Установка драйвера...</string>
-    <string name="settings_bios_gpu_prompt_install_versioned">Установить рекомендованный (%1$s)</string>
+    <string name="settings_bios_gpu_prompt_recommended">Рекомендуемый драйвер: %1$s</string>
     <string name="settings_bios_gpu_prompt_install">Установить рекомендованный</string>
     <string name="settings_bios_gpu_prompt_install_from_file">Установить из файла</string>
     <string name="settings_bios_gpu_prompt_skip">Пропустить</string>
@@ -699,6 +703,14 @@
     <string name="settings_permissions_accessibility_description">Позволяет открывать быструю панель поверх других эмуляторов и беззвучно делать снимки сохранений</string>
     <string name="settings_permissions_live_wallpaper_title">Анимированный экран блокировки</string>
     <string name="settings_permissions_live_wallpaper_description">Разрешите Argosy установить анимированный экран блокировки.</string>
+    <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
+    <string name="settings_permissions_privileged_title">Доступ через %1$s</string>
+    <string name="settings_permissions_privileged_description_off">Разрешите Argosy доступ к папкам сохранений эмуляторов в Android/data.</string>
+    <string name="settings_permissions_privileged_description_checking">Проверка доступа...</string>
+    <string name="settings_permissions_privileged_description_root">Папки сохранений и функции root доступны.</string>
+    <string name="settings_permissions_privileged_description_app_data">Папки сохранений доступны. Для работы игр в фоне нужен root.</string>
+    <string name="settings_permissions_privileged_description_unreachable">Нет доступа к папкам сохранений на этом устройстве.</string>
+    <string name="settings_permissions_privileged_description_refused">Доступ не предоставлен. Выберите, чтобы запросить снова.</string>
     <string name="settings_lock_screen_wallpaper_label">Библиотека Argosy</string>
     <string name="settings_lock_screen_wallpaper_description">Разрешите Argosy установить анимированный экран блокировки.</string>
     <string name="settings_permissions_status_footer">Статус: предоставлено %1$d/%2$d разрешений</string>

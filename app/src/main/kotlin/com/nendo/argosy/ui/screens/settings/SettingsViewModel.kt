@@ -305,6 +305,7 @@ class SettingsViewModel @Inject constructor(
         displayDelegate.loadPreviewGame(viewModelScope)
         displayDelegate.observeScreenCapturePermission(viewModelScope)
         permissionsDelegate.observeLockScreenArt(viewModelScope)
+        permissionsDelegate.observePrivilegedAccess(viewModelScope)
         routeStartControllerDetectionPolling(this)
         installerDelegate.observeJobs(viewModelScope)
         viewModelScope.launch {
@@ -1666,6 +1667,8 @@ class SettingsViewModel @Inject constructor(
     fun openAccessibilitySettings() = permissionsDelegate.openAccessibilitySettings()
 
     fun openLiveWallpaperPicker() = permissionsDelegate.openLiveWallpaperPicker()
+
+    fun enablePrivilegedAccess() = permissionsDelegate.enablePrivilegedAccess()
 
     fun requestScreenCapturePermission() = routeRequestScreenCapturePermission(this)
     fun refreshPermissions() = permissionsDelegate.refreshPermissions()

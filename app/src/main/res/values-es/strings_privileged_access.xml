@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
+    <string name="privileged_access_prompt_title">¿Usar %1$s?</string>
+    <string name="privileged_access_prompt_message_root">Argosy encontró %1$s en este dispositivo. ¿Permitir que Argosy lo use para acceder a las carpetas de guardado de los emuladores y ejecutar funciones root?</string>
+    <string name="privileged_access_prompt_message_shizuku">Argosy detectó que %1$s se está ejecutando en este dispositivo. ¿Permitir que Argosy lo use para acceder a las carpetas de guardado de los emuladores?</string>
+    <string name="privileged_access_prompt_enable">Activar</string>
+    <string name="privileged_access_prompt_not_now">Ahora no</string>
+
+    <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
+    <string name="privileged_access_result_enabled_title">%1$s activado</string>
+    <string name="privileged_access_result_root_subtitle">Las carpetas de guardado y las funciones root están listas</string>
+    <string name="privileged_access_result_app_data_subtitle">Las carpetas de guardado están listas. Mantener los juegos en ejecución necesita root.</string>
+    <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
+    <string name="privileged_access_result_unreachable_title">%1$s no puede acceder a las carpetas de guardado</string>
+    <string name="privileged_access_result_unreachable_subtitle">Argosy sigue usando su acceso a archivos actual</string>
+    <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
+    <string name="privileged_access_result_refused_title">No se concedió el acceso de %1$s</string>
+</resources>

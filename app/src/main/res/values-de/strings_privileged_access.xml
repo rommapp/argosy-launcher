@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
+    <string name="privileged_access_prompt_title">%1$s verwenden?</string>
+    <string name="privileged_access_prompt_message_root">Argosy hat %1$s auf diesem Gerät gefunden. Darf Argosy es verwenden, um auf Spielstandordner von Emulatoren zuzugreifen und Root-Funktionen auszuführen?</string>
+    <string name="privileged_access_prompt_message_shizuku">Argosy hat festgestellt, dass %1$s auf diesem Gerät läuft. Darf Argosy es verwenden, um auf Spielstandordner von Emulatoren zuzugreifen?</string>
+    <string name="privileged_access_prompt_enable">Aktivieren</string>
+    <string name="privileged_access_prompt_not_now">Nicht jetzt</string>
+
+    <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
+    <string name="privileged_access_result_enabled_title">%1$s aktiviert</string>
+    <string name="privileged_access_result_root_subtitle">Spielstandordner und Root-Funktionen sind bereit</string>
+    <string name="privileged_access_result_app_data_subtitle">Spielstandordner sind bereit. Damit Spiele weiterlaufen, ist Root erforderlich.</string>
+    <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
+    <string name="privileged_access_result_unreachable_title">%1$s erreicht keine Spielstandordner</string>
+    <string name="privileged_access_result_unreachable_subtitle">Argosy verwendet weiterhin den bisherigen Dateizugriff</string>
+    <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
+    <string name="privileged_access_result_refused_title">%1$s-Zugriff wurde nicht gewährt</string>
+</resources>

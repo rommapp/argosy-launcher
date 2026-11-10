@@ -1219,6 +1219,10 @@
     </plurals>
     <!-- Button that closes that panel. The usual short word for agreeing. -->
     <string name="settings_bios_distribute_result_dismiss">OK</string>
+    <string name="settings_bios_distribute_failure_files_missing">Chaves ou firmware não baixados</string>
+    <string name="settings_bios_distribute_failure_keys_mismatch">As chaves não correspondem a este firmware</string>
+    <string name="settings_bios_distribute_failure_emulator_missing">Emulador não instalado</string>
+    <string name="settings_bios_distribute_failure_install_failed">Não foi possível instalar</string>
 
     <!-- Heading shown when a BIOS download run finished with some files missing. -->
     <string name="settings_bios_download_failed_title">Alguns Arquivos Não Foram Baixados</string>
@@ -1240,7 +1244,7 @@
     <!-- Line shown while the driver is being put in place. -->
     <string name="settings_bios_gpu_prompt_installing">Instalando driver...</string>
     <!-- Button taking the suggested driver. Verb phrase. %1$s is the driver's version. -->
-    <string name="settings_bios_gpu_prompt_install_versioned">Instalar Recomendado (%1$s)</string>
+    <string name="settings_bios_gpu_prompt_recommended">Driver recomendado: %1$s</string>
     <!-- The same button when the version is unknown. Verb phrase. -->
     <string name="settings_bios_gpu_prompt_install">Instalar Recomendado</string>
     <!-- Button that takes a driver the user supplies. Verb phrase. -->
@@ -1307,6 +1311,14 @@
     <string name="settings_permissions_live_wallpaper_title">Tela de Bloqueio Animada</string>
     <!-- Body of that card. -->
     <string name="settings_permissions_live_wallpaper_description">Permitir que o Argosy aplique uma tela de bloqueio animada.</string>
+    <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
+    <string name="settings_permissions_privileged_title">Acesso via %1$s</string>
+    <string name="settings_permissions_privileged_description_off">Permitir que o Argosy acesse as pastas de save dos emuladores em Android/data.</string>
+    <string name="settings_permissions_privileged_description_checking">Verificando acesso...</string>
+    <string name="settings_permissions_privileged_description_root">Pastas de save e recursos root disponíveis.</string>
+    <string name="settings_permissions_privileged_description_app_data">Pastas de save disponíveis. Manter jogos em execução precisa de root.</string>
+    <string name="settings_permissions_privileged_description_unreachable">Não é possível acessar as pastas de save neste dispositivo.</string>
+    <string name="settings_permissions_privileged_description_refused">O acesso não foi concedido. Selecione para pedir novamente.</string>
     <!-- Name of Argosy's live wallpaper in Android's wallpaper picker. -->
     <string name="settings_lock_screen_wallpaper_label">Biblioteca Argosy</string>
     <!-- Description of that wallpaper in Android's wallpaper picker, which Argosy opens on startup while Lock Screen Art is on. -->

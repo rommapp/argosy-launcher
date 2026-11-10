@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
+    <string name="privileged_access_prompt_title">Utiliser %1$s ?</string>
+    <string name="privileged_access_prompt_message_root">Argosy a détecté %1$s sur cet appareil. Autoriser Argosy à l\'utiliser pour accéder aux dossiers de sauvegarde des émulateurs et exécuter les fonctions root ?</string>
+    <string name="privileged_access_prompt_message_shizuku">Argosy a détecté que %1$s est en cours d\'exécution sur cet appareil. Autoriser Argosy à l\'utiliser pour accéder aux dossiers de sauvegarde des émulateurs ?</string>
+    <string name="privileged_access_prompt_enable">Activer</string>
+    <string name="privileged_access_prompt_not_now">Plus tard</string>
+
+    <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
+    <string name="privileged_access_result_enabled_title">%1$s activé</string>
+    <string name="privileged_access_result_root_subtitle">Les dossiers de sauvegarde et les fonctions root sont prêts</string>
+    <string name="privileged_access_result_app_data_subtitle">Les dossiers de sauvegarde sont prêts. Garder les jeux en cours d\'exécution nécessite le root.</string>
+    <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
+    <string name="privileged_access_result_unreachable_title">%1$s ne peut pas accéder aux dossiers de sauvegarde</string>
+    <string name="privileged_access_result_unreachable_subtitle">Argosy continue d\'utiliser son accès aux fichiers actuel</string>
+    <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
+    <string name="privileged_access_result_refused_title">L\'accès %1$s n\'a pas été accordé</string>
+</resources>

@@ -1,6 +1,7 @@
 package com.nendo.argosy.hardware
 
 import com.nendo.argosy.util.RootCommandRunner
+import com.nendo.argosy.util.RootShell
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -217,6 +218,8 @@ class RootedQualcommPerformanceTest {
             }
             return Result.success("")
         }
+
+        override fun runScript(script: String): RootShell.Result? = null
 
         private companion object {
             val WRITE = Regex("(?:\\[ -e (\\S+) ] && )?echo (\\S+) > (\\S+)")

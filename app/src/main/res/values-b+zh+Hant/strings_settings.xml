@@ -584,6 +584,10 @@
         <item quantity="other">%d個檔案</item>
     </plurals>
     <string name="settings_bios_distribute_result_dismiss">確定</string>
+    <string name="settings_bios_distribute_failure_files_missing">金鑰或韌體尚未下載</string>
+    <string name="settings_bios_distribute_failure_keys_mismatch">金鑰與此韌體不相符</string>
+    <string name="settings_bios_distribute_failure_emulator_missing">模擬器未安裝</string>
+    <string name="settings_bios_distribute_failure_install_failed">無法安裝</string>
 
     <string name="settings_bios_download_failed_title">部分檔案未下載</string>
     <plurals name="settings_bios_download_failed_message">
@@ -595,7 +599,7 @@
     <string name="settings_bios_gpu_prompt_detected">已偵測：%1$s</string>
     <string name="settings_bios_gpu_prompt_message">在Snapdragon 8裝置上，自訂GPU驅動程式可以提升Switch模擬效能。</string>
     <string name="settings_bios_gpu_prompt_installing">正在安裝驅動程式&#8230;</string>
-    <string name="settings_bios_gpu_prompt_install_versioned">安裝建議版本（%1$s）</string>
+    <string name="settings_bios_gpu_prompt_recommended">建議驅動程式：%1$s</string>
     <string name="settings_bios_gpu_prompt_install">安裝建議版本</string>
     <string name="settings_bios_gpu_prompt_install_from_file">從檔案安裝</string>
     <string name="settings_bios_gpu_prompt_skip">略過</string>
@@ -626,6 +630,14 @@
     <string name="settings_permissions_accessibility_description">讓快速面板可在其他模擬器上層開啟，並可靜默擷取存檔截圖</string>
     <string name="settings_permissions_live_wallpaper_title">動態鎖定畫面</string>
     <string name="settings_permissions_live_wallpaper_description">允許 Argosy 套用動態鎖定畫面。</string>
+    <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
+    <string name="settings_permissions_privileged_title">%1$s 存取權</string>
+    <string name="settings_permissions_privileged_description_off">允許 Argosy 存取 Android/data 中的模擬器存檔資料夾。</string>
+    <string name="settings_permissions_privileged_description_checking">正在檢查存取權...</string>
+    <string name="settings_permissions_privileged_description_root">存檔資料夾和 root 功能可供使用。</string>
+    <string name="settings_permissions_privileged_description_app_data">存檔資料夾可供使用。讓遊戲在背景持續執行需要 root。</string>
+    <string name="settings_permissions_privileged_description_unreachable">無法存取此裝置上的存檔資料夾。</string>
+    <string name="settings_permissions_privileged_description_refused">未取得存取權。選取以再次要求。</string>
     <string name="settings_lock_screen_wallpaper_label">Argosy 遊戲庫</string>
     <string name="settings_lock_screen_wallpaper_description">允許 Argosy 套用動態鎖定畫面。</string>
     <string name="settings_permissions_status_footer">狀態：已授予%1$d／%2$d項權限</string>

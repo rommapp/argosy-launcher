@@ -422,7 +422,7 @@ class SigilSaveHandler @Inject constructor(
     private suspend fun locate(route: SigilRoute, gameId: Long): SigilSaveLocation? {
         if (!fal.isDirectory(route.root)) return null
         val game = gameDao.getById(gameId) ?: return null
-        fal.prepareSaveAccess(route.root)
+        fal.prepareSaveAccess(*accessPaths(route))
         return saveLocator.locate(route, identity(game, titleIdCandidates(game)), contentName(game))
     }
 
@@ -572,6 +572,8 @@ class SigilSaveHandler @Inject constructor(
         return roots.firstOrNull { fal.isDirectory(it) } ?: roots.firstOrNull()
     }
 
+    private fun accessPaths(route: SigilRoute): Array<String> = saveLocator.accessPaths(route).toTypedArray()
+
     private fun profileFor(layout: String, pkg: String?, root: String): String? =
         if (layout in PROFILE_FROM_EMULATOR_LAYOUTS && pkg != null) {
             runCatching { switchProfileParser.parseActiveProfile(pkg, root) }.getOrNull()
@@ -594,7 +596,7 @@ class SigilSaveHandler @Inject constructor(
 
     private suspend fun collect(route: SigilRoute, game: GameEntity, claimNewSaves: Boolean): SigilCollect {
         if (!fal.isDirectory(route.root)) return SigilCollect.Absent
-        fal.prepareSaveAccess(route.root)
+        fal.prepareSaveAccess(*accessPaths(route))
         val ids = titleIdCandidates(game)
         val stateKey = stateKey(route, game)
         val stored = loadState(stateKey)
@@ -660,7 +662,7 @@ class SigilSaveHandler @Inject constructor(
         if (route.layout in CLOSED_EMULATOR_LAYOUTS && !emulatorIsClosed(route.emulatorPackage)) {
             return@withContext SigilRestore.Refused("the emulator must be closed before its saves are restored")
         }
-        fal.prepareSaveAccess(route.root)
+        fal.prepareSaveAccess(*accessPaths(route))
         try {
             restore(route, game, unit)
         } catch (e: SigilException) {
@@ -671,7 +673,7 @@ class SigilSaveHandler @Inject constructor(
     suspend fun probe(route: SigilRoute, gameId: Long): SigilProbe = withContext(Dispatchers.IO) {
         val game = gameDao.getById(gameId) ?: return@withContext SigilProbe.Absent
         if (!fal.isDirectory(route.root)) return@withContext SigilProbe.Absent
-        fal.prepareSaveAccess(route.root)
+        fal.prepareSaveAccess(*accessPaths(route))
         val ids = titleIdCandidates(game)
         val anchor = committedState(loadState(stateKey(route, game)))
         try {
@@ -779,7 +781,7 @@ class SigilSaveHandler @Inject constructor(
             profile = route.profile,
             fileAccess = fileAccess
         )
-        if (!fal.commitSaveAccess(route.root)) {
+        if (!fal.commitSaveAccess(*accessPaths(route))) {
             return SigilRestore.Refused("the restored files did not reach ${route.root}")
         }
         sigilSyncStateDao.upsert(row(stateKey, result.state, result.unowned))

@@ -39,6 +39,7 @@ import java.nio.ByteOrder
 import java.security.MessageDigest
 import java.time.Instant
 import java.util.UUID
+import java.util.zip.ZipFile
 import java.util.zip.ZipInputStream
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -49,6 +50,9 @@ private const val FIRMWARE_STALL_TIMEOUT_MS = 90_000L
 private const val FIRMWARE_PART_SUFFIX = ".part"
 private const val FIRMWARE_DOWNLOAD_ATTEMPTS = 6
 private const val HTTP_PARTIAL_CONTENT = 206
+private const val EDEN_EMULATOR_ID = "eden"
+private const val SWITCH_SLUG = "switch"
+private const val SWITCH_INSTALLED_FILES = 2
 
 data class BiosPlatformStatus(
     val platformSlug: String,
@@ -707,9 +711,12 @@ class BiosRepository @Inject constructor(
         results
     }
 
+    enum class DistributeFailure { FILES_MISSING, KEYS_MISMATCH, EMULATOR_MISSING, INSTALL_FAILED }
+
     data class DetailedDistributeResult(
         val emulatorId: String,
-        val platformResults: Map<String, Int>
+        val platformResults: Map<String, Int>,
+        val failedPlatforms: Map<String, DistributeFailure> = emptyMap()
     )
 
     suspend fun distributeAllBiosToEmulatorsDetailed(): List<DetailedDistributeResult> = withContext(Dispatchers.IO) {
@@ -718,15 +725,7 @@ class BiosRepository @Inject constructor(
             val platformSlugs = firmwareDao.getPlatformSlugsWithDownloadedFirmware()
 
             val switchJob = if (isSwitchFirmwareReady() && isEdenInstalled()) {
-                async {
-                    val result = installSwitchFirmware()
-                    if (result is SwitchInstallResult.Success) {
-                        Pair("eden", "switch" to 2)
-                    } else {
-                        Logger.warn(TAG, "Switch firmware distribution to Eden did not complete | result=$result")
-                        null
-                    }
-                }
+                async { installSwitchFirmware() }
             } else null
 
             val regularSlugs = platformSlugs.filter { it != "switch" }
@@ -741,15 +740,33 @@ class BiosRepository @Inject constructor(
                 }
             }
 
-            switchJob?.await()?.let { (emulatorId, platformResult) ->
-                val emulatorResults = results.getOrPut(emulatorId) { mutableMapOf() }
-                emulatorResults[platformResult.first] = platformResult.second
+            val failures = mutableMapOf<String, Map<String, DistributeFailure>>()
+            switchJob?.await()?.let { result ->
+                val failure = switchDistributeFailure(result)
+                if (failure == null) {
+                    results.getOrPut(EDEN_EMULATOR_ID) { mutableMapOf() }[SWITCH_SLUG] = SWITCH_INSTALLED_FILES
+                } else {
+                    Logger.warn(TAG, "Switch firmware distribution to Eden did not complete | result=$result")
+                    failures[EDEN_EMULATOR_ID] = mapOf(SWITCH_SLUG to failure)
+                }
             }
 
-            results.map { (emulatorId, platformResults) ->
-                DetailedDistributeResult(emulatorId, platformResults)
+            (results.keys + failures.keys).map { emulatorId ->
+                DetailedDistributeResult(
+                    emulatorId = emulatorId,
+                    platformResults = results[emulatorId].orEmpty(),
+                    failedPlatforms = failures[emulatorId].orEmpty()
+                )
             }
         }
+    }
+
+    private fun switchDistributeFailure(result: SwitchInstallResult): DistributeFailure? = when (result) {
+        SwitchInstallResult.Success -> null
+        SwitchInstallResult.MissingFiles -> DistributeFailure.FILES_MISSING
+        SwitchInstallResult.EdenNotInstalled -> DistributeFailure.EMULATOR_MISSING
+        is SwitchInstallResult.ValidationFailed -> DistributeFailure.KEYS_MISMATCH
+        is SwitchInstallResult.Error -> DistributeFailure.INSTALL_FAILED
     }
 
     suspend fun getStatusByPlatform(): List<BiosPlatformStatus> = withContext(Dispatchers.IO) {
@@ -972,33 +989,42 @@ class BiosRepository @Inject constructor(
             )
             edenDirs.forEach { dir -> requireEdenDir("$edenBasePath/$dir") }
 
-            val targetProdKeys = "$edenBasePath/keys/prod.keys"
-            if (!fal.writeBytes(targetProdKeys, File(prodKeysPath).readBytes())) {
-                throw java.io.IOException("Cannot write $targetProdKeys")
+            val keysDir = "$edenBasePath/keys"
+            val targetProdKeys = "$keysDir/prod.keys"
+            val prodKeys = File(prodKeysPath).readBytes()
+            if (fal.readBytes(targetProdKeys)?.contentEquals(prodKeys) == true) {
+                Logger.debug(TAG, "Eden already holds these prod.keys | path=$targetProdKeys")
+            } else {
+                if (!fal.writeBytes(targetProdKeys, prodKeys)) {
+                    throw java.io.IOException("Cannot write $targetProdKeys")
+                }
+                requireCommitted(keysDir)
+                Logger.info(TAG, "Copied prod.keys to $targetProdKeys")
             }
-            Logger.info(TAG, "Copied prod.keys to $targetProdKeys")
 
-            val internalKeysDir = File(context.filesDir, "bios/switch")
-            internalKeysDir.mkdirs()
-            val internalProdKeys = File(internalKeysDir, "prod.keys")
-            File(prodKeysPath).copyTo(internalProdKeys, overwrite = true)
-            Logger.info(TAG, "Copied prod.keys to internal fallback | path=${internalProdKeys.absolutePath}")
+            val internalProdKeys = File(context.filesDir, "$BIOS_INTERNAL_DIR/$SWITCH_SLUG/prod.keys")
+            if (internalProdKeys.canonicalFile != File(prodKeysPath).canonicalFile) {
+                internalProdKeys.parentFile?.mkdirs()
+                File(prodKeysPath).copyTo(internalProdKeys, overwrite = true)
+                Logger.info(TAG, "Copied prod.keys to internal fallback | path=${internalProdKeys.absolutePath}")
+            }
 
             val registeredDir = "$edenBasePath/nand/system/Contents/registered"
-            requireEdenDir(registeredDir)
-
-            val ncaFiles = mutableListOf<String>()
-            ZipInputStream(FileInputStream(firmwareZipPath)).use { zip ->
-                var entry = zip.nextEntry
-                while (entry != null) {
-                    if (entry.name.endsWith(".nca", ignoreCase = true)) {
-                        ncaFiles.add(entry.name)
-                    }
-                    entry = zip.nextEntry
-                }
+            val firmwareNcas = ZipFile(firmwareZipPath).use { zip ->
+                zip.entries().asSequence()
+                    .filter { it.name.endsWith(".nca", ignoreCase = true) }
+                    .associate { File(it.name).name to it.size }
             }
 
-            val totalFiles = ncaFiles.size
+            if (firmwareAlreadyInstalled(registeredDir, firmwareNcas)) {
+                Logger.info(TAG, "Eden already holds this firmware, skipping extraction | files=${firmwareNcas.size}")
+                createDefaultEdenProfile(edenBasePath)
+                return@withContext SwitchInstallResult.Success
+            }
+
+            requireEdenDir(registeredDir)
+
+            val totalFiles = firmwareNcas.size
             var extractedCount = 0
 
             ZipInputStream(FileInputStream(firmwareZipPath)).use { zip ->
@@ -1018,6 +1044,7 @@ class BiosRepository @Inject constructor(
                 }
             }
 
+            requireCommitted(registeredDir)
             Logger.info(TAG, "Extracted $extractedCount NCA files to $registeredDir")
 
             createDefaultEdenProfile(edenBasePath)
@@ -1033,6 +1060,18 @@ class BiosRepository @Inject constructor(
         if (!fal.mkdirs(path) && !fal.isDirectory(path)) {
             throw java.io.IOException("Cannot create $path")
         }
+    }
+
+    private fun requireCommitted(vararg paths: String) {
+        if (!fal.commitSaveAccess(*paths)) {
+            throw java.io.IOException("Cannot copy into Eden's folder | paths=${paths.joinToString()}")
+        }
+    }
+
+    private fun firmwareAlreadyInstalled(registeredDir: String, firmwareNcas: Map<String, Long>): Boolean {
+        if (firmwareNcas.isEmpty()) return false
+        val installed = fal.fileSizes(registeredDir) ?: return false
+        return firmwareNcas.all { (name, size) -> installed[name] == size }
     }
 
     private fun createDefaultEdenProfile(edenBasePath: String) {
@@ -1076,6 +1115,7 @@ class BiosRepository @Inject constructor(
 
         val userSaveDir = "$edenBasePath/nand/user/save/0000000000000000/$folderName"
         requireEdenDir(userSaveDir)
+        requireCommitted(profileDir, userSaveDir)
         Logger.info(TAG, "Created Eden user save directory | path=$userSaveDir")
     }
 

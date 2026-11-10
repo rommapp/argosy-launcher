@@ -25,13 +25,13 @@ class SuExecutorIsolationTest {
     }
 
     @Test
-    fun `only the performance resolver reaches the su route`() {
+    fun `only the performance resolver and the user-approved privileged access route reach su`() {
         val users = mainSources().walkTopDown()
             .filter { it.isFile && it.extension == "kt" && it.name != "SuExecutor.kt" }
             .filter { reference.containsMatchIn(it.readText()) }
             .map { it.name }
             .toSet()
 
-        assertEquals(setOf("DevicePerformance.kt"), users)
+        assertEquals(setOf("DevicePerformance.kt", "PrivilegedAccess.kt"), users)
     }
 }

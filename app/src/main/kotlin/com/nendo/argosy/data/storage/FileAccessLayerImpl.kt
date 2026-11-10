@@ -359,6 +359,9 @@ class FileAccessLayerImpl @Inject constructor(
         return androidDataAccessor.normalizePathForDisplay(path)
     }
 
+    override fun fileSizes(path: String): Map<String, Long>? =
+        androidDataAccessor.mirroredFileSizes(path) ?: super.fileSizes(path)
+
     override fun getTransformedFile(path: String): File {
         return androidDataAccessor.getFile(path)
     }

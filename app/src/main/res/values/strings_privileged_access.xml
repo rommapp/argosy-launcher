@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
+    <string name="privileged_access_prompt_title">Use %1$s?</string>
+    <string name="privileged_access_prompt_message_root">Argosy found %1$s on this device. Allow Argosy to use it to reach emulator save folders and run root features?</string>
+    <string name="privileged_access_prompt_message_shizuku">Argosy found %1$s running on this device. Allow Argosy to use it to reach emulator save folders?</string>
+    <string name="privileged_access_prompt_enable">Enable</string>
+    <string name="privileged_access_prompt_not_now">Not now</string>
+
+    <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
+    <string name="privileged_access_result_enabled_title">%1$s enabled</string>
+    <string name="privileged_access_result_root_subtitle">Save folders and root features are ready</string>
+    <string name="privileged_access_result_app_data_subtitle">Save folders are ready. Keeping games running needs root.</string>
+    <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
+    <string name="privileged_access_result_unreachable_title">%1$s can\'t reach save folders</string>
+    <string name="privileged_access_result_unreachable_subtitle">Argosy keeps using its current file access</string>
+    <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
+    <string name="privileged_access_result_refused_title">%1$s access was not granted</string>
+</resources>

@@ -198,7 +198,8 @@ class ArgosyViewModel @Inject constructor(
     private val deepLinkLaunchCoordinator: com.nendo.argosy.ui.deeplink.DeepLinkLaunchCoordinator,
     private val gameStartRouter: com.nendo.argosy.ui.screens.common.GameStartRouter,
     private val connectedControllerTracker: com.nendo.argosy.core.input.ConnectedControllerTracker,
-    val apkInstallManager: com.nendo.argosy.data.update.ApkInstallManager
+    val apkInstallManager: com.nendo.argosy.data.update.ApkInstallManager,
+    val privilegedAccess: com.nendo.argosy.data.access.PrivilegedAccess
 ) : ViewModel() {
 
     suspend fun resolveDeepLinkLaunch(

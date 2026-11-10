@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
+    <string name="privileged_access_prompt_title">Использовать %1$s?</string>
+    <string name="privileged_access_prompt_message_root">Argosy обнаружил %1$s на этом устройстве. Разрешить Argosy использовать его для доступа к папкам сохранений эмуляторов и функциям root?</string>
+    <string name="privileged_access_prompt_message_shizuku">Argosy обнаружил, что на этом устройстве запущен %1$s. Разрешить Argosy использовать его для доступа к папкам сохранений эмуляторов?</string>
+    <string name="privileged_access_prompt_enable">Включить</string>
+    <string name="privileged_access_prompt_not_now">Не сейчас</string>
+
+    <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
+    <string name="privileged_access_result_enabled_title">%1$s: включено</string>
+    <string name="privileged_access_result_root_subtitle">Папки сохранений и функции root готовы</string>
+    <string name="privileged_access_result_app_data_subtitle">Папки сохранений готовы. Для работы игр в фоне нужен root.</string>
+    <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
+    <string name="privileged_access_result_unreachable_title">%1$s не может получить доступ к папкам сохранений</string>
+    <string name="privileged_access_result_unreachable_subtitle">Argosy продолжит использовать текущий доступ к файлам</string>
+    <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
+    <string name="privileged_access_result_refused_title">Доступ через %1$s не предоставлен</string>
+</resources>

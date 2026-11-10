@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Accessibility
+import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Lock
@@ -38,6 +39,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
 import com.nendo.argosy.R
+import com.nendo.argosy.ui.common.cardDescriptionRes
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.PermissionCard
 import com.nendo.argosy.ui.screens.settings.PermissionsState
@@ -72,13 +74,17 @@ internal sealed class PermissionsItem(
         key = "liveWallpaper",
         visibleWhen = { it.isLiveWallpaperRelevant }
     )
+    data object PrivilegedAccess : PermissionsItem(
+        key = "privilegedAccess",
+        visibleWhen = { it.privilegedRoute != null }
+    )
     data object StatusFooter : PermissionsItem("statusFooter")
 
     companion object {
         val ALL: List<PermissionsItem>
             get() = listOf(
                 InfoText, StorageAccess, UsageStats, Notifications, WriteSettings, ScreenCapture, DisplayOverlay,
-                AccessibilityService, LiveWallpaper, StatusFooter
+                AccessibilityService, LiveWallpaper, PrivilegedAccess, StatusFooter
             )
     }
 }
@@ -96,6 +102,7 @@ internal fun PermissionsItem.confirm(viewModel: SettingsViewModel) {
         PermissionsItem.DisplayOverlay -> viewModel.openDisplayOverlaySettings()
         PermissionsItem.AccessibilityService -> viewModel.openAccessibilitySettings()
         PermissionsItem.LiveWallpaper -> viewModel.openLiveWallpaperPicker()
+        PermissionsItem.PrivilegedAccess -> viewModel.enablePrivilegedAccess()
         PermissionsItem.InfoText, PermissionsItem.StatusFooter -> Unit
     }
 }
@@ -212,6 +219,18 @@ fun PermissionsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
                     title = stringResource(R.string.settings_permissions_live_wallpaper_title),
                     description = stringResource(R.string.settings_permissions_live_wallpaper_description),
                     isGranted = permissions.hasLiveWallpaper,
+                    isFocused = isFocused(item),
+                    onClick = { item.confirm(viewModel) }
+                )
+
+                PermissionsItem.PrivilegedAccess -> PermissionCard(
+                    icon = Icons.Default.AdminPanelSettings,
+                    title = stringResource(
+                        R.string.settings_permissions_privileged_title,
+                        permissions.privilegedRoute?.productName.orEmpty()
+                    ),
+                    description = stringResource(permissions.privilegedReach.cardDescriptionRes),
+                    isGranted = permissions.privilegedReach.isReady,
                     isFocused = isFocused(item),
                     onClick = { item.confirm(viewModel) }
                 )

@@ -24,6 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.text.style.TextOverflow
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
@@ -119,6 +120,12 @@ fun ActionButton(
             InputGlyph(button = glyph, tint = labelColor)
             Spacer(modifier = Modifier.width(Dimens.spacingSm))
         }
-        Text(text = label, style = MaterialTheme.typography.titleSmall, color = labelColor, maxLines = 1)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.titleSmall,
+            color = labelColor,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }

@@ -234,6 +234,8 @@ tasks.withType<Test> {
 dependencies {
     // Core
     implementation(libs.androidx.core.ktx)
+    implementation(libs.shizuku.api)
+    implementation(libs.shizuku.provider)
     implementation(libs.bundles.lifecycle)
     implementation(libs.kotlinx.coroutines.android)
 

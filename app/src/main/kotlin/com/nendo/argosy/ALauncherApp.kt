@@ -191,6 +191,9 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
     @Inject
     lateinit var performanceModeStore: com.nendo.argosy.hardware.PerformanceModeStore
 
+    @Inject
+    lateinit var privilegedAccess: com.nendo.argosy.data.access.PrivilegedAccess
+
     private val lastForegroundSteamRefreshAt = AtomicLong(NEVER_REFRESHED)
 
     private val foregroundObserver = object : androidx.lifecycle.DefaultLifecycleObserver {
@@ -207,7 +210,10 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
         appScope.launch { socialSyncCoordinator.discardQueueWithoutSocialAccount() }
         appScope.launch { variantFileCleanup.runOnce() }
         appScope.launch { homeAppAvailability.applyAtStartup() }
-        appScope.launch { performanceModeStore.restoreSavedMode() }
+        appScope.launch {
+            privilegedAccess.start(appScope)
+            performanceModeStore.restoreSavedMode()
+        }
         UpdateCheckWorker.schedule(this)
         SaveSyncWorker.schedule(this)
         SocialSyncWorker.schedule(this)

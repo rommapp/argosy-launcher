@@ -155,6 +155,13 @@
         </provider>
 
         <provider
+            android:name="rikka.shizuku.ShizukuProvider"
+            android:authorities="${applicationId}.shizuku"
+            android:exported="true"
+            android:multiprocess="false"
+            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
+
+        <provider
             android:name="com.nendo.argosy.data.storage.ArgosyFileProvider"
             android:authorities="${applicationId}.fileprovider"
             android:exported="false"

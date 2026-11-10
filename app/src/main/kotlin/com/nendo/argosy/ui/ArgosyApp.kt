@@ -7,6 +7,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.ui.res.stringResource
 import com.nendo.argosy.R
+import com.nendo.argosy.ui.common.promptMessageRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -171,6 +172,7 @@ fun ArgosyApp(
     val backgroundConflictSnapshot by viewModel.saveConflicts.backgroundConflictSnapshot.collectAsState()
     val coreCrashPrompt by viewModel.coreCrashController.prompt.collectAsState()
     val pushedApkPrompt by viewModel.apkInstallManager.pushedPrompt.collectAsState()
+    val privilegedAccessPrompt by viewModel.privilegedAccess.prompt.collectAsState()
     val coreCrashFocusIndex by viewModel.coreCrashController.focusIndex.collectAsState()
     val coreCrashDownloading by viewModel.coreCrashController.downloading.collectAsState()
     val netplayInvitePrompt by viewModel.netplayInvitePrompt.collectAsState()
@@ -1471,6 +1473,20 @@ fun ArgosyApp(
                 cancelLabel = stringResource(R.string.ui_pushed_apk_not_now),
                 onConfirm = { viewModel.apkInstallManager.confirmPushedInstall() },
                 onDismiss = { viewModel.apkInstallManager.dismissPushedInstall() }
+            )
+
+            val offeredRoute = privilegedAccessPrompt
+            com.nendo.argosy.ui.primitives.ArgosyConfirmModalHost(
+                visible = offeredRoute != null && pushedApk == null,
+                title = stringResource(R.string.privileged_access_prompt_title, offeredRoute?.productName.orEmpty()),
+                message = stringResource(
+                    offeredRoute?.promptMessageRes ?: R.string.privileged_access_prompt_message_root,
+                    offeredRoute?.productName.orEmpty()
+                ),
+                confirmLabel = stringResource(R.string.privileged_access_prompt_enable),
+                cancelLabel = stringResource(R.string.privileged_access_prompt_not_now),
+                onConfirm = { viewModel.privilegedAccess.answerPrompt(enable = true) },
+                onDismiss = { viewModel.privilegedAccess.answerPrompt(enable = false) }
             )
 
             netplayInvitePrompt?.let { invite ->

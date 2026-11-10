@@ -645,6 +645,10 @@
         <item quantity="other">%d archivos</item>
     </plurals>
     <string name="settings_bios_distribute_result_dismiss">Aceptar</string>
+    <string name="settings_bios_distribute_failure_files_missing">Claves o firmware sin descargar</string>
+    <string name="settings_bios_distribute_failure_keys_mismatch">Las claves no coinciden con este firmware</string>
+    <string name="settings_bios_distribute_failure_emulator_missing">Emulador no instalado</string>
+    <string name="settings_bios_distribute_failure_install_failed">No se pudo instalar</string>
 
     <string name="settings_bios_download_failed_title">Algunos archivos no se descargaron</string>
     <plurals name="settings_bios_download_failed_message">
@@ -658,7 +662,7 @@
     <string name="settings_bios_gpu_prompt_detected">Detectado: %1$s</string>
     <string name="settings_bios_gpu_prompt_message">Un controlador GPU personalizado puede mejorar el rendimiento de la emulación de Switch en dispositivos Snapdragon 8.</string>
     <string name="settings_bios_gpu_prompt_installing">Instalando controlador...</string>
-    <string name="settings_bios_gpu_prompt_install_versioned">Instalar recomendado (%1$s)</string>
+    <string name="settings_bios_gpu_prompt_recommended">Controlador recomendado: %1$s</string>
     <string name="settings_bios_gpu_prompt_install">Instalar recomendado</string>
     <string name="settings_bios_gpu_prompt_install_from_file">Instalar desde archivo</string>
     <string name="settings_bios_gpu_prompt_skip">Omitir</string>
@@ -695,6 +699,14 @@
     <string name="settings_permissions_accessibility_description">Permite abrir el panel rápido sobre otros emuladores y tomar capturas de guardado en silencio</string>
     <string name="settings_permissions_live_wallpaper_title">Pantalla de bloqueo animada</string>
     <string name="settings_permissions_live_wallpaper_description">Permite que Argosy aplique una pantalla de bloqueo animada.</string>
+    <!-- %1$s is a root or system-access app name, such as Magisk or Shizuku -->
+    <string name="settings_permissions_privileged_title">Acceso de %1$s</string>
+    <string name="settings_permissions_privileged_description_off">Permite que Argosy acceda a las carpetas de guardado de los emuladores en Android/data.</string>
+    <string name="settings_permissions_privileged_description_checking">Comprobando acceso...</string>
+    <string name="settings_permissions_privileged_description_root">Las carpetas de guardado y las funciones root están disponibles.</string>
+    <string name="settings_permissions_privileged_description_app_data">Las carpetas de guardado están disponibles. Mantener los juegos en ejecución necesita root.</string>
+    <string name="settings_permissions_privileged_description_unreachable">No se puede acceder a las carpetas de guardado en este dispositivo.</string>
+    <string name="settings_permissions_privileged_description_refused">No se concedió el acceso. Selecciona para volver a pedirlo.</string>
     <string name="settings_lock_screen_wallpaper_label">Biblioteca de Argosy</string>
     <string name="settings_lock_screen_wallpaper_description">Permite que Argosy aplique una pantalla de bloqueo animada.</string>
     <string name="settings_permissions_status_footer">Estado: %1$d/%2$d permisos concedidos</string>

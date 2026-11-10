@@ -20,8 +20,17 @@ data class SigilSaveLocation(val shared: List<String>, val own: List<String>) {
 class SigilSaveLocator @Inject constructor(private val fileAccess: FalSigilFileAccess) {
 
     /**
+     * The folders under [route]'s root that its layout reads and writes, or the root itself for a
+     * layout with no subfolders.
+     */
+    fun accessPaths(route: SigilRoute): List<String> =
+        Sigil.layoutSubdirs(route.layout)
+            .map { "${route.root.trimEnd('/')}/$it" }
+            .ifEmpty { listOf(route.root) }
+
+    /**
      * The location of [game]'s saves under [route], or null when Sigil cannot list the root. The
-     * caller prepares save access on the root first.
+     * caller prepares save access on [accessPaths] first.
      */
     fun locate(route: SigilRoute, game: SigilResult, contentPath: String): SigilSaveLocation? = try {
         val base = Sigil.saveBase(route.layout, route.root).first

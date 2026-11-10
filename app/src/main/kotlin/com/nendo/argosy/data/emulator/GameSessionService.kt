@@ -70,6 +70,7 @@ class GameSessionService : Service() {
         com.nendo.argosy.data.social.uploader.RomMActivityReporter
     @Inject lateinit var permissionHelper: PermissionHelper
     @Inject lateinit var pspSavePrefixLearner: com.nendo.argosy.data.sync.PspSavePrefixLearner
+    @Inject lateinit var androidDataAccessor: com.nendo.argosy.data.storage.AndroidDataAccessor
 
     private val serviceScope = SafeCoroutineScope(Dispatchers.IO, "GameSessionService")
     private val handler = Handler(Looper.getMainLooper())
@@ -85,6 +86,7 @@ class GameSessionService : Service() {
 
     private var activityJob: Job? = null
     private var presenceJob: Job? = null
+    private var mirrorRefreshJob: Job? = null
     private var currentGameId: Long = -1
     private var currentEmulatorId: String? = null
     private var currentEmulatorPackage: String? = null
@@ -176,6 +178,7 @@ class GameSessionService : Service() {
                     stopWatching()
                     removeOverlay()
                     startWatching(watchPath)
+                    startMirrorRefresh(savePath)
                 }
 
                 startActivityReporting(gameId)
@@ -415,7 +418,19 @@ class GameSessionService : Service() {
         relative.substringBefore('/').takeIf { it.isNotEmpty() }?.let { sessionWrittenFolders += it }
     }
 
+    private fun startMirrorRefresh(savePath: String?) {
+        if (savePath == null || !androidDataAccessor.isRestrictedAndroidPath(savePath)) return
+        mirrorRefreshJob = serviceScope.launch {
+            while (isActive) {
+                delay(MIRROR_REFRESH_MS)
+                if (androidDataAccessor.syncMirror(listOf(savePath)) == null) break
+            }
+        }
+    }
+
     private fun stopWatching() {
+        mirrorRefreshJob?.cancel()
+        mirrorRefreshJob = null
         watchGeneration++
         isWaitingForDirectory = false
         watchRoot = null
@@ -782,6 +797,7 @@ class GameSessionService : Service() {
         private const val RESET_DELAY_MS = 1700L
         private const val OVERLAY_DEBOUNCE_MS = 30 * 1000L
         private const val POLL_INTERVAL_MS = 2000L
+        private const val MIRROR_REFRESH_MS = 5_000L
         private const val PRESENCE_TICK_MS = 2_000L
         private const val PRESENCE_LOOKBACK_MS = 2 * 60 * 1000L
         private const val PRESENCE_WAKE_GRACE_MS = 3_000L

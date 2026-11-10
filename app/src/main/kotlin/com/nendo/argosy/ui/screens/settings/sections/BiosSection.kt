@@ -305,7 +305,6 @@ fun BiosSection(uiState: SettingsUiState, viewModel: SettingsViewModel) {
         GpuDriverPromptModal(
             gpuName = bios.deviceGpuName,
             driverName = bios.gpuDriverInfo?.name,
-            driverVersion = bios.gpuDriverInfo?.version,
             isInstalling = bios.gpuDriverInfo?.isInstalling == true,
             installProgress = bios.gpuDriverInfo?.installProgress ?: 0f,
             focusIndex = bios.gpuDriverPromptFocusIndex,
@@ -396,7 +395,7 @@ internal fun DistributeResultModal(
                 text = stringResource(
                     R.string.settings_bios_distribute_result_message,
                     totalFiles,
-                    results.size
+                    results.count { emulator -> emulator.platformResults.any { it.filesCopied > 0 } }
                 ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = theme.textDim
@@ -436,14 +435,19 @@ internal fun DistributeResultModal(
                                     style = MaterialTheme.typography.bodySmall,
                                     color = theme.textDim
                                 )
+                                val failureRes = platform.failureRes
                                 Text(
-                                    text = pluralStringResource(
-                                        R.plurals.settings_bios_distribute_result_files,
-                                        platform.filesCopied,
-                                        platform.filesCopied
-                                    ),
+                                    text = if (failureRes != null) {
+                                        stringResource(failureRes)
+                                    } else {
+                                        pluralStringResource(
+                                            R.plurals.settings_bios_distribute_result_files,
+                                            platform.filesCopied,
+                                            platform.filesCopied
+                                        )
+                                    },
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = theme.textMute
+                                    color = if (failureRes != null) MaterialTheme.colorScheme.error else theme.textMute
                                 )
                             }
                         }
@@ -595,7 +599,6 @@ internal fun BiosDownloadFailureModal(
 private fun GpuDriverPromptModal(
     gpuName: String?,
     driverName: String?,
-    driverVersion: String?,
     isInstalling: Boolean,
     installProgress: Float,
     focusIndex: Int,
@@ -645,6 +648,15 @@ private fun GpuDriverPromptModal(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
+            if (driverName != null) {
+                Spacer(modifier = Modifier.height(Dimens.spacingSm))
+                Text(
+                    text = stringResource(R.string.settings_bios_gpu_prompt_recommended, driverName),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
             Spacer(modifier = Modifier.height(Dimens.spacingMd))
 
             if (isInstalling) {
@@ -661,12 +673,9 @@ private fun GpuDriverPromptModal(
                     verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
                 ) {
                     ActionButton(
-                        label = if (driverName != null && driverVersion != null) {
-                            stringResource(R.string.settings_bios_gpu_prompt_install_versioned, driverVersion)
-                        } else {
-                            stringResource(R.string.settings_bios_gpu_prompt_install)
-                        },
+                        label = stringResource(R.string.settings_bios_gpu_prompt_install),
                         onClick = onInstallRecommended,
+                        enabled = driverName != null,
                         focused = focusIndex == 0,
                         primary = true,
                         modifier = Modifier.fillMaxWidth()

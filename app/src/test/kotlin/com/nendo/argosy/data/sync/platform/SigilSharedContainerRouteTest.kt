@@ -90,6 +90,7 @@ class SigilSharedContainerRouteTest {
             cartFeatureScanner = mockk(relaxed = true),
             saveLocator = saveLocator
         )
+        every { saveLocator.accessPaths(any()) } answers { listOf(firstArg<SigilRoute>().root) }
     }
 
     @After
@@ -110,6 +111,18 @@ class SigilSharedContainerRouteTest {
         assertEquals("pcsx2", route?.layout)
         assertEquals(memcards.absolutePath, route?.root)
         assertEquals(true, route?.libretro)
+    }
+
+    @Test
+    fun `routing prepares save access on the layout's folders, not the whole root`() = runTest {
+        located(shared = listOf("Mcd001.ps2"), own = emptyList())
+        val layoutFolder = "${memcards.absolutePath}/cards"
+        every { saveLocator.accessPaths(any()) } returns listOf(layoutFolder)
+
+        handler.route(GAME_ID, BUILTIN)
+
+        verify { fal.prepareSaveAccess(layoutFolder) }
+        verify(exactly = 0) { fal.prepareSaveAccess(memcards.absolutePath) }
     }
 
     @Test

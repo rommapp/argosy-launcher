@@ -2,6 +2,8 @@ package com.nendo.argosy.ui.screens.settings
 
 import androidx.annotation.StringRes
 import com.nendo.argosy.R
+import com.nendo.argosy.data.model.PrivilegedReach
+import com.nendo.argosy.data.model.PrivilegedRoute
 import com.nendo.argosy.ui.common.BuiltinCoreSummary
 import com.nendo.argosy.ui.common.DisplayText
 import com.nendo.argosy.ui.components.TextEntryFocus
@@ -1681,7 +1683,9 @@ data class PermissionsState(
     val hasDisplayOverlay: Boolean = false,
     val hasAccessibilityService: Boolean = false,
     val hasLiveWallpaper: Boolean = false,
-    val isLiveWallpaperRelevant: Boolean = false
+    val isLiveWallpaperRelevant: Boolean = false,
+    val privilegedRoute: PrivilegedRoute? = null,
+    val privilegedReach: PrivilegedReach = PrivilegedReach.NONE
 ) {
     private val relevantGrants: List<Boolean>
         get() = listOfNotNull(
@@ -1792,7 +1796,8 @@ data class DistributeResultItem(
 data class PlatformDistributeResult(
     val platformSlug: String,
     val platformName: String,
-    val filesCopied: Int
+    val filesCopied: Int,
+    @StringRes val failureRes: Int? = null
 )
 
 data class BiosDownloadFailureItem(
@@ -1802,7 +1807,6 @@ data class BiosDownloadFailureItem(
 
 data class GpuDriverInfo(
     val name: String,
-    val version: String,
     val isInstalling: Boolean = false,
     val installProgress: Float = 0f
 )

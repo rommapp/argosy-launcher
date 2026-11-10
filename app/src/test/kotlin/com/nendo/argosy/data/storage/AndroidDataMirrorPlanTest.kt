@@ -112,6 +112,20 @@ class AndroidDataMirrorPlanTest {
     }
 
     @Test
+    fun `a shell route reaches each key through shared storage and maps its listing back to the same key`() {
+        val keys = listOf(
+            "/data/media/0/Android/data/pkg/files/a.sav",
+            "/data/media/10/Android/obb/pkg",
+            "/data/media/0/Android/data"
+        )
+        keys.forEach { key ->
+            val upper = AndroidDataMirror.upperOf(key)
+            assertTrue(upper.startsWith("/storage/emulated/"))
+            assertEquals(key, AndroidDataMirror.lowerOf(upper))
+        }
+    }
+
+    @Test
     fun `a folder's parent is its scope except at the top of Android data`() {
         assertEquals("/data/media/0/Android/data/pkg", AndroidDataMirror.parentScope("/data/media/0/Android/data/pkg/files"))
         assertEquals("/data/media/0/Android/data", AndroidDataMirror.parentScope("/data/media/0/Android/data/pkg"))

@@ -8,6 +8,7 @@ import com.nendo.argosy.data.repository.PlatformRepository
 import com.nendo.argosy.data.repository.BiosDownloadResult
 import com.nendo.argosy.data.repository.BiosRepository
 import com.nendo.argosy.data.repository.FirmwareBulkProgress
+import com.nendo.argosy.ui.common.labelRes
 import com.nendo.argosy.ui.screens.settings.BiosDownloadFailureItem
 import com.nendo.argosy.ui.screens.settings.BiosFirmwareItem
 import com.nendo.argosy.ui.screens.settings.BiosPlatformGroup
@@ -262,14 +263,23 @@ class BiosSettingsDelegate @Inject constructor(
                 val emulatorDef = EmulatorRegistry.getById(result.emulatorId)
                 val emulatorName = emulatorDef?.displayName ?: result.emulatorId
 
-                val platformResults = result.platformResults.map { (slug, count) ->
-                    val platform = platforms.find { it.slug == slug }
+                fun platformName(slug: String) = platforms.find { it.slug == slug }?.name ?: slug
+                val copied = result.platformResults.map { (slug, count) ->
                     PlatformDistributeResult(
                         platformSlug = slug,
-                        platformName = platform?.name ?: slug,
+                        platformName = platformName(slug),
                         filesCopied = count
                     )
-                }.sortedBy { it.platformName }
+                }
+                val failed = result.failedPlatforms.map { (slug, failure) ->
+                    PlatformDistributeResult(
+                        platformSlug = slug,
+                        platformName = platformName(slug),
+                        filesCopied = 0,
+                        failureRes = failure.labelRes
+                    )
+                }
+                val platformResults = (copied + failed).sortedBy { it.platformName }
 
                 DistributeResultItem(
                     emulatorId = result.emulatorId,
@@ -278,10 +288,13 @@ class BiosSettingsDelegate @Inject constructor(
                 )
             }.sortedBy { it.emulatorName }
 
-            val edenDistributed = resultItems.any { it.emulatorId == "eden" }
+            val edenDistributed = resultItems.any { item ->
+                item.emulatorId == "eden" && item.platformResults.any { it.filesCopied > 0 }
+            }
             val shouldPromptGpuDriver = edenDistributed &&
                 gpuDriverManager.isAdrenoGpuSupported() &&
                 !checkHasGpuDriverInstalled()
+            val recommendedDriver = if (shouldPromptGpuDriver) gpuDriverManager.getLatestDriverInfo() else null
 
             _state.update {
                 it.copy(
@@ -290,12 +303,9 @@ class BiosSettingsDelegate @Inject constructor(
                     showDistributeResultModal = !shouldPromptGpuDriver && resultItems.isNotEmpty(),
                     showGpuDriverPrompt = shouldPromptGpuDriver,
                     deviceGpuName = if (shouldPromptGpuDriver) gpuDriverManager.getDeviceGpu() else null,
-                    gpuDriverPromptFocusIndex = 0
+                    gpuDriverInfo = recommendedDriver?.let { driver -> GpuDriverInfo(name = driver.name) },
+                    gpuDriverPromptFocusIndex = if (recommendedDriver == null) 1 else 0
                 )
-            }
-
-            if (shouldPromptGpuDriver) {
-                fetchGpuDriverInfo(scope)
             }
         }
     }
@@ -381,25 +391,9 @@ class BiosSettingsDelegate @Inject constructor(
         _state.update { it.copy(platformSubFocusIndex = 0) }
     }
 
-    private fun checkHasGpuDriverInstalled(): Boolean {
+    private suspend fun checkHasGpuDriverInstalled(): Boolean {
         val edenPackage = biosRepository.findInstalledEdenPackage() ?: return false
         return gpuDriverManager.hasInstalledDriver(edenPackage)
-    }
-
-    private fun fetchGpuDriverInfo(scope: CoroutineScope) {
-        scope.launch {
-            val driverInfo = gpuDriverManager.getLatestDriverInfo()
-            if (driverInfo != null) {
-                _state.update {
-                    it.copy(
-                        gpuDriverInfo = GpuDriverInfo(
-                            name = driverInfo.name,
-                            version = driverInfo.version
-                        )
-                    )
-                }
-            }
-        }
     }
 
     fun installGpuDriver(scope: CoroutineScope) {

@@ -79,10 +79,12 @@ internal enum class NonDefaultDisplayLaunch { RUN_HERE, YIELD, HAND_TO_COMPANION
 internal fun nonDefaultDisplayLaunch(
     desktopMode: Boolean,
     dualScreenEnabled: Boolean,
-    docked: Boolean
+    docked: Boolean,
+    launchedAsHome: Boolean
 ): NonDefaultDisplayLaunch = when {
     desktopMode -> NonDefaultDisplayLaunch.RUN_HERE
-    !docked && !dualScreenEnabled -> NonDefaultDisplayLaunch.YIELD
+    !docked && !dualScreenEnabled ->
+        if (launchedAsHome) NonDefaultDisplayLaunch.YIELD else NonDefaultDisplayLaunch.RUN_HERE
     else -> NonDefaultDisplayLaunch.HAND_TO_COMPANION
 }
 
@@ -244,7 +246,8 @@ class ArgosyActivity : ComponentActivity() {
             val launch = nonDefaultDisplayLaunch(
                 desktopMode = desktopMode,
                 dualScreenEnabled = sessionStateStore.isDualScreenEnabled(),
-                docked = !desktopMode && DisplayAffinityHelper.dockedExternalDisplayId(this) != null
+                docked = !desktopMode && DisplayAffinityHelper.dockedExternalDisplayId(this) != null,
+                launchedAsHome = intent?.hasCategory(Intent.CATEGORY_HOME) == true
             )
             if (launch != NonDefaultDisplayLaunch.RUN_HERE) forwardDeepLinkToDefaultDisplay()
             if (launch == NonDefaultDisplayLaunch.YIELD) {

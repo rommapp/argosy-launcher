@@ -114,6 +114,11 @@ private fun MoreOptionAction.toMenuEntry(
         context.getString(R.string.gamedetail_more_options_files),
         action = this
     )
+    MoreOptionAction.Mods -> MoreMenuEntry.Option(
+        Icons.Default.Layers,
+        context.getString(R.string.gamedetail_mods_title),
+        action = this
+    )
     MoreOptionAction.RefreshData -> MoreMenuEntry.Option(
         Icons.Default.Refresh,
         context.getString(R.string.gamedetail_more_options_refresh_data),

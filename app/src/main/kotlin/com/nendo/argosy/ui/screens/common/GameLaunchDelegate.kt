@@ -289,6 +289,11 @@ class GameLaunchDelegate @Inject constructor(
                 onLaunchFailed()
                 return@launch
             }
+            if (com.nendo.argosy.data.platform.PlatformDefinitions.getCanonicalSlug(game.platformSlug) == "switch" &&
+                withContext(Dispatchers.IO) { com.nendo.argosy.data.mod.SwitchModLaunchGate.isBlocked(application.filesDir) }) {
+                dispatchErrorResult(LaunchResult.ModInstallPending, onLaunchFailed)
+                return@launch
+            }
             val ticket = launchProgressTracker.begin(gameId, game.title) ?: run {
                 android.util.Log.d("GameLaunchDelegate", "launchGame: another launch is in progress")
                 notificationManager.showError(NotificationText.Res(R.string.notif_gamelaunch_busy_launching))
@@ -636,6 +641,7 @@ class GameLaunchDelegate @Inject constructor(
                 NotificationText.Res(R.string.notif_gamelaunch_no_android_app, listOf(result.packageName))
             )
             is LaunchResult.Error -> notificationManager.showError(NotificationText.Raw(result.message))
+            LaunchResult.ModInstallPending -> notificationManager.showError(NotificationText.Res(R.string.gamedetail_mods_launch_blocked))
             else -> { /* Success/SelectDisc/SelectVariant handled elsewhere */ }
         }
         onLaunchFailed()
@@ -678,6 +684,7 @@ class GameLaunchDelegate @Inject constructor(
                     )
                     LaunchResult.Cancelled -> Unit
                     is LaunchResult.Error -> notificationManager.showError(NotificationText.Raw(result.message))
+                    LaunchResult.ModInstallPending -> notificationManager.showError(NotificationText.Res(R.string.gamedetail_mods_launch_blocked))
                     else -> notificationManager.showError(NotificationText.Res(R.string.notif_gamelaunch_disc_launch_failed))
                 }
             }
@@ -754,6 +761,7 @@ class GameLaunchDelegate @Inject constructor(
                     )
                     LaunchResult.Cancelled -> Unit
                     is LaunchResult.Error -> notificationManager.showError(NotificationText.Raw(result.message))
+                    LaunchResult.ModInstallPending -> notificationManager.showError(NotificationText.Res(R.string.gamedetail_mods_launch_blocked))
                     else -> notificationManager.showError(NotificationText.Res(R.string.notif_gamelaunch_launch_failed))
                 }
             }

@@ -129,6 +129,7 @@
     <string name="settings_shell_header_drivers">GPU驱动</string>
     <string name="settings_shell_header_about">关于</string>
     <string name="settings_shell_header_social">社交</string>
+    <string name="settings_shell_header_network">网络和蓝牙</string>
     <string name="settings_shell_header_context_global">全局</string>
 
     <string name="settings_shell_context_previous_desc">上一个上下文</string>
@@ -339,6 +340,8 @@
     <string name="settings_shell_footer_reset_platformdetail">重置</string>
     <string name="settings_shell_footer_launch_targets_screen">屏幕</string>
     <string name="settings_shell_footer_launch_targets_reset">重置</string>
+    <string name="settings_shell_footer_network_forget">按住以忘记</string>
+    <string name="settings_shell_footer_network_group">分区</string>
     <string name="settings_shell_footer_toggle_label">切换</string>
     <string name="settings_shell_footer_open_label">打开</string>
     <string name="settings_shell_footer_select_label">选择</string>

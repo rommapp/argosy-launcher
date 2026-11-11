@@ -6,6 +6,8 @@
     <string name="settings_main_section_gameplay">ИГРОВОЙ ПРОЦЕСС</string>
     <string name="settings_main_section_library">БИБЛИОТЕКА</string>
     <string name="settings_main_section_connections">ПОДКЛЮЧЕНИЯ</string>
+    <string name="settings_main_network_title">Сеть и Bluetooth</string>
+    <string name="settings_main_network_subtitle">Сети Wi-Fi и контроллеры Bluetooth</string>
     <string name="settings_main_section_system">СИСТЕМА</string>
 
     <string name="settings_main_theme_title">Тема</string>

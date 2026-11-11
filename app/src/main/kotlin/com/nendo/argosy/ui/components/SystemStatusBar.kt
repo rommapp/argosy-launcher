@@ -199,7 +199,8 @@ fun SystemStatusBar(
     modifier: Modifier = Modifier,
     contentColor: Color = Color.Unspecified,
     scrim: Boolean = true,
-    allowWrap: Boolean = false
+    allowWrap: Boolean = false,
+    showsRunningSlots: Boolean = true
 ) {
     val isScrapingArtwork = LocalArtworkScraping.current
     val shown = LocalStatusBarItems.current
@@ -249,7 +250,7 @@ fun SystemStatusBar(
         }
 
     }
-    val running = LocalRunningGames.current
+    val running = LocalRunningGames.current.takeIf { showsRunningSlots } ?: RunningGamesUi()
     val indicators: @Composable (Modifier) -> Unit = { itemModifier ->
         if (shown.network || shown.battery || running.isAnyRunning) {
             Row(

@@ -4,6 +4,8 @@
     <string name="settings_main_section_gameplay">遊戲進行</string>
     <string name="settings_main_section_library">收藏庫</string>
     <string name="settings_main_section_connections">連線</string>
+    <string name="settings_main_network_title">網路和藍牙</string>
+    <string name="settings_main_network_subtitle">Wi-Fi 網路和藍牙控制器</string>
     <string name="settings_main_section_system">系統</string>
 
     <string name="settings_main_theme_title">主題</string>

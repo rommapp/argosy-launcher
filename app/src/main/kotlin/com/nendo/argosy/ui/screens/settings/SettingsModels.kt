@@ -96,6 +96,7 @@ enum class SettingsSection {
     SYNC_SETTINGS,
     STEAM_SETTINGS,
     JELLYFIN,
+    NETWORK_BLUETOOTH,
     RETRO_ACHIEVEMENTS,
     STORAGE,
     STORAGE_GAMES,

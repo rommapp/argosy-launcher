@@ -86,25 +86,19 @@ class GamepadHoldTracker {
 }
 
 /**
- * Modal-only destructive commit button: fires [onConfirmed] exactly once after an
- * uninterrupted hold; releasing early resets progress. Touch holds directly; gamepad
- * holds feed in through [gamepadTracker] from the hosting modal's raw key listener.
+ * Fill fraction of a hold that commits after [holdMs]. [onConfirmed] fires once when the hold
+ * completes while [held] stays true; releasing early resets the fraction to zero. A gamepad hold
+ * fed through [gamepadTracker] ends on a key-up or once its key events stall.
  */
 @Composable
-fun HoldToConfirmButton(
-    label: String,
-    isFocused: Boolean,
-    onConfirmed: () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    gamepadTracker: GamepadHoldTracker? = null,
-    onHoldStart: () -> Unit = {}
-) {
-    val theme = LocalArgosyTheme.current
-    var touchHeld by remember { mutableStateOf(false) }
+fun rememberHoldProgress(
+    held: Boolean,
+    holdMs: Long,
+    gamepadTracker: GamepadHoldTracker?,
+    onHoldStart: () -> Unit,
+    onConfirmed: () -> Unit
+): Float {
     var progress by remember { mutableFloatStateOf(0f) }
-    val gamepadHeld = gamepadTracker?.isHeld == true
-    val held = enabled && (gamepadHeld || touchHeld)
     val currentOnConfirmed by rememberUpdatedState(onConfirmed)
     val currentOnHoldStart by rememberUpdatedState(onHoldStart)
 
@@ -114,7 +108,6 @@ fun HoldToConfirmButton(
             return@LaunchedEffect
         }
         currentOnHoldStart()
-        val holdMs = ComponentDefaults.HoldButton.holdDurationMs.toLong()
         val tickMs = ComponentDefaults.HoldButton.tickMs.toLong()
         val startMs = SystemClock.uptimeMillis()
         while (true) {
@@ -135,7 +128,6 @@ fun HoldToConfirmButton(
                         }
                     }
                 }
-                touchHeld = false
                 gamepadTracker?.forceRelease()
                 currentOnConfirmed()
                 return@LaunchedEffect
@@ -150,6 +142,38 @@ fun HoldToConfirmButton(
             easing = LinearEasing
         ),
         label = "hold-progress"
+    )
+    return displayProgress
+}
+
+/**
+ * Modal-only destructive commit button: fires [onConfirmed] exactly once after an
+ * uninterrupted hold; releasing early resets progress. Touch holds directly; gamepad
+ * holds feed in through [gamepadTracker] from the hosting modal's raw key listener.
+ */
+@Composable
+fun HoldToConfirmButton(
+    label: String,
+    isFocused: Boolean,
+    onConfirmed: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    gamepadTracker: GamepadHoldTracker? = null,
+    onHoldStart: () -> Unit = {}
+) {
+    val theme = LocalArgosyTheme.current
+    var touchHeld by remember { mutableStateOf(false) }
+    val gamepadHeld = gamepadTracker?.isHeld == true
+    val held = enabled && (gamepadHeld || touchHeld)
+    val displayProgress = rememberHoldProgress(
+        held = held,
+        holdMs = ComponentDefaults.HoldButton.holdDurationMs.toLong(),
+        gamepadTracker = gamepadTracker,
+        onHoldStart = onHoldStart,
+        onConfirmed = {
+            touchHeld = false
+            onConfirmed()
+        }
     )
 
     val tint = theme.destructive

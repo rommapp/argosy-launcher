@@ -131,6 +131,7 @@
     <string name="settings_shell_header_drivers">GPU ड्राइवर</string>
     <string name="settings_shell_header_about">परिचय</string>
     <string name="settings_shell_header_social">सोशल</string>
+    <string name="settings_shell_header_network">नेटवर्क और ब्लूटूथ</string>
     <string name="settings_shell_header_context_global">ग्लोबल</string>
 
     <string name="settings_shell_context_previous_desc">पिछला कॉन्टेक्स्ट</string>
@@ -343,6 +344,8 @@
     <string name="settings_shell_footer_reset_platformdetail">रीसेट करें</string>
     <string name="settings_shell_footer_launch_targets_screen">स्क्रीन</string>
     <string name="settings_shell_footer_launch_targets_reset">रीसेट करें</string>
+    <string name="settings_shell_footer_network_forget">भूलने के लिए दबाए रखें</string>
+    <string name="settings_shell_footer_network_group">सेक्शन</string>
     <string name="settings_shell_footer_toggle_label">टॉगल करें</string>
     <string name="settings_shell_footer_open_label">खोलें</string>
     <string name="settings_shell_footer_select_label">चुनें</string>

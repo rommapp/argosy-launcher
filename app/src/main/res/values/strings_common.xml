@@ -1246,8 +1246,6 @@
     <string name="ui_quick_settings_bluetooth">Bluetooth</string>
     <!-- Value of a radio row. Adjective: the radio is switched on. -->
     <string name="ui_quick_settings_radio_on">On</string>
-    <!-- Value of a radio row. Adjective: the radio is switched off. -->
-    <string name="ui_quick_settings_radio_off">Off</string>
     <!-- Value of the Wi-Fi row. Adjective: joined to a wireless network. -->
     <string name="ui_quick_settings_wifi_connected">Connected</string>
     <!-- Value of the Wi-Fi row. Adjective: switched on but not joined to any network. -->
@@ -1276,9 +1274,6 @@
     <!-- Title of the page of that panel holding the Wi-Fi and Bluetooth rows. Noun, plural: the
          device's wireless links. -->
     <string name="ui_quick_settings_page_connections">Connections</string>
-    <!-- Connections page, on a device where Argosy cannot switch the radios or join networks.
-         Shown alone below the Wi-Fi and Bluetooth status rows. Full sentence. -->
-    <string name="ui_quick_connections_unsupported">This device doesn\'t allow direct Wi-Fi and Bluetooth control</string>
     <!-- Connections page switcher option that shows the Wi-Fi network lists. Name of the radio. -->
     <string name="ui_quick_connections_tab_wifi">Wi-Fi</string>
     <!-- Connections page switcher option that shows the paired Bluetooth devices. Name of the radio. -->
@@ -1296,9 +1291,6 @@
     <!-- Connections page heading over the Bluetooth devices paired with this device. Noun
          phrase. Shown in capitals. -->
     <string name="ui_quick_connections_paired">Paired devices</string>
-    <!-- Connections page, under Nearby networks while the device looks for networks in range.
-         Verb phrase in progress. -->
-    <string name="ui_quick_connections_scanning">Searching for networks</string>
     <!-- Connections page, under Nearby networks when the search found nothing to join. -->
     <string name="ui_quick_connections_no_networks">No networks found</string>
     <!-- Connections page, under Paired devices when no Bluetooth device is paired. -->
@@ -1319,16 +1311,16 @@
     <!-- Connections page row that starts searching for Bluetooth controllers to pair. Verb
          phrase. -->
     <string name="ui_quick_connections_pair_controller">Pair a controller</string>
-    <!-- Value beside the pair row while a search runs; pressing the row again stops it. Verb;
-         keep short. -->
+    <!-- Button on the pair row while a search runs; pressing it stops the search. Verb; keep
+         short. -->
     <string name="ui_quick_connections_pair_stop">Stop</string>
-    <!-- Connections page heading over Bluetooth controllers found in pairing mode. Noun phrase.
-         Shown in capitals. -->
-    <string name="ui_quick_connections_nearby_controllers">Controllers found</string>
-    <!-- Under Controllers found while the search runs and nothing has turned up yet. Tells the
-         player what to do with the controller. -->
-    <string name="ui_quick_connections_controllers_searching">Hold the controller\'s pairing button</string>
-    <!-- Under Controllers found after a search that found nothing. -->
+    <!-- Connections page heading over Bluetooth controllers found in pairing mode. Short phrase:
+         found close to this device. Shown in capitals. -->
+    <string name="ui_quick_connections_nearby_controllers">Found nearby</string>
+    <!-- Under Found nearby while the search runs and nothing has turned up yet. Tells the player
+         what to do with the controller. -->
+    <string name="ui_quick_connections_controllers_searching">Hold the pairing button on your controller</string>
+    <!-- Under Found nearby after a search that found nothing. -->
     <string name="ui_quick_connections_no_controllers">No controllers found</string>
     <!-- Value beside a found controller while it pairs. Verb, in progress; keep short. -->
     <string name="ui_quick_connections_row_pairing">Pairing</string>
@@ -1364,6 +1356,72 @@
     <string name="ui_quick_connections_join_cancel">Cancel</string>
     <!-- Error in that dialog when the device refused to join the network. Full sentence. -->
     <string name="ui_quick_connections_join_failed">The device couldn\'t join this network.</string>
+    <!-- Status line under the Bluetooth switch when one device is linked. %1$s is the device
+         name. -->
+    <string name="ui_quick_connections_bluetooth_status_one">%1$s connected</string>
+    <!-- Status line under the Bluetooth switch when several devices are linked. %1$d is how
+         many. -->
+    <plurals name="ui_quick_connections_bluetooth_status_many">
+        <item quantity="one">%1$d device connected</item>
+        <item quantity="other">%1$d devices connected</item>
+    </plurals>
+    <!-- Status line under the Bluetooth switch when no paired device is linked. -->
+    <string name="ui_quick_connections_bluetooth_status_none">No devices connected</string>
+    <!-- Status line under the Wi-Fi switch. %1$s is the network name, %2$s its band, such as
+         "5 GHz". Keep the separator dot. -->
+    <string name="ui_quick_connections_wifi_status_network">%1$s · %2$s</string>
+    <!-- The pair row while a Bluetooth search for controllers runs. Verb, in progress; keep it
+         one short word, it shares the row with the Stop button. -->
+    <string name="ui_quick_connections_searching_controllers">Searching</string>
+    <!-- Button on a found controller that pairs it. Verb. -->
+    <string name="ui_quick_connections_found_pair">Pair</string>
+    <!-- Button on a found controller that did not pair; pairs it again. Verb phrase. -->
+    <string name="ui_quick_connections_retry_pair">Try again</string>
+    <!-- Button on a nearby network the device could not join; joins it again. Verb phrase. -->
+    <string name="ui_quick_connections_retry_join">Try again</string>
+    <!-- Row heading the nearby networks while the device looks for networks in range. Verb
+         phrase in progress. -->
+    <string name="ui_quick_connections_scan_running">Scanning for networks</string>
+    <!-- That same row once a scan has finished; pressing it scans again. Verb phrase. -->
+    <string name="ui_quick_connections_scan_again">Scan again</string>
+    <!-- Value beside a saved network the last scan did not see. Keep short. -->
+    <string name="ui_quick_connections_saved_out_of_range">Not in range</string>
+    <!-- Value beside the saved network the device is joined to right now. Adjective. -->
+    <string name="ui_quick_connections_saved_connected">Connected</string>
+    <!-- Button on a nearby network that connects to it. Verb. -->
+    <string name="ui_quick_connections_nearby_join">Join</string>
+    <!-- Button on a nearby network that opens the Android Wi-Fi panel to connect there. Verb
+         phrase. -->
+    <string name="ui_quick_connections_nearby_join_outside">Join in Wi-Fi settings</string>
+    <!-- Hint under "Bluetooth is off". "It" is Bluetooth. -->
+    <string name="ui_quick_connections_bluetooth_off_hint">Turn it on to pair controllers</string>
+    <!-- Hint under "Wi-Fi is off". "It" is Wi-Fi. -->
+    <string name="ui_quick_connections_wifi_off_hint">Turn it on to see nearby networks</string>
+    <!-- Line under the Bluetooth switch while it has focus, on devices where Android keeps
+         switching Bluetooth off to its own settings. "It" is Bluetooth. -->
+    <string name="ui_quick_connections_bluetooth_toggle_standard">Turn it off in Bluetooth settings</string>
+    <!-- Line under the paired devices on devices where Argosy cannot unpair them. -->
+    <string name="ui_quick_connections_forget_device_hint">Forget devices in Android Bluetooth settings</string>
+    <!-- Line under the Wi-Fi switch while it has focus, on devices where Android keeps the
+         switch to its own Wi-Fi panel. -->
+    <string name="ui_quick_connections_wifi_toggle_standard">Turn Wi-Fi on or off in the Wi-Fi panel</string>
+    <!-- Connections page notice asking for the location permission Android requires before it
+         shares Wi-Fi network names. Full sentence without a final period. -->
+    <string name="ui_quick_connections_wifi_permission">Allow location access to see network names and nearby networks</string>
+    <!-- Button beside that notice that asks for the permission. Verb. -->
+    <string name="ui_quick_connections_wifi_permission_allow">Allow</string>
+    <!-- Connections page notice after the player turned the location permission down for
+         good. -->
+    <string name="ui_quick_connections_wifi_permission_denied">Location access is off for Argosy</string>
+    <!-- Button beside that notice that opens Argosy\'s page in Android app settings. Verb
+         phrase. -->
+    <string name="ui_quick_connections_wifi_permission_settings">Open app permissions</string>
+    <!-- Connections page notice after the player turned the Bluetooth nearby devices permission
+         down for good. -->
+    <string name="ui_quick_connections_bluetooth_permission_denied">Nearby devices permission is off for Argosy</string>
+    <!-- Button beside that notice that opens Argosy\'s page in Android app settings. Verb
+         phrase. -->
+    <string name="ui_quick_connections_bluetooth_permission_settings">Open app permissions</string>
     <!-- Title of the page of that panel holding the background music row. Noun. -->
     <string name="ui_quick_settings_page_music">Music</string>
     <!-- Section heading on that panel over the theme and brightness rows. Noun. Shown in

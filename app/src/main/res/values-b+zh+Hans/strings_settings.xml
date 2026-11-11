@@ -7,6 +7,8 @@
     <string name="settings_main_section_gameplay">游戏玩法</string>
     <string name="settings_main_section_library">库</string>
     <string name="settings_main_section_connections">连接</string>
+    <string name="settings_main_network_title">网络和蓝牙</string>
+    <string name="settings_main_network_subtitle">Wi-Fi 网络和蓝牙手柄</string>
     <string name="settings_main_section_system">系统</string>
 
     <string name="settings_main_theme_title">主题</string>

@@ -908,26 +908,29 @@ private fun routeComputeEvaluatedStatePath(vm: SettingsViewModel, platformId: Lo
 
 // --- Section jump ---
 
-internal fun routeJumpToNextSection(vm: SettingsViewModel, sections: List<com.nendo.argosy.ui.components.ListSection>): Boolean {
-    val currentFocus = vm._uiState.value.focusedIndex
-    val nextSection = sections.firstOrNull { it.focusStartIndex > currentFocus }
-    if (nextSection != null) {
-        vm._uiState.update { it.copy(focusedIndex = nextSection.focusStartIndex) }
-        return true
-    }
-    return false
-}
+internal fun nextSectionFocus(sections: List<com.nendo.argosy.ui.components.ListSection>, currentFocus: Int): Int? =
+    sections.firstOrNull { it.focusStartIndex > currentFocus }?.focusStartIndex
 
-internal fun routeJumpToPrevSection(vm: SettingsViewModel, sections: List<com.nendo.argosy.ui.components.ListSection>): Boolean {
-    val currentFocus = vm._uiState.value.focusedIndex
+internal fun prevSectionFocus(sections: List<com.nendo.argosy.ui.components.ListSection>, currentFocus: Int): Int? {
     val currentSectionIdx = sections.indexOfLast { it.focusStartIndex <= currentFocus }
-    if (currentSectionIdx <= 0) return false
+    if (currentSectionIdx <= 0) return null
     val prevSection = if (currentFocus == sections[currentSectionIdx].focusStartIndex) {
         sections[currentSectionIdx - 1]
     } else {
         sections[currentSectionIdx]
     }
-    vm._uiState.update { it.copy(focusedIndex = prevSection.focusStartIndex) }
+    return prevSection.focusStartIndex
+}
+
+internal fun routeJumpToNextSection(vm: SettingsViewModel, sections: List<com.nendo.argosy.ui.components.ListSection>): Boolean {
+    val target = nextSectionFocus(sections, vm._uiState.value.focusedIndex) ?: return false
+    vm._uiState.update { it.copy(focusedIndex = target) }
+    return true
+}
+
+internal fun routeJumpToPrevSection(vm: SettingsViewModel, sections: List<com.nendo.argosy.ui.components.ListSection>): Boolean {
+    val target = prevSectionFocus(sections, vm._uiState.value.focusedIndex) ?: return false
+    vm._uiState.update { it.copy(focusedIndex = target) }
     return true
 }
 

@@ -22,6 +22,8 @@
     <string name="settings_main_section_library">BIBLIOTECA</string>
     <!-- Group heading over the rows for the servers and accounts Argosy talks to. Noun, plural. -->
     <string name="settings_main_section_connections">CONEXÕES</string>
+    <string name="settings_main_network_title">Rede e Bluetooth</string>
+    <string name="settings_main_network_subtitle">Redes Wi-Fi e controles Bluetooth</string>
     <!-- Group heading over the rows about the device and the app itself. Noun. -->
     <string name="settings_main_section_system">SISTEMA</string>
 

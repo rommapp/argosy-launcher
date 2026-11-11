@@ -73,9 +73,57 @@ class RadioController @Inject constructor(
     }
 
     fun hasBluetoothPermission(): Boolean =
-        Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
-            ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) ==
-            PackageManager.PERMISSION_GRANTED
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.S || isGranted(Manifest.permission.BLUETOOTH_CONNECT)
+
+    fun hasWifiPermission(): Boolean = isGranted(Manifest.permission.ACCESS_FINE_LOCATION)
+
+    fun wifiPermissions(): List<String> =
+        listOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
+
+    @Suppress("DEPRECATION")
+    fun publicWifiConnection(): WifiConnection? {
+        if (!isWifiConnected()) return null
+        val info = try {
+            wifiManager?.connectionInfo
+        } catch (_: SecurityException) {
+            null
+        } ?: return WifiConnection(ssid = null, rssi = null, frequencyMhz = null)
+        val ssid = info.ssid?.removeSurrounding("\"")
+            ?.takeIf { hasWifiPermission() && it.isNotBlank() && it != WifiManager.UNKNOWN_SSID }
+        return WifiConnection(ssid = ssid, rssi = info.rssi, frequencyMhz = info.frequency.takeIf { it > 0 })
+    }
+
+    @Suppress("DEPRECATION")
+    fun startPublicWifiScan(): Boolean = try {
+        wifiManager?.startScan() == true
+    } catch (_: SecurityException) {
+        false
+    }
+
+    @Suppress("DEPRECATION")
+    @SuppressLint("MissingPermission")
+    fun publicWifiScanResults(): List<WifiScanResult> {
+        if (!hasWifiPermission()) return emptyList()
+        val results = try {
+            wifiManager?.scanResults.orEmpty()
+        } catch (_: SecurityException) {
+            emptyList()
+        }
+        return WifiShellParser.strongestPerNetwork(
+            results.mapNotNull { result ->
+                val ssid = result.SSID?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+                WifiScanResult(
+                    ssid = ssid,
+                    rssi = result.level,
+                    frequencyMhz = result.frequency,
+                    security = WifiShellParser.securityOf(result.capabilities.orEmpty())
+                )
+            }
+        )
+    }
+
+    private fun isGranted(permission: String): Boolean =
+        ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
 
     @SuppressLint("MissingPermission")
     fun pairedDevices(): List<PairedBluetoothDevice> {

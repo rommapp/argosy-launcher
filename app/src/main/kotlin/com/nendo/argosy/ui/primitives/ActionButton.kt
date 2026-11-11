@@ -91,6 +91,22 @@ fun ActionButton(
 }
 
 @Composable
+fun actionButtonLabelColor(
+    focused: Boolean,
+    primary: Boolean = false,
+    accentColor: Color? = null,
+    enabled: Boolean = true,
+): Color {
+    val theme = LocalArgosyTheme.current
+    return when {
+        !enabled -> theme.textMute
+        primary -> Color.White
+        focused -> lerp(accentColor ?: theme.focusAccent, Color.White, 0.45f)
+        else -> theme.textPrimary
+    }
+}
+
+@Composable
 fun ActionButton(
     label: String,
     onClick: () -> Unit,
@@ -101,13 +117,7 @@ fun ActionButton(
     enabled: Boolean = true,
     glyph: InputButton? = null,
 ) {
-    val theme = LocalArgosyTheme.current
-    val labelColor = when {
-        !enabled -> theme.textMute
-        primary -> Color.White
-        focused -> lerp(accentColor ?: theme.focusAccent, Color.White, 0.45f)
-        else -> theme.textPrimary
-    }
+    val labelColor = actionButtonLabelColor(focused = focused, primary = primary, accentColor = accentColor, enabled = enabled)
     ActionButton(
         onClick = onClick,
         modifier = modifier,

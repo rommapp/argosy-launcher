@@ -192,6 +192,8 @@
     <string name="settings_shell_header_drivers">GPU DRIVERS</string>
     <string name="settings_shell_header_about">ABOUT</string>
     <string name="settings_shell_header_social">SOCIAL</string>
+    <!-- Heading of the Wi-Fi and Bluetooth settings screen. Shown in capitals. -->
+    <string name="settings_shell_header_network">NETWORK AND BLUETOOTH</string>
     <!-- Small label next to the header showing "no specific platform is selected". Adjective. -->
     <string name="settings_shell_header_context_global">Global</string>
 
@@ -471,6 +473,12 @@
     <!-- Y-button hint on the Display Targets screen: returns the focused row to the default
          screen. Verb. -->
     <string name="settings_shell_footer_launch_targets_reset">Reset</string>
+    <!-- Footer hint on a saved network or paired device in the Network and Bluetooth settings:
+         keep the button held to make the device forget it. Verb phrase. -->
+    <string name="settings_shell_footer_network_forget">Hold to forget</string>
+    <!-- Bumper hint on the Network and Bluetooth screen: jumps to the previous or next group
+         (Wi-Fi, nearby networks, Bluetooth, found controllers). Noun. -->
+    <string name="settings_shell_footer_network_group">Section</string>
     <!-- A-button hint label when the focused row is a toggle. Verb. -->
     <string name="settings_shell_footer_toggle_label">Toggle</string>
     <!-- A-button hint label when the focused row opens a sub-screen. Verb. -->

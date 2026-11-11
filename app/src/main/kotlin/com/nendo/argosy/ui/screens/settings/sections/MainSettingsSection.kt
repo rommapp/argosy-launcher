@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.TouchApp
+import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -138,6 +139,12 @@ internal sealed class MainSettingsItem(
         "library"
     )
 
+    data object NetworkBluetooth : MainSettingsItem(
+        "networkBluetooth",
+        Icons.Default.Wifi,
+        R.string.settings_main_network_title,
+        "connections"
+    )
     data object RomM :
         MainSettingsItem("romm", Icons.Default.Dns, R.string.settings_main_romm_title, "connections")
     data object Steam : MainSettingsItem(
@@ -180,7 +187,7 @@ internal sealed class MainSettingsItem(
                 Header("libraryHeader", "library", R.string.settings_main_section_library),
                 Platforms, Storage, PlayTime,
                 Header("connectionsHeader", "connections", R.string.settings_main_section_connections),
-                RomM, Steam, Jellyfin, Social,
+                NetworkBluetooth, RomM, Steam, Jellyfin, Social,
                 Header("systemHeader", "system", R.string.settings_main_section_system),
                 Permissions, ManagedInstallers, DeviceSettings, About
             )
@@ -220,6 +227,7 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
         MainSettingsItem.ManagedInstallers ->
             context.getString(R.string.settings_main_installers_subtitle)
         MainSettingsItem.DeviceSettings -> context.getString(R.string.settings_main_device_subtitle)
+        MainSettingsItem.NetworkBluetooth -> context.getString(R.string.settings_main_network_subtitle)
         MainSettingsItem.RomM -> when (uiState.server.connectionStatus) {
             ConnectionStatus.NOT_CONFIGURED ->
                 context.getString(R.string.settings_main_romm_subtitle_unconfigured)
@@ -316,6 +324,7 @@ fun MainSettingsSection(uiState: SettingsUiState, viewModel: SettingsViewModel) 
             MainSettingsItem.ManagedInstallers ->
                 viewModel.navigateToSection(SettingsSection.MANAGED_INSTALLERS)
             MainSettingsItem.DeviceSettings -> context.startActivity(Intent(Settings.ACTION_SETTINGS))
+            MainSettingsItem.NetworkBluetooth -> viewModel.navigateToSection(SettingsSection.NETWORK_BLUETOOTH)
             MainSettingsItem.RomM -> viewModel.navigateToSection(SettingsSection.ROMM)
             MainSettingsItem.Saves -> viewModel.navigateToSection(SettingsSection.SAVES)
             MainSettingsItem.RetroAchievements -> viewModel.navigateToSection(SettingsSection.RETRO_ACHIEVEMENTS)

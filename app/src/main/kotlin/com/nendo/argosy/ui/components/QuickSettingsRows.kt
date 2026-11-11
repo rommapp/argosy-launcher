@@ -27,8 +27,10 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.R
@@ -150,7 +152,7 @@ private fun QuickRowIcon(icon: ImageVector, isFocused: Boolean) {
 }
 
 @Composable
-private fun QuickValueText(text: String, isFocused: Boolean) {
+internal fun QuickValueText(text: String, isFocused: Boolean) {
     Text(
         text = text,
         style = MaterialTheme.typography.bodyMedium,
@@ -222,18 +224,80 @@ internal fun QuickDetailRow(
     isFocused: Boolean,
     onClick: (() -> Unit)?,
     valueText: String? = null,
+    labelWraps: Boolean = false,
+    leading: (@Composable (icon: @Composable () -> Unit) -> Unit)? = null,
     trailing: @Composable RowScope.() -> Unit = {}
 ) {
+    val rowIcon: @Composable () -> Unit = { QuickRowIcon(icon, isFocused) }
     QuickRowFrame(isFocused = isFocused, onClick = onClick) {
-        QuickLabelLine(
-            label = label,
-            leading = { QuickRowIcon(icon, isFocused) }
-        ) {
-            if (valueText != null) {
-                Spacer(modifier = Modifier.width(Dimens.spacingSm))
-                QuickValueText(valueText, isFocused)
+        if (labelWraps) {
+            QuickWrappingLabelLine(
+                label = label,
+                leading = { if (leading == null) rowIcon() else leading(rowIcon) }
+            ) {
+                if (valueText != null) QuickValueText(valueText, isFocused)
+                trailing()
             }
-            trailing()
+        } else {
+            QuickLabelLine(
+                label = label,
+                leading = { if (leading == null) rowIcon() else leading(rowIcon) }
+            ) {
+                if (valueText != null) {
+                    Spacer(modifier = Modifier.width(Dimens.spacingSm))
+                    QuickValueText(valueText, isFocused)
+                }
+                trailing()
+            }
+        }
+    }
+}
+
+@Composable
+private fun QuickWrappingLabelLine(
+    label: String,
+    leading: @Composable () -> Unit,
+    trailing: @Composable RowScope.() -> Unit
+) {
+    val gap = Dimens.spacingSm
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(modifier = Modifier.width(leadingSlotWidth()), contentAlignment = Alignment.Center) {
+            leading()
+        }
+        Spacer(modifier = Modifier.width(gap))
+        Layout(
+            content = {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = LocalArgosyTheme.current.textPrimary
+                )
+                Row(verticalAlignment = Alignment.CenterVertically, content = trailing)
+            },
+            modifier = Modifier.weight(1f)
+        ) { measurables, constraints ->
+            val width = constraints.maxWidth
+            val gapPx = gap.roundToPx()
+            val trailingPlaceable = measurables[1].measure(Constraints(maxWidth = width))
+            val trailingWidth = trailingPlaceable.width
+            val labelSingleLine = measurables[0].maxIntrinsicWidth(Constraints.Infinity)
+            val sideBySide = trailingWidth == 0 || labelSingleLine + gapPx + trailingWidth <= width
+            if (sideBySide) {
+                val labelWidth = (width - if (trailingWidth == 0) 0 else gapPx + trailingWidth).coerceAtLeast(0)
+                val labelPlaceable = measurables[0].measure(Constraints(maxWidth = labelWidth))
+                val height = maxOf(labelPlaceable.height, trailingPlaceable.height, constraints.minHeight)
+                layout(width, height) {
+                    labelPlaceable.place(0, (height - labelPlaceable.height) / 2)
+                    trailingPlaceable.place(width - trailingWidth, (height - trailingPlaceable.height) / 2)
+                }
+            } else {
+                val labelPlaceable = measurables[0].measure(Constraints(maxWidth = width))
+                val height = maxOf(labelPlaceable.height + trailingPlaceable.height, constraints.minHeight)
+                layout(width, height) {
+                    labelPlaceable.place(0, 0)
+                    trailingPlaceable.place(0, labelPlaceable.height)
+                }
+            }
         }
     }
 }

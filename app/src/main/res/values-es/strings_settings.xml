@@ -17,6 +17,8 @@
     <string name="settings_main_section_gameplay">JUGABILIDAD</string>
     <string name="settings_main_section_library">BIBLIOTECA</string>
     <string name="settings_main_section_connections">CONEXIONES</string>
+    <string name="settings_main_network_title">Red y Bluetooth</string>
+    <string name="settings_main_network_subtitle">Redes Wi-Fi y mandos Bluetooth</string>
     <string name="settings_main_section_system">SISTEMA</string>
 
     <string name="settings_main_theme_title">Tema</string>

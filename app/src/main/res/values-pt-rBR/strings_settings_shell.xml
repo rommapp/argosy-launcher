@@ -112,6 +112,8 @@
     <string name="settings_shell_footer_reset_platformdetail">Redefinir</string>
     <string name="settings_shell_footer_launch_targets_screen">Tela</string>
     <string name="settings_shell_footer_launch_targets_reset">Redefinir</string>
+    <string name="settings_shell_footer_network_forget">Segure para esquecer</string>
+    <string name="settings_shell_footer_network_group">Seção</string>
     <string name="settings_shell_footer_toggle_label">Alternar</string>
     <string name="settings_shell_footer_open_label">Abrir</string>
     <string name="settings_shell_footer_select_label">Selecionar</string>
@@ -181,6 +183,7 @@
     <string name="settings_shell_header_drivers">Drivers de GPU</string>
     <string name="settings_shell_header_about">Sobre</string>
     <string name="settings_shell_header_social">Redes sociais</string>
+    <string name="settings_shell_header_network">Rede e Bluetooth</string>
     <string name="settings_shell_header_context_global">Global</string>
     <string name="settings_shell_context_previous_desc">Contexto anterior</string>
     <string name="settings_shell_context_next_desc">Próximo contexto</string>

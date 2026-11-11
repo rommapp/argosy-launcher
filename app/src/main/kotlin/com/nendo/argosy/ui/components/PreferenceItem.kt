@@ -666,9 +666,35 @@ fun InfoPreference(
 private val clockwiseArrowIcons = setOf(Icons.Default.Refresh)
 
 @Composable
+internal fun PreferenceTrailingButton(label: String, isFocused: Boolean, onClick: () -> Unit) {
+    val container = if (isFocused) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.primary
+    val content = if (isFocused) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.onPrimary
+    Box(
+        modifier = Modifier
+            .heightIn(min = Dimens.iconMd)
+            .clip(RoundedCornerShape(Dimens.radiusMd))
+            .background(container)
+            .clickableNoFocus(onClick = onClick)
+            .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingXs),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            color = content
+        )
+    }
+}
+
+/**
+ * A settings row that runs [onClick]. [leading] receives the drawn icon and may wrap it, for
+ * motion behind the icon; [trailingContent] sits after the trailing button for row actions the
+ * plain button cannot express, such as a hold-to-confirm.
+ */
+@Composable
 fun ActionPreference(
     title: String,
-    subtitle: String,
+    subtitle: String?,
     isFocused: Boolean,
     icon: ImageVector? = null,
     iconTint: Color? = null,
@@ -681,6 +707,8 @@ fun ActionPreference(
     showResetButton: Boolean = false,
     onReset: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
+    leading: (@Composable (icon: @Composable () -> Unit) -> Unit)? = null,
+    trailingContent: (@Composable () -> Unit)? = null,
     onClick: () -> Unit
 ) {
     val rowModifier = if (onLongClick != null) {
@@ -720,12 +748,15 @@ fun ActionPreference(
             } else {
                 Modifier.size(Dimens.iconMd)
             }
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = iconTint ?: defaultTint,
-                modifier = iconModifier
-            )
+            val drawnIcon: @Composable () -> Unit = {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconTint ?: defaultTint,
+                    modifier = iconModifier
+                )
+            }
+            if (leading == null) drawnIcon() else leading(drawnIcon)
             Spacer(modifier = Modifier.width(Dimens.spacingMd))
         }
         Column(modifier = Modifier.weight(1f)) {
@@ -735,40 +766,26 @@ fun ActionPreference(
                 color = if (isEnabled) preferenceContentColor(isFocused, isDangerous)
                         else preferenceContentColor(isFocused, isDangerous).copy(alpha = 0.5f)
             )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = if (isEnabled) preferenceSecondaryColor(isFocused)
-                        else preferenceSecondaryColor(isFocused).copy(alpha = 0.5f)
-            )
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (isEnabled) preferenceSecondaryColor(isFocused)
+                            else preferenceSecondaryColor(isFocused).copy(alpha = 0.5f)
+                )
+            }
         }
         if (trailingButtonLabel != null) {
             Spacer(modifier = Modifier.width(Dimens.spacingMd))
-            val btnContainer = if (isFocused) {
-                MaterialTheme.colorScheme.onPrimaryContainer
-            } else {
-                MaterialTheme.colorScheme.primary
-            }
-            val btnContent = if (isFocused) {
-                MaterialTheme.colorScheme.primaryContainer
-            } else {
-                MaterialTheme.colorScheme.onPrimary
-            }
-            Box(
-                modifier = Modifier
-                    .heightIn(min = Dimens.iconMd)
-                    .clip(RoundedCornerShape(Dimens.radiusMd))
-                    .background(btnContainer)
-                    .clickableNoFocus(onClick = { if (isEnabled) onClick() })
-                    .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingXs),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = trailingButtonLabel,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = btnContent
-                )
-            }
+            PreferenceTrailingButton(
+                label = trailingButtonLabel,
+                isFocused = isFocused,
+                onClick = { if (isEnabled) onClick() }
+            )
+        }
+        if (trailingContent != null) {
+            Spacer(modifier = Modifier.width(Dimens.spacingMd))
+            trailingContent()
         }
         if (showResetButton && onReset != null) {
             Spacer(modifier = Modifier.width(Dimens.spacingSm))

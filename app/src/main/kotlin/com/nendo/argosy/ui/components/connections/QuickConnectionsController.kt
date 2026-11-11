@@ -10,11 +10,14 @@ import com.nendo.argosy.hardware.WifiConnection
 import com.nendo.argosy.hardware.WifiScanResult
 import com.nendo.argosy.hardware.WifiSecurity
 import com.nendo.argosy.hardware.WifiShellParser
+import com.nendo.argosy.ui.components.GamepadHoldTracker
 import com.nendo.argosy.ui.components.TEXT_ENTRY_CANCEL_BUTTON
 import com.nendo.argosy.ui.components.TEXT_ENTRY_CONFIRM_BUTTON
 import com.nendo.argosy.ui.components.TextEntryRow
 import com.nendo.argosy.ui.input.InputDispatcher.Companion.computeWrappedIndex
 import com.nendo.argosy.ui.input.InputResult
+import com.nendo.argosy.ui.theme.generated.ComponentDefaults
+import com.nendo.argosy.ui.theme.generated.MotionTokens
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -33,15 +36,28 @@ private val RADIO_SETTLE_MS = listOf(1_000L, 2_000L, 3_000L)
 private val SCAN_POLL_MS = listOf(1_500L, 2_500L, 3_000L)
 private val JOIN_SETTLE_MS = listOf(2_000L, 3_000L, 5_000L)
 private const val FORGET_SETTLE_MS = 1_000L
+private val SUCCESS_HOLD_MS = ComponentDefaults.Connections.successHoldMs.toLong()
+private val SUCCESS_TINT_MS = MotionTokens.Tween.longMs.toLong()
 
 private data class WifiSnapshot(
+    val enabled: Boolean,
+    val connected: Boolean,
     val current: WifiCurrentUi?,
-    val saved: List<WifiSavedUi>
+    val saved: List<WifiSavedUi>,
+    val permitted: Boolean
 )
 
+private fun permissionOf(granted: Boolean, previous: RadioPermission): RadioPermission = when {
+    granted -> RadioPermission.GRANTED
+    previous == RadioPermission.DENIED -> RadioPermission.DENIED
+    else -> RadioPermission.ASKABLE
+}
+
 /**
- * State and actions of the quick panel's Connections page. Every radio and shell call runs on
- * [deviceDispatcher].
+ * State and actions of a Connections list, behind both the quick panel's page and the Network
+ * and Bluetooth settings section. Every radio and shell call runs on [deviceDispatcher]. Actions
+ * Android keeps for itself arrive on [outsideLaunches] for the host to open; [forgetHold] carries
+ * the gamepad hold that forgets the focused device or network.
  */
 class QuickConnectionsController(
     private val radioController: RadioController,
@@ -51,17 +67,23 @@ class QuickConnectionsController(
     private val _state = MutableStateFlow(QuickConnectionsState())
     val state: StateFlow<QuickConnectionsState> = _state.asStateFlow()
 
-    private val _bluetoothPermissionRequests = MutableSharedFlow<List<String>>(extraBufferCapacity = 1)
-    val bluetoothPermissionRequests: SharedFlow<List<String>> = _bluetoothPermissionRequests.asSharedFlow()
+    val forgetHold = GamepadHoldTracker()
+
+    private val _permissionRequests = MutableSharedFlow<ConnectionsPermissionRequest>(extraBufferCapacity = 1)
+    val permissionRequests: SharedFlow<ConnectionsPermissionRequest> = _permissionRequests.asSharedFlow()
+
+    private val _outsideLaunches = MutableSharedFlow<OutsideLaunch>(extraBufferCapacity = 1)
+    val outsideLaunches: SharedFlow<OutsideLaunch> = _outsideLaunches.asSharedFlow()
 
     private var scanJob: Job? = null
     private var bluetoothWatch: AutoCloseable? = null
     private var searchAfterPermission = false
+    private var shown = false
 
     private val pairingListener = object : BluetoothPairing.Listener {
         override fun onFound(device: NearbyBluetoothDevice) {
-            _state.update { state ->
-                if (state.nearbyControllers.any { it.address == device.address }) return@update state
+            updateKeepingFocus { state ->
+                if (state.nearbyControllers.any { it.address == device.address }) return@updateKeepingFocus state
                 state.copy(nearbyControllers = state.nearbyControllers + BluetoothNearbyUi(device.address, device.name))
             }
         }
@@ -72,15 +94,7 @@ class QuickConnectionsController(
 
         override fun onBondChanged(address: String, bonded: Boolean, failed: Boolean) {
             when {
-                bonded -> {
-                    _state.update { state ->
-                        state.copy(
-                            nearbyControllers = state.nearbyControllers.filterNot { it.address == address },
-                            pairingAddress = state.pairingAddress.takeUnless { it == address }
-                        )
-                    }
-                    scope.launch(deviceDispatcher) { readBluetooth() }
-                }
+                bonded -> landPairedDevice(address)
                 failed -> _state.update { state ->
                     state.copy(
                         pairingAddress = state.pairingAddress.takeUnless { it == address },
@@ -92,15 +106,27 @@ class QuickConnectionsController(
     }
 
     fun onPageShown() {
-        _state.update { it.copy(focusIndex = 0, join = null) }
+        shown = true
+        forgetHold.forceRelease()
+        _state.update { it.copy(focusIndices = emptyMap(), join = null) }
         if (bluetoothWatch == null) bluetoothWatch = radioController.bluetooth.watch(pairingListener)
         scope.launch(deviceDispatcher) {
             readAll()
-            if (_state.value.switchable && _state.value.wifiEnabled) startScan()
+            scanIfReadable()
+        }
+    }
+
+    fun onResumed() {
+        if (!shown) return
+        scope.launch(deviceDispatcher) {
+            readAll()
+            if (!_state.value.scanning) scanIfReadable()
         }
     }
 
     fun onPageHidden() {
+        shown = false
+        forgetHold.forceRelease()
         scanJob?.cancel()
         scanJob = null
         stopSearch()
@@ -110,26 +136,39 @@ class QuickConnectionsController(
     }
 
     fun setFocus(index: Int) {
-        _state.update { it.copy(focusIndex = index) }
+        forgetHold.forceRelease()
+        _state.update { it.withFocus(index) }
     }
 
     fun showList(list: ConnectionsList) {
         if (list != ConnectionsList.BLUETOOTH) stopSearch()
+        forgetHold.forceRelease()
         _state.update { it.copy(list = list) }
     }
 
     fun moveFocus(delta: Int, wrapMode: MenuWrapMode): InputResult {
+        forgetHold.forceRelease()
         val snapshot = _state.value
         val current = quickConnectionsFocusIndex(snapshot)
         if (current < 0) return InputResult.handled(SoundType.BOUNDARY)
         val maxIndex = quickConnectionsFocusableRows(snapshot).lastIndex
         val next = computeWrappedIndex(current, delta, maxIndex, wrapMode)
-        _state.update { it.copy(focusIndex = next) }
+        _state.update { it.withFocus(next) }
         return if (next != current) InputResult.HANDLED else InputResult.handled(SoundType.BOUNDARY)
     }
 
+    fun holdForget(isRepeat: Boolean) {
+        forgetHold.onConfirmKeyDown(isRepeat = isRepeat)
+    }
+
+    fun releaseForget(): Boolean {
+        if (!forgetHold.isHeld) return false
+        forgetHold.forceRelease()
+        return true
+    }
+
     fun setWifiEnabled(enabled: Boolean) {
-        if (!_state.value.switchable) return
+        if (!_state.value.canToggleWifi) return
         _state.update {
             it.copy(
                 wifiEnabled = enabled,
@@ -143,7 +182,7 @@ class QuickConnectionsController(
     }
 
     fun setBluetoothEnabled(enabled: Boolean) {
-        if (!_state.value.switchable) return
+        if (!_state.value.canSwitchBluetoothDirectly(on = enabled)) return
         if (!enabled) stopSearch()
         _state.update {
             it.copy(
@@ -156,20 +195,75 @@ class QuickConnectionsController(
         switchRadio(rescan = false) { radioController.setBluetoothEnabled(enabled) }
     }
 
-    fun requestBluetoothPermission() {
-        _bluetoothPermissionRequests.tryEmit(BluetoothPairing.requiredPermissions())
+    fun requestBluetoothOn() {
+        val launch = if (radioController.hasBluetoothPermission()) {
+            OutsideLaunch.BLUETOOTH_ENABLE_PROMPT
+        } else {
+            OutsideLaunch.BLUETOOTH_SETTINGS
+        }
+        _outsideLaunches.tryEmit(launch)
     }
 
-    fun onBluetoothPermissionResult() {
-        scope.launch(deviceDispatcher) {
-            readBluetooth()
-            if (searchAfterPermission && radioController.bluetooth.missingPermissions().isEmpty()) {
-                searchAfterPermission = false
-                startSearch()
+    fun openBluetoothSettings() {
+        _outsideLaunches.tryEmit(OutsideLaunch.BLUETOOTH_SETTINGS)
+    }
+
+    fun openWifiPanel() {
+        _outsideLaunches.tryEmit(OutsideLaunch.WIFI_PANEL)
+    }
+
+    fun requestPermission(radio: ConnectionsList) {
+        val state = _state.value
+        val permission = when (radio) {
+            ConnectionsList.WIFI -> state.wifiPermission
+            ConnectionsList.BLUETOOTH -> state.bluetoothPermission
+        }
+        if (permission == RadioPermission.DENIED) {
+            _outsideLaunches.tryEmit(OutsideLaunch.APP_PERMISSIONS)
+            return
+        }
+        val permissions = when (radio) {
+            ConnectionsList.WIFI -> radioController.wifiPermissions()
+            ConnectionsList.BLUETOOTH -> BluetoothPairing.requiredPermissions()
+        }
+        _permissionRequests.tryEmit(ConnectionsPermissionRequest(radio, permissions))
+    }
+
+    /**
+     * Records the answer to a request from [permissionRequests]. [permanentlyDenied] is true when
+     * Android will not show its prompt again, which turns the notice into a link to app settings.
+     */
+    fun onPermissionResult(radio: ConnectionsList, permanentlyDenied: Boolean) {
+        when (radio) {
+            ConnectionsList.WIFI -> {
+                val granted = radioController.hasWifiPermission()
+                _state.update {
+                    it.copy(wifiPermission = permissionOf(granted, previousFor(permanentlyDenied, it.wifiPermission)))
+                }
+                scope.launch(deviceDispatcher) {
+                    applyWifi(fetchWifi())
+                    scanIfReadable()
+                }
             }
-            searchAfterPermission = false
+            ConnectionsList.BLUETOOTH -> {
+                val granted = radioController.hasBluetoothPermission()
+                _state.update {
+                    it.copy(
+                        bluetoothPermission = permissionOf(granted, previousFor(permanentlyDenied, it.bluetoothPermission))
+                    )
+                }
+                scope.launch(deviceDispatcher) {
+                    readBluetooth()
+                    val search = searchAfterPermission && radioController.bluetooth.missingPermissions().isEmpty()
+                    searchAfterPermission = false
+                    if (search) startSearch()
+                }
+            }
         }
     }
+
+    private fun previousFor(permanentlyDenied: Boolean, previous: RadioPermission): RadioPermission =
+        if (permanentlyDenied) RadioPermission.DENIED else previous
 
     fun toggleSearch() {
         if (_state.value.discovering) {
@@ -179,7 +273,7 @@ class QuickConnectionsController(
         val missing = radioController.bluetooth.missingPermissions()
         if (missing.isNotEmpty()) {
             searchAfterPermission = true
-            _bluetoothPermissionRequests.tryEmit(missing)
+            _permissionRequests.tryEmit(ConnectionsPermissionRequest(ConnectionsList.BLUETOOTH, missing))
             return
         }
         scope.launch(deviceDispatcher) { startSearch() }
@@ -196,8 +290,8 @@ class QuickConnectionsController(
     }
 
     fun forgetDevice(device: BluetoothPairedUi) {
-        if (!_state.value.canForgetDevices) return
-        _state.update { state -> state.copy(paired = state.paired.filterNot { it.address == device.address }) }
+        if (!_state.value.canForgetDevice) return
+        updateKeepingFocus { state -> state.copy(paired = state.paired.filterNot { it.address == device.address }) }
         scope.launch(deviceDispatcher) {
             radioController.bluetooth.forget(device.address)
             delay(FORGET_SETTLE_MS)
@@ -205,9 +299,29 @@ class QuickConnectionsController(
         }
     }
 
+    private fun landPairedDevice(address: String) {
+        val key = bluetoothRowKey(address)
+        _state.update { state ->
+            state.copy(pairingAddress = state.pairingAddress.takeUnless { it == address }, justAddedKey = key)
+        }
+        scope.launch(deviceDispatcher) {
+            delay(SUCCESS_HOLD_MS)
+            val paired = readPaired()
+            updateKeepingFocus { state ->
+                state.copy(paired = paired, nearbyControllers = state.nearbyControllers.filterNot { it.address == address })
+            }
+            clearJustAdded(key)
+        }
+    }
+
+    private suspend fun clearJustAdded(key: String) {
+        delay(SUCCESS_TINT_MS)
+        _state.update { if (it.justAddedKey == key) it.copy(justAddedKey = null) else it }
+    }
+
     private fun startSearch() {
         val started = radioController.bluetooth.startDiscovery()
-        _state.update {
+        updateKeepingFocus {
             it.copy(
                 discovering = started,
                 searched = true,
@@ -223,8 +337,13 @@ class QuickConnectionsController(
         scope.launch(deviceDispatcher) { radioController.bluetooth.cancelDiscovery() }
     }
 
+    fun scanNetworks() {
+        if (_state.value.scanning) return
+        scanIfReadable()
+    }
+
     fun selectNearby(network: WifiNearbyUi) {
-        if (!_state.value.switchable || _state.value.joiningSsid != null) return
+        if (!_state.value.canJoinWifi || _state.value.joiningSsid != null) return
         if (network.security.needsPassphrase) {
             _state.update { it.copy(join = WifiJoinDraft(ssid = network.ssid, security = network.security)) }
         } else {
@@ -267,11 +386,11 @@ class QuickConnectionsController(
     }
 
     fun forget(network: WifiSavedUi) {
-        if (!_state.value.switchable) return
-        _state.update { state -> state.copy(saved = state.saved.filterNot { it.networkId == network.networkId }) }
+        if (!_state.value.canForgetWifi) return
+        updateKeepingFocus { state -> state.copy(saved = state.saved.filterNot { it.networkId == network.networkId }) }
         scope.launch(deviceDispatcher) {
             radioController.wifi.forget(network.networkId)
-            readWifi()
+            applyWifi(fetchWifi())
         }
     }
 
@@ -292,16 +411,31 @@ class QuickConnectionsController(
                 return@launch
             }
             _state.update { it.copy(join = null) }
-            try {
-                for (wait in JOIN_SETTLE_MS) {
-                    delay(wait)
-                    readWifi()
-                    if (_state.value.current?.ssid == ssid) break
-                }
+            val joined = try {
+                settleJoin(ssid)
             } finally {
                 _state.update { it.copy(joiningSsid = null) }
             }
+            if (!joined) {
+                _state.update { it.copy(failedSsid = ssid) }
+                return@launch
+            }
+            val key = wifiRowKey(ssid)
+            _state.update { it.copy(justAddedKey = key) }
+            delay(SUCCESS_HOLD_MS)
+            applyWifi(fetchWifi())
+            clearJustAdded(key)
         }
+    }
+
+    private suspend fun settleJoin(ssid: String): Boolean {
+        for (wait in JOIN_SETTLE_MS) {
+            delay(wait)
+            val snapshot = fetchWifi()
+            if (snapshot.current?.ssid == ssid) return true
+            applyWifi(snapshot)
+        }
+        return false
     }
 
     private fun switchRadio(rescan: Boolean, apply: () -> Boolean) {
@@ -311,8 +445,13 @@ class QuickConnectionsController(
                 delay(wait)
                 readAll()
             }
-            if (rescan && _state.value.wifiEnabled) startScan()
+            if (rescan) scanIfReadable()
         }
+    }
+
+    private fun scanIfReadable() {
+        val state = _state.value
+        if (state.wifiEnabled && state.canReadNearbyWifi) startScan()
     }
 
     private fun startScan() {
@@ -320,11 +459,17 @@ class QuickConnectionsController(
         scanJob = scope.launch(deviceDispatcher) {
             _state.update { it.copy(scanning = true) }
             try {
-                radioController.wifi.startScan()
+                val full = _state.value.wifiTier == RadioTier.FULL
+                if (full) radioController.wifi.startScan() else radioController.startPublicWifiScan()
                 SCAN_POLL_MS.forEach { wait ->
                     delay(wait)
-                    val results = radioController.wifi.scanResults()
-                    _state.update { state -> state.copy(nearby = nearbyFrom(results, state.current?.ssid)) }
+                    val results = if (full) radioController.wifi.scanResults() else radioController.publicWifiScanResults()
+                    updateKeepingFocus { state ->
+                        state.copy(
+                            nearby = keepingOrder(state.nearby, nearbyFrom(results)),
+                            lastScanAt = System.currentTimeMillis()
+                        )
+                    }
                 }
             } finally {
                 _state.update { it.copy(scanning = false) }
@@ -334,66 +479,104 @@ class QuickConnectionsController(
 
     private fun readAll() {
         val status = radioController.status()
-        val switchable = radioController.canToggle
+        val tier = if (radioController.canToggle) RadioTier.FULL else RadioTier.STANDARD
         _state.update {
             it.copy(
                 loaded = true,
-                switchable = switchable,
+                wifiTier = tier,
+                bluetoothTier = tier,
                 wifiEnabled = status.wifiEnabled,
                 wifiConnected = status.wifiConnected,
                 bluetoothEnabled = status.bluetoothEnabled
             )
         }
-        if (!switchable) return
-        readWifi()
+        applyWifi(fetchWifi())
         readBluetooth()
     }
 
-    private fun readWifi() {
-        val enabled = radioController.status().wifiEnabled
-        val snapshot = if (enabled) {
-            WifiSnapshot(
-                current = radioController.wifi.connection()?.toUi(),
-                saved = radioController.wifi.savedNetworks().map { WifiSavedUi(it.networkId, it.ssid) }
-            )
-        } else {
-            WifiSnapshot(current = null, saved = emptyList())
+    private fun fetchWifi(): WifiSnapshot {
+        val status = radioController.status()
+        val permitted = radioController.hasWifiPermission()
+        if (!status.wifiEnabled) {
+            return WifiSnapshot(enabled = false, connected = false, current = null, saved = emptyList(), permitted)
         }
-        _state.update { state ->
+        val full = _state.value.wifiTier == RadioTier.FULL
+        val connection = if (full) radioController.wifi.connection() else radioController.publicWifiConnection()
+        val saved = if (full) {
+            radioController.wifi.savedNetworks().map { WifiSavedUi(it.networkId, it.ssid) }
+        } else {
+            emptyList()
+        }
+        return WifiSnapshot(
+            enabled = true,
+            connected = connection != null || status.wifiConnected,
+            current = connection?.toUi(),
+            saved = saved,
+            permitted = permitted
+        )
+    }
+
+    private fun applyWifi(snapshot: WifiSnapshot) {
+        updateKeepingFocus { state ->
             state.copy(
-                wifiEnabled = enabled,
-                wifiConnected = snapshot.current != null,
+                wifiEnabled = snapshot.enabled,
+                wifiConnected = snapshot.connected,
                 current = snapshot.current,
                 saved = snapshot.saved,
-                nearby = state.nearby.filterNot { it.ssid == snapshot.current?.ssid }
+                nearby = if (snapshot.enabled) state.nearby else emptyList(),
+                wifiPermission = permissionOf(snapshot.permitted, state.wifiPermission)
             )
+        }
+    }
+
+    private fun readPaired(): List<BluetoothPairedUi> {
+        val enabled = radioController.status().bluetoothEnabled
+        return if (enabled && radioController.hasBluetoothPermission()) {
+            radioController.pairedDevices().map { it.toUi() }
+        } else {
+            emptyList()
         }
     }
 
     private fun readBluetooth() {
         val permitted = radioController.hasBluetoothPermission()
         val enabled = radioController.status().bluetoothEnabled
-        val paired = if (enabled && permitted) radioController.pairedDevices().map { it.toUi() } else emptyList()
-        _state.update {
+        val paired = readPaired()
+        val canForget = radioController.bluetooth.canForget
+        updateKeepingFocus {
             it.copy(
                 bluetoothEnabled = enabled,
-                bluetoothPermitted = permitted,
+                bluetoothPermission = permissionOf(permitted, it.bluetoothPermission),
                 paired = paired,
-                canForgetDevices = radioController.bluetooth.canForget
+                canForgetDevice = canForget
             )
         }
     }
 
-    private fun nearbyFrom(results: List<WifiScanResult>, connectedSsid: String?): List<WifiNearbyUi> = results
-        .filter { it.ssid != connectedSsid }
-        .mapNotNull { result ->
-            val security = result.security ?: return@mapNotNull null
-            WifiNearbyUi(
-                ssid = result.ssid,
-                signalLevel = WifiShellParser.signalLevel(result.rssi),
-                security = security
-            )
+    private fun updateKeepingFocus(transform: (QuickConnectionsState) -> QuickConnectionsState) {
+        _state.update { old ->
+            val focusedKey = quickConnectionsFocusedRow(old)?.key
+            val next = transform(old)
+            if (focusedKey == null || next.list != old.list) return@update next
+            val index = quickConnectionsFocusableRows(next).indexOfFirst { it.key == focusedKey }
+            if (index < 0) next else next.withFocus(index)
         }
+    }
+
+    private fun keepingOrder(previous: List<WifiNearbyUi>, fresh: List<WifiNearbyUi>): List<WifiNearbyUi> {
+        val freshBySsid = fresh.associateBy { it.ssid }
+        val previousSsids = previous.map { it.ssid }.toSet()
+        return previous.mapNotNull { freshBySsid[it.ssid] } + fresh.filter { it.ssid !in previousSsids }
+    }
+
+    private fun nearbyFrom(results: List<WifiScanResult>): List<WifiNearbyUi> = results.mapNotNull { result ->
+        val security = result.security ?: return@mapNotNull null
+        WifiNearbyUi(
+            ssid = result.ssid,
+            signalLevel = WifiShellParser.signalLevel(result.rssi),
+            security = security
+        )
+    }
 
     private fun WifiConnection.toUi(): WifiCurrentUi = WifiCurrentUi(
         ssid = ssid,

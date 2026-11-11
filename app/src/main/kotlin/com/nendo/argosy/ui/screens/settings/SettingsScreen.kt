@@ -123,6 +123,9 @@ import com.nendo.argosy.ui.screens.settings.sections.ControllerGripSection
 import com.nendo.argosy.ui.screens.settings.sections.HomeScreenSection
 import com.nendo.argosy.ui.screens.settings.sections.InterfaceSection
 import com.nendo.argosy.ui.screens.settings.sections.JellyfinSection
+import com.nendo.argosy.ui.screens.settings.sections.NetworkSection
+import com.nendo.argosy.ui.components.connections.quickConnectionsCanForget
+import com.nendo.argosy.ui.components.connections.quickConnectionsFocusedRow
 import com.nendo.argosy.ui.screens.settings.sections.MainSettingsSection
 import com.nendo.argosy.ui.screens.settings.sections.PermissionsSection
 import com.nendo.argosy.ui.screens.settings.sections.RASettingsSection
@@ -181,6 +184,7 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val networkState by viewModel.networkConnections.state.collectAsState()
     val imageCacheProgress by viewModel.imageCacheProgress.collectAsState()
     val context = LocalContext.current
 
@@ -656,6 +660,7 @@ fun SettingsScreen(
                         SettingsSection.SYNC_SETTINGS -> SyncSettingsSection(uiState, viewModel, imageCacheProgress)
                         SettingsSection.STEAM_SETTINGS -> SteamSection(uiState, viewModel)
                         SettingsSection.JELLYFIN -> JellyfinSection(uiState, viewModel)
+                        SettingsSection.NETWORK_BLUETOOTH -> NetworkSection(viewModel)
                         SettingsSection.RETRO_ACHIEVEMENTS -> RASettingsSection(uiState, viewModel)
                         SettingsSection.STORAGE -> StorageSection(uiState, viewModel)
                         SettingsSection.STORAGE_GAMES -> StorageGamesSection(uiState, viewModel)
@@ -731,6 +736,9 @@ fun SettingsScreen(
                     viewModel.getFrameRegistry().getAllFrames()
                         .getOrNull(uiState.focusedIndex - 2)
                         ?.source == FrameRegistry.Source.CUSTOM,
+                networkForgetFocused = uiState.currentSection == SettingsSection.NETWORK_BLUETOOTH &&
+                    quickConnectionsFocusedRow(networkState)
+                        ?.let { quickConnectionsCanForget(networkState, it) } == true,
                 onHintClick = { button ->
                     when (button) {
                         InputButton.A -> { inputHandler.onConfirm() }
@@ -1484,6 +1492,7 @@ private fun settingsSectionTitle(uiState: SettingsUiState): String = when (uiSta
     SettingsSection.SYNC_SETTINGS -> stringResource(R.string.settings_shell_header_sync_settings)
     SettingsSection.STEAM_SETTINGS -> stringResource(R.string.settings_shell_header_steam)
     SettingsSection.JELLYFIN -> stringResource(R.string.settings_shell_header_jellyfin)
+    SettingsSection.NETWORK_BLUETOOTH -> stringResource(R.string.settings_shell_header_network)
     SettingsSection.RETRO_ACHIEVEMENTS -> stringResource(R.string.settings_shell_header_retroachievements)
     SettingsSection.STORAGE -> stringResource(R.string.settings_shell_header_storage)
     SettingsSection.STORAGE_GAMES -> stringResource(R.string.settings_shell_header_storage_games)
@@ -1775,6 +1784,7 @@ private fun SettingsFooter(
     uiState: SettingsUiState,
     shaderStack: ShaderStackState,
     customFrameFocused: Boolean = false,
+    networkForgetFocused: Boolean = false,
     onHintClick: ((InputButton) -> Unit)? = null
 ) {
     if (uiState.emulators.showSavePathModal || uiState.emulators.showEmulatorPicker ||
@@ -1870,6 +1880,8 @@ private fun SettingsFooter(
     val resetSystemComboHint = stringResource(R.string.settings_shell_footer_reset_system_combo)
     val launchTargetsScreenHint = stringResource(R.string.settings_shell_footer_launch_targets_screen)
     val launchTargetsResetHint = stringResource(R.string.settings_shell_footer_launch_targets_reset)
+    val networkForgetHint = stringResource(R.string.settings_shell_footer_network_forget)
+    val networkGroupHint = stringResource(R.string.settings_shell_footer_network_group)
     val launchTargetRows = remember(uiState.launchTargets) { launchTargetsLayout(uiState.launchTargets) }
 
     val hints = buildList {
@@ -1916,6 +1928,12 @@ private fun SettingsFooter(
         }
         if (customFrameFocused) {
             add(InputButton.Y to removeFrameHint)
+        }
+        if (uiState.currentSection == SettingsSection.NETWORK_BLUETOOTH) {
+            add(InputButton.LB_RB to networkGroupHint)
+        }
+        if (networkForgetFocused) {
+            add(InputButton.X to networkForgetHint)
         }
         if (uiState.currentSection == SettingsSection.NAVIGATION) {
             val focusedNavigationItem = navigationItemAtFocusIndex(uiState.focusedIndex, uiState.controls)

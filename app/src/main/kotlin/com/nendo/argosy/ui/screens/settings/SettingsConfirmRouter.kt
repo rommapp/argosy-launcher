@@ -187,6 +187,7 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
                 MainSettingsItem.Social -> vm.navigateToSection(SettingsSection.SOCIAL)
                 MainSettingsItem.Steam -> vm.navigateToSection(SettingsSection.STEAM_SETTINGS)
                 MainSettingsItem.Jellyfin -> vm.navigateToSection(SettingsSection.JELLYFIN)
+                MainSettingsItem.NetworkBluetooth -> vm.navigateToSection(SettingsSection.NETWORK_BLUETOOTH)
                 null -> {}
             }
             InputResult.HANDLED
@@ -196,6 +197,7 @@ internal fun routeConfirm(vm: SettingsViewModel): InputResult {
         SettingsSection.SAVES -> routeSavesConfirm(vm, state)
         SettingsSection.STEAM_SETTINGS -> routeSteamConfirm(vm, state)
         SettingsSection.JELLYFIN -> routeJellyfinConfirm(vm, state)
+        SettingsSection.NETWORK_BLUETOOTH -> InputResult.HANDLED
         SettingsSection.RETRO_ACHIEVEMENTS -> {
             val ra = state.retroAchievements
             if (ra.showLoginForm) {
@@ -1404,6 +1406,7 @@ private fun computeMaxFocusIndex(
         state.jellyfin.showLoginForm -> JELLYFIN_LOGIN_CANCEL_INDEX
         else -> jellyfinMaxFocusIndex(JellyfinLayoutState.from(state))
     }
+    SettingsSection.NETWORK_BLUETOOTH -> 0
     SettingsSection.RETRO_ACHIEVEMENTS -> when {
         state.retroAchievements.showLoginForm -> 3
         state.retroAchievements.isLoggedIn -> raLoggedInMaxFocusIndex(

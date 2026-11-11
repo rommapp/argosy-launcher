@@ -178,6 +178,11 @@
     <!-- Second line of that row, listing what the hub shows. -->
     <string name="settings_main_play_time_subtitle">Patterns, top games, devices</string>
 
+    <!-- Row opening the Wi-Fi and Bluetooth settings. Wi-Fi and Bluetooth are radio names,
+         usually kept as is. -->
+    <string name="settings_main_network_title">Network and Bluetooth</string>
+    <!-- Second line of that row. Lists what the screen holds. -->
+    <string name="settings_main_network_subtitle">Wi-Fi networks and Bluetooth controllers</string>
     <!-- Row opening the RomM game server settings. Proper name of the server software Argosy
          talks to, never translated. -->
     <string name="settings_main_romm_title" translatable="false">RomM</string>

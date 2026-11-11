@@ -7,6 +7,8 @@
     <string name="settings_main_section_gameplay">गेमप्ले</string>
     <string name="settings_main_section_library">लाइब्रेरी</string>
     <string name="settings_main_section_connections">कनेक्शन</string>
+    <string name="settings_main_network_title">नेटवर्क और ब्लूटूथ</string>
+    <string name="settings_main_network_subtitle">वाई-फ़ाई नेटवर्क और ब्लूटूथ कंट्रोलर</string>
     <string name="settings_main_section_system">सिस्टम</string>
 
     <string name="settings_main_theme_title">थीम</string>

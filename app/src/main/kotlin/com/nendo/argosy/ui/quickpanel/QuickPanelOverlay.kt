@@ -351,7 +351,8 @@ class QuickPanelOverlay @Inject constructor(
                 ) {
                     QuickConnectionsEffects(
                         controller = connections,
-                        pageVisible = page == QuickSettingsPage.CONNECTIONS
+                        pageVisible = page == QuickSettingsPage.CONNECTIONS,
+                        onLeave = ::hide
                     )
                     Box(modifier = Modifier.fillMaxSize()) {
                         key(warmed) {
@@ -377,10 +378,11 @@ class QuickPanelOverlay @Inject constructor(
                                 connectionsPage = {
                                     QuickSettingsConnectionsPage(
                                         state = connectionsState,
+                                        forgetHold = connections.forgetHold,
                                         onRowClick = connectionsHandler::tapRow,
                                         onShowList = connectionsHandler::tapList,
-                                        onForget = connectionsHandler::tapForget,
-                                        onForgetDevice = connectionsHandler::tapForgetDevice
+                                        onFocusRow = connectionsHandler::focusRow,
+                                        onForget = connectionsHandler::forget
                                     )
                                 },
                                 musicPage = { QuickSettingsMusicPage(viewModel = music, onOpenRommSignIn = null) }

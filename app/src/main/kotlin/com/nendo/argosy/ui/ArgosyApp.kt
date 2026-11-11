@@ -1416,10 +1416,11 @@ fun ArgosyApp(
                 connectionsPage = {
                     QuickSettingsConnectionsPage(
                         state = quickConnectionsState,
+                        forgetHold = viewModel.quickConnections.forgetHold,
                         onRowClick = quickConnectionsInputHandler::tapRow,
                         onShowList = quickConnectionsInputHandler::tapList,
-                        onForget = quickConnectionsInputHandler::tapForget,
-                        onForgetDevice = quickConnectionsInputHandler::tapForgetDevice
+                        onFocusRow = quickConnectionsInputHandler::focusRow,
+                        onForget = quickConnectionsInputHandler::forget
                     )
                 },
                 musicPage = {

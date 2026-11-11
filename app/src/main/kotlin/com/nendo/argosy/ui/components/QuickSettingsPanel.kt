@@ -58,7 +58,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
@@ -210,10 +209,10 @@ private fun QuickPanelHeader(title: String) {
             style = MaterialTheme.typography.titleMedium,
             color = theme.textPrimary,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+            softWrap = false,
             modifier = Modifier.weight(1f)
         )
-        SystemStatusBar(contentColor = theme.textDim, scrim = false)
+        SystemStatusBar(contentColor = theme.textDim, scrim = false, showsRunningSlots = false)
     }
 }
 

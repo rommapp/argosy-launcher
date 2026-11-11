@@ -70,6 +70,8 @@ import com.nendo.argosy.ui.screens.settings.sections.EmulatorsItem
 import com.nendo.argosy.ui.screens.settings.sections.createEmulatorsLayoutInfo
 import com.nendo.argosy.ui.screens.settings.sections.emulatorsItemAtFocusIndex
 import com.nendo.argosy.ui.components.TextEntryRow
+import com.nendo.argosy.ui.components.connections.QuickConnectionsController
+import com.nendo.argosy.ui.components.connections.QuickConnectionsInputHandler
 import com.nendo.argosy.core.emulator.LibretroSettingDef
 import com.nendo.argosy.util.LogLevel
 import com.nendo.argosy.util.PlatformFilterLogic
@@ -167,7 +169,8 @@ class SettingsViewModel @Inject constructor(
     private val biosRepository: com.nendo.argosy.data.repository.BiosRepository,
     private val savePathValidator: com.nendo.argosy.data.emulator.SavePathValidator,
     internal val jellyfinConnectionManager: JellyfinConnectionManager,
-    private val downloadFileStatusRepository: com.nendo.argosy.data.repository.DownloadFileStatusRepository
+    private val downloadFileStatusRepository: com.nendo.argosy.data.repository.DownloadFileStatusRepository,
+    radioController: com.nendo.argosy.hardware.RadioController
 ) : ViewModel() {
 
     private var jellyfinSignInJob: Job? = null
@@ -202,6 +205,15 @@ class SettingsViewModel @Inject constructor(
         repository = inputConfigRepository,
         scope = viewModelScope
     )
+
+    val networkConnections = QuickConnectionsController(
+        radioController = radioController,
+        scope = viewModelScope
+    )
+
+    val networkConnectionsInput = QuickConnectionsInputHandler(networkConnections) {
+        _uiState.value.controls.menuWrapMode
+    }
 
     internal val _openUrlEvent = MutableSharedFlow<String>()
     val openUrlEvent: SharedFlow<String> = _openUrlEvent.asSharedFlow()

@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Owner: Network and Bluetooth settings section (NetworkSection).
+      Key prefix: settings_network_
+    -->
+
+    <!-- Section rail entry over the Wi-Fi and Bluetooth tabs and the Wi-Fi switch, while the
+         Wi-Fi tab is open. Name of the radio; usually kept as is. Shown in capitals. -->
+    <string name="settings_network_group_wifi">Wi-Fi</string>
+    <!-- Group heading and section rail entry over the Wi-Fi networks this device remembers.
+         Noun phrase. Shown in capitals. -->
+    <string name="settings_network_group_saved">Saved networks</string>
+    <!-- Group heading and section rail entry over the networks found by a scan. Noun phrase.
+         Shown in capitals. -->
+    <string name="settings_network_group_nearby">Nearby networks</string>
+    <!-- Section rail entry over the Wi-Fi and Bluetooth tabs and the Bluetooth switch, while
+         the Bluetooth tab is open. Name of the radio; usually kept as is. Shown in capitals. -->
+    <string name="settings_network_group_bluetooth">Bluetooth</string>
+    <!-- Group heading and section rail entry over the Bluetooth devices paired with this
+         device. Noun phrase. Shown in capitals. -->
+    <string name="settings_network_group_paired">Paired devices</string>
+    <!-- Group heading and section rail entry over the controllers a Bluetooth search found
+         close to this device. Shown in capitals. -->
+    <string name="settings_network_group_found">Found nearby</string>
+
+    <!-- Tab at the top of the section that shows the Wi-Fi switch and networks. Name of the
+         radio. -->
+    <string name="settings_network_tab_wifi">Wi-Fi</string>
+    <!-- Tab at the top of the section that shows the Bluetooth switch and devices. Name of the
+         radio. -->
+    <string name="settings_network_tab_bluetooth">Bluetooth</string>
+
+    <!-- Title of the switch row that turns Wi-Fi on or off. Name of the radio. -->
+    <string name="settings_network_wifi_title">Wi-Fi</string>
+    <!-- Title of the switch row that turns Bluetooth on or off. Name of the radio. -->
+    <string name="settings_network_bluetooth_title">Bluetooth</string>
+    <!-- Line under the Wi-Fi switch on devices where the switch opens Android's own Wi-Fi
+         panel. -->
+    <string name="settings_network_wifi_standard">Turn Wi-Fi on or off in the Wi-Fi panel</string>
+    <!-- Line under the Wi-Fi switch: switched on but not joined to any network. Adjective. -->
+    <string name="settings_network_wifi_not_connected">Not connected</string>
+    <!-- Line under the Wi-Fi switch: joined to a network whose name Android does not share.
+         Adjective. -->
+    <string name="settings_network_wifi_connected">Connected</string>
+    <!-- Line under the Wi-Fi switch. %1$s is the network name, %2$s its band, such as
+         "5 GHz". Keep the separator dot. -->
+    <string name="settings_network_wifi_status">%1$s &#183; %2$s</string>
+    <!-- Wi-Fi frequency band of the current network. Keep the unit abbreviation. -->
+    <string name="settings_network_band_2_4">2.4 GHz</string>
+    <!-- Wi-Fi frequency band of the current network. Keep the unit abbreviation. -->
+    <string name="settings_network_band_5">5 GHz</string>
+    <!-- Wi-Fi frequency band of the current network. Keep the unit abbreviation. -->
+    <string name="settings_network_band_6">6 GHz</string>
+    <!-- Line under the Bluetooth switch on devices that hand switching Bluetooth off to its
+         own settings. "It" is Bluetooth. -->
+    <string name="settings_network_bluetooth_standard">Turn it off in Bluetooth settings</string>
+    <!-- Line under the Bluetooth switch while Argosy may not list paired devices. Adjective:
+         the radio is switched on. -->
+    <string name="settings_network_bluetooth_on">On</string>
+    <!-- Line under the Bluetooth switch when no paired device is linked. -->
+    <string name="settings_network_bluetooth_status_none">No devices connected</string>
+    <!-- Line under the Bluetooth switch when one device is linked. %1$s is the device name. -->
+    <string name="settings_network_bluetooth_status_one">%1$s connected</string>
+    <!-- Line under the Bluetooth switch when several devices are linked. %1$d is how many. -->
+    <plurals name="settings_network_bluetooth_status_many">
+        <item quantity="one">%1$d device connected</item>
+        <item quantity="other">%1$d devices connected</item>
+    </plurals>
+    <!-- Shown under the Wi-Fi switch while Wi-Fi is off. "It" is Wi-Fi. -->
+    <string name="settings_network_wifi_off_hint">Turn it on to see nearby networks</string>
+    <!-- Shown under the Bluetooth switch while Bluetooth is off. "It" is Bluetooth. -->
+    <string name="settings_network_bluetooth_off_hint">Turn it on to pair controllers</string>
+
+    <!-- Line of the row that asks for the permission Android needs before it shares Wi-Fi
+         network names. Full sentence without a final period. -->
+    <string name="settings_network_wifi_permission">Allow location access to see network names and nearby networks</string>
+    <!-- Title of that row; pressing it asks for the permission. Verb. -->
+    <string name="settings_network_wifi_permission_allow">Allow</string>
+    <!-- Line of that row after the location permission was turned down for good. -->
+    <string name="settings_network_wifi_permission_denied">Location access is off for Argosy</string>
+    <!-- Title of that row after a denial; pressing it opens Argosy's app permissions. Verb
+         phrase. -->
+    <string name="settings_network_wifi_permission_settings">Open app permissions</string>
+    <!-- Line of the row that asks for the permission Argosy needs to list paired Bluetooth
+         devices. Full sentence. -->
+    <string name="settings_network_bluetooth_permission">Argosy needs permission to show paired devices.</string>
+    <!-- Title of that row; pressing it asks for the permission. Verb. -->
+    <string name="settings_network_bluetooth_permission_allow">Allow</string>
+    <!-- Line of that row after the nearby devices permission was turned down for good. -->
+    <string name="settings_network_bluetooth_permission_denied">Nearby devices permission is off for Argosy</string>
+    <!-- Title of that row after a denial; pressing it opens Argosy's app permissions. Verb
+         phrase. -->
+    <string name="settings_network_bluetooth_permission_settings">Open app permissions</string>
+
+    <!-- Line under the saved network the device is joined to right now. Adjective. -->
+    <string name="settings_network_saved_connected">Connected</string>
+    <!-- Line under a saved network the last scan did not see. -->
+    <string name="settings_network_saved_out_of_range">Not in range</string>
+    <!-- Button on the focused saved network that makes the device stop remembering it. Verb. -->
+    <string name="settings_network_forget">Forget</string>
+    <!-- Title of the row that looks for nearby networks while a scan runs. Verb phrase in
+         progress. -->
+    <string name="settings_network_scan_running">Scanning for networks</string>
+    <!-- That same row once a scan has finished; pressing it scans again. Verb phrase. -->
+    <string name="settings_network_scan_again">Scan again</string>
+    <!-- Line under that row. %1$s is how long ago the last scan finished, such as "just now"
+         or "2 min ago". -->
+    <string name="settings_network_scan_updated">Updated %1$s</string>
+    <!-- Under Nearby networks when the scan found nothing to join. -->
+    <string name="settings_network_no_networks">No networks found</string>
+    <!-- Line under a nearby network that needs a password. Adjective. -->
+    <string name="settings_network_nearby_secured">Secured</string>
+    <!-- Line under a nearby network anyone can join without a password. Adjective. -->
+    <string name="settings_network_nearby_open">Open</string>
+    <!-- Line under a nearby network while the device connects to it. Verb, in progress. -->
+    <string name="settings_network_nearby_joining">Joining</string>
+    <!-- Line under a nearby network the device could not join. -->
+    <string name="settings_network_nearby_failed">Couldn\'t join</string>
+    <!-- Button on the focused nearby network that connects to it. Verb. -->
+    <string name="settings_network_nearby_join">Join</string>
+    <!-- Button on the focused nearby network on devices where joining happens in Android's own
+         Wi-Fi panel. Verb phrase. -->
+    <string name="settings_network_nearby_join_outside">Join in Wi-Fi settings</string>
+    <!-- Button on a nearby network the device could not join; joins it again. Verb phrase. -->
+    <string name="settings_network_nearby_retry">Try again</string>
+
+    <!-- Under the Bluetooth switch when no Bluetooth device is paired. -->
+    <string name="settings_network_no_paired">No paired devices</string>
+    <!-- Line under a paired Bluetooth device that is linked right now. Adjective. -->
+    <string name="settings_network_device_connected">Connected</string>
+    <!-- Line under a paired Bluetooth device that is not linked right now. Adjective. -->
+    <string name="settings_network_device_not_connected">Not connected</string>
+    <!-- Battery charge of a connected controller, for example "80%". %1$d is the number. -->
+    <string name="settings_network_battery">%1$d%%</string>
+    <!-- Button on the focused paired device that unpairs it from this device. Verb. -->
+    <string name="settings_network_forget_device">Forget</string>
+    <!-- Line under the paired devices on devices where Argosy cannot unpair them. -->
+    <string name="settings_network_forget_device_hint">Forget devices in Android Bluetooth settings</string>
+    <!-- Title of the row that starts a Bluetooth search for controllers to pair. Verb
+         phrase. -->
+    <string name="settings_network_pair_controller">Pair a controller</string>
+    <!-- That same row while the search runs. Verb phrase in progress. -->
+    <string name="settings_network_pair_searching">Searching for controllers</string>
+    <!-- Line under that row while the search runs: what to do with the controller. -->
+    <string name="settings_network_pair_searching_hint">Hold the pairing button on your controller</string>
+    <!-- Button on the focused search row that stops the search. Verb. -->
+    <string name="settings_network_pair_stop">Stop</string>
+    <!-- Under Found nearby after a search that found nothing. -->
+    <string name="settings_network_no_controllers">No controllers found</string>
+    <!-- Line under a found controller while it pairs. Verb, in progress. -->
+    <string name="settings_network_found_pairing">Pairing</string>
+    <!-- Line under a found controller that did not pair. -->
+    <string name="settings_network_found_pair_failed">Couldn\'t pair</string>
+    <!-- Button on the focused found controller that pairs it. Verb. -->
+    <string name="settings_network_found_pair">Pair</string>
+    <!-- Button on a found controller that did not pair; pairs it again. Verb phrase. -->
+    <string name="settings_network_found_retry">Try again</string>
+</resources>

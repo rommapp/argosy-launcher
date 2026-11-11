@@ -138,6 +138,7 @@
     <string name="settings_shell_header_drivers">GPU-TREIBER</string>
     <string name="settings_shell_header_about">ÜBER</string>
     <string name="settings_shell_header_social">SOZIAL</string>
+    <string name="settings_shell_header_network">NETZWERK UND BLUETOOTH</string>
     <string name="settings_shell_header_context_global">Global</string>
 
     <string name="settings_shell_context_previous_desc">Vorheriger Kontext</string>
@@ -350,6 +351,8 @@
     <string name="settings_shell_footer_reset_platformdetail">Zurücksetzen</string>
     <string name="settings_shell_footer_launch_targets_screen">Bildschirm</string>
     <string name="settings_shell_footer_launch_targets_reset">Zurücksetzen</string>
+    <string name="settings_shell_footer_network_forget">Halten zum Entfernen</string>
+    <string name="settings_shell_footer_network_group">Abschnitt</string>
     <string name="settings_shell_footer_toggle_label">Umschalten</string>
     <string name="settings_shell_footer_open_label">Öffnen</string>
     <string name="settings_shell_footer_select_label">Auswählen</string>

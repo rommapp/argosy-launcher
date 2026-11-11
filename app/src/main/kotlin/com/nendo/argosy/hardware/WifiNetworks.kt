@@ -13,7 +13,11 @@ enum class WifiSecurity(val token: String) {
 
 enum class WifiBand { GHZ_2_4, GHZ_5, GHZ_6 }
 
-data class WifiConnection(val ssid: String, val rssi: Int?, val frequencyMhz: Int?)
+/**
+ * The joined network. [ssid] is null where Android withholds the name, such as without location
+ * access.
+ */
+data class WifiConnection(val ssid: String?, val rssi: Int?, val frequencyMhz: Int?)
 
 /**
  * One network from a scan. [security] is null for networks a shell suggestion cannot join, such as
@@ -92,6 +96,9 @@ object WifiShellParser {
                 security = securityOf(match.groupValues[5])
             )
         }
+        .let(::strongestPerNetwork)
+
+    fun strongestPerNetwork(results: List<WifiScanResult>): List<WifiScanResult> = results
         .groupBy { it.ssid }
         .map { (_, sightings) -> sightings.maxBy { it.rssi } }
         .sortedByDescending { it.rssi }

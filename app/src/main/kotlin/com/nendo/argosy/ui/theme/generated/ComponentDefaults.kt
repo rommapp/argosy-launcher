@@ -510,6 +510,17 @@ object ComponentDefaults {
         const val statsTempHotC = 85
     }
 
+    object Connections {
+        const val forgetHoldMs = 3000
+        const val pulseRingScale = 1.5f
+        const val pulseRingAlpha = 0.45f
+        const val pairArcDegrees = 90
+        const val reducedRingAlpha = 0.5f
+        const val foundRiseDp = 12
+        const val successTintAlpha = 0.15f
+        const val successHoldMs = 600
+    }
+
     object QuickMenuRandom {
         const val coverHeightRatio = 0.66f
         const val coverWidthMaxRatio = 0.4f

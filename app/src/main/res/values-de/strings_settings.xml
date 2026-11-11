@@ -17,6 +17,8 @@
     <string name="settings_main_section_gameplay">GAMEPLAY</string>
     <string name="settings_main_section_library">BIBLIOTHEK</string>
     <string name="settings_main_section_connections">VERBINDUNGEN</string>
+    <string name="settings_main_network_title">Netzwerk und Bluetooth</string>
+    <string name="settings_main_network_subtitle">WLAN-Netzwerke und Bluetooth-Controller</string>
     <string name="settings_main_section_system">SYSTEM</string>
 
     <string name="settings_main_theme_title">Design</string>

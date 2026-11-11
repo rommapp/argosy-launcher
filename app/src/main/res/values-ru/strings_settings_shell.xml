@@ -142,6 +142,7 @@
     <string name="settings_shell_header_drivers">ДРАЙВЕРЫ GPU</string>
     <string name="settings_shell_header_about">О ПРИЛОЖЕНИИ</string>
     <string name="settings_shell_header_social">СОЦИАЛЬНОЕ</string>
+    <string name="settings_shell_header_network">СЕТЬ И BLUETOOTH</string>
     <string name="settings_shell_header_context_global">Общее</string>
 
     <string name="settings_shell_context_previous_desc">Предыдущий контекст</string>
@@ -358,6 +359,8 @@
     <string name="settings_shell_footer_reset_platformdetail">Сбросить</string>
     <string name="settings_shell_footer_launch_targets_screen">Экран</string>
     <string name="settings_shell_footer_launch_targets_reset">Сбросить</string>
+    <string name="settings_shell_footer_network_forget">Удерживайте, чтобы забыть</string>
+    <string name="settings_shell_footer_network_group">Раздел</string>
     <string name="settings_shell_footer_toggle_label">Переключить</string>
     <string name="settings_shell_footer_open_label">Открыть</string>
     <string name="settings_shell_footer_select_label">Выбрать</string>

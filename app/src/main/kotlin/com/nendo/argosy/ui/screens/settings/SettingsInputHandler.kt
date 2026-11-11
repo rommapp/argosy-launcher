@@ -18,6 +18,7 @@ import com.nendo.argosy.ui.screens.settings.sections.input.DriversSectionInput
 import com.nendo.argosy.ui.screens.settings.sections.input.InterfaceSectionInput
 import com.nendo.argosy.ui.screens.settings.sections.input.LaunchTargetsSectionInput
 import com.nendo.argosy.ui.screens.settings.sections.input.LightSectionsInput
+import com.nendo.argosy.ui.screens.settings.sections.input.NetworkSectionInput
 import com.nendo.argosy.ui.screens.settings.sections.input.PlayTimeListSectionInput
 import com.nendo.argosy.ui.screens.settings.sections.input.PlayTimeSectionInput
 import com.nendo.argosy.ui.screens.settings.sections.input.ShaderStackSectionInput
@@ -76,6 +77,10 @@ class SettingsInputHandler(
         put(SettingsSection.PLAY_TIME_DEVICES, playTimeListInput)
         put(SettingsSection.PLAY_TIME_GAMES, playTimeListInput)
         put(SettingsSection.DRIVERS, DriversSectionInput(viewModel))
+        put(
+            SettingsSection.NETWORK_BLUETOOTH,
+            NetworkSectionInput(viewModel.networkConnectionsInput, viewModel.networkConnections)
+        )
         put(SettingsSection.FRAME_PICKER, FrameSectionInput(viewModel))
         for (s in listOf(
             SettingsSection.MAIN,

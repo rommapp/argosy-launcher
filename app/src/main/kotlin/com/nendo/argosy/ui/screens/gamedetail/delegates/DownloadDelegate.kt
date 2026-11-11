@@ -24,6 +24,8 @@ import com.nendo.argosy.core.notification.showSuccess
 import com.nendo.argosy.ui.screens.common.GameActionsDelegate
 import com.nendo.argosy.ui.screens.gamedetail.ExtractionFailedInfo
 import com.nendo.argosy.ui.screens.gamedetail.GameDownloadStatus
+import com.nendo.argosy.ui.screens.gamedetail.DownloadWaitStatus
+import com.nendo.argosy.ui.screens.gamedetail.toDownloadWaitStatus
 import com.nendo.argosy.ui.screens.gamedetail.LaunchEvent
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
@@ -41,7 +43,7 @@ import javax.inject.Inject
 data class DownloadUiState(
     val downloadStatus: GameDownloadStatus = GameDownloadStatus.NOT_DOWNLOADED,
     val downloadProgress: Float = 0f,
-    val isAwaitingServer: Boolean = false,
+    val downloadWaitStatus: DownloadWaitStatus? = null,
     val downloadSizeBytes: Long? = null,
     val isRefreshingGameData: Boolean = false,
     val showExtractionFailedPrompt: Boolean = false,
@@ -89,7 +91,7 @@ class DownloadDelegate @Inject constructor(
     }
 
     fun updateDownloadStatus(status: GameDownloadStatus, progress: Float) {
-        _state.update { it.copy(downloadStatus = status, downloadProgress = progress) }
+        _state.update { it.copy(downloadStatus = status, downloadProgress = progress, downloadWaitStatus = null) }
     }
 
     fun updateDownloadSize(sizeBytes: Long?) {
@@ -157,7 +159,7 @@ class DownloadDelegate @Inject constructor(
                         it.copy(
                             downloadStatus = status,
                             downloadProgress = progress,
-                            isAwaitingServer = activeDownload?.isAwaitingServer == true
+                            downloadWaitStatus = activeDownload?.toDownloadWaitStatus()
                         )
                     }
                 }

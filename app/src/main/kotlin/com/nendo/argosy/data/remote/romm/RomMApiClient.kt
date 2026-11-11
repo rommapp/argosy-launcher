@@ -242,6 +242,31 @@ class RomMApiClient @Inject constructor(
         }
     }
 
+    fun newDownloadCall(
+        romId: Long,
+        fileName: String,
+        rangeHeader: String? = null,
+        fileIds: String? = null,
+        ifRange: String? = null,
+        isGameFile: Boolean = false
+    ): retrofit2.Call<okhttp3.ResponseBody> {
+        val currentApi = api ?: throw java.io.IOException("Not connected")
+        return if (isGameFile) {
+            currentApi.downloadRomFileCall(romId, fileName, rangeHeader, ifRange)
+        } else {
+            currentApi.downloadRomCall(romId, fileName, rangeHeader, fileIds, ifRange)
+        }
+    }
+
+    fun downloadRequestKey(
+        romId: Long,
+        fileName: String,
+        fileIds: String? = null,
+        isGameFile: Boolean = false
+    ): String = DownloadRequestKey.of(
+        newDownloadCall(romId, fileName, fileIds = fileIds, isGameFile = isGameFile).request().url
+    )
+
     suspend fun downloadRom(
         romId: Long,
         fileName: String,
@@ -252,6 +277,8 @@ class RomMApiClient @Inject constructor(
         return try {
             val response = currentApi.downloadRom(romId, fileName, rangeHeader, fileIds)
             interpretDownloadResponse(response, "ROM")
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
             RomMResult.Error(downloadErrorMessage(e))
         }
@@ -266,6 +293,8 @@ class RomMApiClient @Inject constructor(
         return try {
             val response = currentApi.downloadRomFile(fileId, fileName, rangeHeader)
             interpretDownloadResponse(response, "File")
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
         } catch (e: Exception) {
             RomMResult.Error(downloadErrorMessage(e))
         }
@@ -300,6 +329,7 @@ class RomMApiClient @Inject constructor(
             500, 502, 503 -> "Server error (HTTP $code)"
             else -> "Download failed (HTTP $code)"
         }
+        response.errorBody()?.close()
         return RomMResult.Error(message, code)
     }
 

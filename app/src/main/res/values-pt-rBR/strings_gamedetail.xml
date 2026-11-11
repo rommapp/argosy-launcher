@@ -914,4 +914,6 @@
     <string name="gamedetail_footer_play_resume_game">Retomar</string>
     <string name="gamedetail_footer_play_closing_game">Salvando</string>
     <string name="gamedetail_footer_close_game">Fechar jogo</string>
+    <string name="gamedetail_menu_play_button_retrying">Tentando novamente&#8230;</string>
+    <string name="gamedetail_menu_play_button_waiting_for_network">Aguardando rede&#8230;</string>
 </resources>

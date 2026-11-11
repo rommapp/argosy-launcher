@@ -4,10 +4,12 @@ import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import okhttp3.ResponseBody
 import retrofit2.Response
+import retrofit2.Call
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
+import retrofit2.http.Headers
 import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.PUT
@@ -96,6 +98,27 @@ interface RomMApi {
         @Path("fileName", encoded = true) fileName: String,
         @Header("Range") range: String? = null
     ): Response<ResponseBody>
+
+    @Streaming
+    @Headers("Accept-Encoding: identity")
+    @GET("api/roms/{id}/content/{fileName}")
+    fun downloadRomCall(
+        @Path("id") romId: Long,
+        @Path("fileName", encoded = true) fileName: String,
+        @Header("Range") range: String? = null,
+        @Query("file_ids") fileIds: String? = null,
+        @Header("If-Range") ifRange: String? = null
+    ): Call<ResponseBody>
+
+    @Streaming
+    @Headers("Accept-Encoding: identity")
+    @GET("api/roms/{fileId}/files/content/{fileName}")
+    fun downloadRomFileCall(
+        @Path("fileId") fileId: Long,
+        @Path("fileName", encoded = true) fileName: String,
+        @Header("Range") range: String? = null,
+        @Header("If-Range") ifRange: String? = null
+    ): Call<ResponseBody>
 
     @GET("api/music/tracks")
     suspend fun getMusicTracks(

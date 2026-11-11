@@ -46,6 +46,8 @@
     <string name="sync_download_service_extracting">Wird entpackt: %1$s</string>
     <string name="sync_download_service_moving">Wird in ROM-Speicher verschoben: %1$s</string>
     <string name="sync_download_service_downloading">Wird heruntergeladen: %1$s</string>
+    <string name="sync_download_service_retrying">Erneuter Versuch: %1$s</string>
+    <string name="sync_download_service_waiting_for_network">Warten auf Netzwerk: %1$s</string>
     <string name="sync_download_service_queued">In Warteschlange: %1$s</string>
     <string name="sync_download_service_pending">Download ausstehend...</string>
     <string name="sync_download_service_media_preparing">%1$s: %2$s</string>

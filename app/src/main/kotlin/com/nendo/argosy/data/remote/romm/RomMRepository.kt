@@ -142,6 +142,23 @@ class RomMRepository @Inject constructor(
 
     suspend fun getRom(romId: Long): RomMResult<RomMRom> = apiClient.getRom(romId)
 
+    fun newDownloadCall(
+        romId: Long,
+        fileName: String,
+        rangeHeader: String? = null,
+        fileIds: String? = null,
+        ifRange: String? = null,
+        isGameFile: Boolean = false
+    ): retrofit2.Call<okhttp3.ResponseBody> =
+        apiClient.newDownloadCall(romId, fileName, rangeHeader, fileIds, ifRange, isGameFile)
+
+    fun downloadRequestKey(
+        romId: Long,
+        fileName: String,
+        fileIds: String? = null,
+        isGameFile: Boolean = false
+    ): String = apiClient.downloadRequestKey(romId, fileName, fileIds, isGameFile)
+
     suspend fun downloadRom(
         romId: Long,
         fileName: String,

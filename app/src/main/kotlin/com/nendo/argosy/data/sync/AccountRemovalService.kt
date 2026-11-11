@@ -2,6 +2,7 @@ package com.nendo.argosy.data.sync
 
 import android.content.Context
 import androidx.room.withTransaction
+import com.nendo.argosy.data.download.DownloadManager
 import com.nendo.argosy.data.local.ALauncherDatabase
 import com.nendo.argosy.data.local.entity.SaveOwnershipEntity
 import com.nendo.argosy.data.local.entity.StateOwnershipEntity
@@ -99,7 +100,8 @@ class AccountRemovalService @Inject constructor(
     private val stateService: AccountSwitchStateService,
     private val rommAccountRepository: RomMAccountRepository,
     private val preferenceStores: AccountPreferenceStoreRegistry,
-    private val quayPassKeystore: QuayPassKeystore
+    private val quayPassKeystore: QuayPassKeystore,
+    private val downloadManager: dagger.Lazy<DownloadManager>
 ) {
 
     suspend fun pendingWork(accountId: Long): AccountPendingWork? = withContext(Dispatchers.IO) {
@@ -156,6 +158,7 @@ class AccountRemovalService @Inject constructor(
             }
         }
 
+        downloadManager.get().discardForOwner(ownerUserId)
         deleteRows(ownerUserId)
         deleteCacheDirectories(ownerUserId)
         preferenceStores.clearFor(ownerUserId)
@@ -204,7 +207,6 @@ class AccountRemovalService @Inject constructor(
             database.stateCacheDao().deleteByOwner(ownerUserId)
             database.stateOwnershipDao().deleteByOwner(ownerUserId)
             database.stateTombstoneDao().deleteByOwner(ownerUserId)
-            database.downloadQueueDao().deleteByOwner(ownerUserId)
             database.quayPassEncounterDao().deleteByOwner(ownerUserId)
             database.quayPassPendingReportDao().deleteByOwner(ownerUserId)
         }

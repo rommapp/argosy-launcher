@@ -68,6 +68,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.nendo.argosy.R
+import com.nendo.argosy.ui.screens.gamedetail.DownloadWaitStatus
 import com.nendo.argosy.data.repository.SaveSyncApiClient
 import com.nendo.argosy.ui.screens.gamedetail.GameDownloadStatus
 import com.nendo.argosy.ui.screens.settings.menu.SettingsLayout
@@ -136,7 +137,7 @@ val menuLayout = SettingsLayout<MenuItem, MenuLayoutState>(
 data class GameDetailMenuState(
     val focusedIndex: Int = 0,
     val downloadStatus: GameDownloadStatus = GameDownloadStatus.NOT_DOWNLOADED,
-    val isAwaitingServer: Boolean = false,
+    val downloadWaitStatus: DownloadWaitStatus? = null,
     val isFavorite: Boolean = false,
     val saveStatus: SaveStatusInfo? = null,
     val isSyncingSaves: Boolean = false,
@@ -196,7 +197,7 @@ fun GameDetailMenu(
                     PlayMenuItem(
                         downloadStatus = displayState.downloadStatus,
                         downloadProgress = downloadProgress,
-                        isAwaitingServer = displayState.isAwaitingServer,
+                        downloadWaitStatus = displayState.downloadWaitStatus,
                         isFocused = isFocused,
                         downloadSizeBytes = displayState.downloadSizeBytes,
                         isCompact = isCompact,
@@ -356,7 +357,7 @@ fun GameDetailMenu(
 private fun PlayMenuItem(
     downloadStatus: GameDownloadStatus,
     downloadProgress: State<Float>,
-    isAwaitingServer: Boolean,
+    downloadWaitStatus: DownloadWaitStatus?,
     isFocused: Boolean,
     downloadSizeBytes: Long?,
     isCompact: Boolean,
@@ -367,7 +368,7 @@ private fun PlayMenuItem(
     val label = when {
         runningGame?.isClosing == true -> stringResource(R.string.gamedetail_menu_play_button_saving)
         runningGame != null -> stringResource(R.string.gamedetail_menu_play_button_resume_game)
-        else -> playButtonLabel(downloadStatus, downloadProgress, isAwaitingServer)
+        else -> playButtonLabel(downloadStatus, downloadProgress, downloadWaitStatus)
     }
     val isClosingGame = runningGame?.isClosing == true
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -401,15 +402,15 @@ private val PLAY_BUTTON_RUNNING_LABELS = com.nendo.argosy.ui.components.RunningL
 private fun playButtonLabel(
     downloadStatus: GameDownloadStatus,
     downloadProgress: State<Float>,
-    isAwaitingServer: Boolean
+    downloadWaitStatus: DownloadWaitStatus?
 ): String {
     return when (downloadStatus) {
         GameDownloadStatus.NO_FILE ->
             stringResource(R.string.gamedetail_menu_play_button_no_file)
         GameDownloadStatus.EXTRACTING ->
             stringResource(R.string.gamedetail_menu_play_button_extracting)
-        GameDownloadStatus.DOWNLOADING -> if (isAwaitingServer) {
-            stringResource(R.string.gamedetail_menu_play_button_waiting_for_server)
+        GameDownloadStatus.DOWNLOADING -> if (downloadWaitStatus != null) {
+            stringResource(downloadWaitStatus.menuLabelRes)
         } else {
             stringResource(
                 R.string.gamedetail_menu_play_button_progress_percent,
@@ -1012,4 +1013,3 @@ private fun buildEndWeightedLines(words: List<String>): List<String> {
 
     return listOf(firstPart, lastPart)
 }
-

@@ -174,6 +174,7 @@ class DatabaseAdminRepository @Inject constructor(
     ) = withContext(Dispatchers.IO) {
         val sourceNames = sources.map { it.name }
 
+        downloadManager.get().discardForGameSources(sourceNames)
         database.withTransaction {
             database.saveSyncDao().deleteByGameSources(sourceNames)
             database.saveCacheDao().deleteByGameSources(sourceNames)

@@ -46,6 +46,8 @@
     <string name="sync_download_service_extracting">正在解压：%1$s</string>
     <string name="sync_download_service_moving">正在移动到ROM存储：%1$s</string>
     <string name="sync_download_service_downloading">正在下载：%1$s</string>
+    <string name="sync_download_service_retrying">正在重试：%1$s</string>
+    <string name="sync_download_service_waiting_for_network">正在等待网络：%1$s</string>
     <string name="sync_download_service_queued">已排队：%1$s</string>
     <string name="sync_download_service_pending">下载等待中...</string>
     <string name="sync_download_service_media_preparing">%1$s：%2$s</string>

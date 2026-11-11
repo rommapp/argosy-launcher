@@ -10,7 +10,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -19,16 +18,22 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class PlatformSyncQueue @Inject constructor(
+class PlatformSyncQueue internal constructor(
     private val syncPlatformUseCase: dagger.Lazy<SyncPlatformUseCase>,
-    private val syncLibraryUseCase: dagger.Lazy<SyncLibraryUseCase>
+    private val syncLibraryUseCase: dagger.Lazy<SyncLibraryUseCase>,
+    private val scope: CoroutineScope
 ) {
+    @Inject
+    constructor(
+        syncPlatformUseCase: dagger.Lazy<SyncPlatformUseCase>,
+        syncLibraryUseCase: dagger.Lazy<SyncLibraryUseCase>
+    ) : this(syncPlatformUseCase, syncLibraryUseCase, CoroutineScope(Dispatchers.IO + SupervisorJob()))
+
     sealed interface Job {
         data class Library(val initializeFirst: Boolean, val changesSince: java.time.Instant? = null) : Job
         data class Platform(val id: Long, val name: String) : Job
     }
 
-    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private data class Pending(val job: Job, val onComplete: (() -> Unit)?)
 
     private val pending = ArrayDeque<Pending>()
@@ -81,14 +86,15 @@ class PlatformSyncQueue @Inject constructor(
     }
 
     /**
-     * Queues a platform sync once any library sync has finished. A library sync picks its
-     * platforms when it starts, so a platform enabled while one runs is not part of it.
+     * Queues a platform sync behind existing jobs, including any library sync.
      */
     fun enqueuePlatformAfterLibrary(platformId: Long, platformName: String) {
-        scope.launch {
-            isLibraryBusy.first { !it }
-            enqueuePlatform(platformId, platformName)
+        synchronized(lock) {
+            if (platformId in _queuedPlatformIds.value) return
+            pending.addLast(Pending(Job.Platform(platformId, platformName), null))
+            _queuedPlatformIds.update { it + platformId }
         }
+        scope.launch { drain() }
     }
 
     fun enqueueLibrary(
@@ -106,7 +112,7 @@ class PlatformSyncQueue @Inject constructor(
     }
 
     private suspend fun drain() {
-        if (!drainMutex.tryLock()) return
+        drainMutex.lock()
         try {
             while (true) {
                 val item = synchronized(lock) { pending.removeFirstOrNull() } ?: break

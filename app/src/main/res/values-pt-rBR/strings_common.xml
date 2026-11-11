@@ -1064,6 +1064,8 @@
     <string name="gamedetail_action_buttons_no_space">SEM ESPAÇO</string>
     <string name="gamedetail_action_buttons_downloading_percent">%1$d%%</string>
     <string name="gamedetail_action_buttons_waiting_for_server">Aguardando o servidor&#8230;</string>
+    <string name="gamedetail_action_buttons_retrying">Tentando novamente&#8230;</string>
+    <string name="gamedetail_action_buttons_waiting_for_network">Aguardando rede&#8230;</string>
     <string name="gamedetail_action_buttons_extracting">EXTRAINDO...</string>
     <string name="gamedetail_action_buttons_resume_percent">RETOMAR %1$d%%</string>
     <string name="gamedetail_action_buttons_retry">TENTAR NOVAMENTE</string>

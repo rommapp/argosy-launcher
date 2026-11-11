@@ -53,4 +53,12 @@
     <string name="error_download_extraction_failed">Échec de l\'extraction</string>
 
     <string name="error_filepicker_already_downloaded">Jeu déjà téléchargé</string>
+    <string name="error_download_http">Échec du téléchargement (HTTP %1$d)</string>
+    <string name="error_download_http_unauthorized">La connexion à RomM a expiré ou est requise (HTTP %1$d)</string>
+    <string name="error_download_http_forbidden">RomM a refusé l’accès à ce téléchargement (HTTP %1$d)</string>
+    <string name="error_download_http_not_found">Téléchargement introuvable sur RomM (HTTP %1$d)</string>
+    <string name="error_download_integrity_check_failed">La vérification de l’intégrité du téléchargement a échoué. Réessayez le téléchargement.</string>
+    <string name="error_download_invalid_response">RomM a renvoyé une réponse de téléchargement non valide.</string>
+    <string name="error_download_storage_access_failed">Impossible d’accéder au stockage des téléchargements. Vérifiez l’espace libre et les autorisations.</string>
+    <string name="error_download_tls_verification_failed">Impossible de vérifier le certificat du serveur. Vérifiez les paramètres du serveur et du certificat.</string>
 </resources>

@@ -4332,6 +4332,18 @@ object Migration_221_222 : Migration(221, 222) {
     }
 }
 
+object Migration_222_223 : Migration(222, 223) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE `download_queue` ADD COLUMN `resumeValidator` TEXT")
+        db.execSQL("ALTER TABLE `download_queue` ADD COLUMN `responseTotalBytes` INTEGER")
+        db.execSQL("ALTER TABLE `download_queue` ADD COLUMN `validatedBytes` INTEGER")
+        db.execSQL("ALTER TABLE `download_queue` ADD COLUMN `retryAttempt` INTEGER NOT NULL DEFAULT 0")
+        db.execSQL("ALTER TABLE `download_queue` ADD COLUMN `nextRetryAt` INTEGER")
+        db.execSQL("ALTER TABLE `download_queue` ADD COLUMN `requestKey` TEXT")
+        db.execSQL("ALTER TABLE `download_queue` ADD COLUMN `representationChecksum` TEXT")
+    }
+}
+
 object Migration_203_204 : Migration(203, 204) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL(

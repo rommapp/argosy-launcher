@@ -38,6 +38,14 @@
     <string name="error_download_not_multi_disc">Não é um jogo de múltiplos discos</string>
 
     <string name="error_download_invalid_content_type">Tipo de arquivo inválido: %1$s</string>
+    <string name="error_download_http">Falha no download (HTTP %1$d)</string>
+    <string name="error_download_http_unauthorized">O login no RomM expirou ou é necessário (HTTP %1$d)</string>
+    <string name="error_download_http_forbidden">O RomM negou acesso a este download (HTTP %1$d)</string>
+    <string name="error_download_http_not_found">Download não encontrado no RomM (HTTP %1$d)</string>
+    <string name="error_download_integrity_check_failed">A verificação de integridade do download falhou. Tente baixar novamente.</string>
+    <string name="error_download_invalid_response">O RomM retornou uma resposta de download inválida.</string>
+    <string name="error_download_storage_access_failed">Não foi possível acessar o armazenamento de downloads. Verifique o espaço livre e as permissões.</string>
+    <string name="error_download_tls_verification_failed">Não foi possível verificar o certificado do servidor. Verifique as configurações do servidor e do certificado.</string>
     <string name="error_download_file_too_small">Arquivo pequeno demais para ser um ROM</string>
     <string name="error_download_unexpected">Falha no download</string>
     <string name="error_download_insufficient_unpack_space_internal">A extração precisa de %1$d MB no armazenamento interno, %2$d MB livres</string>

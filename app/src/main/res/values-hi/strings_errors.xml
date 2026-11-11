@@ -62,4 +62,12 @@
 
     <!-- FilePickerFlowUseCase -->
     <string name="error_filepicker_already_downloaded">गेम पहले से डाउनलोड हो चुका है</string>
+    <string name="error_download_http">डाउनलोड विफल हुआ (HTTP %1$d)</string>
+    <string name="error_download_http_unauthorized">RomM साइन-इन की समय सीमा समाप्त हो गई है या साइन-इन आवश्यक है (HTTP %1$d)</string>
+    <string name="error_download_http_forbidden">RomM ने इस डाउनलोड का ऐक्सेस अस्वीकार कर दिया (HTTP %1$d)</string>
+    <string name="error_download_http_not_found">RomM पर डाउनलोड नहीं मिला (HTTP %1$d)</string>
+    <string name="error_download_integrity_check_failed">डाउनलोड की अखंडता जाँच विफल हुई। फिर से डाउनलोड करें।</string>
+    <string name="error_download_invalid_response">RomM ने अमान्य डाउनलोड प्रतिक्रिया दी।</string>
+    <string name="error_download_storage_access_failed">डाउनलोड स्टोरेज का ऐक्सेस नहीं मिल सका। खाली जगह और अनुमतियाँ जाँचें।</string>
+    <string name="error_download_tls_verification_failed">सर्वर प्रमाणपत्र सत्यापित नहीं किया जा सका। सर्वर और प्रमाणपत्र की सेटिंग जाँचें।</string>
 </resources>

@@ -197,6 +197,10 @@
     <string name="downloads_file_state_queued">В очереди</string>
     <string name="downloads_file_state_percent">%1$d%%</string>
     <string name="downloads_file_state_waiting_for_server">Ожидание сервера…</string>
+    <string name="downloads_file_state_retrying">Повторная попытка…</string>
+    <string name="downloads_file_state_waiting_for_network">Ожидание сети…</string>
+    <string name="downloads_item_status_retrying">Повторная попытка…</string>
+    <string name="downloads_item_status_waiting_for_network">Ожидание сети…</string>
     <string name="downloads_item_status_moving">Перемещение в хранилище ROM…</string>
     <string name="downloads_item_status_extracting_fallback">Распаковка…</string>
     <string name="downloads_item_status_waiting_for_server">Ожидание сервера…</string>

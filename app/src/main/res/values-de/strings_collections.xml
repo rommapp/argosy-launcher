@@ -181,6 +181,10 @@
     <string name="downloads_file_state_queued">Wartend</string>
     <string name="downloads_file_state_percent">%1$d%%</string>
     <string name="downloads_file_state_waiting_for_server">Warten auf Server…</string>
+    <string name="downloads_file_state_retrying">Erneuter Versuch…</string>
+    <string name="downloads_file_state_waiting_for_network">Warten auf Netzwerk…</string>
+    <string name="downloads_item_status_retrying">Erneuter Versuch…</string>
+    <string name="downloads_item_status_waiting_for_network">Warten auf Netzwerk…</string>
     <string name="downloads_item_status_moving">Wird in ROM-Speicher verschoben…</string>
     <string name="downloads_item_status_extracting_fallback">Wird entpackt…</string>
     <string name="downloads_item_status_waiting_for_server">Warten auf Server…</string>

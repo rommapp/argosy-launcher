@@ -222,4 +222,8 @@
 
     <string name="collections_cell_installed">%1$d instalados</string>
     <string name="collections_cell_achievements">%1$d/%2$d</string>
+    <string name="downloads_file_state_retrying">Tentando novamente&#8230;</string>
+    <string name="downloads_file_state_waiting_for_network">Aguardando rede&#8230;</string>
+    <string name="downloads_item_status_retrying">Tentando novamente&#8230;</string>
+    <string name="downloads_item_status_waiting_for_network">Aguardando rede&#8230;</string>
 </resources>

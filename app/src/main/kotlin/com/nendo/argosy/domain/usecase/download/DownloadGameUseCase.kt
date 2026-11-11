@@ -9,6 +9,7 @@ import com.nendo.argosy.data.local.dao.GameDiscDao
 import com.nendo.argosy.data.local.dao.GameFileDao
 import com.nendo.argosy.data.download.DownloadState
 import com.nendo.argosy.data.platform.PlatformDefinitions
+import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.data.repository.GameRepository
@@ -57,7 +58,8 @@ class DownloadGameUseCase @Inject constructor(
     private val emulatorConfigDao: EmulatorConfigDao,
     private val downloadQueueDao: DownloadQueueDao,
     private val gameRepository: GameRepository,
-    private val preferencesRepository: com.nendo.argosy.data.preferences.UserPreferencesRepository
+    private val preferencesRepository: com.nendo.argosy.data.preferences.UserPreferencesRepository,
+    private val syncPreferencesRepository: SyncPreferencesRepository
 ) {
     suspend operator fun invoke(
         gameId: Long,
@@ -74,10 +76,15 @@ class DownloadGameUseCase @Inject constructor(
             return DownloadResult.AlreadyDownloaded
         }
 
-        val failedEntry = downloadQueueDao.getByGameId(gameId)
+        val failedEntry = if (selectedFileIds == null) {
+            val ownerUserId = syncPreferencesRepository.getRommUserId()
+            downloadQueueDao.getRecoverableDownloads().filter {
+                it.gameId == gameId && it.discId == null && it.gameFileId == null &&
+                    it.ownerUserId == ownerUserId
+            }.singleOrNull()?.takeIf { it.state == DownloadState.FAILED.name }
+        } else null
         val decodedFailure = com.nendo.argosy.data.download.DownloadFailureReasonCodec.decode(failedEntry?.errorReason)
         if (failedEntry != null &&
-            failedEntry.state == DownloadState.FAILED.name &&
             decodedFailure is com.nendo.argosy.data.download.DownloadFailureReason.ExtractionFailed
         ) {
             val targetFile = downloadManager.getDownloadPath(gameId, failedEntry.platformSlug, failedEntry.fileName)

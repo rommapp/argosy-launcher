@@ -1,6 +1,7 @@
 package com.nendo.argosy.domain.usecase.download
 
 import com.nendo.argosy.data.download.DownloadManager
+import com.nendo.argosy.data.local.entity.DownloadQueueEntity
 import com.nendo.argosy.data.local.dao.DownloadQueueDao
 import com.nendo.argosy.data.local.dao.EmulatorConfigDao
 import com.nendo.argosy.data.local.dao.GameDao
@@ -11,6 +12,7 @@ import com.nendo.argosy.data.local.entity.GameEntity
 import com.nendo.argosy.data.local.entity.GameFileEntity
 import com.nendo.argosy.data.model.GameSource
 import com.nendo.argosy.data.model.ResolvedGameArt
+import com.nendo.argosy.data.preferences.SyncPreferencesRepository
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.data.remote.romm.RomMRom
@@ -24,6 +26,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.io.File
 
 class DownloadGameUseCaseTest {
 
@@ -47,8 +50,54 @@ class DownloadGameUseCaseTest {
         downloadQueueDao = mockk(relaxed = true)
         gameRepository = mockk(relaxed = true)
         gameFileDao = mockk(relaxed = true)
-        useCase = DownloadGameUseCase(gameDao, gameDiscDao, gameFileDao, romMRepository, downloadManager, emulatorConfigDao, downloadQueueDao, gameRepository, mockk(relaxed = true))
+        val syncPreferencesRepository = mockk<SyncPreferencesRepository>(relaxed = true)
+        coEvery { syncPreferencesRepository.getRommUserId() } returns OWNER_ID
+        useCase = DownloadGameUseCase(gameDao, gameDiscDao, gameFileDao, romMRepository, downloadManager, emulatorConfigDao, downloadQueueDao, gameRepository, mockk(relaxed = true), syncPreferencesRepository)
     }
+
+    @Test
+    fun `sibling disc and file extraction failures do not prompt base recovery`() = runTest {
+        coEvery { gameDao.getById(123L) } returns createGameEntity()
+        coEvery { romMRepository.getRom(any()) } returns RomMResult.Success(createRom(fileName = "game.nes"))
+        val failed = failedExtractionEntry()
+        coEvery { downloadQueueDao.getRecoverableDownloads() } returns listOf(
+            failed.copy(discId = 1L), failed.copy(id = 2L, gameFileId = 2L)
+        )
+
+        assertEquals(DownloadResult.Queued, useCase(123L))
+        coVerify(exactly = 0) { downloadManager.getDownloadPath(any(), any(), any()) }
+    }
+
+    @Test
+    fun `ambiguous base extraction failures do not prompt recovery`() = runTest {
+        coEvery { gameDao.getById(123L) } returns createGameEntity()
+        coEvery { romMRepository.getRom(any()) } returns RomMResult.Success(createRom(fileName = "game.nes"))
+        val failed = failedExtractionEntry()
+        coEvery { downloadQueueDao.getRecoverableDownloads() } returns listOf(failed, failed.copy(id = 2L))
+
+        assertEquals(DownloadResult.Queued, useCase(123L))
+        coVerify(exactly = 0) { downloadManager.getDownloadPath(any(), any(), any()) }
+    }
+
+    @Test
+    fun `another accounts failed base row does not hide the current owners recovery`() = runTest {
+        coEvery { gameDao.getById(123L) } returns createGameEntity()
+        val failed = failedExtractionEntry()
+        coEvery { downloadQueueDao.getRecoverableDownloads() } returns listOf(
+            failed, failed.copy(id = 2L, ownerUserId = OWNER_ID + 1)
+        )
+        val archive = File.createTempFile("game", ".zip").apply { deleteOnExit() }
+        coEvery { downloadManager.getDownloadPath(123L, "nes", "game.zip") } returns archive
+
+        assertTrue(useCase(123L) is DownloadResult.ExtractionFailed)
+    }
+
+    private fun failedExtractionEntry() = DownloadQueueEntity(
+        id = 1L, gameId = 123L, rommId = 456L, fileName = "game.zip", gameTitle = "Game",
+        platformSlug = "nes", coverPath = null, bytesDownloaded = 1L, totalBytes = 1L,
+        state = "FAILED", errorReason = "EXTRACTION_FAILED:bad archive", tempFilePath = null,
+        ownerUserId = OWNER_ID
+    )
 
     @Test
     fun `a folder disc downloads only its own file`() = runTest {
@@ -329,5 +378,6 @@ class DownloadGameUseCaseTest {
     private companion object {
         const val DISC_1 = "Game (Disc 1).chd"
         const val DISC_2 = "Game (Disc 2).chd"
+        const val OWNER_ID = 42L
     }
 }

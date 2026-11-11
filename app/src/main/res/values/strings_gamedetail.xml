@@ -115,6 +115,11 @@
     <!-- Along the bottom of the running game's last frame: achievements earned out of the game's
          total. -->
     <string name="gamedetail_running_frame_ra_progress" translatable="false">%1$d/%2$d</string>
+    <!-- Big button at the top of the left menu while a dropped download waits to try again. Verb
+         in progress. -->
+    <string name="gamedetail_menu_play_button_retrying">Retrying&#8230;</string>
+    <!-- Same button while the download waits for the device to get back online. -->
+    <string name="gamedetail_menu_play_button_waiting_for_network">Waiting for network&#8230;</string>
 
     <!-- Row in the left menu while save data is being exchanged with the server. Verb in the
          continuous form. -->

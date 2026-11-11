@@ -15,12 +15,15 @@ class HomeAppAvailabilityReceiver : BroadcastReceiver() {
 
     @Inject lateinit var homeAppAvailability: HomeAppAvailability
 
+    @Inject lateinit var accessibilityRebind: com.nendo.argosy.hardware.AccessibilityRebind
+
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action != Intent.ACTION_MY_PACKAGE_REPLACED && intent.action != Intent.ACTION_BOOT_COMPLETED) return
         val pending = goAsync()
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             try {
                 homeAppAvailability.applyAtStartup()
+                if (intent.action == Intent.ACTION_MY_PACKAGE_REPLACED) accessibilityRebind.recoverAfterUpdate()
             } finally {
                 pending.finish()
             }

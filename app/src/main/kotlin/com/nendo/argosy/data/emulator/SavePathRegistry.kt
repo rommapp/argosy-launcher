@@ -319,6 +319,16 @@ object SavePathRegistry {
             usesFolderBasedSaves = true,
             usesPackageTemplate = true
         ),
+        "eden_nx2" to SavePathConfig(
+            emulatorId = "eden_nx2",
+            defaultPaths = listOf(
+                "{extStorage}/Android/data/{package}/files/nand/user/save"
+            ),
+            saveExtensions = listOf("*"),
+            usesFolderBasedSaves = true,
+            usesPackageTemplate = true,
+            supported = false
+        ),
         "eden_duo" to SavePathConfig(
             emulatorId = "eden_duo",
             defaultPaths = listOf(
@@ -918,7 +928,8 @@ object SavePathRegistry {
         "io.wip.pico8" to "pico8_android",
         "com.sa_moo_rai.picpic" to "picpic",
         "com.pixelrespawn.linkboy" to "linkboy",
-        "com.phobos.emulator" to "phobos"
+        "com.phobos.emulator" to "phobos",
+        "dev.eden.nx2" to "eden_nx2"
     )
 
     private val packagePrefixToConfigId = mapOf(

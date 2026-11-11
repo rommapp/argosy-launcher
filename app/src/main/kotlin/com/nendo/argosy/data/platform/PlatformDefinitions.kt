@@ -36,7 +36,7 @@ private val AMBIGUOUS_EXTENSIONS = setOf(
 object PlatformDefinitions {
 
     private val TITLE_ID_PLATFORMS = setOf(
-        "switch", "vita", "psvita", "psp", "3ds", "wiiu", "wii", "gc", "ngc", "gamecube", "ps2",
+        "switch", "switch2", "vita", "psvita", "psp", "3ds", "wiiu", "wii", "gc", "ngc", "gamecube", "ps2",
         "ps3", "xbox", "xbox360", "psx", "dreamcast", "gb", "gbc", "snes", "n64"
     )
 
@@ -53,7 +53,7 @@ object PlatformDefinitions {
      * about the archive's own size for these. Holds raw slug aliases beside canonical slugs.
      */
     val PACKED_PAYLOAD_PLATFORMS = setOf(
-        "switch", "ps3", "ps4", "wiiu", "vita", "psvita"
+        "switch", "switch2", "ps3", "ps4", "wiiu", "vita", "psvita"
     )
 
     private val slugAliases = mapOf(
@@ -70,6 +70,8 @@ object PlatformDefinitions {
         "nintendoswitch" to "switch",
         "nswitch" to "switch",
         "nintendo-switch" to "switch",
+        "nintendoswitch2" to "switch2",
+        "nintendo-switch-2" to "switch2",
         "new_nintendo3ds" to "3ds",
         "new-nintendo-3ds" to "3ds",
         "n3ds" to "3ds",
@@ -421,6 +423,7 @@ object PlatformDefinitions {
         PlatformDef("wii", "Wii", "Wii", setOf("wbfs", "iso", "rvz", "gcz", "ciso", "wia", "wad", "zip", "7z"), 120),
         PlatformDef("wiiu", "Wii U", "Wii U", setOf("wud", "wux", "rpx", "wua", "zip", "7z"), 125),
         PlatformDef("switch", "Switch", "Switch", setOf("nsp", "xci", "nsz", "xcz", "zip", "7z"), 130),
+        PlatformDef("switch2", "Switch 2", "Switch 2", setOf("nup"), 131),
 
         // =====================================================================
         // NINTENDO HANDHELDS (150-199) - Chronological order

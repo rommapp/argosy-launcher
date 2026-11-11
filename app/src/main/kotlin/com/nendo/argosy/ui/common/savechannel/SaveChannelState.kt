@@ -2,6 +2,7 @@ package com.nendo.argosy.ui.common.savechannel
 
 import com.nendo.argosy.domain.model.UnifiedSaveEntry
 import com.nendo.argosy.domain.model.UnifiedStateEntry
+import com.nendo.argosy.ui.components.TextEntryFocus
 import com.nendo.argosy.ui.common.savechannel.snapshot.SnapshotViewState
 
 enum class SaveTab { SAVES, STATES }
@@ -37,6 +38,7 @@ data class SaveChannelState(
     val renameEntry: UnifiedSaveEntry? = null,
     val renameText: String = "",
     val renameMode: RenameMode = RenameMode.SAVE_AS,
+    val renameFocus: TextEntryFocus = TextEntryFocus(),
     val showDeleteConfirmation: Boolean = false,
     val deleteTarget: SaveDeleteTarget? = null,
     val showVersionMismatchDialog: Boolean = false,

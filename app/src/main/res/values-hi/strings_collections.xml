@@ -62,6 +62,7 @@
     <string name="collections_detail_loading">लोड हो रहा है…</string>
     <string name="collections_detail_hint_search_open">खोलें</string>
     <string name="collections_detail_hint_search_close">खोज बंद करें</string>
+    <string name="collections_detail_keyboard_submit">खोजें</string>
     <string name="collections_detail_hint_navigate">नेविगेट</string>
     <string name="collections_detail_hint_open">खोलें</string>
     <string name="collections_detail_hint_back">वापस</string>
@@ -90,6 +91,7 @@
     <string name="collections_browser_loading">लोड हो रहा है…</string>
     <string name="collections_browser_hint_search_select">चुनें</string>
     <string name="collections_browser_hint_search_close">खोज बंद करें</string>
+    <string name="collections_browser_keyboard_submit">खोजें</string>
     <string name="collections_browser_hint_navigate">नेविगेट</string>
     <string name="collections_browser_hint_select">चुनें</string>
     <string name="collections_browser_hint_back">वापस</string>
@@ -118,6 +120,7 @@
     <string name="collections_category_loading">लोड हो रहा है…</string>
     <string name="collections_category_hint_search_open">खोलें</string>
     <string name="collections_category_hint_search_close">खोज बंद करें</string>
+    <string name="collections_category_keyboard_submit">खोजें</string>
     <string name="collections_category_hint_navigate">नेविगेट</string>
     <string name="collections_category_hint_open">खोलें</string>
     <string name="collections_category_hint_back">वापस</string>

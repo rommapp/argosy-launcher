@@ -75,8 +75,6 @@
     <string name="ui_save_channel_rename_prompt_save_as">Escribe un nombre para esta ranura de guardado</string>
     <string name="ui_save_channel_rename_prompt_new_slot">Escribe un nombre para esta ranura de guardado</string>
     <string name="ui_save_channel_rename_prompt_rename">Escribe un nuevo nombre</string>
-    <string name="ui_save_channel_rename_footer_confirm">Confirmar</string>
-    <string name="ui_save_channel_rename_footer_cancel">Cancelar</string>
     <string name="ui_save_channel_rename_placeholder">Nombre de la ranura</string>
     <string name="ui_save_channel_rename_cancel_button">Cancelar</string>
 
@@ -201,6 +199,21 @@
     <string name="ui_pushed_apk_not_now">Ahora no</string>
 
     <string name="ui_modal_search_placeholder">Buscar...</string>
+    <string name="ui_modal_search_keyboard_submit">Buscar</string>
+
+    <string name="ui_keyboard_key_shift">Mayúsculas</string>
+    <string name="ui_keyboard_key_caps_lock">Bloq Mayús</string>
+    <string name="ui_keyboard_key_backspace">Retroceso</string>
+    <string name="ui_keyboard_key_space">Espacio</string>
+    <string name="ui_keyboard_key_symbols">Símbolos</string>
+    <string name="ui_keyboard_key_letters">Letras</string>
+    <string name="ui_keyboard_key_layout">Cambiar distribución</string>
+    <string name="ui_keyboard_key_enter_default">Listo</string>
+    <plurals name="ui_keyboard_password_announce">
+        <item quantity="one">%d carácter</item>
+        <item quantity="many">%d caracteres</item>
+        <item quantity="other">%d caracteres</item>
+    </plurals>
 
     <string name="ui_disc_picker_title">SELECCIONAR DISCO</string>
     <string name="ui_disc_picker_subtitle">Elige qué disco iniciar</string>
@@ -367,7 +380,6 @@
 
     <string name="ui_tile_picker_title">AGREGAR A LA CUADRÍCULA</string>
     <string name="ui_tile_picker_title_track_game">SEGUIR UN JUEGO</string>
-    <string name="ui_tile_picker_subtitle_matching">Coincide con \"%1$s\"</string>
     <string name="ui_tile_picker_empty_games">No hay juegos instalados para agregar</string>
     <string name="ui_tile_picker_empty_collections">Aún no hay colecciones</string>
     <string name="ui_tile_picker_empty_apps">No se encontraron aplicaciones</string>
@@ -488,6 +500,7 @@
     <string name="ui_platform_filter_sort_most_games">Más juegos</string>
     <string name="ui_platform_filter_sort_least_games">Menos juegos</string>
     <string name="ui_platform_filter_search_placeholder">Buscar plataformas...</string>
+    <string name="ui_platform_filter_keyboard_submit">Listo</string>
     <string name="ui_platform_filter_search_clear">Borrar</string>
     <plurals name="ui_platform_filter_count">
         <item quantity="one">%d plataforma</item>
@@ -828,6 +841,7 @@
     <string name="ui_quick_menu_empty_favorites">Aún no hay favoritos</string>
     <string name="ui_quick_menu_empty_random">No hay juegos disponibles</string>
     <string name="ui_quick_menu_search_placeholder">Buscar juegos...</string>
+    <string name="ui_quick_menu_search_keyboard_submit">Buscar</string>
     <string name="ui_quick_menu_search_prompt">Escribe al menos 2 caracteres para buscar</string>
     <string name="ui_quick_menu_search_no_results">No se encontraron juegos para \"%1$s\"</string>
     <string name="ui_quick_menu_recent_searches_heading">Búsquedas recientes</string>
@@ -864,6 +878,7 @@
     <string name="ui_file_browser_new_folder_field_label">Nombre de la carpeta</string>
     <string name="ui_file_browser_new_folder_cancel">Cancelar</string>
     <string name="ui_file_browser_new_folder_confirm">Crear</string>
+    <string name="ui_file_browser_new_folder_keyboard_submit">Crear</string>
     <string name="ui_file_browser_new_folder_error_empty">El nombre de la carpeta no puede estar vacío</string>
     <string name="ui_file_browser_new_folder_error_invalid">Nombre de carpeta no válido</string>
     <string name="ui_file_browser_new_folder_error_exists">Esa carpeta ya existe</string>

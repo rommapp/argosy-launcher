@@ -1593,7 +1593,10 @@ fun HomeScreen(
                 focusIndex = uiState.tilePickerFocusIndex,
                 onSelect = { entry -> viewModel.selectTilePickerEntry(entry) },
                 onDismiss = viewModel::closeTilePicker,
-                searchActive = uiState.customGrid.pickerSearchActive,
+                searchFocused = uiState.customGrid.pickerSearchFocused,
+                keyboardOpen = uiState.customGrid.pickerKeyboardOpen,
+                onOpenKeyboard = viewModel::openTilePickerSearch,
+                onCloseKeyboard = viewModel::closeTilePickerKeyboard,
                 onQueryChange = viewModel::setTilePickerQuery,
                 category = uiState.customGrid.pickerCategory,
                 categories = uiState.customGrid.pickerCategories,
@@ -1670,10 +1673,12 @@ fun HomeScreen(
             com.nendo.argosy.ui.components.PageChooserModal(
                 state = chooser,
                 onSelect = { index ->
-                    viewModel.movePageChooserFocus(index - chooser.focusIndex)
+                    viewModel.focusPageChooserEntry(index)
                     viewModel.confirmPageChooser()
                 },
                 onQueryChange = viewModel::setPageChooserQuery,
+                onOpenKeyboard = viewModel::openPageChooserKeyboard,
+                onCloseKeyboard = viewModel::closePageChooserKeyboard,
                 onDismiss = viewModel::closePageChooser
             )
         }

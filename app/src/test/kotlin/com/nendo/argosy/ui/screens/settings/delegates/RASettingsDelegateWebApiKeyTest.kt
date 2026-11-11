@@ -45,15 +45,17 @@ class RASettingsDelegateWebApiKeyTest {
     }
 
     @Test
-    fun `confirm on the field moves to the buttons, then runs the focused button`() = runTest {
+    fun `confirm on the field reopens the keyboard, confirm on a button runs it`() = runTest {
         coEvery { keyRepository.validateAndSave("abcdefgh1234") } returns RAWebApiKeyCheck.SAVED
         var saved = 0
         delegate.openWebApiKeyEditor()
         delegate.setWebApiKeyDraft("abcdefgh1234")
 
         delegate.confirmWebApiKeyEditor(this, onSaved = { saved++ }, onCleared = {})
-        assertEquals(TextEntryRow.BUTTONS, editor!!.row)
+        assertEquals(TextEntryRow.FIELD, editor!!.row)
+        assertEquals(1, editor!!.keyboardRequest)
 
+        delegate.moveWebApiKeyRow(TextEntryRow.BUTTONS)
         delegate.confirmWebApiKeyEditor(this, onSaved = { saved++ }, onCleared = {})
         advanceUntilIdle()
 

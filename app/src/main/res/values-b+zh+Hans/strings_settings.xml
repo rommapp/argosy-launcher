@@ -2062,7 +2062,16 @@
     </plurals>
 
     <string name="settings_romm_config_server_url_label">服务器网址</string>
-    <string name="settings_romm_config_server_url_placeholder">https://romm.example.com</string>
+    <string name="settings_romm_config_url_keyboard_submit">完成</string>
+    <string name="settings_romm_config_pairing_code_keyboard_label">配对码</string>
+    <string name="settings_romm_config_pairing_code_keyboard_submit">完成</string>
+    <string name="settings_jellyfin_config_keyboard_submit">保存</string>
+    <string name="settings_jellyfin_signin_username_keyboard_submit">完成</string>
+    <string name="settings_jellyfin_signin_password_keyboard_submit">登录</string>
+    <string name="settings_ra_login_username_keyboard_submit">完成</string>
+    <string name="settings_ra_login_password_keyboard_submit">完成</string>
+    <string name="settings_ra_proxy_address_keyboard_submit">完成</string>
+    <string name="settings_steam_add_game_keyboard_submit">添加</string>    <string name="settings_romm_config_server_url_placeholder">https://romm.example.com</string>
     <string name="settings_romm_config_auth_method_title">认证方式</string>
     <string name="settings_romm_config_auth_method_device">设备配对</string>
     <string name="settings_romm_config_auth_method_pairing_code">配对代码</string>

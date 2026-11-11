@@ -66,6 +66,7 @@
     <string name="collections_detail_loading">Загрузка…</string>
     <string name="collections_detail_hint_search_open">Открыть</string>
     <string name="collections_detail_hint_search_close">Закрыть поиск</string>
+    <string name="collections_detail_keyboard_submit">Найти</string>
     <string name="collections_detail_hint_navigate">Навигация</string>
     <string name="collections_detail_hint_open">Открыть</string>
     <string name="collections_detail_hint_back">Назад</string>
@@ -96,6 +97,7 @@
     <string name="collections_browser_loading">Загрузка…</string>
     <string name="collections_browser_hint_search_select">Выбрать</string>
     <string name="collections_browser_hint_search_close">Закрыть поиск</string>
+    <string name="collections_browser_keyboard_submit">Найти</string>
     <string name="collections_browser_hint_navigate">Навигация</string>
     <string name="collections_browser_hint_select">Выбрать</string>
     <string name="collections_browser_hint_back">Назад</string>
@@ -128,6 +130,7 @@
     <string name="collections_category_loading">Загрузка…</string>
     <string name="collections_category_hint_search_open">Открыть</string>
     <string name="collections_category_hint_search_close">Закрыть поиск</string>
+    <string name="collections_category_keyboard_submit">Найти</string>
     <string name="collections_category_hint_navigate">Навигация</string>
     <string name="collections_category_hint_open">Открыть</string>
     <string name="collections_category_hint_back">Назад</string>

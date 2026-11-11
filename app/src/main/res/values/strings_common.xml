@@ -184,10 +184,6 @@
     <string name="ui_save_channel_rename_prompt_new_slot">Enter a name for this save slot</string>
     <!-- Prompt above the text field when renaming an existing slot. -->
     <string name="ui_save_channel_rename_prompt_rename">Enter a new name</string>
-    <!-- Footer hint accepting the typed name. Verb. -->
-    <string name="ui_save_channel_rename_footer_confirm">Confirm</string>
-    <!-- Footer hint abandoning the typed name. Verb. -->
-    <string name="ui_save_channel_rename_footer_cancel">Cancel</string>
     <!-- Placeholder inside the empty text field. Noun phrase naming what to type. -->
     <string name="ui_save_channel_rename_placeholder">Slot name</string>
     <!-- Button beside the confirm button. Verb: abandons the typed name. -->
@@ -430,6 +426,34 @@
 
     <!-- Placeholder in a modal's search field when nothing has been typed. -->
     <string name="ui_modal_search_placeholder">Search...</string>
+    <!-- Enter key of the on-screen controller keyboard while typing in a picker's search field. Verb. -->
+    <string name="ui_modal_search_keyboard_submit">Search</string>
+
+    <!-- Controller keyboard: spoken names of its function keys, read by screen readers. -->
+    <!-- The key that types the next letter in upper case. -->
+    <string name="ui_keyboard_key_shift">Shift</string>
+    <!-- The same key once it is locked so every letter types in upper case. -->
+    <string name="ui_keyboard_key_caps_lock">Caps lock</string>
+    <!-- The key that deletes the character before the cursor. -->
+    <string name="ui_keyboard_key_backspace">Backspace</string>
+    <!-- The key that types a space character. -->
+    <string name="ui_keyboard_key_space">Space</string>
+    <!-- The key that switches to the page of punctuation and symbols. -->
+    <string name="ui_keyboard_key_symbols">Symbols</string>
+    <!-- The key that switches back from the symbols page to the letters page. -->
+    <string name="ui_keyboard_key_letters">Letters</string>
+    <!-- The key that switches to the next keyboard language layout. Verb phrase. -->
+    <string name="ui_keyboard_key_layout">Switch layout</string>
+    <!-- Default label of the key that finishes typing and submits the text. Verb, as in "I am done". -->
+    <string name="ui_keyboard_key_enter_default">Done</string>
+    <!-- Spoken instead of a password's characters. %d is how many characters have been typed. -->
+    <plurals name="ui_keyboard_password_announce">
+        <item quantity="one">%d character</item>
+        <item quantity="other">%d characters</item>
+    </plurals>
+    <string name="ui_keyboard_label_symbols" translatable="false">&amp;123</string>
+    <string name="ui_keyboard_label_letters" translatable="false">ABC</string>
+    <string name="ui_keyboard_counter" translatable="false">%1$d/%2$d</string>
 
     <!-- Heading of the modal that asks which disc of a multi-disc game to start. Rendered in
          caps in English. -->
@@ -727,8 +751,6 @@
     <!-- Heading of the same modal while it is choosing which game the RetroAchievements tile
          tracks, instead of adding a fresh tile. Rendered in caps in English. -->
     <string name="ui_tile_picker_title_track_game">TRACK A GAME</string>
-    <!-- Second line under that heading while the list is filtered. %1$s is what was typed. -->
-    <string name="ui_tile_picker_subtitle_matching">Matching \"%1$s\"</string>
     <!-- Shown on the games tab when nothing is on the device. -->
     <string name="ui_tile_picker_empty_games">No installed games to add</string>
     <!-- Shown on the collections tab when the user has made none. -->
@@ -967,6 +989,8 @@
     <string name="ui_platform_filter_sort_least_games">Least Games</string>
     <!-- Placeholder in the platform list's search field. -->
     <string name="ui_platform_filter_search_placeholder">Search platforms...</string>
+    <!-- Enter key of the on-screen controller keyboard while searching platforms. Finishes typing. -->
+    <string name="ui_platform_filter_keyboard_submit">Done</string>
     <!-- Icon description on the cross that empties that field. Verb. -->
     <string name="ui_platform_filter_search_clear">Clear</string>
     <!-- Count of platforms shown left of the header's buttons. -->
@@ -1881,6 +1905,8 @@
     <string name="ui_quick_menu_empty_random">No games available</string>
     <!-- Placeholder in the quick menu's search field. -->
     <string name="ui_quick_menu_search_placeholder">Search games...</string>
+    <!-- Enter key of the on-screen controller keyboard while typing in the quick menu search. Verb. -->
+    <string name="ui_quick_menu_search_keyboard_submit">Search</string>
     <!-- Shown under an almost-empty search field, saying how much to type. -->
     <string name="ui_quick_menu_search_prompt">Type at least 2 characters to search</string>
     <!-- Shown when a search matches nothing. %1$s is what was typed. -->
@@ -1967,6 +1993,8 @@
     <string name="ui_file_browser_new_folder_cancel">Cancel</string>
     <!-- Button on that modal. Verb: makes the folder. -->
     <string name="ui_file_browser_new_folder_confirm">Create</string>
+    <!-- Enter key of the on-screen controller keyboard while naming a new folder. Verb: create the folder. -->
+    <string name="ui_file_browser_new_folder_keyboard_submit">Create</string>
     <!-- Shown under that field when nothing was typed. -->
     <string name="ui_file_browser_new_folder_error_empty">Folder name cannot be empty</string>
     <!-- Shown under that field when the name holds a character a folder name cannot. -->

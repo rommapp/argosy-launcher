@@ -414,6 +414,8 @@
     <string name="gamedetail_speedrun_empty_suffix">एक बनाने के लिए, या कम्युनिटी से इंपोर्ट करें।</string>
     <string name="gamedetail_speedrun_category_summary">%1$d सेगमेंट · %2$d प्रयास</string>
     <string name="gamedetail_speedrun_import_row">स्प्लिट्स इंपोर्ट करें...</string>
+    <string name="gamedetail_speedrun_new_category_row">नई श्रेणी</string>
+    <string name="gamedetail_speedrun_add_segment_row">सेगमेंट जोड़ें</string>
     <string name="gamedetail_speedrun_import_loading_title">खोजा जा रहा है...</string>
     <string name="gamedetail_speedrun_import_loading_message">therun.gg और speedrun.com पर श्रेणियां खोजी जा रही हैं</string>
     <string name="gamedetail_speedrun_import_importing_title">इंपोर्ट हो रहा है...</string>
@@ -432,8 +434,7 @@
     <string name="gamedetail_speedrun_source_speedruncom">speedrun.com · केवल नाम</string>
     <string name="gamedetail_speedrun_prompt_confirm">पुष्टि करें</string>
     <string name="gamedetail_speedrun_prompt_cancel">रद्द करें</string>
-    <string name="gamedetail_speedrun_prompt_placeholder">नाम</string>
-    <string name="gamedetail_speedrun_confirm_delete_title">\"%1$s\" हटाएं?</string>
+    <string name="gamedetail_speedrun_prompt_placeholder">नाम</string>    <string name="gamedetail_speedrun_confirm_delete_title">\"%1$s\" हटाएं?</string>
     <string name="gamedetail_speedrun_confirm_delete_footer_delete">हटाएं</string>
     <string name="gamedetail_speedrun_confirm_delete_footer_cancel">रद्द करें</string>
     <string name="gamedetail_speedrun_confirm_delete_category_message">इससे श्रेणी, उसके सेगमेंट और सभी दर्ज प्रयास हट जाएंगे।</string>

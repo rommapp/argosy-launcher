@@ -86,6 +86,8 @@ data class SearchUiState(
     val focusedIndex: Int = -1,
     val showKeyboard: Boolean = true
 ) {
+    val isFieldFocused: Boolean get() = focusedIndex == SearchViewModel.SEARCH_FIELD_INDEX
+
     val resultCount: Int get() = gameResults.size + mediaResults.size
 
     val hasResults: Boolean get() = gameResults.isNotEmpty() || mediaResults.isNotEmpty()
@@ -180,7 +182,7 @@ class SearchViewModel @Inject constructor(
                     gameResults = results.first,
                     mediaResults = results.second,
                     isSearching = false,
-                    focusedIndex = if (results.first.isEmpty() && results.second.isEmpty()) -1 else 0
+                    focusedIndex = if (state.showKeyboard || (results.first.isEmpty() && results.second.isEmpty())) -1 else 0
                 )
             }
         }
@@ -246,7 +248,13 @@ class SearchViewModel @Inject constructor(
     }
 
     fun focusKeyboard() {
-        _uiState.update { it.copy(showKeyboard = true, focusedIndex = -1) }
+        _uiState.update { it.copy(showKeyboard = true, focusedIndex = SEARCH_FIELD_INDEX) }
+    }
+
+    fun closeKeyboard() {
+        _uiState.update { state ->
+            state.copy(showKeyboard = false, focusedIndex = if (state.hasResults) 0 else state.focusedIndex)
+        }
     }
 
     fun selectionAt(index: Int): SearchSelection? = when (val result = resultAt(index)) {
@@ -307,8 +315,9 @@ class SearchViewModel @Inject constructor(
     ): InputHandler = object : InputHandler {
         override fun onUp(): InputResult {
             val state = _uiState.value
+            if (state.focusedIndex == SEARCH_FIELD_INDEX) return InputResult.handled(SoundType.BOUNDARY)
             if (state.focusedIndex == 0) {
-                focusKeyboard()
+                _uiState.update { it.copy(focusedIndex = SEARCH_FIELD_INDEX) }
                 return InputResult.HANDLED
             }
             return if (moveFocus(-1)) InputResult.HANDLED else InputResult.handled(SoundType.BOUNDARY)
@@ -338,6 +347,10 @@ class SearchViewModel @Inject constructor(
         }
 
         override fun onConfirm(): InputResult {
+            if (_uiState.value.focusedIndex == SEARCH_FIELD_INDEX) {
+                focusKeyboard()
+                return InputResult.HANDLED
+            }
             when (val selection = selectionAt(_uiState.value.focusedIndex)) {
                 is SearchSelection.OpenGame -> {
                     setGameContext()
@@ -383,6 +396,7 @@ class SearchViewModel @Inject constructor(
     }
 
     companion object {
+        const val SEARCH_FIELD_INDEX = -1
         private const val MIN_QUERY_LENGTH = 2
         private const val DEBOUNCE_MS = 300L
 

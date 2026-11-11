@@ -41,7 +41,6 @@
     <string name="quaypass_greeting_modal_footer_cancel">取消</string>
     <string name="quaypass_greeting_modal_description">打卡時會顯示給您遇到的旅人。</string>
     <string name="quaypass_greeting_modal_placeholder">你好！</string>
-
     <string name="doodle_tool_selector_pen_description">畫筆</string>
     <string name="doodle_tool_selector_line_description">直線</string>
     <string name="doodle_tool_selector_fill_description">填色</string>

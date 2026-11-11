@@ -64,6 +64,7 @@
     <string name="collections_detail_loading">Chargement…</string>
     <string name="collections_detail_hint_search_open">Ouvrir</string>
     <string name="collections_detail_hint_search_close">Fermer la recherche</string>
+    <string name="collections_detail_keyboard_submit">Rechercher</string>
     <string name="collections_detail_hint_navigate">Naviguer</string>
     <string name="collections_detail_hint_open">Ouvrir</string>
     <string name="collections_detail_hint_back">Retour</string>
@@ -93,6 +94,7 @@
     <string name="collections_browser_loading">Chargement…</string>
     <string name="collections_browser_hint_search_select">Sélectionner</string>
     <string name="collections_browser_hint_search_close">Fermer la recherche</string>
+    <string name="collections_browser_keyboard_submit">Rechercher</string>
     <string name="collections_browser_hint_navigate">Naviguer</string>
     <string name="collections_browser_hint_select">Sélectionner</string>
     <string name="collections_browser_hint_back">Retour</string>
@@ -123,6 +125,7 @@
     <string name="collections_category_loading">Chargement…</string>
     <string name="collections_category_hint_search_open">Ouvrir</string>
     <string name="collections_category_hint_search_close">Fermer la recherche</string>
+    <string name="collections_category_keyboard_submit">Rechercher</string>
     <string name="collections_category_hint_navigate">Naviguer</string>
     <string name="collections_category_hint_open">Ouvrir</string>
     <string name="collections_category_hint_back">Retour</string>

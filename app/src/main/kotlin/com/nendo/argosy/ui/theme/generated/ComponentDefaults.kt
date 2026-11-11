@@ -557,4 +557,20 @@ object ComponentDefaults {
         const val bodyGlyphSizeRatio = 1.1f
     }
 
+    object ControllerKeyboard {
+        const val sheetTargetHeightPercent = 45f
+        const val sheetMaxHeightPercent = 50f
+        const val keyHeightMinDp = 32
+        const val compactMaxWindowHeightDp = 480
+        const val sizingRowCount = 5
+        const val echoFullExtraLineDp = 30
+        const val echoFullMaxLines = 3
+        const val counterNearLimitPercent = 10f
+    }
+
+    object PairingCode {
+        const val cellWidthDp = 36
+        const val cellHeightDp = 44
+    }
+
 }

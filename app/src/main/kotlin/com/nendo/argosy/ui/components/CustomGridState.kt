@@ -117,8 +117,13 @@ data class PageChooserState(
     val isSearching: Boolean = false,
     val isLoading: Boolean = false,
     val gameId: Long? = null,
-    val gameTitle: String? = null
+    val gameTitle: String? = null,
+    val searchFocused: Boolean = false,
+    val searchKeyboardOpen: Boolean = false
 ) {
+    val offersSearch: Boolean
+        get() = gameTitle != null && gameId == null
+
     /**
      * Null once a game has been opened, because the heading is then that game's own title, which
      * [gameTitle] already carries.
@@ -218,7 +223,8 @@ data class CustomGridState(
     val menuScreens: List<AppMenuRow.OpenOnScreen> = emptyList(),
     val showPicker: Boolean = false,
     val pickerQuery: String = "",
-    val pickerSearchActive: Boolean = false,
+    val pickerSearchFocused: Boolean = false,
+    val pickerKeyboardOpen: Boolean = false,
     val pickerCategory: TilePickerCategory = TilePickerCategory.GAMES,
     /**
      * The media library the picker has drilled into, or null while it is offering the libraries

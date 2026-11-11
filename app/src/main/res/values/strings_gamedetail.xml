@@ -1119,6 +1119,10 @@
     <!-- Row at the end of the category list. Verb phrase: fetches ready-made splits from the
          speedrunning community. -->
     <string name="gamedetail_speedrun_import_row">Import Splits...</string>
+    <!-- Row after the user's categories. Verb phrase: starts naming a new speedrun category. -->
+    <string name="gamedetail_speedrun_new_category_row">New Category</string>
+    <!-- Row after a category's sections. Verb phrase: starts naming a new timed section. -->
+    <string name="gamedetail_speedrun_add_segment_row">Add Segment</string>
     <!-- Heading of the panel shown while the community sites are being queried. Verb in the
          continuous form. -->
     <string name="gamedetail_speedrun_import_loading_title">Searching...</string>
@@ -1163,8 +1167,7 @@
     <!-- Footer hint while typing a name. Verb: discards what was typed. -->
     <string name="gamedetail_speedrun_prompt_cancel">Cancel</string>
     <!-- Grey text inside the empty name field. Noun, singular. -->
-    <string name="gamedetail_speedrun_prompt_placeholder">Name</string>
-    <!-- Heading of the panel asking whether to remove a category or section. %1$s is its name. -->
+    <string name="gamedetail_speedrun_prompt_placeholder">Name</string>    <!-- Heading of the panel asking whether to remove a category or section. %1$s is its name. -->
     <string name="gamedetail_speedrun_confirm_delete_title">Delete \"%1$s\"?</string>
     <!-- Footer hint on that panel. Verb: goes ahead with the removal. -->
     <string name="gamedetail_speedrun_confirm_delete_footer_delete">Delete</string>

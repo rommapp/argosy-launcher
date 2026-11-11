@@ -375,6 +375,8 @@
     <string name="gamedetail_speedrun_empty_suffix">чтобы создать её, или импортируйте из сообщества.</string>
     <string name="gamedetail_speedrun_category_summary">%1$d сегментов · %2$d попыток</string>
     <string name="gamedetail_speedrun_import_row">Импортировать сплиты...</string>
+    <string name="gamedetail_speedrun_new_category_row">Новая категория</string>
+    <string name="gamedetail_speedrun_add_segment_row">Добавить сегмент</string>
     <string name="gamedetail_speedrun_import_loading_title">Поиск...</string>
     <string name="gamedetail_speedrun_import_loading_message">Поиск категорий на therun.gg и speedrun.com</string>
     <string name="gamedetail_speedrun_import_importing_title">Импорт...</string>
@@ -393,8 +395,7 @@
     <string name="gamedetail_speedrun_source_speedruncom">speedrun.com · только название</string>
     <string name="gamedetail_speedrun_prompt_confirm">Подтвердить</string>
     <string name="gamedetail_speedrun_prompt_cancel">Отмена</string>
-    <string name="gamedetail_speedrun_prompt_placeholder">Название</string>
-    <string name="gamedetail_speedrun_confirm_delete_title">Удалить \"%1$s\"?</string>
+    <string name="gamedetail_speedrun_prompt_placeholder">Название</string>    <string name="gamedetail_speedrun_confirm_delete_title">Удалить \"%1$s\"?</string>
     <string name="gamedetail_speedrun_confirm_delete_footer_delete">Удалить</string>
     <string name="gamedetail_speedrun_confirm_delete_footer_cancel">Отмена</string>
     <string name="gamedetail_speedrun_confirm_delete_category_message">Это удалит категорию, её сегменты и все записанные попытки.</string>

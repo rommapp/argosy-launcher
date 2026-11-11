@@ -62,6 +62,7 @@
     <string name="library_filter_title">ФИЛЬТР ИГР</string>
     <string name="library_filter_active_summary">Активно: %1$s</string>
     <string name="library_filter_search_placeholder">Введите текст для поиска...</string>
+    <string name="library_filter_keyboard_submit">Найти</string>
     <string name="library_filter_recent_searches">Недавние запросы</string>
 
     <string name="library_filter_category_sort">Сортировка</string>
@@ -78,7 +79,6 @@
     <string name="library_filter_category_series">Серии</string>
 
     <string name="library_filter_hint_clear">Очистить</string>
-    <string name="library_filter_hint_type">Ввод</string>
     <string name="library_filter_hint_close_search">Закрыть</string>
     <string name="library_filter_hint_reset">Сбросить</string>
     <string name="library_filter_hint_toggle">Переключить</string>
@@ -172,6 +172,7 @@
 
     <string name="library_search_placeholder_games_and_media">Поиск игр и медиа...</string>
     <string name="library_search_placeholder_games">Поиск игр...</string>
+    <string name="library_search_keyboard_submit">Найти</string>
     <plurals name="library_search_min_query_hint">
         <item quantity="one">Введите минимум %d символ для поиска</item>
         <item quantity="few">Введите минимум %d символа для поиска</item>

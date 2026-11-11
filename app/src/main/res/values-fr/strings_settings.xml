@@ -2172,7 +2172,16 @@
     <!-- ===== Formulaire de configuration RomM ===== -->
 
     <string name="settings_romm_config_server_url_label">URL du serveur</string>
-    <string name="settings_romm_config_server_url_placeholder">https://romm.example.com</string>
+    <string name="settings_romm_config_url_keyboard_submit">Terminé</string>
+    <string name="settings_romm_config_pairing_code_keyboard_label">Code d\'appairage</string>
+    <string name="settings_romm_config_pairing_code_keyboard_submit">Terminé</string>
+    <string name="settings_jellyfin_config_keyboard_submit">Enregistrer</string>
+    <string name="settings_jellyfin_signin_username_keyboard_submit">Terminé</string>
+    <string name="settings_jellyfin_signin_password_keyboard_submit">Se connecter</string>
+    <string name="settings_ra_login_username_keyboard_submit">Terminé</string>
+    <string name="settings_ra_login_password_keyboard_submit">Terminé</string>
+    <string name="settings_ra_proxy_address_keyboard_submit">Terminé</string>
+    <string name="settings_steam_add_game_keyboard_submit">Ajouter</string>    <string name="settings_romm_config_server_url_placeholder">https://romm.example.com</string>
     <string name="settings_romm_config_auth_method_title">Méthode d\'authentification</string>
     <string name="settings_romm_config_auth_method_device">Appairage d\'appareil</string>
     <string name="settings_romm_config_auth_method_pairing_code">Code d\'appairage</string>

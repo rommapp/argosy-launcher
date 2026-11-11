@@ -73,8 +73,6 @@
     <string name="ui_save_channel_rename_prompt_save_as">Введите имя для этого слота сохранения</string>
     <string name="ui_save_channel_rename_prompt_new_slot">Введите имя для этого слота сохранения</string>
     <string name="ui_save_channel_rename_prompt_rename">Введите новое имя</string>
-    <string name="ui_save_channel_rename_footer_confirm">Подтвердить</string>
-    <string name="ui_save_channel_rename_footer_cancel">Отмена</string>
     <string name="ui_save_channel_rename_placeholder">Имя слота</string>
     <string name="ui_save_channel_rename_cancel_button">Отмена</string>
 
@@ -200,6 +198,22 @@
     <string name="ui_pushed_apk_not_now">Не сейчас</string>
 
     <string name="ui_modal_search_placeholder">Поиск...</string>
+    <string name="ui_modal_search_keyboard_submit">Найти</string>
+
+    <string name="ui_keyboard_key_shift">Shift</string>
+    <string name="ui_keyboard_key_caps_lock">Caps Lock</string>
+    <string name="ui_keyboard_key_backspace">Удалить</string>
+    <string name="ui_keyboard_key_space">Пробел</string>
+    <string name="ui_keyboard_key_symbols">Символы</string>
+    <string name="ui_keyboard_key_letters">Буквы</string>
+    <string name="ui_keyboard_key_layout">Сменить раскладку</string>
+    <string name="ui_keyboard_key_enter_default">Готово</string>
+    <plurals name="ui_keyboard_password_announce">
+        <item quantity="one">%d символ</item>
+        <item quantity="few">%d символа</item>
+        <item quantity="many">%d символов</item>
+        <item quantity="other">%d символа</item>
+    </plurals>
 
     <string name="ui_disc_picker_title">ВЫБОР ДИСКА</string>
     <string name="ui_disc_picker_subtitle">Выберите диск для запуска</string>
@@ -376,7 +390,6 @@
 
     <string name="ui_tile_picker_title">ДОБАВИТЬ НА СЕТКУ</string>
     <string name="ui_tile_picker_title_track_game">ОТСЛЕЖИВАТЬ ИГРУ</string>
-    <string name="ui_tile_picker_subtitle_matching">Совпадения с \"%1$s\"</string>
     <string name="ui_tile_picker_empty_games">Нет установленных игр для добавления</string>
     <string name="ui_tile_picker_empty_collections">Пока нет коллекций</string>
     <string name="ui_tile_picker_empty_apps">Приложения не найдены</string>
@@ -496,6 +509,7 @@
     <string name="ui_platform_filter_sort_most_games">Больше всего игр</string>
     <string name="ui_platform_filter_sort_least_games">Меньше всего игр</string>
     <string name="ui_platform_filter_search_placeholder">Поиск платформ...</string>
+    <string name="ui_platform_filter_keyboard_submit">Готово</string>
     <string name="ui_platform_filter_search_clear">Очистить</string>
     <plurals name="ui_platform_filter_count">
         <item quantity="one">%d платформа</item>
@@ -833,6 +847,7 @@
     <string name="ui_quick_menu_empty_favorites">Пока нет избранного</string>
     <string name="ui_quick_menu_empty_random">Нет доступных игр</string>
     <string name="ui_quick_menu_search_placeholder">Поиск игр...</string>
+    <string name="ui_quick_menu_search_keyboard_submit">Найти</string>
     <string name="ui_quick_menu_search_prompt">Введите не менее 2 символов для поиска</string>
     <string name="ui_quick_menu_search_no_results">По запросу \"%1$s\" игр не найдено</string>
     <string name="ui_quick_menu_recent_searches_heading">Недавние запросы</string>
@@ -867,6 +882,7 @@
     <string name="ui_file_browser_new_folder_field_label">Имя папки</string>
     <string name="ui_file_browser_new_folder_cancel">Отмена</string>
     <string name="ui_file_browser_new_folder_confirm">Создать</string>
+    <string name="ui_file_browser_new_folder_keyboard_submit">Создать</string>
     <string name="ui_file_browser_new_folder_error_empty">Имя папки не может быть пустым</string>
     <string name="ui_file_browser_new_folder_error_invalid">Недопустимое имя папки</string>
     <string name="ui_file_browser_new_folder_error_exists">Такая папка уже существует</string>

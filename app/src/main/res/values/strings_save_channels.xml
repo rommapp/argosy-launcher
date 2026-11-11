@@ -148,8 +148,7 @@
     <!-- Title of the name entry when forking a snapshot into a new channel. Verb. -->
     <string name="save_channels_label_title_fork">Fork</string>
     <!-- Placeholder in the channel name field. Noun. -->
-    <string name="save_channels_label_field_placeholder">Name</string>
-    <!-- Name entry button that cancels. -->
+    <string name="save_channels_label_field_placeholder">Name</string>    <!-- Name entry button that cancels. -->
     <string name="save_channels_label_cancel">Cancel</string>
     <!-- Name entry confirm button for a new channel. Verb. -->
     <string name="save_channels_label_confirm_new">Create</string>

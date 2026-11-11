@@ -45,14 +45,17 @@ fun PageChooserModal(
     state: PageChooserState,
     onSelect: (Int) -> Unit,
     onQueryChange: (String) -> Unit,
+    onOpenKeyboard: () -> Unit,
+    onCloseKeyboard: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val theme = LocalArgosyTheme.current
     val listState = rememberLazyListState()
 
-    LaunchedEffect(state.focusIndex, state.entries.size) {
+    LaunchedEffect(state.focusIndex, state.entries.size, state.searchFocused) {
         if (state.entries.isEmpty()) return@LaunchedEffect
-        listState.animateScrollToItem(state.focusIndex.coerceIn(0, state.entries.lastIndex))
+        val target = if (state.searchFocused) 0 else state.focusIndex.coerceIn(0, state.entries.lastIndex)
+        listState.animateScrollToItem(target)
     }
 
     Modal(
@@ -67,12 +70,15 @@ fun PageChooserModal(
             InputButton.B to stringResource(R.string.ui_page_chooser_footer_back)
         )
     ) {
-        if (state.gameTitle != null && state.gameId == null) {
+        if (state.offersSearch) {
             ModalSearchField(
                 query = state.query,
                 onQueryChange = onQueryChange,
+                keyboardOpen = state.searchKeyboardOpen,
+                onOpenKeyboard = onOpenKeyboard,
+                onCloseKeyboard = onCloseKeyboard,
+                focused = state.searchFocused,
                 placeholder = stringResource(R.string.ui_page_chooser_search_placeholder),
-                autoFocus = false,
                 modifier = Modifier.padding(bottom = Dimens.spacingSm)
             )
         }
@@ -112,7 +118,7 @@ fun PageChooserModal(
                     } else {
                         PageChooserRow(
                             entry = entry,
-                            isFocused = index == state.focusIndex,
+                            isFocused = !state.searchFocused && index == state.focusIndex,
                             onClick = { onSelect(index) }
                         )
                     }

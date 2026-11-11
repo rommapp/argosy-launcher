@@ -1735,7 +1735,8 @@ data class RAWebApiKeyEditor(
     val actions: List<RAWebApiKeyAction>,
     val row: TextEntryRow = TextEntryRow.FIELD,
     val buttonIndex: Int = actions.indexOf(RAWebApiKeyAction.SAVE).coerceAtLeast(0),
-    val status: RAWebApiKeyStatus = RAWebApiKeyStatus.IDLE
+    val status: RAWebApiKeyStatus = RAWebApiKeyStatus.IDLE,
+    val keyboardRequest: Int = 0
 ) {
     val focusedAction: RAWebApiKeyAction?
         get() = if (row == TextEntryRow.BUTTONS) actions.getOrNull(buttonIndex) else null

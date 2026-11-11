@@ -27,6 +27,9 @@ import com.nendo.argosy.data.remote.romm.RomMCoverArtType
 import com.nendo.argosy.data.remote.romm.RomMRepository
 import com.nendo.argosy.data.remote.romm.RomMResult
 import com.nendo.argosy.data.repository.GameRepository
+import com.nendo.argosy.ui.components.TEXT_ENTRY_CANCEL_BUTTON
+import com.nendo.argosy.ui.components.TEXT_ENTRY_CONFIRM_BUTTON
+import com.nendo.argosy.ui.components.TextEntryRow
 import com.nendo.argosy.ui.screens.gamedetail.components.MenuItem
 import com.nendo.argosy.ui.screens.gamedetail.components.MenuLayoutState
 import com.nendo.argosy.ui.screens.gamedetail.components.menuLayout
@@ -1977,6 +1980,10 @@ class GameDetailViewModel @Inject constructor(
 
     fun setArtPickerQuery(query: String) = pickerModalDelegate.setArtPickerQuery(query)
 
+    fun openArtPickerKeyboard() = pickerModalDelegate.openArtPickerKeyboard()
+
+    fun closeArtPickerKeyboard() = pickerModalDelegate.closeArtPickerKeyboard()
+
     fun openArtFileBrowser() = pickerModalDelegate.openArtFileBrowser()
 
     /**
@@ -2051,6 +2058,10 @@ class GameDetailViewModel @Inject constructor(
 
     private fun confirmArtPickerSelection() {
         val picker = pickerModalDelegate.state.value
+        if (picker.artPickerSearchFocused) {
+            pickerModalDelegate.openArtPickerKeyboard()
+            return
+        }
         val candidate = picker.artCandidates.getOrNull(picker.artPickerFocusIndex)
         if (candidate == null) openArtFileBrowser() else selectArtCandidate(candidate)
     }
@@ -2623,7 +2634,12 @@ class GameDetailViewModel @Inject constructor(
             val pickerState = pickerModalDelegate.state.value
             return when {
                 state.reviewEditor != null -> { moveReviewEditorSection(direction); InputResult.HANDLED }
-                saveState.showRenameDialog -> InputResult.UNHANDLED
+                saveState.showRenameDialog -> {
+                    saveManagement.saveChannelDelegate.moveRenameRow(
+                        if (direction < 0) TextEntryRow.FIELD else TextEntryRow.BUTTONS
+                    )
+                    InputResult.HANDLED
+                }
                 saveState.showRestoreConfirmation -> InputResult.UNHANDLED
                 saveState.showDeleteConfirmation -> InputResult.UNHANDLED
                 saveState.isVisible -> { moveSaveCacheFocus(direction); InputResult.HANDLED }
@@ -2668,6 +2684,10 @@ class GameDetailViewModel @Inject constructor(
             val pickerState = pickerModalDelegate.state.value
             when {
                 state.reviewEditor != null -> { adjustReviewEditor(-1); return InputResult.HANDLED }
+                saveState.showRenameDialog -> {
+                    saveManagement.saveChannelDelegate.moveRenameButton(TEXT_ENTRY_CANCEL_BUTTON)
+                    return InputResult.HANDLED
+                }
                 saveState.showRestoreConfirmation || saveState.showDeleteConfirmation || saveState.showRenameDialog || saveState.showMigrateConfirmation || saveState.showDeleteLegacyConfirmation -> return InputResult.HANDLED
                 saveState.isVisible -> {
                     when (saveState.selectedTab) {
@@ -2705,6 +2725,10 @@ class GameDetailViewModel @Inject constructor(
             val pickerState = pickerModalDelegate.state.value
             when {
                 state.reviewEditor != null -> { adjustReviewEditor(1); return InputResult.HANDLED }
+                saveState.showRenameDialog -> {
+                    saveManagement.saveChannelDelegate.moveRenameButton(TEXT_ENTRY_CONFIRM_BUTTON)
+                    return InputResult.HANDLED
+                }
                 saveState.showRestoreConfirmation || saveState.showDeleteConfirmation || saveState.showRenameDialog || saveState.showMigrateConfirmation || saveState.showDeleteLegacyConfirmation -> return InputResult.HANDLED
                 saveState.isVisible -> {
                     when (saveState.selectedTab) {
@@ -2788,7 +2812,7 @@ class GameDetailViewModel @Inject constructor(
             val pickerState = pickerModalDelegate.state.value
             when {
                 state.reviewEditor != null -> confirmReviewEditorAction()
-                saveState.showRenameDialog -> confirmRename()
+                saveState.showRenameDialog -> saveManagement.saveChannelDelegate.confirmRenameFocus(viewModelScope)
                 saveState.showDeleteConfirmation -> confirmDelete()
                 saveState.showRestoreConfirmation -> restoreSave(syncToServer = false)
                 saveState.showMigrateConfirmation -> confirmMigrateChannel()
@@ -2899,6 +2923,7 @@ class GameDetailViewModel @Inject constructor(
             val state = _uiState.value
             val saveState = state.saveChannel
             if (state.reviewEditor != null) { promptReviewDelete(); return InputResult.HANDLED }
+            if (saveState.showRenameDialog) return InputResult.HANDLED
             if (pickerModalDelegate.state.value.showArtPicker) {
                 openArtFileBrowser(); return InputResult.HANDLED
             }
@@ -2913,6 +2938,7 @@ class GameDetailViewModel @Inject constructor(
             val state = _uiState.value
             val saveState = state.saveChannel
             if (state.reviewEditor != null) return InputResult.HANDLED
+            if (saveState.showRenameDialog) return InputResult.HANDLED
             if (pickerModalDelegate.state.value.showArtPicker) {
                 searchArtwork(); return InputResult.HANDLED
             }

@@ -72,8 +72,6 @@
     <string name="ui_save_channel_rename_prompt_save_as">Digite um nome para este slot de save</string>
     <string name="ui_save_channel_rename_prompt_new_slot">Digite um nome para este slot de save</string>
     <string name="ui_save_channel_rename_prompt_rename">Digite um novo nome</string>
-    <string name="ui_save_channel_rename_footer_confirm">Confirmar</string>
-    <string name="ui_save_channel_rename_footer_cancel">Cancelar</string>
     <string name="ui_save_channel_rename_placeholder">Nome do slot</string>
     <string name="ui_save_channel_rename_cancel_button">Cancelar</string>
     <string name="ui_save_channel_migrate_title">MIGRAR SAVE</string>
@@ -186,6 +184,21 @@
     <string name="ui_pushed_apk_not_now">Agora não</string>
 
     <string name="ui_modal_search_placeholder">Buscar...</string>
+    <string name="ui_modal_search_keyboard_submit">Buscar</string>
+
+    <string name="ui_keyboard_key_shift">Shift</string>
+    <string name="ui_keyboard_key_caps_lock">Caps Lock</string>
+    <string name="ui_keyboard_key_backspace">Apagar</string>
+    <string name="ui_keyboard_key_space">Espaço</string>
+    <string name="ui_keyboard_key_symbols">Símbolos</string>
+    <string name="ui_keyboard_key_letters">Letras</string>
+    <string name="ui_keyboard_key_layout">Trocar layout</string>
+    <string name="ui_keyboard_key_enter_default">Concluir</string>
+    <plurals name="ui_keyboard_password_announce">
+        <item quantity="one">%d caractere</item>
+        <item quantity="many">%d caracteres</item>
+        <item quantity="other">%d caracteres</item>
+    </plurals>
 
     <string name="ui_disc_picker_title">SELECIONAR DISCO</string>
     <string name="ui_disc_picker_subtitle">Escolha qual disco iniciar</string>
@@ -352,7 +365,6 @@
 
     <string name="ui_tile_picker_title">ADICIONAR À GRADE</string>
     <string name="ui_tile_picker_title_track_game">RASTREAR UM JOGO</string>
-    <string name="ui_tile_picker_subtitle_matching">Correspondendo a \"%1$s\"</string>
     <string name="ui_tile_picker_empty_games">Nenhum jogo instalado para adicionar</string>
     <string name="ui_tile_picker_empty_collections">Nenhuma coleção ainda</string>
     <string name="ui_tile_picker_empty_apps">Nenhum app encontrado</string>
@@ -471,6 +483,7 @@
     <string name="ui_platform_filter_sort_most_games">Mais jogos</string>
     <string name="ui_platform_filter_sort_least_games">Menos jogos</string>
     <string name="ui_platform_filter_search_placeholder">Buscar plataformas...</string>
+    <string name="ui_platform_filter_keyboard_submit">Concluído</string>
     <string name="ui_platform_filter_search_clear">Limpar</string>
     <plurals name="ui_platform_filter_count">
         <item quantity="one">%d plataforma</item>
@@ -871,6 +884,7 @@
     <string name="ui_quick_menu_empty_favorites">Nenhum favorito ainda</string>
     <string name="ui_quick_menu_empty_random">Nenhum jogo disponível</string>
     <string name="ui_quick_menu_search_placeholder">Buscar jogos...</string>
+    <string name="ui_quick_menu_search_keyboard_submit">Buscar</string>
     <string name="ui_quick_menu_search_prompt">Digite pelo menos 2 caracteres para buscar</string>
     <string name="ui_quick_menu_search_no_results">Nenhum jogo encontrado para \"%1$s\"</string>
     <string name="ui_quick_menu_recent_searches_heading">Buscas recentes</string>
@@ -905,6 +919,7 @@
     <string name="ui_file_browser_new_folder_field_label">Nome da pasta</string>
     <string name="ui_file_browser_new_folder_cancel">Cancelar</string>
     <string name="ui_file_browser_new_folder_confirm">Criar</string>
+    <string name="ui_file_browser_new_folder_keyboard_submit">Criar</string>
     <string name="ui_file_browser_new_folder_error_empty">O nome da pasta não pode ser vazio</string>
     <string name="ui_file_browser_new_folder_error_invalid">Nome de pasta inválido</string>
     <string name="ui_file_browser_new_folder_error_exists">A pasta já existe</string>

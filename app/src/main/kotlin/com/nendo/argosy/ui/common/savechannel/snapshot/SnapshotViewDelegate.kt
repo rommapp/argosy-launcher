@@ -3,6 +3,10 @@ package com.nendo.argosy.ui.common.savechannel.snapshot
 import com.nendo.argosy.R
 import com.nendo.argosy.data.sync.snapshot.SnapshotChannels
 import com.nendo.argosy.ui.common.savechannel.SaveChannelStateHolder
+import com.nendo.argosy.ui.components.TEXT_ENTRY_CANCEL_BUTTON
+import com.nendo.argosy.ui.components.TEXT_ENTRY_CONFIRM_BUTTON
+import com.nendo.argosy.ui.components.TextEntryFocus
+import com.nendo.argosy.ui.components.TextEntryRow
 import com.nendo.argosy.ui.screens.gamedetail.components.SaveStatusEvent
 import kotlinx.coroutines.CoroutineScope
 import javax.inject.Inject
@@ -26,7 +30,8 @@ class SnapshotViewDelegate @Inject constructor(
     fun moveVertical(delta: Int) {
         val state = snapshot ?: return
         when {
-            state.labelEntry != null || state.confirm != null -> Unit
+            state.confirm != null -> Unit
+            state.labelEntry != null -> updateLabelFocus { it.copy(row = if (delta < 0) TextEntryRow.FIELD else TextEntryRow.BUTTONS) }
             state.hasOverlay -> holder.updateSnapshot { SnapshotFocus.moveOverlay(it, delta) }
             else -> holder.updateSnapshot { SnapshotFocus.moveVertical(it, delta) }
         }
@@ -36,7 +41,10 @@ class SnapshotViewDelegate @Inject constructor(
         val state = snapshot ?: return
         when {
             state.confirm != null -> Unit
-            state.labelEntry != null -> Unit
+            state.labelEntry != null -> updateLabelFocus { focus ->
+                if (focus.row != TextEntryRow.BUTTONS) focus
+                else focus.copy(buttonIndex = if (delta < 0) TEXT_ENTRY_CANCEL_BUTTON else TEXT_ENTRY_CONFIRM_BUTTON)
+            }
             state.hasOverlay -> holder.updateSnapshot { SnapshotFocus.moveDetailColumn(it, delta) }
             else -> holder.updateSnapshot { SnapshotFocus.moveHorizontal(it, delta) }
         }
@@ -46,7 +54,11 @@ class SnapshotViewDelegate @Inject constructor(
         val state = snapshot ?: return
         if (state.isBusy || state.confirm != null) return
         when {
-            state.labelEntry != null -> confirmLabel(scope)
+            state.labelEntry != null -> when {
+                state.labelEntry.focus.row == TextEntryRow.FIELD -> updateLabelFocus { it.requestKeyboard() }
+                state.labelEntry.focus.buttonIndex == TEXT_ENTRY_CANCEL_BUTTON -> dismissLabel()
+                else -> confirmLabel(scope)
+            }
             state.copyPicker != null -> confirmCopyTarget(scope)
             state.channelMenu != null -> runChannelAction(scope, onSaveStatusChanged)
             state.detail != null -> runDetailAction(scope, onSaveStatusChanged)
@@ -213,6 +225,12 @@ class SnapshotViewDelegate @Inject constructor(
 
     fun dismissLabel() {
         holder.updateSnapshot { it.copy(labelEntry = null) }
+    }
+
+    private fun updateLabelFocus(transform: (TextEntryFocus) -> TextEntryFocus) {
+        holder.updateSnapshot { state ->
+            state.copy(labelEntry = state.labelEntry?.let { it.copy(focus = transform(it.focus)) })
+        }
     }
 
     fun confirmShare(scope: CoroutineScope) {

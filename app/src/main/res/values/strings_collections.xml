@@ -124,6 +124,8 @@
     <!-- Footer hint, search active. Verb: open the focused game. -->
     <string name="collections_detail_hint_search_open">Open</string>
     <string name="collections_detail_hint_search_close">Close Search</string>
+    <!-- Enter key of the on-screen controller keyboard while searching a collection. Verb. -->
+    <string name="collections_detail_keyboard_submit">Search</string>
     <string name="collections_detail_hint_navigate">Navigate</string>
     <!-- Footer hint, search inactive. Verb: open the focused game. Distinct key from
          collections_detail_hint_search_open (different code branch), never reused. -->
@@ -168,6 +170,8 @@
     <!-- Footer hint, search active. Verb: open the focused category. -->
     <string name="collections_browser_hint_search_select">Select</string>
     <string name="collections_browser_hint_search_close">Close Search</string>
+    <!-- Enter key of the on-screen controller keyboard while searching a browse-by list. Verb. -->
+    <string name="collections_browser_keyboard_submit">Search</string>
     <string name="collections_browser_hint_navigate">Navigate</string>
     <!-- Footer hint, search inactive. Verb: open the focused category. -->
     <string name="collections_browser_hint_select">Select</string>
@@ -207,6 +211,8 @@
     <string name="collections_category_loading">Loading&#8230;</string>
     <string name="collections_category_hint_search_open">Open</string>
     <string name="collections_category_hint_search_close">Close Search</string>
+    <!-- Enter key of the on-screen controller keyboard while searching a category's games. Verb. -->
+    <string name="collections_category_keyboard_submit">Search</string>
     <string name="collections_category_hint_navigate">Navigate</string>
     <string name="collections_category_hint_open">Open</string>
     <string name="collections_category_hint_back">Back</string>

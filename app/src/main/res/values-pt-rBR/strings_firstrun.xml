@@ -74,6 +74,8 @@
     <string name="firstrun_pairing_code_clear_description">Limpar código</string>
     <!-- Button that sends the typed pairing code to the server. Verb, imperative. -->
     <string name="firstrun_pairing_code_button_connect">Conectar</string>
+    <string name="firstrun_pairing_code_keyboard_submit">Conectar</string>
+    <string name="firstrun_romm_url_keyboard_submit">Continuar</string>
     <!-- Label the same button takes on while the code is being checked. Present-progressive. -->
     <string name="firstrun_pairing_code_button_connecting">Conectando...</string>
     <!-- Button that goes back to the server address field to change it. Verb phrase. -->

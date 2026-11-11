@@ -64,8 +64,7 @@
     <string name="save_channels_label_title_new">Nuevo canal</string>
     <string name="save_channels_label_title_rename">Renombrar</string>
     <string name="save_channels_label_title_fork">Bifurcar</string>
-    <string name="save_channels_label_field_placeholder">Nombre</string>
-    <string name="save_channels_label_cancel">Cancelar</string>
+    <string name="save_channels_label_field_placeholder">Nombre</string>    <string name="save_channels_label_cancel">Cancelar</string>
     <string name="save_channels_label_confirm_new">Crear</string>
     <string name="save_channels_label_confirm_rename">Renombrar</string>
     <string name="save_channels_label_confirm_fork">Bifurcar</string>

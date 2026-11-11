@@ -5,9 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -15,13 +13,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,7 +26,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -38,9 +34,12 @@ import com.nendo.argosy.R
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.data.emulator.LaunchMethod
 import com.nendo.argosy.data.emulator.RomBindingFormat
-import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.Modal
-import com.nendo.argosy.ui.components.NestedModal
+import com.nendo.argosy.ui.components.TEXT_ENTRY_CANCEL_BUTTON
+import com.nendo.argosy.ui.components.TEXT_ENTRY_CONFIRM_BUTTON
+import com.nendo.argosy.ui.components.TextEntryFocus
+import com.nendo.argosy.ui.components.TextEntryModal
+import com.nendo.argosy.ui.components.TextEntryRow
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.LocalInputDispatcher
@@ -190,60 +189,76 @@ private fun CustomExtrasModal(
 ) {
     val inputDispatcher = LocalInputDispatcher.current
     var text by remember { mutableStateOf(initialValue) }
+    var focus by remember { mutableStateOf(TextEntryFocus()) }
+    val currentText by rememberUpdatedState(text)
+    val currentOnSubmit by rememberUpdatedState(onSubmit)
+    val currentOnDismiss by rememberUpdatedState(onDismiss)
 
-    val inputHandler = remember(onSubmit, onDismiss) {
+    val inputHandler = remember {
         object : InputHandler {
+            override fun onUp(): InputResult {
+                focus = focus.copy(row = TextEntryRow.FIELD)
+                return InputResult.HANDLED
+            }
+
+            override fun onDown(): InputResult {
+                focus = focus.copy(row = TextEntryRow.BUTTONS)
+                return InputResult.HANDLED
+            }
+
+            override fun onLeft(): InputResult {
+                if (focus.row == TextEntryRow.BUTTONS) focus = focus.copy(buttonIndex = TEXT_ENTRY_CANCEL_BUTTON)
+                return InputResult.HANDLED
+            }
+
+            override fun onRight(): InputResult {
+                if (focus.row == TextEntryRow.BUTTONS) focus = focus.copy(buttonIndex = TEXT_ENTRY_CONFIRM_BUTTON)
+                return InputResult.HANDLED
+            }
+
             override fun onConfirm(): InputResult {
-                onSubmit(text)
+                when {
+                    focus.row == TextEntryRow.FIELD -> focus = focus.requestKeyboard()
+                    focus.buttonIndex == TEXT_ENTRY_CANCEL_BUTTON -> currentOnDismiss()
+                    else -> currentOnSubmit(currentText)
+                }
                 return InputResult.HANDLED
             }
 
             override fun onBack(): InputResult {
-                onDismiss()
+                currentOnDismiss()
                 return InputResult.handled(SoundType.CLOSE_MODAL)
             }
+
+            override fun onMenu(): InputResult = InputResult.HANDLED
+            override fun onSecondaryAction(): InputResult = InputResult.HANDLED
+            override fun onContextMenu(): InputResult = InputResult.HANDLED
+            override fun onPrevSection(): InputResult = InputResult.HANDLED
+            override fun onNextSection(): InputResult = InputResult.HANDLED
+            override fun onPrevTrigger(): InputResult = InputResult.HANDLED
+            override fun onNextTrigger(): InputResult = InputResult.HANDLED
+            override fun onSelect(): InputResult = InputResult.HANDLED
+            override fun onLeftStickClick(): InputResult = InputResult.HANDLED
+            override fun onRightStickClick(): InputResult = InputResult.HANDLED
+            override fun onLongConfirm(): InputResult = InputResult.HANDLED
         }
     }
 
     com.nendo.argosy.ui.input.ModalInputEffect(active = true, handler = inputHandler, inputDispatcher = inputDispatcher)
 
-    NestedModal(
+    TextEntryModal(
         title = stringResource(R.string.settings_launch_args_custom_extras_title),
+        label = stringResource(R.string.settings_launch_args_custom_extras_title),
+        confirmLabel = stringResource(R.string.settings_launch_args_custom_extras_save_hint),
+        cancelLabel = stringResource(R.string.settings_launch_args_custom_extras_cancel_hint),
+        text = text,
+        onTextChange = { text = it },
         onDismiss = onDismiss,
-        footerHints = listOf(
-            InputButton.A to stringResource(R.string.settings_launch_args_custom_extras_save_hint),
-            InputButton.B to stringResource(R.string.settings_launch_args_custom_extras_cancel_hint)
-        ),
-        content = {
-            Column {
-                Text(
-                    text = stringResource(R.string.settings_launch_args_custom_extras_help),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                TextField(
-                    value = text,
-                    onValueChange = { text = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    placeholder = {
-                        Text(
-                            text = stringResource(R.string.settings_launch_args_custom_extras_placeholder),
-                            style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
-                        )
-                    },
-                    singleLine = true,
-                    textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        focusedIndicatorColor = MaterialTheme.colorScheme.primary,
-                        unfocusedIndicatorColor = Color.Transparent
-                    )
-                )
-            }
-        }
+        onSubmit = { onSubmit(text) },
+        focus = focus,
+        placeholder = stringResource(R.string.settings_launch_args_custom_extras_placeholder),
+        message = stringResource(R.string.settings_launch_args_custom_extras_help),
+        canSubmit = true
     )
 }
 

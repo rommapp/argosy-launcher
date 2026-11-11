@@ -44,7 +44,6 @@
     <string name="quaypass_greeting_modal_footer_cancel">Отмена</string>
     <string name="quaypass_greeting_modal_description">Показывается попутчикам, которых вы встречаете при регистрации.</string>
     <string name="quaypass_greeting_modal_placeholder">Привет!</string>
-
     <string name="doodle_tool_selector_pen_description">Перо</string>
     <string name="doodle_tool_selector_line_description">Линия</string>
     <string name="doodle_tool_selector_fill_description">Заливка</string>

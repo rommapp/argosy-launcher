@@ -64,8 +64,7 @@
     <string name="save_channels_label_title_new">Neuer Kanal</string>
     <string name="save_channels_label_title_rename">Umbenennen</string>
     <string name="save_channels_label_title_fork">Abzweigen</string>
-    <string name="save_channels_label_field_placeholder">Name</string>
-    <string name="save_channels_label_cancel">Abbrechen</string>
+    <string name="save_channels_label_field_placeholder">Name</string>    <string name="save_channels_label_cancel">Abbrechen</string>
     <string name="save_channels_label_confirm_new">Erstellen</string>
     <string name="save_channels_label_confirm_rename">Umbenennen</string>
     <string name="save_channels_label_confirm_fork">Abzweigen</string>

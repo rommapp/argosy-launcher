@@ -3552,7 +3552,16 @@
     <string name="settings_platform_filters_empty">Nenhuma plataforma disponível</string>
     <string name="settings_platform_filters_no_games">Nenhum jogo</string>
     <string name="settings_romm_config_server_url_label">URL do servidor</string>
-    <string name="settings_romm_config_server_url_placeholder">https://romm.example.com</string>
+    <string name="settings_romm_config_url_keyboard_submit">Concluído</string>
+    <string name="settings_romm_config_pairing_code_keyboard_label">Código de pareamento</string>
+    <string name="settings_romm_config_pairing_code_keyboard_submit">Concluído</string>
+    <string name="settings_jellyfin_config_keyboard_submit">Salvar</string>
+    <string name="settings_jellyfin_signin_username_keyboard_submit">Concluído</string>
+    <string name="settings_jellyfin_signin_password_keyboard_submit">Entrar</string>
+    <string name="settings_ra_login_username_keyboard_submit">Concluído</string>
+    <string name="settings_ra_login_password_keyboard_submit">Concluído</string>
+    <string name="settings_ra_proxy_address_keyboard_submit">Concluído</string>
+    <string name="settings_steam_add_game_keyboard_submit">Adicionar</string>    <string name="settings_romm_config_server_url_placeholder">https://romm.example.com</string>
     <string name="settings_romm_config_auth_method_title">Método de autenticação</string>
     <string name="settings_romm_config_auth_method_device">Emparelhamento de dispositivos</string>
     <string name="settings_romm_config_auth_method_pairing_code">Código de emparelhamento</string>

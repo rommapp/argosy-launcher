@@ -39,7 +39,11 @@ fun RAWebApiKeyModal(
         onTextChange = onDraftChange,
         onDismiss = onDismiss,
         onSubmit = { onAction(RAWebApiKeyAction.SAVE) },
-        focus = TextEntryFocus(row = editor.row, buttonIndex = editor.buttonIndex),
+        focus = TextEntryFocus(
+            row = editor.row,
+            buttonIndex = editor.buttonIndex,
+            keyboardRequest = editor.keyboardRequest
+        ),
         message = stringResource(R.string.settings_ra_web_api_key_modal_message),
         errorMessage = status.takeUnless { validating },
         statusMessage = status.takeIf { validating },

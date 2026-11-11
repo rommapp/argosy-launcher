@@ -110,7 +110,6 @@
     <string name="quaypass_greeting_modal_description">Exibido aos viajantes que você encontra no Check-In.</string>
     <!-- Grey text inside the empty greeting field, offered as an example greeting. -->
     <string name="quaypass_greeting_modal_placeholder">Olá!</string>
-
     <!-- ================================== Doodle editor ================================== -->
 
     <!-- Spoken description of the pen tool icon. Noun naming the drawing tool, not a verb. -->

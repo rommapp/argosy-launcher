@@ -64,8 +64,7 @@
     <string name="save_channels_label_title_new">Nouveau canal</string>
     <string name="save_channels_label_title_rename">Renommer</string>
     <string name="save_channels_label_title_fork">Dériver</string>
-    <string name="save_channels_label_field_placeholder">Nom</string>
-    <string name="save_channels_label_cancel">Annuler</string>
+    <string name="save_channels_label_field_placeholder">Nom</string>    <string name="save_channels_label_cancel">Annuler</string>
     <string name="save_channels_label_confirm_new">Créer</string>
     <string name="save_channels_label_confirm_rename">Renommer</string>
     <string name="save_channels_label_confirm_fork">Dériver</string>

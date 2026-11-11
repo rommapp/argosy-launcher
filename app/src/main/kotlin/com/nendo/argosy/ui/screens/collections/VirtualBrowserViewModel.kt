@@ -43,10 +43,12 @@ data class VirtualBrowserUiState(
     val currentSectionLabel: String = "",
     val isSearchActive: Boolean = false,
     val searchQuery: String = "",
+    val isSearchKeyboardOpen: Boolean = false,
+    val isSearchStopFocused: Boolean = false,
     val overlayLetter: String? = null
 ) {
     val focusedCategory: CategoryWithCount?
-        get() = categories.getOrNull(focusedIndex)
+        get() = if (isSearchStopFocused) null else categories.getOrNull(focusedIndex)
 
     val isFocusedCategoryPinned: Boolean
         get() = focusedCategory?.let { it.name in pinnedCategories } ?: false
@@ -55,7 +57,12 @@ data class VirtualBrowserUiState(
         get() = !isSearchActive && sectionLabels.size > 1
 }
 
-private data class SearchState(val active: Boolean = false, val query: String = "")
+private data class SearchState(
+    val active: Boolean = false,
+    val query: String = "",
+    val keyboardOpen: Boolean = false,
+    val stopFocused: Boolean = false
+)
 
 @HiltViewModel
 class VirtualBrowserViewModel @Inject constructor(
@@ -84,6 +91,7 @@ class VirtualBrowserViewModel @Inject constructor(
     private val _search = MutableStateFlow(SearchState())
     private val _overlayLetter = MutableStateFlow<String?>(null)
     private var preSearchIndex = 0
+    private var preSearchStopFocused = false
     private var lastRefreshTime = 0L
     private var overlayJob: Job? = null
 
@@ -145,7 +153,9 @@ class VirtualBrowserViewModel @Inject constructor(
             sectionLabels = if (search.active) emptyList() else visible.map { sectionLabelFor(it.name) }.distinct(),
             currentSectionLabel = visible.getOrNull(clamped)?.let { sectionLabelFor(it.name) } ?: "",
             isSearchActive = search.active,
-            searchQuery = search.query
+            searchQuery = search.query,
+            isSearchKeyboardOpen = search.keyboardOpen,
+            isSearchStopFocused = search.stopFocused
         )
     }
 
@@ -189,18 +199,26 @@ class VirtualBrowserViewModel @Inject constructor(
     }
 
     private fun setFocus(index: Int) {
+        _search.update { it.copy(stopFocused = false) }
         _focusedIndex.value = index
         if (!_search.value.active) positions.set(type, index)
     }
 
     fun moveUp() {
-        val current = uiState.value.focusedIndex
-        if (current > 0) setFocus(current - 1)
+        val state = uiState.value
+        when {
+            state.isSearchStopFocused -> Unit
+            state.focusedIndex > 0 -> setFocus(state.focusedIndex - 1)
+            else -> _search.update { it.copy(stopFocused = true) }
+        }
     }
 
     fun moveDown() {
-        val current = uiState.value.focusedIndex
-        if (current < uiState.value.categories.size - 1) setFocus(current + 1)
+        val state = uiState.value
+        when {
+            state.isSearchStopFocused -> if (state.categories.isNotEmpty()) setFocus(0)
+            state.focusedIndex < state.categories.size - 1 -> setFocus(state.focusedIndex + 1)
+        }
     }
 
     fun jumpToSection(label: String) {
@@ -237,15 +255,23 @@ class VirtualBrowserViewModel @Inject constructor(
     }
 
     fun openSearch() {
-        if (_search.value.active) return
+        if (_search.value.active) {
+            _search.update { it.copy(keyboardOpen = true, stopFocused = true) }
+            return
+        }
         preSearchIndex = uiState.value.focusedIndex
+        preSearchStopFocused = uiState.value.isSearchStopFocused
         _focusedIndex.value = 0
-        _search.value = SearchState(active = true, query = "")
+        _search.value = SearchState(active = true, query = "", keyboardOpen = true, stopFocused = true)
+    }
+
+    fun closeSearchKeyboard() {
+        _search.update { it.copy(keyboardOpen = false) }
     }
 
     fun closeSearch() {
         if (!_search.value.active) return
-        _search.value = SearchState(active = false, query = "")
+        _search.value = SearchState(active = false, query = "", stopFocused = preSearchStopFocused)
         _focusedIndex.value = preSearchIndex
     }
 
@@ -296,7 +322,12 @@ class VirtualBrowserViewModel @Inject constructor(
         }
 
         override fun onConfirm(): InputResult {
-            uiState.value.focusedCategory?.let { onCategoryClick(it.name) }
+            val state = uiState.value
+            if (state.isSearchStopFocused) {
+                openSearch()
+                return InputResult.HANDLED
+            }
+            state.focusedCategory?.let { onCategoryClick(it.name) }
             return InputResult.HANDLED
         }
 

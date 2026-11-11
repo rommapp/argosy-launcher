@@ -20,6 +20,8 @@
     <string name="firstrun_pairing_code_hint">Créez un jeton API dans l\'interface web de RomM, puis entrez le code à 8 caractères.</string>
     <string name="firstrun_pairing_code_clear_description">Effacer le code</string>
     <string name="firstrun_pairing_code_button_connect">Connecter</string>
+    <string name="firstrun_pairing_code_keyboard_submit">Connecter</string>
+    <string name="firstrun_romm_url_keyboard_submit">Continuer</string>
     <string name="firstrun_pairing_code_button_connecting">Connexion...</string>
     <string name="firstrun_pairing_code_button_edit_url">Modifier l\'URL</string>
     <string name="firstrun_pairing_code_button_scan">Scanner le code QR</string>

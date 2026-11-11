@@ -419,6 +419,8 @@
     <string name="gamedetail_speedrun_empty_suffix">para crear una, o impórtala desde la comunidad.</string>
     <string name="gamedetail_speedrun_category_summary">%1$d segmentos · %2$d intentos</string>
     <string name="gamedetail_speedrun_import_row">Importar segmentos...</string>
+    <string name="gamedetail_speedrun_new_category_row">Nueva categoría</string>
+    <string name="gamedetail_speedrun_add_segment_row">Agregar segmento</string>
     <string name="gamedetail_speedrun_import_loading_title">Buscando...</string>
     <string name="gamedetail_speedrun_import_loading_message">Buscando categorías en therun.gg y speedrun.com</string>
     <string name="gamedetail_speedrun_import_importing_title">Importando...</string>
@@ -437,8 +439,7 @@
     <string name="gamedetail_speedrun_source_speedruncom">speedrun.com · solo nombre</string>
     <string name="gamedetail_speedrun_prompt_confirm">Confirmar</string>
     <string name="gamedetail_speedrun_prompt_cancel">Cancelar</string>
-    <string name="gamedetail_speedrun_prompt_placeholder">Nombre</string>
-    <string name="gamedetail_speedrun_confirm_delete_title">¿Eliminar \"%1$s\"?</string>
+    <string name="gamedetail_speedrun_prompt_placeholder">Nombre</string>    <string name="gamedetail_speedrun_confirm_delete_title">¿Eliminar \"%1$s\"?</string>
     <string name="gamedetail_speedrun_confirm_delete_footer_delete">Eliminar</string>
     <string name="gamedetail_speedrun_confirm_delete_footer_cancel">Cancelar</string>
     <string name="gamedetail_speedrun_confirm_delete_category_message">Esto elimina la categoría, sus segmentos y todos los intentos registrados.</string>

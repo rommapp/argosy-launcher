@@ -1360,10 +1360,15 @@ fun ArgosyApp(
             LaunchedEffect(mutedNotificationKeys) { dsm?.setMutedNotificationKeys(mutedNotificationKeys) }
             val notificationsOnPresentation by dsm?.companionHoldsPrimary?.collectAsState()
                 ?: remember { mutableStateOf(false) }
+            val keyboardHeightPx by com.nendo.argosy.ui.components.keyboard.ControllerKeyboard.dockedHeightPx
+                .collectAsState()
+            val keyboardHeight = with(LocalDensity.current) { keyboardHeightPx.toDp() }
             if (!notificationsOnPresentation) {
                 NotificationHost(
                     manager = viewModel.notificationManager,
-                    modifier = Modifier.align(Alignment.BottomEnd),
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(bottom = keyboardHeight),
                     mutedKeys = mutedNotificationKeys
                 )
             }
@@ -1551,8 +1556,9 @@ fun ArgosyApp(
                     com.nendo.argosy.DualScreenManagerHolder.instance?.publishControlHints(relayed)
                 }
             } else {
+                val keyboardOpen by com.nendo.argosy.ui.components.keyboard.ControllerKeyboard.active.collectAsState()
                 AnimatedVisibility(
-                    visible = !navRingState.footerYieldsToBar,
+                    visible = !navRingState.footerYieldsToBar && keyboardOpen == null,
                     enter = slideInVertically(tween(Motion.durationSlide)) { it },
                     exit = slideOutVertically(tween(Motion.durationSlide)) { it },
                     modifier = Modifier.align(Alignment.BottomCenter)
@@ -1560,6 +1566,8 @@ fun ArgosyApp(
                     FooterHost(controller = footerHostController)
                 }
             }
+
+            com.nendo.argosy.ui.components.keyboard.ControllerKeyboardHost()
             }
         }
     }

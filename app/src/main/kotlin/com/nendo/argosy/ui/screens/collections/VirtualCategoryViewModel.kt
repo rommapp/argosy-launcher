@@ -65,6 +65,8 @@ data class VirtualCategoryUiState(
     val currentSectionLabel: String = "",
     val isSearchActive: Boolean = false,
     val searchQuery: String = "",
+    val isSearchKeyboardOpen: Boolean = false,
+    val isSearchStopFocused: Boolean = false,
     val overlayLetter: String? = null,
     val showOptionsModal: Boolean = false,
     val optionsModalFocusIndex: Int = 0,
@@ -72,7 +74,7 @@ data class VirtualCategoryUiState(
     val optionsMoveTargets: List<RunningMoveTarget> = emptyList()
 ) {
     val focusedGame: CollectionGameUi?
-        get() = games.getOrNull(focusedIndex)
+        get() = if (isSearchStopFocused) null else games.getOrNull(focusedIndex)
 
     val downloadableGamesCount: Int
         get() = games.count { !it.isDownloaded && it.rommId != null }
@@ -100,7 +102,12 @@ data class VirtualCategoryUiState(
         get() = !isSearchActive && sectionLabels.size > 1
 }
 
-private data class CategorySearchState(val active: Boolean = false, val query: String = "")
+private data class CategorySearchState(
+    val active: Boolean = false,
+    val query: String = "",
+    val keyboardOpen: Boolean = false,
+    val stopFocused: Boolean = false
+)
 
 private data class CategoryOptionsState(
     val visible: Boolean = false,
@@ -146,6 +153,7 @@ class VirtualCategoryViewModel @Inject constructor(
     private var optionsOpenJob: Job? = null
     private val _overlayLetter = MutableStateFlow<String?>(null)
     private var preSearchIndex = 0
+    private var preSearchStopFocused = false
     private var lastRefreshTime = 0L
     private var overlayJob: Job? = null
 
@@ -222,6 +230,8 @@ class VirtualCategoryViewModel @Inject constructor(
             currentSectionLabel = listing.sectionLabelByGame.getOrNull(clamped) ?: "",
             isSearchActive = search.active,
             searchQuery = search.query,
+            isSearchKeyboardOpen = search.keyboardOpen,
+            isSearchStopFocused = search.stopFocused,
             showOptionsModal = options.visible,
             optionsModalFocusIndex = options.focusIndex,
             optionsRunning = options.running,
@@ -259,18 +269,26 @@ class VirtualCategoryViewModel @Inject constructor(
     }
 
     private fun setFocus(index: Int) {
+        _search.update { it.copy(stopFocused = false) }
         _focusedIndex.value = index
         if (!_search.value.active) positions.set(stickyKey, index)
     }
 
     fun moveUp() {
-        val current = uiState.value.focusedIndex
-        if (current > 0) setFocus(current - 1)
+        val state = uiState.value
+        when {
+            state.isSearchStopFocused -> Unit
+            state.focusedIndex > 0 -> setFocus(state.focusedIndex - 1)
+            else -> _search.update { it.copy(stopFocused = true) }
+        }
     }
 
     fun moveDown() {
-        val current = uiState.value.focusedIndex
-        if (current < uiState.value.games.size - 1) setFocus(current + 1)
+        val state = uiState.value
+        when {
+            state.isSearchStopFocused -> if (state.games.isNotEmpty()) setFocus(0)
+            state.focusedIndex < state.games.size - 1 -> setFocus(state.focusedIndex + 1)
+        }
     }
 
     fun handleGameLongPress(index: Int) {
@@ -315,15 +333,23 @@ class VirtualCategoryViewModel @Inject constructor(
     }
 
     fun openSearch() {
-        if (_search.value.active) return
+        if (_search.value.active) {
+            _search.update { it.copy(keyboardOpen = true, stopFocused = true) }
+            return
+        }
         preSearchIndex = uiState.value.focusedIndex
+        preSearchStopFocused = uiState.value.isSearchStopFocused
         _focusedIndex.value = 0
-        _search.value = CategorySearchState(active = true, query = "")
+        _search.value = CategorySearchState(active = true, query = "", keyboardOpen = true, stopFocused = true)
+    }
+
+    fun closeSearchKeyboard() {
+        _search.update { it.copy(keyboardOpen = false) }
     }
 
     fun closeSearch() {
         if (!_search.value.active) return
-        _search.value = CategorySearchState(active = false, query = "")
+        _search.value = CategorySearchState(active = false, query = "", stopFocused = preSearchStopFocused)
         _focusedIndex.value = preSearchIndex
     }
 
@@ -522,6 +548,10 @@ class VirtualCategoryViewModel @Inject constructor(
             if (state.downloadAllProgress.isActive) return InputResult.HANDLED
             if (state.showOptionsModal) {
                 confirmOptionSelection()
+                return InputResult.HANDLED
+            }
+            if (state.isSearchStopFocused) {
+                openSearch()
                 return InputResult.HANDLED
             }
             state.focusedGame?.let { onGameClick(it.id) }

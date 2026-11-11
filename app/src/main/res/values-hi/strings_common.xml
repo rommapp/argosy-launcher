@@ -75,8 +75,6 @@
     <string name="ui_save_channel_rename_prompt_save_as">इस सेव स्लॉट के लिए एक नाम दर्ज करें</string>
     <string name="ui_save_channel_rename_prompt_new_slot">इस सेव स्लॉट के लिए एक नाम दर्ज करें</string>
     <string name="ui_save_channel_rename_prompt_rename">एक नया नाम दर्ज करें</string>
-    <string name="ui_save_channel_rename_footer_confirm">पुष्टि करें</string>
-    <string name="ui_save_channel_rename_footer_cancel">रद्द करें</string>
     <string name="ui_save_channel_rename_placeholder">स्लॉट का नाम</string>
     <string name="ui_save_channel_rename_cancel_button">रद्द करें</string>
 
@@ -198,6 +196,20 @@
     <string name="ui_pushed_apk_not_now">अभी नहीं</string>
 
     <string name="ui_modal_search_placeholder">खोजें...</string>
+    <string name="ui_modal_search_keyboard_submit">खोजें</string>
+
+    <string name="ui_keyboard_key_shift">शिफ़्ट</string>
+    <string name="ui_keyboard_key_caps_lock">कैप्स लॉक</string>
+    <string name="ui_keyboard_key_backspace">बैकस्पेस</string>
+    <string name="ui_keyboard_key_space">स्पेस</string>
+    <string name="ui_keyboard_key_symbols">चिह्न</string>
+    <string name="ui_keyboard_key_letters">अक्षर</string>
+    <string name="ui_keyboard_key_layout">लेआउट बदलें</string>
+    <string name="ui_keyboard_key_enter_default">हो गया</string>
+    <plurals name="ui_keyboard_password_announce">
+        <item quantity="one">%d वर्ण</item>
+        <item quantity="other">%d वर्ण</item>
+    </plurals>
 
     <string name="ui_disc_picker_title">डिस्क चुनें</string>
     <string name="ui_disc_picker_subtitle">लॉन्च करने के लिए डिस्क चुनें</string>
@@ -354,7 +366,6 @@
 
     <string name="ui_tile_picker_title">ग्रिड में जोड़ें</string>
     <string name="ui_tile_picker_title_track_game">एक गेम ट्रैक करें</string>
-    <string name="ui_tile_picker_subtitle_matching">\"%1$s\" से मेल खाता</string>
     <string name="ui_tile_picker_empty_games">जोड़ने के लिए कोई इंस्टॉल्ड गेम नहीं</string>
     <string name="ui_tile_picker_empty_collections">अभी तक कोई कलेक्शन नहीं</string>
     <string name="ui_tile_picker_empty_apps">कोई ऐप नहीं मिला</string>
@@ -474,6 +485,7 @@
     <string name="ui_platform_filter_sort_most_games">सबसे ज़्यादा गेम</string>
     <string name="ui_platform_filter_sort_least_games">सबसे कम गेम</string>
     <string name="ui_platform_filter_search_placeholder">प्लेटफ़ॉर्म खोजें...</string>
+    <string name="ui_platform_filter_keyboard_submit">पूर्ण</string>
     <string name="ui_platform_filter_search_clear">साफ़ करें</string>
     <plurals name="ui_platform_filter_count">
         <item quantity="one">%d प्लेटफ़ॉर्म</item>
@@ -807,6 +819,7 @@
     <string name="ui_quick_menu_empty_favorites">अभी तक कोई पसंदीदा नहीं</string>
     <string name="ui_quick_menu_empty_random">कोई गेम उपलब्ध नहीं</string>
     <string name="ui_quick_menu_search_placeholder">गेम खोजें...</string>
+    <string name="ui_quick_menu_search_keyboard_submit">खोजें</string>
     <string name="ui_quick_menu_search_prompt">खोजने के लिए कम से कम 2 अक्षर टाइप करें</string>
     <string name="ui_quick_menu_search_no_results">\"%1$s\" के लिए कोई गेम नहीं मिला</string>
     <string name="ui_quick_menu_recent_searches_heading">हाल की खोजें</string>
@@ -843,6 +856,7 @@
     <string name="ui_file_browser_new_folder_field_label">फ़ोल्डर का नाम</string>
     <string name="ui_file_browser_new_folder_cancel">रद्द करें</string>
     <string name="ui_file_browser_new_folder_confirm">बनाएं</string>
+    <string name="ui_file_browser_new_folder_keyboard_submit">बनाएं</string>
     <string name="ui_file_browser_new_folder_error_empty">फ़ोल्डर का नाम खाली नहीं हो सकता</string>
     <string name="ui_file_browser_new_folder_error_invalid">अमान्य फ़ोल्डर नाम</string>
     <string name="ui_file_browser_new_folder_error_exists">फ़ोल्डर पहले से मौजूद है</string>

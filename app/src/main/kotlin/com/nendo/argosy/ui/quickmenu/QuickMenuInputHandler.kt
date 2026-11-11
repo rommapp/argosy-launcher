@@ -78,6 +78,7 @@ class QuickMenuInputHandler(
                     viewModel.hide()
                     onGamePlay(randomGameId)
                 }
+                viewModel.isOnSearchInput() -> viewModel.openSearchKeyboard()
                 viewModel.isOnRecentSearches() -> viewModel.selectRecentSearch(state.focusedContentIndex)
                 else -> viewModel.getSelectedGameId()?.let { gameId ->
                     viewModel.saveSearchQuery()

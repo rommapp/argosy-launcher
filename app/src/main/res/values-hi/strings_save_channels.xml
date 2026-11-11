@@ -64,8 +64,7 @@
     <string name="save_channels_label_title_new">नया चैनल</string>
     <string name="save_channels_label_title_rename">नाम बदलें</string>
     <string name="save_channels_label_title_fork">फ़ोर्क करें</string>
-    <string name="save_channels_label_field_placeholder">नाम</string>
-    <string name="save_channels_label_cancel">रद्द करें</string>
+    <string name="save_channels_label_field_placeholder">नाम</string>    <string name="save_channels_label_cancel">रद्द करें</string>
     <string name="save_channels_label_confirm_new">बनाएं</string>
     <string name="save_channels_label_confirm_rename">नाम बदलें</string>
     <string name="save_channels_label_confirm_fork">फ़ोर्क करें</string>

@@ -1,6 +1,7 @@
 package com.nendo.argosy.ui.common.savechannel.snapshot
 
 import androidx.annotation.StringRes
+import com.nendo.argosy.ui.components.TextEntryFocus
 
 sealed interface SnapshotDeviceUi {
     data object Unknown : SnapshotDeviceUi
@@ -117,7 +118,8 @@ data class SnapshotLabelEntryUi(
     val snapshotId: Long? = null,
     val romFileId: Long? = null,
     val backupSaveId: Long? = null,
-    @StringRes val error: Int? = null
+    @StringRes val error: Int? = null,
+    val focus: TextEntryFocus = TextEntryFocus()
 )
 
 sealed interface SnapshotConfirmUi {

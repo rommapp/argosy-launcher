@@ -1,37 +1,29 @@
 package com.nendo.argosy.ui.common.savechannel.snapshot
 
 import android.view.KeyEvent
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
 import com.nendo.argosy.R
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.components.GamepadHoldTracker
 import com.nendo.argosy.ui.components.HoldToConfirmButton
 import com.nendo.argosy.ui.components.NestedModal
+import com.nendo.argosy.ui.components.TextEntryModal
 import com.nendo.argosy.ui.input.GamepadEvent
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.LocalGamepadInputHandler
 import com.nendo.argosy.ui.input.ModalInputEffect
 import com.nendo.argosy.ui.primitives.ArgosyConfirmModalHost
-import com.nendo.argosy.ui.primitives.ModalActionButton
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 
@@ -63,9 +55,6 @@ internal fun SnapshotEntryOverlays(state: SnapshotViewState, actions: SnapshotVi
 
 @Composable
 private fun SnapshotLabelOverlay(entry: SnapshotLabelEntryUi, isBusy: Boolean, actions: SnapshotViewActions) {
-    val theme = LocalArgosyTheme.current
-    val focusRequester = remember { FocusRequester() }
-    LaunchedEffect(Unit) { focusRequester.requestFocus() }
     val title = when (entry.mode) {
         SnapshotLabelMode.NEW_CHANNEL -> stringResource(R.string.save_channels_label_title_new)
         SnapshotLabelMode.RENAME -> stringResource(R.string.save_channels_label_title_rename)
@@ -76,48 +65,20 @@ private fun SnapshotLabelOverlay(entry: SnapshotLabelEntryUi, isBusy: Boolean, a
         SnapshotLabelMode.RENAME -> stringResource(R.string.save_channels_label_confirm_rename)
         SnapshotLabelMode.FORK -> stringResource(R.string.save_channels_label_confirm_fork)
     }
-    NestedModal(title = title, onDismiss = actions::dismissLabel) {
-        OutlinedTextField(
-            value = entry.text,
-            onValueChange = actions::updateLabelText,
-            modifier = Modifier.fillMaxWidth().focusRequester(focusRequester),
-            placeholder = { Text(stringResource(R.string.save_channels_label_field_placeholder)) },
-            isError = entry.error != null,
-            supportingText = if (entry.error != null) {
-                { Text(stringResource(entry.error)) }
-            } else {
-                null
-            },
-            singleLine = true,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline
-            )
-        )
-        Spacer(modifier = Modifier.height(Dimens.spacingMd))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-        ) {
-            ModalActionButton(
-                label = stringResource(R.string.save_channels_label_cancel),
-                tint = theme.textDim,
-                restLabelColor = theme.textPrimary,
-                focused = false,
-                onClick = actions::dismissLabel,
-                modifier = Modifier.weight(1f)
-            )
-            ModalActionButton(
-                label = confirmLabel,
-                tint = theme.focusAccent,
-                restLabelColor = theme.textPrimary,
-                focused = false,
-                onClick = actions::confirmLabel,
-                enabled = entry.text.isNotBlank() && !isBusy,
-                modifier = Modifier.weight(1f)
-            )
-        }
-    }
+    TextEntryModal(
+        title = title,
+        label = title,
+        confirmLabel = confirmLabel,
+        cancelLabel = stringResource(R.string.save_channels_label_cancel),
+        text = entry.text,
+        onTextChange = actions::updateLabelText,
+        onDismiss = actions::dismissLabel,
+        onSubmit = actions::confirmLabel,
+        focus = entry.focus,
+        placeholder = stringResource(R.string.save_channels_label_field_placeholder),
+        errorMessage = entry.error?.let { stringResource(it) },
+        canSubmit = entry.text.isNotBlank() && !isBusy
+    )
 }
 
 @Composable

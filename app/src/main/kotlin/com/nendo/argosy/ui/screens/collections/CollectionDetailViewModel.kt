@@ -89,12 +89,14 @@ data class CollectionDetailUiState(
     val currentSectionLabel: String = "",
     val isSearchActive: Boolean = false,
     val searchQuery: String = "",
+    val isSearchKeyboardOpen: Boolean = false,
+    val isSearchStopFocused: Boolean = false,
     val overlayLetter: String? = null,
     val optionsRunning: com.nendo.argosy.ui.common.RunningGameUi? = null,
     val optionsMoveTargets: List<com.nendo.argosy.ui.screens.running.RunningMoveTarget> = emptyList()
 ) {
     val focusedGame: CollectionGameUi?
-        get() = games.getOrNull(focusedIndex)
+        get() = if (isSearchStopFocused) null else games.getOrNull(focusedIndex)
 
     val downloadableGamesCount: Int
         get() = games.count { !it.isDownloaded && it.rommId != null }
@@ -153,6 +155,8 @@ class CollectionDetailViewModel @Inject constructor(
         val isRefreshing: Boolean = false,
         val searchActive: Boolean = false,
         val searchQuery: String = "",
+        val searchKeyboardOpen: Boolean = false,
+        val searchStopFocused: Boolean = false,
         val optionsRunning: com.nendo.argosy.ui.common.RunningGameUi? = null,
         val optionsMoveTargets: List<com.nendo.argosy.ui.screens.running.RunningMoveTarget> = emptyList()
     )
@@ -161,6 +165,7 @@ class CollectionDetailViewModel @Inject constructor(
     private val _refreshTrigger = MutableStateFlow(0)
     private val _overlayLetter = MutableStateFlow<String?>(null)
     private var preSearchIndex = 0
+    private var preSearchStopFocused = false
     private var lastRefreshTime = 0L
     private var overlayJob: Job? = null
 
@@ -235,6 +240,8 @@ class CollectionDetailViewModel @Inject constructor(
             currentSectionLabel = listing.sectionLabelByGame.getOrNull(clamped) ?: "",
             isSearchActive = modalState.searchActive,
             searchQuery = modalState.searchQuery,
+            isSearchKeyboardOpen = modalState.searchKeyboardOpen,
+            isSearchStopFocused = modalState.searchStopFocused,
             optionsRunning = modalState.optionsRunning,
             optionsMoveTargets = modalState.optionsMoveTargets
         )
@@ -279,18 +286,25 @@ class CollectionDetailViewModel @Inject constructor(
         state.showEditDialog || state.showDeleteDialog || state.showRemoveGameDialog
 
     private fun setFocus(index: Int) {
-        _modalState.update { it.copy(focusedIndex = index) }
+        _modalState.update { it.copy(focusedIndex = index, searchStopFocused = false) }
         if (!_modalState.value.searchActive) positions.set(stickyKey, index)
     }
 
     fun moveUp() {
-        val current = uiState.value.focusedIndex
-        if (current > 0) setFocus(current - 1)
+        val state = uiState.value
+        when {
+            state.isSearchStopFocused -> Unit
+            state.focusedIndex > 0 -> setFocus(state.focusedIndex - 1)
+            else -> _modalState.update { it.copy(searchStopFocused = true) }
+        }
     }
 
     fun moveDown() {
-        val current = uiState.value.focusedIndex
-        if (current < uiState.value.games.size - 1) setFocus(current + 1)
+        val state = uiState.value
+        when {
+            state.isSearchStopFocused -> if (state.games.isNotEmpty()) setFocus(0)
+            state.focusedIndex < state.games.size - 1 -> setFocus(state.focusedIndex + 1)
+        }
     }
 
     fun handleGameLongPress(index: Int) {
@@ -335,15 +349,25 @@ class CollectionDetailViewModel @Inject constructor(
     }
 
     fun openSearch() {
-        if (_modalState.value.searchActive) return
+        if (_modalState.value.searchActive) {
+            _modalState.update { it.copy(searchKeyboardOpen = true, searchStopFocused = true) }
+            return
+        }
         preSearchIndex = uiState.value.focusedIndex
+        preSearchStopFocused = uiState.value.isSearchStopFocused
         _modalState.update {
             it.copy(
                 searchActive = true,
                 searchQuery = "",
+                searchKeyboardOpen = true,
+                searchStopFocused = true,
                 focusedIndex = 0
             )
         }
+    }
+
+    fun closeSearchKeyboard() {
+        _modalState.update { it.copy(searchKeyboardOpen = false) }
     }
 
     fun closeSearch() {
@@ -352,6 +376,8 @@ class CollectionDetailViewModel @Inject constructor(
             it.copy(
                 searchActive = false,
                 searchQuery = "",
+                searchKeyboardOpen = false,
+                searchStopFocused = preSearchStopFocused,
                 focusedIndex = preSearchIndex
             )
         }
@@ -576,6 +602,10 @@ class CollectionDetailViewModel @Inject constructor(
             when {
                 state.showOptionsModal -> {
                     confirmOptionSelection()
+                    return InputResult.HANDLED
+                }
+                state.isSearchStopFocused -> {
+                    openSearch()
                     return InputResult.HANDLED
                 }
                 else -> {

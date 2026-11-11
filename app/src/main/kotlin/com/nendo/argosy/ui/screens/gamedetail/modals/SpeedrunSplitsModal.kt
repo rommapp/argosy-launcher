@@ -3,17 +3,15 @@ package com.nendo.argosy.ui.screens.gamedetail.modals
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -36,6 +34,10 @@ import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.Modal
 import com.nendo.argosy.ui.components.NestedModal
+import com.nendo.argosy.ui.components.TEXT_ENTRY_CANCEL_BUTTON
+import com.nendo.argosy.ui.components.TEXT_ENTRY_CONFIRM_BUTTON
+import com.nendo.argosy.ui.components.TextEntryModal
+import com.nendo.argosy.ui.components.TextEntryRow
 import com.nendo.argosy.ui.components.dragReorderContainer
 import com.nendo.argosy.ui.components.dragReorderItem
 import com.nendo.argosy.ui.components.liftedReorderHints
@@ -59,8 +61,9 @@ fun SpeedrunSplitsModal(
 ) {
     val inputDispatcher = LocalInputDispatcher.current
     val currentState = rememberUpdatedState(state)
-    var promptText by remember(state.prompt) {
-        mutableStateOf((state.prompt as? SpeedrunPrompt.Text)?.initial ?: "")
+    val textPrompt = state.prompt as? SpeedrunPrompt.Text
+    var promptText by remember(textPrompt?.title, textPrompt?.initial, textPrompt?.target) {
+        mutableStateOf(textPrompt?.initial ?: "")
     }
     val currentPromptText = rememberUpdatedState(promptText)
 
@@ -70,6 +73,7 @@ fun SpeedrunSplitsModal(
                 val s = currentState.value
                 when {
                     s.import != null -> delegate.moveImportFocus(-1)
+                    s.prompt is SpeedrunPrompt.Text -> delegate.movePromptRow(TextEntryRow.FIELD)
                     s.prompt == null -> delegate.moveFocus(-1)
                 }
                 return InputResult.HANDLED
@@ -78,23 +82,38 @@ fun SpeedrunSplitsModal(
                 val s = currentState.value
                 when {
                     s.import != null -> delegate.moveImportFocus(1)
+                    s.prompt is SpeedrunPrompt.Text -> delegate.movePromptRow(TextEntryRow.BUTTONS)
                     s.prompt == null -> delegate.moveFocus(1)
                 }
                 return InputResult.HANDLED
             }
             override fun onLeft(): InputResult {
-                if (currentState.value.import is SpeedrunImport.Preview) delegate.cyclePreviewRunner(-1)
+                val s = currentState.value
+                when {
+                    s.import is SpeedrunImport.Preview -> delegate.cyclePreviewRunner(-1)
+                    s.prompt is SpeedrunPrompt.Text -> delegate.movePromptButton(TEXT_ENTRY_CANCEL_BUTTON)
+                }
                 return InputResult.HANDLED
             }
             override fun onRight(): InputResult {
-                if (currentState.value.import is SpeedrunImport.Preview) delegate.cyclePreviewRunner(1)
+                val s = currentState.value
+                when {
+                    s.import is SpeedrunImport.Preview -> delegate.cyclePreviewRunner(1)
+                    s.prompt is SpeedrunPrompt.Text -> delegate.movePromptButton(TEXT_ENTRY_CONFIRM_BUTTON)
+                }
                 return InputResult.HANDLED
             }
             override fun onConfirm(): InputResult {
                 val s = currentState.value
+                val prompt = s.prompt
                 when {
                     s.import != null -> delegate.confirmImport()
-                    s.prompt != null -> delegate.confirmPrompt(currentPromptText.value)
+                    prompt is SpeedrunPrompt.Text -> when {
+                        prompt.focus.row == TextEntryRow.FIELD -> delegate.requestPromptKeyboard()
+                        prompt.focus.buttonIndex == TEXT_ENTRY_CANCEL_BUTTON -> delegate.dismissPrompt()
+                        else -> delegate.confirmPrompt(currentPromptText.value)
+                    }
+                    prompt != null -> delegate.confirmPrompt(currentPromptText.value)
                     else -> delegate.confirmFocused()
                 }
                 return InputResult.HANDLED
@@ -213,19 +232,27 @@ fun SpeedrunSplitsModal(
                         )
                     }
                 }
+                item(key = "add-segment") {
+                    OptionItem(
+                        icon = Icons.Default.Add,
+                        label = stringResource(R.string.gamedetail_speedrun_add_segment_row),
+                        isFocused = state.focusIndex == state.segments.size,
+                        onClick = { delegate.confirmFocusedAt(state.segments.size) }
+                    )
+                }
                 item(key = "rename-category") {
                     OptionItem(
                         label = stringResource(R.string.gamedetail_speedrun_rename_category),
-                        isFocused = state.focusIndex == state.segments.size,
-                        onClick = { delegate.confirmFocusedAt(state.segments.size) }
+                        isFocused = state.focusIndex == state.segments.size + 1,
+                        onClick = { delegate.confirmFocusedAt(state.segments.size + 1) }
                     )
                 }
                 item(key = "delete-category") {
                     OptionItem(
                         label = stringResource(R.string.gamedetail_speedrun_delete_category),
                         isDangerous = true,
-                        isFocused = state.focusIndex == state.segments.size + 1,
-                        onClick = { delegate.confirmFocusedAt(state.segments.size + 1) }
+                        isFocused = state.focusIndex == state.segments.size + 2,
+                        onClick = { delegate.confirmFocusedAt(state.segments.size + 2) }
                     )
                 }
             }
@@ -265,12 +292,20 @@ fun SpeedrunSplitsModal(
                         onClick = { delegate.confirmFocusedAt(index) }
                     )
                 }
+                item(key = "new-category") {
+                    OptionItem(
+                        icon = Icons.Default.Add,
+                        label = stringResource(R.string.gamedetail_speedrun_new_category_row),
+                        isFocused = state.focusIndex == state.categories.size,
+                        onClick = { delegate.confirmFocusedAt(state.categories.size) }
+                    )
+                }
                 item(key = "import-splits") {
                     OptionItem(
                         icon = Icons.Default.CloudDownload,
                         label = stringResource(R.string.gamedetail_speedrun_import_row),
-                        isFocused = state.focusIndex == state.categories.size,
-                        onClick = { delegate.confirmFocusedAt(state.categories.size) }
+                        isFocused = state.focusIndex == state.categories.size + 1,
+                        onClick = { delegate.confirmFocusedAt(state.categories.size + 1) }
                     )
                 }
             }
@@ -382,28 +417,18 @@ fun SpeedrunSplitsModal(
     }
 
     when (val prompt = state.prompt) {
-        is SpeedrunPrompt.Text -> NestedModal(
+        is SpeedrunPrompt.Text -> TextEntryModal(
             title = prompt.title,
+            label = prompt.title,
+            confirmLabel = stringResource(R.string.gamedetail_speedrun_prompt_confirm),
+            cancelLabel = stringResource(R.string.gamedetail_speedrun_prompt_cancel),
+            text = promptText,
+            onTextChange = { promptText = it },
             onDismiss = { delegate.dismissPrompt() },
-            footerHints = listOf(
-                InputButton.A to stringResource(R.string.gamedetail_speedrun_prompt_confirm),
-                InputButton.B to stringResource(R.string.gamedetail_speedrun_prompt_cancel)
-            )
-        ) {
-            OutlinedTextField(
-                value = promptText,
-                onValueChange = { promptText = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = {
-                    Text(stringResource(R.string.gamedetail_speedrun_prompt_placeholder))
-                },
-                singleLine = true,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
-                )
-            )
-        }
+            onSubmit = { delegate.confirmPrompt(promptText) },
+            focus = prompt.focus,
+            placeholder = stringResource(R.string.gamedetail_speedrun_prompt_placeholder)
+        )
         is SpeedrunPrompt.ConfirmDelete -> NestedModal(
             title = stringResource(
                 R.string.gamedetail_speedrun_confirm_delete_title,

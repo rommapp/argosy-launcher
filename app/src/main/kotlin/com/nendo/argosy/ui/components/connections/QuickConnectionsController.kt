@@ -12,7 +12,6 @@ import com.nendo.argosy.hardware.WifiSecurity
 import com.nendo.argosy.hardware.WifiShellParser
 import com.nendo.argosy.ui.components.GamepadHoldTracker
 import com.nendo.argosy.ui.components.TEXT_ENTRY_CANCEL_BUTTON
-import com.nendo.argosy.ui.components.TEXT_ENTRY_CONFIRM_BUTTON
 import com.nendo.argosy.ui.components.TextEntryRow
 import com.nendo.argosy.ui.input.InputDispatcher.Companion.computeWrappedIndex
 import com.nendo.argosy.ui.input.InputResult
@@ -369,7 +368,9 @@ class QuickConnectionsController(
     fun confirmJoinFocus() {
         val draft = _state.value.join ?: return
         when {
-            draft.focus.row == TextEntryRow.FIELD -> setJoinFocus(TextEntryRow.BUTTONS, TEXT_ENTRY_CONFIRM_BUTTON)
+            draft.focus.row == TextEntryRow.FIELD -> _state.update { state ->
+                state.copy(join = state.join?.let { it.copy(focus = it.focus.requestKeyboard()) })
+            }
             draft.focus.buttonIndex == TEXT_ENTRY_CANCEL_BUTTON -> dismissJoin()
             else -> submitJoin()
         }

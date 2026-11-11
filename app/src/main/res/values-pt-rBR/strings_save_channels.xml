@@ -64,8 +64,7 @@
     <string name="save_channels_label_title_new">Novo canal</string>
     <string name="save_channels_label_title_rename">Renomear</string>
     <string name="save_channels_label_title_fork">Derivar</string>
-    <string name="save_channels_label_field_placeholder">Nome</string>
-    <string name="save_channels_label_cancel">Cancelar</string>
+    <string name="save_channels_label_field_placeholder">Nome</string>    <string name="save_channels_label_cancel">Cancelar</string>
     <string name="save_channels_label_confirm_new">Criar</string>
     <string name="save_channels_label_confirm_rename">Renomear</string>
     <string name="save_channels_label_confirm_fork">Derivar</string>

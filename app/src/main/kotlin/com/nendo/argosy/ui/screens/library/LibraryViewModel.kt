@@ -384,6 +384,12 @@ data class LibraryUiState(
     val currentFilterCategory: FilterCategory
         get() = FilterCategory.entries.getOrElse(filterCategoryIndex) { FilterCategory.SOURCE }
 
+    val filterLeadingStops: Int
+        get() = if (currentFilterCategory == FilterCategory.SEARCH) 1 else 0
+
+    val isFilterSearchFieldFocused: Boolean
+        get() = currentFilterCategory == FilterCategory.SEARCH && filterOptionIndex == 0
+
     fun currentCategoryOptions(context: Context): List<String> =
         when (currentFilterCategory) {
             FilterCategory.SORT -> SortOption.entries.map { option ->
@@ -1845,18 +1851,26 @@ class LibraryViewModel @Inject constructor(
 
     fun moveFilterOptionFocus(delta: Int) {
         _uiState.update { state ->
-            val options = state.currentCategoryOptions(context)
-            if (options.isEmpty()) return@update state
-            val maxIndex = options.size - 1
-            val newIndex = (state.filterOptionIndex + delta).coerceIn(0, maxIndex)
+            val stopCount = state.currentCategoryOptions(context).size + state.filterLeadingStops
+            if (stopCount == 0) return@update state
+            val newIndex = (state.filterOptionIndex + delta).coerceIn(0, stopCount - 1)
             state.copy(filterOptionIndex = newIndex)
         }
+    }
+
+    fun openFilterSearchKeyboard() {
+        _uiState.update { it.copy(filterOptionIndex = 0) }
+        viewModelScope.launch { _events.emit(LibraryEvent.OpenSearchKeyboard) }
     }
 
     fun confirmFilterSelection() {
         val state = _uiState.value
         val category = state.currentFilterCategory
-        val optionIndex = state.filterOptionIndex
+        if (state.isFilterSearchFieldFocused) {
+            openFilterSearchKeyboard()
+            return
+        }
+        val optionIndex = state.filterOptionIndex - state.filterLeadingStops
         val options = state.currentCategoryOptions(context)
 
         val newFilters = when (category) {
@@ -2558,12 +2572,9 @@ class LibraryViewModel @Inject constructor(
                 return if (liftPlatformCell()) InputResult.handled(SoundType.SELECT) else InputResult.HANDLED
             }
             if (_uiState.value.isSectionRailFocused) return InputResult.HANDLED
-            if (_uiState.value.showFilterMenu && _uiState.value.currentFilterCategory == FilterCategory.SEARCH) {
-                viewModelScope.launch { _events.emit(LibraryEvent.OpenSearchKeyboard) }
-                return InputResult.HANDLED
-            }
+            if (_uiState.value.showFilterMenu) return InputResult.HANDLED
             val game = _uiState.value.focusedGame ?: return InputResult.UNHANDLED
-            if (_uiState.value.showAddToCollectionModal || _uiState.value.showQuickMenu || _uiState.value.showFilterMenu) return InputResult.HANDLED
+            if (_uiState.value.showAddToCollectionModal || _uiState.value.showQuickMenu) return InputResult.HANDLED
             if (_uiState.value.activeFilters.source == SourceFilter.HIDDEN) {
                 unhideGame(game.id)
             } else {
@@ -2588,6 +2599,7 @@ class LibraryViewModel @Inject constructor(
         override fun onSelect(): InputResult {
             if (isLiftingPlatform) return InputResult.HANDLED
             if (_uiState.value.showAddToCollectionModal) return InputResult.HANDLED
+            if (_uiState.value.showFilterMenu) return InputResult.HANDLED
             if (com.nendo.argosy.ui.dualscreen.selectSwapsRoles()) return InputResult.UNHANDLED
             if (_uiState.value.isPlatformGrid) return InputResult.HANDLED
             if (_uiState.value.isSectionRailFocused) return InputResult.HANDLED

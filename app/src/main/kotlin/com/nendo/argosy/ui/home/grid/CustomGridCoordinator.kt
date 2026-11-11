@@ -729,7 +729,8 @@ class CustomGridCoordinator(
                 menuFocusIndex = 0,
                 showPicker = false,
                 pickerQuery = "",
-                pickerSearchActive = false,
+                pickerSearchFocused = false,
+                pickerKeyboardOpen = false,
                 pickerFocusIndex = 0
             )
         }
@@ -750,7 +751,8 @@ class CustomGridCoordinator(
                 showPicker = true,
                 pickerQuery = "",
                 pickerFocusIndex = 0,
-                pickerSearchActive = false,
+                pickerSearchFocused = false,
+                pickerKeyboardOpen = false,
                 pickerCategory = TilePickerCategory.GAMES
             )
         }
@@ -761,7 +763,8 @@ class CustomGridCoordinator(
         it.copy(
             showPicker = false,
             pickerQuery = "",
-            pickerSearchActive = false,
+            pickerSearchFocused = false,
+            pickerKeyboardOpen = false,
             pickerPurpose = TilePickerPurpose.PLACE,
             mediaSetup = null,
             featureSetup = null,
@@ -788,7 +791,8 @@ class CustomGridCoordinator(
                 pickerPurpose = TilePickerPurpose.PLACE,
                 pickerCategory = TilePickerCategory.FEATURES,
                 pickerQuery = "",
-                pickerSearchActive = false,
+                pickerSearchFocused = false,
+                pickerKeyboardOpen = false,
                 pickerFocusIndex = 0,
                 pickerEntries = emptyList()
             )
@@ -808,7 +812,8 @@ class CustomGridCoordinator(
                 pickerPurpose = TilePickerPurpose.TRACK_RA_GAME,
                 pickerCategory = TilePickerCategory.GAMES,
                 pickerQuery = "",
-                pickerSearchActive = false,
+                pickerSearchFocused = false,
+                pickerKeyboardOpen = false,
                 pickerFocusIndex = 0,
                 pickerEntries = emptyList()
             )
@@ -816,20 +821,24 @@ class CustomGridCoordinator(
         refreshPicker()
     }
 
-    /**
-     * Opens the search field, which is the one place the grid hands focus to Compose: a soft
-     * keyboard has to reach a text field, and there is nothing else on the modal competing for it.
-     * Closing it clears the query so the list a dismissed search leaves behind is the full one.
-     */
-    fun togglePickerSearch() {
-        val active = !read().pickerSearchActive
-        write { it.copy(pickerSearchActive = active, pickerQuery = if (active) it.pickerQuery else "") }
-        if (!active) refreshPicker()
-    }
+    fun openPickerSearch() = write { it.copy(pickerSearchFocused = true, pickerKeyboardOpen = true) }
+
+    fun closePickerKeyboard() = write { it.copy(pickerKeyboardOpen = false) }
 
     fun movePickerFocus(delta: Int) = write {
-        val maxIndex = (it.pickerFocusCount - 1).coerceAtLeast(0)
-        it.copy(pickerFocusIndex = (it.pickerFocusIndex + delta).coerceIn(0, maxIndex))
+        when {
+            it.pickerSearchFocused ->
+                if (delta > 0 && it.pickerFocusCount > 0) {
+                    it.copy(pickerSearchFocused = false, pickerFocusIndex = 0)
+                } else {
+                    it
+                }
+            delta < 0 && it.pickerFocusIndex == 0 -> it.copy(pickerSearchFocused = true)
+            else -> {
+                val maxIndex = (it.pickerFocusCount - 1).coerceAtLeast(0)
+                it.copy(pickerFocusIndex = (it.pickerFocusIndex + delta).coerceIn(0, maxIndex))
+            }
+        }
     }
 
     /**
@@ -955,6 +964,10 @@ class CustomGridCoordinator(
 
     fun confirmPickerSelection() {
         val current = read()
+        if (current.pickerSearchFocused) {
+            openPickerSearch()
+            return
+        }
         if (current.isPickerDeletePageFocused) {
             deleteCurrentPage()
             return
@@ -1030,7 +1043,16 @@ class CustomGridCoordinator(
      */
     fun movePageChooserFocus(delta: Int) = write { state ->
         val chooser = state.pageChooser ?: return@write state
-        if (chooser.entries.isEmpty() || delta == 0) return@write state
+        if (delta == 0) return@write state
+        val firstEntry = chooser.entries.indexOfFirst { !it.isHeader }
+        if (chooser.searchFocused) {
+            if (delta < 0 || firstEntry < 0) return@write state
+            return@write state.copy(pageChooser = chooser.copy(searchFocused = false, focusIndex = firstEntry))
+        }
+        if (chooser.offersSearch && delta < 0 && (firstEntry < 0 || chooser.focusIndex <= firstEntry)) {
+            return@write state.copy(pageChooser = chooser.copy(searchFocused = true))
+        }
+        if (chooser.entries.isEmpty()) return@write state
         val step = if (delta > 0) 1 else -1
         var index = chooser.focusIndex
         repeat(kotlin.math.abs(delta)) {
@@ -1041,6 +1063,22 @@ class CustomGridCoordinator(
             if (next in chooser.entries.indices) index = next
         }
         state.copy(pageChooser = chooser.copy(focusIndex = index))
+    }
+
+    fun focusPageChooserEntry(index: Int) = write { state ->
+        val chooser = state.pageChooser ?: return@write state
+        if (index !in chooser.entries.indices || chooser.entries[index].isHeader) return@write state
+        state.copy(pageChooser = chooser.copy(focusIndex = index, searchFocused = false))
+    }
+
+    fun openPageChooserKeyboard() = write { state ->
+        val chooser = state.pageChooser?.takeIf { it.offersSearch } ?: return@write state
+        state.copy(pageChooser = chooser.copy(searchFocused = true, searchKeyboardOpen = true))
+    }
+
+    fun closePageChooserKeyboard() = write { state ->
+        val chooser = state.pageChooser ?: return@write state
+        state.copy(pageChooser = chooser.copy(searchKeyboardOpen = false))
     }
 
     fun setPageChooserQuery(query: String) {
@@ -1072,7 +1110,9 @@ class CustomGridCoordinator(
                     gameId = null,
                     gameTitle = null,
                     focusIndex = 0,
-                    isLoading = true
+                    isLoading = true,
+                    searchFocused = false,
+                    searchKeyboardOpen = false
                 )
             )
         }
@@ -1100,6 +1140,10 @@ class CustomGridCoordinator(
 
     fun confirmPageChooser() {
         val chooser = read().pageChooser ?: return
+        if (chooser.searchFocused) {
+            openPageChooserKeyboard()
+            return
+        }
         val entry = chooser.entries.getOrNull(chooser.focusIndex) ?: return
         when (val action = entry.action ?: return) {
             PageChooserAction.OpenFileBrowser ->
@@ -1126,7 +1170,9 @@ class CustomGridCoordinator(
                             gameId = action.gameId,
                             gameTitle = action.title,
                             focusIndex = 0,
-                            isLoading = true
+                            isLoading = true,
+                            searchFocused = false,
+                            searchKeyboardOpen = false
                         )
                     )
                 }

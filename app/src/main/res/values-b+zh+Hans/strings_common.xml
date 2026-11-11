@@ -73,8 +73,6 @@
     <string name="ui_save_channel_rename_prompt_save_as">输入此存档槽位的名称</string>
     <string name="ui_save_channel_rename_prompt_new_slot">输入此存档槽位的名称</string>
     <string name="ui_save_channel_rename_prompt_rename">输入新名称</string>
-    <string name="ui_save_channel_rename_footer_confirm">确认</string>
-    <string name="ui_save_channel_rename_footer_cancel">取消</string>
     <string name="ui_save_channel_rename_placeholder">槽位名称</string>
     <string name="ui_save_channel_rename_cancel_button">取消</string>
 
@@ -191,6 +189,19 @@
     <string name="ui_pushed_apk_not_now">暂不</string>
 
     <string name="ui_modal_search_placeholder">搜索...</string>
+    <string name="ui_modal_search_keyboard_submit">搜索</string>
+
+    <string name="ui_keyboard_key_shift">Shift 键</string>
+    <string name="ui_keyboard_key_caps_lock">大写锁定</string>
+    <string name="ui_keyboard_key_backspace">退格</string>
+    <string name="ui_keyboard_key_space">空格</string>
+    <string name="ui_keyboard_key_symbols">符号</string>
+    <string name="ui_keyboard_key_letters">字母</string>
+    <string name="ui_keyboard_key_layout">切换布局</string>
+    <string name="ui_keyboard_key_enter_default">完成</string>
+    <plurals name="ui_keyboard_password_announce">
+        <item quantity="other">%d 个字符</item>
+    </plurals>
 
     <string name="ui_disc_picker_title">选择光盘</string>
     <string name="ui_disc_picker_subtitle">选择要启动的光盘</string>
@@ -337,7 +348,6 @@
 
     <string name="ui_tile_picker_title">添加到网格</string>
     <string name="ui_tile_picker_title_track_game">追踪一款游戏</string>
-    <string name="ui_tile_picker_subtitle_matching">匹配“%1$s”</string>
     <string name="ui_tile_picker_empty_games">没有可添加的已安装游戏</string>
     <string name="ui_tile_picker_empty_collections">还没有合集</string>
     <string name="ui_tile_picker_empty_apps">未找到应用</string>
@@ -454,6 +464,7 @@
     <string name="ui_platform_filter_sort_most_games">游戏最多</string>
     <string name="ui_platform_filter_sort_least_games">游戏最少</string>
     <string name="ui_platform_filter_search_placeholder">搜索平台...</string>
+    <string name="ui_platform_filter_keyboard_submit">完成</string>
     <string name="ui_platform_filter_search_clear">清除</string>
     <plurals name="ui_platform_filter_count">
         <item quantity="other">%d个平台</item>
@@ -770,6 +781,7 @@
     <string name="ui_quick_menu_empty_favorites">还没有收藏</string>
     <string name="ui_quick_menu_empty_random">没有可用的游戏</string>
     <string name="ui_quick_menu_search_placeholder">搜索游戏...</string>
+    <string name="ui_quick_menu_search_keyboard_submit">搜索</string>
     <string name="ui_quick_menu_search_prompt">至少输入2个字符进行搜索</string>
     <string name="ui_quick_menu_search_no_results">未找到“%1$s”的相关游戏</string>
     <string name="ui_quick_menu_recent_searches_heading">最近搜索</string>
@@ -804,6 +816,7 @@
     <string name="ui_file_browser_new_folder_field_label">文件夹名称</string>
     <string name="ui_file_browser_new_folder_cancel">取消</string>
     <string name="ui_file_browser_new_folder_confirm">创建</string>
+    <string name="ui_file_browser_new_folder_keyboard_submit">创建</string>
     <string name="ui_file_browser_new_folder_error_empty">文件夹名称不能为空</string>
     <string name="ui_file_browser_new_folder_error_invalid">文件夹名称无效</string>
     <string name="ui_file_browser_new_folder_error_exists">文件夹已存在</string>

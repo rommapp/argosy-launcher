@@ -43,7 +43,6 @@
     <string name="quaypass_greeting_modal_footer_cancel">Cancelar</string>
     <string name="quaypass_greeting_modal_description">Se muestra a los viajeros que encuentres en el Check-In.</string>
     <string name="quaypass_greeting_modal_placeholder">¡Hola!</string>
-
     <string name="doodle_tool_selector_pen_description">Lápiz</string>
     <string name="doodle_tool_selector_line_description">Línea</string>
     <string name="doodle_tool_selector_fill_description">Relleno</string>

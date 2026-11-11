@@ -43,7 +43,6 @@
     <string name="quaypass_greeting_modal_footer_cancel">Annuler</string>
     <string name="quaypass_greeting_modal_description">Affiché aux voyageurs que vous croisez au Check-In.</string>
     <string name="quaypass_greeting_modal_placeholder">Bonjour !</string>
-
     <string name="doodle_tool_selector_pen_description">Stylo</string>
     <string name="doodle_tool_selector_line_description">Ligne</string>
     <string name="doodle_tool_selector_fill_description">Remplissage</string>

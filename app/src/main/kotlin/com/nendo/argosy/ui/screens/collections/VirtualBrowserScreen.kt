@@ -25,15 +25,12 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PushPin
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -44,7 +41,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.pluralStringResource
@@ -62,6 +58,7 @@ import com.nendo.argosy.ui.common.rememberFileImageModel
 import com.nendo.argosy.ui.components.AlphabetSidebar
 import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.InputButton
+import com.nendo.argosy.ui.components.keyboard.ControllerKeyboardSession
 import com.nendo.argosy.ui.input.LocalInputDispatcher
 import com.nendo.argosy.ui.navigation.Screen
 import androidx.compose.ui.graphics.compositeOver
@@ -102,8 +99,10 @@ fun VirtualBrowserScreen(
     val uiState by viewModel.uiState.collectAsState()
     val listState = rememberLazyListState()
 
-    LaunchedEffect(uiState.focusedIndex) {
-        if (uiState.categories.isNotEmpty() && uiState.focusedIndex in uiState.categories.indices) {
+    LaunchedEffect(uiState.focusedIndex, uiState.isSearchStopFocused) {
+        if (uiState.isSearchStopFocused) {
+            listState.animateScrollToItem(0)
+        } else if (uiState.categories.isNotEmpty() && uiState.focusedIndex in uiState.categories.indices) {
             val visibleItems = listState.layoutInfo.visibleItemsInfo
             val viewportHeight = listState.layoutInfo.viewportEndOffset
             val avgItemHeight = if (visibleItems.isNotEmpty()) {
@@ -114,17 +113,35 @@ fun VirtualBrowserScreen(
         }
     }
 
+    val title = stringResource(uiState.titleRes)
+    val searchFieldFocus = remember { FocusRequester() }
+    ControllerKeyboardSession(
+        open = uiState.isSearchActive && uiState.isSearchKeyboardOpen,
+        label = stringResource(R.string.collections_browser_search_placeholder, title),
+        text = uiState.searchQuery,
+        onTextChange = { viewModel.setSearchQuery(it) },
+        onSubmit = { viewModel.closeSearchKeyboard() },
+        onClose = { viewModel.closeSearchKeyboard() },
+        submitLabel = stringResource(R.string.collections_browser_keyboard_submit),
+        onSystemKeyboard = {
+            viewModel.closeSearchKeyboard()
+            searchFieldFocus.requestFocus()
+        }
+    )
+
     Box(modifier = Modifier.fillMaxSize()) {
-        val title = stringResource(uiState.titleRes)
         Column(modifier = Modifier.fillMaxSize()) {
             VirtualBrowserHeader(
                 title = title,
                 categoryCount = uiState.categories.size,
                 isSearchActive = uiState.isSearchActive,
                 searchQuery = uiState.searchQuery,
+                searchFieldFocus = searchFieldFocus,
+                isSearchStopFocused = uiState.isSearchStopFocused,
                 onBack = { if (uiState.isSearchActive) viewModel.closeSearch() else onBack() },
                 onSearchOpen = { viewModel.openSearch() },
                 onSearchChange = { viewModel.setSearchQuery(it) },
+                onSearchFieldFocused = { viewModel.closeSearchKeyboard() },
                 onSearchClose = { viewModel.closeSearch() }
             )
 
@@ -160,7 +177,7 @@ fun VirtualBrowserScreen(
                             itemsIndexed(uiState.categories, key = { _, c -> c.name }) { index, category ->
                                 CategoryRow(
                                     category = category,
-                                    isFocused = uiState.focusedIndex == index,
+                                    isFocused = !uiState.isSearchStopFocused && uiState.focusedIndex == index,
                                     isPinned = category.name in uiState.pinnedCategories,
                                     onClick = { onCategoryClick(category.name) }
                                 )
@@ -263,9 +280,12 @@ private fun VirtualBrowserHeader(
     categoryCount: Int,
     isSearchActive: Boolean,
     searchQuery: String,
+    searchFieldFocus: FocusRequester,
+    isSearchStopFocused: Boolean,
     onBack: () -> Unit,
     onSearchOpen: () -> Unit,
     onSearchChange: (String) -> Unit,
+    onSearchFieldFocused: () -> Unit,
     onSearchClose: () -> Unit
 ) {
     Row(
@@ -285,20 +305,15 @@ private fun VirtualBrowserHeader(
         Spacer(modifier = Modifier.width(Dimens.spacingSm))
 
         if (isSearchActive) {
-            val focusRequester = remember { FocusRequester() }
-            LaunchedEffect(Unit) { focusRequester.requestFocus() }
-            TextField(
-                value = searchQuery,
-                onValueChange = onSearchChange,
-                modifier = Modifier
-                    .weight(1f)
-                    .focusRequester(focusRequester),
-                placeholder = { Text(stringResource(R.string.collections_browser_search_placeholder, title)) },
-                singleLine = true,
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
+            CollectionSearchField(
+                query = searchQuery,
+                placeholder = stringResource(R.string.collections_browser_search_placeholder, title),
+                isFocused = isSearchStopFocused,
+                focusRequester = searchFieldFocus,
+                onQueryChange = onSearchChange,
+                onFieldFocused = onSearchFieldFocused,
+                onTap = onSearchOpen,
+                modifier = Modifier.weight(1f)
             )
             IconButton(onClick = onSearchClose) {
                 Icon(
@@ -320,13 +335,11 @@ private fun VirtualBrowserHeader(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            IconButton(onClick = onSearchOpen) {
-                Icon(
-                    Icons.Default.Search,
-                    contentDescription = stringResource(R.string.collections_browser_search_description),
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
-            }
+            CollectionSearchButton(
+                isFocused = isSearchStopFocused,
+                contentDescription = stringResource(R.string.collections_browser_search_description),
+                onClick = onSearchOpen
+            )
         }
     }
 }

@@ -50,6 +50,7 @@
     <string name="library_filter_title">गेम फ़िल्टर करें</string>
     <string name="library_filter_active_summary">सक्रिय: %1$s</string>
     <string name="library_filter_search_placeholder">खोजने के लिए टाइप करें...</string>
+    <string name="library_filter_keyboard_submit">खोजें</string>
     <string name="library_filter_recent_searches">हाल की खोजें</string>
 
     <string name="library_filter_category_sort">सॉर्ट</string>
@@ -66,7 +67,6 @@
     <string name="library_filter_category_series">सीरीज़</string>
 
     <string name="library_filter_hint_clear">साफ़ करें</string>
-    <string name="library_filter_hint_type">टाइप करें</string>
     <string name="library_filter_hint_close_search">बंद करें</string>
     <string name="library_filter_hint_reset">रीसेट</string>
     <string name="library_filter_hint_toggle">टॉगल</string>
@@ -156,6 +156,7 @@
 
     <string name="library_search_placeholder_games_and_media">गेम और मीडिया खोजें...</string>
     <string name="library_search_placeholder_games">गेम खोजें...</string>
+    <string name="library_search_keyboard_submit">खोजें</string>
     <plurals name="library_search_min_query_hint">
         <item quantity="one">खोजने के लिए कम से कम %d अक्षर टाइप करें</item>
         <item quantity="other">खोजने के लिए कम से कम %d अक्षर टाइप करें</item>

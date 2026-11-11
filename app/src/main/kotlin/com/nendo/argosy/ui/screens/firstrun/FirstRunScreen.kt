@@ -106,6 +106,11 @@ import com.nendo.argosy.ui.common.rememberStorageAccessRequest
 import com.nendo.argosy.ui.components.PermissionCard
 import com.nendo.argosy.ui.components.PlatformFilterHeader
 import com.nendo.argosy.ui.components.SwitchPreference
+import com.nendo.argosy.ui.components.keyboard.ControllerKeyboardSession
+import com.nendo.argosy.ui.components.keyboard.ControllerKeyboardTapTarget
+import com.nendo.argosy.ui.components.keyboard.KeyboardFieldType
+import com.nendo.argosy.ui.screens.settings.components.PAIRING_CODE_LENGTH
+import com.nendo.argosy.ui.screens.settings.components.pairingCodeFilter
 import com.nendo.argosy.ui.filebrowser.FileBrowserMode
 import com.nendo.argosy.ui.filebrowser.FileBrowserScreen
 import com.nendo.argosy.ui.filebrowser.FileFilter
@@ -119,6 +124,9 @@ import com.nendo.argosy.ui.theme.MotionTier
 import com.nendo.argosy.ui.theme.generated.MotionTokens
 import com.nendo.argosy.util.PlatformFilterLogic
 import kotlinx.coroutines.delay
+
+private const val ROMM_URL_FOCUS_FIELD = 0
+private const val ROMM_PAIRING_CODE_FOCUS_FIELD = 2
 
 @Composable
 fun FirstRunScreen(
@@ -277,6 +285,7 @@ fun FirstRunScreen(
                     onUseManualCode = { viewModel.useManualPairingCode() },
                     onUseDevicePairing = { viewModel.useDevicePairing() },
                     onBack = { viewModel.previousStep() },
+                    onFieldTap = { viewModel.setFocusedIndex(0) },
                     onClearFocusField = { viewModel.clearRommFocusField() }
                 )
                 FirstRunStep.ROMM_SUCCESS -> RommSuccessStep(
@@ -501,6 +510,7 @@ private fun RommLoginStep(
     onUseManualCode: () -> Unit,
     onUseDevicePairing: () -> Unit,
     onBack: () -> Unit,
+    onFieldTap: () -> Unit,
     onClearFocusField: () -> Unit
 ) {
     if (devicePairing) {
@@ -552,15 +562,49 @@ private fun RommLoginStep(
         }
     }
 
+    var keyboardField by remember { mutableStateOf<Int?>(null) }
+
     LaunchedEffect(rommFocusField) {
         when (rommFocusField) {
-            0 -> urlFocusRequester.requestFocus()
-            2 -> pairingCodeFocusRequester.requestFocus()
+            ROMM_URL_FOCUS_FIELD, ROMM_PAIRING_CODE_FOCUS_FIELD -> keyboardField = rommFocusField
         }
         if (rommFocusField != null) {
             onClearFocusField()
         }
     }
+
+    val canContinue = !isConnecting && url.isNotBlank()
+    val canConnect = !isConnecting && codeComplete
+    val commitUrlFromKeyboard = {
+        keyboardField = null
+        if (canContinue) onCommitUrl()
+    }
+    ControllerKeyboardSession(
+        open = !urlCommitted && keyboardField == ROMM_URL_FOCUS_FIELD,
+        label = stringResource(R.string.firstrun_romm_url_field_label),
+        text = url,
+        onTextChange = { onUrlChange(it.trim()) },
+        onSubmit = commitUrlFromKeyboard,
+        onClose = commitUrlFromKeyboard,
+        submitLabel = stringResource(R.string.firstrun_romm_url_keyboard_submit),
+        placeholder = stringResource(R.string.firstrun_romm_url_field_placeholder),
+        fieldType = KeyboardFieldType.URI,
+        canSubmit = canContinue
+    )
+    ControllerKeyboardSession(
+        open = urlCommitted && keyboardField == ROMM_PAIRING_CODE_FOCUS_FIELD,
+        label = stringResource(R.string.firstrun_pairing_code_title),
+        text = pairingCode,
+        onTextChange = { raw -> pairingCodeFilter(raw)?.let(onPairingCodeChange) },
+        onSubmit = {
+            keyboardField = null
+            if (canConnect) onConnect()
+        },
+        onClose = { keyboardField = null },
+        submitLabel = stringResource(R.string.firstrun_pairing_code_keyboard_submit),
+        maxLength = PAIRING_CODE_LENGTH,
+        canSubmit = canConnect
+    )
 
     if (!urlCommitted) {
         LaunchedEffect(focusedIndex) {
@@ -574,7 +618,6 @@ private fun RommLoginStep(
         } else {
             stringResource(R.string.firstrun_romm_url_button_continue)
         }
-        val canContinue = !isConnecting && url.isNotBlank()
         StepColumn(verticalArrangement = Arrangement.Center) {
             AnimatedVisibility(visible = !compact, enter = roomEnter, exit = roomExit) {
                 Column(
@@ -597,46 +640,55 @@ private fun RommLoginStep(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth(fieldWidthFraction)
                 ) {
-                    OutlinedTextField(
-                        value = url,
-                        onValueChange = { onUrlChange(it.trim()) },
-                        label = { Text(stringResource(R.string.firstrun_romm_url_field_label)) },
-                        placeholder = {
-                            Text(
-                                text = stringResource(R.string.firstrun_romm_url_field_placeholder),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
+                    ControllerKeyboardTapTarget(
+                        onTap = {
+                            onFieldTap()
+                            keyboardField = ROMM_URL_FOCUS_FIELD
                         },
-                        singleLine = true,
-                        shape = inputShape,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Go),
-                        keyboardActions = KeyboardActions(
-                            onGo = {
-                                if (canContinue) {
-                                    keyboard?.hide()
-                                    focusManager.clearFocus()
-                                    onCommitUrl()
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        OutlinedTextField(
+                            value = url,
+                            onValueChange = { onUrlChange(it.trim()) },
+                            label = { Text(stringResource(R.string.firstrun_romm_url_field_label)) },
+                            placeholder = {
+                                Text(
+                                    text = stringResource(R.string.firstrun_romm_url_field_placeholder),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            },
+                            singleLine = true,
+                            shape = inputShape,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Go),
+                            keyboardActions = KeyboardActions(
+                                onGo = {
+                                    if (canContinue) {
+                                        keyboard?.hide()
+                                        focusManager.clearFocus()
+                                        onCommitUrl()
+                                    }
                                 }
-                            }
-                        ),
-                        modifier = Modifier
-                            .weight(1f)
-                            .focusRequester(urlFocusRequester)
-                            .onFocusChanged { fs ->
-                                if (wasUrlFocused && !fs.isFocused && url.isNotBlank()) {
-                                    onCommitUrl()
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .focusRequester(urlFocusRequester)
+                                .onFocusChanged { fs ->
+                                    if (fs.isFocused) keyboardField = null
+                                    if (wasUrlFocused && !fs.isFocused && url.isNotBlank()) {
+                                        onCommitUrl()
+                                    }
+                                    wasUrlFocused = fs.isFocused
                                 }
-                                wasUrlFocused = fs.isFocused
-                            }
-                            .then(
-                                if (focusedIndex == 0)
-                                    Modifier
-                                        .border(Dimens.borderMedium, MaterialTheme.colorScheme.primary, inputShape)
-                                        .background(LocalArgosyTheme.current.focusAccent.copy(alpha = 0.15f), inputShape)
-                                else Modifier
-                            )
-                    )
+                                .then(
+                                    if (focusedIndex == 0)
+                                        Modifier
+                                            .border(Dimens.borderMedium, MaterialTheme.colorScheme.primary, inputShape)
+                                            .background(LocalArgosyTheme.current.focusAccent.copy(alpha = 0.15f), inputShape)
+                                    else Modifier
+                                )
+                        )
+                    }
                     AnimatedVisibility(
                         visible = compact,
                         enter = roomEnterSide,
@@ -721,13 +773,13 @@ private fun RommLoginStep(
 
     LaunchedEffect(codeComplete) {
         if (codeComplete) {
+            keyboardField = null
             keyboard?.hide()
             focusManager.clearFocus()
             onCodeComplete()
         }
     }
 
-    val canConnect = !isConnecting && codeComplete
     StepColumn(verticalArrangement = Arrangement.Center) {
         AnimatedVisibility(visible = !compact, enter = roomEnter, exit = roomExit) {
             Column(
@@ -773,11 +825,16 @@ private fun RommLoginStep(
                     onCodeChange = onPairingCodeChange,
                     isFocused = focusedIndex == 0,
                     focusRequester = pairingCodeFocusRequester,
+                    onTap = {
+                        onFieldTap()
+                        keyboardField = ROMM_PAIRING_CODE_FOCUS_FIELD
+                    },
                     onImeAction = {
                         if (canConnect) {
                             onConnect()
                         }
-                    }
+                    },
+                    onInputFocused = { keyboardField = null }
                 )
                 if (pairingCode.isNotEmpty()) {
                     IconButton(

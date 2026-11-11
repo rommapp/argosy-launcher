@@ -42,7 +42,6 @@
     <string name="quaypass_greeting_modal_footer_cancel">Abbrechen</string>
     <string name="quaypass_greeting_modal_description">Wird Reisenden gezeigt, die Sie beim Check-In treffen.</string>
     <string name="quaypass_greeting_modal_placeholder">Hallo!</string>
-
     <string name="doodle_tool_selector_pen_description">Stift</string>
     <string name="doodle_tool_selector_line_description">Linie</string>
     <string name="doodle_tool_selector_fill_description">Füllen</string>

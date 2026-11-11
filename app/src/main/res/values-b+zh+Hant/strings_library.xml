@@ -44,6 +44,7 @@
     <string name="library_filter_title">篩選遊戲</string>
     <string name="library_filter_active_summary">已套用：%1$s</string>
     <string name="library_filter_search_placeholder">輸入以搜尋...</string>
+    <string name="library_filter_keyboard_submit">搜尋</string>
     <string name="library_filter_recent_searches">最近搜尋</string>
 
     <string name="library_filter_category_sort">排序</string>
@@ -60,7 +61,6 @@
     <string name="library_filter_category_series">系列</string>
 
     <string name="library_filter_hint_clear">清除</string>
-    <string name="library_filter_hint_type">輸入</string>
     <string name="library_filter_hint_close_search">關閉</string>
     <string name="library_filter_hint_reset">重設</string>
     <string name="library_filter_hint_toggle">切換</string>
@@ -148,6 +148,7 @@
 
     <string name="library_search_placeholder_games_and_media">搜尋遊戲與媒體...</string>
     <string name="library_search_placeholder_games">搜尋遊戲...</string>
+    <string name="library_search_keyboard_submit">搜尋</string>
     <plurals name="library_search_min_query_hint">
         <item quantity="other">請至少輸入%d個字元進行搜尋</item>
     </plurals>

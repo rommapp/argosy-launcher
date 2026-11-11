@@ -61,7 +61,7 @@ internal fun CollectionNameDialog(
 
                 override fun onConfirm(): InputResult {
                     when {
-                        focus.row == TextEntryRow.FIELD -> focus = focus.copy(row = TextEntryRow.BUTTONS)
+                        focus.row == TextEntryRow.FIELD -> focus = focus.requestKeyboard()
                         focus.buttonIndex == TEXT_ENTRY_CANCEL_BUTTON -> currentOnDismiss()
                         else -> currentSubmit()
                     }

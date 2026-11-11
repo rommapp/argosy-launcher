@@ -35,6 +35,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.compositeOver
@@ -44,6 +47,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.animateScrollToItemCentered
+import com.nendo.argosy.ui.components.keyboard.ControllerKeyboardTapTarget
 import com.nendo.argosy.ui.quickmenu.GameRowUi
 import com.nendo.argosy.ui.quickmenu.QuickMenuOrb
 import com.nendo.argosy.ui.quickmenu.QuickMenuUiState
@@ -55,6 +59,9 @@ fun QuickMenuContent(
     uiState: QuickMenuUiState,
     isFocused: Boolean,
     onSearchQueryChange: (String) -> Unit,
+    searchFieldFocus: FocusRequester,
+    onSearchFieldFocused: () -> Unit,
+    onSearchFieldTap: () -> Unit,
     onGameSelect: (Long) -> Unit,
     onRecentSearchSelect: (String) -> Unit,
     onRandomPlay: (Long) -> Unit,
@@ -81,6 +88,9 @@ fun QuickMenuContent(
                 isInputFocused = isFocused && uiState.searchInputFocused,
                 isListFocused = isFocused && !uiState.searchInputFocused,
                 onQueryChange = onSearchQueryChange,
+                searchFieldFocus = searchFieldFocus,
+                onSearchFieldFocused = onSearchFieldFocused,
+                onSearchFieldTap = onSearchFieldTap,
                 onGameSelect = onGameSelect,
                 onRecentSearchSelect = onRecentSearchSelect
             )
@@ -134,6 +144,9 @@ private fun SearchContent(
     isInputFocused: Boolean,
     isListFocused: Boolean,
     onQueryChange: (String) -> Unit,
+    searchFieldFocus: FocusRequester,
+    onSearchFieldFocused: () -> Unit,
+    onSearchFieldTap: () -> Unit,
     onGameSelect: (Long) -> Unit,
     onRecentSearchSelect: (String) -> Unit,
     modifier: Modifier = Modifier
@@ -144,46 +157,51 @@ private fun SearchContent(
     } else Modifier
 
     Column(modifier = modifier.fillMaxSize()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .then(inputBorderModifier)
-                .background(
-                    if (isInputFocused) LocalArgosyTheme.current.focusAccent.copy(alpha = 0.15f)
-                        .compositeOver(MaterialTheme.colorScheme.surface)
-                    else MaterialTheme.colorScheme.surfaceVariant,
-                    inputShape
+        ControllerKeyboardTapTarget(onTap = onSearchFieldTap, modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(inputBorderModifier)
+                    .background(
+                        if (isInputFocused) LocalArgosyTheme.current.focusAccent.copy(alpha = 0.15f)
+                            .compositeOver(MaterialTheme.colorScheme.surface)
+                        else MaterialTheme.colorScheme.surfaceVariant,
+                        inputShape
+                    )
+                    .padding(horizontal = Dimens.spacingMd, vertical = Dimens.radiusLg),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Default.Search,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(Dimens.iconSm + Dimens.borderMedium)
                 )
-                .padding(horizontal = Dimens.spacingMd, vertical = Dimens.radiusLg),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                Icons.Default.Search,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(Dimens.iconSm + Dimens.borderMedium)
-            )
-            Spacer(modifier = Modifier.width(Dimens.radiusLg))
+                Spacer(modifier = Modifier.width(Dimens.radiusLg))
 
-            Box(modifier = Modifier.weight(1f)) {
-                if (query.isEmpty()) {
-                    Text(
-                        text = stringResource(R.string.ui_quick_menu_search_placeholder),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                Box(modifier = Modifier.weight(1f)) {
+                    if (query.isEmpty()) {
+                        Text(
+                            text = stringResource(R.string.ui_quick_menu_search_placeholder),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                        )
+                    }
+                    BasicTextField(
+                        value = query,
+                        onValueChange = onQueryChange,
+                        textStyle = TextStyle(
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontSize = MaterialTheme.typography.bodyLarge.fontSize
+                        ),
+                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                        singleLine = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .focusRequester(searchFieldFocus)
+                            .onFocusChanged { if (it.isFocused) onSearchFieldFocused() }
                     )
                 }
-                BasicTextField(
-                    value = query,
-                    onValueChange = onQueryChange,
-                    textStyle = TextStyle(
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = MaterialTheme.typography.bodyLarge.fontSize
-                    ),
-                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
             }
         }
 

@@ -56,6 +56,7 @@
     <string name="library_filter_title">FILTRAR JOGOS</string>
     <string name="library_filter_active_summary">Ativos: %1$s</string>
     <string name="library_filter_search_placeholder">Digite para buscar...</string>
+    <string name="library_filter_keyboard_submit">Buscar</string>
     <string name="library_filter_recent_searches">Buscas recentes</string>
 
     <string name="library_filter_category_sort">Ordenar</string>
@@ -72,7 +73,6 @@
     <string name="library_filter_category_series">Séries</string>
 
     <string name="library_filter_hint_clear">Limpar</string>
-    <string name="library_filter_hint_type">Digitar</string>
     <string name="library_filter_hint_close_search">Fechar</string>
     <string name="library_filter_hint_reset">Redefinir</string>
     <string name="library_filter_hint_toggle">Alternar</string>
@@ -164,6 +164,7 @@
 
     <string name="library_search_placeholder_games_and_media">Buscar jogos e mídia...</string>
     <string name="library_search_placeholder_games">Buscar jogos...</string>
+    <string name="library_search_keyboard_submit">Buscar</string>
     <plurals name="library_search_min_query_hint">
         <item quantity="one">Digite pelo menos %d caractere para buscar</item>
         <item quantity="many">Digite pelo menos %d caracteres para buscar</item>

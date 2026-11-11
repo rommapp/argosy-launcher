@@ -1575,7 +1575,9 @@ class HomeViewModel @Inject constructor(
 
     fun setTilePickerQuery(query: String) = customGrid.setPickerQuery(query)
 
-    override fun toggleTilePickerSearch() = customGrid.togglePickerSearch()
+    override fun openTilePickerSearch() = customGrid.openPickerSearch()
+
+    fun closeTilePickerKeyboard() = customGrid.closePickerKeyboard()
 
     override fun moveTilePickerFocus(delta: Int) = customGrid.movePickerFocus(delta)
 
@@ -1894,6 +1896,12 @@ class HomeViewModel @Inject constructor(
     }
 
     fun setPageChooserQuery(query: String) = customGrid.setPageChooserQuery(query)
+
+    fun focusPageChooserEntry(index: Int) = customGrid.focusPageChooserEntry(index)
+
+    fun openPageChooserKeyboard() = customGrid.openPageChooserKeyboard()
+
+    fun closePageChooserKeyboard() = customGrid.closePageChooserKeyboard()
 
     fun closePageChooser() = customGrid.closePageChooser()
 

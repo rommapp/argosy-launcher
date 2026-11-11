@@ -20,6 +20,8 @@
     <string name="firstrun_pairing_code_hint">Erstellen Sie einen API-Token in der RomM-Weboberfläche und geben Sie dann den 8-stelligen Code ein.</string>
     <string name="firstrun_pairing_code_clear_description">Code löschen</string>
     <string name="firstrun_pairing_code_button_connect">Verbinden</string>
+    <string name="firstrun_pairing_code_keyboard_submit">Verbinden</string>
+    <string name="firstrun_romm_url_keyboard_submit">Weiter</string>
     <string name="firstrun_pairing_code_button_connecting">Wird verbunden...</string>
     <string name="firstrun_pairing_code_button_edit_url">URL bearbeiten</string>
     <string name="firstrun_pairing_code_button_scan">QR-Code scannen</string>

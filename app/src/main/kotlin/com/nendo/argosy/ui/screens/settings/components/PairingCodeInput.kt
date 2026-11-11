@@ -34,22 +34,22 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.nendo.argosy.ui.components.keyboard.ControllerKeyboardTapTarget
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
-import com.nendo.argosy.ui.util.clickableNoFocus
+import com.nendo.argosy.ui.theme.generated.ComponentDefaults
 
-private const val CODE_LENGTH = 8
+internal const val PAIRING_CODE_LENGTH = 8
 private const val GROUP_SIZE = 4
 
 fun pairingCodeFilter(raw: String): String? {
     val filtered = raw.uppercase().filter { it.isLetterOrDigit() }
-    return filtered.takeIf { it.length <= CODE_LENGTH }
+    return filtered.takeIf { it.length <= PAIRING_CODE_LENGTH }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -59,12 +59,13 @@ fun PairingCodeInput(
     onCodeChange: (String) -> Unit,
     isFocused: Boolean,
     focusRequester: FocusRequester,
+    onTap: () -> Unit,
     modifier: Modifier = Modifier,
-    onImeAction: (() -> Unit)? = null
+    onImeAction: (() -> Unit)? = null,
+    onInputFocused: () -> Unit = {}
 ) {
     val shape = RoundedCornerShape(Dimens.radiusSm)
     val focusAccent = LocalArgosyTheme.current.focusAccent
-    val keyboard = LocalSoftwareKeyboardController.current
     val bringIntoViewRequester = remember { BringIntoViewRequester() }
     var hasInputFocus by remember { mutableStateOf(false) }
     val imeBottom = WindowInsets.ime.getBottom(LocalDensity.current)
@@ -90,67 +91,71 @@ fun PairingCodeInput(
         }
     }
 
-    BasicTextField(
-        value = code,
-        onValueChange = { newValue ->
-            pairingCodeFilter(newValue)?.let(onCodeChange)
-        },
-        keyboardOptions = KeyboardOptions(
-            keyboardType = KeyboardType.Text,
-            capitalization = KeyboardCapitalization.Characters,
-            imeAction = if (onImeAction != null) ImeAction.Go else ImeAction.Default
-        ),
-        keyboardActions = KeyboardActions(onGo = { onImeAction?.invoke() }),
-        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-        modifier = modifier
-            .bringIntoViewRequester(bringIntoViewRequester)
-            .focusRequester(focusRequester)
-            .onFocusChanged { hasInputFocus = it.isFocused },
-        decorationBox = {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs),
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.clickableNoFocus {
-                    focusRequester.requestFocus()
-                    keyboard?.show()
-                }
-            ) {
-                for (i in 0 until CODE_LENGTH) {
-                    if (i == GROUP_SIZE) {
-                        Text(
-                            text = "-",
-                            style = MaterialTheme.typography.headlineSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    val char = code.getOrNull(i)
-                    val isCurrentSlot = i == code.length && isFocused
-                    val slotBorder = if (isCurrentSlot) {
-                        focusAccent
-                    } else {
-                        borderColor
-                    }
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .size(width = 36.dp, height = 44.dp)
-                            .clip(shape)
-                            .background(if (char != null) filledColor else MaterialTheme.colorScheme.surface)
-                            .border(
-                                width = if (isCurrentSlot) Dimens.borderMedium else Dimens.borderThin,
-                                color = slotBorder,
-                                shape = shape
+    ControllerKeyboardTapTarget(onTap = onTap, modifier = modifier) {
+        BasicTextField(
+            value = code,
+            onValueChange = { newValue ->
+                pairingCodeFilter(newValue)?.let(onCodeChange)
+            },
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Text,
+                capitalization = KeyboardCapitalization.Characters,
+                imeAction = if (onImeAction != null) ImeAction.Go else ImeAction.Default
+            ),
+            keyboardActions = KeyboardActions(onGo = { onImeAction?.invoke() }),
+            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+            modifier = Modifier
+                .bringIntoViewRequester(bringIntoViewRequester)
+                .focusRequester(focusRequester)
+                .onFocusChanged {
+                    hasInputFocus = it.isFocused
+                    if (it.isFocused) onInputFocused()
+                },
+            decorationBox = {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(Dimens.spacingXs),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    for (i in 0 until PAIRING_CODE_LENGTH) {
+                        if (i == GROUP_SIZE) {
+                            Text(
+                                text = "-",
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                    ) {
-                        Text(
-                            text = char?.toString() ?: "",
-                            style = MaterialTheme.typography.titleLarge,
-                            color = textColor,
-                            textAlign = TextAlign.Center
-                        )
+                        }
+                        val char = code.getOrNull(i)
+                        val isCurrentSlot = i == code.length && isFocused
+                        val slotBorder = if (isCurrentSlot) {
+                            focusAccent
+                        } else {
+                            borderColor
+                        }
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(
+                                    width = ComponentDefaults.PairingCode.cellWidthDp.dp,
+                                    height = ComponentDefaults.PairingCode.cellHeightDp.dp
+                                )
+                                .clip(shape)
+                                .background(if (char != null) filledColor else MaterialTheme.colorScheme.surface)
+                                .border(
+                                    width = if (isCurrentSlot) Dimens.borderMedium else Dimens.borderThin,
+                                    color = slotBorder,
+                                    shape = shape
+                                )
+                        ) {
+                            Text(
+                                text = char?.toString() ?: "",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = textColor,
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 }
             }
-        }
-    )
+        )
+    }
 }

@@ -68,7 +68,11 @@ fun ArtPickerModal(
     errorMessage: String?,
     canSearch: Boolean,
     query: String,
+    searchFocused: Boolean,
+    keyboardOpen: Boolean,
     onQueryChange: (String) -> Unit,
+    onOpenKeyboard: () -> Unit,
+    onCloseKeyboard: () -> Unit,
     onSearch: () -> Unit,
     onChooseFile: () -> Unit,
     onSelect: (ArtCandidate) -> Unit,
@@ -116,8 +120,11 @@ fun ArtPickerModal(
             ModalSearchField(
                 query = query,
                 onQueryChange = onQueryChange,
+                keyboardOpen = keyboardOpen,
+                onOpenKeyboard = onOpenKeyboard,
+                onCloseKeyboard = onCloseKeyboard,
+                focused = searchFocused,
                 placeholder = stringResource(R.string.gamedetail_art_picker_search_placeholder),
-                autoFocus = false,
                 onSearch = onSearch,
                 modifier = Modifier.padding(bottom = Dimens.spacingSm)
             )
@@ -130,6 +137,7 @@ fun ArtPickerModal(
                 } else {
                     stringResource(R.string.gamedetail_art_picker_search_unavailable)
                 },
+                isFocused = !searchFocused,
                 onChooseFile = onChooseFile
             )
             else -> {
@@ -153,7 +161,7 @@ fun ArtPickerModal(
                             candidate = candidate,
                             slot = slot,
                             config = config,
-                            isFocused = index == focusIndex,
+                            isFocused = !searchFocused && index == focusIndex,
                             onClick = { onSelect(candidate) }
                         )
                     }
@@ -345,7 +353,7 @@ private fun LoadingState() {
 }
 
 @Composable
-private fun ChooseFileState(message: String, onChooseFile: () -> Unit) {
+private fun ChooseFileState(message: String, isFocused: Boolean, onChooseFile: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -363,7 +371,7 @@ private fun ChooseFileState(message: String, onChooseFile: () -> Unit) {
         OptionItem(
             icon = Icons.Default.FolderOpen,
             label = stringResource(R.string.gamedetail_art_picker_choose_file),
-            isFocused = true,
+            isFocused = isFocused,
             onClick = onChooseFile
         )
     }

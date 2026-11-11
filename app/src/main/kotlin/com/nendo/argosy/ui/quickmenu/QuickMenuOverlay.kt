@@ -20,12 +20,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.res.stringResource
+import com.nendo.argosy.R
 import com.nendo.argosy.ui.components.FooterHints
+import com.nendo.argosy.ui.components.keyboard.ControllerKeyboardSession
 import com.nendo.argosy.ui.quickmenu.components.QuickMenuContent
 import com.nendo.argosy.ui.quickmenu.components.QuickMenuOrbRow
 import com.nendo.argosy.ui.theme.Dimens
@@ -65,6 +70,22 @@ fun QuickMenuOverlay(
     if (uiState.isVisible) {
         FooterHints(hints = emptyList())
     }
+
+    val searchFieldFocus = remember { FocusRequester() }
+    ControllerKeyboardSession(
+        open = uiState.isVisible && uiState.contentFocused &&
+            uiState.selectedOrb == QuickMenuOrb.SEARCH && uiState.searchKeyboardOpen,
+        label = stringResource(R.string.ui_quick_menu_search_placeholder),
+        text = uiState.searchQuery,
+        onTextChange = viewModel::updateSearchQuery,
+        onSubmit = viewModel::closeSearchKeyboard,
+        onClose = viewModel::closeSearchKeyboard,
+        submitLabel = stringResource(R.string.ui_quick_menu_search_keyboard_submit),
+        onSystemKeyboard = {
+            viewModel.closeSearchKeyboard()
+            searchFieldFocus.requestFocus()
+        }
+    )
 
     AnimatedVisibility(
         visible = uiState.isVisible,
@@ -126,6 +147,9 @@ fun QuickMenuOverlay(
                     uiState = uiState,
                     isFocused = uiState.contentFocused,
                     onSearchQueryChange = viewModel::updateSearchQuery,
+                    searchFieldFocus = searchFieldFocus,
+                    onSearchFieldFocused = viewModel::closeSearchKeyboard,
+                    onSearchFieldTap = viewModel::openSearchKeyboard,
                     onGameSelect = { gameId ->
                         viewModel.saveSearchQuery()
                         viewModel.hide()

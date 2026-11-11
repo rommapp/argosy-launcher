@@ -54,6 +54,12 @@ object InputIcons {
     val RightStickVertical: Painter
         @Composable get() = painterResource(R.drawable.ic_input_right_stick_vertical)
 
+    val LeftStickPress: Painter
+        @Composable get() = painterResource(R.drawable.ic_input_left_stick_press)
+
+    val RightStickPress: Painter
+        @Composable get() = painterResource(R.drawable.ic_input_right_stick_press)
+
     val Menu: Painter
         @Composable get() = painterResource(R.drawable.ic_input_menu)
 

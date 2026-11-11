@@ -43,6 +43,9 @@
     <string name="firstrun_romm_url_hint">Enter your RomM server address, with or without https://, and we\'ll detect how to sign in.</string>
     <!-- Button that submits the typed server address. Verb, imperative. -->
     <string name="firstrun_romm_url_button_continue">Continue</string>
+    <!-- Enter key of the on-screen controller keyboard while typing the server address. Verb,
+         imperative: submit the address. -->
+    <string name="firstrun_romm_url_keyboard_submit">Continue</string>
     <!-- Label the same button takes on while the app is contacting the server to see which
          sign-in methods it offers. Present-progressive verb. -->
     <string name="firstrun_romm_url_button_checking">Checking...</string>
@@ -76,6 +79,9 @@
     <string name="firstrun_pairing_code_clear_description">Clear code</string>
     <!-- Button that sends the typed pairing code to the server. Verb, imperative. -->
     <string name="firstrun_pairing_code_button_connect">Connect</string>
+    <!-- Enter key of the on-screen controller keyboard while typing the pairing code. Verb,
+         imperative: send the code to the server. -->
+    <string name="firstrun_pairing_code_keyboard_submit">Connect</string>
     <!-- Label the same button takes on while the code is being checked. Present-progressive. -->
     <string name="firstrun_pairing_code_button_connecting">Connecting...</string>
     <!-- Button that goes back to the server address field to change it. Verb phrase. -->

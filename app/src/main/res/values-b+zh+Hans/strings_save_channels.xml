@@ -64,8 +64,7 @@
     <string name="save_channels_label_title_new">新建通道</string>
     <string name="save_channels_label_title_rename">重命名</string>
     <string name="save_channels_label_title_fork">派生</string>
-    <string name="save_channels_label_field_placeholder">名称</string>
-    <string name="save_channels_label_cancel">取消</string>
+    <string name="save_channels_label_field_placeholder">名称</string>    <string name="save_channels_label_cancel">取消</string>
     <string name="save_channels_label_confirm_new">创建</string>
     <string name="save_channels_label_confirm_rename">重命名</string>
     <string name="save_channels_label_confirm_fork">派生</string>

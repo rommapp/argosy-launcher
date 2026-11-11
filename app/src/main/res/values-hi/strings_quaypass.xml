@@ -46,7 +46,6 @@
     <string name="quaypass_greeting_modal_footer_cancel">रद्द करें</string>
     <string name="quaypass_greeting_modal_description">चेक-इन पर मिलने वाले यात्रियों को दिखाया जाएगा।</string>
     <string name="quaypass_greeting_modal_placeholder">नमस्ते!</string>
-
     <!-- ================================== Doodle editor ================================== -->
 
     <string name="doodle_tool_selector_pen_description">पेन</string>

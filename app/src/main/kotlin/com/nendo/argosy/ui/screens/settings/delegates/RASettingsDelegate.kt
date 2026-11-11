@@ -225,13 +225,13 @@ class RASettingsDelegate @Inject constructor(
     }
 
     /**
-     * The A press inside the editor: on the field it moves to the buttons, on a button it runs it.
+     * The A press inside the editor: on the field it reopens the keyboard, on a button it runs it.
      */
     fun confirmWebApiKeyEditor(scope: CoroutineScope, onSaved: () -> Unit, onCleared: () -> Unit) {
         val editor = _state.value.webApiKeyEditor ?: return
         val action = editor.focusedAction
         if (action == null) {
-            moveWebApiKeyRow(TextEntryRow.BUTTONS)
+            updateEditor { it.copy(keyboardRequest = it.keyboardRequest + 1) }
             return
         }
         runWebApiKeyAction(scope, action, onSaved, onCleared)

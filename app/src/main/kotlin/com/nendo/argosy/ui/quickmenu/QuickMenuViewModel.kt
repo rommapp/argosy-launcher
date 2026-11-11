@@ -75,6 +75,7 @@ data class QuickMenuUiState(
     val searchResults: List<GameRowUi> = emptyList(),
     val recentSearches: List<String> = emptyList(),
     val searchInputFocused: Boolean = true,
+    val searchKeyboardOpen: Boolean = false,
     val randomGame: GameCardUi? = null,
     val isRandomResolved: Boolean = false,
     val mostPlayedGames: List<GameRowUi> = emptyList(),
@@ -127,7 +128,7 @@ class QuickMenuViewModel @Inject constructor(
     }
 
     fun hide() {
-        _uiState.update { it.copy(isVisible = false) }
+        _uiState.update { it.copy(isVisible = false, searchKeyboardOpen = false) }
     }
 
     fun toggle() {
@@ -138,7 +139,8 @@ class QuickMenuViewModel @Inject constructor(
         _uiState.update {
             it.copy(
                 selectedOrb = orb,
-                focusedContentIndex = 0
+                focusedContentIndex = 0,
+                searchKeyboardOpen = false
             )
         }
     }
@@ -169,7 +171,20 @@ class QuickMenuViewModel @Inject constructor(
     }
 
     fun exitContent() {
-        _uiState.update { it.copy(contentFocused = false, searchInputFocused = true) }
+        _uiState.update { it.copy(contentFocused = false, searchInputFocused = true, searchKeyboardOpen = false) }
+    }
+
+    fun isOnSearchInput(): Boolean {
+        val state = _uiState.value
+        return state.selectedOrb == QuickMenuOrb.SEARCH && state.contentFocused && state.searchInputFocused
+    }
+
+    fun openSearchKeyboard() {
+        _uiState.update { it.copy(contentFocused = true, searchInputFocused = true, searchKeyboardOpen = true) }
+    }
+
+    fun closeSearchKeyboard() {
+        _uiState.update { it.copy(searchKeyboardOpen = false) }
     }
 
     fun moveContentUp() {

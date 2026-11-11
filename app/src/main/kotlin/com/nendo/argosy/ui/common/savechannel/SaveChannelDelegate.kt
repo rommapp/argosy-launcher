@@ -3,6 +3,7 @@ package com.nendo.argosy.ui.common.savechannel
 import com.nendo.argosy.data.repository.ActiveSaveRepository
 import com.nendo.argosy.data.repository.SaveSyncRepository
 import com.nendo.argosy.ui.common.savechannel.snapshot.SnapshotViewDelegate
+import com.nendo.argosy.ui.components.TextEntryRow
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.ui.screens.gamedetail.components.SaveStatusEvent
@@ -273,6 +274,12 @@ class SaveChannelDelegate @Inject constructor(
     fun updateRenameText(text: String) = savesDelegate.updateRenameText(text)
 
     fun confirmRename(scope: CoroutineScope) = savesDelegate.confirmRename(scope)
+
+    fun moveRenameRow(row: TextEntryRow) = savesDelegate.moveRenameRow(row)
+
+    fun moveRenameButton(buttonIndex: Int) = savesDelegate.moveRenameButton(buttonIndex)
+
+    fun confirmRenameFocus(scope: CoroutineScope) = savesDelegate.confirmRenameFocus(scope)
 
     fun dismissDeleteConfirmation() = savesDelegate.dismissDeleteConfirmation()
 

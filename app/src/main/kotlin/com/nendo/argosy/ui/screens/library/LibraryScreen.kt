@@ -75,7 +75,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.zIndex
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
@@ -136,6 +135,7 @@ import com.nendo.argosy.ui.components.SourceBadge
 import com.nendo.argosy.ui.screens.home.GameDownloadIndicator
 import com.nendo.argosy.ui.screens.home.HomeGameUi
 import com.nendo.argosy.ui.util.clickableNoFocus
+import com.nendo.argosy.ui.util.observeTouchDown
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -152,10 +152,12 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import com.nendo.argosy.ui.components.keyboard.ControllerKeyboardSession
+import com.nendo.argosy.ui.components.keyboard.ControllerKeyboardTapTarget
 import androidx.compose.ui.layout.onSizeChanged
 import com.nendo.argosy.data.preferences.LibraryListStyle
 import androidx.compose.ui.text.TextStyle
@@ -181,7 +183,6 @@ fun LibraryScreen(
     val initialGridIndex = remember { viewModel.gameIndexToGridIndex(uiState.focusedIndex) }
     val gridState = rememberLazyGridState(initialFirstVisibleItemIndex = initialGridIndex)
     val platformGridState = rememberLazyGridState()
-    var isProgrammaticScroll by remember { mutableStateOf(false) }
 
     LaunchedEffect(initialPlatformId) {
         if (initialPlatformId != null) {
@@ -236,12 +237,10 @@ fun LibraryScreen(
         val effectiveHeight = viewportHeight - headerHeightPx - footerHeightPx
         val centeringOffset = (effectiveHeight - itemHeight) / 2
 
-        isProgrammaticScroll = true
         gridState.animateScrollToItem(
             index = viewModel.gameIndexToGridIndex(uiState.focusedIndex),
             scrollOffset = -centeringOffset
         )
-        isProgrammaticScroll = false
     }
 
     LaunchedEffect(uiState.sectionJumpTrigger) {
@@ -259,27 +258,30 @@ fun LibraryScreen(
         val effectiveHeight = viewportHeight - headerHeightPx - footerHeightPx
         val centeringOffset = if (itemHeight > 0) (effectiveHeight - itemHeight) / 2 else 0
 
-        isProgrammaticScroll = true
         gridState.fastAnimateScrollToItem(
             index = gridIndex,
             scrollOffset = -centeringOffset
         )
-        isProgrammaticScroll = false
-    }
-
-    LaunchedEffect(gridState) {
-        snapshotFlow { gridState.isScrollInProgress }
-            .collect { isScrolling ->
-                if (isScrolling && !isProgrammaticScroll) {
-                    viewModel.enterTouchMode()
-                }
-            }
     }
 
 
     val context = LocalContext.current
     val searchFieldFocus = remember { FocusRequester() }
-    val keyboardController = LocalSoftwareKeyboardController.current
+    var searchKeyboardOpen by remember { mutableStateOf(false) }
+    ControllerKeyboardSession(
+        open = searchKeyboardOpen && uiState.showFilterMenu &&
+            uiState.currentFilterCategory == FilterCategory.SEARCH,
+        label = stringResource(R.string.library_filter_search_placeholder),
+        text = uiState.activeFilters.searchQuery,
+        onTextChange = { viewModel.updateSearchQuery(it) },
+        onSubmit = { searchKeyboardOpen = false },
+        onClose = { searchKeyboardOpen = false },
+        submitLabel = stringResource(R.string.library_filter_keyboard_submit),
+        onSystemKeyboard = {
+            searchKeyboardOpen = false
+            searchFieldFocus.requestFocus()
+        }
+    )
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
@@ -290,11 +292,7 @@ fun LibraryScreen(
                         android.util.Log.e("LibraryScreen", "Failed to start activity", e)
                     }
                 }
-                LibraryEvent.OpenSearchKeyboard -> {
-                    searchFieldFocus.requestFocus()
-                    withFrameNanos { }
-                    keyboardController?.show()
-                }
+                LibraryEvent.OpenSearchKeyboard -> searchKeyboardOpen = true
             }
         }
     }
@@ -475,7 +473,9 @@ fun LibraryScreen(
                                     ),
                                     horizontalArrangement = Arrangement.spacedBy(gridSpacing),
                                     verticalArrangement = Arrangement.spacedBy(gridSpacing),
-                                    modifier = Modifier.fillMaxSize()
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .observeTouchDown { viewModel.enterTouchMode() }
                                 ) {
                                     items(
                                         count = uiState.gridItems.size,
@@ -638,7 +638,9 @@ fun LibraryScreen(
                     viewModel.moveFilterOptionFocus(index - uiState.filterOptionIndex)
                     viewModel.confirmFilterSelection()
                 },
-                onSearchQueryChange = { viewModel.updateSearchQuery(it) }
+                onSearchQueryChange = { viewModel.updateSearchQuery(it) },
+                onSearchFieldFocused = { searchKeyboardOpen = false },
+                onSearchFieldTap = { viewModel.openFilterSearchKeyboard() }
             )
         }
 
@@ -1098,7 +1100,6 @@ private fun LibraryMasonryGrid(
     val initialIndex = remember { viewModel.gameIndexToGridIndex(uiState.focusedIndex) }
     val downloadIndicators = viewModel.downloadIndicators.collectAsState()
     val staggeredState = rememberLazyStaggeredGridState(initialFirstVisibleItemIndex = initialIndex)
-    var isProgrammaticScroll by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.currentPlatformIndex) {
         staggeredState.scrollToItem(0)
@@ -1123,12 +1124,10 @@ private fun LibraryMasonryGrid(
         val effectiveHeight = viewportHeight - headerHeightPx - footerHeightPx
         val centeringOffset = (effectiveHeight - itemHeight) / 2
 
-        isProgrammaticScroll = true
         staggeredState.animateScrollToItem(
             index = gridIndex,
             scrollOffset = -centeringOffset
         )
-        isProgrammaticScroll = false
     }
 
     LaunchedEffect(uiState.sectionJumpTrigger) {
@@ -1147,21 +1146,10 @@ private fun LibraryMasonryGrid(
         val effectiveHeight = viewportHeight - headerHeightPx - footerHeightPx
         val centeringOffset = if (itemHeight > 0) (effectiveHeight - itemHeight) / 2 else 0
 
-        isProgrammaticScroll = true
         staggeredState.fastAnimateScrollToItem(
             index = gridIndex,
             scrollOffset = -centeringOffset
         )
-        isProgrammaticScroll = false
-    }
-
-    LaunchedEffect(staggeredState) {
-        snapshotFlow { staggeredState.isScrollInProgress }
-            .collect { isScrolling ->
-                if (isScrolling && !isProgrammaticScroll) {
-                    viewModel.enterTouchMode()
-                }
-            }
     }
 
     val currentGridItems by rememberUpdatedState(uiState.gridItems)
@@ -1200,7 +1188,9 @@ private fun LibraryMasonryGrid(
         ),
         horizontalArrangement = Arrangement.spacedBy(gridSpacing),
         verticalItemSpacing = gridSpacing,
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .fillMaxSize()
+            .observeTouchDown { viewModel.enterTouchMode() }
     ) {
         uiState.gridItems.forEachIndexed { _, gridItem ->
             when (gridItem) {
@@ -1451,7 +1441,9 @@ private fun FilterMenuOverlay(
     onDismiss: () -> Unit,
     onCategorySelect: (FilterCategory) -> Unit,
     onOptionSelect: (Int) -> Unit,
-    onSearchQueryChange: (String) -> Unit
+    onSearchQueryChange: (String) -> Unit,
+    onSearchFieldFocused: () -> Unit,
+    onSearchFieldTap: () -> Unit
 ) {
     val listState = rememberLazyListState()
     val filterContext = LocalContext.current
@@ -1478,12 +1470,6 @@ private fun FilterMenuOverlay(
             } else {
                 listState.animateScrollToItem(uiState.filterOptionIndex)
             }
-        }
-    }
-
-    LaunchedEffect(isSearchCategory) {
-        if (isSearchCategory && uiState.screenWidthDp > 900) {
-            searchFieldFocus.requestFocus()
         }
     }
 
@@ -1574,47 +1560,14 @@ private fun FilterMenuOverlay(
             }
 
             if (isSearchCategory) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(Dimens.radiusMd))
-                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .padding(Dimens.spacingMd),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Search,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(Dimens.iconSm)
-                    )
-                    BasicTextField(
-                        value = searchQuery,
-                        onValueChange = onSearchQueryChange,
-                        modifier = Modifier
-                            .weight(1f)
-                            .focusRequester(searchFieldFocus),
-                        textStyle = TextStyle(
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontSize = MaterialTheme.typography.bodyMedium.fontSize
-                        ),
-                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                        singleLine = true,
-                        decorationBox = { innerTextField ->
-                            Box {
-                                if (searchQuery.isEmpty()) {
-                                    Text(
-                                        text = stringResource(R.string.library_filter_search_placeholder),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                                    )
-                                }
-                                innerTextField()
-                            }
-                        }
-                    )
-                }
+                FilterSearchField(
+                    query = searchQuery,
+                    isFocused = uiState.isFilterSearchFieldFocused,
+                    focusRequester = searchFieldFocus,
+                    onQueryChange = onSearchQueryChange,
+                    onFieldFocused = onSearchFieldFocused,
+                    onTap = onSearchFieldTap
+                )
 
                 if (options.isNotEmpty()) {
                     Text(
@@ -1630,7 +1583,8 @@ private fun FilterMenuOverlay(
                     verticalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
                 ) {
                     itemsIndexed(options) { index, recentQuery ->
-                        val isFocused = index == uiState.filterOptionIndex
+                        val stopIndex = index + uiState.filterLeadingStops
+                        val isFocused = stopIndex == uiState.filterOptionIndex
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -1639,7 +1593,7 @@ private fun FilterMenuOverlay(
                                     if (isFocused) Modifier.background(LocalArgosyTheme.current.focusAccent.copy(alpha = 0.15f))
                                     else Modifier
                                 )
-                                .clickableNoFocus { onOptionSelect(index) }
+                                .clickableNoFocus { onOptionSelect(stopIndex) }
                                 .padding(horizontal = Dimens.spacingMd, vertical = Dimens.spacingSm),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
@@ -1687,7 +1641,6 @@ private fun FilterMenuOverlay(
             FooterHints(
                 hints = if (isSearchCategory) {
                     listOf(
-                        InputButton.Y to stringResource(R.string.library_filter_hint_type),
                         InputButton.X to stringResource(R.string.library_filter_hint_clear),
                         InputButton.B to stringResource(R.string.library_filter_hint_close_search)
                     )
@@ -1701,6 +1654,67 @@ private fun FilterMenuOverlay(
                         },
                         InputButton.B to stringResource(R.string.library_filter_hint_close_options)
                     )
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun FilterSearchField(
+    query: String,
+    isFocused: Boolean,
+    focusRequester: FocusRequester,
+    onQueryChange: (String) -> Unit,
+    onFieldFocused: () -> Unit,
+    onTap: () -> Unit
+) {
+    val focusAccent = LocalArgosyTheme.current.focusAccent
+    ControllerKeyboardTapTarget(onTap = onTap, modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(Dimens.radiusMd))
+                .background(
+                    if (isFocused) focusAccent.copy(alpha = 0.15f)
+                        .compositeOver(MaterialTheme.colorScheme.surfaceVariant)
+                    else MaterialTheme.colorScheme.surfaceVariant
+                )
+                .padding(Dimens.spacingMd),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(Dimens.spacingSm)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Search,
+                contentDescription = null,
+                tint = if (isFocused) lerp(focusAccent, Color.White, 0.45f)
+                       else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(Dimens.iconSm)
+            )
+            BasicTextField(
+                value = query,
+                onValueChange = onQueryChange,
+                modifier = Modifier
+                    .weight(1f)
+                    .focusRequester(focusRequester)
+                    .onFocusChanged { if (it.isFocused) onFieldFocused() },
+                textStyle = TextStyle(
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = MaterialTheme.typography.bodyMedium.fontSize
+                ),
+                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                singleLine = true,
+                decorationBox = { innerTextField ->
+                    Box {
+                        if (query.isEmpty()) {
+                            Text(
+                                text = stringResource(R.string.library_filter_search_placeholder),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                            )
+                        }
+                        innerTextField()
+                    }
                 }
             )
         }

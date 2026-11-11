@@ -4081,7 +4081,26 @@
     <string name="settings_romm_config_server_url_label">Server URL</string>
     <!-- Placeholder text illustrating the expected URL format. Not a real address. -->
     <string name="settings_romm_config_server_url_placeholder">https://romm.example.com</string>
-    <!-- Row title choosing how this device authenticates with the server. Noun phrase. -->
+    <!-- Enter key of the on-screen controller keyboard while typing the server URL. Finishes typing. -->
+    <string name="settings_romm_config_url_keyboard_submit">Done</string>
+    <!-- Label shown on the on-screen controller keyboard while typing the 8-character pairing code. Noun phrase. -->
+    <string name="settings_romm_config_pairing_code_keyboard_label">Pairing code</string>
+    <!-- Enter key of the on-screen controller keyboard while typing the pairing code. Finishes typing. -->
+    <string name="settings_romm_config_pairing_code_keyboard_submit">Done</string>
+    <!-- Enter key of the on-screen controller keyboard on the Jellyfin server address field. Verb: save the address. -->
+    <string name="settings_jellyfin_config_keyboard_submit">Save</string>
+    <!-- Enter key of the on-screen controller keyboard on the Jellyfin username field. Finishes typing. -->
+    <string name="settings_jellyfin_signin_username_keyboard_submit">Done</string>
+    <!-- Enter key of the on-screen controller keyboard on the Jellyfin password field. Verb phrase: sign in now. -->
+    <string name="settings_jellyfin_signin_password_keyboard_submit">Sign in</string>
+    <!-- Enter key of the on-screen controller keyboard on the RetroAchievements username field. Finishes typing. -->
+    <string name="settings_ra_login_username_keyboard_submit">Done</string>
+    <!-- Enter key of the on-screen controller keyboard on the RetroAchievements password field. Finishes typing. -->
+    <string name="settings_ra_login_password_keyboard_submit">Done</string>
+    <!-- Enter key of the on-screen controller keyboard on the offline proxy address field. Finishes typing. -->
+    <string name="settings_ra_proxy_address_keyboard_submit">Done</string>
+    <!-- Enter key of the on-screen controller keyboard on the Steam app ID field. Verb: add the game. -->
+    <string name="settings_steam_add_game_keyboard_submit">Add</string>    <!-- Row title choosing how this device authenticates with the server. Noun phrase. -->
     <string name="settings_romm_config_auth_method_title">Auth Method</string>
     <!-- Auth method value: pairs by scanning a QR code with another device. -->
     <string name="settings_romm_config_auth_method_device">Device Pairing</string>

@@ -26,6 +26,8 @@
     <string name="firstrun_pairing_code_hint">RomM वेब UI में एक API टोकन बनाएं, फिर 8-अक्षर वाला कोड दर्ज करें।</string>
     <string name="firstrun_pairing_code_clear_description">कोड साफ़ करें</string>
     <string name="firstrun_pairing_code_button_connect">कनेक्ट करें</string>
+    <string name="firstrun_pairing_code_keyboard_submit">कनेक्ट करें</string>
+    <string name="firstrun_romm_url_keyboard_submit">जारी रखें</string>
     <string name="firstrun_pairing_code_button_connecting">कनेक्ट हो रहा है...</string>
     <string name="firstrun_pairing_code_button_edit_url">URL संपादित करें</string>
     <string name="firstrun_pairing_code_button_scan">QR कोड स्कैन करें</string>

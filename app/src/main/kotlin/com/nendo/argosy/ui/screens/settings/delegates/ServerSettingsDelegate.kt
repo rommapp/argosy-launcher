@@ -278,6 +278,13 @@ class ServerSettingsDelegate @Inject constructor(
         }
     }
 
+    private fun requestAddressEditorKeyboard() {
+        _state.update { state ->
+            val editor = state.rommAddressEditor ?: return@update state
+            state.copy(rommAddressEditor = editor.copy(focus = editor.focus.requestKeyboard()))
+        }
+    }
+
     fun moveAddressEditorButton(delta: Int) {
         _state.update { state ->
             val editor = state.rommAddressEditor ?: return@update state
@@ -290,7 +297,7 @@ class ServerSettingsDelegate @Inject constructor(
     fun confirmAddressEditor(scope: CoroutineScope) {
         val editor = _state.value.rommAddressEditor ?: return
         when {
-            editor.focus.row == TextEntryRow.FIELD -> moveAddressEditorRow(TextEntryRow.BUTTONS)
+            editor.focus.row == TextEntryRow.FIELD -> requestAddressEditorKeyboard()
             editor.focus.buttonIndex == TEXT_ENTRY_CANCEL_BUTTON -> closeAddressEditor()
             else -> saveAddress(scope, editor.row)
         }

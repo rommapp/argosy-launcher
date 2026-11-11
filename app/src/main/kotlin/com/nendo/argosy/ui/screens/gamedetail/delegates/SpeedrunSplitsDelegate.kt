@@ -6,6 +6,8 @@ import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.data.speedrun.SpeedrunRepository
 import com.nendo.argosy.ui.components.ListReorder
 import com.nendo.argosy.ui.components.ReorderStep
+import com.nendo.argosy.ui.components.TextEntryFocus
+import com.nendo.argosy.ui.components.TextEntryRow
 import com.nendo.argosy.ui.input.SoundFeedbackManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
@@ -30,7 +32,8 @@ sealed class SpeedrunPrompt {
     data class Text(
         override val title: String,
         val initial: String,
-        val target: Target
+        val target: Target,
+        val focus: TextEntryFocus = TextEntryFocus()
     ) : SpeedrunPrompt() {
         enum class Target { NEW_CATEGORY, RENAME_CATEGORY, NEW_SEGMENT, RENAME_SEGMENT }
     }
@@ -68,6 +71,9 @@ data class SpeedrunSplitsState(
 ) {
     val isReordering: Boolean get() = reorder != null
 }
+
+private const val CATEGORY_TRAILING_ROWS = 2
+private const val SEGMENT_TRAILING_ROWS = 3
 
 class SpeedrunSplitsDelegate @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -232,8 +238,7 @@ class SpeedrunSplitsDelegate @Inject constructor(
             moveHeldSegment(delta)
             return
         }
-        val itemCount = if (s.editingCategory != null) s.segments.size + 2 else s.categories.size + 1
-        if (itemCount == 0) return
+        val itemCount = if (s.editingCategory != null) s.segments.size + SEGMENT_TRAILING_ROWS else s.categories.size + CATEGORY_TRAILING_ROWS
         _state.update { it.copy(focusIndex = (it.focusIndex + delta).mod(itemCount)) }
     }
 
@@ -267,7 +272,8 @@ class SpeedrunSplitsDelegate @Inject constructor(
                         )
                     }
                 }
-                s.focusIndex == s.segments.size -> _state.update {
+                s.focusIndex == s.segments.size -> promptNew()
+                s.focusIndex == s.segments.size + 1 -> _state.update {
                     it.copy(
                         prompt = SpeedrunPrompt.Text(
                             context.getString(
@@ -283,12 +289,11 @@ class SpeedrunSplitsDelegate @Inject constructor(
                 }
             }
         } else {
-            if (s.focusIndex == s.categories.size) {
-                openImport()
-                return
+            when (s.focusIndex) {
+                s.categories.size -> promptNew()
+                s.categories.size + 1 -> openImport()
+                else -> s.categories.getOrNull(s.focusIndex)?.let(::loadSegments)
             }
-            val category = s.categories.getOrNull(s.focusIndex) ?: return
-            loadSegments(category)
         }
     }
 
@@ -408,6 +413,28 @@ class SpeedrunSplitsDelegate @Inject constructor(
         _state.update { it.copy(prompt = null) }
     }
 
+    fun movePromptRow(row: TextEntryRow) {
+        updateTextPrompt { it.copy(focus = it.focus.copy(row = row)) }
+    }
+
+    fun movePromptButton(buttonIndex: Int) {
+        updateTextPrompt { prompt ->
+            if (prompt.focus.row != TextEntryRow.BUTTONS) prompt
+            else prompt.copy(focus = prompt.focus.copy(buttonIndex = buttonIndex))
+        }
+    }
+
+    fun requestPromptKeyboard() {
+        updateTextPrompt { it.copy(focus = it.focus.requestKeyboard()) }
+    }
+
+    private fun updateTextPrompt(transform: (SpeedrunPrompt.Text) -> SpeedrunPrompt.Text) {
+        _state.update { s ->
+            val prompt = s.prompt as? SpeedrunPrompt.Text ?: return@update s
+            s.copy(prompt = transform(prompt))
+        }
+    }
+
     private fun createCategory(name: String) {
         val currentScope = scope ?: return
         currentScope.launch(Dispatchers.IO) {
@@ -505,7 +532,7 @@ class SpeedrunSplitsDelegate @Inject constructor(
             _state.update {
                 it.copy(
                     categories = categories,
-                    focusIndex = it.focusIndex.coerceIn(0, (categories.size - 1).coerceAtLeast(0)),
+                    focusIndex = it.focusIndex.coerceIn(0, categories.size + CATEGORY_TRAILING_ROWS - 1),
                     prompt = if (clearPrompt) null else it.prompt
                 )
             }

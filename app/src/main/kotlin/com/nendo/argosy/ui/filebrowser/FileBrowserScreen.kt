@@ -50,6 +50,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
@@ -58,6 +59,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.input.ImeAction
@@ -76,6 +78,8 @@ import com.nendo.argosy.ui.components.FooterHints
 import com.nendo.argosy.ui.components.FooterSpacer
 import com.nendo.argosy.ui.components.InputButton
 import com.nendo.argosy.ui.components.Modal
+import com.nendo.argosy.ui.components.keyboard.ControllerKeyboardSession
+import com.nendo.argosy.ui.components.keyboard.ControllerKeyboardTapTarget
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.LocalInputDispatcher
@@ -762,10 +766,40 @@ private fun CreateFolderDialog(
     val currentCanCreate by rememberUpdatedState(canCreate)
     val currentOnConfirm by rememberUpdatedState(onConfirm)
     val currentOnDismiss by rememberUpdatedState(onDismiss)
+    var keyboardDismissed by remember { mutableStateOf(false) }
+    var systemKeyboardActive by remember { mutableStateOf(false) }
+    val reopenKeyboard = {
+        if (systemKeyboardActive) focusManager.clearFocus()
+        focusRow = FOLDER_ROW_FIELD
+        keyboardDismissed = false
+    }
+    val currentReopenKeyboard by rememberUpdatedState(reopenKeyboard)
 
     LaunchedEffect(focusRow) {
-        if (focusRow == FOLDER_ROW_FIELD) focusRequester.requestFocus() else focusManager.clearFocus()
+        if (focusRow != FOLDER_ROW_FIELD) {
+            keyboardDismissed = false
+            focusManager.clearFocus()
+        }
     }
+
+    ControllerKeyboardSession(
+        open = focusRow == FOLDER_ROW_FIELD && !keyboardDismissed,
+        label = stringResource(R.string.ui_file_browser_new_folder_field_label),
+        text = folderName,
+        onTextChange = onFolderNameChange,
+        onSubmit = {
+            keyboardDismissed = true
+            if (canCreate) onConfirm()
+        },
+        onClose = { keyboardDismissed = true },
+        submitLabel = stringResource(R.string.ui_file_browser_new_folder_keyboard_submit),
+        error = errorRes?.let { stringResource(it) },
+        canSubmit = canCreate,
+        onSystemKeyboard = {
+            keyboardDismissed = true
+            focusRequester.requestFocus()
+        }
+    )
 
     val inputHandler = remember {
         object : InputHandler {
@@ -791,7 +825,7 @@ private fun CreateFolderDialog(
 
             override fun onConfirm(): InputResult {
                 when {
-                    focusRow == FOLDER_ROW_FIELD -> focusRow = FOLDER_ROW_BUTTONS
+                    focusRow == FOLDER_ROW_FIELD -> currentReopenKeyboard()
                     buttonIndex == 0 -> currentOnDismiss()
                     currentCanCreate -> currentOnConfirm()
                 }
@@ -823,24 +857,33 @@ private fun CreateFolderDialog(
         title = stringResource(R.string.ui_file_browser_new_folder_title),
         onDismiss = onDismiss
     ) {
-        OutlinedTextField(
-            value = folderName,
-            onValueChange = onFolderNameChange,
-            label = { Text(stringResource(R.string.ui_file_browser_new_folder_field_label)) },
-            singleLine = true,
-            isError = errorRes != null,
-            shape = fieldShape,
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(onDone = { if (canCreate) onConfirm() }),
-            modifier = Modifier
-                .fillMaxWidth()
-                .focusRequester(focusRequester)
-                .then(
-                    if (focusRow == FOLDER_ROW_FIELD) {
-                        Modifier.background(theme.focusAccent.copy(alpha = 0.15f), fieldShape)
-                    } else Modifier
-                )
-        )
+        ControllerKeyboardTapTarget(
+            onTap = reopenKeyboard,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            OutlinedTextField(
+                value = folderName,
+                onValueChange = onFolderNameChange,
+                label = { Text(stringResource(R.string.ui_file_browser_new_folder_field_label)) },
+                singleLine = true,
+                isError = errorRes != null,
+                shape = fieldShape,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { if (canCreate) onConfirm() }),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester)
+                    .onFocusChanged {
+                        systemKeyboardActive = it.isFocused
+                        if (it.isFocused) keyboardDismissed = true
+                    }
+                    .then(
+                        if (focusRow == FOLDER_ROW_FIELD) {
+                            Modifier.background(theme.focusAccent.copy(alpha = 0.15f), fieldShape)
+                        } else Modifier
+                    )
+            )
+        }
         if (errorRes != null) {
             Spacer(modifier = Modifier.height(Dimens.spacingSm))
             Text(

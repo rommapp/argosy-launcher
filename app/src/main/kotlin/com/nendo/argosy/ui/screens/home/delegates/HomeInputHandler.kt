@@ -67,7 +67,7 @@ interface HomeInputActions {
      * how back knows to close the picker instead.
      */
     fun backOutOfPickerLibrary(): Boolean
-    fun toggleTilePickerSearch()
+    fun openTilePickerSearch()
     fun cycleTilePickerCategory(delta: Int)
 
     fun jumpTilePickerLetter(forward: Boolean)
@@ -575,10 +575,6 @@ class HomeInputHandler(
             actions.backFromMediaTileSetup()
             return InputResult.handled(SoundType.CLOSE_MODAL)
         }
-        if (state.customGrid.pickerSearchActive) {
-            actions.toggleTilePickerSearch()
-            return InputResult.HANDLED
-        }
         if (state.showTilePicker) {
             if (actions.backOutOfPickerLibrary()) return InputResult.HANDLED
             actions.closeTilePicker()
@@ -746,7 +742,7 @@ class HomeInputHandler(
         if (state.appBarFocused) return InputResult.HANDLED
         if (state.customGrid.mediaSetup != null || state.customGrid.featureSetup != null) return InputResult.HANDLED
         if (state.showTilePicker) {
-            actions.toggleTilePickerSearch()
+            actions.openTilePickerSearch()
             return InputResult.HANDLED
         }
         if (isCustomGrid(state)) {

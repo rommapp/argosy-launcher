@@ -64,8 +64,7 @@
     <string name="save_channels_label_title_new">新增存檔槽</string>
     <string name="save_channels_label_title_rename">重新命名</string>
     <string name="save_channels_label_title_fork">分支</string>
-    <string name="save_channels_label_field_placeholder">名稱</string>
-    <string name="save_channels_label_cancel">取消</string>
+    <string name="save_channels_label_field_placeholder">名稱</string>    <string name="save_channels_label_cancel">取消</string>
     <string name="save_channels_label_confirm_new">建立</string>
     <string name="save_channels_label_confirm_rename">重新命名</string>
     <string name="save_channels_label_confirm_fork">分支</string>

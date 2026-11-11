@@ -108,6 +108,8 @@
     <string name="library_filter_active_summary">Active: %1$s</string>
     <!-- Placeholder inside the filter modal's text field, shown while it is empty. -->
     <string name="library_filter_search_placeholder">Type to search...</string>
+    <!-- Enter key of the on-screen controller keyboard while typing a library filter search. Verb. -->
+    <string name="library_filter_keyboard_submit">Search</string>
     <!-- Heading over the list of the user's previous search terms in the filter modal.
          Adjective plus noun, the searches themselves, not an instruction to search again. -->
     <string name="library_filter_recent_searches">Recent searches</string>
@@ -142,8 +144,6 @@
     <!-- Button hint in the filter modal while the search tab is open. Verb, empties the text
          field. -->
     <string name="library_filter_hint_clear">Clear</string>
-    <!-- Footer hint that opens the on-screen keyboard for the library search field. -->
-    <string name="library_filter_hint_type">Type</string>
     <!-- Button hint in the filter modal while the search tab is open. Verb, dismisses the
          modal. -->
     <string name="library_filter_hint_close_search">Close</string>
@@ -374,6 +374,8 @@
     <!-- Placeholder in the search field when no media account is signed in, so only games can
          be found. -->
     <string name="library_search_placeholder_games">Search games...</string>
+    <!-- Enter key of the on-screen controller keyboard on the search screen. Verb. -->
+    <string name="library_search_keyboard_submit">Search</string>
     <!-- Shown in place of results while the typed query is still too short to search on.
          Counts characters. -->
     <plurals name="library_search_min_query_hint">

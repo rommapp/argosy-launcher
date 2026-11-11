@@ -41,14 +41,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
@@ -69,6 +69,9 @@ import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.DualActionPreference
 import com.nendo.argosy.ui.components.InfoPreference
 import com.nendo.argosy.ui.components.Modal
+import com.nendo.argosy.ui.components.keyboard.ControllerKeyboardSession
+import com.nendo.argosy.ui.components.keyboard.ControllerKeyboardTapTarget
+import com.nendo.argosy.ui.components.keyboard.KeyboardFieldType
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
 import com.nendo.argosy.ui.input.ModalInputEffect
@@ -840,14 +843,35 @@ internal fun AddSteamGameDialog(uiState: SettingsUiState, viewModel: SettingsVie
 
     var focusRow by remember { mutableIntStateOf(ADD_GAME_ROW_FIELD) }
     var buttonIndex by remember { mutableIntStateOf(1) }
-    val focusRequester = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     val currentIsAdding by rememberUpdatedState(isAddingGame)
     val currentCanAdd by rememberUpdatedState(canAdd)
+    var keyboardDismissed by remember { mutableStateOf(false) }
 
     LaunchedEffect(focusRow) {
-        if (focusRow == ADD_GAME_ROW_FIELD) focusRequester.requestFocus() else focusManager.clearFocus()
+        if (focusRow != ADD_GAME_ROW_FIELD) {
+            keyboardDismissed = false
+            focusManager.clearFocus()
+        }
     }
+
+    ControllerKeyboardSession(
+        open = focusRow == ADD_GAME_ROW_FIELD && !keyboardDismissed,
+        label = stringResource(R.string.settings_steam_add_game_field_label),
+        text = uiState.steam.addGameAppId,
+        onTextChange = { viewModel.setAddGameAppId(it) },
+        onSubmit = {
+            keyboardDismissed = true
+            if (canAdd) viewModel.confirmAddSteamGame()
+        },
+        onClose = { keyboardDismissed = true },
+        submitLabel = stringResource(R.string.settings_steam_add_game_keyboard_submit),
+        placeholder = stringResource(R.string.settings_steam_add_game_field_hint),
+        fieldType = KeyboardFieldType.NUMBER,
+        error = uiState.steam.addGameError,
+        canSubmit = canAdd,
+        enabled = !isAddingGame
+    )
 
     val inputHandler = remember {
         object : InputHandler {
@@ -874,7 +898,7 @@ internal fun AddSteamGameDialog(uiState: SettingsUiState, viewModel: SettingsVie
             override fun onConfirm(): InputResult {
                 when {
                     currentIsAdding -> {}
-                    focusRow == ADD_GAME_ROW_FIELD -> focusRow = ADD_GAME_ROW_BUTTONS
+                    focusRow == ADD_GAME_ROW_FIELD -> keyboardDismissed = false
                     buttonIndex == 0 -> viewModel.dismissAddSteamGameDialog()
                     currentCanAdd -> viewModel.confirmAddSteamGame()
                 }
@@ -917,26 +941,35 @@ internal fun AddSteamGameDialog(uiState: SettingsUiState, viewModel: SettingsVie
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(Dimens.spacingMd))
-        OutlinedTextField(
-            value = uiState.steam.addGameAppId,
-            onValueChange = { viewModel.setAddGameAppId(it) },
-            label = { Text(stringResource(R.string.settings_steam_add_game_field_label)) },
-            placeholder = { Text(stringResource(R.string.settings_steam_add_game_field_hint)) },
-            singleLine = true,
-            enabled = !isAddingGame,
-            isError = uiState.steam.addGameError != null,
-            shape = fieldShape,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(onDone = { if (canAdd) viewModel.confirmAddSteamGame() }),
-            modifier = Modifier
-                .fillMaxWidth()
-                .focusRequester(focusRequester)
-                .then(
-                    if (focusRow == ADD_GAME_ROW_FIELD) {
-                        Modifier.background(theme.focusAccent.copy(alpha = 0.15f), fieldShape)
-                    } else Modifier
-                )
-        )
+        ControllerKeyboardTapTarget(
+            onTap = {
+                focusRow = ADD_GAME_ROW_FIELD
+                keyboardDismissed = false
+            },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !isAddingGame
+        ) {
+            OutlinedTextField(
+                value = uiState.steam.addGameAppId,
+                onValueChange = { viewModel.setAddGameAppId(it) },
+                label = { Text(stringResource(R.string.settings_steam_add_game_field_label)) },
+                placeholder = { Text(stringResource(R.string.settings_steam_add_game_field_hint)) },
+                singleLine = true,
+                enabled = !isAddingGame,
+                isError = uiState.steam.addGameError != null,
+                shape = fieldShape,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { if (canAdd) viewModel.confirmAddSteamGame() }),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { if (it.isFocused) keyboardDismissed = true }
+                    .then(
+                        if (focusRow == ADD_GAME_ROW_FIELD) {
+                            Modifier.background(theme.focusAccent.copy(alpha = 0.15f), fieldShape)
+                        } else Modifier
+                    )
+            )
+        }
         if (uiState.steam.addGameError != null) {
             Spacer(modifier = Modifier.height(Dimens.spacingSm))
             Text(

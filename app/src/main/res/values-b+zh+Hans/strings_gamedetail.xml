@@ -362,6 +362,8 @@
     <string name="gamedetail_speedrun_empty_suffix">创建一个，或从社区导入。</string>
     <string name="gamedetail_speedrun_category_summary">%1$d个分段 · %2$d次尝试</string>
     <string name="gamedetail_speedrun_import_row">导入分段...</string>
+    <string name="gamedetail_speedrun_new_category_row">新建类别</string>
+    <string name="gamedetail_speedrun_add_segment_row">添加分段</string>
     <string name="gamedetail_speedrun_import_loading_title">正在搜索...</string>
     <string name="gamedetail_speedrun_import_loading_message">正在therun.gg和speedrun.com上查找类别</string>
     <string name="gamedetail_speedrun_import_importing_title">正在导入...</string>
@@ -380,8 +382,7 @@
     <string name="gamedetail_speedrun_source_speedruncom">speedrun.com · 仅名称</string>
     <string name="gamedetail_speedrun_prompt_confirm">确认</string>
     <string name="gamedetail_speedrun_prompt_cancel">取消</string>
-    <string name="gamedetail_speedrun_prompt_placeholder">名称</string>
-    <string name="gamedetail_speedrun_confirm_delete_title">删除“%1$s”？</string>
+    <string name="gamedetail_speedrun_prompt_placeholder">名称</string>    <string name="gamedetail_speedrun_confirm_delete_title">删除“%1$s”？</string>
     <string name="gamedetail_speedrun_confirm_delete_footer_delete">删除</string>
     <string name="gamedetail_speedrun_confirm_delete_footer_cancel">取消</string>
     <string name="gamedetail_speedrun_confirm_delete_category_message">这将删除该类别、其分段以及所有已记录的尝试。</string>

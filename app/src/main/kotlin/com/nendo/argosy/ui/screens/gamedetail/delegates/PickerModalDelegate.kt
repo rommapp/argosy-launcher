@@ -70,6 +70,8 @@ data class PickerModalState(
      * whose stored title is often not what the artwork is filed under.
      */
     val artPickerQuery: String = "",
+    val artPickerSearchFocused: Boolean = false,
+    val artPickerKeyboardOpen: Boolean = false,
     val showArtFileBrowser: Boolean = false
 ) {
     val hasAnyPickerOpen: Boolean
@@ -131,9 +133,22 @@ class PickerModalDelegate @Inject constructor(
                 artPickerLoading = false,
                 artPickerError = null,
                 artPickerQuery = query,
+                artPickerSearchFocused = false,
+                artPickerKeyboardOpen = false,
                 showArtFileBrowser = false
             )
         }
+    }
+
+    fun openArtPickerKeyboard() {
+        _state.update {
+            if (!it.artPickerCanSearch) it
+            else it.copy(artPickerSearchFocused = true, artPickerKeyboardOpen = true)
+        }
+    }
+
+    fun closeArtPickerKeyboard() {
+        _state.update { it.copy(artPickerKeyboardOpen = false) }
     }
 
     fun setArtPickerQuery(query: String) {
@@ -175,15 +190,29 @@ class PickerModalDelegate @Inject constructor(
 
     fun moveArtPickerFocus(delta: Int) {
         _state.update { state ->
-            if (state.artCandidates.isEmpty()) return@update state
-            state.copy(
-                artPickerFocusIndex = artGridStep(
-                    index = state.artPickerFocusIndex,
-                    delta = delta,
-                    size = state.artCandidates.size,
-                    columns = state.artPickerSlot.pickerConfig.columns
+            val columns = state.artPickerSlot.pickerConfig.columns
+            val movesUp = delta < 0 && kotlin.math.abs(delta) >= columns
+            val movesDown = delta > 0 && delta >= columns
+            when {
+                state.artPickerSearchFocused ->
+                    if (movesDown && state.artCandidates.isNotEmpty()) {
+                        state.copy(artPickerSearchFocused = false, artPickerFocusIndex = 0)
+                    } else {
+                        state
+                    }
+                state.artPickerCanSearch && movesUp &&
+                    (state.artCandidates.isEmpty() || state.artPickerFocusIndex < columns) ->
+                    state.copy(artPickerSearchFocused = true)
+                state.artCandidates.isEmpty() -> state
+                else -> state.copy(
+                    artPickerFocusIndex = artGridStep(
+                        index = state.artPickerFocusIndex,
+                        delta = delta,
+                        size = state.artCandidates.size,
+                        columns = columns
+                    )
                 )
-            )
+            }
         }
     }
 

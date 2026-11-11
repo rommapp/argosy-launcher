@@ -31,11 +31,13 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -47,6 +49,9 @@ import com.nendo.argosy.ui.components.ActionPreference
 import com.nendo.argosy.ui.components.CyclePreference
 import com.nendo.argosy.ui.components.FocusedScroll
 import com.nendo.argosy.ui.components.SwitchPreference
+import com.nendo.argosy.ui.components.keyboard.ControllerKeyboardSession
+import com.nendo.argosy.ui.components.keyboard.ControllerKeyboardTapTarget
+import com.nendo.argosy.ui.components.keyboard.KeyboardFieldType
 import com.nendo.argosy.ui.screens.settings.RA_LOGGED_IN_LOGOUT_INDEX
 import com.nendo.argosy.ui.screens.settings.RA_LOGGED_IN_PLAY_MODE_INDEX
 import com.nendo.argosy.ui.screens.settings.RA_LOGGED_IN_PROXY_FIELD_INDEX
@@ -65,6 +70,9 @@ import com.nendo.argosy.ui.theme.ALauncherColors
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.theme.LocalLauncherTheme
+
+private const val RA_LOGIN_USERNAME_FIELD = 0
+private const val RA_LOGIN_PASSWORD_FIELD = 1
 
 @Composable
 fun RASettingsSection(
@@ -378,30 +386,46 @@ private fun LazyListScope.raProxyItems(
     if (raState.proxyEnabled) {
         settingsRowItem(focusIndex = proxyFieldIndex) {
             val inputShape = RoundedCornerShape(Dimens.radiusMd)
-            val focusRequester = remember { FocusRequester() }
+            var keyboardOpen by remember { mutableStateOf(false) }
             LaunchedEffect(raState.focusField) {
                 if (raState.focusField == proxyFieldIndex) {
-                    focusRequester.requestFocus()
+                    keyboardOpen = true
                     viewModel.clearRAFocusField()
                 }
             }
-            OutlinedTextField(
-                value = raState.proxyAddress,
-                onValueChange = { viewModel.setRAProxyAddress(it) },
-                label = { Text(stringResource(R.string.settings_ra_proxy_address_label)) },
-                placeholder = { Text("127.0.0.1:8080") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                shape = inputShape,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .focusRequester(focusRequester)
-                    .then(
-                        if (focusedIndex == proxyFieldIndex)
-                            Modifier.background(LocalArgosyTheme.current.focusAccent.copy(alpha = 0.15f), inputShape)
-                        else Modifier
-                    )
+            ControllerKeyboardSession(
+                open = keyboardOpen,
+                label = stringResource(R.string.settings_ra_proxy_address_label),
+                text = raState.proxyAddress,
+                onTextChange = { viewModel.setRAProxyAddress(it) },
+                onSubmit = { keyboardOpen = false },
+                onClose = { keyboardOpen = false },
+                submitLabel = stringResource(R.string.settings_ra_proxy_address_keyboard_submit),
+                placeholder = "127.0.0.1:8080",
+                fieldType = KeyboardFieldType.URI
             )
+            ControllerKeyboardTapTarget(
+                onTap = { viewModel.raDelegate.setFocusField(proxyFieldIndex) },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                OutlinedTextField(
+                    value = raState.proxyAddress,
+                    onValueChange = { viewModel.setRAProxyAddress(it) },
+                    label = { Text(stringResource(R.string.settings_ra_proxy_address_label)) },
+                    placeholder = { Text("127.0.0.1:8080") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                    shape = inputShape,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged { if (it.isFocused) keyboardOpen = false }
+                        .then(
+                            if (focusedIndex == proxyFieldIndex)
+                                Modifier.background(LocalArgosyTheme.current.focusAccent.copy(alpha = 0.15f), inputShape)
+                            else Modifier
+                        )
+                )
+            }
         }
     }
 }
@@ -413,18 +437,36 @@ private fun RALoginForm(
     viewModel: SettingsViewModel
 ) {
     val inputShape = RoundedCornerShape(Dimens.radiusMd)
-    val usernameFocusRequester = remember { FocusRequester() }
-    val passwordFocusRequester = remember { FocusRequester() }
+    var keyboardField by remember { mutableStateOf<Int?>(null) }
 
     LaunchedEffect(raState.focusField) {
         when (raState.focusField) {
-            0 -> usernameFocusRequester.requestFocus()
-            1 -> passwordFocusRequester.requestFocus()
+            RA_LOGIN_USERNAME_FIELD, RA_LOGIN_PASSWORD_FIELD -> keyboardField = raState.focusField
         }
         if (raState.focusField != null) {
             viewModel.clearRAFocusField()
         }
     }
+
+    ControllerKeyboardSession(
+        open = keyboardField == RA_LOGIN_USERNAME_FIELD,
+        label = stringResource(R.string.settings_ra_login_username_label),
+        text = raState.loginUsername,
+        onTextChange = { viewModel.setRALoginUsername(it) },
+        onSubmit = { keyboardField = null },
+        onClose = { keyboardField = null },
+        submitLabel = stringResource(R.string.settings_ra_login_username_keyboard_submit)
+    )
+    ControllerKeyboardSession(
+        open = keyboardField == RA_LOGIN_PASSWORD_FIELD,
+        label = stringResource(R.string.settings_ra_login_password_label),
+        text = raState.loginPassword,
+        onTextChange = { viewModel.setRALoginPassword(it) },
+        onSubmit = { keyboardField = null },
+        onClose = { keyboardField = null },
+        submitLabel = stringResource(R.string.settings_ra_login_password_keyboard_submit),
+        fieldType = KeyboardFieldType.PASSWORD
+    )
 
     Column(
         modifier = Modifier
@@ -458,42 +500,58 @@ private fun RALoginForm(
 
         Spacer(modifier = Modifier.height(Dimens.spacingSm))
 
-        OutlinedTextField(
-            value = raState.loginUsername,
-            onValueChange = { viewModel.setRALoginUsername(it) },
-            label = { Text(stringResource(R.string.settings_ra_login_username_label)) },
-            leadingIcon = {
-                Icon(Icons.Default.Person, contentDescription = null)
+        ControllerKeyboardTapTarget(
+            onTap = {
+                viewModel.setFocusIndex(RA_LOGIN_USERNAME_FIELD)
+                viewModel.raDelegate.setFocusField(RA_LOGIN_USERNAME_FIELD)
             },
-            singleLine = true,
-            shape = inputShape,
-            modifier = Modifier
-                .fillMaxWidth()
-                .focusRequester(usernameFocusRequester)
-                .then(
-                    if (focusedIndex == 0)
-                        Modifier.background(LocalArgosyTheme.current.focusAccent.copy(alpha = 0.15f), inputShape)
-                    else Modifier
-                )
-        )
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            OutlinedTextField(
+                value = raState.loginUsername,
+                onValueChange = { viewModel.setRALoginUsername(it) },
+                label = { Text(stringResource(R.string.settings_ra_login_username_label)) },
+                leadingIcon = {
+                    Icon(Icons.Default.Person, contentDescription = null)
+                },
+                singleLine = true,
+                shape = inputShape,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { if (it.isFocused) keyboardField = null }
+                    .then(
+                        if (focusedIndex == RA_LOGIN_USERNAME_FIELD)
+                            Modifier.background(LocalArgosyTheme.current.focusAccent.copy(alpha = 0.15f), inputShape)
+                        else Modifier
+                    )
+            )
+        }
 
-        OutlinedTextField(
-            value = raState.loginPassword,
-            onValueChange = { viewModel.setRALoginPassword(it) },
-            label = { Text(stringResource(R.string.settings_ra_login_password_label)) },
-            singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            shape = inputShape,
-            modifier = Modifier
-                .fillMaxWidth()
-                .focusRequester(passwordFocusRequester)
-                .then(
-                    if (focusedIndex == 1)
-                        Modifier.background(LocalArgosyTheme.current.focusAccent.copy(alpha = 0.15f), inputShape)
-                    else Modifier
-                )
-        )
+        ControllerKeyboardTapTarget(
+            onTap = {
+                viewModel.setFocusIndex(RA_LOGIN_PASSWORD_FIELD)
+                viewModel.raDelegate.setFocusField(RA_LOGIN_PASSWORD_FIELD)
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            OutlinedTextField(
+                value = raState.loginPassword,
+                onValueChange = { viewModel.setRALoginPassword(it) },
+                label = { Text(stringResource(R.string.settings_ra_login_password_label)) },
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                shape = inputShape,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { if (it.isFocused) keyboardField = null }
+                    .then(
+                        if (focusedIndex == RA_LOGIN_PASSWORD_FIELD)
+                            Modifier.background(LocalArgosyTheme.current.focusAccent.copy(alpha = 0.15f), inputShape)
+                        else Modifier
+                    )
+            )
+        }
 
         if (raState.loginError != null) {
             Text(

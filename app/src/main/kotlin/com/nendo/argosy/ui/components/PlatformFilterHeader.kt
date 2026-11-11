@@ -22,23 +22,25 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.withFrameNanos
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import com.nendo.argosy.R
+import com.nendo.argosy.ui.components.keyboard.ControllerKeyboardSession
+import com.nendo.argosy.ui.components.keyboard.ControllerKeyboardTapTarget
 import com.nendo.argosy.ui.theme.Dimens
 import com.nendo.argosy.ui.theme.LocalArgosyTheme
 import com.nendo.argosy.ui.util.clickableNoFocus
@@ -76,16 +78,21 @@ fun PlatformFilterHeader(
     onCloseSortMenu: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val searchFocusRequester = remember { FocusRequester() }
-    val keyboardController = LocalSoftwareKeyboardController.current
+    var keyboardOpen by remember { mutableStateOf(false) }
 
     LaunchedEffect(searchActive) {
-        if (searchActive) {
-            searchFocusRequester.requestFocus()
-            withFrameNanos { }
-            keyboardController?.show()
-        }
+        keyboardOpen = searchActive
     }
+
+    ControllerKeyboardSession(
+        open = searchActive && keyboardOpen,
+        label = stringResource(R.string.ui_platform_filter_search_placeholder),
+        text = searchQuery,
+        onTextChange = onSearchQueryChange,
+        onSubmit = { keyboardOpen = false },
+        onClose = { keyboardOpen = false },
+        submitLabel = stringResource(R.string.ui_platform_filter_keyboard_submit)
+    )
 
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -109,33 +116,38 @@ fun PlatformFilterHeader(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(Dimens.iconSm)
                 )
-                BasicTextField(
-                    value = searchQuery,
-                    onValueChange = onSearchQueryChange,
-                    modifier = Modifier
-                        .weight(1f)
-                        .focusRequester(searchFocusRequester),
-                    textStyle = TextStyle(
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = MaterialTheme.typography.bodyMedium.fontSize
-                    ),
-                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                    singleLine = true,
-                    decorationBox = { innerTextField ->
-                        Box {
-                            if (searchQuery.isEmpty()) {
-                                Text(
-                                    text = stringResource(
-                                        R.string.ui_platform_filter_search_placeholder
-                                    ),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                                )
+                ControllerKeyboardTapTarget(
+                    onTap = { keyboardOpen = true },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    BasicTextField(
+                        value = searchQuery,
+                        onValueChange = onSearchQueryChange,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onFocusChanged { if (it.isFocused) keyboardOpen = false },
+                        textStyle = TextStyle(
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontSize = MaterialTheme.typography.bodyMedium.fontSize
+                        ),
+                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                        singleLine = true,
+                        decorationBox = { innerTextField ->
+                            Box {
+                                if (searchQuery.isEmpty()) {
+                                    Text(
+                                        text = stringResource(
+                                            R.string.ui_platform_filter_search_placeholder
+                                        ),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                    )
+                                }
+                                innerTextField()
                             }
-                            innerTextField()
                         }
-                    }
-                )
+                    )
+                }
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = stringResource(

@@ -130,7 +130,10 @@ fun HomeTilePickerModal(
     focusIndex: Int,
     onSelect: (TilePickerEntry) -> Unit,
     onDismiss: () -> Unit,
-    searchActive: Boolean = false,
+    searchFocused: Boolean = false,
+    keyboardOpen: Boolean = false,
+    onOpenKeyboard: () -> Unit = {},
+    onCloseKeyboard: () -> Unit = {},
     onQueryChange: (String) -> Unit = {},
     category: TilePickerCategory = TilePickerCategory.GAMES,
     categories: List<TilePickerCategory> = TilePickerCategory.entries,
@@ -149,11 +152,6 @@ fun HomeTilePickerModal(
         } else {
             stringResource(R.string.ui_tile_picker_title)
         },
-        subtitle = if (searchActive || query.isBlank()) {
-            null
-        } else {
-            stringResource(R.string.ui_tile_picker_subtitle_matching, query)
-        },
         baseWidth = Dimens.modalWidthXl,
         onDismiss = onDismiss
     ) {
@@ -165,13 +163,15 @@ fun HomeTilePickerModal(
                 modifier = Modifier.padding(bottom = Dimens.spacingSm)
             )
         }
-        if (searchActive) {
-            ModalSearchField(
-                query = query,
-                onQueryChange = onQueryChange,
-                modifier = Modifier.padding(bottom = Dimens.spacingSm)
-            )
-        }
+        ModalSearchField(
+            query = query,
+            onQueryChange = onQueryChange,
+            keyboardOpen = keyboardOpen,
+            onOpenKeyboard = onOpenKeyboard,
+            onCloseKeyboard = onCloseKeyboard,
+            focused = searchFocused,
+            modifier = Modifier.padding(bottom = Dimens.spacingSm)
+        )
         if (entries.isEmpty()) {
             Text(
                 text = if (query.isBlank()) {
@@ -203,7 +203,7 @@ fun HomeTilePickerModal(
                 itemsIndexed(entries, key = { _, entry -> entry.key }) { index, entry ->
                     TilePickerRow(
                         entry = entry,
-                        isFocused = index == focusIndex,
+                        isFocused = !searchFocused && index == focusIndex,
                         showDownloadMark = trackingGame && !entry.isLocal,
                         onClick = { onSelect(entry) }
                     )
@@ -217,7 +217,7 @@ fun HomeTilePickerModal(
             )
             TileDangerRow(
                 label = stringResource(R.string.ui_tile_picker_delete_page),
-                isFocused = focusIndex >= entries.size,
+                isFocused = !searchFocused && focusIndex >= entries.size,
                 onClick = onDeletePage
             )
         }

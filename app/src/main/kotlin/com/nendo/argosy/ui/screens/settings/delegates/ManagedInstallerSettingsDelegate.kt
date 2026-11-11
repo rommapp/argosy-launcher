@@ -127,7 +127,7 @@ class ManagedInstallerSettingsDelegate @Inject constructor(
     fun confirmAdd(scope: CoroutineScope) {
         val focus = _state.value.addFocus
         when {
-            focus.row == TextEntryRow.FIELD -> moveAddRow(TextEntryRow.BUTTONS)
+            focus.row == TextEntryRow.FIELD -> _state.update { it.copy(addFocus = it.addFocus.requestKeyboard()) }
             focus.buttonIndex == TEXT_ENTRY_CANCEL_BUTTON -> dismissAddModal()
             else -> submitAdd(scope)
         }

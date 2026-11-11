@@ -64,8 +64,7 @@
     <string name="save_channels_label_title_new">Новый канал</string>
     <string name="save_channels_label_title_rename">Переименовать</string>
     <string name="save_channels_label_title_fork">Ответвить</string>
-    <string name="save_channels_label_field_placeholder">Название</string>
-    <string name="save_channels_label_cancel">Отмена</string>
+    <string name="save_channels_label_field_placeholder">Название</string>    <string name="save_channels_label_cancel">Отмена</string>
     <string name="save_channels_label_confirm_new">Создать</string>
     <string name="save_channels_label_confirm_rename">Переименовать</string>
     <string name="save_channels_label_confirm_fork">Ответвить</string>

@@ -794,6 +794,8 @@
     <!-- Row at the end of the category list. Verb phrase: fetches ready-made splits from the
          speedrunning community. -->
     <string name="gamedetail_speedrun_import_row">Importar Divisões...</string>
+    <string name="gamedetail_speedrun_new_category_row">Nova Categoria</string>
+    <string name="gamedetail_speedrun_add_segment_row">Adicionar Segmento</string>
     <!-- Heading of the panel shown while the community sites are being queried. Verb in the
          continuous form. -->
     <string name="gamedetail_speedrun_import_loading_title">Buscando...</string>
@@ -838,8 +840,7 @@
     <!-- Footer hint while typing a name. Verb: discards what was typed. -->
     <string name="gamedetail_speedrun_prompt_cancel">Cancelar</string>
     <!-- Grey text inside the empty name field. Noun, singular. -->
-    <string name="gamedetail_speedrun_prompt_placeholder">Nome</string>
-    <!-- Heading for a new segment prompt. Noun phrase. -->
+    <string name="gamedetail_speedrun_prompt_placeholder">Nome</string>    <!-- Heading for a new segment prompt. Noun phrase. -->
     <string name="gamedetail_speedrun_prompt_new_segment">Novo Segmento</string>
     <!-- Heading for a new category prompt. Noun phrase. -->
     <string name="gamedetail_speedrun_prompt_new_category">Nova Categoria</string>

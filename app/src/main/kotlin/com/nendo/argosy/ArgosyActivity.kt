@@ -120,6 +120,7 @@ class ArgosyActivity : ComponentActivity() {
     @Inject lateinit var downloadQueueRepository: com.nendo.argosy.data.repository.DownloadQueueRepository
     @Inject lateinit var gamepadInputHandler: GamepadInputHandler
     @Inject lateinit var connectedControllerTracker: com.nendo.argosy.core.input.ConnectedControllerTracker
+    @Inject lateinit var savedPadSeatsPublisher: com.nendo.argosy.hardware.pad.SavedPadSeatsPublisher
     @Inject lateinit var triggerAxisKeyEmitter: com.nendo.argosy.ui.input.TriggerAxisKeyEmitter
     @Inject lateinit var imageCacheManager: ImageCacheManager
     @Inject lateinit var resolveGameEmulatorContext:
@@ -454,6 +455,7 @@ class ArgosyActivity : ComponentActivity() {
     @SuppressLint("NewApi")
     override fun onResume() {
         super.onResume()
+        savedPadSeatsPublisher.onLauncherResumed()
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) pointerGuard.onInFrontChanged(true)
         systemBars.apply()
         if (::dualScreenManager.isInitialized) {

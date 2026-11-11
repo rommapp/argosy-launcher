@@ -1418,7 +1418,8 @@ fun ArgosyApp(
                         state = quickConnectionsState,
                         onRowClick = quickConnectionsInputHandler::tapRow,
                         onShowList = quickConnectionsInputHandler::tapList,
-                        onForget = quickConnectionsInputHandler::tapForget
+                        onForget = quickConnectionsInputHandler::tapForget,
+                        onForgetDevice = quickConnectionsInputHandler::tapForgetDevice
                     )
                 },
                 musicPage = {

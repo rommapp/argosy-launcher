@@ -160,7 +160,7 @@ fun ControllerOrderModal(
 private fun playFeedback(outcome: SeatKeyOutcome) {
     val event = when (outcome) {
         SeatKeyOutcome.CLAIMED, SeatKeyOutcome.READY -> GamepadEvent.Confirm
-        SeatKeyOutcome.CLOSE -> GamepadEvent.Back
+        SeatKeyOutcome.CLOSE, SeatKeyOutcome.RELEASED -> GamepadEvent.Back
         SeatKeyOutcome.CLEARED -> GamepadEvent.SecondaryAction
         SeatKeyOutcome.NONE -> return
     }

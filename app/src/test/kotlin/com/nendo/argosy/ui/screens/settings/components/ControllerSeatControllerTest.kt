@@ -85,12 +85,30 @@ class ControllerSeatControllerTest {
     }
 
     @Test
-    fun `B closes and Y clears every seat`() {
+    fun `B from an unseated pad closes and Y clears every seat`() {
         press(GamepadEvent.Confirm, padA)
 
         assertEquals(SeatKeyOutcome.CLEARED, press(GamepadEvent.SecondaryAction, padB))
         assertEquals(empty, seats.state.value.seats)
         assertEquals(SeatKeyOutcome.CLOSE, press(GamepadEvent.Back, padB))
+    }
+
+    @Test
+    fun `B from a seated pad gives up its seat and keeps the others`() {
+        press(GamepadEvent.Confirm, padA)
+        press(GamepadEvent.Confirm, padB)
+
+        assertEquals(SeatKeyOutcome.RELEASED, press(GamepadEvent.Back, padA))
+        assertEquals(listOf(null, padB, null, null), seats.state.value.seats)
+        assertEquals(SeatKeyOutcome.CLOSE, press(GamepadEvent.Back, padA))
+    }
+
+    @Test
+    fun `B from a source that is not a controller closes`() {
+        press(GamepadEvent.Confirm, padA)
+
+        assertEquals(SeatKeyOutcome.CLOSE, press(GamepadEvent.Back, null))
+        assertEquals(listOf(padA, null, null, null), seats.state.value.seats)
     }
 
     @Test

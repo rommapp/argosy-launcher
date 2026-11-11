@@ -2,7 +2,6 @@ package com.nendo.argosy.hardware
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.bluetooth.BluetoothClass
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.content.Context
@@ -50,6 +49,8 @@ class RadioController @Inject constructor(
     private val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
 
     val wifi: WifiNetworks = WifiNetworks { script -> RootShell.run(context, script) }
+
+    val bluetooth: BluetoothPairing = BluetoothPairing(context) { bluetoothManager?.adapter }
 
     val canToggle: Boolean
         get() = RootShell.isAvailable
@@ -132,24 +133,10 @@ class RadioController @Inject constructor(
             device.bluetoothClass
         } catch (_: SecurityException) {
             null
-        } ?: return BluetoothDeviceKind.OTHER
-        return when (deviceClass.majorDeviceClass) {
-            BluetoothClass.Device.Major.AUDIO_VIDEO -> BluetoothDeviceKind.AUDIO
-            BluetoothClass.Device.Major.PERIPHERAL ->
-                if ((deviceClass.deviceClass and PERIPHERAL_MINOR_MASK) in GAME_PERIPHERAL_MINORS) {
-                    BluetoothDeviceKind.CONTROLLER
-                } else {
-                    BluetoothDeviceKind.OTHER
-                }
-            else -> BluetoothDeviceKind.OTHER
         }
+        return BluetoothPairing.kindOf(deviceClass)
     }
 
     private fun InputDevice.isGamepad(): Boolean =
         supportsSource(InputDevice.SOURCE_GAMEPAD) || supportsSource(InputDevice.SOURCE_JOYSTICK)
-
-    private companion object {
-        const val PERIPHERAL_MINOR_MASK = 0x3C
-        val GAME_PERIPHERAL_MINORS = setOf(0x04, 0x08)
-    }
 }

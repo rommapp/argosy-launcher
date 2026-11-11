@@ -66,6 +66,7 @@ class RootFileHarnessReceiver : BroadcastReceiver() {
                         "apk=${q(context.applicationInfo.sourceDir)}\n" +
                             "pkill -f $PAD_DRIVER_CLASS\n" +
                             "setsid nohup app_process -Djava.class.path=\"\$apk\" /system/bin $PAD_DRIVER_CLASS " +
+                            "${q(File(context.filesDir, com.nendo.argosy.hardware.pad.PadSeats.FILE_NAME).absolutePath)} " +
                             "> $PAD_DRIVER_LOG 2>&1 < /dev/null &\n" +
                             "sleep 1; ps -A -o PID,USER,NAME,ARGS | grep $PAD_DRIVER_CLASS | grep -v grep"
                     )

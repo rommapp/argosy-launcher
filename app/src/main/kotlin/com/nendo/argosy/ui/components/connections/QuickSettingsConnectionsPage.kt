@@ -1,7 +1,5 @@
 package com.nendo.argosy.ui.components.connections
 
-import android.Manifest
-import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.StringRes
@@ -19,6 +17,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.BluetoothDisabled
+import androidx.compose.material.icons.filled.BluetoothSearching
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.NetworkWifi1Bar
@@ -61,7 +60,8 @@ fun QuickSettingsConnectionsPage(
     state: QuickConnectionsState,
     onRowClick: (QuickConnectionsRow) -> Unit,
     onShowList: (ConnectionsList) -> Unit,
-    onForget: (QuickConnectionsRow.Saved) -> Unit
+    onForget: (QuickConnectionsRow.Saved) -> Unit,
+    onForgetDevice: (QuickConnectionsRow.Paired) -> Unit
 ) {
     if (!state.switchable) {
         LimitedConnections(state)
@@ -84,7 +84,8 @@ fun QuickSettingsConnectionsPage(
                 isFocused = row.key == focusedKey,
                 onClick = { onRowClick(row) },
                 onShowList = onShowList,
-                onForget = onForget
+                onForget = onForget,
+                onForgetDevice = onForgetDevice
             )
         }
     }
@@ -96,16 +97,16 @@ fun QuickConnectionsEffects(controller: QuickConnectionsController, pageVisible:
         if (pageVisible) controller.onPageShown() else controller.onPageHidden()
     }
     val permissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
+        contract = ActivityResultContracts.RequestMultiplePermissions()
     ) {
         controller.onBluetoothPermissionResult()
     }
     LaunchedEffect(controller, permissionLauncher) {
-        controller.bluetoothPermissionRequests.collect {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                permissionLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT)
-            } else {
+        controller.bluetoothPermissionRequests.collect { permissions ->
+            if (permissions.isEmpty()) {
                 controller.onBluetoothPermissionResult()
+            } else {
+                permissionLauncher.launch(permissions.toTypedArray())
             }
         }
     }
@@ -142,7 +143,8 @@ private fun ConnectionsRow(
     isFocused: Boolean,
     onClick: () -> Unit,
     onShowList: (ConnectionsList) -> Unit,
-    onForget: (QuickConnectionsRow.Saved) -> Unit
+    onForget: (QuickConnectionsRow.Saved) -> Unit,
+    onForgetDevice: (QuickConnectionsRow.Paired) -> Unit
 ) {
     when (row) {
         QuickConnectionsRow.ListTabs -> QuickRowFrame(isFocused = isFocused, onClick = null) {
@@ -242,6 +244,40 @@ private fun ConnectionsRow(
             isFocused = isFocused,
             onClick = onClick,
             valueText = pairedValue(row.device)
+        ) {
+            if (state.canForgetDevices) {
+                Spacer(modifier = Modifier.width(Dimens.spacingSm))
+                ActionButton(
+                    label = stringResource(R.string.ui_quick_connections_forget_device),
+                    onClick = { onForgetDevice(row) },
+                    focused = isFocused,
+                    glyph = InputButton.X
+                )
+            }
+        }
+        QuickConnectionsRow.PairController -> QuickDetailRow(
+            icon = Icons.Default.BluetoothSearching,
+            label = stringResource(R.string.ui_quick_connections_pair_controller),
+            isFocused = isFocused,
+            onClick = onClick,
+            valueText = stringResource(R.string.ui_quick_connections_pair_stop).takeIf { state.discovering }
+        )
+        QuickConnectionsRow.NearbyControllersHeader ->
+            QuickSectionHeader(title = stringResource(R.string.ui_quick_connections_nearby_controllers))
+        QuickConnectionsRow.NearbyControllersPlaceholder -> PlaceholderText(
+            if (state.discovering) R.string.ui_quick_connections_controllers_searching
+            else R.string.ui_quick_connections_no_controllers
+        )
+        is QuickConnectionsRow.NearbyController -> QuickDetailRow(
+            icon = Icons.Default.SportsEsports,
+            label = row.device.name,
+            isFocused = isFocused,
+            onClick = onClick,
+            valueText = when (row.device.address) {
+                state.pairingAddress -> stringResource(R.string.ui_quick_connections_row_pairing)
+                state.pairFailedAddress -> stringResource(R.string.ui_quick_connections_row_pair_failed)
+                else -> null
+            }
         )
     }
 }

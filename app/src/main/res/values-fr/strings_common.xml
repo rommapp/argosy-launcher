@@ -1072,6 +1072,14 @@
     <string name="ui_quick_connections_row_failed">Échec</string>
     <string name="ui_quick_connections_secured">Sécurisé</string>
     <string name="ui_quick_connections_forget">Oublier</string>
+    <string name="ui_quick_connections_forget_device">Oublier</string>
+    <string name="ui_quick_connections_pair_controller">Associer une manette</string>
+    <string name="ui_quick_connections_pair_stop">Arrêter</string>
+    <string name="ui_quick_connections_nearby_controllers">Manettes trouvées</string>
+    <string name="ui_quick_connections_controllers_searching">Maintenez le bouton d\'association de la manette</string>
+    <string name="ui_quick_connections_no_controllers">Aucune manette trouvée</string>
+    <string name="ui_quick_connections_row_pairing">Association</string>
+    <string name="ui_quick_connections_row_pair_failed">Échec de l\'association</string>
     <string name="ui_quick_connections_bluetooth_permission">Argosy a besoin d\'une autorisation pour afficher les appareils associés.</string>
     <string name="ui_quick_connections_bluetooth_permission_allow">Autoriser</string>
     <string name="ui_quick_connections_device_connected">Connecté</string>

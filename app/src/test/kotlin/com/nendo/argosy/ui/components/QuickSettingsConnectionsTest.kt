@@ -4,6 +4,7 @@ import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.data.preferences.MenuWrapMode
 import com.nendo.argosy.hardware.BluetoothDeviceKind
 import com.nendo.argosy.hardware.WifiSecurity
+import com.nendo.argosy.ui.components.connections.BluetoothNearbyUi
 import com.nendo.argosy.ui.components.connections.BluetoothPairedUi
 import com.nendo.argosy.ui.components.connections.ConnectionsList
 import com.nendo.argosy.ui.components.connections.QuickConnectionsController
@@ -90,15 +91,34 @@ class QuickSettingsConnectionsTest {
     }
 
     @Test
-    fun `the bluetooth list shows paired devices and no networks`() {
+    fun `the bluetooth list offers pairing above paired devices and no networks`() {
         assertEquals(
             listOf(
                 QuickConnectionsRow.WifiToggle,
                 QuickConnectionsRow.BluetoothToggle,
                 QuickConnectionsRow.ListTabs,
+                QuickConnectionsRow.PairController,
                 QuickConnectionsRow.Paired(rootState.paired.single())
             ),
             quickConnectionsFocusableRows(rootState.copy(list = ConnectionsList.BLUETOOTH))
+        )
+    }
+
+    @Test
+    fun `a search lists the controllers it found between the pair row and paired devices`() {
+        val found = BluetoothNearbyUi(address = "AA:BB", name = "SNES Controller")
+        val state = rootState.copy(list = ConnectionsList.BLUETOOTH, searched = true, nearbyControllers = listOf(found))
+
+        assertEquals(
+            listOf(
+                QuickConnectionsRow.WifiToggle,
+                QuickConnectionsRow.BluetoothToggle,
+                QuickConnectionsRow.ListTabs,
+                QuickConnectionsRow.PairController,
+                QuickConnectionsRow.NearbyController(found),
+                QuickConnectionsRow.Paired(rootState.paired.single())
+            ),
+            quickConnectionsFocusableRows(state)
         )
     }
 

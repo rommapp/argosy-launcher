@@ -1074,6 +1074,14 @@
     <string name="ui_quick_connections_row_failed">Ошибка</string>
     <string name="ui_quick_connections_secured">Защищена</string>
     <string name="ui_quick_connections_forget">Забыть</string>
+    <string name="ui_quick_connections_forget_device">Забыть</string>
+    <string name="ui_quick_connections_pair_controller">Подключить контроллер</string>
+    <string name="ui_quick_connections_pair_stop">Стоп</string>
+    <string name="ui_quick_connections_nearby_controllers">Найденные контроллеры</string>
+    <string name="ui_quick_connections_controllers_searching">Удерживайте кнопку сопряжения на контроллере</string>
+    <string name="ui_quick_connections_no_controllers">Контроллеры не найдены</string>
+    <string name="ui_quick_connections_row_pairing">Сопряжение</string>
+    <string name="ui_quick_connections_row_pair_failed">Не удалось</string>
     <string name="ui_quick_connections_bluetooth_permission">Argosy нужно разрешение, чтобы показать сопряжённые устройства.</string>
     <string name="ui_quick_connections_bluetooth_permission_allow">Разрешить</string>
     <string name="ui_quick_connections_device_connected">Подключено</string>

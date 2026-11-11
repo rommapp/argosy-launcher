@@ -2,6 +2,8 @@ package com.nendo.argosy.ui.components.connections
 
 import com.nendo.argosy.core.input.SoundType
 import com.nendo.argosy.data.preferences.MenuWrapMode
+import com.nendo.argosy.hardware.BluetoothPairing
+import com.nendo.argosy.hardware.NearbyBluetoothDevice
 import com.nendo.argosy.hardware.PairedBluetoothDevice
 import com.nendo.argosy.hardware.RadioController
 import com.nendo.argosy.hardware.WifiConnection
@@ -30,6 +32,7 @@ import kotlinx.coroutines.launch
 private val RADIO_SETTLE_MS = listOf(1_000L, 2_000L, 3_000L)
 private val SCAN_POLL_MS = listOf(1_500L, 2_500L, 3_000L)
 private val JOIN_SETTLE_MS = listOf(2_000L, 3_000L, 5_000L)
+private const val FORGET_SETTLE_MS = 1_000L
 
 private data class WifiSnapshot(
     val current: WifiCurrentUi?,
@@ -48,13 +51,49 @@ class QuickConnectionsController(
     private val _state = MutableStateFlow(QuickConnectionsState())
     val state: StateFlow<QuickConnectionsState> = _state.asStateFlow()
 
-    private val _bluetoothPermissionRequests = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
-    val bluetoothPermissionRequests: SharedFlow<Unit> = _bluetoothPermissionRequests.asSharedFlow()
+    private val _bluetoothPermissionRequests = MutableSharedFlow<List<String>>(extraBufferCapacity = 1)
+    val bluetoothPermissionRequests: SharedFlow<List<String>> = _bluetoothPermissionRequests.asSharedFlow()
 
     private var scanJob: Job? = null
+    private var bluetoothWatch: AutoCloseable? = null
+    private var searchAfterPermission = false
+
+    private val pairingListener = object : BluetoothPairing.Listener {
+        override fun onFound(device: NearbyBluetoothDevice) {
+            _state.update { state ->
+                if (state.nearbyControllers.any { it.address == device.address }) return@update state
+                state.copy(nearbyControllers = state.nearbyControllers + BluetoothNearbyUi(device.address, device.name))
+            }
+        }
+
+        override fun onDiscoveryFinished() {
+            _state.update { it.copy(discovering = false) }
+        }
+
+        override fun onBondChanged(address: String, bonded: Boolean, failed: Boolean) {
+            when {
+                bonded -> {
+                    _state.update { state ->
+                        state.copy(
+                            nearbyControllers = state.nearbyControllers.filterNot { it.address == address },
+                            pairingAddress = state.pairingAddress.takeUnless { it == address }
+                        )
+                    }
+                    scope.launch(deviceDispatcher) { readBluetooth() }
+                }
+                failed -> _state.update { state ->
+                    state.copy(
+                        pairingAddress = state.pairingAddress.takeUnless { it == address },
+                        pairFailedAddress = address
+                    )
+                }
+            }
+        }
+    }
 
     fun onPageShown() {
         _state.update { it.copy(focusIndex = 0, join = null) }
+        if (bluetoothWatch == null) bluetoothWatch = radioController.bluetooth.watch(pairingListener)
         scope.launch(deviceDispatcher) {
             readAll()
             if (_state.value.switchable && _state.value.wifiEnabled) startScan()
@@ -64,7 +103,10 @@ class QuickConnectionsController(
     fun onPageHidden() {
         scanJob?.cancel()
         scanJob = null
-        _state.update { it.copy(join = null, scanning = false) }
+        stopSearch()
+        bluetoothWatch?.close()
+        bluetoothWatch = null
+        _state.update { it.copy(join = null, scanning = false, searched = false, nearbyControllers = emptyList()) }
     }
 
     fun setFocus(index: Int) {
@@ -72,6 +114,7 @@ class QuickConnectionsController(
     }
 
     fun showList(list: ConnectionsList) {
+        if (list != ConnectionsList.BLUETOOTH) stopSearch()
         _state.update { it.copy(list = list) }
     }
 
@@ -101,16 +144,83 @@ class QuickConnectionsController(
 
     fun setBluetoothEnabled(enabled: Boolean) {
         if (!_state.value.switchable) return
-        _state.update { it.copy(bluetoothEnabled = enabled, paired = if (enabled) it.paired else emptyList()) }
+        if (!enabled) stopSearch()
+        _state.update {
+            it.copy(
+                bluetoothEnabled = enabled,
+                paired = if (enabled) it.paired else emptyList(),
+                searched = it.searched && enabled,
+                nearbyControllers = if (enabled) it.nearbyControllers else emptyList()
+            )
+        }
         switchRadio(rescan = false) { radioController.setBluetoothEnabled(enabled) }
     }
 
     fun requestBluetoothPermission() {
-        _bluetoothPermissionRequests.tryEmit(Unit)
+        _bluetoothPermissionRequests.tryEmit(BluetoothPairing.requiredPermissions())
     }
 
     fun onBluetoothPermissionResult() {
-        scope.launch(deviceDispatcher) { readBluetooth() }
+        scope.launch(deviceDispatcher) {
+            readBluetooth()
+            if (searchAfterPermission && radioController.bluetooth.missingPermissions().isEmpty()) {
+                searchAfterPermission = false
+                startSearch()
+            }
+            searchAfterPermission = false
+        }
+    }
+
+    fun toggleSearch() {
+        if (_state.value.discovering) {
+            stopSearch()
+            return
+        }
+        val missing = radioController.bluetooth.missingPermissions()
+        if (missing.isNotEmpty()) {
+            searchAfterPermission = true
+            _bluetoothPermissionRequests.tryEmit(missing)
+            return
+        }
+        scope.launch(deviceDispatcher) { startSearch() }
+    }
+
+    fun pair(device: BluetoothNearbyUi) {
+        if (_state.value.pairingAddress != null) return
+        _state.update { it.copy(pairingAddress = device.address, pairFailedAddress = null, discovering = false) }
+        scope.launch(deviceDispatcher) {
+            if (!radioController.bluetooth.pair(device.address)) {
+                _state.update { it.copy(pairingAddress = null, pairFailedAddress = device.address) }
+            }
+        }
+    }
+
+    fun forgetDevice(device: BluetoothPairedUi) {
+        if (!_state.value.canForgetDevices) return
+        _state.update { state -> state.copy(paired = state.paired.filterNot { it.address == device.address }) }
+        scope.launch(deviceDispatcher) {
+            radioController.bluetooth.forget(device.address)
+            delay(FORGET_SETTLE_MS)
+            readBluetooth()
+        }
+    }
+
+    private fun startSearch() {
+        val started = radioController.bluetooth.startDiscovery()
+        _state.update {
+            it.copy(
+                discovering = started,
+                searched = true,
+                nearbyControllers = if (started) emptyList() else it.nearbyControllers,
+                pairFailedAddress = null
+            )
+        }
+    }
+
+    private fun stopSearch() {
+        if (!_state.value.discovering) return
+        _state.update { it.copy(discovering = false) }
+        scope.launch(deviceDispatcher) { radioController.bluetooth.cancelDiscovery() }
     }
 
     fun selectNearby(network: WifiNearbyUi) {
@@ -264,7 +374,14 @@ class QuickConnectionsController(
         val permitted = radioController.hasBluetoothPermission()
         val enabled = radioController.status().bluetoothEnabled
         val paired = if (enabled && permitted) radioController.pairedDevices().map { it.toUi() } else emptyList()
-        _state.update { it.copy(bluetoothEnabled = enabled, bluetoothPermitted = permitted, paired = paired) }
+        _state.update {
+            it.copy(
+                bluetoothEnabled = enabled,
+                bluetoothPermitted = permitted,
+                paired = paired,
+                canForgetDevices = radioController.bluetooth.canForget
+            )
+        }
     }
 
     private fun nearbyFrom(results: List<WifiScanResult>, connectedSsid: String?): List<WifiNearbyUi> = results

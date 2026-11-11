@@ -1313,6 +1313,27 @@
     <string name="ui_quick_connections_secured">Secured</string>
     <!-- Button on a saved network that makes the device stop remembering it. Verb. -->
     <string name="ui_quick_connections_forget">Forget</string>
+    <!-- Button on a paired Bluetooth device that unpairs it so this device stops remembering it.
+         Verb. -->
+    <string name="ui_quick_connections_forget_device">Forget</string>
+    <!-- Connections page row that starts searching for Bluetooth controllers to pair. Verb
+         phrase. -->
+    <string name="ui_quick_connections_pair_controller">Pair a controller</string>
+    <!-- Value beside the pair row while a search runs; pressing the row again stops it. Verb;
+         keep short. -->
+    <string name="ui_quick_connections_pair_stop">Stop</string>
+    <!-- Connections page heading over Bluetooth controllers found in pairing mode. Noun phrase.
+         Shown in capitals. -->
+    <string name="ui_quick_connections_nearby_controllers">Controllers found</string>
+    <!-- Under Controllers found while the search runs and nothing has turned up yet. Tells the
+         player what to do with the controller. -->
+    <string name="ui_quick_connections_controllers_searching">Hold the controller\'s pairing button</string>
+    <!-- Under Controllers found after a search that found nothing. -->
+    <string name="ui_quick_connections_no_controllers">No controllers found</string>
+    <!-- Value beside a found controller while it pairs. Verb, in progress; keep short. -->
+    <string name="ui_quick_connections_row_pairing">Pairing</string>
+    <!-- Value beside a found controller that did not pair. Keep short. -->
+    <string name="ui_quick_connections_row_pair_failed">Couldn\'t pair</string>
     <!-- Connections page notice when Argosy may not read the paired Bluetooth devices. Full
          sentence. -->
     <string name="ui_quick_connections_bluetooth_permission">Argosy needs permission to show paired devices.</string>

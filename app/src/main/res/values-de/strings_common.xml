@@ -1024,6 +1024,14 @@
     <string name="ui_quick_connections_row_failed">Fehlgeschlagen</string>
     <string name="ui_quick_connections_secured">Gesichert</string>
     <string name="ui_quick_connections_forget">Entfernen</string>
+    <string name="ui_quick_connections_forget_device">Entfernen</string>
+    <string name="ui_quick_connections_pair_controller">Controller koppeln</string>
+    <string name="ui_quick_connections_pair_stop">Stopp</string>
+    <string name="ui_quick_connections_nearby_controllers">Gefundene Controller</string>
+    <string name="ui_quick_connections_controllers_searching">Kopplungstaste am Controller gedrückt halten</string>
+    <string name="ui_quick_connections_no_controllers">Keine Controller gefunden</string>
+    <string name="ui_quick_connections_row_pairing">Wird gekoppelt</string>
+    <string name="ui_quick_connections_row_pair_failed">Kopplung fehlgeschlagen</string>
     <string name="ui_quick_connections_bluetooth_permission">Argosy benötigt eine Berechtigung, um gekoppelte Geräte anzuzeigen.</string>
     <string name="ui_quick_connections_bluetooth_permission_allow">Erlauben</string>
     <string name="ui_quick_connections_device_connected">Verbunden</string>

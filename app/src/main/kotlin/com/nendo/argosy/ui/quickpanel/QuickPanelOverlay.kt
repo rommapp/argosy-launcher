@@ -379,7 +379,8 @@ class QuickPanelOverlay @Inject constructor(
                                         state = connectionsState,
                                         onRowClick = connectionsHandler::tapRow,
                                         onShowList = connectionsHandler::tapList,
-                                        onForget = connectionsHandler::tapForget
+                                        onForget = connectionsHandler::tapForget,
+                                        onForgetDevice = connectionsHandler::tapForgetDevice
                                     )
                                 },
                                 musicPage = { QuickSettingsMusicPage(viewModel = music, onOpenRommSignIn = null) }

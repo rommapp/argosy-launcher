@@ -171,6 +171,9 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
     lateinit var controllerNoticePoster: dagger.Lazy<com.nendo.argosy.ui.notification.ControllerNoticePoster>
 
     @Inject
+    lateinit var savedPadSeatsPublisher: dagger.Lazy<com.nendo.argosy.hardware.pad.SavedPadSeatsPublisher>
+
+    @Inject
     lateinit var siblingGroupRepository: com.nendo.argosy.data.repository.SiblingGroupRepository
 
     @Inject
@@ -246,6 +249,7 @@ class ArgosyApp : Application(), Configuration.Provider, ImageLoaderFactory {
         overAppNoticeWindow.get().start()
         batteryNoticePoster.get().start()
         controllerNoticePoster.get().start()
+        savedPadSeatsPublisher.get().start()
         siblingGroupRepository.start()
         lidSleepGuard.start()
         backgroundGames.start()

@@ -1024,6 +1024,14 @@
     <string name="ui_quick_connections_row_failed">विफल</string>
     <string name="ui_quick_connections_secured">सुरक्षित</string>
     <string name="ui_quick_connections_forget">भूलें</string>
+    <string name="ui_quick_connections_forget_device">भूलें</string>
+    <string name="ui_quick_connections_pair_controller">कंट्रोलर पेयर करें</string>
+    <string name="ui_quick_connections_pair_stop">रोकें</string>
+    <string name="ui_quick_connections_nearby_controllers">मिले कंट्रोलर</string>
+    <string name="ui_quick_connections_controllers_searching">कंट्रोलर का पेयरिंग बटन दबाए रखें</string>
+    <string name="ui_quick_connections_no_controllers">कोई कंट्रोलर नहीं मिला</string>
+    <string name="ui_quick_connections_row_pairing">पेयर हो रहा है</string>
+    <string name="ui_quick_connections_row_pair_failed">पेयर नहीं हुआ</string>
     <string name="ui_quick_connections_bluetooth_permission">पेयर किए गए डिवाइस दिखाने के लिए Argosy को अनुमति चाहिए।</string>
     <string name="ui_quick_connections_bluetooth_permission_allow">अनुमति दें</string>
     <string name="ui_quick_connections_device_connected">कनेक्ट है</string>

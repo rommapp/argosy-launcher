@@ -21,6 +21,8 @@ data class BluetoothPairedUi(
     val batteryPercent: Int?
 )
 
+data class BluetoothNearbyUi(val address: String, val name: String)
+
 data class WifiJoinDraft(
     val ssid: String,
     val security: WifiSecurity,
@@ -52,6 +54,12 @@ data class QuickConnectionsState(
     val failedSsid: String? = null,
     val bluetoothPermitted: Boolean = true,
     val paired: List<BluetoothPairedUi> = emptyList(),
+    val canForgetDevices: Boolean = false,
+    val discovering: Boolean = false,
+    val searched: Boolean = false,
+    val nearbyControllers: List<BluetoothNearbyUi> = emptyList(),
+    val pairingAddress: String? = null,
+    val pairFailedAddress: String? = null,
     val focusIndex: Int = 0,
     val join: WifiJoinDraft? = null,
     val list: ConnectionsList = ConnectionsList.WIFI
@@ -72,6 +80,11 @@ sealed class QuickConnectionsRow(val key: String, val focusable: Boolean) {
     data class Saved(val network: WifiSavedUi) : QuickConnectionsRow("saved_${network.networkId}", focusable = true)
     data object BluetoothToggle : QuickConnectionsRow("bluetoothToggle", focusable = true)
     data object BluetoothPermission : QuickConnectionsRow("bluetoothPermission", focusable = true)
+    data object PairController : QuickConnectionsRow("pairController", focusable = true)
+    data object NearbyControllersHeader : QuickConnectionsRow("nearbyControllersHeader", focusable = false)
+    data object NearbyControllersPlaceholder : QuickConnectionsRow("nearbyControllersPlaceholder", focusable = false)
+    data class NearbyController(val device: BluetoothNearbyUi) :
+        QuickConnectionsRow("nearbyController_${device.address}", focusable = true)
     data object PairedHeader : QuickConnectionsRow("pairedHeader", focusable = false)
     data object PairedPlaceholder : QuickConnectionsRow("pairedPlaceholder", focusable = false)
     data class Paired(val device: BluetoothPairedUi) : QuickConnectionsRow("paired_${device.address}", focusable = true)
@@ -116,6 +129,12 @@ private fun MutableList<QuickConnectionsRow>.addBluetoothRows(state: QuickConnec
         !state.bluetoothEnabled -> add(QuickConnectionsRow.BluetoothOffPlaceholder)
         !state.bluetoothPermitted -> add(QuickConnectionsRow.BluetoothPermission)
         else -> {
+            add(QuickConnectionsRow.PairController)
+            if (state.discovering || state.searched) {
+                add(QuickConnectionsRow.NearbyControllersHeader)
+                if (state.nearbyControllers.isEmpty()) add(QuickConnectionsRow.NearbyControllersPlaceholder)
+                state.nearbyControllers.forEach { add(QuickConnectionsRow.NearbyController(it)) }
+            }
             add(QuickConnectionsRow.PairedHeader)
             if (state.paired.isEmpty()) add(QuickConnectionsRow.PairedPlaceholder)
             state.paired.forEach { add(QuickConnectionsRow.Paired(it)) }

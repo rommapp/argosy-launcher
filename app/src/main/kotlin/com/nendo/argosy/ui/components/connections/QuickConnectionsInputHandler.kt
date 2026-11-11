@@ -39,10 +39,18 @@ class QuickConnectionsInputHandler(
         return activate(row)
     }
 
-    override fun onContextMenu(): InputResult {
-        val row = focusedRow() as? QuickConnectionsRow.Saved ?: return InputResult.UNHANDLED
-        controller.forget(row.network)
-        return InputResult.HANDLED
+    override fun onContextMenu(): InputResult = when (val row = focusedRow()) {
+        is QuickConnectionsRow.Saved -> {
+            controller.forget(row.network)
+            InputResult.HANDLED
+        }
+        is QuickConnectionsRow.Paired -> if (controller.state.value.canForgetDevices) {
+            controller.forgetDevice(row.device)
+            InputResult.HANDLED
+        } else {
+            InputResult.UNHANDLED
+        }
+        else -> InputResult.UNHANDLED
     }
 
     fun tapRow(row: QuickConnectionsRow) {
@@ -58,6 +66,11 @@ class QuickConnectionsInputHandler(
     fun tapForget(row: QuickConnectionsRow.Saved) {
         if (!focusOn(row)) return
         controller.forget(row.network)
+    }
+
+    fun tapForgetDevice(row: QuickConnectionsRow.Paired) {
+        if (!focusOn(row)) return
+        controller.forgetDevice(row.device)
     }
 
     private fun focusOn(row: QuickConnectionsRow): Boolean {
@@ -86,6 +99,14 @@ class QuickConnectionsInputHandler(
             }
             QuickConnectionsRow.BluetoothPermission -> {
                 controller.requestBluetoothPermission()
+                InputResult.HANDLED
+            }
+            QuickConnectionsRow.PairController -> {
+                controller.toggleSearch()
+                InputResult.HANDLED
+            }
+            is QuickConnectionsRow.NearbyController -> {
+                controller.pair(row.device)
                 InputResult.HANDLED
             }
             else -> InputResult.handled(SoundType.SILENT)

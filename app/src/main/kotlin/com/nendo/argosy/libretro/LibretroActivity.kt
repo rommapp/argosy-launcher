@@ -265,6 +265,7 @@ open class LibretroActivity : ComponentActivity() {
     private var autoSaveStateCaptured = false
     private lateinit var retroView: GLRetroView
     private val portResolver = ControllerPortResolver()
+    private lateinit var padSeats: PadSeatPublisher
     private val inputMapper = ControllerInputMapper()
     private lateinit var inputConfig: InputConfigCoordinator
     private val controllerSeats by lazy {
@@ -698,6 +699,8 @@ open class LibretroActivity : ComponentActivity() {
             controllerId = intent.getStringExtra(EXTRA_LAUNCH_CONTROLLER_ID),
             isDocked = isDockedDark()
         )
+        padSeats = PadSeatPublisher(filesDir, portResolver, lifecycleScope)
+        portResolver.addPortClaimedListener { _, _ -> padSeats.publish() }
         inputConfig.initialize(onControllerOrderLoaded = ::promptForSeatsIfNeeded)
         initializeControllerNotices()
         lifecycleScope.launch {
@@ -3826,6 +3829,7 @@ open class LibretroActivity : ComponentActivity() {
         leavingForHome = false
         reopenPlaySessionIfEnded()
         sessionLink.onResumed()
+        if (::padSeats.isInitialized) padSeats.publish()
         refreshKeepsGameOpen()
         autoSaveStateCaptured = false
         window.hideSystemBars()
@@ -3995,6 +3999,7 @@ open class LibretroActivity : ComponentActivity() {
 
     override fun onPause() {
         sessionLink.onPaused()
+        if (::padSeats.isInitialized) padSeats.clear()
         gyroAim.stop()
         releaseCoreHeldKeys()
         hideSecondScreen()
@@ -4107,6 +4112,11 @@ open class LibretroActivity : ComponentActivity() {
                 if (::inputConfig.isInitialized) {
                     val released = inputConfig.releaseDisconnectedControllers()
                     if (::controllerNotices.isInitialized) controllerNotices.onSeatsReleased(released)
+                }
+                if (::padSeats.isInitialized &&
+                    lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)
+                ) {
+                    padSeats.publish()
                 }
                 refreshGamepadPresence()
             }

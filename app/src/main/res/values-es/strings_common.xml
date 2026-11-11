@@ -1061,6 +1061,14 @@
     <string name="ui_quick_connections_row_failed">Error</string>
     <string name="ui_quick_connections_secured">Protegida</string>
     <string name="ui_quick_connections_forget">Olvidar</string>
+    <string name="ui_quick_connections_forget_device">Olvidar</string>
+    <string name="ui_quick_connections_pair_controller">Vincular un mando</string>
+    <string name="ui_quick_connections_pair_stop">Detener</string>
+    <string name="ui_quick_connections_nearby_controllers">Mandos encontrados</string>
+    <string name="ui_quick_connections_controllers_searching">Mantén pulsado el botón de vinculación del mando</string>
+    <string name="ui_quick_connections_no_controllers">No se encontraron mandos</string>
+    <string name="ui_quick_connections_row_pairing">Vinculando</string>
+    <string name="ui_quick_connections_row_pair_failed">No se pudo vincular</string>
     <string name="ui_quick_connections_bluetooth_permission">Argosy necesita permiso para mostrar los dispositivos vinculados.</string>
     <string name="ui_quick_connections_bluetooth_permission_allow">Permitir</string>
     <string name="ui_quick_connections_device_connected">Conectado</string>

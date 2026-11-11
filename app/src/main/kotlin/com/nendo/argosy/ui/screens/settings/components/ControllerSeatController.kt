@@ -24,7 +24,7 @@ data class ControllerSeatState(
     val seats: List<SeatHolder?> = List(ControllerSeating.PORT_COUNT) { null }
 )
 
-enum class SeatKeyOutcome { NONE, CLAIMED, CLEARED, READY, CLOSE }
+enum class SeatKeyOutcome { NONE, CLAIMED, RELEASED, CLEARED, READY, CLOSE }
 
 fun claimSeat(seats: List<SeatHolder?>, holder: SeatHolder): List<SeatHolder?> {
     if (seats.any { it?.controllerId == holder.controllerId }) return seats
@@ -67,7 +67,12 @@ class ControllerSeatController(
         }
         if (!isDown) return SeatKeyOutcome.NONE
         return when (event) {
-            GamepadEvent.Back -> SeatKeyOutcome.CLOSE
+            GamepadEvent.Back -> if (pad != null && isSeated(pad.controllerId)) {
+                release(pad.controllerId)
+                SeatKeyOutcome.RELEASED
+            } else {
+                SeatKeyOutcome.CLOSE
+            }
             GamepadEvent.SecondaryAction -> {
                 clearAll()
                 SeatKeyOutcome.CLEARED
@@ -98,6 +103,11 @@ class ControllerSeatController(
         _state.update { it.copy(seats = after) }
         persist(pad.controllerId, pad.name ?: pad.controllerId, after.indexOfFirst { it?.controllerId == pad.controllerId })
         return SeatKeyOutcome.CLAIMED
+    }
+
+    private fun release(controllerId: String) {
+        val port = _state.value.seats.indexOfFirst { it?.controllerId == controllerId }
+        if (port >= 0) releaseSeat(port)
     }
 
     fun releaseSeat(port: Int) {

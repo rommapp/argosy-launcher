@@ -963,6 +963,14 @@
     <string name="ui_quick_connections_row_failed">连接失败</string>
     <string name="ui_quick_connections_secured">已加密</string>
     <string name="ui_quick_connections_forget">忘记</string>
+    <string name="ui_quick_connections_forget_device">忘记</string>
+    <string name="ui_quick_connections_pair_controller">配对手柄</string>
+    <string name="ui_quick_connections_pair_stop">停止</string>
+    <string name="ui_quick_connections_nearby_controllers">找到的手柄</string>
+    <string name="ui_quick_connections_controllers_searching">按住手柄的配对按钮</string>
+    <string name="ui_quick_connections_no_controllers">未找到手柄</string>
+    <string name="ui_quick_connections_row_pairing">正在配对</string>
+    <string name="ui_quick_connections_row_pair_failed">无法配对</string>
     <string name="ui_quick_connections_bluetooth_permission">Argosy 需要权限才能显示已配对的设备。</string>
     <string name="ui_quick_connections_bluetooth_permission_allow">允许</string>
     <string name="ui_quick_connections_device_connected">已连接</string>

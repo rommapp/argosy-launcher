@@ -616,6 +616,14 @@
     <string name="ui_quick_connections_row_failed">Não foi possível conectar</string>
     <string name="ui_quick_connections_secured">Protegida</string>
     <string name="ui_quick_connections_forget">Esquecer</string>
+    <string name="ui_quick_connections_forget_device">Esquecer</string>
+    <string name="ui_quick_connections_pair_controller">Parear um controle</string>
+    <string name="ui_quick_connections_pair_stop">Parar</string>
+    <string name="ui_quick_connections_nearby_controllers">Controles encontrados</string>
+    <string name="ui_quick_connections_controllers_searching">Segure o botão de pareamento do controle</string>
+    <string name="ui_quick_connections_no_controllers">Nenhum controle encontrado</string>
+    <string name="ui_quick_connections_row_pairing">Pareando</string>
+    <string name="ui_quick_connections_row_pair_failed">Falha ao parear</string>
     <string name="ui_quick_connections_bluetooth_permission">O Argosy precisa de permissão para mostrar dispositivos pareados.</string>
     <string name="ui_quick_connections_bluetooth_permission_allow">Permitir</string>
     <string name="ui_quick_connections_device_connected">Conectado</string>

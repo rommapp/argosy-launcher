@@ -987,6 +987,14 @@
     <string name="ui_quick_connections_row_failed">連線失敗</string>
     <string name="ui_quick_connections_secured">已加密</string>
     <string name="ui_quick_connections_forget">忘記</string>
+    <string name="ui_quick_connections_forget_device">忘記</string>
+    <string name="ui_quick_connections_pair_controller">配對控制器</string>
+    <string name="ui_quick_connections_pair_stop">停止</string>
+    <string name="ui_quick_connections_nearby_controllers">找到的控制器</string>
+    <string name="ui_quick_connections_controllers_searching">按住控制器的配對按鈕</string>
+    <string name="ui_quick_connections_no_controllers">找不到控制器</string>
+    <string name="ui_quick_connections_row_pairing">配對中</string>
+    <string name="ui_quick_connections_row_pair_failed">無法配對</string>
     <string name="ui_quick_connections_bluetooth_permission">Argosy 需要權限才能顯示已配對的裝置。</string>
     <string name="ui_quick_connections_bluetooth_permission_allow">允許</string>
     <string name="ui_quick_connections_device_connected">已連線</string>

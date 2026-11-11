@@ -41,6 +41,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import com.nendo.argosy.ui.components.GameTitle
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
@@ -408,14 +409,14 @@ private fun LogoShowcase(
                         .fillMaxHeight(LOGO_HEIGHT_SHARE)
                 )
             } else {
-                Text(
-                    text = detail.title,
-                    style = MaterialTheme.typography.displayLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = theme.textPrimary,
+                GameTitle(
+                    title = detail.title,
+                    titleStyle = MaterialTheme.typography.displayLarge.copy(fontWeight = FontWeight.Bold),
+                    titleColor = theme.textPrimary,
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    adaptiveSize = true
                 )
             }
         }
@@ -627,13 +628,12 @@ private fun JournalShowcase(
     ) {
         detail.subtitle?.let { ShowcaseSubtitle(it, detail.platformSlug) }
         Column(verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)) {
-            Text(
-                text = detail.title,
-                style = MaterialTheme.typography.displayMedium,
-                fontWeight = FontWeight.Bold,
-                color = theme.textPrimary,
+            GameTitle(
+                title = detail.title,
+                titleStyle = MaterialTheme.typography.displayMedium.copy(fontWeight = FontWeight.Bold),
+                titleColor = theme.textPrimary,
                 maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                adaptiveSize = true
             )
             developer?.let {
                 Text(
@@ -752,13 +752,12 @@ private fun ShowcaseTitle(detail: CompanionDetail) {
     val theme = LocalArgosyTheme.current
     Column(verticalArrangement = Arrangement.spacedBy(Dimens.spacingXs)) {
         detail.subtitle?.let { ShowcaseSubtitle(it, detail.platformSlug, pill = false) }
-        Text(
-            text = detail.title,
-            style = MaterialTheme.typography.displayMedium,
-            fontWeight = FontWeight.Bold,
-            color = theme.textPrimary,
+        GameTitle(
+            title = detail.title,
+            titleStyle = MaterialTheme.typography.displayMedium.copy(fontWeight = FontWeight.Bold),
+            titleColor = theme.textPrimary,
             maxLines = 2,
-            overflow = TextOverflow.Ellipsis
+            adaptiveSize = true
         )
     }
 }

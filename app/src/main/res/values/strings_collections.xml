@@ -218,14 +218,13 @@
     <string name="collections_category_hint_refresh">Refresh</string>
     <!-- Footer hint on dual-screen devices, where Select swaps the two screens. Verb phrase. -->
     <string name="collections_category_hint_swap_screens">Swap Screens</string>
-    <!-- Footer hint on dual-screen devices: A opens the game, and holding A downloads every game in the category. %1$d is how many games would download. -->
-    <string name="collections_category_hint_open_hold_download_all">Open, hold to Download All (%1$d)</string>
-    <!-- Footer hint. Downloads every downloadable game in this category; %1$d is how many
-         qualify. Distinct key from collections_options_download_all (different usage site). -->
-    <string name="collections_category_hint_download_all">Download All (%1$d)</string>
-    <!-- Footer hint on dual-screen devices: pressing Select downloads every downloadable game in
-         this category, and holding it swaps the two screens. %1$d is how many games qualify. -->
-    <string name="collections_category_hint_download_all_hold_swap_screens">Download All (%1$d), hold to Swap Screens</string>
+    <!-- Footer hint on dual-screen devices: A opens the game, and holding A opens the options menu for the category and the focused game. -->
+    <string name="collections_category_hint_open_hold_options">Open, hold for Options</string>
+    <!-- Footer hint. Noun: opens the options menu for the category and the focused game. -->
+    <string name="collections_category_hint_options">Options</string>
+    <!-- Footer hint on dual-screen devices: pressing Select opens the options menu for the
+         category and the focused game, and holding it swaps the two screens. -->
+    <string name="collections_category_hint_options_hold_swap_screens">Options, hold to Swap Screens</string>
     <!-- Footer hint on dual-screen devices: holding Select swaps the two screens. Verb phrase. -->
     <string name="collections_category_hint_hold_swap_screens">Hold to Swap Screens</string>
     <!-- Title of the confirmation shown before every game in a category is queued for download. Question. -->

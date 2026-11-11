@@ -123,9 +123,9 @@
     <string name="collections_category_hint_refreshing">重新整理中&#8230;</string>
     <string name="collections_category_hint_refresh">重新整理</string>
     <string name="collections_category_hint_swap_screens">交換螢幕</string>
-    <string name="collections_category_hint_open_hold_download_all">開啟，長按全部下載 (%1$d)</string>
-    <string name="collections_category_hint_download_all">全部下載 (%1$d)</string>
-    <string name="collections_category_hint_download_all_hold_swap_screens">全部下載 (%1$d)，長按交換螢幕</string>
+    <string name="collections_category_hint_open_hold_options">開啟，長按查看選項</string>
+    <string name="collections_category_hint_options">選項</string>
+    <string name="collections_category_hint_options_hold_swap_screens">選項，長按交換螢幕</string>
     <string name="collections_category_hint_hold_swap_screens">長按交換螢幕</string>
     <string name="collections_category_downloadall_confirm_title">下載全部遊戲？</string>
     <plurals name="collections_category_downloadall_confirm_message">

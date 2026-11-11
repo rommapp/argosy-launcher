@@ -128,9 +128,9 @@
     <string name="collections_category_hint_refreshing">रीफ्रेश हो रहा है…</string>
     <string name="collections_category_hint_refresh">रीफ्रेश</string>
     <string name="collections_category_hint_swap_screens">स्क्रीन बदलें</string>
-    <string name="collections_category_hint_open_hold_download_all">खोलें, सभी डाउनलोड करने के लिए दबाए रखें (%1$d)</string>
-    <string name="collections_category_hint_download_all">सभी डाउनलोड करें (%1$d)</string>
-    <string name="collections_category_hint_download_all_hold_swap_screens">सभी डाउनलोड करें (%1$d), स्क्रीन बदलने के लिए दबाए रखें</string>
+    <string name="collections_category_hint_open_hold_options">खोलें, विकल्पों के लिए दबाए रखें</string>
+    <string name="collections_category_hint_options">विकल्प</string>
+    <string name="collections_category_hint_options_hold_swap_screens">विकल्प, स्क्रीन बदलने के लिए दबाए रखें</string>
     <string name="collections_category_hint_hold_swap_screens">स्क्रीन बदलने के लिए दबाए रखें</string>
     <string name="collections_category_downloadall_confirm_title">सभी गेम डाउनलोड करें?</string>
     <plurals name="collections_category_downloadall_confirm_message">

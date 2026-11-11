@@ -133,9 +133,9 @@
     <string name="collections_category_hint_refreshing">Actualisation…</string>
     <string name="collections_category_hint_refresh">Actualiser</string>
     <string name="collections_category_hint_swap_screens">Inverser les écrans</string>
-    <string name="collections_category_hint_open_hold_download_all">Ouvrir, maintenir pour tout télécharger (%1$d)</string>
-    <string name="collections_category_hint_download_all">Tout télécharger (%1$d)</string>
-    <string name="collections_category_hint_download_all_hold_swap_screens">Tout télécharger (%1$d), maintenir pour inverser les écrans</string>
+    <string name="collections_category_hint_open_hold_options">Ouvrir, maintenir pour les options</string>
+    <string name="collections_category_hint_options">Options</string>
+    <string name="collections_category_hint_options_hold_swap_screens">Options, maintenir pour inverser les écrans</string>
     <string name="collections_category_hint_hold_swap_screens">Maintenir pour inverser les écrans</string>
     <string name="collections_category_downloadall_confirm_title">Télécharger tous les jeux ?</string>
     <plurals name="collections_category_downloadall_confirm_message">

@@ -133,9 +133,9 @@
     <string name="collections_category_hint_refreshing">Actualizando&#8230;</string>
     <string name="collections_category_hint_refresh">Actualizar</string>
     <string name="collections_category_hint_swap_screens">Cambiar pantallas</string>
-    <string name="collections_category_hint_open_hold_download_all">Abrir, mantén para descargar todo (%1$d)</string>
-    <string name="collections_category_hint_download_all">Descargar todo (%1$d)</string>
-    <string name="collections_category_hint_download_all_hold_swap_screens">Descargar todo (%1$d), mantén para cambiar pantallas</string>
+    <string name="collections_category_hint_open_hold_options">Abrir, mantén para opciones</string>
+    <string name="collections_category_hint_options">Opciones</string>
+    <string name="collections_category_hint_options_hold_swap_screens">Opciones, mantén para cambiar pantallas</string>
     <string name="collections_category_hint_hold_swap_screens">Mantén para cambiar pantallas</string>
     <string name="collections_category_downloadall_confirm_title">¿Descargar todos los juegos?</string>
     <plurals name="collections_category_downloadall_confirm_message">

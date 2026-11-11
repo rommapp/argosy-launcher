@@ -648,6 +648,7 @@ class CollectionDetailViewModel @Inject constructor(
         override fun onSelect(): InputResult {
             val state = uiState.value
             if (hasDialogOpen(state)) return InputResult.UNHANDLED
+            if (state.showOptionsModal) return InputResult.HANDLED
             if (com.nendo.argosy.ui.dualscreen.selectSwapsRoles()) return InputResult.UNHANDLED
             showOptionsModal()
             return InputResult.HANDLED
@@ -667,5 +668,30 @@ class CollectionDetailViewModel @Inject constructor(
             togglePin()
             return InputResult.HANDLED
         }
+
+        private fun heldByOptions(): InputResult =
+            if (uiState.value.showOptionsModal) InputResult.HANDLED else InputResult.UNHANDLED
+
+        override fun onLeft(): InputResult = heldByOptions()
+
+        override fun onRight(): InputResult = heldByOptions()
+
+        override fun onPrevSection(): InputResult = heldByOptions()
+
+        override fun onNextSection(): InputResult = heldByOptions()
+
+        override fun onLongSelect(): InputResult = heldByOptions()
+
+        override fun onLeftStickClick(): InputResult = heldByOptions()
+
+        override fun onRightStickClick(): InputResult = heldByOptions()
+
+        override fun onRightStickUp(): InputResult = heldByOptions()
+
+        override fun onRightStickDown(): InputResult = heldByOptions()
+
+        override fun onRightStickLeft(): InputResult = heldByOptions()
+
+        override fun onRightStickRight(): InputResult = heldByOptions()
     }
 }

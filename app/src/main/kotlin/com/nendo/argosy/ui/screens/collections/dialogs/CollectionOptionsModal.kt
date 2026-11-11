@@ -30,18 +30,22 @@ sealed interface CollectionOptionRow {
 /**
  * The options modal's rows in order: one Move to Display row per [moveTargets] entry first, then
  * the collection's own options, then the focused game's, with Close last when [showCloseGame].
+ * Rename and Delete appear only when [editable]; a virtual category passes false.
  */
 fun collectionOptionRows(
     showDownloadAll: Boolean = false,
     downloadableCount: Int = 0,
+    editable: Boolean = true,
     showRemoveGame: Boolean = false,
     moveTargets: List<RunningMoveTarget> = emptyList(),
     showCloseGame: Boolean = false
 ): List<CollectionOptionRow> = buildList {
     moveTargets.forEach { add(CollectionOptionRow.MoveTo(it)) }
     if (showDownloadAll && downloadableCount > 0) add(CollectionOptionRow.Action(CollectionOption.DOWNLOAD_ALL))
-    add(CollectionOptionRow.Action(CollectionOption.RENAME))
-    add(CollectionOptionRow.Action(CollectionOption.DELETE))
+    if (editable) {
+        add(CollectionOptionRow.Action(CollectionOption.RENAME))
+        add(CollectionOptionRow.Action(CollectionOption.DELETE))
+    }
     if (showRemoveGame) add(CollectionOptionRow.Action(CollectionOption.REMOVE_GAME))
     if (showCloseGame) add(CollectionOptionRow.Action(CollectionOption.CLOSE_GAME))
 }

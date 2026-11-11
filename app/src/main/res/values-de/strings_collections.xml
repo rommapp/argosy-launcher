@@ -128,9 +128,9 @@
     <string name="collections_category_hint_refreshing">Aktualisiert…</string>
     <string name="collections_category_hint_refresh">Aktualisieren</string>
     <string name="collections_category_hint_swap_screens">Bildschirme tauschen</string>
-    <string name="collections_category_hint_open_hold_download_all">Öffnen, halten für Alle herunterladen (%1$d)</string>
-    <string name="collections_category_hint_download_all">Alle herunterladen (%1$d)</string>
-    <string name="collections_category_hint_download_all_hold_swap_screens">Alle herunterladen (%1$d), halten für Bildschirme tauschen</string>
+    <string name="collections_category_hint_open_hold_options">Öffnen, halten für Optionen</string>
+    <string name="collections_category_hint_options">Optionen</string>
+    <string name="collections_category_hint_options_hold_swap_screens">Optionen, halten für Bildschirme tauschen</string>
     <string name="collections_category_hint_hold_swap_screens">Halten für Bildschirme tauschen</string>
     <string name="collections_category_downloadall_confirm_title">Alle Spiele herunterladen?</string>
     <plurals name="collections_category_downloadall_confirm_message">

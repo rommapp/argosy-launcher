@@ -138,9 +138,9 @@
     <string name="collections_category_hint_refreshing">Обновление…</string>
     <string name="collections_category_hint_refresh">Обновить</string>
     <string name="collections_category_hint_swap_screens">Поменять экраны</string>
-    <string name="collections_category_hint_open_hold_download_all">Открыть, удерживайте, чтобы скачать всё (%1$d)</string>
-    <string name="collections_category_hint_download_all">Скачать всё (%1$d)</string>
-    <string name="collections_category_hint_download_all_hold_swap_screens">Скачать всё (%1$d), удерживайте, чтобы поменять экраны</string>
+    <string name="collections_category_hint_open_hold_options">Открыть, удерживайте для параметров</string>
+    <string name="collections_category_hint_options">Параметры</string>
+    <string name="collections_category_hint_options_hold_swap_screens">Параметры, удерживайте, чтобы поменять экраны</string>
     <string name="collections_category_hint_hold_swap_screens">Удерживайте, чтобы поменять экраны</string>
     <string name="collections_category_downloadall_confirm_title">Скачать все игры?</string>
     <plurals name="collections_category_downloadall_confirm_message">

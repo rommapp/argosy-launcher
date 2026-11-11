@@ -60,6 +60,8 @@ import com.nendo.argosy.ui.navigation.Screen
 import com.nendo.argosy.ui.primitives.ArgosyConfirmModalHost
 import com.nendo.argosy.ui.primitives.ArgosyProgressBar
 import com.nendo.argosy.ui.components.gamelist.GameListRow
+import com.nendo.argosy.ui.screens.collections.dialogs.CollectionOptionsModal
+import com.nendo.argosy.ui.screens.running.RunningGameCloseHost
 import com.nendo.argosy.ui.theme.Dimens
 
 @Composable
@@ -161,7 +163,7 @@ fun VirtualCategoryScreen(
                                     isDownloaded = game.isDownloaded,
                                     isFocused = uiState.focusedIndex == index,
                                     onClick = { onGameClick(game.id) },
-                                    onLongClick = { inputHandler.onLongConfirm() },
+                                    onLongClick = { viewModel.handleGameLongPress(index) },
                                     running = com.nendo.argosy.ui.common.LocalRunningGames.current.markFor(game.id)
                                 )
                             }
@@ -186,8 +188,12 @@ fun VirtualCategoryScreen(
 
         val selectSwapMode = com.nendo.argosy.ui.dualscreen.selectSwapModeState()
         val selectSwapsRoles = selectSwapMode == com.nendo.argosy.data.preferences.SelectSwapMode.TAP
+        val focusedRunning = uiState.focusedGame?.let {
+            com.nendo.argosy.ui.common.LocalRunningGames.current.markFor(it.id)
+        }
+        val hasOptions = uiState.optionRowsFor(focusedRunning).isNotEmpty()
         val selectHintSwaps = selectSwapsRoles ||
-            (selectSwapMode == com.nendo.argosy.data.preferences.SelectSwapMode.HOLD && !uiState.canDownloadAll)
+            (selectSwapMode == com.nendo.argosy.data.preferences.SelectSwapMode.HOLD && !hasOptions)
         FooterHints(
             hints = if (uiState.isSearchActive) {
                 listOf(
@@ -198,14 +204,13 @@ fun VirtualCategoryScreen(
                 buildList {
                     add(InputButton.DPAD to stringResource(R.string.collections_category_hint_navigate))
                     add(
-                        InputButton.A to if (selectSwapsRoles && uiState.canDownloadAll) {
-                            stringResource(
-                                R.string.collections_category_hint_open_hold_download_all,
-                                uiState.downloadableGamesCount
-                            )
-                        } else {
-                            stringResource(R.string.collections_category_hint_open)
-                        }
+                        InputButton.A to stringResource(
+                            if (selectSwapsRoles && hasOptions) {
+                                R.string.collections_category_hint_open_hold_options
+                            } else {
+                                R.string.collections_category_hint_open
+                            }
+                        )
                     )
                     add(InputButton.B to stringResource(R.string.collections_category_hint_back))
                     add(InputButton.X to stringResource(R.string.collections_category_hint_search))
@@ -227,17 +232,11 @@ fun VirtualCategoryScreen(
                             add(InputButton.SELECT to stringResource(R.string.collections_category_hint_swap_screens))
                         selectHintSwaps ->
                             add(InputButton.SELECT to stringResource(R.string.collections_category_hint_hold_swap_screens))
-                        selectSwapMode != null && uiState.canDownloadAll -> add(
-                            InputButton.SELECT to stringResource(
-                                R.string.collections_category_hint_download_all_hold_swap_screens,
-                                uiState.downloadableGamesCount
-                            )
+                        selectSwapMode != null && hasOptions -> add(
+                            InputButton.SELECT to stringResource(R.string.collections_category_hint_options_hold_swap_screens)
                         )
-                        uiState.canDownloadAll -> add(
-                            InputButton.SELECT to stringResource(
-                                R.string.collections_category_hint_download_all,
-                                uiState.downloadableGamesCount
-                            )
+                        hasOptions -> add(
+                            InputButton.SELECT to stringResource(R.string.collections_category_hint_options)
                         )
                     }
                 }
@@ -301,6 +300,21 @@ fun VirtualCategoryScreen(
             )
         }
     }
+
+    if (uiState.showOptionsModal) {
+        CollectionOptionsModal(
+            collectionName = uiState.categoryName,
+            focusIndex = uiState.optionsModalFocusIndex,
+            onOptionSelect = { option -> viewModel.selectOption(option) },
+            onDismiss = { viewModel.hideOptionsModal() },
+            rows = uiState.optionRows,
+            downloadableCount = uiState.downloadableGamesCount,
+            gameTitle = uiState.focusedGame?.title,
+            onMoveToDisplay = { target -> viewModel.moveRunningGame(target) }
+        )
+    }
+
+    RunningGameCloseHost(viewModel.runningGameMenu)
 }
 
 @Composable

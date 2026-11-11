@@ -20,8 +20,14 @@ import com.nendo.argosy.core.notification.NotificationDuration
 import com.nendo.argosy.core.notification.NotificationManager
 import com.nendo.argosy.core.notification.NotificationText
 import com.nendo.argosy.core.notification.NotificationType
+import com.nendo.argosy.ui.common.RunningGameUi
 import com.nendo.argosy.ui.input.InputHandler
 import com.nendo.argosy.ui.input.InputResult
+import com.nendo.argosy.ui.screens.collections.dialogs.CollectionOption
+import com.nendo.argosy.ui.screens.collections.dialogs.CollectionOptionRow
+import com.nendo.argosy.ui.screens.collections.dialogs.collectionOptionRows
+import com.nendo.argosy.ui.screens.running.RunningGameMenu
+import com.nendo.argosy.ui.screens.running.RunningMoveTarget
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -59,7 +65,11 @@ data class VirtualCategoryUiState(
     val currentSectionLabel: String = "",
     val isSearchActive: Boolean = false,
     val searchQuery: String = "",
-    val overlayLetter: String? = null
+    val overlayLetter: String? = null,
+    val showOptionsModal: Boolean = false,
+    val optionsModalFocusIndex: Int = 0,
+    val optionsRunning: RunningGameUi? = null,
+    val optionsMoveTargets: List<RunningMoveTarget> = emptyList()
 ) {
     val focusedGame: CollectionGameUi?
         get() = games.getOrNull(focusedIndex)
@@ -72,11 +82,32 @@ data class VirtualCategoryUiState(
                 !downloadAllProgress.isActive &&
                 !downloadAllProgress.isOnCooldown
 
+    val optionRows: List<CollectionOptionRow>
+        get() = optionRowsFor(optionsRunning, optionsMoveTargets)
+
+    fun optionRowsFor(
+        running: RunningGameUi?,
+        moveTargets: List<RunningMoveTarget> = emptyList()
+    ): List<CollectionOptionRow> = collectionOptionRows(
+        showDownloadAll = canDownloadAll,
+        downloadableCount = downloadableGamesCount,
+        editable = false,
+        moveTargets = moveTargets.takeIf { running != null }.orEmpty(),
+        showCloseGame = running != null
+    )
+
     val showSectionSidebar: Boolean
         get() = !isSearchActive && sectionLabels.size > 1
 }
 
 private data class CategorySearchState(val active: Boolean = false, val query: String = "")
+
+private data class CategoryOptionsState(
+    val visible: Boolean = false,
+    val focusIndex: Int = 0,
+    val running: RunningGameUi? = null,
+    val moveTargets: List<RunningMoveTarget> = emptyList()
+)
 
 @HiltViewModel
 class VirtualCategoryViewModel @Inject constructor(
@@ -92,7 +123,8 @@ class VirtualCategoryViewModel @Inject constructor(
     private val notificationManager: NotificationManager,
     private val positions: VirtualBrowsePositions,
     private val downloadFileStatusRepository: com.nendo.argosy.data.repository.DownloadFileStatusRepository,
-    showcaseSource: com.nendo.argosy.ui.common.PresentationShowcaseSource
+    showcaseSource: com.nendo.argosy.ui.common.PresentationShowcaseSource,
+    val runningGameMenu: RunningGameMenu
 ) : ViewModel() {
 
     private val presentation = com.nendo.argosy.ui.common.PresentationFocus(
@@ -110,6 +142,8 @@ class VirtualCategoryViewModel @Inject constructor(
     private val _isRefreshing = MutableStateFlow(false)
     private val _downloadAllProgress = MutableStateFlow(DownloadAllProgress())
     private val _search = MutableStateFlow(CategorySearchState())
+    private val _options = MutableStateFlow(CategoryOptionsState())
+    private var optionsOpenJob: Job? = null
     private val _overlayLetter = MutableStateFlow<String?>(null)
     private var preSearchIndex = 0
     private var lastRefreshTime = 0L
@@ -170,8 +204,9 @@ class VirtualCategoryViewModel @Inject constructor(
         visibleGames,
         _focusedIndex,
         combine(_isPinned, _isRefreshing, _downloadAllProgress) { a, b, c -> Triple(a, b, c) },
-        _search
-    ) { listing, focusedIndex, (isPinned, isRefreshing, downloadProgress), search ->
+        _search,
+        _options
+    ) { listing, focusedIndex, (isPinned, isRefreshing, downloadProgress), search, options ->
         val visible = listing.games
         val clamped = focusedIndex.coerceIn(0, (visible.size - 1).coerceAtLeast(0))
         VirtualCategoryUiState(
@@ -186,7 +221,11 @@ class VirtualCategoryViewModel @Inject constructor(
             sectionLabels = if (search.active) emptyList() else listing.sectionLabels,
             currentSectionLabel = listing.sectionLabelByGame.getOrNull(clamped) ?: "",
             isSearchActive = search.active,
-            searchQuery = search.query
+            searchQuery = search.query,
+            showOptionsModal = options.visible,
+            optionsModalFocusIndex = options.focusIndex,
+            optionsRunning = options.running,
+            optionsMoveTargets = options.moveTargets
         )
     }
 
@@ -232,6 +271,14 @@ class VirtualCategoryViewModel @Inject constructor(
     fun moveDown() {
         val current = uiState.value.focusedIndex
         if (current < uiState.value.games.size - 1) setFocus(current + 1)
+    }
+
+    fun handleGameLongPress(index: Int) {
+        val state = uiState.value
+        if (state.downloadAllProgress.isActive || state.showOptionsModal) return
+        val game = state.games.getOrNull(index) ?: return
+        setFocus(index)
+        openOptionsFor(state, game)
     }
 
     fun jumpToSection(label: String) {
@@ -382,33 +429,115 @@ class VirtualCategoryViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Opens the options modal for the focused game. False, and nothing opens, when the modal has
+     * no rows for that game.
+     */
+    fun showOptionsModal(): Boolean {
+        val state = uiState.value
+        return openOptionsFor(state, state.focusedGame)
+    }
+
+    private fun openOptionsFor(state: VirtualCategoryUiState, game: CollectionGameUi?): Boolean {
+        if (optionsOpenJob?.isActive == true) return true
+        val running = game?.let { runningGameMenu.markFor(it.id) }
+        if (state.optionRowsFor(running).isEmpty()) return false
+        optionsOpenJob = viewModelScope.launch {
+            val moveTargets = runningGameMenu.moveTargets(running)
+            _options.update {
+                it.copy(
+                    visible = true,
+                    focusIndex = 0,
+                    running = running,
+                    moveTargets = moveTargets
+                )
+            }
+        }
+        return true
+    }
+
+    fun hideOptionsModal() {
+        optionsOpenJob?.cancel()
+        _options.update { it.copy(visible = false) }
+    }
+
+    fun moveOptionsFocus(delta: Int) {
+        val maxIndex = (uiState.value.optionRows.size - 1).coerceAtLeast(0)
+        _options.update { it.copy(focusIndex = (it.focusIndex + delta).coerceIn(0, maxIndex)) }
+    }
+
+    fun selectOption(option: CollectionOption) {
+        val state = uiState.value
+        hideOptionsModal()
+        when (option) {
+            CollectionOption.DOWNLOAD_ALL -> requestDownloadAll()
+            CollectionOption.CLOSE_GAME -> runningGameMenu.requestClose(state.optionsRunning, state.focusedGame?.title)
+            CollectionOption.RENAME, CollectionOption.DELETE, CollectionOption.REMOVE_GAME -> Unit
+        }
+    }
+
+    fun moveRunningGame(target: RunningMoveTarget) {
+        val state = uiState.value
+        hideOptionsModal()
+        val running = state.optionsRunning ?: return
+        val title = state.focusedGame?.title ?: return
+        runningGameMenu.moveTo(viewModelScope, running, target, title)
+    }
+
+    fun confirmOptionSelection() {
+        val state = uiState.value
+        when (val row = state.optionRows.getOrNull(state.optionsModalFocusIndex)) {
+            is CollectionOptionRow.Action -> selectOption(row.option)
+            is CollectionOptionRow.MoveTo -> moveRunningGame(row.target)
+            null -> Unit
+        }
+    }
+
     fun createInputHandler(
         onBack: () -> Unit,
         onGameClick: (Long) -> Unit
     ): InputHandler = object : InputHandler {
+        private fun isBlocked(state: VirtualCategoryUiState): Boolean =
+            state.downloadAllProgress.isActive || state.showOptionsModal
+
+        private fun heldWhileBlocked(): InputResult =
+            if (isBlocked(uiState.value)) InputResult.HANDLED else InputResult.UNHANDLED
+
         override fun onUp(): InputResult {
-            if (uiState.value.downloadAllProgress.isActive) return InputResult.HANDLED
-            moveUp()
+            val state = uiState.value
+            if (state.downloadAllProgress.isActive) return InputResult.HANDLED
+            if (state.showOptionsModal) moveOptionsFocus(-1) else moveUp()
             return InputResult.HANDLED
         }
 
         override fun onDown(): InputResult {
-            if (uiState.value.downloadAllProgress.isActive) return InputResult.HANDLED
-            moveDown()
+            val state = uiState.value
+            if (state.downloadAllProgress.isActive) return InputResult.HANDLED
+            if (state.showOptionsModal) moveOptionsFocus(1) else moveDown()
             return InputResult.HANDLED
         }
 
         override fun onConfirm(): InputResult {
-            if (uiState.value.downloadAllProgress.isActive) return InputResult.HANDLED
-            uiState.value.focusedGame?.let { onGameClick(it.id) }
+            val state = uiState.value
+            if (state.downloadAllProgress.isActive) return InputResult.HANDLED
+            if (state.showOptionsModal) {
+                confirmOptionSelection()
+                return InputResult.HANDLED
+            }
+            state.focusedGame?.let { onGameClick(it.id) }
             return InputResult.HANDLED
         }
 
         override fun onBack(): InputResult {
-            if (uiState.value.downloadAllProgress.isActive) {
+            val state = uiState.value
+            if (state.downloadAllProgress.isActive) {
                 return InputResult.HANDLED
             }
-            if (uiState.value.isSearchActive) {
+            if (state.showOptionsModal) {
+                hideOptionsModal()
+                return InputResult.HANDLED
+            }
+            if (state.isSearchActive) {
                 closeSearch()
                 return InputResult.HANDLED
             }
@@ -416,54 +545,72 @@ class VirtualCategoryViewModel @Inject constructor(
             return InputResult.HANDLED
         }
 
+        override fun onLeft(): InputResult = heldWhileBlocked()
+
+        override fun onRight(): InputResult = heldWhileBlocked()
+
+        override fun onPrevSection(): InputResult = heldWhileBlocked()
+
+        override fun onNextSection(): InputResult = heldWhileBlocked()
+
+        override fun onLeftStickClick(): InputResult = heldWhileBlocked()
+
+        override fun onRightStickClick(): InputResult = heldWhileBlocked()
+
+        override fun onRightStickUp(): InputResult = heldWhileBlocked()
+
+        override fun onRightStickDown(): InputResult = heldWhileBlocked()
+
+        override fun onRightStickLeft(): InputResult = heldWhileBlocked()
+
+        override fun onRightStickRight(): InputResult = heldWhileBlocked()
+
         override fun onSecondaryAction(): InputResult {
-            if (uiState.value.downloadAllProgress.isActive) return InputResult.HANDLED
+            if (isBlocked(uiState.value)) return InputResult.HANDLED
             togglePin()
             return InputResult.HANDLED
         }
 
         override fun onContextMenu(): InputResult {
-            if (uiState.value.downloadAllProgress.isActive) return InputResult.HANDLED
+            if (isBlocked(uiState.value)) return InputResult.HANDLED
             openSearch()
             return InputResult.HANDLED
         }
 
         override fun onMenu(): InputResult {
-            if (uiState.value.downloadAllProgress.isActive) return InputResult.HANDLED
+            if (isBlocked(uiState.value)) return InputResult.HANDLED
             refresh()
             return InputResult.HANDLED
         }
 
         override fun onPrevTrigger(): InputResult {
-            if (uiState.value.downloadAllProgress.isActive) return InputResult.HANDLED
-            if (uiState.value.sectionLabels.isEmpty()) return InputResult.UNHANDLED
+            val state = uiState.value
+            if (isBlocked(state)) return InputResult.HANDLED
+            if (state.sectionLabels.isEmpty()) return InputResult.UNHANDLED
             jumpToPreviousSection()
             return InputResult.HANDLED
         }
 
         override fun onNextTrigger(): InputResult {
-            if (uiState.value.downloadAllProgress.isActive) return InputResult.HANDLED
-            if (uiState.value.sectionLabels.isEmpty()) return InputResult.UNHANDLED
+            val state = uiState.value
+            if (isBlocked(state)) return InputResult.HANDLED
+            if (state.sectionLabels.isEmpty()) return InputResult.UNHANDLED
             jumpToNextSection()
             return InputResult.HANDLED
         }
 
         override fun onSelect(): InputResult {
-            if (uiState.value.downloadAllProgress.isActive) return InputResult.HANDLED
+            if (isBlocked(uiState.value)) return InputResult.HANDLED
             if (com.nendo.argosy.ui.dualscreen.selectSwapsRoles()) return InputResult.UNHANDLED
             return onLongConfirm()
         }
 
         override fun onLongSelect(): InputResult =
-            if (uiState.value.downloadAllProgress.isActive) InputResult.HANDLED else InputResult.UNHANDLED
+            if (isBlocked(uiState.value)) InputResult.HANDLED else InputResult.UNHANDLED
 
         override fun onLongConfirm(): InputResult {
-            if (uiState.value.downloadAllProgress.isActive) return InputResult.HANDLED
-            if (uiState.value.canDownloadAll) {
-                requestDownloadAll()
-                return InputResult.HANDLED
-            }
-            return InputResult.UNHANDLED
+            if (isBlocked(uiState.value)) return InputResult.HANDLED
+            return if (showOptionsModal()) InputResult.HANDLED else InputResult.UNHANDLED
         }
     }
 }

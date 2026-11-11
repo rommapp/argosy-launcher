@@ -61,6 +61,15 @@ class RootFileHarnessReceiver : BroadcastReceiver() {
                             "*) echo refused; exit 1 ;; esac"
                     )
                     "stacks" -> runRoot(work, "debuggerd -b ${android.os.Process.myPid()}", echoOutput = false)
+                    "paddriver" -> runRoot(
+                        work,
+                        "apk=${q(context.applicationInfo.sourceDir)}\n" +
+                            "pkill -f $PAD_DRIVER_CLASS\n" +
+                            "setsid nohup app_process -Djava.class.path=\"\$apk\" /system/bin $PAD_DRIVER_CLASS " +
+                            "> $PAD_DRIVER_LOG 2>&1 < /dev/null &\n" +
+                            "sleep 1; ps -A -o PID,USER,NAME,ARGS | grep $PAD_DRIVER_CLASS | grep -v grep"
+                    )
+                    "paddriverstop" -> runRoot(work, "pkill -f $PAD_DRIVER_CLASS && echo stopped")
                     else -> Log.w(TAG, "unknown op $op")
                 }
             } catch (e: Exception) {
@@ -150,6 +159,8 @@ class RootFileHarnessReceiver : BroadcastReceiver() {
         const val SCRIPT_NAME = "harness-op.sh"
         const val WRAPPER_NAME = "harness-run.sh"
         const val OUTPUT_NAME = "harness-result.txt"
+        const val PAD_DRIVER_CLASS = "com.nendo.argosy.hardware.pad.PadDriverMain"
+        const val PAD_DRIVER_LOG = "/data/local/tmp/paddriver.log"
         val OCTAL_MODE_PATTERN = Regex("^[0-7]{3,4}$")
         val SYMBOLIC_MODE_PATTERN = Regex("^[ugoa]*[-+=][rwxX]+$")
         val GROUP_PATTERN = Regex("^[0-9]+$")
